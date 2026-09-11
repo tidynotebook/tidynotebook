@@ -44,6 +44,17 @@ await test('the reading measure sits on the line and not on the content', () => 
   assert.equal(rule('.cm-np-widget-block').marginInline, 'auto');
 });
 
+await test('every heading level keeps the shared line edge', () => {
+  for (let level = 1; level <= 6; level += 1) {
+    const heading = rule(`.cm-np-h${String(level)}`);
+    assert.equal(heading.maxWidth, undefined);
+    assert.equal(heading.marginInline, undefined);
+    assert.equal(heading.marginInlineStart, undefined);
+    assert.equal(heading.paddingInline, undefined);
+    assert.equal(heading.paddingInlineStart, undefined);
+  }
+});
+
 await test('the note body reads in the strong text color', () => {
   assert.equal(rule('&').color, 'var(--notes-text-strong)');
 });

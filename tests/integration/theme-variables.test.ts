@@ -96,7 +96,7 @@ await test('the built stylesheet declares every variable the editor reads', () =
 await test('the note surface keeps its designed typography', () => {
   assert.match(css, /--text-note:\s*1rem/);
   assert.match(css, /--text-note--line-height:\s*1\.65/);
-  assert.match(css, /--note-measure:\s*68ch/);
+  assert.match(css, /--note-measure:\s*42rem/);
   assert.match(css, /--note-h1:\s*2em/);
   assert.match(css, /--note-h6:\s*1em/);
   assert.match(css, /--note-mono-size:\s*0\.9em/);
