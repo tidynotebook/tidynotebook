@@ -330,12 +330,12 @@ export function DeleteNoticeBar(): ReactNode {
   return (
     <div className="fixed bottom-4 left-1/2 z-50 w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 rounded-xl border border-edge-subtle bg-card p-3 shadow-md">
       <div
-        className="flex flex-wrap items-center justify-between gap-3"
+        className="flex flex-wrap items-center justify-between gap-group"
         role="status"
         aria-live="polite"
       >
         <p className="m-0 min-w-0 text-control text-strong">{message}</p>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-cluster">
           <Button
             variant="secondary"
             size="sm"
@@ -612,7 +612,7 @@ function TrashList({
                         {parts.join(' \u00b7 ')}
                       </p>
                     </div>
-                    <div className="flex shrink-0 items-center gap-2">
+                    <div className="flex shrink-0 items-center gap-cluster">
                       <Button
                         variant="secondary"
                         size="sm"

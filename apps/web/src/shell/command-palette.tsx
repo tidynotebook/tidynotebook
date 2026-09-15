@@ -202,7 +202,7 @@ export function CommandPalette({
       hideTitle
       width="medium"
     >
-      <div className="flex items-center gap-3 border-b border-edge-subtle px-4">
+      <div className="flex items-center gap-group border-b border-edge-subtle px-gutter">
         <span className="text-muted" aria-hidden="true">
           <SearchIcon size={18} />
         </span>
@@ -245,7 +245,7 @@ export function CommandPalette({
         </kbd>
       </div>
       {content.offline ? (
-        <p className="m-0 border-b border-edge-subtle px-4 py-2 text-control text-muted">
+        <p className="m-0 border-b border-edge-subtle px-gutter py-2 text-control text-muted">
           No connection. These results come from this device.
         </p>
       ) : null}
@@ -278,7 +278,7 @@ export function CommandPalette({
               id={row.id}
               role="option"
               aria-selected={index === selected}
-              className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-3 py-2 ${index === selected ? 'bg-active text-strong' : 'text-ink hover:bg-hover'}`}
+              className={`flex min-h-11 cursor-pointer items-center gap-group rounded-lg px-3 py-2 ${index === selected ? 'bg-active text-strong' : 'text-ink hover:bg-hover'}`}
               onMouseEnter={() => setSelected(index)}
               onMouseDown={(event): void => {
                 event.preventDefault();

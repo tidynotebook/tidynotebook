@@ -4,6 +4,7 @@ import {
   childFolderPath,
   knownFolderPaths,
   selectedFolderOrRoot,
+  selectionForOpenNote,
 } from './folder-selection.ts';
 
 await test('a child folder uses the selected full parent path', () => {
@@ -23,4 +24,16 @@ await test('a missing selection returns to the root', () => {
   assert.equal(selectedFolderOrRoot('Work/Plans', folders), 'Work/Plans');
   assert.equal(selectedFolderOrRoot('Work/Old', folders), '');
   assert.equal(selectedFolderOrRoot('', folders), '');
+});
+
+await test('the open note decides the create parent', () => {
+  // The defect this covers: New folder made its folder at the top while the
+  // person was reading a note three folders deep, because nothing had moved
+  // the selection there.
+  assert.equal(selectionForOpenNote('', 'Work/Plans/Next.md'), 'Work/Plans');
+  assert.equal(selectionForOpenNote('Archive', 'Notes/One.md'), 'Notes');
+  // A note at the top selects the top.
+  assert.equal(selectionForOpenNote('Archive', 'One.md'), '');
+  // No open note leaves the choice of the person alone.
+  assert.equal(selectionForOpenNote('Archive', null), 'Archive');
 });

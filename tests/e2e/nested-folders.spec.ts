@@ -113,3 +113,94 @@ test('a note that moves into a folder stays there after the next edit', async ({
     .locator('xpath=ancestor::li[1]');
   await expect(row.getByRole('link', { name: noteName })).toBeVisible();
 });
+
+test('a new folder lands inside the folder of the note that is open', async ({
+  checkedPage: page,
+  stack,
+}) => {
+  await signIn(page, stack);
+  await openPersonalWorkspace(page);
+  const suffix = Date.now().toString();
+  const parent = `notes-${suffix}`;
+  const child = `ideas-${suffix}`;
+  const noteName = `entry-${suffix}`;
+  const navigation = page.locator('#notes-sidebar');
+
+  await openNavigation(page);
+  await navigation
+    .getByRole('button', { name: 'New folder', exact: true })
+    .click();
+  await page.getByLabel('Folder name').fill(parent);
+  await page.getByRole('button', { name: 'Make folder' }).click();
+  await navigation
+    .getByRole('button', { name: 'New note', exact: true })
+    .click();
+  await page.waitForURL(/\/notes\/[0-9a-f-]+$/);
+  await page.getByLabel('Note name').fill(noteName);
+  await replaceEditorText(page, '# In the folder');
+  await waitForServerSave(page);
+
+  // The person selects the top, then opens the note again. Opening the note
+  // is what decides the parent, so the folder below lands next to that note
+  // and not at the top. This is the defect the journey covers.
+  await openNavigation(page);
+  await navigation.getByRole('button', { name: 'All notes' }).click();
+  await navigation.getByRole('link', { name: noteName }).click();
+  await page.waitForURL(/\/notes\/[0-9a-f-]+$/);
+
+  await openNavigation(page);
+  await navigation
+    .getByRole('button', { name: 'New folder', exact: true })
+    .click();
+  const dialog = page.getByRole('dialog', { name: 'New folder' });
+  // The dialog states the parent, so the person reads where it lands.
+  await expect(dialog).toContainText(`The folder goes inside ${parent}`);
+  await page.getByLabel('Folder name').fill(child);
+  await page.getByRole('button', { name: 'Make folder' }).click();
+
+  const parentRow = page
+    .getByRole('button', { name: parent, exact: true })
+    .locator('xpath=ancestor::li[1]');
+  await expect(
+    parentRow.getByRole('button', { name: child, exact: true }),
+  ).toBeVisible();
+});
+
+test('the folder row makes a folder inside that folder', async ({
+  checkedPage: page,
+  stack,
+}) => {
+  await signIn(page, stack);
+  await openPersonalWorkspace(page);
+  const suffix = Date.now().toString();
+  const parent = `team-${suffix}`;
+  const child = `plans-${suffix}`;
+  const navigation = page.locator('#notes-sidebar');
+
+  await openNavigation(page);
+  await navigation
+    .getByRole('button', { name: 'New folder', exact: true })
+    .click();
+  await page.getByLabel('Folder name').fill(parent);
+  await page.getByRole('button', { name: 'Make folder' }).click();
+
+  // The top is selected, so only the menu of the row can name this parent.
+  await navigation.getByRole('button', { name: 'All notes' }).click();
+  await page
+    .getByRole('button', { name: `Actions for the folder ${parent}` })
+    .click();
+  await page
+    .getByRole('menuitem', { name: 'New folder in this folder' })
+    .click();
+  const dialog = page.getByRole('dialog', { name: 'New folder' });
+  await expect(dialog).toContainText(`The folder goes inside ${parent}`);
+  await page.getByLabel('Folder name').fill(child);
+  await page.getByRole('button', { name: 'Make folder' }).click();
+
+  const parentRow = page
+    .getByRole('button', { name: parent, exact: true })
+    .locator('xpath=ancestor::li[1]');
+  await expect(
+    parentRow.getByRole('button', { name: child, exact: true }),
+  ).toBeVisible();
+});

@@ -16,6 +16,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -35,6 +36,7 @@ import {
   loadBoundedFiles,
   type BoundedFiles,
 } from '../lib/file-load.ts';
+import { shouldRevalidate } from '../lib/revalidate.ts';
 import { mergeNotes, type NoteSummary } from '../lib/note-list.ts';
 import { folderPaths } from '../lib/note-name.ts';
 
@@ -138,8 +140,12 @@ export function FilesProvider({
   const accountId = session.account?.accountId ?? null;
   const [serverFiles, setServerFiles] =
     useState<BoundedFiles<WorkspaceFileSummary>>(noServerFiles);
-  const [loading, setLoading] = useState(true);
+  // The list of this area has been read at least once. Only the first read
+  // shows a placeholder; every later read is a background refresh that keeps
+  // the rows a person is looking at.
+  const [answered, setAnswered] = useState(false);
   const [generation, setGeneration] = useState(0);
+  const lastReadAt = useRef<number | null>(null);
   const emptyLocalFiles = useMemo<readonly LocalFileSummary[]>(() => [], []);
   const localFiles = useLocalQuery(
     store.store,
@@ -161,6 +167,25 @@ export function FilesProvider({
     setGeneration((current) => current + 1);
   }, []);
 
+  /**
+   * Reads the server list again, at most once per quiet period.
+   *
+   * A window focus and a reconnect both arrive as often as a person switches
+   * windows, so the rule in `lib/revalidate.ts` bounds them.
+   */
+  const revalidate = useCallback(() => {
+    if (!shouldRevalidate(lastReadAt.current, Date.now())) return;
+    reload();
+  }, [reload]);
+
+  // The area changed, so nothing that is on screen describes it. This is the
+  // one moment the list is emptied and the placeholder comes back.
+  useEffect(() => {
+    setAnswered(false);
+    setServerFiles(noServerFiles);
+    lastReadAt.current = null;
+  }, [workspaceId]);
+
   // A purge removes the local row that could mask an old server list. Read
   // the server list again when the store reports that exact transition. A
   // focus or reconnect is the safety path when another tab missed the event.
@@ -175,28 +200,35 @@ export function FilesProvider({
       )
         reload();
     });
-    window.addEventListener('focus', reload);
-    window.addEventListener('online', reload);
+    window.addEventListener('focus', revalidate);
+    window.addEventListener('online', revalidate);
     return () => {
       unsubscribe();
-      window.removeEventListener('focus', reload);
-      window.removeEventListener('online', reload);
+      window.removeEventListener('focus', revalidate);
+      window.removeEventListener('online', revalidate);
     };
-  }, [store.store, accountId, workspaceId, reload]);
+  }, [store.store, accountId, workspaceId, reload, revalidate]);
 
+  // The read itself. It never empties the list first and it never puts the
+  // placeholder back, so a person who returns to the window keeps reading the
+  // tree while the refresh runs behind it. A failed refresh keeps the rows
+  // this device already had, because an empty tree is not what a lost
+  // connection means.
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setServerFiles(noServerFiles);
+    lastReadAt.current = Date.now();
     void loadFiles(workspaceId)
       .then((loaded) => {
         if (!cancelled) setServerFiles(loaded);
       })
       .catch(() => {
-        if (!cancelled) setServerFiles(noServerFiles);
+        // The local rows stay. The sync state line reports the connection.
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          lastReadAt.current = Date.now();
+          setAnswered(true);
+        }
       });
     return () => {
       cancelled = true;
@@ -221,6 +253,8 @@ export function FilesProvider({
     workspaceId,
     useMemo(() => notes.map((note) => note.path), [notes]),
   );
+
+  const loading = !answered;
 
   const value = useMemo<FilesValue>(
     () => ({

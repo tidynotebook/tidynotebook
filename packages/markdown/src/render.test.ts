@@ -146,3 +146,29 @@ await test('double bracket text renders as plain text', async () => {
   assert.ok(html.includes('See [[A Title]] and [[A Title|shown label]].'));
   assert.ok(!html.includes('<a '));
 });
+
+await test('one new line joins a paragraph and two start a new one', async () => {
+  // This is the CommonMark rule, and it is how a Markdown file reads. A
+  // single new line is a soft break: it separates the source lines and the
+  // reader sees one paragraph. Only a blank line starts a paragraph.
+  const html = await renderMarkdown('line one\nline two\n\nsecond\n');
+  assert.equal(html, '<p>line one\nline two</p>\n<p>second</p>');
+  assert.ok(!html.includes('<br>'));
+});
+
+await test('a line break is written as a break and nothing else is', async () => {
+  // The two CommonMark forms of a hard break. Both give one `br` element, so
+  // a person who wants a break inside a paragraph has a way to write it.
+  for (const source of ['first\\\nsecond\n', 'first  \nsecond\n']) {
+    const html = await renderMarkdown(source);
+    assert.equal(html, '<p>first<br>\nsecond</p>');
+  }
+});
+
+await test('a list item keeps its own item and does not merge', async () => {
+  // A new line between two items is the item separator, not a soft break, so
+  // the rule above never joins a list into one line.
+  const html = await renderMarkdown('- one\n- two\n');
+  assert.ok(html.includes('<li>one</li>'));
+  assert.ok(html.includes('<li>two</li>'));
+});

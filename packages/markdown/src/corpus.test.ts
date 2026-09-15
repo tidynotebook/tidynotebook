@@ -171,6 +171,13 @@ await test('a hard line break renders as a break element', () => {
   assert.ok(html.includes('A hard break ends this line<br>'));
 });
 
+await test('a soft line break joins its paragraph and draws no break', () => {
+  // The two source lines of the first paragraph of the corpus are one
+  // paragraph to a reader. Only the hard break above writes a `br`.
+  assert.ok(html.includes('escaped *star*.\nUnicode: caf\u00e9'));
+  assert.equal(html.match(/<br>/g)?.length, 1);
+});
+
 await test('Unicode renders exactly as written', () => {
   assert.ok(html.includes('caf\u00e9 in composed form'));
   assert.ok(html.includes('cafe\u0301 with a combining mark'));

@@ -70,6 +70,24 @@ await test('the note body reads in the strong text color', () => {
   assert.equal(rule('&').color, 'var(--notes-text-strong)');
 });
 
+await test('the caret mark is one text line high at every block kind', () => {
+  // A line holds the space between two blocks as padding, because CodeMirror
+  // measures a line by its padding box. That space belongs to the block and
+  // not to the line, so the mark of the caret stops at the content box and a
+  // heading never shows a tall empty band over its own text.
+  assert.equal(rule('.cm-activeLine').backgroundClip, 'content-box');
+  // A fill that states the block itself covers the whole line box.
+  assert.equal(rule('.cm-np-code-block-line').backgroundClip, 'border-box');
+  assert.equal(rule('.cm-np-quote').backgroundClip, 'border-box');
+});
+
+await test('the first line of a note starts at the top of the text', () => {
+  // There is no block above the first line, so the heading rhythm would only
+  // push the title of a note away from the name that titles it.
+  assert.equal(rule('.cm-line:first-child').paddingBlockStart, '0');
+  assert.equal(rule('.cm-np-heading').paddingTop, 'calc(var(--spacing) * 5)');
+});
+
 await test('the active code line has a focus outline', () => {
   const activeCodeLine = rule('.cm-activeLine.cm-np-code-block-line');
   assert.equal(activeCodeLine.outline, '1px solid var(--notes-focus)');

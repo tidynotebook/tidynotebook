@@ -31,7 +31,7 @@ export function Notice({
         : 'border-edge text-ink';
   return (
     <div
-      className={`flex flex-wrap items-center gap-3 rounded-lg border bg-card px-3 py-2 text-control ${toneClass} ${className ?? ''}`}
+      className={`flex flex-wrap items-center gap-group rounded-lg border bg-card px-3 py-2 text-control ${toneClass} ${className ?? ''}`}
       role={tone === 'problem' ? 'alert' : 'status'}
       aria-live={tone === 'problem' ? 'assertive' : 'polite'}
     >

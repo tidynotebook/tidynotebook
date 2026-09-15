@@ -17,6 +17,9 @@
  *   selection is anywhere inside it.
  * - An inline construct shows its source when the selection touches the
  *   whole construct, so a cursor inside a bold word shows both `**` runs.
+ * - A task box is the one exception. It is a control, so it stays a checkbox
+ *   whatever the selection does, and its `- [ ]` source never comes back on
+ *   screen. See decision record 0033.
  *
  * Cost. Only the visible ranges are walked, and only the tree is read: no
  * `doc.toString()` and no regular expression over the document. The walk
@@ -569,17 +572,23 @@ export function buildPreview(
         mark(node.from, node.to, 'cm-np-list-number');
         return false;
       }
+      // The bullet of a task item is the stem of its box. The box stays a box
+      // while the line is edited, so the bullet stays hidden with it and the
+      // item never grows a second marker under the caret.
+      const item = node.node.parent;
+      if (item !== null && item.getChild('Task') !== null) {
+        hide(node.from, node.to);
+        return false;
+      }
       if (touchesLines(node.from, node.to)) {
         dim(node.from, node.to);
         return false;
       }
-      const item = node.node.parent;
-      const hasTask = item !== null && item.getChild('Task') !== null;
       items.push(
-        (hasTask
-          ? Decoration.replace({})
-          : Decoration.replace({ widget: new BulletWidget() })
-        ).range(node.from, node.to),
+        Decoration.replace({ widget: new BulletWidget() }).range(
+          node.from,
+          node.to,
+        ),
       );
       return false;
     }
@@ -595,10 +604,10 @@ export function buildPreview(
 
     if (name === 'TaskMarker') {
       const checked = /[xX]/.test(doc.sliceString(node.from + 1, node.to - 1));
-      if (touchesLines(node.from, node.to)) {
-        mark(node.from, node.to, 'cm-np-task-source');
-        return false;
-      }
+      // A task box is the one construct that does not follow the reveal rule.
+      // It is a control and not a marker: a person opens the line to write the
+      // item and ticks the box in the same moment, so the box must stay a box
+      // under the caret. See decision record 0033.
       items.push(
         Decoration.replace({
           widget: new TaskCheckboxWidget(node.from, checked),

@@ -187,6 +187,27 @@ export function MoreIcon({ size = 16, className }: IconProps): ReactNode {
   );
 }
 
+/** A side panel icon for the navigation sidebar on the left. */
+export function PanelLeftIcon({ size = 16, className }: IconProps): ReactNode {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <line x1="9" y1="4" x2="9" y2="20" />
+    </svg>
+  );
+}
+
 /** A side panel icon for the outline rail. */
 export function PanelRightIcon({ size = 16, className }: IconProps): ReactNode {
   return (

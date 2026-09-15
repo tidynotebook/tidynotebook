@@ -11,10 +11,10 @@ sandboxed diagram frame. It composes the packages and holds no rule of its own.
 
 ## What lives here and what does not
 
-- `src/shell/` is the app frame: the layout, the sidebar and its tree, the
-  command palette, the drawer, and the frame notices. `src/features/<feature>/`
-  holds one feature each (notes, editor, history, trash, attention, folders,
-  accounts, export). `src/lib/` holds pure helpers that use no React.
+- `src/shell/` is the app frame: the layout, the sidebar with its tree, width
+  and drawer, the command palette, and the frame notices.
+  `src/features/<feature>/` holds one feature each (notes, editor, history,
+  trash, attention, folders, accounts, export). `src/lib/` holds pure helpers.
 - `src/app.tsx`, `src/router.tsx`, and `src/main.tsx` compose the application.
   `src/pwa/` holds the service worker, `src/diagram/` the Mermaid frame.
 - `src/tailwind.css` is the only application CSS source. It holds Tailwind
@@ -61,7 +61,7 @@ proved by a Playwright journey in `tests/e2e`.
 - No colour value. Colour comes from the theme registry in
   `packages/ui/src/themes` through the theme tokens.
 - No `text-xs`, no `text-white`, no `bg-black`, and no arbitrary Tailwind
-  value such as `w-[32rem]`. Use the named scales.
+  value such as `w-[32rem]`. Use the named type, spacing, and layout scales.
 - No `innerHTML` and no `dangerouslySetInnerHTML`, except the sandboxed
   `src/diagram/frame-main.ts` in `tools/design-rules-allow.json`.
 - No identifier, raw timestamp, error code, or engine notice in text that a
@@ -73,8 +73,8 @@ proved by a Playwright journey in `tests/e2e`.
 | File                                  | Purpose                         |
 | ------------------------------------- | ------------------------------- |
 | `src/app.tsx`                         | Application shell and stores    |
-| `src/tailwind.css`                    | The only application CSS source |
-| `src/shell/shell.tsx`                 | The layout frame and the tree   |
+| `src/tailwind.css`                    | CSS source and layout scale     |
+| `src/shell/shell.tsx`                 | Frame, tree, sidebar size       |
 | `src/features/editor/note-editor.tsx` | The editor host and editor view |
 | `vite.config.ts`                      | Build, theme assets, worker     |
 | `src/logging.ts`                      | Browser sink for log events     |

@@ -97,7 +97,12 @@ function NameField({
  *
  * The folder appears in the tree at once and stays there until a note is
  * made or moved into it. The context menu of the folder row holds New note
- * in this folder.
+ * in this folder and New folder in this folder.
+ *
+ * The dialog states the parent it will use, so a person reads where the
+ * folder lands before they make it and never has to guess. `parent` comes
+ * from the row that started the action, or from the selected folder for the
+ * main action and the command palette.
  */
 export function NewFolderDialog({
   open,
@@ -168,7 +173,11 @@ export function NewFolderDialog({
           <NameField
             id="new-folder-name"
             label="Folder name"
-            help="The folder starts empty. Use New note in this folder to fill it."
+            help={
+              parent === ''
+                ? 'The folder goes at the top and starts empty. Use New note in this folder to fill it.'
+                : `The folder goes inside ${parent} and starts empty. Use New note in this folder to fill it.`
+            }
             value={name}
             error={error}
             onEnter={create}
@@ -278,7 +287,7 @@ export function MoveNoteDialog({
           <ul className="m-0 max-h-64 list-none overflow-y-auto p-0">
             {['', ...folders].map((folder) => (
               <li key={folder === '' ? 'root' : folder}>
-                <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-2 text-ui text-ink hover:bg-hover">
+                <label className="flex min-h-11 cursor-pointer items-center gap-cluster rounded-lg px-2 text-ui text-ink hover:bg-hover">
                   <input
                     type="radio"
                     name="move-target"
@@ -296,7 +305,7 @@ export function MoveNoteDialog({
               </li>
             ))}
             <li>
-              <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-2 text-ui text-ink hover:bg-hover">
+              <label className="flex min-h-11 cursor-pointer items-center gap-cluster rounded-lg px-2 text-ui text-ink hover:bg-hover">
                 <input
                   type="radio"
                   name="move-target"

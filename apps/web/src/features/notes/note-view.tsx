@@ -10,7 +10,7 @@
  */
 import { lazy, Suspense, useMemo, useState, type ReactNode } from 'react';
 import { useParams } from 'react-router';
-import { LoadingState, Page, PageHeader } from '@notesapp/ui';
+import { LoadingState, Page, pageGutter, PageHeader } from '@notesapp/ui';
 import { useLocalStore, useSession } from '../../app.tsx';
 import { useFiles } from '../../shell/files.tsx';
 import { MoveNoteDialog } from '../folders/folders.tsx';
@@ -56,7 +56,7 @@ export function NoteView(): ReactNode {
   const accountId = session.account?.accountId ?? null;
   if (accountId === null)
     return (
-      <main className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6">
+      <main className={`mx-auto w-full max-w-3xl ${pageGutter} py-6`}>
         <LoadingState shape="note" label="The note is loading." />
       </main>
     );
@@ -65,7 +65,7 @@ export function NoteView(): ReactNode {
     <main className="flex h-full min-w-0 flex-col">
       <Suspense
         fallback={
-          <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6">
+          <div className={`mx-auto w-full max-w-3xl ${pageGutter} py-6`}>
             <LoadingState shape="note" label="The editor is loading." />
           </div>
         }

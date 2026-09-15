@@ -63,6 +63,7 @@ export {
   EmptyState,
   ListRow,
   Page,
+  pageGutter,
   PageHeader,
   Toolbar,
 } from './layout.tsx';
@@ -94,6 +95,7 @@ export {
   MenuIcon,
   MoonIcon,
   MoreIcon,
+  PanelLeftIcon,
   PanelRightIcon,
   PencilIcon,
   PlusIcon,

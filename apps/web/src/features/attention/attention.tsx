@@ -83,7 +83,7 @@ function ParkedSaveRow({
           {save.text}
         </pre>
       </details>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-cluster">
         <Button
           variant="primary"
           size="sm"

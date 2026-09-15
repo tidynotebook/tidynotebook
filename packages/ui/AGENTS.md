@@ -16,7 +16,8 @@ accessible controls, menus, dialogs, notices, and lightweight SVG icons.
   the registry. `src/theme.ts` declares `ThemeTokens` and `SyntaxTokens`,
   `applyTheme`, and the contrast helpers.
 - `src/layout.tsx` holds `Page`, `PageHeader`, `Card`, `EmptyState`,
-  `ListRow`, and `Toolbar`. `src/controls.tsx`, `src/menu.tsx`,
+  `ListRow`, `Toolbar`, and `pageGutter`, the one distance from the edge of
+  the screen to the content. `src/controls.tsx`, `src/menu.tsx`,
   `src/dialog.tsx`, and `src/notice.tsx` hold the controls.
   `src/loading.tsx` holds `LoadingState`, the one placeholder that a screen
   shows while it waits.
@@ -41,7 +42,8 @@ only package, or a server only package.
   `src/index.ts`. Build its classes with the named scale, and give an icon
   only action an accessible name and a title.
 - **A layout primitive.** Add it in `src/layout.tsx` and use it from every
-  screen, so spacing and the heading ramp stay decided in one place.
+  screen, so spacing and the heading ramp stay decided in one place. A frame
+  that cannot use `Page` reads `pageGutter` rather than its own padding.
 
 ## Testing conventions here
 

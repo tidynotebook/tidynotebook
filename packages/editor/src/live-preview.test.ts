@@ -262,6 +262,39 @@ await test('a task marker becomes a checkbox that carries its own position', () 
   );
 });
 
+await test('a task box stays a box while its own line is edited', () => {
+  // The defect this covers: a caret on the line turned the box back into
+  // `- [ ]`, so the one moment a person wants to tick an item was the one
+  // moment the control was gone.
+  const doc = '- [ ] one\n- [x] two\n';
+  for (const caret of [0, 3, 6, 9]) {
+    const found = describe(doc, { from: caret, to: caret });
+    const boxes = found.filter(
+      (item) => item.kind === 'widget' && item.value === 'TaskCheckboxWidget',
+    );
+    assert.deepEqual(
+      boxes.map((box) => [box.from, box.to]),
+      [
+        [2, 5],
+        [12, 15],
+      ],
+      `the caret at ${String(caret)} lost a task box`,
+    );
+    // The bullet of the item stays hidden as well, so the line never shows a
+    // stray marker next to the box.
+    assert.ok(has(found, 'hide', '', 0, 1));
+  }
+});
+
+await test('a bullet that is not a task still shows its source when edited', () => {
+  // The task box is the one exception to the reveal rule. Every other marker
+  // keeps the rule, so a caret on a plain item shows the `-` it wrote.
+  const doc = '- one\n';
+  assert.ok(
+    has(describe(doc, { from: 2, to: 2 }), 'mark', 'cm-np-marker', 0, 1),
+  );
+});
+
 await test('a fenced block keeps its info string and dims its fences', () => {
   const doc = '```ts\nconst a = 1;\n```\n';
   const found = describe(doc);

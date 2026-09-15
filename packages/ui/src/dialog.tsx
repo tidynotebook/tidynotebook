@@ -130,7 +130,7 @@ export function Dialog({
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex justify-center overflow-y-auto bg-scrim/70 px-4 ${position}`}
+      className={`fixed inset-0 z-50 flex justify-center overflow-y-auto bg-scrim/70 px-gutter ${position}`}
       data-notes-dialog-root=""
       role="presentation"
       onMouseDown={(event): void => {
@@ -178,7 +178,7 @@ export function DialogFooter({
   readonly children: ReactNode;
 }): ReactNode {
   return (
-    <div className="flex flex-wrap justify-end gap-2 border-t border-edge-subtle px-5 py-3">
+    <div className="flex flex-wrap justify-end gap-cluster border-t border-edge-subtle px-5 py-3">
       {children}
     </div>
   );

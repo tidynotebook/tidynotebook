@@ -2,11 +2,22 @@
  * The application shell: one frame for every signed in screen.
  *
  * The header is one row of 48 px with three zones. Left: the drawer toggle
- * below `md`, then the product mark. Centre: one search affordance that
- * opens the command palette at every width. Right: the save and sync chip,
- * then one overflow menu. The sidebar is 256 px, holds the only primary
- * action of the shell, the folder tree, and a quiet footer. Every route below
- * owns exactly one `main` landmark.
+ * below `md`, the sidebar toggle from `md` up, then the product mark. Centre:
+ * one search affordance that opens the command palette at every width. Right:
+ * one overflow menu. Every distance in that row comes from the layout scale
+ * of `apps/web/src/tailwind.css`, through `pageGutter` and the cluster and
+ * group gaps, so the header lines up with every page under it.
+ *
+ * The sidebar holds the only primary action of the shell, the folder tree,
+ * and a quiet footer. Its width and its collapse state belong to the person
+ * and live in browser settings; `./sidebar-size.ts` holds the steps and
+ * `./drawer.ts` turns one state into classes. Every route below owns exactly
+ * one `main` landmark.
+ *
+ * The tree marks two things at once: the note the screen shows, and the
+ * folder that a create action uses as its parent. `lib/tree-row.ts` holds
+ * which mark each one takes, and `lib/folder-selection.ts` holds which folder
+ * is the parent.
  *
  * The one workspace of the account is an implicit container. It stays in
  * the address so a note keeps a stable link, but nothing on screen names
@@ -42,6 +53,8 @@ import {
   MoreIcon,
   CloseIcon,
   Notice,
+  pageGutter,
+  PanelLeftIcon,
   PencilIcon,
   PlusIcon,
   SearchIcon,
@@ -84,12 +97,24 @@ import {
   type TreeNode,
 } from '../lib/note-list.ts';
 import { drawerClassName } from './drawer.ts';
+import {
+  formatSidebarSize,
+  parseSidebarSize,
+  sidebarInsetClass,
+  sidebarSizeStorageKey,
+  sidebarWidthPx,
+  stepAfterKey,
+  stepForWidth,
+  type SidebarSize,
+} from './sidebar-size.ts';
 import { useTreeDrag, type TreeDrag } from './tree-drag.ts';
+import { treeRowClassName, treeRowTextClassName } from '../lib/tree-row.ts';
 import { deleteNotes } from '../features/editor/note-delete.ts';
 import { displayNoteName } from '../lib/note-name.ts';
 import {
   knownFolderPaths,
   selectedFolderOrRoot,
+  selectionForOpenNote,
 } from '../lib/folder-selection.ts';
 import { folderOf } from '../lib/relative-time.ts';
 import { UpdateNotice, usePersistentStorage } from './pwa-notices.tsx';
@@ -108,7 +133,13 @@ import {
   useDeleteNotice,
 } from '../features/trash/trash.tsx';
 
-/** One note row of the tree. */
+/**
+ * One note row of the tree.
+ *
+ * The row and not the link carries the mark of the open note, so the fill,
+ * the edge, and the pointer answer cover the same box as the actions menu
+ * next to it. `tree-row.ts` holds which mark each state takes.
+ */
 function NoteRow({
   note,
   basename,
@@ -124,7 +155,7 @@ function NoteRow({
   readonly active: boolean;
   readonly drag?: TreeDrag | undefined;
   readonly onNavigate: () => void;
-  readonly onDelete?: (() => void) | undefined;
+  readonly onDelete: () => void;
 }): ReactNode {
   // The open note scrolls into view when its row mounts or becomes active, so
   // a note opened from the palette or a link is visible in the tree even when
@@ -135,58 +166,43 @@ function NoteRow({
     },
     [active],
   );
-  const linkClassName = `flex min-h-11 items-center gap-2 rounded-lg px-2 text-control no-underline motion-safe:transition-colors md:min-h-8 ${
-    onDelete === undefined
-      ? active
-        ? 'bg-active text-strong'
-        : 'text-muted hover:bg-hover hover:text-strong'
-      : active
-        ? 'flex-1 text-strong'
-        : 'flex-1 text-muted hover:bg-hover hover:text-strong'
-  }`;
-  const link = (
-    <Link
-      ref={revealActive}
-      className={linkClassName}
-      to={`/w/${workspaceId}/notes/${note.fileId}`}
-      onClick={onNavigate}
-      aria-current={active ? 'page' : undefined}
-      draggable={drag !== undefined}
-      onDragStart={(event) => {
-        drag?.begin(event, {
-          kind: 'note',
-          fileId: note.fileId,
-          path: note.path,
-        });
-      }}
-      onDragEnd={() => drag?.end()}
-    >
-      <span className="inline-flex shrink-0 items-center" aria-hidden="true">
-        <FileTextIcon size={14} />
-      </span>
-      <span className="min-w-0 flex-1 truncate">
-        {displayNoteName(basename)}
-      </span>
-      {note.localOnly || note.unsent ? (
-        <span
-          className="shrink-0 rounded-full border border-edge px-1.5 text-control text-muted"
-          title="On this device only"
-        >
-          Local
-        </span>
-      ) : null}
-    </Link>
-  );
-  if (onDelete === undefined) return link;
   return (
-    <div
-      className={`flex items-center gap-1 rounded-lg ${active ? 'bg-active' : ''}`}
-    >
-      {link}
+    <div className={`group ${treeRowClassName({ open: active })}`}>
+      <Link
+        ref={revealActive}
+        className={`flex min-h-11 flex-1 items-center gap-cluster rounded-lg px-2 text-control no-underline motion-safe:transition-colors md:min-h-8 ${treeRowTextClassName({ open: active })}`}
+        to={`/w/${workspaceId}/notes/${note.fileId}`}
+        onClick={onNavigate}
+        aria-current={active ? 'page' : undefined}
+        draggable={drag !== undefined}
+        onDragStart={(event) => {
+          drag?.begin(event, {
+            kind: 'note',
+            fileId: note.fileId,
+            path: note.path,
+          });
+        }}
+        onDragEnd={() => drag?.end()}
+      >
+        <span className="inline-flex shrink-0 items-center" aria-hidden="true">
+          <FileTextIcon size={14} />
+        </span>
+        <span className="min-w-0 flex-1 truncate">
+          {displayNoteName(basename)}
+        </span>
+        {note.localOnly || note.unsent ? (
+          <span
+            className="shrink-0 rounded-full border border-edge px-1.5 text-control text-muted"
+            title="On this device only"
+          >
+            Local
+          </span>
+        ) : null}
+      </Link>
       <Menu
         label={`Actions for the note ${displayNoteName(basename)}`}
         icon={<MoreIcon size={14} />}
-        triggerClassName="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-transparent bg-transparent text-muted motion-safe:transition-colors hover:bg-hover hover:text-strong focus-visible:outline-2 focus-visible:outline-focus md:size-8"
+        triggerClassName={rowMenuClassName}
         items={[
           {
             id: 'delete-note',
@@ -200,6 +216,10 @@ function NoteRow({
     </div>
   );
 }
+
+/** The actions menu of one tree row, which every row shares. */
+const rowMenuClassName =
+  'inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-transparent bg-transparent text-muted motion-safe:transition-colors hover:bg-hover hover:text-strong focus-visible:outline-2 focus-visible:outline-focus md:size-8';
 
 /**
  * Renders the tree nodes as interactive collapsible lists.
@@ -221,6 +241,7 @@ function TreeView({
   onRenameFolder,
   onDeleteFolder,
   onNewNoteIn,
+  onNewFolderIn,
   onDeleteNote,
   onNavigate,
 }: {
@@ -235,11 +256,12 @@ function TreeView({
   readonly onRenameFolder: (path: string) => void;
   readonly onDeleteFolder: (folder: string) => void;
   readonly onNewNoteIn: (path: string) => void;
+  readonly onNewFolderIn: (path: string) => void;
   readonly onDeleteNote: (note: NoteSummary) => void;
   readonly onNavigate: () => void;
 }): ReactNode {
   return (
-    <ul className="m-0 list-none space-y-0.5 p-0">
+    <ul className="m-0 list-none space-y-1 p-0">
       {nodes.map((node) => {
         if (node.kind === 'note')
           return (
@@ -262,7 +284,10 @@ function TreeView({
         return (
           <li key={`folder:${node.fullPath}`}>
             <div
-              className={`flex items-center gap-1 rounded-lg ${isSelected ? 'bg-active' : ''} ${isTarget ? 'ring-2 ring-focus' : ''}`}
+              className={`group ${treeRowClassName({
+                selected: isSelected,
+                dropTarget: isTarget,
+              })}`}
               onDragOver={(event) => {
                 if (!drag.accepts(node.fullPath)) return;
                 event.preventDefault();
@@ -295,7 +320,7 @@ function TreeView({
               </button>
               <button
                 type="button"
-                className={`flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-lg border-0 bg-transparent px-1 text-left text-control motion-safe:transition-colors hover:bg-hover hover:text-strong focus-visible:outline-2 focus-visible:outline-focus md:min-h-8 ${isSelected ? 'text-strong' : 'text-muted'}`}
+                className={`flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-lg border-0 bg-transparent px-1 text-left text-control motion-safe:transition-colors focus-visible:outline-2 focus-visible:outline-focus md:min-h-8 ${treeRowTextClassName({ selected: isSelected })}`}
                 onClick={() => onSelectFolder(node.fullPath)}
                 aria-pressed={isSelected}
                 aria-expanded={isOpen}
@@ -320,13 +345,19 @@ function TreeView({
               <Menu
                 label={`Actions for the folder ${node.name}`}
                 icon={<MoreIcon size={14} />}
-                triggerClassName="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-transparent bg-transparent text-muted motion-safe:transition-colors hover:bg-hover hover:text-strong focus-visible:outline-2 focus-visible:outline-focus md:size-8"
+                triggerClassName={rowMenuClassName}
                 items={[
                   {
                     id: 'new-note',
                     label: 'New note in this folder',
                     icon: <PlusIcon size={14} />,
                     onSelect: () => onNewNoteIn(node.fullPath),
+                  },
+                  {
+                    id: 'new-folder',
+                    label: 'New folder in this folder',
+                    icon: <FolderPlusIcon size={14} />,
+                    onSelect: () => onNewFolderIn(node.fullPath),
                   },
                   {
                     id: 'rename',
@@ -363,6 +394,7 @@ function TreeView({
                     onRenameFolder={onRenameFolder}
                     onDeleteFolder={onDeleteFolder}
                     onNewNoteIn={onNewNoteIn}
+                    onNewFolderIn={onNewFolderIn}
                     onDeleteNote={onDeleteNote}
                     onNavigate={onNavigate}
                   />
@@ -388,7 +420,7 @@ function GroupLabel({
 }): ReactNode {
   return (
     <h2
-      className="mb-1 flex min-h-8 items-center justify-between gap-2 px-2 text-control font-semibold uppercase tracking-wide text-muted"
+      className="mb-1 flex min-h-8 items-center justify-between gap-cluster px-2 text-control font-semibold uppercase tracking-wide text-muted"
       id={id}
     >
       <span>{children}</span>
@@ -403,7 +435,7 @@ function Sidebar({
   selectedFolder,
   onSelectFolder,
   onNavigate,
-  onNewFolder,
+  onNewFolderIn,
   onRenameFolder,
   onNewNoteIn,
   onClose,
@@ -412,7 +444,7 @@ function Sidebar({
   readonly selectedFolder: string;
   readonly onSelectFolder: (folder: string) => void;
   readonly onNavigate: () => void;
-  readonly onNewFolder: () => void;
+  readonly onNewFolderIn: (folder: string) => void;
   readonly onRenameFolder: (folder: string) => void;
   readonly onNewNoteIn: (folder: string) => void;
   readonly onClose: () => void;
@@ -548,7 +580,7 @@ function Sidebar({
 
   return (
     <>
-      <div className="flex h-header shrink-0 items-center justify-between gap-2 border-b border-edge-subtle px-2 md:hidden">
+      <div className="flex h-header shrink-0 items-center justify-between gap-cluster border-b border-edge-subtle px-2 md:hidden">
         <span className="text-ui font-semibold text-strong">Notes</span>
         <Button
           variant="ghost"
@@ -578,7 +610,7 @@ function Sidebar({
             label="New folder"
             title="New folder"
             icon={<FolderPlusIcon size={18} />}
-            onClick={onNewFolder}
+            onClick={() => onNewFolderIn(selectedFolder)}
           />
         </div>
       ) : null}
@@ -587,7 +619,10 @@ function Sidebar({
         <section aria-labelledby="tree-heading">
           <GroupLabel id="tree-heading">Folders</GroupLabel>
           <div
-            className={`rounded-lg ${selectedFolder === '' ? 'bg-active' : ''} ${drag.over === '' ? 'ring-2 ring-focus' : ''}`}
+            className={`group ${treeRowClassName({
+              selected: selectedFolder === '',
+              dropTarget: drag.over === '',
+            })}`}
             onDragOver={(event) => {
               if (!drag.accepts('')) return;
               event.preventDefault();
@@ -604,7 +639,7 @@ function Sidebar({
           >
             <button
               type="button"
-              className={`flex min-h-11 w-full cursor-pointer items-center rounded-lg border-0 bg-transparent px-2 text-left text-control motion-safe:transition-colors hover:bg-hover hover:text-strong focus-visible:outline-2 focus-visible:outline-focus md:min-h-8 ${selectedFolder === '' ? 'text-strong' : 'text-muted'}`}
+              className={`flex min-h-11 w-full cursor-pointer items-center rounded-lg border-0 bg-transparent px-2 text-left text-control motion-safe:transition-colors focus-visible:outline-2 focus-visible:outline-focus md:min-h-8 ${treeRowTextClassName({ selected: selectedFolder === '' })}`}
               aria-pressed={selectedFolder === ''}
               onClick={() => onSelectFolder('')}
             >
@@ -637,6 +672,7 @@ function Sidebar({
               onRenameFolder={onRenameFolder}
               onDeleteFolder={deleteFolderNow}
               onNewNoteIn={onNewNoteIn}
+              onNewFolderIn={onNewFolderIn}
               onDeleteNote={deleteNoteNow}
               onNavigate={onNavigate}
             />
@@ -670,7 +706,7 @@ function Sidebar({
             : 'No connection. Your notes stay on this device.'}
         </p>
         <Link
-          className="flex min-h-11 items-center gap-2 rounded-lg px-2 text-control text-muted no-underline motion-safe:transition-colors hover:bg-hover hover:text-strong md:min-h-8"
+          className="flex min-h-11 items-center gap-cluster rounded-lg px-2 text-control text-muted no-underline motion-safe:transition-colors hover:bg-hover hover:text-strong md:min-h-8"
           to={trashPath}
           onClick={onNavigate}
           aria-current={location.pathname === trashPath ? 'page' : undefined}
@@ -691,6 +727,151 @@ function Sidebar({
         ) : null}
       </div>
     </>
+  );
+}
+
+/** The sidebar width and collapse state of this device. */
+type SidebarControl = {
+  readonly size: SidebarSize;
+  readonly setStep: (step: SidebarSize['step']) => void;
+  readonly toggleCollapsed: () => void;
+};
+
+/**
+ * Keeps the sidebar width and the collapse choice across reloads.
+ *
+ * Both are choices of this person on this device, so they live next to the
+ * open folders of the tree in browser settings and never reach the account.
+ */
+function useSidebarSize(): SidebarControl {
+  const [size, setSize] = useState<SidebarSize>(() => {
+    try {
+      return parseSidebarSize(
+        window.localStorage.getItem(sidebarSizeStorageKey),
+      );
+    } catch {
+      return parseSidebarSize(null);
+    }
+  });
+
+  /**
+   * Moves to one size and stores it.
+   *
+   * A drag reports every pointer move, and most of those moves land on the
+   * step the sidebar already has. The write is therefore skipped when nothing
+   * changed, so one gesture writes once for each step it crosses.
+   */
+  const change = useCallback(
+    (next: (current: SidebarSize) => SidebarSize): void => {
+      setSize((current) => {
+        const wanted = next(current);
+        if (
+          wanted.step === current.step &&
+          wanted.collapsed === current.collapsed
+        )
+          return current;
+        try {
+          window.localStorage.setItem(
+            sidebarSizeStorageKey,
+            formatSidebarSize(wanted),
+          );
+        } catch {
+          // The sidebar still works when browser preference storage fails.
+        }
+        return wanted;
+      });
+    },
+    [],
+  );
+
+  const setStep = useCallback(
+    (step: SidebarSize['step']): void => {
+      // A drag on a collapsed sidebar means the person wants it back.
+      change(() => ({ step, collapsed: false }));
+    },
+    [change],
+  );
+
+  const toggleCollapsed = useCallback((): void => {
+    change((current) => ({ ...current, collapsed: !current.collapsed }));
+  }, [change]);
+
+  return useMemo(
+    () => ({ size, setStep, toggleCollapsed }),
+    [size, setStep, toggleCollapsed],
+  );
+}
+
+/**
+ * The edge of the sidebar that sets its width.
+ *
+ * It is a separator, which is the role a person and a screen reader both know
+ * for this control: a pointer drags it, and the arrow keys move it one step
+ * at a time, so the width is reachable without a pointer. The width moves in
+ * named steps, because presentation comes from utility classes and a pixel
+ * width would need an inline style.
+ *
+ * The hit area is wider than the line a person sees, so the edge is easy to
+ * catch. It is hidden below the medium width, where the sidebar is an overlay
+ * that covers the screen and has no width to set.
+ */
+function SidebarResizer({
+  size,
+  onStep,
+}: {
+  readonly size: SidebarSize;
+  readonly onStep: (step: SidebarSize['step']) => void;
+}): ReactNode {
+  const [dragging, setDragging] = useState(false);
+
+  const follow = useCallback(
+    (clientX: number): void => {
+      onStep(stepForWidth(clientX));
+    },
+    [onStep],
+  );
+
+  useEffect(() => {
+    if (!dragging) return;
+    const onMove = (event: PointerEvent): void => {
+      event.preventDefault();
+      follow(event.clientX);
+    };
+    const onUp = (): void => setDragging(false);
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
+    // A drag over text would select it, which makes the gesture look broken.
+    const previous = document.body.style.userSelect;
+    document.body.style.userSelect = 'none';
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
+      document.body.style.userSelect = previous;
+    };
+  }, [dragging, follow]);
+
+  return (
+    <div
+      role="separator"
+      aria-label="Sidebar width"
+      aria-orientation="vertical"
+      aria-valuenow={sidebarWidthPx(size.step)}
+      aria-valuemin={sidebarWidthPx('narrow')}
+      aria-valuemax={sidebarWidthPx('widest')}
+      tabIndex={0}
+      className="absolute bottom-0 right-0 top-0 z-10 hidden w-2 translate-x-1 cursor-col-resize focus-visible:outline-2 focus-visible:outline-focus md:block"
+      onPointerDown={(event) => {
+        event.preventDefault();
+        setDragging(true);
+      }}
+      onKeyDown={(event) => {
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+        event.preventDefault();
+        onStep(stepAfterKey(size.step, event.key === 'ArrowRight' ? 1 : -1));
+      }}
+    />
   );
 }
 
@@ -724,12 +905,17 @@ function ShellFrame({
 }): ReactNode {
   const location = useLocation();
   const navigate = useNavigate();
+  const params = useParams();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
-  const [newFolderOpen, setNewFolderOpen] = useState(false);
+  // The parent of the folder the dialog will make, or `null` while it is
+  // closed. It is a path and not a flag, so a folder row can name a parent
+  // that is not the selected one.
+  const [newFolderParent, setNewFolderParent] = useState<string | null>(null);
   const [renameFolder, setRenameFolder] = useState<string | null>(null);
   const [selectedFolder, setSelectedFolder] = useState('');
+  const sidebar = useSidebarSize();
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
   const sidebarRef = useRef<HTMLElement | null>(null);
   const drawerWasOpenRef = useRef(false);
@@ -753,9 +939,29 @@ function ShellFrame({
     [files.notes, files.emptyFolders],
   );
 
+  // The note the screen shows right now, so a create action puts its result
+  // next to it. The path and not the identifier, because a note that moves to
+  // another folder moves the create parent with it.
+  const openNotePath = useMemo(() => {
+    const fileId = typeof params.fileId === 'string' ? params.fileId : null;
+    if (fileId === null) return null;
+    return files.notes.find((note) => note.fileId === fileId)?.path ?? null;
+  }, [params.fileId, files.notes]);
+
   useEffect(() => {
+    setSelectedFolder((selected) =>
+      selectionForOpenNote(selected, openNotePath),
+    );
+  }, [openNotePath]);
+
+  // A folder that left the tree cannot be a parent. The list of an area that
+  // has not answered yet holds nothing, so the check waits for the answer:
+  // without that wait every background refresh would send the selection of
+  // the person back to the top.
+  useEffect(() => {
+    if (files.loading) return;
     setSelectedFolder((selected) => selectedFolderOrRoot(selected, allFolders));
-  }, [allFolders]);
+  }, [allFolders, files.loading]);
 
   useEffect(() => {
     setDrawerOpen(false);
@@ -764,14 +970,20 @@ function ShellFrame({
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
       const key = event.key.toLowerCase();
-      if ((event.metaKey || event.ctrlKey) && (key === 'p' || key === 'o')) {
+      if (!event.metaKey && !event.ctrlKey) return;
+      if (key === 'p' || key === 'o') {
         event.preventDefault();
         setPaletteOpen(true);
+        return;
+      }
+      if (key === '\\') {
+        event.preventDefault();
+        sidebar.toggleCollapsed();
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
+  }, [sidebar.toggleCollapsed]);
 
   useEffect(() => {
     if (!drawerOpen) {
@@ -878,7 +1090,13 @@ function ShellFrame({
         id: 'new-folder',
         label: 'New folder',
         keywords: 'create add group',
-        run: () => setNewFolderOpen(true),
+        run: () => setNewFolderParent(selectedFolder),
+      },
+      {
+        id: 'toggle-sidebar',
+        label: 'Show or hide the sidebar',
+        keywords: 'sidebar panel collapse expand navigation tree',
+        run: sidebar.toggleCollapsed,
       },
       {
         id: 'toggle-theme',
@@ -980,6 +1198,7 @@ function ShellFrame({
       newNote.create,
       noteActions,
       selectedFolder,
+      sidebar.toggleCollapsed,
       workspaceId,
     ],
   );
@@ -995,7 +1214,9 @@ function ShellFrame({
             Skip to content
           </a>
 
-          <header className="z-30 flex h-header shrink-0 items-center gap-2 border-b border-edge-subtle bg-card px-2 sm:px-3">
+          <header
+            className={`z-30 flex h-header shrink-0 items-center gap-group border-b border-edge-subtle bg-card ${pageGutter}`}
+          >
             <Button
               buttonRef={menuButtonRef}
               variant="ghost"
@@ -1010,9 +1231,24 @@ function ShellFrame({
                 setDrawerOpen((open) => !open);
               }}
             />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="size-11 shrink-0 max-md:hidden"
+              label={
+                sidebar.size.collapsed ? 'Show the sidebar' : 'Hide the sidebar'
+              }
+              title={
+                sidebar.size.collapsed ? 'Show the sidebar' : 'Hide the sidebar'
+              }
+              icon={<PanelLeftIcon size={18} />}
+              ariaControls="notes-sidebar"
+              ariaExpanded={!sidebar.size.collapsed}
+              onClick={sidebar.toggleCollapsed}
+            />
 
             <Link
-              className="flex shrink-0 items-center gap-2 text-ui font-semibold text-strong no-underline"
+              className="flex shrink-0 items-center gap-cluster text-ui font-semibold text-strong no-underline"
               to="/"
             >
               <span
@@ -1026,7 +1262,7 @@ function ShellFrame({
 
             <button
               type="button"
-              className="mx-auto flex min-h-11 w-full max-w-md min-w-0 cursor-pointer items-center gap-2 rounded-lg border border-edge bg-app px-3 text-control text-muted motion-safe:transition-colors hover:bg-hover hover:text-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus md:min-h-8"
+              className="mx-auto flex min-h-11 w-full max-w-md min-w-0 cursor-pointer items-center gap-cluster rounded-lg border border-edge bg-app px-3 text-control text-muted motion-safe:transition-colors hover:bg-hover hover:text-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus md:min-h-8"
               onClick={() => setPaletteOpen(true)}
             >
               <span
@@ -1063,7 +1299,7 @@ function ShellFrame({
           <aside
             ref={sidebarRef}
             id="notes-sidebar"
-            className={drawerClassName(drawerOpen)}
+            className={drawerClassName(drawerOpen, sidebar.size)}
             aria-label="Notes navigation"
             aria-modal={drawerOpen ? true : undefined}
             role={drawerOpen ? 'dialog' : undefined}
@@ -1073,18 +1309,21 @@ function ShellFrame({
               selectedFolder={selectedFolder}
               onSelectFolder={setSelectedFolder}
               onNavigate={() => setDrawerOpen(false)}
-              onNewFolder={() => setNewFolderOpen(true)}
+              onNewFolderIn={(folder) => setNewFolderParent(folder)}
               onRenameFolder={(folder) => setRenameFolder(folder)}
               onNewNoteIn={(folder) => newNote.create(folder)}
               onClose={() => setDrawerOpen(false)}
             />
+            <SidebarResizer size={sidebar.size} onStep={sidebar.setStep} />
           </aside>
 
           <div
             id="notes-content"
-            className="min-h-0 flex-1 overflow-y-auto md:pl-64"
+            className={`min-h-0 flex-1 overflow-y-auto ${sidebarInsetClass(sidebar.size)}`}
           >
-            <div className="mx-auto w-full max-w-3xl px-4 pt-4 empty:hidden sm:px-6">
+            <div
+              className={`mx-auto w-full max-w-3xl ${pageGutter} pt-4 empty:hidden`}
+            >
               <UpdateNotice
                 store={store.store}
                 onFlushDrafts={() => Promise.resolve()}
@@ -1126,10 +1365,10 @@ function ShellFrame({
             onClose={() => setShortcutsOpen(false)}
           />
           <NewFolderDialog
-            open={newFolderOpen}
-            onClose={() => setNewFolderOpen(false)}
+            open={newFolderParent !== null}
+            onClose={() => setNewFolderParent(null)}
             folders={allFolders}
-            parent={selectedFolder}
+            parent={newFolderParent ?? ''}
             onCreated={(folder) => {
               files.addEmptyFolder(folder);
               setSelectedFolder(folder);

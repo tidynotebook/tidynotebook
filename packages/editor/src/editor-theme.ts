@@ -191,7 +191,18 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
     // The hover surface of the palette, which is the quietest tint the
     // theme owns. The line the caret sits on is findable, and the note
     // still reads as one page of text instead of a banded table.
-    '.cm-activeLine': { backgroundColor: 'var(--notes-surface-hover)' },
+    //
+    // The fill stops at the content box. A line carries the vertical rhythm
+    // of its block as padding, because CodeMirror measures a line by its
+    // padding box and a margin would put the height map out of step with the
+    // screen. That padding is the space between two blocks and not a part of
+    // the line, so a heading with five steps of space above it would show a
+    // tall empty band over its own text. Clipping the fill to the content box
+    // makes the mark one text line high at every block kind.
+    '.cm-activeLine': {
+      backgroundColor: 'var(--notes-surface-hover)',
+      backgroundClip: 'content-box',
+    },
     '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection':
       {
         backgroundColor:
@@ -206,6 +217,11 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
       paddingTop: 'calc(var(--spacing) * 5)',
       paddingBottom: 'calc(var(--spacing) * 1)',
     },
+    // The first line of a note has no block above it to separate from, and
+    // `.cm-content` already holds the space under the note name. A heading
+    // that opens a note therefore starts at the top of the text, which is
+    // what every reader expects of a title line.
+    '.cm-line:first-child': { paddingBlockStart: '0' },
 
     '.cm-np-bold': { fontWeight: '700', color: 'var(--notes-text-strong)' },
     '.cm-np-italic': { fontStyle: 'italic' },
@@ -223,10 +239,13 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
       paddingInline: 'calc(var(--spacing) * 1)',
       paddingBlock: 'calc(var(--spacing) * 0.5)',
     },
+    // The fill of a code line is the block, not the caret, so it covers the
+    // whole line box and overrides the content box clip of the active line.
     '.cm-np-code-block-line': {
       fontFamily: 'var(--font-mono)',
       fontSize: 'var(--text-note-mono)',
       backgroundColor: 'var(--notes-surface-hover)',
+      backgroundClip: 'border-box',
       paddingInline: 'calc(var(--spacing) * 3)',
     },
     '.cm-activeLine.cm-np-code-block-line': {
@@ -244,7 +263,15 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
     // A quoted line keeps the quieter text color of the palette. The bars
     // come from the level rules below, which follow this rule, so a deeper
     // level replaces the layers of the level above it.
-    '.cm-np-quote': { color: 'var(--notes-text-muted)' },
+    //
+    // A bar is a background layer, so it must reach both edges of the line
+    // box. The clip is therefore restored here, and it applies to the fill of
+    // the active line on the same element: a quote keeps one continuous bar
+    // whether the caret is on it or not.
+    '.cm-np-quote': {
+      color: 'var(--notes-text-muted)',
+      backgroundClip: 'border-box',
+    },
     '.cm-np-quote-1': quoteLevel(1),
     '.cm-np-quote-2': quoteLevel(2),
     '.cm-np-quote-3': quoteLevel(3),
@@ -269,7 +296,6 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
       accentColor: 'var(--notes-accent-fill)',
       cursor: 'pointer',
     },
-    '.cm-np-task-source': { fontFamily: 'var(--font-mono)' },
 
     '.cm-np-link': {
       color: 'var(--notes-accent-text)',

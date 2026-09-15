@@ -151,7 +151,7 @@ export function InlineDiff({
             <ol className="m-0 list-none p-0 font-mono text-control">
               {entry.rows.map((row, rowIndex) => (
                 <li
-                  className={`flex gap-2 px-3 py-0.5 ${row.kind === 'removed' ? 'bg-danger/10 text-danger' : row.kind === 'added' ? 'bg-success/10 text-success' : 'text-muted'}`}
+                  className={`flex gap-cluster px-3 py-0.5 ${row.kind === 'removed' ? 'bg-danger/10 text-danger' : row.kind === 'added' ? 'bg-success/10 text-success' : 'text-muted'}`}
                   key={`${idPrefix}-hunk-${String(index)}-row-${String(rowIndex)}`}
                 >
                   <span>

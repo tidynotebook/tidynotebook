@@ -9,7 +9,7 @@
  */
 import { lazy, Suspense, type ReactNode } from 'react';
 import { Link, RouterProvider, createBrowserRouter } from 'react-router';
-import { LoadingState } from '@notesapp/ui';
+import { LoadingState, pageGutter } from '@notesapp/ui';
 import {
   AccountSettingsPage,
   LoginPage,
@@ -43,7 +43,7 @@ function deferred(element: ReactNode): ReactNode {
   return (
     <Suspense
       fallback={
-        <main className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6">
+        <main className={`mx-auto w-full max-w-3xl ${pageGutter} py-6`}>
           <LoadingState label="The screen is loading." />
         </main>
       }
@@ -57,7 +57,7 @@ function deferred(element: ReactNode): ReactNode {
 function NotFoundPage(): ReactNode {
   useDocumentTitle('Page not found');
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6">
+    <main className={`mx-auto w-full max-w-3xl ${pageGutter} py-6`}>
       <h1 className="mb-4 mt-0 text-xl font-semibold text-strong">
         Page not found
       </h1>

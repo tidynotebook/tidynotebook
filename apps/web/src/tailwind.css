@@ -26,6 +26,29 @@
   --spacing: 0.25rem;
   --spacing-header: 3rem;
 
+  /*
+   * The layout scale. Four named steps decide every distance that a person
+   * reads as structure, so no screen picks its own number.
+   *
+   * `gutter` is the distance from the edge of the screen to the content of
+   * the page, and `gutter-wide` is the same distance from the small width up.
+   * `cluster` separates two controls that belong together, for example a
+   * button and the button next to it in one toolbar. `group` separates two
+   * things that do not belong together, for example the product mark and the
+   * search field of the header.
+   *
+   * A distance inside one control, such as an icon and the word next to it,
+   * stays on the numeric scale. It is not structure that a person reads, so
+   * it needs no name.
+   *
+   * `packages/ui/src/layout.tsx` holds the one class string of the gutter and
+   * every page frame reads it from there.
+   */
+  --spacing-gutter: calc(var(--spacing) * 4);
+  --spacing-gutter-wide: calc(var(--spacing) * 6);
+  --spacing-cluster: calc(var(--spacing) * 2);
+  --spacing-group: calc(var(--spacing) * 3);
+
   --text-control: 0.8125rem;
   --text-control--line-height: 1.25rem;
   --text-ui: 0.875rem;

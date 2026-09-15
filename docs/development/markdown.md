@@ -31,6 +31,22 @@ The corpus lives in a TypeScript file and not in a `.md` file for two reasons.
 A browser-safe package cannot read a file from disk in a test, and Prettier
 would repair the deliberately malformed Markdown that the corpus needs.
 
+## Line breaks
+
+A new line inside a paragraph is a soft break. It separates two lines of the
+source and a reader sees one paragraph, so a note wraps where the reader's
+window wraps it. A blank line starts a new paragraph. A break inside one
+paragraph is written the two CommonMark ways: a backslash at the end of the
+line, or two spaces at the end of the line. Both give one break element.
+
+This is the CommonMark rule, and it is the rule of a Markdown file. A comment
+field of a hosting service often turns every new line into a break instead; a
+note is a document and not a comment, so it follows the document rule.
+
+The editor shows the source, so a soft break looks like a break while a person
+writes. That is the source and not the result. `render.test.ts` holds both
+rules, and the corpus holds one of each kind.
+
 ## Delimiters that are ours to choose
 
 `packages/markdown/src/math-syntax.ts` holds the math delimiter rule, and both
@@ -57,6 +73,10 @@ Reveal is per construct, never per marker.
   anywhere inside it.
 - An inline construct shows its source when the selection touches the whole
   construct, so a cursor inside a bold word shows both marker runs.
+- A task box is the one exception. It is a control and not notation, so it
+  stays a checkbox at every selection and its `- [ ]` source never comes back
+  on screen. See
+  [decision 0033](../decisions/0033-a-task-box-is-a-control-not-a-marker.md).
 
 A widget exists only where text cannot express the result: an image, a diagram,
 and math. A table stays editable text: each row of the source is one row of a

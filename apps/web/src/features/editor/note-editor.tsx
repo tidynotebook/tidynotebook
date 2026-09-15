@@ -46,7 +46,13 @@ import {
   type LinkTarget,
   type RichWidgetResolvers,
 } from '@notesapp/editor';
-import { Button, CollapsibleSection, LoadingState, Notice } from '@notesapp/ui';
+import {
+  Button,
+  CollapsibleSection,
+  LoadingState,
+  Notice,
+  pageGutter,
+} from '@notesapp/ui';
 import { problemMessage, useRequestSync, useTheme } from '../../app.tsx';
 import { ActiveNoteScope, useActiveNoteControl } from './active-note.tsx';
 import { downloadNote } from '../export/export.ts';
@@ -1049,7 +1055,7 @@ function NoteEditorBody({
         onNameCommit={commitName}
       />
 
-      <div className="flex min-h-0 flex-1 flex-col px-4 sm:px-6">
+      <div className={`flex min-h-0 flex-1 flex-col ${pageGutter}`}>
         {editorNotice === '' ? null : (
           <div className="mt-4">
             <Notice tone="problem" message={editorNotice} />
@@ -1327,13 +1333,13 @@ export function NoteEditorLoader({
 
   if (status.kind === 'loading')
     return (
-      <section className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6">
+      <section className={`mx-auto w-full max-w-3xl ${pageGutter} py-6`}>
         <LoadingState shape="note" label="The note is loading." />
       </section>
     );
   if (status.kind === 'unknown')
     return (
-      <section className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6">
+      <section className={`mx-auto w-full max-w-3xl ${pageGutter} py-6`}>
         <h1 className="mb-4 mt-0 text-xl font-semibold text-strong">
           Note not found
         </h1>
@@ -1348,7 +1354,7 @@ export function NoteEditorLoader({
     );
   if (status.kind === 'purged')
     return (
-      <section className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6">
+      <section className={`mx-auto w-full max-w-3xl ${pageGutter} py-6`}>
         <h1 className="mb-4 mt-0 text-xl font-semibold text-strong">
           Note deleted permanently
         </h1>
@@ -1363,7 +1369,7 @@ export function NoteEditorLoader({
     );
   if (status.kind === 'deleted')
     return (
-      <section className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6">
+      <section className={`mx-auto w-full max-w-3xl ${pageGutter} py-6`}>
         <h1 className="mb-4 mt-0 text-xl font-semibold text-strong">
           Note deleted on this device
         </h1>
@@ -1378,7 +1384,7 @@ export function NoteEditorLoader({
     );
   if (status.kind === 'unavailable')
     return (
-      <section className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6">
+      <section className={`mx-auto w-full max-w-3xl ${pageGutter} py-6`}>
         <h1 className="mb-4 mt-0 text-xl font-semibold text-strong">
           Note unavailable
         </h1>
@@ -1389,7 +1395,7 @@ export function NoteEditorLoader({
     );
   if (store === null)
     return (
-      <section className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6">
+      <section className={`mx-auto w-full max-w-3xl ${pageGutter} py-6`}>
         <h1 className="mb-4 mt-0 text-xl font-semibold text-strong">
           {displayNoteName(status.path)}
         </h1>
@@ -1407,7 +1413,7 @@ export function NoteEditorLoader({
   return (
     <div className="flex h-full min-h-0 flex-col">
       {linkNotice === '' ? null : (
-        <div className="px-4 pt-4 sm:px-6">
+        <div className={`${pageGutter} pt-4`}>
           <Notice tone="info" message={linkNotice} />
         </div>
       )}

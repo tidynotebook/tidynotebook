@@ -28,6 +28,7 @@ import {
   MoonIcon,
   Notice,
   Page,
+  pageGutter,
   PageHeader,
   StatusRegion,
   SunIcon,
@@ -181,7 +182,9 @@ export function LoginPage(): ReactNode {
 
   const title = setup ? 'Create your account' : 'Sign in';
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center px-4 py-10">
+    <div
+      className={`flex min-h-dvh flex-col items-center justify-center ${pageGutter} py-10`}
+    >
       <div className="mb-5 flex items-center gap-2.5 text-lg font-semibold text-strong">
         <span
           className="inline-flex size-8 items-center justify-center rounded-lg bg-accent-fill text-on-accent"
@@ -253,7 +256,7 @@ export function LoginPage(): ReactNode {
                   onChange={setConfirmation}
                 />
               ) : null}
-              <label className="mb-4 flex min-h-11 items-center gap-2 text-control text-strong md:min-h-9">
+              <label className="mb-4 flex min-h-11 items-center gap-cluster text-control text-strong md:min-h-9">
                 <input
                   type="checkbox"
                   checked={reveal}
@@ -347,7 +350,7 @@ export function ThemeSettings(): ReactNode {
       </p>
       <fieldset className="m-0 mt-3 border-0 p-0">
         <legend className="sr-only">Appearance</legend>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-cluster">
           {appearanceChoices.map((choice) => {
             const chosen = theme.choice === choice.value;
             return (
@@ -380,12 +383,12 @@ export function ThemeSettings(): ReactNode {
       </fieldset>
       <fieldset className="m-0 mt-4 border-0 p-0">
         <legend className="mb-2 p-0 text-control text-muted">Theme</legend>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-cluster">
           {themeFamilies.map((family) => {
             const chosen = theme.familyId === family.id;
             return (
               <label
-                className={`inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-control font-medium motion-safe:transition-colors focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus md:min-h-9 ${
+                className={`inline-flex min-h-11 cursor-pointer items-center gap-cluster rounded-lg border px-3 py-1.5 text-control font-medium motion-safe:transition-colors focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus md:min-h-9 ${
                   chosen
                     ? 'border-accent-fill bg-hover text-strong'
                     : 'border-edge bg-transparent text-strong hover:bg-hover'
@@ -653,7 +656,7 @@ export function AccountSettingsPage(): ReactNode {
             take more space, so you choose whether to keep them too.
           </p>
           <div className="mt-3 space-y-1">
-            <label className="flex min-h-11 items-center gap-2 text-control text-strong md:min-h-9">
+            <label className="flex min-h-11 items-center gap-cluster text-control text-strong md:min-h-9">
               <input
                 type="checkbox"
                 checked={offline.choices.images}
@@ -664,7 +667,7 @@ export function AccountSettingsPage(): ReactNode {
               />
               Keep images on this device
             </label>
-            <label className="flex min-h-11 items-center gap-2 text-control text-strong md:min-h-9">
+            <label className="flex min-h-11 items-center gap-cluster text-control text-strong md:min-h-9">
               <input
                 type="checkbox"
                 checked={offline.choices.history}
@@ -686,7 +689,7 @@ export function AccountSettingsPage(): ReactNode {
           {exportError === '' ? null : (
             <Notice className="mt-3" tone="problem" message={exportError} />
           )}
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-3 flex flex-wrap gap-cluster">
             <Button
               variant="secondary"
               disabled={exporting || workspaceId === null}
@@ -743,7 +746,7 @@ export function AccountSettingsPage(): ReactNode {
                 });
             }}
           />
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-3 flex flex-wrap gap-cluster">
             <Button
               variant="secondary"
               disabled={importing || workspaceId === null}
@@ -777,7 +780,7 @@ export function AccountSettingsPage(): ReactNode {
           {signOutError === '' ? null : (
             <Notice className="mt-3" tone="problem" message={signOutError} />
           )}
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-3 flex flex-wrap gap-cluster">
             <Button
               variant="secondary"
               onClick={() => {

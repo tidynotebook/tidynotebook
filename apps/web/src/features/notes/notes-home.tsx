@@ -98,7 +98,7 @@ export function NotesHomeView(): ReactNode {
                     <li key={note.fileId}>
                       <Link
                         to={`/w/${workspaceId}/notes/${note.fileId}`}
-                        className="flex min-h-11 items-center gap-3 rounded-lg border-b border-edge-subtle px-2 py-2 text-ink no-underline motion-safe:transition-colors last:border-b-0 hover:bg-hover"
+                        className="flex min-h-11 items-center gap-group rounded-lg border-b border-edge-subtle px-2 py-2 text-ink no-underline motion-safe:transition-colors last:border-b-0 hover:bg-hover"
                       >
                         <span
                           className="inline-flex shrink-0 items-center text-muted"

@@ -7,8 +7,24 @@
  * screen, a page title is `text-xl`, a section title is `text-base`, and a
  * quiet group label is `text-control`. There is no smaller size than
  * `text-control`.
+ *
+ * Distance is decided once as well. `pageGutter` below is the one distance
+ * from the edge of the screen to the content of a page, and every frame that
+ * is not a `Page`, such as the application header and the note column, reads
+ * the same constant. `gap-cluster` and `gap-group` separate controls inside
+ * a row. The four values live in the central theme of
+ * `apps/web/src/tailwind.css`.
  */
 import type { ReactNode } from 'react';
+
+/**
+ * The distance from the edge of the screen to the content of a page.
+ *
+ * One string, so a frame that cannot use `Page`, for example a fixed header
+ * or a column that owns its own scrolling, still lines its content up with
+ * every page of the application.
+ */
+export const pageGutter = 'px-gutter sm:px-gutter-wide';
 
 /** How wide the reading column of a screen is. */
 export type PageWidth = 'reading' | 'wide';
@@ -31,7 +47,7 @@ export function Page({
   const measure = width === 'wide' ? 'max-w-5xl' : 'max-w-3xl';
   return (
     <main
-      className={`mx-auto w-full ${measure} px-4 py-6 sm:px-6 ${className ?? ''}`}
+      className={`mx-auto w-full ${measure} ${pageGutter} py-6 ${className ?? ''}`}
     >
       {children}
     </main>
@@ -58,7 +74,7 @@ export function PageHeader({
   readonly id?: string | undefined;
 }): ReactNode {
   return (
-    <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+    <div className="mb-6 flex flex-wrap items-start justify-between gap-group">
       <div className="min-w-0 grow basis-full sm:basis-0">
         <h1 className="m-0 text-xl font-semibold text-strong" id={id}>
           {title}
@@ -68,7 +84,7 @@ export function PageHeader({
         )}
       </div>
       {actions === undefined ? null : (
-        <div className="flex shrink-0 items-center gap-2">{actions}</div>
+        <div className="flex shrink-0 items-center gap-cluster">{actions}</div>
       )}
     </div>
   );
@@ -127,7 +143,7 @@ export function EmptyState({
   readonly action?: ReactNode | undefined;
 }): ReactNode {
   return (
-    <div className="rounded-xl border border-dashed border-edge-subtle bg-card px-6 py-14 text-center">
+    <div className="rounded-xl border border-dashed border-edge-subtle bg-card px-gutter-wide py-14 text-center">
       {icon === undefined ? null : (
         <p className="m-0 flex justify-center text-muted" aria-hidden="true">
           {icon}
@@ -161,7 +177,7 @@ export function ListRow({
 }): ReactNode {
   return (
     <li
-      className={`flex min-h-11 items-center gap-3 border-b border-edge-subtle px-1 py-2 last:border-b-0 ${className ?? ''}`}
+      className={`flex min-h-11 items-center gap-group border-b border-edge-subtle px-1 py-2 last:border-b-0 ${className ?? ''}`}
     >
       {children}
     </li>
@@ -180,7 +196,7 @@ export function Toolbar({
 }): ReactNode {
   return (
     <div
-      className={`flex flex-wrap items-center gap-2 ${className ?? ''}`}
+      className={`flex flex-wrap items-center gap-cluster ${className ?? ''}`}
       role="toolbar"
       aria-label={label}
     >

@@ -61,6 +61,10 @@ and needs no record.
 | [0029](0029-selected-folder-is-the-create-parent.md)           | The selected folder is the create parent                  |
 | [0030](0030-published-links-are-hashed-tokens-over-a-scope.md) | A published link is a hashed token over a read-only scope |
 | [0031](0031-the-reader-path-is-a-closed-read-only-boundary.md) | The reader path is a closed read-only boundary            |
+| [0032](0032-whole-file-actions-are-store-operations.md)        | A move and a deletion are each one store operation        |
+| [0033](0033-a-task-box-is-a-control-not-a-marker.md)           | A task box is a control, not a marker                     |
+| [0034](0034-the-open-note-selects-its-folder.md)               | The open note selects its folder                          |
+| [0035](0035-the-sidebar-width-belongs-to-the-person.md)        | The sidebar width belongs to the person                   |
 
 Records 0001 to 0015 record the decisions D1 to D15 of
 [the v0.1 revamp plan](../plans/003-v0.1-revamp.md). Record 0016 records the
@@ -94,3 +98,10 @@ record 0025 kept its first production reader. Record 0032 makes a move and a
 deletion each one operation of the local store, because the path and the
 deletion state of a note live on every working copy of that note and an action
 that wrote only one of them was reverted by the next save of any other.
+Records 0033 to 0035 answer the client report of 2026-09-15. Record 0033 makes
+a task box the one construct that keeps its control under the caret, so a
+person can tick an item on the line they are writing. Record 0034 makes the
+open note select its folder and stops a background read of the note list from
+moving that selection, so a create action lands where the person is reading,
+and it refines record 0029. Record 0035 gives the sidebar four named widths and
+a collapsed state that belong to the person.

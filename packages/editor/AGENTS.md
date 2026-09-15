@@ -54,6 +54,9 @@ pattern for a pure module.
 
 - No second Markdown grammar and no second scanner. Every decoration and the
   outline come from the Lezer tree through `syntaxTree(state)`.
+- No second exception to the reveal rule. A task box is the one construct that
+  keeps its control under the caret (record 0033); every other marker reveals
+  its source when the selection touches it.
 - No widget outside the three allowed kinds: an image, a Mermaid diagram, and
   display math. A table stays editable text with alignment decorations.
 - No single dollar inline math. Inline math uses `$$...$$` or `\(...\)`.
