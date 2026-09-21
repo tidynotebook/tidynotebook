@@ -44,11 +44,11 @@
     "@types/pg": "catalog:",
     "fake-indexeddb": "6.2.5",
     "fastify": "catalog:",
-    "oxc-parser": "0.148.0",
-    "oxlint": "1.81.0",
-    "oxlint-tsgolint": "7.0.2001",
+    "oxc-parser": "0.150.0",
+    "oxlint": "1.83.0",
+    "oxlint-tsgolint": "7.0.2002",
     "pg": "catalog:",
-    "prettier": "3.9.6",
+    "prettier": "3.9.8",
     "sharp": "catalog:",
     "typescript": "catalog:toolchain"
   }
