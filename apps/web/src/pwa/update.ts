@@ -55,12 +55,14 @@ export type SentUpdateMessage = {
  */
 export function readUpdateMessage(value: unknown): SentUpdateMessage | null {
   if (value === null || typeof value !== 'object') return null;
-  const record = Object.fromEntries(Object.entries(value));
-  const from = record['from'];
-  const type = record['type'];
+  const record = new Map<string, unknown>(Object.entries(value));
+  const from = record.get('from');
+  const type = record.get('type');
   if (typeof from !== 'string' || from === '') return null;
-  if (type === 'NOTESAPP_CLOSE_FOR_UPDATE') return { from, message: { type } };
-  if (type === 'NOTESAPP_UPDATE_SETTLED') return { from, message: { type } };
+  if (type === 'NOTESAPP_CLOSE_FOR_UPDATE')
+    return { from, message: { type: 'NOTESAPP_CLOSE_FOR_UPDATE' } };
+  if (type === 'NOTESAPP_UPDATE_SETTLED')
+    return { from, message: { type: 'NOTESAPP_UPDATE_SETTLED' } };
   return null;
 }
 
