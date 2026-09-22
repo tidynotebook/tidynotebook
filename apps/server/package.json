@@ -25,11 +25,11 @@
     "@notesapp/markdown": "workspace:*",
     "@notesapp/logging": "workspace:*",
     "@notesapp/storage-server": "workspace:*",
-    "better-auth": "1.7.2",
+    "better-auth": "1.7.5",
     "better-call": "1.4.0",
     "drizzle-orm": "catalog:",
     "fastify": "catalog:",
-    "nodemailer": "10.0.0",
+    "nodemailer": "10.0.10",
     "pg": "catalog:",
     "sharp": "catalog:"
   },
