@@ -23,6 +23,7 @@
 import type { AcceptedChangeset, ChangesetInput } from '@notesapp/core';
 import { generateUUID } from '@notesapp/core';
 import type { Draft, LocalStore, QueueEntry } from './local-port.ts';
+import type { ProtocolFit } from './protocol.ts';
 
 /** A stable service failure: HTTP status, application code, and file IDs. */
 export type Problem = {
@@ -86,6 +87,11 @@ export type SyncNotice =
   | { readonly kind: 'access-lost' }
   | { readonly kind: 'lease-held' }
   | { readonly kind: 'lease-lost' }
+  /**
+   * The capability read changed how this client stands against the server.
+   * Only a change is announced, so `compatible` follows an earlier misfit.
+   */
+  | { readonly kind: 'protocol'; readonly fit: ProtocolFit }
   | { readonly kind: 'cycle-error'; readonly code: string };
 
 /** What submission and download need from their environment. */

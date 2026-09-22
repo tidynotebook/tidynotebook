@@ -176,6 +176,7 @@ export {
   syncDefaultLimit,
   syncLimit,
   syncMaxLimit,
+  syncProtocolVersion,
   syncRetentionDays,
 } from './files/snapshot.ts';
 export type { ExcerptPart, SearchHit } from './search/service.ts';

@@ -1,0 +1,21 @@
+get:
+  operationId: getSyncProtocol
+  summary: Report the sync protocol versions that this server serves.
+  description: >-
+    Lists every sync protocol version that the push and pull operations of
+    this deployment accept. A client reads it before it pushes or pulls and
+    sends nothing when its own version is not in the list. A server that
+    answers 404 for this operation predates it and serves version 1 only.
+    The answer holds no account or workspace data, so no session is needed.
+  tags:
+    - service
+  security: []
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/SyncProtocol.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

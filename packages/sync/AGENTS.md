@@ -16,6 +16,9 @@ local search, and local backlinks.
   is the contract that `packages/storage-browser` implements.
 - `src/engine.ts` sends queue entries in local order with a frozen body and
   digest, so a retry repeats the same mutation.
+- `src/protocol.ts` decides whether this client fits the sync protocol
+  versions that the server serves. The engine reads them before every push
+  and pull and sends nothing on a misfit (record 0086).
 - `src/queue.ts`, `src/lease.ts`, `src/snapshot.ts`, `src/checkpoints.ts`,
   `src/local-search.ts`, and `src/local-backlinks.ts` hold their own rules.
   The last two are pure functions over the rows of `listSearchFiles`, and
@@ -77,3 +80,4 @@ against a real database is covered by
 | `src/engine.ts`      | The send loop, ordering, and retries     |
 | `src/lease.ts`       | The single sender lease                  |
 | `src/checkpoints.ts` | When a save becomes a checkpoint         |
+| `src/protocol.ts`    | Whether client and server protocols fit  |

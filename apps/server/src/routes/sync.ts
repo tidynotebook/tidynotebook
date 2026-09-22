@@ -9,7 +9,12 @@
  */
 import type { FastifyRequest } from 'fastify';
 import type { Result, WorkspaceStore } from '@notesapp/core';
-import { getChanges, getSnapshotPage, startSnapshot } from '@notesapp/core';
+import {
+  getChanges,
+  getSnapshotPage,
+  startSnapshot,
+  supportedSyncVersions,
+} from '@notesapp/core';
 import { requireActor } from '../auth/actor.ts';
 import { readProperty } from '../values.ts';
 import type { HandlerMap, HandlerResult } from '../plugins/register.ts';
@@ -42,6 +47,16 @@ function readOptionalInteger(value: unknown, key: string): number | undefined {
 /** Builds the snapshot and incremental sync handlers. */
 export function createSyncHandlers(store: WorkspaceStore): HandlerMap {
   return {
+    // The list is a fact of the build, not of an account, so the answer reads
+    // no session and no store. The client reads it before a push or a pull
+    // (record 0086).
+    getSyncProtocol: (): Promise<HandlerResult> =>
+      Promise.resolve({
+        status: 200,
+        mediaType: jsonMediaType,
+        body: { versions: [...supportedSyncVersions] },
+      }),
+
     startSnapshot: async (request: FastifyRequest): Promise<HandlerResult> => {
       const actor = requireActor(request).actor;
       const workspaceId = readText(request.params, 'workspaceId');

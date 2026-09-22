@@ -13,6 +13,7 @@ See [decision 0007](../decisions/0007-keep-the-save-model.md).
 | `packages/sync/src/local-port.ts`            | Local record shapes and storage port |
 | `packages/sync/src/checkpoints.ts`           | The explicit version rule            |
 | `packages/sync/src/engine.ts`                | Queue push and server pull           |
+| `packages/sync/src/protocol.ts`              | Whether client and server fit        |
 | `packages/storage-browser/src/database.ts`   | Dexie schema and row shapes          |
 | `packages/storage-browser/src/migrations.ts` | Validation and schema migration      |
 | `packages/storage-browser/src/local-store/`  | IndexedDB transactions               |
@@ -74,6 +75,16 @@ stops two tabs from sending the same browser queue at the same time.
 
 Snapshot activation changes accepted server state only. It never deletes a
 draft or a queued version.
+
+## Protocol check
+
+Before each push and each pull, the sync engine reads the sync protocol
+versions that the server serves. A client that does not fit sends nothing and
+reads nothing, and it keeps every draft and queued save. A server that answers
+this read with the unknown path refusal predates the check and serves version
+1 only. `packages/sync/src/protocol.ts` holds the rule, and
+`packages/core/src/files/snapshot.ts` holds the one version of the build. See
+[decision 0086](../decisions/0086-protocol-upgrades-precede-the-breaking-sync-format.md).
 
 ## Storage failures
 

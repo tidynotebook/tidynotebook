@@ -10,13 +10,16 @@
  *    An expired session pauses the run with drafts kept. A lost membership
  *    stops reads and writes. A downgrade to viewer suspends writes while
  *    permitted reads continue, and resumes them when the role is restored.
- * 3. Submit the queued mutations in parent order through `pushQueue`, which
+ * 3. Read the sync protocol versions that the server serves. A client that
+ *    does not fit sends nothing and pulls nothing, keeps every draft and
+ *    queued save, and announces the misfit once (record 0086).
+ * 4. Submit the queued mutations in parent order through `pushQueue`, which
  *    freezes each mutation on first send, batches unsent chains atomically,
  *    branches on stale heads, and preserves anything the server refuses.
- * 4. Pull the server state through `pullNew`: stage a snapshot, fetch its
+ * 5. Pull the server state through `pullNew`: stage a snapshot, fetch its
  *    immutable revisions, activate only when complete, then consume ordered
  *    changes. A dirty working copy is never replaced.
- * 5. Wait for the poll interval and repeat until the abort signal fires.
+ * 6. Wait for the poll interval and repeat until the abort signal fires.
  *
  * Every application HTTP call below is a direct import of a generated
  * operation function. There is no handwritten transport: this module only
@@ -29,11 +32,13 @@ import {
   getChanges,
   getRevision,
   getSnapshotPage,
+  getSyncProtocol,
   startSnapshot,
 } from '@notesapp/api-client';
 import {
   generateUUID,
   requestDigest,
+  syncProtocolVersion,
   type AcceptedChangeset,
   type ChangesetInput,
   type ContentRef,
@@ -44,6 +49,7 @@ import { isLocalStorageError } from './local-port.ts';
 import {
   SyncFailedError,
   pushQueue,
+  sendWithRetry,
   transportFailedCode,
   type Problem,
   type PushOutcome,
@@ -53,6 +59,11 @@ import {
   type SyncNotice,
 } from './queue.ts';
 import { pullNew, type SnapshotNetwork } from './snapshot.ts';
+import {
+  protocolFit,
+  servedProtocolOfProblem,
+  type ProtocolFit,
+} from './protocol.ts';
 
 /** Reading one unknown property without asserting its shape. */
 function readProperty(value: unknown, key: string): unknown {
@@ -151,8 +162,23 @@ export type SessionNetwork = {
   ): Promise<ServiceOutcome<{ readonly accountId: string }>>;
 };
 
+/**
+ * The capability read that runs before every push and pull.
+ *
+ * A failed read keeps its problem, because a legacy server is recognized by
+ * the problem it answers for an unknown path.
+ */
+export type ProtocolNetwork = {
+  syncProtocol(
+    signal: AbortSignal,
+  ): Promise<ServiceOutcome<{ readonly versions: readonly number[] }>>;
+};
+
 /** Every network operation the engine runs, for injection in tests. */
-export type EngineOperations = QueueNetwork & SnapshotNetwork & SessionNetwork;
+export type EngineOperations = QueueNetwork &
+  SnapshotNetwork &
+  SessionNetwork &
+  ProtocolNetwork;
 
 /** Options of one engine. Everything except the store has a default. */
 export type EngineOptions = {
@@ -264,6 +290,31 @@ export function createSyncEngine(
     return 'access-lost';
   }
 
+  /**
+   * Reads how this client stands against the server, or `null` when the read
+   * failed in transport and a later cycle asks again.
+   *
+   * A failure that names no legacy server is not a protocol answer, so it
+   * stops the cycle as an unexpected answer and sends nothing.
+   */
+  async function readProtocolFit(
+    ctx: SyncContext,
+  ): Promise<ProtocolFit | null> {
+    const outcome = await sendWithRetry(ctx, (signal) =>
+      operations.syncProtocol(signal),
+    );
+    if (outcome === null) return null;
+    if (outcome.ok)
+      return protocolFit(syncProtocolVersion, {
+        kind: 'served',
+        versions: outcome.value.versions,
+      });
+    const served = servedProtocolOfProblem(outcome.problem);
+    if (served === null)
+      throw new SyncFailedError(outcome.problem.code, outcome.problem.status);
+    return protocolFit(syncProtocolVersion, served);
+  }
+
   /** Waits out a delay; returns `false` when the run stopped meanwhile. */
   async function rest(ms: number, signal: AbortSignal): Promise<boolean> {
     if (wakeRequested) {
@@ -332,6 +383,12 @@ export function createSyncEngine(
             : { kind: 'access-lost' },
         );
       };
+      let lastFit: ProtocolFit = 'compatible';
+      const noteFit = (fit: ProtocolFit): void => {
+        if (fit === lastFit) return;
+        lastFit = fit;
+        announce({ kind: 'protocol', fit });
+      };
       let lastCycleError = '';
       const noteCycleError = (code: string): void => {
         if (code === lastCycleError) return;
@@ -376,6 +433,16 @@ export function createSyncEngine(
             id: newId,
             announce,
           };
+          const fit = await readProtocolFit(ctx);
+          if (fit === null) {
+            if (!(await rest(pollIntervalMs, signal))) return;
+            continue;
+          }
+          noteFit(fit);
+          if (fit !== 'compatible') {
+            if (!(await rest(pollIntervalMs, signal))) return;
+            continue;
+          }
           // A refused precondition makes the queue read the server again
           // before it decides what to do with the refused mutation.
           const pull = (): Promise<PushOutcome> =>
@@ -523,7 +590,7 @@ function createOperations(
       const sent = await startSnapshot({
         headers: extraHeaders(),
         path: { workspaceId },
-        body: { syncVersion: 1 },
+        body: { syncVersion: syncProtocolVersion },
         signal,
       });
       if (sent.error !== undefined || sent.data === undefined)
@@ -628,6 +695,15 @@ function createOperations(
           nextCursor: sent.data.nextCursor,
         },
       };
+    },
+    async syncProtocol(signal: AbortSignal) {
+      const sent = await getSyncProtocol({ headers: extraHeaders(), signal });
+      if (sent.error !== undefined || sent.data === undefined)
+        return {
+          ok: false as const,
+          problem: toProblem(sent.error, sent.response),
+        };
+      return { ok: true as const, value: { versions: sent.data.versions } };
     },
     async verifySession(signal: AbortSignal) {
       const sent = await getAccount({ headers: extraHeaders(), signal });

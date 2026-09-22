@@ -18,9 +18,11 @@ import {
   getReadiness,
   getRootHealth,
   getRootReadiness,
+  getSyncProtocol,
   unlockPublishedLink,
 } from '@notesapp/api-client';
 import { operations } from '@notesapp/api-contract';
+import { supportedSyncVersions, syncProtocolVersion } from '@notesapp/core';
 import { createHandlers, loadServerConfig } from '@notesapp/server';
 import {
   completeTestHandlers,
@@ -273,6 +275,30 @@ await test('an unknown path answers with problem details', async () => {
   const response = await server.app.inject({
     method: 'GET',
     url: '/api/missing',
+    headers: { host: '127.0.0.1' },
+  });
+  assert.equal(response.statusCode, 404);
+  assert.equal(asProblem(response.json()).code, 'route_not_found');
+});
+
+await test('the sync protocol answers without a session', async () => {
+  // Record 0086. A client reads this list before it pushes or pulls, so the
+  // answer must come from the list that `startSnapshot` enforces, and it must
+  // need no session: a client checks it before it knows its session state.
+  const result = await getSyncProtocol();
+  assert.equal(result.error, undefined);
+  assert.equal(responseOf(result.response).status, 200);
+  assert.deepEqual(result.data, { versions: [...supportedSyncVersions] });
+  assert.ok(result.data?.versions.includes(syncProtocolVersion));
+});
+
+await test('a server without the protocol operation answers route not found', async () => {
+  // A deployment from before record 0086 has no such route. The client reads
+  // exactly this answer as a legacy server that serves version 1 only, so the
+  // status and the code of an unknown API path are part of that rule.
+  const response = await server.app.inject({
+    method: 'GET',
+    url: '/api/sync/protocol-from-a-later-release',
     headers: { host: '127.0.0.1' },
   });
   assert.equal(response.statusCode, 404);

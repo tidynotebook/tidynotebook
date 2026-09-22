@@ -1,0 +1,5 @@
+description: The sync protocol versions that this server serves.
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/SyncProtocolReport.yaml'

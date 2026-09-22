@@ -1203,6 +1203,16 @@ export type SyncChanges = {
 };
 
 /**
+ * The sync protocol versions that push and pull accept.
+ */
+export type SyncProtocolReport = {
+    /**
+     * Every served sync protocol version, oldest first. The list is never empty.
+     */
+    readonly versions: Array<number>;
+};
+
+/**
  * Identifier of a theme family in the client theme registry, for example tokyo-night. An identifier that the client does not know falls back to the default family, so a stored value never stops the page painting.
  */
 export type ThemeFamily = string;
@@ -2290,6 +2300,41 @@ export type CreateOwnerResponses = {
 };
 
 export type CreateOwnerResponse = CreateOwnerResponses[keyof CreateOwnerResponses];
+
+export type GetSyncProtocolData = {
+    body?: never;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/sync/protocol';
+};
+
+export type GetSyncProtocolErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type GetSyncProtocolError = GetSyncProtocolErrors[keyof GetSyncProtocolErrors];
+
+export type GetSyncProtocolResponses = {
+    /**
+     * The sync protocol versions that this server serves.
+     */
+    200: SyncProtocolReport;
+};
+
+export type GetSyncProtocolResponse = GetSyncProtocolResponses[keyof GetSyncProtocolResponses];
 
 export type ListWorkspacesData = {
     body?: never;

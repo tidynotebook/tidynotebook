@@ -8,10 +8,11 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import type {
-  AcceptedChangeset,
-  ChangesetInput,
-  SupersededHead,
+import {
+  syncProtocolVersion,
+  type AcceptedChangeset,
+  type ChangesetInput,
+  type SupersededHead,
 } from '@notesapp/core';
 import {
   LocalStorageError,
@@ -595,6 +596,7 @@ function stubOperations(behavior: {
   readonly revision?: SnapshotNetwork['revision'];
   readonly changes?: SnapshotNetwork['changes'];
   readonly verifySession?: EngineOperations['verifySession'];
+  readonly syncProtocol?: EngineOperations['syncProtocol'];
 }): Stubs {
   const commitCalls: ChangesetInput[] = [];
   const queue: QueueNetwork = {
@@ -638,6 +640,14 @@ function stubOperations(behavior: {
           value: { accountId },
         });
       return behavior.verifySession(_signal);
+    },
+    syncProtocol: (_signal) => {
+      if (behavior.syncProtocol === undefined)
+        return Promise.resolve({
+          ok: true as const,
+          value: { versions: [syncProtocolVersion] },
+        });
+      return behavior.syncProtocol(_signal);
     },
     commitCalls,
   };
@@ -1693,6 +1703,183 @@ await test('an expired session pauses the run without sending anything', async (
   controller.abort();
   await running;
   assert.equal(store.lease, null);
+});
+
+await test('a server with a later protocol gets no push and no pull', async () => {
+  // Record 0086. A cached client must not send a format that the server no
+  // longer reads, and it must not read a feed it cannot apply.
+  const store = new FakeStore();
+  store.enqueue(queuedEntry('file-a', 'rev-a', '# A\n', null, 'mutation-1'));
+  const notices: SyncNotice[] = [];
+  let reads = 0;
+  const ops = stubOperations({
+    syncProtocol: () => {
+      reads += 1;
+      return Promise.resolve({
+        ok: true as const,
+        value: { versions: [syncProtocolVersion + 1] },
+      });
+    },
+    commit: () => Promise.reject(new Error('nothing may be sent')),
+    start: () => Promise.reject(new Error('nothing may be pulled')),
+  });
+  const engine = createSyncEngine(store, accountId, workspaceId, {
+    ownerId: 'owner-1',
+    operations: ops,
+    announce: (notice) => {
+      notices.push(notice);
+    },
+    pollIntervalMs: 5,
+    leaseTtlMs: 60_000,
+    random: () => 0,
+  });
+  const controller = new AbortController();
+  const running = engine.run(controller.signal);
+  // Three reads prove that the check repeats each cycle, and the notice list
+  // below proves that the misfit is said once and not on every cycle.
+  await waitFor(() => reads >= 3);
+  controller.abort();
+  await running;
+  assert.equal(ops.commitCalls.length, 0);
+  assert.equal(store.queued()?.state, 'pending');
+  assert.equal(store.recovery.length, 0);
+  assert.deepEqual(
+    notices.filter((notice) => notice.kind === 'protocol'),
+    [{ kind: 'protocol', fit: 'client-behind' }],
+  );
+  assert.equal(store.lease, null);
+});
+
+await test('a server without the protocol operation serves version 1', async () => {
+  const store = new FakeStore();
+  store.enqueue(queuedEntry('file-a', 'rev-a', '# A\n', null, 'mutation-1'));
+  store.cursors.set(`${accountId}/${workspaceId}`, '0');
+  const notices: SyncNotice[] = [];
+  const ops = stubOperations({
+    syncProtocol: () =>
+      Promise.resolve({
+        ok: false as const,
+        problem: { status: 404, code: 'route_not_found', fileIds: [] },
+      }),
+    commit: (input) =>
+      Promise.resolve({
+        ok: true as const,
+        value: accepted(input.mutationId, ['rev-a'], '1'),
+      }),
+    changes: (cursor) =>
+      Promise.resolve({
+        ok: true as const,
+        value: { changes: [], nextCursor: cursor },
+      }),
+  });
+  const engine = createSyncEngine(store, accountId, workspaceId, {
+    ownerId: 'owner-1',
+    operations: ops,
+    announce: (notice) => {
+      notices.push(notice);
+    },
+    pollIntervalMs: 5,
+    leaseTtlMs: 60_000,
+    random: () => 0,
+  });
+  const controller = new AbortController();
+  const running = engine.run(controller.signal);
+  await waitFor(() => ops.commitCalls.length === 1);
+  controller.abort();
+  await running;
+  // Version 1 is the version of this build, so a legacy server fits.
+  assert.equal(syncProtocolVersion, 1);
+  assert.equal(
+    notices.some((notice) => notice.kind === 'protocol'),
+    false,
+  );
+});
+
+await test('a server that rolled back makes the client wait, then resume', async () => {
+  const store = new FakeStore();
+  store.enqueue(queuedEntry('file-a', 'rev-a', '# A\n', null, 'mutation-1'));
+  store.cursors.set(`${accountId}/${workspaceId}`, '0');
+  const notices: SyncNotice[] = [];
+  let served: readonly number[] = [syncProtocolVersion - 1];
+  let reads = 0;
+  const ops = stubOperations({
+    syncProtocol: () => {
+      reads += 1;
+      return Promise.resolve({ ok: true as const, value: { versions: served } });
+    },
+    commit: (input) =>
+      Promise.resolve({
+        ok: true as const,
+        value: accepted(input.mutationId, ['rev-a'], '1'),
+      }),
+    changes: (cursor) =>
+      Promise.resolve({
+        ok: true as const,
+        value: { changes: [], nextCursor: cursor },
+      }),
+  });
+  const engine = createSyncEngine(store, accountId, workspaceId, {
+    ownerId: 'owner-1',
+    operations: ops,
+    announce: (notice) => {
+      notices.push(notice);
+    },
+    pollIntervalMs: 5,
+    leaseTtlMs: 60_000,
+    random: () => 0,
+  });
+  const controller = new AbortController();
+  const running = engine.run(controller.signal);
+  await waitFor(() => reads >= 2);
+  assert.equal(ops.commitCalls.length, 0);
+  served = [syncProtocolVersion];
+  await waitFor(() => ops.commitCalls.length === 1);
+  controller.abort();
+  await running;
+  assert.deepEqual(
+    notices.filter((notice) => notice.kind === 'protocol'),
+    [
+      { kind: 'protocol', fit: 'server-behind' },
+      { kind: 'protocol', fit: 'compatible' },
+    ],
+  );
+});
+
+await test('a stop answer of 503 keeps a queued save queued', async () => {
+  // Record 0086. A new server stops a client from before the compatibility
+  // release with an answer that its engine already handles. A 503 is retried
+  // with a bound and then deferred, so the save stays in the queue and never
+  // reaches the recovery area. A new refusal code would park it instead; see
+  // the test above for an unknown code.
+  const store = new FakeStore();
+  store.enqueue(queuedEntry('file-a', 'rev-b', '# B\n', 'rev-a', 'mutation-2'));
+  const delays: number[] = [];
+  const ops = stubOperations({
+    commit: () =>
+      Promise.resolve({
+        ok: false as const,
+        problem: {
+          status: 503,
+          code: 'sync_protocol_unsupported',
+          fileIds: [],
+        },
+      }),
+  });
+  const outcome = await pushQueue(
+    store,
+    accountId,
+    workspaceId,
+    ops,
+    testContext([], delays),
+    noPull,
+  );
+  assert.equal(outcome, 'deferred');
+  assert.equal(ops.commitCalls.length, 4);
+  assert.equal(delays.length, 3);
+  assert.notEqual(store.queued(), null);
+  assert.notEqual(store.queued()?.state, 'conflict');
+  assert.equal(store.recovery.length, 0);
+  assert.equal(store.discarded.length, 0);
 });
 
 await test('the worker lease is exclusive, renewable, and taken over on expiry', async () => {

@@ -56,6 +56,8 @@ paths:
     $ref: './paths/api_ready.yaml'
   /api/setup:
     $ref: './paths/api_setup.yaml'
+  /api/sync/protocol:
+    $ref: './paths/api_sync_protocol.yaml'
   /api/account:
     $ref: './paths/api_account.yaml'
   /api/account/preferences:
@@ -207,6 +209,8 @@ components:
       $ref: './components/responses/Readiness.yaml'
     NotReady:
       $ref: './components/responses/NotReady.yaml'
+    SyncProtocol:
+      $ref: './components/responses/SyncProtocol.yaml'
     BadRequest:
       $ref: './components/responses/BadRequest.yaml'
     ServerError:
@@ -302,6 +306,8 @@ components:
       $ref: './components/schemas/HealthReport.yaml'
     ReadinessReport:
       $ref: './components/schemas/ReadinessReport.yaml'
+    SyncProtocolReport:
+      $ref: './components/schemas/SyncProtocolReport.yaml'
     ReadinessCheck:
       $ref: './components/schemas/ReadinessCheck.yaml'
     ProblemDetails:

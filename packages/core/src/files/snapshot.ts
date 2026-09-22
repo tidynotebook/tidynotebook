@@ -23,8 +23,22 @@ import type {
   WorkspaceStore,
 } from './ports.ts';
 
-/** Sync protocol versions that this server accepts. */
-export const supportedSyncVersions = [1] as const;
+/**
+ * The sync protocol version that this build speaks.
+ *
+ * The client sends it and the server serves it, so one build agrees with
+ * itself by construction. Two deployments agree only when the client reads
+ * the served list first; record 0086 states that check.
+ */
+export const syncProtocolVersion = 1;
+
+/**
+ * Sync protocol versions that this server accepts.
+ *
+ * `getSyncProtocol` answers this list, and `startSnapshot` refuses a version
+ * outside it, so the capability answer and the refusal cannot disagree.
+ */
+export const supportedSyncVersions = [syncProtocolVersion] as const;
 
 /** How long a materialized snapshot stays readable, in milliseconds. */
 export const snapshotTtlMs = 15 * 60 * 1000;

@@ -31,6 +31,7 @@ export type OperationId =
   | 'getRootReadiness'
   | 'getSetupStatus'
   | 'getSnapshotPage'
+  | 'getSyncProtocol'
   | 'importWorkspace'
   | 'listBacklinks'
   | 'listDeletedFiles'
@@ -4930,6 +4931,87 @@ export const operations: readonly OperationEntry[] = [
       },
       {
         "status": 410,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 500,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      }
+    ],
+    "noContent": []
+  },
+  {
+    "id": "getSyncProtocol",
+    "method": "get",
+    "path": "/api/sync/protocol",
+    "protocol": null,
+    "security": [],
+    "parameters": [
+      {
+        "name": "x-request-id",
+        "location": "header",
+        "required": false,
+        "style": "simple",
+        "explode": false
+      }
+    ],
+    "request": {
+      "params": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "headers": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Shared2"
+      },
+      "body": null,
+      "bodyMediaType": null
+    },
+    "responses": [
+      {
+        "status": 200,
+        "mediaType": "application/json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "description": "The sync protocol versions that push and pull accept.",
+          "additionalProperties": false,
+          "required": [
+            "versions"
+          ],
+          "properties": {
+            "versions": {
+              "type": "array",
+              "readOnly": true,
+              "description": "Every served sync protocol version, oldest first. The list is never empty.",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        }
+      },
+      {
+        "status": 400,
         "mediaType": "application/problem+json",
         "schema": {
           "$schema": "https://json-schema.org/draft/2020-12/schema",

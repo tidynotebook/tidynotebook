@@ -1,0 +1,17 @@
+type: object
+description: The sync protocol versions that push and pull accept.
+additionalProperties: false
+required:
+  - versions
+properties:
+  versions:
+    type: array
+    readOnly: true
+    description: >-
+      Every served sync protocol version, oldest first. The list is never
+      empty.
+    minItems: 1
+    uniqueItems: true
+    items:
+      type: integer
+      minimum: 1

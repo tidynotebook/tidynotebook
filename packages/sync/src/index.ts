@@ -83,9 +83,17 @@ export {
   readWorkerLease,
   releaseWorkerLease,
 } from './lease.ts';
+export type { ProtocolFit, ServedProtocol } from './protocol.ts';
+export {
+  legacySyncProtocolVersions,
+  protocolFit,
+  routeNotFoundCode,
+  servedProtocolOfProblem,
+} from './protocol.ts';
 export type {
   EngineOptions,
   EngineOperations,
+  ProtocolNetwork,
   SessionNetwork,
   SyncEngine,
 } from './engine.ts';
