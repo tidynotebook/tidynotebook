@@ -363,6 +363,9 @@ const openOperations = [
   'getRootHealth',
   'getRootReadiness',
   'getSetupStatus',
+  // The served sync protocol versions are a fact of the build and hold no
+  // account data. A client reads them before it knows its session (0086).
+  'getSyncProtocol',
 ];
 
 await test('every reader operation declares an empty security requirement', () => {
