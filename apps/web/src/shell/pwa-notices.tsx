@@ -6,15 +6,30 @@
  * refusal has to be said once, because the promise of offline drafts does
  * not hold without it.
  */
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import type { LocalStore } from '@notesapp/sync';
 import { Button, Notice } from '@notesapp/ui';
 import {
+  describeStorageFailure,
   persistenceDenialMessage,
-  prepareForUpdate,
   requestPersistentStorage,
-  requestUpdate,
 } from '../pwa/lifecycle.ts';
+import {
+  closeForUpdate,
+  currentUpdateRegistration,
+  holdTabLock,
+  listenForUpdates,
+  postUpdateMessage,
+  runUpdate,
+  UpdateFailedError,
+  type TabLock,
+} from '../pwa/update.ts';
 
 /** Watches the worker registration for a version that waits to activate. */
 export function useWaitingUpdate(): boolean {
@@ -65,54 +80,149 @@ export function useWaitingUpdate(): boolean {
   return waiting;
 }
 
+/** What this tab says when it cannot store its text for an update. */
+const keptOpenMessage =
+  'This tab could not store its text, so it stays open. Copy your text, then close the tab.';
+
 /**
- * Offers the waiting version.
+ * Offers the waiting version, and closes this tab for an update of another.
  *
- * Accepting writes every draft, stops queue writes, closes the database of
- * this tab, and only then lets the new worker take over. A tab that cannot
- * close its database says why and keeps the old version usable.
+ * The notice shows when a new worker waits, and when the server needs a newer
+ * application before this tab syncs again (record 0086). Accepting runs
+ * `runUpdate`: it stores the text of every open tab, closes each of them,
+ * and only then lets the new worker take over. A step that fails keeps the
+ * text and says what to do next.
+ *
+ * Every tab also listens for the update of another tab. It stores its text,
+ * stops, closes its database, and then reloads when that update ends.
  */
 export function UpdateNotice({
   store,
   ownerId,
+  required,
   onFlushDrafts,
   onStopQueue,
 }: {
   readonly store: LocalStore | null;
   readonly ownerId: string;
+  /** The server needs a newer application before this tab syncs again. */
+  readonly required: boolean;
   readonly onFlushDrafts: () => Promise<void>;
   readonly onStopQueue: () => Promise<void>;
 }): ReactNode {
   const waiting = useWaitingUpdate();
   const [problem, setProblem] = useState<string | null>(null);
+  const [mustReload, setMustReload] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [closed, setClosed] = useState(false);
+  const tabLock = useRef<TabLock | null>(null);
+  const closedRef = useRef(false);
+  // The listener below lives as long as the tab, so it reads the current
+  // callbacks through a ref instead of subscribing again on every render.
+  const effects = useRef({ store, onFlushDrafts, onStopQueue });
+  effects.current = { store, onFlushDrafts, onStopQueue };
+
+  useEffect(() => {
+    const lock = holdTabLock(store, ownerId);
+    tabLock.current = lock;
+    return () => {
+      lock.leave();
+      tabLock.current = null;
+    };
+  }, [store, ownerId]);
+
+  useEffect(
+    () =>
+      listenForUpdates(ownerId, (message) => {
+        if (message.type === 'NOTESAPP_UPDATE_SETTLED') {
+          if (closedRef.current) window.location.reload();
+          return;
+        }
+        const current = effects.current;
+        void closeForUpdate({
+          flushDrafts: current.onFlushDrafts,
+          stopQueue: current.onStopQueue,
+          closeStore: () => current.store?.close() ?? Promise.resolve(),
+          leave: () => tabLock.current?.leave(),
+        }).then((outcome) => {
+          if (outcome === 'kept') {
+            setProblem(keptOpenMessage);
+            return;
+          }
+          closedRef.current = true;
+          setClosed(true);
+        });
+      }),
+    [ownerId],
+  );
 
   const install = useCallback((): void => {
     setBusy(true);
+    setProblem(null);
     void (async (): Promise<void> => {
       try {
-        if (store !== null)
-          await prepareForUpdate(store, ownerId, {
-            flushDrafts: onFlushDrafts,
-            stopQueue: onStopQueue,
-          });
-        await requestUpdate();
-        window.location.reload();
+        await runUpdate({
+          registration: await currentUpdateRegistration(),
+          flushDrafts: onFlushDrafts,
+          stopQueue: onStopQueue,
+          closeStore: () => store?.close() ?? Promise.resolve(),
+          tabs: tabLock.current ?? holdTabLock(store, ownerId),
+          post: (message) => {
+            postUpdateMessage(ownerId, message);
+          },
+          reload: () => {
+            window.location.reload();
+          },
+        });
       } catch (failure: unknown) {
         setBusy(false);
-        setProblem(
-          failure instanceof Error
-            ? failure.message
-            : 'The update could not start. Close the other tabs and try again.',
-        );
+        if (failure instanceof UpdateFailedError) {
+          setMustReload(failure.reason === 'start-failed');
+          setProblem(failure.message);
+          return;
+        }
+        // A draft that could not be stored stops the update before any tab
+        // closes, so the sentence is the one of that storage failure.
+        setProblem(describeStorageFailure(failure));
       }
     })();
   }, [store, ownerId, onFlushDrafts, onStopQueue]);
 
-  if (!waiting) return null;
-  if (problem !== null) return <Notice tone="problem" message={problem} />;
+  const reload = useCallback((): void => {
+    window.location.reload();
+  }, []);
+
+  if (closed)
+    return (
+      <Notice
+        tone="info"
+        message="Notesapp updates in another tab. This tab reloads when the update is done."
+      >
+        <Button variant="secondary" size="sm" onClick={reload}>
+          Reload
+        </Button>
+      </Notice>
+    );
+  if (mustReload && problem !== null)
+    return (
+      <Notice tone="problem" message={problem}>
+        <Button variant="secondary" size="sm" onClick={reload}>
+          Reload
+        </Button>
+      </Notice>
+    );
+  if (!waiting && !required)
+    return problem === null ? null : <Notice tone="problem" message={problem} />;
   return (
-    <Notice tone="info" message="A new version of Notesapp is ready.">
+    <Notice
+      tone={problem === null ? 'info' : 'problem'}
+      message={
+        problem ??
+        (required
+          ? 'A new version of Notesapp is needed to save to the server.'
+          : 'A new version of Notesapp is ready.')
+      }
+    >
       <Button variant="primary" size="sm" disabled={busy} onClick={install}>
         {busy ? 'Updating' : 'Update now'}
       </Button>

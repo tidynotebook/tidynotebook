@@ -42,7 +42,13 @@ important out.
 
 **Updates.** When a new version of the application has downloaded, a notice
 offers **Update now**. The update waits for you, so a running tab is never
-replaced while you write.
+replaced while you write. When your server needs a newer version, saving to
+the server waits, and the same notice asks you to update. Your work stays on
+this device until then.
+
+When you select **Update now**, every open tab of the application stores its
+text and closes, then reloads with the new version. If a tab cannot store its
+text, the update stops and every tab stays as it was.
 
 ## Signing out with queued saves
 

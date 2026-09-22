@@ -1807,6 +1807,7 @@ function ShellFrame({
               <UpdateNotice
                 store={store.store}
                 ownerId={syncSession.ownerId}
+                required={sync.state.kind === 'update-required'}
                 onFlushDrafts={flushNoteDraft}
                 onStopQueue={syncSession.stop}
               />

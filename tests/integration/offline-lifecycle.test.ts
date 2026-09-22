@@ -39,12 +39,19 @@ import {
   downloadProgress,
   isReadyOffline,
   isRecoveryVisible as isRecordVisible,
-  prepareForUpdate,
-  requestUpdate,
   signOut,
   SignOutBlockedError,
-  type UpdateRegistration,
 } from '../../apps/web/src/pwa/lifecycle.ts';
+import {
+  closeForUpdate,
+  holdTabLock,
+  listenForUpdates,
+  postUpdateMessage,
+  runUpdate,
+  UpdateFailedError,
+  type UpdateRegistration,
+  type UpdateWorker,
+} from '../../apps/web/src/pwa/update.ts';
 
 const origin = 'https://notes.example.test';
 
@@ -55,6 +62,16 @@ function createClock(): () => number {
     current += 1000;
     return current;
   };
+}
+
+/** Waits until a condition holds, failing loudly after a bound. */
+async function waitUntil(condition: () => boolean): Promise<void> {
+  const started = Date.now();
+  while (!condition()) {
+    if (Date.now() - started > 5000)
+      throw new Error('the condition did not hold in time');
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
 }
 
 /** A counted identifier source, so a failure names the record that differs. */
@@ -480,7 +497,183 @@ await test('pins are workspace scoped and logout keeps only the marker', async (
   await store.close();
 });
 
-await test('an update waits while another tab holds a live lease', async () => {
+/** A worker that waits and activates when it is asked to. */
+function waitingWorker(): UpdateWorker & { readonly posted: string[] } {
+  let state: ServiceWorkerState = 'installed';
+  const listeners = new Set<() => void>();
+  const posted: string[] = [];
+  return {
+    state: () => state,
+    postMessage: (message) => {
+      posted.push(message.type);
+      queueMicrotask(() => {
+        state = 'activated';
+        for (const listener of [...listeners]) listener();
+      });
+    },
+    onStateChange: (listener) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    posted,
+  };
+}
+
+/** A registration with one worker that already waits. */
+function registrationWith(worker: UpdateWorker): UpdateRegistration {
+  return {
+    waiting: () => worker,
+    installing: () => null,
+    update: () => Promise.resolve(),
+  };
+}
+
+await test('two tabs store their text before the new version starts', async () => {
+  // Record 0086. Two tabs share one database and one Web Lock, as two tabs
+  // of one browser do. The second tab writes its last text only when the
+  // first asks it to close, so the test proves that the update waits for it.
+  const backend = createBackend('update-two-tabs');
+  const storeA = await openLocalStore(origin, backend.options());
+  const storeB = await openLocalStore(origin, backend.options());
+  const lockA = holdTabLock(storeA, 'tab-a');
+  const lockB = holdTabLock(storeB, 'tab-b');
+  const inMemoryB = draftOf('account-1', 'workspace-1', 'file-b', '# B\n');
+  const eventsB: string[] = [];
+  let reloadedB = false;
+  const selfHeard: string[] = [];
+  const stopA = listenForUpdates('tab-a', (message) => {
+    selfHeard.push(message.type);
+  });
+  const stopB = listenForUpdates('tab-b', (message) => {
+    eventsB.push(message.type);
+    if (message.type === 'NOTESAPP_UPDATE_SETTLED') {
+      reloadedB = true;
+      return;
+    }
+    void closeForUpdate({
+      // The second tab is slow to store its text. The update must wait for
+      // it however long it takes, so the lock and not the timing decides.
+      flushDrafts: () =>
+        new Promise((resolve) => setTimeout(resolve, 20)).then(() =>
+          storeB.saveDraft(inMemoryB),
+        ),
+      stopQueue: () => Promise.resolve(),
+      closeStore: () => storeB.close(),
+      leave: lockB.leave,
+    });
+  });
+
+  const worker = waitingWorker();
+  let reloadedA = false;
+  let storedAtStop: string | null = null;
+  await runUpdate({
+    registration: registrationWith(worker),
+    flushDrafts: () =>
+      storeA.saveDraft(
+        draftOf('account-1', 'workspace-1', 'file-a', '# A\n'),
+      ),
+    stopQueue: async () => {
+      storedAtStop =
+        (await storeA.readDraft('account-1', 'workspace-1', 'copy-file-b'))
+          ?.text ?? null;
+    },
+    closeStore: () => storeA.close(),
+    tabs: lockA,
+    post: (message) => {
+      postUpdateMessage('tab-a', message);
+    },
+    reload: () => {
+      reloadedA = true;
+    },
+  });
+  assert.equal(reloadedA, true);
+  assert.equal(storedAtStop, '# B\n');
+  assert.deepEqual(worker.posted, ['NOTESAPP_SKIP_WAITING']);
+
+  // The new version opens the database and reads the text of both tabs.
+  const reopened = await openLocalStore(origin, backend.options());
+  assert.equal(
+    (await reopened.readDraft('account-1', 'workspace-1', 'copy-file-a'))
+      ?.text,
+    '# A\n',
+  );
+  assert.equal(
+    (await reopened.readDraft('account-1', 'workspace-1', 'copy-file-b'))
+      ?.text,
+    '# B\n',
+  );
+  await reopened.close();
+  // A channel message reaches its own tab too, so the sender is filtered.
+  assert.deepEqual(selfHeard, []);
+  await waitUntil(() => reloadedB);
+  assert.deepEqual(eventsB, [
+    'NOTESAPP_CLOSE_FOR_UPDATE',
+    'NOTESAPP_UPDATE_SETTLED',
+  ]);
+  stopA();
+  stopB();
+  lockA.reopen();
+  lockA.leave();
+});
+
+await test('a tab that cannot store its text keeps the update from starting', async () => {
+  const backend = createBackend('update-kept-tab');
+  const storeA = await openLocalStore(origin, backend.options());
+  const storeB = await openLocalStore(origin, backend.options());
+  const lockA = holdTabLock(storeA, 'tab-a', { timeoutMs: 50 });
+  const lockB = holdTabLock(storeB, 'tab-b');
+  let keptB: 'closed' | 'kept' | null = null;
+  const stopB = listenForUpdates('tab-b', (message) => {
+    if (message.type !== 'NOTESAPP_CLOSE_FOR_UPDATE') return;
+    void closeForUpdate({
+      flushDrafts: () => Promise.reject(new Error('quota')),
+      stopQueue: () => Promise.resolve(),
+      closeStore: () => storeB.close(),
+      leave: lockB.leave,
+    }).then((outcome) => {
+      keptB = outcome;
+    });
+  });
+  const worker = waitingWorker();
+  let stopped = false;
+  let reloaded = false;
+  await assert.rejects(
+    runUpdate({
+      registration: registrationWith(worker),
+      flushDrafts: () => Promise.resolve(),
+      stopQueue: () => {
+        stopped = true;
+        return Promise.resolve();
+      },
+      closeStore: () => storeA.close(),
+      tabs: lockA,
+      post: (message) => {
+        postUpdateMessage('tab-a', message);
+      },
+      reload: () => {
+        reloaded = true;
+      },
+    }),
+    (error: unknown) =>
+      error instanceof UpdateFailedError && error.reason === 'other-tab-open',
+  );
+  assert.equal(keptB, 'kept');
+  assert.equal(stopped, false);
+  assert.equal(reloaded, false);
+  assert.deepEqual(worker.posted, []);
+  // Both tabs still read and write their own store.
+  await storeA.saveDraft(draftOf('account-1', 'workspace-1', 'file-a', 'a'));
+  await storeB.saveDraft(draftOf('account-1', 'workspace-1', 'file-b', 'b'));
+  stopB();
+  lockA.leave();
+  lockB.leave();
+  await storeA.close();
+  await storeB.close();
+});
+
+await test('without Web Locks an update waits while another tab holds a live lease', async () => {
   const backend = createBackend('update-lease');
   const store = await openLocalStore(origin, backend.options());
   let now = 1_000_000;
@@ -488,101 +681,16 @@ await test('an update waits while another tab holds a live lease', async () => {
   assert.equal(held, true);
   assert.equal(isLeaseExpired(now + 30_000, now), false);
   assert.equal(isLeaseExpired(now + 30_000, now + 30_001), true);
-
   const lease = await readWorkerLease(store);
   assert.deepEqual(lease, { ownerId: 'other-tab', expiresAt: now + 30_000 });
 
-  let flushed = false;
-  let stopped = false;
-  await assert.rejects(
-    prepareForUpdate(store, 'this-tab', {
-      flushDrafts: () => {
-        flushed = true;
-        return Promise.resolve();
-      },
-      stopQueue: () => {
-        stopped = true;
-        return Promise.resolve();
-      },
-      clock: () => now,
-    }),
-    (error: unknown) =>
-      error instanceof SignOutBlockedError && error.code === 'update-blocked',
-  );
-  assert.equal(flushed, true);
-  assert.equal(stopped, true);
-
-  // After expiry the same tab may take over and the update closes the store.
+  const tabs = holdTabLock(store, 'this-tab', { locks: null, clock: () => now });
+  assert.equal(await tabs.closeOthers(), false);
+  // After expiry the same tab may take over.
   now += 60_000;
-  const storeOptions = backend.options();
-  await prepareForUpdate(store, 'this-tab', {
-    flushDrafts: () => Promise.resolve(),
-    stopQueue: () => Promise.resolve(),
-    clock: () => now,
-  });
-  const reopened = await openLocalStore(origin, storeOptions);
-  await reopened.close();
-});
-
-await test('an update accepts the live lease of this tab', async () => {
-  const backend = createBackend('update-own-lease');
-  const store = await openLocalStore(origin, backend.options());
-  const now = 1_000_000;
-  const held = await store.acquireLease('this-tab', now + 30_000);
-  assert.equal(held, true);
-
-  let flushed = false;
-  let stopped = false;
-  const storeOptions = backend.options();
-  await prepareForUpdate(store, 'this-tab', {
-    flushDrafts: () => {
-      flushed = true;
-      return Promise.resolve();
-    },
-    stopQueue: () => {
-      stopped = true;
-      return Promise.resolve();
-    },
-    clock: () => now,
-  });
-
-  assert.equal(flushed, true);
-  assert.equal(stopped, true);
-  const reopened = await openLocalStore(origin, storeOptions);
-  await reopened.close();
-});
-
-await test('an update waits for the new worker to activate', async () => {
-  let state: ServiceWorkerState = 'installed';
-  let stateListener = (): void => {};
-  let posted = false;
-  let updated = false;
-  const registration: UpdateRegistration = {
-    waiting: {
-      state: () => state,
-      postMessage: () => {
-        posted = true;
-        state = 'activating';
-        queueMicrotask(() => {
-          state = 'activated';
-          stateListener();
-        });
-      },
-      onStateChange: (listener) => {
-        stateListener = listener;
-        return () => {
-          stateListener = (): void => {};
-        };
-      },
-    },
-    update: () => {
-      updated = true;
-      return Promise.resolve();
-    },
-  };
-
-  await requestUpdate(registration);
-  assert.equal(posted, true);
-  assert.equal(state, 'activated');
-  assert.equal(updated, false);
+  assert.equal(await tabs.closeOthers(), true);
+  // The live lease of this tab never blocks its own update.
+  await store.acquireLease('this-tab', now + 30_000);
+  assert.equal(await tabs.closeOthers(), true);
+  await store.close();
 });

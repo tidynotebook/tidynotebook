@@ -34,6 +34,10 @@ export type SyncState =
   | { readonly kind: 'signed-out' }
   /** Another tab of this browser drives sync. */
   | { readonly kind: 'other-tab' }
+  /** The server needs a newer application before this tab syncs again. */
+  | { readonly kind: 'update-required' }
+  /** The server runs an earlier version, so sync waits for it. */
+  | { readonly kind: 'server-behind' }
   /** Sync stopped for a reason the person cannot act on directly. */
   | { readonly kind: 'stopped' };
 
@@ -61,6 +65,14 @@ export function syncStateOfNotice(notice: SyncNotice): SyncState | null {
   if (notice.kind === 'lease-held') return { kind: 'other-tab' };
   if (notice.kind === 'lease-lost') return { kind: 'waiting' };
   if (notice.kind === 'access-lost') return { kind: 'stopped' };
+  // A fit after a misfit proves only that sync can run again, so the state
+  // starts over and the next queue read or send states where work stands.
+  if (notice.kind === 'protocol')
+    return notice.fit === 'client-behind'
+      ? { kind: 'update-required' }
+      : notice.fit === 'server-behind'
+        ? { kind: 'server-behind' }
+        : startingSyncState;
   // A cycle that failed on the way out never reached the server, so it is a
   // lost connection and not a refusal. A browser reports that it is online
   // long after the connection died, and the person read that saving had
@@ -99,6 +111,10 @@ export function syncStateMessage(
     return 'The session ended. Sign in again to save to the server.';
   if (state.kind === 'other-tab')
     return 'Another tab of this browser is saving to the server.';
+  if (state.kind === 'update-required')
+    return 'Saving to the server waits for an update of Notesapp. Your work stays on this device.';
+  if (state.kind === 'server-behind')
+    return 'The server runs an earlier version of Notesapp, so saving waits. Your work stays on this device.';
   return 'Saving to the server stopped. Your work stays on this device.';
 }
 
@@ -141,7 +157,8 @@ export function syncNeedsAttention(state: SyncState): boolean {
     state.kind === 'attention' ||
     state.kind === 'signed-out' ||
     state.kind === 'stopped' ||
-    state.kind === 'delete-refused'
+    state.kind === 'delete-refused' ||
+    state.kind === 'update-required'
   );
 }
 

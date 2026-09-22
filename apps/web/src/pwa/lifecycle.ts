@@ -11,9 +11,7 @@
  *   Attachment completeness is reported separately and never blocks editing.
  * - Persistent storage is requested where supported. A denial or an
  *   eviction stops the claim of persistence instead of discarding drafts.
- * - An update persists drafts, stops queue writes, closes the database
- *   connection of this tab, and announces the same to every other tab. A
- *   live lease of another tab blocks the upgrade and keeps drafts in memory.
+ * - An update across every open tab lives in `update.ts` (record 0086).
  * - Online sign-out settles or explicitly discards pending work, then
  *   revokes the session and clears private data. Offline sign-out needs an
  *   explicit discard, clears private data, and records a marker that
@@ -25,9 +23,7 @@ import {
   isBlockedUpgradeError,
 } from '@notesapp/storage-browser';
 import {
-  isLeaseExpired,
   isLocalStorageError,
-  readWorkerLease,
   type LocalStore,
   type RecoveryReason,
   type RecoveryRecord,
@@ -132,157 +128,15 @@ export function describeStorageFailure(error: unknown): string {
   return 'A local write did not commit. The draft stays in memory for retry.';
 }
 
-/** Why a sign-out or an update cannot continue yet. */
+/** Why a sign-out cannot continue yet. */
 export class SignOutBlockedError extends Error {
-  readonly code: 'needs-discard' | 'update-blocked';
+  readonly code: 'needs-discard';
 
-  constructor(code: 'needs-discard' | 'update-blocked', detail: string) {
+  constructor(code: 'needs-discard', detail: string) {
     super(detail);
     this.name = 'SignOutBlockedError';
     this.code = code;
   }
-}
-
-/** Hooks the application supplies around an update of this tab. */
-export type UpdateHooks = {
-  /** Writes every in-memory buffer to the local store. */
-  readonly flushDrafts: () => Promise<void>;
-  /** Stops the sync engine and gives up queue writes. */
-  readonly stopQueue: () => Promise<void>;
-  /** Milliseconds since the Unix epoch. Defaults to the system clock. */
-  readonly clock?: () => number;
-};
-
-/** Broadcasts the pending update so every tab closes its connection. */
-function announceUpdateClosing(): void {
-  try {
-    if (typeof BroadcastChannel === 'undefined') return;
-    const channel = new BroadcastChannel('notesapp-update');
-    channel.postMessage({ type: 'NOTESAPP_CLOSE_FOR_UPDATE' });
-    channel.close();
-  } catch {
-    return;
-  }
-}
-
-/**
- * Prepares this tab for an application update.
- *
- * Persists drafts, stops queue writes, refuses while another tab holds a
- * live worker lease, then closes the database connection of this tab and
- * tells every other tab to do the same. The migration transaction itself
- * completes on the next open; a blocked upgrade keeps the old application
- * usable and shows the required action without losing drafts.
- */
-export async function prepareForUpdate(
-  store: LocalStore,
-  ownerId: string,
-  hooks: UpdateHooks,
-): Promise<void> {
-  await hooks.flushDrafts();
-  await hooks.stopQueue();
-  const now = hooks.clock === undefined ? Date.now() : hooks.clock();
-  const lease = await readWorkerLease(store);
-  if (
-    lease !== null &&
-    !isLeaseExpired(lease.expiresAt, now) &&
-    lease.ownerId !== ownerId
-  )
-    throw new SignOutBlockedError('update-blocked', blockedUpgradeInstructions);
-  announceUpdateClosing();
-  await store.close();
-}
-
-/** The waiting worker and events that one update needs. */
-export type WaitingUpdateWorker = {
-  readonly state: () => ServiceWorkerState;
-  readonly postMessage: (message: { readonly type: string }) => void;
-  readonly onStateChange: (listener: () => void) => () => void;
-};
-
-/** The part of a worker registration that the update action needs. */
-export type UpdateRegistration = {
-  readonly waiting: WaitingUpdateWorker | null;
-  readonly update: () => Promise<void>;
-};
-
-/** Adapts the browser registration to the small update port. */
-function updateRegistration(
-  registration: ServiceWorkerRegistration,
-): UpdateRegistration {
-  const worker = registration.waiting;
-  return {
-    waiting:
-      worker === null
-        ? null
-        : {
-            state: () => worker.state,
-            postMessage: (message) => worker.postMessage(message),
-            onStateChange: (listener) => {
-              worker.addEventListener('statechange', listener);
-              return () => worker.removeEventListener('statechange', listener);
-            },
-          },
-    update: () => registration.update().then(() => undefined),
-  };
-}
-
-/** Reads the current browser registration through the update port. */
-async function currentUpdateRegistration(): Promise<UpdateRegistration | null> {
-  if (typeof navigator === 'undefined') return null;
-  const container = navigator.serviceWorker;
-  if (container === undefined) return null;
-  const registration = await container.getRegistration().catch(() => undefined);
-  return registration === undefined ? null : updateRegistration(registration);
-}
-
-/** Waits until the worker that received skip waiting is active. */
-function activateWaitingWorker(worker: WaitingUpdateWorker): Promise<void> {
-  return new Promise<void>((resolve, reject) => {
-    let remove = (): void => {};
-    const settle = (): void => {
-      const state = worker.state();
-      if (state === 'activated') {
-        remove();
-        resolve();
-      } else if (state === 'redundant') {
-        remove();
-        reject(
-          new Error(
-            'The new version could not start. Keep this tab open and try again.',
-          ),
-        );
-      }
-    };
-    remove = worker.onStateChange(settle);
-    try {
-      worker.postMessage({ type: 'NOTESAPP_SKIP_WAITING' });
-      settle();
-    } catch (failure: unknown) {
-      remove();
-      reject(failure);
-    }
-  });
-}
-
-/**
- * Asks the installed worker to take over after persistence succeeded.
- *
- * Old assets stay installed while old clients remain active: the worker
- * waits in the installed state until this call, and only then does the new
- * version activate. Pass an explicit registration in tests; the browser
- * path reads the current registration.
- */
-export async function requestUpdate(
-  registration?: UpdateRegistration | null,
-): Promise<void> {
-  const target =
-    registration === undefined
-      ? await currentUpdateRegistration()
-      : registration;
-  if (target?.waiting !== null && target?.waiting !== undefined)
-    return activateWaitingWorker(target.waiting);
-  await target?.update().catch(() => undefined);
 }
 
 /**

@@ -83,7 +83,12 @@ versions that the server serves. A client that does not fit sends nothing and
 reads nothing, and it keeps every draft and queued save. A server that answers
 this read with the unknown path refusal predates the check and serves version
 1 only. `packages/sync/src/protocol.ts` holds the rule, and
-`packages/core/src/files/snapshot.ts` holds the one version of the build. See
+`packages/core/src/files/snapshot.ts` holds the one version of the build.
+
+A client that is behind offers the update. `apps/web/src/pwa/update.ts` holds
+its order: every open tab stores its text and closes before the waiting worker
+starts, and a Web Lock proves that no tab is still open. A step that fails
+keeps the text of every tab. See
 [decision 0086](../decisions/0086-protocol-upgrades-precede-the-breaking-sync-format.md).
 
 ## Storage failures

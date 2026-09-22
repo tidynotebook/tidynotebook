@@ -31,6 +31,9 @@ const notices: readonly SyncNotice[] = [
   { kind: 'access-lost' },
   { kind: 'lease-held' },
   { kind: 'lease-lost' },
+  { kind: 'protocol', fit: 'client-behind' },
+  { kind: 'protocol', fit: 'server-behind' },
+  { kind: 'protocol', fit: 'compatible' },
   { kind: 'cycle-error', code: 'network' },
 ];
 
@@ -66,6 +69,8 @@ const states: readonly SyncState[] = [
   { kind: 'delete-refused', path: 'plans/old.md' },
   { kind: 'signed-out' },
   { kind: 'other-tab' },
+  { kind: 'update-required' },
+  { kind: 'server-behind' },
   { kind: 'stopped' },
 ];
 
@@ -95,6 +100,30 @@ await test('only the states that need an answer ask for one', () => {
   assert.equal(syncNeedsAttention({ kind: 'attention', fileId: 'f' }), true);
   assert.equal(syncNeedsAttention({ kind: 'signed-out' }), true);
   assert.equal(syncNeedsAttention({ kind: 'stopped' }), true);
+  // An update is an action that the person takes. A server that runs an
+  // earlier version is not, so it waits like a lost connection.
+  assert.equal(syncNeedsAttention({ kind: 'update-required' }), true);
+  assert.equal(syncNeedsAttention({ kind: 'server-behind' }), false);
+});
+
+await test('a protocol misfit names its cause and a fit starts over', () => {
+  assert.deepEqual(
+    syncStateOfNotice({ kind: 'protocol', fit: 'client-behind' }),
+    { kind: 'update-required' },
+  );
+  assert.deepEqual(
+    syncStateOfNotice({ kind: 'protocol', fit: 'server-behind' }),
+    { kind: 'server-behind' },
+  );
+  const resumed = syncStateOfNotice({ kind: 'protocol', fit: 'compatible' });
+  assert.deepEqual(resumed, startingSyncState);
+  // The next queue read may then replace it, because the state is quiet.
+  assert.deepEqual(syncStateOfQueue(resumed ?? startingSyncState, 0), {
+    kind: 'in-step',
+  });
+  assert.deepEqual(syncStateOfQueue({ kind: 'update-required' }, 0), {
+    kind: 'update-required',
+  });
 });
 
 await test('an empty queue reports that everything reached the server', () => {
