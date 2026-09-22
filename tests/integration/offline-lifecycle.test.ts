@@ -571,9 +571,7 @@ await test('two tabs store their text before the new version starts', async () =
   await runUpdate({
     registration: registrationWith(worker),
     flushDrafts: () =>
-      storeA.saveDraft(
-        draftOf('account-1', 'workspace-1', 'file-a', '# A\n'),
-      ),
+      storeA.saveDraft(draftOf('account-1', 'workspace-1', 'file-a', '# A\n')),
     stopQueue: async () => {
       storedAtStop =
         (await storeA.readDraft('account-1', 'workspace-1', 'copy-file-b'))
@@ -595,13 +593,11 @@ await test('two tabs store their text before the new version starts', async () =
   // The new version opens the database and reads the text of both tabs.
   const reopened = await openLocalStore(origin, backend.options());
   assert.equal(
-    (await reopened.readDraft('account-1', 'workspace-1', 'copy-file-a'))
-      ?.text,
+    (await reopened.readDraft('account-1', 'workspace-1', 'copy-file-a'))?.text,
     '# A\n',
   );
   assert.equal(
-    (await reopened.readDraft('account-1', 'workspace-1', 'copy-file-b'))
-      ?.text,
+    (await reopened.readDraft('account-1', 'workspace-1', 'copy-file-b'))?.text,
     '# B\n',
   );
   await reopened.close();
@@ -684,7 +680,10 @@ await test('without Web Locks an update waits while another tab holds a live lea
   const lease = await readWorkerLease(store);
   assert.deepEqual(lease, { ownerId: 'other-tab', expiresAt: now + 30_000 });
 
-  const tabs = holdTabLock(store, 'this-tab', { locks: null, clock: () => now });
+  const tabs = holdTabLock(store, 'this-tab', {
+    locks: null,
+    clock: () => now,
+  });
   assert.equal(await tabs.closeOthers(), false);
   // After expiry the same tab may take over.
   now += 60_000;

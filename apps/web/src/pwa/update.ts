@@ -15,7 +15,11 @@
  * new version starts. A tab that cannot store its text keeps its lock, and
  * the update stops with every tab still usable.
  */
-import { readWorkerLease, isLeaseExpired, type LocalStore } from '@notesapp/sync';
+import {
+  readWorkerLease,
+  isLeaseExpired,
+  type LocalStore,
+} from '@notesapp/sync';
 
 /** The channel that carries the messages of an update between tabs. */
 export const updateChannelName = 'notesapp-update';

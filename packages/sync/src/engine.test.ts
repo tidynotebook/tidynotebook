@@ -1805,7 +1805,10 @@ await test('a server that rolled back makes the client wait, then resume', async
   const ops = stubOperations({
     syncProtocol: () => {
       reads += 1;
-      return Promise.resolve({ ok: true as const, value: { versions: served } });
+      return Promise.resolve({
+        ok: true as const,
+        value: { versions: served },
+      });
     },
     commit: (input) =>
       Promise.resolve({

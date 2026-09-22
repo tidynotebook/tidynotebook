@@ -169,7 +169,10 @@ await test('each failure to get a worker changes nothing and names its cause', a
   broken.move('redundant');
   await assert.rejects(install, failedWith('install-failed'));
   // The server answered with the same worker, so nothing new waits.
-  await assert.rejects(readyWorker(registrationOf({})), failedWith('not-ready'));
+  await assert.rejects(
+    readyWorker(registrationOf({})),
+    failedWith('not-ready'),
+  );
 });
 
 await test('no registration means a reload loads the new version', async () => {

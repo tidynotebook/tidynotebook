@@ -212,7 +212,9 @@ export function UpdateNotice({
       </Notice>
     );
   if (!waiting && !required)
-    return problem === null ? null : <Notice tone="problem" message={problem} />;
+    return problem === null ? null : (
+      <Notice tone="problem" message={problem} />
+    );
   return (
     <Notice
       tone={problem === null ? 'info' : 'problem'}
