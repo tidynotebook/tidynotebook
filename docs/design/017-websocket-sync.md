@@ -228,9 +228,26 @@ reconnect and on every new subscription.
 
 A high-water value in a notice is not needed for correctness. Do not invent
 a second cursor or permit a notice to skip a page. Catch-up uses the existing
-feed contract, including whole cursor groups, retention expiry, and snapshot
-fallback. Snapshot activation keeps pending checkpoints and drafts under
+feed recovery rules for retention expiry and snapshot fallback. Snapshot activation keeps pending checkpoints and drafts under
 record 0085. Large backlogs stay in paged HTTP reads.
+
+Two existing limits need work before push rollout. First,
+`packages/storage-server/src/snapshots.ts` limits rows after a cursor, while
+`packages/core/src/files/snapshot.ts` returns the final row's cursor. Several
+rows can share that cursor. A page can split the group and skip its remaining
+rows on the next request. The existing feed does not guarantee complete cursor
+groups. The implementation must first prove bounded, lossless continuation
+with a served regression test. This defect also affects polling.
+[Issue 193](https://github.com/bkhanale/notesapp/issues/193) blocks push rollout.
+
+Second, `pullNew` in `packages/sync/src/snapshot.ts` applies one incremental
+page and returns. One wake must keep reading until an empty page confirms the
+end. An empty page with a pending wake needs another read. Expose page progress
+to the scheduler; do not treat its current completion result as end-of-feed.
+Bound each scheduling turn and yield between batches. Retain pending catch-up
+across those yields, while permitting queued writes and other workspaces to
+run. Pause on refusal or transport failure. Test one wake, several pages,
+and no later notice, including records that only change membership.
 
 ## Browser ownership and fallback
 
@@ -263,9 +280,15 @@ blocked by a proxy. Never infer access loss from an opaque browser handshake
 failure; use the generated session and capability operations. Auth failures
 pause the account. They do not start an endless reconnect loop.
 
-Configure the maintained client wrapper with capped growing reconnect delays,
-its randomized initial delay, and a stable uptime threshold. Do not claim that
-this is full jitter on every retry. Load-test the reconnect distribution. The
+Configure the maintained wrapper with capped growing delays and a stable
+uptime threshold. Do not assume its defaults add jitter: the
+[PartySocket source](https://raw.githubusercontent.com/partykit/partyserver/main/packages/partysocket/src/ws.ts)
+uses fixed delay settings, despite the randomized example in its README.
+Select bounded, independently randomized minimum and maximum delay settings
+for each coordinator through the library options. This spreads retries without
+writing another retry loop; it is not full jitter on every attempt. Test the
+pinned library's retry schedule, including prolonged outage and cap behavior.
+Stop automatic reconnect on terminal session or protocol refusal. The
 wrapper owns reconnect timers; NotesApp owns HTTP fallback, lease renewal,
 auth revalidation, and reconciliation timers with explicit cancellation.
 A server heartbeat uses protocol Ping and Pong. A transport heartbeat proves
@@ -325,6 +348,14 @@ the HTTP upgrade address and the AsyncAPI channel. Keep both sender and receiver
 semantics explicit rather than blindly reversing operation directions.
 The existing protocol-adapter registry can register the upgrade. No custom
 OpenAPI message extension or feature-owned route enters the application.
+
+The current checks in `tools/sdk-codegen/src/contract-layout.ts` and
+`tools/sdk-codegen/src/orphans.ts` start from the HTTP contract. Extend source
+ownership and reachability across both standard contract roots. A message-only
+schema must be reachable through AsyncAPI, and a schema used by neither
+contract must still fail. Shared files have one owner even when both roots
+reference them. Do not disable orphan checks or add fake HTTP references to
+make message schemas pass. Add positive and negative generator fixtures.
 
 Use the maintained [Fastify WebSocket adapter](https://github.com/fastify/fastify-websocket)
 behind contract-driven registration. Its pre-upgrade hooks can authenticate,

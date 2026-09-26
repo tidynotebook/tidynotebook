@@ -16,12 +16,24 @@ not complete implementation or establish a capacity claim.
 
 ## Ordered work
 
-| Item | Work                                                          | Depends on    | Board issue                                                  |
-| ---- | ------------------------------------------------------------- | ------------- | ------------------------------------------------------------ |
-| 1    | Contract and generated transport boundary                     | None          | [Issue 188](https://github.com/bkhanale/notesapp/issues/188) |
-| 2    | Database notices and authorized server channel                | Item 1        | [Issue 189](https://github.com/bkhanale/notesapp/issues/189) |
-| 3    | Account coordinator, tab interests, and engine wake policy    | Items 1 and 2 | [Issue 190](https://github.com/bkhanale/notesapp/issues/190) |
-| 4    | Failure proof, capacity comparison, proxy checks, and rollout | Items 2 and 3 | [Issue 191](https://github.com/bkhanale/notesapp/issues/191) |
+| Item | Work                                                          | Depends on       | Board issue                                                  |
+| ---- | ------------------------------------------------------------- | ---------------- | ------------------------------------------------------------ |
+| 0    | Repair feed pagination before transport rollout               | None             | [Issue 193](https://github.com/bkhanale/notesapp/issues/193) |
+| 1    | Contract and generated transport boundary                     | None             | [Issue 188](https://github.com/bkhanale/notesapp/issues/188) |
+| 2    | Database notices and authorized server channel                | Item 1           | [Issue 189](https://github.com/bkhanale/notesapp/issues/189) |
+| 3    | Account coordinator, tab interests, and engine wake policy    | Items 1 and 2    | [Issue 190](https://github.com/bkhanale/notesapp/issues/190) |
+| 4    | Failure proof, capacity comparison, proxy checks, and rollout | Items 0, 2 and 3 | [Issue 191](https://github.com/bkhanale/notesapp/issues/191) |
+
+## Item 0: Feed correctness prerequisite
+
+`readSyncChanges` in `packages/storage-server/src/snapshots.ts` limits rows
+inside a cursor group. `getChanges` in `packages/core/src/files/snapshot.ts`
+then advances past that cursor. Prove this skipped-row defect with a failing
+served regression test and repair it before enabling push. A higher page
+limit alone is not a fix. Require bounded, lossless continuation, including
+large changesets and a page boundary inside a smaller changeset. Record any
+contract change before code and prove compatibility with old clients.
+Items 1 through 3 can proceed, but item 4 cannot enable push until this passes.
 
 ## Item 1: Contract and generation
 
@@ -31,6 +43,9 @@ generations, compatibility, close handling, and all wire bounds first.
 Use AsyncAPI, its official parser, and Modelina under record 0124. Share payload
 schemas with OpenAPI by reference and reuse Ajv. Prove tool dialect compatibility.
 Generate the client entry, frame validators, and server metadata.
+Extend `tools/sdk-codegen/src/contract-layout.ts` and
+`tools/sdk-codegen/src/orphans.ts` across both roots. Accept message-only
+references while still refusing schemas unused by either contract.
 Update `tools/check-boundaries.mjs` and affected guides with the new boundary.
 
 Prove that malformed frames, unlisted references, missing frame handlers,
@@ -70,9 +85,16 @@ lease. The coordinator alone acquires, renews, and releases it. Stopping one
 workspace engine must not release it for the other engines. Combine live tab interests
 with queued workspace work; expire abandoned interests.
 
-Use PartySocket for reconnects with disconnected buffering disabled.
+Use PartySocket for reconnects with disconnected buffering disabled. Its
+source has fixed retry settings; supply bounded random delay settings through
+its options and prove the pinned library's schedule. Stop reconnect on a
+terminal session or protocol refusal.
 Implement subscription acknowledgement before catch-up, pending wakes during
-a read, one in-flight cycle, fallback, jitter, and timer cancellation. A local
+a read, one in-flight cycle, fallback, jitter, and timer cancellation.
+`packages/sync/src/snapshot.ts` currently reads one incremental page per call.
+Expose page progress and drain to an empty page after one wake, with bounded
+turns, fair scheduling, and retained pending work. Test a multi-page backlog
+with no later notice and a membership-only page. A local
 checkpoint sends promptly without a socket. Session change stops the old
 coordinator and leaves its queue in its account partition.
 
