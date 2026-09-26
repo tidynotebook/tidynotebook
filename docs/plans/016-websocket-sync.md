@@ -24,6 +24,32 @@ not complete implementation or establish a capacity claim.
 | 3    | Account coordinator, tab interests, and engine wake policy    | Items 1 and 2    | [Issue 190](https://github.com/bkhanale/notesapp/issues/190) |
 | 4    | Failure proof, capacity comparison, proxy checks, and rollout | Items 0, 2 and 3 | [Issue 191](https://github.com/bkhanale/notesapp/issues/191) |
 
+## Which issue to pick next
+
+Use this default order: **193, 188, 189, 190, then 191**. Start with the first
+issue in that sequence that is open and has no accepted completion evidence.
+Check its current code and board state before work; an issue can be complete
+in code while its board state is stale. Do not repeat completed work.
+
+The dependency table states technical dependencies. It permits some overlap,
+but overlap is not the default execution order. Complete and land each issue
+before starting the next one. Keep notification publishing and admission off
+through the first four issues. Only issue 191 enables a measured rollout.
+
+| Pick                                                   | Start condition                       | Work order inside the issue                                                                                                                                  | Required hand-off                                                                                                                      |
+| ------------------------------------------------------ | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| [193](https://github.com/bkhanale/notesapp/issues/193) | Start here                            | Reproduce skipped rows; decide bounded continuation; record any contract decision; fix storage and cursor handling; prove compatibility                      | A failing-before-fix served regression now passes; every page preserves all accepted changes; existing clients have a proved safe path |
+| [188](https://github.com/bkhanale/notesapp/issues/188) | Feed repair is landed                 | Prove library and schema compatibility; define messages; generate types and validators; extend layout, reference, and boundary checks                        | Contract and generated client entry are committed; negative fixtures pass; server and client work can use the declared interface       |
+| [189](https://github.com/bkhanale/notesapp/issues/189) | Contract work is landed               | Add domain ports; add migration and publishing control; add listener; add authorized gateway and shared limits; test two servers                             | Two servers prove wake delivery, access loss, bounded load, and fallback; publishing and admission remain off                          |
+| [190](https://github.com/bkhanale/notesapp/issues/190) | Server work is landed                 | Centralize lease ownership; add tab interests and library adapter; add subscription catch-up and page draining; add fallback; test account and lease changes | One connection serves the account; a single wake drains the backlog; offline drafts and queues survive every tested transition         |
+| [191](https://github.com/bkhanale/notesapp/issues/191) | All four prior hand-offs are accepted | Set load goals; run failure and proxy tests; record browser evidence; compare load; prove rollback; enable a small cohort; assess wider use                  | Acceptance evidence and shipped guides are complete; only then mark this plan and its design complete                                  |
+
+For each hand-off, link the landed commit and test evidence on the issue.
+Run focused checks during work and `pnpm verify` before landing. Close an issue
+only when its acceptance checks pass. A blocked check keeps the issue open;
+do not pass it to the last issue as unfinished work. A runtime defect found
+in the last issue gets a failing regression and a fix before rollout continues.
+
 ## Item 0: Feed correctness prerequisite
 
 `readSyncChanges` in `packages/storage-server/src/snapshots.ts` limits rows
@@ -33,7 +59,9 @@ served regression test and repair it before enabling push. A higher page
 limit alone is not a fix. Require bounded, lossless continuation, including
 large changesets and a page boundary inside a smaller changeset. Record any
 contract change before code and prove compatibility with old clients.
-Items 1 through 3 can proceed, but item 4 cannot enable push until this passes.
+The table permits independent preparation of later items, but the default
+execution sequence completes this repair first. Item 4 cannot enable push
+until its served regression and compatibility evidence pass.
 
 ## Item 1: Contract and generation
 
