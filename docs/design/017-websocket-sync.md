@@ -338,7 +338,7 @@ OpenAPI continues to define HTTP operations and the upgrade address. AsyncAPI
 in `packages/api-contract` defines messages, directions, and the WebSocket
 binding. Shared JSON Schema components have one physical source. Both contracts
 reference them; neither copies payload definitions from the other. This
-extends record 0019 for a new transport through record 0124.
+extends record 0019 for a new transport through record 0126.
 
 Use the official AsyncAPI parser and Modelina through `tools/sdk-codegen`.
 Reuse the existing Ajv validator generation. Generate the typed client entry
@@ -443,6 +443,6 @@ This does not block the architecture, but it blocks a claim of proven scale.
 
 ## Decisions
 
-- [0122: WebSockets wake the durable sync engine](../decisions/0122-websockets-wake-the-durable-sync-engine.md).
-- [0123: PostgreSQL notifies the sync gateways](../decisions/0123-postgresql-notifies-the-sync-gateways.md).
-- [0124: WebSocket messages use the generated contract](../decisions/0124-websocket-messages-use-the-generated-contract.md).
+- [0124: WebSockets wake the durable sync engine](../decisions/0124-websockets-wake-the-durable-sync-engine.md).
+- [0125: PostgreSQL notifies the sync gateways](../decisions/0125-postgresql-notifies-the-sync-gateways.md).
+- [0126: WebSocket messages use the generated contract](../decisions/0126-websocket-messages-use-the-generated-contract.md).

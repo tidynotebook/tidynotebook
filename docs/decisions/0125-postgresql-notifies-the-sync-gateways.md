@@ -1,4 +1,4 @@
-# 0123. PostgreSQL notifies the sync gateways
+# 0125. PostgreSQL notifies the sync gateways
 
 - Status: Accepted
 - Date: 2026-09-26

@@ -10,9 +10,9 @@ not complete implementation or establish a capacity claim.
 
 ## Decisions
 
-- [0122](../decisions/0122-websockets-wake-the-durable-sync-engine.md): wake the existing engine; keep HTTP durability.
-- [0123](../decisions/0123-postgresql-notifies-the-sync-gateways.md): native PostgreSQL notices and process fan-out.
-- [0124](../decisions/0124-websocket-messages-use-the-generated-contract.md): one generated contract for the transport.
+- [0124](../decisions/0124-websockets-wake-the-durable-sync-engine.md): wake the existing engine; keep HTTP durability.
+- [0125](../decisions/0125-postgresql-notifies-the-sync-gateways.md): native PostgreSQL notices and process fan-out.
+- [0126](../decisions/0126-websocket-messages-use-the-generated-contract.md): one generated contract for the transport.
 
 ## Ordered work
 
@@ -68,7 +68,7 @@ until its served regression and compatibility evidence pass.
 Read `packages/api-contract/AGENTS.md`, `packages/api-client/AGENTS.md`, and
 `tools/sdk-codegen/AGENTS.md`. Define the upgrade, frame meanings, subscription
 generations, compatibility, close handling, and all wire bounds first.
-Use AsyncAPI, its official parser, and Modelina under record 0124. Share payload
+Use AsyncAPI, its official parser, and Modelina under record 0126. Share payload
 schemas with OpenAPI by reference and reuse Ajv. Prove tool dialect compatibility.
 Generate the client entry, frame validators, and server metadata.
 Extend `tools/sdk-codegen/src/contract-layout.ts` and

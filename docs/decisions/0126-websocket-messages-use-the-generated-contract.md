@@ -1,4 +1,4 @@
-# 0124. WebSocket messages use the generated contract
+# 0126. WebSocket messages use the generated contract
 
 - Status: Accepted
 - Date: 2026-09-26

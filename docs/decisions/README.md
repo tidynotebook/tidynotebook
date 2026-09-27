@@ -153,6 +153,9 @@ and needs no record.
 | [0121](0121-every-limit-and-every-job-holds-across-server-processes.md)            | Every limit and every job holds across server processes                         |
 | [0122](0122-a-session-is-revoked-by-its-identifier.md)                             | A session is revoked by its identifier                                          |
 | [0123](0123-a-report-seals-the-address-of-its-link.md)                             | A report seals the address of its link                                          |
+| [0124](0124-websockets-wake-the-durable-sync-engine.md)                            | WebSockets wake the durable sync engine                                         |
+| [0125](0125-postgresql-notifies-the-sync-gateways.md)                              | PostgreSQL notifies the sync gateways                                           |
+| [0126](0126-websocket-messages-use-the-generated-contract.md)                      | WebSocket messages use the generated contract                                   |
 
 Records 0001 to 0015 record the decisions D1 to D15 of
 [the v0.1 revamp plan](../plans/003-v0.1-revamp.md). Record 0016 records the
@@ -459,3 +462,9 @@ supersedes record 0117, because the revoke route of the library names a
 session by its token. Record 0123 seals the address of a
 reported link, so an administrator can open it and the database still holds no
 working link.
+
+Records 0124 to 0126 follow [design 017](../design/017-websocket-sync.md).
+They define WebSocket wake notices, PostgreSQL notifications, and a generated
+message boundary. HTTP keeps the durable sync operations. These are target
+decisions; [plan 016](../plans/016-websocket-sync.md) owns implementation and
+measured rollout evidence.

@@ -1,4 +1,4 @@
-# 0122. WebSockets wake the durable sync engine
+# 0124. WebSockets wake the durable sync engine
 
 - Status: Accepted
 - Date: 2026-09-26
