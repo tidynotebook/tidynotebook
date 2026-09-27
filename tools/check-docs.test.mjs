@@ -323,7 +323,11 @@ await test('a development page over the line cap fails', () => {
   assert.match(result.output, /151 lines\. A page of development\//);
 });
 
-/** A decision record that satisfies every rule, with the given number. */
+/**
+ * A decision record that satisfies every rule, with the given number.
+ *
+ * @param {string} number
+ */
 function record(number) {
   return (
     `# ${number}. A choice\n\n- Status: Accepted\n- Date: 2026-01-01\n\n` +
@@ -331,7 +335,12 @@ function record(number) {
   );
 }
 
-/** An index whose table holds the given rows, then the given trailing text. */
+/**
+ * An index whose table holds the given rows, then the given trailing text.
+ *
+ * @param {string[]} rows
+ * @param {string} [after]
+ */
 function decisionIndex(rows, after = '') {
   return (
     '# Decision records\n\n## Index\n\n| Record | Decision |\n| --- | --- |\n' +
