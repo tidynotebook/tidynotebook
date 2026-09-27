@@ -1,0 +1,11 @@
+name: sessionId
+in: path
+required: true
+style: simple
+explode: false
+description: Identifier of the session that the operation ends.
+schema:
+  type: string
+  minLength: 1
+  maxLength: 128
+  pattern: ^[A-Za-z0-9_-]+$

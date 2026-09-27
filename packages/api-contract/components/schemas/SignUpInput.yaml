@@ -1,0 +1,31 @@
+type: object
+description: What a person gives to ask for an account under open registration.
+additionalProperties: false
+required:
+  - email
+  - password
+  - proof
+properties:
+  email:
+    allOf:
+      - $ref: './EmailAddress.yaml'
+    description: The address of the new account. A link goes to it.
+  password:
+    allOf:
+      - $ref: './Password.yaml'
+    description: The password of the new account.
+  name:
+    type: string
+    description: The display name of the new account.
+    minLength: 1
+    maxLength: 256
+  proof:
+    allOf:
+      - $ref: './SignUpProof.yaml'
+    description: The proof of work of this sign-up (record 0115).
+  consent:
+    allOf:
+      - $ref: './ConsentInput.yaml'
+    description: >-
+      The versions of the legal documents that the person accepts. It is
+      required when the installation names its documents (record 0120).

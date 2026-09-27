@@ -14,6 +14,10 @@ import type {
   InstallationRole,
   RegistrationPolicy,
 } from './installation.ts';
+import type {
+  ReportReason,
+  ReportedLinkState,
+} from '../publications/report.ts';
 
 /** One account as an administrator sees it. It names no note. */
 export type AccountRecord = {
@@ -38,6 +42,22 @@ export type InvitationRecord = {
   readonly expiresAt: string;
   /** Whether the link went to the address by mail. */
   readonly mailed: boolean;
+};
+
+/**
+ * One open report of a published link, as an administrator reads it (record
+ * 0119). It holds no fact of a note and no fact of the workspace. The address
+ * of the link is sealed with a key of the server (record 0123).
+ */
+export type LinkReportRecord = {
+  readonly reportId: string;
+  readonly publicationId: string;
+  readonly reason: ReportReason;
+  readonly note: string | null;
+  /** The sealed address of the link, or `null` when none was kept. */
+  readonly sealedAddress: string | null;
+  readonly linkState: ReportedLinkState;
+  readonly createdAt: string;
 };
 
 /** What a new invitation stores. The token itself never reaches storage. */
@@ -87,6 +107,15 @@ export type InstallationTransaction = {
   invite(invitation: NewInvitation): Promise<InvitationRecord | null>;
   /** Revokes one invitation. Answers `false` when it does not wait. */
   revokeInvitation(invitationId: string): Promise<boolean>;
+  /** Every open report of a published link, newest first. */
+  reports(): Promise<readonly LinkReportRecord[]>;
+  /** Closes one open report. Answers `false` when it is not open. */
+  dismissReport(reportId: string): Promise<boolean>;
+  /**
+   * Takes down the link of one open report and closes every open report of
+   * it. Answers `false` when the report is not open.
+   */
+  takeDown(reportId: string): Promise<boolean>;
   /** The registration policy of the installation. */
   registrationPolicy(): Promise<RegistrationPolicy>;
   /** Changes the registration policy of the installation. */
@@ -111,7 +140,8 @@ export type InstallationStore = {
  */
 export type RegistrationGround =
   | { readonly kind: 'first-run' }
-  | { readonly kind: 'invitation'; readonly tokenDigest: string };
+  | { readonly kind: 'invitation'; readonly tokenDigest: string }
+  | { readonly kind: 'open' };
 
 /** What one registration asks the store to make. */
 export type RegistrationRequest = {
@@ -138,4 +168,6 @@ export type RegistrationStore = {
    * opens nothing.
    */
   invitationAddress(tokenDigest: string): Promise<string | null>;
+  /** The registration policy, which is a public fact of the installation. */
+  registrationPolicy(): Promise<RegistrationPolicy>;
 };

@@ -10,13 +10,16 @@ import test from 'node:test';
 import { verifyActor, type Actor } from './actor.ts';
 import {
   createInvitation,
+  dismissReport,
   listAccounts,
   listInvitations,
+  listReports,
   readRegistrationPolicy,
   removeAccount,
   removeOwnAccount,
   revokeInvitation,
   setRegistrationPolicy,
+  takeDownReportedLink,
   updateAccount,
 } from './administration.ts';
 import {
@@ -31,6 +34,7 @@ import type {
   InstallationStore,
   InstallationTransaction,
   InvitationRecord,
+  LinkReportRecord,
 } from './ports.ts';
 import { maxAccountLimitBytes } from './registration.ts';
 
@@ -51,6 +55,7 @@ type FakeInstallation = InstallationStore & {
   readonly accounts: Map<string, AccountRecord>;
   readonly removed: string[];
   readonly invitations: Map<string, InvitationRecord>;
+  readonly reports: Map<string, LinkReportRecord>;
   policy: RegistrationPolicy;
   transactions: number;
 };
@@ -73,10 +78,12 @@ function createStore(seed: readonly AccountStanding[]): FakeInstallation {
     ]),
   );
   const invitations = new Map<string, InvitationRecord>();
+  const reports = new Map<string, LinkReportRecord>();
   const store: FakeInstallation = {
     accounts,
     removed: [],
     invitations,
+    reports,
     policy: 'invitation',
     transactions: 0,
     installation<T>(
@@ -142,6 +149,16 @@ function createStore(seed: readonly AccountStanding[]): FakeInstallation {
         },
         revokeInvitation: (invitationId) =>
           Promise.resolve(invitations.delete(invitationId)),
+        reports: () => Promise.resolve([...reports.values()]),
+        dismissReport: (reportId) => Promise.resolve(reports.delete(reportId)),
+        takeDown: (reportId) => {
+          const found = reports.get(reportId);
+          if (found === undefined) return Promise.resolve(false);
+          for (const [id, report] of reports)
+            if (report.publicationId === found.publicationId)
+              reports.delete(id);
+          return Promise.resolve(true);
+        },
         registrationPolicy: () => Promise.resolve(store.policy),
         setRegistrationPolicy: (policy) => {
           store.policy = policy;
@@ -174,6 +191,9 @@ await test('an administrator takes every action and a member takes none', () => 
     'change-role',
     'change-limit',
     'change-policy',
+    'list-reports',
+    'close-report',
+    'take-down',
   ];
   for (const action of actions) {
     assert.equal(mayAdminister(admin(ada), action), true, action);
@@ -401,4 +421,55 @@ await test('the open policy needs every part and a member changes nothing', asyn
     value: 'open',
   });
   assert.equal((await readRegistrationPolicy(store, actorFor(bea))).ok, false);
+});
+
+await test('an administrator reads, closes and acts on a report and a member cannot', async () => {
+  const store = createStore([admin(ada), member(bea)]);
+  const report = (
+    reportId: string,
+    publicationId: string,
+  ): LinkReportRecord => ({
+    reportId,
+    publicationId,
+    reason: 'phishing',
+    note: null,
+    sealedAddress: null,
+    linkState: 'live',
+    createdAt: '2026-09-27T10:00:00.000Z',
+  });
+  const link = '33333333-3333-4333-8333-333333333333';
+  const other = '44444444-4444-4444-8444-444444444444';
+  store.reports.set('r1', report('r1', link));
+  store.reports.set('r2', report('r2', link));
+  store.reports.set('r3', report('r3', other));
+  for (const refused of [
+    await listReports(store, actorFor(bea)),
+    await dismissReport(store, actorFor(bea), 'r3'),
+    await takeDownReportedLink(store, actorFor(bea), 'r1'),
+  ])
+    assert.deepEqual(refused, {
+      ok: false,
+      error: { code: 'forbidden', fileIds: [] },
+    });
+  assert.equal(store.reports.size, 3);
+  const listed = await listReports(store, actorFor(ada));
+  assert.equal(listed.ok && listed.value.length, 3);
+  assert.deepEqual(await takeDownReportedLink(store, actorFor(ada), 'r1'), {
+    ok: true,
+    value: undefined,
+  });
+  // Every open report of the taken down link closes, and the other stays.
+  assert.deepEqual([...store.reports.keys()], ['r3']);
+  assert.deepEqual(await dismissReport(store, actorFor(ada), 'r3'), {
+    ok: true,
+    value: undefined,
+  });
+  assert.deepEqual(await takeDownReportedLink(store, actorFor(ada), 'r3'), {
+    ok: false,
+    error: { code: 'not_found', fileIds: [] },
+  });
+  assert.deepEqual(await dismissReport(store, actorFor(ada), 'r3'), {
+    ok: false,
+    error: { code: 'not_found', fileIds: [] },
+  });
 });

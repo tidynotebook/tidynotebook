@@ -1,0 +1,13 @@
+type: object
+description: >-
+  The one answer of a sign-up. It is the same for every address, so it
+  states nothing about the address.
+additionalProperties: false
+required:
+  - accepted
+properties:
+  accepted:
+    type: boolean
+    const: true
+    readOnly: true
+    description: The server took the request and sent a message if it could.

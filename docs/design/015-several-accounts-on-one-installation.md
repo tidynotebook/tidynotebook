@@ -1,6 +1,6 @@
 # 015: Several accounts on one installation
 
-Status: active
+Status: complete
 
 This design states how one installation serves several people at the same
 time. Each person has an account, notes, devices and a sync stream of their

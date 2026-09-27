@@ -116,6 +116,10 @@ export type Account = {
      * The stored settings of the account.
      */
     readonly preferences: Preferences;
+    /**
+     * Whether the account must accept the current legal documents before the application opens (record 0120).
+     */
+    readonly consentRequired: boolean;
 };
 
 /**
@@ -136,6 +140,46 @@ export type AccountRemovalInput = {
      * The current password of the account.
      */
     password: string;
+};
+
+/**
+ * One session of the signed in account, on one device. It holds no token, so a read of the list opens no session.
+ */
+export type AccountSession = {
+    /**
+     * Identifier of the session. It is not the token.
+     */
+    readonly sessionId: string;
+    /**
+     * True for the session of the device that reads the list.
+     */
+    readonly current: boolean;
+    /**
+     * What the browser of the session said it is, or null when it said nothing.
+     */
+    readonly userAgent: string | null;
+    /**
+     * Instant at which the session started.
+     */
+    readonly createdAt: string;
+    /**
+     * Instant at which the session was last used.
+     */
+    readonly lastActiveAt: string;
+    /**
+     * Instant at which the session ends if nobody uses it.
+     */
+    readonly expiresAt: string;
+};
+
+/**
+ * Every session of the signed in account.
+ */
+export type AccountSessionList = {
+    /**
+     * The sessions, the current one first, then newest first.
+     */
+    readonly sessions: Array<AccountSession>;
 };
 
 /**
@@ -218,6 +262,26 @@ export type AccountUpdateInput = {
 };
 
 /**
+ * The token that a verification link carries in its fragment.
+ */
+export type AddressVerificationInput = {
+    /**
+     * The token of the verification link.
+     */
+    token: string;
+};
+
+/**
+ * The address that the verification proved. Its account now exists.
+ */
+export type AddressVerified = {
+    /**
+     * The address of the new account, which signs in now.
+     */
+    readonly email: EmailAddress;
+};
+
+/**
  * Appearance choice. The value system follows the device preference between the light and the dark variant of the chosen theme family.
  */
 export type Appearance = 'system' | 'light' | 'dark';
@@ -297,7 +361,7 @@ export type AuthPasswordReset = {
     /**
      * New password of the account.
      */
-    newPassword: string;
+    newPassword: unknown;
     /**
      * Token from the reset message.
      */
@@ -479,6 +543,30 @@ export type ChangesetInput = {
 export type CheckpointMessage = string | null;
 
 /**
+ * The versions of the two legal documents that a person accepts.
+ */
+export type ConsentInput = {
+    /**
+     * The version of the terms that the person read.
+     */
+    termsVersion: string;
+    /**
+     * The version of the privacy notice that the person read.
+     */
+    privacyVersion: string;
+};
+
+/**
+ * The account accepted the current legal documents.
+ */
+export type ConsentRecorded = {
+    /**
+     * The consent is stored with its time.
+     */
+    readonly accepted: true;
+};
+
+/**
  * The SHA-256 digest of the content, in lower case hexadecimal. Content is addressed by this value, so it is verified against the bytes before a revision is accepted.
  */
 export type ContentDigest = string;
@@ -530,6 +618,10 @@ export type CreatePublishedLinkInput = {
      * The one note, or the one folder, that the link opens.
      */
     scope: PublishedScope;
+    /**
+     * Password that a reader gives before it reads the link. Leave it out for a link that opens without one. The product keeps one password policy, so this bound is the bound of an account password.
+     */
+    password?: unknown;
 };
 
 /**
@@ -993,6 +1085,69 @@ export type InvitationReadInput = {
 export type InvitationToken = string;
 
 /**
+ * One legal document of the installation and its current version.
+ */
+export type LegalDocument = {
+    /**
+     * Where a person reads the document.
+     */
+    readonly url: string;
+    /**
+     * The current version, which a consent names.
+     */
+    readonly version: string;
+};
+
+/**
+ * The terms and the privacy notice of the installation (record 0120). The operator writes both and names their versions.
+ */
+export type LegalDocuments = {
+    terms: LegalDocument;
+    privacy: LegalDocument;
+};
+
+/**
+ * One open report of a published link, as an administrator reads it. It holds no fact of a note and no fact of the workspace.
+ */
+export type LinkReport = {
+    /**
+     * Identifier of the report.
+     */
+    readonly reportId: Uuid;
+    /**
+     * Identifier of the reported link. Two reports of one link name the same value. It opens nothing.
+     */
+    readonly publicationId: Uuid;
+    reason: ReportReason;
+    /**
+     * What the reader added, or null.
+     */
+    readonly note: string | null;
+    /**
+     * The address of the reported link, which the administrator opens as any reader does. It is null when the server cannot open the sealed address, for example after a change of its secret.
+     */
+    readonly address: string | null;
+    /**
+     * Whether the link opens now, an administrator took it down, or it stopped for another cause.
+     */
+    readonly linkState: 'live' | 'taken-down' | 'stopped';
+    /**
+     * Instant of the report.
+     */
+    readonly createdAt: string;
+};
+
+/**
+ * The open reports of published links.
+ */
+export type LinkReportList = {
+    /**
+     * The open reports, newest first.
+     */
+    readonly reports: Array<LinkReport>;
+};
+
+/**
  * The content of one saved note. It carries document work, never text: the accepted text is what the workspace derives from the accepted document.
  */
 export type MarkdownContentInput = {
@@ -1030,7 +1185,7 @@ export type MutationReceipt = {
 };
 
 /**
- * A password. The server applies the password policy of the installation to a new password.
+ * A new password. The bounds are the ones of NIST SP 800-63B revision 4 for a password that is the only factor, and passwordBounds of the core states the same bounds. The server also refuses a password that a list of leaked passwords holds.
  */
 export type Password = string;
 
@@ -1163,6 +1318,10 @@ export type PublishedLink = {
      * Whether a reader gives a password before it reads the link.
      */
     readonly passwordProtected: boolean;
+    /**
+     * Whether an administrator took the link down after a report. A taken down link opens nothing, and its owner cannot make it live again. It stays in the list for 30 days.
+     */
+    readonly takenDown: boolean;
 };
 
 /**
@@ -1250,6 +1409,13 @@ export type PublishedRefusal = {
      * Identifier of the request, repeated in the x-request-id header.
      */
     readonly requestId: string;
+};
+
+/**
+ * The fields of the report form of a published page. The page holds no script, so the browser sends the fields in the form encoding of HTML.
+ */
+export type PublishedReportFormInput = {
+    reason: ReportReason;
 };
 
 /**
@@ -1394,6 +1560,11 @@ export type Removed = {
 };
 
 /**
+ * Why a reader reports a published link. The list is fixed, so an administrator can sort the reports.
+ */
+export type ReportReason = 'phishing' | 'malware' | 'illegal' | 'harassment' | 'spam' | 'other';
+
+/**
  * Payload to bring one deleted file back into the file tree.
  */
 export type RestoreFileInput = {
@@ -1490,6 +1661,88 @@ export type SearchHit = {
  */
 export type SearchResults = {
     readonly hits: Array<SearchHit>;
+};
+
+/**
+ * How many sessions ended.
+ */
+export type SessionsRevoked = {
+    /**
+     * The number of sessions that ended.
+     */
+    readonly revoked: number;
+};
+
+/**
+ * The one answer of a sign-up. It is the same for every address, so it states nothing about the address.
+ */
+export type SignUpAccepted = {
+    /**
+     * The server took the request and sent a message if it could.
+     */
+    readonly accepted: true;
+};
+
+/**
+ * A challenge of the proof of work of a sign-up. The digest of the value, a colon and the solution must start with `difficulty` zero bits.
+ */
+export type SignUpChallenge = {
+    /**
+     * The signed challenge, which the sign-up sends back unchanged.
+     */
+    readonly challenge: string;
+    /**
+     * The random value whose digest a solution reduces.
+     */
+    readonly value: string;
+    /**
+     * How many leading zero bits the digest of a solution needs.
+     */
+    readonly difficulty: number;
+    /**
+     * Instant after which the challenge counts for nothing.
+     */
+    readonly expiresAt: string;
+};
+
+/**
+ * What a person gives to ask for an account under open registration.
+ */
+export type SignUpInput = {
+    /**
+     * The address of the new account. A link goes to it.
+     */
+    email: EmailAddress;
+    /**
+     * The password of the new account.
+     */
+    password: unknown;
+    /**
+     * The display name of the new account.
+     */
+    name?: string;
+    /**
+     * The proof of work of this sign-up (record 0115).
+     */
+    proof: SignUpProof;
+    /**
+     * The versions of the legal documents that the person accepts. It is required when the installation names its documents (record 0120).
+     */
+    consent?: ConsentInput;
+};
+
+/**
+ * The solution of one challenge of the proof of work.
+ */
+export type SignUpProof = {
+    /**
+     * The signed challenge, as the server answered it.
+     */
+    challenge: string;
+    /**
+     * The solution that the browser found.
+     */
+    solution: string;
 };
 
 /**
@@ -2014,6 +2267,20 @@ export type AuthCurrentSessionWritable = {
 } | null;
 
 /**
+ * The new password and the token from the reset message.
+ */
+export type AuthPasswordResetWritable = {
+    /**
+     * New password of the account.
+     */
+    newPassword: Password;
+    /**
+     * Token from the reset message.
+     */
+    token?: string;
+};
+
+/**
  * The result of a completed sign-in. It never carries the session token: the browser already holds that value in an HttpOnly cookie, and the protocol adapter removes it from this answer.
  */
 export type AuthSessionWritable = {
@@ -2053,7 +2320,7 @@ export type CreatePublishedLinkInputWritable = {
     /**
      * Password that a reader gives before it reads the link. Leave it out for a link that opens without one. The product keeps one password policy, so this bound is the bound of an account password.
      */
-    password?: string;
+    password?: Password;
     /**
      * Instant after which the link opens nothing. Leave it out for a link that lasts until the owner revokes it.
      */
@@ -2078,6 +2345,27 @@ export type InvitationReadInputWritable = {
 };
 
 /**
+ * The terms and the privacy notice of the installation (record 0120). The operator writes both and names their versions.
+ */
+export type LegalDocumentsWritable = {
+    [key: string]: never;
+};
+
+/**
+ * One open report of a published link, as an administrator reads it. It holds no fact of a note and no fact of the workspace.
+ */
+export type LinkReportWritable = {
+    reason: ReportReason;
+};
+
+/**
+ * The open reports of published links.
+ */
+export type LinkReportListWritable = {
+    [key: string]: never;
+};
+
+/**
  * One published link of a workspace, as its owner sees it. This shape holds no token, so a read of the list cannot open a link.
  */
 export type PublishedLinkWritable = {
@@ -2099,6 +2387,17 @@ export type PublishedLinkListWritable = {
 };
 
 /**
+ * The fields of the report form of a published page. The page holds no script, so the browser sends the fields in the form encoding of HTML.
+ */
+export type PublishedReportFormInputWritable = {
+    reason: ReportReason;
+    /**
+     * What the reader adds for the administrator. An empty value is the same as no note.
+     */
+    note?: string;
+};
+
+/**
  * What a person gives to make an account. The address comes from the invitation.
  */
 export type RegistrationInputWritable = {
@@ -2114,6 +2413,32 @@ export type RegistrationInputWritable = {
      * The display name of the new account.
      */
     name?: string;
+};
+
+/**
+ * What a person gives to ask for an account under open registration.
+ */
+export type SignUpInputWritable = {
+    /**
+     * The address of the new account. A link goes to it.
+     */
+    email: EmailAddress;
+    /**
+     * The password of the new account.
+     */
+    password: Password;
+    /**
+     * The display name of the new account.
+     */
+    name?: string;
+    /**
+     * The proof of work of this sign-up (record 0115).
+     */
+    proof: SignUpProof;
+    /**
+     * The versions of the legal documents that the person accepts. It is required when the installation names its documents (record 0120).
+     */
+    consent?: ConsentInput;
 };
 
 /**
@@ -2320,6 +2645,16 @@ export type AccountId = Uuid;
 export type InvitationId = Uuid;
 
 /**
+ * Identifier of the session that the operation ends.
+ */
+export type SessionId = string;
+
+/**
+ * Identifier of the report that the operation acts on.
+ */
+export type ReportId = Uuid;
+
+/**
  * The note of a folder link that the page shows. Leave it out to read the list of every note that the link opens. A link over one note opens that note, so it needs no value here.
  */
 export type PublishedNote = PublishedNoteReference;
@@ -2440,9 +2775,29 @@ export type InstallationUpdate = InstallationUpdateInput;
 export type AccountRemoval = AccountRemovalInput;
 
 /**
+ * The address and the password of the account that a person asks for.
+ */
+export type SignUp = SignUpInputWritable;
+
+/**
+ * The token of a verification link.
+ */
+export type AddressVerification = AddressVerificationInput;
+
+/**
+ * The versions of the legal documents that the person accepts.
+ */
+export type Consent = ConsentInput;
+
+/**
  * The password of the published link, as its page form sends it.
  */
 export type PublishedPasswordForm = PublishedPasswordFormInput;
+
+/**
+ * The report of a published link, as its form sends it.
+ */
+export type PublishedReportForm = PublishedReportFormInputWritable;
 
 export type GetAccountData = {
     body?: never;
@@ -2486,6 +2841,64 @@ export type GetAccountResponses = {
 };
 
 export type GetAccountResponse = GetAccountResponses[keyof GetAccountResponses];
+
+export type AcceptLegalDocumentsData = {
+    /**
+     * The versions of the legal documents that the person accepts.
+     */
+    body: Consent;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/account/consent';
+};
+
+export type AcceptLegalDocumentsErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The change cannot be accepted next to the state that the workspace holds. The code names the reason: path_conflict for a path that another live file occupies, and mutation_reused for a mutation identity that was already used for another operation. A save of a note adds epoch_mismatch, which means that the note holds another generation of its document, so the device reads the current document before it saves again.
+     */
+    409: ProblemDetails;
+    /**
+     * The request body is larger than the configured limit. A save of a note adds document_too_large, which means that the update or the document it would produce passes a bound of the workspace. The work stays on the device, which offers recovery rather than sending the same bytes again.
+     */
+    413: ProblemDetails;
+    /**
+     * The request media type is not supported.
+     */
+    415: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type AcceptLegalDocumentsError = AcceptLegalDocumentsErrors[keyof AcceptLegalDocumentsErrors];
+
+export type AcceptLegalDocumentsResponses = {
+    /**
+     * The consent is stored.
+     */
+    200: ConsentRecorded;
+};
+
+export type AcceptLegalDocumentsResponse = AcceptLegalDocumentsResponses[keyof AcceptLegalDocumentsResponses];
 
 export type UpdatePreferencesData = {
     /**
@@ -2602,6 +3015,144 @@ export type RemoveOwnAccountResponses = {
 };
 
 export type RemoveOwnAccountResponse = RemoveOwnAccountResponses[keyof RemoveOwnAccountResponses];
+
+export type ListSessionsData = {
+    body?: never;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/account/sessions';
+};
+
+export type ListSessionsErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type ListSessionsError = ListSessionsErrors[keyof ListSessionsErrors];
+
+export type ListSessionsResponses = {
+    /**
+     * Every session of the signed in account.
+     */
+    200: AccountSessionList;
+};
+
+export type ListSessionsResponse = ListSessionsResponses[keyof ListSessionsResponses];
+
+export type RevokeOtherSessionsData = {
+    body?: never;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/account/sessions/others';
+};
+
+export type RevokeOtherSessionsErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type RevokeOtherSessionsError = RevokeOtherSessionsErrors[keyof RevokeOtherSessionsErrors];
+
+export type RevokeOtherSessionsResponses = {
+    /**
+     * How many sessions ended.
+     */
+    200: SessionsRevoked;
+};
+
+export type RevokeOtherSessionsResponse = RevokeOtherSessionsResponses[keyof RevokeOtherSessionsResponses];
+
+export type RevokeSessionData = {
+    body?: never;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path: {
+        /**
+         * Identifier of the session that the operation ends.
+         */
+        sessionId: string;
+    };
+    query?: never;
+    url: '/api/account/sessions/{sessionId}';
+};
+
+export type RevokeSessionErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The requested resource does not exist.
+     */
+    404: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type RevokeSessionError = RevokeSessionErrors[keyof RevokeSessionErrors];
+
+export type RevokeSessionResponses = {
+    /**
+     * The named record no longer exists.
+     */
+    200: Removed;
+};
+
+export type RevokeSessionResponse = RevokeSessionResponses[keyof RevokeSessionResponses];
 
 export type ListAccountsData = {
     body?: never;
@@ -2874,7 +3425,7 @@ export type ResetPasswordData = {
     /**
      * The new password and the reset token.
      */
-    body: AuthPasswordReset;
+    body: AuthPasswordResetWritable;
     path?: never;
     query?: never;
     url: '/api/auth/reset-password';
@@ -3419,6 +3970,43 @@ export type RegisterAccountResponses = {
 
 export type RegisterAccountResponse = RegisterAccountResponses[keyof RegisterAccountResponses];
 
+export type GetSignUpChallengeData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/registrations/challenge';
+};
+
+export type GetSignUpChallengeErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * Too many attempts were made in a short time.
+     */
+    429: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type GetSignUpChallengeError = GetSignUpChallengeErrors[keyof GetSignUpChallengeErrors];
+
+export type GetSignUpChallengeResponses = {
+    /**
+     * One challenge for the proof of work of a sign-up.
+     */
+    200: SignUpChallenge;
+};
+
+export type GetSignUpChallengeResponse = GetSignUpChallengeResponses[keyof GetSignUpChallengeResponses];
+
 export type ReadInvitationData = {
     /**
      * The token of the invitation to read.
@@ -3467,6 +4055,253 @@ export type ReadInvitationResponses = {
 
 export type ReadInvitationResponse = ReadInvitationResponses[keyof ReadInvitationResponses];
 
+export type SignUpAccountData = {
+    /**
+     * The address and the password of the account that a person asks for.
+     */
+    body: SignUp;
+    path?: never;
+    query?: never;
+    url: '/api/registrations/open';
+};
+
+export type SignUpAccountErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The change cannot be accepted next to the state that the workspace holds. The code names the reason: path_conflict for a path that another live file occupies, and mutation_reused for a mutation identity that was already used for another operation. A save of a note adds epoch_mismatch, which means that the note holds another generation of its document, so the device reads the current document before it saves again.
+     */
+    409: ProblemDetails;
+    /**
+     * The request body is larger than the configured limit. A save of a note adds document_too_large, which means that the update or the document it would produce passes a bound of the workspace. The work stays on the device, which offers recovery rather than sending the same bytes again.
+     */
+    413: ProblemDetails;
+    /**
+     * The request media type is not supported.
+     */
+    415: ProblemDetails;
+    /**
+     * Too many attempts were made in a short time.
+     */
+    429: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type SignUpAccountError = SignUpAccountErrors[keyof SignUpAccountErrors];
+
+export type SignUpAccountResponses = {
+    /**
+     * The sign-up was taken. A message goes to the address.
+     */
+    202: SignUpAccepted;
+};
+
+export type SignUpAccountResponse = SignUpAccountResponses[keyof SignUpAccountResponses];
+
+export type VerifyAddressData = {
+    /**
+     * The token of a verification link.
+     */
+    body: AddressVerification;
+    path?: never;
+    query?: never;
+    url: '/api/registrations/verification';
+};
+
+export type VerifyAddressErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The verification link opens nothing. The code is verification_invalid for a token that expired, that a later sign-up replaced, or that never existed. The answer does not say which. The code is registration_closed when the installation stopped open registration after the sign-up.
+     */
+    403: ProblemDetails;
+    /**
+     * The request body is larger than the configured limit. A save of a note adds document_too_large, which means that the update or the document it would produce passes a bound of the workspace. The work stays on the device, which offers recovery rather than sending the same bytes again.
+     */
+    413: ProblemDetails;
+    /**
+     * The request media type is not supported.
+     */
+    415: ProblemDetails;
+    /**
+     * Too many attempts were made in a short time.
+     */
+    429: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type VerifyAddressError = VerifyAddressErrors[keyof VerifyAddressErrors];
+
+export type VerifyAddressResponses = {
+    /**
+     * The address is proved and the account exists.
+     */
+    200: AddressVerified;
+};
+
+export type VerifyAddressResponse = VerifyAddressResponses[keyof VerifyAddressResponses];
+
+export type ListReportsData = {
+    body?: never;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/reports';
+};
+
+export type ListReportsErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type ListReportsError = ListReportsErrors[keyof ListReportsErrors];
+
+export type ListReportsResponses = {
+    /**
+     * The open reports of published links.
+     */
+    200: LinkReportList;
+};
+
+export type ListReportsResponse = ListReportsResponses[keyof ListReportsResponses];
+
+export type DismissReportData = {
+    body?: never;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path: {
+        /**
+         * Identifier of the report that the operation acts on.
+         */
+        reportId: Uuid;
+    };
+    query?: never;
+    url: '/api/reports/{reportId}';
+};
+
+export type DismissReportErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The requested resource does not exist.
+     */
+    404: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type DismissReportError = DismissReportErrors[keyof DismissReportErrors];
+
+export type DismissReportResponses = {
+    /**
+     * The named record no longer exists.
+     */
+    200: Removed;
+};
+
+export type DismissReportResponse = DismissReportResponses[keyof DismissReportResponses];
+
+export type TakeDownReportedLinkData = {
+    body?: never;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path: {
+        /**
+         * Identifier of the report that the operation acts on.
+         */
+        reportId: Uuid;
+    };
+    query?: never;
+    url: '/api/reports/{reportId}/takedown';
+};
+
+export type TakeDownReportedLinkErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The requested resource does not exist.
+     */
+    404: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type TakeDownReportedLinkError = TakeDownReportedLinkErrors[keyof TakeDownReportedLinkErrors];
+
+export type TakeDownReportedLinkResponses = {
+    /**
+     * The named record no longer exists.
+     */
+    200: Removed;
+};
+
+export type TakeDownReportedLinkResponse = TakeDownReportedLinkResponses[keyof TakeDownReportedLinkResponses];
+
 export type GetSetupStatusData = {
     body?: never;
     path?: never;
@@ -3497,6 +4332,14 @@ export type GetSetupStatusResponses = {
      */
     200: {
         readonly initialized: boolean;
+        /**
+         * Whether a person can ask for an account without an invitation (record 0114).
+         */
+        readonly openRegistration: boolean;
+        /**
+         * The terms and the privacy notice, or null when the installation names none (record 0120).
+         */
+        legalDocuments: LegalDocuments | null;
     };
 };
 
@@ -6059,6 +6902,101 @@ export type GetPublishedAttachmentResponses = {
 };
 
 export type GetPublishedAttachmentResponse = GetPublishedAttachmentResponses[keyof GetPublishedAttachmentResponses];
+
+export type GetReportPageData = {
+    body?: never;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path: {
+        /**
+         * The token of the published link. It is the one part of the address that opens the link. Any single segment of an address is accepted here, because a value that no link holds opens nothing and must read like every other value that no link holds.
+         */
+        token: PublishedSecret;
+    };
+    query?: never;
+    url: '/published/{token}/report';
+};
+
+export type GetReportPageErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type GetReportPageError = GetReportPageErrors[keyof GetReportPageErrors];
+
+export type GetReportPageResponses = {
+    /**
+     * The published page, as one HTML document.
+     */
+    200: PublishedDocument;
+};
+
+export type GetReportPageResponse = GetReportPageResponses[keyof GetReportPageResponses];
+
+export type ReportPublishedLinkData = {
+    /**
+     * The report of a published link, as its form sends it.
+     */
+    body: PublishedReportForm;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path: {
+        /**
+         * The token of the published link. It is the one part of the address that opens the link. Any single segment of an address is accepted here, because a value that no link holds opens nothing and must read like every other value that no link holds.
+         */
+        token: PublishedSecret;
+    };
+    query?: never;
+    url: '/published/{token}/report';
+};
+
+export type ReportPublishedLinkErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request body is larger than the configured limit. A save of a note adds document_too_large, which means that the update or the document it would produce passes a bound of the workspace. The work stays on the device, which offers recovery rather than sending the same bytes again.
+     */
+    413: ProblemDetails;
+    /**
+     * The request media type is not supported.
+     */
+    415: ProblemDetails;
+    /**
+     * Too many attempts were made in a short time.
+     */
+    429: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type ReportPublishedLinkError = ReportPublishedLinkErrors[keyof ReportPublishedLinkErrors];
+
+export type ReportPublishedLinkResponses = {
+    /**
+     * The published page, as one HTML document.
+     */
+    200: PublishedDocument;
+};
+
+export type ReportPublishedLinkResponse = ReportPublishedLinkResponses[keyof ReportPublishedLinkResponses];
 
 export type UnlockPublishedLinkData = {
     /**

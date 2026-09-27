@@ -282,7 +282,14 @@ export type AcceptedInput = Omit<ChangesetInput, 'revisions'> & {
  * token all take it, so the answer states nothing about the invitation.
  * `account_exists` refuses an invitation to an address that already signs
  * in. `open_registration_unavailable` refuses the open policy while the
- * installation lacks a part that record 0114 names.
+ * installation lacks a part that record 0114 names. `password_breached`
+ * refuses a new password that the breach service lists (record 0116).
+ * `registration_closed` refuses an open sign-up while the policy is not
+ * open, and `verification_invalid` is the one refusal of a verification link
+ * (record 0114). `proof_invalid` refuses a sign-up whose proof of work does
+ * not count (record 0115). `consent_required` refuses a sign-up or a consent
+ * that does not name the current versions of the legal documents (record
+ * 0120).
  */
 export type DomainErrorCode =
   | 'forbidden'
@@ -310,7 +317,12 @@ export type DomainErrorCode =
   | 'last_administrator'
   | 'invitation_invalid'
   | 'account_exists'
-  | 'open_registration_unavailable';
+  | 'open_registration_unavailable'
+  | 'password_breached'
+  | 'registration_closed'
+  | 'verification_invalid'
+  | 'proof_invalid'
+  | 'consent_required';
 
 /**
  * A domain failure and the files it refers to.

@@ -10,6 +10,7 @@
 import { readFile } from 'node:fs/promises';
 import { createInterface } from 'node:readline';
 import { Writable } from 'node:stream';
+import { passwordBounds, passwordProblem } from '@notesapp/core';
 
 /** Where a command may read a secret from. */
 export type SecretSource = {
@@ -85,4 +86,20 @@ export function readArgument(
     if (argument.startsWith(`${flag}=`)) return argument.slice(flag.length + 1);
   }
   return null;
+}
+
+/**
+ * Refuses a new password outside the one policy of `@notesapp/core`, with a
+ * message that names the rule (record 0116).
+ */
+export function assertNewPassword(password: string): void {
+  const problem = passwordProblem(password);
+  if (problem === 'too_short')
+    throw new Error(
+      `notesapp: the password must have at least ${String(passwordBounds.minLength)} characters.`,
+    );
+  if (problem === 'too_long')
+    throw new Error(
+      `notesapp: the password must have at most ${String(passwordBounds.maxLength)} characters.`,
+    );
 }

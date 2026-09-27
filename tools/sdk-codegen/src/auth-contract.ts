@@ -285,11 +285,12 @@ export function authContractSchemas(): Json {
       additionalProperties: false,
       required: ['newPassword'],
       properties: {
+        // The one component of a new password, which the root document
+        // states, so the reset takes the bounds of every other new password
+        // (record 0116).
         newPassword: {
-          type: 'string',
+          allOf: [{ $ref: '#/components/schemas/Password' }],
           description: 'New password of the account.',
-          minLength: 12,
-          maxLength: 512,
         },
         token: {
           type: 'string',

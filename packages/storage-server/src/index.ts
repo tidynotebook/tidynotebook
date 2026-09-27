@@ -14,6 +14,8 @@ export {
   openWorkspaceStore,
   WorkspaceUnavailableError,
   type DatabaseProbeResult,
+  type OwnedPublishedLink,
+  type PublicationReport,
   type PublicationCleanupResult,
   type PublicationUnlockAttempt,
   type PublicationUnlockResult,
@@ -74,8 +76,15 @@ export {
   authAccount,
   authSession,
   authUser,
+  authRateLimit,
   authVerification,
 } from './schema.ts';
+export {
+  maxAttemptKeyLength,
+  openCoordination,
+  type AttemptCount,
+  type CoordinationHandle,
+} from './coordination.ts';
 export {
   provisionAccounts,
   provisionWorkspace,

@@ -19,7 +19,8 @@ identity store, the attachment bytes, and provisioning.
   path and `publication-unlock.ts` its one write (0031), one repository per
   context holds the SQL, `index.ts` is the composition root, and `admin.ts`,
   `identity-store.ts`, `profiles.ts`, `snapshots.ts`, `attachments.ts` and
-  `attachment-row.ts` (0019) own the rest.
+  `attachment-row.ts` (0019) own the rest. `coordination.ts` holds what every
+  server process shares: the attempt counters and the job locks (0121).
 - `src/migrate.ts` runs the migrations and exports `requiredSchemaVersion`.
 - No domain rule and no HTTP route live here. A rule lives in `packages/core`.
 

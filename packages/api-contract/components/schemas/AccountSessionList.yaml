@@ -1,0 +1,13 @@
+type: object
+description: Every session of the signed in account.
+additionalProperties: false
+required:
+  - sessions
+properties:
+  sessions:
+    type: array
+    readOnly: true
+    description: The sessions, the current one first, then newest first.
+    maxItems: 1000
+    items:
+      $ref: './AccountSession.yaml'

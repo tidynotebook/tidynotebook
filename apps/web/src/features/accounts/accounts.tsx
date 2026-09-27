@@ -24,10 +24,18 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router';
+import { Link, Navigate, useNavigate, useParams } from 'react-router';
 import {
+  acceptLegalDocuments,
+  type AccountSession,
   createOwner,
+  listWorkspaces,
+  type LegalDocuments,
   getSetupStatus,
+  listSessions,
+  removeOwnAccount,
+  revokeOtherSessions,
+  revokeSession,
   signInWithPassword,
   updatePreferences,
 } from '@notesapp/api-client';
@@ -36,9 +44,14 @@ import {
   type AppearanceChoice,
   AppMarkIcon,
   Button,
+  buttonClassName,
+  Dialog,
+  DialogBody,
+  DialogFooter,
   Card,
   Checkbox,
   CheckIcon,
+  ListRow,
   ComputerIcon,
   DownloadIcon,
   LoadingState,
@@ -50,6 +63,8 @@ import {
   SignOutIcon,
   SunIcon,
   TextField,
+  TrashIcon,
+  UsersIcon,
   themeFamilies,
   themeOfFamily,
   transitionSurface,
@@ -64,6 +79,13 @@ import {
   useRequestSync,
 } from '../../app.tsx';
 import { problemCode, problemStatus } from '../../lib/problem-text.ts';
+import { signUpRoute, storageLine } from '../../lib/accounts.ts';
+import { consentTo, waitsForConsent } from '../../lib/legal.ts';
+import {
+  deviceName,
+  otherSessionsEndedText,
+  sessionFacts,
+} from '../../lib/sessions.ts';
 import { passwordProblem, passwordRule } from '../../lib/password-policy.ts';
 import {
   signOut as endSession,
@@ -72,6 +94,7 @@ import {
 import { downloadAll, importAll } from '../export/export.ts';
 import { DailyNoteSettingsFields } from '../daily-notes/daily-note-settings.tsx';
 import { useDocumentTitle } from '../../shell/document-title.ts';
+import { useNow } from '../../shell/now.ts';
 
 /** The title of the settings page, which is also its breadcrumb part. */
 export const settingsTitle = 'Settings';
@@ -93,7 +116,191 @@ export function RequireSession({
   if (session.status === 'signed-out' || session.account === null) {
     return <Navigate to="/login" replace />;
   }
+  // The application opens after consent to the current legal documents
+  // (record 0120).
+  if (waitsForConsent(session.account)) return <ConsentPage />;
   return children;
+}
+
+/** How far the read of the legal documents got. */
+type DocumentsState =
+  | { readonly kind: 'loading' }
+  | { readonly kind: 'failed'; readonly message: string }
+  | { readonly kind: 'ready'; readonly documents: LegalDocuments | null };
+
+/**
+ * The step that asks for consent again after the operator raised a version
+ * of the terms or of the privacy notice (record 0120).
+ *
+ * The one filled action accepts. A person who does not accept can export
+ * their notes, remove their account, or sign out, and the application stays
+ * closed until they accept.
+ */
+function ConsentPage(): ReactNode {
+  const session = useSession();
+  const store = useLocalStore();
+  const [state, setState] = useState<DocumentsState>({ kind: 'loading' });
+  const [generation, setGeneration] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [removing, setRemoving] = useState(false);
+  useDocumentTitle('Accept the terms');
+
+  useEffect(() => {
+    let cancelled = false;
+    void getSetupStatus().then((result) => {
+      if (cancelled) return;
+      setState(
+        result.data === undefined
+          ? { kind: 'failed', message: problemMessage(result.error) }
+          : { kind: 'ready', documents: result.data.legalDocuments },
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [generation]);
+
+  const account = session.account;
+  if (account === null) return <Navigate to="/login" replace />;
+  const documents = state.kind === 'ready' ? state.documents : null;
+
+  const accept = async (): Promise<void> => {
+    if (documents === null) return;
+    setBusy(true);
+    setError('');
+    const result = await acceptLegalDocuments({ body: consentTo(documents) });
+    setBusy(false);
+    if (result.error !== undefined) {
+      setError(problemMessage(result.error));
+      // A version that changed while the person read reads again.
+      setGeneration((value) => value + 1);
+      return;
+    }
+    session.refresh();
+  };
+
+  const exportNotes = async (): Promise<void> => {
+    setBusy(true);
+    setError('');
+    try {
+      const listed = await listWorkspaces();
+      for (const workspace of listed.data?.workspaces ?? [])
+        if (workspace.role === 'owner')
+          await downloadAll(workspace.workspaceId);
+    } catch (failure: unknown) {
+      setError(problemMessage(failure));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <AuthFrame title="Accept the terms">
+      {state.kind === 'loading' ? (
+        <LoadingState label="The terms are loading." />
+      ) : state.kind === 'failed' ? (
+        <div className="mt-4 space-y-3">
+          <Notice tone="problem" message={state.message} />
+          <Button
+            onClick={() => {
+              setGeneration((value) => value + 1);
+            }}
+          >
+            Try again
+          </Button>
+        </div>
+      ) : (
+        <>
+          <p className="mb-3 mt-0 text-control text-muted">
+            Read the terms and the privacy notice of this service, then accept
+            them to open your notes. A new version asks you again.
+          </p>
+          {documents === null ? null : (
+            <p className="mb-5 mt-0 flex flex-wrap gap-cluster text-control">
+              <a
+                className="text-accent underline"
+                href={documents.terms.url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Terms
+              </a>
+              <a
+                className="text-accent underline"
+                href={documents.privacy.url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Privacy notice
+              </a>
+            </p>
+          )}
+          {error === '' ? null : (
+            <Notice className="mb-4" tone="problem" message={error} />
+          )}
+          <Button
+            className="w-full"
+            disabled={busy || documents === null}
+            onClick={() => {
+              void accept();
+            }}
+          >
+            {busy ? 'Saving your answer' : 'Accept and continue'}
+          </Button>
+          <p className="mb-2 mt-5 text-control text-muted">
+            If you do not accept them, you can export your notes and remove your
+            account.
+          </p>
+          <div className="flex flex-wrap gap-cluster">
+            <Button
+              variant="secondary"
+              icon={<DownloadIcon />}
+              disabled={busy}
+              onClick={() => {
+                void exportNotes();
+              }}
+            >
+              Export my notes
+            </Button>
+            <Button
+              variant="secondary"
+              tone="danger"
+              icon={<TrashIcon />}
+              disabled={busy}
+              onClick={() => {
+                setRemoving(true);
+              }}
+            >
+              Remove my account
+            </Button>
+            <Button
+              variant="ghost"
+              icon={<SignOutIcon />}
+              disabled={busy}
+              onClick={() => {
+                session.signOut();
+              }}
+            >
+              Sign out
+            </Button>
+          </div>
+        </>
+      )}
+      {removing ? (
+        <RemoveOwnAccountDialog
+          store={store.store}
+          accountId={account.accountId}
+          onClose={() => {
+            setRemoving(false);
+          }}
+          onRemoved={() => {
+            session.refresh();
+          }}
+        />
+      ) : null}
+    </AuthFrame>
+  );
 }
 
 /** How far the setup status call got. */
@@ -101,14 +308,19 @@ type SetupStatus =
   | { readonly kind: 'loading' }
   | { readonly kind: 'unreachable'; readonly message: string }
   /** True when the owner account of this installation already exists. */
-  | { readonly kind: 'ready'; readonly initialized: boolean };
+  | {
+      readonly kind: 'ready';
+      readonly initialized: boolean;
+      /** Whether a person can ask for an account (record 0114). */
+      readonly openRegistration: boolean;
+    };
 
 /**
  * First-run setup and email and password sign in.
  *
  * One screen serves both, and it says which one it is: setup states that it
- * creates the single owner account of the installation and asks for the
- * password twice, sign in asks for it once. The password rule is under the
+ * creates the first account of the installation, its administrator, and asks
+ * for the password twice, sign in asks for it once. The password rule is under the
  * field from the start, so nobody learns it from a refusal. A status call
  * that does not answer offers Retry instead of a dead submit button.
  */
@@ -137,7 +349,11 @@ export function LoginPage(): ReactNode {
         });
         return;
       }
-      setStatus({ kind: 'ready', initialized: result.data.initialized });
+      setStatus({
+        kind: 'ready',
+        initialized: result.data.initialized,
+        openRegistration: result.data.openRegistration,
+      });
     });
     return () => {
       cancelled = true;
@@ -190,6 +406,113 @@ export function LoginPage(): ReactNode {
 
   const title = setup ? 'Create your account' : 'Sign in';
   return (
+    <AuthFrame title={status.kind === 'loading' ? 'Notesapp' : title}>
+      {status.kind === 'loading' ? (
+        <LoadingState label="The sign-in screen is loading." />
+      ) : status.kind === 'unreachable' ? (
+        <div className="mt-4 space-y-3">
+          <Notice tone="problem" message={status.message} />
+          <Button
+            onClick={() => {
+              setAttempt((value) => value + 1);
+            }}
+          >
+            Try again
+          </Button>
+        </div>
+      ) : (
+        <>
+          <p className="mb-5 mt-0 text-control text-muted">
+            {setup
+              ? 'This installation has no account yet. What you enter here becomes the first account. It administers the installation and invites other people.'
+              : 'Enter the address and the password of your account.'}
+          </p>
+          <form
+            onSubmit={(event): void => {
+              event.preventDefault();
+              void submitPassword();
+            }}
+          >
+            <TextField
+              id="login-email"
+              label="Email address"
+              value={email}
+              inputType="email"
+              autoComplete={setup ? 'email' : 'username'}
+              required
+              autoFocus
+              onChange={setEmail}
+            />
+            <TextField
+              id="login-password"
+              label="Password"
+              value={password}
+              inputType={reveal ? 'text' : 'password'}
+              autoComplete={setup ? 'new-password' : 'current-password'}
+              hint={setup ? passwordRule : undefined}
+              required
+              error={fieldError}
+              onChange={setPassword}
+            />
+            {setup ? (
+              <TextField
+                id="login-password-again"
+                label="Password again"
+                value={confirmation}
+                inputType={reveal ? 'text' : 'password'}
+                autoComplete="new-password"
+                required
+                onChange={setConfirmation}
+              />
+            ) : null}
+            <div className="mb-4">
+              <Checkbox
+                id="login-reveal"
+                label="Show the password"
+                checked={reveal}
+                onChange={setReveal}
+              />
+            </div>
+            {error === '' ? null : (
+              <Notice className="mb-4" tone="problem" message={error} />
+            )}
+            <Button type="submit" disabled={busy} className="w-full">
+              {busy
+                ? setup
+                  ? 'Creating your account'
+                  : 'Signing in'
+                : setup
+                  ? 'Create account'
+                  : 'Sign in'}
+            </Button>
+          </form>
+          {status.kind === 'ready' && !setup && status.openRegistration ? (
+            <Link
+              className={`mt-3 w-full ${buttonClassName({ variant: 'ghost' })}`}
+              to={signUpRoute}
+            >
+              Create an account
+            </Link>
+          ) : null}
+        </>
+      )}
+    </AuthFrame>
+  );
+}
+
+/**
+ * The frame of a screen before a session: the wordmark over one raised panel
+ * on the chrome plane (decisions 0062 and 0064). Sign in, first-run setup and
+ * the acceptance of an invitation use it.
+ */
+export function AuthFrame({
+  title,
+  children,
+}: {
+  readonly title: string;
+  readonly children: ReactNode;
+}): ReactNode {
+  return (
     <div
       className={`flex min-h-dvh flex-col items-center justify-center bg-surface ${pageGutter} py-10`}
     >
@@ -204,89 +527,9 @@ export function LoginPage(): ReactNode {
       </div>
       <Card className="w-full max-w-sm sm:p-6">
         <h1 className="mb-2 mt-0 text-xl font-semibold tracking-heading text-strong">
-          {status.kind === 'loading' ? 'Notesapp' : title}
+          {title}
         </h1>
-        {status.kind === 'loading' ? (
-          <LoadingState label="The sign-in screen is loading." />
-        ) : status.kind === 'unreachable' ? (
-          <div className="mt-4 space-y-3">
-            <Notice tone="problem" message={status.message} />
-            <Button
-              onClick={() => {
-                setAttempt((value) => value + 1);
-              }}
-            >
-              Try again
-            </Button>
-          </div>
-        ) : (
-          <>
-            <p className="mb-5 mt-0 text-control text-muted">
-              {setup
-                ? 'This installation has no account yet. What you enter here becomes the one owner account, and it owns every note.'
-                : 'Enter the address and the password of your account.'}
-            </p>
-            <form
-              onSubmit={(event): void => {
-                event.preventDefault();
-                void submitPassword();
-              }}
-            >
-              <TextField
-                id="login-email"
-                label="Email address"
-                value={email}
-                inputType="email"
-                autoComplete={setup ? 'email' : 'username'}
-                required
-                autoFocus
-                onChange={setEmail}
-              />
-              <TextField
-                id="login-password"
-                label="Password"
-                value={password}
-                inputType={reveal ? 'text' : 'password'}
-                autoComplete={setup ? 'new-password' : 'current-password'}
-                hint={setup ? passwordRule : undefined}
-                required
-                error={fieldError}
-                onChange={setPassword}
-              />
-              {setup ? (
-                <TextField
-                  id="login-password-again"
-                  label="Password again"
-                  value={confirmation}
-                  inputType={reveal ? 'text' : 'password'}
-                  autoComplete="new-password"
-                  required
-                  onChange={setConfirmation}
-                />
-              ) : null}
-              <div className="mb-4">
-                <Checkbox
-                  id="login-reveal"
-                  label="Show the password"
-                  checked={reveal}
-                  onChange={setReveal}
-                />
-              </div>
-              {error === '' ? null : (
-                <Notice className="mb-4" tone="problem" message={error} />
-              )}
-              <Button type="submit" disabled={busy} className="w-full">
-                {busy
-                  ? setup
-                    ? 'Creating your account'
-                    : 'Signing in'
-                  : setup
-                    ? 'Create account'
-                    : 'Sign in'}
-              </Button>
-            </form>
-          </>
-        )}
+        {children}
       </Card>
     </div>
   );
@@ -679,6 +922,158 @@ function useOfflineChoices(
   return { choices, status, setChoice };
 }
 
+/** How far the list of sessions got. */
+type SessionsState =
+  | { readonly kind: 'loading' }
+  | { readonly kind: 'failed'; readonly message: string }
+  | { readonly kind: 'ready'; readonly sessions: readonly AccountSession[] };
+
+/**
+ * The devices that are signed in to this account (record 0122).
+ *
+ * The current device is first and has no action here, because the Sign out
+ * section ends it. Each other device has its own Sign out, for a lost phone,
+ * and one action ends every other device, for a password that somebody else
+ * may know. Only the identifier of a session leaves the server, never its
+ * token.
+ */
+function SessionsSettings(): ReactNode {
+  const now = useNow();
+  const [state, setState] = useState<SessionsState>({ kind: 'loading' });
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<{
+    readonly tone: 'info' | 'problem';
+    readonly message: string;
+  } | null>(null);
+  const [generation, setGeneration] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    void listSessions().then((result) => {
+      if (cancelled) return;
+      if (result.error !== undefined || result.data === undefined) {
+        setState({ kind: 'failed', message: problemMessage(result.error) });
+        return;
+      }
+      setState({ kind: 'ready', sessions: result.data.sessions });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [generation]);
+
+  /** Runs one change, states its result, and reads the list again. */
+  function change(
+    run: () => Promise<{ readonly error?: unknown; readonly done: string }>,
+  ): void {
+    setBusy(true);
+    setNotice(null);
+    void run()
+      .then((result) => {
+        setNotice(
+          result.error === undefined
+            ? { tone: 'info', message: result.done }
+            : { tone: 'problem', message: problemMessage(result.error) },
+        );
+      })
+      .finally(() => {
+        setBusy(false);
+        setGeneration((value) => value + 1);
+      });
+  }
+
+  const others =
+    state.kind === 'ready'
+      ? state.sessions.filter((session) => !session.current).length
+      : 0;
+
+  return (
+    <SettingsSection
+      title="Sessions"
+      titleId="sessions-heading"
+      description="These devices are signed in to your account. Sign out a device that you do not use or do not know."
+    >
+      {notice === null ? null : (
+        <Notice className="mb-3" tone={notice.tone} message={notice.message} />
+      )}
+      {state.kind === 'failed' ? (
+        <Notice tone="problem" message={state.message} />
+      ) : state.kind === 'loading' ? (
+        <LoadingState
+          shape="list"
+          rows={2}
+          label="The signed in devices are loading."
+        />
+      ) : (
+        <>
+          <ul className="m-0 list-none p-0">
+            {state.sessions.map((session) => {
+              const name = deviceName(session.userAgent);
+              return (
+                <ListRow key={session.sessionId} className="flex-wrap">
+                  <span
+                    className="inline-flex shrink-0 items-center text-muted"
+                    aria-hidden="true"
+                  >
+                    <ComputerIcon />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="m-0 truncate text-ui text-strong">{name}</p>
+                    <p className="m-0 flex flex-wrap gap-cluster text-control text-muted">
+                      {sessionFacts(session, now).map((fact) => (
+                        <span key={fact}>{fact}</span>
+                      ))}
+                    </p>
+                  </div>
+                  {session.current ? null : (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      disabled={busy}
+                      label={`Sign out ${name}`}
+                      onClick={() => {
+                        change(async () => ({
+                          error: (
+                            await revokeSession({
+                              path: { sessionId: session.sessionId },
+                            })
+                          ).error,
+                          done: `${name} is signed out.`,
+                        }));
+                      }}
+                    >
+                      Sign out
+                    </Button>
+                  )}
+                </ListRow>
+              );
+            })}
+          </ul>
+          {others === 0 ? null : (
+            <Button
+              className="mt-3"
+              variant="secondary"
+              icon={<SignOutIcon />}
+              disabled={busy}
+              onClick={() => {
+                change(async () => {
+                  const ended = await revokeOtherSessions();
+                  return {
+                    error: ended.error,
+                    done: otherSessionsEndedText(ended.data?.revoked ?? 0),
+                  };
+                });
+              }}
+            >
+              Sign out every other device
+            </Button>
+          )}
+        </>
+      )}
+    </SettingsSection>
+  );
+}
+
 /** Account page: profile, theme, offline availability, and sign-out. */
 export function AccountSettingsPage(): ReactNode {
   const session = useSession();
@@ -690,6 +1085,7 @@ export function AccountSettingsPage(): ReactNode {
   const [exportError, setExportError] = useState('');
   const [importing, setImporting] = useState(false);
   const [importNotice, setImportNotice] = useState('');
+  const [removing, setRemoving] = useState(false);
   const importInput = useRef<HTMLInputElement | null>(null);
   const requestSync = useRequestSync();
   const account = session.account;
@@ -897,7 +1293,26 @@ export function AccountSettingsPage(): ReactNode {
           <p className="m-0 text-ui text-strong">
             {account.email ?? 'No address linked'}
           </p>
+          {storageLine(account.storage) === '' ? null : (
+            <p className="mb-0 mt-1 text-control text-muted">
+              {storageLine(account.storage)}
+            </p>
+          )}
+          {account.installationRole === 'administrator' &&
+          workspaceId !== null ? (
+            <Link
+              className={`mt-3 ${buttonClassName({ variant: 'secondary' })}`}
+              to={`/w/${workspaceId}/accounts`}
+            >
+              <span className="inline-flex items-center" aria-hidden="true">
+                <UsersIcon />
+              </span>
+              <span>Manage accounts</span>
+            </Link>
+          ) : null}
         </SettingsSection>
+
+        <SessionsSettings />
 
         <SettingsSection
           title="Sign out"
@@ -937,7 +1352,130 @@ export function AccountSettingsPage(): ReactNode {
             ) : null}
           </div>
         </SettingsSection>
+
+        <SettingsSection
+          title="Remove account"
+          titleId="remove-account-heading"
+          description="This removes your account and every note in your workspaces for good. Export your notes first if you want to keep them."
+        >
+          <Button
+            variant="secondary"
+            tone="danger"
+            icon={<TrashIcon />}
+            onClick={() => {
+              setRemoving(true);
+            }}
+          >
+            Remove my account
+          </Button>
+        </SettingsSection>
       </div>
+      {removing ? (
+        <RemoveOwnAccountDialog
+          store={store.store}
+          accountId={account.accountId}
+          onClose={() => {
+            setRemoving(false);
+          }}
+          onRemoved={() => {
+            session.refresh();
+          }}
+        />
+      ) : null}
     </Page>
+  );
+}
+
+/**
+ * The dialog that removes the account of the person (record 0111).
+ *
+ * The person gives the password again, so a session that somebody else holds
+ * cannot remove the account. After the removal this device keeps nothing of
+ * the account: its queued work cannot reach the server any more.
+ */
+function RemoveOwnAccountDialog({
+  store,
+  accountId,
+  onClose,
+  onRemoved,
+}: {
+  readonly store: LocalStore | null;
+  readonly accountId: string;
+  readonly onClose: () => void;
+  readonly onRemoved: () => void;
+}): ReactNode {
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (): Promise<void> => {
+    setBusy(true);
+    setError('');
+    const result = await removeOwnAccount({ body: { password } });
+    if (result.data === undefined) {
+      setBusy(false);
+      setError(
+        problemCode(result.error) === 'forbidden'
+          ? 'That password is not the password of this account.'
+          : problemMessage(result.error),
+      );
+      return;
+    }
+    // The refresh reads no account any more, and the loader then forgets
+    // the account that this device cached.
+    try {
+      await store?.clearPrivateData(accountId);
+    } catch {
+      // The account is gone on the server. What stays here is out of view
+      // of every other account, and the next sign-in deletes it.
+    }
+    onRemoved();
+  };
+
+  return (
+    <Dialog
+      open
+      title="Remove your account?"
+      titleId="remove-own-account-title"
+      width="small"
+      onClose={onClose}
+    >
+      <form
+        onSubmit={(event): void => {
+          event.preventDefault();
+          void submit();
+        }}
+      >
+        <DialogBody>
+          <p className="mb-4 mt-0 text-ui text-strong">
+            Your account and every note in your workspaces go for good. You are
+            signed out on every device.
+          </p>
+          <TextField
+            id="remove-own-password"
+            label="Password"
+            value={password}
+            inputType="password"
+            autoComplete="current-password"
+            required
+            autoFocus
+            error={error}
+            onChange={setPassword}
+          />
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant="danger"
+            disabled={busy || password === ''}
+          >
+            {busy ? 'Removing your account' : 'Remove account'}
+          </Button>
+        </DialogFooter>
+      </form>
+    </Dialog>
   );
 }

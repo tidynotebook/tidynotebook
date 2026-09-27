@@ -127,7 +127,9 @@ await test('the write check and the trusted list accept the same origins', async
 
 await test('every served origin is accepted and nothing else is', async () => {
   for (const origin of candidates) {
-    const served = config.servedOrigins.includes(origin);
+    const served = config.servedOrigins.some(
+      (entry) => entry.origin === origin,
+    );
     assert.equal(await writeAccepts(origin), served, origin);
     assert.equal(await signInAccepts(origin), served, origin);
   }
@@ -136,7 +138,12 @@ await test('every served origin is accepted and nothing else is', async () => {
 await test('an invented port of a served host is refused', async () => {
   // The trusted list used to add the port 3000 to every allowed host, so the
   // shipped defaults trusted an origin that no operator named.
-  assert.equal(config.servedOrigins.includes('http://localhost:3000'), false);
+  assert.equal(
+    config.servedOrigins.some(
+      (entry) => entry.origin === 'http://localhost:3000',
+    ),
+    false,
+  );
   assert.equal(await writeAccepts('http://localhost:3000'), false);
   assert.equal(await signInAccepts('http://localhost:3000'), false);
 });

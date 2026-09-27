@@ -88,6 +88,7 @@ export {
   mailInvitation,
 } from './auth/invitations.ts';
 export { createAdministrationHandlers } from './routes/administration.ts';
+export { authProblemCode } from './auth/better-auth.ts';
 export {
   authBasePath,
   authRoutes,

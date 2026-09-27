@@ -1,0 +1,53 @@
+get:
+  operationId: getReportPage
+  summary: Read the report form of a published link.
+  description: >-
+    Answers one HTML document that the server builds, with no script. The
+    form asks for a reason from a fixed list and an optional note. The form
+    answers the same document for every token, so it states nothing about
+    the link.
+  tags:
+    - published
+  security: []
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+    - $ref: '../components/parameters/PublishedToken.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/PublishedPage.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'
+post:
+  operationId: reportPublishedLink
+  summary: Report a published link to the administrators.
+  description: >-
+    Takes the reason and the note of the report form and answers one
+    document that thanks the reader. The report is the second write of the
+    reader path. One narrow function stores it for a link that opens now,
+    and stores nothing for any other token. Both answer the same document.
+    The operation declares an empty security requirement, so no identity
+    hook runs for it. The attempt limit of this route counts each client
+    address, and each /64 prefix of an IPv6 address.
+  tags:
+    - published
+  security: []
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+    - $ref: '../components/parameters/PublishedToken.yaml'
+  requestBody:
+    $ref: '../components/requestBodies/PublishedReportForm.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/PublishedPage.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '413':
+      $ref: '../components/responses/PayloadTooLarge.yaml'
+    '415':
+      $ref: '../components/responses/UnsupportedMediaType.yaml'
+    '429':
+      $ref: '../components/responses/RateLimited.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

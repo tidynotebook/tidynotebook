@@ -1,0 +1,6 @@
+description: The address and the password of the account that a person asks for.
+required: true
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/SignUpInput.yaml'

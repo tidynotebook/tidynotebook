@@ -1,0 +1,23 @@
+get:
+  operationId: getSignUpChallenge
+  summary: Read a proof of work challenge for one sign-up.
+  description: >-
+    Answers a random value, a difficulty and an expiry, signed by this
+    server (record 0115). The browser finds a solution whose digest starts
+    with as many zero bits as the difficulty names, and sends it with the
+    sign-up. One solution makes one account. No third party takes part. The
+    installation must have the open registration policy.
+  tags:
+    - auth
+  security: []
+  responses:
+    '200':
+      $ref: '../components/responses/SignUpChallenge.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '403':
+      $ref: '../components/responses/Forbidden.yaml'
+    '429':
+      $ref: '../components/responses/RateLimited.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

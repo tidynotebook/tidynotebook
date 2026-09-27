@@ -1,0 +1,21 @@
+get:
+  operationId: listSessions
+  summary: List the sessions of the signed in account.
+  description: >-
+    Lists every session of the account with the device that the browser
+    named and the last activity. No answer holds a token.
+  tags:
+    - accounts
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/AccountSessionList.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

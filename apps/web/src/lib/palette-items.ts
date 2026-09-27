@@ -140,6 +140,7 @@ export const actionIconNames = [
   'ordered-list',
   'publish',
   'published-links',
+  'accounts',
   'quote',
   'rename',
   'settings',

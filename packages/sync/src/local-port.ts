@@ -1096,7 +1096,9 @@ export type LocalStore = {
 
   /**
    * Deletes the private data of every other account of this origin that
-   * holds no work, when one account signs in (record 0113).
+   * holds no work, when one account signs in (record 0113). After a sign-out
+   * no account is signed in, and `null` names that: the private data of every
+   * account of the origin that holds no work goes.
    *
    * A partition holds work when it has a queued save in any state, a
    * recovery record, a save or a draft of release 0.4 that waits for
@@ -1109,7 +1111,9 @@ export type LocalStore = {
    * The check and the deletion are one transaction, so no write of another
    * tab lands between them. Answers the accounts that keep a partition.
    */
-  clearIdleAccounts(signedInAccountId: string): Promise<readonly string[]>;
+  clearIdleAccounts(
+    signedInAccountId: string | null,
+  ): Promise<readonly string[]>;
 
   /** The current sync worker lease, or `null` when none is stored. */
   readLeaseState(): Promise<{

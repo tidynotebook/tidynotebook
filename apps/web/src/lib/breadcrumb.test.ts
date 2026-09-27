@@ -155,6 +155,7 @@ const titles: PageTitles = {
   notes: 'All notes',
   trash: 'Trash',
   published: 'Published links',
+  accounts: 'Accounts',
   attention: 'Needs attention',
   settings: 'Settings',
   'not-found': 'Page not found',

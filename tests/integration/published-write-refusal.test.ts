@@ -210,11 +210,16 @@ const writes = operations.filter(isWrite);
 /**
  * The writes of the reader boundary.
  *
- * Both take a token because a reader has no account. Neither writes a note:
+ * Each takes a token because a reader has no account. None writes a note:
  * decision 0031 gives the reader path a port with read methods only and a
- * read-only transaction, and the one row that the unlock writes is a ticket.
+ * read-only transaction. The one row that the unlock writes is a ticket, and
+ * the one row that a report writes is a report (record 0119).
  */
-const readerWrites = ['openPublishedPage', 'unlockPublishedLink'];
+const readerWrites = [
+  'openPublishedPage',
+  'unlockPublishedLink',
+  'reportPublishedLink',
+];
 
 /**
  * The writes of the account path, which the protocol library serves.
@@ -230,10 +235,18 @@ const protocolWrites = [
   'signOut',
 ];
 
-/** The one write that runs while no account exists. */
-// The public writes that make an account (record 0108). Each takes its own
-// secret, a first run or an invitation token, and none reads a session.
-const setupWrites = ['createOwner', 'readInvitation', 'registerAccount'];
+/**
+ * The public writes that make an account (records 0108 and 0114). Each takes
+ * its own secret or its own address, a first run, an invitation token, an
+ * open sign-up or its verification token, and none reads a session.
+ */
+const setupWrites = [
+  'createOwner',
+  'readInvitation',
+  'registerAccount',
+  'signUpAccount',
+  'verifyAddress',
+];
 
 /** The value of each path parameter, so every address names a real thing. */
 const pathValues: Readonly<Record<string, string>> = {
@@ -243,6 +256,8 @@ const pathValues: Readonly<Record<string, string>> = {
   objectId: randomUUID(),
   accountId: randomUUID(),
   invitationId: randomUUID(),
+  sessionId: randomUUID(),
+  reportId: randomUUID(),
   token,
 };
 
@@ -356,10 +371,13 @@ await test('the writes of the reader boundary write no note', async () => {
     // password is wrong, because a reader who guesses is the caller that this
     // pair of operations exists to refuse.
     const mediaType = operation.request.bodyMediaType ?? 'application/json';
+    // A report takes a reason instead of a password.
     const payload =
-      mediaType === 'application/json'
-        ? JSON.stringify({ password: 'the wrong password' })
-        : 'password=the+wrong+password';
+      id === 'reportPublishedLink'
+        ? 'reason=spam&note=the+wrong+password'
+        : mediaType === 'application/json'
+          ? JSON.stringify({ password: 'the wrong password' })
+          : 'password=the+wrong+password';
     const attempt = readerAttempt(operation);
     const response = await app.inject({
       ...attempt,

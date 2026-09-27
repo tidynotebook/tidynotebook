@@ -287,6 +287,7 @@ await test('a failed link deletes the identity user that it made', async () => {
         register: () => Promise.resolve(null),
         invitationAddress: () => Promise.resolve(email),
         accountOf: () => Promise.resolve(null),
+        registrationPolicy: () => Promise.resolve('invitation'),
       },
       {
         email,

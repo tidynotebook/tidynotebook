@@ -1,0 +1,61 @@
+type: object
+description: >-
+  One open report of a published link, as an administrator reads it. It
+  holds no fact of a note and no fact of the workspace.
+additionalProperties: false
+required:
+  - reportId
+  - publicationId
+  - reason
+  - note
+  - address
+  - linkState
+  - createdAt
+properties:
+  reportId:
+    allOf:
+      - $ref: './Uuid.yaml'
+    readOnly: true
+    description: Identifier of the report.
+  publicationId:
+    allOf:
+      - $ref: './Uuid.yaml'
+    readOnly: true
+    description: >-
+      Identifier of the reported link. Two reports of one link name the same
+      value. It opens nothing.
+  reason:
+    $ref: './ReportReason.yaml'
+  note:
+    oneOf:
+      - type: string
+        maxLength: 2000
+      - type: 'null'
+    readOnly: true
+    description: What the reader added, or null.
+  address:
+    oneOf:
+      - type: string
+        maxLength: 2048
+      - type: 'null'
+    readOnly: true
+    description: >-
+      The address of the reported link, which the administrator opens as any
+      reader does. It is null when the server cannot open the sealed address,
+      for example after a change of its secret.
+  linkState:
+    type: string
+    readOnly: true
+    description: >-
+      Whether the link opens now, an administrator took it down, or it
+      stopped for another cause.
+    enum:
+      - live
+      - taken-down
+      - stopped
+  createdAt:
+    type: string
+    readOnly: true
+    description: Instant of the report.
+    format: date-time
+    maxLength: 64

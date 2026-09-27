@@ -20,7 +20,6 @@ import {
 import {
   getAccount,
   listWorkspaces,
-  signOut,
   updatePreferences,
   type Account,
   type Preferences,
@@ -70,7 +69,7 @@ import {
 } from './lib/sync-state.ts';
 import { subscribeToSystemTheme, systemPrefersDark } from './platform.ts';
 import { webLogger } from './logging.ts';
-import { describeStorageFailure } from './pwa/lifecycle.ts';
+import { describeStorageFailure, signOutKeepingWork } from './pwa/lifecycle.ts';
 import { createSyncSession, type SyncSession } from './pwa/sync-session.ts';
 
 /**
@@ -183,6 +182,9 @@ function readCachedAccount(): Account | null {
         spellCheck:
           typeof spellCheck === 'boolean' ? spellCheck : defaultSpellCheck,
       },
+      // An account cached by an earlier release holds no consent state. The
+      // next read of the account answers it (record 0120).
+      consentRequired: row['consentRequired'] === true,
     };
   } catch {
     return null;
@@ -1143,14 +1145,15 @@ export function AppProviders({
     setWorkspaceGeneration((current) => current + 1);
   }, []);
 
+  const signedOutStore = storeValue.store;
   const doSignOut = useCallback(() => {
     async function end(): Promise<void> {
       rememberAccount(null);
-      await signOut({ body: {} });
+      await signOutKeepingWork(signedOutStore);
       refresh();
     }
     void end();
-  }, [refresh]);
+  }, [refresh, signedOutStore]);
 
   const sessionValue = useMemo<SessionValue>(
     () => ({

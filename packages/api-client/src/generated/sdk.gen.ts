@@ -2,7 +2,7 @@
 
 import { client } from './client.gen.js';
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape, urlSearchParamsBodySerializer } from './client/index.js';
-import type { CommitChangesetData, CommitChangesetErrors, CommitChangesetResponses, CreateFileData, CreateFileErrors, CreateFileResponses, CreateInvitationData, CreateInvitationErrors, CreateInvitationResponses, CreateOwnerData, CreateOwnerErrors, CreateOwnerResponses, CreatePublishedLinkData, CreatePublishedLinkErrors, CreatePublishedLinkResponses, CreateWorkspaceData, CreateWorkspaceErrors, CreateWorkspaceResponses, DeleteFileData, DeleteFileErrors, DeleteFileResponses, DeleteWorkspaceData, DeleteWorkspaceErrors, DeleteWorkspaceResponses, ExportNoteData, ExportNoteErrors, ExportNoteResponses, ExportWorkspaceData, ExportWorkspaceErrors, ExportWorkspaceResponses, FinalizeAttachmentData, FinalizeAttachmentErrors, FinalizeAttachmentResponses, GetAccountData, GetAccountErrors, GetAccountResponses, GetAttachmentRevisionData, GetAttachmentRevisionErrors, GetAttachmentRevisionResponses, GetAuthSessionData, GetAuthSessionErrors, GetAuthSessionResponses, GetChangesData, GetChangesErrors, GetChangesResponses, GetDailyNoteSettingsData, GetDailyNoteSettingsErrors, GetDailyNoteSettingsResponses, GetFileData, GetFileErrors, GetFileResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetInstallationData, GetInstallationErrors, GetInstallationResponses, GetMutationReceiptData, GetMutationReceiptErrors, GetMutationReceiptResponses, GetPublishedAttachmentData, GetPublishedAttachmentErrors, GetPublishedAttachmentResponses, GetPublishedPageData, GetPublishedPageErrors, GetPublishedPageResponses, GetReadinessData, GetReadinessErrors, GetReadinessResponses, GetRevisionData, GetRevisionErrors, GetRevisionResponses, GetRootHealthData, GetRootHealthErrors, GetRootHealthResponses, GetRootReadinessData, GetRootReadinessErrors, GetRootReadinessResponses, GetSetupStatusData, GetSetupStatusErrors, GetSetupStatusResponses, GetSnapshotPageData, GetSnapshotPageErrors, GetSnapshotPageResponses, GetSyncProtocolData, GetSyncProtocolErrors, GetSyncProtocolResponses, ImportWorkspaceData, ImportWorkspaceErrors, ImportWorkspaceResponses, ListAccountsData, ListAccountsErrors, ListAccountsResponses, ListBacklinksData, ListBacklinksErrors, ListBacklinksResponses, ListDeletedFilesData, ListDeletedFilesErrors, ListDeletedFilesResponses, ListFilesData, ListFilesErrors, ListFilesResponses, ListHistoryData, ListHistoryErrors, ListHistoryResponses, ListInvitationsData, ListInvitationsErrors, ListInvitationsResponses, ListPublishedLinksData, ListPublishedLinksErrors, ListPublishedLinksResponses, ListWorkspacesData, ListWorkspacesErrors, ListWorkspacesResponses, OpenPublishedPageData, OpenPublishedPageErrors, OpenPublishedPageResponses, PreviewPurgeData, PreviewPurgeErrors, PreviewPurgeResponses, PurgeFilesData, PurgeFilesErrors, PurgeFilesResponses, ReadInvitationData, ReadInvitationErrors, ReadInvitationResponses, RegisterAccountData, RegisterAccountErrors, RegisterAccountResponses, RemoveAccountData, RemoveAccountErrors, RemoveAccountResponses, RemoveOwnAccountData, RemoveOwnAccountErrors, RemoveOwnAccountResponses, RequestPasswordResetData, RequestPasswordResetErrors, RequestPasswordResetResponses, ResetPasswordData, ResetPasswordErrors, ResetPasswordResponses, RestoreFileData, RestoreFileErrors, RestoreFileResponses, RestoreRevisionData, RestoreRevisionErrors, RestoreRevisionResponses, RevokeInvitationData, RevokeInvitationErrors, RevokeInvitationResponses, RevokePublishedLinkData, RevokePublishedLinkErrors, RevokePublishedLinkResponses, SearchFilesData, SearchFilesErrors, SearchFilesResponses, SignInWithPasswordData, SignInWithPasswordErrors, SignInWithPasswordResponses, SignOutData, SignOutErrors, SignOutResponses, StartSnapshotData, StartSnapshotErrors, StartSnapshotResponses, UnlockPublishedLinkData, UnlockPublishedLinkErrors, UnlockPublishedLinkResponses, UpdateAccountData, UpdateAccountErrors, UpdateAccountResponses, UpdateDailyNoteSettingsData, UpdateDailyNoteSettingsErrors, UpdateDailyNoteSettingsResponses, UpdateFileData, UpdateFileErrors, UpdateFileResponses, UpdateInstallationData, UpdateInstallationErrors, UpdateInstallationResponses, UpdatePreferencesData, UpdatePreferencesErrors, UpdatePreferencesResponses, UpdateWorkspaceData, UpdateWorkspaceErrors, UpdateWorkspaceResponses, UploadAttachmentData, UploadAttachmentErrors, UploadAttachmentResponses } from './types.gen.js';
+import type { AcceptLegalDocumentsData, AcceptLegalDocumentsErrors, AcceptLegalDocumentsResponses, CommitChangesetData, CommitChangesetErrors, CommitChangesetResponses, CreateFileData, CreateFileErrors, CreateFileResponses, CreateInvitationData, CreateInvitationErrors, CreateInvitationResponses, CreateOwnerData, CreateOwnerErrors, CreateOwnerResponses, CreatePublishedLinkData, CreatePublishedLinkErrors, CreatePublishedLinkResponses, CreateWorkspaceData, CreateWorkspaceErrors, CreateWorkspaceResponses, DeleteFileData, DeleteFileErrors, DeleteFileResponses, DeleteWorkspaceData, DeleteWorkspaceErrors, DeleteWorkspaceResponses, DismissReportData, DismissReportErrors, DismissReportResponses, ExportNoteData, ExportNoteErrors, ExportNoteResponses, ExportWorkspaceData, ExportWorkspaceErrors, ExportWorkspaceResponses, FinalizeAttachmentData, FinalizeAttachmentErrors, FinalizeAttachmentResponses, GetAccountData, GetAccountErrors, GetAccountResponses, GetAttachmentRevisionData, GetAttachmentRevisionErrors, GetAttachmentRevisionResponses, GetAuthSessionData, GetAuthSessionErrors, GetAuthSessionResponses, GetChangesData, GetChangesErrors, GetChangesResponses, GetDailyNoteSettingsData, GetDailyNoteSettingsErrors, GetDailyNoteSettingsResponses, GetFileData, GetFileErrors, GetFileResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetInstallationData, GetInstallationErrors, GetInstallationResponses, GetMutationReceiptData, GetMutationReceiptErrors, GetMutationReceiptResponses, GetPublishedAttachmentData, GetPublishedAttachmentErrors, GetPublishedAttachmentResponses, GetPublishedPageData, GetPublishedPageErrors, GetPublishedPageResponses, GetReadinessData, GetReadinessErrors, GetReadinessResponses, GetReportPageData, GetReportPageErrors, GetReportPageResponses, GetRevisionData, GetRevisionErrors, GetRevisionResponses, GetRootHealthData, GetRootHealthErrors, GetRootHealthResponses, GetRootReadinessData, GetRootReadinessErrors, GetRootReadinessResponses, GetSetupStatusData, GetSetupStatusErrors, GetSetupStatusResponses, GetSignUpChallengeData, GetSignUpChallengeErrors, GetSignUpChallengeResponses, GetSnapshotPageData, GetSnapshotPageErrors, GetSnapshotPageResponses, GetSyncProtocolData, GetSyncProtocolErrors, GetSyncProtocolResponses, ImportWorkspaceData, ImportWorkspaceErrors, ImportWorkspaceResponses, ListAccountsData, ListAccountsErrors, ListAccountsResponses, ListBacklinksData, ListBacklinksErrors, ListBacklinksResponses, ListDeletedFilesData, ListDeletedFilesErrors, ListDeletedFilesResponses, ListFilesData, ListFilesErrors, ListFilesResponses, ListHistoryData, ListHistoryErrors, ListHistoryResponses, ListInvitationsData, ListInvitationsErrors, ListInvitationsResponses, ListPublishedLinksData, ListPublishedLinksErrors, ListPublishedLinksResponses, ListReportsData, ListReportsErrors, ListReportsResponses, ListSessionsData, ListSessionsErrors, ListSessionsResponses, ListWorkspacesData, ListWorkspacesErrors, ListWorkspacesResponses, OpenPublishedPageData, OpenPublishedPageErrors, OpenPublishedPageResponses, PreviewPurgeData, PreviewPurgeErrors, PreviewPurgeResponses, PurgeFilesData, PurgeFilesErrors, PurgeFilesResponses, ReadInvitationData, ReadInvitationErrors, ReadInvitationResponses, RegisterAccountData, RegisterAccountErrors, RegisterAccountResponses, RemoveAccountData, RemoveAccountErrors, RemoveAccountResponses, RemoveOwnAccountData, RemoveOwnAccountErrors, RemoveOwnAccountResponses, ReportPublishedLinkData, ReportPublishedLinkErrors, ReportPublishedLinkResponses, RequestPasswordResetData, RequestPasswordResetErrors, RequestPasswordResetResponses, ResetPasswordData, ResetPasswordErrors, ResetPasswordResponses, RestoreFileData, RestoreFileErrors, RestoreFileResponses, RestoreRevisionData, RestoreRevisionErrors, RestoreRevisionResponses, RevokeInvitationData, RevokeInvitationErrors, RevokeInvitationResponses, RevokeOtherSessionsData, RevokeOtherSessionsErrors, RevokeOtherSessionsResponses, RevokePublishedLinkData, RevokePublishedLinkErrors, RevokePublishedLinkResponses, RevokeSessionData, RevokeSessionErrors, RevokeSessionResponses, SearchFilesData, SearchFilesErrors, SearchFilesResponses, SignInWithPasswordData, SignInWithPasswordErrors, SignInWithPasswordResponses, SignOutData, SignOutErrors, SignOutResponses, SignUpAccountData, SignUpAccountErrors, SignUpAccountResponses, StartSnapshotData, StartSnapshotErrors, StartSnapshotResponses, TakeDownReportedLinkData, TakeDownReportedLinkErrors, TakeDownReportedLinkResponses, UnlockPublishedLinkData, UnlockPublishedLinkErrors, UnlockPublishedLinkResponses, UpdateAccountData, UpdateAccountErrors, UpdateAccountResponses, UpdateDailyNoteSettingsData, UpdateDailyNoteSettingsErrors, UpdateDailyNoteSettingsResponses, UpdateFileData, UpdateFileErrors, UpdateFileResponses, UpdateInstallationData, UpdateInstallationErrors, UpdateInstallationResponses, UpdatePreferencesData, UpdatePreferencesErrors, UpdatePreferencesResponses, UpdateWorkspaceData, UpdateWorkspaceErrors, UpdateWorkspaceResponses, UploadAttachmentData, UploadAttachmentErrors, UploadAttachmentResponses, VerifyAddressData, VerifyAddressErrors, VerifyAddressResponses } from './types.gen.js';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -31,6 +31,25 @@ export const getAccount = <ThrowOnError extends boolean = false>(options?: Optio
         }],
     url: '/api/account',
     ...options
+});
+
+/**
+ * Accept the current legal documents of the installation.
+ *
+ * Stores the versions of the terms and of the privacy notice that the person accepts, with the time (record 0120). The versions must be the current ones, so a page that showed an older version records nothing and answers consent_required.
+ */
+export const acceptLegalDocuments = <ThrowOnError extends boolean = false>(options: Options<AcceptLegalDocumentsData, ThrowOnError>): RequestResult<AcceptLegalDocumentsResponses, AcceptLegalDocumentsErrors, ThrowOnError> => (options.client ?? client).post<AcceptLegalDocumentsResponses, AcceptLegalDocumentsErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'notesapp_session',
+            type: 'apiKey'
+        }],
+    url: '/api/account/consent',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
 
 /**
@@ -69,6 +88,51 @@ export const removeOwnAccount = <ThrowOnError extends boolean = false>(options: 
         'Content-Type': 'application/json',
         ...options.headers
     }
+});
+
+/**
+ * List the sessions of the signed in account.
+ *
+ * Lists every session of the account with the device that the browser named and the last activity. No answer holds a token.
+ */
+export const listSessions = <ThrowOnError extends boolean = false>(options?: Options<ListSessionsData, ThrowOnError>): RequestResult<ListSessionsResponses, ListSessionsErrors, ThrowOnError> => (options?.client ?? client).get<ListSessionsResponses, ListSessionsErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'notesapp_session',
+            type: 'apiKey'
+        }],
+    url: '/api/account/sessions',
+    ...options
+});
+
+/**
+ * End every session of the account but the current one.
+ *
+ * Signs the account out on every other device. The session that makes the request stays.
+ */
+export const revokeOtherSessions = <ThrowOnError extends boolean = false>(options?: Options<RevokeOtherSessionsData, ThrowOnError>): RequestResult<RevokeOtherSessionsResponses, RevokeOtherSessionsErrors, ThrowOnError> => (options?.client ?? client).delete<RevokeOtherSessionsResponses, RevokeOtherSessionsErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'notesapp_session',
+            type: 'apiKey'
+        }],
+    url: '/api/account/sessions/others',
+    ...options
+});
+
+/**
+ * End one session of the signed in account.
+ *
+ * Ends one session of the account, for example on a lost device. A session of another account answers not found.
+ */
+export const revokeSession = <ThrowOnError extends boolean = false>(options: Options<RevokeSessionData, ThrowOnError>): RequestResult<RevokeSessionResponses, RevokeSessionErrors, ThrowOnError> => (options.client ?? client).delete<RevokeSessionResponses, RevokeSessionErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'notesapp_session',
+            type: 'apiKey'
+        }],
+    url: '/api/account/sessions/{sessionId}',
+    ...options
 });
 
 /**
@@ -295,6 +359,13 @@ export const registerAccount = <ThrowOnError extends boolean = false>(options: O
 });
 
 /**
+ * Read a proof of work challenge for one sign-up.
+ *
+ * Answers a random value, a difficulty and an expiry, signed by this server (record 0115). The browser finds a solution whose digest starts with as many zero bits as the difficulty names, and sends it with the sign-up. One solution makes one account. No third party takes part. The installation must have the open registration policy.
+ */
+export const getSignUpChallenge = <ThrowOnError extends boolean = false>(options?: Options<GetSignUpChallengeData, ThrowOnError>): RequestResult<GetSignUpChallengeResponses, GetSignUpChallengeErrors, ThrowOnError> => (options?.client ?? client).get<GetSignUpChallengeResponses, GetSignUpChallengeErrors, ThrowOnError>({ url: '/api/registrations/challenge', ...options });
+
+/**
  * Read the address that a valid invitation binds.
  *
  * Answers the address of a valid invitation, so the person sees the address of their new account before they choose a password. The token travels in the body, so it reaches no address log.
@@ -309,7 +380,80 @@ export const readInvitation = <ThrowOnError extends boolean = false>(options: Op
 });
 
 /**
- * Report whether the first account exists.
+ * Ask for an account with an address and a password.
+ *
+ * Open registration (record 0114). A new address gets a pending account and a verification link by mail. An address that already signs in gets a mail that tells its owner about the attempt. A pending address is replaced, with its password. Every one of these answers the same status and body, so the answer states nothing about the address. The installation must have the open registration policy.
+ */
+export const signUpAccount = <ThrowOnError extends boolean = false>(options: Options<SignUpAccountData, ThrowOnError>): RequestResult<SignUpAccountResponses, SignUpAccountErrors, ThrowOnError> => (options.client ?? client).post<SignUpAccountResponses, SignUpAccountErrors, ThrowOnError>({
+    url: '/api/registrations/open',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Prove the address of a pending account and make the account.
+ *
+ * Takes the token of a verification link. A valid token marks the address verified and makes the account, and the person then signs in. An expired, a replaced and an unknown token all take one refusal. The token travels in the body, so it reaches no address log.
+ */
+export const verifyAddress = <ThrowOnError extends boolean = false>(options: Options<VerifyAddressData, ThrowOnError>): RequestResult<VerifyAddressResponses, VerifyAddressErrors, ThrowOnError> => (options.client ?? client).post<VerifyAddressResponses, VerifyAddressErrors, ThrowOnError>({
+    url: '/api/registrations/verification',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * List the open reports of published links.
+ *
+ * Only an administrator reads the reports. A report names its link and the address to open it, and no fact of a note or of the workspace.
+ */
+export const listReports = <ThrowOnError extends boolean = false>(options?: Options<ListReportsData, ThrowOnError>): RequestResult<ListReportsResponses, ListReportsErrors, ThrowOnError> => (options?.client ?? client).get<ListReportsResponses, ListReportsErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'notesapp_session',
+            type: 'apiKey'
+        }],
+    url: '/api/reports',
+    ...options
+});
+
+/**
+ * Close one report and keep its link.
+ *
+ * Only an administrator closes a report. The link stays as it is.
+ */
+export const dismissReport = <ThrowOnError extends boolean = false>(options: Options<DismissReportData, ThrowOnError>): RequestResult<DismissReportResponses, DismissReportErrors, ThrowOnError> => (options.client ?? client).delete<DismissReportResponses, DismissReportErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'notesapp_session',
+            type: 'apiKey'
+        }],
+    url: '/api/reports/{reportId}',
+    ...options
+});
+
+/**
+ * Take down the link of one report.
+ *
+ * Only an administrator takes a link down. The link stops at once, and every open report of it closes. The owner sees that an administrator took the link down and cannot make it live again. The administrator gets no membership, so no note of the workspace becomes readable.
+ */
+export const takeDownReportedLink = <ThrowOnError extends boolean = false>(options: Options<TakeDownReportedLinkData, ThrowOnError>): RequestResult<TakeDownReportedLinkResponses, TakeDownReportedLinkErrors, ThrowOnError> => (options.client ?? client).post<TakeDownReportedLinkResponses, TakeDownReportedLinkErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'notesapp_session',
+            type: 'apiKey'
+        }],
+    url: '/api/reports/{reportId}/takedown',
+    ...options
+});
+
+/**
+ * Report whether the first account exists and who can make one.
  *
  * Reports if first-run setup is complete without exposing account data.
  */
@@ -947,6 +1091,28 @@ export const openPublishedPage = <ThrowOnError extends boolean = false>(options:
  * Streams the bytes of one attachment revision that a published note names. The address names the link, the note and the revision, and the server proves all three facts on every call: the link opens the note, and the current content of that note names that revision. It trusts no part of the address. The operation declares an empty security requirement, so no identity hook runs for it. Every failure takes the one refusal of the reader path.
  */
 export const getPublishedAttachment = <ThrowOnError extends boolean = false>(options: Options<GetPublishedAttachmentData, ThrowOnError>): RequestResult<GetPublishedAttachmentResponses, GetPublishedAttachmentErrors, ThrowOnError> => (options.client ?? client).get<GetPublishedAttachmentResponses, GetPublishedAttachmentErrors, ThrowOnError>({ url: '/published/{token}/attachments/{fileId}/{revisionId}', ...options });
+
+/**
+ * Read the report form of a published link.
+ *
+ * Answers one HTML document that the server builds, with no script. The form asks for a reason from a fixed list and an optional note. The form answers the same document for every token, so it states nothing about the link.
+ */
+export const getReportPage = <ThrowOnError extends boolean = false>(options: Options<GetReportPageData, ThrowOnError>): RequestResult<GetReportPageResponses, GetReportPageErrors, ThrowOnError> => (options.client ?? client).get<GetReportPageResponses, GetReportPageErrors, ThrowOnError>({ url: '/published/{token}/report', ...options });
+
+/**
+ * Report a published link to the administrators.
+ *
+ * Takes the reason and the note of the report form and answers one document that thanks the reader. The report is the second write of the reader path. One narrow function stores it for a link that opens now, and stores nothing for any other token. Both answer the same document. The operation declares an empty security requirement, so no identity hook runs for it. The attempt limit of this route counts each client address, and each /64 prefix of an IPv6 address.
+ */
+export const reportPublishedLink = <ThrowOnError extends boolean = false>(options: Options<ReportPublishedLinkData, ThrowOnError>): RequestResult<ReportPublishedLinkResponses, ReportPublishedLinkErrors, ThrowOnError> => (options.client ?? client).post<ReportPublishedLinkResponses, ReportPublishedLinkErrors, ThrowOnError>({
+    ...urlSearchParamsBodySerializer,
+    url: '/published/{token}/report',
+    ...options,
+    headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        ...options.headers
+    }
+});
 
 /**
  * Give the password of a published link.

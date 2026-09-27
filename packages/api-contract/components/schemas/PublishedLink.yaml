@@ -9,6 +9,7 @@ required:
   - createdAt
   - expiresAt
   - passwordProtected
+  - takenDown
 properties:
   publicationId:
     allOf:
@@ -42,3 +43,10 @@ properties:
     type: boolean
     readOnly: true
     description: Whether a reader gives a password before it reads the link.
+  takenDown:
+    type: boolean
+    readOnly: true
+    description: >-
+      Whether an administrator took the link down after a report. A taken
+      down link opens nothing, and its owner cannot make it live again. It
+      stays in the list for 30 days.

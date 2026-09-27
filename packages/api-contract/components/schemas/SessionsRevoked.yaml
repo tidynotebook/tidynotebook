@@ -1,0 +1,11 @@
+type: object
+description: How many sessions ended.
+additionalProperties: false
+required:
+  - revoked
+properties:
+  revoked:
+    type: integer
+    readOnly: true
+    description: The number of sessions that ended.
+    minimum: 0

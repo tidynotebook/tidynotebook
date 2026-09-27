@@ -1,0 +1,5 @@
+description: The address is proved and the account exists.
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/AddressVerified.yaml'

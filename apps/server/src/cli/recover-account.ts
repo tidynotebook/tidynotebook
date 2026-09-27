@@ -13,10 +13,10 @@
 import process from 'node:process';
 import { openIdentityStore } from '@notesapp/storage-server';
 import type { ServerConfig } from '../config.ts';
-import { createAuth } from '../auth/better-auth.ts';
 import { loadProtectedEnvironment, loadServerConfig } from '../config.ts';
-import { minimumPasswordLength } from './bootstrap.ts';
-import { readArgument, readSecret } from './prompt.ts';
+import { checkBreach } from '../auth/breach-check.ts';
+import { createAuth, pwnedRangeQuery } from '../auth/better-auth.ts';
+import { assertNewPassword, readArgument, readSecret } from './prompt.ts';
 
 /** What the recovery command changed. */
 export type RecoveryResult = {
@@ -45,9 +45,15 @@ export type RecoveryInput = {
 export async function recoverAccount(
   input: RecoveryInput,
 ): Promise<RecoveryResult> {
-  if (input.password.length < minimumPasswordLength)
+  assertNewPassword(input.password);
+  // The command sets the password without the library, so it runs the same
+  // breach check itself (record 0116). No answer accepts the password.
+  if (
+    input.config.breachCheck &&
+    (await checkBreach(input.password, pwnedRangeQuery)) === 'breached'
+  )
     throw new Error(
-      `notesapp: the password must have at least ${String(minimumPasswordLength)} characters.`,
+      'notesapp: that password is in a list of leaked passwords. Choose another one.',
     );
   const identity = openIdentityStore(input.config.databaseUrl, { poolSize: 2 });
   // The command starts no session, so the hook refuses every one.

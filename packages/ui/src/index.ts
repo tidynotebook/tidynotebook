@@ -183,5 +183,6 @@ export {
   TaskListIcon,
   TrashIcon,
   UploadIcon,
+  UsersIcon,
   WorkspaceIcon,
 } from './icons.tsx';

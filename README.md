@@ -1,11 +1,11 @@
 # NotesApp
 
-NotesApp is a self-hosted Markdown notes application for one person. The file
-is the document: a note is a Markdown file with one `.md` suffix, in a folder
+NotesApp is a self-hosted Markdown notes application for you and the people
+you invite. Each account has its own notes. The file is the document: a note is a Markdown file with one `.md` suffix, in a folder
 you choose. Typing writes a draft on your device. Save creates one immutable
 version on your server.
 
-**Status:** 0.7.3 is the current release. See
+**Status:** 0.8.0 is the current release. See
 [CHANGELOG.md](CHANGELOG.md) for what changed and the
 [GitHub project board](https://github.com/users/bkhanale/projects/2) for the
 open work.

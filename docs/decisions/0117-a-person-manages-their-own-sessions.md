@@ -1,6 +1,6 @@
 # 0117. A person manages their own sessions
 
-- Status: Accepted
+- Status: Superseded by [0122](0122-a-session-is-revoked-by-its-identifier.md)
 - Date: 2026-09-26
 
 ## Context

@@ -1,0 +1,5 @@
+description: One challenge for the proof of work of a sign-up.
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/SignUpChallenge.yaml'

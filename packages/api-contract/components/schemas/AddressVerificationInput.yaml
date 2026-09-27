@@ -1,0 +1,12 @@
+type: object
+description: The token that a verification link carries in its fragment.
+additionalProperties: false
+required:
+  - token
+properties:
+  token:
+    type: string
+    description: The token of the verification link.
+    minLength: 1
+    maxLength: 512
+    pattern: '^[A-Za-z0-9_.-]+$'

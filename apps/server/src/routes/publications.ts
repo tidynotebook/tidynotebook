@@ -24,10 +24,10 @@ import type {
   Action,
   Actor,
   PasswordHasher,
-  PublishedLink,
   SecretDigest,
 } from '@notesapp/core';
 import type {
+  OwnedPublishedLink,
   PublishedLinkDraft,
   PublishedLinkStore,
 } from '@notesapp/storage-server';
@@ -63,7 +63,7 @@ function permit(actor: Actor, workspaceId: string, action: Action): void {
 }
 
 /** One link as the contract reports it. No member of it opens anything. */
-function answerLink(link: PublishedLink): Record<string, unknown> {
+function answerLink(link: OwnedPublishedLink): Record<string, unknown> {
   return {
     publicationId: link.publicationId,
     scope:
@@ -73,6 +73,7 @@ function answerLink(link: PublishedLink): Record<string, unknown> {
     createdAt: link.createdAt,
     expiresAt: link.expiresAt,
     passwordProtected: link.passwordProtected,
+    takenDown: link.takenDown,
   };
 }
 

@@ -1,0 +1,50 @@
+type: object
+description: >-
+  One session of the signed in account, on one device. It holds no token,
+  so a read of the list opens no session.
+additionalProperties: false
+required:
+  - sessionId
+  - current
+  - userAgent
+  - createdAt
+  - lastActiveAt
+  - expiresAt
+properties:
+  sessionId:
+    type: string
+    readOnly: true
+    description: Identifier of the session. It is not the token.
+    minLength: 1
+    maxLength: 128
+  current:
+    type: boolean
+    readOnly: true
+    description: True for the session of the device that reads the list.
+  userAgent:
+    type:
+      - string
+      - 'null'
+    readOnly: true
+    description: >-
+      What the browser of the session said it is, or null when it said
+      nothing.
+    maxLength: 512
+  createdAt:
+    type: string
+    readOnly: true
+    description: Instant at which the session started.
+    format: date-time
+    maxLength: 64
+  lastActiveAt:
+    type: string
+    readOnly: true
+    description: Instant at which the session was last used.
+    format: date-time
+    maxLength: 64
+  expiresAt:
+    type: string
+    readOnly: true
+    description: Instant at which the session ends if nobody uses it.
+    format: date-time
+    maxLength: 64

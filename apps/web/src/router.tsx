@@ -3,8 +3,8 @@
  *
  * The one workspace of the account keeps its identifier in the address, so a
  * note link stays stable, but no screen names the workspace. Session
- * protection wraps every private route. Login and first-run setup use the
- * only public page.
+ * protection wraps every private route. Login and first-run setup use one
+ * public page, and the link of an invitation opens the other.
  *
  * Every page a signed in person opens is a child of the workspace frame, so
  * each has the sidebar and the breadcrumb (record 0091). Each child names its
@@ -21,6 +21,11 @@ import {
   RequireSession,
 } from './features/accounts/accounts.tsx';
 import type { FrameHandle } from './lib/breadcrumb.ts';
+import {
+  invitationRoute,
+  signUpRoute,
+  verificationRoute,
+} from './lib/accounts.ts';
 const Shell = lazy(async () => ({
   default: (await import('./shell/shell.tsx')).Shell,
 }));
@@ -44,6 +49,19 @@ const TrashView = lazy(async () => ({
 }));
 const AttentionRoute = lazy(async () => ({
   default: (await import('./features/attention/attention.tsx')).AttentionRoute,
+}));
+const AccountsView = lazy(async () => ({
+  default: (await import('./features/accounts/administration.tsx'))
+    .AccountsView,
+}));
+const InvitationPage = lazy(async () => ({
+  default: (await import('./features/accounts/invitation.tsx')).InvitationPage,
+}));
+const SignUpPage = lazy(async () => ({
+  default: (await import('./features/accounts/sign-up.tsx')).SignUpPage,
+}));
+const VerifyPage = lazy(async () => ({
+  default: (await import('./features/accounts/sign-up.tsx')).VerifyPage,
 }));
 const PublishedLinksView = lazy(async () => ({
   default: (await import('./features/publishing/published-links.tsx'))
@@ -75,6 +93,13 @@ function page(name: FrameHandle['page']): FrameHandle {
 
 const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
+  // The page that an invitation link opens. It needs no session, and the
+  // server writes the same path into every link.
+  { path: invitationRoute, element: deferred(<InvitationPage />) },
+  // Open registration (record 0114). The server writes the verification path
+  // into every link.
+  { path: signUpRoute, element: deferred(<SignUpPage />) },
+  { path: verificationRoute, element: deferred(<VerifyPage />) },
   {
     path: '/w/:workspaceId',
     element: <RequireSession>{deferred(<Shell />)}</RequireSession>,
@@ -108,6 +133,11 @@ const router = createBrowserRouter([
         path: 'published',
         element: deferred(<PublishedLinksView />),
         handle: page('published'),
+      },
+      {
+        path: 'accounts',
+        element: deferred(<AccountsView />),
+        handle: page('accounts'),
       },
       {
         path: 'attention',

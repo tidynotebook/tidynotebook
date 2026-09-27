@@ -7,11 +7,15 @@ visit to your first saved note.
 
 Open the address of your installation. Because no account exists yet, the page
 says **Create your account**. Enter an email address and a password of at least
-12 characters, and type the password again to confirm it. Select **Create
-account**.
+15 characters, and type the password again to confirm it. Select **Create
+account**. A password that a list of leaked passwords holds is refused, so
+choose one that you use nowhere else. A password that an earlier release
+accepted still signs in.
 
-That account is the only account. It owns every note. There is no second
-account, no invitation, and no sharing.
+That first account is the administrator of the installation. It can invite
+other people, and each of them gets an account with its own notes. See
+[Accounts and invitations](accounts.md). If somebody invited you, read
+[Joining an installation](joining.md) instead.
 
 Every later visit shows **Sign in** instead. Enter the same address and
 password.

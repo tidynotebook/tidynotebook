@@ -62,6 +62,10 @@ services:
       # origin, with its scheme and its port, only when a second address
       # reaches this installation.
       NOTESAPP_ADDITIONAL_ORIGINS: ${NOTESAPP_ADDITIONAL_ORIGINS:-}
+      # A public installation serves each published page from an origin of
+      # its own, on a host name that the application does not use. An empty
+      # value serves published pages from the origin above.
+      NOTESAPP_PUBLISHED_ORIGIN: ${NOTESAPP_PUBLISHED_ORIGIN:-}
       NOTESAPP_LOG_LEVEL: ${NOTESAPP_LOG_LEVEL:-info}
       NOTESAPP_MAX_BODY_BYTES: ${NOTESAPP_MAX_BODY_BYTES:-1048576}
       NOTESAPP_MAX_HEADER_BYTES: ${NOTESAPP_MAX_HEADER_BYTES:-16384}
@@ -75,6 +79,9 @@ services:
       NOTESAPP_UPLOAD_IDLE_TIMEOUT_MS: ${NOTESAPP_UPLOAD_IDLE_TIMEOUT_MS:-}
       NOTESAPP_RATE_LIMIT_WINDOW_S: ${NOTESAPP_RATE_LIMIT_WINDOW_S:-60}
       NOTESAPP_RATE_LIMIT_MAX: ${NOTESAPP_RATE_LIMIT_MAX:-100}
+      # The life of one session, in seconds. An empty value keeps the default
+      # that apps/server/src/config.ts states.
+      NOTESAPP_SESSION_MAX_AGE_S: ${NOTESAPP_SESSION_MAX_AGE_S:-}
       NOTESAPP_HOST: 0.0.0.0
       NOTESAPP_PORT: 3000
       # The proxies whose forwarded headers this installation believes. An
@@ -86,6 +93,22 @@ services:
       # apps/server/src/config.ts states.
       NOTESAPP_SHUTDOWN_GRACE_MS: ${NOTESAPP_SHUTDOWN_GRACE_MS:-}
       NOTESAPP_SHUTDOWN_DEADLINE_MS: ${NOTESAPP_SHUTDOWN_DEADLINE_MS:-}
+      # The storage limit of a new account, in bytes, and the life of a new
+      # invitation, in hours. An empty value keeps the default that
+      # apps/server/src/config.ts states.
+      NOTESAPP_ACCOUNT_LIMIT_BYTES: ${NOTESAPP_ACCOUNT_LIMIT_BYTES:-}
+      NOTESAPP_INVITATION_LIFETIME_HOURS: ${NOTESAPP_INVITATION_LIFETIME_HOURS:-}
+      NOTESAPP_PENDING_ACCOUNT_HOURS: ${NOTESAPP_PENDING_ACCOUNT_HOURS:-}
+      NOTESAPP_SIGNUP_DIFFICULTY: ${NOTESAPP_SIGNUP_DIFFICULTY:-}
+      # The terms and the privacy notice of a public installation. Name all
+      # four or none. A raised version asks every account for consent again.
+      NOTESAPP_TERMS_URL: ${NOTESAPP_TERMS_URL:-}
+      NOTESAPP_TERMS_VERSION: ${NOTESAPP_TERMS_VERSION:-}
+      NOTESAPP_PRIVACY_URL: ${NOTESAPP_PRIVACY_URL:-}
+      NOTESAPP_PRIVACY_VERSION: ${NOTESAPP_PRIVACY_VERSION:-}
+      # Whether a new password is checked against the range service of Have I
+      # Been Pwned. Set it to off for an installation with no outbound network.
+      NOTESAPP_BREACH_CHECK: ${NOTESAPP_BREACH_CHECK:-on}
     secrets:
       - runtime_database_url
       - auth_database_url

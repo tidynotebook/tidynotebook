@@ -1,0 +1,11 @@
+type: object
+description: The address that the verification proved. Its account now exists.
+additionalProperties: false
+required:
+  - email
+properties:
+  email:
+    allOf:
+      - $ref: './EmailAddress.yaml'
+    readOnly: true
+    description: The address of the new account, which signs in now.

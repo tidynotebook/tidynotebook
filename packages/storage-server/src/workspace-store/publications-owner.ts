@@ -22,7 +22,7 @@
  *   a digest of any kind.
  */
 import { randomUUID } from 'node:crypto';
-import { and, count, desc, eq, isNotNull, isNull } from 'drizzle-orm';
+import { and, count, desc, eq, isNotNull, isNull, or } from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import type pg from 'pg';
 import {
@@ -39,6 +39,14 @@ import { files, publications } from '../schema.ts';
 import { isUuid } from './errors.ts';
 import { isSecretDigest, storedScope } from './publication-row.ts';
 
+/**
+ * One link as its owner reads it: the domain record, and whether an
+ * administrator took it down after a report (record 0119).
+ */
+export type OwnedPublishedLink = PublishedLink & {
+  readonly takenDown: boolean;
+};
+
 /** What the owner path stores for one new link. */
 export type PublishedLinkDraft = {
   /** The digest of the opaque token. The token itself reaches no server file. */
@@ -53,7 +61,7 @@ export type PublishedLinkDraft = {
 /** The links of one workspace, as their owner changes them. */
 export type PublicationOwner = {
   /** Writes one more link, or refuses the request as the rule decided. */
-  create(draft: PublishedLinkDraft): Promise<Result<PublishedLink>>;
+  create(draft: PublishedLinkDraft): Promise<Result<OwnedPublishedLink>>;
   /**
    * Every open link of this workspace, newest first, and no digest of any.
    *
@@ -62,11 +70,14 @@ export type PublicationOwner = {
    * its row away, so the list of the owner drops it at once: the screen
    * answers what is open right now (decision 0048) and it has no words for a
    * link that is not. A link that reached its expiry stays, because the
-   * screen does say that one stopped and the owner can revoke it.
+   * screen does say that one stopped and the owner can revoke it. A link that
+   * an administrator took down stays too, marked, until the retention run
+   * takes it away after 30 days, so the owner learns why it stopped (record
+   * 0123).
    */
-  list(): Promise<readonly PublishedLink[]>;
+  list(): Promise<readonly OwnedPublishedLink[]>;
   /** Stops one link at `at`. A link that is already revoked keeps its instant. */
-  revoke(publicationId: string, at: Date): Promise<Result<PublishedLink>>;
+  revoke(publicationId: string, at: Date): Promise<Result<OwnedPublishedLink>>;
 };
 
 /** How many links one answer of the owner list holds at most. */
@@ -82,6 +93,7 @@ const linkColumns = {
   createdAt: publications.createdAt,
   expiresAt: publications.expiresAt,
   revokedAt: publications.revokedAt,
+  takenDownAt: publications.takenDownAt,
   passwordDigest: publications.passwordDigest,
 };
 
@@ -95,8 +107,9 @@ function ownedLink(row: {
   createdAt: Date;
   expiresAt: Date | null;
   revokedAt: Date | null;
+  takenDownAt: Date | null;
   passwordDigest: string | null;
-}): PublishedLink {
+}): OwnedPublishedLink {
   return {
     publicationId: row.publicationId,
     workspaceId: row.workspaceId,
@@ -105,6 +118,7 @@ function ownedLink(row: {
     expiresAt: row.expiresAt?.toISOString() ?? null,
     revokedAt: row.revokedAt?.toISOString() ?? null,
     passwordProtected: row.passwordDigest !== null,
+    takenDown: row.takenDownAt !== null,
   };
 }
 
@@ -150,7 +164,7 @@ export function publicationsOwnerRepository(
   /** One link of this workspace by its identifier. */
   const linkById = async (
     publicationId: string,
-  ): Promise<PublishedLink | null> => {
+  ): Promise<OwnedPublishedLink | null> => {
     const rows = await db
       .select(linkColumns)
       .from(publications)
@@ -166,7 +180,9 @@ export function publicationsOwnerRepository(
   };
 
   return {
-    async create(draft: PublishedLinkDraft): Promise<Result<PublishedLink>> {
+    async create(
+      draft: PublishedLinkDraft,
+    ): Promise<Result<OwnedPublishedLink>> {
       if (!isSecretDigest(draft.tokenDigest)) {
         throw new OperationalError(
           'unexpected',
@@ -217,14 +233,17 @@ export function publicationsOwnerRepository(
       return ok(ownedLink(row));
     },
 
-    async list(): Promise<readonly PublishedLink[]> {
+    async list(): Promise<readonly OwnedPublishedLink[]> {
       const rows = await db
         .select(linkColumns)
         .from(publications)
         .where(
           and(
             eq(publications.workspaceId, workspaceId),
-            isNull(publications.revokedAt),
+            or(
+              isNull(publications.revokedAt),
+              isNotNull(publications.takenDownAt),
+            ),
           ),
         )
         .orderBy(desc(publications.createdAt), desc(publications.id))
@@ -235,7 +254,7 @@ export function publicationsOwnerRepository(
     async revoke(
       publicationId: string,
       at: Date,
-    ): Promise<Result<PublishedLink>> {
+    ): Promise<Result<OwnedPublishedLink>> {
       if (!isUuid(publicationId)) return fail('not_found');
       const rows = await db
         .update(publications)

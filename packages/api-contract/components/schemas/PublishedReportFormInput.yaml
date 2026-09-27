@@ -1,0 +1,17 @@
+type: object
+description: >-
+  The fields of the report form of a published page. The page holds no
+  script, so the browser sends the fields in the form encoding of HTML.
+additionalProperties: false
+required:
+  - reason
+properties:
+  reason:
+    $ref: './ReportReason.yaml'
+  note:
+    type: string
+    writeOnly: true
+    description: >-
+      What the reader adds for the administrator. An empty value is the
+      same as no note.
+    maxLength: 2000

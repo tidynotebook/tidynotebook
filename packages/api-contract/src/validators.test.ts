@@ -258,6 +258,7 @@ await test('the token of a link appears in one answer only', () => {
     createdAt: '2026-09-16T00:00:00.000Z',
     expiresAt: null,
     passwordProtected: false,
+    takenDown: false,
   };
   assert.equal(created({ link, token: 'aaaaaaaaaaaaaaaaaaaaaa' }), true);
   // The answer states the token once, so a second copy is refused.

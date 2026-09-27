@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { ConfigError, loadServerConfig, mebibyte } from './config.ts';
+import {
+  ConfigError,
+  loadServerConfig,
+  mebibyte,
+  optionalVariables,
+} from './config.ts';
 
 const valid: Record<string, string> = {
   NOTESAPP_ORIGIN: 'http://127.0.0.1',
@@ -25,7 +31,9 @@ function environment(
 await test('a complete environment produces a configuration', () => {
   const config = loadServerConfig(valid);
   assert.equal(config.origin, 'http://127.0.0.1');
-  assert.deepEqual(config.servedOrigins, ['http://127.0.0.1']);
+  assert.deepEqual(config.servedOrigins, [
+    { origin: 'http://127.0.0.1', role: 'application' },
+  ]);
   assert.equal(config.logLevel, 'warn');
   assert.equal(config.limits.bodyBytes, 1048576);
   assert.equal(config.limits.headerBytes, 16384);
@@ -271,7 +279,9 @@ await test('an absent additional list serves the canonical origin only', () => {
     }),
   );
   assert.equal(config.origin, 'https://notes.example.com:8443');
-  assert.deepEqual(config.servedOrigins, ['https://notes.example.com:8443']);
+  assert.deepEqual(config.servedOrigins, [
+    { origin: 'https://notes.example.com:8443', role: 'application' },
+  ]);
 });
 
 await test('an additional origin joins the served list', () => {
@@ -281,7 +291,7 @@ await test('an additional origin joins the served list', () => {
         NOTESAPP_ORIGIN: 'http://127.0.0.1',
         NOTESAPP_ADDITIONAL_ORIGINS: 'http://localhost,http://[::1]:3000',
       }),
-    ).servedOrigins,
+    ).servedOrigins.map((entry) => entry.origin),
     ['http://127.0.0.1', 'http://localhost', 'http://[::1]:3000'],
   );
 });
@@ -369,4 +379,59 @@ await test('a configuration error never repeats a rejected value', () => {
     assert.ok(error instanceof ConfigError);
     assert.equal(error.message.includes('super-secret'), false);
   }
+});
+
+await test('every optional setting reaches the container of the Compose file', async () => {
+  // The Compose file passes a closed list of variables to the application.
+  // A setting that the server reads and the list leaves out does nothing in a
+  // container, whatever the operator writes in .env. The mail transport is
+  // the one exception: its URL is a secret, so an operator override adds it
+  // with the sender, as the self-hosting guide states.
+  const compose = await readFile(
+    new URL('../../../docker-compose.yml', import.meta.url),
+    'utf8',
+  );
+  const byOverride = ['NOTESAPP_SMTP_URL', 'NOTESAPP_MAIL_FROM'];
+  for (const name of optionalVariables) {
+    if (byOverride.includes(name)) continue;
+    assert.match(compose, new RegExp(`^ +${name}:`, 'm'), name);
+  }
+});
+
+await test('the legal documents come all four or not at all', () => {
+  assert.equal(loadServerConfig(environment({})).legalDocuments, null);
+  const named = loadServerConfig(
+    environment({
+      NOTESAPP_TERMS_URL: 'https://example.test/terms',
+      NOTESAPP_TERMS_VERSION: '2026-09',
+      NOTESAPP_PRIVACY_URL: 'https://example.test/privacy',
+      NOTESAPP_PRIVACY_VERSION: '3',
+    }),
+  );
+  assert.deepEqual(named.legalDocuments, {
+    terms: { url: 'https://example.test/terms', version: '2026-09' },
+    privacy: { url: 'https://example.test/privacy', version: '3' },
+  });
+  assert.throws(
+    () =>
+      loadServerConfig(
+        environment({
+          NOTESAPP_TERMS_URL: 'https://example.test/terms',
+          NOTESAPP_TERMS_VERSION: '1',
+        }),
+      ),
+    /all four, or none of them/,
+  );
+  assert.throws(
+    () =>
+      loadServerConfig(
+        environment({
+          NOTESAPP_TERMS_URL: 'ftp://example.test/terms',
+          NOTESAPP_TERMS_VERSION: '1',
+          NOTESAPP_PRIVACY_URL: 'https://example.test/privacy',
+          NOTESAPP_PRIVACY_VERSION: '1',
+        }),
+      ),
+    /NOTESAPP_TERMS_URL: name a full http or https address/,
+  );
 });

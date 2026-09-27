@@ -15,6 +15,8 @@ import {
   publishedDocument,
   publishedDocumentClasses,
   readableNoteName,
+  reportedSentence,
+  reportReasonWords,
   unavailableSentence,
   type PublishedPageView,
 } from './published-document.ts';
@@ -147,4 +149,58 @@ await test('every class of the document is one token of the named scale', () => 
     assert.ok(!name.includes(' '), name);
     assert.notEqual(name, '');
   }
+});
+
+await test('a note and a list carry the report link, and no other state does', () => {
+  const reportHref = '/published/abc/report';
+  const note = publishedDocument({
+    view: { kind: 'note', name: 'Day one', body: '<p>x</p>', listHref: null },
+    stylesheets: [],
+    formAction: '/published/abc',
+    reportHref,
+  });
+  assert.ok(note.includes(`href="${reportHref}"`));
+  assert.ok(note.includes('Report this page'));
+  const list = publishedDocument({
+    view: { kind: 'list', notes: [] },
+    stylesheets: [],
+    formAction: '/published/abc',
+    reportHref,
+  });
+  assert.ok(list.includes(`href="${reportHref}"`));
+  for (const view of [
+    { kind: 'unavailable' },
+    { kind: 'locked' },
+  ] satisfies PublishedPageView[])
+    assert.ok(
+      !publishedDocument({
+        view,
+        stylesheets: [],
+        formAction: '/published/abc',
+        reportHref,
+      }).includes(reportHref),
+      view.kind,
+    );
+});
+
+await test('the report form offers every reason and holds no script', () => {
+  const html = publishedDocument({
+    view: { kind: 'report', reasons: ['phishing', 'spam', 'other'] },
+    stylesheets: ['/assets/a.css'],
+    formAction: '/published/abc/report',
+  });
+  assert.ok(html.includes('<title>Report this page</title>'));
+  assert.ok(html.includes('action="/published/abc/report"'));
+  assert.ok(html.includes('method="post"'));
+  assert.ok(html.includes('value="phishing" checked'));
+  assert.ok(!html.includes('value="spam" checked'));
+  assert.ok(html.includes(reportReasonWords.spam));
+  assert.ok(html.includes('name="note"'));
+  assert.ok(!/<script|\son[a-z]+=/i.test(html));
+});
+
+await test('the answer after a report says one sentence', () => {
+  const html = documentOf({ kind: 'reported' });
+  assert.ok(html.includes(reportedSentence));
+  assert.ok(!html.includes('<form'));
 });

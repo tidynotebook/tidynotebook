@@ -14,10 +14,14 @@
  * else changes: the key still carries the caller and the group, so two groups
  * and two callers stay apart.
  *
- * The counter lives in this process. A deployment that runs more than one
- * instance needs a shared counter, which the plugin supports through its
- * Redis store, and this file is where that choice would be made.
+ * A deployment counts in PostgreSQL, so every server process of one
+ * installation reads one count and a limit survives a restart (record 0121).
+ * `databaseAttemptCounter` is that counter, and `app.ts` builds the store of
+ * the plugin over it with `attemptStoreFor`. The map of this process stays for
+ * a server that has no database, which is what a test of the boundary runs.
+ * This file is the one place that decides where a count lives.
  */
+import { isIPv4, isIPv6 } from 'node:net';
 
 /** What one key holds right now. */
 type Attempt = {
@@ -35,6 +39,65 @@ export type AttemptState = { readonly current: number; readonly ttl: number };
 type AttemptCallback = (error: Error | null, result?: AttemptState) => void;
 
 /**
+ * Where the counts live. The map of this process answers at once, and the
+ * table of the installation answers after a round trip.
+ */
+export type AttemptCounter = {
+  count(
+    key: string,
+    timeWindow: number,
+    now: number,
+  ): AttemptState | Promise<AttemptState>;
+  read(
+    key: string,
+    timeWindow: number,
+    now: number,
+  ): AttemptState | Promise<AttemptState>;
+};
+
+/** What the counter of the installation needs from the database. */
+export type SharedCounterStore = {
+  countAttempt(key: string, windowMs: number): Promise<AttemptState>;
+  readAttempt(key: string, windowMs: number): Promise<AttemptState>;
+};
+
+/**
+ * The counter of the installation, which every server process shares.
+ *
+ * The database clock decides the window, so two processes with two clocks
+ * still read one window.
+ */
+export function databaseAttemptCounter(
+  store: SharedCounterStore,
+): AttemptCounter {
+  return {
+    count: (key, timeWindow) => store.countAttempt(key, timeWindow),
+    read: (key, timeWindow) => store.readAttempt(key, timeWindow),
+  };
+}
+
+/** Hands one answer of a counter to the callback of the plugin. */
+function answer(
+  result: AttemptState | Promise<AttemptState>,
+  callback: AttemptCallback,
+): void {
+  if (!(result instanceof Promise)) {
+    callback(null, result);
+    return;
+  }
+  result.then(
+    (state) => {
+      callback(null, state);
+    },
+    (error: unknown) => {
+      callback(
+        error instanceof Error ? error : new Error('notesapp: no count.'),
+      );
+    },
+  );
+}
+
+/**
  * How many keys one server holds.
  *
  * The map is bounded, so a caller that invents keys cannot grow it without
@@ -44,7 +107,7 @@ type AttemptCallback = (error: Error | null, result?: AttemptState) => void;
 export const maxAttemptKeys = 20_000;
 
 /** One counter map, which every child of one store shares. */
-export class AttemptCounters {
+export class AttemptCounters implements AttemptCounter {
   private readonly keys = new Map<string, Attempt>();
 
   /** Counts one attempt against `key` and answers the state after it. */
@@ -95,7 +158,9 @@ export class AttemptCounters {
  * from, which is the whole point of this file.
  */
 export class SharedAttemptStore {
-  readonly #counters: AttemptCounters;
+  readonly #counters: AttemptCounter;
+  /** The map of this process, when the counts live there. */
+  readonly #local: AttemptCounters | null;
   readonly #now: () => number;
 
   /**
@@ -105,20 +170,22 @@ export class SharedAttemptStore {
    */
   constructor(options?: {
     readonly now?: (() => number) | undefined;
-    readonly counters?: AttemptCounters | undefined;
+    readonly counters?: AttemptCounter | undefined;
   }) {
-    this.#counters = options?.counters ?? new AttemptCounters();
+    const counters = options?.counters ?? new AttemptCounters();
+    this.#counters = counters;
+    this.#local = counters instanceof AttemptCounters ? counters : null;
     this.#now = options?.now ?? ((): number => Date.now());
   }
 
   /** Counts one attempt. The signature is the one the plugin calls. */
   incr(key: string, callback: AttemptCallback, timeWindow: number): void {
-    callback(null, this.#counters.count(key, timeWindow, this.#now()));
+    answer(this.#counters.count(key, timeWindow, this.#now()), callback);
   }
 
   /** Reads the state of a key without counting an attempt against it. */
   read(key: string, callback: AttemptCallback, timeWindow: number): void {
-    callback(null, this.#counters.read(key, timeWindow, this.#now()));
+    answer(this.#counters.read(key, timeWindow, this.#now()), callback);
   }
 
   /** The store of one route, which shares the counters of this one. */
@@ -129,8 +196,58 @@ export class SharedAttemptStore {
     });
   }
 
-  /** How many keys this store holds. The bound of the map is tested by it. */
+  /** How many keys the map of this process holds, or zero for none. */
   get keyCount(): number {
-    return this.#counters.size;
+    return this.#local?.size ?? 0;
   }
+}
+
+/**
+ * The store class that the limit plugin builds, over one counter.
+ *
+ * The plugin builds its store with `new` and its own options, so the counter
+ * travels in the class. Every child of the store shares that counter.
+ */
+export function attemptStoreFor(
+  counter: AttemptCounter,
+): new () => SharedAttemptStore {
+  return class extends SharedAttemptStore {
+    constructor() {
+      super({ counters: counter });
+    }
+  };
+}
+
+/**
+ * The client part of the key of a report attempt (record 0119).
+ *
+ * An IPv4 address counts alone. A host of IPv6 usually holds a whole /64
+ * prefix and can draw a new address from it for each attempt, so an IPv6
+ * address counts by its /64 prefix. An IPv4 address that IPv6 carries counts
+ * as that IPv4 address.
+ */
+export function attemptAddress(ip: string): string {
+  const address = ip.trim().toLowerCase();
+  if (isIPv4(address)) return address;
+  if (!isIPv6(address)) return address;
+  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(address);
+  if (mapped?.[1] !== undefined) return mapped[1];
+  const [head = '', tail] = address.split('::');
+  const left = head === '' ? [] : head.split(':');
+  const right = tail === undefined || tail === '' ? [] : tail.split(':');
+  const groups =
+    tail === undefined
+      ? left
+      : [
+          ...left,
+          ...Array.from<string>({
+            length: 8 - left.length - right.length,
+          }).fill('0'),
+          ...right,
+        ];
+  const prefix = groups
+    .slice(0, 4)
+    .map((group) => group.replace(/^0+(?=.)/, ''))
+    .join(':');
+  return `${prefix}::/64`;
 }

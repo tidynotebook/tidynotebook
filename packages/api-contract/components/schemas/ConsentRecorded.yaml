@@ -1,0 +1,11 @@
+type: object
+description: The account accepted the current legal documents.
+additionalProperties: false
+required:
+  - accepted
+properties:
+  accepted:
+    type: boolean
+    const: true
+    readOnly: true
+    description: The consent is stored with its time.

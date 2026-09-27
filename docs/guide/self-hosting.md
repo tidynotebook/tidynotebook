@@ -167,6 +167,15 @@ one. One installation serves HTTP or HTTPS, not both, because one cookie policy
 serves all of its origins. An empty list serves `NOTESAPP_ORIGIN` and nothing
 else.
 
+A public installation shows published pages on an origin of their own. Set
+`NOTESAPP_PUBLISHED_ORIGIN` to that origin, for example
+`https://pages.example.net`, and point that host name at the same server. Use
+a host name that no other origin uses, and the scheme of `NOTESAPP_ORIGIN`. The
+published origin serves published pages and nothing else, and it sets no
+cookie, so a harmful page cannot reach an account. A browser block of one page
+then does not block the application. An empty value shows published pages on
+`NOTESAPP_ORIGIN`.
+
 Set `NOTESAPP_SECRETS_DIR` and create the directory it names. This value is
 required and has no default, as `NOTESAPP_DATABASE_DIR` and
 `NOTESAPP_STORAGE_DIR` are: `docker compose up` stops with a message that
@@ -223,9 +232,58 @@ cannot fill the disk. Startup also fails when a required secret file, storage
 mount, or database connection is not usable.
 
 Open the web application after the first startup. Enter the email address and
-password for the single user. The setup operation is available only until this
-account exists. Use `pnpm owner:bootstrap` only when an unattended installation
-must create the same first account before a browser opens.
+password of the first account, which is the administrator. The setup operation
+is available only until this account exists. Use `pnpm owner:bootstrap` only
+when an unattended installation must create the same first account before a
+browser opens.
+
+## Accounts and invitations
+
+Every later account needs an invitation. An administrator invites a person in
+the application, as [Accounts and invitations](accounts.md) states. You can
+also invite a person from the server:
+
+```sh
+pnpm account:invite --email person@example.com
+```
+
+With a mail transport, the link goes to the address. Without one, the command
+prints the link once. Send it to the person yourself.
+
+When no administrator can sign in any more, make an account an administrator
+again. The command also enables the account:
+
+```sh
+pnpm account:promote --email person@example.com
+```
+
+These optional settings of `.env` apply to accounts.
+`NOTESAPP_ACCOUNT_LIMIT_BYTES` is the storage limit, in bytes, that a new
+account starts with. An administrator changes the limit of one account in the
+application. `NOTESAPP_INVITATION_LIFETIME_HOURS` is how long a new invitation
+works. `NOTESAPP_PENDING_ACCOUNT_HOURS` is how long a sign-up waits for the
+person to open the link in its message. After that the server removes the
+sign-up. `NOTESAPP_SIGNUP_DIFFICULTY` sets how hard the check of the browser is
+at a sign-up, from 8 to 28. Each step doubles the time that the browser takes.
+The check runs in the browser and sends nothing to another service.
+
+A public service names its terms and its privacy notice with
+`NOTESAPP_TERMS_URL`, `NOTESAPP_TERMS_VERSION`, `NOTESAPP_PRIVACY_URL` and
+`NOTESAPP_PRIVACY_VERSION`. Set all four or none. Each account stores the
+versions that it accepted and when. When you raise a version, each person
+accepts it again before the application opens. An installation with no
+documents asks for nothing.
+
+A sign-in needs a proved address. The first account and an invited account
+prove their address when they are made, so an installation that upgrades keeps
+every account. When anybody can sign up, the server sends a link to the
+address, and the account exists only after the person opens it.
+
+A new password is checked against the range service of Have I Been Pwned. The
+server sends five characters of a digest of the password and never the
+password. When the service does not answer, the server accepts the password and
+writes a log event. Set `NOTESAPP_BREACH_CHECK` to `off` in `.env` for an
+installation with no outbound network.
 
 ## Health and readiness
 

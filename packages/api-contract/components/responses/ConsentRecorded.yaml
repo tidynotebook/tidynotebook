@@ -1,0 +1,5 @@
+description: The consent is stored.
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/ConsentRecorded.yaml'

@@ -1,0 +1,5 @@
+description: The open reports of published links.
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/LinkReportList.yaml'

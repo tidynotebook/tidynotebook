@@ -64,12 +64,24 @@ paths:
     $ref: './paths/api_registrations.yaml'
   /api/registrations/invitation:
     $ref: './paths/api_registrations_invitation.yaml'
+  /api/registrations/open:
+    $ref: './paths/api_registrations_open.yaml'
+  /api/registrations/verification:
+    $ref: './paths/api_registrations_verification.yaml'
+  /api/registrations/challenge:
+    $ref: './paths/api_registrations_challenge.yaml'
   /api/installation:
     $ref: './paths/api_installation.yaml'
   /api/invitations:
     $ref: './paths/api_invitations.yaml'
   /api/invitations/{invitationId}:
     $ref: './paths/api_invitations_invitationId.yaml'
+  /api/reports:
+    $ref: './paths/api_reports.yaml'
+  /api/reports/{reportId}:
+    $ref: './paths/api_reports_reportId.yaml'
+  /api/reports/{reportId}/takedown:
+    $ref: './paths/api_reports_reportId_takedown.yaml'
   /api/accounts:
     $ref: './paths/api_accounts.yaml'
   /api/accounts/{accountId}:
@@ -78,6 +90,14 @@ paths:
     $ref: './paths/api_sync_protocol.yaml'
   /api/account:
     $ref: './paths/api_account.yaml'
+  /api/account/consent:
+    $ref: './paths/api_account_consent.yaml'
+  /api/account/sessions:
+    $ref: './paths/api_account_sessions.yaml'
+  /api/account/sessions/others:
+    $ref: './paths/api_account_sessions_others.yaml'
+  /api/account/sessions/{sessionId}:
+    $ref: './paths/api_account_sessions_sessionId.yaml'
   /api/account/removal:
     $ref: './paths/api_account_removal.yaml'
   /api/account/preferences:
@@ -140,6 +160,8 @@ paths:
     $ref: './paths/published_token.yaml'
   /published/{token}/unlock:
     $ref: './paths/published_token_unlock.yaml'
+  /published/{token}/report:
+    $ref: './paths/published_token_report.yaml'
   /published/{token}/attachments/{fileId}/{revisionId}:
     $ref: './paths/published_token_attachments_fileId_revisionId.yaml'
 components:
@@ -201,6 +223,10 @@ components:
       $ref: './components/parameters/AccountId.yaml'
     InvitationId:
       $ref: './components/parameters/InvitationId.yaml'
+    SessionId:
+      $ref: './components/parameters/SessionId.yaml'
+    ReportId:
+      $ref: './components/parameters/ReportId.yaml'
   requestBodies:
     PreferencesUpdate:
       $ref: './components/requestBodies/PreferencesUpdate.yaml'
@@ -359,6 +385,18 @@ components:
       $ref: './components/responses/AccountSummary.yaml'
     InvitationList:
       $ref: './components/responses/InvitationList.yaml'
+    SignUpAccepted:
+      $ref: './components/responses/SignUpAccepted.yaml'
+    SignUpChallenge:
+      $ref: './components/responses/SignUpChallenge.yaml'
+    ConsentRecorded:
+      $ref: './components/responses/ConsentRecorded.yaml'
+    AddressVerified:
+      $ref: './components/responses/AddressVerified.yaml'
+    VerificationUnavailable:
+      $ref: './components/responses/VerificationUnavailable.yaml'
+    LinkReportList:
+      $ref: './components/responses/LinkReportList.yaml'
     InvitationCreated:
       $ref: './components/responses/InvitationCreated.yaml'
     InvitationAddress:
@@ -375,6 +413,10 @@ components:
       $ref: './components/responses/OpenRegistrationUnavailable.yaml'
     InvitationRefused:
       $ref: './components/responses/InvitationRefused.yaml'
+    AccountSessionList:
+      $ref: './components/responses/AccountSessionList.yaml'
+    SessionsRevoked:
+      $ref: './components/responses/SessionsRevoked.yaml'
   schemas:
     HealthReport:
       $ref: './components/schemas/HealthReport.yaml'
@@ -594,6 +636,34 @@ components:
       $ref: './components/schemas/Invitation.yaml'
     InvitationList:
       $ref: './components/schemas/InvitationList.yaml'
+    SignUpInput:
+      $ref: './components/schemas/SignUpInput.yaml'
+    SignUpAccepted:
+      $ref: './components/schemas/SignUpAccepted.yaml'
+    SignUpChallenge:
+      $ref: './components/schemas/SignUpChallenge.yaml'
+    SignUpProof:
+      $ref: './components/schemas/SignUpProof.yaml'
+    LegalDocument:
+      $ref: './components/schemas/LegalDocument.yaml'
+    LegalDocuments:
+      $ref: './components/schemas/LegalDocuments.yaml'
+    ConsentInput:
+      $ref: './components/schemas/ConsentInput.yaml'
+    ConsentRecorded:
+      $ref: './components/schemas/ConsentRecorded.yaml'
+    AddressVerificationInput:
+      $ref: './components/schemas/AddressVerificationInput.yaml'
+    AddressVerified:
+      $ref: './components/schemas/AddressVerified.yaml'
+    LinkReport:
+      $ref: './components/schemas/LinkReport.yaml'
+    LinkReportList:
+      $ref: './components/schemas/LinkReportList.yaml'
+    ReportReason:
+      $ref: './components/schemas/ReportReason.yaml'
+    PublishedReportFormInput:
+      $ref: './components/schemas/PublishedReportFormInput.yaml'
     InvitationCreateInput:
       $ref: './components/schemas/InvitationCreateInput.yaml'
     InvitationCreated:
@@ -612,3 +682,9 @@ components:
       $ref: './components/schemas/InstallationUpdateInput.yaml'
     AccountRemovalInput:
       $ref: './components/schemas/AccountRemovalInput.yaml'
+    AccountSession:
+      $ref: './components/schemas/AccountSession.yaml'
+    AccountSessionList:
+      $ref: './components/schemas/AccountSessionList.yaml'
+    SessionsRevoked:
+      $ref: './components/schemas/SessionsRevoked.yaml'

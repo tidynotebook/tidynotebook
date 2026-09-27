@@ -58,6 +58,7 @@ import {
   TaskListIcon,
   TrashIcon,
   UploadIcon,
+  UsersIcon,
   WorkspaceIcon,
 } from '@notesapp/ui';
 import type { ActionIconName } from '../lib/palette-items.ts';
@@ -94,6 +95,7 @@ const actionIcons: Readonly<Record<ActionIconName, ReactNode>> = {
   'ordered-list': <OrderedListIcon />,
   publish: <LinkIcon />,
   'published-links': <LinkIcon />,
+  accounts: <UsersIcon />,
   quote: <QuoteIcon />,
   rename: <PencilIcon />,
   settings: <SettingsIcon />,

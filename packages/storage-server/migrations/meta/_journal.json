@@ -92,6 +92,48 @@
       "when": 1790418943663,
       "tag": "0012_several_accounts",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1790472975559,
+      "tag": "0013_shared_limits",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1790489285293,
+      "tag": "0014_own_sessions",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1790490199578,
+      "tag": "0015_published_origin",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1790507452359,
+      "tag": "0016_pending_accounts",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1790508499291,
+      "tag": "0017_used_challenges",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1790509066300,
+      "tag": "0018_account_consents",
+      "breakpoints": true
     }
   ]
 }

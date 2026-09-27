@@ -1,6 +1,6 @@
 get:
   operationId: getSetupStatus
-  summary: Report whether the first account exists.
+  summary: Report whether the first account exists and who can make one.
   description: Reports if first-run setup is complete without exposing account data.
   tags:
     - auth
@@ -15,10 +15,25 @@ get:
             additionalProperties: false
             required:
               - initialized
+              - openRegistration
+              - legalDocuments
             properties:
               initialized:
                 type: boolean
                 readOnly: true
+              openRegistration:
+                type: boolean
+                readOnly: true
+                description: >-
+                  Whether a person can ask for an account without an
+                  invitation (record 0114).
+              legalDocuments:
+                oneOf:
+                  - $ref: '../components/schemas/LegalDocuments.yaml'
+                  - type: 'null'
+                description: >-
+                  The terms and the privacy notice, or null when the
+                  installation names none (record 0120).
     '400':
       $ref: '../components/responses/BadRequest.yaml'
     '429':

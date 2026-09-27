@@ -1,0 +1,32 @@
+post:
+  operationId: signUpAccount
+  summary: Ask for an account with an address and a password.
+  description: >-
+    Open registration (record 0114). A new address gets a pending account
+    and a verification link by mail. An address that already signs in gets
+    a mail that tells its owner about the attempt. A pending address is
+    replaced, with its password. Every one of these answers the same status
+    and body, so the answer states nothing about the address. The installation
+    must have the open registration policy.
+  tags:
+    - auth
+  security: []
+  requestBody:
+    $ref: '../components/requestBodies/SignUp.yaml'
+  responses:
+    '202':
+      $ref: '../components/responses/SignUpAccepted.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '403':
+      $ref: '../components/responses/Forbidden.yaml'
+    '409':
+      $ref: '../components/responses/Conflict.yaml'
+    '413':
+      $ref: '../components/responses/PayloadTooLarge.yaml'
+    '415':
+      $ref: '../components/responses/UnsupportedMediaType.yaml'
+    '429':
+      $ref: '../components/responses/RateLimited.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

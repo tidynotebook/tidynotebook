@@ -1,0 +1,6 @@
+description: The token of a verification link.
+required: true
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/AddressVerificationInput.yaml'

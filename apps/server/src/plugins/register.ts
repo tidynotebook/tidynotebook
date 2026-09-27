@@ -38,6 +38,7 @@ import {
   ResponseContractError,
 } from './problem.ts';
 import { createServerLogger } from '../logging.ts';
+import { attemptAddress } from './attempt-store.ts';
 
 declare module 'fastify' {
   interface FastifyContextConfig {
@@ -503,8 +504,23 @@ function throttleGroup(id: OperationId): string | null {
   if (id === 'readInvitation' || id === 'registerAccount') return 'invitation';
   // The removal of an own account takes the password again, like a sign-in.
   if (id === 'removeOwnAccount') return 'password';
+  // A report counts per client address and per /64 prefix (record 0119).
+  if (id === 'reportPublishedLink') return 'report';
+  // A sign-up and its verification count the same way (record 0115).
+  if (
+    id === 'signUpAccount' ||
+    id === 'verifyAddress' ||
+    id === 'getSignUpChallenge'
+  )
+    return 'signup';
   return null;
 }
+
+/**
+ * The groups that count an IPv6 caller by its /64 prefix, because one host
+ * of IPv6 can draw a new address for each attempt (records 0115 and 0119).
+ */
+const prefixGroups: ReadonlySet<string> = new Set(['report', 'signup']);
 
 /** The body bounds of the routes that carry a file, from `config.limits`. */
 export type RouteBodyLimits = {
@@ -731,6 +747,12 @@ export function registerOperations(
                 groupId: throttleGroup(operation.id) ?? '',
                 max: rateLimit.max,
                 timeWindow: rateLimit.windowSeconds * 1000,
+                ...(prefixGroups.has(throttleGroup(operation.id) ?? '')
+                  ? {
+                      keyGenerator: (request: FastifyRequest) =>
+                        attemptAddress(request.ip),
+                    }
+                  : {}),
               },
             }),
       },

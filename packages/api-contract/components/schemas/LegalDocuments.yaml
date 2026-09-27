@@ -1,0 +1,13 @@
+type: object
+description: >-
+  The terms and the privacy notice of the installation (record 0120). The
+  operator writes both and names their versions.
+additionalProperties: false
+required:
+  - terms
+  - privacy
+properties:
+  terms:
+    $ref: './LegalDocument.yaml'
+  privacy:
+    $ref: './LegalDocument.yaml'

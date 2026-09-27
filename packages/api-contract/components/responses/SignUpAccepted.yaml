@@ -1,0 +1,5 @@
+description: The sign-up was taken. A message goes to the address.
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/SignUpAccepted.yaml'

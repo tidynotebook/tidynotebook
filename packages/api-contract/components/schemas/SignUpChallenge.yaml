@@ -1,0 +1,36 @@
+type: object
+description: >-
+  A challenge of the proof of work of a sign-up. The digest of the value, a
+  colon and the solution must start with `difficulty` zero bits.
+additionalProperties: false
+required:
+  - challenge
+  - value
+  - difficulty
+  - expiresAt
+properties:
+  challenge:
+    type: string
+    readOnly: true
+    description: The signed challenge, which the sign-up sends back unchanged.
+    minLength: 1
+    maxLength: 512
+    pattern: '^[A-Za-z0-9_.-]+$'
+  value:
+    type: string
+    readOnly: true
+    description: The random value whose digest a solution reduces.
+    minLength: 1
+    maxLength: 128
+  difficulty:
+    type: integer
+    readOnly: true
+    description: How many leading zero bits the digest of a solution needs.
+    minimum: 8
+    maximum: 28
+  expiresAt:
+    type: string
+    readOnly: true
+    description: Instant after which the challenge counts for nothing.
+    format: date-time
+    maxLength: 64

@@ -20,12 +20,15 @@ import {
   UnauthenticatedError,
 } from '../plugins/problem.ts';
 import { toRequestHeaders, type NotesappAuth } from './better-auth.ts';
+import { applicationOrigins, type ServedOrigin } from '../served-origins.ts';
 
 /** A verified actor and what the session knows about it. */
 export type ResolvedActor = {
   readonly actor: Actor;
   /** The identity user of the session, which a password check names. */
   readonly authUserId: string;
+  /** The identifier of the session, which is not its token (record 0122). */
+  readonly sessionId: string;
   /** Sign-in address of the account. */
   readonly email: string | null;
   /** Display name of the account. */
@@ -71,7 +74,7 @@ export type IdentityDependencies = {
   readonly auth: NotesappAuth;
   readonly identity: IdentityStoreHandle;
   /** The served origins of the deployment, from `config.servedOrigins`. */
-  readonly servedOrigins: readonly string[];
+  readonly servedOrigins: readonly ServedOrigin[];
 };
 
 /** The identity adapter of one deployment. */
@@ -109,7 +112,7 @@ export async function accountForSession(
  */
 function readSessionUser(
   value: unknown,
-): { id: string; email: string; name: string } | null {
+): { id: string; email: string; name: string; sessionId: string } | null {
   if (value === null || typeof value !== 'object') return null;
   const record: Record<string, unknown> = Object.fromEntries(
     Object.entries(value),
@@ -121,8 +124,16 @@ function readSessionUser(
   );
   const id = fields.id;
   if (typeof id !== 'string' || id === '') return null;
+  const session = record.session;
+  const sessionFields: Record<string, unknown> =
+    session === null || typeof session !== 'object'
+      ? {}
+      : Object.fromEntries(Object.entries(session));
+  const sessionId = sessionFields.id;
+  if (typeof sessionId !== 'string' || sessionId === '') return null;
   return {
     id,
+    sessionId,
     email: typeof fields.email === 'string' ? fields.email : '',
     name: typeof fields.name === 'string' ? fields.name : '',
   };
@@ -142,9 +153,11 @@ export type OriginDecision = 'accepted' | 'foreign' | 'missing';
  * The list is the one that `config.servedOrigins` holds, which is the same
  * list that the identity routes trust. See
  * [decision 0039](../../../../docs/decisions/0039-one-list-of-served-origins.md).
+ * Only an `application` origin is trusted, so a page on the published origin
+ * cannot write (record 0118).
  */
 export function checkWriteOrigin(
-  servedOrigins: readonly string[],
+  servedOrigins: readonly ServedOrigin[],
   method: string,
   headers: {
     readonly origin?: string | undefined;
@@ -153,7 +166,9 @@ export function checkWriteOrigin(
 ): OriginDecision {
   if (safeMethods.has(method.toUpperCase())) return 'accepted';
   if (headers.origin !== undefined)
-    return servedOrigins.includes(headers.origin) ? 'accepted' : 'foreign';
+    return applicationOrigins(servedOrigins).includes(headers.origin)
+      ? 'accepted'
+      : 'foreign';
   if (headers.site !== undefined)
     return headers.site === 'same-origin' ? 'accepted' : 'foreign';
   return 'missing';
@@ -168,7 +183,7 @@ export function checkWriteOrigin(
  * forget it. `auth/setup.ts` is the one such operation today.
  */
 export function requireWriteOrigin(
-  servedOrigins: readonly string[],
+  servedOrigins: readonly ServedOrigin[],
   request: FastifyRequest,
 ): void {
   const decision = checkWriteOrigin(servedOrigins, request.method, {
@@ -211,6 +226,7 @@ export function createIdentityAdapter(
     return {
       actor: verified.value,
       authUserId: user.id,
+      sessionId: user.sessionId,
       email: user.email === '' ? null : user.email,
       name: user.name === '' ? null : user.name,
     };

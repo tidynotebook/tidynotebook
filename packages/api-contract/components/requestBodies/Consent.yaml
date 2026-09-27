@@ -1,0 +1,6 @@
+description: The versions of the legal documents that the person accepts.
+required: true
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/ConsentInput.yaml'

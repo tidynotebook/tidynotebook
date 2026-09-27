@@ -89,9 +89,39 @@ export async function registerAccount(
     return fail('forbidden');
   const accountId = await store.register(request);
   if (accountId !== null) return ok(accountId);
+  if (request.ground.kind === 'open') return fail('registration_closed');
   return fail(
     request.ground.kind === 'invitation' ? 'invitation_invalid' : 'forbidden',
   );
+}
+
+/** How long a pending account waits for its verification, by default. */
+export const defaultPendingAccountHours = 24;
+
+/** The longest wait that the configuration accepts for a pending account. */
+export const maxPendingAccountHours = 7 * 24;
+
+/** What an identity user of an address already is, for an open sign-up. */
+export type ExistingIdentity = {
+  /** Whether an account links the identity user. */
+  readonly linked: boolean;
+};
+
+/**
+ * What an open sign-up does for one address (record 0114).
+ *
+ * A new address gets a pending account. An identity user that no account
+ * links is a pending account or a failed attempt, and a new sign-up replaces
+ * it with its password, so a person who signed up first with the address of
+ * another person keeps nothing. An address that an account links gets a
+ * message to its owner and nothing else. The caller answers the same in
+ * every case.
+ */
+export function openSignUpAction(
+  existing: ExistingIdentity | null,
+): 'create' | 'replace' | 'notify' {
+  if (existing === null) return 'create';
+  return existing.linked ? 'notify' : 'replace';
 }
 
 /** The address that a valid invitation binds, or the one refusal. */

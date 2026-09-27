@@ -22,6 +22,14 @@ export type {
 } from './identity/actor.ts';
 export { actionsForRole, authorize, verifyActor } from './identity/actor.ts';
 export { generateUUID } from './identity/uuid.ts';
+export type { PasswordProblem } from './identity/password.ts';
+export type { SessionView } from './identity/sessions.ts';
+export {
+  listSessions,
+  revokeOtherSessions,
+  revokeSession,
+} from './identity/sessions.ts';
+export { passwordBounds, passwordProblem } from './identity/password.ts';
 export type {
   AccountStanding,
   AccountState,
@@ -42,18 +50,23 @@ export type {
   InstallationStore,
   InstallationTransaction,
   InvitationRecord,
+  LinkReportRecord,
   NewInvitation,
   RegistrationGround,
   RegistrationRequest,
   RegistrationStore,
 } from './identity/ports.ts';
 export type {
+  ExistingIdentity,
   OpenRegistrationPart,
   OpenRegistrationReadiness,
 } from './identity/registration.ts';
 export {
   defaultAccountLimitBytes,
   defaultInvitationLifetimeHours,
+  defaultPendingAccountHours,
+  maxPendingAccountHours,
+  openSignUpAction,
   invitationExpiry,
   invitationState,
   invitationTokenPattern,
@@ -72,13 +85,16 @@ export type {
 } from './identity/administration.ts';
 export {
   createInvitation,
+  dismissReport,
   listAccounts,
   listInvitations,
+  listReports,
   readRegistrationPolicy,
   removeAccount,
   removeOwnAccount,
   revokeInvitation,
   setRegistrationPolicy,
+  takeDownReportedLink,
   updateAccount,
 } from './identity/administration.ts';
 export type {
@@ -195,6 +211,7 @@ export {
   readRevision,
 } from './files/read.ts';
 export type {
+  SessionRecord,
   AccountOwnStanding,
   AccountTransaction,
   AppearanceChoice,
@@ -269,6 +286,14 @@ export type {
   ScopedNote,
 } from './publications/model.ts';
 export { maxPublishedLinksPerWorkspace } from './publications/model.ts';
+export type { ReportReason, ReportedLinkState } from './publications/report.ts';
+export {
+  isReportReason,
+  maxReportNoteLength,
+  reportNote,
+  reportReasons,
+  reportedLinkStates,
+} from './publications/report.ts';
 export type {
   ReaderRefusalCause,
   ReaderRefusalLog,
@@ -352,3 +377,27 @@ export {
   readDailyNoteSettings,
   updateDailyNoteSettings,
 } from './daily-notes/settings.ts';
+export type { ProofFacts, ProofRefusal } from './identity/proof-of-work.ts';
+export {
+  defaultProofDifficulty,
+  leadingZeroBits,
+  maxProofDifficulty,
+  maxProofSolutionLength,
+  minProofDifficulty,
+  proofInput,
+  proofLifetimeMs,
+  proofRefusal,
+} from './identity/proof-of-work.ts';
+export type {
+  ConsentRecord,
+  ConsentVersions,
+  LegalDocument,
+  LegalDocuments,
+} from './identity/legal.ts';
+export {
+  acceptLegalDocuments,
+  consentMatches,
+  consentRequired,
+  maxLegalVersionLength,
+  readConsent,
+} from './identity/legal.ts';

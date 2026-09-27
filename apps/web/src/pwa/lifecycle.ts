@@ -217,6 +217,28 @@ export async function signOut(
 }
 
 /**
+ * Signs out and keeps the work that waits for the server.
+ *
+ * The session is revoked first. No account is signed in after that, so the
+ * private data of every account of this origin that holds no work leaves the
+ * device, and a partition with a queued save, kept text or unsaved draft text
+ * stays for the next sign-in (record 0113). A reset that fails leaves the data
+ * for the next sign-in to delete, and the sign-out itself still counts.
+ */
+export async function signOutKeepingWork(
+  store: LocalStore | null,
+  revokeSession: () => Promise<void> = revokeSessionViaClient,
+): Promise<void> {
+  await revokeSession();
+  if (store === null) return;
+  try {
+    await store.clearIdleAccounts(null);
+  } catch {
+    // Stated above.
+  }
+}
+
+/**
  * Completes a pending offline sign-out on reconnect.
  *
  * Revocation runs through the generated client before anything is

@@ -1,17 +1,22 @@
 /**
- * The one password policy of this product.
+ * The words of the one password policy of this product.
  *
- * Two screens take a password: first-run setup, which makes the owner
- * account, and the publish dialog, which guards a published link. The
- * contract states one bound for both, because the product keeps one policy,
- * so the two screens read the bound from here and cannot drift apart.
+ * Every screen that sets a new password reads the rule here: first-run
+ * setup, an accepted invitation, and the publish dialog, which guards a
+ * published link. The bounds come from `passwordBounds` of `@notesapp/core`,
+ * which the server and the contract state too (record 0116).
  *
  * The rule is stated under a field from the start, and the refusal names the
  * same rule in the same words, so nobody learns a requirement from a failure.
  */
 
+import {
+  passwordBounds,
+  passwordProblem as boundsProblem,
+} from '@notesapp/core';
+
 /** The shortest password that the server accepts. */
-export const minPasswordLength = 12;
+export const minPasswordLength: number = passwordBounds.minLength;
 
 /**
  * The longest password that the server accepts.
@@ -20,7 +25,7 @@ export const minPasswordLength = 12;
  * manager can. The screen states it here rather than letting the server
  * answer a refusal that names no rule.
  */
-export const maxPasswordLength = 512;
+export const maxPasswordLength: number = passwordBounds.maxLength;
 
 /** The rule of a password field, stated before anything is submitted. */
 export const passwordRule = `Use at least ${String(minPasswordLength)} characters.`;
@@ -33,8 +38,9 @@ export const passwordRule = `Use at least ${String(minPasswordLength)} character
  * empty value as "no password" calls {@link optionalPasswordProblem}.
  */
 export function passwordProblem(password: string): string | null {
-  if (password.length < minPasswordLength) return 'This password is too short.';
-  if (password.length > maxPasswordLength) return 'This password is too long.';
+  const problem = boundsProblem(password);
+  if (problem === 'too_short') return 'This password is too short.';
+  if (problem === 'too_long') return 'This password is too long.';
   return null;
 }
 

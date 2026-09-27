@@ -1,0 +1,19 @@
+type: object
+description: One legal document of the installation and its current version.
+additionalProperties: false
+required:
+  - url
+  - version
+properties:
+  url:
+    type: string
+    readOnly: true
+    description: Where a person reads the document.
+    format: uri
+    maxLength: 2048
+  version:
+    type: string
+    readOnly: true
+    description: The current version, which a consent names.
+    minLength: 1
+    maxLength: 64

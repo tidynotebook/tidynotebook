@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { maxAttemptKeys, SharedAttemptStore } from './attempt-store.ts';
+import {
+  attemptAddress,
+  maxAttemptKeys,
+  SharedAttemptStore,
+} from './attempt-store.ts';
 
 /** The state that one attempt against `key` produces. */
 function count(
@@ -87,4 +91,24 @@ await test('the map is bounded, so invented keys cannot grow it without end', ()
   for (let index = 0; index < maxAttemptKeys + 500; index += 1)
     count(route, `caller-${String(index)}`);
   assert.equal(store.keyCount, maxAttemptKeys);
+});
+
+await test('a report attempt counts an IPv6 address by its /64 prefix', () => {
+  assert.equal(attemptAddress('203.0.113.7'), '203.0.113.7');
+  assert.equal(attemptAddress('::ffff:203.0.113.7'), '203.0.113.7');
+  assert.equal(
+    attemptAddress('2001:db8:1:2:aaaa:bbbb:cccc:dddd'),
+    '2001:db8:1:2::/64',
+  );
+  // Two addresses of one /64 share one key, and a neighbour prefix does not.
+  assert.equal(
+    attemptAddress('2001:0db8:0001:0002::1'),
+    attemptAddress('2001:db8:1:2:ffff::9'),
+  );
+  assert.notEqual(
+    attemptAddress('2001:db8:1:2::1'),
+    attemptAddress('2001:db8:1:3::1'),
+  );
+  assert.equal(attemptAddress('::1'), '0:0:0:0::/64');
+  assert.equal(attemptAddress('fe80::1'), 'fe80:0:0:0::/64');
 });

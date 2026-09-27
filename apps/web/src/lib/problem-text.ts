@@ -9,6 +9,7 @@
 
 /** A sentence for one known problem code. */
 const sentences: Readonly<Record<string, string>> = {
+  account_exists: 'An account already uses this address.',
   deleted_remotely:
     'This note was deleted on another device. Open Trash to restore it.',
   forbidden: 'This account cannot do that.',
@@ -19,16 +20,30 @@ const sentences: Readonly<Record<string, string>> = {
     'That note name cannot be stored. Change the name and try again.',
   invalid_request: 'The server refused the request. Try again.',
   invalid_response: 'The answer of the server could not be read. Try again.',
+  invitation_invalid: 'This invitation is not valid. Ask for a new one.',
+  registration_closed:
+    'This installation takes new accounts by invitation. Ask an administrator for one.',
+  verification_invalid:
+    'This link is not valid any more. Sign up again to get a new link.',
+  proof_invalid: 'The check of this browser did not finish. Try again.',
+  consent_required:
+    'The terms or the privacy notice changed. Read them again and accept them.',
+  last_administrator:
+    'The installation needs an administrator. Make another account an administrator first.',
   mutation_reused: 'That save was already sent. Nothing changed.',
   not_found: 'That note is not on the server.',
   not_ready: 'The server is still starting. Try again in a moment.',
+  open_registration_unavailable:
+    'Open sign-up needs a mail server, an address for published pages and legal documents first.',
   origin_required: 'This page is not allowed to reach the server.',
+  password_breached:
+    'This password is in a list of leaked passwords. Choose another one.',
   path_conflict:
     'Another note already uses that name. Choose a different name.',
   payload_too_large: 'That file is too large to upload.',
   precondition_required: 'This note changed. Reload the note and try again.',
   purged: 'This note was deleted permanently and cannot be opened.',
-  quota_exceeded: 'The notes area is full. Delete notes to free space.',
+  quota_exceeded: 'Your account is full. Delete notes to free space.',
   route_not_found: 'That address does not exist on the server.',
   snapshot_required: 'This device needs a fresh copy of your notes.',
   stale_head: 'This note changed. The device reads it again and retries.',

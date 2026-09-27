@@ -1,0 +1,28 @@
+post:
+  operationId: verifyAddress
+  summary: Prove the address of a pending account and make the account.
+  description: >-
+    Takes the token of a verification link. A valid token marks the address
+    verified and makes the account, and the person then signs in. An
+    expired, a replaced and an unknown token all take one refusal. The token
+    travels in the body, so it reaches no address log.
+  tags:
+    - auth
+  security: []
+  requestBody:
+    $ref: '../components/requestBodies/AddressVerification.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/AddressVerified.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '403':
+      $ref: '../components/responses/VerificationUnavailable.yaml'
+    '413':
+      $ref: '../components/responses/PayloadTooLarge.yaml'
+    '415':
+      $ref: '../components/responses/UnsupportedMediaType.yaml'
+    '429':
+      $ref: '../components/responses/RateLimited.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

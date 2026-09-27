@@ -9,7 +9,7 @@ import {
 } from './password-policy.ts';
 
 await test('the stated rule names the length that the check enforces', () => {
-  assert.equal(passwordRule, 'Use at least 12 characters.');
+  assert.equal(passwordRule, 'Use at least 15 characters.');
   assert.ok(passwordRule.includes(String(minPasswordLength)));
 });
 

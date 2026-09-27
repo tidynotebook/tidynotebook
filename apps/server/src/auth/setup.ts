@@ -5,8 +5,10 @@
  * exists. The registration of an invited person makes a member for the
  * address of the invitation. Both go through `registerIdentity`, the one
  * registration path, and both start the session of the new account after it
- * exists. None of these operations declares a security scheme, so each
- * applies the origin rule itself.
+ * exists. An open sign-up and its verification (record 0114) live in
+ * `open-registration.ts`, and the person signs in after the verification.
+ * None of these operations declares a security scheme, so each applies the
+ * origin rule itself.
  */
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { WorkspaceStore } from '@notesapp/core';
@@ -20,6 +22,13 @@ import type { NotesappAuth } from './better-auth.ts';
 import { secretDigest } from './publication-secrets.ts';
 import { registerIdentity, startSession } from './registration.ts';
 import { seedWelcomeNote } from './welcome-note.ts';
+import {
+  openRegistration,
+  signUpOpen,
+  verifyOpen,
+  type OpenRegistrationDependencies,
+} from './open-registration.ts';
+import type { ServedOrigin } from '../served-origins.ts';
 
 const jsonMediaType = 'application/json';
 
@@ -41,9 +50,14 @@ export type SetupDependencies = {
   readonly identity: IdentityStoreHandle;
   readonly content: WorkspaceStore;
   /** The served origins of the deployment, from `config.servedOrigins`. */
-  readonly servedOrigins: readonly string[];
+  readonly servedOrigins: readonly ServedOrigin[];
   /** The byte limit that a new account starts with. */
   readonly accountLimitBytes: bigint;
+  /** What an open sign-up and its verification need (record 0114). */
+  readonly open: Omit<
+    OpenRegistrationDependencies,
+    'auth' | 'identity' | 'accounts' | 'limitBytes'
+  >;
 };
 
 /** Builds the public operations that make an account. */
@@ -51,6 +65,13 @@ export function createSetupHandlers(
   dependencies: SetupDependencies,
 ): HandlerMap {
   const { auth, identity, content, servedOrigins } = dependencies;
+  const open: OpenRegistrationDependencies = {
+    ...dependencies.open,
+    auth,
+    identity,
+    accounts: identity,
+    limitBytes: dependencies.accountLimitBytes,
+  };
 
   /** Writes the welcome note into the personal workspace of an account. */
   const welcome = async (accountId: string): Promise<void> => {
@@ -63,7 +84,11 @@ export function createSetupHandlers(
     getSetupStatus: async (): Promise<HandlerResult> => ({
       status: 200,
       mediaType: jsonMediaType,
-      body: { initialized: await identity.hasAccount() },
+      body: {
+        initialized: await identity.hasAccount(),
+        openRegistration: await openRegistration(identity),
+        legalDocuments: dependencies.open.documents,
+      },
     }),
 
     createOwner: async (
@@ -87,8 +112,11 @@ export function createSetupHandlers(
         ground: { kind: 'first-run' },
         limitBytes: dependencies.accountLimitBytes,
       });
-      if (!made.ok)
+      if (!made.ok) {
+        if (made.error.code === 'password_breached')
+          throw new DomainProblemError(made.error);
         throw new ForbiddenError('The first account already exists.');
+      }
       // The one welcome note is written through the same commit path that the
       // create operation uses, so it has a revision and reaches every device.
       await welcome(made.value.accountId);
@@ -137,7 +165,11 @@ export function createSetupHandlers(
         ground: { kind: 'invitation', tokenDigest: digest },
         limitBytes: dependencies.accountLimitBytes,
       });
-      if (!made.ok) throw invitationRefused();
+      if (!made.ok) {
+        if (made.error.code === 'password_breached')
+          throw new DomainProblemError(made.error);
+        throw invitationRefused();
+      }
       await welcome(made.value.accountId);
       const cookies = await startSession(auth, made.value.email, password);
       if (cookies.length === 0)
@@ -147,6 +179,60 @@ export function createSetupHandlers(
         status: 201,
         mediaType: jsonMediaType,
         body: { registered: true },
+      };
+    },
+
+    getSignUpChallenge: async (): Promise<HandlerResult> => {
+      if (!(await openRegistration(identity)))
+        throw new DomainProblemError({
+          code: 'registration_closed',
+          fileIds: [],
+        });
+      return {
+        status: 200,
+        mediaType: jsonMediaType,
+        body: open.challenges.issue(open.clock()),
+      };
+    },
+
+    signUpAccount: async (request): Promise<HandlerResult> => {
+      requireWriteOrigin(servedOrigins, request);
+      const name = readProperty(request.body, 'name');
+      const proof = readProperty(request.body, 'proof');
+      const consent = readProperty(request.body, 'consent');
+      const taken = await signUpOpen(open, {
+        email: text(request.body, 'email'),
+        password: text(request.body, 'password'),
+        name: typeof name === 'string' && name !== '' ? name : null,
+        proof: {
+          challenge: text(proof, 'challenge'),
+          solution: text(proof, 'solution'),
+        },
+        consent:
+          consent === undefined
+            ? null
+            : {
+                termsVersion: text(consent, 'termsVersion'),
+                privacyVersion: text(consent, 'privacyVersion'),
+              },
+      });
+      if (!taken.ok) throw new DomainProblemError(taken.error);
+      return {
+        status: 202,
+        mediaType: jsonMediaType,
+        body: { accepted: true },
+      };
+    },
+
+    verifyAddress: async (request): Promise<HandlerResult> => {
+      requireWriteOrigin(servedOrigins, request);
+      const verified = await verifyOpen(open, text(request.body, 'token'));
+      if (!verified.ok) throw new DomainProblemError(verified.error);
+      if (verified.value.created) await welcome(verified.value.accountId);
+      return {
+        status: 200,
+        mediaType: jsonMediaType,
+        body: { email: verified.value.email },
       };
     },
   };

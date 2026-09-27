@@ -1,0 +1,11 @@
+type: string
+description: >-
+  Why a reader reports a published link. The list is fixed, so an
+  administrator can sort the reports.
+enum:
+  - phishing
+  - malware
+  - illegal
+  - harassment
+  - spam
+  - other

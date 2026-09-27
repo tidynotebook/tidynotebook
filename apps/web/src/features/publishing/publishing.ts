@@ -155,6 +155,8 @@ export type OwnedLink = {
   readonly createdAt: string;
   readonly expiresAt: string | null;
   readonly passwordProtected: boolean;
+  /** Whether an administrator took the link down after a report (0119). */
+  readonly takenDown: boolean;
 };
 
 /**
@@ -186,23 +188,30 @@ export function linkTitle(
  * one name and a small number of facts, and a screen that reads four of them
  * joined by a middle dot is reading a string that nothing can lay out. The
  * screen shows the first two and keeps the rest for the tooltip of the row.
+ *
+ * A link that an administrator took down says so first, because it opens
+ * nothing now and its owner cannot make it live again (record 0119).
  */
 export function linkFacts(
   link: OwnedLink,
   noteCount: number,
   now: number,
 ): readonly string[] {
-  const parts: string[] = [
+  const parts: string[] = link.takenDown ? [takenDownFact] : [];
+  parts.push(
     link.scope.kind === 'folder'
       ? `Folder with ${noteCountPhrase(noteCount)}`
       : 'One note',
-  ];
+  );
   if (link.passwordProtected) parts.push('Password');
   parts.push(expiryPhrase(link.expiresAt, now));
   const made = relativeTime(link.createdAt, now);
   if (made !== '') parts.push(`published ${made}`);
   return parts;
 }
+
+/** The fact of a link that an administrator took down. */
+export const takenDownFact = 'Taken down by an administrator';
 
 /** How many facts of a link one row shows before the rest go to its tooltip. */
 export const shownLinkFacts = 2;

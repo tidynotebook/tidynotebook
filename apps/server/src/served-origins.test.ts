@@ -2,23 +2,45 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { checkWriteOrigin } from './auth/actor.ts';
 import {
+  applicationOrigins,
+  publishedOrigin,
   readOrigin,
   readServedOrigins,
+  roleOfHost,
   servedHostNames,
+  type ServedOrigin,
 } from './served-origins.ts';
 
-/** The origins of an accepted list, or the assertion failure of a refusal. */
-function origins(canonical: string, additional?: string): readonly string[] {
-  const result = readServedOrigins(canonical, additional);
+/** The accepted list with its roles, or the assertion failure of a refusal. */
+function served(
+  canonical: string,
+  additional?: string,
+  published?: string,
+): readonly ServedOrigin[] {
+  const result = readServedOrigins(canonical, additional, published);
   if (!result.ok) assert.fail(result.issues.join('\n'));
   return result.origins;
 }
 
+/** The origins of an accepted list, or the assertion failure of a refusal. */
+function origins(canonical: string, additional?: string): readonly string[] {
+  return served(canonical, additional).map((entry) => entry.origin);
+}
+
+/** Application origins, as a list of the one role. */
+function application(...values: readonly string[]): readonly ServedOrigin[] {
+  return values.map((origin) => ({ origin, role: 'application' }));
+}
+
 /** The refusal reasons of a list, or the assertion failure of an accepted one. */
-function refusal(canonical: string, additional?: string): readonly string[] {
-  const result = readServedOrigins(canonical, additional);
+function refusal(
+  canonical: string,
+  additional?: string,
+  published?: string,
+): readonly string[] {
+  const result = readServedOrigins(canonical, additional, published);
   if (result.ok)
-    assert.fail(`the list was accepted: ${String(result.origins)}`);
+    assert.fail(`the list was accepted: ${JSON.stringify(result.origins)}`);
   return result.issues;
 }
 
@@ -75,7 +97,9 @@ await test('the host name of an origin is lowercased and a trailing slash is dro
 
 await test('a bracketed IPv6 origin keeps its brackets', () => {
   assert.deepEqual(origins('http://[::1]:3000'), ['http://[::1]:3000']);
-  assert.deepEqual(servedHostNames(['http://[::1]:3000']), ['[::1]']);
+  assert.deepEqual(servedHostNames(application('http://[::1]:3000')), [
+    '[::1]',
+  ]);
 });
 
 await test('a malformed canonical origin stops startup', () => {
@@ -138,28 +162,30 @@ await test('one origin reads as itself and nothing else', () => {
 await test('the Host allowlist holds the host name of each served origin', () => {
   assert.deepEqual(
     servedHostNames(
-      origins('https://notes.example.com', 'https://notes.internal:8443'),
+      served('https://notes.example.com', 'https://notes.internal:8443'),
     ),
     ['notes.example.com', 'notes.internal'],
   );
   // Two origins on one host name give one entry.
   assert.deepEqual(
-    servedHostNames([
-      'https://notes.example.com',
-      'https://notes.example.com:8443',
-    ]),
+    servedHostNames(
+      application(
+        'https://notes.example.com',
+        'https://notes.example.com:8443',
+      ),
+    ),
     ['notes.example.com'],
   );
 });
 
 await test('the write check accepts every served origin', () => {
-  const served = origins(
+  const list = served(
     'https://notes.example.com',
     'https://notes.internal:8443',
   );
-  for (const origin of served)
+  for (const { origin } of list)
     assert.equal(
-      checkWriteOrigin(served, 'POST', { origin }),
+      checkWriteOrigin(list, 'POST', { origin }),
       'accepted',
       origin,
     );
@@ -169,7 +195,7 @@ await test('the write check refuses a neighbour of a served origin', () => {
   // Issue 18. The write check compared one configured value while the trusted
   // list accepted four variants of every allowed host. Both now read the same
   // list, so each of these is foreign to both.
-  const served = origins('https://notes.example.com');
+  const list = served('https://notes.example.com');
   for (const origin of [
     'http://notes.example.com',
     'https://notes.example.com:3000',
@@ -177,23 +203,94 @@ await test('the write check refuses a neighbour of a served origin', () => {
     'https://example.com',
     'null',
   ])
-    assert.equal(
-      checkWriteOrigin(served, 'POST', { origin }),
-      'foreign',
-      origin,
-    );
+    assert.equal(checkWriteOrigin(list, 'POST', { origin }), 'foreign', origin);
 });
 
 await test('the write check reads the fetch metadata header when there is no origin', () => {
-  const served = origins('https://notes.example.com');
+  const list = served('https://notes.example.com');
   assert.equal(
-    checkWriteOrigin(served, 'POST', { site: 'same-origin' }),
+    checkWriteOrigin(list, 'POST', { site: 'same-origin' }),
     'accepted',
   );
   assert.equal(
-    checkWriteOrigin(served, 'POST', { site: 'cross-site' }),
+    checkWriteOrigin(list, 'POST', { site: 'cross-site' }),
     'foreign',
   );
-  assert.equal(checkWriteOrigin(served, 'POST', {}), 'missing');
-  assert.equal(checkWriteOrigin(served, 'GET', {}), 'accepted');
+  assert.equal(checkWriteOrigin(list, 'POST', {}), 'missing');
+  assert.equal(checkWriteOrigin(list, 'GET', {}), 'accepted');
+});
+
+await test('the published origin comes last with its own role', () => {
+  const list = served(
+    'https://notes.example.com',
+    'https://notes.internal',
+    'https://pages.example.net/',
+  );
+  assert.deepEqual(list, [
+    { origin: 'https://notes.example.com', role: 'application' },
+    { origin: 'https://notes.internal', role: 'application' },
+    { origin: 'https://pages.example.net', role: 'published' },
+  ]);
+  assert.deepEqual(applicationOrigins(list), [
+    'https://notes.example.com',
+    'https://notes.internal',
+  ]);
+  assert.equal(publishedOrigin(list), 'https://pages.example.net');
+  assert.equal(publishedOrigin(served('https://notes.example.com')), null);
+  // An empty value is the same as no value.
+  assert.equal(
+    publishedOrigin(served('https://notes.example.com', undefined, ' ')),
+    null,
+  );
+  assert.deepEqual(servedHostNames(list), [
+    'notes.example.com',
+    'notes.internal',
+    'pages.example.net',
+  ]);
+  assert.equal(roleOfHost(list, 'pages.example.net'), 'published');
+  assert.equal(roleOfHost(list, 'notes.internal'), 'application');
+  assert.equal(roleOfHost(list, 'elsewhere.example'), null);
+});
+
+await test('the published origin is never trusted for a write', () => {
+  // Record 0118. A page on the published origin is a page of a stranger, so
+  // a write that names it is refused like a write from any other site.
+  const list = served(
+    'https://notes.example.com',
+    undefined,
+    'https://pages.example.net',
+  );
+  assert.equal(
+    checkWriteOrigin(list, 'POST', { origin: 'https://pages.example.net' }),
+    'foreign',
+  );
+  assert.equal(
+    checkWriteOrigin(list, 'POST', { origin: 'https://notes.example.com' }),
+    'accepted',
+  );
+});
+
+await test('a published origin on a host of the application stops startup', () => {
+  for (const value of [
+    'https://notes.example.com:8443',
+    'https://notes.example.com',
+  ])
+    assert.ok(
+      refusal('https://notes.example.com', undefined, value).some((issue) =>
+        issue.includes('host name'),
+      ),
+      value,
+    );
+  assert.ok(
+    refusal(
+      'https://notes.example.com',
+      undefined,
+      'http://pages.example.net',
+    ).some((issue) => issue.includes('scheme')),
+  );
+  assert.ok(
+    refusal('https://notes.example.com', undefined, 'pages.example.net').some(
+      (issue) => issue.startsWith('NOTESAPP_PUBLISHED_ORIGIN:'),
+    ),
+  );
 });

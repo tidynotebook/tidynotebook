@@ -8,6 +8,7 @@ import {
   invitationState,
   normalizeEmail,
   openRegistrationMissing,
+  openSignUpAction,
   readInvitation,
   registerAccount,
 } from './registration.ts';
@@ -40,6 +41,7 @@ function storeAnswering(
       return Promise.resolve(account);
     },
     invitationAddress: () => Promise.resolve(address),
+    registrationPolicy: () => Promise.resolve('open'),
   };
 }
 
@@ -74,6 +76,11 @@ await test('a registration that the store refuses answers one code per ground', 
     await registerAccount(refused, request({ kind: 'first-run' })),
     { ok: false, error: { code: 'forbidden', fileIds: [] } },
   );
+  // The open ground fails only when the policy stopped being open.
+  assert.deepEqual(await registerAccount(refused, request({ kind: 'open' })), {
+    ok: false,
+    error: { code: 'registration_closed', fileIds: [] },
+  });
   const made = storeAnswering('11111111-1111-4111-8111-111111111111');
   assert.deepEqual(
     await registerAccount(
@@ -134,4 +141,12 @@ await test('open registration names each part it lacks', () => {
     }),
     [],
   );
+});
+
+await test('an open sign-up makes, replaces or notifies, and never keeps a stranger', () => {
+  assert.equal(openSignUpAction(null), 'create');
+  // An identity user that no account links is pending, so a new sign-up
+  // replaces it with its password (record 0114).
+  assert.equal(openSignUpAction({ linked: false }), 'replace');
+  assert.equal(openSignUpAction({ linked: true }), 'notify');
 });

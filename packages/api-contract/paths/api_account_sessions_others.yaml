@@ -1,0 +1,21 @@
+delete:
+  operationId: revokeOtherSessions
+  summary: End every session of the account but the current one.
+  description: >-
+    Signs the account out on every other device. The session that makes the
+    request stays.
+  tags:
+    - accounts
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/SessionsRevoked.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

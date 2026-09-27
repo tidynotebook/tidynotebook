@@ -1,0 +1,5 @@
+description: How many sessions ended.
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/SessionsRevoked.yaml'

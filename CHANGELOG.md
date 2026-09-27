@@ -5,6 +5,62 @@ All notable changes to this project are recorded here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.8.0 - 2026-09-27
+
+This minor release lets several people use one installation, each with their
+own notes, and lets an installation serve the public safely.
+
+### Added
+
+- **Several accounts.** The first account administers the installation. An
+  administrator invites a person by mail or with a link, and the person
+  chooses a password and gets their own notes.
+- The accounts page lists each account with its role, its state, its last use
+  and its storage. An administrator makes an account an administrator or a
+  member, disables it, changes its storage limit, or removes it. You never see
+  the notes of another account.
+- Each account has a storage limit. Settings shows how much of it you use.
+- Settings lets you remove your own account and every note in it.
+- Settings lists each device that is signed in to your account. Sign out one
+  device, or every device but this one.
+- An installation can let anybody sign up. The person proves their address
+  with a link in a message, and the browser does a short check first.
+- An installation can name its terms and its privacy notice. Each person
+  accepts them at sign-up, and again before the notes open when a new version
+  comes out.
+- An installation can show published pages on an address of their own, so a
+  harmful page cannot reach an account.
+- Each published page has a Report this page link. An administrator reads the
+  reports, opens the page, and takes a link down. The owner sees the takedown.
+- The operator can invite a person and make an account an administrator from
+  the command line.
+
+### Changed
+
+- A new password needs at least 15 characters. Your current password keeps
+  working.
+- A sign-in needs an address that the installation proved. Every account of an
+  installation that upgrades counts as proved.
+- The limits of the server and its hourly work now hold across several server
+  processes of one installation.
+- The note tree uses less space between rows.
+
+### Fixed
+
+- A browser that another account signs in to stops sending your saves until
+  you sign in again. The data that another account left on the device goes
+  away at sign-in and at sign-out.
+- The outline of a note scrolls inside its side panel.
+- On a phone, the editor footer stays above the keyboard.
+- An empty note list shows one New note action.
+- On a touch screen, the name field of a new note takes the focus at once.
+- A setting in the environment file of a container now reaches the server.
+
+### Security
+
+- A new password is checked against a list of leaked passwords. The server
+  sends five characters of a digest of the password and never the password.
+
 ## 0.7.3 - 2026-09-25
 
 This patch release shows each new line of a note as a new line, and repairs

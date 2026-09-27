@@ -237,17 +237,19 @@ function PublishedLinksList({
                         ))}
                       </p>
                     </div>
-                    <div className="flex shrink-0 items-center gap-cluster">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        disabled={busy !== null}
-                        label={`Revoke the link to ${name}`}
-                        onClick={() => revoke(link, name)}
-                      >
-                        Revoke
-                      </Button>
-                    </div>
+                    {link.takenDown ? null : (
+                      <div className="flex shrink-0 items-center gap-cluster">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          disabled={busy !== null}
+                          label={`Revoke the link to ${name}`}
+                          onClick={() => revoke(link, name)}
+                        >
+                          Revoke
+                        </Button>
+                      </div>
+                    )}
                   </ListRow>
                 );
               })}

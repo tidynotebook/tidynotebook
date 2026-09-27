@@ -15,9 +15,11 @@ import type {
 } from '@notesapp/core';
 import {
   createInvitation,
+  dismissReport,
   invitationState,
   listAccounts,
   listInvitations,
+  listReports,
   normalizeEmail,
   openRegistrationMissing,
   readRegistrationPolicy,
@@ -25,6 +27,7 @@ import {
   removeOwnAccount,
   revokeInvitation,
   setRegistrationPolicy,
+  takeDownReportedLink,
   updateAccount,
 } from '@notesapp/core';
 import { requireActor } from '../auth/actor.ts';
@@ -55,10 +58,15 @@ export type AdministrationDependencies = {
   readonly defaultLimitBytes: bigint;
   /**
    * What the installation has of the parts that open registration needs.
-   * The published origin and the legal documents arrive with records 0118
-   * and 0120, and until then the composition states that they are missing.
+   * The legal documents arrive with record 0120, and until then the
+   * composition states that they are missing.
    */
   readonly readiness: OpenRegistrationReadiness;
+  /**
+   * The address of a reported link from its sealed value, or `null` when
+   * this server cannot open it (record 0123).
+   */
+  readonly openAddress: (sealed: string) => string | null;
   /** Whether a password is the current one of an identity user. */
   readonly verifyPassword: (
     authUserId: string,
@@ -200,6 +208,53 @@ export function createAdministrationHandlers(
           link: dependencies.mail === null ? issued.link : null,
         },
       };
+    },
+
+    listReports: async (request): Promise<HandlerResult> => {
+      const resolved = requireActor(request);
+      const reports = unwrapDomain(await listReports(store, resolved.actor));
+      return {
+        status: 200,
+        mediaType: jsonMediaType,
+        body: {
+          reports: reports.map((report) => ({
+            reportId: report.reportId,
+            publicationId: report.publicationId,
+            reason: report.reason,
+            note: report.note,
+            address:
+              report.sealedAddress === null
+                ? null
+                : dependencies.openAddress(report.sealedAddress),
+            linkState: report.linkState,
+            createdAt: report.createdAt,
+          })),
+        },
+      };
+    },
+
+    dismissReport: async (request): Promise<HandlerResult> => {
+      const resolved = requireActor(request);
+      unwrapDomain(
+        await dismissReport(
+          store,
+          resolved.actor,
+          readParameter(request, 'reportId'),
+        ),
+      );
+      return { status: 200, mediaType: jsonMediaType, body: { removed: true } };
+    },
+
+    takeDownReportedLink: async (request): Promise<HandlerResult> => {
+      const resolved = requireActor(request);
+      unwrapDomain(
+        await takeDownReportedLink(
+          store,
+          resolved.actor,
+          readParameter(request, 'reportId'),
+        ),
+      );
+      return { status: 200, mediaType: jsonMediaType, body: { removed: true } };
     },
 
     revokeInvitation: async (request): Promise<HandlerResult> => {

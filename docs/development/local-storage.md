@@ -111,7 +111,8 @@ One browser profile holds one session cookie, so it serves the account of that
 session. The session check of `packages/sync/src/engine.ts` compares the two
 accounts. On a difference the engine pauses and keeps its queue in place. When
 the server confirms an account, `clearIdleAccounts` deletes each partition of
-another account that holds no work. `draftHoldsWork` in
+another account that holds no work, and a sign-out that keeps work deletes
+every such partition of the origin. `draftHoldsWork` in
 `src/local-store/shared.ts` states what unsaved text is. See
 [decision 0113](../decisions/0113-a-browser-serves-the-account-of-its-session.md).
 

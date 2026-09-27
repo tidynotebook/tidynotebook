@@ -7,16 +7,31 @@
  * No handler repeats a contract shape and no handler reads the database.
  */
 import type { FastifyRequest } from 'fastify';
-import type { Preferences, Result, WorkspaceAdminStore } from '@notesapp/core';
+import type {
+  LegalDocuments,
+  Preferences,
+  Result,
+  WorkspaceAdminStore,
+} from '@notesapp/core';
 import {
+  acceptLegalDocuments,
+  consentRequired,
+  listSessions,
+  readConsent,
   readOwnStanding,
   readPreferences,
+  revokeOtherSessions,
+  revokeSession,
   updatePreferences,
 } from '@notesapp/core';
 import { requireActor } from '../auth/actor.ts';
 import { readProperty } from '../values.ts';
 import type { HandlerMap, HandlerResult } from '../plugins/register.ts';
-import { ForbiddenError, NotFoundError } from '../plugins/problem.ts';
+import {
+  ForbiddenError,
+  NotFoundError,
+  unwrapDomain,
+} from '../plugins/problem.ts';
 
 /** Media type of every answer in this module. */
 const jsonMediaType = 'application/json';
@@ -91,12 +106,16 @@ function preferencesBody(preferences: Preferences): Record<string, unknown> {
 }
 
 /** Builds the account and settings handlers. */
-export function createAccountHandlers(store: WorkspaceAdminStore): HandlerMap {
+export function createAccountHandlers(
+  store: WorkspaceAdminStore,
+  documents: LegalDocuments | null,
+): HandlerMap {
   return {
     getAccount: async (request): Promise<HandlerResult> => {
       const resolved = requireActor(request);
       const preferences = unwrap(await readPreferences(store, resolved.actor));
       const standing = unwrap(await readOwnStanding(store, resolved.actor));
+      const consent = unwrap(await readConsent(store, resolved.actor));
       return {
         status: 200,
         mediaType: jsonMediaType,
@@ -110,8 +129,71 @@ export function createAccountHandlers(store: WorkspaceAdminStore): HandlerMap {
             limitBytes: Number(standing.limitBytes),
           },
           preferences: preferencesBody(preferences),
+          // The application opens only after consent to the current legal
+          // documents (record 0120).
+          consentRequired: consentRequired(documents, consent),
         },
       };
+    },
+
+    acceptLegalDocuments: async (request): Promise<HandlerResult> => {
+      const resolved = requireActor(request);
+      // A refusal names its own code, so the page can say that a version
+      // changed while the person read it.
+      unwrapDomain(
+        await acceptLegalDocuments(store, resolved.actor, documents, {
+          termsVersion: readString(request.body, 'termsVersion'),
+          privacyVersion: readString(request.body, 'privacyVersion'),
+        }),
+      );
+      return {
+        status: 200,
+        mediaType: jsonMediaType,
+        body: { accepted: true },
+      };
+    },
+
+    listSessions: async (request): Promise<HandlerResult> => {
+      const resolved = requireActor(request);
+      const sessions = unwrap(
+        await listSessions(store, resolved.actor, resolved.sessionId),
+      );
+      return {
+        status: 200,
+        mediaType: jsonMediaType,
+        body: {
+          // Each member is named, so no member of the store, and never a
+          // token, reaches the answer (record 0122).
+          sessions: sessions.map((session) => ({
+            sessionId: session.sessionId,
+            current: session.current,
+            userAgent: session.userAgent,
+            createdAt: session.createdAt,
+            lastActiveAt: session.lastActiveAt,
+            expiresAt: session.expiresAt,
+          })),
+        },
+      };
+    },
+
+    revokeSession: async (request): Promise<HandlerResult> => {
+      const resolved = requireActor(request);
+      unwrap(
+        await revokeSession(
+          store,
+          resolved.actor,
+          readParameter(request, 'sessionId'),
+        ),
+      );
+      return { status: 200, mediaType: jsonMediaType, body: { removed: true } };
+    },
+
+    revokeOtherSessions: async (request): Promise<HandlerResult> => {
+      const resolved = requireActor(request);
+      const revoked = unwrap(
+        await revokeOtherSessions(store, resolved.actor, resolved.sessionId),
+      );
+      return { status: 200, mediaType: jsonMediaType, body: { revoked } };
     },
 
     updatePreferences: async (request): Promise<HandlerResult> => {

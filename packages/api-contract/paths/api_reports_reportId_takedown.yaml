@@ -1,0 +1,26 @@
+post:
+  operationId: takeDownReportedLink
+  summary: Take down the link of one report.
+  description: >-
+    Only an administrator takes a link down. The link stops at once, and
+    every open report of it closes. The owner sees that an administrator
+    took the link down and cannot make it live again. The administrator
+    gets no membership, so no note of the workspace becomes readable.
+  tags:
+    - administration
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+    - $ref: '../components/parameters/ReportId.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/Removed.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

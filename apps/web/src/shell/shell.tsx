@@ -128,6 +128,7 @@ import { SidebarCalendar } from '../features/daily-notes/calendar.tsx';
 import { dailyNoteDate } from '@notesapp/core';
 import { PublishDialog } from '../features/publishing/publish-dialog.tsx';
 import { publishedLinksTitle } from '../features/publishing/publishing.ts';
+import { accountsTitle } from '../lib/accounts.ts';
 import {
   NoteActionsScope,
   useNoteActions,
@@ -320,6 +321,7 @@ const pageTitles: PageTitles = {
   notes: allNotesTitle,
   trash: trashTitle,
   published: publishedLinksTitle,
+  accounts: accountsTitle,
   attention: attentionTitle,
   settings: settingsTitle,
   'not-found': notFoundTitle,
@@ -711,6 +713,10 @@ function Sidebar({
   const notesPath = `/w/${workspaceId}`;
   const trashPath = `/w/${workspaceId}/trash`;
   const publishedPath = `/w/${workspaceId}/published`;
+  const accountsPath = `/w/${workspaceId}/accounts`;
+  // An administrator manages the accounts of the installation, so only an
+  // administrator sees the row that opens them (record 0109).
+  const administers = session.account?.installationRole === 'administrator';
   const attentionPath = `/w/${workspaceId}/attention`;
   // One short sentence for the state of the work, beside the dot that states
   // the same thing without a word. A failed local write of the open note
@@ -1077,6 +1083,27 @@ function Sidebar({
           </span>
           <span className="min-w-0 flex-1 truncate">{publishedLinksTitle}</span>
         </Link>
+        {administers ? (
+          <Link
+            className={rowClassName({
+              current: location.pathname === accountsPath,
+              inset: false,
+            })}
+            to={accountsPath}
+            onClick={onNavigate}
+            aria-current={
+              location.pathname === accountsPath ? 'page' : undefined
+            }
+          >
+            <span
+              className="inline-flex shrink-0 items-center"
+              aria-hidden="true"
+            >
+              {actionIcon('accounts')}
+            </span>
+            <span className="min-w-0 flex-1 truncate">{accountsTitle}</span>
+          </Link>
+        ) : null}
         <AttentionLink
           workspaceId={workspaceId}
           count={attentionCount}
@@ -1686,6 +1713,20 @@ function ShellFrame({
           void navigate(`/w/${workspaceId}/published`);
         },
       },
+      // Only an administrator manages the accounts (record 0109).
+      ...(session.account?.installationRole === 'administrator'
+        ? [
+            {
+              id: 'accounts',
+              label: `Go to ${accountsTitle}`,
+              keywords: 'accounts invite invitation people users administrator',
+              icon: 'accounts' as const,
+              run: (): void => {
+                void navigate(`/w/${workspaceId}/accounts`);
+              },
+            },
+          ]
+        : []),
       // One row per workspace of the account, so a switch is reachable from
       // the keyboard alone. The note search of the palette stays inside the
       // open workspace, because isolation is the point of record 0049.

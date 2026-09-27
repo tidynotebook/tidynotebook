@@ -101,6 +101,16 @@ export const attachmentState = pgEnum('attachment_state', [
 /** What one published link opens: one note, or one folder and its notes. */
 export const publicationScope = pgEnum('publication_scope', ['note', 'folder']);
 
+/** Why a reader reports a published link (record 0119). */
+export const reportReason = pgEnum('report_reason', [
+  'phishing',
+  'malware',
+  'illegal',
+  'harassment',
+  'spam',
+  'other',
+]);
+
 /** The kind of entity that one incremental sync record refers to. */
 export const syncEntityKind = pgEnum('sync_entity_kind', [
   'file',
@@ -863,6 +873,11 @@ export const publications = pgTable(
     passwordDigest: text('password_digest'),
     expiresAt: timestamp('expires_at', { withTimezone: true }),
     revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    /**
+     * When an administrator took the link down after a report (record 0119).
+     * The owner sees it and cannot make the link live again.
+     */
+    takenDownAt: timestamp('taken_down_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -940,6 +955,48 @@ export const readingTickets = pgTable(
     check(
       'reading_tickets_digest_check',
       sql`${table.ticketDigest} ~ '^[0-9a-f]{64}$'`,
+    ),
+  ],
+);
+
+/**
+ * One report of a published link (records 0119 and 0123).
+ *
+ * A reader writes it through one function that takes the digest of the
+ * token, and an administrator reads it through another. The runtime role
+ * holds no right on the table. The address of the link is sealed with a key
+ * of the server, so the row holds no working link.
+ */
+export const publicationReports = pgTable(
+  'publication_reports',
+  {
+    id: uuid('id').primaryKey(),
+    workspaceId: uuid('workspace_id').notNull(),
+    publicationId: uuid('publication_id').notNull(),
+    reason: reportReason('reason').notNull(),
+    note: text('note'),
+    sealedAddress: text('sealed_address'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    closedAt: timestamp('closed_at', { withTimezone: true }),
+  },
+  (table) => [
+    foreignKey({
+      name: 'publication_reports_publication_fk',
+      columns: [table.workspaceId, table.publicationId],
+      foreignColumns: [publications.workspaceId, publications.id],
+    }).onDelete('cascade'),
+    index('publication_reports_open_idx')
+      .on(table.createdAt)
+      .where(sql`${table.closedAt} is null`),
+    index('publication_reports_publication_idx').on(
+      table.workspaceId,
+      table.publicationId,
+    ),
+    check(
+      'publication_reports_note_check',
+      sql`${table.note} is null or char_length(${table.note}) between 1 and 2000`,
     ),
   ],
 );
@@ -1060,6 +1117,64 @@ export const authVerification = pgTable(
 );
 
 /**
+ * The attempt counters of the rate limit of Better Auth (record 0121).
+ *
+ * The library keeps its own counters here, so every server process of one
+ * installation reads one count. The table belongs to the identity role, like
+ * the three tables above it.
+ */
+export const authRateLimit = pgTable('auth_rate_limit', {
+  id: text('id').primaryKey(),
+  key: text('key').notNull().unique(),
+  count: integer('count').notNull(),
+  lastRequest: bigint('last_request', { mode: 'number' }).notNull(),
+});
+
+/**
+ * The attempt counters of the limited routes of this server (record 0121).
+ *
+ * One row counts the attempts of one key, which names the caller and the
+ * group of the route, inside one window. Every server process of an
+ * installation counts in this one table, so a limit holds across processes
+ * and across a restart. The runtime role writes it through
+ * `notesapp_count_attempt` only.
+ */
+export const attemptCounters = pgTable(
+  'attempt_counters',
+  {
+    key: text('key').primaryKey(),
+    count: integer('count').notNull(),
+    windowStartedAt: timestamp('window_started_at', {
+      withTimezone: true,
+    }).notNull(),
+  },
+  (table) => [
+    check('attempt_counters_key_check', sql`char_length(${table.key}) <= 512`),
+    index('attempt_counters_window_idx').on(table.windowStartedAt),
+  ],
+);
+
+/**
+ * The digest of each challenge of the proof of work that a sign-up used
+ * (record 0115). A row lives until the challenge expires, so one solution
+ * makes one account. The runtime role reaches it through two functions only.
+ */
+export const usedChallenges = pgTable(
+  'used_challenges',
+  {
+    digest: text('digest').primaryKey(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    check(
+      'used_challenges_digest_check',
+      sql`${table.digest} ~ '^[0-9a-f]{64}$'`,
+    ),
+    index('used_challenges_expiry_idx').on(table.expiresAt),
+  ],
+);
+
+/**
  * The map from a Better Auth user to an application account.
  *
  * The application identifies an account by a UUID that never changes, so the
@@ -1121,6 +1236,23 @@ export const accountAuditEvents = pgTable(
  * the browser to check the spelling of a note (record 0103). Its default is
  * `defaultSpellCheck` of `@notesapp/core`, which SQL cannot read.
  */
+/**
+ * The legal documents that one account accepted (record 0120): the version
+ * of the terms and of the privacy notice, and when. One row for each
+ * account, which a new consent replaces. A row belongs to its account and to
+ * nobody else.
+ */
+export const accountConsents = pgTable('account_consents', {
+  accountId: uuid('account_id')
+    .primaryKey()
+    .references(() => accounts.id, { onDelete: 'cascade' }),
+  termsVersion: text('terms_version').notNull(),
+  privacyVersion: text('privacy_version').notNull(),
+  acceptedAt: timestamp('accepted_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export const accountPreferences = pgTable('account_preferences', {
   accountId: uuid('account_id')
     .primaryKey()

@@ -29,6 +29,7 @@ export const framePages = [
   'review',
   'trash',
   'published',
+  'accounts',
   'attention',
   'settings',
   'not-found',

@@ -29,6 +29,8 @@
  * `tests/integration/published-styles.test.ts` proves that it does.
  */
 
+import type { ReportReason } from '@notesapp/core';
+
 /** Text that a person reads, with every markup character removed. */
 export function escapeText(value: string): string {
   return value
@@ -78,15 +80,27 @@ export type PublishedPageView =
   | {
       readonly kind: 'list';
       readonly notes: readonly PublishedListEntry[];
-    };
+    }
+  /** The report form of a link (record 0119). */
+  | {
+      readonly kind: 'report';
+      readonly reasons: readonly ReportReason[];
+    }
+  /** The answer after a report, whatever the report stored. */
+  | { readonly kind: 'reported' };
 
 /** What the document needs besides the view. */
 export type PublishedDocumentInput = {
   readonly view: PublishedPageView;
   /** The stylesheets of the built application document, in order. */
   readonly stylesheets: readonly string[];
-  /** Where the password form sends the password of this link. */
+  /** Where the form of this state sends its fields. */
   readonly formAction: string;
+  /**
+   * The address of the report page of this link, or `null`. A note and a
+   * list carry it, so a reader can report what the link shows.
+   */
+  readonly reportHref?: string | null;
 };
 
 /**
@@ -103,6 +117,30 @@ export const lockedSentence = 'This link needs a password.';
 
 /** The words of the empty list of a folder link. */
 export const emptyListSentence = 'This folder holds no notes.';
+
+/** The heading of the report page. */
+export const reportHeading = 'Report this page';
+
+/** The sentence under the heading of the report page. */
+const reportSentence =
+  'Tell the administrators of this server why this page is harmful. They can take the link down.';
+
+/** The words of the report link at the foot of a page. */
+const reportLinkWords = 'Report this page';
+
+/** The sentence after a report. It is the same whatever the report stored. */
+export const reportedSentence =
+  'Thank you. The administrators of this server read each report.';
+
+/** The words of each reason, in the order of the form. */
+export const reportReasonWords: Readonly<Record<ReportReason, string>> = {
+  phishing: 'It asks for a password, a payment or personal data',
+  malware: 'It holds a harmful file',
+  illegal: 'It holds illegal content',
+  harassment: 'It attacks or threatens a person',
+  spam: 'It is spam',
+  other: 'Another reason',
+};
 
 /** The heading of the list of a folder link. */
 const listHeading = 'Notes';
@@ -190,6 +228,15 @@ const formClasses = 'my-4 flex flex-col gap-2';
 /** The classes of the label above the password field. */
 const labelClasses = 'text-control font-medium text-strong';
 
+/** The classes of the group of reasons of the report form. */
+const reasonGroupClasses = 'm-0 flex flex-col gap-2 border-0 p-0';
+
+/** The classes of one reason of the report form, a radio and its words. */
+const reasonClasses = 'flex items-center gap-2 text-ui text-ink';
+
+/** The classes of the foot of a page, which holds the report link. */
+const footClasses = 'mt-12 text-control text-muted';
+
 /**
  * The classes of the one button of this page, and of its one field.
  *
@@ -228,6 +275,9 @@ export const publishedDocumentClasses: readonly string[] = [
   listClasses,
   formClasses,
   labelClasses,
+  reasonGroupClasses,
+  reasonClasses,
+  footClasses,
   publishedButtonClasses,
   publishedFieldClasses,
 ].flatMap((group) => group.split(' '));
@@ -236,6 +286,7 @@ export const publishedDocumentClasses: readonly string[] = [
 function titleOf(view: PublishedPageView): string {
   if (view.kind === 'note') return view.name;
   if (view.kind === 'list') return listHeading;
+  if (view.kind === 'report') return reportHeading;
   // A link that opens nothing and a link that asks for a password both name
   // the product and never the note, so a browser tab discloses nothing.
   return 'Notesapp';
@@ -247,6 +298,8 @@ function mainOf(input: PublishedDocumentInput): string {
   if (view.kind === 'unavailable')
     return `<p>${escapeText(unavailableSentence)}</p>`;
   if (view.kind === 'locked') return passwordForm(input.formAction);
+  if (view.kind === 'report') return reportForm(input.formAction, view.reasons);
+  if (view.kind === 'reported') return `<p>${escapeText(reportedSentence)}</p>`;
   if (view.kind === 'list') {
     if (view.notes.length === 0)
       return [
@@ -291,6 +344,43 @@ function passwordForm(action: string): string {
   ].join('\n');
 }
 
+/**
+ * The report form (record 0119).
+ *
+ * It holds no script, so it sends the form encoding of HTML to its own
+ * address. The first reason is chosen at the start, so the form always sends
+ * one reason of the fixed list.
+ */
+function reportForm(action: string, reasons: readonly ReportReason[]): string {
+  const choices = reasons
+    .map(
+      (reason, index) =>
+        `<label class="${reasonClasses}"><input type="radio" name="reason" value="${escapeAttribute(reason)}"${index === 0 ? ' checked' : ''}>${escapeText(reportReasonWords[reason])}</label>`,
+    )
+    .join('\n');
+  return [
+    `<h1 class="${pageHeadingClasses}">${escapeText(reportHeading)}</h1>`,
+    `<p>${escapeText(reportSentence)}</p>`,
+    `<form class="${formClasses}" method="post" action="${escapeAttribute(action)}">`,
+    `<fieldset class="${reasonGroupClasses}">`,
+    `<legend class="${labelClasses}">Reason</legend>`,
+    choices,
+    '</fieldset>',
+    `<label class="${labelClasses}" for="report-note">More details (optional)</label>`,
+    `<textarea class="${publishedFieldClasses}" id="report-note" name="note" rows="4" maxlength="2000"></textarea>`,
+    `<button class="${publishedButtonClasses}" type="submit">Send report</button>`,
+    '</form>',
+  ].join('\n');
+}
+
+/** The foot of a page that shows content, with its report link. */
+function footOf(input: PublishedDocumentInput): string {
+  const shows = input.view.kind === 'note' || input.view.kind === 'list';
+  if (!shows || input.reportHref === undefined || input.reportHref === null)
+    return '';
+  return `\n<footer class="${footClasses}"><a class="${linkClasses}" href="${escapeAttribute(input.reportHref)}">${escapeText(reportLinkWords)}</a></footer>`;
+}
+
 /** Builds the whole document of one state of a published link. */
 export function publishedDocument(input: PublishedDocumentInput): string {
   const styles = input.stylesheets
@@ -308,7 +398,7 @@ export function publishedDocument(input: PublishedDocumentInput): string {
     ${styles}</head>
   <body class="${bodyClasses}">
     <main class="${pageClasses}">
-${mainOf(input)}
+${mainOf(input)}${footOf(input)}
     </main>
   </body>
 </html>

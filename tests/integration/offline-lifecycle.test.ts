@@ -42,6 +42,7 @@ import {
   isRecoveryVisible as isRecordVisible,
   signOut,
   SignOutBlockedError,
+  signOutKeepingWork,
 } from '../../apps/web/src/pwa/lifecycle.ts';
 import {
   closeForUpdate,
@@ -336,6 +337,35 @@ await test('online sign-out revokes before it clears private data', async () => 
     null,
   );
   assert.equal(await store.hasSignOutMarker(account), false);
+  await store.close();
+});
+
+await test('a sign-out that keeps work deletes every idle partition', async () => {
+  // Issue 187. A plain sign-out used to keep every record of the account on
+  // the device. Now it keeps only the partitions that hold work (record 0113).
+  const backend = createBackend('signout-keeps-work');
+  const store = await openLocalStore(origin, backend.options());
+  const account = randomUUID();
+  const other = randomUUID();
+  const busy = randomUUID();
+  const idle = randomUUID();
+  const otherIdle = randomUUID();
+  const file = randomUUID();
+  const digest = 'd'.repeat(64);
+  await queueOne(store, account, busy, file, 'waiting\n');
+  await store.setAttachmentPinned(account, idle, digest, true);
+  await store.setAttachmentPinned(other, otherIdle, digest, true);
+
+  const events: string[] = [];
+  await signOutKeepingWork(store, () => {
+    events.push('revoke');
+    return Promise.resolve();
+  });
+
+  assert.deepEqual(events, ['revoke']);
+  assert.equal((await store.pending(account, busy)).length, 1);
+  assert.equal(await store.isAttachmentPinned(account, idle, digest), false);
+  assert.equal(await store.isAttachmentPinned(other, otherIdle, digest), false);
   await store.close();
 });
 

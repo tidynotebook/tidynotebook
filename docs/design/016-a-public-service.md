@@ -1,6 +1,6 @@
 # 016: A public service
 
-Status: active
+Status: complete
 
 This design states what one installation needs before a stranger can sign up
 and write notes on it. It builds on

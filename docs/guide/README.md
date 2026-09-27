@@ -2,8 +2,9 @@
 
 This page is for anyone who uses NotesApp or runs it on their own server.
 
-NotesApp is a self-hosted Markdown notes application for one person. A note is
-a Markdown file in a folder you choose. Typing writes a draft on your device.
+NotesApp is a self-hosted Markdown notes application for you and the people you
+invite. Each account has its own notes. A note is a Markdown file in a folder
+you choose. Typing writes a draft on your device.
 Save creates one version on your server, and History keeps every version.
 
 ## Writing notes
@@ -12,6 +13,8 @@ For the person who writes the notes.
 
 - [Getting started](getting-started.md) - your first sign-in and your first
   note.
+- [Joining an installation](joining.md) - accept an invitation, and leave
+  again.
 - [Notes and folders](notes-and-folders.md) - create, rename, move, and find
   your notes.
 - [Workspaces](workspaces.md) - keep personal notes and work notes apart.
@@ -41,6 +44,8 @@ For the person who runs the server.
 - [Backup and restore](backup-and-restore.md) - encrypted backups, and the
   restore test that makes them evidence.
 - [Upgrade](upgrade.md) - move to a new build and go back safely.
+- [Accounts and invitations](accounts.md) - invite people and manage their
+  accounts as an administrator.
 - [Security model](security-model.md) - what the operator can see, and what
   the product does not protect against.
 

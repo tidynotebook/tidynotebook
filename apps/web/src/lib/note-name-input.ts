@@ -12,3 +12,8 @@ export type NoteNameInputPolicy = {
 export function noteNameInputPolicy(): NoteNameInputPolicy {
   return { autoComplete: 'off' };
 }
+
+/** A coarse touch screen needs the native tap to open its keyboard. */
+export function shouldFocusNewNoteNameOnOpen(coarseTouch: boolean): boolean {
+  return !coarseTouch;
+}

@@ -71,6 +71,10 @@ link does not come back. Publish again to make a new link.
 
 The screen tells you **No published links** when your workspace holds none.
 
+A row that says **Taken down by an administrator** is a link that an
+administrator stopped after a report. It opens nothing, and you cannot make it
+open again. The row stays for 30 days.
+
 ## What the reader sees
 
 The reader sees the note as you wrote it: the headings, the lists, the tasks,
@@ -84,6 +88,14 @@ A diagram appears as its text, because the published page draws no diagram.
 
 The reader sees the last version that your server holds. An edit on your device
 reaches the reader after you save it.
+
+Each page has a **Report this page** link at its foot. A reader who finds a
+harmful page gives a reason there. The administrators of the server read the
+report and can take the link down.
+
+A server can show published pages on an address of their own, for example
+`pages.example.net`. The reader then opens that address, and an old address on
+the main site moves the reader there.
 
 ## What a published link does not do
 

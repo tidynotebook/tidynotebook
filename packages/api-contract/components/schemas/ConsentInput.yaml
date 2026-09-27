@@ -1,0 +1,17 @@
+type: object
+description: The versions of the two legal documents that a person accepts.
+additionalProperties: false
+required:
+  - termsVersion
+  - privacyVersion
+properties:
+  termsVersion:
+    type: string
+    description: The version of the terms that the person read.
+    minLength: 1
+    maxLength: 64
+  privacyVersion:
+    type: string
+    description: The version of the privacy notice that the person read.
+    minLength: 1
+    maxLength: 64

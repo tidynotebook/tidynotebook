@@ -1,0 +1,9 @@
+description: >-
+  The verification link opens nothing. The code is verification_invalid for a
+  token that expired, that a later sign-up replaced, or that never existed.
+  The answer does not say which. The code is registration_closed when the
+  installation stopped open registration after the sign-up.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/ProblemDetails.yaml'

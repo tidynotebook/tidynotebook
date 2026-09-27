@@ -22,7 +22,6 @@ import type {
   DocumentService,
   PublicationReader,
   PublicationStore,
-  PublishedLink,
   Result,
   TransactOptions,
   WorkspaceStore,
@@ -46,9 +45,14 @@ import { publicationsRepository } from './publications-repository.ts';
 import {
   publicationsOwnerRepository,
   runPublicationCleanup,
+  type OwnedPublishedLink,
   type PublicationCleanupResult,
   type PublishedLinkDraft,
 } from './publications-owner.ts';
+import {
+  reportPublication,
+  type PublicationReport,
+} from './publication-report.ts';
 import {
   unlockPublication,
   type PublicationUnlockAttempt,
@@ -57,9 +61,11 @@ import {
 
 export { DatabaseFailure, WorkspaceUnavailableError } from './errors.ts';
 export type {
+  OwnedPublishedLink,
   PublicationCleanupResult,
   PublishedLinkDraft,
 } from './publications-owner.ts';
+export type { PublicationReport } from './publication-report.ts';
 export type {
   PublicationUnlockAttempt,
   PublicationUnlockResult,
@@ -126,16 +132,19 @@ export type PublishedLinkStore = {
     actor: Actor,
     workspaceId: string,
     draft: PublishedLinkDraft,
-  ): Promise<Result<PublishedLink>>;
+  ): Promise<Result<OwnedPublishedLink>>;
   /** Every link of this workspace, newest first, and no digest of any. */
-  list(actor: Actor, workspaceId: string): Promise<readonly PublishedLink[]>;
+  list(
+    actor: Actor,
+    workspaceId: string,
+  ): Promise<readonly OwnedPublishedLink[]>;
   /** Stops one link of this workspace at `at`. */
   revoke(
     actor: Actor,
     workspaceId: string,
     publicationId: string,
     at: Date,
-  ): Promise<Result<PublishedLink>>;
+  ): Promise<Result<OwnedPublishedLink>>;
 };
 
 /** A workspace store and the calls that a process needs to manage its pool. */
@@ -161,6 +170,12 @@ export type WorkspaceStoreHandle = WorkspaceStore & {
   unlockPublication(
     attempt: PublicationUnlockAttempt,
   ): Promise<PublicationUnlockResult>;
+  /**
+   * Stores one report of a link that opens now, or nothing for any other
+   * token. It is the second write of the published boundary (record 0119),
+   * one statement that calls one function. See `publication-report.ts`.
+   */
+  reportPublication(report: PublicationReport): Promise<void>;
   /**
    * Removes every link that stopped before `cutoff` and every expired ticket.
    *
@@ -339,6 +354,10 @@ export function openWorkspaceStore(
       attempt: PublicationUnlockAttempt,
     ): Promise<PublicationUnlockResult> {
       return unlockPublication(pool, attempt);
+    },
+
+    reportPublication(report: PublicationReport): Promise<void> {
+      return reportPublication(pool, report);
     },
 
     async cleanupPublications(cutoff: Date): Promise<PublicationCleanupResult> {

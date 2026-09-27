@@ -61,8 +61,8 @@ http://127.0.0.1:3000
 ```
 
 The first visit shows the setup screen. Enter an email address and a password
-for the single user. The setup operation closes after that account exists, and
-every later visit shows the sign-in page.
+for the first account, which is the administrator. The setup operation closes
+after that account exists, and every later visit shows the sign-in page.
 
 Check that the installation is ready:
 

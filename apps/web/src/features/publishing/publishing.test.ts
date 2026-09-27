@@ -14,6 +14,7 @@ import {
   publishFailureSentence,
   shownLinkFacts,
   sortLinks,
+  takenDownFact,
   type OwnedLink,
 } from './publishing.ts';
 
@@ -88,7 +89,7 @@ await test('a note link counts the one note it names', () => {
 await test('the password rule states that an empty field makes an open link', () => {
   assert.equal(
     linkPasswordRule,
-    'Leave this empty for a link that opens without a password. A password needs at least 12 characters.',
+    'Leave this empty for a link that opens without a password. A password needs at least 15 characters.',
   );
 });
 
@@ -132,6 +133,7 @@ await test('the row facts state the reach, the password, the expiry and the age'
     createdAt: '2026-09-14T12:00:00.000Z',
     expiresAt: '2026-09-23T12:00:00.000Z',
     passwordProtected: true,
+    takenDown: false,
   };
   assert.deepEqual(linkFacts(link, 3, now), [
     'Folder with 3 notes',
@@ -148,6 +150,7 @@ await test('a note link with no password and no expiry reads plainly', () => {
     createdAt: '2026-09-16T12:00:00.000Z',
     expiresAt: null,
     passwordProtected: false,
+    takenDown: false,
   };
   assert.deepEqual(linkFacts(link, 1, now), [
     'One note',
@@ -163,6 +166,7 @@ await test('a row shows the first two facts and keeps the rest', () => {
     createdAt: '2026-09-14T12:00:00.000Z',
     expiresAt: null,
     passwordProtected: true,
+    takenDown: false,
   };
   const facts = linkFacts(link, 1, now);
   assert.deepEqual(facts.slice(0, shownLinkFacts), ['One note', 'Password']);
@@ -180,6 +184,7 @@ await test('the newest link comes first and a tie keeps a stable order', () => {
       createdAt: '2026-09-10T12:00:00.000Z',
       expiresAt: null,
       passwordProtected: false,
+      takenDown: false,
     },
     {
       publicationId: 'tie-b',
@@ -187,6 +192,7 @@ await test('the newest link comes first and a tie keeps a stable order', () => {
       createdAt: '2026-09-15T12:00:00.000Z',
       expiresAt: null,
       passwordProtected: false,
+      takenDown: false,
     },
     {
       publicationId: 'tie-a',
@@ -194,6 +200,7 @@ await test('the newest link comes first and a tie keeps a stable order', () => {
       createdAt: '2026-09-15T12:00:00.000Z',
       expiresAt: null,
       passwordProtected: false,
+      takenDown: false,
     },
   ];
   const sorted = sortLinks(links, (link) => linkTitle(link.scope, []));
@@ -211,6 +218,7 @@ await test('a link whose instant cannot be read sorts last and is still listed',
       createdAt: 'not an instant',
       expiresAt: null,
       passwordProtected: false,
+      takenDown: false,
     },
     {
       publicationId: 'good',
@@ -218,6 +226,7 @@ await test('a link whose instant cannot be read sorts last and is still listed',
       createdAt: '2026-09-10T12:00:00.000Z',
       expiresAt: null,
       passwordProtected: false,
+      takenDown: false,
     },
   ];
   const sorted = sortLinks(links, (link) => linkTitle(link.scope, []));
@@ -245,4 +254,18 @@ await test('every other cause keeps the shared sentence', () => {
     publishFailureSentence(null, 500),
     'The server had a problem. Try again in a moment.',
   );
+});
+
+await test('a taken down link says so first', () => {
+  const link: OwnedLink = {
+    publicationId: 'p9',
+    scope: { kind: 'note', fileId: 'a' },
+    createdAt: '2026-09-16T12:00:00.000Z',
+    expiresAt: null,
+    passwordProtected: false,
+    takenDown: true,
+  };
+  const facts = linkFacts(link, 1, now);
+  assert.equal(facts[0], takenDownFact);
+  assert.ok(facts.slice(0, shownLinkFacts).includes(takenDownFact));
 });

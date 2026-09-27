@@ -6,6 +6,7 @@ required:
   - installationRole
   - storage
   - preferences
+  - consentRequired
 properties:
   accountId:
     allOf:
@@ -41,3 +42,9 @@ properties:
       - $ref: './Preferences.yaml'
     readOnly: true
     description: The stored settings of the account.
+  consentRequired:
+    type: boolean
+    readOnly: true
+    description: >-
+      Whether the account must accept the current legal documents before the
+      application opens (record 0120).

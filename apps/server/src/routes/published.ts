@@ -27,7 +27,10 @@
  * writes the headers of decision 0047.
  */
 import {
+  isReportReason,
   readPublishedPage,
+  reportNote,
+  reportReasons,
   resolvePublishedAttachment,
   type PasswordHasher,
   type PublicationStore,
@@ -40,6 +43,7 @@ import {
 import { renderMarkdown, type NoteTarget } from '@notesapp/markdown';
 import type {
   AttachmentStore,
+  PublicationReport,
   PublicationUnlockAttempt,
   PublicationUnlockResult,
 } from '@notesapp/storage-server';
@@ -63,10 +67,17 @@ import { newPublishedSecret } from '../auth/publication-secrets.ts';
 export type PublishedDependencies = {
   /** The read-only store of the reader path, which is the port of 0031. */
   readonly store: PublicationStore;
-  /** The one write of the boundary: a password becomes a reading ticket. */
+  /** The first write of the boundary: a password becomes a reading ticket. */
   readonly unlock: (
     attempt: PublicationUnlockAttempt,
   ) => Promise<PublicationUnlockResult>;
+  /** The second write of the boundary: one report (record 0119). */
+  readonly report: (report: PublicationReport) => Promise<void>;
+  /**
+   * The sealed full address of the link of one token, which a report keeps
+   * so that an administrator can open the link (record 0123).
+   */
+  readonly sealLink: (token: string) => string;
   /** The bytes of an attachment revision. */
   readonly attachments: AttachmentStore;
   /** The digest rule of a token and of a ticket. */
@@ -107,6 +118,11 @@ function pageAddress(
   if (ticket !== null) query.set('ticket', ticket);
   const text = query.toString();
   return `/published/${encodeURIComponent(token)}${text === '' ? '' : `?${text}`}`;
+}
+
+/** The address of the report page of this link. */
+function reportAddress(token: string): string {
+  return `/published/${encodeURIComponent(token)}/report`;
 }
 
 /** The address of one picture of one note of this link. */
@@ -222,6 +238,7 @@ export function createPublishedHandlers(
       // The form returns to the address that the reader is on, so an unlock
       // of a folder link opens the note that the reader asked for.
       formAction: pageAddress(token, null, note),
+      reportHref: reportAddress(token),
     }),
     headers: publishedDocumentHeaders,
   });
@@ -293,6 +310,47 @@ export function createPublishedHandlers(
         status: 200,
         mediaType: 'application/json',
         body: { ticket, expiresAt: unlocked.ticket.expiresAt },
+      };
+    },
+
+    getReportPage: (request): Promise<HandlerResult> => {
+      const token = readText(request.params, 'token');
+      // The form is the same for every token, so it states nothing about
+      // the link.
+      return Promise.resolve({
+        status: 200,
+        mediaType: 'text/html',
+        body: publishedDocument({
+          view: { kind: 'report', reasons: reportReasons },
+          stylesheets: parts.stylesheets(),
+          formAction: reportAddress(token),
+        }),
+        headers: publishedDocumentHeaders,
+      });
+    },
+
+    reportPublishedLink: async (request): Promise<HandlerResult> => {
+      const token = readText(request.params, 'token');
+      const reason = readText(request.body, 'reason');
+      // The contract names the reasons, and the core names them again, so a
+      // reason that is not one of them stores nothing.
+      if (isReportReason(reason))
+        await parts.report({
+          tokenDigest: parts.secrets.digest(token),
+          reason,
+          note: reportNote(readOptionalText(request.body, 'note')),
+          sealedAddress: parts.sealLink(token),
+        });
+      // One answer for a stored report and for a token of no link.
+      return {
+        status: 200,
+        mediaType: 'text/html',
+        body: publishedDocument({
+          view: { kind: 'reported' },
+          stylesheets: parts.stylesheets(),
+          formAction: reportAddress(token),
+        }),
+        headers: publishedDocumentHeaders,
       };
     },
 
@@ -373,6 +431,8 @@ function refusingHandlers(): HandlerMap {
   return {
     getPublishedPage: page,
     openPublishedPage: page,
+    getReportPage: page,
+    reportPublishedLink: page,
     unlockPublishedLink: refuse,
     getPublishedAttachment: refuse,
   };

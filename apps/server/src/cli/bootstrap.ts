@@ -21,7 +21,7 @@ import { createAuth } from '../auth/better-auth.ts';
 import { registerIdentity } from '../auth/registration.ts';
 import { seedWelcomeNote } from '../auth/welcome-note.ts';
 import { loadProtectedEnvironment, loadServerConfig } from '../config.ts';
-import { readArgument, readSecret } from './prompt.ts';
+import { assertNewPassword, readArgument, readSecret } from './prompt.ts';
 
 /** What the bootstrap command created. */
 export type BootstrapResult = {
@@ -41,9 +41,6 @@ export type BootstrapInput = {
   readonly password: string;
 };
 
-/** The shortest password that this installation accepts. */
-export const minimumPasswordLength = 12;
-
 /**
  * Creates the first account and its personal workspace.
  *
@@ -54,10 +51,7 @@ export const minimumPasswordLength = 12;
 export async function bootstrapOwner(
   input: BootstrapInput,
 ): Promise<BootstrapResult> {
-  if (input.password.length < minimumPasswordLength)
-    throw new Error(
-      `notesapp: the password must have at least ${String(minimumPasswordLength)} characters.`,
-    );
+  assertNewPassword(input.password);
   const identity = openIdentityStore(input.config.databaseUrl, { poolSize: 2 });
   const content = openWorkspaceStore(
     input.config.databaseUrl,
@@ -84,7 +78,11 @@ export async function bootstrapOwner(
       limitBytes: input.config.accounts.limitBytes,
     });
     if (!made.ok)
-      throw new Error('notesapp: the first account already exists.');
+      throw new Error(
+        made.error.code === 'password_breached'
+          ? 'notesapp: that password is in a list of leaked passwords. Choose another one.'
+          : 'notesapp: the first account already exists.',
+      );
     const [membership] = await identity.memberships(made.value.accountId);
     if (membership !== undefined)
       await seedWelcomeNote(

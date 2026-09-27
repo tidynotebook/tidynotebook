@@ -284,13 +284,14 @@ export function createRecoverySlice(ctx: LocalStoreContext): RecoverySlice {
 
   /**
    * The partitions of this origin that other accounts hold, by account.
+   * With no signed-in account, every account of the origin is another one.
    *
    * Only the keys are read, so the text of a note does not leave the disk
    * for a partition that is only counted. The account-wide part of an
    * account is in the answer as `accountWide`.
    */
   const partitionsOfOthers = async (
-    signedInAccountId: string,
+    signedInAccountId: string | null,
   ): Promise<Map<string, Set<string>>> => {
     const keyLists: readonly (readonly (readonly string[])[])[] =
       await Promise.all(
@@ -479,7 +480,7 @@ export function createRecoverySlice(ctx: LocalStoreContext): RecoverySlice {
     },
 
     async clearIdleAccounts(
-      signedInAccountId: string,
+      signedInAccountId: string | null,
     ): Promise<readonly string[]> {
       const outcome = await guard('clearing the data of absent accounts', () =>
         db.transaction('rw', privateTables(tables), async () => {

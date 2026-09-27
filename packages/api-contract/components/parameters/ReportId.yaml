@@ -1,0 +1,8 @@
+name: reportId
+in: path
+required: true
+style: simple
+explode: false
+description: Identifier of the report that the operation acts on.
+schema:
+  $ref: '../schemas/Uuid.yaml'

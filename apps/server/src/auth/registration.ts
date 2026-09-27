@@ -25,7 +25,7 @@ import {
   personalWorkspaceName,
   registerAccount,
 } from '@notesapp/core';
-import type { NotesappAuth } from './better-auth.ts';
+import { breachedPasswordCode, type NotesappAuth } from './better-auth.ts';
 import { readProperty } from '../values.ts';
 
 /** What the identity side must answer besides the registration store. */
@@ -49,6 +49,12 @@ export type Registered = {
   readonly authUserId: string;
   readonly email: string;
 };
+
+/** The code that a refusal of the library carries, or `null`. */
+function libraryCodeOf(error: unknown): string | null {
+  const code = readProperty(readProperty(error, 'body'), 'code');
+  return typeof code === 'string' ? code : null;
+}
 
 /** Deletes an identity user. A user that is gone already is no failure. */
 async function deleteIdentityUser(
@@ -97,7 +103,11 @@ export async function registerIdentity(
     const id = readProperty(readProperty(created, 'user'), 'id');
     if (typeof id !== 'string' || id === '') return refusal(input.ground);
     authUserId = id;
-  } catch {
+  } catch (error: unknown) {
+    // A leaked password has its own answer, because the person can act on
+    // it (record 0116).
+    if (libraryCodeOf(error) === breachedPasswordCode)
+      return fail('password_breached');
     // Two acceptances of one invitation race here: the second finds the
     // address taken by the identity user of the first. It made nothing.
     return refusal(input.ground);

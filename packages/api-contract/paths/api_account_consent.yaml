@@ -1,0 +1,31 @@
+post:
+  operationId: acceptLegalDocuments
+  summary: Accept the current legal documents of the installation.
+  description: >-
+    Stores the versions of the terms and of the privacy notice that the
+    person accepts, with the time (record 0120). The versions must be the
+    current ones, so a page that showed an older version records nothing and
+    answers consent_required.
+  tags:
+    - accounts
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+  requestBody:
+    $ref: '../components/requestBodies/Consent.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/ConsentRecorded.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../components/responses/Forbidden.yaml'
+    '409':
+      $ref: '../components/responses/Conflict.yaml'
+    '413':
+      $ref: '../components/responses/PayloadTooLarge.yaml'
+    '415':
+      $ref: '../components/responses/UnsupportedMediaType.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

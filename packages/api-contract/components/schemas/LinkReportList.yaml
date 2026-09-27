@@ -1,0 +1,13 @@
+type: object
+description: The open reports of published links.
+additionalProperties: false
+required:
+  - reports
+properties:
+  reports:
+    type: array
+    readOnly: true
+    description: The open reports, newest first.
+    maxItems: 10000
+    items:
+      $ref: './LinkReport.yaml'

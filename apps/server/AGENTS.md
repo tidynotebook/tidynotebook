@@ -10,16 +10,22 @@ authentication routes on one origin, and it holds no domain rule.
 
 - `src/plugins/` holds one cross-cutting Fastify concern per file and no business
   resource: `register.ts`, `problem.ts`, `security-headers.ts`, `static-assets.ts`,
-  `host.ts`, `content-disposition.ts` and `body-idle-timeout.ts`.
+  `host.ts`, `content-disposition.ts`, `body-idle-timeout.ts`, `attempt-store.ts`
+  and `published-origin.ts`, which keeps the published origin to the reader path
+  and redirects a reader address to it (0118).
 - `src/routes/` holds one controller file per resource. `handlers.ts` returns one
   handler per operation id and the body lives in its area file. `published.ts` is the
-  reader path of a published link, `published-document.ts` writes its one document
-  (0031, 0047), and `publications.ts` holds the owner operations.
+  reader path of a published link and its report (0119), `published-document.ts`
+  writes its one document (0031, 0047), and `publications.ts` holds the owner
+  operations.
 - `main.ts` wires the process to `src/lifecycle.ts`, which owns the order of the start
   and of the stop and holds no signal and no exit.
 - `src/auth/` holds the Better Auth adapter, the actor resolver, the secrets of a
-  published link, mail, setup, invitations, and `registration.ts`, the one path that
-  makes an account (0108). `src/jobs/` holds background work, `src/cli/` the operator
+  published link, the seal of a reported address (`report-seal.ts`, 0123), mail,
+  setup, invitations, and `registration.ts`, the one path that makes an account
+  (0108). `open-registration.ts` holds the sign-up and the proof of an address
+  of open registration, `verification.ts` the token of its link (0114), and
+  `proof-of-work.ts` the challenges of a sign-up (0115). `src/jobs/` holds background work, `src/cli/` the operator
   commands. `routes/administration.ts` serves the installation operations (0109).
 - A domain rule lives in `packages/core`, every SQL statement in
   `packages/storage-server`, and every request shape in `packages/api-contract/`.

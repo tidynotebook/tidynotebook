@@ -30,6 +30,7 @@ import type {
   InstallationStore,
   InstallationTransaction,
   InvitationRecord,
+  LinkReportRecord,
   NewInvitation,
 } from './ports.ts';
 import {
@@ -243,6 +244,53 @@ export function revokeInvitation(
     if (!(await permitted(tx, actor, 'revoke-invitation')))
       return fail<void>('forbidden');
     return (await tx.revokeInvitation(invitationId))
+      ? ok(undefined)
+      : fail<void>('not_found');
+  });
+}
+
+/** Every open report of a published link, for an administrator (0119). */
+export function listReports(
+  store: InstallationStore,
+  actor: Actor,
+): Promise<Result<readonly LinkReportRecord[]>> {
+  return store.installation(actor, async (tx) => {
+    if (!(await permitted(tx, actor, 'list-reports')))
+      return fail<readonly LinkReportRecord[]>('forbidden');
+    return ok(await tx.reports());
+  });
+}
+
+/** Closes one open report and keeps its link, for an administrator. */
+export function dismissReport(
+  store: InstallationStore,
+  actor: Actor,
+  reportId: string,
+): Promise<Result<void>> {
+  return store.installation(actor, async (tx) => {
+    if (!(await permitted(tx, actor, 'close-report')))
+      return fail<void>('forbidden');
+    return (await tx.dismissReport(reportId))
+      ? ok(undefined)
+      : fail<void>('not_found');
+  });
+}
+
+/**
+ * Takes down the link of one open report, for an administrator (0119).
+ *
+ * The takedown revokes the link and adds no membership, so the administrator
+ * still reads no note of the workspace. The owner cannot make it live again.
+ */
+export function takeDownReportedLink(
+  store: InstallationStore,
+  actor: Actor,
+  reportId: string,
+): Promise<Result<void>> {
+  return store.installation(actor, async (tx) => {
+    if (!(await permitted(tx, actor, 'take-down')))
+      return fail<void>('forbidden');
+    return (await tx.takeDown(reportId))
       ? ok(undefined)
       : fail<void>('not_found');
   });

@@ -1,0 +1,21 @@
+get:
+  operationId: listReports
+  summary: List the open reports of published links.
+  description: >-
+    Only an administrator reads the reports. A report names its link and
+    the address to open it, and no fact of a note or of the workspace.
+  tags:
+    - administration
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/LinkReportList.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

@@ -41,10 +41,11 @@ import { createIdentityAdapter } from './auth/actor.ts';
 import { createPublicationHasher } from './auth/publication-secrets.ts';
 import { createSetupHandlers } from './auth/setup.ts';
 import { passwordMatches, sessionAllowedBy } from './auth/registration.ts';
-import { createMailTransport } from './auth/mail.ts';
+import { createMailTransport, type MailTransport } from './auth/mail.ts';
 import {
   createDocumentService,
   openAttachmentStore,
+  openCoordination,
   openIdentityStore,
   openWorkspaceStore,
 } from '@notesapp/storage-server';
@@ -71,7 +72,12 @@ import { createAttachmentCleanup } from './jobs/attachment-cleanup.ts';
 import { createPublicationCleanup } from './jobs/publication-cleanup.ts';
 import { createSyncCleanup } from './jobs/sync-cleanup.ts';
 import { createServerLogger, errorName } from './logging.ts';
-import { SharedAttemptStore } from './plugins/attempt-store.ts';
+import {
+  AttemptCounters,
+  attemptStoreFor,
+  databaseAttemptCounter,
+  type AttemptCounter,
+} from './plugins/attempt-store.ts';
 
 /**
  * Accepted shape of a caller supplied correlation id. It matches the contract
@@ -101,7 +107,17 @@ export function requestId(supplied: unknown): string {
 
 import { hostName } from './plugins/host.ts';
 export { hostName } from './plugins/host.ts';
-import { servedHostNames } from './served-origins.ts';
+import {
+  publishedOrigin,
+  roleOfHost,
+  servedHostNames,
+} from './served-origins.ts';
+import { publishedOriginDecision } from './plugins/published-origin.ts';
+import { createVerificationTokens } from './auth/verification.ts';
+import { createSignUpChallenges } from './auth/proof-of-work.ts';
+
+/** How many messages of a sign-up one address takes in an hour (record 0114). */
+const signUpMailsPerHour = 3;
 
 /**
  * The address of one request, as a problem body repeats it.
@@ -166,6 +182,17 @@ export type AppOptions = {
   readonly lifecycle?: ServiceLifecycle;
   /** Custom web assets directory or null to disable web asset serving. */
   readonly webDist?: string | null;
+  /**
+   * Where the attempt counts of the limited routes live. A deployment passes
+   * the counter of the installation, which every process shares (record
+   * 0121). A server with no database counts in its own memory.
+   */
+  readonly attempts?: AttemptCounter;
+  /**
+   * The mail transport. The configuration decides it, and a test supplies
+   * its own so that it reads every message without a mail server.
+   */
+  readonly mail?: MailTransport | null;
 };
 
 /** Builds the application with an explicit handler map. */
@@ -250,7 +277,7 @@ export async function createAppWithHandlers(
   // group is one bucket. See `./attempt-store.ts`.
   await app.register(rateLimit, {
     global: false,
-    store: SharedAttemptStore,
+    store: attemptStoreFor(options.attempts ?? new AttemptCounters()),
   });
   const logger = createServerLogger(app.log);
 
@@ -293,6 +320,55 @@ export async function createAppWithHandlers(
         }),
       );
   });
+
+  // The published origin serves the reader path and nothing else, and the
+  // application origin sends a reader address there (record 0118). A request
+  // that the published origin does not serve gets the not-found answer of any
+  // other unknown address, so the origin names no operation of the product.
+  const published = publishedOrigin(config.servedOrigins);
+  if (published !== null) {
+    app.addHook('onRequest', async (request, reply) => {
+      const decision = publishedOriginDecision(
+        roleOfHost(config.servedOrigins, hostName(request.headers.host)),
+        published,
+        {
+          operationId: request.routeOptions.config.operationId,
+          method: request.method,
+          url: request.url,
+        },
+      );
+      if (decision.kind === 'serve') return;
+      if (decision.kind === 'redirect') {
+        await reply.redirect(decision.location, 307);
+        return;
+      }
+      // The operation of this address does not exist on the published origin,
+      // so its contract does not apply. The answer is the not-found answer of
+      // an unknown address, serialized here so that no route schema reads it.
+      await reply
+        .status(404)
+        .header('content-type', `${problemMediaType}; charset=utf-8`)
+        .send(
+          JSON.stringify(
+            createProblem({
+              code: 'route_not_found',
+              status: 404,
+              detail: 'No operation serves this method and path.',
+              instance: instanceOf(request),
+              requestId: request.id,
+            }),
+          ),
+        );
+    });
+    // No answer of the published origin sets a cookie, whatever wrote it.
+    app.addHook('onSend', async (request, reply) => {
+      if (
+        roleOfHost(config.servedOrigins, hostName(request.headers.host)) ===
+        'published'
+      )
+        reply.removeHeader('set-cookie');
+    });
+  }
 
   const webDist = webAssetsDirectory(options.webDist);
 
@@ -478,6 +554,9 @@ async function composeApp(
 ): Promise<FastifyInstance> {
   const identity = openIdentityStore(config.databaseUrl);
   opened.push(() => identity.close());
+  // The attempt counters and the job locks that every process shares.
+  const coordination = openCoordination(config.databaseUrl);
+  opened.push(() => coordination.close());
   // The content store uses the same runtime role. It opens its own pool,
   // because a content transaction holds the workspace lock for the length of a
   // changeset and must not queue behind an identity lookup.
@@ -499,7 +578,10 @@ async function composeApp(
     config.storageRoot,
   );
   opened.push(() => attachments.close());
-  const mail = createMailTransport(config.mail);
+  const mail =
+    options?.mail === undefined
+      ? createMailTransport(config.mail)
+      : options.mail;
   // The published page reads the stylesheet of the built shell document, so
   // the page cannot drift from the theme (decision 0031). A deployment that
   // serves no built assets, which is what a development run and most tests
@@ -524,7 +606,10 @@ async function composeApp(
   const refusals: { record?: (cause: ReaderRefusalCause) => void } = {};
   // The protocol library writes into the application log. The sink is filled
   // once the instance exists, so nothing reaches the console in between.
-  const sink: { write?: (record: AuthLogRecord) => void } = {};
+  const sink: {
+    write?: (record: AuthLogRecord) => void;
+    breachUnavailable?: () => void;
+  } = {};
   // Sign-up is enabled inside the protocol library, but its public route is
   // not mounted. The one registration path of `auth/registration.ts` calls
   // it. The session hook asks the account store before every new session, so
@@ -538,10 +623,12 @@ async function composeApp(
       allowSignUp: true,
       sessionAllowed: sessionAllowedBy(identity),
       log: (record) => sink.write?.(record),
+      onBreachUnavailable: () => sink.breachUnavailable?.(),
     },
     authPool,
   );
   opened.push(() => auth.close());
+  const attempts = databaseAttemptCounter(coordination);
   const adapter = createIdentityAdapter({
     auth: auth.auth,
     identity,
@@ -573,6 +660,31 @@ async function composeApp(
         content,
         servedOrigins: config.servedOrigins,
         accountLimitBytes: config.accounts.limitBytes,
+        open: {
+          mail,
+          origin: config.origin,
+          pendingHours: config.accounts.pendingHours,
+          tokens: createVerificationTokens(config.authSecret),
+          documents: config.legalDocuments,
+          challenges: createSignUpChallenges(
+            config.authSecret,
+            config.accounts.proofDifficulty,
+          ),
+          useChallenge: (digest, expiresAt) =>
+            identity.useChallenge(digest, expiresAt),
+          breached: auth.breached,
+          // Three messages to one address in an hour, whoever asked for them
+          // (record 0114). The count is shared by every server process.
+          mayMail: async (email) =>
+            (
+              await attempts.count(
+                `signup-mail:${email}`,
+                60 * 60 * 1000,
+                Date.now(),
+              )
+            ).current <= signUpMailsPerHour,
+          clock: () => new Date(),
+        },
       }),
     },
     identity: adapter.resolver,
@@ -582,6 +694,7 @@ async function composeApp(
       ? { logStream: options.logStream }
       : {}),
     ...(options?.webDist !== undefined ? { webDist: options.webDist } : {}),
+    attempts,
   });
   const logger = createServerLogger(app.log);
   refusals.record = (cause): void => {
@@ -591,24 +704,48 @@ async function composeApp(
   const cleanupAttachments = createAttachmentCleanup(attachments);
   const cleanupPublications = createPublicationCleanup(content);
   let cleanupRunning = false;
+  // Each job runs under a lock that one process takes, so two processes of
+  // one installation never run one job at once (record 0121). A process that
+  // finds a job running skips that run and tries again next hour.
+  const jobs: readonly {
+    readonly name:
+      'sync' | 'attachments' | 'publications' | 'attempts' | 'pending';
+    readonly run: () => Promise<unknown>;
+  }[] = [
+    { name: 'sync', run: () => cleanupSync() },
+    { name: 'attachments', run: () => cleanupAttachments() },
+    { name: 'publications', run: () => cleanupPublications() },
+    {
+      name: 'pending',
+      // A sign-up that nobody verified in time leaves nothing (record 0114).
+      // The used challenges of the proof of work go once they expire.
+      run: async () => {
+        await identity.removePendingIdentities(
+          new Date(Date.now() - config.accounts.pendingHours * 3_600_000),
+        );
+        await identity.pruneChallenges(new Date());
+      },
+    },
+    {
+      name: 'attempts',
+      // A window is minutes long, so a counter older than a day counts
+      // nothing any more.
+      run: () =>
+        coordination.pruneAttempts(new Date(Date.now() - 24 * 60 * 60 * 1000)),
+    },
+  ];
   const runCleanup = async (): Promise<void> => {
     if (cleanupRunning) return;
     cleanupRunning = true;
     try {
-      try {
-        await cleanupSync();
-      } catch {
-        logger.emit('maintenance.failed', { job: 'sync' });
-      }
-      try {
-        await cleanupAttachments();
-      } catch {
-        logger.emit('maintenance.failed', { job: 'attachments' });
-      }
-      try {
-        await cleanupPublications();
-      } catch {
-        logger.emit('maintenance.failed', { job: 'publications' });
+      for (const job of jobs) {
+        try {
+          await coordination.runExclusive(job.name, async () => {
+            await job.run();
+          });
+        } catch {
+          logger.emit('maintenance.failed', { job: job.name });
+        }
       }
     } finally {
       cleanupRunning = false;
@@ -616,6 +753,9 @@ async function composeApp(
   };
   const cleanupTimer = setInterval(() => void runCleanup(), 60 * 60 * 1000);
   cleanupTimer.unref();
+  sink.breachUnavailable = (): void => {
+    logger.emit('auth.breach_check_unavailable', {});
+  };
   sink.write = (record): void => {
     if (record.level === 'error')
       logger.emit('auth.failed', { source: 'better-auth' });
@@ -631,6 +771,7 @@ async function composeApp(
     await authPool.end();
     await attachments.close();
     await content.close();
+    await coordination.close();
     await identity.close();
   });
   return app;

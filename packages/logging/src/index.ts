@@ -22,7 +22,8 @@ export type LogEventFields = {
     readonly reason: string;
   };
   readonly 'maintenance.failed': {
-    readonly job: 'sync' | 'attachments' | 'publications';
+    readonly job:
+      'sync' | 'attachments' | 'publications' | 'attempts' | 'pending';
   };
   /**
    * One refusal of the reader path of a published link.
@@ -37,6 +38,11 @@ export type LogEventFields = {
   readonly 'auth.debug': { readonly source: 'better-auth' };
   readonly 'auth.info': { readonly source: 'better-auth' };
   readonly 'auth.warning': { readonly source: 'better-auth' };
+  /**
+   * The breach service did not answer, so a new password was accepted
+   * without the check (record 0116). The record names no password.
+   */
+  readonly 'auth.breach_check_unavailable': Record<string, never>;
   readonly 'auth.failed': { readonly source: 'better-auth' };
   readonly 'web.problem': { readonly problemCode: string };
 };
@@ -63,6 +69,7 @@ export const logEventCatalog = {
   'auth.debug': { level: 'debug', fields: ['source'] },
   'auth.info': { level: 'info', fields: ['source'] },
   'auth.warning': { level: 'warn', fields: ['source'] },
+  'auth.breach_check_unavailable': { level: 'warn', fields: [] },
   'auth.failed': { level: 'error', fields: ['source'] },
   'web.problem': { level: 'warn', fields: ['problemCode'] },
 } as const satisfies Readonly<

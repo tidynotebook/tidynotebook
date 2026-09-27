@@ -93,6 +93,7 @@ import {
   storageNotePath,
 } from '../../lib/note-name.ts';
 import { commitNoteName } from '../../lib/note-name-commit.ts';
+import { shouldFocusNewNoteNameOnOpen } from '../../lib/note-name-input.ts';
 import { OutlinePanel } from './outline.tsx';
 import { useDeleteNotice } from '../trash/trash.tsx';
 import { createDiagramFrame } from '../../diagram/frame.ts';
@@ -357,6 +358,12 @@ function NoteEditorBody({
 
   useEffect(() => {
     if (!focusName) return;
+    if (
+      !shouldFocusNewNoteNameOnOpen(
+        window.matchMedia('(hover: none) and (pointer: coarse)').matches,
+      )
+    )
+      return;
     nameInputRef.current?.focus();
     nameInputRef.current?.select();
   }, [focusName]);
@@ -1334,6 +1341,7 @@ function NoteEditorBody({
         name={name}
         nameError={pathError}
         nameInputRef={nameInputRef}
+        selectOnFirstFocus={focusName}
         onNameChange={typeName}
         onNameCommit={commitName}
         onNameRevert={revertName}

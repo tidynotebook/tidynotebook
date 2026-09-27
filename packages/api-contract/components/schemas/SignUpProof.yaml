@@ -1,0 +1,19 @@
+type: object
+description: The solution of one challenge of the proof of work.
+additionalProperties: false
+required:
+  - challenge
+  - solution
+properties:
+  challenge:
+    type: string
+    description: The signed challenge, as the server answered it.
+    minLength: 1
+    maxLength: 512
+    pattern: '^[A-Za-z0-9_.-]+$'
+  solution:
+    type: string
+    description: The solution that the browser found.
+    minLength: 1
+    maxLength: 32
+    pattern: '^[0-9a-z]+$'

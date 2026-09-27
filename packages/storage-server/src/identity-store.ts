@@ -27,15 +27,19 @@ import type {
   AccountTransaction,
   Actor,
   AppearanceChoice,
+  ConsentRecord,
+  ConsentVersions,
   InstallationRole,
   InstallationStore,
   InstallationTransaction,
   InvitationRecord,
+  LinkReportRecord,
   NewInvitation,
   Preferences,
   RegistrationPolicy,
   RegistrationStore,
   Role,
+  SessionRecord,
   WorkspaceAdminStore,
   WorkspaceAdminTransaction,
   WorkspaceSummary,
@@ -47,6 +51,8 @@ import {
   isThemeFamilyId,
   OperationalError,
   registrationPolicies,
+  reportReasons,
+  reportedLinkStates,
 } from '@notesapp/core';
 import pg from 'pg';
 import { openPool } from './pool.ts';
@@ -124,6 +130,21 @@ function asRegistrationPolicy(value: string): RegistrationPolicy {
   return known;
 }
 
+/** Narrows the stored reason and link state of a report. */
+function asReportFacts(
+  reason: string,
+  linkState: string,
+): Pick<LinkReportRecord, 'reason' | 'linkState'> {
+  const knownReason = reportReasons.find((known) => known === reason);
+  const knownState = reportedLinkStates.find((known) => known === linkState);
+  if (knownReason === undefined || knownState === undefined)
+    throw new OperationalError(
+      'unexpected',
+      'notesapp: a report row holds an unknown reason or link state.',
+    );
+  return { reason: knownReason, linkState: knownState };
+}
+
 /** An instant that the driver read, as an ISO 8601 text. */
 function isoOf(value: Date | string): string {
   return (value instanceof Date ? value : new Date(value)).toISOString();
@@ -189,6 +210,19 @@ export type IdentityStoreHandle = WorkspaceAdminStore &
     ): Promise<readonly { workspaceId: string; role: Role }[]>;
     /** Whether any application account exists. The bootstrap command uses it. */
     hasAccount(): Promise<boolean>;
+    /**
+     * Removes each identity user that nobody verified before `cutoff` and
+     * that no account links, and answers how many (record 0114). The hourly
+     * run calls it, so a pending sign-up that expired leaves nothing.
+     */
+    removePendingIdentities(cutoff: Date): Promise<number>;
+    /**
+     * Marks one challenge of the proof of work used, and answers whether this
+     * call was the first use (record 0115).
+     */
+    useChallenge(digest: string, expiresAt: Date): Promise<boolean>;
+    /** Removes the used challenges that expired before `cutoff`. */
+    pruneChallenges(cutoff: Date): Promise<number>;
     /**
      * Appends one content free record to the audit trail of an account. The
      * operator recovery command uses it.
@@ -418,6 +452,72 @@ export function openIdentityStore(
         };
       },
 
+      async sessions(): Promise<readonly SessionRecord[]> {
+        const rows = await client.query<{
+          session_id: string;
+          user_agent: string | null;
+          created_at: Date;
+          last_active_at: Date;
+          expires_at: Date;
+        }>('select * from notesapp_account_sessions()');
+        return rows.rows.map((row) => ({
+          sessionId: row.session_id,
+          userAgent: row.user_agent,
+          createdAt: isoOf(row.created_at),
+          lastActiveAt: isoOf(row.last_active_at),
+          expiresAt: isoOf(row.expires_at),
+        }));
+      },
+
+      async revokeSession(sessionId: string): Promise<boolean> {
+        const rows = await client.query<{ revoked: boolean }>(
+          'select notesapp_revoke_session($1) as revoked',
+          [sessionId],
+        );
+        return rows.rows[0]?.revoked ?? false;
+      },
+
+      async revokeOtherSessions(keepSessionId: string): Promise<number> {
+        const rows = await client.query<{ ended: number }>(
+          'select notesapp_revoke_other_sessions($1) as ended',
+          [keepSessionId],
+        );
+        return rows.rows[0]?.ended ?? 0;
+      },
+
+      async consent(): Promise<ConsentRecord | null> {
+        const rows = await client.query<{
+          terms_version: string;
+          privacy_version: string;
+          accepted_at: Date;
+        }>(
+          `select terms_version, privacy_version, accepted_at
+             from account_consents where account_id = $1`,
+          [accountId],
+        );
+        const row = rows.rows[0];
+        return row === undefined
+          ? null
+          : {
+              termsVersion: row.terms_version,
+              privacyVersion: row.privacy_version,
+              acceptedAt: isoOf(row.accepted_at),
+            };
+      },
+
+      async recordConsent(versions: ConsentVersions): Promise<void> {
+        await client.query(
+          `insert into account_consents
+             (account_id, terms_version, privacy_version, accepted_at)
+             values ($1, $2, $3, now())
+           on conflict (account_id)
+             do update set terms_version = excluded.terms_version,
+                           privacy_version = excluded.privacy_version,
+                           accepted_at = now()`,
+          [accountId, versions.termsVersion, versions.privacyVersion],
+        );
+      },
+
       async savePreferences(preferences: Preferences): Promise<void> {
         await client.query(
           `insert into account_preferences
@@ -642,6 +742,44 @@ export function openIdentityStore(
         return rows.rows[0]?.revoked ?? false;
       },
 
+      async reports(): Promise<readonly LinkReportRecord[]> {
+        const rows = await client.query<{
+          report_id: string;
+          publication_id: string;
+          reason: string;
+          note: string | null;
+          sealed_address: string | null;
+          link_state: string;
+          created_at: Date;
+        }>('select * from notesapp_list_reports()');
+        return rows.rows.map((row) => ({
+          reportId: row.report_id,
+          publicationId: row.publication_id,
+          ...asReportFacts(row.reason, row.link_state),
+          note: row.note,
+          sealedAddress: row.sealed_address,
+          createdAt: isoOf(row.created_at),
+        }));
+      },
+
+      async dismissReport(reportId: string): Promise<boolean> {
+        assertUuid(reportId, 'the report');
+        const rows = await client.query<{ closed: boolean }>(
+          'select notesapp_dismiss_report($1) as closed',
+          [reportId],
+        );
+        return rows.rows[0]?.closed ?? false;
+      },
+
+      async takeDown(reportId: string): Promise<boolean> {
+        assertUuid(reportId, 'the report');
+        const rows = await client.query<{ taken: boolean }>(
+          'select notesapp_take_down_publication($1) as taken',
+          [reportId],
+        );
+        return rows.rows[0]?.taken ?? false;
+      },
+
       async registrationPolicy(): Promise<RegistrationPolicy> {
         const rows = await client.query<{ policy: string }>(
           'select notesapp_registration_policy()::text as policy',
@@ -825,6 +963,50 @@ export function openIdentityStore(
           workspaceId: row.workspace_id,
           role: asRole(row.role),
         }));
+      });
+    },
+
+    async useChallenge(digest: string, expiresAt: Date): Promise<boolean> {
+      if (!/^[0-9a-f]{64}$/.test(digest))
+        throw new OperationalError(
+          'unexpected',
+          'notesapp: a used challenge is stored as a digest.',
+        );
+      return inTransaction(null, null, async (client) => {
+        const rows = await client.query<{ first: boolean }>(
+          'select notesapp_use_challenge($1, $2) as first',
+          [digest, expiresAt],
+        );
+        return rows.rows[0]?.first ?? false;
+      });
+    },
+
+    async pruneChallenges(cutoff: Date): Promise<number> {
+      return inTransaction(null, null, async (client) => {
+        const rows = await client.query<{ removed: number }>(
+          'select notesapp_prune_challenges($1) as removed',
+          [cutoff],
+        );
+        return rows.rows[0]?.removed ?? 0;
+      });
+    },
+
+    async removePendingIdentities(cutoff: Date): Promise<number> {
+      return inTransaction(null, null, async (client) => {
+        const rows = await client.query<{ removed: number }>(
+          'select notesapp_remove_pending_identities($1) as removed',
+          [cutoff],
+        );
+        return rows.rows[0]?.removed ?? 0;
+      });
+    },
+
+    async registrationPolicy(): Promise<RegistrationPolicy> {
+      return inTransaction(null, null, async (client) => {
+        const rows = await client.query<{ policy: string }>(
+          'select notesapp_registration_policy()::text as policy',
+        );
+        return asRegistrationPolicy(rows.rows[0]?.policy ?? '');
       });
     },
 

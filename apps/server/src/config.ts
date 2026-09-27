@@ -11,11 +11,18 @@ import { compileSchema, describeIssues } from '@notesapp/api-contract';
 import {
   defaultAccountLimitBytes,
   defaultInvitationLifetimeHours,
+  defaultPendingAccountHours,
+  defaultProofDifficulty,
   maxAccountLimitBytes,
   maxInvitationLifetimeHours,
+  maxPendingAccountHours,
+  maxLegalVersionLength,
+  maxProofDifficulty,
+  minProofDifficulty,
 } from '@notesapp/core';
+import type { LegalDocuments } from '@notesapp/core';
 import { readFile } from 'node:fs/promises';
-import { readServedOrigins } from './served-origins.ts';
+import { readServedOrigins, type ServedOrigin } from './served-origins.ts';
 import { readTrustedProxies } from './trusted-proxies.ts';
 
 const logLevels = [
@@ -69,13 +76,16 @@ export type ServerConfig = {
   /** Secret that signs sessions and tokens. */
   readonly authSecret: string;
   /**
-   * Every origin that this deployment serves, the canonical one first.
+   * Every origin that this deployment serves and its role, the canonical one
+   * first and the published origin, when there is one, last.
    *
    * It is the one list. The cookie write check, the trusted list of the
-   * identity routes, and the Host allowlist all read it. See
-   * [decision 0039](../../../docs/decisions/0039-one-list-of-served-origins.md).
+   * identity routes, and the Host allowlist all read it, and only an
+   * `application` origin is trusted for a write. See
+   * [decision 0039](../../../docs/decisions/0039-one-list-of-served-origins.md)
+   * and [record 0118](../../../docs/decisions/0118-a-published-page-of-a-public-installation-has-its-own-origin.md).
    */
-  readonly servedOrigins: readonly string[];
+  readonly servedOrigins: readonly ServedOrigin[];
   /**
    * The socket that this process listens on.
    *
@@ -159,11 +169,29 @@ export type ServerConfig = {
    * `limitBytes` is the byte limit that a new account starts with. An
    * administrator changes the limit of one account afterwards.
    * `invitationLifetimeHours` is how long a new invitation stays valid.
+   * `pendingHours` is how long a sign-up of open registration waits for its
+   * verification before the hourly run removes it (record 0114).
+   * `proofDifficulty` is how many leading zero bits the proof of work of a
+   * sign-up needs (record 0115).
    */
   readonly accounts: {
     readonly limitBytes: bigint;
     readonly invitationLifetimeHours: number;
+    readonly pendingHours: number;
+    readonly proofDifficulty: number;
   };
+  /**
+   * Whether a new password is checked against the range service of Have I
+   * Been Pwned (record 0116). An installation with no outbound network sets
+   * `NOTESAPP_BREACH_CHECK` to `off`.
+   */
+  readonly breachCheck: boolean;
+  /**
+   * The terms and the privacy notice of the installation, or `null` for
+   * none (record 0120). The operator names the address and the version of
+   * both, or of neither.
+   */
+  readonly legalDocuments: LegalDocuments | null;
   /**
    * The stop of this process.
    *
@@ -215,8 +243,9 @@ const variables = [
  * treated as absent, so a placeholder in a Compose file cannot enable a half
  * configured transport and cannot grant trust that nobody named.
  */
-const optionalVariables = [
+export const optionalVariables = [
   'NOTESAPP_ADDITIONAL_ORIGINS',
+  'NOTESAPP_PUBLISHED_ORIGIN',
   'NOTESAPP_HOST',
   'NOTESAPP_PORT',
   'NOTESAPP_TRUSTED_PROXIES',
@@ -230,6 +259,13 @@ const optionalVariables = [
   'NOTESAPP_UPLOAD_IDLE_TIMEOUT_MS',
   'NOTESAPP_ACCOUNT_LIMIT_BYTES',
   'NOTESAPP_INVITATION_LIFETIME_HOURS',
+  'NOTESAPP_PENDING_ACCOUNT_HOURS',
+  'NOTESAPP_SIGNUP_DIFFICULTY',
+  'NOTESAPP_TERMS_URL',
+  'NOTESAPP_TERMS_VERSION',
+  'NOTESAPP_PRIVACY_URL',
+  'NOTESAPP_PRIVACY_VERSION',
+  'NOTESAPP_BREACH_CHECK',
 ] as const;
 
 const protectedFiles = {
@@ -381,6 +417,7 @@ const configSchema: SchemaObject = {
     // The shape of one entry is decided by `served-origins.ts`, which refuses
     // a value that is not exactly one origin and names what to write instead.
     NOTESAPP_ADDITIONAL_ORIGINS: { type: 'string', maxLength: 1024 },
+    NOTESAPP_PUBLISHED_ORIGIN: { type: 'string', maxLength: 1024 },
     NOTESAPP_HOST: { type: 'string', minLength: 1, maxLength: 255 },
     NOTESAPP_PORT: positiveInteger,
     // The shape of one entry is decided by `trusted-proxies.ts`, which refuses
@@ -407,6 +444,19 @@ const configSchema: SchemaObject = {
       pattern: '^[1-9][0-9]{0,15}$',
     },
     NOTESAPP_INVITATION_LIFETIME_HOURS: positiveInteger,
+    NOTESAPP_PENDING_ACCOUNT_HOURS: positiveInteger,
+    NOTESAPP_SIGNUP_DIFFICULTY: positiveInteger,
+    NOTESAPP_TERMS_URL: { type: 'string', maxLength: 2048 },
+    NOTESAPP_TERMS_VERSION: {
+      type: 'string',
+      maxLength: maxLegalVersionLength,
+    },
+    NOTESAPP_PRIVACY_URL: { type: 'string', maxLength: 2048 },
+    NOTESAPP_PRIVACY_VERSION: {
+      type: 'string',
+      maxLength: maxLegalVersionLength,
+    },
+    NOTESAPP_BREACH_CHECK: { type: 'string', enum: ['on', 'off'] },
   },
 };
 
@@ -445,9 +495,10 @@ export function loadServerConfig(
   const served = readServedOrigins(
     raw.NOTESAPP_ORIGIN,
     raw.NOTESAPP_ADDITIONAL_ORIGINS,
+    raw.NOTESAPP_PUBLISHED_ORIGIN,
   );
   if (!served.ok) throw new ConfigError(served.issues);
-  const [canonical] = served.origins;
+  const canonical = served.origins[0]?.origin;
   if (canonical === undefined)
     throw new ConfigError([
       'NOTESAPP_ORIGIN: name the origin of this installation.',
@@ -543,6 +594,8 @@ export function loadServerConfig(
         : Number(raw.NOTESAPP_SESSION_MAX_AGE_S),
     shutdown,
     accounts: readAccounts(raw),
+    breachCheck: raw.NOTESAPP_BREACH_CHECK !== 'off',
+    legalDocuments: readLegalDocuments(raw),
   };
 }
 
@@ -552,6 +605,53 @@ export function loadServerConfig(
  * The largest limit is the largest integer that a JSON answer carries without
  * loss, and the longest invitation lasts one year.
  */
+/** The address of one document: a full http or https URL, or `null`. */
+function documentUrl(value: string): string | null {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' || url.protocol === 'http:'
+      ? url.href
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The legal documents of the installation (record 0120).
+ *
+ * The four values come together or not at all, so no installation asks for
+ * consent to a document with no address or no version.
+ */
+function readLegalDocuments(raw: RawConfig): LegalDocuments | null {
+  const values = [
+    raw.NOTESAPP_TERMS_URL,
+    raw.NOTESAPP_TERMS_VERSION,
+    raw.NOTESAPP_PRIVACY_URL,
+    raw.NOTESAPP_PRIVACY_VERSION,
+  ];
+  if (values.every((value) => value === undefined)) return null;
+  const issues: string[] = [];
+  if (values.some((value) => value === undefined))
+    issues.push(
+      'NOTESAPP_TERMS_URL: name the address and the version of the terms and of the privacy notice, all four, or none of them.',
+    );
+  const termsUrl = documentUrl(raw.NOTESAPP_TERMS_URL ?? '');
+  const privacyUrl = documentUrl(raw.NOTESAPP_PRIVACY_URL ?? '');
+  if (raw.NOTESAPP_TERMS_URL !== undefined && termsUrl === null)
+    issues.push('NOTESAPP_TERMS_URL: name a full http or https address.');
+  if (raw.NOTESAPP_PRIVACY_URL !== undefined && privacyUrl === null)
+    issues.push('NOTESAPP_PRIVACY_URL: name a full http or https address.');
+  if (issues.length > 0) throw new ConfigError(issues);
+  return {
+    terms: { url: termsUrl ?? '', version: raw.NOTESAPP_TERMS_VERSION ?? '' },
+    privacy: {
+      url: privacyUrl ?? '',
+      version: raw.NOTESAPP_PRIVACY_VERSION ?? '',
+    },
+  };
+}
+
 function readAccounts(raw: RawConfig): ServerConfig['accounts'] {
   const limitBytes =
     raw.NOTESAPP_ACCOUNT_LIMIT_BYTES === undefined
@@ -561,7 +661,22 @@ function readAccounts(raw: RawConfig): ServerConfig['accounts'] {
     raw.NOTESAPP_INVITATION_LIFETIME_HOURS === undefined
       ? defaultInvitationLifetimeHours
       : Number(raw.NOTESAPP_INVITATION_LIFETIME_HOURS);
+  const pendingHours =
+    raw.NOTESAPP_PENDING_ACCOUNT_HOURS === undefined
+      ? defaultPendingAccountHours
+      : Number(raw.NOTESAPP_PENDING_ACCOUNT_HOURS);
+  const proofDifficulty =
+    raw.NOTESAPP_SIGNUP_DIFFICULTY === undefined
+      ? defaultProofDifficulty
+      : Number(raw.NOTESAPP_SIGNUP_DIFFICULTY);
   const issues: string[] = [];
+  if (
+    proofDifficulty < minProofDifficulty ||
+    proofDifficulty > maxProofDifficulty
+  )
+    issues.push(
+      `NOTESAPP_SIGNUP_DIFFICULTY: name a number from ${String(minProofDifficulty)} to ${String(maxProofDifficulty)}.`,
+    );
   if (limitBytes > maxAccountLimitBytes)
     issues.push(
       `NOTESAPP_ACCOUNT_LIMIT_BYTES: name at most ${maxAccountLimitBytes.toString()} bytes.`,
@@ -570,6 +685,10 @@ function readAccounts(raw: RawConfig): ServerConfig['accounts'] {
     issues.push(
       `NOTESAPP_INVITATION_LIFETIME_HOURS: name at most ${String(maxInvitationLifetimeHours)} hours.`,
     );
+  if (pendingHours > maxPendingAccountHours)
+    issues.push(
+      `NOTESAPP_PENDING_ACCOUNT_HOURS: name at most ${String(maxPendingAccountHours)} hours.`,
+    );
   if (issues.length > 0) throw new ConfigError(issues);
-  return { limitBytes, invitationLifetimeHours };
+  return { limitBytes, invitationLifetimeHours, pendingHours, proofDifficulty };
 }
