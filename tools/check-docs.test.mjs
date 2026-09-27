@@ -6,6 +6,7 @@ import { dirname, join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import {
+  decisionIndexFailures,
   fenceLanguages,
   isSuperseded,
   maximumDevelopmentLines,
@@ -31,7 +32,9 @@ const baseline = {
     '```sh\ndocker compose up -d\n```\n',
   'docs/development/architecture.md':
     '# Architecture\n\nThe shape of the system. See [the guide](../guide/README.md).\n',
-  'docs/decisions/README.md': '# Decision records\n\nThe index.\n',
+  'docs/decisions/README.md':
+    '# Decision records\n\n## Index\n\n| Record | Decision |\n| --- | --- |\n' +
+    '| [0001](0001-a-choice.md) | A choice |\n\nThe records follow.\n',
   'docs/decisions/0001-a-choice.md':
     '# 0001. A choice\n\n- Status: Accepted\n- Date: 2026-01-01\n\n' +
     '## Context\n\nFacts.\n\n## Decision\n\nThe choice.\n\n## Consequences\n\nThe cost.\n',
@@ -318,4 +321,82 @@ await test('a development page over the line cap fails', () => {
   });
   assert.equal(result.status, 1);
   assert.match(result.output, /151 lines\. A page of development\//);
+});
+
+/** A decision record that satisfies every rule, with the given number. */
+function record(number) {
+  return (
+    `# ${number}. A choice\n\n- Status: Accepted\n- Date: 2026-01-01\n\n` +
+    '## Context\n\nFacts.\n\n## Decision\n\nThe choice.\n\n## Consequences\n\nThe cost.\n'
+  );
+}
+
+/** An index whose table holds the given rows, then the given trailing text. */
+function decisionIndex(rows, after = '') {
+  return (
+    '# Decision records\n\n## Index\n\n| Record | Decision |\n| --- | --- |\n' +
+    rows
+      .map((name) => `| [${name.slice(0, 4)}](${name}) | A choice |\n`)
+      .join('') +
+    after
+  );
+}
+
+await test('a record whose row sits after a blank line fails', () => {
+  // The defect this covers: three rows were written after a blank line, so
+  // the table ended above them and they showed as a paragraph of pipes.
+  const result = check({
+    'docs/decisions/0002-a-second-choice.md': record('0002'),
+    'docs/decisions/README.md': decisionIndex(
+      ['0001-a-choice.md'],
+      '\n| [0002](0002-a-second-choice.md) | A second choice |\n',
+    ),
+  });
+  assert.equal(result.status, 1);
+  assert.match(
+    result.output,
+    /0002-a-second-choice\.md has no row in the index table/,
+  );
+});
+
+await test('two records with one number fail', () => {
+  // The defect this covers: a branch took record numbers that the main line
+  // had already given to other records.
+  const result = check({
+    'docs/decisions/0001-another-choice.md': record('0001'),
+    'docs/decisions/README.md': decisionIndex([
+      '0001-a-choice.md',
+      '0001-another-choice.md',
+    ]),
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.output, /share the number 0001/);
+});
+
+await test('the index rule refuses a missing heading, a stray row and an order', () => {
+  assert.match(
+    String(decisionIndexFailures(['0001-a.md'], '# Records\n')[0]),
+    /no "## Index" heading/,
+  );
+  assert.deepEqual(
+    decisionIndexFailures(
+      ['0000-template.md', 'README.md', '0001-a.md', '0002-b.md'],
+      decisionIndex(['0001-a.md', '0002-b.md']),
+    ),
+    [],
+  );
+  assert.match(
+    decisionIndexFailures(
+      ['0001-a.md'],
+      decisionIndex(['0001-a.md', '0003-c.md']),
+    ).join('\n'),
+    /the index row for 0003-c\.md names no record/,
+  );
+  assert.match(
+    decisionIndexFailures(
+      ['0001-a.md', '0002-b.md'],
+      decisionIndex(['0002-b.md', '0001-a.md']),
+    ).join('\n'),
+    /0001-a\.md follows 0002-b\.md/,
+  );
 });

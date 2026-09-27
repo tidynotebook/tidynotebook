@@ -24,7 +24,9 @@ and needs no record.
 2. Fill in Context, Decision, and Consequences. Keep the file under 40 lines,
    or under 60 when the record states a structure that a reader has to follow.
 3. Set `Status: Accepted` and the date.
-4. Add the row to the index below.
+4. Add the row to the index table below, in number order and with no blank
+   line before it. `tools/check-docs.mjs` refuses a record with no row and
+   two records with one number.
 
 ## Index
 

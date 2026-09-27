@@ -27,6 +27,8 @@
  * 6. A page under `development/` stays under the line cap that
  *    `docs/README.md` states, so a page that grew into two pages is split
  *    rather than left to grow.
+ * 7. Each decision number names one record, and the index table of
+ *    `docs/decisions/README.md` holds one row for each record, in order.
  *
  * A separate root permits a disposable negative check without real documents,
  * in the same shape as `tools/check-agents-md.mjs`.
@@ -281,6 +283,75 @@ export function headerFailures(kind, name, text) {
   return failures;
 }
 
+/** The heading of `docs/decisions/README.md` that holds the record table. */
+export const decisionIndexHeading = '## Index';
+
+/**
+ * Checks that the decision records and their index agree.
+ *
+ * Two branches can take the same next number, and a row written after a
+ * blank line ends the table and becomes a paragraph of pipes that no reader
+ * sees as a row. So every number has one record, and every record has one
+ * row inside the one table under the index heading, in number order.
+ *
+ * @param {string[]} names The file names in `docs/decisions/`.
+ * @param {string} index The text of `docs/decisions/README.md`.
+ * @returns {string[]}
+ */
+export function decisionIndexFailures(names, index) {
+  /** @type {string[]} */
+  const failures = [];
+  const records = names
+    .filter((name) => /^\d{4}-.+\.md$/.test(name))
+    .filter((name) => !name.startsWith('0000-'))
+    .sort();
+  /** @type {Map<string, string>} */
+  const byNumber = new Map();
+  for (const name of records) {
+    const number = name.slice(0, 4);
+    const earlier = byNumber.get(number);
+    if (earlier === undefined) byNumber.set(number, name);
+    else
+      failures.push(
+        `${earlier} and ${name} share the number ${number}. Take the next free number.`,
+      );
+  }
+  const lines = index.split('\n');
+  const start = lines.indexOf(decisionIndexHeading);
+  if (start === -1)
+    return [
+      ...failures,
+      `no "${decisionIndexHeading}" heading. The index table lists every record.`,
+    ];
+  let first = start + 1;
+  while (first < lines.length && (lines[first] ?? '').trim() === '') first += 1;
+  /** @type {string[]} */
+  const rows = [];
+  for (let line = first; line < lines.length; line += 1) {
+    const text = lines[line] ?? '';
+    if (!text.startsWith('|')) break;
+    const link = /\]\((\d{4}-[^)]+\.md)\)/.exec(text);
+    if (link !== null) rows.push(/** @type {string} */ (link[1]));
+  }
+  const listed = new Set(rows);
+  for (const name of records)
+    if (!listed.has(name))
+      failures.push(
+        `${name} has no row in the index table. Add the row inside the table, with no blank line before it.`,
+      );
+  for (const row of new Set(rows))
+    if (!records.includes(row))
+      failures.push(`the index row for ${row} names no record.`);
+  for (const [position, row] of rows.entries()) {
+    const previous = rows[position - 1];
+    if (previous !== undefined && previous >= row)
+      failures.push(
+        `the index row for ${row} follows ${previous}. Keep one row for each record, in number order.`,
+      );
+  }
+  return failures;
+}
+
 /**
  * The repository paths that one document names inside a code span.
  *
@@ -366,6 +437,17 @@ export async function main(directory) {
         failures.push(
           `${path}:${fence.line}: a "${fence.language}" block. A document points at code and never copies it.`,
         );
+  }
+  const decisionNames = documents
+    .filter((path) => path.startsWith('docs/decisions/'))
+    .map((path) => path.slice('docs/decisions/'.length));
+  if (decisionNames.length > 0) {
+    const index = await readFile(
+      join(directory, 'docs/decisions/README.md'),
+      'utf8',
+    ).catch(() => '');
+    for (const failure of decisionIndexFailures(decisionNames, index))
+      failures.push(`docs/decisions/README.md: ${failure}`);
   }
   for (const name of linkedRootFiles) {
     const text = await readFile(join(directory, name), 'utf8').catch(
