@@ -38,6 +38,7 @@ export function NoteHeader({
   onNameRevert,
   onNameDone,
   nameInputRef,
+  selectOnFirstFocus = false,
 }: {
   readonly fileId: string;
   readonly name: string;
@@ -54,8 +55,11 @@ export function NoteHeader({
   /** Moves the caret into the note after Enter or Escape. */
   readonly onNameDone: () => void;
   readonly nameInputRef?: React.Ref<HTMLInputElement> | undefined;
+  /** Selects the initial name when a new note first takes native focus. */
+  readonly selectOnFirstFocus?: boolean | undefined;
 }): ReactNode {
   const fallbackRef = useRef<HTMLInputElement | null>(null);
+  const selectOnFocus = useRef(selectOnFirstFocus);
 
   return (
     <HeaderLeaf>
@@ -76,6 +80,11 @@ export function NoteHeader({
         }
         placeholder="Note name"
         onChange={(event): void => onNameChange(event.target.value)}
+        onFocus={(event): void => {
+          if (!selectOnFocus.current) return;
+          selectOnFocus.current = false;
+          event.currentTarget.select();
+        }}
         onBlur={(): void => {
           onNameCommit();
         }}
