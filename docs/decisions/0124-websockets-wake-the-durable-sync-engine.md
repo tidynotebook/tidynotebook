@@ -13,6 +13,8 @@ protect offline work. See [design 017](../design/017-websocket-sync.md).
 
 - WebSockets carry authorized workspace wake notices. Generated HTTP operations
   keep saves, receipt lookup, paged reads, snapshots, and attachment transfer.
+- SSE also fits; WebSockets are the base for later two-way real-time work.
+  Each later client message type needs its own design and record.
 - A notice requests a read. Only applied feed or snapshot data advances the
   local cursor. Missing or repeated notices do not change correctness.
 - One account coordinator in the lease-owning tab shares one socket across
@@ -32,8 +34,7 @@ protect offline work. See [design 017](../design/017-websocket-sync.md).
 
 ## Consequences
 
-Lower discovery delay and fewer quiet reads are expected, not yet measured.
-Sockets add lifecycle and resource costs. Tests must prove catch-up races,
-lease transfer, fallback, access loss, and mixed deployments. Load evidence
-must compare polling and push before rollout. This is a target decision;
-[plan 016](../plans/016-websocket-sync.md) remains active until delivery.
+Lower delay and fewer quiet reads are expected, not measured. Sockets add
+lifecycle and resource costs. Tests prove catch-up races, lease transfer,
+fallback, access loss, mixed deployments, and polling and push load before
+rollout. [Plan 016](../plans/016-websocket-sync.md) owns delivery.

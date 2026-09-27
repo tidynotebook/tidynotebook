@@ -16,18 +16,20 @@ not complete implementation or establish a capacity claim.
 
 ## Ordered work
 
-| Item | Work                                                          | Depends on       | Board issue                                                  |
-| ---- | ------------------------------------------------------------- | ---------------- | ------------------------------------------------------------ |
-| 0    | Repair feed pagination before transport rollout               | None             | [Issue 193](https://github.com/bkhanale/notesapp/issues/193) |
-| 1    | Contract and generated transport boundary                     | None             | [Issue 188](https://github.com/bkhanale/notesapp/issues/188) |
-| 2    | Database notices and authorized server channel                | Item 1           | [Issue 189](https://github.com/bkhanale/notesapp/issues/189) |
-| 3    | Account coordinator, tab interests, and engine wake policy    | Items 1 and 2    | [Issue 190](https://github.com/bkhanale/notesapp/issues/190) |
-| 4    | Failure proof, capacity comparison, proxy checks, and rollout | Items 0, 2 and 3 | [Issue 191](https://github.com/bkhanale/notesapp/issues/191) |
+| Item | Work                                                          | Depends on                   | Board issue                                                  |
+| ---- | ------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------ |
+| 1    | Contract and generated transport boundary                     | None                         | [Issue 188](https://github.com/bkhanale/notesapp/issues/188) |
+| 2    | Database notices and authorized server channel                | Item 1                       | [Issue 189](https://github.com/bkhanale/notesapp/issues/189) |
+| 3    | Account coordinator, tab interests, and engine wake policy    | Items 1 and 2                | [Issue 190](https://github.com/bkhanale/notesapp/issues/190) |
+| 4    | Failure proof, capacity comparison, proxy checks, and rollout | Items 2 and 3, and issue 193 | [Issue 191](https://github.com/bkhanale/notesapp/issues/191) |
 
 ## Which issue to pick next
 
-Use this default order: **193, 188, 189, 190, then 191**. Start with the first
-issue in that sequence that is open and has no accepted completion evidence.
+Fix [issue 193](https://github.com/bkhanale/notesapp/issues/193) first. It is
+a defect of the polling sync that ships today, so it is a prerequisite and not
+an item of this plan, and it does not wait for this plan. Then use this default
+order: **188, 189, 190, then 191**. Start with the first issue in that sequence
+that is open and has no accepted completion evidence.
 Check its current code and board state before work; an issue can be complete
 in code while its board state is stale. Do not repeat completed work.
 
@@ -38,7 +40,7 @@ through the first four issues. Only issue 191 enables a measured rollout.
 
 | Pick                                                   | Start condition                       | Work order inside the issue                                                                                                                                  | Required hand-off                                                                                                                      |
 | ------------------------------------------------------ | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| [193](https://github.com/bkhanale/notesapp/issues/193) | Start here                            | Reproduce skipped rows; decide bounded continuation; record any contract decision; fix storage and cursor handling; prove compatibility                      | A failing-before-fix served regression now passes; every page preserves all accepted changes; existing clients have a proved safe path |
+| [193](https://github.com/bkhanale/notesapp/issues/193) | Prerequisite; start here              | Reproduce skipped rows; decide bounded continuation; record any contract decision; fix storage and cursor handling; prove compatibility                      | A failing-before-fix served regression now passes; every page preserves all accepted changes; existing clients have a proved safe path |
 | [188](https://github.com/bkhanale/notesapp/issues/188) | Feed repair is landed                 | Prove library and schema compatibility; define messages; generate types and validators; extend layout, reference, and boundary checks                        | Contract and generated client entry are committed; negative fixtures pass; server and client work can use the declared interface       |
 | [189](https://github.com/bkhanale/notesapp/issues/189) | Contract work is landed               | Add domain ports; add migration and publishing control; add listener; add authorized gateway and shared limits; test two servers                             | Two servers prove wake delivery, access loss, bounded load, and fallback; publishing and admission remain off                          |
 | [190](https://github.com/bkhanale/notesapp/issues/190) | Server work is landed                 | Centralize lease ownership; add tab interests and library adapter; add subscription catch-up and page draining; add fallback; test account and lease changes | One connection serves the account; a single wake drains the backlog; offline drafts and queues survive every tested transition         |
@@ -50,7 +52,7 @@ only when its acceptance checks pass. A blocked check keeps the issue open;
 do not pass it to the last issue as unfinished work. A runtime defect found
 in the last issue gets a failing regression and a fix before rollout continues.
 
-## Item 0: Feed correctness prerequisite
+## Prerequisite: feed correctness
 
 `readSyncChanges` in `packages/storage-server/src/snapshots.ts` limits rows
 inside a cursor group. `getChanges` in `packages/core/src/files/snapshot.ts`
@@ -59,17 +61,20 @@ served regression test and repair it before enabling push. A higher page
 limit alone is not a fix. Require bounded, lossless continuation, including
 large changesets and a page boundary inside a smaller changeset. Record any
 contract change before code and prove compatibility with old clients.
-The table permits independent preparation of later items, but the default
-execution sequence completes this repair first. Item 4 cannot enable push
-until its served regression and compatibility evidence pass.
+[Issue 193](https://github.com/bkhanale/notesapp/issues/193) owns this repair.
+Close it on its own acceptance checks, not on the progress of this plan. The
+default sequence completes this repair first. Item 4 cannot enable push until
+its served regression and compatibility evidence pass.
 
 ## Item 1: Contract and generation
 
 Read `packages/api-contract/AGENTS.md`, `packages/api-client/AGENTS.md`, and
 `tools/sdk-codegen/AGENTS.md`. Define the upgrade, frame meanings, subscription
 generations, compatibility, close handling, and all wire bounds first.
-Use AsyncAPI, its official parser, and Modelina under record 0126. Share payload
-schemas with OpenAPI by reference and reuse Ajv. Prove tool dialect compatibility.
+Use AsyncAPI under record 0126. Lint and bundle it with the pinned Redocly CLI.
+List the payload schemas as shared components of both roots, so Hey API writes
+their types and Ajv compiles their validators. Add no AsyncAPI parser and no
+Modelina. Prove that the lint refuses a keyword outside the shared dialect.
 Generate the client entry, frame validators, and server metadata.
 Extend `tools/sdk-codegen/src/contract-layout.ts` and
 `tools/sdk-codegen/src/orphans.ts` across both roots. Accept message-only
@@ -91,13 +96,12 @@ row access, and migration policy intact.
 Implement native multicast notification, listener lifecycle,
 authorized subscription replacement, buffer coalescing, heartbeat, and drain.
 Use the existing pool factory and generated registration. Shared admission
-limits must meet record 0121 before enablement; check the current implementation
-rather than assuming that its decision record is shipped.
-[Issue 186](https://github.com/bkhanale/notesapp/issues/186) currently tracks
-that work in a later milestone. Deliver the required shared limits in this
-release through this item; do not wait for that later release or close all of
-issue 186 when only the notification limits are complete. Use expiring shared
-connection reservations and release them on failure and shutdown.
+limits must meet record 0121 before enablement. Commit 3e6e1b0 shipped that
+record through `packages/storage-server/src/coordination.ts`, and
+[issue 186](https://github.com/bkhanale/notesapp/issues/186) is closed. That
+file holds the shared attempt counters and the job locks, but no connection
+reservation. Add expiring shared connection reservations to that coordination
+handle, and release them on failure and shutdown.
 
 Real PostgreSQL tests cover rollback, missed notices, concurrent commits,
 publishing disablement, deletion, and each feed writer. Two listening servers

@@ -75,8 +75,17 @@ for NotesApp's checkpoint acceptance, receipts, quotas, and History rules.
 Use WebSockets to replace frequent polling as the normal trigger for remote
 reads. Keep generated HTTP operations for checkpoints, receipts, change pages,
 snapshots, and attachments. The socket carries small notices, not note text.
-This choice answers the requested WebSocket direction and permits subscription
-changes on one connection. It does not claim better scale than SSE.
+It does not claim better scale than SSE.
+
+For this change alone, SSE and WebSockets are both sufficient. The owner
+chooses WebSockets because the product moves toward two-way real-time work,
+and a later change can use this one authenticated connection for it instead
+of a second stream. This change pays the cost of that base now: the upgrade
+path, the message contract, the reconnect library, and the proxy checks. It
+does not build a two-way feature. Each later use of the channel in the
+direction from the client to the server, other than the subscription set,
+needs its own design and decision record. That record keeps the save model of
+record 0022 unless it replaces that record by name.
 
 The benefit is lower discovery delay and fewer empty reads at quiet load.
 Busy workspaces still read the feed. Connections, authentication, database
@@ -89,11 +98,24 @@ Live keystroke sharing, presence, and a new save model are outside this design.
 Use established specifications and maintained libraries for common mechanisms.
 The [AsyncAPI specification](https://www.asyncapi.com/docs/reference/specification/latest)
 and its [WebSocket binding](https://www.asyncapi.com/docs/reference/bindings/websockets)
-describe the message channel. The official
-[parser](https://github.com/asyncapi/parser-js) reads and validates it, and
-[Modelina](https://github.com/asyncapi/modelina) generates payload types.
-The existing Ajv tooling validates payloads at runtime. Do not write a new
-contract language, reference parser, frame parser, or type generator.
+describe the message channel. The repository already has a tool for each
+remaining step, so it adds none. The pinned Redocly CLI lints and bundles an
+AsyncAPI 3.0 document as it does the OpenAPI root. A trial with the pinned
+version refused a wrong schema type and moved an external schema file into
+the bundled components. Hey API already writes a TypeScript type for each
+schema in the OpenAPI components, and the existing Ajv tooling validates
+payloads at runtime. So the message payload schemas are shared components
+that both roots list, and each generator reads them once. The AsyncAPI
+parser and Modelina would add a second contract reader and a second type
+generator for the same schemas, and two types for one schema can drift. Do
+not write or add a contract language, reference parser, frame parser, or
+type generator.
+
+The default schema format of AsyncAPI 3.0 is not JSON Schema 2020-12. The same
+trial refused the 2020-12 keywords `prefixItems` and `unevaluatedItems` in a
+message payload. A message schema uses only the keywords that both formats
+read the same way. The lint of both roots holds that rule, and Ajv with the
+2020-12 dialect stays the one runtime validator.
 
 Use the Fastify WebSocket adapter backed by `ws` on the server. Use
 [PartySocket's standard WebSocket wrapper](https://raw.githubusercontent.com/partykit/partyserver/main/packages/partysocket/README.md)
@@ -119,9 +141,10 @@ Do not add that job system merely to duplicate this feed.
 
 Before implementation pins dependencies, check their current maintenance,
 license, runtime support, security advisories, and bundle cost. Test the chosen
-AsyncAPI dialect with its parser, Modelina, and Ajv together. The specification
-can advance before every tool supports it. Pin a supported combination in the
-lockfile; do not patch around a mismatch with a private parser.
+AsyncAPI version with the pinned Redocly CLI, Hey API, and Ajv together. The
+specification can advance before every tool supports it. Pin a supported
+combination in the lockfile; do not patch around a mismatch with a private
+parser.
 
 ## Ownership and data flow
 
@@ -324,9 +347,10 @@ Bound connection count, subscription count, frame bytes, messages per interval,
 work per event-loop turn, pending authorization work, and outbound bytes.
 Coalesce a slow client's notices per workspace. Close a client that exceeds
 the bounded buffer and let it catch up later. Account connection limits use
-shared expiring reservations, not per-process counts. Apply shared admission
-limits through the work of record 0121 and local process caps as a second
-bound. Deny new admission when the shared limiter cannot answer.
+shared expiring reservations, not per-process counts. Add them to the shared
+coordination store that record 0121 shipped in
+`packages/storage-server/src/coordination.ts`, and keep local process caps as
+a second bound. Deny new admission when the shared limiter cannot answer.
 
 Use the central logging package for typed lifecycle and refusal events.
 Do not log cookies, session secrets, note bodies, full frames, or unrestricted
@@ -340,10 +364,12 @@ binding. Shared JSON Schema components have one physical source. Both contracts
 reference them; neither copies payload definitions from the other. This
 extends record 0019 for a new transport through record 0126.
 
-Use the official AsyncAPI parser and Modelina through `tools/sdk-codegen`.
-Reuse the existing Ajv validator generation. Generate the typed client entry
-and operation metadata around those outputs; this small integration joins the
-repository, not a replacement for standard tooling. Check agreement between
+`tools/sdk-codegen` lints and bundles the AsyncAPI root with the Redocly CLI
+that it already runs. Hey API writes the message payload types from the shared
+components, and the existing Ajv validator generation compiles the frame
+validators. Generate the typed client entry and operation metadata around those
+outputs; this small integration joins the repository, not a replacement for
+standard tooling. Check agreement between
 the HTTP upgrade address and the AsyncAPI channel. Keep both sender and receiver
 semantics explicit rather than blindly reversing operation directions.
 The existing protocol-adapter registry can register the upgrade. No custom

@@ -14,9 +14,10 @@ mechanisms. See [design 017](../design/017-websocket-sync.md).
 - OpenAPI owns HTTP and the upgrade address. AsyncAPI owns messages and the
   WebSocket binding in `packages/api-contract`. Shared JSON Schema components
   have one physical source. This refines record 0019 for message transport.
-- `tools/sdk-codegen` uses the official AsyncAPI parser and Modelina. Existing
-  Ajv tooling validates payloads. Do not build a parser, private contract
-  language, or new payload type generator. Pin a mutually supported dialect.
+- The pinned Redocly CLI lints and bundles both roots. Hey API writes payload
+  types and Ajv compiles validators, as for HTTP. Add no AsyncAPI parser,
+  Modelina, private contract language, or second type generator. A message
+  schema uses only keywords that AsyncAPI 3.0 and JSON Schema 2020-12 share.
 - Generate the typed client entry and server metadata. Check address agreement,
   references, both frame directions, handler coverage, and stale output.
 - `packages/api-client` wraps PartySocket's standard WebSocket client behind
@@ -28,8 +29,7 @@ mechanisms. See [design 017](../design/017-websocket-sync.md).
   checks, post-upgrade validation, bounds, and explicit error handling.
 - Notification capability stays separate from the durable sync protocol.
   Unsupported transport selects HTTP fallback, not data recovery.
-- Update directory guides and boundary checks with implementation. The client
-  dependency allowance and generator inputs change explicitly. Feature code
+- Update guides and boundary checks with the implementation. Feature code
   never opens a raw socket or constructs its address.
 
 ## Consequences
