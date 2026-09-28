@@ -20,14 +20,14 @@ catalog:
   '@types/react-dom': 19.3.0
   '@types/ws': 8.18.1
   diff: 9.0.0
-  drizzle-orm: 0.45.2
+  drizzle-orm: 0.45.3
   fastify: 5.12.5
-  katex: 0.18.7
+  katex: 0.18.9
   pg: 8.23.0
   react: 19.3.0
   react-dom: 19.3.0
   sharp: 0.35.4
-  yjs: 13.6.32
+  yjs: 13.6.33
 # TypeScript is the one shared name with two versions. The code generator reads
 # a compiler API that the other line does not expose, so each version gets its
 # own named catalog and no package can take the other one by accident.
