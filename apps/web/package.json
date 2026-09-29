@@ -38,6 +38,6 @@
     "tailwindcss": "4.3.3",
     "type-fest": "5.10.0",
     "typescript": "catalog:toolchain",
-    "vite": "8.3.0"
+    "vite": "8.3.1"
   }
 }
