@@ -45,6 +45,16 @@ const bytes = customType<{ data: Uint8Array; driverData: Buffer }>({
 });
 
 /**
+ * A PostgreSQL text search vector.
+ *
+ * The database writes it from other columns, so the application never reads
+ * or writes it and the type carries no conversion.
+ */
+const tsvector = customType<{ data: string }>({
+  dataType: () => 'tsvector',
+});
+
+/**
  * A workspace membership role.
  *
  * Every workspace has one member, its owner, so `owner` is the only role. The
@@ -761,6 +771,14 @@ export const searchIndex = pgTable(
     path: text('path').notNull(),
     title: text('title').notNull(),
     body: text('body').notNull(),
+    // The weighted vector of the title and the body, stored when the row is
+    // written. A search matches, ranks and tests the title on it, so no
+    // query parses the text of every match again (issue 207).
+    document: tsvector('document')
+      .notNull()
+      .generatedAlwaysAs(
+        sql`setweight(to_tsvector('english', title), 'A') || setweight(to_tsvector('english', body), 'B')`,
+      ),
   },
   (table) => [
     primaryKey({ columns: [table.workspaceId, table.fileId] }),
@@ -777,13 +795,10 @@ export const searchIndex = pgTable(
     // The workspace identifier leads the index, so a search of one workspace
     // never reads the postings of another. `btree_gin` supplies the operator
     // class of the uuid column; the migration installs it.
-    //
-    // The expression has to stay the same as the one in `notesapp_search`,
-    // or the planner cannot use this index for the match.
     index('search_index_document_idx').using(
       'gin',
       table.workspaceId,
-      sql`(setweight(to_tsvector('english', ${table.title}), 'A') || setweight(to_tsvector('english', ${table.body}), 'B'))`,
+      table.document,
     ),
   ],
 );

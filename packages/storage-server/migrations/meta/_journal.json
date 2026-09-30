@@ -155,6 +155,13 @@
       "when": 1790793678935,
       "tag": "0021_auth_account_provider_key",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1790801443788,
+      "tag": "0022_stored_search_document",
+      "breakpoints": true
     }
   ]
 }

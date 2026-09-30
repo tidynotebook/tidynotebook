@@ -10,11 +10,7 @@ import {
   ok,
   type Result,
 } from '@notesapp/core';
-import {
-  extractLinks,
-  parseMarkdown,
-  rewriteRelativeReferences,
-} from '@notesapp/markdown';
+import { extractLinks, rewriteRelativeReferences } from '@notesapp/markdown';
 import {
   contents,
   files,
@@ -67,35 +63,37 @@ export async function updateAcceptedIndexes(
     (tip) => !tip.deleted && tip.content.kind === 'markdown',
   );
   if (searchable.length === 0) return;
-  await db.insert(searchIndex).values(
-    searchable.map((tip) => {
-      const text = tip.content.kind === 'markdown' ? tip.content.text : '';
-      parseMarkdown(text);
-      return {
-        workspaceId,
-        fileId: tip.fileId,
-        revisionId: tip.id,
-        path: tip.path,
-        title: noteTitle(tip.path),
-        body: text,
-      };
-    }),
-  );
-  const links = searchable.flatMap((tip) => {
+  // One parse of each note. `extractLinks` parses under the limits of the
+  // one grammar, so a note that the renderer refuses fails here, before any
+  // row is written, and no second parse repeats the check (issue 207).
+  const linked = searchable.map((tip) => {
     const text = tip.content.kind === 'markdown' ? tip.content.text : '';
     const targets = new Set(
       extractLinks(text, tip.path).flatMap((link) =>
         link.targetPath === null ? [] : [link.targetPath],
       ),
     );
-    return [...targets].map((targetPath) => ({
+    return { tip, text, targets };
+  });
+  await db.insert(searchIndex).values(
+    linked.map(({ tip, text }) => ({
+      workspaceId,
+      fileId: tip.fileId,
+      revisionId: tip.id,
+      path: tip.path,
+      title: noteTitle(tip.path),
+      body: text,
+    })),
+  );
+  const links = linked.flatMap(({ tip, targets }) =>
+    [...targets].map((targetPath) => ({
       workspaceId,
       sourceFileId: tip.fileId,
       sourceRevisionId: tip.id,
       sourcePath: tip.path,
       targetPath,
-    }));
-  });
+    })),
+  );
   if (links.length > 0) await db.insert(noteLinks).values(links);
 }
 

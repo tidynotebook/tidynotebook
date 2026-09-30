@@ -178,6 +178,66 @@ await test('the excerpt is the matching part of the note, with the word marked',
   );
 });
 
+await test('a search of more notes than the limit answers the best ranked page', async () => {
+  // Issue 207. The page is ranked and cut before its excerpts, so the cut
+  // keeps the name match and the notes that hold the word most often.
+  const namedId = randomUUID();
+  const oftenId = randomUUID();
+  const entries = [
+    revision({
+      fileId: namedId,
+      path: 'rivers/Rapids.md',
+      text: '# Rapids\nOne note.\n',
+    }),
+    revision({
+      fileId: oftenId,
+      path: 'rivers/Often.md',
+      text: `# Often\n${'rapids '.repeat(30)}\n`,
+    }),
+    ...Array.from({ length: 6 }, (_, index) =>
+      revision({
+        fileId: randomUUID(),
+        path: `rivers/Once ${String(index)}.md`,
+        text: `# Once ${String(index)}\n${'Calm water. '.repeat(20)} rapids.\n`,
+      }),
+    ),
+  ];
+  await accept(entries);
+  const found = await searchFiles(store, actor, workspaceId, 'rapids', 2);
+  assert.equal(found.ok, true);
+  if (!found.ok) return;
+  assert.deepEqual(
+    found.value.map((hit) => hit.fileId),
+    [namedId, oftenId],
+  );
+  for (const hit of found.value)
+    assert.ok(hit.excerpt.some((part) => part.marked));
+});
+
+await test('the search reads the stored vector of a note', async () => {
+  // Issue 207. A vector built from the text of each match at query time
+  // cost most of the search, so the index stores it and the function reads
+  // it. The definition names no text search parse of a row.
+  const client = new pg.Client({ connectionString: database.migrationUrl });
+  await client.connect();
+  try {
+    const definition = await client.query<{ source: string }>(
+      "select pg_get_functiondef('public.notesapp_search(uuid, text, integer)'::regprocedure) as source",
+    );
+    const source = definition.rows[0]?.source ?? '';
+    assert.match(source, /indexed\.document @@ needle/);
+    assert.doesNotMatch(source, /to_tsvector/);
+    const column = await client.query<{ generated: string }>(
+      `select is_generated as generated from information_schema.columns
+        where table_schema = 'public' and table_name = 'search_index'
+          and column_name = 'document'`,
+    );
+    assert.equal(column.rows[0]?.generated, 'ALWAYS');
+  } finally {
+    await client.end();
+  }
+});
+
 await test('search requires the current role and a read grant', async () => {
   const created = verifyActor(accountId, [{ workspaceId, actions: ['write'] }]);
   assert.equal(created.ok, true);
