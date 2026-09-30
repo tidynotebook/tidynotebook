@@ -1,52 +1,13 @@
 # Toolchain
 
-This document owns the dependency policy, the compiler policy, and the checks
+This document owns the package layout, the compiler policy, and the checks
 that `pnpm lint` and `pnpm lint:types` run. It records no version number and no
-measured result. The manifests hold the versions, and
-`tools/check-versions.mjs` fails the gate when a manifest and the installed tree
-disagree.
+measured result.
 
 ## Versions
 
-Node and pnpm are pinned in `.node-version`, and in `engines` and
-`packageManager` in the root `package.json`. Every dependency is pinned to an
-exact version, once, in a manifest or in the `pnpm-workspace.yaml` catalog.
-
-- Check a version against the registry and the release notes before you change
-  it. Registry availability does not prove runtime behaviour.
-- A prerelease is refused. A release candidate line stays unused while a stable
-  line exists.
-- `pnpm install` uses exact versions, strict engines, strict peers, no
-  automatic peer installation, and explicit `workspace:*` links. There is no
-  major version override.
-- pnpm refuses an unreviewed build script. `pnpm-workspace.yaml` lists the
-  ones that were read and decided.
-
-A version change is one commit over the manifest and the lockfile. The
-evidence belongs in that commit body, not here.
-
-## Automated bumps
-
-`.github/dependabot.yml` opens the bump changes. It runs once a week. It groups
-each wave into one change per area: the runtime dependencies, the development
-and build tools, the GitHub Actions, and the container images of `Dockerfile`
-and the Compose files. Each change carries a conventional commit prefix.
-
-The npm entry sets an increasing versioning strategy, so Dependabot writes a new
-exact version into a manifest that already holds one. No range reaches a
-manifest, and `tools/check-versions.mjs` accepts the change. Dependabot reaches
-a version that a manifest states, and a person bumps a catalog version by hand.
-Review a bump like any other change. Run `pnpm verify` on the branch, and open
-the screens that a bump of the editor or the router can change.
-
-Two pins stay manual, and the configuration says why.
-
-- TypeScript. `tools/check-versions.mjs` names the version of the code
-  generator and the version of every other package, so a bump edits that check
-  in the same commit.
-- The image digest inside the `perf:service` script of the root `package.json`.
-  Dependabot reads a Dockerfile and a Compose file, not a script. Move this
-  digest with the base image digest of `Dockerfile`.
+The version pins, the container image and the automated bumps are in
+[Versions](versions.md).
 
 ## Packages
 

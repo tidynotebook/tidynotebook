@@ -6,7 +6,7 @@
 # manifest and the gate stays green.
 #
 # Each ecosystem groups its wave into one change, so a review reads one branch
-# and not forty. See docs/development/toolchain.md.
+# and not forty. See docs/development/versions.md.
 version: 2
 updates:
   - package-ecosystem: npm
@@ -53,7 +53,9 @@ updates:
           - '*'
 
   - package-ecosystem: docker
-    # Dockerfile, which pins the Node base image by digest in both stages.
+    # Dockerfile, which pins the Node base image by exact tag and digest in
+    # both stages. A bump fails tools/check-versions.mjs until .node-version,
+    # engines.node and the perf:service script move to the same release.
     directory: /
     schedule:
       interval: weekly

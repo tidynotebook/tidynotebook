@@ -61,6 +61,94 @@ export function parseCatalogs(text) {
 }
 
 /**
+ * Reads the base images of a Dockerfile.
+ *
+ * A `FROM` line that names an earlier stage is not an image, so it is left
+ * out. A `--platform` flag before the image is skipped.
+ *
+ * @param {string} text
+ * @returns {string[]}
+ */
+export function baseImages(text) {
+  /** @type {Set<string>} */
+  const stages = new Set();
+  /** @type {string[]} */
+  const images = [];
+  for (const line of text.split('\n')) {
+    const from = /^\s*FROM\s+(?:--\S+\s+)*(\S+)(?:\s+AS\s+(\S+))?\s*$/i.exec(
+      line,
+    );
+    if (!from) continue;
+    const image = from[1] ?? '';
+    if (!stages.has(image.toLowerCase())) images.push(image);
+    if (from[2]) stages.add(from[2].toLowerCase());
+  }
+  return images;
+}
+
+/**
+ * The failures of one Node image reference against the pinned runtime.
+ *
+ * The tag names the exact release of `.node-version`, and the digest pins the
+ * bytes of that release. A floating tag such as `26-bookworm-slim` is refused,
+ * because the digest behind it moves to each new release of the line.
+ *
+ * @param {string} image
+ * @param {string} runtime
+ * @param {string} where
+ * @returns {string[]}
+ */
+export function nodeImageFailures(image, runtime, where) {
+  const reference = /^node:([^@\s]+)@sha256:[0-9a-f]{64}$/.exec(image);
+  if (!reference)
+    return [`${where} names ${image}; pin a node tag and its digest.`];
+  const tag = reference[1] ?? '';
+  if (tag !== runtime && !tag.startsWith(`${runtime}-`))
+    return [
+      `${where} runs node:${tag}; .node-version says ${runtime}. Move both in one commit.`,
+    ];
+  return [];
+}
+
+/**
+ * The failures of the container images against the pinned runtime.
+ *
+ * Each stage of `Dockerfile` and the image of the `perf:service` script must
+ * name one reference, so the image that production runs, the image that the
+ * service measurement runs and the release that the checks run are the same.
+ *
+ * @param {string} dockerfile
+ * @param {string} serviceScript
+ * @param {string} runtime
+ * @returns {string[]}
+ */
+export function imageFailures(dockerfile, serviceScript, runtime) {
+  const images = baseImages(dockerfile);
+  if (images.length === 0) return ['Dockerfile names no base image.'];
+  /** @type {string[]} */
+  const failures = [];
+  for (const image of new Set(images))
+    failures.push(...nodeImageFailures(image, runtime, 'Dockerfile'));
+  if (new Set(images).size > 1)
+    failures.push('The stages of Dockerfile name different base images.');
+  const [image = ''] = images;
+  if (!serviceScript.split(/\s+/).includes(image))
+    failures.push(`The perf:service script does not run ${image}.`);
+  return failures;
+}
+
+/**
+ * The command of the `perf:service` script of a root manifest, or nothing.
+ *
+ * @param {Record<string, unknown>} manifest
+ * @returns {string}
+ */
+function serviceScript(manifest) {
+  const script = record(manifest.scripts)['perf:service'];
+  return typeof script === 'string' ? script : '';
+}
+
+/**
  * Resolves what a manifest declares to the version that the install uses.
  *
  * A plain specifier resolves to itself. A `catalog:` specifier resolves to the
@@ -117,6 +205,14 @@ export async function versionPolicy(directory = root) {
     failures.push(
       `engines.node is ${String(engines.node)}; .node-version says ${runtime}.`,
     );
+  // The container runs the release that every check runs.
+  failures.push(
+    ...imageFailures(
+      await readFile(join(directory, 'Dockerfile'), 'utf8').catch(() => ''),
+      serviceScript(manifest),
+      runtime,
+    ),
+  );
   const pinnedManager = String(manifest.packageManager).split('+')[0] ?? '';
   const expectedManager = pinnedManager.replace(/^pnpm@/, '');
   if (engines.pnpm !== expectedManager)
