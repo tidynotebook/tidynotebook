@@ -10,13 +10,16 @@ export { createDocumentService } from './document-service.ts';
 export { openPool, poolSizes, processConnectionLimit } from './pool.ts';
 export {
   listenerRetryMs,
+  listenerTimerSchedule,
   openSyncListener,
   parseSyncHint,
   syncHintChannel,
   syncListenerName,
+  type ListenerSchedule,
   type SyncHint,
   type SyncListener,
   type SyncListenerEvents,
+  type SyncListenerOptions,
 } from './sync-listener.ts';
 export {
   DatabaseFailure,

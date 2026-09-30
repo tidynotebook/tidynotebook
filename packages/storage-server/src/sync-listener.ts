@@ -70,13 +70,38 @@ export type SyncListener = {
 export const listenerRetryMs = { first: 250, cap: 10_000 } as const;
 
 /**
+ * Runs `run` once after `ms` milliseconds, and answers the call that cancels
+ * it. The listener waits for a reconnect through it.
+ */
+export type ListenerSchedule = (ms: number, run: () => void) => () => void;
+
+/** The default schedule, on the timers of the runtime. */
+export const listenerTimerSchedule: ListenerSchedule = (ms, run) => {
+  const timer = setTimeout(run, ms);
+  return () => {
+    clearTimeout(timer);
+  };
+};
+
+/** What a caller can choose about the listener besides its events. */
+export type SyncListenerOptions = {
+  /**
+   * When a reconnect runs. A deployment takes the timers of the runtime. A
+   * test holds the reconnect, so a commit falls in the gap by construction.
+   */
+  readonly schedule?: ListenerSchedule;
+};
+
+/**
  * Starts the listener. It connects in the background, so a database that is
  * down at the start delays the listening and not the start of the server.
  */
 export function openSyncListener(
   databaseUrl: string,
   events: SyncListenerEvents,
+  options: SyncListenerOptions = {},
 ): SyncListener {
+  const scheduleRun = options.schedule ?? listenerTimerSchedule;
   const pool = openPool({
     connectionString: databaseUrl,
     max: poolSizes.listener,
@@ -87,7 +112,7 @@ export function openSyncListener(
   let listening = false;
   let closed = false;
   let delay: number = listenerRetryMs.first;
-  let timer: NodeJS.Timeout | null = null;
+  let cancelRetry: (() => void) | null = null;
 
   const onNotification = (message: pg.Notification): void => {
     if (message.channel !== syncHintChannel) return;
@@ -109,11 +134,11 @@ export function openSyncListener(
   };
 
   const schedule = (): void => {
-    if (closed || timer !== null) return;
-    timer = setTimeout(() => {
-      timer = null;
+    if (closed || cancelRetry !== null) return;
+    cancelRetry = scheduleRun(delay, () => {
+      cancelRetry = null;
       void connect();
-    }, delay);
+    });
     delay = Math.min(delay * 2, listenerRetryMs.cap);
   };
 
@@ -155,8 +180,8 @@ export function openSyncListener(
     close: async () => {
       closed = true;
       listening = false;
-      if (timer !== null) clearTimeout(timer);
-      timer = null;
+      cancelRetry?.();
+      cancelRetry = null;
       const current = client;
       client = null;
       if (current !== null) {

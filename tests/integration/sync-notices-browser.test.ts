@@ -31,7 +31,12 @@ import {
   syncNoticesProtocol,
 } from '@notesapp/api-client';
 import { createApp, loadServerConfig } from '@notesapp/server';
-import { openSyncListener, syncListenerName } from '@notesapp/storage-server';
+import {
+  listenerTimerSchedule,
+  openSyncListener,
+  syncListenerName,
+  type ListenerSchedule,
+} from '@notesapp/storage-server';
 import { openLocalStore } from '@notesapp/storage-browser';
 import {
   createLeaseKeeper,
@@ -87,7 +92,36 @@ const config = loadServerConfig({
   NOTESAPP_MAX_HEADER_BYTES: '16384',
   NOTESAPP_REQUEST_TIMEOUT_MS: '60000',
 });
-const app = await createApp(config);
+/**
+ * The reconnect of the sync listener of the server. While a test holds it,
+ * a lost listener stays down, so a commit in the gap reaches no listener by
+ * construction and not by a race against the retry delay.
+ */
+const reconnect = (() => {
+  let holding = false;
+  const held: (() => void)[] = [];
+  const schedule: ListenerSchedule = (ms, run) => {
+    if (!holding) return listenerTimerSchedule(ms, run);
+    held.push(run);
+    return () => {
+      const at = held.indexOf(run);
+      if (at !== -1) held.splice(at, 1);
+    };
+  };
+  return {
+    schedule,
+    hold: () => {
+      holding = true;
+    },
+    /** Whether the lost listener asked for its reconnect. */
+    waiting: () => held.length > 0,
+    release: () => {
+      holding = false;
+      for (const run of held.splice(0)) run();
+    },
+  };
+})();
+const app = await createApp(config, { listenerSchedule: reconnect.schedule });
 await app.listen({ host: '127.0.0.1', port: 0 });
 const address: string | AddressInfo | null = app.server.address();
 if (address === null || typeof address === 'string')
@@ -290,15 +324,26 @@ function draft(fileId: string, path: string): Draft {
   };
 }
 
-/** Runs one statement as the migration role. */
-async function asOwner(text: string, params: unknown[] = []): Promise<void> {
+/** Runs one statement as the migration role and answers its rows. */
+async function asOwnerRows<Row extends object>(
+  text: string,
+  params: unknown[] = [],
+): Promise<Row[]> {
   const session = await openSession(database.migrationUrl);
   try {
-    await session.query(text, params);
+    return await session.query<Row>(text, params);
   } finally {
     await session.close();
   }
 }
+
+/** Runs one statement as the migration role. */
+async function asOwner(text: string, params: unknown[] = []): Promise<void> {
+  await asOwnerRows<object>(text, params);
+}
+
+/** How long the gap test waits for the ended listener backend to exit. */
+const backendExitBoundMs = 5000;
 
 await test('a commit before and during a subscription is read after it', async () => {
   const before = await commitElsewhere('before-subscribe', 1);
@@ -348,11 +393,23 @@ await test('a notice missed in a listener gap is read after reconcile', async ()
   try {
     await listeningNow;
     const before = device.notified();
-    await asOwner(
-      'select pg_terminate_backend(pid) from pg_stat_activity where application_name = $1 and datname = current_database()',
-      [syncListenerName],
+    reconnect.hold();
+    // Without a timeout the call returns before the backend exits, and a
+    // backend that has not exited yet can still hear the commit below. With
+    // a timeout, each call waits until its backend is gone.
+    const ended = await asOwnerRows<{ ended: boolean }>(
+      'select pg_terminate_backend(pid, $2) as ended from pg_stat_activity where application_name = $1 and datname = current_database()',
+      [syncListenerName, backendExitBoundMs],
     );
+    assert.equal(ended.length, 1, 'the server holds one listener');
+    assert.ok(
+      ended.every((row) => row.ended),
+      `the listener did not exit in ${String(backendExitBoundMs)} ms`,
+    );
+    // The server saw the loss when its listener asks to reconnect.
+    await waitFor(() => reconnect.waiting(), 'the lost listener');
     const cursor = await commitElsewhere('in-the-gap', 1);
+    reconnect.release();
     await waitFor(() => reached(cursor), 'the read after reconcile');
     // The commit fell in the gap, so no notice named it. The read came from
     // the reconcile that followed the restored listener.
@@ -360,6 +417,7 @@ await test('a notice missed in a listener gap is read after reconcile', async ()
     assert.equal(lost, false, 'the listener of another database stays open');
     assert.equal(listener.listening(), true);
   } finally {
+    reconnect.release();
     await listener.close();
     await other.destroy();
   }

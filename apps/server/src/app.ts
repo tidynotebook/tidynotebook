@@ -49,6 +49,7 @@ import {
   openSyncListener,
   openIdentityStore,
   openWorkspaceStore,
+  type ListenerSchedule,
 } from '@notesapp/storage-server';
 import {
   classifyError,
@@ -206,6 +207,12 @@ export type AppOptions = {
    * deployment takes `defaultNoticeBounds` (record 0129).
    */
   readonly noticeBounds?: Partial<NoticeBounds>;
+  /**
+   * When the sync listener reconnects after a loss. A deployment takes the
+   * timers of the runtime. A test holds the reconnect, so the gap of the
+   * listener lasts until the test ends it.
+   */
+  readonly listenerSchedule?: ListenerSchedule;
 };
 
 /** Builds the application with an explicit handler map. */
@@ -678,7 +685,14 @@ async function composeApp(
       renewStream: (id, ttlMs) => coordination.renewStream(id, ttlMs),
       releaseStream: (id) => coordination.releaseStream(id),
     },
-    listener: (events) => openSyncListener(config.databaseUrl, events),
+    listener: (events) =>
+      openSyncListener(
+        config.databaseUrl,
+        events,
+        options?.listenerSchedule === undefined
+          ? {}
+          : { schedule: options.listenerSchedule },
+      ),
     bounds: { ...defaultNoticeBounds, ...options?.noticeBounds },
     log: {
       opened: () => noticeLog.logger?.emit('notices.opened', {}),

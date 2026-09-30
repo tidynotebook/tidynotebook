@@ -40,6 +40,9 @@ Records [0125](../decisions/0125-postgresql-notifies-the-sync-gateways.md),
   its account. A tab whose session serves another account gives the lease
   back and asks again later.
 - A pass reads feed pages until an empty page, so one wake drains a backlog.
+- A lost listener reconnects through its schedule. A test that proves a gap
+  holds that schedule through the `listenerSchedule` option of `createApp`,
+  so its commit falls in the gap by construction and not by a race.
 
 ## Proofs
 
