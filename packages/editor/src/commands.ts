@@ -14,6 +14,7 @@ import type {
 } from '@codemirror/state';
 import { EditorState } from '@codemirror/state';
 import type { SyntaxNode } from '@lezer/common';
+import type { EditorView } from '@codemirror/view';
 
 /**
  * The transaction that one editing command dispatches.
@@ -36,6 +37,35 @@ export function editingTransaction(spec: TransactionSpec): TransactionSpec {
     userEvent: spec.userEvent ?? 'input.format',
     scrollIntoView: true,
   };
+}
+
+/**
+ * Writes `text` over the main selection and puts the caret after it.
+ *
+ * A change with no selection of its own maps the caret, and a caret at the
+ * start of an insert stays before it. A second image that the note menu
+ * attached then went before the first one, and a line of images read in the
+ * reverse order of the attach. The caret moves past the text instead, as it
+ * does after a paste.
+ */
+export function insertTextSpec(
+  state: EditorState,
+  text: string,
+): TransactionSpec {
+  const { from, to } = state.selection.main;
+  return {
+    changes: { from, to, insert: text },
+    selection: { anchor: from + text.length },
+    userEvent: 'input',
+  };
+}
+
+/** Writes `text` over the selection of a view, as `insertTextSpec` says. */
+export function insertText(view: EditorView, text: string): void {
+  view.dispatch(
+    view.state.update(editingTransaction(insertTextSpec(view.state, text))),
+  );
+  view.focus();
 }
 
 /**

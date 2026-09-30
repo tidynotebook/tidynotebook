@@ -3,6 +3,7 @@ import test from 'node:test';
 import { EditorState } from '@codemirror/state';
 import {
   editingTransaction,
+  insertTextSpec,
   isTaskToggle,
   linkSpanAt,
   taskToggleAt,
@@ -124,4 +125,24 @@ await test('a toggle of a task box states that it is one', () => {
     userEvent: 'input.type',
   });
   assert.equal(isTaskToggle(typed), false);
+});
+
+await test('an inserted text leaves the caret after it', () => {
+  // Two images attached one after the other read in the order of the attach.
+  let state = EditorState.create({ doc: 'Top\n\n', selection: { anchor: 5 } });
+  for (const text of ['![a](a.png)', '![b](b.png)'])
+    state = state.update(editingTransaction(insertTextSpec(state, text))).state;
+  assert.equal(state.doc.toString(), 'Top\n\n![a](a.png)![b](b.png)');
+  assert.equal(state.selection.main.head, state.doc.length);
+});
+
+await test('an inserted text replaces the selection', () => {
+  const state = EditorState.create({
+    doc: 'one two three',
+    selection: { anchor: 4, head: 7 },
+  });
+  const next = state.update(insertTextSpec(state, 'six')).state;
+  assert.equal(next.doc.toString(), 'one six three');
+  assert.equal(next.selection.main.head, 7);
+  assert.equal(next.selection.main.empty, true);
 });

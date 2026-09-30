@@ -68,6 +68,7 @@ export type { EditorState } from '@codemirror/state';
 export type { EditorView } from '@codemirror/view';
 export {
   findTaskBox,
+  insertText,
   linkSpanAt,
   taskToggleAt,
   toggleTaskSpec,

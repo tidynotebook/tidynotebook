@@ -37,6 +37,7 @@ import {
 } from '@notesapp/sync';
 import {
   createEditor,
+  insertText,
   openBoundNote,
   plainTextContext,
   runFormatAction,
@@ -1104,10 +1105,7 @@ function NoteEditorBody({
   /** Inserts Markdown at the current cursor through an editor transaction. */
   const insertAtCursor = (text: string): void => {
     const view = viewRef.current;
-    if (view === null) return;
-    const { from, to } = view.state.selection.main;
-    view.dispatch(view.state.update({ changes: { from, to, insert: text } }));
-    view.focus();
+    if (view !== null) insertText(view, text);
   };
 
   /**
