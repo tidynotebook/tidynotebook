@@ -18,6 +18,11 @@ import test from 'node:test';
 import { assetHashLength, cacheControlFor } from '@notesapp/server';
 import { appIcons, iconHashLength } from '../../apps/web/src/pwa/icons.ts';
 import {
+  builtScripts,
+  deferredLibraries,
+  firstRouteScripts,
+} from '../../tools/performance/first-route.ts';
+import {
   derivePrecache,
   directoryFiles,
   workerFileName,
@@ -138,4 +143,22 @@ await test('the built shell fits the content viewport when a keyboard opens', as
 await test('no icon keeps a fixed address of its own', async () => {
   const root = await readdir(distribution);
   for (const icon of appIcons) assert.ok(!root.includes(icon.file), icon.file);
+});
+
+await test('the first route loads no library that only a note needs', async () => {
+  await readWorker();
+  const first = await firstRouteScripts(distribution);
+  const every = await builtScripts(distribution);
+  for (const library of deferredLibraries) {
+    // The marker must name the library in the build at all, or the check
+    // below would pass for a marker that the library no longer holds.
+    assert.ok(
+      every.some((script) => script.bytes.includes(library.marker)),
+      `no built chunk holds the marker of ${library.name}`,
+    );
+    const holders = first
+      .filter((script) => script.bytes.includes(library.marker))
+      .map((script) => script.file);
+    assert.deepEqual(holders, [], `${library.name} is on the first route`);
+  }
 });

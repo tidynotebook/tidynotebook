@@ -22,6 +22,10 @@ The editor, the server index, and Read mode all read a note through it.
   the published page both follow (record 0089).
 - `test-data/content.ts` is the corpus document that both render paths must
   agree on.
+- `package.json` states `"sideEffects": false`, so a bundle takes only the
+  modules a caller imports. The link scan of the first route then leaves the
+  renderer and KaTeX in the deferred chunks. A module here runs nothing when
+  it loads, and a stylesheet belongs to the caller that renders the markup.
 - No input and no output of any kind happens here. No attachment is fetched
   and no diagram is rendered. A caller resolves those through typed
   resolvers.

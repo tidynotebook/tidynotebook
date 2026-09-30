@@ -99,6 +99,9 @@ here.
   compressed JavaScript that the first route actually loads. A deferred
   chunk, such as the editor, stays out of the measure. The budget follows
   [record 0136](../decisions/0136-the-initial-javascript-budget-follows-the-inequality-gap.md).
+  `tools/performance/first-route.ts` is the one definition of the first
+  route, and `tests/integration/web-build.test.ts` fails when a library that
+  only a note needs, such as KaTeX, returns to it.
 
 The local interaction checks bound the typing transaction, the local draft
 save, and a cached note read, using the Node adapters. They do not include
