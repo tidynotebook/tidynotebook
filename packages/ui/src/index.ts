@@ -57,6 +57,21 @@ export {
   toneSurfaceBlend,
   uiContrastMinimum,
 } from './themes/index.ts';
+export type { ThemeProblem } from './theme-rules.ts';
+export { themeColourLabels, themeProblems } from './theme-rules.ts';
+export type {
+  ThemeFileData,
+  ThemeFileResult,
+  ThemePalette,
+} from './theme-file.ts';
+export {
+  importedFamilyPrefix,
+  importedThemeFamily,
+  readThemeFile,
+  themeFileMaximumBytes,
+  themeFileText,
+  themeNameMaximumLength,
+} from './theme-file.ts';
 export type {
   ButtonName,
   ButtonSize,

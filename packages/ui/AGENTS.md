@@ -7,11 +7,12 @@ Read the root [AGENTS.md](../../AGENTS.md), then the
 ## What lives here and what does not
 
 - `src/themes/` holds one file per family, `src/themes/index.ts` is the
-  registry, and it is the one place here with a colour value. `default.ts` is
-  the family a new account starts with: its action fill is ink and its blue
-  carries meaning (0056, 0062). `src/theme.ts` declares the tokens,
-  `applyTheme`, the contrast helpers, and `derivedPropertyNames`: the divider
-  (0053), the hover of a control fill (0057) and the tone surfaces (0065).
+  registry, the one place here with a colour value. `default.ts` starts a new
+  account: ink action fill, meaningful blue (0056, 0062). `src/theme.ts`
+  declares the tokens, `applyTheme`, the contrast helpers, and
+  `derivedPropertyNames`: the divider (0053), the control hover (0057) and the
+  tone surfaces (0065). `src/theme-rules.ts` is the one rule set of a palette
+  and `src/theme-file.ts` the file of an imported theme (0141).
 - `src/control-classes.ts` is the one recipe of a control, and nothing else
   writes the classes of a control (0065): `buttonClassName`, `rowClassName`,
   `fieldClassName`, `kbdClassName`, `badgeClassName`, `avatarClassName`,
@@ -40,7 +41,7 @@ Node only package, no server only package.
 - **A theme.** Copy a file in `src/themes`, register it in
   `src/themes/index.ts`, record the licence in `THIRD_PARTY_LICENSES.md`, and
   read [themes.md](../../docs/development/themes.md). A failing token moves
-  along its lightness until `theme.test.ts` passes, noted in that file.
+  along its lightness until `themeProblems` answers nothing, noted there.
 - **A control.** Add it in `src/controls.tsx`, read its classes from
   `src/control-classes.ts`, export it, and give an icon only action an
   accessible name and a title. A control that needs a class of its own needs a
@@ -52,9 +53,8 @@ Node only package, no server only package.
 
 ## Testing conventions here
 
-`node --test` through `pnpm test:unit`. `src/theme.test.ts` walks the registry
-and names the exact token, surface and theme that misses a contrast rule, so a
-new theme needs no new test. Node loads no `.tsx` file, so a rule a test must
+`node --test` through `pnpm test:unit`. `src/theme.test.ts` holds the registry
+to `themeProblems`, so a new theme needs no new test. Node loads no `.tsx` file, so a rule a test must
 read lives in a `.ts` module: `control-classes.ts`, `icon-grid.ts`,
 `overlay-position.ts`. `src/icons.test.ts` reads `src/icons.tsx` as text, the
 only way to see an attribute an icon states for itself, and

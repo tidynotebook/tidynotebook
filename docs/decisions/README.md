@@ -172,6 +172,7 @@ and needs no record.
 | [0138](0138-a-page-names-the-page-above-it-and-accounts-belong-to-settings.md)        | A page names the page above it, and Accounts belong to Settings                 |
 | [0139](0139-the-breadcrumb-names-the-way-to-a-page-and-the-heading-names-the-page.md) | The breadcrumb names the way to a page, and the heading names the page          |
 | [0140](0140-a-published-formula-keeps-its-layout-in-style-attributes.md)              | A published formula keeps its layout in style attributes                        |
+| [0141](0141-a-person-imports-a-theme-that-the-account-keeps.md)                       | A person imports a theme that the account keeps                                 |
 
 Records 0001 to 0015 record the decisions D1 to D15 of
 [the v0.1 revamp plan](../plans/003-v0.1-revamp.md). Record 0016 records the
@@ -551,3 +552,9 @@ Record 0140 lets the style attributes of a formula apply on the published
 page, because KaTeX places each row and each script with one and the page
 refused them all. The math sanitizer stays the one producer of such an
 attribute. It refines records 0031 and 0060.
+
+Record 0141 answers
+[issue 137](https://github.com/bkhanale/notesapp/issues/137). A person imports
+a theme file, the account keeps it, and one rule set of a palette holds the
+registry and every import, so a theme that cannot be used names what to
+correct. It refines record 0016.

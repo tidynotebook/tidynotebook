@@ -31,14 +31,12 @@ import {
   shiftAwayFrom,
   syntaxPropertyName,
   syntaxPropertyNames,
-  textContrastMinimum,
   themePropertyName,
   themePropertyNames,
   toneSurfaceBlend,
-  uiContrastMinimum,
   type Theme,
-  type ThemeTokens,
 } from './theme.ts';
+import { themeProblems } from './theme-rules.ts';
 import {
   defaultThemeFamilyId,
   defaultThemeFor,
@@ -86,223 +84,32 @@ await test('luminance and contrast match known anchors', () => {
   assert.ok(Number.isNaN(contrastRatio('#fff', '#ffffff')));
 });
 
-/** Every fill a screen paints behind text, named for the failure message. */
-function surfacesOf(
-  tokens: ThemeTokens,
-): readonly (readonly [string, string])[] {
-  return [
-    ['page background', tokens.background],
-    ['sidebar surface', tokens.surface],
-    ['card', tokens.surfaceCard],
-    ['row hover', tokens.surfaceHover],
-    ['row active', tokens.surfaceActive],
-  ];
-}
-
 for (const theme of themes) {
-  const name = theme.id;
-
-  await test(`${name} body text passes on the surfaces that use it`, () => {
-    const tokens = theme.tokens;
-    for (const surface of [tokens.background, tokens.surfaceCard]) {
-      assert.ok(
-        contrastRatio(tokens.text, surface) >= textContrastMinimum,
-        `body text on ${surface} in ${name}`,
-      );
-    }
-  });
-
-  await test(`${name} strong and muted text pass on every surface`, () => {
-    const tokens = theme.tokens;
-    for (const [surfaceName, surface] of surfacesOf(tokens)) {
-      assert.ok(
-        contrastRatio(tokens.textStrong, surface) >= textContrastMinimum,
-        `strong text on the ${surfaceName} in ${name}`,
-      );
-      assert.ok(
-        contrastRatio(tokens.textMuted, surface) >= textContrastMinimum,
-        `muted text on the ${surfaceName} in ${name}`,
-      );
-    }
-  });
-
-  await test(`${name} accent, success, and danger text pass on every surface`, () => {
-    const tokens = theme.tokens;
-    for (const [surfaceName, surface] of surfacesOf(tokens)) {
-      assert.ok(
-        contrastRatio(tokens.accentText, surface) >= textContrastMinimum,
-        `accent text on the ${surfaceName} in ${name}`,
-      );
-      assert.ok(
-        contrastRatio(tokens.successText, surface) >= textContrastMinimum,
-        `success text on the ${surfaceName} in ${name}`,
-      );
-      assert.ok(
-        contrastRatio(tokens.dangerText, surface) >= textContrastMinimum,
-        `danger text on the ${surfaceName} in ${name}`,
-      );
-    }
-  });
-
-  await test(`${name} every tone is readable on its own surface`, () => {
-    // A notice paints the surface of its tone and writes on it (record 0065).
-    // A tone surface is a fill and not the page, so a notice sets the strong
-    // text on it, as every other fill of the product does. The tone itself is
-    // there too, in the mark of the notice.
-    const tokens = theme.tokens;
-    for (const [tone, surfaceName] of [
-      ['accentText', 'accentSurface'],
-      ['successText', 'successSurface'],
-      ['dangerText', 'dangerSurface'],
-    ] as const) {
-      const surface = derivedValue(tokens, surfaceName);
-      assert.ok(parseHexColor(surface) !== null, `${surfaceName} in ${name}`);
-      for (const label of [tone, 'textStrong', 'textMuted'] as const) {
-        assert.ok(
-          contrastRatio(tokens[label], surface) >= textContrastMinimum,
-          `${label} on the ${surfaceName} in ${name}`,
-        );
-      }
-    }
-  });
-
-  await test(`${name} control fill labels pass on their fill`, () => {
-    const tokens = theme.tokens;
-    assert.ok(
-      contrastRatio(tokens.accentOnFill, tokens.accentFill) >=
-        textContrastMinimum,
-      `accent fill label in ${name}`,
-    );
-    assert.ok(
-      contrastRatio(tokens.onDanger, tokens.dangerFill) >= textContrastMinimum,
-      `danger fill label in ${name}`,
+  await test(`${theme.id} meets every rule of a palette`, () => {
+    // One rule set holds the registry and every imported theme (decision
+    // 0141), so a failure here names the colour and the fill in the words a
+    // person reads on import.
+    assert.deepEqual(
+      themeProblems(theme).map((problem) => problem.message),
+      [],
     );
   });
 
-  await test(`${name} the hover fill of a control comes forward`, () => {
-    const tokens = theme.tokens;
-    for (const [fill, hover] of [
-      ['accentFill', 'accentFillHover'],
-      ['dangerFill', 'dangerFillHover'],
-    ] as const) {
-      const resting = tokens[fill];
-      const hovered = derivedValue(tokens, hover);
-      assert.ok(parseHexColor(hovered) !== null, `${hover} in ${name}`);
-      assert.ok(
-        contrastRatio(hovered, tokens.background) >
-          contrastRatio(resting, tokens.background),
-        `${hover} does not stand further from the page than ${fill} in ${name}`,
-      );
-    }
-  });
-
-  await test(`${name} control fill labels pass on the hover fill`, () => {
-    const tokens = theme.tokens;
-    assert.ok(
-      contrastRatio(
-        tokens.accentOnFill,
-        derivedValue(tokens, 'accentFillHover'),
-      ) >= textContrastMinimum,
-      `accent fill label on the hover fill in ${name}`,
-    );
-    assert.ok(
-      contrastRatio(tokens.onDanger, derivedValue(tokens, 'dangerFillHover')) >=
-        textContrastMinimum,
-      `danger fill label on the hover fill in ${name}`,
-    );
-  });
-
-  await test(`${name} component edge and focus pass on every surface`, () => {
-    const tokens = theme.tokens;
-    for (const [surfaceName, surface] of surfacesOf(tokens)) {
-      assert.ok(
-        contrastRatio(tokens.border, surface) >= uiContrastMinimum,
-        `component edge on the ${surfaceName} in ${name}`,
-      );
-      assert.ok(
-        contrastRatio(tokens.focus, surface) >= uiContrastMinimum,
-        `focus ring on the ${surfaceName} in ${name}`,
-      );
-    }
-  });
-
-  await test(`${name} control fills pass as non-text against the page`, () => {
-    const tokens = theme.tokens;
-    assert.ok(
-      contrastRatio(tokens.accentFill, tokens.background) >= uiContrastMinimum,
-      `accent fill on the page background in ${name}`,
-    );
-    assert.ok(
-      contrastRatio(tokens.dangerFill, tokens.background) >= uiContrastMinimum,
-      `danger fill on the page background in ${name}`,
-    );
-  });
-
-  await test(`${name} scrim is darker than every surface it covers`, () => {
-    const tokens = theme.tokens;
-    const scrim = relativeLuminance(tokens.scrim);
-    for (const [surfaceName, surface] of surfacesOf(tokens)) {
-      assert.ok(
-        scrim < relativeLuminance(surface),
-        `scrim over the ${surfaceName} in ${name}`,
-      );
-    }
-  });
-
-  await test(`${name} decorative edge stays quieter than the component edge`, () => {
-    const tokens = theme.tokens;
-    assert.ok(
-      contrastRatio(tokens.borderSubtle, tokens.background) <
-        contrastRatio(tokens.border, tokens.background),
-      `decorative edge in ${name}`,
-    );
-  });
-
-  await test(`${name} divider sits between the two edges`, () => {
-    const tokens = theme.tokens;
-    const divider = derivedValue(tokens, 'borderLine');
-    assert.ok(parseHexColor(divider) !== null, `divider colour in ${name}`);
-    const found = contrastRatio(divider, tokens.background);
-    assert.ok(
-      found > contrastRatio(tokens.borderSubtle, tokens.background),
-      `divider is not louder than the decorative edge in ${name}`,
-    );
-    assert.ok(
-      found < contrastRatio(tokens.border, tokens.background),
-      `divider is not quieter than the component edge in ${name}`,
-    );
-  });
-
-  await test(`${name} code colours pass on the page and on a code block`, () => {
-    const tokens = theme.tokens;
-    for (const property of syntaxPropertyNames) {
-      const colour = theme.syntax[property];
-      assert.ok(
-        contrastRatio(colour, tokens.background) >= textContrastMinimum,
-        `${property} on the page background in ${name}`,
-      );
-      assert.ok(
-        contrastRatio(colour, tokens.surfaceHover) >= textContrastMinimum,
-        `${property} on a code block in ${name}`,
-      );
-    }
-  });
-
-  await test(`${name} states every colour as a six digit hex value`, () => {
+  await test(`${theme.id} states every colour as a six digit hex value`, () => {
     for (const property of themePropertyNames)
       assert.ok(
         parseHexColor(theme.tokens[property]) !== null,
-        `${property} in ${name}`,
+        `${property} in ${theme.id}`,
       );
     for (const property of derivedPropertyNames)
       assert.ok(
         parseHexColor(derivedValue(theme.tokens, property)) !== null,
-        `${property} in ${name}`,
+        `${property} in ${theme.id}`,
       );
     for (const property of syntaxPropertyNames)
       assert.ok(
         parseHexColor(theme.syntax[property]) !== null,
-        `${property} in ${name}`,
+        `${property} in ${theme.id}`,
       );
   });
 }
