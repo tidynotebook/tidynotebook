@@ -43,7 +43,6 @@ import {
 } from '@notesapp/api-client';
 import type { LocalStore } from '@notesapp/sync';
 import {
-  type AppearanceChoice,
   AppMarkIcon,
   Button,
   buttonClassName,
@@ -52,25 +51,19 @@ import {
   DialogFooter,
   Card,
   Checkbox,
-  CheckIcon,
   ListRow,
   ComputerIcon,
   DownloadIcon,
   LoadingState,
-  MoonIcon,
   Notice,
   Page,
   pageGutter,
   PageHeader,
   pageListClassName,
   SignOutIcon,
-  SunIcon,
   TextField,
   TrashIcon,
   UsersIcon,
-  themeFamilies,
-  themeOfFamily,
-  transitionSurface,
   UploadIcon,
   type PageSection,
 } from '@notesapp/ui';
@@ -79,7 +72,6 @@ import {
   useLocalStore,
   useSession,
   useSpellCheck,
-  useTheme,
   useRequestSync,
 } from '../../app.tsx';
 import { problemCode, problemStatus } from '../../lib/problem-text.ts';
@@ -103,6 +95,7 @@ import { downloadAll, importAll } from '../export/export.ts';
 import { DailyNoteSettingsFields } from '../daily-notes/daily-note-settings.tsx';
 import { useDocumentTitle } from '../../shell/document-title.ts';
 import { SettingsSection } from './settings-section.tsx';
+import { ThemeSettings } from './theme-settings.tsx';
 import {
   sectionOf,
   settingsSections,
@@ -549,154 +542,9 @@ export function AuthFrame({
   );
 }
 
-/** The three appearance choices, with the icon that names each of them. */
-const appearanceChoices: readonly {
-  readonly value: AppearanceChoice;
-  readonly label: string;
-  readonly icon: ReactNode;
-}[] = [
-  { value: 'system', label: 'System', icon: <ComputerIcon /> },
-  { value: 'light', label: 'Light', icon: <SunIcon /> },
-  { value: 'dark', label: 'Dark', icon: <MoonIcon /> },
-];
-
-/**
- * The four colours that show what one family looks like.
- *
- * The swatch is the page background, the sidebar surface, the accent fill,
- * and the body text of the variant that the current appearance selects, so
- * the preview is exactly what the screen becomes on selection.
- */
-function FamilySwatch({ familyId }: { readonly familyId: string }): ReactNode {
-  const theme = useTheme();
-  const family = themeFamilies.find((entry) => entry.id === familyId);
-  if (family === undefined) return null;
-  const tokens = themeOfFamily(family, theme.resolved).tokens;
-  const colours = [
-    tokens.background,
-    tokens.surface,
-    tokens.accentFill,
-    tokens.text,
-  ];
-  return (
-    <span
-      aria-hidden="true"
-      className="inline-flex overflow-hidden rounded-sm border border-edge-line"
-    >
-      {colours.map((colour) => (
-        <span
-          className="block h-4 w-3"
-          key={colour}
-          style={{ backgroundColor: colour }}
-        />
-      ))}
-    </span>
-  );
-}
-
 /** One section of Settings, by its name in the list of the page. */
 function settingsSection(key: SettingsSectionKey): PageSection {
   return sectionOf(settingsSections, key);
-}
-
-/**
- * Appearance settings: local first, synced without delaying the change.
- *
- * The appearance choices are a segmented control: one radio group in one
- * track, so the whole set is visible, the arrow keys move through it and the
- * choice in force is the raised segment. The theme families are radio buttons
- * as well, one chip each, and the chosen chip takes the strong edge and a
- * ring of the same colour and never the accent fill (decision 0062). A
- * selection applies at once, which is why the swatch of every family shows
- * the variant of the appearance in force.
- *
- * Both groups carry their focus treatment with `focus-within`, because the
- * radio a person reaches is visually hidden and the label around it is what
- * they see. `focus-visible` on the label would never match.
- */
-export function ThemeSettings(): ReactNode {
-  const theme = useTheme();
-  return (
-    <SettingsSection
-      section={settingsSection('appearance')}
-      description="System follows the device. The choice applies at once on this device and goes to your account in the background."
-    >
-      <fieldset className="m-0 border-0 p-0">
-        <legend className="sr-only">Appearance</legend>
-        <div className="inline-flex rounded-md border border-edge-subtle bg-surface p-0.5 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus">
-          {appearanceChoices.map((choice) => {
-            const chosen = theme.choice === choice.value;
-            return (
-              <label
-                className={`inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-sm px-2.5 text-control ${transitionSurface} md:min-h-7 ${
-                  chosen
-                    ? 'bg-card font-medium text-strong shadow-raised'
-                    : 'text-muted hover:text-strong'
-                }`}
-                key={choice.value}
-              >
-                <input
-                  className="sr-only"
-                  type="radio"
-                  name="theme-choice"
-                  value={choice.value}
-                  checked={chosen}
-                  onChange={(): void => {
-                    theme.setChoice(choice.value);
-                  }}
-                />
-                <span className="inline-flex items-center" aria-hidden="true">
-                  {choice.icon}
-                </span>
-                <span>{choice.label}</span>
-              </label>
-            );
-          })}
-        </div>
-      </fieldset>
-      <fieldset className="m-0 mt-4 border-0 p-0">
-        <legend className="mb-2 p-0 text-control font-medium text-strong">
-          Theme
-        </legend>
-        <div className="flex flex-wrap gap-cluster">
-          {themeFamilies.map((family) => {
-            const chosen = theme.familyId === family.id;
-            return (
-              <label
-                className={`inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-md border bg-card px-2.5 text-control text-strong ${transitionSurface} focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus md:min-h-8 ${
-                  chosen
-                    ? 'border-strong ring-1 ring-strong'
-                    : 'border-edge-line hover:bg-hover'
-                }`}
-                key={family.id}
-              >
-                <input
-                  className="sr-only"
-                  type="radio"
-                  name="theme-family"
-                  value={family.id}
-                  checked={chosen}
-                  onChange={(): void => {
-                    theme.setFamily(family.id);
-                  }}
-                />
-                <FamilySwatch familyId={family.id} />
-                <span>{family.name}</span>
-                {chosen ? (
-                  <span className="inline-flex items-center" aria-hidden="true">
-                    <CheckIcon />
-                  </span>
-                ) : null}
-              </label>
-            );
-          })}
-        </div>
-      </fieldset>
-      {theme.syncError === null ? null : (
-        <Notice className="mt-4" tone="problem" message={theme.syncError} />
-      )}
-    </SettingsSection>
-  );
 }
 
 /**

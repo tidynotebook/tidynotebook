@@ -126,6 +126,7 @@ await test('an account that never chose has its spelling checked', async () => {
     appearance: 'system',
     themeFamily: 'default',
     spellCheck: true,
+    themes: [],
   });
 });
 
@@ -139,6 +140,7 @@ await test('a write keeps every setting that it does not name', async () => {
     appearance: 'system',
     themeFamily: 'default',
     spellCheck: false,
+    themes: [],
   });
 
   // The theme write of a client that knows no spell check leaves it off.
@@ -151,6 +153,7 @@ await test('a write keeps every setting that it does not name', async () => {
     appearance: 'dark',
     themeFamily: 'ink',
     spellCheck: false,
+    themes: [],
   });
 
   const on = await updatePreferences({ headers, body: { spellCheck: true } });
@@ -159,6 +162,7 @@ await test('a write keeps every setting that it does not name', async () => {
     appearance: 'dark',
     themeFamily: 'ink',
     spellCheck: true,
+    themes: [],
   });
 });
 
@@ -174,6 +178,7 @@ await test('a refused write changes nothing', async () => {
     appearance: 'dark',
     themeFamily: 'ink',
     spellCheck: true,
+    themes: [],
   });
 });
 

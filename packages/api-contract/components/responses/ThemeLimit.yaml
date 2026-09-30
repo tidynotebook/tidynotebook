@@ -1,0 +1,7 @@
+description: >-
+  The account already keeps as many imported themes as it may. The code is
+  theme_limit. Nothing changed.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/ProblemDetails.yaml'

@@ -62,7 +62,8 @@ export type ProblemCode =
   | 'registration_closed'
   | 'verification_invalid'
   | 'proof_invalid'
-  | 'consent_required';
+  | 'consent_required'
+  | 'theme_limit';
 
 /** Problem details body. Extra members are permitted by RFC 9457. */
 export type Problem = {
@@ -128,6 +129,7 @@ const titles: Readonly<Record<ProblemCode, string>> = {
   verification_invalid: 'This verification link is not valid.',
   proof_invalid: 'The proof of work of this sign-up does not count.',
   consent_required: 'The current legal documents need consent.',
+  theme_limit: 'The account keeps as many imported themes as it may.',
   rate_limited: 'Too many attempts were made in a short time.',
   route_not_found: 'No operation serves this method and path.',
   not_ready: 'The service cannot accept traffic yet.',
@@ -355,6 +357,8 @@ const domainStatus: Readonly<
   // The versions that the person saw are not the current ones, or the
   // sign-up gave no consent (record 0120).
   consent_required: { status: 409, code: 'consent_required' },
+  // The account keeps as many imported themes as it may (record 0141).
+  theme_limit: { status: 409, code: 'theme_limit' },
 };
 
 /** The explanation of one domain failure. It names no path and no content. */
@@ -412,6 +416,8 @@ const domainTitles: Readonly<Record<DomainErrorCode, string>> = {
   proof_invalid: 'The check of this browser did not finish. Try again.',
   consent_required:
     'The terms or the privacy notice changed. Read them again and accept them.',
+  theme_limit:
+    'The account already keeps as many imported themes as it may. Delete one first.',
 };
 
 /**

@@ -104,6 +104,10 @@ paths:
     $ref: './paths/api_account_removal.yaml'
   /api/account/preferences:
     $ref: './paths/api_account_preferences.yaml'
+  /api/account/themes:
+    $ref: './paths/api_account_themes.yaml'
+  /api/account/themes/{themeId}:
+    $ref: './paths/api_account_themes_themeId.yaml'
   /api/workspaces:
     $ref: './paths/api_workspaces.yaml'
   /api/workspaces/{workspaceId}:
@@ -229,11 +233,15 @@ components:
       $ref: './components/parameters/InvitationId.yaml'
     SessionId:
       $ref: './components/parameters/SessionId.yaml'
+    ThemeId:
+      $ref: './components/parameters/ThemeId.yaml'
     ReportId:
       $ref: './components/parameters/ReportId.yaml'
   requestBodies:
     PreferencesUpdate:
       $ref: './components/requestBodies/PreferencesUpdate.yaml'
+    ThemeImport:
+      $ref: './components/requestBodies/ThemeImport.yaml'
     DailyNoteSettingsUpdate:
       $ref: './components/requestBodies/DailyNoteSettingsUpdate.yaml'
     WorkspaceName:
@@ -415,6 +423,8 @@ components:
       $ref: './components/responses/Installation.yaml'
     LastAdministrator:
       $ref: './components/responses/LastAdministrator.yaml'
+    ThemeLimit:
+      $ref: './components/responses/ThemeLimit.yaml'
     InvitationUnavailable:
       $ref: './components/responses/InvitationUnavailable.yaml'
     OpenRegistrationUnavailable:
@@ -462,6 +472,20 @@ components:
       $ref: './components/schemas/Appearance.yaml'
     ThemeFamily:
       $ref: './components/schemas/ThemeFamily.yaml'
+    ThemeColour:
+      $ref: './components/schemas/ThemeColour.yaml'
+    ThemeName:
+      $ref: './components/schemas/ThemeName.yaml'
+    ThemePaletteTokens:
+      $ref: './components/schemas/ThemePaletteTokens.yaml'
+    ThemePaletteSyntax:
+      $ref: './components/schemas/ThemePaletteSyntax.yaml'
+    ThemePalette:
+      $ref: './components/schemas/ThemePalette.yaml'
+    ImportedTheme:
+      $ref: './components/schemas/ImportedTheme.yaml'
+    ThemeImportInput:
+      $ref: './components/schemas/ThemeImportInput.yaml'
     Role:
       $ref: './components/schemas/Role.yaml'
     Preferences:

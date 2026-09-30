@@ -28,7 +28,11 @@ import {
   type Preferences,
   type Workspace,
 } from '@notesapp/api-client';
-import { defaultSpellCheck, generateUUID } from '@notesapp/core';
+import {
+  defaultSpellCheck,
+  generateUUID,
+  isThemeFamilyId,
+} from '@notesapp/core';
 import { openLocalStore } from '@notesapp/storage-browser';
 import {
   createSyncEngine,
@@ -41,14 +45,27 @@ import {
   applyThemeToDocument,
   defaultThemeFamilyId,
   parseAppearanceChoice,
-  parseThemeFamilyId,
   resolveAppearance,
   themeFamilyStorageKey,
   themeFor,
+  themeOfFamily,
   type Appearance,
   type AppearanceChoice,
   type Theme,
+  type ThemeFamily,
 } from '@notesapp/ui';
+import {
+  importedPaletteStorageKey,
+  inlineImportedFamily,
+  keptImportedFamily,
+} from './lib/first-paint.ts';
+import {
+  cachedThemes,
+  chooseableFamilies,
+  familyAmong,
+  importedFamilies,
+  isImportedFamilyId,
+} from './lib/imported-themes.ts';
 import { createFocusPass } from './lib/focus-pass.ts';
 import { displayNoteName } from './lib/note-name.ts';
 import {
@@ -193,6 +210,8 @@ function readCachedAccount(): Account | null {
         // An account cached by an earlier release holds no spell check.
         spellCheck:
           typeof spellCheck === 'boolean' ? spellCheck : defaultSpellCheck,
+        // Each cached theme passes the reader of a theme file again (0141).
+        themes: cachedThemes(readProperty(row['preferences'], 'themes')),
       },
       // An account cached by an earlier release holds no consent state. The
       // next read of the account answers it (record 0120).
@@ -729,6 +748,8 @@ export type ThemeValue = {
   readonly resolved: Appearance;
   /** The identifier of the chosen family, for example `tokyo-night`. */
   readonly familyId: string;
+  /** Every family to choose: the registry, then the imported (0141). */
+  readonly families: readonly ThemeFamily[];
   /** The palette that the document renders with right now. */
   readonly theme: Theme;
   readonly setChoice: (choice: AppearanceChoice) => void;
@@ -737,12 +758,13 @@ export type ThemeValue = {
   readonly syncError: string | null;
 };
 
-const startingTheme = themeFor(parseThemeFamilyId(undefined), 'dark');
+const startingTheme = themeFor(defaultThemeFamilyId, 'dark');
 
 const ThemeContext = createContext<ThemeValue>({
   choice: 'system',
   resolved: 'dark',
   familyId: startingTheme.family,
+  families: chooseableFamilies([]),
   theme: startingTheme,
   setChoice: () => {},
   setFamily: () => {},
@@ -764,6 +786,19 @@ function readSetting(key: string): string | null {
 }
 
 /**
+ * Reads a stored family identifier by its shape alone.
+ *
+ * An imported theme arrives with the account after the first render, so the
+ * registry cannot decide yet. A family that names nothing paints the default
+ * family, and the effective family is decided when the families are known.
+ */
+function parseFamilySetting(value: string | null | undefined): string {
+  return typeof value === 'string' && isThemeFamilyId(value)
+    ? value
+    : defaultThemeFamilyId;
+}
+
+/**
  * Owns the appearance choice and the theme family.
  *
  * Both are stored locally first so the next paint is already correct, then
@@ -776,13 +811,50 @@ function useThemeLoader(stored: Preferences | null): ThemeValue {
   const [choice, setChoiceState] = useState<AppearanceChoice>(() =>
     parseAppearanceChoice(readSetting(appearanceStorageKey)),
   );
-  const [familyId, setFamilyState] = useState<string>(() =>
-    parseThemeFamilyId(readSetting(themeFamilyStorageKey)),
+  const [storedFamilyId, setFamilyState] = useState<string>(() =>
+    parseFamilySetting(readSetting(themeFamilyStorageKey)),
   );
   const [prefersDark, setPrefersDark] = useState<boolean>(systemPrefersDark);
   const [syncError, setSyncError] = useState<string | null>(null);
   const resolved = resolveAppearance(choice, prefersDark);
-  const theme = themeFor(familyId, resolved);
+  // Until the account answers, the imported theme that this device chose
+  // stands in for the themes of the account, so the page keeps the palette of
+  // the first paint (record 0141).
+  const [kept] = useState<ThemeFamily | null>(() =>
+    keptImportedFamily(
+      readSetting(importedPaletteStorageKey),
+      parseFamilySetting(readSetting(themeFamilyStorageKey)),
+    ),
+  );
+  const families = useMemo(
+    () =>
+      chooseableFamilies(
+        stored === null
+          ? kept === null
+            ? []
+            : [kept]
+          : importedFamilies(stored.themes),
+      ),
+    [stored, kept],
+  );
+  const family = familyAmong(families, storedFamilyId);
+  const familyId = family.id;
+  const theme = themeOfFamily(family, resolved);
+
+  // The script of the first paint reads the chosen imported theme from this
+  // device, because the account arrives after it (record 0141).
+  useEffect(() => {
+    try {
+      if (isImportedFamilyId(family.id))
+        window.localStorage.setItem(
+          importedPaletteStorageKey,
+          inlineImportedFamily(family),
+        );
+      else window.localStorage.removeItem(importedPaletteStorageKey);
+    } catch {
+      // The palette still applies below. Only the next first paint differs.
+    }
+  }, [family]);
 
   useEffect(() => {
     return subscribeToSystemTheme(setPrefersDark);
@@ -800,7 +872,7 @@ function useThemeLoader(stored: Preferences | null): ThemeValue {
     if (readSetting(appearanceStorageKey) === null)
       setChoiceState(parseAppearanceChoice(stored.appearance));
     if (readSetting(themeFamilyStorageKey) === null)
-      setFamilyState(parseThemeFamilyId(stored.themeFamily));
+      setFamilyState(parseFamilySetting(stored.themeFamily));
   }, [stored]);
 
   const store = useCallback(
@@ -845,11 +917,11 @@ function useThemeLoader(stored: Preferences | null): ThemeValue {
 
   const setFamily = useCallback(
     (next: string) => {
-      const known = parseThemeFamilyId(next);
+      const known = familyAmong(families, next).id;
       setFamilyState(known);
       publish(choice, known);
     },
-    [publish, choice],
+    [publish, choice, families],
   );
 
   return useMemo(
@@ -857,12 +929,22 @@ function useThemeLoader(stored: Preferences | null): ThemeValue {
       choice,
       resolved,
       familyId,
+      families,
       theme,
       setChoice,
       setFamily,
       syncError,
     }),
-    [choice, resolved, familyId, theme, setChoice, setFamily, syncError],
+    [
+      choice,
+      resolved,
+      familyId,
+      families,
+      theme,
+      setChoice,
+      setFamily,
+      syncError,
+    ],
   );
 }
 

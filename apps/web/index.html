@@ -29,8 +29,24 @@
           appearance === 'dark' ||
           (appearance !== 'light' &&
             window.matchMedia('(prefers-color-scheme: dark)').matches);
+        // An imported theme is data of the account (record 0141). The device
+        // keeps the palette of the chosen one and paints it only when the
+        // stored family names it, so a stale entry is never painted.
+        var imported = null;
+        if (!themes.families[family]) {
+          try {
+            var kept = JSON.parse(
+              localStorage.getItem('notesapp.theme-imported') || 'null',
+            );
+            if (kept && kept.family === family) imported = kept.variants;
+          } catch (error) {
+            imported = null;
+          }
+        }
         var variants =
-          themes.families[family] || themes.families[themes.fallback];
+          imported ||
+          themes.families[family] ||
+          themes.families[themes.fallback];
         var theme =
           variants[dark ? 'dark' : 'light'] || variants.dark || variants.light;
         var root = document.documentElement;

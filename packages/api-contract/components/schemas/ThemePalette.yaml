@@ -1,0 +1,11 @@
+type: object
+description: The light or the dark palette of one imported theme.
+additionalProperties: false
+required:
+  - tokens
+  - syntax
+properties:
+  tokens:
+    $ref: './ThemePaletteTokens.yaml'
+  syntax:
+    $ref: './ThemePaletteSyntax.yaml'

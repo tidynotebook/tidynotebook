@@ -22,6 +22,9 @@ choice keeps the same family.
 A theme change applies at once on this device and is sent to your account in
 the background, so your other browsers follow it.
 
+To use colours of your own, import a theme file. See
+[Your own theme](custom-themes.md).
+
 ## Offline storage
 
 The **Available offline** card decides what else is kept on this device besides

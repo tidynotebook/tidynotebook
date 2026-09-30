@@ -1,0 +1,15 @@
+type: object
+description: >-
+  A theme to keep for the signed in account: a name and a light palette,
+  a dark palette or both.
+additionalProperties: false
+required:
+  - name
+minProperties: 2
+properties:
+  name:
+    $ref: './ThemeName.yaml'
+  light:
+    $ref: './ThemePalette.yaml'
+  dark:
+    $ref: './ThemePalette.yaml'

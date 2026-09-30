@@ -17,8 +17,13 @@ import {
   defaultThemeFamilyId,
   defaultThemeFor,
   themeFamilies,
-  themeProperties,
 } from '@notesapp/ui';
+import {
+  inlinePropertyNames,
+  inlineVariants,
+  type InlineThemeVariant,
+  type InlineThemeVariants,
+} from './src/lib/first-paint.ts';
 
 // The JSX transform comes from Vite's built-in esbuild support with the
 // automatic runtime, so no framework plugin is needed for the production
@@ -64,18 +69,13 @@ const manifestPath = 'manifest.webmanifest';
 const iconLinkPlaceholder = '__NOTESAPP_ICON_LINKS__';
 
 /** One theme of the registry as the inline script receives it. */
-export type InlineThemeVariant = {
-  readonly id: string;
-  readonly values: readonly string[];
-};
+export type { InlineThemeVariant };
 
 /** The whole registry as the inline script receives it. */
 export type InlineThemes = {
   readonly fallback: string;
   readonly properties: readonly string[];
-  readonly families: Readonly<
-    Record<string, Readonly<Record<string, InlineThemeVariant>>>
-  >;
+  readonly families: Readonly<Record<string, InlineThemeVariants>>;
 };
 
 /**
@@ -90,20 +90,12 @@ export type InlineThemes = {
  * text does not have to claim one.
  */
 export function themeRegistry(): InlineThemes {
-  const names = themeProperties(defaultThemeFor('dark')).map(([name]) => name);
-  const families: Record<string, Record<string, InlineThemeVariant>> = {};
-  for (const family of themeFamilies) {
-    const variants: Record<string, InlineThemeVariant> = {};
-    for (const theme of family.variants)
-      variants[theme.appearance] = {
-        id: theme.id,
-        values: themeProperties(theme).map(([, value]) => value),
-      };
-    families[family.id] = variants;
-  }
+  const families: Record<string, InlineThemeVariants> = {};
+  for (const family of themeFamilies)
+    families[family.id] = inlineVariants(family);
   return {
     fallback: defaultThemeFamilyId,
-    properties: names,
+    properties: inlinePropertyNames(),
     families,
   };
 }

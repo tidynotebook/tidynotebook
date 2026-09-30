@@ -1,0 +1,33 @@
+type: object
+description: >-
+  The colours of code inside a fenced block of one palette.
+additionalProperties: false
+required:
+  - keyword
+  - string
+  - comment
+  - number
+  - tag
+  - attribute
+  - heading
+  - link
+  - punctuation
+properties:
+  keyword:
+    $ref: './ThemeColour.yaml'
+  string:
+    $ref: './ThemeColour.yaml'
+  comment:
+    $ref: './ThemeColour.yaml'
+  number:
+    $ref: './ThemeColour.yaml'
+  tag:
+    $ref: './ThemeColour.yaml'
+  attribute:
+    $ref: './ThemeColour.yaml'
+  heading:
+    $ref: './ThemeColour.yaml'
+  link:
+    $ref: './ThemeColour.yaml'
+  punctuation:
+    $ref: './ThemeColour.yaml'

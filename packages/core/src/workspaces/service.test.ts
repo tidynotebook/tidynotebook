@@ -16,11 +16,13 @@ import {
 } from '../identity/legal.ts';
 import type {
   AccountTransaction,
+  ImportedTheme,
   Preferences,
   WorkspaceAdminStore,
   WorkspaceAdminTransaction,
   WorkspaceSummary,
 } from './ports.ts';
+import { customThemeLimit, deleteTheme, importTheme } from './themes.ts';
 import {
   defaultSpellCheck,
   createWorkspace,
@@ -28,6 +30,7 @@ import {
   listWorkspaces,
   sessionGrants,
   isThemeFamilyId,
+  themeFamilyMaximumLength,
   updatePreferences,
   updateWorkspace,
 } from './service.ts';
@@ -66,6 +69,8 @@ type FakeStore = WorkspaceAdminStore & {
   readonly spaces: Map<string, Space>;
   readonly accountAudit: Map<string, string[]>;
   readonly preferences: Map<string, Preferences>;
+  readonly themes: Map<string, ImportedTheme[]>;
+  readonly settingsLocks: string[];
   readonly consents: Map<string, ConsentRecord>;
   space(id: string): Space;
   seed(id: string, members: readonly (readonly [string, Role])[]): void;
@@ -77,6 +82,8 @@ function createFakeStore(): FakeStore {
   const spaces = new Map<string, Space>();
   const accountAudit = new Map<string, string[]>();
   const preferences = new Map<string, Preferences>();
+  const themes = new Map<string, ImportedTheme[]>();
+  const settingsLocks: string[] = [];
   const consents = new Map<string, ConsentRecord>();
 
   const space = (id: string): Space => {
@@ -138,6 +145,24 @@ function createFakeStore(): FakeStore {
       savePreferences: (value: Preferences) => {
         preferences.set(actor.accountId, value);
         return Promise.resolve();
+      },
+      themes: () => Promise.resolve([...(themes.get(actor.accountId) ?? [])]),
+      lockSettings: () => {
+        settingsLocks.push(actor.accountId);
+        return Promise.resolve();
+      },
+      addTheme: (theme: ImportedTheme) => {
+        themes.set(actor.accountId, [
+          ...(themes.get(actor.accountId) ?? []),
+          theme,
+        ]);
+        return Promise.resolve();
+      },
+      removeTheme: (themeId: string) => {
+        const held = themes.get(actor.accountId) ?? [];
+        const kept = held.filter((theme) => theme.themeId !== themeId);
+        themes.set(actor.accountId, kept);
+        return Promise.resolve(kept.length < held.length);
       },
       consent: () => Promise.resolve(consents.get(actor.accountId) ?? null),
       recordConsent: (versions) => {
@@ -205,6 +230,8 @@ function createFakeStore(): FakeStore {
     spaces,
     accountAudit,
     preferences,
+    themes,
+    settingsLocks,
     consents,
     space,
     seed,
@@ -384,7 +411,7 @@ await test('a theme family that is not a slug is rejected', async () => {
     'Tokyo Night',
     'tokyo_night',
     '-nord',
-    'a'.repeat(41),
+    'a'.repeat(themeFamilyMaximumLength + 1),
   ]) {
     const result = await updatePreferences(store, actorFor(alice), {
       appearance: 'dark',
@@ -442,4 +469,106 @@ await test('consent names the current versions and is stored with its time', asy
       acceptedAt: '2026-09-27T12:00:00.000Z',
     },
   });
+});
+
+/** One palette of hex colours, as the contract lets through. */
+const palette = {
+  tokens: { background: '#ffffff', text: '#111111' },
+  syntax: { keyword: '#0033aa' },
+};
+
+const themeIds = Array.from(
+  { length: customThemeLimit + 1 },
+  (_, index) => `cccccccc-cccc-4ccc-8ccc-${String(index).padStart(12, '0')}`,
+);
+
+await test('an imported theme is kept and read back with the settings', async () => {
+  const store = createFakeStore();
+  const result = await importTheme(
+    store,
+    actorFor(alice),
+    { name: '  Harbour  ', light: palette, dark: null },
+    themeIds[0] ?? '',
+  );
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  assert.deepEqual(result.value.themes, [
+    { themeId: themeIds[0], name: 'Harbour', light: palette, dark: null },
+  ]);
+  // The count is read under the lock of the settings of the account.
+  assert.deepEqual(store.settingsLocks, [alice]);
+  assert.equal(store.themes.get(bob), undefined);
+});
+
+await test('a theme with no name, no palette or a colour that is not hex is refused', async () => {
+  const store = createFakeStore();
+  const refused = [
+    { name: '   ', light: palette, dark: null },
+    { name: 'Empty', light: null, dark: null },
+    {
+      name: 'Named colour',
+      light: { ...palette, tokens: { background: 'white' } },
+      dark: null,
+    },
+    { name: 'No colours', light: { tokens: {}, syntax: {} }, dark: null },
+  ];
+  for (const input of refused) {
+    const result = await importTheme(
+      store,
+      actorFor(alice),
+      input,
+      themeIds[0] ?? '',
+    );
+    assert.deepEqual(result, {
+      ok: false,
+      error: { code: 'forbidden', fileIds: [] },
+    });
+  }
+  assert.equal(store.themes.get(alice), undefined);
+});
+
+await test('an account keeps no more themes than the limit', async () => {
+  const store = createFakeStore();
+  for (const themeId of themeIds.slice(0, customThemeLimit)) {
+    const kept = await importTheme(
+      store,
+      actorFor(alice),
+      { name: 'One', light: palette, dark: null },
+      themeId,
+    );
+    assert.equal(kept.ok, true);
+  }
+  const over = await importTheme(
+    store,
+    actorFor(alice),
+    { name: 'One more', light: palette, dark: null },
+    themeIds[customThemeLimit] ?? '',
+  );
+  assert.deepEqual(over, {
+    ok: false,
+    error: { code: 'theme_limit', fileIds: [] },
+  });
+  assert.equal(store.themes.get(alice)?.length, customThemeLimit);
+});
+
+await test('a deleted theme leaves the settings, and an unknown one is not found', async () => {
+  const store = createFakeStore();
+  await importTheme(
+    store,
+    actorFor(alice),
+    { name: 'Harbour', light: null, dark: palette },
+    themeIds[0] ?? '',
+  );
+  const missing = await deleteTheme(store, actorFor(bob), themeIds[0] ?? '');
+  assert.deepEqual(missing, {
+    ok: false,
+    error: { code: 'not_found', fileIds: [] },
+  });
+  const removed = await deleteTheme(store, actorFor(alice), themeIds[0] ?? '');
+  assert.equal(removed.ok, true);
+  if (removed.ok) assert.deepEqual(removed.value.themes, []);
+});
+
+await test('the family of an imported theme is a stored family', () => {
+  assert.equal(isThemeFamilyId(`custom-${themeIds[0] ?? ''}`), true);
 });

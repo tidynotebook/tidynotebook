@@ -222,10 +222,14 @@ export {
 export type {
   SessionRecord,
   AccountOwnStanding,
+  AccountSettings,
   AccountTransaction,
   AppearanceChoice,
+  ImportedPalette,
+  ImportedTheme,
   Preferences,
   PreferencesChange,
+  ThemeImport,
   WorkspaceAdminStore,
   WorkspaceAdminTransaction,
   WorkspaceSummary,
@@ -245,6 +249,11 @@ export {
   updatePreferences,
   updateWorkspace,
 } from './workspaces/service.ts';
+export {
+  customThemeLimit,
+  deleteTheme,
+  importTheme,
+} from './workspaces/themes.ts';
 export type { RestoreRevisionInput } from './history/service.ts';
 export {
   defaultHistoryLimit,

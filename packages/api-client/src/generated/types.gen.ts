@@ -969,6 +969,19 @@ export type ImportWorkspaceResult = {
 };
 
 /**
+ * One theme that the account imported. The client checks its contrast before it offers or paints it, and its family is custom- and the identifier.
+ */
+export type ImportedTheme = {
+    /**
+     * Identifier of the imported theme.
+     */
+    readonly themeId: Uuid;
+    readonly name: ThemeName;
+    readonly light?: ThemePalette;
+    readonly dark?: ThemePalette;
+};
+
+/**
  * The settings of the installation that an administrator reads.
  */
 export type Installation = {
@@ -1215,6 +1228,10 @@ export type Preferences = {
      * True when the editor asks the browser to check the spelling of a note.
      */
     readonly spellCheck: boolean;
+    /**
+     * The themes that the account imported, oldest first.
+     */
+    readonly themes: Array<ImportedTheme>;
 };
 
 /**
@@ -2107,9 +2124,76 @@ export type SyncUpdateRecord = {
 };
 
 /**
- * Identifier of a theme family in the client theme registry, for example tokyo-night. An identifier that the client does not know falls back to the default family, so a stored value never stops the page painting.
+ * One colour of an imported theme, as a hash and six hexadecimal digits.
+ */
+export type ThemeColour = string;
+
+/**
+ * Identifier of a theme family in the client theme registry, for example tokyo-night, or custom- and the identifier of a theme that the account imported. An identifier that the client does not know falls back to the default family, so a stored value never stops the page painting.
  */
 export type ThemeFamily = string;
+
+/**
+ * A theme to keep for the signed in account: a name and a light palette, a dark palette or both.
+ */
+export type ThemeImportInput = {
+    name: ThemeName;
+    light?: ThemePalette;
+    dark?: ThemePalette;
+};
+
+/**
+ * The name of an imported theme, as a person reads it.
+ */
+export type ThemeName = string;
+
+/**
+ * The light or the dark palette of one imported theme.
+ */
+export type ThemePalette = {
+    tokens: ThemePaletteTokens;
+    syntax: ThemePaletteSyntax;
+};
+
+/**
+ * The colours of code inside a fenced block of one palette.
+ */
+export type ThemePaletteSyntax = {
+    keyword: ThemeColour;
+    string: ThemeColour;
+    comment: ThemeColour;
+    number: ThemeColour;
+    tag: ThemeColour;
+    attribute: ThemeColour;
+    heading: ThemeColour;
+    link: ThemeColour;
+    punctuation: ThemeColour;
+};
+
+/**
+ * The interface colours of one palette. Each member is a token of the theme registry of the client.
+ */
+export type ThemePaletteTokens = {
+    background: ThemeColour;
+    surface: ThemeColour;
+    surfaceCard: ThemeColour;
+    surfaceHover: ThemeColour;
+    surfaceActive: ThemeColour;
+    text: ThemeColour;
+    textStrong: ThemeColour;
+    textMuted: ThemeColour;
+    accentText: ThemeColour;
+    accentFill: ThemeColour;
+    accentOnFill: ThemeColour;
+    successText: ThemeColour;
+    dangerText: ThemeColour;
+    dangerFill: ThemeColour;
+    onDanger: ThemeColour;
+    border: ThemeColour;
+    borderSubtle: ThemeColour;
+    focus: ThemeColour;
+    scrim: ThemeColour;
+};
 
 /**
  * The password of one published link.
@@ -2345,6 +2429,13 @@ export type WorkspaceNameInput = {
 };
 
 /**
+ * The signed in account and its settings.
+ */
+export type AccountWritable = {
+    [key: string]: never;
+};
+
+/**
  * The current session, or null when there is none.
  */
 export type AuthCurrentSessionWritable = {
@@ -2421,6 +2512,13 @@ export type ExpectedHeadsWritable = {
 };
 
 /**
+ * One theme that the account imported. The client checks its contrast before it offers or paints it, and its family is custom- and the identifier.
+ */
+export type ImportedThemeWritable = {
+    [key: string]: never;
+};
+
+/**
  * The token of the invitation to read.
  */
 export type InvitationReadInputWritable = {
@@ -2448,6 +2546,13 @@ export type LinkReportWritable = {
  * The open reports of published links.
  */
 export type LinkReportListWritable = {
+    [key: string]: never;
+};
+
+/**
+ * Settings that follow one account to every device.
+ */
+export type PreferencesWritable = {
     [key: string]: never;
 };
 
@@ -2741,6 +2846,11 @@ export type InvitationId = Uuid;
 export type SessionId = string;
 
 /**
+ * Identifier of the imported theme that the operation removes.
+ */
+export type ThemeId = Uuid;
+
+/**
  * Identifier of the report that the operation acts on.
  */
 export type ReportId = Uuid;
@@ -2754,6 +2864,11 @@ export type PublishedNote = PublishedNoteReference;
  * The settings to store for the signed in account.
  */
 export type PreferencesUpdate = PreferencesInput;
+
+/**
+ * The theme to keep for the signed in account.
+ */
+export type ThemeImport = ThemeImportInput;
 
 /**
  * The daily note settings to store for the signed in member.
@@ -3244,6 +3359,116 @@ export type RevokeSessionResponses = {
 };
 
 export type RevokeSessionResponse = RevokeSessionResponses[keyof RevokeSessionResponses];
+
+export type ImportThemeData = {
+    /**
+     * The theme to keep for the signed in account.
+     */
+    body: ThemeImport;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/account/themes';
+};
+
+export type ImportThemeErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The account already keeps as many imported themes as it may. The code is theme_limit. Nothing changed.
+     */
+    409: ProblemDetails;
+    /**
+     * The request body is larger than the configured limit. A save of a note adds document_too_large, which means that the update or the document it would produce passes a bound of the workspace. The work stays on the device, which offers recovery rather than sending the same bytes again.
+     */
+    413: ProblemDetails;
+    /**
+     * The request media type is not supported.
+     */
+    415: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type ImportThemeError = ImportThemeErrors[keyof ImportThemeErrors];
+
+export type ImportThemeResponses = {
+    /**
+     * The stored settings of the signed in account.
+     */
+    201: Preferences;
+};
+
+export type ImportThemeResponse = ImportThemeResponses[keyof ImportThemeResponses];
+
+export type DeleteThemeData = {
+    body?: never;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path: {
+        /**
+         * Identifier of the imported theme that the operation removes.
+         */
+        themeId: Uuid;
+    };
+    query?: never;
+    url: '/api/account/themes/{themeId}';
+};
+
+export type DeleteThemeErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The requested resource does not exist.
+     */
+    404: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type DeleteThemeError = DeleteThemeErrors[keyof DeleteThemeErrors];
+
+export type DeleteThemeResponses = {
+    /**
+     * The stored settings of the signed in account.
+     */
+    200: Preferences;
+};
+
+export type DeleteThemeResponse = DeleteThemeResponses[keyof DeleteThemeResponses];
 
 export type ListAccountsData = {
     body?: never;

@@ -1,0 +1,27 @@
+type: object
+description: >-
+  One theme that the account imported. The client checks its contrast
+  before it offers or paints it, and its family is custom- and the
+  identifier.
+additionalProperties: false
+required:
+  - themeId
+  - name
+properties:
+  themeId:
+    allOf:
+      - $ref: './Uuid.yaml'
+    readOnly: true
+    description: Identifier of the imported theme.
+  name:
+    allOf:
+      - $ref: './ThemeName.yaml'
+    readOnly: true
+  light:
+    allOf:
+      - $ref: './ThemePalette.yaml'
+    readOnly: true
+  dark:
+    allOf:
+      - $ref: './ThemePalette.yaml'
+    readOnly: true

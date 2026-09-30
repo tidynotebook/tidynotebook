@@ -1,0 +1,6 @@
+type: string
+description: >-
+  One colour of an imported theme, as a hash and six hexadecimal digits.
+minLength: 7
+maxLength: 7
+pattern: '^#[0-9a-fA-F]{6}$'

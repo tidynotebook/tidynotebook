@@ -1297,6 +1297,42 @@ export const accountPreferences = pgTable('account_preferences', {
 });
 
 /**
+ * The themes that one account imported (record 0141).
+ *
+ * `palettes` holds a `light` palette, a `dark` palette or both, each with
+ * the `tokens` and the `syntax` colours of the client theme registry. The
+ * server keeps them as data and never paints them. A row hangs from the
+ * settings of its account, so the removal of an account, which deletes its
+ * settings, deletes its themes too. The row policy binds a row to the account
+ * of the transaction.
+ */
+export const accountThemes = pgTable(
+  'account_themes',
+  {
+    id: uuid('id').primaryKey(),
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => accountPreferences.accountId, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    palettes: jsonb('palettes').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('account_themes_account_idx').on(table.accountId, table.createdAt),
+    check(
+      'account_themes_name_check',
+      sql`char_length(${table.name}) between 1 and 60`,
+    ),
+    check(
+      'account_themes_palettes_check',
+      sql`jsonb_typeof(${table.palettes}) = 'object' and (${table.palettes} ? 'light' or ${table.palettes} ? 'dark') and octet_length(${table.palettes}::text) <= 16384`,
+    ),
+  ],
+);
+
+/**
  * The daily note settings that one member keeps in one workspace.
  *
  * Record 0099 states the settings. A row belongs to one membership, and the

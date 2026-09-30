@@ -162,6 +162,13 @@
       "when": 1790801443788,
       "tag": "0022_stored_search_document",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1790801872728,
+      "tag": "0023_account_themes",
+      "breakpoints": true
     }
   ]
 }

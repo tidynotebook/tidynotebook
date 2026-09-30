@@ -29,6 +29,8 @@ import type {
   AppearanceChoice,
   ConsentRecord,
   ConsentVersions,
+  ImportedPalette,
+  ImportedTheme,
   InstallationRole,
   InstallationStore,
   InstallationTransaction,
@@ -95,6 +97,55 @@ function assertUuid(value: string, what: string): void {
       `notesapp: ${what} is not a UUID; the transport must validate it.`,
     );
   }
+}
+
+/** The string members of one stored colour group, or `null` for no group. */
+function colourGroupOf(value: unknown): Record<string, string> | null {
+  if (value === null || typeof value !== 'object' || Array.isArray(value))
+    return null;
+  const colours: Record<string, string> = {};
+  for (const [name, colour] of Object.entries(value)) {
+    if (typeof colour !== 'string') return null;
+    colours[name] = colour;
+  }
+  return colours;
+}
+
+/** Narrows one stored palette. A palette that is present must be whole. */
+function paletteOf(value: unknown): ImportedPalette | null {
+  if (value === undefined) return null;
+  const members =
+    value !== null && typeof value === 'object' && !Array.isArray(value)
+      ? new Map(Object.entries(value))
+      : null;
+  const tokens = colourGroupOf(members?.get('tokens'));
+  const syntax = colourGroupOf(members?.get('syntax'));
+  if (tokens === null || syntax === null)
+    throw new OperationalError(
+      'unexpected',
+      'notesapp: an imported theme row holds a palette of another shape.',
+    );
+  return { tokens, syntax };
+}
+
+/** Narrows the stored palettes of one imported theme (record 0141). */
+function importedThemeOf(row: {
+  id: string;
+  name: string;
+  palettes: unknown;
+}): ImportedTheme {
+  const palettes =
+    row.palettes !== null &&
+    typeof row.palettes === 'object' &&
+    !Array.isArray(row.palettes)
+      ? new Map(Object.entries(row.palettes))
+      : new Map<string, unknown>();
+  return {
+    themeId: row.id,
+    name: row.name,
+    light: paletteOf(palettes.get('light')),
+    dark: paletteOf(palettes.get('dark')),
+  };
 }
 
 /** Narrows a stored installation role. An unexpected value is a defect. */
@@ -525,6 +576,62 @@ export function openIdentityStore(
                            accepted_at = now()`,
           [accountId, versions.termsVersion, versions.privacyVersion],
         );
+      },
+
+      async themes(): Promise<readonly ImportedTheme[]> {
+        const rows = await client.query<{
+          id: string;
+          name: string;
+          palettes: unknown;
+        }>(
+          `select id, name, palettes from account_themes
+             where account_id = $1 order by created_at, id`,
+          [accountId],
+        );
+        return rows.rows.map(importedThemeOf);
+      },
+
+      async lockSettings(): Promise<void> {
+        // A theme hangs from the settings row, so the row exists before the
+        // first theme, and its lock orders two writes of one account.
+        await client.query(
+          `insert into account_preferences (account_id) values ($1)
+             on conflict (account_id) do nothing`,
+          [accountId],
+        );
+        await client.query(
+          'select account_id from account_preferences where account_id = $1 for update',
+          [accountId],
+        );
+      },
+
+      async addTheme(theme: ImportedTheme): Promise<void> {
+        assertUuid(theme.themeId, 'the theme');
+        const palettes: Record<string, ImportedPalette> = {};
+        if (theme.light !== null) palettes['light'] = theme.light;
+        if (theme.dark !== null) palettes['dark'] = theme.dark;
+        await client.query(
+          `insert into account_themes (id, account_id, name, palettes)
+             values ($1, $2, $3, $4::jsonb)`,
+          [theme.themeId, accountId, theme.name, JSON.stringify(palettes)],
+        );
+      },
+
+      async removeTheme(themeId: string): Promise<boolean> {
+        assertUuid(themeId, 'the theme');
+        const removed = await client.query(
+          'delete from account_themes where id = $1 and account_id = $2',
+          [themeId, accountId],
+        );
+        if (removed.rowCount !== 1) return false;
+        // The family of the theme is `custom-` and its identifier. A setting
+        // that names it takes the column default, the one default family.
+        await client.query(
+          `update account_preferences set theme_family = default, updated_at = now()
+             where account_id = $1 and theme_family = $2`,
+          [accountId, `custom-${themeId}`],
+        );
+        return true;
       },
 
       async savePreferences(preferences: Preferences): Promise<void> {

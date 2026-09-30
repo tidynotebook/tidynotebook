@@ -323,7 +323,8 @@ export type DomainErrorCode =
   | 'registration_closed'
   | 'verification_invalid'
   | 'proof_invalid'
-  | 'consent_required';
+  | 'consent_required'
+  | 'theme_limit';
 
 /**
  * A domain failure and the files it refers to.

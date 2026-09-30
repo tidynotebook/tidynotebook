@@ -14,8 +14,10 @@
 import type { Action, Actor, Role } from '../identity/actor.ts';
 import { actionsForRole, authorize } from '../identity/actor.ts';
 import { fail, ok, type Result } from '../files/model.ts';
+import { settingsOf } from './themes.ts';
 import type {
   AccountOwnStanding,
+  AccountSettings,
   AppearanceChoice,
   Preferences,
   PreferencesChange,
@@ -41,8 +43,13 @@ export const appearanceChoices: readonly AppearanceChoice[] = [
  */
 export const themeFamilyPattern = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
-/** The longest theme family identifier the store accepts. */
-export const themeFamilyMaximumLength = 40;
+/**
+ * The longest theme family identifier the store accepts.
+ *
+ * The family of an imported theme is `custom-` and a UUID, 43 characters
+ * (record 0141).
+ */
+export const themeFamilyMaximumLength = 64;
 
 /** True when a value can be stored as a theme family identifier. */
 export function isThemeFamilyId(value: string): boolean {
@@ -182,12 +189,12 @@ export function readOwnStanding(
   return store.account(actor, async (tx) => ok(await tx.standing()));
 }
 
-/** The stored settings of the account. */
+/** The stored settings of the account, with the themes it imported. */
 export function readPreferences(
   store: WorkspaceAdminStore,
   actor: Actor,
-): Promise<Result<Preferences>> {
-  return store.account(actor, async (tx) => ok(await tx.preferences()));
+): Promise<Result<AccountSettings>> {
+  return store.account(actor, async (tx) => ok(await settingsOf(tx)));
 }
 
 /**
@@ -201,7 +208,7 @@ export function updatePreferences(
   store: WorkspaceAdminStore,
   actor: Actor,
   change: PreferencesChange,
-): Promise<Result<Preferences>> {
+): Promise<Result<AccountSettings>> {
   return store.account(actor, async (tx) => {
     const current = await tx.preferences();
     let appearance = current.appearance;
@@ -209,18 +216,19 @@ export function updatePreferences(
       const known = appearanceChoices.find(
         (choice) => choice === change.appearance,
       );
-      if (known === undefined) return fail<Preferences>('forbidden');
+      if (known === undefined) return fail<AccountSettings>('forbidden');
       appearance = known;
     }
     const themeFamily = change.themeFamily ?? current.themeFamily;
-    if (!isThemeFamilyId(themeFamily)) return fail<Preferences>('forbidden');
+    if (!isThemeFamilyId(themeFamily))
+      return fail<AccountSettings>('forbidden');
     const checked: Preferences = {
       appearance,
       themeFamily,
       spellCheck: change.spellCheck ?? current.spellCheck,
     };
     await tx.savePreferences(checked);
-    return ok(checked);
+    return ok({ ...checked, themes: await tx.themes() });
   });
 }
 

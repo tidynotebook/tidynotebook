@@ -1,0 +1,6 @@
+description: The theme to keep for the signed in account.
+required: true
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/ThemeImportInput.yaml'

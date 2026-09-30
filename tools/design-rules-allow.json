@@ -2,7 +2,7 @@
   "comment": "Accepted exceptions of tools/check-design-rules.mjs. One entry names one file and one rule, and it states why the rule cannot hold there. Do not add an entry to make a new screen pass.",
   "allow": [
     {
-      "file": "apps/web/src/features/accounts/accounts.tsx",
+      "file": "apps/web/src/features/accounts/theme-settings.tsx",
       "rule": "inline-style",
       "reason": "The theme swatch paints four token values that it reads from the theme registry at run time, one set per family. A utility class names a value at build time, so it cannot express a colour that the registry chooses."
     },

@@ -86,7 +86,7 @@ function asBlob(data: unknown, mediaType: string): Blob {
 }
 
 /** Hands one blob to the browser as a saved file. */
-function save(blob: Blob, name: string): void {
+export function save(blob: Blob, name: string): void {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
   anchor.href = url;

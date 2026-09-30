@@ -7,15 +7,19 @@
  * No handler repeats a contract shape and no handler reads the database.
  */
 import type { FastifyRequest } from 'fastify';
+import { randomUUID } from 'node:crypto';
 import type {
+  AccountSettings,
+  ImportedPalette,
   LegalDocuments,
-  Preferences,
   Result,
   WorkspaceAdminStore,
 } from '@notesapp/core';
 import {
   acceptLegalDocuments,
   consentRequired,
+  deleteTheme,
+  importTheme,
   listSessions,
   readConsent,
   readOwnStanding,
@@ -96,12 +100,48 @@ function isBoolean(value: unknown): value is boolean {
   return typeof value === 'boolean';
 }
 
-/** The public shape of stored settings. */
-function preferencesBody(preferences: Preferences): Record<string, unknown> {
+/** The public shape of one palette of an imported theme. */
+function paletteBody(palette: ImportedPalette): Record<string, unknown> {
+  return { tokens: { ...palette.tokens }, syntax: { ...palette.syntax } };
+}
+
+/** The public shape of stored settings, with the imported themes. */
+function preferencesBody(
+  preferences: AccountSettings,
+): Record<string, unknown> {
   return {
     appearance: preferences.appearance,
     themeFamily: preferences.themeFamily,
     spellCheck: preferences.spellCheck,
+    themes: preferences.themes.map((theme) => ({
+      themeId: theme.themeId,
+      name: theme.name,
+      ...(theme.light === null ? {} : { light: paletteBody(theme.light) }),
+      ...(theme.dark === null ? {} : { dark: paletteBody(theme.dark) }),
+    })),
+  };
+}
+
+/** Reads one colour group of a validated palette of a request body. */
+function colourGroup(value: unknown): Readonly<Record<string, string>> {
+  if (value === null || typeof value !== 'object' || Array.isArray(value))
+    throw new ForbiddenError('The request body has an invalid palette.');
+  const colours: Record<string, string> = {};
+  for (const [name, colour] of Object.entries(value)) {
+    if (typeof colour !== 'string')
+      throw new ForbiddenError('The request body has an invalid colour.');
+    colours[name] = colour;
+  }
+  return colours;
+}
+
+/** Reads one validated palette that the body may leave out. */
+function paletteOf(body: unknown, key: string): ImportedPalette | null {
+  const value = readProperty(body, key);
+  if (value === undefined) return null;
+  return {
+    tokens: colourGroup(readProperty(value, 'tokens')),
+    syntax: colourGroup(readProperty(value, 'syntax')),
   };
 }
 
@@ -204,6 +244,43 @@ export function createAccountHandlers(
           themeFamily: optionalMember(request.body, 'themeFamily', isString),
           spellCheck: optionalMember(request.body, 'spellCheck', isBoolean),
         }),
+      );
+      return {
+        status: 200,
+        mediaType: jsonMediaType,
+        body: preferencesBody(stored),
+      };
+    },
+
+    importTheme: async (request): Promise<HandlerResult> => {
+      const resolved = requireActor(request);
+      const stored = unwrapDomain(
+        await importTheme(
+          store,
+          resolved.actor,
+          {
+            name: readString(request.body, 'name'),
+            light: paletteOf(request.body, 'light'),
+            dark: paletteOf(request.body, 'dark'),
+          },
+          randomUUID(),
+        ),
+      );
+      return {
+        status: 201,
+        mediaType: jsonMediaType,
+        body: preferencesBody(stored),
+      };
+    },
+
+    deleteTheme: async (request): Promise<HandlerResult> => {
+      const resolved = requireActor(request);
+      const stored = unwrapDomain(
+        await deleteTheme(
+          store,
+          resolved.actor,
+          readParameter(request, 'themeId'),
+        ),
       );
       return {
         status: 200,

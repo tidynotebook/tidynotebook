@@ -1,0 +1,33 @@
+post:
+  operationId: importTheme
+  summary: Keep an imported theme for the signed in account.
+  description: >-
+    Keeps one theme that the person imported from a file, so it follows the
+    account to every device. The answer is the stored settings with the new
+    theme in them. The client checks the contrast of the theme before it
+    sends it, and the account keeps a bounded number of themes.
+  tags:
+    - accounts
+  security:
+    - sessionCookie: []
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+  requestBody:
+    $ref: '../components/requestBodies/ThemeImport.yaml'
+  responses:
+    '201':
+      $ref: '../components/responses/Preferences.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../components/responses/Forbidden.yaml'
+    '409':
+      $ref: '../components/responses/ThemeLimit.yaml'
+    '413':
+      $ref: '../components/responses/PayloadTooLarge.yaml'
+    '415':
+      $ref: '../components/responses/UnsupportedMediaType.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

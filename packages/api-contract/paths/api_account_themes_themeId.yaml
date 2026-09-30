@@ -1,0 +1,27 @@
+delete:
+  operationId: deleteTheme
+  summary: Delete one imported theme of the signed in account.
+  description: >-
+    Deletes one imported theme of the account. When the account uses that
+    theme, it takes the default family in the same change. The answer is
+    the stored settings. A theme of another account answers not found.
+  tags:
+    - accounts
+  security:
+    - sessionCookie: []
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+    - $ref: '../components/parameters/ThemeId.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/Preferences.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../components/responses/NotFound.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

@@ -1,0 +1,8 @@
+name: themeId
+in: path
+required: true
+style: simple
+explode: false
+description: Identifier of the imported theme that the operation removes.
+schema:
+  $ref: '../schemas/Uuid.yaml'

@@ -1,8 +1,9 @@
 type: string
 description: >-
   Identifier of a theme family in the client theme registry, for example
-  tokyo-night. An identifier that the client does not know falls back to
-  the default family, so a stored value never stops the page painting.
+  tokyo-night, or custom- and the identifier of a theme that the account
+  imported. An identifier that the client does not know falls back to the
+  default family, so a stored value never stops the page painting.
 minLength: 1
-maxLength: 40
+maxLength: 64
 pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'

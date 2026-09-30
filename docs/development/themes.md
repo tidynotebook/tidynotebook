@@ -49,6 +49,25 @@ first and sent to the account in the background, so the choice applies at once
 and survives a failed request. A family the client does not know falls back to
 the default family, so a stored value never leaves the page without colour.
 
+## Imported themes
+
+A person imports a theme file, and the account keeps it. See
+[decision 0141](../decisions/0141-a-person-imports-a-theme-that-the-account-keeps.md).
+
+- `themeProblems` in `packages/ui/src/theme-rules.ts` is the one rule set of a
+  palette. `theme.test.ts` holds the registry to it, and the import refuses a
+  palette that breaks it with the words of `themeColourLabels`.
+- `packages/ui/src/theme-file.ts` reads and writes the file. The download of
+  the theme in use writes the same shape, so it is the start of a new theme.
+- The account answers its themes with its settings. The server checks the shape
+  of each colour and the count, and `apps/web/src/lib/imported-themes.ts` reads
+  every stored theme through the file reader again, so a theme that fails the
+  rules is neither offered nor painted.
+- The family of an imported theme is `custom-` and its identifier. The device
+  keeps the palette of the chosen one for the script of the first paint, from
+  `apps/web/src/lib/first-paint.ts`, which also builds the registry data of the
+  build.
+
 ## Adding a theme
 
 1. Copy an existing file in `packages/ui/src/themes` and name it after the
@@ -59,9 +78,9 @@ the default family, so a stored value never leaves the page without colour.
 3. Add the family to the registry in `packages/ui/src/themes/index.ts`.
 4. Record the project, the licence, the address, and every value you had to
    derive in `packages/ui/THIRD_PARTY_LICENSES.md`.
-5. Run the unit tests of the package. `theme.test.ts` walks the whole registry
-   and fails with the exact token, surface, and theme that misses a contrast
-   rule. Move that token along its own lightness until it passes, and note the
+5. Run the unit tests of the package. `theme.test.ts` holds the whole registry
+   to `themeProblems`, which names the exact colour, surface, and palette that
+   misses a rule. Move that token along its own lightness until it passes, and note the
    change in the licence file.
 6. Run `pnpm verify`.
 

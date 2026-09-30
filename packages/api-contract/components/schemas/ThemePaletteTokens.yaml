@@ -1,0 +1,63 @@
+type: object
+description: >-
+  The interface colours of one palette. Each member is a token of the theme registry of the client.
+additionalProperties: false
+required:
+  - background
+  - surface
+  - surfaceCard
+  - surfaceHover
+  - surfaceActive
+  - text
+  - textStrong
+  - textMuted
+  - accentText
+  - accentFill
+  - accentOnFill
+  - successText
+  - dangerText
+  - dangerFill
+  - onDanger
+  - border
+  - borderSubtle
+  - focus
+  - scrim
+properties:
+  background:
+    $ref: './ThemeColour.yaml'
+  surface:
+    $ref: './ThemeColour.yaml'
+  surfaceCard:
+    $ref: './ThemeColour.yaml'
+  surfaceHover:
+    $ref: './ThemeColour.yaml'
+  surfaceActive:
+    $ref: './ThemeColour.yaml'
+  text:
+    $ref: './ThemeColour.yaml'
+  textStrong:
+    $ref: './ThemeColour.yaml'
+  textMuted:
+    $ref: './ThemeColour.yaml'
+  accentText:
+    $ref: './ThemeColour.yaml'
+  accentFill:
+    $ref: './ThemeColour.yaml'
+  accentOnFill:
+    $ref: './ThemeColour.yaml'
+  successText:
+    $ref: './ThemeColour.yaml'
+  dangerText:
+    $ref: './ThemeColour.yaml'
+  dangerFill:
+    $ref: './ThemeColour.yaml'
+  onDanger:
+    $ref: './ThemeColour.yaml'
+  border:
+    $ref: './ThemeColour.yaml'
+  borderSubtle:
+    $ref: './ThemeColour.yaml'
+  focus:
+    $ref: './ThemeColour.yaml'
+  scrim:
+    $ref: './ThemeColour.yaml'

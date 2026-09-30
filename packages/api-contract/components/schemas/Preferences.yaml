@@ -5,6 +5,7 @@ required:
   - appearance
   - themeFamily
   - spellCheck
+  - themes
 properties:
   appearance:
     allOf:
@@ -22,3 +23,10 @@ properties:
     description: >-
       True when the editor asks the browser to check the spelling of a
       note.
+  themes:
+    type: array
+    readOnly: true
+    description: The themes that the account imported, oldest first.
+    maxItems: 20
+    items:
+      $ref: './ImportedTheme.yaml'

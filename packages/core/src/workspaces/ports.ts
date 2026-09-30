@@ -33,6 +33,38 @@ export type Preferences = {
 };
 
 /**
+ * The colours of one palette of an imported theme, by the token names of the
+ * client theme registry (record 0141).
+ *
+ * The server keeps them as data. The contract checks that each one is a hex
+ * colour, and the client checks their contrast before it paints them.
+ */
+export type ImportedPalette = {
+  readonly tokens: Readonly<Record<string, string>>;
+  readonly syntax: Readonly<Record<string, string>>;
+};
+
+/** One theme that an account imported, with one palette or two. */
+export type ImportedTheme = {
+  readonly themeId: string;
+  readonly name: string;
+  readonly light: ImportedPalette | null;
+  readonly dark: ImportedPalette | null;
+};
+
+/** A theme to import, before it is checked. */
+export type ThemeImport = {
+  readonly name: string;
+  readonly light: ImportedPalette | null;
+  readonly dark: ImportedPalette | null;
+};
+
+/** The stored settings of an account with the themes it imported. */
+export type AccountSettings = Preferences & {
+  readonly themes: readonly ImportedTheme[];
+};
+
+/**
  * The settings that one write changes, before they are checked.
  *
  * A member that is absent keeps its stored value, so each setting is written
@@ -101,6 +133,21 @@ export type AccountTransaction = {
   revokeOtherSessions(keepSessionId: string): Promise<number>;
   /** Replaces the stored settings of the account with a checked value. */
   savePreferences(preferences: Preferences): Promise<void>;
+  /** The themes that the account imported, oldest first (record 0141). */
+  themes(): Promise<readonly ImportedTheme[]>;
+  /**
+   * Takes the lock of the settings of the account, so two writes of its
+   * themes read the count one after the other.
+   */
+  lockSettings(): Promise<void>;
+  /** Keeps one checked theme for the account. */
+  addTheme(theme: ImportedTheme): Promise<void>;
+  /**
+   * Removes one theme of the account, and answers `false` when it has none
+   * of that identifier. A theme family that names the theme goes back to the
+   * default family in the same write, so no setting names a removed theme.
+   */
+  removeTheme(themeId: string): Promise<boolean>;
   /** The legal documents that the account accepted, or `null` (0120). */
   consent(): Promise<ConsentRecord | null>;
   /** Stores the consent of the account to two versions, with the time. */
