@@ -14,7 +14,7 @@ allowBuilds:
 # reference and holds the exact version rule over the value below, so a range
 # still fails the gate.
 catalog:
-  '@types/node': 26.6.2
+  '@types/node': 26.6.3
   '@types/pg': 8.23.1
   '@types/react': 19.3.0
   '@types/react-dom': 19.3.0
@@ -26,7 +26,7 @@ catalog:
   pg: 8.23.0
   react: 19.3.0
   react-dom: 19.3.0
-  sharp: 0.35.4
+  sharp: 0.35.5
   yjs: 13.6.33
 # TypeScript is the one shared name with two versions. The code generator reads
 # a compiler API that the other line does not expose, so each version gets its

@@ -30,7 +30,7 @@
     "better-call": "1.4.0",
     "drizzle-orm": "catalog:",
     "fastify": "catalog:",
-    "nodemailer": "10.0.10",
+    "nodemailer": "10.0.11",
     "pg": "catalog:",
     "sharp": "catalog:"
   },
