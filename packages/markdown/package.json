@@ -20,7 +20,7 @@
     "katex": "catalog:",
     "mdast-util-to-string": "4.0.0",
     "micromark-extension-math": "3.1.0",
-    "micromark-util-types": "2.0.2",
+    "micromark-util-types": "2.0.3",
     "rehype-sanitize": "6.0.0",
     "rehype-stringify": "10.0.1",
     "remark-frontmatter": "5.0.0",
