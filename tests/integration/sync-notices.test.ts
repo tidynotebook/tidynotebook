@@ -45,7 +45,9 @@ import {
   type NoticeBounds,
 } from '@notesapp/server';
 import {
+  deferHintsSetting,
   openSyncListener,
+  syncHintsSetting,
   syncListenerName,
   type SyncHint,
 } from '@notesapp/storage-server';
@@ -422,6 +424,46 @@ await test('a rollback, a savepoint rollback and a replay send nothing', async (
       assert.notEqual(responseOf(refused.response).status, 200);
     }),
     [],
+  );
+});
+
+await test('a deferring transaction marks its hint and queues no notice', async () => {
+  // Record 0142. The unit of work of the store asks the trigger to mark, and
+  // it sends the hint itself after its commit. A session that marks and does
+  // not send therefore sends nothing, and its mark names the workspace.
+  const session = await openSession(database.migrationUrl, accountId);
+  try {
+    let mark = '';
+    assert.deepEqual(
+      await hintsOf(async () => {
+        await session.query('begin');
+        await session.query("select set_config($1, 'on', true)", [
+          deferHintsSetting,
+        ]);
+        await session.query(
+          `insert into sync_changes (workspace_id, cursor, entity_kind, entity_id, deleted)
+           values ($1, notesapp_next_cursor($1), 'membership', $2, false)`,
+          [workspaceId, accountId],
+        );
+        const rows = await session.query<{ mark: string }>(
+          'select current_setting($1, true) as mark',
+          [syncHintsSetting],
+        );
+        mark = rows[0]?.mark ?? '';
+        await session.query('commit');
+      }),
+      [],
+    );
+    assert.equal(mark, workspaceId);
+  } finally {
+    await session.close();
+  }
+  // The same write through the store sends its hint after its commit.
+  assert.deepEqual(
+    await hintsOf(async () => {
+      await newNote('deferred/after-commit.md');
+    }),
+    [`w:${workspaceId}`],
   );
 });
 

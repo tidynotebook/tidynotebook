@@ -169,6 +169,13 @@
       "when": 1790801872728,
       "tag": "0023_account_themes",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1790804416073,
+      "tag": "0024_feed_hints_after_commit",
+      "breakpoints": true
     }
   ]
 }

@@ -14,10 +14,10 @@
  */
 import pg from 'pg';
 import { openPool, poolSizes } from './pool.ts';
+import { syncHintChannel } from './sync-hints.ts';
 import { defaultConnectionTimeoutMs } from './workspace-store/index.ts';
 
-/** The PostgreSQL channel of every sync hint. */
-export const syncHintChannel = 'notesapp_sync';
+export { syncHintChannel };
 
 /**
  * The application name of the listening connection.

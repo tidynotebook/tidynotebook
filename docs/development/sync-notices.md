@@ -31,7 +31,9 @@ Records [0125](../decisions/0125-postgresql-notifies-the-sync-gateways.md),
 ## Invariants
 
 - A trigger sends a hint only after commit. A rollback and a replayed receipt
-  send nothing.
+  send nothing. The unit of work of the store marks its hints and sends them
+  after its commit, so saves do not wait for each other at commit (record
+  0142). Every other writer sends its hint from the trigger.
 - Every process admits a stream while its listener listens. No setting and no
   switch turns the stream off (record 0131).
 - The gateway reads the access of a stream before each batch and caches no

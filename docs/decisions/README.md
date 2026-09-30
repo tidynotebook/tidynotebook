@@ -173,6 +173,7 @@ and needs no record.
 | [0139](0139-the-breadcrumb-names-the-way-to-a-page-and-the-heading-names-the-page.md) | The breadcrumb names the way to a page, and the heading names the page          |
 | [0140](0140-a-published-formula-keeps-its-layout-in-style-attributes.md)              | A published formula keeps its layout in style attributes                        |
 | [0141](0141-a-person-imports-a-theme-that-the-account-keeps.md)                       | A person imports a theme that the account keeps                                 |
+| [0142](0142-the-store-sends-its-feed-hints-after-its-commit.md)                       | The store sends its feed hints after its commit                                 |
 
 Records 0001 to 0015 record the decisions D1 to D15 of
 [the v0.1 revamp plan](../plans/003-v0.1-revamp.md). Record 0016 records the
@@ -558,3 +559,8 @@ Record 0141 answers
 a theme file, the account keeps it, and one rule set of a palette holds the
 registry and every import, so a theme that cannot be used names what to
 correct. It refines record 0016.
+
+Record 0142 lets the unit of work of the store send its feed hints after its
+commit, because PostgreSQL serialized every commit that queued a notification
+through one lock held until its flush, and twenty saves waited for each other.
+Every other writer keeps the trigger. It refines record 0125.

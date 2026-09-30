@@ -21,6 +21,7 @@ export {
   type SyncListenerEvents,
   type SyncListenerOptions,
 } from './sync-listener.ts';
+export { deferHintsSetting, syncHintsSetting } from './sync-hints.ts';
 export {
   DatabaseFailure,
   defaultConnectionTimeoutMs,

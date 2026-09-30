@@ -19,8 +19,8 @@ identity store, the attachment bytes, and provisioning.
   context holds the SQL, `index.ts` is the composition root, and `admin.ts`,
   `identity-store.ts`, `profiles.ts`, `snapshots.ts`, `attachments.ts` and
   `attachment-row.ts` (0019) own the rest. `coordination.ts` holds what every
-  process shares (0121), with the stream reservations of the notices
-  (0129). `sync-listener.ts` holds the `LISTEN` of the sync hints (0125).
+  process shares (0121) and the stream reservations (0129), `sync-listener.ts`
+  the `LISTEN` of the hints (0125), `sync-hints.ts` their send (0142).
 - `src/migrate.ts` runs the migrations and exports `requiredSchemaVersion`.
 - No domain rule and no HTTP route live here. A rule lives in `packages/core`.
 
