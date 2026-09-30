@@ -53,6 +53,11 @@ export {
   orderedMarkerStyles,
 } from './ordered-markers.ts';
 export type { MathRenderReason } from './math.ts';
-export { mathLimits, MathRenderError, renderMath } from './math.ts';
+export {
+  isSafeMathStyle,
+  mathLimits,
+  MathRenderError,
+  renderMath,
+} from './math.ts';
 export type { NoteTarget, RenderMarkdownOptions } from './render.ts';
 export { headingSlug, renderMarkdown } from './render.ts';

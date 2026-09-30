@@ -101,9 +101,13 @@ export const framedDocumentContentPolicy = [
  *
  * `script-src 'none'` is the rule of decision 0031. The page holds no script,
  * so an injected one cannot run even if a later change let one through the
- * sanitizer. `style-src` has no `'unsafe-inline'`, because the page writes no
- * inline style either, and the shell policy above is the only one that needs
- * that allowance.
+ * sanitizer. `style-src` has no `'unsafe-inline'`, so a `<style>` element
+ * cannot apply. `style-src-attr` allows a `style` attribute, because KaTeX
+ * places each row and each script of a formula with one (decision 0140). The
+ * math sanitizer of `@notesapp/markdown` is the one producer of such an
+ * attribute, and it keeps a numeric size, `position: relative` and the error
+ * red only. A browser that does not know `style-src-attr` falls back to
+ * `style-src`.
  *
  * `frame-ancestors 'none'` denies framing, so no other page can put a
  * published note inside itself and read the address around it.
@@ -112,6 +116,7 @@ export const publishedDocumentContentPolicy = [
   "default-src 'none'",
   "script-src 'none'",
   "style-src 'self'",
+  "style-src-attr 'unsafe-inline'",
   "img-src 'self' https:",
   "font-src 'self'",
   "connect-src 'none'",

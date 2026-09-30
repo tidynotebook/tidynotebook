@@ -171,6 +171,7 @@ and needs no record.
 | [0137](0137-every-page-shares-the-note-column-and-its-side-region.md)                 | Every page shares the note column and its side region                           |
 | [0138](0138-a-page-names-the-page-above-it-and-accounts-belong-to-settings.md)        | A page names the page above it, and Accounts belong to Settings                 |
 | [0139](0139-the-breadcrumb-names-the-way-to-a-page-and-the-heading-names-the-page.md) | The breadcrumb names the way to a page, and the heading names the page          |
+| [0140](0140-a-published-formula-keeps-its-layout-in-style-attributes.md)              | A published formula keeps its layout in style attributes                        |
 
 Records 0001 to 0015 record the decisions D1 to D15 of
 [the v0.1 revamp plan](../plans/003-v0.1-revamp.md). Record 0016 records the
@@ -545,3 +546,8 @@ asked for one rule on 2026-09-30. It refines records 0064, 0091 and 0137.
 Record 0139 takes the name of a page out of the breadcrumb, because the
 heading below it said the same word. The breadcrumb names the way to the
 page, and the note keeps its name there. It refines records 0064, 0091 and 0138.
+
+Record 0140 lets the style attributes of a formula apply on the published
+page, because KaTeX places each row and each script with one and the page
+refused them all. The math sanitizer stays the one producer of such an
+attribute. It refines records 0031 and 0060.

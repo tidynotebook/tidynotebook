@@ -8,6 +8,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  isSafeMathStyle,
   mathLimits,
   MathRenderError,
   renderMath,
@@ -125,4 +126,31 @@ await test('the MathML branch reaches a screen reader', () => {
   const html = renderMath('x^2', false);
   assert.ok(html.includes('katex-mathml'));
   assert.ok(html.includes('aria-hidden="true"'));
+});
+
+await test('every style that the renderer writes passes the style rule', () => {
+  const html = renderMath(
+    '\\begin{aligned} a &= b^2 \\\\ \\frac{c}{d} &= \\sqrt{e_1} \\end{aligned}',
+    true,
+  );
+  const styles = [...html.matchAll(/style="([^"]*)"/g)].map(
+    (match) => match[1] ?? '',
+  );
+  assert.ok(styles.length > 0, 'an aligned block places its rows by style');
+  for (const style of styles) assert.ok(isSafeMathStyle(style), style);
+});
+
+await test('the style rule refuses what the sanitizer drops', () => {
+  assert.equal(isSafeMathStyle('height:0.68em;top:-3.06em'), true);
+  assert.equal(isSafeMathStyle('position:relative'), true);
+  assert.equal(isSafeMathStyle('color:#cc0000'), true);
+  assert.equal(isSafeMathStyle('position:fixed'), false);
+  assert.equal(isSafeMathStyle('height:0.68em;inset:0'), false);
+  assert.equal(
+    isSafeMathStyle('background:url(https://x.invalid/a.png)'),
+    false,
+  );
+  assert.equal(isSafeMathStyle('width:expression(alert(1))'), false);
+  assert.equal(isSafeMathStyle(''), false);
+  assert.equal(isSafeMathStyle('height'), false);
 });

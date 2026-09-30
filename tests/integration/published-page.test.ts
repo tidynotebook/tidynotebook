@@ -59,6 +59,7 @@ import {
   openIdentityStore,
   openWorkspaceStore,
 } from '@notesapp/storage-server';
+import { isSafeMathStyle } from '@notesapp/markdown';
 import sharp from 'sharp';
 import { createDisposableDatabase } from './support/database.ts';
 import { LogRecorder, startTestServer } from './support/server.ts';
@@ -293,6 +294,20 @@ const dayOneText = [
   '',
 ].join('\n');
 const dayOneId = await writeNote('notes/trip/day-one.md', dayOneText);
+const formulasText = [
+  '# Formulas',
+  '',
+  '$$',
+  '\\begin{aligned}',
+  'a &= b^2 + \\frac{c}{d} \\\\',
+  'e_1 &= \\sqrt{f}',
+  '\\end{aligned}',
+  '$$',
+  '',
+  '<span style="position:fixed;inset:0">Over the page</span>',
+  '',
+].join('\n');
+const formulasId = await writeNote('notes/trip/formulas.md', formulasText);
 
 /** Publishes one link and answers its token. */
 async function publish(
@@ -399,6 +414,26 @@ await test('a script and an event attribute never travel, a picture does', async
   assert.ok(page.html.includes('const kept = 1;'));
   assert.ok(page.html.includes('<table>'));
   assert.ok(page.html.includes('type="checkbox"'));
+});
+
+await test('a formula keeps the styles that place it, and an author style does not travel', async () => {
+  const page = await readPage(folder.token, { note: formulasId });
+  // Decision 0140. The page lets a style attribute apply, and no other
+  // inline style.
+  const policy = page.response.headers.get('content-security-policy') ?? '';
+  assert.ok(policy.split('; ').includes("style-src-attr 'unsafe-inline'"));
+  assert.ok(policy.split('; ').includes("style-src 'self'"));
+  assert.ok(page.html.includes('class="katex-display"'));
+  const styles = [...page.html.matchAll(/\sstyle="([^"]*)"/g)].map(
+    (match) => match[1] ?? '',
+  );
+  // KaTeX places each row of the aligned block and each script by style.
+  assert.ok(styles.length > 0, 'the formula carries its layout');
+  for (const style of styles) assert.ok(isSafeMathStyle(style), style);
+  assert.ok(!page.html.includes('position:fixed'));
+  assert.ok(!page.html.includes('<style'));
+  // The words of the dropped element stay.
+  assert.ok(page.html.includes('Over the page'));
 });
 
 await test('a mermaid fence stays a placeholder on the server path', async () => {

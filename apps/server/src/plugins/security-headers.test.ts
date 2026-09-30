@@ -108,7 +108,14 @@ await test('the published page denies framing and every script', () => {
   const policy = publishedDocumentContentPolicy;
   assert.ok(policy.includes("frame-ancestors 'none'"));
   assert.ok(policy.includes("script-src 'none'"));
-  assert.ok(!policy.includes('unsafe-inline'));
+  // Decision 0140. The one inline allowance is the style attribute of a
+  // formula. No script, no style element and no other directive takes it.
+  const inline = policy
+    .split('; ')
+    .filter((directive) => directive.includes('unsafe-inline'));
+  assert.deepEqual(inline, ["style-src-attr 'unsafe-inline'"]);
+  assert.ok(!policy.includes('style-src-elem'));
+  assert.ok(!policy.includes('unsafe-hashes'));
   assert.ok(!policy.includes('unsafe-eval'));
   assert.ok(policy.startsWith("default-src 'none'"));
   // The page loads the built stylesheet and its fonts, and the pictures of its

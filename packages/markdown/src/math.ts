@@ -137,6 +137,29 @@ function sanitizeStyleValue(raw: string): string | null {
   return kept.length === 0 ? null : kept.join(';');
 }
 
+/**
+ * Reports whether a whole style attribute value is one that the math
+ * sanitizer writes.
+ *
+ * Every declaration must pass the same rule that `sanitizeStyleValue` keeps,
+ * so a surface that lets a style attribute apply can hold its served result
+ * to this sanitizer (decision 0140). An empty value, and a part with no
+ * colon, is not one this sanitizer writes.
+ */
+export function isSafeMathStyle(value: string): boolean {
+  const parts = value.split(';');
+  return (
+    value.trim() !== '' &&
+    parts.every((part) => {
+      const colon = part.indexOf(':');
+      return (
+        colon !== -1 &&
+        isSafeStyleDeclaration(part.slice(0, colon), part.slice(colon + 1))
+      );
+    })
+  );
+}
+
 /** A class token the KaTeX HTML emitter writes. */
 const classToken = /^[a-zA-Z0-9_-]+$/;
 
