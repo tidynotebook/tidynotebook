@@ -33,6 +33,7 @@
  */
 import { syntaxTree } from '@codemirror/language';
 import {
+  Prec,
   RangeSet,
   StateField,
   type EditorState,
@@ -564,12 +565,22 @@ class RichWidgetType extends WidgetType {
 
 /** The decorations and the atomic ranges of one state. */
 export type RichWidgetSet = {
-  readonly decorations: DecorationSet;
+  /**
+   * The widgets, each over the whole range of its source. The extension
+   * gives them a higher precedence than every text decoration, because a
+   * text decoration that replaces the start of a widget range leaves
+   * CodeMirror a widget that is open at its start, and CodeMirror draws such
+   * a range as the rest of the decoration before it and never draws the
+   * widget (issue 204).
+   */
+  readonly widgets: DecorationSet;
+  /** The source that the preview hides without a widget in its place. */
+  readonly hides: DecorationSet;
   readonly atomic: RangeSet<Decoration>;
 };
 
 /**
- * Builds the block decorations of one state.
+ * Builds the widgets and the hidden source of one state.
  *
  * A region whose range the selection touches is left out, so its source
  * shows and stays editable. The setext heading underline is hidden here as
@@ -582,6 +593,7 @@ export function buildRichWidgets(
   const selection = state.selection.main;
   const touches = (from: number, to: number): boolean =>
     selection.from <= to && selection.to >= from;
+  const widgetItems: Range<Decoration>[] = [];
   const items: Range<Decoration>[] = [];
   const atomicItems: Range<Decoration>[] = [];
   for (const widget of findRichRegions(state)) {
@@ -591,7 +603,7 @@ export function buildRichWidgets(
       widget: new RichWidgetType(widget, resolvers),
       block: widget.block,
     });
-    items.push(decoration.range(widget.from, widget.to));
+    widgetItems.push(decoration.range(widget.from, widget.to));
     atomicItems.push(decoration.range(widget.from, widget.to));
   }
   for (const marker of findHardBreakMarkers(state)) {
@@ -617,7 +629,8 @@ export function buildRichWidgets(
     }
   }
   return {
-    decorations: Decoration.set(items, true),
+    widgets: Decoration.set(widgetItems, true),
+    hides: Decoration.set(items, true),
     atomic: RangeSet.of(atomicItems, true),
   };
 }
@@ -800,7 +813,10 @@ export function richWidgets(resolvers: RichWidgetResolvers = {}): Extension {
       return buildRichWidgets(transaction.state, resolvers);
     },
     provide: (self) => [
-      EditorView.decorations.from(self, (value) => value.decorations),
+      // A widget replaces its whole source, so no text decoration of the
+      // live preview may cut into its range (issue 204).
+      Prec.high(EditorView.decorations.from(self, (value) => value.widgets)),
+      EditorView.decorations.from(self, (value) => value.hides),
       EditorView.atomicRanges.of(
         (view) => view.state.field(self, false)?.atomic ?? RangeSet.empty,
       ),

@@ -69,12 +69,12 @@ produces. `unified-diff.test.ts` is the pattern for a pure module.
   outline come from the Lezer tree.
 - A bullet and a task box hold no caret (0033, 0132). An ordered marker shows
   its source under the selection (0092). Others follow the reveal rule.
-- No widget outside an image, a Mermaid diagram and display math. A table
-  stays text; only its model and writer change its rows and columns (0096).
+- No widget outside an image, a Mermaid diagram and display math, and no text
+  decoration above a widget (204). A table stays text; only its model and
+  writer change its rows and columns (0096).
 - No single dollar inline math: use `$$...$$` or `\(...\)`.
-- No network call, no database access, no token storage, and no import of
-  `@notesapp/api-client`. No colour value: the theme adapter reads `--notes-*`
-  and `--notes-syntax-*`.
+- No network call, no database, no token storage, no `@notesapp/api-client`.
+  No colour value: the theme adapter reads `--notes-*` and `--notes-syntax-*`.
 - No replacement of the editor document during a React render, a theme
   change, or a preview update.
 

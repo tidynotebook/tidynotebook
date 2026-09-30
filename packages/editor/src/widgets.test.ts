@@ -8,13 +8,16 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { EditorState } from '@codemirror/state';
+import { EditorState, RangeSet, type RangeValue } from '@codemirror/state';
+import { EditorView, type DecorationSet } from '@codemirror/view';
 import { noteMarkdown, parsedWhole } from './language.ts';
+import { buildPreview, livePreview } from './live-preview.ts';
 import {
   attachmentIdOf,
   buildRichWidgets,
   findRichRegions,
   richLimits,
+  richWidgets,
   shouldPreserveAsSource,
   widgetView,
   type RichWidget,
@@ -119,13 +122,13 @@ await test('a widget the selection touches is dropped so its source shows', () =
   const doc = `text\n\n![shot](${attachment})\n\nmore\n`;
   const away = buildRichWidgets(stateOf(doc, 0), {});
   let count = 0;
-  away.decorations.between(0, doc.length, () => {
+  away.widgets.between(0, doc.length, () => {
     count += 1;
   });
   assert.equal(count, 1);
   const inside = buildRichWidgets(stateOf(doc, 10), {});
   let insideCount = 0;
-  inside.decorations.between(0, doc.length, () => {
+  inside.widgets.between(0, doc.length, () => {
     insideCount += 1;
   });
   assert.equal(insideCount, 0);
@@ -145,14 +148,14 @@ await test('a setext underline is hidden together with the break above it', () =
   const doc = 'Title\n=====\n\ntail\n';
   const set = buildRichWidgets(stateOf(doc, doc.length), {});
   const hidden: Array<[number, number]> = [];
-  set.decorations.between(0, doc.length, (from, to) => {
+  set.hides.between(0, doc.length, (from, to) => {
     hidden.push([from, to]);
   });
   assert.deepEqual(hidden, [[5, 11]]);
   // A cursor on either line brings the underline back.
   const revealed = buildRichWidgets(stateOf(doc, 2), {});
   let count = 0;
-  revealed.decorations.between(0, doc.length, () => {
+  revealed.hides.between(0, doc.length, () => {
     count += 1;
   });
   assert.equal(count, 0);
@@ -162,7 +165,7 @@ await test('a fenced code block hides its opening and closing fence lines', () =
   const doc = '```js\nconst a = 1;\n```\n\ntail\n';
   const away = buildRichWidgets(stateOf(doc, doc.indexOf('tail')), {});
   const hidden: Array<[number, number]> = [];
-  away.decorations.between(0, doc.length, (from, to) => {
+  away.hides.between(0, doc.length, (from, to) => {
     hidden.push([from, to]);
   });
   // The opening line with its trailing break, and the closing line with the
@@ -176,7 +179,7 @@ await test('a fenced code block hides its opening and closing fence lines', () =
   // A cursor inside the block brings the fences back.
   const inside = buildRichWidgets(stateOf(doc, 8), {});
   let count = 0;
-  inside.decorations.between(0, doc.length, () => {
+  inside.widgets.between(0, doc.length, () => {
     count += 1;
   });
   assert.equal(count, 0);
@@ -185,19 +188,24 @@ await test('a fenced code block hides its opening and closing fence lines', () =
 await test('a mermaid fence renders as a diagram and keeps no fence-line hide', () => {
   const doc = '```mermaid\ngraph TD;\n```\n\ntail\n';
   const away = buildRichWidgets(stateOf(doc, doc.indexOf('tail')), {});
-  let count = 0;
-  away.decorations.between(0, doc.length, () => {
-    count += 1;
+  let widgets = 0;
+  away.widgets.between(0, doc.length, () => {
+    widgets += 1;
+  });
+  let hides = 0;
+  away.hides.between(0, doc.length, () => {
+    hides += 1;
   });
   // Only the diagram widget, and no separate fence-line hides.
-  assert.equal(count, 1);
+  assert.equal(widgets, 1);
+  assert.equal(hides, 0);
 });
 
 await test('an unclosed fence hides only its opening line', () => {
   const doc = 'intro\n\n```js\nconst x = 1;\n';
   const away = buildRichWidgets(stateOf(doc, 0), {});
   const hidden: Array<[number, number]> = [];
-  away.decorations.between(0, doc.length, (from, to) => {
+  away.hides.between(0, doc.length, (from, to) => {
     hidden.push([from, to]);
   });
   assert.deepEqual(hidden, [[7, 13]]);
@@ -268,12 +276,15 @@ await test('an attachment whose bytes are missing keeps its source', () => {
 
 /** The source of every range that one state hides or replaces. */
 function hiddenSources(doc: string, head: number): string[] {
-  const { decorations } = buildRichWidgets(stateOf(doc, head), {});
-  const found: string[] = [];
-  decorations.between(0, doc.length, (from, to) => {
-    found.push(doc.slice(from, to));
-  });
-  return found;
+  const { widgets, hides } = buildRichWidgets(stateOf(doc, head), {});
+  const found: Array<[number, number]> = [];
+  for (const set of [widgets, hides])
+    set.between(0, doc.length, (from, to) => {
+      found.push([from, to]);
+    });
+  return found
+    .sort((left, right) => left[0] - right[0])
+    .map(([from, to]) => doc.slice(from, to));
 }
 
 await test('a new line inside a paragraph keeps its own line', () => {
@@ -305,9 +316,9 @@ await test('a hard break keeps its line break and hides its marker', () => {
   // The marker is notation, so it goes while the caret is away and the line
   // break it asks for stays (decision 0107).
   const doc = 'One line.  \nKept apart.\n\nAway.\n';
-  const { decorations } = buildRichWidgets(stateOf(doc, doc.length - 1), {});
+  const { hides } = buildRichWidgets(stateOf(doc, doc.length - 1), {});
   const found: string[] = [];
-  decorations.between(0, doc.length, (from, to) => {
+  hides.between(0, doc.length, (from, to) => {
     found.push(doc.slice(from, to));
   });
   assert.deepEqual(found, ['  ']);
@@ -315,9 +326,9 @@ await test('a hard break keeps its line break and hides its marker', () => {
 
 await test('a backslash break hides the backslash only', () => {
   const doc = 'One line.\\\nKept apart.\n\nAway.\n';
-  const { decorations } = buildRichWidgets(stateOf(doc, doc.length - 1), {});
+  const { hides } = buildRichWidgets(stateOf(doc, doc.length - 1), {});
   const found: [number, number][] = [];
-  decorations.between(0, doc.length, (from, to) => {
+  hides.between(0, doc.length, (from, to) => {
     found.push([from, to]);
   });
   assert.deepEqual(found, [[9, 10]]);
@@ -326,9 +337,9 @@ await test('a backslash break hides the backslash only', () => {
 
 await test('a hard break shows its marker under the caret', () => {
   const doc = 'One line.\\\nKept apart.\n';
-  const { decorations } = buildRichWidgets(stateOf(doc, 3), {});
+  const { hides } = buildRichWidgets(stateOf(doc, 3), {});
   const found: [number, number][] = [];
-  decorations.between(0, doc.length, (from, to) => {
+  hides.between(0, doc.length, (from, to) => {
     found.push([from, to]);
   });
   assert.deepEqual(found, []);
@@ -353,4 +364,77 @@ await test('a shortcut image reads its own alt text as the label', () => {
 await test('a reference image with no definition stays source', () => {
   const doc = '![Missing][nowhere]\n';
   assert.deepEqual(findRichRegions(stateOf(doc, doc.length)), []);
+});
+
+/**
+ * The widgets that the view draws for one document, from every decoration
+ * source of the note surface in the order of its precedence.
+ *
+ * The view walks the sources with `RangeSet.spans`. A replacing range that
+ * reaches the walk open at its start, because a source of a higher
+ * precedence replaced the start of it, is drawn as the rest of the range
+ * before it, so its widget never appears. This counts a widget only when the
+ * walk reaches it whole, which is when the view makes its element.
+ */
+function drawnWidgets(doc: string): string[] {
+  const resolvers = { resolveAttachment: (destination: string) => destination };
+  const state = parsedWhole(
+    EditorState.create({
+      doc,
+      extensions: [noteMarkdown(), livePreview(), richWidgets(resolvers)],
+      selection: { anchor: 0 },
+    }),
+  );
+  const preview = buildPreview(
+    state,
+    [{ from: 0, to: doc.length }],
+    state.selection.main,
+  ).decorations;
+  // The one plugin source is the live preview, so the view answers it.
+  const view = { plugin: () => ({ decorations: preview }) };
+  const sources = state.facet(EditorView.decorations);
+  assert.equal(
+    sources.filter((source) => typeof source === 'function').length,
+    1,
+  );
+  const sets: DecorationSet[] = sources.map((source) => {
+    if (typeof source !== 'function') return source;
+    const answer: unknown = Reflect.apply(source, undefined, [view]);
+    assert.ok(answer === preview);
+    return preview;
+  });
+  const drawn: string[] = [];
+  RangeSet.spans(sets, 0, doc.length, {
+    span: () => {},
+    point: (from, to, value: RangeValue, active, openStart) => {
+      const widget: unknown = Reflect.get(Reflect.get(value, 'spec'), 'widget');
+      if (widget === undefined || openStart > active.length) return;
+      drawn.push(doc.slice(from, to));
+    },
+  });
+  return drawn;
+}
+
+/** One attachment image as the note menu writes it. */
+function attached(index: number): string {
+  return `![pic${String(index)}.png](attachments/0a1b2c3d-4e5f-4a6b-8c9d-0e1f2a3b4c5${String(index)}-pic${String(index)}.png)`;
+}
+
+await test('every image of one line draws, next to each other', () => {
+  // Issue 204. Two, three and four images with no space between them.
+  for (const count of [2, 3, 4]) {
+    const images = Array.from({ length: count }, (_, index) => attached(index));
+    const doc = `Top line\n\n${images.join('')}\n`;
+    assert.deepEqual(drawnWidgets(doc), images, `${String(count)} images`);
+  }
+});
+
+await test('an image and inline math inside a sentence draw whole', () => {
+  const doc = `see ${attached(1)} and $$x^2$$ here\n`;
+  assert.deepEqual(drawnWidgets(doc), [attached(1), '$$x^2$$']);
+});
+
+await test('an image alone on its line still draws as a block', () => {
+  const doc = `Top line\n\n${attached(1)}\n\n${attached(2)}\n`;
+  assert.deepEqual(drawnWidgets(doc), [attached(1), attached(2)]);
 });
