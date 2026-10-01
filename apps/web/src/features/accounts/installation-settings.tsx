@@ -192,7 +192,11 @@ function MailSettingsForm({
   }, [savedKey]);
   const changed = mailFormChanged(saved, form);
   const stored = mail.source === 'application';
-  const keepsPassword = mail.passwordStored && form.username.trim() !== '';
+  // A saved password belongs to its user name, so a new user name needs one.
+  const keepsPassword =
+    mail.passwordStored &&
+    form.username.trim() !== '' &&
+    form.username.trim() === mail.username;
   const lostPassword = stored && mail.username !== null && !mail.passwordStored;
 
   const update = (change: Partial<MailForm>): void => {

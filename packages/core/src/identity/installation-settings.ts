@@ -142,6 +142,11 @@ export function characterCount(text: string): number {
   return Array.from(text).length;
 }
 
+/** Whether a text holds a zero character, which the database cannot store. */
+export function holdsZeroCharacter(text: string): boolean {
+  return text.includes('\u0000');
+}
+
 /** A blank of a template: a word or words in double braces. */
 const templateBlank = /\{\{[^{}\n]*\}\}/g;
 
@@ -199,6 +204,7 @@ export function mailHost(value: string): string | null {
  */
 export function mailSender(value: string): string | null {
   const sender = value.trim();
+  if (holdsZeroCharacter(sender)) return null;
   const length = characterCount(sender);
   if (length < 3 || length > maxSenderLength) return null;
   if (/[\r\n]/.test(sender)) return null;
@@ -256,6 +262,8 @@ export function readMailSettings(input: MailSettingsInput):
   if (sender === null) return { ok: false, problem: 'sender' };
   const username = input.username?.trim() ?? '';
   const password = input.password ?? '';
+  if (holdsZeroCharacter(username)) return { ok: false, problem: 'username' };
+  if (holdsZeroCharacter(password)) return { ok: false, problem: 'password' };
   // A credential past its bound is refused and never cut, because a cut
   // password signs in as another password.
   if (characterCount(username) > maxSenderLength)
@@ -312,6 +320,13 @@ export function readLegalDocument(
 ):
   | { readonly ok: true; readonly value: StoredLegalDocument }
   | { readonly ok: false; readonly problem: LegalDocumentProblem } {
+  // The database stores no zero character, so the boundary refuses it.
+  if (
+    holdsZeroCharacter(input.version) ||
+    holdsZeroCharacter(input.text ?? '') ||
+    holdsZeroCharacter(input.url ?? '')
+  )
+    return { ok: false, problem: { kind: 'invalid' } };
   const version = input.version.trim();
   // The version is counted in code points, as the contract and the database
   // count it.
@@ -398,11 +413,14 @@ export function setMailSettings(
     if (environment.mail)
       return fail<StoredInstallationSettings>('setting_locked');
     const stored = await tx.settings();
+    // A kept password belongs to the user name that it was saved with, so a
+    // new user name needs its own password.
     const kept =
       password.kind === 'keep'
-        ? settings.username === null
+        ? settings.username === null ||
+          stored.mail?.username !== settings.username
           ? null
-          : (stored.mail?.passwordSealed ?? null)
+          : (stored.mail.passwordSealed ?? null)
         : password.sealed;
     // A user name signs in with a password, so one with no password, neither
     // new nor kept, is refused rather than stored as an empty sign-in.

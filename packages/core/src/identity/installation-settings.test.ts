@@ -116,6 +116,12 @@ await test('the mail settings name their first invalid field', () => {
     mailSender(`${emoji.repeat(300)} <a@example.com>`) !== null,
     true,
   );
+  // The database stores no zero character, so the boundary refuses one.
+  assert.deepEqual(readMailSettings({ ...input, password: 'a\u0000b' }), {
+    ok: false,
+    problem: 'password',
+  });
+  assert.equal(mailSender('a\u0000@example.com'), null);
   // A server with no sign-in keeps no password.
   const anonymous = readMailSettings({ ...input, username: ' ' });
   assert.equal(anonymous.ok && anonymous.value.username, null);
@@ -172,6 +178,8 @@ await test('a legal document is a finished text or a full address', () => {
     { kind: 'address', text: null, url: 'javascript:alert(1)', version: '1' },
     { kind: 'address', text: null, url: '/legal/terms', version: '1' },
     { kind: 'file', text: 'x', url: null, version: '1' },
+    { kind: 'text', text: 'a\u0000b', url: null, version: '1' },
+    { kind: 'text', text: 'x', url: null, version: '1\u0000' },
   ])
     assert.deepEqual(readLegalDocument(input), invalid, input.kind);
   assert.equal(documentAddress('ftp://example.com'), null);

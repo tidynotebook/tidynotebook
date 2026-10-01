@@ -577,6 +577,18 @@ await test('a kept password stays only with its user name', async () => {
   await setMailSettings(store, actorFor(ada), mailOf, sealed, none);
   await setMailSettings(store, actorFor(ada), mailOf, keep, none);
   assert.equal(store.settings.mail?.passwordSealed, 'sealed');
+  // A new user name does not take the password of the old one.
+  assert.deepEqual(
+    await setMailSettings(
+      store,
+      actorFor(ada),
+      { ...mailOf, username: 'someone-else' },
+      keep,
+      none,
+    ),
+    { ok: false, error: { code: 'mail_password_required', fileIds: [] } },
+  );
+  assert.equal(store.settings.mail?.username, 'notes');
   await setMailSettings(
     store,
     actorFor(ada),
