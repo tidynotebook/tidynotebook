@@ -178,6 +178,7 @@ and needs no record.
 | [0144](0144-the-store-sends-its-feed-hints-after-its-commit.md)                       | The store sends its feed hints after its commit                                 |
 | [0145](0145-a-click-on-a-picture-opens-the-image-viewer.md)                           | A click on a picture opens the image viewer                                     |
 | [0146](0146-a-closed-link-page-says-what-to-do-next.md)                               | A closed link page says what to do next                                         |
+| [0147](0147-a-table-sizes-to-its-text-and-its-controls-sit-on-its-edge.md)            | A table sizes to its text and its controls sit on its edge                      |
 
 Records 0001 to 0015 record the decisions D1 to D15 of
 [the v0.1 revamp plan](../plans/003-v0.1-revamp.md). Record 0016 records the
@@ -583,3 +584,9 @@ picture still opens its source. It refines record 0002.
 Record 0146 lets the page of a link that opens nothing and the page of a
 link that asks for a password say what the reader can do next, in one more
 sentence that is the same for every cause. It refines record 0047.
+
+Record 0147 follows
+[design 018](../design/018-a-table-that-reads-like-a-document.md). A cell hides
+its padding and wraps, so a column takes the width of its text. The handles
+become grips on the edge of the table, a pressed grip marks its row or column,
+and the add bars come back. It refines records 0095 and 0098.
