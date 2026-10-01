@@ -1,0 +1,82 @@
+get:
+  operationId: getLegalDocumentSettings
+  summary: Read one legal document of the installation to change it.
+  description: >-
+    Only an administrator reads the stored text or address of a document and
+    the template of the document, with the facts that the server knows
+    already filled in (record 0148).
+  tags:
+    - administration
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+    - $ref: '../components/parameters/LegalDocumentName.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/LegalDocumentSettings.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'
+put:
+  operationId: updateLegalDocument
+  summary: Set one legal document of the installation.
+  description: >-
+    Only an administrator sets a document: a Markdown text that this server
+    serves, or an external address, and its version. The documents apply
+    when both exist. A text that still holds a blank of the template is
+    refused. A new version asks every account to accept again (record 0120).
+  tags:
+    - administration
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+    - $ref: '../components/parameters/LegalDocumentName.yaml'
+  requestBody:
+    $ref: '../components/requestBodies/LegalDocumentUpdate.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/Installation.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../components/responses/Forbidden.yaml'
+    '409':
+      $ref: '../components/responses/SettingConflict.yaml'
+    '413':
+      $ref: '../components/responses/PayloadTooLarge.yaml'
+    '415':
+      $ref: '../components/responses/UnsupportedMediaType.yaml'
+    '422':
+      $ref: '../components/responses/LegalDocumentUnfinished.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'
+delete:
+  operationId: removeLegalDocument
+  summary: Remove one legal document of the installation.
+  description: >-
+    Only an administrator removes a document. The server refuses while the
+    server environment sets the documents, and while open registration needs
+    them (record 0114).
+  tags:
+    - administration
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+    - $ref: '../components/parameters/LegalDocumentName.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/Installation.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../components/responses/Forbidden.yaml'
+    '409':
+      $ref: '../components/responses/SettingConflict.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

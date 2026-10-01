@@ -1,0 +1,32 @@
+type: object
+description: One stored legal document, as the administrator changes it.
+additionalProperties: false
+required:
+  - kind
+  - text
+  - url
+  - version
+properties:
+  kind:
+    allOf:
+      - $ref: './LegalDocumentKind.yaml'
+    readOnly: true
+  text:
+    type:
+      - string
+      - 'null'
+    readOnly: true
+    description: The Markdown text, for the kind text.
+    maxLength: 262144
+  url:
+    type:
+      - string
+      - 'null'
+    readOnly: true
+    description: The address, for the kind address.
+    maxLength: 2048
+  version:
+    type: string
+    readOnly: true
+    minLength: 1
+    maxLength: 64

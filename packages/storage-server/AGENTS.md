@@ -17,10 +17,10 @@ identity store, the attachment bytes, and provisioning.
   unit of work, `publication-transaction.ts` the read-only one of the reader
   path and `publication-unlock.ts` its one write (0031), one repository per
   context holds the SQL, `index.ts` is the composition root, and `admin.ts`,
-  `identity-store.ts`, `profiles.ts`, `snapshots.ts`, `attachments.ts` and
-  `attachment-row.ts` (0019) own the rest. `coordination.ts` holds what every
-  process shares (0121) and the stream reservations (0129), `sync-listener.ts`
-  the `LISTEN` of the hints (0125), `sync-hints.ts` their send (0144).
+  `identity-store.ts`, `profiles.ts`, `snapshots.ts`, `attachments.ts`,
+  `attachment-row.ts` (0019) and `installation-settings-row.ts` (0148) own the
+  rest. `coordination.ts` holds what every process shares (0121, 0129), and
+  `sync-listener.ts` and `sync-hints.ts` the hints (0125, 0144).
 - `src/migrate.ts` runs the migrations and exports `requiredSchemaVersion`.
 - No domain rule and no HTTP route live here. A rule lives in `packages/core`.
 

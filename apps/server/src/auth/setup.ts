@@ -100,8 +100,8 @@ export function createSetupHandlers(
         openRegistration: await openRegistration(identity),
         // A reset link goes by mail, so a reset needs a transport (record
         // 0141).
-        passwordReset: dependencies.open.mail !== null,
-        legalDocuments: dependencies.open.documents,
+        passwordReset: await dependencies.open.mail.available(),
+        legalDocuments: await dependencies.open.documents(),
       },
     }),
 
@@ -173,7 +173,7 @@ export function createSetupHandlers(
       if (!address.ok) throw invitationRefused();
       // An invited person accepts the current terms and privacy notice when
       // the installation names them, as a sign-up does (record 0120).
-      const documents = dependencies.open.documents;
+      const documents = await dependencies.open.documents();
       const consent = consentOf(request.body);
       if (documents !== null && !consentMatches(documents, consent))
         throw new DomainProblemError({

@@ -1,0 +1,42 @@
+type: object
+description: The mail transport that an administrator sets.
+additionalProperties: false
+required:
+  - host
+  - port
+  - security
+  - sender
+properties:
+  host:
+    type: string
+    description: The host name of the mail server.
+    minLength: 1
+    maxLength: 253
+  port:
+    type: integer
+    description: The port of the mail server.
+    minimum: 1
+    maximum: 65535
+  security:
+    $ref: './MailSecurity.yaml'
+  username:
+    type: string
+    description: >-
+      The user name that signs in to the mail server. Leave it out for a
+      server that takes mail with no sign-in.
+    minLength: 1
+    maxLength: 320
+  password:
+    type: string
+    writeOnly: true
+    description: >-
+      The password of the user name. Leave it out to keep the stored one.
+    minLength: 1
+    maxLength: 1024
+  sender:
+    type: string
+    description: >-
+      The sender of every message, an address or a name and an address, for
+      example NotesApp <no-reply@notes.example.com>.
+    minLength: 3
+    maxLength: 320

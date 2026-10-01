@@ -15,6 +15,12 @@ import type {
   RegistrationPolicy,
 } from './installation.ts';
 import type {
+  LegalDocumentName,
+  StoredInstallationSettings,
+  StoredLegalDocument,
+  StoredMailSettings,
+} from './installation-settings.ts';
+import type {
   ReportReason,
   ReportedLinkState,
 } from '../publications/report.ts';
@@ -120,6 +126,15 @@ export type InstallationTransaction = {
   registrationPolicy(): Promise<RegistrationPolicy>;
   /** Changes the registration policy of the installation. */
   setRegistrationPolicy(policy: RegistrationPolicy): Promise<void>;
+  /** The mail transport and the legal documents (record 0148). */
+  settings(): Promise<StoredInstallationSettings>;
+  /** Sets the mail transport, or removes it with `null`. */
+  setMailSettings(mail: StoredMailSettings | null): Promise<void>;
+  /** Sets one legal document, or removes it with `null`. */
+  setLegalDocument(
+    name: LegalDocumentName,
+    document: StoredLegalDocument | null,
+  ): Promise<void>;
 };
 
 /** Opens the transactions of the installation use cases. */
@@ -170,4 +185,13 @@ export type RegistrationStore = {
   invitationAddress(tokenDigest: string): Promise<string | null>;
   /** The registration policy, which is a public fact of the installation. */
   registrationPolicy(): Promise<RegistrationPolicy>;
+};
+
+/**
+ * The mail transport and the legal documents (record 0148), which the server
+ * reads with no session: to send a message that a stranger causes and to
+ * serve a legal page. The password stays sealed.
+ */
+export type InstallationSettingsReader = {
+  installationSettings(): Promise<StoredInstallationSettings>;
 };

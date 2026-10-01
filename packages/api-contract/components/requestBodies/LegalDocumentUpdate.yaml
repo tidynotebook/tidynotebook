@@ -1,0 +1,6 @@
+description: The legal document to set.
+required: true
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/LegalDocumentInput.yaml'

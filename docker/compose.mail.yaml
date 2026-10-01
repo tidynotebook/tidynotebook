@@ -6,6 +6,9 @@
 #
 #   COMPOSE_FILE=docker-compose.yml:docker/compose.mail.yaml
 #
+# An administrator can set the mail server in the application instead, with
+# no file and no restart. This override wins over that page and locks it.
+#
 # Write the URL, for example `smtps://user:password@smtp.example.com:465`, to
 # `smtp_url` in NOTESAPP_SECRETS_DIR with mode 0600 and owner uid 10001, and
 # set NOTESAPP_MAIL_FROM in `.env`. See docs/guide/self-hosting.md.

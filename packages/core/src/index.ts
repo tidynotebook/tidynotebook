@@ -47,6 +47,7 @@ export {
 } from './identity/installation.ts';
 export type {
   AccountRecord,
+  InstallationSettingsReader,
   InstallationStore,
   InstallationTransaction,
   InvitationRecord,
@@ -414,6 +415,41 @@ export type {
   LegalDocument,
   LegalDocuments,
 } from './identity/legal.ts';
+export type {
+  InstallationEnvironment,
+  LegalDocumentInput,
+  LegalDocumentName,
+  LegalDocumentProblem,
+  MailSecurity,
+  MailSettingsInput,
+  MailSettingsProblem,
+  StoredInstallationSettings,
+  StoredLegalDocument,
+  StoredMailSettings,
+} from './identity/installation-settings.ts';
+export {
+  blankLabel,
+  documentAddress,
+  emptyInstallationSettings,
+  fillBlanks,
+  legalDocumentNames,
+  mailHost,
+  mailSecurities,
+  mailSender,
+  maxLegalTextBytes,
+  readInstallationSettings,
+  readLegalDocument,
+  readMailSettings,
+  removeMailSettings,
+  senderAddress,
+  setLegalDocument,
+  setMailSettings,
+  settingsReadiness,
+  templateBlanks,
+  utf8Length,
+} from './identity/installation-settings.ts';
+export type { LegalTemplateFacts } from './identity/legal-templates.ts';
+export { legalTemplate } from './identity/legal-templates.ts';
 export {
   acceptLegalDocuments,
   consentMatches,

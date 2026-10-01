@@ -1,0 +1,7 @@
+description: >-
+  The test message did not go. The code is mail_failed, and the reason
+  member names the kind of the failure.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/ProblemDetails.yaml'

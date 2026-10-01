@@ -55,7 +55,7 @@ import type { ServerConfig } from '../config.ts';
 import type { ProblemCode } from '../plugins/problem.ts';
 import { createProblem, problemMediaType } from '../plugins/problem.ts';
 import type { ProtocolAdapter, ProtocolResult } from '../plugins/register.ts';
-import type { MailTransport } from './mail.ts';
+import { noMailer, type Mailer, type MailMessage } from './mail.ts';
 import { passwordChangedMessage, passwordResetMessage } from './messages.ts';
 import { applicationOrigins } from '../served-origins.ts';
 
@@ -103,12 +103,13 @@ export type AuthLogRecord = {
 /** What the auth instance needs besides the validated configuration. */
 export type AuthOptions = {
   /**
-   * Sends the reset message and the notice after a reset, or `null` when no
-   * transport is configured. The composition gives the budgeted transport of
+   * Sends the reset message and the notice after a reset, or `null` for a
+   * process that sends no mail. The composition gives the budgeted mailer of
    * `mail.ts`, because a person with no session asks for a reset (record
-   * 0141).
+   * 0141). The mailer asks for the transport at each message, so a transport
+   * that an administrator sets later applies with no restart (record 0148).
    */
-  readonly mail: MailTransport | null;
+  readonly mail: Mailer | null;
   /**
    * Whether an identity user may start a session (record 0111).
    *
@@ -229,13 +230,18 @@ function buildAuth(
   database: ReturnType<typeof drizzle>,
   pending: Set<Promise<void>>,
 ) {
-  const mail = options.mail;
+  const mail = options.mail ?? noMailer;
   // A message that the answer does not wait for. Its failure reaches the
   // operator through the log, with no address and no token. The close of the
   // instance waits for every message that is still on its way, so a stop
   // does not drop one.
-  const sendLater = (sending: Promise<void>): void => {
-    const settled = sending
+  const sendLater = (message: () => MailMessage): void => {
+    const settled = (async (): Promise<void> => {
+      // With no transport now, the reset sends nothing and logs nothing. The
+      // sign-in page offers no reset then, so nobody waits for the message.
+      if (!(await mail.available())) return;
+      await mail.send(message());
+    })()
       .catch(() => {
         options.log?.({
           level: 'error',
@@ -329,49 +335,39 @@ function buildAuth(
       requireEmailVerification: true,
       revokeSessionsOnPasswordReset: true,
       resetPasswordTokenExpiresIn: resetLifetimeHours * 60 * 60,
-      ...(mail === null
-        ? {}
-        : {
-            // The link opens the reset page of the application with the token
-            // in the fragment, so no server log and no `Referer` header holds
-            // it. The address that the library builds is not used.
-            //
-            // The answer does not wait for the mail server. Only an address
-            // with an account sends a message, so an answer that waited would
-            // tell a stranger by its time which address has one.
-            sendResetPassword: (data: {
-              user: { email: string };
-              token: string;
-            }): Promise<void> => {
-              sendLater(
-                mail.send(
-                  passwordResetMessage({
-                    to: data.user.email,
-                    origin: config.origin,
-                    link: resetPasswordLink(config.origin, data.token),
-                    lifetimeHours: resetLifetimeHours,
-                  }),
-                ),
-              );
-              return Promise.resolve();
-            },
-            // The owner of the address learns that the password changed, and
-            // the library ends every session of the account. A mail server
-            // that fails does not undo the reset.
-            onPasswordReset: (data: {
-              user: { email: string };
-            }): Promise<void> => {
-              sendLater(
-                mail.send(
-                  passwordChangedMessage({
-                    to: data.user.email,
-                    origin: config.origin,
-                  }),
-                ),
-              );
-              return Promise.resolve();
-            },
+      // The link opens the reset page of the application with the token in
+      // the fragment, so no server log and no `Referer` header holds it. The
+      // address that the library builds is not used.
+      //
+      // The answer does not wait for the mail server. Only an address with an
+      // account sends a message, so an answer that waited would tell a
+      // stranger by its time which address has one.
+      sendResetPassword: (data: {
+        user: { email: string };
+        token: string;
+      }): Promise<void> => {
+        sendLater(() =>
+          passwordResetMessage({
+            to: data.user.email,
+            origin: config.origin,
+            link: resetPasswordLink(config.origin, data.token),
+            lifetimeHours: resetLifetimeHours,
           }),
+        );
+        return Promise.resolve();
+      },
+      // The owner of the address learns that the password changed, and the
+      // library ends every session of the account. A mail server that fails
+      // does not undo the reset.
+      onPasswordReset: (data: { user: { email: string } }): Promise<void> => {
+        sendLater(() =>
+          passwordChangedMessage({
+            to: data.user.email,
+            origin: config.origin,
+          }),
+        );
+        return Promise.resolve();
+      },
     },
     hooks: {
       // A new password is checked before the library hashes it. The route of

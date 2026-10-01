@@ -1,0 +1,10 @@
+type: object
+description: Where the test message went.
+additionalProperties: false
+required:
+  - to
+properties:
+  to:
+    allOf:
+      - $ref: './EmailAddress.yaml'
+    readOnly: true

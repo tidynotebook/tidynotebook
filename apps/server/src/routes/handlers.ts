@@ -13,7 +13,8 @@ import type {
   WorkspaceAdminStore,
   WorkspaceStore,
 } from '@notesapp/core';
-import type { MailTransport } from '../auth/mail.ts';
+import { emptyInstallationSettings } from '@notesapp/core';
+import type { InstallationSettings } from '../installation-settings.ts';
 import { createAdministrationHandlers } from './administration.ts';
 import type { ServerConfig } from '../config.ts';
 import type { ServiceLifecycle } from '../lifecycle.ts';
@@ -41,7 +42,8 @@ import { secretDigest } from '../auth/publication-secrets.ts';
 import { createPublicationHandlers } from './publications.ts';
 import { createPublishedHandlers } from './published.ts';
 import { createLegalHandlers, type LegalDependencies } from './legal.ts';
-import { createAddressSeal } from '../auth/report-seal.ts';
+import { createAddressSeal, createMailPasswordSeal } from '../auth/seal.ts';
+import { createInstallationSettings } from '../installation-settings.ts';
 import { publishedOrigin } from '../served-origins.ts';
 
 /**
@@ -105,8 +107,12 @@ export type PublicationDependencies = {
 export type HandlerDependencies = {
   /** The account, workspace and installation store of the deployment. */
   readonly store?: WorkspaceAdminStore & InstallationStore;
-  /** The mail transport of the deployment, or `null` for none. */
-  readonly mail?: MailTransport | null;
+  /**
+   * The decider of the mail transport and of the legal documents (record
+   * 0148). A test that checks the service operations leaves it out, and the
+   * installation then has neither.
+   */
+  readonly settings?: InstallationSettings;
   /**
    * Whether a password is the current one of an identity user. A test that
    * checks the service operations leaves it out, and every check fails.
@@ -160,6 +166,18 @@ export function createHandlers(
   dependencies: HandlerDependencies = {},
 ): HandlerMap {
   const store = dependencies.store ?? missingStore();
+  const settings =
+    dependencies.settings ??
+    createInstallationSettings({
+      config,
+      // A server with no settings decider holds no setting at all.
+      reader: {
+        installationSettings: () => Promise.resolve(emptyInstallationSettings),
+      },
+      environmentMail: null,
+      environmentTexts: { terms: null, privacy: null },
+      passwordSeal: createMailPasswordSeal(config.authSecret),
+    });
   const lifecycle = dependencies.lifecycle ?? runningLifecycle;
   const published = dependencies.publications;
   // A report keeps the address of its link sealed with a key of this server
@@ -167,7 +185,10 @@ export function createHandlers(
   const seal = createAddressSeal(config.authSecret);
   const readerOrigin = publishedOrigin(config.servedOrigins) ?? config.origin;
   return {
-    ...createAccountHandlers(store, config.legalDocuments),
+    ...createAccountHandlers(
+      store,
+      async () => (await settings.legal()).documents,
+    ),
     ...createFileHandlers(dependencies.content ?? missingWorkspaceStore()),
     ...createHistoryHandlers(dependencies.content ?? missingWorkspaceStore()),
     ...createSyncHandlers(
@@ -194,15 +215,11 @@ export function createHandlers(
     ...createWorkspaceHandlers(store),
     ...createAdministrationHandlers({
       store,
-      mail: dependencies.mail ?? null,
+      settings,
+      passwordSeal: createMailPasswordSeal(config.authSecret),
       origin: config.origin,
       invitationLifetimeHours: config.accounts.invitationLifetimeHours,
       defaultLimitBytes: config.accounts.limitBytes,
-      readiness: {
-        mail: (dependencies.mail ?? null) !== null,
-        publishedOrigin: publishedOrigin(config.servedOrigins) !== null,
-        legalDocuments: config.legalDocuments !== null,
-      },
       openAddress: (sealed) => seal.open(sealed),
       verifyPassword:
         dependencies.verifyPassword ?? (() => Promise.resolve(false)),

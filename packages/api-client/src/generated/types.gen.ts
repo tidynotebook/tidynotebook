@@ -997,6 +997,8 @@ export type Installation = {
      * The limit that a new account starts with.
      */
     readonly defaultLimitBytes: ByteCount;
+    readonly mail: MailSettings;
+    readonly legalDocuments: LegalSettings;
 };
 
 /**
@@ -1118,6 +1120,76 @@ export type LegalDocument = {
 };
 
 /**
+ * One legal document that an administrator sets: a text with the kind text, or an address with the kind address, and its version.
+ */
+export type LegalDocumentInput = {
+    kind: LegalDocumentKind;
+    /**
+     * The Markdown text of the document, for the kind text.
+     */
+    text?: string;
+    /**
+     * The address of the document, for the kind address.
+     */
+    url?: string;
+    /**
+     * The version of the document. A new version asks every account to accept again.
+     */
+    version: string;
+};
+
+/**
+ * The source of a legal document. text is Markdown that this server serves, and address is a page on another site.
+ */
+export type LegalDocumentKind = 'text' | 'address';
+
+/**
+ * One stored legal document, as the administrator changes it.
+ */
+export type LegalDocumentSetting = {
+    readonly kind: LegalDocumentKind;
+    /**
+     * The Markdown text, for the kind text.
+     */
+    readonly text: string | null;
+    /**
+     * The address, for the kind address.
+     */
+    readonly url: string | null;
+    readonly version: string;
+};
+
+/**
+ * One legal document of the installation and its template, as the administrator changes them.
+ */
+export type LegalDocumentSettings = {
+    readonly source: SettingSource;
+    /**
+     * The stored document, or null when the application holds none.
+     */
+    readonly document: LegalDocumentSetting | null;
+    /**
+     * The template of the document in Markdown. The server fills the facts that it knows, and each other blank is a marker in double braces.
+     */
+    readonly template: string;
+};
+
+/**
+ * One legal document that the installation holds.
+ */
+export type LegalDocumentSummary = {
+    readonly kind: LegalDocumentKind;
+    /**
+     * Where a person reads the document.
+     */
+    readonly url: string;
+    /**
+     * The current version, which a consent names.
+     */
+    readonly version: string;
+};
+
+/**
  * The terms and the privacy notice of the installation (record 0120). The operator writes both and names their versions.
  */
 export type LegalDocuments = {
@@ -1129,6 +1201,15 @@ export type LegalDocuments = {
  * One legal document of the installation, as one HTML document. The server builds it from the Markdown file of the operator with the one sanitized renderer, and it holds no script.
  */
 export type LegalPageDocument = string;
+
+/**
+ * The legal documents that the installation holds. They apply when both exist (record 0148).
+ */
+export type LegalSettings = {
+    readonly source: SettingSource;
+    readonly terms: LegalDocumentSummary | null;
+    readonly privacy: LegalDocumentSummary | null;
+};
 
 /**
  * One open report of a published link, as an administrator reads it. It holds no fact of a note and no fact of the workspace.
@@ -1169,6 +1250,69 @@ export type LinkReportList = {
      * The open reports, newest first.
      */
     readonly reports: Array<LinkReport>;
+};
+
+/**
+ * How the connection to the mail server is protected. tls opens a TLS connection at once, starttls upgrades a plain connection, and none sends with no protection.
+ */
+export type MailSecurity = 'tls' | 'starttls' | 'none';
+
+/**
+ * The mail transport that applies now. No member holds a password.
+ */
+export type MailSettings = {
+    readonly source: SettingSource;
+    /**
+     * The host name of the mail server.
+     */
+    readonly host: string | null;
+    /**
+     * The port of the mail server.
+     */
+    readonly port: number | null;
+    readonly security: MailSecurity | null;
+    /**
+     * The user name that signs in to the mail server, or null.
+     */
+    readonly username: string | null;
+    /**
+     * The sender of every message.
+     */
+    readonly sender: string | null;
+    /**
+     * Whether the application holds a password for the mail server.
+     */
+    readonly passwordStored: boolean;
+};
+
+/**
+ * The mail transport that an administrator sets.
+ */
+export type MailSettingsInput = {
+    /**
+     * The host name of the mail server.
+     */
+    host: string;
+    /**
+     * The port of the mail server.
+     */
+    port: number;
+    security: MailSecurity;
+    /**
+     * The user name that signs in to the mail server. Leave it out for a server that takes mail with no sign-in.
+     */
+    username?: string;
+    /**
+     * The sender of every message, an address or a name and an address, for example NotesApp <no-reply@notes.example.com>.
+     */
+    sender: string;
+};
+
+/**
+ * Where the test message went.
+ */
+export type MailTestSent = {
+    readonly to: EmailAddress;
 };
 
 /**
@@ -1704,6 +1848,11 @@ export type SessionsRevoked = {
      */
     readonly revoked: number;
 };
+
+/**
+ * Where a group of settings comes from (record 0148). environment is the server environment, which wins and cannot change in the application. application is what an administrator set. none is no setting.
+ */
+export type SettingSource = 'environment' | 'application' | 'none';
 
 /**
  * The one answer of a sign-up. It is the same for every address, so it states nothing about the address.
@@ -2555,6 +2704,33 @@ export type LinkReportListWritable = {
 };
 
 /**
+ * The mail transport that an administrator sets.
+ */
+export type MailSettingsInputWritable = {
+    /**
+     * The host name of the mail server.
+     */
+    host: string;
+    /**
+     * The port of the mail server.
+     */
+    port: number;
+    security: MailSecurity;
+    /**
+     * The user name that signs in to the mail server. Leave it out for a server that takes mail with no sign-in.
+     */
+    username?: string;
+    /**
+     * The password of the user name. Leave it out to keep the stored one.
+     */
+    password?: string;
+    /**
+     * The sender of every message, an address or a name and an address, for example NotesApp <no-reply@notes.example.com>.
+     */
+    sender: string;
+};
+
+/**
  * Settings that follow one account to every device.
  */
 export type PreferencesWritable = {
@@ -2988,6 +3164,16 @@ export type Registration = RegistrationInputWritable;
  * The settings of the installation to change.
  */
 export type InstallationUpdate = InstallationUpdateInput;
+
+/**
+ * The mail transport to set.
+ */
+export type MailSettingsUpdate = MailSettingsInputWritable;
+
+/**
+ * The legal document to set.
+ */
+export type LegalDocumentUpdate = LegalDocumentInput;
 
 /**
  * The current password of the account.
@@ -4110,6 +4296,325 @@ export type UpdateInstallationResponses = {
 };
 
 export type UpdateInstallationResponse = UpdateInstallationResponses[keyof UpdateInstallationResponses];
+
+export type RemoveLegalDocumentData = {
+    body?: never;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path: {
+        /**
+         * Which legal document to read, the terms or the privacy notice.
+         */
+        document: 'terms' | 'privacy';
+    };
+    query?: never;
+    url: '/api/installation/legal/{document}';
+};
+
+export type RemoveLegalDocumentErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The setting cannot change now. The code is setting_locked when the server environment sets it, and setting_required when open registration needs it. Nothing changed.
+     */
+    409: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type RemoveLegalDocumentError = RemoveLegalDocumentErrors[keyof RemoveLegalDocumentErrors];
+
+export type RemoveLegalDocumentResponses = {
+    /**
+     * The settings of the installation.
+     */
+    200: Installation;
+};
+
+export type RemoveLegalDocumentResponse = RemoveLegalDocumentResponses[keyof RemoveLegalDocumentResponses];
+
+export type GetLegalDocumentSettingsData = {
+    body?: never;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path: {
+        /**
+         * Which legal document to read, the terms or the privacy notice.
+         */
+        document: 'terms' | 'privacy';
+    };
+    query?: never;
+    url: '/api/installation/legal/{document}';
+};
+
+export type GetLegalDocumentSettingsErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type GetLegalDocumentSettingsError = GetLegalDocumentSettingsErrors[keyof GetLegalDocumentSettingsErrors];
+
+export type GetLegalDocumentSettingsResponses = {
+    /**
+     * One legal document as the administrator changes it.
+     */
+    200: LegalDocumentSettings;
+};
+
+export type GetLegalDocumentSettingsResponse = GetLegalDocumentSettingsResponses[keyof GetLegalDocumentSettingsResponses];
+
+export type UpdateLegalDocumentData = {
+    /**
+     * The legal document to set.
+     */
+    body: LegalDocumentUpdate;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path: {
+        /**
+         * Which legal document to read, the terms or the privacy notice.
+         */
+        document: 'terms' | 'privacy';
+    };
+    query?: never;
+    url: '/api/installation/legal/{document}';
+};
+
+export type UpdateLegalDocumentErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The setting cannot change now. The code is setting_locked when the server environment sets it, and setting_required when open registration needs it. Nothing changed.
+     */
+    409: ProblemDetails;
+    /**
+     * The request body is larger than the configured limit. A save of a note adds document_too_large, which means that the update or the document it would produce passes a bound of the workspace. The work stays on the device, which offers recovery rather than sending the same bytes again.
+     */
+    413: ProblemDetails;
+    /**
+     * The request media type is not supported.
+     */
+    415: ProblemDetails;
+    /**
+     * The text still holds a blank of the template. The code is legal_document_unfinished, and the blanks member lists each one. Nothing changed.
+     */
+    422: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type UpdateLegalDocumentError = UpdateLegalDocumentErrors[keyof UpdateLegalDocumentErrors];
+
+export type UpdateLegalDocumentResponses = {
+    /**
+     * The settings of the installation.
+     */
+    200: Installation;
+};
+
+export type UpdateLegalDocumentResponse = UpdateLegalDocumentResponses[keyof UpdateLegalDocumentResponses];
+
+export type RemoveMailSettingsData = {
+    body?: never;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/installation/mail';
+};
+
+export type RemoveMailSettingsErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The setting cannot change now. The code is setting_locked when the server environment sets it, and setting_required when open registration needs it. Nothing changed.
+     */
+    409: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type RemoveMailSettingsError = RemoveMailSettingsErrors[keyof RemoveMailSettingsErrors];
+
+export type RemoveMailSettingsResponses = {
+    /**
+     * The settings of the installation.
+     */
+    200: Installation;
+};
+
+export type RemoveMailSettingsResponse = RemoveMailSettingsResponses[keyof RemoveMailSettingsResponses];
+
+export type UpdateMailSettingsData = {
+    /**
+     * The mail transport to set.
+     */
+    body: MailSettingsUpdate;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/installation/mail';
+};
+
+export type UpdateMailSettingsErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The setting cannot change now. The code is setting_locked when the server environment sets it, and setting_required when open registration needs it. Nothing changed.
+     */
+    409: ProblemDetails;
+    /**
+     * The request body is larger than the configured limit. A save of a note adds document_too_large, which means that the update or the document it would produce passes a bound of the workspace. The work stays on the device, which offers recovery rather than sending the same bytes again.
+     */
+    413: ProblemDetails;
+    /**
+     * The request media type is not supported.
+     */
+    415: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type UpdateMailSettingsError = UpdateMailSettingsErrors[keyof UpdateMailSettingsErrors];
+
+export type UpdateMailSettingsResponses = {
+    /**
+     * The settings of the installation.
+     */
+    200: Installation;
+};
+
+export type UpdateMailSettingsResponse = UpdateMailSettingsResponses[keyof UpdateMailSettingsResponses];
+
+export type SendTestMessageData = {
+    body?: never;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/installation/mail/test';
+};
+
+export type SendTestMessageErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The test message did not go. The code is mail_failed, and the reason member names the kind of the failure.
+     */
+    422: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type SendTestMessageError = SendTestMessageErrors[keyof SendTestMessageErrors];
+
+export type SendTestMessageResponses = {
+    /**
+     * The test message went to the mail server.
+     */
+    200: MailTestSent;
+};
+
+export type SendTestMessageResponse = SendTestMessageResponses[keyof SendTestMessageResponses];
 
 export type ListInvitationsData = {
     body?: never;

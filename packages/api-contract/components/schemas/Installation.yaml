@@ -6,6 +6,8 @@ required:
   - mailConfigured
   - invitationLifetimeHours
   - defaultLimitBytes
+  - mail
+  - legalDocuments
 properties:
   registrationPolicy:
     allOf:
@@ -29,3 +31,11 @@ properties:
       - $ref: './ByteCount.yaml'
     readOnly: true
     description: The limit that a new account starts with.
+  mail:
+    allOf:
+      - $ref: './MailSettings.yaml'
+    readOnly: true
+  legalDocuments:
+    allOf:
+      - $ref: './LegalSettings.yaml'
+    readOnly: true

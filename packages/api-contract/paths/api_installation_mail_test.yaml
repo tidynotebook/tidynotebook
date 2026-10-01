@@ -1,0 +1,24 @@
+post:
+  operationId: sendTestMessage
+  summary: Send a test message to the address of the administrator.
+  description: >-
+    Sends one message through the mail transport that applies now, to the
+    address of the administrator who asks (record 0148). A failure names its
+    kind and never the answer of the mail server.
+  tags:
+    - administration
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/MailTestSent.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../components/responses/Forbidden.yaml'
+    '422':
+      $ref: '../components/responses/MailFailed.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

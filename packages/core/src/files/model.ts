@@ -324,7 +324,10 @@ export type DomainErrorCode =
   | 'verification_invalid'
   | 'proof_invalid'
   | 'consent_required'
-  | 'theme_limit';
+  | 'theme_limit'
+  | 'setting_locked'
+  | 'setting_required'
+  | 'legal_document_unfinished';
 
 /**
  * A domain failure and the files it refers to.

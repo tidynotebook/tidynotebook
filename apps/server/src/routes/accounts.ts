@@ -148,7 +148,8 @@ function paletteOf(body: unknown, key: string): ImportedPalette | null {
 /** Builds the account and settings handlers. */
 export function createAccountHandlers(
   store: WorkspaceAdminStore,
-  documents: LegalDocuments | null,
+  /** The legal documents that apply now (records 0120, 0148). */
+  legalDocuments: () => Promise<LegalDocuments | null>,
 ): HandlerMap {
   return {
     getAccount: async (request): Promise<HandlerResult> => {
@@ -171,7 +172,7 @@ export function createAccountHandlers(
           preferences: preferencesBody(preferences),
           // The application opens only after consent to the current legal
           // documents (record 0120).
-          consentRequired: consentRequired(documents, consent),
+          consentRequired: consentRequired(await legalDocuments(), consent),
         },
       };
     },
@@ -181,10 +182,15 @@ export function createAccountHandlers(
       // A refusal names its own code, so the page can say that a version
       // changed while the person read it.
       unwrapDomain(
-        await acceptLegalDocuments(store, resolved.actor, documents, {
-          termsVersion: readString(request.body, 'termsVersion'),
-          privacyVersion: readString(request.body, 'privacyVersion'),
-        }),
+        await acceptLegalDocuments(
+          store,
+          resolved.actor,
+          await legalDocuments(),
+          {
+            termsVersion: readString(request.body, 'termsVersion'),
+            privacyVersion: readString(request.body, 'privacyVersion'),
+          },
+        ),
       );
       return {
         status: 200,

@@ -1,0 +1,27 @@
+type: object
+description: >-
+  One legal document of the installation and its template, as the
+  administrator changes them.
+additionalProperties: false
+required:
+  - source
+  - document
+  - template
+properties:
+  source:
+    allOf:
+      - $ref: './SettingSource.yaml'
+    readOnly: true
+  document:
+    oneOf:
+      - $ref: './LegalDocumentSetting.yaml'
+      - type: 'null'
+    readOnly: true
+    description: The stored document, or null when the application holds none.
+  template:
+    type: string
+    readOnly: true
+    description: >-
+      The template of the document in Markdown. The server fills the facts
+      that it knows, and each other blank is a marker in double braces.
+    maxLength: 262144

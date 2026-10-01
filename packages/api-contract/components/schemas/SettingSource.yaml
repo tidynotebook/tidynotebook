@@ -1,0 +1,9 @@
+type: string
+description: >-
+  Where a group of settings comes from (record 0148). environment is the
+  server environment, which wins and cannot change in the application.
+  application is what an administrator set. none is no setting.
+enum:
+  - environment
+  - application
+  - none

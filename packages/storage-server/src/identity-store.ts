@@ -19,6 +19,10 @@
  * after it.
  */
 import { randomUUID } from 'node:crypto';
+import {
+  installationSettingsOf,
+  type InstallationSettingsRow,
+} from './installation-settings-row.ts';
 import type {
   AccountOwnStanding,
   AccountSettings,
@@ -33,6 +37,7 @@ import type {
   ImportedPalette,
   ImportedTheme,
   InstallationRole,
+  InstallationSettingsReader,
   InstallationStore,
   InstallationTransaction,
   InvitationRecord,
@@ -43,6 +48,9 @@ import type {
   RegistrationStore,
   Role,
   SessionRecord,
+  StoredInstallationSettings,
+  StoredLegalDocument,
+  StoredMailSettings,
   WorkspaceAdminStore,
   WorkspaceAdminTransaction,
   WorkspaceSummary,
@@ -193,6 +201,22 @@ function asAccountState(value: string): AccountState {
 }
 
 /** Narrows a stored registration policy. An unexpected value is a defect. */
+/** The one read of the settings row (record 0148). */
+async function readInstallationSettings(
+  client: pg.PoolClient,
+): Promise<StoredInstallationSettings> {
+  const rows = await client.query<InstallationSettingsRow>(
+    'select * from notesapp_installation_settings()',
+  );
+  const row = rows.rows[0];
+  if (row === undefined)
+    throw new OperationalError(
+      'unexpected',
+      'notesapp: the installation has no settings row.',
+    );
+  return installationSettingsOf(row);
+}
+
 function asRegistrationPolicy(value: string): RegistrationPolicy {
   const known = registrationPolicies.find((policy) => policy === value);
   if (known === undefined)
@@ -256,6 +280,7 @@ function asThemeFamily(value: string): string {
 /** An identity store and the calls that a process needs to manage its pool. */
 export type IdentityStoreHandle = WorkspaceAdminStore &
   InstallationStore &
+  InstallationSettingsReader &
   RegistrationStore & {
     /** The account of a Better Auth user, or `null` when none is linked. */
     accountOf(authUserId: string): Promise<string | null>;
@@ -962,6 +987,40 @@ export function openIdentityStore(
           [policy],
         );
       },
+
+      settings(): Promise<StoredInstallationSettings> {
+        return readInstallationSettings(client);
+      },
+
+      async setMailSettings(mail: StoredMailSettings | null): Promise<void> {
+        await client.query(
+          'select notesapp_set_mail_settings($1, $2, $3::mail_security, $4, $5, $6)',
+          [
+            mail?.host ?? null,
+            mail?.port ?? null,
+            mail?.security ?? null,
+            mail?.username ?? null,
+            mail?.passwordSealed ?? null,
+            mail?.sender ?? null,
+          ],
+        );
+      },
+
+      async setLegalDocument(
+        name: 'terms' | 'privacy',
+        document: StoredLegalDocument | null,
+      ): Promise<void> {
+        await client.query(
+          'select notesapp_set_legal_document($1, $2::legal_document_kind, $3, $4, $5)',
+          [
+            name,
+            document?.kind ?? null,
+            document?.kind === 'text' ? document.text : null,
+            document?.kind === 'address' ? document.url : null,
+            document?.version ?? null,
+          ],
+        );
+      },
     };
   }
 
@@ -1191,6 +1250,10 @@ export function openIdentityStore(
         );
         return asRegistrationPolicy(rows.rows[0]?.policy ?? '');
       });
+    },
+
+    async installationSettings(): Promise<StoredInstallationSettings> {
+      return inTransaction(null, null, readInstallationSettings);
     },
 
     async hasAccount(): Promise<boolean> {

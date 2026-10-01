@@ -7,10 +7,12 @@
 #
 #   COMPOSE_FILE=docker-compose.yml:docker/compose.legal.yaml
 #
-# Copy `docker/legal/terms.md` and `docker/legal/privacy.md` to
-# NOTESAPP_LEGAL_DIR, fill each blank in double braces, and set both versions
-# in `.env`. The application refuses to start while a blank is left. See
-# docs/guide/self-hosting.md.
+# An administrator can set both documents in the application instead, with no
+# file and no restart. These files win over that page and lock it. Copy each
+# template from the Legal documents section of the application to
+# NOTESAPP_LEGAL_DIR as terms.md and privacy.md, fill each blank in double
+# braces, and set both versions in `.env`. The application refuses to start
+# while a blank is left. See docs/guide/self-hosting.md.
 services:
   app:
     environment:

@@ -1,0 +1,24 @@
+type: object
+description: One legal document that the installation holds.
+additionalProperties: false
+required:
+  - kind
+  - url
+  - version
+properties:
+  kind:
+    allOf:
+      - $ref: './LegalDocumentKind.yaml'
+    readOnly: true
+  url:
+    type: string
+    readOnly: true
+    description: Where a person reads the document.
+    format: uri
+    maxLength: 2048
+  version:
+    type: string
+    readOnly: true
+    description: The current version, which a consent names.
+    minLength: 1
+    maxLength: 64

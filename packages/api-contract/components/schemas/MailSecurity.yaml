@@ -1,0 +1,9 @@
+type: string
+description: >-
+  How the connection to the mail server is protected. tls opens a TLS
+  connection at once, starttls upgrades a plain connection, and none sends
+  with no protection.
+enum:
+  - tls
+  - starttls
+  - none

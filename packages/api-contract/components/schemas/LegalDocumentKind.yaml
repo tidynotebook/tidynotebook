@@ -1,0 +1,7 @@
+type: string
+description: >-
+  The source of a legal document. text is Markdown that this server serves,
+  and address is a page on another site.
+enum:
+  - text
+  - address

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createAddressSeal } from './report-seal.ts';
+import { createAddressSeal, createMailPasswordSeal } from './seal.ts';
 
 const secret = 'report-seal-test-secret-0123456789abcdef';
 const token = 'Zx9_published-token-value-0123456789abcdefg';
@@ -33,4 +33,17 @@ await test('another secret, a changed value or another shape opens nothing', () 
   assert.equal(seal.open(`v2.${sealed.slice(3)}`), null);
   assert.equal(seal.open('v1.'), null);
   assert.equal(seal.open(''), null);
+});
+
+await test('a key of one purpose opens no value of another', () => {
+  const password = createMailPasswordSeal(secret).seal('mail-password');
+  assert.ok(!password.includes('mail-password'));
+  assert.equal(createMailPasswordSeal(secret).open(password), 'mail-password');
+  assert.equal(createAddressSeal(secret).open(password), null);
+  assert.equal(
+    createMailPasswordSeal(secret).open(
+      createAddressSeal(secret).seal(address),
+    ),
+    null,
+  );
 });

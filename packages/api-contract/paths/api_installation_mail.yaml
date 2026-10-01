@@ -1,0 +1,55 @@
+put:
+  operationId: updateMailSettings
+  summary: Set the mail transport of the installation.
+  description: >-
+    Only an administrator sets the mail transport (record 0148). A password
+    that the body leaves out keeps the stored one, and no answer holds a
+    password. The server refuses the change while the server environment
+    sets the mail transport.
+  tags:
+    - administration
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+  requestBody:
+    $ref: '../components/requestBodies/MailSettingsUpdate.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/Installation.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../components/responses/Forbidden.yaml'
+    '409':
+      $ref: '../components/responses/SettingConflict.yaml'
+    '413':
+      $ref: '../components/responses/PayloadTooLarge.yaml'
+    '415':
+      $ref: '../components/responses/UnsupportedMediaType.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'
+delete:
+  operationId: removeMailSettings
+  summary: Remove the mail transport of the installation.
+  description: >-
+    Only an administrator removes the mail transport. The server refuses
+    while the server environment sets it, and while open registration needs
+    it (record 0114).
+  tags:
+    - administration
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/Installation.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../components/responses/Forbidden.yaml'
+    '409':
+      $ref: '../components/responses/SettingConflict.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

@@ -76,6 +76,12 @@ paths:
     $ref: './paths/api_registrations_challenge.yaml'
   /api/installation:
     $ref: './paths/api_installation.yaml'
+  /api/installation/mail:
+    $ref: './paths/api_installation_mail.yaml'
+  /api/installation/mail/test:
+    $ref: './paths/api_installation_mail_test.yaml'
+  /api/installation/legal/{document}:
+    $ref: './paths/api_installation_legal_document.yaml'
   /api/invitations:
     $ref: './paths/api_invitations.yaml'
   /api/invitations/{invitationId}:
@@ -292,6 +298,10 @@ components:
       $ref: './components/requestBodies/Registration.yaml'
     InstallationUpdate:
       $ref: './components/requestBodies/InstallationUpdate.yaml'
+    MailSettingsUpdate:
+      $ref: './components/requestBodies/MailSettingsUpdate.yaml'
+    LegalDocumentUpdate:
+      $ref: './components/requestBodies/LegalDocumentUpdate.yaml'
     AccountRemoval:
       $ref: './components/requestBodies/AccountRemoval.yaml'
   responses:
@@ -431,6 +441,16 @@ components:
       $ref: './components/responses/Registered.yaml'
     Installation:
       $ref: './components/responses/Installation.yaml'
+    SettingConflict:
+      $ref: './components/responses/SettingConflict.yaml'
+    MailFailed:
+      $ref: './components/responses/MailFailed.yaml'
+    MailTestSent:
+      $ref: './components/responses/MailTestSent.yaml'
+    LegalDocumentUnfinished:
+      $ref: './components/responses/LegalDocumentUnfinished.yaml'
+    LegalDocumentSettings:
+      $ref: './components/responses/LegalDocumentSettings.yaml'
     LastAdministrator:
       $ref: './components/responses/LastAdministrator.yaml'
     ThemeLimit:
@@ -742,6 +762,28 @@ components:
       $ref: './components/schemas/Installation.yaml'
     InstallationUpdateInput:
       $ref: './components/schemas/InstallationUpdateInput.yaml'
+    SettingSource:
+      $ref: './components/schemas/SettingSource.yaml'
+    MailSecurity:
+      $ref: './components/schemas/MailSecurity.yaml'
+    MailSettings:
+      $ref: './components/schemas/MailSettings.yaml'
+    MailSettingsInput:
+      $ref: './components/schemas/MailSettingsInput.yaml'
+    MailTestSent:
+      $ref: './components/schemas/MailTestSent.yaml'
+    LegalDocumentKind:
+      $ref: './components/schemas/LegalDocumentKind.yaml'
+    LegalDocumentSummary:
+      $ref: './components/schemas/LegalDocumentSummary.yaml'
+    LegalSettings:
+      $ref: './components/schemas/LegalSettings.yaml'
+    LegalDocumentInput:
+      $ref: './components/schemas/LegalDocumentInput.yaml'
+    LegalDocumentSetting:
+      $ref: './components/schemas/LegalDocumentSetting.yaml'
+    LegalDocumentSettings:
+      $ref: './components/schemas/LegalDocumentSettings.yaml'
     AccountRemovalInput:
       $ref: './components/schemas/AccountRemovalInput.yaml'
     AccountSession:

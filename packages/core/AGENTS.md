@@ -20,7 +20,9 @@ the role and action matrix, and the storage ports that a runtime implements.
   installation role, and the two never read each other (0109).
   `administration.ts` and `registration.ts` hold the use cases of accounts,
   invitations and the one registration path, over the ports of `ports.ts`
-  (0108 to 0112). `src/history/`, `src/search/`, `src/workspaces/`, and
+  (0108 to 0112). `installation-settings.ts` holds the rules of the mail
+  settings and the legal documents that an administrator sets, and
+  `legal-templates.ts` the templates of both documents (0148). `src/history/`, `src/search/`, `src/workspaces/`, and
   `src/publications/` hold their own use cases and ports. The publication port
   declares read methods only, and no use case of it takes an `Actor`.
 - `src/daily-notes/` holds the day arithmetic, the name format, the path of

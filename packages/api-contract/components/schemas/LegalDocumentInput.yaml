@@ -1,0 +1,28 @@
+type: object
+description: >-
+  One legal document that an administrator sets: a text with the kind text,
+  or an address with the kind address, and its version.
+additionalProperties: false
+required:
+  - kind
+  - version
+properties:
+  kind:
+    $ref: './LegalDocumentKind.yaml'
+  text:
+    type: string
+    description: The Markdown text of the document, for the kind text.
+    minLength: 1
+    maxLength: 262144
+  url:
+    type: string
+    description: The address of the document, for the kind address.
+    format: uri
+    maxLength: 2048
+  version:
+    type: string
+    description: >-
+      The version of the document. A new version asks every account to
+      accept again.
+    minLength: 1
+    maxLength: 64

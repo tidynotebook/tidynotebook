@@ -38,8 +38,11 @@ import {
   maxAccountLimitBytes,
   normalizeEmail,
   openRegistrationMissing,
-  type OpenRegistrationReadiness,
 } from './registration.ts';
+import {
+  settingsReadiness,
+  type InstallationEnvironment,
+} from './installation-settings.ts';
 
 /** Whether the caller of a transaction may take one action. */
 async function permitted(
@@ -320,13 +323,16 @@ export function setRegistrationPolicy(
   store: InstallationStore,
   actor: Actor,
   policy: string,
-  readiness: OpenRegistrationReadiness,
+  environment: InstallationEnvironment,
 ): Promise<Result<RegistrationPolicy>> {
   return store.installation(actor, async (tx) => {
     if (!(await permitted(tx, actor, 'change-policy')))
       return fail<RegistrationPolicy>('forbidden');
     const known = registrationPolicies.find((entry) => entry === policy);
     if (known === undefined) return fail<RegistrationPolicy>('forbidden');
+    // The stored settings are read under the installation lock, so a removal
+    // of mail or of a document cannot pass between this check and the write.
+    const readiness = settingsReadiness(environment, await tx.settings());
     if (known === 'open' && openRegistrationMissing(readiness).length > 0)
       return fail<RegistrationPolicy>('open_registration_unavailable');
     await tx.setRegistrationPolicy(known);

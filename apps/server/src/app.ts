@@ -48,8 +48,11 @@ import { passwordMatches, sessionAllowedBy } from './auth/registration.ts';
 import {
   budgetedTransport,
   createMailTransport,
+  type ApplicationMail,
   type MailTransport,
 } from './auth/mail.ts';
+import { createMailPasswordSeal } from './auth/seal.ts';
+import { createInstallationSettings } from './installation-settings.ts';
 import {
   createDocumentService,
   openAttachmentStore,
@@ -210,10 +213,17 @@ export type AppOptions = {
    */
   readonly attempts?: AttemptCounter;
   /**
-   * The mail transport. The configuration decides it, and a test supplies
-   * its own so that it reads every message without a mail server.
+   * The mail transport of the environment. The configuration decides it, and
+   * a test supplies its own so that it reads every message without a mail
+   * server. A transport given here stands for `NOTESAPP_SMTP_URL`, so the
+   * mail settings of the application are locked (record 0148).
    */
   readonly mail?: MailTransport | null;
+  /**
+   * Builds the transport of the mail settings that an administrator stores.
+   * A test supplies its own, so it reads what those settings send.
+   */
+  readonly connectMail?: (mail: ApplicationMail) => MailTransport;
   /**
    * The Markdown text of each legal document that this server serves. `main.ts`
    * reads it before the start, so a refusal names its file. A caller that
@@ -518,6 +528,12 @@ export async function createAppWithHandlers(
           ...(classified.missing !== undefined && status === classified.status
             ? { missing: classified.missing }
             : {}),
+          ...(classified.blanks !== undefined && status === classified.status
+            ? { blanks: classified.blanks }
+            : {}),
+          ...(classified.reason !== undefined && status === classified.status
+            ? { reason: classified.reason }
+            : {}),
         }),
       );
   });
@@ -641,10 +657,23 @@ async function composeApp(
     config.storageRoot,
   );
   opened.push(() => attachments.close());
-  const mail =
-    options?.mail === undefined
-      ? createMailTransport(config.mail)
-      : options.mail;
+  // The mail transport and the legal documents come from the environment or
+  // from the settings of the application, and this one decider answers which
+  // applies at each request (record 0148).
+  const settings = createInstallationSettings({
+    config,
+    reader: identity,
+    environmentMail:
+      options?.mail === undefined
+        ? createMailTransport(config.mail)
+        : options.mail,
+    environmentTexts: options?.legalTexts ?? (await loadLegalTexts(config)),
+    passwordSeal: createMailPasswordSeal(config.authSecret),
+    ...(options?.connectMail === undefined
+      ? {}
+      : { connect: options.connectMail }),
+  });
+  const mail = settings.mailer;
   // The published page reads the stylesheet of the built shell document, so
   // the page cannot drift from the theme (decision 0031). A deployment that
   // serves no built assets, which is what a development run and most tests
@@ -747,7 +776,7 @@ async function composeApp(
     handlers: {
       ...createHandlers(config, probes, {
         store: identity,
-        mail,
+        settings,
         verifyPassword: (authUserId, password) =>
           passwordMatches(auth.auth, authUserId, password),
         content,
@@ -764,7 +793,7 @@ async function composeApp(
           : { lifecycle: options.lifecycle }),
         noticeProtocols: () => gateway.offered(),
         legal: {
-          texts: options?.legalTexts ?? (await loadLegalTexts(config)),
+          texts: async () => (await settings.legal()).texts,
           stylesheets: publishedStylesheets,
         },
       }),
@@ -779,7 +808,7 @@ async function composeApp(
           origin: config.origin,
           pendingHours: config.accounts.pendingHours,
           tokens: createVerificationTokens(config.authSecret),
-          documents: config.legalDocuments,
+          documents: async () => (await settings.legal()).documents,
           challenges: createSignUpChallenges(
             config.authSecret,
             config.accounts.proofDifficulty,

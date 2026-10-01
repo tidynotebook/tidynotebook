@@ -1,0 +1,5 @@
+description: The test message went to the mail server.
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/MailTestSent.yaml'

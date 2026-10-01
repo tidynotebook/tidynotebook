@@ -176,6 +176,13 @@
       "when": 1790804416073,
       "tag": "0024_feed_hints_after_commit",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1790863502625,
+      "tag": "0025_installation_mail_and_legal",
+      "breakpoints": true
     }
   ]
 }

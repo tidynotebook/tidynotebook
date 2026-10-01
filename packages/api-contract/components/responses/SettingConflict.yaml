@@ -1,0 +1,8 @@
+description: >-
+  The setting cannot change now. The code is setting_locked when the server
+  environment sets it, and setting_required when open registration needs it.
+  Nothing changed.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/ProblemDetails.yaml'

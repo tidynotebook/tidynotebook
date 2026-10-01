@@ -2,7 +2,7 @@
 
 import { client } from './client.gen.js';
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape, urlSearchParamsBodySerializer } from './client/index.js';
-import type { AcceptLegalDocumentsData, AcceptLegalDocumentsErrors, AcceptLegalDocumentsResponses, CommitChangesetData, CommitChangesetErrors, CommitChangesetResponses, CreateFileData, CreateFileErrors, CreateFileResponses, CreateInvitationData, CreateInvitationErrors, CreateInvitationResponses, CreateOwnerData, CreateOwnerErrors, CreateOwnerResponses, CreatePublishedLinkData, CreatePublishedLinkErrors, CreatePublishedLinkResponses, CreateWorkspaceData, CreateWorkspaceErrors, CreateWorkspaceResponses, DeleteFileData, DeleteFileErrors, DeleteFileResponses, DeleteThemeData, DeleteThemeErrors, DeleteThemeResponses, DeleteWorkspaceData, DeleteWorkspaceErrors, DeleteWorkspaceResponses, DismissReportData, DismissReportErrors, DismissReportResponses, ExportNoteData, ExportNoteErrors, ExportNoteResponses, ExportWorkspaceData, ExportWorkspaceErrors, ExportWorkspaceResponses, FinalizeAttachmentData, FinalizeAttachmentErrors, FinalizeAttachmentResponses, GetAccountData, GetAccountErrors, GetAccountResponses, GetAttachmentRevisionData, GetAttachmentRevisionErrors, GetAttachmentRevisionResponses, GetAuthSessionData, GetAuthSessionErrors, GetAuthSessionResponses, GetChangesData, GetChangesErrors, GetChangesResponses, GetDailyNoteSettingsData, GetDailyNoteSettingsErrors, GetDailyNoteSettingsResponses, GetFileData, GetFileErrors, GetFileResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetInstallationData, GetInstallationErrors, GetInstallationResponses, GetLegalDocumentData, GetLegalDocumentErrors, GetLegalDocumentResponses, GetMutationReceiptData, GetMutationReceiptErrors, GetMutationReceiptResponses, GetPublishedAttachmentData, GetPublishedAttachmentErrors, GetPublishedAttachmentResponses, GetPublishedPageData, GetPublishedPageErrors, GetPublishedPageResponses, GetReadinessData, GetReadinessErrors, GetReadinessResponses, GetReportPageData, GetReportPageErrors, GetReportPageResponses, GetRevisionData, GetRevisionErrors, GetRevisionResponses, GetRootHealthData, GetRootHealthErrors, GetRootHealthResponses, GetRootReadinessData, GetRootReadinessErrors, GetRootReadinessResponses, GetSetupStatusData, GetSetupStatusErrors, GetSetupStatusResponses, GetSignUpChallengeData, GetSignUpChallengeErrors, GetSignUpChallengeResponses, GetSnapshotPageData, GetSnapshotPageErrors, GetSnapshotPageResponses, GetSyncProtocolData, GetSyncProtocolErrors, GetSyncProtocolResponses, ImportThemeData, ImportThemeErrors, ImportThemeResponses, ImportWorkspaceData, ImportWorkspaceErrors, ImportWorkspaceResponses, ListAccountsData, ListAccountsErrors, ListAccountsResponses, ListBacklinksData, ListBacklinksErrors, ListBacklinksResponses, ListDeletedFilesData, ListDeletedFilesErrors, ListDeletedFilesResponses, ListFilesData, ListFilesErrors, ListFilesResponses, ListHistoryData, ListHistoryErrors, ListHistoryResponses, ListInvitationsData, ListInvitationsErrors, ListInvitationsResponses, ListPublishedLinksData, ListPublishedLinksErrors, ListPublishedLinksResponses, ListReportsData, ListReportsErrors, ListReportsResponses, ListSessionsData, ListSessionsErrors, ListSessionsResponses, ListWorkspacesData, ListWorkspacesErrors, ListWorkspacesResponses, OpenPublishedPageData, OpenPublishedPageErrors, OpenPublishedPageResponses, OpenSyncNoticesData, OpenSyncNoticesErrors, PreviewPurgeData, PreviewPurgeErrors, PreviewPurgeResponses, PurgeFilesData, PurgeFilesErrors, PurgeFilesResponses, ReadInvitationData, ReadInvitationErrors, ReadInvitationResponses, RegisterAccountData, RegisterAccountErrors, RegisterAccountResponses, RemoveAccountData, RemoveAccountErrors, RemoveAccountResponses, RemoveOwnAccountData, RemoveOwnAccountErrors, RemoveOwnAccountResponses, ReportPublishedLinkData, ReportPublishedLinkErrors, ReportPublishedLinkResponses, RequestPasswordResetData, RequestPasswordResetErrors, RequestPasswordResetResponses, ResetPasswordData, ResetPasswordErrors, ResetPasswordResponses, RestoreFileData, RestoreFileErrors, RestoreFileResponses, RestoreRevisionData, RestoreRevisionErrors, RestoreRevisionResponses, RevokeInvitationData, RevokeInvitationErrors, RevokeInvitationResponses, RevokeOtherSessionsData, RevokeOtherSessionsErrors, RevokeOtherSessionsResponses, RevokePublishedLinkData, RevokePublishedLinkErrors, RevokePublishedLinkResponses, RevokeSessionData, RevokeSessionErrors, RevokeSessionResponses, SearchFilesData, SearchFilesErrors, SearchFilesResponses, SignInWithPasswordData, SignInWithPasswordErrors, SignInWithPasswordResponses, SignOutData, SignOutErrors, SignOutResponses, SignUpAccountData, SignUpAccountErrors, SignUpAccountResponses, StartSnapshotData, StartSnapshotErrors, StartSnapshotResponses, TakeDownReportedLinkData, TakeDownReportedLinkErrors, TakeDownReportedLinkResponses, UnlockPublishedLinkData, UnlockPublishedLinkErrors, UnlockPublishedLinkResponses, UpdateAccountData, UpdateAccountErrors, UpdateAccountResponses, UpdateDailyNoteSettingsData, UpdateDailyNoteSettingsErrors, UpdateDailyNoteSettingsResponses, UpdateFileData, UpdateFileErrors, UpdateFileResponses, UpdateInstallationData, UpdateInstallationErrors, UpdateInstallationResponses, UpdatePreferencesData, UpdatePreferencesErrors, UpdatePreferencesResponses, UpdateProfileData, UpdateProfileErrors, UpdateProfileResponses, UpdateWorkspaceData, UpdateWorkspaceErrors, UpdateWorkspaceResponses, UploadAttachmentData, UploadAttachmentErrors, UploadAttachmentResponses, VerifyAddressData, VerifyAddressErrors, VerifyAddressResponses } from './types.gen.js';
+import type { AcceptLegalDocumentsData, AcceptLegalDocumentsErrors, AcceptLegalDocumentsResponses, CommitChangesetData, CommitChangesetErrors, CommitChangesetResponses, CreateFileData, CreateFileErrors, CreateFileResponses, CreateInvitationData, CreateInvitationErrors, CreateInvitationResponses, CreateOwnerData, CreateOwnerErrors, CreateOwnerResponses, CreatePublishedLinkData, CreatePublishedLinkErrors, CreatePublishedLinkResponses, CreateWorkspaceData, CreateWorkspaceErrors, CreateWorkspaceResponses, DeleteFileData, DeleteFileErrors, DeleteFileResponses, DeleteThemeData, DeleteThemeErrors, DeleteThemeResponses, DeleteWorkspaceData, DeleteWorkspaceErrors, DeleteWorkspaceResponses, DismissReportData, DismissReportErrors, DismissReportResponses, ExportNoteData, ExportNoteErrors, ExportNoteResponses, ExportWorkspaceData, ExportWorkspaceErrors, ExportWorkspaceResponses, FinalizeAttachmentData, FinalizeAttachmentErrors, FinalizeAttachmentResponses, GetAccountData, GetAccountErrors, GetAccountResponses, GetAttachmentRevisionData, GetAttachmentRevisionErrors, GetAttachmentRevisionResponses, GetAuthSessionData, GetAuthSessionErrors, GetAuthSessionResponses, GetChangesData, GetChangesErrors, GetChangesResponses, GetDailyNoteSettingsData, GetDailyNoteSettingsErrors, GetDailyNoteSettingsResponses, GetFileData, GetFileErrors, GetFileResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetInstallationData, GetInstallationErrors, GetInstallationResponses, GetLegalDocumentData, GetLegalDocumentErrors, GetLegalDocumentResponses, GetLegalDocumentSettingsData, GetLegalDocumentSettingsErrors, GetLegalDocumentSettingsResponses, GetMutationReceiptData, GetMutationReceiptErrors, GetMutationReceiptResponses, GetPublishedAttachmentData, GetPublishedAttachmentErrors, GetPublishedAttachmentResponses, GetPublishedPageData, GetPublishedPageErrors, GetPublishedPageResponses, GetReadinessData, GetReadinessErrors, GetReadinessResponses, GetReportPageData, GetReportPageErrors, GetReportPageResponses, GetRevisionData, GetRevisionErrors, GetRevisionResponses, GetRootHealthData, GetRootHealthErrors, GetRootHealthResponses, GetRootReadinessData, GetRootReadinessErrors, GetRootReadinessResponses, GetSetupStatusData, GetSetupStatusErrors, GetSetupStatusResponses, GetSignUpChallengeData, GetSignUpChallengeErrors, GetSignUpChallengeResponses, GetSnapshotPageData, GetSnapshotPageErrors, GetSnapshotPageResponses, GetSyncProtocolData, GetSyncProtocolErrors, GetSyncProtocolResponses, ImportThemeData, ImportThemeErrors, ImportThemeResponses, ImportWorkspaceData, ImportWorkspaceErrors, ImportWorkspaceResponses, ListAccountsData, ListAccountsErrors, ListAccountsResponses, ListBacklinksData, ListBacklinksErrors, ListBacklinksResponses, ListDeletedFilesData, ListDeletedFilesErrors, ListDeletedFilesResponses, ListFilesData, ListFilesErrors, ListFilesResponses, ListHistoryData, ListHistoryErrors, ListHistoryResponses, ListInvitationsData, ListInvitationsErrors, ListInvitationsResponses, ListPublishedLinksData, ListPublishedLinksErrors, ListPublishedLinksResponses, ListReportsData, ListReportsErrors, ListReportsResponses, ListSessionsData, ListSessionsErrors, ListSessionsResponses, ListWorkspacesData, ListWorkspacesErrors, ListWorkspacesResponses, OpenPublishedPageData, OpenPublishedPageErrors, OpenPublishedPageResponses, OpenSyncNoticesData, OpenSyncNoticesErrors, PreviewPurgeData, PreviewPurgeErrors, PreviewPurgeResponses, PurgeFilesData, PurgeFilesErrors, PurgeFilesResponses, ReadInvitationData, ReadInvitationErrors, ReadInvitationResponses, RegisterAccountData, RegisterAccountErrors, RegisterAccountResponses, RemoveAccountData, RemoveAccountErrors, RemoveAccountResponses, RemoveLegalDocumentData, RemoveLegalDocumentErrors, RemoveLegalDocumentResponses, RemoveMailSettingsData, RemoveMailSettingsErrors, RemoveMailSettingsResponses, RemoveOwnAccountData, RemoveOwnAccountErrors, RemoveOwnAccountResponses, ReportPublishedLinkData, ReportPublishedLinkErrors, ReportPublishedLinkResponses, RequestPasswordResetData, RequestPasswordResetErrors, RequestPasswordResetResponses, ResetPasswordData, ResetPasswordErrors, ResetPasswordResponses, RestoreFileData, RestoreFileErrors, RestoreFileResponses, RestoreRevisionData, RestoreRevisionErrors, RestoreRevisionResponses, RevokeInvitationData, RevokeInvitationErrors, RevokeInvitationResponses, RevokeOtherSessionsData, RevokeOtherSessionsErrors, RevokeOtherSessionsResponses, RevokePublishedLinkData, RevokePublishedLinkErrors, RevokePublishedLinkResponses, RevokeSessionData, RevokeSessionErrors, RevokeSessionResponses, SearchFilesData, SearchFilesErrors, SearchFilesResponses, SendTestMessageData, SendTestMessageErrors, SendTestMessageResponses, SignInWithPasswordData, SignInWithPasswordErrors, SignInWithPasswordResponses, SignOutData, SignOutErrors, SignOutResponses, SignUpAccountData, SignUpAccountErrors, SignUpAccountResponses, StartSnapshotData, StartSnapshotErrors, StartSnapshotResponses, TakeDownReportedLinkData, TakeDownReportedLinkErrors, TakeDownReportedLinkResponses, UnlockPublishedLinkData, UnlockPublishedLinkErrors, UnlockPublishedLinkResponses, UpdateAccountData, UpdateAccountErrors, UpdateAccountResponses, UpdateDailyNoteSettingsData, UpdateDailyNoteSettingsErrors, UpdateDailyNoteSettingsResponses, UpdateFileData, UpdateFileErrors, UpdateFileResponses, UpdateInstallationData, UpdateInstallationErrors, UpdateInstallationResponses, UpdateLegalDocumentData, UpdateLegalDocumentErrors, UpdateLegalDocumentResponses, UpdateMailSettingsData, UpdateMailSettingsErrors, UpdateMailSettingsResponses, UpdatePreferencesData, UpdatePreferencesErrors, UpdatePreferencesResponses, UpdateProfileData, UpdateProfileErrors, UpdateProfileResponses, UpdateWorkspaceData, UpdateWorkspaceErrors, UpdateWorkspaceResponses, UploadAttachmentData, UploadAttachmentErrors, UploadAttachmentResponses, VerifyAddressData, VerifyAddressErrors, VerifyAddressResponses } from './types.gen.js';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -334,6 +334,104 @@ export const updateInstallation = <ThrowOnError extends boolean = false>(options
         'Content-Type': 'application/json',
         ...options.headers
     }
+});
+
+/**
+ * Remove one legal document of the installation.
+ *
+ * Only an administrator removes a document. The server refuses while the server environment sets the documents, and while open registration needs them (record 0114).
+ */
+export const removeLegalDocument = <ThrowOnError extends boolean = false>(options: Options<RemoveLegalDocumentData, ThrowOnError>): RequestResult<RemoveLegalDocumentResponses, RemoveLegalDocumentErrors, ThrowOnError> => (options.client ?? client).delete<RemoveLegalDocumentResponses, RemoveLegalDocumentErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'notesapp_session',
+            type: 'apiKey'
+        }],
+    url: '/api/installation/legal/{document}',
+    ...options
+});
+
+/**
+ * Read one legal document of the installation to change it.
+ *
+ * Only an administrator reads the stored text or address of a document and the template of the document, with the facts that the server knows already filled in (record 0148).
+ */
+export const getLegalDocumentSettings = <ThrowOnError extends boolean = false>(options: Options<GetLegalDocumentSettingsData, ThrowOnError>): RequestResult<GetLegalDocumentSettingsResponses, GetLegalDocumentSettingsErrors, ThrowOnError> => (options.client ?? client).get<GetLegalDocumentSettingsResponses, GetLegalDocumentSettingsErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'notesapp_session',
+            type: 'apiKey'
+        }],
+    url: '/api/installation/legal/{document}',
+    ...options
+});
+
+/**
+ * Set one legal document of the installation.
+ *
+ * Only an administrator sets a document: a Markdown text that this server serves, or an external address, and its version. The documents apply when both exist. A text that still holds a blank of the template is refused. A new version asks every account to accept again (record 0120).
+ */
+export const updateLegalDocument = <ThrowOnError extends boolean = false>(options: Options<UpdateLegalDocumentData, ThrowOnError>): RequestResult<UpdateLegalDocumentResponses, UpdateLegalDocumentErrors, ThrowOnError> => (options.client ?? client).put<UpdateLegalDocumentResponses, UpdateLegalDocumentErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'notesapp_session',
+            type: 'apiKey'
+        }],
+    url: '/api/installation/legal/{document}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Remove the mail transport of the installation.
+ *
+ * Only an administrator removes the mail transport. The server refuses while the server environment sets it, and while open registration needs it (record 0114).
+ */
+export const removeMailSettings = <ThrowOnError extends boolean = false>(options?: Options<RemoveMailSettingsData, ThrowOnError>): RequestResult<RemoveMailSettingsResponses, RemoveMailSettingsErrors, ThrowOnError> => (options?.client ?? client).delete<RemoveMailSettingsResponses, RemoveMailSettingsErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'notesapp_session',
+            type: 'apiKey'
+        }],
+    url: '/api/installation/mail',
+    ...options
+});
+
+/**
+ * Set the mail transport of the installation.
+ *
+ * Only an administrator sets the mail transport (record 0148). A password that the body leaves out keeps the stored one, and no answer holds a password. The server refuses the change while the server environment sets the mail transport.
+ */
+export const updateMailSettings = <ThrowOnError extends boolean = false>(options: Options<UpdateMailSettingsData, ThrowOnError>): RequestResult<UpdateMailSettingsResponses, UpdateMailSettingsErrors, ThrowOnError> => (options.client ?? client).put<UpdateMailSettingsResponses, UpdateMailSettingsErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'notesapp_session',
+            type: 'apiKey'
+        }],
+    url: '/api/installation/mail',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Send a test message to the address of the administrator.
+ *
+ * Sends one message through the mail transport that applies now, to the address of the administrator who asks (record 0148). A failure names its kind and never the answer of the mail server.
+ */
+export const sendTestMessage = <ThrowOnError extends boolean = false>(options?: Options<SendTestMessageData, ThrowOnError>): RequestResult<SendTestMessageResponses, SendTestMessageErrors, ThrowOnError> => (options?.client ?? client).post<SendTestMessageResponses, SendTestMessageErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'notesapp_session',
+            type: 'apiKey'
+        }],
+    url: '/api/installation/mail/test',
+    ...options
 });
 
 /**

@@ -19,8 +19,12 @@ import {
   maxLegalVersionLength,
   maxProofDifficulty,
   minProofDifficulty,
+  legalDocumentNames,
+  maxLegalTextBytes,
+  templateBlanks,
+  type LegalDocumentName,
+  type LegalDocuments,
 } from '@notesapp/core';
-import type { LegalDocuments } from '@notesapp/core';
 import { Buffer } from 'node:buffer';
 import { readFile } from 'node:fs/promises';
 import { readServedOrigins, type ServedOrigin } from './served-origins.ts';
@@ -623,11 +627,7 @@ function documentUrl(value: string): string | null {
   }
 }
 
-/** The two legal documents, by the name that their page takes. */
-export const legalDocumentNames = ['terms', 'privacy'] as const;
-
-/** One legal document, by the name that its page takes. */
-export type LegalDocumentName = (typeof legalDocumentNames)[number];
+export { legalDocumentNames, type LegalDocumentName } from '@notesapp/core';
 
 /** The Markdown file of each served legal document, or `null`. */
 export type LegalFiles = Readonly<Record<LegalDocumentName, string | null>>;
@@ -712,15 +712,9 @@ function readLegalDocuments(
 export type LegalTexts = Readonly<Record<LegalDocumentName, string | null>>;
 
 /** The largest legal document that this server reads. */
-export const maxLegalDocumentBytes = 256 * 1024;
+export const maxLegalDocumentBytes = maxLegalTextBytes;
 
-/** A blank of a template: a word or words in double braces. */
-const templateBlank = /\{\{[^{}\n]*\}\}/g;
-
-/** The distinct blanks of a template that a text still holds. */
-export function templateBlanks(text: string): readonly string[] {
-  return [...new Set(text.match(templateBlank) ?? [])];
-}
+export { templateBlanks } from '@notesapp/core';
 
 /**
  * Reads the Markdown file of each served legal document (record 0140).

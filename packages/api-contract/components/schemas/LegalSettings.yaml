@@ -1,0 +1,24 @@
+type: object
+description: >-
+  The legal documents that the installation holds. They apply when both
+  exist (record 0148).
+additionalProperties: false
+required:
+  - source
+  - terms
+  - privacy
+properties:
+  source:
+    allOf:
+      - $ref: './SettingSource.yaml'
+    readOnly: true
+  terms:
+    oneOf:
+      - $ref: './LegalDocumentSummary.yaml'
+      - type: 'null'
+    readOnly: true
+  privacy:
+    oneOf:
+      - $ref: './LegalDocumentSummary.yaml'
+      - type: 'null'
+    readOnly: true

@@ -166,6 +166,16 @@ await test('the first account is an administrator with the default limit', async
     mailConfigured: false,
     invitationLifetimeHours: config.accounts.invitationLifetimeHours,
     defaultLimitBytes: Number(defaultAccountLimitBytes),
+    mail: {
+      source: 'none',
+      host: null,
+      port: null,
+      security: null,
+      username: null,
+      sender: null,
+      passwordStored: false,
+    },
+    legalDocuments: { source: 'none', terms: null, privacy: null },
   });
 });
 

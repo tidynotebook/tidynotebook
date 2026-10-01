@@ -121,7 +121,11 @@ export {
   parseTag,
   revisionTag,
 } from './routes/files.ts';
-export type { MailMessage, MailTransport } from './auth/mail.ts';
+export type {
+  ApplicationMail,
+  MailMessage,
+  MailTransport,
+} from './auth/mail.ts';
 export { createMailTransport } from './auth/mail.ts';
 export { bootstrapOwner, type BootstrapResult } from './cli/bootstrap.ts';
 export { recoverAccount, type RecoveryResult } from './cli/recover-account.ts';

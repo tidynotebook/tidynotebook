@@ -77,6 +77,19 @@ export const installationRole = pgEnum('installation_role', [
 export const accountState = pgEnum('account_state', ['enabled', 'disabled']);
 
 /** Who can make an account (record 0108). */
+/** How the connection to the mail server is protected (record 0148). */
+export const mailSecurity = pgEnum('mail_security', [
+  'tls',
+  'starttls',
+  'none',
+]);
+
+/** The source of one legal document (record 0148). */
+export const legalDocumentKind = pgEnum('legal_document_kind', [
+  'text',
+  'address',
+]);
+
 export const registrationPolicy = pgEnum('registration_policy', [
   'invitation',
   'open',
@@ -167,6 +180,11 @@ export const accounts = pgTable(
  * one row and no second. The registration policy lives here and not in the
  * environment, so the registration function reads it in its own transaction
  * (record 0108).
+ *
+ * The mail transport and the two legal documents that an administrator sets
+ * live here too (record 0148). A group is whole or absent, which the checks
+ * hold. The password of the mail server is sealed by the server, so the row
+ * holds no password that a read of the database opens.
  */
 export const installationSettings = pgTable(
   'installation_settings',
@@ -175,11 +193,39 @@ export const installationSettings = pgTable(
     registrationPolicy: registrationPolicy('registration_policy')
       .notNull()
       .default('invitation'),
+    mailHost: text('mail_host'),
+    mailPort: integer('mail_port'),
+    mailSecurity: mailSecurity('mail_security'),
+    mailUsername: text('mail_username'),
+    mailPasswordSealed: text('mail_password_sealed'),
+    mailSender: text('mail_sender'),
+    termsKind: legalDocumentKind('terms_kind'),
+    termsText: text('terms_text'),
+    termsUrl: text('terms_url'),
+    termsVersion: text('terms_version'),
+    privacyKind: legalDocumentKind('privacy_kind'),
+    privacyText: text('privacy_text'),
+    privacyUrl: text('privacy_url'),
+    privacyVersion: text('privacy_version'),
     updatedAt: timestamp('updated_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
-  (table) => [check('installation_settings_one_row', sql`${table.id}`)],
+  (table) => [
+    check('installation_settings_one_row', sql`${table.id}`),
+    check(
+      'installation_settings_mail_check',
+      sql`(${table.mailHost} is null and ${table.mailPort} is null and ${table.mailSecurity} is null and ${table.mailUsername} is null and ${table.mailPasswordSealed} is null and ${table.mailSender} is null) or coalesce((char_length(${table.mailHost}) between 1 and 253 and ${table.mailPort} between 1 and 65535 and ${table.mailSecurity} is not null and char_length(${table.mailSender}) between 3 and 320 and (${table.mailUsername} is null or char_length(${table.mailUsername}) between 1 and 320) and (${table.mailPasswordSealed} is null or ${table.mailUsername} is not null)), false)`,
+    ),
+    check(
+      'installation_settings_terms_check',
+      sql`(${table.termsKind} is null and ${table.termsText} is null and ${table.termsUrl} is null and ${table.termsVersion} is null) or coalesce((char_length(${table.termsVersion}) between 1 and 64 and ((${table.termsKind} = 'text' and ${table.termsUrl} is null and octet_length(${table.termsText}) between 1 and 262144) or (${table.termsKind} = 'address' and ${table.termsText} is null and ${table.termsUrl} ~ '^https?://' and char_length(${table.termsUrl}) <= 2048))), false)`,
+    ),
+    check(
+      'installation_settings_privacy_check',
+      sql`(${table.privacyKind} is null and ${table.privacyText} is null and ${table.privacyUrl} is null and ${table.privacyVersion} is null) or coalesce((char_length(${table.privacyVersion}) between 1 and 64 and ((${table.privacyKind} = 'text' and ${table.privacyUrl} is null and octet_length(${table.privacyText}) between 1 and 262144) or (${table.privacyKind} = 'address' and ${table.privacyText} is null and ${table.privacyUrl} ~ '^https?://' and char_length(${table.privacyUrl}) <= 2048))), false)`,
+    ),
+  ],
 );
 
 /**

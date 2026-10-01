@@ -27,13 +27,14 @@ authentication routes on one origin, and it holds no domain rule.
 - `main.ts` wires the process to `src/lifecycle.ts`, which owns the order of the start
   and of the stop and holds no signal and no exit.
 - `src/auth/` holds the Better Auth adapter, the actor resolver, the secrets of a
-  published link, the seal of a reported address (`report-seal.ts`, 0123), mail
-  and its budget for each address (`mail.ts`), the words of every message
+  published link, the seal of a reported address and of the mail password
+  (`seal.ts`, 0123, 0148), mail and its budget for each address (`mail.ts`), the words of every message
   (`messages.ts`, 0141), setup, invitations, and `registration.ts`, the one path that makes an account
   (0108). `open-registration.ts` holds the sign-up and the proof of an address
   of open registration, `verification.ts` the token of its link (0114), and
   `proof-of-work.ts` the challenges of a sign-up (0115). `src/jobs/` holds background work, `src/cli/` the operator
   commands. `routes/administration.ts` serves the installation operations (0109).
+- `src/installation-settings.ts` decides the mail and the legal documents (0148).
 - A domain rule lives in `packages/core`, every SQL statement in
   `packages/storage-server`, and every request shape in `packages/api-contract/`.
 
@@ -68,7 +69,7 @@ request that no generated operation can express uses `app.inject()`.
   a route, including a probe, and two ids of one answer share one function (0040).
 - No domain rule in a handler. It reads validated input, calls a use case, and answers.
 - No direct SQL or weakened server invariant, and that includes a readiness probe.
-- No second origin list and no second decider of the client address (0039, 0043).
+- No second origin list, client address or settings decider (0039, 0043, 0148).
 - No rejected body, token, or password in a log line, which is why the whole reader
   path of a published link is redacted. A rejection names the request id and the reason.
 - No handwritten HTTP transport. `better-auth.ts` is the one listed protocol file.

@@ -149,3 +149,24 @@ export function passwordChangedMessage(input: {
     ]),
   };
 }
+
+/**
+ * The message that an administrator sends to check the mail transport
+ * (record 0148).
+ */
+export function testMessage(input: {
+  readonly to: string;
+  readonly origin: string;
+}): MailMessage {
+  const name = signature(input.origin);
+  return {
+    to: input.to,
+    subject: `Test message from ${name}`,
+    text: body([
+      `This message checks the mail settings of ${name}.`,
+      'It arrived, so invitations, sign-up links and password resets can reach a person too.',
+      'If it is in your spam folder, check the SPF, DKIM and DMARC records of the domain of the sender.',
+      `-- \n${name}`,
+    ]),
+  };
+}

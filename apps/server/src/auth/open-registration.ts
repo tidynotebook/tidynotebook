@@ -51,7 +51,7 @@ import {
   registerAccount,
 } from '@notesapp/core';
 import type { NotesappAuth } from './better-auth.ts';
-import type { MailMessage, MailTransport } from './mail.ts';
+import type { Mailer, MailMessage } from './mail.ts';
 import { signUpAttemptMessage, verificationMessage } from './messages.ts';
 import type { RegistrationIdentity } from './registration.ts';
 import type { VerificationTokens } from './verification.ts';
@@ -65,14 +65,17 @@ export type OpenRegistrationDependencies = {
     Pick<RegistrationStore, 'registrationPolicy'>;
   /** The account store, which keeps the consent of a new account. */
   readonly accounts: WorkspaceAdminStore;
-  /** The legal documents of the installation, or `null` (record 0120). */
-  readonly documents: LegalDocuments | null;
   /**
-   * The mail transport. The open policy needs one (record 0114). The
-   * composition gives the budgeted transport of `mail.ts`, so a sign-up cannot
+   * The legal documents that apply now, or `null` (records 0120, 0148). The
+   * decider of `installation-settings.ts` answers at each sign-up.
+   */
+  readonly documents: () => Promise<LegalDocuments | null>;
+  /**
+   * The mailer. The open policy needs a transport (record 0114). The
+   * composition gives the budgeted mailer of `mail.ts`, so a sign-up cannot
    * flood the mailbox of another person (record 0141).
    */
-  readonly mail: MailTransport | null;
+  readonly mail: Mailer;
   /** The application origin, which every link of a message names. */
   readonly origin: string;
   /** How long a pending sign-up waits for its verification. */
@@ -109,7 +112,7 @@ async function send(
   dependencies: OpenRegistrationDependencies,
   message: MailMessage,
 ): Promise<void> {
-  if (dependencies.mail === null) return;
+  if (!(await dependencies.mail.available())) return;
   await dependencies.mail.send(message);
 }
 
@@ -121,7 +124,7 @@ export async function signUpOpen(
   dependencies: OpenRegistrationDependencies,
   input: SignUpInput,
 ): Promise<Result<void>> {
-  if ((await dependencies.identity.registrationPolicy()) !== 'open')
+  if (!(await openRegistration(dependencies.identity)))
     return fail('registration_closed');
   const refusal = await dependencies.challenges.check(
     input.proof,
@@ -129,7 +132,7 @@ export async function signUpOpen(
     dependencies.useChallenge,
   );
   if (refusal !== null) return fail('proof_invalid');
-  const documents = dependencies.documents;
+  const documents = await dependencies.documents();
   if (documents !== null && !consentMatches(documents, input.consent))
     return fail('consent_required');
   if (await dependencies.breached(input.password))

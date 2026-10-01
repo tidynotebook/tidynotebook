@@ -1,0 +1,55 @@
+type: object
+description: >-
+  The mail transport that applies now. No member holds a password.
+additionalProperties: false
+required:
+  - source
+  - host
+  - port
+  - security
+  - username
+  - sender
+  - passwordStored
+properties:
+  source:
+    allOf:
+      - $ref: './SettingSource.yaml'
+    readOnly: true
+  host:
+    type:
+      - string
+      - 'null'
+    readOnly: true
+    description: The host name of the mail server.
+    maxLength: 253
+  port:
+    type:
+      - integer
+      - 'null'
+    readOnly: true
+    description: The port of the mail server.
+    minimum: 1
+    maximum: 65535
+  security:
+    oneOf:
+      - $ref: './MailSecurity.yaml'
+      - type: 'null'
+    readOnly: true
+  username:
+    type:
+      - string
+      - 'null'
+    readOnly: true
+    description: The user name that signs in to the mail server, or null.
+    maxLength: 320
+  sender:
+    type:
+      - string
+      - 'null'
+    readOnly: true
+    description: The sender of every message.
+    maxLength: 320
+  passwordStored:
+    type: boolean
+    readOnly: true
+    description: Whether the application holds a password for the mail server.

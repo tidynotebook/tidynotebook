@@ -43,6 +43,7 @@ export type InstallationAction =
   | 'change-role'
   | 'change-limit'
   | 'change-policy'
+  | 'change-settings'
   | 'list-reports'
   | 'close-report'
   | 'take-down';
@@ -66,6 +67,7 @@ const roleActions: Readonly<
     'change-role',
     'change-limit',
     'change-policy',
+    'change-settings',
     'list-reports',
     'close-report',
     'take-down',

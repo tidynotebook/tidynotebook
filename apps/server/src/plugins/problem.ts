@@ -65,7 +65,11 @@ export type ProblemCode =
   | 'consent_required'
   | 'address_unverified'
   | 'account_unavailable'
-  | 'theme_limit';
+  | 'theme_limit'
+  | 'setting_locked'
+  | 'setting_required'
+  | 'legal_document_unfinished'
+  | 'mail_failed';
 
 /** Problem details body. Extra members are permitted by RFC 9457. */
 export type Problem = {
@@ -81,6 +85,10 @@ export type Problem = {
   readonly fileIds?: readonly string[];
   /** The parts that open registration lacks (record 0114). */
   readonly missing?: readonly string[];
+  /** The blanks of a template that a legal text still holds (record 0148). */
+  readonly blanks?: readonly string[];
+  /** The kind of a failed test message (record 0148). */
+  readonly reason?: string;
 };
 
 const titles: Readonly<Record<ProblemCode, string>> = {
@@ -134,6 +142,10 @@ const titles: Readonly<Record<ProblemCode, string>> = {
   address_unverified: 'The address of this account is not proved yet.',
   account_unavailable: 'This account cannot sign in.',
   theme_limit: 'The account keeps as many imported themes as it may.',
+  setting_locked: 'The server environment sets this setting.',
+  setting_required: 'Open registration needs this setting.',
+  legal_document_unfinished: 'The text still holds a blank of the template.',
+  mail_failed: 'The mail server did not take the message.',
   rate_limited: 'Too many attempts were made in a short time.',
   route_not_found: 'No operation serves this method and path.',
   not_ready: 'The service cannot accept traffic yet.',
@@ -363,6 +375,14 @@ const domainStatus: Readonly<
   consent_required: { status: 409, code: 'consent_required' },
   // The account keeps as many imported themes as it may (record 0143).
   theme_limit: { status: 409, code: 'theme_limit' },
+  // A group that the environment sets, and a part that open registration
+  // needs, do not change in the application (record 0148).
+  setting_locked: { status: 409, code: 'setting_locked' },
+  setting_required: { status: 409, code: 'setting_required' },
+  legal_document_unfinished: {
+    status: 422,
+    code: 'legal_document_unfinished',
+  },
 };
 
 /** The explanation of one domain failure. It names no path and no content. */
@@ -422,6 +442,12 @@ const domainTitles: Readonly<Record<DomainErrorCode, string>> = {
     'The terms or the privacy notice changed. Read them again and accept them.',
   theme_limit:
     'The account already keeps as many imported themes as it may. Delete one first.',
+  setting_locked:
+    'The server environment sets this setting, so it changes there and not here.',
+  setting_required:
+    'Open registration needs this setting. Close open registration first.',
+  legal_document_unfinished:
+    'The text still holds a blank of the template. Fill each blank first.',
 };
 
 /**
@@ -436,6 +462,35 @@ export class OpenRegistrationUnavailableError extends Error {
     super(domainTitles.open_registration_unavailable);
     this.name = 'OpenRegistrationUnavailableError';
     this.missing = [...missing];
+  }
+}
+
+/**
+ * A legal text that still holds a blank of the template (record 0148). The
+ * answer names each blank, so the page can show the fields that are left.
+ */
+export class LegalDocumentUnfinishedError extends Error {
+  readonly blanks: readonly string[];
+
+  constructor(blanks: readonly string[]) {
+    super(domainTitles.legal_document_unfinished);
+    this.name = 'LegalDocumentUnfinishedError';
+    this.blanks = [...blanks];
+  }
+}
+
+/**
+ * A test message that did not go (record 0148). The answer names the kind of
+ * the failure and never the answer of the mail server, which can name a host
+ * or an address.
+ */
+export class MailFailedError extends Error {
+  readonly reason: string;
+
+  constructor(reason: string) {
+    super('The mail server did not take the test message.');
+    this.name = 'MailFailedError';
+    this.reason = reason;
   }
 }
 
@@ -492,10 +547,13 @@ export function createProblem(input: {
   readonly issues?: readonly ValidationIssue[];
   readonly fileIds?: readonly string[];
   readonly missing?: readonly string[];
+  readonly blanks?: readonly string[];
+  readonly reason?: string;
 }): Problem {
   const issues = input.issues ?? [];
   const fileIds = input.fileIds ?? [];
   const missing = input.missing ?? [];
+  const blanks = input.blanks ?? [];
   return {
     type: `https://notesapp.invalid/problems/${input.code}`,
     title: titles[input.code],
@@ -507,6 +565,8 @@ export function createProblem(input: {
     ...(issues.length > 0 ? { issues } : {}),
     ...(fileIds.length > 0 ? { fileIds } : {}),
     ...(missing.length > 0 ? { missing } : {}),
+    ...(blanks.length > 0 ? { blanks } : {}),
+    ...(input.reason === undefined ? {} : { reason: input.reason }),
   };
 }
 
@@ -518,7 +578,25 @@ export function classifyError(error: unknown): {
   issues: readonly ValidationIssue[];
   fileIds?: readonly string[];
   missing?: readonly string[];
+  blanks?: readonly string[];
+  reason?: string;
 } {
+  if (error instanceof LegalDocumentUnfinishedError)
+    return {
+      status: 422,
+      code: 'legal_document_unfinished',
+      detail: error.message,
+      issues: [],
+      blanks: error.blanks,
+    };
+  if (error instanceof MailFailedError)
+    return {
+      status: 422,
+      code: 'mail_failed',
+      detail: error.message,
+      issues: [],
+      reason: error.reason,
+    };
   if (error instanceof OpenRegistrationUnavailableError)
     return {
       status: 422,

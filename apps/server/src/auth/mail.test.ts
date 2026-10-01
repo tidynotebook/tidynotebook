@@ -3,8 +3,12 @@ import test from 'node:test';
 import {
   budgetedTransport,
   envelopeOf,
+  mailFailureReason,
+  MailUnavailableError,
+  noMailer,
+  transportOptions,
+  type Mailer,
   type MailMessage,
-  type MailTransport,
 } from './mail.ts';
 
 const message: MailMessage = {
@@ -28,7 +32,8 @@ await test('every message states that a program wrote it', () => {
 
 await test('a budgeted transport sends while the address has budget', async () => {
   const sent: MailMessage[] = [];
-  const inner: MailTransport = {
+  const inner: Mailer = {
+    available: () => Promise.resolve(true),
     send: (next) => {
       sent.push(next);
       return Promise.resolve();
@@ -41,14 +46,67 @@ await test('a budgeted transport sends while the address has budget', async () =
     left -= 1;
     return Promise.resolve(left >= 0);
   });
-  assert.notEqual(transport, null);
+  assert.equal(await transport.available(), true);
   for (let attempt = 0; attempt < 3; attempt += 1)
-    await transport?.send(message);
+    await transport.send(message);
   // The third message is over the budget, and it goes nowhere in silence.
   assert.equal(sent.length, 2);
   assert.deepEqual(asked, ['a@example.com', 'a@example.com', 'a@example.com']);
+  const none = budgetedTransport(noMailer, () => Promise.resolve(true));
+  assert.equal(await none.available(), false);
+  await assert.rejects(none.send(message), MailUnavailableError);
+});
+
+await test('each security mode of the settings reaches the transport', () => {
+  const mail = {
+    host: 'smtp.example.com',
+    port: 587,
+    security: 'starttls' as const,
+    username: 'notes',
+    password: 'secret',
+    sender: 'a@example.com',
+  };
+  assert.deepEqual(transportOptions(mail), {
+    host: 'smtp.example.com',
+    port: 587,
+    secure: false,
+    requireTLS: true,
+    ignoreTLS: false,
+    auth: { user: 'notes', pass: 'secret' },
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 30_000,
+  });
+  const tls = transportOptions({ ...mail, security: 'tls', port: 465 });
+  assert.equal(tls.secure, true);
+  assert.equal(tls.requireTLS, false);
+  const plain = transportOptions({
+    ...mail,
+    security: 'none',
+    username: null,
+    password: null,
+    host: '[2001:db8::1]',
+  });
+  assert.equal(plain.ignoreTLS, true);
+  assert.equal(plain.auth, undefined);
+  assert.equal(plain.host, '2001:db8::1');
+});
+
+await test('a failure names only its kind', () => {
+  assert.equal(mailFailureReason(new MailUnavailableError()), 'unavailable');
+  assert.equal(mailFailureReason({ code: 'EAUTH' }), 'authentication');
+  assert.equal(mailFailureReason({ responseCode: 535 }), 'authentication');
+  assert.equal(mailFailureReason({ code: 'ETLS' }), 'security');
   assert.equal(
-    budgetedTransport(null, () => Promise.resolve(true)),
-    null,
+    mailFailureReason({ code: 'ESOCKET', message: 'wrong version number' }),
+    'security',
   );
+  assert.equal(
+    mailFailureReason({ code: 'ESOCKET', message: 'reset' }),
+    'connection',
+  );
+  assert.equal(mailFailureReason({ code: 'ECONNECTION' }), 'connection');
+  assert.equal(mailFailureReason({ code: 'EENVELOPE' }), 'sender');
+  assert.equal(mailFailureReason(new Error('x')), 'other');
+  assert.equal(mailFailureReason('x'), 'other');
 });

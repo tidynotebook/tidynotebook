@@ -37,6 +37,15 @@ import type {
   LinkReportRecord,
 } from './ports.ts';
 import { maxAccountLimitBytes } from './registration.ts';
+import {
+  emptyInstallationSettings,
+  readInstallationSettings,
+  removeMailSettings,
+  setLegalDocument,
+  setMailSettings,
+  type StoredInstallationSettings,
+  type StoredLegalDocument,
+} from './installation-settings.ts';
 
 const ada = '11111111-1111-4111-8111-111111111111';
 const bea = '22222222-2222-4222-8222-222222222222';
@@ -57,6 +66,7 @@ type FakeInstallation = InstallationStore & {
   readonly invitations: Map<string, InvitationRecord>;
   readonly reports: Map<string, LinkReportRecord>;
   policy: RegistrationPolicy;
+  settings: StoredInstallationSettings;
   transactions: number;
 };
 
@@ -85,6 +95,7 @@ function createStore(seed: readonly AccountStanding[]): FakeInstallation {
     invitations,
     reports,
     policy: 'invitation',
+    settings: emptyInstallationSettings,
     transactions: 0,
     installation<T>(
       _actor: Actor,
@@ -164,6 +175,18 @@ function createStore(seed: readonly AccountStanding[]): FakeInstallation {
           store.policy = policy;
           return Promise.resolve();
         },
+        settings: () => Promise.resolve(store.settings),
+        setMailSettings: (mail) => {
+          store.settings = { ...store.settings, mail };
+          return Promise.resolve();
+        },
+        setLegalDocument: (name, document) => {
+          store.settings =
+            name === 'terms'
+              ? { ...store.settings, terms: document }
+              : { ...store.settings, privacy: document };
+          return Promise.resolve();
+        },
       });
     },
   };
@@ -191,6 +214,7 @@ await test('an administrator takes every action and a member takes none', () => 
     'change-role',
     'change-limit',
     'change-policy',
+    'change-settings',
     'list-reports',
     'close-report',
     'take-down',
@@ -421,6 +445,131 @@ await test('the open policy needs every part and a member changes nothing', asyn
     value: 'open',
   });
   assert.equal((await readRegistrationPolicy(store, actorFor(bea))).ok, false);
+});
+
+const none = { mail: false, publishedOrigin: true, legalDocuments: false };
+const mailOf = {
+  host: 'smtp.example.test',
+  port: 587,
+  security: 'starttls' as const,
+  username: 'notes',
+  sender: 'Notes <no-reply@example.test>',
+};
+const terms: StoredLegalDocument = {
+  kind: 'text',
+  text: '# Terms',
+  version: '1',
+};
+const privacy: StoredLegalDocument = {
+  kind: 'address',
+  url: 'https://example.test/privacy',
+  version: '1',
+};
+
+await test('the open policy reads the parts that the administrator set', async () => {
+  const store = createStore([admin(ada)]);
+  assert.equal(
+    (await setRegistrationPolicy(store, actorFor(ada), 'open', none)).ok,
+    false,
+  );
+  assert.equal(
+    (await setMailSettings(store, actorFor(ada), mailOf, 'sealed', none)).ok,
+    true,
+  );
+  await setLegalDocument(store, actorFor(ada), 'terms', terms, none);
+  // One document is not enough: the documents apply when both exist.
+  assert.deepEqual(
+    await setRegistrationPolicy(store, actorFor(ada), 'open', none),
+    {
+      ok: false,
+      error: { code: 'open_registration_unavailable', fileIds: [] },
+    },
+  );
+  await setLegalDocument(store, actorFor(ada), 'privacy', privacy, none);
+  assert.deepEqual(
+    await setRegistrationPolicy(store, actorFor(ada), 'open', none),
+    { ok: true, value: 'open' },
+  );
+});
+
+await test('a removal that open registration needs is refused', async () => {
+  const store = createStore([admin(ada)]);
+  await setMailSettings(store, actorFor(ada), mailOf, 'sealed', none);
+  await setLegalDocument(store, actorFor(ada), 'terms', terms, none);
+  await setLegalDocument(store, actorFor(ada), 'privacy', privacy, none);
+  await setRegistrationPolicy(store, actorFor(ada), 'open', none);
+  const required = {
+    ok: false,
+    error: { code: 'setting_required', fileIds: [] },
+  };
+  assert.deepEqual(
+    await removeMailSettings(store, actorFor(ada), none),
+    required,
+  );
+  assert.deepEqual(
+    await setLegalDocument(store, actorFor(ada), 'privacy', null, none),
+    required,
+  );
+  assert.notEqual(store.settings.mail, null);
+  assert.notEqual(store.settings.privacy, null);
+  await setRegistrationPolicy(store, actorFor(ada), 'invitation', none);
+  assert.equal((await removeMailSettings(store, actorFor(ada), none)).ok, true);
+  assert.equal(store.settings.mail, null);
+});
+
+await test('a group that the environment sets is locked', async () => {
+  const store = createStore([admin(ada)]);
+  const locked = { ok: false, error: { code: 'setting_locked', fileIds: [] } };
+  const environment = {
+    mail: true,
+    publishedOrigin: true,
+    legalDocuments: true,
+  };
+  assert.deepEqual(
+    await setMailSettings(store, actorFor(ada), mailOf, null, environment),
+    locked,
+  );
+  assert.deepEqual(
+    await removeMailSettings(store, actorFor(ada), environment),
+    locked,
+  );
+  assert.deepEqual(
+    await setLegalDocument(store, actorFor(ada), 'terms', terms, environment),
+    locked,
+  );
+  assert.deepEqual(store.settings, emptyInstallationSettings);
+});
+
+await test('a kept password stays only with its user name', async () => {
+  const store = createStore([admin(ada)]);
+  await setMailSettings(store, actorFor(ada), mailOf, 'sealed', none);
+  await setMailSettings(store, actorFor(ada), mailOf, 'keep', none);
+  assert.equal(store.settings.mail?.passwordSealed, 'sealed');
+  await setMailSettings(
+    store,
+    actorFor(ada),
+    { ...mailOf, username: null },
+    'keep',
+    none,
+  );
+  assert.equal(store.settings.mail?.passwordSealed, null);
+});
+
+await test('a member reads and changes no setting', async () => {
+  const store = createStore([admin(ada), member(bea)]);
+  const forbidden = { ok: false, error: { code: 'forbidden', fileIds: [] } };
+  assert.deepEqual(
+    await readInstallationSettings(store, actorFor(bea)),
+    forbidden,
+  );
+  assert.deepEqual(
+    await setMailSettings(store, actorFor(bea), mailOf, null, none),
+    forbidden,
+  );
+  assert.deepEqual(
+    await setLegalDocument(store, actorFor(bea), 'terms', terms, none),
+    forbidden,
+  );
 });
 
 await test('an administrator reads, closes and acts on a report and a member cannot', async () => {
