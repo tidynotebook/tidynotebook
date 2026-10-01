@@ -21,6 +21,8 @@ import {
   insertColumnLeftEdit,
   insertRowAboveEdit,
   addColumnEdit,
+  appendColumnEdit,
+  appendRowEdit,
   cellAboveEdit,
   cellBelowEdit,
   cellText,
@@ -715,5 +717,25 @@ await test('a column takes the alignment a person sets', () => {
   assert.equal(
     applied(centred, tableEditSpec(centred, alignColumnEdit(null))),
     '| a   | b‸   |\n| --- | --- |\n| 1   | 2   |',
+  );
+});
+
+await test('an add bar adds a row or a column at the end, from any cell', () => {
+  // Record 0147. The bar under the table and the bar at its right edge act
+  // on the table and not on the cell of the caret, so a press from the
+  // header adds at the end all the same.
+  const inHeader = stateOf(aligned.replace('| a   ', '| a‸   '));
+  assert.equal(
+    applied(inHeader, tableEditSpec(inHeader, appendRowEdit)),
+    '| a   | b   |\n| --- | --- |\n| 1   | 2   |\n| ‸    |     |',
+  );
+  assert.equal(
+    applied(inHeader, tableEditSpec(inHeader, appendColumnEdit)),
+    '| a   | b   | ‸    |\n| --- | --- | --- |\n| 1   | 2   |     |',
+  );
+  const inBody = stateOf(aligned.replace('| 1   ', '| 1‸   '));
+  assert.equal(
+    applied(inBody, tableEditSpec(inBody, appendColumnEdit)),
+    '| a   | b   | ‸    |\n| --- | --- | --- |\n| 1   | 2   |     |',
   );
 });

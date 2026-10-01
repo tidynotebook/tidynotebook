@@ -30,14 +30,18 @@ back. Press Enter to go to the cell below, and Shift and Enter to go up. Tab in
 the last cell and Enter in the last row add a row. You can also select a cell
 to write in it.
 
-A handle shows to the left of the row and above the column that you point at,
-or that holds the cursor. Select it to open the menu of that row or that
-column. The row menu inserts a row above or below, moves the row up or down,
+A small handle of six dots shows on the left edge of the row and on the top
+edge of the column that you point at, or that holds the cursor. Select it to
+open the menu of that row or that column. The row or the column that the menu
+acts on shows as selected. The row menu inserts a row above or below, moves the row up or down,
 and deletes the row. The column menu inserts a column to the left or to the
 right, moves the column, sets its alignment, and deletes it. The header row and
 the last column stay. Both menus have **Delete table**, which removes the whole
 table. Press Ctrl + Z to get it back. The command palette offers the same
 actions while the cursor is in a table.
+
+To add a row at the end, select the **+** bar under the table. To add a column
+at the end, point at the table and select the **+** bar at its right edge.
 
 To move a row or a column, drag its handle. A line shows where it goes. Release
 the handle to move it there. Press Escape to stop the drag and move nothing.
@@ -99,9 +103,10 @@ reference links, images, thematic breaks, hard breaks, escapes, and entities
 all work as CommonMark describes.
 
 A task box is a real checkbox. Select it to tick the line. A table shows as a
-grid of cells, and the note stores it as a GitHub table. A table wider than the
-column scrolls sideways inside its own outline, and the rest of the note stays
-where it is.
+grid of cells, and the note stores it as a GitHub table. A long cell wraps
+onto more lines, so each column takes the width that its text needs. A table
+that cannot fit even when its cells wrap scrolls sideways inside its own
+outline, and the rest of the note stays where it is.
 
 ## Ordered lists
 

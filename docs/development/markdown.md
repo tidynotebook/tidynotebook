@@ -85,7 +85,9 @@ Reveal is per construct, never per marker.
 A widget exists only where text cannot express the result: an image, a diagram,
 and math. A table stays editable text: each row of the source is one row of a
 real table and each cell holds its own padding, so the columns line up without
-a widget and every cell is edited where it stands. The delimiter row follows
+a widget and every cell is edited where it stands. The padding never shows, and
+a cell wraps, so a column takes the width of its text
+([decision 0147](../decisions/0147-a-table-sizes-to-its-text-and-its-controls-sit-on-its-edge.md)). The delimiter row follows
 the same reveal rule as every other marker, because the columns already state
 what it says. Each widget covers whole lines or one span, is atomic for cursor
 movement, disappears while the selection touches it, and puts the cursor at the

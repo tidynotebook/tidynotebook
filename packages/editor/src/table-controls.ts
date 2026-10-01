@@ -1,41 +1,53 @@
 /**
- * The handles that a table carries (records 0097 and 0098).
+ * The controls that a table carries (records 0097, 0098 and 0147).
  *
- * A handle stands at the start of the active row and above the active column:
- * the row and the column of the cell under the pointer, or of the caret. A
- * press on a handle opens the menu of its row or its column. A drag of a
- * handle moves its row or its column, and a line shows where it lands.
+ * A grip stands on the edge of the table for the active row and the active
+ * column: the row and the column of the cell under the pointer, or of the
+ * caret. The row grip sits on the left edge, centred on its row, and the
+ * column grip sits on the top edge, centred on its column, as the grips of
+ * Notion and of Obsidian do. A grip straddles the edge, so the table keeps no
+ * room for it. A press on a grip opens the menu of its row or its column and
+ * marks what the menu acts on. A drag of a grip moves its row or its column,
+ * and a line shows where it lands.
  *
- * The handles stand in one layer over the text, inside the scroller of the
+ * An add bar stands under the table and at its right edge while the pointer
+ * is over the table, and the bar under the table also stands while the caret
+ * is in it. A press adds a row or a column at the end.
+ *
+ * The controls stand in one layer over the text, inside the scroller of the
  * editor, so they replace no text and the set of widget kinds of record 0002
  * stays closed. The layer is the way CodeMirror draws its own selection and
  * its tooltips: an element beside the content, placed from what the view
- * measures. A table keeps room for the handles beside its rows and above its
- * columns (`editor-theme.ts`), so a handle never covers a cell and a phone
- * shows the whole of it. A move is an edit of `table-grid.ts`. The menu is a
- * control of `packages/ui`, which the editor does not render, so a handle asks
+ * measures. A move and an add are edits of `table-grid.ts`. The menu is a
+ * control of `packages/ui`, which the editor does not render, so a grip asks
  * the application for it through `tableMenuOpener`.
  *
- * A handle takes no focus from the editor. The keyboard reaches every action
- * of the menu, moves included, from the command palette.
+ * A control takes no focus from the editor. The keyboard reaches every action
+ * of the menu, moves included, from the command palette, and Tab and Enter add
+ * a row.
  */
 import { Facet, type Extension } from '@codemirror/state';
 import { EditorView, ViewPlugin, type ViewUpdate } from '@codemirror/view';
 import { editingTransaction } from './commands.ts';
-import { glyph, gripParts } from './icon-mark.ts';
+import { glyph, gripParts, plusParts } from './icon-mark.ts';
 import { dragStep, followPointer, type DragInput } from './pointer-drag.ts';
 import { cellFormatContext, type FormatContext } from './format-context.ts';
 import {
+  appendColumnEdit,
+  appendRowEdit,
   moveColumnEdit,
   moveRowEdit,
   tableContextAt,
   tableEditSpec,
+  type TableEdit,
 } from './table-grid.ts';
 
-/** The names of the handles, which a person hears and reads. */
+/** The names of the controls, which a person hears and reads. */
 export const tableControlLabels = {
   rowMenu: 'Row actions',
   columnMenu: 'Column actions',
+  addRow: 'Add a row',
+  addColumn: 'Add a column',
 } as const;
 
 /** A place on the screen, in the coordinates of the viewport. */
@@ -46,15 +58,20 @@ export type ScreenRect = {
   readonly height: number;
 };
 
-/** What a handle asks for: the menu of its row or its column. */
+/** What a grip asks for: the menu of its row or its column. */
 export type TableMenuRequest = {
   readonly kind: 'row' | 'column';
-  /** A position in the cell of the handle, which the actions act on. */
+  /** A position in the cell of the grip, which the actions act on. */
   readonly pos: number;
-  /** The handle, where the menu opens. */
+  /** The grip, where the menu opens. */
   readonly anchor: ScreenRect;
   /** What the cell allows: a header row, one column, its alignment. */
   readonly context: FormatContext;
+  /**
+   * Tells the editor that the menu closed, so the row or the column that it
+   * marked for the menu goes back to rest.
+   */
+  readonly onClose: () => void;
 };
 
 /** Opens the menu of one row or one column. The application renders it. */
@@ -69,7 +86,7 @@ export const tableMenuOpener = Facet.define<
 /** The width of the line that shows where a row or a column lands. */
 const dropLineWidth = 2;
 
-/** One handle element. */
+/** One grip: a hit area that holds the drawn pill of six dots. */
 function handle(kind: 'row' | 'column'): HTMLButtonElement {
   const button = document.createElement('button');
   const label =
@@ -79,7 +96,24 @@ function handle(kind: 'row' | 'column'): HTMLButtonElement {
   button.tabIndex = -1;
   button.setAttribute('aria-label', label);
   button.title = label;
-  button.append(glyph('cm-np-table-control-mark', gripParts(kind === 'row')));
+  const grip = document.createElement('span');
+  grip.className = 'cm-np-table-grip';
+  grip.append(glyph('cm-np-table-control-mark', gripParts(kind === 'row')));
+  button.append(grip);
+  return button;
+}
+
+/** One add bar. */
+function addBar(kind: 'row' | 'column'): HTMLButtonElement {
+  const button = document.createElement('button');
+  const label =
+    kind === 'row' ? tableControlLabels.addRow : tableControlLabels.addColumn;
+  button.type = 'button';
+  button.className = `cm-np-table-add cm-np-table-add-${kind}`;
+  button.tabIndex = -1;
+  button.setAttribute('aria-label', label);
+  button.title = label;
+  button.append(glyph('cm-np-table-control-mark', plusParts));
   return button;
 }
 
@@ -119,25 +153,77 @@ type Place = {
   readonly height: number;
 };
 
-/** Where the handles and the drop line stand. */
+/** Where every control of the layer stands, or null where it does not. */
 type ControlPlaces = {
   readonly rowHandle: Place | null;
   readonly columnHandle: Place | null;
   readonly dropLine: Place | null;
+  readonly marked: Place | null;
+  readonly addRow: Place | null;
+  readonly addColumn: Place | null;
+  /** The grip that is pressed: its menu is open or it drags. */
+  readonly pressed: 'row' | 'column' | null;
 };
 
-/** A press on a handle, which becomes a drag once the pointer travels. */
+/** No control at all. */
+const noPlaces: ControlPlaces = {
+  rowHandle: null,
+  columnHandle: null,
+  dropLine: null,
+  marked: null,
+  addRow: null,
+  addColumn: null,
+  pressed: null,
+};
+
+/** The outline of the grid of one table, in the coordinates of the viewport. */
+type GridBox = {
+  readonly lines: readonly HTMLElement[];
+  /** The top of the header row and the bottom of the last row. */
+  readonly top: number;
+  readonly bottom: number;
+  /** The left and the right edge of the part of the grid that shows. */
+  readonly left: number;
+  readonly right: number;
+  /** True when the grid ends inside its scroll box, with nothing cut. */
+  readonly endShows: boolean;
+};
+
+/** Measures the grid of one table element. */
+function gridBox(table: HTMLElement): GridBox | null {
+  const lines = gridLines(table);
+  const first = lines[0];
+  const last = lines[lines.length - 1];
+  if (first === undefined || last === undefined) return null;
+  const cells = rowCells(first);
+  const start = cells[0]?.getBoundingClientRect();
+  const end = cells[cells.length - 1]?.getBoundingClientRect();
+  if (start === undefined || end === undefined) return null;
+  const box = table.getBoundingClientRect();
+  return {
+    lines,
+    top: first.getBoundingClientRect().top,
+    bottom: last.getBoundingClientRect().bottom,
+    left: Math.max(start.left, box.left),
+    right: Math.min(end.right, box.right),
+    endShows: end.right <= box.right + 1,
+  };
+}
+
+/** A press on a grip, which becomes a drag once the pointer travels. */
 type Drag = {
   readonly kind: 'row' | 'column';
   readonly pointerId: number;
   readonly startX: number;
   readonly startY: number;
-  /** A position in the cell of the handle, which names what moves. */
+  /** A position in the cell of the grip, which names what moves. */
   readonly pos: number;
   /** The row or the column that moves, as the grid counts them. */
   readonly from: number;
   readonly table: HTMLElement;
-  /** The handle that was pressed, where a press opens its menu. */
+  /** The cell of the grip, whose row or column the drag marks. */
+  readonly cell: HTMLElement;
+  /** The grip that was pressed, where a press opens its menu. */
   readonly button: HTMLElement;
   /** True once the pointer travelled far enough to be a drag. */
   moving: boolean;
@@ -145,18 +231,29 @@ type Drag = {
   to: number;
 };
 
-/** Builds the layer of the handles and keeps it on the active table. */
+/** The menu that a grip opened, while it is open. */
+type OpenMenu = {
+  readonly kind: 'row' | 'column';
+  readonly cell: HTMLElement;
+};
+
+/** Builds the layer of the controls and keeps it on the active table. */
 class TableControls {
   private readonly layer: HTMLElement;
   private readonly rowHandle: HTMLButtonElement;
   private readonly columnHandle: HTMLButtonElement;
+  private readonly addRow: HTMLButtonElement;
+  private readonly addColumn: HTMLButtonElement;
   private readonly dropLine: HTMLElement;
+  private readonly marked: HTMLElement;
   /** The table and the cell under the pointer, which win over the caret. */
   private hovered: HTMLElement | null = null;
   private hoveredCell: HTMLElement | null = null;
-  /** The cell the handles stand on now. */
+  /** The table and the cell the controls stand on now. */
+  private activeTable: HTMLElement | null = null;
   private activeCell: HTMLElement | null = null;
   private drag: Drag | null = null;
+  private menu: OpenMenu | null = null;
   /** Stops the listening of the window that one drag started. */
   private stopListening: (() => void) | null = null;
   private readonly onPointer: (event: PointerEvent) => void;
@@ -168,9 +265,20 @@ class TableControls {
     this.layer.className = 'cm-np-table-controls';
     this.rowHandle = handle('row');
     this.columnHandle = handle('column');
+    this.addRow = addBar('row');
+    this.addColumn = addBar('column');
     this.dropLine = document.createElement('div');
     this.dropLine.className = 'cm-np-table-drop';
-    this.layer.append(this.rowHandle, this.columnHandle, this.dropLine);
+    this.marked = document.createElement('div');
+    this.marked.className = 'cm-np-table-marked';
+    this.layer.append(
+      this.marked,
+      this.addRow,
+      this.addColumn,
+      this.rowHandle,
+      this.columnHandle,
+      this.dropLine,
+    );
     view.scrollDOM.append(this.layer);
 
     for (const [button, kind] of [
@@ -190,30 +298,50 @@ class TableControls {
       button.addEventListener('click', (event) => {
         const cell = this.activeCell;
         if (event.detail !== 0 || cell === null) return;
-        this.openMenu(kind, this.view.posAtDOM(cell, 0), button);
+        this.openMenu(kind, cell, button);
+      });
+    }
+    for (const [button, edit] of [
+      [this.addRow, appendRowEdit],
+      [this.addColumn, appendColumnEdit],
+    ] as const) {
+      button.addEventListener('mousedown', (event) => {
+        event.preventDefault();
+      });
+      button.addEventListener('click', () => {
+        this.append(edit);
       });
     }
 
     this.onPointer = (event: PointerEvent): void => {
-      if (this.drag !== null) return;
+      if (this.drag !== null || this.menu !== null) return;
       const target = event.target;
       if (!(target instanceof Element)) return;
       if (this.layer.contains(target)) return;
+      // A finger has no hover. Its controls follow the caret alone, so a tap
+      // on another table does not move them before the caret gets there.
+      if (event.pointerType === 'touch') return;
       const table = target.closest<HTMLElement>('.cm-np-table');
       const cell =
         table === null
           ? null
           : target.closest<HTMLElement>('.cm-np-table-cell, .cm-np-table-head');
-      // A pointer on the edge between two cells is over no cell, and the
-      // handles stay on the cell it left.
-      const nextCell = table === null ? null : (cell ?? this.hoveredCell);
+      // A pointer on the edge between two cells, or in the room around the
+      // grid, is over no cell, and the grips stay on the cell it left.
+      const nextCell =
+        table === null
+          ? null
+          : (cell ??
+            (this.hoveredCell !== null && table.contains(this.hoveredCell)
+              ? this.hoveredCell
+              : null));
       if (table === this.hovered && nextCell === this.hoveredCell) return;
       this.hovered = table;
       this.hoveredCell = nextCell;
       this.schedule();
     };
     this.onLeave = (): void => {
-      if (this.drag !== null) return;
+      if (this.drag !== null || this.menu !== null) return;
       this.hovered = null;
       this.hoveredCell = null;
       this.schedule();
@@ -247,7 +375,28 @@ class TableControls {
     this.layer.remove();
   }
 
-  /** A press on a handle: it becomes a drag or, if it stays, the menu. */
+  /** Adds a row or a column at the end of the active table. */
+  private append(edit: TableEdit): void {
+    const table = this.activeTable;
+    if (table === null || !table.isConnected || this.view.state.readOnly)
+      return;
+    const first = table.querySelector('.cm-np-table-head, .cm-np-table-cell');
+    if (first === null) return;
+    const spec = tableEditSpec(
+      this.view.state,
+      edit,
+      this.view.posAtDOM(first, 0),
+    );
+    if (spec !== null)
+      this.view.dispatch(
+        this.view.state.update(editingTransaction(spec), {
+          scrollIntoView: true,
+        }),
+      );
+    this.view.focus();
+  }
+
+  /** A press on a grip: it becomes a drag or, if it stays, the menu. */
   private startDrag(
     kind: 'row' | 'column',
     event: PointerEvent,
@@ -268,11 +417,13 @@ class TableControls {
       pos,
       from,
       table,
+      cell,
       button,
       moving: false,
       to: from,
     };
     this.listen(button.ownerDocument.defaultView ?? window);
+    this.schedule();
   }
 
   /** Follows one drag on the whole window until it ends (record 0098). */
@@ -313,7 +464,7 @@ class TableControls {
   /** Ends a press: a drag moves its row or its column, a press opens the menu. */
   private endDrag(drag: Drag): void {
     if (!drag.moving) {
-      this.openMenu(drag.kind, drag.pos, drag.button);
+      this.openMenu(drag.kind, drag.cell, drag.button);
       this.schedule();
       return;
     }
@@ -333,12 +484,15 @@ class TableControls {
   /** Asks the application for the menu of the row or the column of a cell. */
   private openMenu(
     kind: 'row' | 'column',
-    pos: number,
+    cell: HTMLElement,
     button: HTMLElement,
   ): void {
     const open = this.view.state.facet(tableMenuOpener);
     if (open === null || this.view.state.readOnly) return;
+    const pos = this.view.posAtDOM(cell, 0);
     const box = button.getBoundingClientRect();
+    const menu: OpenMenu = { kind, cell };
+    this.menu = menu;
     open({
       kind,
       pos,
@@ -349,30 +503,49 @@ class TableControls {
         height: box.height,
       },
       context: cellFormatContext(this.view.state, pos),
+      onClose: () => {
+        if (this.menu !== menu) return;
+        this.menu = null;
+        this.schedule();
+      },
     });
+    this.schedule();
   }
 
-  /** Measures the active table and places the handles on it. */
+  /** Measures the active table and places the controls on it. */
   private schedule(): void {
     this.view.requestMeasure({
       key: this,
       read: (view): ControlPlaces | null => {
         if (view.state.readOnly) return null;
         const scroller = view.scrollDOM.getBoundingClientRect();
-        const x = (left: number): number =>
-          left - scroller.left + view.scrollDOM.scrollLeft;
-        const y = (top: number): number =>
-          top - scroller.top + view.scrollDOM.scrollTop;
+        const sized = (
+          left: number,
+          top: number,
+          width: number,
+          height: number,
+        ): Place => ({
+          left: left - scroller.left + view.scrollDOM.scrollLeft,
+          top: top - scroller.top + view.scrollDOM.scrollTop,
+          width,
+          height,
+        });
         const drag = this.drag;
-        if (drag !== null) return this.dragPlaces(drag, x, y);
+        if (drag !== null) return this.pressedPlaces(drag, sized);
+        const menu = this.menu;
+        if (menu !== null) return this.pressedPlaces(menu, sized);
 
         this.activeCell = null;
+        this.activeTable = null;
         const pointed =
           this.hovered?.isConnected === true ? this.hovered : null;
         const caret = view.hasFocus ? caretCell(view) : null;
-        const table =
-          pointed ?? caret?.closest<HTMLElement>('.cm-np-table') ?? null;
+        const caretTable = caret?.closest<HTMLElement>('.cm-np-table') ?? null;
+        const table = pointed ?? caretTable;
         if (table === null) return null;
+        const grid = gridBox(table);
+        if (grid === null) return null;
+        this.activeTable = table;
         const cell =
           this.hoveredCell?.isConnected === true &&
           table.contains(this.hoveredCell)
@@ -381,39 +554,64 @@ class TableControls {
               ? caret
               : null;
         this.activeCell = cell;
-        if (cell === null) return null;
 
-        const box = table.getBoundingClientRect();
-        const first = gridLines(table)[0]?.getBoundingClientRect() ?? box;
-        const cellBox = cell.getBoundingClientRect();
+        const rowSize = this.size(this.rowHandle);
+        const columnSize = this.size(this.columnHandle);
+        const addRowSize = this.size(this.addRow);
+        const addColumnSize = this.size(this.addColumn);
+        const cellBox = cell?.getBoundingClientRect() ?? null;
         const rowBox =
-          cell.closest('.cm-np-table-line')?.getBoundingClientRect() ?? cellBox;
-        // A handle stands wholly outside the table, in the room the table
-        // keeps beside its rows and above its columns, so it covers no cell.
-        const handleWidth = this.rowHandle.offsetWidth;
-        const handleHeight = this.columnHandle.offsetHeight;
-        // Only the part of a column that the table shows takes a handle, so
-        // the handle of a column scrolled out of view does not float beside
-        // the table.
-        const from = Math.max(cellBox.left, box.left);
-        const to = Math.min(cellBox.right, box.right);
+          cell?.closest('.cm-np-table-line')?.getBoundingClientRect() ?? null;
+        // Only the part of a column that the table shows takes a grip, so the
+        // grip of a column scrolled out of view does not float beside it.
+        const from = cellBox === null ? 0 : Math.max(cellBox.left, grid.left);
+        const to = cellBox === null ? 0 : Math.min(cellBox.right, grid.right);
+        // The grip straddles the edge: its middle stands on the line of the
+        // edge.
+        const rowHandle =
+          rowBox === null
+            ? null
+            : sized(
+                grid.left - rowSize.width / 2,
+                rowBox.top + rowBox.height / 2 - rowSize.height / 2,
+                rowSize.width,
+                rowSize.height,
+              );
+        const columnHandle =
+          cellBox === null || to <= from
+            ? null
+            : sized(
+                (from + to) / 2 - columnSize.width / 2,
+                grid.top - columnSize.height / 2,
+                columnSize.width,
+                columnSize.height,
+              );
+        // The bar under the table follows the pointer and the caret. The bar
+        // at its right edge follows the pointer alone, and it shows only
+        // where the grid ends on the screen and the scroller has room for it.
+        const addRow = sized(
+          grid.left,
+          grid.bottom,
+          grid.right - grid.left,
+          addRowSize.height,
+        );
+        const addColumn =
+          pointed !== null &&
+          grid.endShows &&
+          grid.right + addColumnSize.width <= scroller.right
+            ? sized(
+                grid.right,
+                grid.top,
+                addColumnSize.width,
+                grid.bottom - grid.top,
+              )
+            : null;
         return {
-          rowHandle: {
-            top: y(rowBox.top),
-            left: x(box.left) - handleWidth,
-            width: handleWidth,
-            height: rowBox.height,
-          },
-          columnHandle:
-            to > from
-              ? {
-                  top: y(first.top) - handleHeight,
-                  left: x(from),
-                  width: to - from,
-                  height: handleHeight,
-                }
-              : null,
-          dropLine: null,
+          ...noPlaces,
+          rowHandle,
+          columnHandle,
+          addRow,
+          addColumn,
         };
       },
       write: (places): void => {
@@ -421,7 +619,7 @@ class TableControls {
           'cm-np-table-controls-shown',
           places !== null,
         );
-        if (places === null) return;
+        const shown = places ?? noPlaces;
         // A place on the screen is a measured number, which no class can
         // state, so the layer writes it, as a tooltip of CodeMirror does.
         const put = (element: HTMLElement, place: Place | null): void => {
@@ -432,71 +630,127 @@ class TableControls {
           element.style.width = `${String(place.width)}px`;
           element.style.height = `${String(place.height)}px`;
         };
-        put(this.rowHandle, places.rowHandle);
-        put(this.columnHandle, places.columnHandle);
-        put(this.dropLine, places.dropLine);
+        put(this.rowHandle, shown.rowHandle);
+        put(this.columnHandle, shown.columnHandle);
+        put(this.addRow, shown.addRow);
+        put(this.addColumn, shown.addColumn);
+        put(this.dropLine, shown.dropLine);
+        put(this.marked, shown.marked);
+        this.rowHandle.classList.toggle(
+          'cm-np-table-handle-on',
+          shown.pressed === 'row',
+        );
+        this.columnHandle.classList.toggle(
+          'cm-np-table-handle-on',
+          shown.pressed === 'column',
+        );
       },
     });
   }
 
+  /** The size that the theme gives an element of the layer. */
+  private size(element: HTMLElement): {
+    readonly width: number;
+    readonly height: number;
+  } {
+    return { width: element.offsetWidth, height: element.offsetHeight };
+  }
+
   /**
-   * Where the handle and the drop line stand during a drag.
+   * Where the controls stand while a grip is pressed: its menu is open, or it
+   * drags its row or its column.
    *
-   * The handle of the moving row or column stays where it was, and a line on
-   * the edge of the place where it lands shows where it goes.
+   * The pressed grip stays where it was, the row or the column it acts on
+   * takes the mark of a selection, and during a drag a line on the edge of
+   * the place where it lands shows where it goes. No other control shows.
    */
-  private dragPlaces(
-    drag: Drag,
-    x: (left: number) => number,
-    y: (top: number) => number,
+  private pressedPlaces(
+    press: Drag | OpenMenu,
+    sized: (left: number, top: number, width: number, height: number) => Place,
   ): ControlPlaces | null {
-    if (!drag.table.isConnected) return null;
-    const box = drag.table.getBoundingClientRect();
-    const lines = gridLines(drag.table);
-    const first = lines[0]?.getBoundingClientRect() ?? box;
-    const moved = drag.moving && drag.to !== drag.from;
-    if (drag.kind === 'row') {
-      const source = lines[drag.from]?.getBoundingClientRect() ?? first;
-      const target = lines[drag.to]?.getBoundingClientRect() ?? source;
-      const edge = drag.to > drag.from ? target.bottom : target.top;
+    const cell = press.cell;
+    const table = cell.closest<HTMLElement>('.cm-np-table');
+    if (!cell.isConnected || table === null) return null;
+    const grid = gridBox(table);
+    if (grid === null) return null;
+    const lines = grid.lines;
+    const drag = 'moving' in press ? press : null;
+    const moved = drag !== null && drag.moving && drag.to !== drag.from;
+    const cellBox = cell.getBoundingClientRect();
+    if (press.kind === 'row') {
+      const rowBox =
+        cell.closest('.cm-np-table-line')?.getBoundingClientRect() ?? cellBox;
+      const size = this.size(this.rowHandle);
+      const target =
+        drag === null
+          ? null
+          : (lines[drag.to]?.getBoundingClientRect() ?? null);
+      const edge =
+        target === null || drag === null
+          ? 0
+          : drag.to > drag.from
+            ? target.bottom
+            : target.top;
       return {
-        rowHandle: {
-          top: y(source.top),
-          left: x(box.left) - this.rowHandle.offsetWidth,
-          width: this.rowHandle.offsetWidth,
-          height: source.height,
-        },
-        columnHandle: null,
+        ...noPlaces,
+        pressed: 'row',
+        rowHandle: sized(
+          grid.left - size.width / 2,
+          rowBox.top + rowBox.height / 2 - size.height / 2,
+          size.width,
+          size.height,
+        ),
+        marked: sized(
+          grid.left,
+          rowBox.top,
+          grid.right - grid.left,
+          rowBox.height,
+        ),
         dropLine: moved
-          ? {
-              top: y(edge) - dropLineWidth / 2,
-              left: x(box.left),
-              width: Math.min(box.right, first.right) - box.left,
-              height: dropLineWidth,
-            }
+          ? sized(
+              grid.left,
+              edge - dropLineWidth / 2,
+              grid.right - grid.left,
+              dropLineWidth,
+            )
           : null,
       };
     }
     const cells = lines[0] === undefined ? [] : rowCells(lines[0]);
-    const source = cells[drag.from]?.getBoundingClientRect() ?? first;
-    const target = cells[drag.to]?.getBoundingClientRect() ?? source;
-    const edge = drag.to > drag.from ? target.right : target.left;
-    const last = lines[lines.length - 1]?.getBoundingClientRect() ?? first;
+    const size = this.size(this.columnHandle);
+    const from = Math.max(cellBox.left, grid.left);
+    const to = Math.min(cellBox.right, grid.right);
+    const target =
+      drag === null ? null : (cells[drag.to]?.getBoundingClientRect() ?? null);
+    const edge =
+      target === null || drag === null
+        ? 0
+        : drag.to > drag.from
+          ? target.right
+          : target.left;
     return {
-      rowHandle: null,
-      columnHandle: {
-        top: y(first.top) - this.columnHandle.offsetHeight,
-        left: x(source.left),
-        width: source.width,
-        height: this.columnHandle.offsetHeight,
-      },
+      ...noPlaces,
+      pressed: 'column',
+      columnHandle:
+        to > from
+          ? sized(
+              (from + to) / 2 - size.width / 2,
+              grid.top - size.height / 2,
+              size.width,
+              size.height,
+            )
+          : null,
+      marked:
+        to > from
+          ? sized(from, grid.top, to - from, grid.bottom - grid.top)
+          : null,
       dropLine: moved
-        ? {
-            top: y(first.top),
-            left: x(edge) - dropLineWidth / 2,
-            width: dropLineWidth,
-            height: last.bottom - first.top,
-          }
+        ? sized(
+            edge - dropLineWidth / 2,
+            grid.top,
+            dropLineWidth,
+            grid.bottom - grid.top,
+          )
         : null,
     };
   }
@@ -526,7 +780,7 @@ function dropIndex(drag: Drag, pointerX: number, pointerY: number): number {
   return to;
 }
 
-/** The handles of every table (records 0097 and 0098). */
+/** The controls of every table (records 0097, 0098 and 0147). */
 export function tableControls(): Extension {
   return ViewPlugin.fromClass(TableControls);
 }

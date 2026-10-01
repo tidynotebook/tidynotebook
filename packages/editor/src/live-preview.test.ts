@@ -663,9 +663,9 @@ await test('a table is a grid: its separators never show, its columns align', ()
   assert.ok(has(found, 'mark', 'cm-np-align-right'));
   // Record 0095: the cells draw the outline, so neither a separator nor the
   // delimiter row is on the screen. Every cell keeps its text, so a cell is
-  // edited where it stands.
+  // edited where it stands, and its padding never shows (record 0147).
   assert.ok(!found.some((item) => item.value.includes('cm-np-table-pipe')));
-  assert.equal(visibleText(doc), ' a  b  c \n\n 1  2  3 \n');
+  assert.equal(visibleText(doc), 'abc\n\n123\n');
   assert.deepEqual(structureOf(doc), [{ kind: 'table', rows: 2, columns: 3 }]);
 });
 
@@ -693,7 +693,7 @@ await test('a separator stays hidden on the row of the caret', () => {
   const firstRow = visibleText(doc, { from: onFirstRow, to: onFirstRow }).split(
     '\n',
   )[0];
-  assert.equal(firstRow, ' a  b ');
+  assert.equal(firstRow, 'ab');
 });
 
 await test('every row of a table carries one box for each column', () => {
@@ -730,9 +730,9 @@ await test('every separator of a row is a gap cell that wraps it', () => {
   // cells: a gap, a cell, a gap, and so on, with no hole between them.
   const doc = '| a | bb |\n| --- | --- |\n| c | d |\n';
   const header = doc.indexOf('\n');
-  const row = describe(doc).filter(
-    (item) => item.kind === 'mark' && item.to <= header,
-  );
+  const row = describe(doc)
+    .filter((item) => item.kind === 'mark' && item.to <= header)
+    .sort((left, right) => left.from - right.from);
   assert.deepEqual(
     row.map((item) => [doc.slice(item.from, item.to), item.value]),
     [
@@ -760,6 +760,81 @@ await test('every separator of a row is a gap cell that wraps it', () => {
   if (gap !== undefined && hidden !== undefined) assert.ok(gap < hidden);
 });
 
+await test('a cell shows its text and not the padding of the source', () => {
+  // Record 0147. The writer pads every cell of a column to one width, and a
+  // cell that showed those spaces was as wide as the longest cell of its
+  // column, so a short column took the width of a long one.
+  const doc =
+    '| Task           | Who |\n| -------------- | --- |\n| Write a design | Sam |\n';
+  assert.equal(visibleText(doc), 'TaskWho\n\nWrite a designSam\n');
+  // Regression: the hidden padding rendered beside the cell and not in it,
+  // the browser wrapped that loose node in an anonymous cell, and the cell
+  // took the width of a column of its own. The cell opens before the hidden
+  // padding at its start and closes after the hidden padding at its end.
+  const state = stateOf(doc);
+  const end = doc.indexOf('|', 1);
+  const sides: Record<string, { start: number; end: number }> = {};
+  buildPreview(state, [{ from: 0, to: state.doc.length }], {
+    from: doc.length,
+    to: doc.length,
+  }).decorations.between(0, end, (from, to, value) => {
+    const name = specClass(value.spec) ?? 'hide';
+    if (from === 1 && to === end)
+      sides[name] = { start: value.startSide, end: value.endSide };
+    if (name === 'hide' && from === 1)
+      sides.lead = { start: value.startSide, end: value.endSide };
+    if (name === 'hide' && to === end)
+      sides.tail = { start: value.startSide, end: value.endSide };
+  });
+  const cell = sides['cm-np-table-head'];
+  const lead = sides.lead;
+  const tail = sides.tail;
+  assert.ok(cell !== undefined && lead !== undefined && tail !== undefined);
+  if (cell !== undefined && lead !== undefined && tail !== undefined) {
+    assert.ok(cell.start < lead.start);
+    assert.ok(cell.end > tail.end);
+  }
+});
+
+await test('a space typed at the end of a cell stays on the screen', () => {
+  // A space at the end of the text is padding until the next letter. It
+  // stays while the caret stands after it, so the caret does not seem to
+  // swallow it.
+  const doc = '| a  | b   |\n| --- | --- |\n| 1   | 2   |\n';
+  const afterSpace = doc.indexOf('a') + 2;
+  assert.equal(
+    visibleText(doc, { from: afterSpace, to: afterSpace }).split('\n')[0],
+    'a b',
+  );
+  // A space after the caret is padding and stays hidden.
+  const afterA = doc.indexOf('a') + 1;
+  assert.equal(
+    visibleText(doc, { from: afterA, to: afterA }).split('\n')[0],
+    'ab',
+  );
+});
+
+await test('an empty cell keeps one space after the place of its caret', () => {
+  // A cell with no text would hold no line box, and a row of empty cells
+  // would lose its height. The space it keeps stands after the caret, so the
+  // caret of an empty cell starts where the text of every other cell starts.
+  const doc = '| a   | b   |\n| --- | --- |\n|     | 2   |\n';
+  const row = doc.lastIndexOf('|     |');
+  assert.equal(visibleText(doc).split('\n')[2], ' 2');
+  const hidden = describe(doc)
+    .filter(
+      (item) => item.kind === 'hide' && item.from > row && item.to <= row + 6,
+    )
+    .sort((left, right) => left.from - right.from);
+  assert.deepEqual(
+    hidden.map((item) => [item.from - row, item.to - row]),
+    [
+      [1, 2],
+      [3, 6],
+    ],
+  );
+});
+
 await test('the cell that holds the caret is the active cell', () => {
   const doc = '| a | b |\n| --- | --- |\n| 1 | 2 |\n';
   const inTwo = doc.indexOf('2') + 1;
@@ -775,13 +850,13 @@ await test('the cell that holds the caret is the active cell', () => {
 
 await test('an escaped pipe in a cell shows as a pipe', () => {
   const doc = '| a \\| b | c |\n| --- | --- |\n| 1 | 2 |\n';
-  assert.equal(visibleText(doc).split('\n')[0], ' a | b  c ');
+  assert.equal(visibleText(doc).split('\n')[0], 'a | bc');
   // The backslash comes back under the selection, so the source stays
   // editable, and an escape outside a table keeps it at every moment.
   const onEscape = doc.indexOf('\\') + 1;
   assert.equal(
     visibleText(doc, { from: onEscape, to: onEscape }).split('\n')[0],
-    ' a \\| b  c ',
+    'a \\| bc',
   );
 });
 
@@ -792,7 +867,7 @@ await test('a table row without edge separators keeps its two cells', () => {
     (item) => item.kind === 'mark' && item.value.startsWith('cm-np-table-head'),
   );
   assert.equal(cells.length, 2);
-  assert.equal(visibleText(doc), 'a  b\n\n1  2\n');
+  assert.equal(visibleText(doc), 'ab\n\n12\n');
 });
 
 await test('the delimiter row is cut at every separator', () => {

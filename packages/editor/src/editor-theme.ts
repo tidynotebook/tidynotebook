@@ -65,6 +65,7 @@ export const editorThemeVariables: readonly string[] = [
   '--font-weight-note-heading',
   '--tracking-heading',
   '--tracking-display',
+  '--shadow-raised',
 ];
 
 /**
@@ -552,6 +553,9 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
     // borders pass to the anonymous table the rows form inside it. The rows
     // are lines of the editor, so the source stays editable text and no
     // widget replaces the table.
+    //
+    // The table starts where every other line starts. Its grips straddle its
+    // edge (record 0147), so it keeps no room beside it or above it.
     '.cm-np-table': {
       display: 'block',
       overflowX: 'auto',
@@ -561,13 +565,6 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
       // never its margin. A margin put every row lower than the editor knew,
       // so a click or the Home key found the wrong row.
       paddingBlock: 'var(--spacing-note-block)',
-      // The handles of the rows and the columns stand in this room beside
-      // and above the table (record 0098), so a handle covers no cell and a
-      // phone shows the whole of it. The room beside the rows is a margin,
-      // because a padding would scroll away with a wide table and slide the
-      // cells under the handles.
-      marginInlineStart: 'calc(var(--spacing) * 4)',
-      paddingBlockStart: 'calc(var(--spacing-note-block) + var(--spacing) * 4)',
     },
     '.cm-np-table-line': {
       display: 'table-row',
@@ -575,19 +572,36 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
       paddingBlock: '0',
     },
     // Every cell draws its outline in the one divider of the palette, so the
-    // table reads as a grid of cells a person writes into. A cell keeps its
-    // text on one line, because a wrap squeezed a wide table into the measure
-    // and broke a column mid word; the wrapper scrolls instead. `pre` and not
-    // `nowrap`, because the spaces inside a cell belong to the source. An
-    // empty cell keeps a width a pointer can reach.
+    // table reads as a grid of cells a person writes into. A cell wraps at a
+    // word, as a cell of Notion and of Obsidian does, so the browser sizes
+    // each column from its text up to the note column, and the table scrolls
+    // sideways only when its columns cannot fit (record 0147). `pre-wrap` and
+    // not `normal`, because the spaces inside a cell belong to the source.
+    //
+    // A word never breaks. `.cm-content` lets a long word break anywhere, and
+    // a table cell that inherits that counts every letter as a place to
+    // break when it sizes its column, so a column shrank to a few letters and
+    // cut its words in two. A word longer than the note column scrolls the
+    // table instead.
     '.cm-np-table-cell': {
       display: 'table-cell',
       paddingInline: 'calc(var(--spacing) * 3)',
       paddingBlock: 'calc(var(--spacing) * 1.5)',
-      minWidth: 'calc(var(--spacing) * 16)',
       verticalAlign: 'top',
       border: '1px solid var(--notes-border-line)',
-      whiteSpace: 'pre',
+      whiteSpace: 'pre-wrap',
+      overflowWrap: 'normal',
+      wordBreak: 'normal',
+    },
+    // An empty cell keeps a width a pointer can reach. A browser ignores
+    // `min-width` on a table cell, so a block of no height inside the cell
+    // holds the width instead: it is the narrowest the column can be, and it
+    // never caps how wide the text makes it.
+    '.cm-np-table-cell::before, .cm-np-table-head::before': {
+      content: "''",
+      display: 'block',
+      width: 'calc(var(--spacing) * 12)',
+      height: '0',
     },
     // The header row takes the hover fill and the heading weight, so the head
     // of the table differs by fill before it differs by a line.
@@ -595,13 +609,14 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
       display: 'table-cell',
       paddingInline: 'calc(var(--spacing) * 3)',
       paddingBlock: 'calc(var(--spacing) * 1.5)',
-      minWidth: 'calc(var(--spacing) * 16)',
       verticalAlign: 'top',
       border: '1px solid var(--notes-border-line)',
       backgroundColor: 'var(--notes-surface-hover)',
       fontWeight: 'var(--font-weight-note-heading)',
       color: 'var(--notes-text-strong)',
-      whiteSpace: 'pre',
+      whiteSpace: 'pre-wrap',
+      overflowWrap: 'normal',
+      wordBreak: 'normal',
     },
     // The cell that holds the caret carries the one focus treatment, drawn
     // inside its edge so the outline of its neighbours stays whole.
@@ -631,9 +646,9 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
     },
     // The delimiter row keeps no height of its own.
     '.cm-np-table-closed': { fontSize: '0', lineHeight: '0' },
-    // The handles of a table (records 0097 and 0098) stand in one layer over
-    // the text, which lets every press but a press on a handle reach the text
-    // below.
+    // The controls of a table (records 0097, 0098 and 0147) stand in one
+    // layer over the text, which lets every press but a press on a control
+    // reach the text below.
     '.cm-np-table-controls': {
       position: 'absolute',
       top: '0',
@@ -643,11 +658,12 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
       zIndex: '2',
       pointerEvents: 'none',
     },
-    // A handle takes the look of the table itself: the one divider as its
-    // edge, square corners, and the page as its fill, and it fills on hover,
-    // as a ghost control does. A handle that does not show keeps its box and
-    // hides it, so the layer can read its size to place it. A drag on it is
-    // the drag of the handle and never a scroll of the page.
+    // A handle is the hit area of one grip. It draws nothing itself, and its
+    // middle stands on the edge of the table, as the grip inside it does, so
+    // a larger hit area reaches as far into the cell as it reaches out of
+    // the table. A handle that does not show keeps its box and hides it, so
+    // the layer can read its size to place it. A drag on it is the drag of
+    // the handle and never a scroll of the page.
     '.cm-np-table-handle': {
       position: 'absolute',
       display: 'flex',
@@ -656,30 +672,93 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
       justifyContent: 'center',
       padding: '0',
       margin: '0',
-      border: '1px solid var(--notes-border-line)',
-      borderRadius: '0',
-      backgroundColor: 'var(--notes-bg)',
-      color: 'var(--notes-text-muted)',
+      border: 'none',
+      backgroundColor: 'transparent',
       cursor: 'grab',
       pointerEvents: 'auto',
       touchAction: 'none',
     },
-    '.cm-np-table-controls-shown .cm-np-table-handle': {
-      visibility: 'visible',
+    '.cm-np-table-handle-row': {
+      width: 'calc(var(--spacing) * 4)',
+      height: 'calc(var(--spacing) * 6)',
     },
+    '.cm-np-table-handle-column': {
+      width: 'calc(var(--spacing) * 6)',
+      height: 'calc(var(--spacing) * 4)',
+    },
+    // The grip is a small raised pill of six dots, as the grip of Notion and
+    // of Obsidian is: the card plane, the subtle edge of a raised surface and
+    // its one shadow step (record 0052). It fills on hover and while its row
+    // or its column is marked.
+    '.cm-np-table-grip': {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: '0',
+      overflow: 'hidden',
+      boxSizing: 'border-box',
+      border: '1px solid var(--notes-border-subtle)',
+      borderRadius: 'var(--radius-sm)',
+      backgroundColor: 'var(--notes-surface-card)',
+      boxShadow: 'var(--shadow-raised)',
+      color: 'var(--notes-text-muted)',
+    },
+    '.cm-np-table-handle-row .cm-np-table-grip': {
+      width: 'calc(var(--spacing) * 4)',
+      height: 'calc(var(--spacing) * 6)',
+    },
+    '.cm-np-table-handle-column .cm-np-table-grip': {
+      width: 'calc(var(--spacing) * 6)',
+      height: 'calc(var(--spacing) * 4)',
+    },
+    '.cm-np-table-handle:hover .cm-np-table-grip, .cm-np-table-handle-on .cm-np-table-grip':
+      {
+        backgroundColor: 'var(--notes-surface-hover)',
+        color: 'var(--notes-text-strong)',
+      },
+    '.cm-np-table-controls-shown .cm-np-table-handle, .cm-np-table-controls-shown .cm-np-table-add':
+      { visibility: 'visible' },
     '.cm-np-table-controls-shown .cm-np-table-control-off': {
       visibility: 'hidden',
     },
-    '.cm-np-table-handle:hover': {
-      backgroundColor: 'var(--notes-surface-hover)',
-      color: 'var(--notes-text-strong)',
-    },
-    '.cm-np-table-handle-row': { width: 'calc(var(--spacing) * 4)' },
-    '.cm-np-table-handle-column': { height: 'calc(var(--spacing) * 4)' },
     '.cm-np-table-control-mark': {
       width: 'calc(var(--spacing) * 4)',
       height: 'calc(var(--spacing) * 4)',
       flexShrink: '0',
+    },
+    // An add bar is a ghost control: no edge and no fill at rest, a muted
+    // plus, and the hover fill under the pointer (record 0147).
+    '.cm-np-table-add': {
+      position: 'absolute',
+      display: 'flex',
+      visibility: 'hidden',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '0',
+      margin: '0',
+      border: 'none',
+      borderRadius: 'var(--radius-sm)',
+      backgroundColor: 'transparent',
+      color: 'var(--notes-text-muted)',
+      cursor: 'pointer',
+      pointerEvents: 'auto',
+    },
+    '.cm-np-table-add-row': { height: 'calc(var(--spacing) * 4)' },
+    '.cm-np-table-add-column': { width: 'calc(var(--spacing) * 4)' },
+    '.cm-np-table-add:hover': {
+      backgroundColor: 'var(--notes-surface-hover)',
+      color: 'var(--notes-text-strong)',
+    },
+    // The row or the column that a pressed grip acts on takes the tint and
+    // the edge of a selection, which is what it is (record 0062).
+    '.cm-np-table-marked': {
+      position: 'absolute',
+      visibility: 'hidden',
+      backgroundColor:
+        'color-mix(in srgb, var(--notes-focus) 12%, transparent)',
+      outline: '2px solid var(--notes-focus)',
+      outlineOffset: '-1px',
+      pointerEvents: 'none',
     },
     // The line that shows where a dragged row or column lands takes the
     // focus colour, which marks where the next edit goes (record 0062).
@@ -689,18 +768,24 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
       backgroundColor: 'var(--notes-focus)',
       pointerEvents: 'none',
     },
-    '.cm-np-table-controls-shown .cm-np-table-drop': { visibility: 'visible' },
-    '.cm-np-table-controls-shown .cm-np-table-drop.cm-np-table-control-off': {
-      visibility: 'hidden',
-    },
+    '.cm-np-table-controls-shown .cm-np-table-drop, .cm-np-table-controls-shown .cm-np-table-marked':
+      { visibility: 'visible' },
+    '.cm-np-table-controls-shown .cm-np-table-drop.cm-np-table-control-off, .cm-np-table-controls-shown .cm-np-table-marked.cm-np-table-control-off':
+      { visibility: 'hidden' },
+    // A finger gets a larger hit area around the same grip. It reaches a
+    // little way into the cell, so a tap on the text of a short header cell
+    // still reaches the text.
     '@media (pointer: coarse)': {
-      '.cm-np-table': {
-        marginInlineStart: 'calc(var(--spacing) * 6)',
-        paddingBlockStart:
-          'calc(var(--spacing-note-block) + var(--spacing) * 6)',
+      '.cm-np-table-handle-row': {
+        width: 'calc(var(--spacing) * 6)',
+        height: 'calc(var(--spacing) * 10)',
       },
-      '.cm-np-table-handle-row': { width: 'calc(var(--spacing) * 6)' },
-      '.cm-np-table-handle-column': { height: 'calc(var(--spacing) * 6)' },
+      '.cm-np-table-handle-column': {
+        width: 'calc(var(--spacing) * 10)',
+        height: 'calc(var(--spacing) * 6)',
+      },
+      '.cm-np-table-add-row': { height: 'calc(var(--spacing) * 6)' },
+      '.cm-np-table-add-column': { width: 'calc(var(--spacing) * 6)' },
     },
     // The grip of a list item (record 0106) stands in one layer over the
     // text, as the handles of a table do, so every press but a press on the

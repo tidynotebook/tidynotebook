@@ -527,6 +527,26 @@ export const addColumnEdit: TableEdit = (data, at) => ({
   select: 'end',
 });
 
+/**
+ * Adds an empty row at the end of the table, for the add bar under it
+ * (record 0147). The caret goes to the first cell of the new row.
+ */
+export const appendRowEdit: TableEdit = (data) => ({
+  data: withRow(data, data.body.length),
+  target: { row: data.body.length + 1, column: 0 },
+  select: 'end',
+});
+
+/**
+ * Adds an empty column at the end of the table, for the add bar at its right
+ * edge (record 0147). The caret goes to the header cell of the new column.
+ */
+export const appendColumnEdit: TableEdit = (data) => ({
+  data: withColumn(data, data.alignments.length),
+  target: { row: 0, column: data.alignments.length },
+  select: 'end',
+});
+
 /** Adds an empty row over the body row of the caret. The header stays first. */
 export const insertRowAboveEdit: TableEdit = (data, at) => {
   if (at.row === 0) return null;

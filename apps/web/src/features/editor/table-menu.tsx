@@ -32,11 +32,14 @@ export function TableMenu({
   const close = useCallback(
     (restoreFocus: boolean): void => {
       onClose();
+      // The editor marks the row or the column of the menu while it is open
+      // (record 0147), and this tells it the menu is gone.
+      request.onClose();
       // A key or a chosen row gives the focus back to the note, where the
       // person writes on.
       if (restoreFocus) view()?.focus();
     },
-    [onClose, view],
+    [onClose, request, view],
   );
   const items = tableMenuEntries(request.kind, request.context).map(
     (entry): MenuItem => ({

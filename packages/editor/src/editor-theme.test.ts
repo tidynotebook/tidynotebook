@@ -264,6 +264,15 @@ await test('a table is a grid of outlined cells that scrolls on its own', () => 
   assert.equal(wrapper.marginBlockStart, undefined);
   assert.equal(wrapper.marginBlockEnd, undefined);
   assert.equal(wrapper.paddingBlock, 'var(--spacing-note-block)');
+  // Regression: the table kept a margin at its start and room above it for
+  // the handles, so it stood to the right of every other line of the note.
+  // The grips straddle its edge now (record 0147).
+  assert.equal(wrapper.marginInlineStart, undefined);
+  assert.equal(wrapper.paddingBlockStart, undefined);
+  const coarse = noteSurfaceStyle()['@media (pointer: coarse)'];
+  assert.ok(
+    coarse === undefined || !Object.keys(coarse).includes('.cm-np-table'),
+  );
   // A hidden separator is a real cell that draws nothing, so a row holds no
   // loose node that the browser wraps in an anonymous cell of its own.
   const gap = rule('.cm-np-table-gap');
@@ -276,9 +285,21 @@ await test('a table is a grid of outlined cells that scrolls on its own', () => 
   for (const box of [head, cell]) {
     // The outline is the one divider of the palette (record 0063).
     assert.equal(box.border, '1px solid var(--notes-border-line)');
-    assert.equal(box.whiteSpace, 'pre');
-    assert.ok(box.minWidth !== undefined, 'an empty cell keeps a width');
+    // A cell wraps at a word and never inside one, so a column takes the
+    // width of its text up to the note column (record 0147). Regression: a
+    // cell inherited the break anywhere of the content, and the browser sized
+    // a column by single letters and cut its words in two.
+    assert.equal(box.whiteSpace, 'pre-wrap');
+    assert.equal(box.overflowWrap, 'normal');
+    assert.equal(box.wordBreak, 'normal');
+    // A browser ignores a minimum width on a table cell, so a block of no
+    // height inside the cell holds the width of an empty one.
+    assert.equal(box.minWidth, undefined);
   }
+  const floor = rule('.cm-np-table-cell::before, .cm-np-table-head::before');
+  assert.equal(floor.display, 'block');
+  assert.equal(floor.height, '0');
+  assert.ok(floor.width !== undefined, 'an empty cell keeps a width');
   // The head differs by fill before it differs by a line.
   assert.equal(head.backgroundColor, 'var(--notes-surface-hover)');
   // The active cell takes the one focus treatment, inside its own edge.

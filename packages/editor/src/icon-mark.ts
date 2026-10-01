@@ -67,3 +67,9 @@ export function gripParts(vertical: boolean): readonly GlyphPart[] {
     })),
   );
 }
+
+/** A plus, the mark of a control that adds, as `PlusIcon` of the set draws it. */
+export const plusParts: readonly GlyphPart[] = [
+  { kind: 'path', d: 'M12 5v14' },
+  { kind: 'path', d: 'M5 12h14' },
+];

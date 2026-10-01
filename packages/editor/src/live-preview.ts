@@ -584,17 +584,53 @@ export function buildPreview(
     // a spreadsheet marks it, so a person sees which cell the next key
     // writes into.
     const active = selection.from === selection.to && touches(from, to);
-    mark(
-      from,
-      to,
-      [
-        header ? 'cm-np-table-head' : 'cm-np-table-cell',
-        align === null ? '' : `cm-np-align-${align}`,
-        active ? 'cm-np-table-active' : '',
-      ]
-        .filter((part) => part !== '')
-        .join(' '),
-    );
+    // The mark is inclusive, so it opens before the hidden padding at its
+    // start and closes after the hidden padding at its end, and the hidden
+    // ranges land inside the cell. A hidden range outside it was a loose node
+    // between two cells, which the browser wrapped in an anonymous cell of
+    // its own, and that cell took the width of a column.
+    if (to > from)
+      items.push(
+        Decoration.mark({
+          class: [
+            header ? 'cm-np-table-head' : 'cm-np-table-cell',
+            align === null ? '' : `cm-np-align-${align}`,
+            active ? 'cm-np-table-active' : '',
+          ]
+            .filter((part) => part !== '')
+            .join(' '),
+          inclusive: true,
+        }).range(from, to),
+      );
+    tablePaddingHide(from, to);
+  };
+
+  /**
+   * Hides the padding of one cell, so a column is as wide as its text and not
+   * as wide as the spaces the writer pads it with (record 0147).
+   *
+   * The caret never stands in the padding (record 0095), so this changes
+   * what a person sees and not where the caret goes. The spaces between the
+   * text and an empty caret stay on the screen: a space that a person just
+   * typed at the end of a cell is padding until the next letter, and it must
+   * not vanish under the caret. An empty cell keeps one space after the
+   * place of its caret, so it keeps a line box and its row keeps its height.
+   */
+  const tablePaddingHide = (from: number, to: number): void => {
+    const text = doc.sliceString(from, to);
+    const trimmed = text.trim();
+    const caret = selection.from === selection.to ? selection.from : -1;
+    if (trimmed === '') {
+      if (to - from < 2) return;
+      hide(from, from + 1);
+      const kept = caret > from + 1 && caret <= to ? caret : from + 2;
+      hide(kept, to);
+      return;
+    }
+    const textFrom = from + (text.length - text.trimStart().length);
+    const textTo = textFrom + trimmed.length;
+    hide(from, textFrom);
+    hide(caret > textTo && caret <= to ? caret : textTo, to);
   };
 
   /**
