@@ -152,9 +152,12 @@ export function createInstallationSettings(
     // A password that this key cannot open, after a change of the server
     // secret, is no transport. The accounts page then shows that the
     // password must be entered again.
+    // A server with no sign-in needs no password. A user name needs one that
+    // this key opens.
     mailUsable: (mail) =>
-      mail.passwordSealed === null ||
-      openPassword(mail.passwordSealed) !== null,
+      mail.username === null ||
+      (mail.passwordSealed !== null &&
+        openPassword(mail.passwordSealed) !== null),
   };
 
   const stored = (): Promise<StoredInstallationSettings> =>

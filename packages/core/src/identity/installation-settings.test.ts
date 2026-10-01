@@ -166,20 +166,45 @@ await test('a legal document is a finished text or a full address', () => {
   const invalid = { ok: false, problem: { kind: 'invalid' } };
   for (const input of [
     { kind: 'text', text: '  ', url: null, version: '1' },
-    {
-      kind: 'text',
-      text: 'a'.repeat(maxLegalTextBytes + 1),
-      url: null,
-      version: '1',
-    },
     { kind: 'text', text: 'x', url: null, version: '' },
     { kind: 'text', text: 'x', url: null, version: 'v'.repeat(65) },
+    { kind: 'text', text: 'x', url: null, version: '\u{1F600}'.repeat(65) },
     { kind: 'address', text: null, url: 'javascript:alert(1)', version: '1' },
     { kind: 'address', text: null, url: '/legal/terms', version: '1' },
     { kind: 'file', text: 'x', url: null, version: '1' },
   ])
     assert.deepEqual(readLegalDocument(input), invalid, input.kind);
   assert.equal(documentAddress('ftp://example.com'), null);
+  // A version counts code points, as the contract counts it.
+  const emojiVersion = '\u{1F600}'.repeat(40);
+  assert.deepEqual(
+    readLegalDocument({
+      kind: 'text',
+      text: 'x',
+      url: null,
+      version: emojiVersion,
+    }),
+    { ok: true, value: { kind: 'text', text: 'x', version: emojiVersion } },
+  );
+  // A text past the bound in bytes names its size, which the contract cannot.
+  assert.deepEqual(
+    readLegalDocument({
+      kind: 'text',
+      text: '\u20AC'.repeat(100_000),
+      url: null,
+      version: '1',
+    }),
+    { ok: false, problem: { kind: 'too_large' } },
+  );
+  assert.deepEqual(
+    readLegalDocument({
+      kind: 'text',
+      text: 'a'.repeat(maxLegalTextBytes + 1),
+      url: null,
+      version: '1',
+    }),
+    { ok: false, problem: { kind: 'too_large' } },
+  );
 });
 
 await test('a blank is a field and its value replaces each copy', () => {

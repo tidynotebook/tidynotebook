@@ -587,6 +587,32 @@ await test('a kept password stays only with its user name', async () => {
   assert.equal(store.settings.mail?.passwordSealed, null);
 });
 
+await test('a user name with no password, new or kept, is refused', async () => {
+  const store = createStore([admin(ada)]);
+  assert.deepEqual(
+    await setMailSettings(store, actorFor(ada), mailOf, keep, none),
+    { ok: false, error: { code: 'mail_password_required', fileIds: [] } },
+  );
+  assert.deepEqual(
+    await setMailSettings(store, actorFor(ada), mailOf, noPassword, none),
+    { ok: false, error: { code: 'mail_password_required', fileIds: [] } },
+  );
+  assert.equal(store.settings.mail, null);
+  // A server with no sign-in needs none.
+  assert.equal(
+    (
+      await setMailSettings(
+        store,
+        actorFor(ada),
+        { ...mailOf, username: null },
+        noPassword,
+        none,
+      )
+    ).ok,
+    true,
+  );
+});
+
 await test('a member reads and changes no setting', async () => {
   const store = createStore([admin(ada), member(bea)]);
   const forbidden = { ok: false, error: { code: 'forbidden', fileIds: [] } };

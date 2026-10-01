@@ -69,6 +69,7 @@ export type ProblemCode =
   | 'setting_locked'
   | 'setting_required'
   | 'legal_document_unfinished'
+  | 'mail_password_required'
   | 'mail_failed';
 
 /** Problem details body. Extra members are permitted by RFC 9457. */
@@ -145,6 +146,7 @@ const titles: Readonly<Record<ProblemCode, string>> = {
   setting_locked: 'The server environment sets this setting.',
   setting_required: 'Open registration needs this setting.',
   legal_document_unfinished: 'The text still holds a blank of the template.',
+  mail_password_required: 'A user name of the mail server needs its password.',
   mail_failed: 'The mail server did not take the message.',
   rate_limited: 'Too many attempts were made in a short time.',
   route_not_found: 'No operation serves this method and path.',
@@ -383,6 +385,7 @@ const domainStatus: Readonly<
     status: 422,
     code: 'legal_document_unfinished',
   },
+  mail_password_required: { status: 400, code: 'mail_password_required' },
 };
 
 /** The explanation of one domain failure. It names no path and no content. */
@@ -448,6 +451,8 @@ const domainTitles: Readonly<Record<DomainErrorCode, string>> = {
     'Open registration needs this setting. Close open registration first.',
   legal_document_unfinished:
     'The text still holds a blank of the template. Fill each blank first.',
+  mail_password_required:
+    'A user name of the mail server needs its password. Enter the password, or leave the user name empty.',
 };
 
 /**

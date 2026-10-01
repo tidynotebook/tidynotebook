@@ -793,12 +793,15 @@ async function composeApp(
           : { lifecycle: options.lifecycle }),
         noticeProtocols: () => gateway.offered(),
         legal: {
-          texts: async () => (await settings.legal()).texts,
-          versions: async () => {
-            const { summaries } = await settings.legal();
+          // One read of the settings gives the text and the version of a page.
+          read: async () => {
+            const { texts, summaries } = await settings.legal();
             return {
-              terms: summaries.terms?.version ?? null,
-              privacy: summaries.privacy?.version ?? null,
+              texts,
+              versions: {
+                terms: summaries.terms?.version ?? null,
+                privacy: summaries.privacy?.version ?? null,
+              },
             };
           },
           stylesheets: publishedStylesheets,

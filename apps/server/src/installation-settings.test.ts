@@ -120,6 +120,29 @@ await test('the transport of one operation stays through a change of the row', a
   assert.equal(await settings.mailer.current(), null);
 });
 
+await test('a user name with no password is no transport', async () => {
+  const mail = stored.mail;
+  assert.notEqual(mail, null);
+  if (mail === null) return;
+  const { settings } = decider({
+    ...stored,
+    mail: { ...mail, passwordSealed: null },
+  });
+  assert.equal(
+    settings.environment.mailUsable({ ...mail, passwordSealed: null }),
+    false,
+  );
+  assert.equal(await settings.mailer.available(), false);
+  assert.equal(
+    settings.environment.mailUsable({
+      ...mail,
+      username: null,
+      passwordSealed: null,
+    }),
+    true,
+  );
+});
+
 await test('a password that this key cannot open is no transport', async () => {
   const sealedElsewhere = createMailPasswordSeal(`${secret}-old`).seal('x');
   const mail = stored.mail;

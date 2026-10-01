@@ -53,6 +53,7 @@ import {
   MailFailedError,
   NotFoundError,
   OpenRegistrationUnavailableError,
+  PayloadTooLargeError,
   RequestContractError,
   unwrapDomain,
 } from '../plugins/problem.ts';
@@ -331,6 +332,10 @@ export function createAdministrationHandlers(
       if (!read.ok) {
         if (read.problem.kind === 'unfinished')
           throw new LegalDocumentUnfinishedError(read.problem.blanks);
+        if (read.problem.kind === 'too_large')
+          throw new PayloadTooLargeError(
+            'The text of the document is larger than 256 KiB.',
+          );
         throw new RequestContractError('body', [
           {
             path: readString(body, 'kind') === 'address' ? '/url' : '/text',

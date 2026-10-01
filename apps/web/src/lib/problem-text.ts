@@ -37,6 +37,8 @@ const sentences: Readonly<Record<string, string>> = {
   setting_required:
     'Anybody can sign up now, and sign-up needs this. Let only invited people make an account first.',
   legal_document_unfinished: 'Fill each blank of the template before you save.',
+  mail_password_required:
+    'Enter the password of the user name, or leave the user name empty.',
   mail_failed:
     'The mail server did not take the message. Check the settings and try again.',
   last_administrator:

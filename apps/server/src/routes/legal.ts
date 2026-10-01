@@ -24,14 +24,14 @@ import { readText } from './files.ts';
 /** What the legal pages need from the composition. */
 export type LegalDependencies = {
   /**
-   * The Markdown text of each served document, or `null`, as it applies now
-   * (record 0148).
+   * The Markdown text and the version of each served document, as they apply
+   * now (record 0148). One read answers both, so a page never shows the text
+   * of one save with the version of another.
    */
-  readonly texts: () => Promise<LegalTexts>;
-  /** The version of each document, which its page states. */
-  readonly versions: () => Promise<
-    Readonly<Record<LegalDocumentName, string | null>>
-  >;
+  readonly read: () => Promise<{
+    readonly texts: LegalTexts;
+    readonly versions: Readonly<Record<LegalDocumentName, string | null>>;
+  }>;
   /** The stylesheets of the built application document. */
   readonly stylesheets: () => readonly string[];
 };
@@ -68,7 +68,8 @@ export function createLegalHandlers(
       const name = readText(request.params, 'document');
       if (dependencies === undefined || !isDocumentName(name))
         throw notServed();
-      const text = (await dependencies.texts())[name];
+      const legal = await dependencies.read();
+      const text = legal.texts[name];
       if (text === null) throw notServed();
       return {
         status: 200,
@@ -78,7 +79,7 @@ export function createLegalHandlers(
           body: await bodyOf(name, text),
           stylesheets: dependencies.stylesheets(),
           otherHref: legalDocumentPath(otherDocument(name)),
-          version: (await dependencies.versions())[name],
+          version: legal.versions[name],
         }),
         headers: legalDocumentHeaders,
       };

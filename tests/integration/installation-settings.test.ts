@@ -254,6 +254,27 @@ await test('a password reset goes through the stored transport', async () => {
   assert.match(sent.at(-1)?.subject ?? '', /^Reset your password/);
 });
 
+await test('a new user name with no password is refused', async () => {
+  await removeMailSettings({ headers: owner });
+  const refused = await updateMailSettings({
+    headers: owner,
+    body: {
+      host: mailInput.host,
+      port: mailInput.port,
+      security: mailInput.security,
+      username: 'notes',
+      sender: mailInput.sender,
+    },
+  });
+  assert.equal(responseOf(refused.response).status, 400);
+  assert.equal(memberOf(refused.error, 'code'), 'mail_password_required');
+  const restored = await updateMailSettings({
+    headers: owner,
+    body: mailInput,
+  });
+  assert.equal(responseOf(restored.response).status, 200);
+});
+
 await test('a mail setting that is not one is refused', async () => {
   for (const body of [
     { ...mailInput, host: 'smtps://smtp.example.test' },
@@ -332,9 +353,17 @@ await test('a document is served at once and both apply together', async () => {
   await updateLegalDocument({
     headers: owner,
     path: { document: 'terms' },
+    body: { kind: 'text', text: '# Terms\n\nRun by Other Ltd.', version: 't2' },
+  });
+  // The page states the text and the version of the same save.
+  const changed = (await legalPage('terms')).body;
+  assert.match(changed, /Run by Other Ltd\./);
+  assert.match(changed, /<span>Version t2<\/span>/);
+  await updateLegalDocument({
+    headers: owner,
+    path: { document: 'terms' },
     body: { kind: 'text', text: '# Terms\n\nRun by Other Ltd.', version: 't1' },
   });
-  assert.match((await legalPage('terms')).body, /Run by Other Ltd\./);
 });
 
 await test('a part that open registration needs cannot go while it is open', async () => {

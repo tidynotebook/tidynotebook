@@ -327,7 +327,8 @@ export type DomainErrorCode =
   | 'theme_limit'
   | 'setting_locked'
   | 'setting_required'
-  | 'legal_document_unfinished';
+  | 'legal_document_unfinished'
+  | 'mail_password_required';
 
 /**
  * A domain failure and the files it refers to.

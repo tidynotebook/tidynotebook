@@ -298,6 +298,7 @@ export function documentAddress(value: string): string | null {
 /** Why a legal document was refused. */
 export type LegalDocumentProblem =
   | { readonly kind: 'invalid' }
+  | { readonly kind: 'too_large' }
   | { readonly kind: 'unfinished'; readonly blanks: readonly string[] };
 
 /**
@@ -312,12 +313,17 @@ export function readLegalDocument(
   | { readonly ok: true; readonly value: StoredLegalDocument }
   | { readonly ok: false; readonly problem: LegalDocumentProblem } {
   const version = input.version.trim();
-  if (version === '' || version.length > maxLegalVersionLength)
+  // The version is counted in code points, as the contract and the database
+  // count it.
+  if (version === '' || characterCount(version) > maxLegalVersionLength)
     return { ok: false, problem: { kind: 'invalid' } };
   if (input.kind === 'text') {
     const text = input.text ?? '';
-    if (text.trim() === '' || utf8Length(text) > maxLegalTextBytes)
-      return { ok: false, problem: { kind: 'invalid' } };
+    if (text.trim() === '') return { ok: false, problem: { kind: 'invalid' } };
+    // The database bounds a text in bytes, which the contract cannot state,
+    // so a text that the contract takes can still be too large.
+    if (utf8Length(text) > maxLegalTextBytes)
+      return { ok: false, problem: { kind: 'too_large' } };
     const blanks = templateBlanks(text);
     if (blanks.length > 0)
       return { ok: false, problem: { kind: 'unfinished', blanks } };
@@ -398,6 +404,10 @@ export function setMailSettings(
           ? null
           : (stored.mail?.passwordSealed ?? null)
         : password.sealed;
+    // A user name signs in with a password, so one with no password, neither
+    // new nor kept, is refused rather than stored as an empty sign-in.
+    if (settings.username !== null && kept === null)
+      return fail<StoredInstallationSettings>('mail_password_required');
     const mail: StoredMailSettings = { ...settings, passwordSealed: kept };
     await tx.setMailSettings(mail);
     return ok({ ...stored, mail });
