@@ -780,10 +780,7 @@ await test('an acknowledgment tells every tab that the queue changed', async () 
   });
   await store.acknowledge(account, acceptanceOf(entry, account, '7'));
   assert.deepEqual(await otherStore.pending(account, workspace), []);
-  assert.ok(
-    changes.includes(`queue:${workspace}:${file}`),
-    changes.join(', '),
-  );
+  assert.ok(changes.includes(`queue:${workspace}:${file}`), changes.join(', '));
   unsubscribe();
   await otherStore.close();
   await store.close();

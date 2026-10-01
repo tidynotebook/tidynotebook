@@ -87,8 +87,7 @@ export function syncStateOfNotice(notice: SyncNotice): SyncState | null {
   // one queue, and the lease tab sends it for all of them, so the queue
   // states where the work stands. A sentence about another tab gave the
   // person nothing to do, and it stayed after the tab took the lease.
-  if (notice.kind === 'lease-held' || notice.kind === 'lease-lost')
-    return null;
+  if (notice.kind === 'lease-held' || notice.kind === 'lease-lost') return null;
   if (notice.kind === 'access-lost') return { kind: 'stopped' };
   if (noticeStartsOver(notice)) return startingSyncState;
   if (notice.kind === 'protocol')
