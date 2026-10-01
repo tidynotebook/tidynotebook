@@ -283,6 +283,15 @@ export function createQueueSlice(ctx: LocalStoreContext): QueueSlice {
                 fileId: revision.fileId,
                 kind: 'file',
               });
+            // The entry leaves the queue, so every tab reads the queue again.
+            // Only the lease tab sends, and the others learn from this alone
+            // that the save reached the server.
+            changes.push({
+              accountId,
+              workspaceId,
+              fileId: entry.input.revisions[0]?.fileId ?? null,
+              kind: 'queue',
+            });
             await tables.queue.delete([
               serverOrigin,
               accountId,

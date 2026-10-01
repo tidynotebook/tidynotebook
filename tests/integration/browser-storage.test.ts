@@ -760,6 +760,35 @@ await test('acknowledging one mutation twice changes nothing', async () => {
   await store.close();
 });
 
+await test('an acknowledgment tells every tab that the queue changed', async () => {
+  // Only the lease tab sends, and the sidebar of every other tab reads the
+  // queue again on a queue change. An acknowledgment that only named the file
+  // left those tabs on "Sending your save" after the save reached the server,
+  // and kept the background engine of a drained workspace running.
+  const backend = createBackend('acknowledged-queue');
+  const store = await openLocalStore(origin, backend.options());
+  const otherStore = await openLocalStore(origin, backend.options());
+  const account = randomUUID();
+  const workspace = randomUUID();
+  const file = randomUUID();
+  const draft = draftOf(account, workspace, file, 'copy-a', 'one\n');
+  await store.saveDraft(draft);
+  const entry = await store.checkpoint(draft, null, 'text');
+  const changes: string[] = [];
+  const unsubscribe = otherStore.subscribe((change) => {
+    changes.push(`${change.kind}:${change.workspaceId}:${change.fileId ?? ''}`);
+  });
+  await store.acknowledge(account, acceptanceOf(entry, account, '7'));
+  assert.deepEqual(await otherStore.pending(account, workspace), []);
+  assert.ok(
+    changes.includes(`queue:${workspace}:${file}`),
+    changes.join(', '),
+  );
+  unsubscribe();
+  await otherStore.close();
+  await store.close();
+});
+
 await test('one account cannot see the records of another', async () => {
   const backend = createBackend('partition');
   const store = await openLocalStore(origin, backend.options());
