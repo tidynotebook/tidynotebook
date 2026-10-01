@@ -448,6 +448,9 @@ await test('the open policy needs every part and a member changes nothing', asyn
 });
 
 const none = { mail: false, publishedOrigin: true, legalDocuments: false };
+const sealed = { kind: 'set' as const, sealed: 'sealed' };
+const noPassword = { kind: 'set' as const, sealed: null };
+const keep = { kind: 'keep' as const };
 const mailOf = {
   host: 'smtp.example.test',
   port: 587,
@@ -473,7 +476,7 @@ await test('the open policy reads the parts that the administrator set', async (
     false,
   );
   assert.equal(
-    (await setMailSettings(store, actorFor(ada), mailOf, 'sealed', none)).ok,
+    (await setMailSettings(store, actorFor(ada), mailOf, sealed, none)).ok,
     true,
   );
   await setLegalDocument(store, actorFor(ada), 'terms', terms, none);
@@ -494,7 +497,7 @@ await test('the open policy reads the parts that the administrator set', async (
 
 await test('a removal that open registration needs is refused', async () => {
   const store = createStore([admin(ada)]);
-  await setMailSettings(store, actorFor(ada), mailOf, 'sealed', none);
+  await setMailSettings(store, actorFor(ada), mailOf, sealed, none);
   await setLegalDocument(store, actorFor(ada), 'terms', terms, none);
   await setLegalDocument(store, actorFor(ada), 'privacy', privacy, none);
   await setRegistrationPolicy(store, actorFor(ada), 'open', none);
@@ -526,7 +529,13 @@ await test('a group that the environment sets is locked', async () => {
     legalDocuments: true,
   };
   assert.deepEqual(
-    await setMailSettings(store, actorFor(ada), mailOf, null, environment),
+    await setMailSettings(
+      store,
+      actorFor(ada),
+      mailOf,
+      noPassword,
+      environment,
+    ),
     locked,
   );
   assert.deepEqual(
@@ -542,14 +551,14 @@ await test('a group that the environment sets is locked', async () => {
 
 await test('a kept password stays only with its user name', async () => {
   const store = createStore([admin(ada)]);
-  await setMailSettings(store, actorFor(ada), mailOf, 'sealed', none);
-  await setMailSettings(store, actorFor(ada), mailOf, 'keep', none);
+  await setMailSettings(store, actorFor(ada), mailOf, sealed, none);
+  await setMailSettings(store, actorFor(ada), mailOf, keep, none);
   assert.equal(store.settings.mail?.passwordSealed, 'sealed');
   await setMailSettings(
     store,
     actorFor(ada),
     { ...mailOf, username: null },
-    'keep',
+    keep,
     none,
   );
   assert.equal(store.settings.mail?.passwordSealed, null);
@@ -563,7 +572,7 @@ await test('a member reads and changes no setting', async () => {
     forbidden,
   );
   assert.deepEqual(
-    await setMailSettings(store, actorFor(bea), mailOf, null, none),
+    await setMailSettings(store, actorFor(bea), mailOf, noPassword, none),
     forbidden,
   );
   assert.deepEqual(

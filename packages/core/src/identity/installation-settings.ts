@@ -344,16 +344,22 @@ async function removalBreaksOpen(
 }
 
 /**
- * Sets the mail transport, for an administrator.
- *
- * `password` is the sealed password, `null` for none, or `keep` for the one
- * that the row holds. A transport that the environment sets is locked.
+ * What a change does with the password of the mail server: keep the one that
+ * the row holds, or store a new sealed one, `null` for none.
+ */
+export type MailPasswordChange =
+  | { readonly kind: 'keep' }
+  | { readonly kind: 'set'; readonly sealed: string | null };
+
+/**
+ * Sets the mail transport, for an administrator. A transport that the
+ * environment sets is locked.
  */
 export function setMailSettings(
   store: InstallationStore,
   actor: Actor,
   settings: Omit<StoredMailSettings, 'passwordSealed'>,
-  password: string | null | 'keep',
+  password: MailPasswordChange,
   environment: InstallationEnvironment,
 ): Promise<Result<StoredInstallationSettings>> {
   return store.installation(actor, async (tx) => {
@@ -363,11 +369,11 @@ export function setMailSettings(
       return fail<StoredInstallationSettings>('setting_locked');
     const stored = await tx.settings();
     const kept =
-      password === 'keep'
+      password.kind === 'keep'
         ? settings.username === null
           ? null
           : (stored.mail?.passwordSealed ?? null)
-        : password;
+        : password.sealed;
     const mail: StoredMailSettings = { ...settings, passwordSealed: kept };
     await tx.setMailSettings(mail);
     return ok({ ...stored, mail });

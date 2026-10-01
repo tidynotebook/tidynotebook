@@ -251,7 +251,12 @@ export function createAdministrationHandlers(
       // A password that the body leaves out keeps the stored one. The row
       // never holds the password itself, only its seal.
       const sealed =
-        password === null ? 'keep' : dependencies.passwordSeal.seal(password);
+        password === null
+          ? { kind: 'keep' as const }
+          : {
+              kind: 'set' as const,
+              sealed: dependencies.passwordSeal.seal(password),
+            };
       const stored = unwrapDomain(
         await setMailSettings(store, resolved.actor, mail, sealed, environment),
       );

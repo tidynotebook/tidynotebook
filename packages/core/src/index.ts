@@ -420,6 +420,7 @@ export type {
   LegalDocumentInput,
   LegalDocumentName,
   LegalDocumentProblem,
+  MailPasswordChange,
   MailSecurity,
   MailSettingsInput,
   MailSettingsProblem,
