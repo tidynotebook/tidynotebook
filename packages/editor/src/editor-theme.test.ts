@@ -73,6 +73,19 @@ await test('the note column is centred by the padding of the content', () => {
   assert.equal(rule('.cm-np-widget-block').marginInline, '0');
 });
 
+await test('a block widget keeps its space in a padding the editor measures', () => {
+  // Regression: the space above and below a picture, a diagram and display
+  // math was a margin. The editor measures the box of a block widget and not
+  // its margin, so every line below the widget stood lower on the screen
+  // than the editor knew. A click in the lower part of a line, or of a table
+  // row, under a picture landed on the line below it.
+  const block = rule('.cm-np-widget-block');
+  assert.equal(block.marginBlock, '0');
+  assert.equal(block.marginBlockStart, undefined);
+  assert.equal(block.marginBlockEnd, undefined);
+  assert.equal(block.paddingBlock, 'var(--spacing-note-block)');
+});
+
 await test('a table row carries no margin, so none decides its column', () => {
   // The regression this holds: the table was the one construct that a
   // centring margin could not move, so it sat a hundred pixels left of every

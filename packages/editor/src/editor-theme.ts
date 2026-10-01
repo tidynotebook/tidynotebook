@@ -865,11 +865,17 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
       color: 'var(--notes-text-muted)',
     },
 
+    // The space above and below a picture, a diagram and display math is a
+    // padding of the widget and never a margin. The editor measures the box
+    // of a block widget and not its margin, so a margin put every line below
+    // the widget lower on the screen than the editor knew, and a click in the
+    // lower part of a line, or of a table row, landed on the line below.
     '.cm-np-widget-block': {
       display: 'block',
       maxWidth: 'var(--container-note)',
       marginInline: '0',
-      marginBlock: 'var(--spacing-note-block)',
+      marginBlock: '0',
+      paddingBlock: 'var(--spacing-note-block)',
     },
     '.cm-np-widget-inline': { display: 'inline' },
     '.cm-np-widget-image': {
