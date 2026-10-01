@@ -26,6 +26,38 @@ import type {
  */
 export const customThemeLimit = 20;
 
+/**
+ * The prefix of the family of an imported theme, before its identifier.
+ *
+ * The browser reader states the same prefix in `@notesapp/ui`, which this
+ * package cannot import, and `tests/integration/account-themes.test.ts`
+ * holds the two together.
+ */
+export const importedFamilyPrefix = 'custom-';
+
+/** The family identifier of one imported theme. */
+export function importedFamilyOf(themeId: string): string {
+  return `${importedFamilyPrefix}${themeId}`;
+}
+
+/**
+ * Whether the account holds the theme that a family names.
+ *
+ * A family of the registry is an opaque slug that the client resolves, so it
+ * always passes. A family of an imported theme passes only while the account
+ * holds that theme, so a device that missed a delete cannot name the removed
+ * theme again (record 0141). The caller holds the settings lock.
+ */
+export async function holdsFamily(
+  tx: AccountTransaction,
+  themeFamily: string,
+): Promise<boolean> {
+  if (!themeFamily.startsWith(importedFamilyPrefix)) return true;
+  return (await tx.themes()).some(
+    (theme) => importedFamilyOf(theme.themeId) === themeFamily,
+  );
+}
+
 /** A colour as the contract states it: a hash and six hexadecimal digits. */
 const hexColour = /^#[0-9a-fA-F]{6}$/;
 

@@ -60,7 +60,8 @@ A person imports a theme file, and the account keeps it. See
 - `packages/ui/src/theme-file.ts` reads and writes the file. The download of
   the theme in use writes the same shape, so it is the start of a new theme.
 - The account answers its themes with its settings. The server checks the shape
-  of each colour and the count, and `apps/web/src/lib/imported-themes.ts` reads
+  of each colour, the count, and that a chosen imported theme is still held
+  under the settings lock, and `apps/web/src/lib/imported-themes.ts` reads
   every stored theme through the file reader again, so a theme that fails the
   rules is neither offered nor painted.
 - The family of an imported theme is `custom-` and its identifier. The device

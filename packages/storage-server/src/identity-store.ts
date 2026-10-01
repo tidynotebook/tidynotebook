@@ -49,6 +49,7 @@ import type {
 import {
   accountStates,
   defaultSpellCheck,
+  importedFamilyOf,
   installationRoles,
   isThemeFamilyId,
   OperationalError,
@@ -624,12 +625,12 @@ export function openIdentityStore(
           [themeId, accountId],
         );
         if (removed.rowCount !== 1) return false;
-        // The family of the theme is `custom-` and its identifier. A setting
-        // that names it takes the column default, the one default family.
+        // A setting that names the family of the theme takes the column
+        // default, the one default family.
         await client.query(
           `update account_preferences set theme_family = default, updated_at = now()
              where account_id = $1 and theme_family = $2`,
-          [accountId, `custom-${themeId}`],
+          [accountId, importedFamilyOf(themeId)],
         );
         return true;
       },

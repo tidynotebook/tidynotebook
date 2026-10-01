@@ -252,6 +252,8 @@ export {
 export {
   customThemeLimit,
   deleteTheme,
+  importedFamilyOf,
+  importedFamilyPrefix,
   importTheme,
 } from './workspaces/themes.ts';
 export type { RestoreRevisionInput } from './history/service.ts';

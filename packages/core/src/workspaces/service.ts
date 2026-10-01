@@ -14,7 +14,7 @@
 import type { Action, Actor, Role } from '../identity/actor.ts';
 import { actionsForRole, authorize } from '../identity/actor.ts';
 import { fail, ok, type Result } from '../files/model.ts';
-import { settingsOf } from './themes.ts';
+import { holdsFamily, settingsOf } from './themes.ts';
 import type {
   AccountOwnStanding,
   AccountSettings,
@@ -210,6 +210,9 @@ export function updatePreferences(
   change: PreferencesChange,
 ): Promise<Result<AccountSettings>> {
   return store.account(actor, async (tx) => {
+    // The lock orders this write after a delete of a theme, so the family
+    // read below and the check of an imported theme see the delete (0141).
+    await tx.lockSettings();
     const current = await tx.preferences();
     let appearance = current.appearance;
     if (change.appearance !== undefined) {
@@ -220,7 +223,7 @@ export function updatePreferences(
       appearance = known;
     }
     const themeFamily = change.themeFamily ?? current.themeFamily;
-    if (!isThemeFamilyId(themeFamily))
+    if (!isThemeFamilyId(themeFamily) || !(await holdsFamily(tx, themeFamily)))
       return fail<AccountSettings>('forbidden');
     const checked: Preferences = {
       appearance,

@@ -31,7 +31,10 @@ import {
   signInWithPassword,
   updatePreferences,
 } from '@notesapp/api-client';
-import { customThemeLimit } from '@notesapp/core';
+import {
+  customThemeLimit,
+  importedFamilyPrefix as coreImportedFamilyPrefix,
+} from '@notesapp/core';
 import {
   bootstrapOwner,
   createAuth,
@@ -51,6 +54,7 @@ import {
 } from '@notesapp/storage-server';
 import {
   findThemeFamily,
+  importedFamilyPrefix,
   readThemeFile,
   themeFileText,
   themeNameMaximumLength,
@@ -224,6 +228,34 @@ await test('a delete of the theme in use takes the default family back', async (
   assert.equal(responseOf(again.response).status, 404);
 });
 
+await test('a device that missed a delete cannot name the removed theme again', async () => {
+  const theme = themeFrom('dracula', 'Removed');
+  const imported = await importTheme({ headers, body: importBody(theme) });
+  const added = (imported.data?.themes ?? []).find(
+    (entry) => entry.name === 'Removed',
+  );
+  assert.ok(added !== undefined);
+  const family = `custom-${added.themeId}`;
+  const chosen = await updatePreferences({
+    headers,
+    body: { themeFamily: family },
+  });
+  assert.equal(chosen.error, undefined, JSON.stringify(chosen.error));
+  const removed = await deleteTheme({
+    headers,
+    path: { themeId: added.themeId },
+  });
+  assert.equal(removed.data?.themeFamily, 'default');
+  // The other device still names the theme in its next appearance change.
+  const stale = await updatePreferences({
+    headers,
+    body: { appearance: 'dark', themeFamily: family },
+  });
+  assert.equal(responseOf(stale.response).status, 403);
+  const account = await getAccount({ headers });
+  assert.equal(account.data?.preferences.themeFamily, 'default');
+});
+
 await test('the account keeps no more themes than its limit', async () => {
   const theme = themeFrom('one', 'Many');
   const before = (await getAccount({ headers })).data?.preferences.themes;
@@ -276,6 +308,8 @@ await test('the client, the core and the contract state one set of bounds', asyn
     preferences,
     new RegExp(`maxItems: ${String(customThemeLimit)}\\n`),
   );
+  // The family of an imported theme has one prefix on both sides.
+  assert.equal(coreImportedFamilyPrefix, importedFamilyPrefix);
 });
 
 await server.close();

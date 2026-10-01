@@ -22,7 +22,12 @@ import type {
   WorkspaceAdminTransaction,
   WorkspaceSummary,
 } from './ports.ts';
-import { customThemeLimit, deleteTheme, importTheme } from './themes.ts';
+import {
+  customThemeLimit,
+  deleteTheme,
+  importedFamilyPrefix,
+  importTheme,
+} from './themes.ts';
 import {
   defaultSpellCheck,
   createWorkspace,
@@ -571,4 +576,49 @@ await test('a deleted theme leaves the settings, and an unknown one is not found
 
 await test('the family of an imported theme is a stored family', () => {
   assert.equal(isThemeFamilyId(`custom-${themeIds[0] ?? ''}`), true);
+});
+
+await test('a setting names an imported theme only while the account holds it', async () => {
+  // A device that did not see a delete must not name the removed theme
+  // again, so the check reads the themes under the settings lock (0141).
+  const store = createFakeStore();
+  const themeId = themeIds[0] ?? '';
+  const family = `${importedFamilyPrefix}${themeId}`;
+  await importTheme(
+    store,
+    actorFor(alice),
+    { name: 'Harbour', light: null, dark: palette },
+    themeId,
+  );
+  store.settingsLocks.length = 0;
+  const chosen = await updatePreferences(store, actorFor(alice), {
+    themeFamily: family,
+  });
+  assert.equal(chosen.ok, true);
+  assert.deepEqual(store.settingsLocks, [alice]);
+  await deleteTheme(store, actorFor(alice), themeId);
+  store.preferences.set(alice, {
+    appearance: 'system',
+    themeFamily: 'default',
+    spellCheck: true,
+  });
+  const stale = await updatePreferences(store, actorFor(alice), {
+    appearance: 'dark',
+    themeFamily: family,
+  });
+  assert.deepEqual(stale, {
+    ok: false,
+    error: { code: 'forbidden', fileIds: [] },
+  });
+  assert.equal(store.preferences.get(alice)?.themeFamily, 'default');
+  // Another account cannot name the theme of the first one either.
+  const other = await updatePreferences(store, actorFor(bob), {
+    themeFamily: `${importedFamilyPrefix}${themeIds[1] ?? ''}`,
+  });
+  assert.equal(other.ok, false);
+  // A registry family stays an opaque slug that the client resolves.
+  const registry = await updatePreferences(store, actorFor(alice), {
+    themeFamily: 'nord',
+  });
+  assert.equal(registry.ok, true);
 });
