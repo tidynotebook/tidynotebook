@@ -37,6 +37,7 @@ import { useNavigate } from 'react-router';
 import { searchFiles as searchRemote } from '@notesapp/api-client';
 import { searchLocal, type LocalStore } from '@notesapp/sync';
 import {
+  bareFieldClassName,
   Button,
   Dialog,
   EmptyState,
@@ -342,7 +343,7 @@ function PaletteDialog({
         <input
           ref={inputRef}
           type="text"
-          className="min-w-0 flex-1 border-0 bg-transparent py-3 text-ui text-strong outline-none placeholder:text-muted"
+          className={bareFieldClassName()}
           value={query}
           placeholder={placeholder}
           aria-label={placeholder}

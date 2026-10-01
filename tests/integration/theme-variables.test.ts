@@ -19,7 +19,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runInNewContext } from 'node:vm';
-import { editorThemeVariables } from '@notesapp/editor';
+import { editorThemeVariables, touchFieldQuery } from '@notesapp/editor';
 import {
   defaultThemeFor,
   importedThemeFamily,
@@ -28,6 +28,7 @@ import {
   themeFamilies,
   themeFileText,
   themeProperties,
+  touchFieldText,
 } from '@notesapp/ui';
 import {
   importedPaletteStorageKey,
@@ -39,8 +40,8 @@ import { loadCompiler, webRequire } from './support/tailwind.ts';
 const root = resolve(fileURLToPath(import.meta.url), '../../..');
 const stylesheet = resolve(root, 'apps/web/src/tailwind.css');
 
-/** Compiles the application stylesheet to plain CSS. */
-async function buildCss(): Promise<string> {
+/** Compiles the application stylesheet, with these classes, to plain CSS. */
+async function buildCss(candidates: readonly string[] = []): Promise<string> {
   const compile = loadCompiler();
   const source = await readFile(stylesheet, 'utf8');
   const compiler = await compile(source, {
@@ -59,7 +60,7 @@ async function buildCss(): Promise<string> {
       };
     },
   });
-  return compiler.build([]);
+  return compiler.build([...candidates]);
 }
 
 const css = await buildCss();
@@ -135,6 +136,36 @@ await test('the named steps of the interface reach the stylesheet', () => {
   assert.match(css, /--text-kbd--line-height:\s*1rem/);
   assert.match(css, /--radius-xl:\s*0\.75rem/);
   assert.match(css, /--spacing-header:\s*2\.75rem/);
+});
+
+await test('a field under touch sets its text at 16 px', async () => {
+  // The defect this covers: Safari on iOS zoomed the page into every field
+  // on a tap, because the text of each field was under 16 px. The class of a
+  // field and the panel theme of the editor state the rule under one query.
+  assert.match(css, /--text-base:\s*1rem/);
+  const touch = await buildCss([touchFieldText]);
+  const query = touchFieldQuery.replace(/[()]/g, '\\$&');
+  assert.match(
+    touch,
+    new RegExp(
+      `@media ${query}\\s*\\{\\s*\\.pointer-coarse\\\\:text-base\\s*\\{\\s*font-size:\\s*var\\(--text-base\\)`,
+    ),
+    'the editor query is the query of the class',
+  );
+  // The served stylesheet holds the rule, because the recipe is a source.
+  const assets = resolve(root, 'apps/web/dist/web/assets');
+  const served = (
+    await Promise.all(
+      (await readdir(assets))
+        .filter((name) => name.endsWith('.css'))
+        .map((name) => readFile(resolve(assets, name), 'utf8')),
+    )
+  ).join('\n');
+  assert.ok(
+    served.includes('.pointer-coarse\\:text-base{font-size:var(--text-base)'),
+    'the served rule',
+  );
+  assert.match(served, /--text-base:1rem/);
 });
 
 await test('the compact tree spacing reaches the built stylesheet', async () => {

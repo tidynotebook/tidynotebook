@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { touchFieldText } from '@notesapp/ui';
 import {
   noteNameFieldClassName,
   noteNameFieldMaximum,
@@ -64,4 +65,10 @@ await test('the name field starts where the folder before it starts', () => {
   // No inline padding, so the whole path reads as one line.
   assert.ok(!classes.some((name) => name.startsWith('px-')));
   assert.ok(!classes.some((name) => name.startsWith('pl-')));
+});
+
+await test('the name field sets its text at 16 px under touch', () => {
+  // Safari on iOS zoomed the page into the name field on a tap, because its
+  // text was under 16 px, and the zoom hid the rest of the header.
+  assert.ok(noteNameFieldClassName().split(' ').includes(touchFieldText));
 });

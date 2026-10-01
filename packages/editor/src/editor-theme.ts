@@ -45,6 +45,7 @@ export const editorThemeVariables: readonly string[] = [
   '--text-ui',
   '--text-ui--line-height',
   '--text-control',
+  '--text-base',
   '--text-note',
   '--text-note--line-height',
   '--container-note',
@@ -78,6 +79,18 @@ export const editorThemeVariables: readonly string[] = [
  * every note on a phone.
  */
 export const gripPointerQuery = '(hover: hover) and (pointer: fine)';
+
+/**
+ * Where a field takes the touch step: a coarse pointer, which is a finger.
+ *
+ * Safari on iOS zooms the page into a field under 16 px on focus, so every
+ * field of the product sets its text at 16 px under touch (`touchFieldText`
+ * of `@notesapp/ui`). CodeMirror builds the search field itself, so the panel
+ * theme states the rule under this query, and
+ * `tests/integration/theme-variables.test.ts` holds it to the query that
+ * Tailwind writes for the class of every other field.
+ */
+export const touchFieldQuery = '(pointer: coarse)';
 
 /** The heading ramp, level by level. */
 const headings: ReadonlyArray<readonly [string, string]> = [

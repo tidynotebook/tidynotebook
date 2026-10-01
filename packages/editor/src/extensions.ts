@@ -22,6 +22,7 @@ import {
   noteLinkSource,
   type NoteLinkSource,
 } from './completion.ts';
+import { touchFieldQuery } from './editor-theme.ts';
 import { formattingKeymap } from './keymaps.ts';
 import { orderedListNumbering } from './list-numbering.ts';
 import { markdownPaste } from './paste.ts';
@@ -75,6 +76,11 @@ export const panelTheme: Extension = EditorView.theme({
     borderRadius: 'calc(var(--spacing) * 1.5)',
     padding: 'calc(var(--spacing) * 1) calc(var(--spacing) * 2)',
     fontSize: 'var(--text-control)',
+  },
+  // The touch step of every field, so Safari on iOS does not zoom into the
+  // search field on a tap.
+  [`@media ${touchFieldQuery}`]: {
+    '.cm-textfield': { fontSize: 'var(--text-base)' },
   },
   '.cm-textfield:focus-visible': {
     outline: '2px solid var(--notes-focus)',

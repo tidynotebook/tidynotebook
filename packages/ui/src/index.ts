@@ -83,6 +83,7 @@ export type {
 export {
   avatarClassName,
   badgeClassName,
+  bareFieldClassName,
   buttonClassName,
   buttonName,
   calendarDayClassName,
@@ -98,6 +99,7 @@ export {
   focusOutlineInset,
   kbdClassName,
   rowClassName,
+  touchFieldText,
 } from './control-classes.ts';
 export { defaultIconSize, iconAttributes, iconGrid } from './icon-grid.ts';
 export type { SelectOption } from './controls.tsx';

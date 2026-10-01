@@ -165,6 +165,15 @@
   --text-control--line-height: 1.25rem;
   --text-ui: 0.875rem;
   --text-ui--line-height: 1.375rem;
+  /*
+   * `text-base` is the title of a card, and the text of every field under
+   * touch: Safari on iOS zooms the page into a focused field under 16 px
+   * (`touchFieldText` in `packages/ui/src/control-classes.ts`). It is the
+   * Tailwind default, stated here because the editor adapter reads it for
+   * the search field that CodeMirror builds.
+   */
+  --text-base: 1rem;
+  --text-base--line-height: 1.5;
 
   --radius-sm: 0.25rem;
   --radius-md: 0.375rem;

@@ -84,7 +84,8 @@ no screen writes its own (record 0065).
   colour class of its own (record 0065).
 - `fieldClassName`: a text field, a select and a read only field. 32 px,
   `edge-line` at rest, `border-focus` with a ring when active, `border-danger`
-  in error. Its label sits above it in `text-control font-medium`.
+  in error, and 16 px text under touch (`touchFieldText`) so that iOS does not
+  zoom. Its label is above it in `text-control font-medium`.
 - `kbdClassName`: one key cap in `text-kbd font-mono` with `edge-line`. A key
   combination is one cap for each key, from `KeyHint` in
   `apps/web/src/shell/key-hint.tsx`, and `apps/web/src/shell/modifier-key.ts`
@@ -102,9 +103,8 @@ nothing else (record 0057), and nothing scales on press.
 
 `packages/ui/src/icons.tsx` is the one set: a 24 grid at a stroke of 1.5. An
 icon is 16 px in a control, a row and a label, and 20 px in an empty state. A
-menu gives every row an icon or no row an icon. An action carries the same icon
-everywhere it appears. An icon only action carries a `label`. Delete an icon
-that no screen uses.
+menu gives every row an icon or no row an icon. An action carries one icon
+everywhere. An icon only action carries a `label`. Delete an unused icon.
 
 ## The frame
 

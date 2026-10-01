@@ -303,7 +303,7 @@ export const publishedButtonClasses =
 
 /** The classes of the password field. See {@link publishedButtonClasses}. */
 export const publishedFieldClasses =
-  'w-full min-h-11 rounded-md border bg-app px-3 text-ui text-strong outline-none focus-visible:ring-2 focus-visible:ring-focus/25 md:min-h-8 border-edge-line focus-visible:border-focus';
+  'w-full min-h-11 rounded-md border bg-app px-3 text-ui pointer-coarse:text-base text-strong outline-none focus-visible:ring-2 focus-visible:ring-focus/25 md:min-h-8 border-edge-line focus-visible:border-focus';
 
 /** The classes of the document frame, which the shell document also writes. */
 export const bodyClasses =

@@ -14,6 +14,7 @@ import test from 'node:test';
 import {
   avatarClassName,
   badgeClassName,
+  bareFieldClassName,
   buttonClassName,
   buttonName,
   calendarDayClassName,
@@ -29,6 +30,7 @@ import {
   selectClassName,
   sidebarViewClassName,
   textAreaClassName,
+  touchFieldText,
   type ButtonSize,
   type ButtonVariant,
   type EdgeMark,
@@ -376,6 +378,31 @@ await test('a field rests on the divider and answers focus on it', () => {
   assert.ok(field.includes('bg-app'), 'the field fill');
   assert.ok(field.includes('min-h-11'), 'the touch minimum');
   assert.ok(field.includes('md:min-h-8'), 'the desktop field height');
+});
+
+await test('every field sets its text at 16 px under touch', () => {
+  // The defect this covers: Safari on iOS zoomed the page into every field
+  // of the product on a tap, because the text of each field was under
+  // 16 px, and the zoom hid what the person had on the screen.
+  for (const [name, classes] of [
+    ['field', fieldClassName()],
+    ['invalid field', fieldClassName({ invalid: true })],
+    ['select', selectClassName()],
+    ['text area', textAreaClassName()],
+    ['bare field', bareFieldClassName()],
+  ] as const) {
+    const parts = classes.split(' ');
+    assert.ok(parts.includes(touchFieldText), `${name} under touch`);
+  }
+  assert.equal(touchFieldText, 'pointer-coarse:text-base');
+});
+
+await test('a bare field is a field with no box of its own', () => {
+  const parts = bareFieldClassName().split(' ');
+  for (const part of ['border-0', 'bg-transparent', 'outline-none'])
+    assert.ok(parts.includes(part), part);
+  assert.ok(parts.includes('text-ui'), 'the body step of the chrome');
+  assert.ok(!parts.some((part) => part.startsWith('rounded')), 'no radius');
 });
 
 await test('a text area is a field of several lines in the code face', () => {

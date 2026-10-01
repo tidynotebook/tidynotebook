@@ -332,6 +332,24 @@ export function sidebarViewClassName(options: {
 }
 
 /**
+ * The text step of a field under touch.
+ *
+ * Safari on iOS zooms the page into a field whose text is under 16 px when
+ * the field takes focus, and the page stays zoomed after the keyboard
+ * closes, so the zoom hides what the person had on the screen. Every field
+ * a person types into therefore sets its text at `text-base`, 16 px, under a
+ * coarse pointer, and keeps its compact step under a mouse. The viewport
+ * does not forbid the zoom instead: a limit on the scale also stops the pinch
+ * of a person on Android who needs larger text.
+ *
+ * The editor adapter states the same rule for the search field that
+ * CodeMirror builds, which no class reaches, through `touchFieldQuery` of
+ * `@notesapp/editor`. `tests/integration/theme-variables.test.ts` holds that
+ * query to the one Tailwind writes for this variant.
+ */
+export const touchFieldText = 'pointer-coarse:text-base';
+
+/**
  * The appearance of a field, as classes.
  *
  * A text field, a select and a read only field all read this, so the three
@@ -356,7 +374,7 @@ export function fieldClassName(
   } = {},
 ): string {
   return [
-    `w-full min-h-11 ${fieldSurface} text-ui md:min-h-8`,
+    `w-full min-h-11 ${fieldSurface} text-ui ${touchFieldText} md:min-h-8`,
     fieldEdge(options.invalid === true),
     options.className ?? '',
   ]
@@ -385,9 +403,20 @@ export function textAreaClassName(
   options: { readonly invalid?: boolean | undefined } = {},
 ): string {
   return [
-    `block w-full min-h-64 resize-y py-2 font-mono text-control leading-relaxed ${fieldSurface}`,
+    `block w-full min-h-64 resize-y py-2 font-mono text-control ${touchFieldText} leading-relaxed ${fieldSurface}`,
     fieldEdge(options.invalid === true),
   ].join(' ');
+}
+
+/**
+ * The appearance of a field with no box of its own, as classes.
+ *
+ * The query of the command palette is a field inside a surface that already
+ * frames it, so it takes no edge, no fill and no radius, and it takes the
+ * body step of the chrome and the touch step of every field.
+ */
+export function bareFieldClassName(): string {
+  return `min-w-0 flex-1 border-0 bg-transparent py-3 text-ui ${touchFieldText} text-strong outline-none placeholder:text-muted`;
 }
 
 /**

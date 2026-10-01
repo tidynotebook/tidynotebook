@@ -20,9 +20,12 @@
  * The field has no inline padding, so the name starts on the same pixel as
  * the folder part before it and the whole path reads as one line.
  *
+ * Under touch the name takes the touch step of every field, so Safari on iOS
+ * does not zoom the page into the header on a tap.
+ *
  * The rules live here, outside JSX, so a unit test can read them.
  */
-import { focusOutline, transitionSurface } from '@notesapp/ui';
+import { focusOutline, touchFieldText, transitionSurface } from '@notesapp/ui';
 
 /** The fewest characters the field is wide, which is its placeholder. */
 export const noteNameFieldMinimum = 9;
@@ -45,5 +48,5 @@ export function noteNameFieldSize(name: string): number {
 
 /** The classes of the inline editable note name in the frame header. */
 export function noteNameFieldClassName(): string {
-  return `w-auto min-w-0 max-w-full truncate rounded-md border-0 bg-transparent py-1 text-ui font-medium text-strong outline-none ${transitionSurface} hover:bg-hover ${focusOutline}`;
+  return `w-auto min-w-0 max-w-full truncate rounded-md border-0 bg-transparent py-1 text-ui ${touchFieldText} font-medium text-strong outline-none ${transitionSurface} hover:bg-hover ${focusOutline}`;
 }
