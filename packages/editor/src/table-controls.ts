@@ -37,6 +37,7 @@ import {
   appendRowEdit,
   moveColumnEdit,
   moveRowEdit,
+  tableAt,
   tableContextAt,
   tableEditSpec,
   type TableEdit,
@@ -115,16 +116,6 @@ function addBar(kind: 'row' | 'column'): HTMLButtonElement {
   button.title = label;
   button.append(glyph('cm-np-table-control-mark', plusParts));
   return button;
-}
-
-/** The cell element that holds the caret, or null. */
-function caretCell(view: EditorView): HTMLElement | null {
-  const { node } = view.domAtPos(view.state.selection.main.head);
-  const element = node instanceof HTMLElement ? node : node.parentElement;
-  return (
-    element?.closest<HTMLElement>('.cm-np-table-cell, .cm-np-table-head') ??
-    null
-  );
 }
 
 /** The rows of a table element that a person sees: every line but the delimiter. */
@@ -210,6 +201,154 @@ function gridBox(table: HTMLElement): GridBox | null {
   };
 }
 
+/**
+ * One cell of a table by its place: the start of the first line of the
+ * table, its row as the grid counts them, and its column.
+ *
+ * The controls keep a place and never an element. A click restyles the cell
+ * it lands in and the cell it leaves, and the editor draws those cells again,
+ * so an element that the controls kept stopped being the cell on the screen
+ * and the grips stayed on the row that the caret had left.
+ */
+type GridRef = {
+  readonly tableFrom: number;
+  readonly row: number;
+  readonly column: number;
+};
+
+/** The start of the first line of a table element, or null. */
+function tableStart(view: EditorView, table: HTMLElement): number | null {
+  const first = gridLines(table)[0];
+  if (first === undefined) return null;
+  return view.state.doc.lineAt(view.posAtDOM(first, 0)).from;
+}
+
+/** The table element that starts at `tableFrom`, if the editor draws it. */
+function tableOf(view: EditorView, tableFrom: number): HTMLElement | null {
+  for (const table of view.contentDOM.querySelectorAll<HTMLElement>(
+    '.cm-np-table',
+  ))
+    if (tableStart(view, table) === tableFrom) return table;
+  return null;
+}
+
+/** The cell element of a place in a table element, or null. */
+function cellIn(table: HTMLElement, ref: GridRef): HTMLElement | null {
+  const line = gridLines(table)[ref.row];
+  return line === undefined ? null : (rowCells(line)[ref.column] ?? null);
+}
+
+/** The cell element of a place, or null. */
+function cellOf(view: EditorView, ref: GridRef): HTMLElement | null {
+  const table = tableOf(view, ref.tableFrom);
+  return table === null ? null : cellIn(table, ref);
+}
+
+/** The place of the cell that holds the caret, read from the document. */
+function caretRef(view: EditorView): GridRef | null {
+  const head = view.state.selection.main.head;
+  const context = tableContextAt(view.state, head);
+  if (!context.table) return null;
+  const table = tableAt(view.state, head);
+  if (table === null) return null;
+  return {
+    tableFrom: view.state.doc.lineAt(table.from).from,
+    row: context.row,
+    column: context.column,
+  };
+}
+
+/**
+ * The row and the column that the pointer names, from what it is over.
+ *
+ * `found` holds the row and the column under the pointer, or -1 where the
+ * pointer is beside the grid, over the room of a grip or an add bar. There
+ * the row or the column that the pointer last named in the same table
+ * stays, so a pointer that moves onto a grip keeps the grip where it is.
+ * With no earlier place, the pointer names the nearest edge of the grid.
+ */
+export function pointedPlace(
+  found: { readonly row: number; readonly column: number },
+  size: { readonly rows: number; readonly columns: number },
+  side: { readonly above: boolean; readonly before: boolean },
+  previous: { readonly row: number; readonly column: number } | null,
+): { readonly row: number; readonly column: number } {
+  return {
+    row:
+      found.row !== -1
+        ? found.row
+        : (previous?.row ?? (side.above ? 0 : size.rows - 1)),
+    column:
+      found.column !== -1
+        ? found.column
+        : (previous?.column ?? (side.before ? 0 : size.columns - 1)),
+  };
+}
+
+/** The room around a grid where the pointer still belongs to its table. */
+type Slack = {
+  readonly left: number;
+  readonly top: number;
+  readonly right: number;
+  readonly bottom: number;
+};
+
+/**
+ * The table and the cell under the pointer.
+ *
+ * The pointer belongs to a table over its grid and over the room where the
+ * grips and the add bars stand, so a pointer that moves onto a control keeps
+ * the controls where they are. Over that room the pointer is over no cell,
+ * and the row or the column it last pointed at stays.
+ */
+function pointerRef(
+  view: EditorView,
+  x: number,
+  y: number,
+  previous: GridRef | null,
+  slack: Slack,
+): { readonly table: HTMLElement; readonly ref: GridRef } | null {
+  for (const table of view.contentDOM.querySelectorAll<HTMLElement>(
+    '.cm-np-table',
+  )) {
+    const grid = gridBox(table);
+    if (grid === null) continue;
+    if (
+      x < grid.left - slack.left ||
+      x > grid.right + slack.right ||
+      y < grid.top - slack.top ||
+      y > grid.bottom + slack.bottom
+    )
+      continue;
+    const tableFrom = tableStart(view, table);
+    if (tableFrom === null) continue;
+    const same = previous !== null && previous.tableFrom === tableFrom;
+    const lines = grid.lines;
+    const columns = lines[0] === undefined ? [] : rowCells(lines[0]);
+    const row = lines.findIndex((line) => {
+      const box = line.getBoundingClientRect();
+      return y >= box.top && y < box.bottom;
+    });
+    const column = columns.findIndex((cell) => {
+      const box = cell.getBoundingClientRect();
+      return x >= box.left && x < box.right;
+    });
+    return {
+      table,
+      ref: {
+        tableFrom,
+        ...pointedPlace(
+          { row, column },
+          { rows: lines.length, columns: columns.length },
+          { above: y < grid.top, before: x < grid.left },
+          same ? previous : null,
+        ),
+      },
+    };
+  }
+  return null;
+}
+
 /** A press on a grip, which becomes a drag once the pointer travels. */
 type Drag = {
   readonly kind: 'row' | 'column';
@@ -217,12 +356,11 @@ type Drag = {
   readonly startX: number;
   readonly startY: number;
   /** A position in the cell of the grip, which names what moves. */
-  readonly pos: number;
+  pos: number;
   /** The row or the column that moves, as the grid counts them. */
   readonly from: number;
-  readonly table: HTMLElement;
   /** The cell of the grip, whose row or column the drag marks. */
-  readonly cell: HTMLElement;
+  ref: GridRef;
   /** The grip that was pressed, where a press opens its menu. */
   readonly button: HTMLElement;
   /** True once the pointer travelled far enough to be a drag. */
@@ -234,7 +372,7 @@ type Drag = {
 /** The menu that a grip opened, while it is open. */
 type OpenMenu = {
   readonly kind: 'row' | 'column';
-  readonly cell: HTMLElement;
+  ref: GridRef;
 };
 
 /** Builds the layer of the controls and keeps it on the active table. */
@@ -246,12 +384,13 @@ class TableControls {
   private readonly addColumn: HTMLButtonElement;
   private readonly dropLine: HTMLElement;
   private readonly marked: HTMLElement;
-  /** The table and the cell under the pointer, which win over the caret. */
-  private hovered: HTMLElement | null = null;
-  private hoveredCell: HTMLElement | null = null;
+  /** Where the pointer is, or null while it is away or is a finger. */
+  private pointer: { readonly x: number; readonly y: number } | null = null;
+  /** The cell the pointer last pointed at, which wins over the caret. */
+  private hoverRef: GridRef | null = null;
   /** The table and the cell the controls stand on now. */
-  private activeTable: HTMLElement | null = null;
-  private activeCell: HTMLElement | null = null;
+  private activeTableFrom: number | null = null;
+  private activeRef: GridRef | null = null;
   private drag: Drag | null = null;
   private menu: OpenMenu | null = null;
   /** Stops the listening of the window that one drag started. */
@@ -260,7 +399,10 @@ class TableControls {
   private readonly onLeave: () => void;
   private readonly onScroll: () => void;
 
-  constructor(private readonly view: EditorView) {
+  private readonly view: EditorView;
+
+  constructor(view: EditorView) {
+    this.view = view;
     this.layer = document.createElement('div');
     this.layer.className = 'cm-np-table-controls';
     this.rowHandle = handle('row');
@@ -296,9 +438,9 @@ class TableControls {
       // no pointer made, which carries no count of presses. It opens the menu,
       // as a press of the pointer that does not drag does.
       button.addEventListener('click', (event) => {
-        const cell = this.activeCell;
-        if (event.detail !== 0 || cell === null) return;
-        this.openMenu(kind, cell, button);
+        const ref = this.activeRef;
+        if (event.detail !== 0 || ref === null) return;
+        this.openMenu(kind, ref, button);
       });
     }
     for (const [button, edit] of [
@@ -313,37 +455,20 @@ class TableControls {
       });
     }
 
+    // The pointer is kept as a place on the screen, and the cell under it is
+    // found again at each measure, so a cell that the editor draws again, a
+    // scroll and an edit all leave the grips on the cell that is there now.
     this.onPointer = (event: PointerEvent): void => {
-      if (this.drag !== null || this.menu !== null) return;
-      const target = event.target;
-      if (!(target instanceof Element)) return;
-      if (this.layer.contains(target)) return;
       // A finger has no hover. Its controls follow the caret alone, so a tap
       // on another table does not move them before the caret gets there.
       if (event.pointerType === 'touch') return;
-      const table = target.closest<HTMLElement>('.cm-np-table');
-      const cell =
-        table === null
-          ? null
-          : target.closest<HTMLElement>('.cm-np-table-cell, .cm-np-table-head');
-      // A pointer on the edge between two cells, or in the room around the
-      // grid, is over no cell, and the grips stay on the cell it left.
-      const nextCell =
-        table === null
-          ? null
-          : (cell ??
-            (this.hoveredCell !== null && table.contains(this.hoveredCell)
-              ? this.hoveredCell
-              : null));
-      if (table === this.hovered && nextCell === this.hoveredCell) return;
-      this.hovered = table;
-      this.hoveredCell = nextCell;
+      this.pointer = { x: event.clientX, y: event.clientY };
+      if (this.drag !== null || this.menu !== null) return;
       this.schedule();
     };
     this.onLeave = (): void => {
+      this.pointer = null;
       if (this.drag !== null || this.menu !== null) return;
-      this.hovered = null;
-      this.hoveredCell = null;
       this.schedule();
     };
     // A table scrolls sideways on its own, and a scroll does not bubble, so
@@ -358,6 +483,21 @@ class TableControls {
   }
 
   update(update: ViewUpdate): void {
+    if (update.docChanged) {
+      // A place names its table by where it starts, which an edit above the
+      // table moves.
+      const map = (ref: GridRef): GridRef => ({
+        ...ref,
+        tableFrom: update.changes.mapPos(ref.tableFrom),
+      });
+      if (this.hoverRef !== null) this.hoverRef = map(this.hoverRef);
+      if (this.activeRef !== null) this.activeRef = map(this.activeRef);
+      if (this.menu !== null) this.menu.ref = map(this.menu.ref);
+      if (this.drag !== null) {
+        this.drag.ref = map(this.drag.ref);
+        this.drag.pos = update.changes.mapPos(this.drag.pos);
+      }
+    }
     if (
       update.docChanged ||
       update.selectionSet ||
@@ -377,10 +517,9 @@ class TableControls {
 
   /** Adds a row or a column at the end of the active table. */
   private append(edit: TableEdit): void {
-    const table = this.activeTable;
-    if (table === null || !table.isConnected || this.view.state.readOnly)
-      return;
-    const first = table.querySelector('.cm-np-table-head, .cm-np-table-cell');
+    const tableFrom = this.activeTableFrom;
+    if (tableFrom === null || this.view.state.readOnly) return;
+    const first = cellOf(this.view, { tableFrom, row: 0, column: 0 });
     if (first === null) return;
     const spec = tableEditSpec(
       this.view.state,
@@ -402,13 +541,12 @@ class TableControls {
     event: PointerEvent,
     button: HTMLElement,
   ): void {
-    const cell = this.activeCell;
-    const table = cell?.closest<HTMLElement>('.cm-np-table') ?? null;
-    if (cell === null || table === null || this.view.state.readOnly) return;
+    const ref = this.activeRef;
+    const cell = ref === null ? null : cellOf(this.view, ref);
+    if (ref === null || cell === null || this.view.state.readOnly) return;
     event.preventDefault();
     const pos = this.view.posAtDOM(cell, 0);
-    const context = tableContextAt(this.view.state, pos);
-    const from = kind === 'row' ? context.row : context.column;
+    const from = kind === 'row' ? ref.row : ref.column;
     this.drag = {
       kind,
       pointerId: event.pointerId,
@@ -416,8 +554,7 @@ class TableControls {
       startY: event.clientY,
       pos,
       from,
-      table,
-      cell,
+      ref,
       button,
       moving: false,
       to: from,
@@ -447,8 +584,10 @@ class TableControls {
     if (step === 'follow' && input.type !== 'cancel') {
       // The header row stays first, so it does not move.
       if (drag.kind === 'row' && drag.from === 0) return;
+      const table = tableOf(this.view, drag.ref.tableFrom);
+      if (table === null) return;
       drag.moving = true;
-      drag.to = dropIndex(drag, input.x, input.y);
+      drag.to = dropIndex(drag, table, input.x, input.y);
       this.schedule();
       return;
     }
@@ -464,7 +603,7 @@ class TableControls {
   /** Ends a press: a drag moves its row or its column, a press opens the menu. */
   private endDrag(drag: Drag): void {
     if (!drag.moving) {
-      this.openMenu(drag.kind, drag.cell, drag.button);
+      this.openMenu(drag.kind, drag.ref, drag.button);
       this.schedule();
       return;
     }
@@ -484,14 +623,15 @@ class TableControls {
   /** Asks the application for the menu of the row or the column of a cell. */
   private openMenu(
     kind: 'row' | 'column',
-    cell: HTMLElement,
+    ref: GridRef,
     button: HTMLElement,
   ): void {
     const open = this.view.state.facet(tableMenuOpener);
-    if (open === null || this.view.state.readOnly) return;
+    const cell = cellOf(this.view, ref);
+    if (open === null || cell === null || this.view.state.readOnly) return;
     const pos = this.view.posAtDOM(cell, 0);
     const box = button.getBoundingClientRect();
-    const menu: OpenMenu = { kind, cell };
+    const menu: OpenMenu = { kind, ref };
     this.menu = menu;
     open({
       kind,
@@ -535,30 +675,35 @@ class TableControls {
         const menu = this.menu;
         if (menu !== null) return this.pressedPlaces(menu, sized);
 
-        this.activeCell = null;
-        this.activeTable = null;
-        const pointed =
-          this.hovered?.isConnected === true ? this.hovered : null;
-        const caret = view.hasFocus ? caretCell(view) : null;
-        const caretTable = caret?.closest<HTMLElement>('.cm-np-table') ?? null;
-        const table = pointed ?? caretTable;
-        if (table === null) return null;
-        const grid = gridBox(table);
-        if (grid === null) return null;
-        this.activeTable = table;
-        const cell =
-          this.hoveredCell?.isConnected === true &&
-          table.contains(this.hoveredCell)
-            ? this.hoveredCell
-            : caret !== null && table.contains(caret)
-              ? caret
-              : null;
-        this.activeCell = cell;
-
         const rowSize = this.size(this.rowHandle);
         const columnSize = this.size(this.columnHandle);
         const addRowSize = this.size(this.addRow);
         const addColumnSize = this.size(this.addColumn);
+        const hit =
+          this.pointer === null
+            ? null
+            : pointerRef(view, this.pointer.x, this.pointer.y, this.hoverRef, {
+                left: rowSize.width / 2,
+                top: columnSize.height / 2,
+                right: addColumnSize.width,
+                bottom: addRowSize.height,
+              });
+        this.hoverRef = hit?.ref ?? null;
+        const caret = view.hasFocus ? caretRef(view) : null;
+        const pointed = hit?.table ?? null;
+        const table =
+          pointed ?? (caret === null ? null : tableOf(view, caret.tableFrom));
+        const tableFrom = table === null ? null : tableStart(view, table);
+        const grid = table === null ? null : gridBox(table);
+        this.activeTableFrom = grid === null ? null : tableFrom;
+        this.activeRef = null;
+        if (table === null || tableFrom === null || grid === null) return null;
+        const ref =
+          hit?.ref ??
+          (caret !== null && caret.tableFrom === tableFrom ? caret : null);
+        const cell = ref === null ? null : cellIn(table, ref);
+        this.activeRef = cell === null ? null : ref;
+
         const cellBox = cell?.getBoundingClientRect() ?? null;
         const rowBox =
           cell?.closest('.cm-np-table-line')?.getBoundingClientRect() ?? null;
@@ -668,9 +813,9 @@ class TableControls {
     press: Drag | OpenMenu,
     sized: (left: number, top: number, width: number, height: number) => Place,
   ): ControlPlaces | null {
-    const cell = press.cell;
-    const table = cell.closest<HTMLElement>('.cm-np-table');
-    if (!cell.isConnected || table === null) return null;
+    const table = tableOf(this.view, press.ref.tableFrom);
+    const cell = table === null ? null : cellIn(table, press.ref);
+    if (table === null || cell === null) return null;
     const grid = gridBox(table);
     if (grid === null) return null;
     const lines = grid.lines;
@@ -763,8 +908,13 @@ class TableControls {
  * header row, which stays first. A column lands on the column whose left edge
  * the pointer passed.
  */
-function dropIndex(drag: Drag, pointerX: number, pointerY: number): number {
-  const lines = gridLines(drag.table);
+function dropIndex(
+  drag: Drag,
+  table: HTMLElement,
+  pointerX: number,
+  pointerY: number,
+): number {
+  const lines = gridLines(table);
   if (drag.kind === 'row') {
     let to = 1;
     lines.forEach((line, index) => {
