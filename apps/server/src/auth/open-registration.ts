@@ -112,8 +112,9 @@ async function send(
   dependencies: OpenRegistrationDependencies,
   message: MailMessage,
 ): Promise<void> {
-  if (!(await dependencies.mail.available())) return;
-  await dependencies.mail.send(message);
+  const transport = await dependencies.mail.current();
+  if (transport === null) return;
+  await transport.send(message);
 }
 
 /**

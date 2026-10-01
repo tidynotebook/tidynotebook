@@ -134,6 +134,14 @@ export function utf8Length(text: string): number {
   return bytes;
 }
 
+/**
+ * The characters of a text, as the contract and the database count them: one
+ * for each code point, so a character outside the basic plane counts once.
+ */
+export function characterCount(text: string): number {
+  return [...text].length;
+}
+
 /** A blank of a template: a word or words in double braces. */
 const templateBlank = /\{\{[^{}\n]*\}\}/g;
 
@@ -191,7 +199,8 @@ export function mailHost(value: string): string | null {
  */
 export function mailSender(value: string): string | null {
   const sender = value.trim();
-  if (sender.length < 3 || sender.length > maxSenderLength) return null;
+  const length = characterCount(sender);
+  if (length < 3 || length > maxSenderLength) return null;
   if (/[\r\n]/.test(sender)) return null;
   const named = /^(?:"([^<>"]*)"|([^<>"]*))\s*<([^<>\s]+)>$/.exec(sender);
   if (named !== null) {
@@ -222,7 +231,8 @@ export type MailSettingsInput = {
 };
 
 /** Why a mail setting was refused. */
-export type MailSettingsProblem = 'host' | 'port' | 'security' | 'sender';
+export type MailSettingsProblem =
+  'host' | 'port' | 'security' | 'username' | 'password' | 'sender';
 
 /**
  * The mail settings of a valid input, with the password not yet sealed, or
@@ -246,17 +256,20 @@ export function readMailSettings(input: MailSettingsInput):
   if (sender === null) return { ok: false, problem: 'sender' };
   const username = input.username?.trim() ?? '';
   const password = input.password ?? '';
+  // A credential past its bound is refused and never cut, because a cut
+  // password signs in as another password.
+  if (characterCount(username) > maxSenderLength)
+    return { ok: false, problem: 'username' };
+  if (characterCount(password) > maxMailPasswordLength)
+    return { ok: false, problem: 'password' };
   return {
     ok: true,
     value: {
       host,
       port: input.port,
       security,
-      username: username === '' ? null : username.slice(0, maxSenderLength),
-      password:
-        username === '' || password === ''
-          ? null
-          : password.slice(0, maxMailPasswordLength),
+      username: username === '' ? null : username,
+      password: username === '' || password === '' ? null : password,
       sender,
     },
   };

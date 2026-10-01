@@ -36,6 +36,12 @@ export type MailTransport = {
  */
 export type Mailer = MailTransport & {
   available(): Promise<boolean>;
+  /**
+   * The transport that applies now, or `null`. An operation that decides
+   * whether a message goes and then sends it takes the transport once, so a
+   * change of the settings in between cannot split the two.
+   */
+  current(): Promise<MailTransport | null>;
 };
 
 /** The failure of a message when the installation has no transport. */
@@ -49,6 +55,7 @@ export class MailUnavailableError extends Error {
 /** The mailer of a process with no transport, such as an operator command. */
 export const noMailer: Mailer = {
   available: () => Promise.resolve(false),
+  current: () => Promise.resolve(null),
   send: () => Promise.reject(new MailUnavailableError()),
 };
 
@@ -216,11 +223,19 @@ export function budgetedTransport(
   mailer: Mailer,
   mayMail: (address: string) => Promise<boolean>,
 ): Mailer {
-  return {
-    available: () => mailer.available(),
+  /** One transport under the budget of each address. */
+  const budgeted = (transport: MailTransport): MailTransport => ({
     async send(message: MailMessage): Promise<void> {
       if (!(await mayMail(message.to))) return;
-      await mailer.send(message);
+      await transport.send(message);
     },
+  });
+  return {
+    available: () => mailer.available(),
+    async current(): Promise<MailTransport | null> {
+      const transport = await mailer.current();
+      return transport === null ? null : budgeted(transport);
+    },
+    send: (message) => budgeted(mailer).send(message),
   };
 }

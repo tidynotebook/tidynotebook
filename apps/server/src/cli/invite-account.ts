@@ -54,7 +54,8 @@ export async function inviteAccount(input: {
       environmentTexts: { terms: null, privacy: null },
       passwordSeal: createMailPasswordSeal(input.config.authSecret),
     });
-    const mailed = await settings.mailer.available();
+    const transport = await settings.mailer.current();
+    const mailed = transport !== null;
     const issued = issueInvitation({
       origin: input.config.origin,
       email,
@@ -67,8 +68,8 @@ export async function inviteAccount(input: {
       throw new Error(
         'notesapp: an account already signs in with that address.',
       );
-    if (mailed)
-      await mailInvitation(settings.mailer, {
+    if (transport !== null)
+      await mailInvitation(transport, {
         origin: input.config.origin,
         email,
         link: issued.link,

@@ -32,12 +32,14 @@ await test('every message states that a program wrote it', () => {
 
 await test('a budgeted transport sends while the address has budget', async () => {
   const sent: MailMessage[] = [];
+  const sendInner = (next: MailMessage): Promise<void> => {
+    sent.push(next);
+    return Promise.resolve();
+  };
   const inner: Mailer = {
     available: () => Promise.resolve(true),
-    send: (next) => {
-      sent.push(next);
-      return Promise.resolve();
-    },
+    current: () => Promise.resolve({ send: sendInner }),
+    send: sendInner,
   };
   const asked: string[] = [];
   let left = 2;
@@ -52,7 +54,12 @@ await test('a budgeted transport sends while the address has budget', async () =
   // The third message is over the budget, and it goes nowhere in silence.
   assert.equal(sent.length, 2);
   assert.deepEqual(asked, ['a@example.com', 'a@example.com', 'a@example.com']);
+  // The transport of one operation keeps the budget too.
+  const taken = await transport.current();
+  await taken?.send(message);
+  assert.equal(sent.length, 2);
   const none = budgetedTransport(noMailer, () => Promise.resolve(true));
+  assert.equal(await none.current(), null);
   assert.equal(await none.available(), false);
   await assert.rejects(none.send(message), MailUnavailableError);
 });

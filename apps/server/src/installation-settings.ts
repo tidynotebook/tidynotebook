@@ -174,6 +174,7 @@ export function createInstallationSettings(
 
   const mailer: Mailer = {
     available: async () => (await currentTransport()) !== null,
+    current: currentTransport,
     async send(message: MailMessage): Promise<void> {
       const transport = await currentTransport();
       if (transport === null) throw new MailUnavailableError();

@@ -239,8 +239,9 @@ function buildAuth(
     const settled = (async (): Promise<void> => {
       // With no transport now, the reset sends nothing and logs nothing. The
       // sign-in page offers no reset then, so nobody waits for the message.
-      if (!(await mail.available())) return;
-      await mail.send(message());
+      const transport = await mail.current();
+      if (transport === null) return;
+      await transport.send(message());
     })()
       .catch(() => {
         options.log?.({

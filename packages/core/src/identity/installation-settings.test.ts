@@ -96,6 +96,26 @@ await test('the mail settings name their first invalid field', () => {
     ok: false,
     problem: 'sender',
   });
+  // A credential past its bound is refused, never cut. An emoji counts as
+  // one character, as the contract counts it.
+  const emoji = '\u{1F600}';
+  const long = readMailSettings({ ...input, password: emoji.repeat(600) });
+  assert.equal(long.ok && long.value.password, emoji.repeat(600));
+  assert.deepEqual(
+    readMailSettings({ ...input, password: emoji.repeat(1025) }),
+    {
+      ok: false,
+      problem: 'password',
+    },
+  );
+  assert.deepEqual(readMailSettings({ ...input, username: 'u'.repeat(321) }), {
+    ok: false,
+    problem: 'username',
+  });
+  assert.equal(
+    mailSender(`${emoji.repeat(300)} <a@example.com>`) !== null,
+    true,
+  );
   // A server with no sign-in keeps no password.
   const anonymous = readMailSettings({ ...input, username: ' ' });
   assert.equal(anonymous.ok && anonymous.value.username, null);

@@ -244,7 +244,9 @@ export function createAdministrationHandlers(
                 ? 'Name the host of the mail server, with no scheme and no port.'
                 : read.problem === 'sender'
                   ? 'Name an address, or a name and an address in angle brackets.'
-                  : `The ${read.problem} is not valid.`,
+                  : read.problem === 'username' || read.problem === 'password'
+                    ? `The ${read.problem === 'username' ? 'user name' : 'password'} is longer than the server keeps.`
+                    : `The ${read.problem} is not valid.`,
           },
         ]);
       const { password, ...mail } = read.value;
@@ -384,9 +386,11 @@ export function createAdministrationHandlers(
       if (email === null)
         throw new ForbiddenError('The request body has no usable email.');
       const now = new Date();
-      // The transport is read once for the whole invitation, so the record,
-      // the message and the answer agree on whether the link went by mail.
-      const mailed = await settings.mailer.available();
+      // The transport is taken once for the whole invitation, so the record,
+      // the message and the answer agree on whether the link went by mail,
+      // even when another administrator changes the mail in between.
+      const transport = await settings.mailer.current();
+      const mailed = transport !== null;
       const issued = issueInvitation({
         origin: dependencies.origin,
         email,
@@ -397,8 +401,8 @@ export function createAdministrationHandlers(
       const stored = unwrapDomain(
         await createInvitation(store, resolved.actor, issued.record),
       );
-      if (mailed)
-        await mailInvitation(settings.mailer, {
+      if (transport !== null)
+        await mailInvitation(transport, {
           origin: dependencies.origin,
           email,
           link: issued.link,

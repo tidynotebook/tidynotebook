@@ -95,6 +95,31 @@ await test('the stored transport opens its password at the message', async () =>
   assert.ok(!JSON.stringify(view).includes('mail-password'));
 });
 
+await test('the transport of one operation stays through a change of the row', async () => {
+  let row: StoredInstallationSettings = stored;
+  const sent: MailMessage[] = [];
+  const settings = createInstallationSettings({
+    config: loadServerConfig(base),
+    reader: { installationSettings: () => Promise.resolve(row) },
+    environmentMail: null,
+    environmentTexts: { terms: null, privacy: null },
+    passwordSeal: seal,
+    connect: () => ({
+      send: (next) => {
+        sent.push(next);
+        return Promise.resolve();
+      },
+    }),
+  });
+  const transport = await settings.mailer.current();
+  assert.notEqual(transport, null);
+  // Another administrator removes the mail before the message goes.
+  row = emptyInstallationSettings;
+  await transport?.send(message);
+  assert.deepEqual(sent, [message]);
+  assert.equal(await settings.mailer.current(), null);
+});
+
 await test('a password that this key cannot open is no transport', async () => {
   const sealedElsewhere = createMailPasswordSeal(`${secret}-old`).seal('x');
   const mail = stored.mail;

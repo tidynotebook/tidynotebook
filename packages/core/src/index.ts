@@ -430,6 +430,7 @@ export type {
 } from './identity/installation-settings.ts';
 export {
   blankLabel,
+  characterCount,
   documentAddress,
   emptyInstallationSettings,
   fillBlanks,
