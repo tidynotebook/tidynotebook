@@ -6,7 +6,9 @@
  * address of the service, the life of a pending sign-up, and whether a new
  * password is checked against Have I Been Pwned. Every other blank is a
  * marker in double braces, which the accounts page shows as a field and which
- * the server refuses to serve. A template is not legal advice, and the
+ * the server refuses to serve. A template names no version: the page of a
+ * document states the version that the settings hold, so the two cannot
+ * differ. A template is not legal advice, and the
  * operator answers for the words.
  */
 import type { LegalDocumentName } from './installation-settings.ts';
@@ -28,7 +30,7 @@ function privacyTemplate(facts: LegalTemplateFacts): string {
     : '';
   return `# Privacy notice
 
-Version {{version}}, in effect from {{effective date}}.
+In effect from {{effective date}}.
 
 This notice tells you which personal data {{operator name}} keeps when you use NotesApp at ${facts.serviceAddress}, why, for how long, and what you can do about it.
 
@@ -107,7 +109,7 @@ When this notice changes, its version changes. The application then shows the ne
 function termsTemplate(facts: LegalTemplateFacts): string {
   return `# Terms
 
-Version {{version}}, in effect from {{effective date}}.
+In effect from {{effective date}}.
 
 These terms are the agreement between you and {{operator name}}, {{postal address}}, for the use of NotesApp at ${facts.serviceAddress}. Read them with the privacy notice, which the foot of this page links. When you make an account, you accept both.
 

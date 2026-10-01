@@ -43,6 +43,10 @@ await test('a sender is an address, or a name and an address', () => {
     'Notes <no-reply@example.com>',
   );
   assert.equal(mailSender('<no-reply@example.com>'), 'no-reply@example.com');
+  assert.equal(
+    mailSender('"NotesApp" <no-reply@example.com>'),
+    'NotesApp <no-reply@example.com>',
+  );
   for (const refused of [
     'nobody',
     'Notes <nobody>',
@@ -254,4 +258,7 @@ await test('a template fills the facts of the server and keeps the other blanks'
       assert.ok(blankLabel(blank).length <= 100, blank);
   }
   assert.ok(!templateBlanks(privacy).includes('{{pending sign-up hours}}'));
+  // The page states the version, so no template names one.
+  for (const text of [privacy, terms])
+    assert.ok(!templateBlanks(text).includes('{{version}}'));
 });

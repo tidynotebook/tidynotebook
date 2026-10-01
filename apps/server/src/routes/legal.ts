@@ -28,6 +28,10 @@ export type LegalDependencies = {
    * (record 0148).
    */
   readonly texts: () => Promise<LegalTexts>;
+  /** The version of each document, which its page states. */
+  readonly versions: () => Promise<
+    Readonly<Record<LegalDocumentName, string | null>>
+  >;
   /** The stylesheets of the built application document. */
   readonly stylesheets: () => readonly string[];
 };
@@ -74,6 +78,7 @@ export function createLegalHandlers(
           body: await bodyOf(name, text),
           stylesheets: dependencies.stylesheets(),
           otherHref: legalDocumentPath(otherDocument(name)),
+          version: (await dependencies.versions())[name],
         }),
         headers: legalDocumentHeaders,
       };

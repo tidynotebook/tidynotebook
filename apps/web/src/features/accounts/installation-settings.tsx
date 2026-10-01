@@ -31,6 +31,9 @@ import {
 import {
   Button,
   buttonClassName,
+  Dialog,
+  DialogBody,
+  DialogFooter,
   ExternalLinkIcon,
   FileTextIcon,
   ListRow,
@@ -49,6 +52,8 @@ import {
   defaultMailPort,
   legalDocumentFact,
   legalDocumentRows,
+  legalRemovedText,
+  legalSavedText,
   mailFacts,
   mailFailureReasonOf,
   mailFailureText,
@@ -168,15 +173,23 @@ function MailSettingsForm({
   readonly mail: MailSettings;
   readonly onSaved: () => void;
 }): ReactNode {
-  const [form, setForm] = useState<MailForm>(() => formOf(mail));
-  const [portError, setPortError] = useState('');
+  const saved = formOf(mail);
+  const [form, setForm] = useState<MailForm>(saved);
+  const [fieldErrors, setFieldErrors] = useState<
+    Readonly<{ port?: string; password?: string }>
+  >({});
   const [outcome, setOutcome] = useState<Outcome>(noOutcome);
-  const [busy, setBusy] = useState(false);
-  // The stored server that the page reads again is what the fields show.
+  const [working, setWorking] = useState<'save' | 'test' | 'remove' | null>(
+    null,
+  );
+  const [confirming, setConfirming] = useState(false);
+  const busy = working !== null;
+  // A stored server that changes is what the fields show next. A read of the
+  // page that another section caused keeps what the person typed.
+  const savedKey = JSON.stringify(saved);
   useEffect(() => {
     setForm(formOf(mail));
-  }, [mail]);
-  const saved = formOf(mail);
+  }, [savedKey]);
   const changed = mailFormChanged(saved, form);
   const stored = mail.source === 'application';
   const keepsPassword = mail.passwordStored && form.username.trim() !== '';
@@ -187,25 +200,33 @@ function MailSettingsForm({
     setOutcome(noOutcome);
   };
 
-  const run = (action: () => Promise<Outcome>): void => {
+  const run = (
+    kind: 'save' | 'test' | 'remove',
+    action: () => Promise<Outcome>,
+  ): void => {
     if (busy) return;
-    setBusy(true);
+    setWorking(kind);
     setOutcome(noOutcome);
     void action().then((next) => {
-      setBusy(false);
+      setWorking(null);
       setOutcome(next);
     });
   };
 
   const save = (): void => {
     const port = mailPortOf(form.port);
-    if (port === null) {
-      setPortError('Enter a port from 1 to 65535.');
-      return;
-    }
-    setPortError('');
     const name = form.username.trim();
-    run(async () => {
+    // A new user name needs its password. A saved one is kept when the field
+    // stays empty.
+    const needsPassword = name !== '' && form.password === '' && !keepsPassword;
+    setFieldErrors({
+      ...(port === null ? { port: 'Enter a port from 1 to 65535.' } : {}),
+      ...(needsPassword
+        ? { password: 'Enter the password of the user name.' }
+        : {}),
+    });
+    if (port === null || needsPassword) return;
+    run('save', async () => {
       const result = await updateMailSettings({
         body: {
           host: form.host.trim(),
@@ -229,7 +250,8 @@ function MailSettingsForm({
   };
 
   const remove = (): void => {
-    run(async () => {
+    setConfirming(false);
+    run('remove', async () => {
       const result = await removeMailSettings();
       if (result.error !== undefined)
         return { kind: 'failed', message: problemMessage(result.error) };
@@ -275,7 +297,7 @@ function MailSettingsForm({
           label="Port"
           value={form.port}
           required
-          error={portError}
+          error={fieldErrors.port}
           onChange={(port) => {
             update({ port });
           }}
@@ -321,6 +343,7 @@ function MailSettingsForm({
             value={form.password}
             inputType="password"
             autoComplete="new-password"
+            error={fieldErrors.password}
             onChange={(password) => {
               update({ password });
             }}
@@ -352,7 +375,7 @@ function MailSettingsForm({
             form.sender.trim() === ''
           }
         >
-          {busy ? 'Saving' : 'Save'}
+          {working === 'save' ? 'Saving' : 'Save'}
         </Button>
         {stored ? (
           <Button
@@ -361,10 +384,10 @@ function MailSettingsForm({
             disabled={busy || changed}
             title={changed ? 'Save the changes first.' : undefined}
             onClick={() => {
-              run(testOutcome);
+              run('test', testOutcome);
             }}
           >
-            Send a test message
+            {working === 'test' ? 'Sending' : 'Send a test message'}
           </Button>
         ) : null}
         {stored ? (
@@ -373,13 +396,63 @@ function MailSettingsForm({
             tone="danger"
             size="sm"
             disabled={busy}
-            onClick={remove}
+            onClick={() => {
+              setConfirming(true);
+            }}
           >
-            Remove
+            {working === 'remove' ? 'Removing' : 'Remove'}
           </Button>
         ) : null}
       </div>
+      {confirming ? (
+        <ConfirmRemoval
+          title="Remove the mail server?"
+          message="The server sends no mail, and the saved password goes for good. An invitation shows its link once again."
+          action="Remove mail server"
+          onCancel={() => {
+            setConfirming(false);
+          }}
+          onConfirm={remove}
+        />
+      ) : null}
     </form>
+  );
+}
+
+/** The small dialog that confirms a removal that cannot be undone. */
+function ConfirmRemoval({
+  title,
+  message,
+  action,
+  onCancel,
+  onConfirm,
+}: {
+  readonly title: string;
+  readonly message: string;
+  readonly action: string;
+  readonly onCancel: () => void;
+  readonly onConfirm: () => void;
+}): ReactNode {
+  return (
+    <Dialog
+      open
+      title={title}
+      titleId="confirm-removal-title"
+      width="small"
+      onClose={onCancel}
+    >
+      <DialogBody>
+        <p className="m-0 text-ui text-strong">{message}</p>
+      </DialogBody>
+      <DialogFooter>
+        <Button variant="ghost" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button variant="danger" onClick={onConfirm}>
+          {action}
+        </Button>
+      </DialogFooter>
+    </Dialog>
   );
 }
 
@@ -395,6 +468,10 @@ export function LegalDocumentsBody({
   const [editing, setEditing] = useState<LegalDocumentRowName | null>(null);
   const [outcome, setOutcome] = useState<Outcome>(noOutcome);
   const [busy, setBusy] = useState(false);
+  const [confirming, setConfirming] = useState<{
+    readonly name: LegalDocumentRowName;
+    readonly title: string;
+  } | null>(null);
   const locked = legal.source === 'environment';
 
   if (editing !== null)
@@ -406,13 +483,14 @@ export function LegalDocumentsBody({
         }}
         onSaved={(title) => {
           setEditing(null);
-          setOutcome({ kind: 'done', message: `The ${title} is saved.` });
+          setOutcome({ kind: 'done', message: legalSavedText(title) });
           onSaved();
         }}
       />
     );
 
   const remove = (name: LegalDocumentRowName, title: string): void => {
+    setConfirming(null);
     if (busy) return;
     setBusy(true);
     setOutcome(noOutcome);
@@ -424,7 +502,7 @@ export function LegalDocumentsBody({
       }
       setOutcome({
         kind: 'done',
-        message: `The ${title} is removed. Nobody accepts the documents until both exist again.`,
+        message: legalRemovedText(title),
       });
       onSaved();
     });
@@ -494,7 +572,7 @@ export function LegalDocumentsBody({
                     disabled={busy}
                     label={`Remove the ${name}`}
                     onClick={() => {
-                      remove(row.name, name);
+                      setConfirming({ name: row.name, title: name });
                     }}
                   >
                     Remove
@@ -505,6 +583,19 @@ export function LegalDocumentsBody({
           );
         })}
       </ul>
+      {confirming === null ? null : (
+        <ConfirmRemoval
+          title={`Remove the ${confirming.title}?`}
+          message={`This removes the text of the ${confirming.title} for good. Nobody accepts the documents until both exist again.`}
+          action={`Remove ${confirming.title}`}
+          onCancel={() => {
+            setConfirming(null);
+          }}
+          onConfirm={() => {
+            remove(confirming.name, confirming.title);
+          }}
+        />
+      )}
     </>
   );
 }
@@ -582,7 +673,7 @@ function LegalDocumentEditor({
   const version = form.version.trim();
   const fields = blankFields(form.text);
   // What a person types into a field fills its place in the text at once.
-  const text = textToSave(form.text, values, version);
+  const text = textToSave(form.text, values);
   const update = (change: Partial<LegalForm>): void => {
     setForm({ ...form, ...change });
     setFailure('');
@@ -711,7 +802,7 @@ function LegalDocumentEditor({
         label="Version"
         value={form.version}
         required
-        hint="A new version asks every person to accept the document again. Keep the version for a fixed typo."
+        hint="The page of the document states its version. A new version asks every person to accept the document again. Keep the version for a fixed typo."
         onChange={(next) => {
           update({ version: next });
         }}

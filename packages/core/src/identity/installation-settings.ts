@@ -185,17 +185,18 @@ export function mailHost(value: string): string | null {
 /**
  * A sender, `address` or `Name <address>`, or `null`.
  *
- * The name holds no angle bracket, no quote and no line break, so it cannot
- * add a header to a message.
+ * The name holds no angle bracket, no quote inside it and no line break, so
+ * it cannot add a header to a message. A name in double quotes, as a mail
+ * program copies it, loses its quotes.
  */
 export function mailSender(value: string): string | null {
   const sender = value.trim();
   if (sender.length < 3 || sender.length > maxSenderLength) return null;
   if (/[\r\n]/.test(sender)) return null;
-  const named = /^([^<>"]*)<([^<>\s]+)>$/.exec(sender);
+  const named = /^(?:"([^<>"]*)"|([^<>"]*))\s*<([^<>\s]+)>$/.exec(sender);
   if (named !== null) {
-    const name = (named[1] ?? '').trim();
-    const address = normalizeEmail(named[2] ?? '');
+    const name = (named[1] ?? named[2] ?? '').trim();
+    const address = normalizeEmail(named[3] ?? '');
     if (address === null) return null;
     return name === '' ? address : `${name} <${address}>`;
   }

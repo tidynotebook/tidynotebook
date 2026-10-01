@@ -39,6 +39,11 @@ export type LegalDocumentInput = {
   readonly stylesheets: readonly string[];
   /** The address of the page of the other document. */
   readonly otherHref: string;
+  /**
+   * The version that a person accepts, or `null` when the document has none
+   * yet. The page states it, so the text never has to (record 0148).
+   */
+  readonly version: string | null;
 };
 
 /** The other legal document of one document. */
@@ -55,6 +60,9 @@ export function legalDocument(input: LegalDocumentInput): string {
     .join('');
   const other = otherDocument(input.name);
   const foot = [
+    ...(input.version === null
+      ? []
+      : [`<span>Version ${escapeText(input.version)}</span>`]),
     `<a class="${linkClasses}" href="${escapeAttribute(input.otherHref)}">${escapeText(legalDocumentTitles[other])}</a>`,
     `<a class="${linkClasses}" href="/login">Sign in</a>`,
   ].join(' &middot; ');

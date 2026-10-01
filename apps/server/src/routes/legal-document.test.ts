@@ -8,7 +8,9 @@ await test('the page of a document holds its body and no script', () => {
     body: '<h1>Terms of service</h1><p>Run by Example Ltd.</p>',
     stylesheets: ['/assets/index-abc.css'],
     otherHref: '/legal/privacy',
+    version: '2026-10-01',
   });
+  assert.match(page, /<span>Version 2026-10-01<\/span>/);
   assert.match(page, /^<!doctype html>/);
   assert.match(page, /<title>Terms<\/title>/);
   assert.match(page, /<link rel="stylesheet" href="\/assets\/index-abc\.css">/);
@@ -26,7 +28,9 @@ await test('each document links the other one', () => {
     body: '<p>Text</p>',
     stylesheets: [],
     otherHref: '/legal/terms',
+    version: null,
   });
+  assert.doesNotMatch(page, /Version/);
   assert.match(page, /<title>Privacy notice<\/title>/);
   assert.match(page, /href="\/legal\/terms">Terms<\/a>/);
 });

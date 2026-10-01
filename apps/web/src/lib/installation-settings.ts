@@ -20,6 +20,21 @@ export const legalDocumentRows = [
   { name: 'privacy', title: 'Privacy notice' },
 ] as const;
 
+/** Whether a name in lower case takes the plural verb. */
+function isPlural(name: string): boolean {
+  return name === 'terms';
+}
+
+/** The sentence after one document is saved, for example `The terms are saved.` */
+export function legalSavedText(name: string): string {
+  return `The ${name} ${isPlural(name) ? 'are' : 'is'} saved.`;
+}
+
+/** The sentence after one document is removed. */
+export function legalRemovedText(name: string): string {
+  return `The ${name} ${isPlural(name) ? 'are' : 'is'} removed. Nobody accepts the documents until both exist again.`;
+}
+
 /** One legal document by the name that its page takes. */
 export type LegalDocumentRowName = (typeof legalDocumentRows)[number]['name'];
 
@@ -194,36 +209,27 @@ export type BlankField = {
 /** The longest label of a field that takes half of a row. */
 const narrowLabelLength = 32;
 
-/**
- * The blank of the version in a template. The Version field of the form
- * fills it, so it is no field of its own.
- */
-const versionBlank = '{{version}}';
-
 /** The fields of the blanks that a text still holds. */
 export function blankFields(text: string): BlankField[] {
-  return templateBlanks(text)
-    .filter((blank) => blank !== versionBlank)
-    .map((blank) => {
-      const words = blankLabel(blank);
-      const label =
-        words === ''
-          ? 'Blank'
-          : `${words.charAt(0).toUpperCase()}${words.slice(1)}`;
-      return { blank, label, wide: label.length > narrowLabelLength };
-    });
+  return templateBlanks(text).map((blank) => {
+    const words = blankLabel(blank);
+    const label =
+      words === ''
+        ? 'Blank'
+        : `${words.charAt(0).toUpperCase()}${words.slice(1)}`;
+    return { blank, label, wide: label.length > narrowLabelLength };
+  });
 }
 
 /**
  * The text that the editor shows and a save sends: each fact that the person
- * typed fills its blank, and the version fills the blank of the version.
+ * typed fills its blank.
  */
 export function textToSave(
   text: string,
   values: Readonly<Record<string, string>>,
-  version: string,
 ): string {
-  return fillBlanks(text, { ...values, [versionBlank]: version });
+  return fillBlanks(text, values);
 }
 
 /** The blanks that a refusal of a legal text names. */

@@ -5,6 +5,8 @@ import {
   blanksOf,
   legalDescription,
   legalDocumentFact,
+  legalRemovedText,
+  legalSavedText,
   mailDescription,
   mailFacts,
   mailFormChanged,
@@ -155,21 +157,11 @@ await test('each blank of a text is one field in sentence case', () => {
       { blank: '{{jurisdiction}}', label: 'Jurisdiction', wide: false },
     ],
   );
-  // The Version field fills the blank of the version.
-  assert.deepEqual(blankFields('Version {{version}} by {{operator name}}'), [
-    { blank: '{{operator name}}', label: 'Operator name', wide: false },
-  ]);
   assert.equal(
-    textToSave('Version {{version}} by {{operator name}}', {}, '2026-10-01'),
-    'Version 2026-10-01 by {{operator name}}',
-  );
-  assert.equal(
-    textToSave(
-      'Version {{version}} by {{operator name}} and {{operator name}}',
-      { '{{operator name}}': 'Ada' },
-      '2',
-    ),
-    'Version 2 by Ada and Ada',
+    textToSave('By {{operator name}} and {{operator name}} in {{place}}', {
+      '{{operator name}}': 'Ada',
+    }),
+    'By Ada and Ada in {{place}}',
   );
   // A label of a sentence takes the whole row.
   assert.equal(
@@ -208,4 +200,17 @@ await test('the mail form has work only when a field differs', () => {
   assert.equal(mailFormChanged(saved, { ...saved, security: 'tls' }), true);
   // A typed password is a change, since the saved one is never shown.
   assert.equal(mailFormChanged(saved, { ...saved, password: 'x' }), true);
+});
+
+await test('each document takes its own verb', () => {
+  assert.equal(legalSavedText('terms'), 'The terms are saved.');
+  assert.equal(
+    legalSavedText('privacy notice'),
+    'The privacy notice is saved.',
+  );
+  assert.match(legalRemovedText('terms'), /^The terms are removed\./);
+  assert.match(
+    legalRemovedText('privacy notice'),
+    /^The privacy notice is removed\./,
+  );
 });

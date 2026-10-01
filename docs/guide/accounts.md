@@ -81,8 +81,8 @@ apply when both exist.
    your service, for example who runs it and the law that applies. Each fact
    fills its place in the text at once. You can change any word of the text
    too.
-4. Enter the version, for example the date, and select **Save**. The version
-   also fills its place in the text.
+4. Enter the version, for example the date, and select **Save**. The page of
+   the document states the version.
 
 The server does not save a text that still holds a blank. The template is not
 legal advice. Ask a person who knows the law of your country to read both

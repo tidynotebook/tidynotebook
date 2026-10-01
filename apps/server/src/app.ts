@@ -794,6 +794,13 @@ async function composeApp(
         noticeProtocols: () => gateway.offered(),
         legal: {
           texts: async () => (await settings.legal()).texts,
+          versions: async () => {
+            const { summaries } = await settings.legal();
+            return {
+              terms: summaries.terms?.version ?? null,
+              privacy: summaries.privacy?.version ?? null,
+            };
+          },
           stylesheets: publishedStylesheets,
         },
       }),
