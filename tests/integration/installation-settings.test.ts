@@ -22,6 +22,7 @@ import {
   getInstallation,
   getLegalDocumentSettings,
   getSetupStatus,
+  getSignUpChallenge,
   registerAccount,
   removeLegalDocument,
   removeMailSettings,
@@ -419,6 +420,45 @@ await test('the database refuses half a transport', async () => {
   } finally {
     await session.close();
   }
+});
+
+await test('a stored transport that a new server secret cannot open closes sign-up', async () => {
+  await updateLegalDocument({
+    headers: owner,
+    path: { document: 'privacy' },
+    body: {
+      kind: 'address',
+      url: 'https://example.test/privacy',
+      version: 'p1',
+    },
+  });
+  const opened = await updateInstallation({
+    headers: owner,
+    body: { registrationPolicy: 'open' },
+  });
+  assert.equal(responseOf(opened.response).status, 200);
+  assert.equal((await getSetupStatus()).data?.openRegistration, true);
+  // The operator changes the server secret, so the sealed mail password
+  // opens no more and no message can go.
+  await current.served.close();
+  current = await serve({
+    NOTESAPP_AUTH_SECRET: 'another-installation-settings-secret-0123456789',
+  });
+  try {
+    const status = await getSetupStatus();
+    assert.equal(status.data?.openRegistration, false);
+    assert.equal(status.data?.passwordReset, false);
+    const challenge = await getSignUpChallenge({ headers: origin });
+    assert.equal(responseOf(challenge.response).status, 403);
+    assert.equal(memberOf(challenge.error, 'code'), 'registration_closed');
+  } finally {
+    await current.served.close();
+    current = await serve();
+  }
+  await updateInstallation({
+    headers: owner,
+    body: { registrationPolicy: 'invitation' },
+  });
 });
 
 await test('the environment wins and locks each group it sets', async () => {

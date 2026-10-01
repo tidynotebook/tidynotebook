@@ -83,10 +83,18 @@ export const emptyInstallationSettings: StoredInstallationSettings = {
 };
 
 /**
- * What the server environment sets. A group that it sets is locked, and a
- * published origin comes from the environment only (record 0118).
+ * What the server environment sets, and what the server can use. A group
+ * that the environment sets is locked, and a published origin comes from the
+ * environment only (record 0118).
+ *
+ * `mailUsable` answers whether the server can send with a stored transport.
+ * The password of a transport is sealed with a key of the server, so a stored
+ * transport whose password this key cannot open, after a change of the
+ * server secret, sends nothing and counts as no transport.
  */
-export type InstallationEnvironment = OpenRegistrationReadiness;
+export type InstallationEnvironment = OpenRegistrationReadiness & {
+  readonly mailUsable: (mail: StoredMailSettings) => boolean;
+};
 
 /** The largest legal text, in bytes of UTF-8. */
 export const maxLegalTextBytes = 256 * 1024;
@@ -106,7 +114,9 @@ export function settingsReadiness(
   stored: StoredInstallationSettings,
 ): OpenRegistrationReadiness {
   return {
-    mail: environment.mail || stored.mail !== null,
+    mail:
+      environment.mail ||
+      (stored.mail !== null && environment.mailUsable(stored.mail)),
     publishedOrigin: environment.publishedOrigin,
     legalDocuments:
       environment.legalDocuments ||

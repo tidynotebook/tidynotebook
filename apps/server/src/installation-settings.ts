@@ -142,10 +142,19 @@ export function createInstallationSettings(
 ): InstallationSettings {
   const { config, reader } = input;
   const connect = input.connect ?? connectMailTransport;
+  /** The opened password of a stored transport, `null` for none. */
+  const openPassword = (sealed: string | null): string | null =>
+    sealed === null ? null : input.passwordSeal.open(sealed);
   const environment: InstallationEnvironment = {
     mail: input.environmentMail !== null,
     publishedOrigin: publishedOrigin(config.servedOrigins) !== null,
     legalDocuments: config.legalDocuments !== null,
+    // A password that this key cannot open, after a change of the server
+    // secret, is no transport. The accounts page then shows that the
+    // password must be entered again.
+    mailUsable: (mail) =>
+      mail.passwordSealed === null ||
+      openPassword(mail.passwordSealed) !== null,
   };
 
   const stored = (): Promise<StoredInstallationSettings> =>
@@ -156,16 +165,8 @@ export function createInstallationSettings(
     settings: StoredInstallationSettings,
   ): MailTransport | null => {
     const mail = settings.mail;
-    if (mail === null) return null;
-    const password =
-      mail.passwordSealed === null
-        ? null
-        : input.passwordSeal.open(mail.passwordSealed);
-    // A password that this key cannot open, after a change of the server
-    // secret, is no transport. The accounts page then shows that the
-    // password must be entered again.
-    if (mail.passwordSealed !== null && password === null) return null;
-    return connect({ ...mail, password });
+    if (mail === null || !environment.mailUsable(mail)) return null;
+    return connect({ ...mail, password: openPassword(mail.passwordSealed) });
   };
 
   const currentTransport = async (): Promise<MailTransport | null> =>
@@ -255,9 +256,7 @@ export function createInstallationSettings(
         username: mail.username,
         sender: mail.sender,
         // A password that this key cannot open counts as none.
-        passwordStored:
-          mail.passwordSealed !== null &&
-          input.passwordSeal.open(mail.passwordSealed) !== null,
+        passwordStored: openPassword(mail.passwordSealed) !== null,
       };
     },
     legal,

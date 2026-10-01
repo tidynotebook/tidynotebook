@@ -108,5 +108,10 @@ await test('a failure names only its kind', () => {
   assert.equal(mailFailureReason({ code: 'ECONNECTION' }), 'connection');
   assert.equal(mailFailureReason({ code: 'EENVELOPE' }), 'sender');
   assert.equal(mailFailureReason(new Error('x')), 'other');
+  // The library throws an Error, whose message is not enumerable.
+  const certificate = Object.assign(new Error('certificate has expired'), {
+    code: 'ESOCKET',
+  });
+  assert.equal(mailFailureReason(certificate), 'security');
   assert.equal(mailFailureReason('x'), 'other');
 });

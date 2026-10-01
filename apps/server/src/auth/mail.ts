@@ -130,7 +130,10 @@ export function mailFailureReason(error: unknown): MailFailureReason {
   if (error instanceof MailUnavailableError) return 'unavailable';
   const code = errorMember(error, 'code');
   const responseCode = errorMember(error, 'responseCode');
-  const message = errorMember(error, 'message');
+  // The message of an `Error` is an own property that is not enumerable, so
+  // it is read directly. It reaches only the test below, never an answer.
+  const message =
+    error instanceof Error ? error.message : errorMember(error, 'message');
   const text = typeof message === 'string' ? message : '';
   if (code === 'EAUTH' || responseCode === 535) return 'authentication';
   if (code === 'ETLS' || /ssl|tls|certificate|wrong version/i.test(text))

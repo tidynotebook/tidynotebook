@@ -124,7 +124,7 @@ export async function signUpOpen(
   dependencies: OpenRegistrationDependencies,
   input: SignUpInput,
 ): Promise<Result<void>> {
-  if (!(await openRegistration(dependencies.identity)))
+  if (!(await openRegistration(dependencies.identity, dependencies.mail)))
     return fail('registration_closed');
   const refusal = await dependencies.challenges.check(
     input.proof,
@@ -241,9 +241,18 @@ export async function verifyOpen(
   return ok({ accountId: made.value, email: user.email, created: true });
 }
 
-/** Whether the installation takes a sign-up now. */
-export async function openRegistration(identity: {
-  registrationPolicy(): Promise<RegistrationPolicy>;
-}): Promise<boolean> {
-  return (await identity.registrationPolicy()) === 'open';
+/**
+ * Whether the installation takes a sign-up now: the policy is open and a
+ * message can go. A sign-up proves its address by a link in a message, so
+ * with no transport, for example a stored one that a changed server secret
+ * cannot open, a sign-up would make a pending account that nobody can finish
+ * (record 0148).
+ */
+export async function openRegistration(
+  identity: { registrationPolicy(): Promise<RegistrationPolicy> },
+  mail: Pick<Mailer, 'available'>,
+): Promise<boolean> {
+  return (
+    (await identity.registrationPolicy()) === 'open' && (await mail.available())
+  );
 }

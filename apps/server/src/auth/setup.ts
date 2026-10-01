@@ -97,7 +97,7 @@ export function createSetupHandlers(
       mediaType: jsonMediaType,
       body: {
         initialized: await identity.hasAccount(),
-        openRegistration: await openRegistration(identity),
+        openRegistration: await openRegistration(identity, open.mail),
         // A reset link goes by mail, so a reset needs a transport (record
         // 0141).
         passwordReset: await dependencies.open.mail.available(),
@@ -209,7 +209,7 @@ export function createSetupHandlers(
     },
 
     getSignUpChallenge: async (): Promise<HandlerResult> => {
-      if (!(await openRegistration(identity)))
+      if (!(await openRegistration(identity, open.mail)))
         throw new DomainProblemError({
           code: 'registration_closed',
           fileIds: [],

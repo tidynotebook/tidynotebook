@@ -51,7 +51,12 @@ const ada = '11111111-1111-4111-8111-111111111111';
 const bea = '22222222-2222-4222-8222-222222222222';
 const cai = '33333333-3333-4333-8333-333333333333';
 const digest = 'a'.repeat(64);
-const ready = { mail: true, publishedOrigin: true, legalDocuments: true };
+const ready = {
+  mail: true,
+  publishedOrigin: true,
+  legalDocuments: true,
+  mailUsable: () => true,
+};
 
 function actorFor(accountId: string): Actor {
   const created = verifyActor(accountId, []);
@@ -447,7 +452,12 @@ await test('the open policy needs every part and a member changes nothing', asyn
   assert.equal((await readRegistrationPolicy(store, actorFor(bea))).ok, false);
 });
 
-const none = { mail: false, publishedOrigin: true, legalDocuments: false };
+const none = {
+  mail: false,
+  publishedOrigin: true,
+  legalDocuments: false,
+  mailUsable: () => true,
+};
 const sealed = { kind: 'set' as const, sealed: 'sealed' };
 const noPassword = { kind: 'set' as const, sealed: null };
 const keep = { kind: 'keep' as const };
@@ -495,6 +505,23 @@ await test('the open policy reads the parts that the administrator set', async (
   );
 });
 
+await test('a stored transport that the server cannot open is no mail', async () => {
+  // The server secret changed, so the sealed password opens no more.
+  const lost = { ...none, mailUsable: () => false };
+  const store = createStore([admin(ada)]);
+  await setMailSettings(store, actorFor(ada), mailOf, sealed, lost);
+  await setLegalDocument(store, actorFor(ada), 'terms', terms, lost);
+  await setLegalDocument(store, actorFor(ada), 'privacy', privacy, lost);
+  assert.deepEqual(
+    await setRegistrationPolicy(store, actorFor(ada), 'open', lost),
+    {
+      ok: false,
+      error: { code: 'open_registration_unavailable', fileIds: [] },
+    },
+  );
+  assert.equal(store.policy, 'invitation');
+});
+
 await test('a removal that open registration needs is refused', async () => {
   const store = createStore([admin(ada)]);
   await setMailSettings(store, actorFor(ada), mailOf, sealed, none);
@@ -523,11 +550,7 @@ await test('a removal that open registration needs is refused', async () => {
 await test('a group that the environment sets is locked', async () => {
   const store = createStore([admin(ada)]);
   const locked = { ok: false, error: { code: 'setting_locked', fileIds: [] } };
-  const environment = {
-    mail: true,
-    publishedOrigin: true,
-    legalDocuments: true,
-  };
+  const environment = { ...ready };
   assert.deepEqual(
     await setMailSettings(
       store,
