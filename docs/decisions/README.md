@@ -179,6 +179,7 @@ and needs no record.
 | [0145](0145-a-click-on-a-picture-opens-the-image-viewer.md)                           | A click on a picture opens the image viewer                                     |
 | [0146](0146-a-closed-link-page-says-what-to-do-next.md)                               | A closed link page says what to do next                                         |
 | [0147](0147-a-table-sizes-to-its-text-and-its-controls-sit-on-its-edge.md)            | A table sizes to its text and its controls sit on its edge                      |
+| [0148](0148-an-administrator-sets-the-mail-and-the-legal-documents.md)                | An administrator sets the mail and the legal documents                          |
 
 Records 0001 to 0015 record the decisions D1 to D15 of
 [the v0.1 revamp plan](../plans/003-v0.1-revamp.md). Record 0016 records the
@@ -590,3 +591,10 @@ Record 0147 follows
 its padding and wraps, so a column takes the width of its text. The handles
 become grips on the edge of the table, a pressed grip marks its row or column,
 and the add bars come back. It refines records 0095 and 0098.
+
+Record 0148 follows
+[design 019](../design/019-installation-settings-in-the-application.md). An
+administrator sets the mail transport and the two legal documents in the
+application. A group that the environment sets wins and is locked, the mail
+password is sealed with a key of the server, and the legal templates move
+into `packages/core`. It refines records 0120, 0140 and 0141.
