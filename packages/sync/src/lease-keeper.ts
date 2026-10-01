@@ -61,6 +61,9 @@ export function createLeaseKeeper(
   let running = false;
   let cancel: (() => void) | null = null;
   let ticking: Promise<void> = Promise.resolve();
+  // The first check of a start. Until it ends, `held` only states that the
+  // tab did not ask yet, and not that another tab holds the lease.
+  let checked: Promise<void> = Promise.resolve();
 
   const set = (next: boolean): void => {
     if (next === held) return;
@@ -94,10 +97,17 @@ export function createLeaseKeeper(
       if (running) return;
       running = true;
       ticking = tick();
+      checked = ticking;
     },
     held: () => held,
     gate: {
-      hold: () => Promise.resolve(held),
+      // An engine that starts with the tab asks before the store answered
+      // the first take. The gate waits for that answer, so the engine never
+      // reads that another tab sends when no other tab is open.
+      hold: async () => {
+        await checked;
+        return held;
+      },
       release: () => Promise.resolve(),
     },
     onChange: (listener) => {

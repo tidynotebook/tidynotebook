@@ -182,3 +182,34 @@ await test('a store that cannot answer stops the sending until it answers', asyn
   assert.deepEqual(changes, [true, false, true]);
   await keeper.stop();
 });
+
+await test('the gate waits for the first check of a tab that just started', async () => {
+  const clock = new DrivenClock();
+  const row = new LeaseRow(() => clock.now);
+  // The store answers the first take only when the test lets it, as a busy
+  // IndexedDB does while the tab opens.
+  let answer: () => void = () => {};
+  const slow: LeaseStore = {
+    ...row.store,
+    acquireLease: (ownerId, expiresAt) =>
+      new Promise<boolean>((resolve) => {
+        answer = () => {
+          void row.store.acquireLease(ownerId, expiresAt).then(resolve);
+        };
+      }),
+  };
+  const keeper = createLeaseKeeper(slow, {
+    ownerId: 'tab-a',
+    ttlMs: 3_000,
+    clock: () => clock.now,
+    schedule: clock.schedule,
+  });
+  keeper.start();
+  // An engine asks before the store answered. No other tab holds the lease,
+  // so the gate must not answer that one does.
+  const asked = keeper.gate.hold();
+  await settle();
+  answer();
+  assert.equal(await asked, true);
+  await keeper.stop();
+});

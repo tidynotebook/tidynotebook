@@ -35,8 +35,6 @@ export type SyncState =
    * waits on the device until this account signs in again (record 0113).
    */
   | { readonly kind: 'other-account' }
-  /** Another tab of this browser drives sync. */
-  | { readonly kind: 'other-tab' }
   /** The server needs a newer application before this tab syncs again. */
   | { readonly kind: 'update-required' }
   /** The server runs an earlier version, so sync waits for it. */
@@ -85,8 +83,12 @@ export function syncStateOfNotice(notice: SyncNotice): SyncState | null {
     return notice.reason === 'other-account'
       ? { kind: 'other-account' }
       : { kind: 'signed-out' };
-  if (notice.kind === 'lease-held') return { kind: 'other-tab' };
-  if (notice.kind === 'lease-lost') return { kind: 'waiting' };
+  // The lease only names the tab that sends. Every tab of the browser shares
+  // one queue, and the lease tab sends it for all of them, so the queue
+  // states where the work stands. A sentence about another tab gave the
+  // person nothing to do, and it stayed after the tab took the lease.
+  if (notice.kind === 'lease-held' || notice.kind === 'lease-lost')
+    return null;
   if (notice.kind === 'access-lost') return { kind: 'stopped' };
   if (noticeStartsOver(notice)) return startingSyncState;
   if (notice.kind === 'protocol')
@@ -131,8 +133,6 @@ export function syncStateMessage(
     return 'The session ended. Sign in again to save to the server.';
   if (state.kind === 'other-account')
     return 'Another account signed in on this browser. Your work stays on this device until you sign in again.';
-  if (state.kind === 'other-tab')
-    return 'Another tab of this browser is saving to the server.';
   if (state.kind === 'update-required')
     return 'Saving to the server waits for an update of Notesapp. Your work stays on this device.';
   if (state.kind === 'server-behind')

@@ -44,7 +44,12 @@ const notices: readonly SyncNotice[] = [
 await test('every engine notice maps to a typed state or to nothing', () => {
   for (const notice of notices) {
     const state = syncStateOfNotice(notice);
-    if (notice.kind === 'snapshot-restart' || notice.kind === 'superseded') {
+    if (
+      notice.kind === 'snapshot-restart' ||
+      notice.kind === 'superseded' ||
+      notice.kind === 'lease-held' ||
+      notice.kind === 'lease-lost'
+    ) {
       assert.equal(state, null);
       continue;
     }
@@ -72,7 +77,6 @@ const states: readonly SyncState[] = [
   { kind: 'delete-refused', path: 'plans/old.md' },
   { kind: 'signed-out' },
   { kind: 'other-account' },
-  { kind: 'other-tab' },
   { kind: 'update-required' },
   { kind: 'server-behind' },
   { kind: 'stopped' },
@@ -100,7 +104,6 @@ await test('a state without a known note still reads as a sentence', () => {
 await test('only the states that need an answer ask for one', () => {
   assert.equal(syncNeedsAttention({ kind: 'in-step' }), false);
   assert.equal(syncNeedsAttention({ kind: 'waiting' }), false);
-  assert.equal(syncNeedsAttention({ kind: 'other-tab' }), false);
   assert.equal(syncNeedsAttention({ kind: 'attention', fileId: 'f' }), true);
   assert.equal(syncNeedsAttention({ kind: 'signed-out' }), true);
   assert.equal(syncNeedsAttention({ kind: 'stopped' }), true);
@@ -133,6 +136,19 @@ await test('a session that serves the engine again starts over', () => {
   );
   assert.equal(noticeStartsOver({ kind: 'access-lost' }), false);
   assert.deepEqual(syncStateOfNotice({ kind: 'resumed' }), startingSyncState);
+});
+
+await test('the lease of the sending tab says nothing to the person', () => {
+  // Every tab of the browser shares one queue, and the tab that holds the
+  // lease sends it for all of them. Which tab sends is no cause a person can
+  // act on, and the queue already states where the work stands. A tab that
+  // waited for the lease of a closed tab read that another tab was saving for
+  // as long as it stayed open.
+  assert.equal(syncStateOfNotice({ kind: 'lease-held' }), null);
+  assert.equal(syncStateOfNotice({ kind: 'lease-lost' }), null);
+  assert.deepEqual(syncStateOfQueue(startingSyncState, 0), {
+    kind: 'in-step',
+  });
 });
 
 await test('a protocol misfit names its cause and a fit starts over', () => {
@@ -204,7 +220,6 @@ await test('the dot of the footer states where the work stands', () => {
   assert.equal(syncDot({ kind: 'starting' }, true), 'pending');
   assert.equal(syncDot({ kind: 'sending' }, true), 'pending');
   assert.equal(syncDot({ kind: 'waiting' }, true), 'pending');
-  assert.equal(syncDot({ kind: 'other-tab' }, true), 'pending');
   assert.equal(syncDot({ kind: 'attention', fileId: 'f' }, true), 'attention');
   assert.equal(syncDot({ kind: 'signed-out' }, true), 'attention');
   assert.equal(syncDot({ kind: 'stopped' }, true), 'attention');
