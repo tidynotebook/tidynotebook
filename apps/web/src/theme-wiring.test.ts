@@ -31,10 +31,9 @@ import {
 import {
   themeRegistry,
   themeRegistryData,
-  webManifest,
-  webManifestDocument,
   type InlineThemeVariant,
-} from '../vite.config.ts';
+} from './lib/first-paint.ts';
+import { webManifest, webManifestDocument } from '../vite.config.ts';
 
 const inline = themeRegistry();
 

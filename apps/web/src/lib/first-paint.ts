@@ -9,10 +9,12 @@
  * the functions here, so the names and the values stay in one order.
  */
 import {
+  defaultThemeFamilyId,
   defaultThemeFor,
   importedFamilyPrefix,
   importedThemeFamily,
   readThemeFile,
+  themeFamilies,
   themeFileText,
   themeProperties,
   type Theme,
@@ -55,6 +57,36 @@ export function inlineVariants(family: ThemeFamily): InlineThemeVariants {
   for (const theme of family.variants)
     variants[theme.appearance] = inlineVariant(theme);
   return variants;
+}
+
+/** The whole registry as the inline script receives it. */
+export type InlineThemes = {
+  readonly fallback: string;
+  readonly properties: readonly string[];
+  readonly families: Readonly<Record<string, InlineThemeVariants>>;
+};
+
+/**
+ * The palette data of the script that runs before the first paint.
+ *
+ * The names are written once, and every theme lists its values in that same
+ * order, so the whole registry stays small inside the document. The build
+ * writes it into `apps/web/index.html` (`apps/web/vite.config.ts`).
+ */
+export function themeRegistry(): InlineThemes {
+  const families: Record<string, InlineThemeVariants> = {};
+  for (const family of themeFamilies)
+    families[family.id] = inlineVariants(family);
+  return {
+    fallback: defaultThemeFamilyId,
+    properties: inlinePropertyNames(),
+    families,
+  };
+}
+
+/** The palette data of the inline script, serialized. */
+export function themeRegistryData(): string {
+  return JSON.stringify(themeRegistry());
 }
 
 /**

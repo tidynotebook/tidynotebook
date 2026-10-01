@@ -47,16 +47,24 @@
           imported ||
           themes.families[family] ||
           themes.families[themes.fallback];
-        var theme =
-          variants[dark ? 'dark' : 'light'] || variants.dark || variants.light;
+        // A family with one palette answers both appearances with it, so the
+        // page states the appearance of the palette that it paints, as
+        // `applyTheme` does once React runs.
+        var wanted = dark ? 'dark' : 'light';
+        var shown = variants[wanted]
+          ? wanted
+          : variants.dark
+            ? 'dark'
+            : 'light';
+        var theme = variants[shown];
         var root = document.documentElement;
-        root.setAttribute('data-theme', dark ? 'dark' : 'light');
+        root.setAttribute('data-theme', shown);
         root.setAttribute('data-theme-id', theme.id);
         // The browser draws the scrollbar, a native control and a remembered
         // field from the colour scheme of the page, and it assumes a light
         // page until the page says otherwise. `applyTheme` writes the same
         // property once React runs.
-        root.style.colorScheme = dark ? 'dark' : 'light';
+        root.style.colorScheme = shown;
         // The thumb of every scrollbar is the component edge of the palette
         // and the track is nothing. The value names the property that the
         // loop above wrote, so it follows the palette with no colour here.

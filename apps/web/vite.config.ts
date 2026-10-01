@@ -13,17 +13,8 @@ import {
   type IconAddresses,
 } from './src/pwa/icons.ts';
 import { precacheWorker } from './src/pwa/precache.ts';
-import {
-  defaultThemeFamilyId,
-  defaultThemeFor,
-  themeFamilies,
-} from '@notesapp/ui';
-import {
-  inlinePropertyNames,
-  inlineVariants,
-  type InlineThemeVariant,
-  type InlineThemeVariants,
-} from './src/lib/first-paint.ts';
+import { defaultThemeFor } from '@notesapp/ui';
+import { themeRegistryData } from './src/lib/first-paint.ts';
 
 // The JSX transform comes from Vite's built-in esbuild support with the
 // automatic runtime, so no framework plugin is needed for the production
@@ -67,43 +58,6 @@ const manifestPath = 'manifest.webmanifest';
 
 /** The placeholder that the icon links of the shell replace. */
 const iconLinkPlaceholder = '__NOTESAPP_ICON_LINKS__';
-
-/** One theme of the registry as the inline script receives it. */
-export type { InlineThemeVariant };
-
-/** The whole registry as the inline script receives it. */
-export type InlineThemes = {
-  readonly fallback: string;
-  readonly properties: readonly string[];
-  readonly families: Readonly<Record<string, InlineThemeVariants>>;
-};
-
-/**
- * The palette data of the script that runs before the first paint.
- *
- * The names are written once, and every theme lists its values in that same
- * order, so the whole registry stays small inside the document. The script
- * reads the stored family and appearance and writes the properties, which is
- * why a reload never shows the wrong palette.
- *
- * The shape is declared here, where the value is built, so a reader of the
- * text does not have to claim one.
- */
-export function themeRegistry(): InlineThemes {
-  const families: Record<string, InlineThemeVariants> = {};
-  for (const family of themeFamilies)
-    families[family.id] = inlineVariants(family);
-  return {
-    fallback: defaultThemeFamilyId,
-    properties: inlinePropertyNames(),
-    families,
-  };
-}
-
-/** The palette data of the inline script, serialized. */
-export function themeRegistryData(): string {
-  return JSON.stringify(themeRegistry());
-}
 
 /** One icon of the installed application manifest. */
 export type WebManifestIcon = {

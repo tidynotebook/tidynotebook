@@ -14,12 +14,26 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
 import { readFile, readdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { runInNewContext } from 'node:vm';
 import { editorThemeVariables } from '@notesapp/editor';
-import { defaultThemeFor, scrollbarValue, themeProperties } from '@notesapp/ui';
-import { importedPaletteStorageKey } from '../../apps/web/src/lib/first-paint.ts';
+import {
+  defaultThemeFor,
+  importedThemeFamily,
+  readThemeFile,
+  scrollbarValue,
+  themeFamilies,
+  themeFileText,
+  themeProperties,
+} from '@notesapp/ui';
+import {
+  importedPaletteStorageKey,
+  inlineImportedFamily,
+  themeRegistryData,
+} from '../../apps/web/src/lib/first-paint.ts';
 import { loadCompiler, webRequire } from './support/tailwind.ts';
 
 const root = resolve(fileURLToPath(import.meta.url), '../../..');
@@ -75,7 +89,9 @@ await test('the shell document states the colour scheme of the first paint', asy
   // stored palette therefore states the appearance as well, and the branch
   // that runs when that script fails states the dark default with it.
   const html = await readFile(resolve(root, 'apps/web/index.html'), 'utf8');
-  assert.match(html, /colorScheme = dark \? 'dark' : 'light'/);
+  // `apps/web/src/theme-wiring.test.ts` runs the script and holds that the
+  // scheme is the appearance of the palette that it paints.
+  assert.match(html, /colorScheme = shown;/);
   assert.match(html, /colorScheme = 'dark'/);
   // The scrollbar of the first paint reads the same palette property that the
   // script writes, so the bar never stands in a colour of its own.
@@ -184,4 +200,95 @@ await test('every palette fallback of the stylesheet is the registry value', () 
   // slip past the check above by stating no value at all.
   const named = [...(block[1] ?? '').matchAll(/var\((--notes-[a-z-]+)/g)];
   assert.equal(named.length, declarations.length, 'a fallback is missing');
+});
+
+/** What the first paint script wrote on the root element of the page. */
+type FirstPaint = {
+  readonly attributes: Map<string, string>;
+  readonly style: Map<string, string>;
+};
+
+/**
+ * Runs the script of the first paint of the shell document, as the build
+ * writes it, against stored settings and a device preference.
+ *
+ * The script runs before any module, so its own text is what a person gets.
+ * The sandbox gives it the four things it reads: local storage, the media
+ * query of the device, the root element and the colour meta element.
+ */
+function firstPaint(
+  stored: Readonly<Record<string, string>>,
+  deviceDark: boolean,
+): FirstPaint {
+  const html = readFileSync(resolve(root, 'apps/web/index.html'), 'utf8');
+  const script = /<script>([\s\S]*?)<\/script>/.exec(html)?.[1] ?? '';
+  assert.ok(script.includes('__NOTESAPP_THEMES__'));
+  const attributes = new Map<string, string>();
+  const style = new Map<string, string>();
+  const element = {
+    setAttribute: (name: string, value: string) => attributes.set(name, value),
+    style: new Proxy(
+      { setProperty: (name: string, value: string) => style.set(name, value) },
+      {
+        set: (target, name, value) => {
+          style.set(String(name), String(value));
+          return true;
+        },
+      },
+    ),
+  };
+  runInNewContext(script.replace('__NOTESAPP_THEMES__', themeRegistryData()), {
+    localStorage: { getItem: (key: string) => stored[key] ?? null },
+    window: { matchMedia: () => ({ matches: deviceDark }) },
+    document: { documentElement: element, querySelector: () => null },
+  });
+  return { attributes, style };
+}
+
+await test('the first paint states the appearance of the variant it paints', () => {
+  // Nord publishes a dark palette alone. A light choice paints that palette,
+  // so the page states dark, as `applyTheme` does once React runs.
+  const nord = firstPaint(
+    { 'notesapp.theme': 'light', 'notesapp.theme-family': 'nord' },
+    false,
+  );
+  const nordPalette = themeFamilies.find(
+    (family) => family.id === 'nord',
+  )?.variants;
+  assert.deepEqual(
+    nordPalette?.map((variant) => variant.appearance),
+    ['dark'],
+  );
+  assert.equal(nord.attributes.get('data-theme-id'), nordPalette?.[0]?.id);
+  assert.equal(nord.attributes.get('data-theme'), 'dark');
+  assert.equal(nord.style.get('colorScheme'), 'dark');
+  // An imported theme with a dark palette alone does the same (record 0141).
+  const read = readThemeFile(
+    themeFileText({
+      id: 'night',
+      name: 'Night',
+      source: { project: 'Night', url: '', licence: '' },
+      variants: nordPalette ?? [],
+    }),
+  );
+  assert.ok(read.ok);
+  const imported = importedThemeFamily('custom-night', read.theme);
+  const night = firstPaint(
+    {
+      'notesapp.theme': 'system',
+      'notesapp.theme-family': imported.id,
+      [importedPaletteStorageKey]: inlineImportedFamily(imported),
+    },
+    false,
+  );
+  assert.equal(night.attributes.get('data-theme-id'), 'custom-night-dark');
+  assert.equal(night.attributes.get('data-theme'), 'dark');
+  assert.equal(night.style.get('colorScheme'), 'dark');
+  // A family with both palettes paints the one that the device asks for.
+  const github = firstPaint(
+    { 'notesapp.theme': 'system', 'notesapp.theme-family': 'github' },
+    false,
+  );
+  assert.equal(github.attributes.get('data-theme'), 'light');
+  assert.equal(github.style.get('colorScheme'), 'light');
 });
