@@ -7,6 +7,7 @@ import {
   legalDocumentFact,
   mailDescription,
   mailFacts,
+  mailFormChanged,
   mailFailureReasonOf,
   mailFailureText,
   mailPortOf,
@@ -133,7 +134,7 @@ await test('the legal section names what is missing', () => {
     /environment/,
   );
   assert.equal(legalDocumentFact(null), 'Not added');
-  assert.equal(legalDocumentFact(document), 'Version 1, shown by this server');
+  assert.equal(legalDocumentFact(document), 'Version 1, on this server');
   assert.equal(
     legalDocumentFact({
       kind: 'address',
@@ -150,17 +151,32 @@ await test('each blank of a text is one field in sentence case', () => {
       'A {{operator name}} and {{operator name}} in {{jurisdiction}}.',
     ),
     [
-      { blank: '{{operator name}}', label: 'Operator name' },
-      { blank: '{{jurisdiction}}', label: 'Jurisdiction' },
+      { blank: '{{operator name}}', label: 'Operator name', wide: false },
+      { blank: '{{jurisdiction}}', label: 'Jurisdiction', wide: false },
     ],
   );
   // The Version field fills the blank of the version.
   assert.deepEqual(blankFields('Version {{version}} by {{operator name}}'), [
-    { blank: '{{operator name}}', label: 'Operator name' },
+    { blank: '{{operator name}}', label: 'Operator name', wide: false },
   ]);
   assert.equal(
-    textToSave('Version {{version}} by {{operator name}}', '2026-10-01'),
+    textToSave('Version {{version}} by {{operator name}}', {}, '2026-10-01'),
     'Version 2026-10-01 by {{operator name}}',
+  );
+  assert.equal(
+    textToSave(
+      'Version {{version}} by {{operator name}} and {{operator name}}',
+      { '{{operator name}}': 'Ada' },
+      '2',
+    ),
+    'Version 2 by Ada and Ada',
+  );
+  // A label of a sentence takes the whole row.
+  assert.equal(
+    blankFields(
+      '{{whether the service is free, or its price and how a person pays}}',
+    )[0]?.wide,
+    true,
   );
   assert.deepEqual(blanksOf({ blanks: ['{{a}}', 3] }), ['{{a}}']);
   assert.deepEqual(blanksOf({}), []);
@@ -172,4 +188,24 @@ await test('each blank of a text is one field in sentence case', () => {
     unfinishedText(['{{a}}', '{{b}}']),
     'Fill the 2 blanks of the template before you save.',
   );
+});
+
+await test('the mail form has work only when a field differs', () => {
+  const saved = {
+    host: 'smtp.example.com',
+    security: 'starttls' as const,
+    port: '587',
+    username: 'notes',
+    password: '',
+    sender: 'a@example.com',
+  };
+  assert.equal(mailFormChanged(saved, saved), false);
+  assert.equal(
+    mailFormChanged(saved, { ...saved, host: ' smtp.example.com ' }),
+    false,
+  );
+  assert.equal(mailFormChanged(saved, { ...saved, port: '465' }), true);
+  assert.equal(mailFormChanged(saved, { ...saved, security: 'tls' }), true);
+  // A typed password is a change, since the saved one is never shown.
+  assert.equal(mailFormChanged(saved, { ...saved, password: 'x' }), true);
 });

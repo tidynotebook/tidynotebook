@@ -40,13 +40,14 @@ The mail server sends invitations, the links of a sign-up, and the links of a
 password reset. Without one, an invitation shows its link once, and nobody can
 reset a password alone.
 
-1. Under **Mail**, select **Set up mail**.
-2. Enter the values that your mail provider gives: the server, the security,
-   the port, the user name and the password. The port follows the security
-   that you choose, and you can change it.
-3. Enter the sender, an address that the mail server lets you send from, for
+1. Under **Mail** on the accounts page, enter the values that your mail
+   provider gives: the server, the port, the security, the user name and the
+   password. The port follows the security that you choose, and you can
+   change it. Leave the user name and the password empty for a server that
+   takes mail with no sign-in.
+2. Enter the sender, an address that the mail server lets you send from, for
    example `NotesApp <no-reply@notes.example.com>`.
-4. Select **Save**, then select **Send a test message**. The message goes to
+3. Select **Save**, then select **Send a test message**. The message goes to
    your own address. Check that it arrives in the inbox and not in spam.
 
 The server keeps the password sealed and never shows it again. To change the
@@ -70,16 +71,18 @@ sign out.
 You add both documents under **Legal documents** on the accounts page. They
 apply when both exist.
 
-1. Select **Add** on the row of a document.
+1. Select **Add** on the row of a document. Its editor opens in the section.
 2. Choose the source. **Text on this server** shows the document on a page of
    the installation. **Page on another site** links a page that you host
    elsewhere.
 3. A text starts from the template of NotesApp. The template states what the
    product keeps, for how long, and where it sends data. Each blank in double
-   braces shows as a field under the text. Type the facts of your service,
-   for example who runs it and the law that applies, and select **Fill the
-   blanks**. You can change any word of the text too.
-4. Enter the version, for example the date. Select **Save**.
+   braces shows as a field under **Facts of your service**. Type the facts of
+   your service, for example who runs it and the law that applies. Each fact
+   fills its place in the text at once. You can change any word of the text
+   too.
+4. Enter the version, for example the date, and select **Save**. The version
+   also fills its place in the text.
 
 The server does not save a text that still holds a blank. The template is not
 legal advice. Ask a person who knows the law of your country to read both

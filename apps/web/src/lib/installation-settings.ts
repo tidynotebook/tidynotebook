@@ -62,6 +62,29 @@ export function portAfterSecurity(
     : port;
 }
 
+/** The fields of the mail form, as the person types them. */
+export type MailForm = {
+  readonly host: string;
+  readonly security: MailSecurity;
+  readonly port: string;
+  readonly username: string;
+  /** A new password, or empty to keep the saved one. */
+  readonly password: string;
+  readonly sender: string;
+};
+
+/** Whether the form differs from the saved server, so Save has work. */
+export function mailFormChanged(saved: MailForm, form: MailForm): boolean {
+  return (
+    form.password !== '' ||
+    form.host.trim() !== saved.host ||
+    form.security !== saved.security ||
+    form.port.trim() !== saved.port ||
+    form.username.trim() !== saved.username ||
+    form.sender.trim() !== saved.sender
+  );
+}
+
 /** A port that the person typed, or `null` when it is not one. */
 export function mailPortOf(text: string): number | null {
   if (!/^[0-9]{1,5}$/.test(text.trim())) return null;
@@ -145,7 +168,7 @@ export function legalDocumentFact(
 ): string {
   if (document === null) return 'Not added';
   return document.kind === 'text'
-    ? `Version ${document.version}, shown by this server`
+    ? `Version ${document.version}, on this server`
     : `Version ${document.version}, at ${hostOf(document.url)}`;
 }
 
@@ -161,7 +184,15 @@ export type BlankField = {
   readonly blank: string;
   /** The label of the field, in sentence case. */
   readonly label: string;
+  /**
+   * Whether the field takes the whole row: a label of a sentence would wrap
+   * in half of it and push its field below the field beside it.
+   */
+  readonly wide: boolean;
 };
+
+/** The longest label of a field that takes half of a row. */
+const narrowLabelLength = 32;
 
 /**
  * The blank of the version in a template. The Version field of the form
@@ -175,19 +206,24 @@ export function blankFields(text: string): BlankField[] {
     .filter((blank) => blank !== versionBlank)
     .map((blank) => {
       const words = blankLabel(blank);
-      return {
-        blank,
-        label:
-          words === ''
-            ? 'Blank'
-            : `${words.charAt(0).toUpperCase()}${words.slice(1)}`,
-      };
+      const label =
+        words === ''
+          ? 'Blank'
+          : `${words.charAt(0).toUpperCase()}${words.slice(1)}`;
+      return { blank, label, wide: label.length > narrowLabelLength };
     });
 }
 
-/** The text that a save sends: the version fills its blank. */
-export function textToSave(text: string, version: string): string {
-  return fillBlanks(text, { [versionBlank]: version });
+/**
+ * The text that the editor shows and a save sends: each fact that the person
+ * typed fills its blank, and the version fills the blank of the version.
+ */
+export function textToSave(
+  text: string,
+  values: Readonly<Record<string, string>>,
+  version: string,
+): string {
+  return fillBlanks(text, { ...values, [versionBlank]: version });
 }
 
 /** The blanks that a refusal of a legal text names. */

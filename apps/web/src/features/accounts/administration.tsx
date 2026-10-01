@@ -100,7 +100,7 @@ import {
 
 /** What the page says under its title. */
 const accountsDescription =
-  'Invite people and manage the accounts of this installation.';
+  'Invite people, manage their accounts, and set up the mail server and the legal documents of this installation.';
 
 /** How far the read of the page got. */
 type PageState =
@@ -316,16 +316,7 @@ function AccountsPage(): ReactNode {
                 body: (
                   <MailSettingsBody
                     mail={state.installation.mail}
-                    busy={busy}
-                    onChanged={(text) => {
-                      setFailure('');
-                      setNotice(text);
-                      reload();
-                    }}
-                    onFailed={(text) => {
-                      setNotice('');
-                      setFailure(text);
-                    }}
+                    onSaved={reload}
                   />
                 ),
               },
@@ -336,16 +327,7 @@ function AccountsPage(): ReactNode {
                 body: (
                   <LegalDocumentsBody
                     legal={state.installation.legalDocuments}
-                    busy={busy}
-                    onChanged={(text) => {
-                      setFailure('');
-                      setNotice(text);
-                      reload();
-                    }}
-                    onFailed={(text) => {
-                      setNotice('');
-                      setFailure(text);
-                    }}
+                    onSaved={reload}
                   />
                 ),
               },

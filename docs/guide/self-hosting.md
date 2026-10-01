@@ -308,8 +308,8 @@ password reset. Without one, an invitation shows its link once, a person
 cannot reset a password alone, and nobody can sign up without an invitation.
 
 Set it up in the application: open **Settings**, select **Manage accounts**,
-and select **Set up mail** under **Mail**. Enter the values of your mail
-provider and select **Send a test message**, as
+and enter the values of your mail provider under **Mail**. Select **Save**,
+then **Send a test message**, as
 [Accounts and invitations](accounts.md#mail) states. The server keeps the
 password sealed with a key that it derives from `NOTESAPP_AUTH_SECRET`. When
 you change that secret, enter the mail password again.
