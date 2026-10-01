@@ -139,7 +139,7 @@ export function utf8Length(text: string): number {
  * for each code point, so a character outside the basic plane counts once.
  */
 export function characterCount(text: string): number {
-  return [...text].length;
+  return Array.from(text).length;
 }
 
 /** A blank of a template: a word or words in double braces. */
