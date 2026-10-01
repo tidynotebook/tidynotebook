@@ -202,6 +202,25 @@ function paletteProblems(
 }
 
 /**
+ * The number of Unicode code points of a text.
+ *
+ * `maxLength` of the contract and `char_length` of the database count code
+ * points, so an emoji counts once here too and the three limits agree.
+ */
+function codePointLength(text: string): number {
+  let count = 0;
+  for (let index = 0; index < text.length; index += 1) {
+    const unit = text.charCodeAt(index);
+    const next = text.charCodeAt(index + 1);
+    // A high surrogate and the low surrogate after it are one code point.
+    if (unit >= 0xd800 && unit <= 0xdbff && next >= 0xdc00 && next <= 0xdfff)
+      index += 1;
+    count += 1;
+  }
+  return count;
+}
+
+/**
  * Reads the text of one theme file.
  *
  * The answer is the theme, or every problem that stops it, so the person can
@@ -230,7 +249,7 @@ export function readThemeFile(text: string): ThemeFileResult {
   const problems: string[] = [];
   const rawName = members.get('name');
   const name = typeof rawName === 'string' ? rawName.trim() : '';
-  if (name === '' || name.length > themeNameMaximumLength)
+  if (name === '' || codePointLength(name) > themeNameMaximumLength)
     problems.push(
       `The theme has no name that can be used. Give it a name of 1 to ${String(themeNameMaximumLength)} characters.`,
     );

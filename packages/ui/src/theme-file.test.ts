@@ -145,3 +145,17 @@ await test('a name longer than the limit is refused', () => {
   );
   assert.equal(read.ok, false);
 });
+
+await test('a name counts its characters, as the contract and the database do', () => {
+  // One emoji is two UTF-16 units and one character. The contract and the
+  // database count characters, so the reader counts them too.
+  const file = fileOf('default');
+  const atLimit = readThemeFile(
+    JSON.stringify({ ...file, name: '🌊'.repeat(themeNameMaximumLength) }),
+  );
+  assert.equal(atLimit.ok, true);
+  const over = readThemeFile(
+    JSON.stringify({ ...file, name: '🌊'.repeat(themeNameMaximumLength + 1) }),
+  );
+  assert.equal(over.ok, false);
+});

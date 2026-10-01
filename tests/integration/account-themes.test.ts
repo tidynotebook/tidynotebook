@@ -161,6 +161,22 @@ await test('an imported theme follows the account with its settings', async () =
   assert.deepEqual(account.data?.preferences.themes, kept);
 });
 
+await test('a name counts characters on the client, the contract and the database', async () => {
+  // One emoji is two UTF-16 units. The reader of the client, the contract and
+  // the database all count it once, so a name at the limit is kept.
+  const name = '🌊'.repeat(themeNameMaximumLength);
+  const theme = themeFrom('nord', name);
+  const kept = await importTheme({ headers, body: importBody(theme) });
+  assert.equal(kept.error, undefined, JSON.stringify(kept.error));
+  const added = (kept.data?.themes ?? []).find((entry) => entry.name === name);
+  assert.ok(added !== undefined);
+  const removed = await deleteTheme({
+    headers,
+    path: { themeId: added.themeId },
+  });
+  assert.equal(removed.error, undefined, JSON.stringify(removed.error));
+});
+
 await test('a colour that is not hex is refused and nothing is kept', async () => {
   const theme = themeFrom('default', 'Broken');
   const dark = theme.dark;
