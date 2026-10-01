@@ -356,14 +356,38 @@ export function fieldClassName(
   } = {},
 ): string {
   return [
-    `w-full min-h-11 rounded-md border bg-app px-3 text-ui text-strong outline-none ${transitionField} focus-visible:ring-2 focus-visible:ring-focus/25 md:min-h-8`,
-    options.invalid === true
-      ? 'border-danger'
-      : 'border-edge-line focus-visible:border-focus',
+    `w-full min-h-11 ${fieldSurface} text-ui md:min-h-8`,
+    fieldEdge(options.invalid === true),
     options.className ?? '',
   ]
     .filter(Boolean)
     .join(' ');
+}
+
+/** The box, the fill and the focus ring that every field shares. */
+const fieldSurface = `rounded-md border bg-app px-3 text-strong outline-none ${transitionField} focus-visible:ring-2 focus-visible:ring-focus/25`;
+
+/** The edge of a field at rest and in its error state. */
+function fieldEdge(invalid: boolean): string {
+  return invalid
+    ? 'border-danger'
+    : 'border-edge-line focus-visible:border-focus';
+}
+
+/**
+ * The appearance of a field of several lines, as classes.
+ *
+ * It is a field in every part but its size: it holds a document in Markdown,
+ * so it is tall, a person can make it taller, and it sets its text in the
+ * code face at the control step, as a source text is.
+ */
+export function textAreaClassName(
+  options: { readonly invalid?: boolean | undefined } = {},
+): string {
+  return [
+    `block w-full min-h-64 resize-y py-2 font-mono text-control leading-relaxed ${fieldSurface}`,
+    fieldEdge(options.invalid === true),
+  ].join(' ');
 }
 
 /**

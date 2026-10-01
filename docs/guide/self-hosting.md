@@ -212,9 +212,10 @@ sudo chmod 600 /etc/notesapp/secrets/*
 
 The migration URL can use the initial PostgreSQL administrator for the first installation. The migration creates the restricted application roles and sets their passwords. Do not give either application role migration rights.
 
-The SMTP URL of the mail transport is a secret too. `docker/compose.mail.yaml`
-adds it, and [Mail](#mail) states how. Do not put credentials in `.env`,
-process arguments, logs, or Git.
+An administrator can set the mail server in the application, so it needs no
+secret file. When you set it in the environment instead, its SMTP URL is a
+secret too. `docker/compose.mail.yaml` adds it, and [Mail](#mail) states how.
+Do not put credentials in `.env`, process arguments, logs, or Git.
 
 Validate and start the installation:
 
@@ -253,7 +254,7 @@ also invite a person from the server:
 pnpm account:invite --email person@example.com
 ```
 
-With a mail transport, the link goes to the address. Without one, the command
+With a mail server, the link goes to the address. Without one, the command
 prints the link once. Send it to the person yourself.
 
 When no administrator can sign in any more, make an account an administrator
@@ -273,16 +274,21 @@ sign-up. `NOTESAPP_SIGNUP_DIFFICULTY` sets how hard the check of the browser is
 at a sign-up, from 8 to 28. Each step doubles the time that the browser takes.
 The check runs in the browser and sends nothing to another service.
 
-A public service names its terms and its privacy notice. Each document has a
-version, `NOTESAPP_TERMS_VERSION` and `NOTESAPP_PRIVACY_VERSION`, and one
-source: an address on another site, `NOTESAPP_TERMS_URL` and
-`NOTESAPP_PRIVACY_URL`, or a Markdown file that the server shows itself, as
-[Open sign-up](#open-sign-up) states. Name both documents or neither. Each
-account stores the versions that it accepted and when. When you raise a
-version, each person accepts it again before the application opens. A change
-of a file with the same version reaches a person at the next start and asks
-nobody again, which suits a fixed typo. An installation with no documents asks
-for nothing.
+A public service names its terms and its privacy notice. An administrator
+writes both in the application, from a template, as
+[Accounts and invitations](accounts.md#terms-and-privacy-notice) states. Each
+account stores the versions that it accepted and when. When a version changes,
+each person accepts it again before the application opens. An installation
+with no documents asks for nothing.
+
+You can name both documents in the environment instead. The environment then
+wins, and the accounts page shows the documents and offers no change. Each
+document has a version, `NOTESAPP_TERMS_VERSION` and
+`NOTESAPP_PRIVACY_VERSION`, and one source: an address on another site,
+`NOTESAPP_TERMS_URL` and `NOTESAPP_PRIVACY_URL`, or a Markdown file that the
+server shows itself, as [Open sign-up](#open-sign-up) states. Name both
+documents or neither. A change of a file with the same version reaches a
+person at the next start and asks nobody again, which suits a fixed typo.
 
 A sign-in needs a proved address. The first account and an invited account
 prove their address when they are made, so an installation that upgrades keeps
@@ -297,9 +303,20 @@ installation with no outbound network.
 
 ## Mail
 
-A mail transport sends invitations, the links of a sign-up, and the links of a
+A mail server sends invitations, the links of a sign-up, and the links of a
 password reset. Without one, an invitation shows its link once, a person
 cannot reset a password alone, and nobody can sign up without an invitation.
+
+Set it up in the application: open **Settings**, select **Manage accounts**,
+and select **Set up mail** under **Mail**. Enter the values of your mail
+provider and select **Send a test message**, as
+[Accounts and invitations](accounts.md#mail) states. The server keeps the
+password sealed with a key that it derives from `NOTESAPP_AUTH_SECRET`. When
+you change that secret, enter the mail password again.
+
+To set the mail server in the environment instead, do these steps. The
+environment then wins, and the accounts page shows the server and offers no
+change.
 
 1. Write the SMTP URL of your mail provider, for example
    `smtps://user:password@smtp.example.com:465`, to the file `smtp_url` in
@@ -318,33 +335,38 @@ that domain, with the values that your mail provider gives:
 - A DMARC policy, for example `p=quarantine`, so that a message that forges
   the domain goes nowhere.
 
-Then send an invitation to an address of your own at a large mailbox provider,
-and check that it arrives in the inbox and not in spam. Each message is plain
+Then select **Send a test message**, or send an invitation to an address of
+your own at a large mailbox provider, and check that it arrives in the inbox
+and not in spam. Each message is plain
 text. It names the product and the host of the installation, and it states that
 a program wrote it, so a vacation responder does not answer it.
 
 ## Open sign-up
 
-An installation lets anybody sign up only when it has a mail transport, a
+An installation lets anybody sign up only when it has a mail server, a
 separate address for published pages, and both legal documents. The accounts
 page names each part that is missing. Do these steps in order.
 
-1. **Mail.** Set up the transport and the three domain records, as
+1. **Mail.** Set up the mail server and the three domain records, as
    [Mail](#mail) states.
 2. **Published pages.** Point a second host name at this server, for example
    `pages.example.net`, and set `NOTESAPP_PUBLISHED_ORIGIN` to it. With the
    `tls` profile, also set `NOTESAPP_PUBLISHED_DOMAIN` to that host name, so
    that the proxy gets a certificate for it.
-3. **Legal documents.** Copy `docker/legal/terms.md` and
-   `docker/legal/privacy.md` to a directory outside this checkout, and name it
-   in `NOTESAPP_LEGAL_DIR`. Fill each blank in double braces with the facts of
-   your service: who runs it, the address to write to, the law that applies,
-   and how long you keep backups and logs. Have a person who knows the law of
-   your country read both. Set `NOTESAPP_TERMS_VERSION` and
-   `NOTESAPP_PRIVACY_VERSION`, for example to the date, and add
-   `docker/compose.legal.yaml` to `COMPOSE_FILE`. The server shows the
-   documents at `/legal/terms` and `/legal/privacy`, and it refuses to start
-   while a file still holds a blank.
+3. **Legal documents.** Add the terms and the privacy notice on the accounts
+   page, as [Accounts and invitations](accounts.md#terms-and-privacy-notice)
+   states. Fill each blank of the template with the facts of your service:
+   who runs it, the address to write to, the law that applies, and how long
+   you keep backups and logs. Have a person who knows the law of your country
+   read both. The server shows a text at `/legal/terms` and `/legal/privacy`.
+
+   To keep the documents in files instead, copy each template from that page
+   to `terms.md` and `privacy.md` in a directory outside this checkout, and
+   name it in `NOTESAPP_LEGAL_DIR`. Fill each blank, set
+   `NOTESAPP_TERMS_VERSION` and `NOTESAPP_PRIVACY_VERSION`, for example to the
+   date, and add `docker/compose.legal.yaml` to `COMPOSE_FILE`. The server
+   refuses to start while a file still holds a blank.
+
 4. **The proxy.** Name the proxy in `NOTESAPP_TRUSTED_PROXIES`, so that the
    attempt limits of sign-up and sign-in count each client on its own.
 5. **Backups.** Check that the backup runs, and that a restore works. See

@@ -25,9 +25,38 @@ that nobody finishes goes away after a time that the server sets.
 
 Turn on **Let anybody sign up** under **Who can make an account** on the
 accounts page. The server allows this only when the installation has a mail
-transport, a separate address for published pages, and the terms and the
-privacy notice of the service. If a part is missing, the page names it. Turn
-the choice off to require an invitation again.
+server, a separate address for published pages, and the terms and the
+privacy notice of the service. If a part is missing, the page names it. You set
+the mail server and the two documents on the same page. The person who runs
+the server sets the address for published pages. Turn the choice off to
+require an invitation again.
+
+While anybody can sign up, the page does not let you remove the mail server or
+a legal document, because sign-up needs them.
+
+## Mail
+
+The mail server sends invitations, the links of a sign-up, and the links of a
+password reset. Without one, an invitation shows its link once, and nobody can
+reset a password alone.
+
+1. Under **Mail**, select **Set up mail**.
+2. Enter the values that your mail provider gives: the server, the security,
+   the port, the user name and the password. The port follows the security
+   that you choose, and you can change it.
+3. Enter the sender, an address that the mail server lets you send from, for
+   example `NotesApp <no-reply@notes.example.com>`.
+4. Select **Save**, then select **Send a test message**. The message goes to
+   your own address. Check that it arrives in the inbox and not in spam.
+
+The server keeps the password sealed and never shows it again. To change the
+other values and keep the password, leave **Password** empty. When the test
+message does not go, the page states the kind of the failure, for example a
+refused password or a server that does not answer. **Remove** stops all mail.
+
+When the person who runs the server sets the mail server in the server
+environment, the page shows it and offers no change. See
+[Self-hosting](self-hosting.md#mail).
 
 ## Terms and privacy notice
 
@@ -38,8 +67,30 @@ comes out, each person accepts it at the next visit, before the notes open. A
 person who does not accept can export their notes, remove their account, or
 sign out.
 
-The person who runs the server writes both documents, and the server can show
-them itself. See [Self-hosting](self-hosting.md#open-sign-up).
+You add both documents under **Legal documents** on the accounts page. They
+apply when both exist.
+
+1. Select **Add** on the row of a document.
+2. Choose the source. **Text on this server** shows the document on a page of
+   the installation. **Page on another site** links a page that you host
+   elsewhere.
+3. A text starts from the template of NotesApp. The template states what the
+   product keeps, for how long, and where it sends data. Each blank in double
+   braces shows as a field under the text. Type the facts of your service,
+   for example who runs it and the law that applies, and select **Fill the
+   blanks**. You can change any word of the text too.
+4. Enter the version, for example the date. Select **Save**.
+
+The server does not save a text that still holds a blank. The template is not
+legal advice. Ask a person who knows the law of your country to read both
+documents.
+
+Change the version when every person must accept the document again. Keep the
+version for a fixed typo, and nobody accepts it again.
+
+When the person who runs the server names the documents in the server
+environment, the page shows them and offers no change. See
+[Self-hosting](self-hosting.md#open-sign-up).
 
 ## Open the accounts page
 

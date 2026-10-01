@@ -93,6 +93,7 @@ export {
   fieldClassName,
   selectClassName,
   sidebarViewClassName,
+  textAreaClassName,
   focusOutline,
   focusOutlineInset,
   kbdClassName,
@@ -108,6 +109,7 @@ export {
   ReadOnlyField,
   SelectField,
   StatusRegion,
+  TextAreaField,
   TextField,
 } from './controls.tsx';
 export type { LoadingShape } from './loading.tsx';

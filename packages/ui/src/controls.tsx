@@ -16,6 +16,7 @@ import {
   fieldClassName,
   focusOutline,
   selectClassName,
+  textAreaClassName,
   type ButtonSize,
   type ButtonTone,
   type ButtonVariant,
@@ -203,6 +204,70 @@ export function TextField({
         placeholder={placeholder}
         required={required ?? false}
         autoFocus={autoFocus ?? false}
+        aria-invalid={hasError}
+        aria-describedby={described === '' ? undefined : described}
+        onChange={(event): void => {
+          onChange(event.target.value);
+        }}
+      />
+      {hasHint ? (
+        <p className="mb-0 mt-1 text-control text-muted" id={hintId}>
+          {hint}
+        </p>
+      ) : null}
+      {hasError ? (
+        <p className="mt-1 text-control text-danger" id={errorId} role="alert">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * A labeled field of several lines, for a document that a person writes.
+ *
+ * It follows `TextField`: the hint stays under it at all times, the error
+ * appears under it, and both are its description. A text area keeps the
+ * spelling check of the browser off, because a document in Markdown holds
+ * marks that are not words.
+ */
+export function TextAreaField({
+  id,
+  label,
+  value,
+  onChange,
+  error,
+  hint,
+  required,
+}: {
+  readonly id: string;
+  readonly label: string;
+  readonly value: string;
+  readonly onChange: (value: string) => void;
+  readonly error?: string | undefined;
+  /** The rule of the field, stated under it at all times. */
+  readonly hint?: string | undefined;
+  readonly required?: boolean | undefined;
+}): ReactNode {
+  const errorId = `${id}-error`;
+  const hintId = `${id}-hint`;
+  const hasError = error !== undefined && error !== '';
+  const hasHint = hint !== undefined && hint !== '';
+  const described = [hasHint ? hintId : '', hasError ? errorId : '']
+    .filter(Boolean)
+    .join(' ');
+  return (
+    <div className="mb-3.5">
+      <label className={fieldLabelClassName} htmlFor={id}>
+        {label}
+      </label>
+      <textarea
+        id={id}
+        className={textAreaClassName({ invalid: hasError })}
+        value={value}
+        required={required ?? false}
+        spellCheck={false}
         aria-invalid={hasError}
         aria-describedby={described === '' ? undefined : described}
         onChange={(event): void => {

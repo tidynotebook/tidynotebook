@@ -28,6 +28,7 @@ import {
   rowClassName,
   selectClassName,
   sidebarViewClassName,
+  textAreaClassName,
   type ButtonSize,
   type ButtonVariant,
   type EdgeMark,
@@ -69,6 +70,8 @@ const recipes: readonly (readonly [string, string])[] = [
   ['field', fieldClassName()],
   ['invalid field', fieldClassName({ invalid: true })],
   ['select field', selectClassName()],
+  ['text area field', textAreaClassName()],
+  ['invalid text area field', textAreaClassName({ invalid: true })],
   ['sidebar view', sidebarViewClassName({ current: false })],
   ['current sidebar view', sidebarViewClassName({ current: true })],
   ['key cap', kbdClassName()],
@@ -373,6 +376,22 @@ await test('a field rests on the divider and answers focus on it', () => {
   assert.ok(field.includes('bg-app'), 'the field fill');
   assert.ok(field.includes('min-h-11'), 'the touch minimum');
   assert.ok(field.includes('md:min-h-8'), 'the desktop field height');
+});
+
+await test('a text area is a field of several lines in the code face', () => {
+  const area = textAreaClassName();
+  for (const part of [
+    'border-edge-line',
+    'focus-visible:border-focus',
+    'focus-visible:ring-2',
+    'bg-app',
+    'rounded-md',
+  ])
+    assert.ok(area.includes(part), part);
+  assert.ok(area.includes('font-mono'), 'the code face');
+  assert.ok(area.includes('min-h-64'), 'the height of a document');
+  assert.ok(!area.includes('md:min-h-8'), 'no height of one line');
+  assert.ok(textAreaClassName({ invalid: true }).includes('border-danger'));
 });
 
 await test('an invalid field states the error on its edge alone', () => {

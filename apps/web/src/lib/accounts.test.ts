@@ -184,7 +184,7 @@ await test('a verification link reads its token from the fragment only', () => {
 await test('a refused open policy names each missing part in words', () => {
   assert.equal(
     openRegistrationMissingText(['legal-documents']),
-    'Anybody can sign up only when the installation has the terms and the privacy notice. The operator of the server can add what is missing.',
+    'Anybody can sign up only when the installation has the terms and the privacy notice. Set up the legal documents on this page.',
   );
   assert.equal(
     openRegistrationMissingText([
@@ -192,7 +192,7 @@ await test('a refused open policy names each missing part in words', () => {
       'published-origin',
       'legal-documents',
     ]),
-    'Anybody can sign up only when the installation has a mail transport, a separate address for published pages and the terms and the privacy notice. The operator of the server can add what is missing.',
+    'Anybody can sign up only when the installation has a mail server, a separate address for published pages and the terms and the privacy notice. Set up the mail server and the legal documents on this page. The operator of the server sets the address for published pages.',
   );
 });
 

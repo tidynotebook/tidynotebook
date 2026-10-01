@@ -15,7 +15,7 @@ Read the root [AGENTS.md](../../AGENTS.md), then the
   and `src/theme-file.ts` the file of an imported theme (0143).
 - `src/control-classes.ts` is the one recipe of a control, and nothing else
   writes the classes of a control (0065): `buttonClassName`, `rowClassName`,
-  `fieldClassName`, `kbdClassName`, `badgeClassName`, `avatarClassName`,
+  `fieldClassName`, `textAreaClassName`, `kbdClassName`, `badgeClassName`, `avatarClassName`,
   `edgeControlClassName` at a frame edge, `controlStripClassName` for a row
   that scrolls (0094), and `focusOutline` with `focusOutlineInset`.
   One element takes one colour class, so a tone is part of a recipe.

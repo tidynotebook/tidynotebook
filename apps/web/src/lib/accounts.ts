@@ -48,7 +48,7 @@ export function invitationTokenOf(hash: string): string | null {
 
 /** The words of each part that open registration needs (record 0114). */
 const partWords: Readonly<Record<string, string>> = {
-  mail: 'a mail transport',
+  mail: 'a mail server',
   'published-origin': 'a separate address for published pages',
   'legal-documents': 'the terms and the privacy notice',
 };
@@ -76,7 +76,22 @@ export function openRegistrationMissingText(
     words.length === 1
       ? (words[0] ?? '')
       : `${words.slice(0, -1).join(', ')} and ${words.at(-1) ?? ''}`;
-  return `Anybody can sign up only when the installation has ${list}. The operator of the server can add what is missing.`;
+  // An administrator sets the mail server and the legal documents on the
+  // accounts page (record 0148). Only the operator sets the published origin.
+  const here = [
+    missing.includes('mail') ? 'the mail server' : '',
+    missing.includes('legal-documents') ? 'the legal documents' : '',
+  ].filter(Boolean);
+  const advice = [
+    here.length === 0 ? '' : `Set up ${here.join(' and ')} on this page.`,
+    missing.includes('published-origin')
+      ? 'The operator of the server sets the address for published pages.'
+      : '',
+  ].filter(Boolean);
+  return [
+    `Anybody can sign up only when the installation has ${list}.`,
+    ...advice,
+  ].join(' ');
 }
 
 /** The page of a sign-up under open registration (record 0114). */

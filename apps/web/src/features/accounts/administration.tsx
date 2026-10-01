@@ -1,9 +1,9 @@
 /**
  * The accounts page of an administrator (records 0108 to 0112).
  *
- * One page holds the four facts an administrator manages: who can make an
- * account, the reports of published links (record 0119), the invitations that
- * wait, and the accounts. A report row opens its link as any reader does, and
+ * One page holds the facts an administrator manages: who can make an account,
+ * the mail server and the legal documents (record 0148), the reports of
+ * published links (record 0119), the invitations that wait, and the accounts. A report row opens its link as any reader does, and
  * never names a note or a workspace. The one primary
  * action is Invite a person. Each account row holds one menu of the changes
  * that apply to it, and the menu hides a change that would fail, such as the
@@ -62,6 +62,14 @@ import { problemMessage, useSession } from '../../app.tsx';
 import { problemCode } from '../../lib/problem-text.ts';
 import { useDocumentTitle } from '../../shell/document-title.ts';
 import { SettingsSection } from './settings-section.tsx';
+import {
+  LegalDocumentsBody,
+  MailSettingsBody,
+} from './installation-settings.tsx';
+import {
+  legalDescription,
+  mailDescription,
+} from '../../lib/installation-settings.ts';
 import {
   administrationSections,
   type AdministrationSectionKey,
@@ -299,6 +307,44 @@ function AccountsPage(): ReactNode {
                     disabled={busy}
                     onChange={(open) => {
                       changePolicy(open ? 'open' : 'invitation');
+                    }}
+                  />
+                ),
+              },
+              mail: {
+                description: mailDescription(state.installation.mail),
+                body: (
+                  <MailSettingsBody
+                    mail={state.installation.mail}
+                    busy={busy}
+                    onChanged={(text) => {
+                      setFailure('');
+                      setNotice(text);
+                      reload();
+                    }}
+                    onFailed={(text) => {
+                      setNotice('');
+                      setFailure(text);
+                    }}
+                  />
+                ),
+              },
+              legal: {
+                description: legalDescription(
+                  state.installation.legalDocuments,
+                ),
+                body: (
+                  <LegalDocumentsBody
+                    legal={state.installation.legalDocuments}
+                    busy={busy}
+                    onChanged={(text) => {
+                      setFailure('');
+                      setNotice(text);
+                      reload();
+                    }}
+                    onFailed={(text) => {
+                      setNotice('');
+                      setFailure(text);
                     }}
                   />
                 ),

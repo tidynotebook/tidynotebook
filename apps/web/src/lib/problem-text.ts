@@ -32,6 +32,13 @@ const sentences: Readonly<Record<string, string>> = {
   proof_invalid: 'The check of this browser did not finish. Try again.',
   consent_required:
     'The terms or the privacy notice changed. Read them again and accept them.',
+  setting_locked:
+    'The server environment sets this, so it changes there and not on this page.',
+  setting_required:
+    'Anybody can sign up now, and sign-up needs this. Let only invited people make an account first.',
+  legal_document_unfinished: 'Fill each blank of the template before you save.',
+  mail_failed:
+    'The mail server did not take the message. Check the settings and try again.',
   last_administrator:
     'The installation needs an administrator. Make another account an administrator first.',
   mutation_reused: 'That save was already sent. Nothing changed.',

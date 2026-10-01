@@ -38,6 +38,8 @@ export const administrationSections = [
     id: 'registration-heading',
     title: 'Who can make an account',
   },
+  { key: 'mail', id: 'mail-heading', title: 'Mail' },
+  { key: 'legal', id: 'legal-heading', title: 'Legal documents' },
   {
     key: 'reports',
     id: 'reports-heading',
