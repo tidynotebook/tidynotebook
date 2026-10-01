@@ -260,6 +260,7 @@ const pathValues: Readonly<Record<string, string>> = {
   sessionId: randomUUID(),
   themeId: randomUUID(),
   reportId: randomUUID(),
+  document: 'terms',
   token,
 };
 

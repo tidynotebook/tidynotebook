@@ -118,3 +118,16 @@ REVOKE ALL ON FUNCTION public.notesapp_set_legal_document(text, public.legal_doc
 GRANT EXECUTE ON FUNCTION public.notesapp_installation_settings() TO notesapp_app;--> statement-breakpoint
 GRANT EXECUTE ON FUNCTION public.notesapp_set_mail_settings(text, integer, public.mail_security, text, text, text) TO notesapp_app;--> statement-breakpoint
 GRANT EXECUTE ON FUNCTION public.notesapp_set_legal_document(text, public.legal_document_kind, text, text, text) TO notesapp_app;
+--> statement-breakpoint
+
+-- The schema version is the number of entries in the migration journal. This
+-- migration is the twenty-sixth entry, so the function reports twenty-six.
+CREATE OR REPLACE FUNCTION public.notesapp_schema_version()
+RETURNS integer
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = pg_catalog, pg_temp
+AS $$
+  SELECT 26;
+$$;
