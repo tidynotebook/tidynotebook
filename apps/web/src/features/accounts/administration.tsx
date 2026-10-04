@@ -917,7 +917,7 @@ function ControlsDialog({
               set({ downloadGigabytes: value });
             }}
           />
-          <div className="space-y-2">
+          <div className="flex flex-wrap gap-cluster">
             <Checkbox
               id="controls-teams"
               label="Teams"
