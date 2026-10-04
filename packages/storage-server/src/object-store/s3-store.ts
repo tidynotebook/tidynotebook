@@ -55,6 +55,14 @@ export type S3StoreSettings = {
 /** The most keys that one call of DeleteObjects takes. */
 const deleteBatch = 1000;
 
+/** A logger of the client that writes nothing. */
+const silentLogger = {
+  debug: (): void => undefined,
+  info: (): void => undefined,
+  warn: (): void => undefined,
+  error: (): void => undefined,
+};
+
 /** The suffix of the marker of an open upload. */
 const uploadMarker = '.upload';
 
@@ -118,6 +126,11 @@ export function openS3ObjectStore(settings: S3StoreSettings): ObjectStore {
     },
     requestChecksumCalculation: 'WHEN_REQUIRED',
     responseChecksumValidation: 'WHEN_REQUIRED',
+    // The client writes a warning of its own to the console when a body
+    // stops, which a stopped part does on purpose. The answer of the route
+    // already states that failure, and the server logs through its one
+    // module (record 0020), so the client logs nothing.
+    logger: silentLogger,
   });
   const Bucket = settings.bucket;
 
