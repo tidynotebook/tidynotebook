@@ -3,7 +3,7 @@
  *
  * Usage, from anywhere inside the worktree:
  *
- *     node .agents/skills/testing-changes-end-to-end/scripts/app.mjs start [--port <port>]
+ *     node .agents/skills/testing-changes-end-to-end/scripts/app.mjs start [--port <port>] [--object-store s3]
  *     node .agents/skills/testing-changes-end-to-end/scripts/app.mjs status
  *     node .agents/skills/testing-changes-end-to-end/scripts/app.mjs restart
  *     node .agents/skills/testing-changes-end-to-end/scripts/app.mjs stop
@@ -15,6 +15,10 @@
  * prints one JSON object: the origin, the sign-in email and password, the
  * port, the process and the log. It writes the same object to
  * `.local-app/app.json`, which `session.mjs` reads.
+ *
+ * `--object-store s3` keeps the uploads and the imports of the run in a
+ * bucket of its own on the test MinIO service instead of its file store
+ * (record 0192). `restart` keeps the store of the run.
  *
  * Every worktree keeps its own `.local-app/` and takes a free port, so two
  * worktrees run two applications that share nothing but the PostgreSQL
@@ -56,7 +60,7 @@ const stopTimeoutMs = 60 * 1000;
 // The log is read twice a second while the application starts.
 const pollMs = 500;
 
-/** @typedef {{ origin: string, email: string, password: string, port: number, pid: number, log: string, commit: string, changedFiles: number }} AppState */
+/** @typedef {{ origin: string, email: string, password: string, port: number, pid: number, log: string, commit: string, changedFiles: number, objectStore: 'filesystem' | 's3' }} AppState */
 
 /**
  * The commit that a start builds, and how many files differ from it.
@@ -124,6 +128,8 @@ function readState() {
     log: text('log'),
     commit: text('commit'),
     changedFiles: count('changedFiles'),
+    objectStore:
+      Reflect.get(value, 'objectStore') === 's3' ? 's3' : 'filesystem',
   };
 }
 
@@ -152,9 +158,10 @@ function lineValue(text, label) {
 
 /**
  * @param {number | null} requestedPort
+ * @param {'filesystem' | 's3'} objectStore
  * @returns {Promise<AppState & { reused?: true }>}
  */
-async function start(requestedPort) {
+async function start(requestedPort, objectStore) {
   const running = readState();
   if (running !== null && isAlive(running.pid))
     return { reused: true, ...running };
@@ -164,7 +171,13 @@ async function start(requestedPort) {
   const log = openSync(logFile, 'w');
   const child = spawn(
     process.execPath,
-    ['tools/dev-app.mjs', '--port', String(port)],
+    [
+      'tools/dev-app.mjs',
+      '--port',
+      String(port),
+      '--object-store',
+      objectStore,
+    ],
     { cwd: root, detached: true, stdio: ['ignore', log, log] },
   );
   closeSync(log);
@@ -190,6 +203,7 @@ async function start(requestedPort) {
         pid: child.pid ?? 0,
         log: logFile,
         ...source,
+        objectStore,
       };
       writeFileSync(stateFile, `${JSON.stringify(state, null, 2)}\n`);
       return state;
@@ -223,6 +237,20 @@ async function stop() {
   return { stopped: true, port: running.port };
 }
 
+/**
+ * @param {readonly string[]} args
+ * @param {'filesystem' | 's3'} fallback
+ * @returns {'filesystem' | 's3'}
+ */
+function storeArgument(args, fallback) {
+  const at = args.indexOf('--object-store');
+  if (at === -1) return fallback;
+  const value = args[at + 1];
+  if (value !== 'filesystem' && value !== 's3')
+    throw new Error('--object-store takes filesystem or s3.');
+  return value;
+}
+
 /** @param {readonly string[]} args */
 function portArgument(args) {
   const at = args.indexOf('--port');
@@ -235,12 +263,15 @@ function portArgument(args) {
 
 async function main() {
   const [command, ...args] = process.argv.slice(2);
-  if (command === 'start') return start(portArgument(args));
+  if (command === 'start')
+    return start(portArgument(args), storeArgument(args, 'filesystem'));
   if (command === 'stop') return stop();
   if (command === 'restart') {
-    const port = portArgument(args) ?? readState()?.port ?? null;
+    const running = readState();
+    const port = portArgument(args) ?? running?.port ?? null;
+    const store = storeArgument(args, running?.objectStore ?? 'filesystem');
     await stop();
-    return start(port);
+    return start(port, store);
   }
   if (command === 'status') {
     const running = readState();
@@ -249,7 +280,7 @@ async function main() {
       : { running: isAlive(running.pid), ...running, now: sourceState() };
   }
   throw new Error(
-    'Usage: app.mjs start [--port <port>] | status | restart | stop',
+    'Usage: app.mjs start [--port <port>] [--object-store s3] | status | restart | stop',
   );
 }
 

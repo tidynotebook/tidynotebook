@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import { createInterface } from 'node:readline';
 import { bootstrapOwner, loadServerConfig } from '@notesapp/server';
 import { createDisposableDatabase, type TestDatabase } from './database.ts';
+import { createTestBucket, type TestBucket } from './object-store.ts';
 
 /** Keep the public origin and listening socket on the same local port. */
 export function devEnvironment(
@@ -134,10 +135,19 @@ export async function startLocalApplication(
   }
 }
 
-/** Creates and removes only the state that belongs to this run. */
-export async function main(port: number): Promise<void> {
+/**
+ * Creates and removes only the state that belongs to this run.
+ *
+ * With `s3` the run keeps its objects in a bucket of its own on the test
+ * MinIO service, which it removes at the end (record 0192).
+ */
+export async function main(
+  port: number,
+  objectStore: 'filesystem' | 's3',
+): Promise<void> {
   let database: TestDatabase | undefined;
   let storageRoot: string | undefined;
+  let bucket: TestBucket | undefined;
   let server: Awaited<ReturnType<typeof serve>> | undefined;
   let child: ReturnType<typeof spawn> | undefined;
   let interrupted = false;
@@ -150,12 +160,16 @@ export async function main(port: number): Promise<void> {
   try {
     database = await createDisposableDatabase();
     storageRoot = await mkdtemp(join(tmpdir(), 'notesapp-dev-'));
-    const environment = devEnvironment(
-      database,
-      storageRoot,
-      port,
-      randomBytes(32).toString('base64url'),
-    );
+    if (objectStore === 's3') bucket = await createTestBucket();
+    const environment = {
+      ...devEnvironment(
+        database,
+        storageRoot,
+        port,
+        randomBytes(32).toString('base64url'),
+      ),
+      ...bucket?.environment,
+    };
     const email = 'owner@notes.invalid';
     const password = randomBytes(18).toString('base64url');
     await bootstrapOwner({
@@ -191,6 +205,7 @@ export async function main(port: number): Promise<void> {
     if (database !== undefined) await database.destroy();
     if (storageRoot !== undefined)
       await rm(storageRoot, { recursive: true, force: true });
+    if (bucket !== undefined) await bucket.destroy();
     process.off('SIGINT', stop);
     process.off('SIGTERM', stop);
   }
@@ -198,7 +213,10 @@ export async function main(port: number): Promise<void> {
 
 if (import.meta.main) {
   try {
-    await main(Number(process.argv[2]));
+    await main(
+      Number(process.argv[2]),
+      process.argv[3] === 's3' ? 's3' : 'filesystem',
+    );
   } catch (error) {
     process.stderr.write(
       `${error instanceof Error ? error.message : 'The local application could not start.'}\n`,

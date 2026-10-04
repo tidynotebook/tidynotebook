@@ -39,6 +39,10 @@ It builds the worktree, starts the server on a free port, and prints the
 an application of this worktree already runs, it prints that one with
 `"reused": true` and starts nothing.
 
+Add `--object-store s3` to keep the uploads and the imports of the run in a
+bucket of its own on the test MinIO service of `compose.test.yaml`, instead
+of its file store. `restart` keeps the store of the run.
+
 The application serves the build that `start` made. `app.mjs status` prints
 whether it runs, what it built, and under `now` the state of the code today.
 When the two differ, run `app.mjs restart` before you drive it again. When a
