@@ -83,7 +83,11 @@ function registerWith(password: string, email: string) {
     name: email,
     password,
     ground: { kind: 'first-run' },
-    limitBytes: defaultAccountLimitBytes,
+    newAccount: {
+      limitBytes: defaultAccountLimitBytes,
+      standing: 'active',
+      removeAfterSeconds: null,
+    },
   });
 }
 

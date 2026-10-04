@@ -24,6 +24,8 @@ import {
   type InstallationSettingsRow,
 } from './installation-settings-row.ts';
 import type {
+  AccountControls,
+  ControlsWrite,
   AccountOwnStanding,
   AccountSettings,
   AccountRecord,
@@ -67,6 +69,12 @@ import {
   reportedLinkStates,
 } from '@notesapp/core';
 import pg from 'pg';
+import {
+  accountControlsColumns,
+  accountControlsOf,
+  controlsParameters,
+  type AccountControlsRow,
+} from './account-controls-row.ts';
 import { openPool, poolSizes } from './pool.ts';
 import {
   defaultConnectionTimeoutMs,
@@ -531,13 +539,14 @@ export function openIdentityStore(
       },
 
       async standing(): Promise<AccountOwnStanding> {
-        const rows = await client.query<{
-          installation_role: string;
-          limit_bytes: string;
-          used_bytes: string;
-        }>(
+        const rows = await client.query<
+          AccountControlsRow & {
+            installation_role: string;
+            used_bytes: string;
+          }
+        >(
           `select a.installation_role::text as installation_role,
-                  a.limit_bytes::text as limit_bytes,
+                  ${accountControlsColumns},
                   coalesce((select sum(u.bytes_used)
                               from workspace_usage u
                               join memberships m on m.workspace_id = u.workspace_id
@@ -556,6 +565,7 @@ export function openIdentityStore(
           role: asInstallationRole(row.installation_role),
           usedBytes: BigInt(row.used_bytes),
           limitBytes: BigInt(row.limit_bytes),
+          controls: accountControlsOf(row),
         };
       },
 
@@ -821,6 +831,32 @@ export function openIdentityStore(
     };
   }
 
+  /**
+   * Writes every control of one account with the revision that the writer
+   * read. The function refuses a caller that is neither an administrator nor
+   * the operator.
+   */
+  async function writeControls(
+    client: pg.PoolClient,
+    accountId: string,
+    revision: number,
+    controls: AccountControls,
+  ): Promise<ControlsWrite> {
+    const rows = await client.query<{ outcome: string }>(
+      `select notesapp_set_account_controls($1, $2::bigint,
+         $3::account_standing, $4::timestamptz, $5::bigint, $6::bigint,
+         $7::bigint, $8::bigint, $9, $10) as outcome`,
+      [accountId, ...controlsParameters(revision, controls)],
+    );
+    const outcome = rows.rows[0]?.outcome;
+    if (outcome === 'written' || outcome === 'changed' || outcome === 'missing')
+      return outcome;
+    throw new OperationalError(
+      'unexpected',
+      'notesapp: the write of the controls answered no known outcome.',
+    );
+  }
+
   function installationTransaction(
     client: pg.PoolClient,
   ): InstallationTransaction {
@@ -852,17 +888,29 @@ export function openIdentityStore(
       },
 
       async accounts(): Promise<readonly AccountRecord[]> {
-        const rows = await client.query<{
-          account_id: string;
-          email: string | null;
-          name: string | null;
-          installation_role: string;
-          state: string;
-          created_at: Date;
-          last_active_at: Date | null;
-          used_bytes: string;
-          limit_bytes: string;
-        }>('select * from notesapp_list_accounts()');
+        const rows = await client.query<
+          AccountControlsRow & {
+            account_id: string;
+            email: string | null;
+            name: string | null;
+            installation_role: string;
+            state: string;
+            created_at: Date;
+            last_active_at: Date | null;
+            used_bytes: string;
+          }
+        >(
+          `select account_id, email, name, installation_role, state,
+                  created_at, last_active_at, used_bytes::text as used_bytes,
+                  limit_bytes::text as limit_bytes, standing, removal_at,
+                  text_limit_bytes::text as text_limit_bytes,
+                  published_transfer_limit_bytes::text
+                    as published_transfer_limit_bytes,
+                  download_limit_bytes::text as download_limit_bytes,
+                  teams, collaboration,
+                  controls_revision::text as controls_revision
+             from notesapp_list_accounts()`,
+        );
         return rows.rows.map((row) => ({
           accountId: row.account_id,
           email: row.email,
@@ -874,6 +922,7 @@ export function openIdentityStore(
             row.last_active_at === null ? null : isoOf(row.last_active_at),
           usedBytes: BigInt(row.used_bytes),
           limitBytes: BigInt(row.limit_bytes),
+          controls: accountControlsOf(row),
         }));
       },
 
@@ -899,6 +948,11 @@ export function openIdentityStore(
           'select notesapp_set_account_limit($1, $2::bigint)',
           [accountId, limitBytes.toString()],
         );
+      },
+
+      async setControls(accountId, revision, controls) {
+        assertUuid(accountId, 'the account');
+        return writeControls(client, accountId, revision, controls);
       },
 
       async remove(accountId: string): Promise<void> {
@@ -1087,8 +1141,8 @@ export function openIdentityStore(
       assertUuid(request.workspaceId, 'the workspace');
       return inTransaction(null, null, async (client) => {
         const rows = await client.query<{ account: string | null }>(
-          `select notesapp_register_account($1, $2, $3, $4, $5, $6, $7::bigint)
-             as account`,
+          `select notesapp_register_account($1, $2, $3, $4, $5, $6, $7::bigint,
+             $8::account_standing, $9::bigint) as account`,
           [
             request.authUserId,
             request.ground.kind,
@@ -1098,7 +1152,11 @@ export function openIdentityStore(
             request.accountId,
             request.workspaceId,
             request.workspaceName,
-            request.limitBytes.toString(),
+            request.newAccount.limitBytes.toString(),
+            request.newAccount.standing,
+            request.newAccount.removeAfterSeconds === null
+              ? null
+              : String(request.newAccount.removeAfterSeconds),
           ],
         );
         return rows.rows[0]?.account ?? null;

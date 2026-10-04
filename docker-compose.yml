@@ -100,6 +100,11 @@ services:
       NOTESAPP_INVITATION_LIFETIME_HOURS: ${NOTESAPP_INVITATION_LIFETIME_HOURS:-}
       NOTESAPP_PENDING_ACCOUNT_HOURS: ${NOTESAPP_PENDING_ACCOUNT_HOURS:-}
       NOTESAPP_SIGNUP_DIFFICULTY: ${NOTESAPP_SIGNUP_DIFFICULTY:-}
+      # The standing of a new account and, for a locked one, its life before
+      # the daily run removes it (record 0189). An empty value keeps every new
+      # account active with no removal time.
+      NOTESAPP_NEW_ACCOUNT_STANDING: ${NOTESAPP_NEW_ACCOUNT_STANDING:-}
+      NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER: ${NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER:-}
       # The mail transport has a secret, so `docker/compose.mail.yaml` adds
       # it with its sender, or `docker/compose.mail-url.yaml` as one URL.
       # The terms and the privacy notice of a public installation. Name both

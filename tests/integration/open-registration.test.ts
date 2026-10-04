@@ -508,7 +508,11 @@ await test('an upgraded installation still signs in its existing accounts', asyn
         accountId: randomUUID(),
         workspaceId: randomUUID(),
         workspaceName: 'Personal',
-        limitBytes: defaultAccountLimitBytes,
+        newAccount: {
+          limitBytes: defaultAccountLimitBytes,
+          standing: 'active',
+          removeAfterSeconds: null,
+        },
       });
       assert.ok(account !== null);
       const signIn = async (): Promise<number> => {

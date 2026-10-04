@@ -11,7 +11,11 @@
  * origin rule itself.
  */
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import type { ConsentVersions, WorkspaceStore } from '@notesapp/core';
+import type {
+  ConsentVersions,
+  NewAccountSettings,
+  WorkspaceStore,
+} from '@notesapp/core';
 import { consentMatches, readInvitation, verifyActor } from '@notesapp/core';
 import type { IdentityStoreHandle } from '@notesapp/storage-server';
 import type { HandlerMap, HandlerResult } from '../plugins/register.ts';
@@ -62,12 +66,12 @@ export type SetupDependencies = {
   readonly content: WorkspaceStore;
   /** The served origins of the deployment, from `config.servedOrigins`. */
   readonly servedOrigins: readonly ServedOrigin[];
-  /** The byte limit that a new account starts with. */
-  readonly accountLimitBytes: bigint;
+  /** The controls that a new account starts with (record 0189). */
+  readonly newAccount: NewAccountSettings;
   /** What an open sign-up and its verification need (record 0114). */
   readonly open: Omit<
     OpenRegistrationDependencies,
-    'auth' | 'identity' | 'accounts' | 'limitBytes'
+    'auth' | 'identity' | 'accounts' | 'newAccount'
   >;
 };
 
@@ -81,7 +85,7 @@ export function createSetupHandlers(
     auth,
     identity,
     accounts: identity,
-    limitBytes: dependencies.accountLimitBytes,
+    newAccount: dependencies.newAccount,
   };
 
   /** Writes the welcome note into the personal workspace of an account. */
@@ -124,7 +128,7 @@ export function createSetupHandlers(
         name: email,
         password,
         ground: { kind: 'first-run' },
-        limitBytes: dependencies.accountLimitBytes,
+        newAccount: dependencies.newAccount,
       });
       if (!made.ok) {
         if (made.error.code === 'password_breached')
@@ -186,7 +190,7 @@ export function createSetupHandlers(
         name: typeof name === 'string' && name !== '' ? name : address.value,
         password,
         ground: { kind: 'invitation', tokenDigest: digest },
-        limitBytes: dependencies.accountLimitBytes,
+        newAccount: dependencies.newAccount,
       });
       if (!made.ok) {
         if (made.error.code === 'password_breached')

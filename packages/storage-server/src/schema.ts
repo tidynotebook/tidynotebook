@@ -17,6 +17,7 @@ import {
   boolean,
   customType,
   check,
+  date,
   foreignKey,
   index,
   integer,
@@ -75,6 +76,16 @@ export const installationRole = pgEnum('installation_role', [
 
 /** Whether an account can sign in (record 0111). */
 export const accountState = pgEnum('account_state', ['enabled', 'disabled']);
+
+/** Whether an account uses every operation or a fixed list (record 0189). */
+export const accountStanding = pgEnum('account_standing', ['active', 'locked']);
+
+/** What happened to an account, for the operator API (record 0190). */
+export const accountEventKind = pgEnum('account_event_kind', [
+  'made',
+  'verified',
+  'removed',
+]);
 
 /** Who can make an account (record 0108). */
 /** How the connection to the mail server is protected (record 0148). */
@@ -151,6 +162,14 @@ export const syncEntityKind = pgEnum('sync_entity_kind', [
  * (record 0112). A removed account keeps its row as a tombstone with
  * `removed_at` set and nothing else that names a person (record 0111), so a
  * revision that names it keeps a valid reference.
+ *
+ * The controls of record 0189 live here too: the text limit, the published
+ * transfer and download limits of one month, the standing, the removal time
+ * of a locked account, and one switch for each switchable feature. A null
+ * limit is no limit. `controls_revision` rises on each change of a control,
+ * and a write names the revision that it read. `removal_notices` counts the
+ * mails that went before the removal time (record 0201), and a new removal
+ * time sets it back to zero.
  */
 export const accounts = pgTable(
   'accounts',
@@ -166,10 +185,138 @@ export const accounts = pgTable(
     limitBytes: bigint('limit_bytes', { mode: 'bigint' }).notNull(),
     addressProof: addressProof('address_proof'),
     removedAt: timestamp('removed_at', { withTimezone: true }),
+    textLimitBytes: bigint('text_limit_bytes', { mode: 'bigint' }),
+    publishedTransferLimitBytes: bigint('published_transfer_limit_bytes', {
+      mode: 'bigint',
+    }),
+    downloadLimitBytes: bigint('download_limit_bytes', { mode: 'bigint' }),
+    standing: accountStanding('standing').notNull().default('active'),
+    removalAt: timestamp('removal_at', { withTimezone: true }),
+    removalNotices: integer('removal_notices').notNull().default(0),
+    teams: boolean('teams').notNull().default(true),
+    collaboration: boolean('collaboration').notNull().default(true),
+    controlsRevision: bigint('controls_revision', { mode: 'bigint' })
+      .notNull()
+      .default(sql`1`),
   },
   (table) => [
     check('accounts_limit_bytes_check', sql`${table.limitBytes} > 0`),
+    check(
+      'accounts_text_limit_bytes_check',
+      sql`${table.textLimitBytes} is null or ${table.textLimitBytes} > 0`,
+    ),
+    check(
+      'accounts_published_transfer_limit_bytes_check',
+      sql`${table.publishedTransferLimitBytes} is null or ${table.publishedTransferLimitBytes} > 0`,
+    ),
+    check(
+      'accounts_download_limit_bytes_check',
+      sql`${table.downloadLimitBytes} is null or ${table.downloadLimitBytes} > 0`,
+    ),
+    check(
+      'accounts_removal_at_check',
+      sql`${table.removalAt} is null or ${table.standing} = 'locked'`,
+    ),
+    check(
+      'accounts_removal_notices_check',
+      sql`${table.removalNotices} between 0 and 2`,
+    ),
+    check(
+      'accounts_controls_revision_check',
+      sql`${table.controlsRevision} > 0`,
+    ),
     index('accounts_administrator_idx').on(table.installationRole, table.state),
+    index('accounts_removal_idx').on(table.removalAt),
+  ],
+);
+
+/**
+ * One event of an account, which the operator API lists after a cursor
+ * (record 0190).
+ *
+ * The cursor is allocated under one lock that the writer holds until it
+ * commits, so the cursors follow the order of the commits and a reader that
+ * continues after the last cursor that it read misses no event. The runtime
+ * role reaches the table through functions only.
+ */
+export const accountEvents = pgTable(
+  'account_events',
+  {
+    cursor: bigint('cursor', { mode: 'bigint' }).primaryKey(),
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => accounts.id),
+    kind: accountEventKind('kind').notNull(),
+    occurredAt: timestamp('occurred_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [check('account_events_cursor_check', sql`${table.cursor} > 0`)],
+);
+
+/**
+ * One portal handoff of record 0190: the digest of a single-use token that
+ * expires after 60 seconds. The token itself is never at rest.
+ */
+export const accountHandoffs = pgTable(
+  'account_handoffs',
+  {
+    tokenDigest: text('token_digest').primaryKey(),
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => accounts.id, { onDelete: 'cascade' }),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    usedAt: timestamp('used_at', { withTimezone: true }),
+  },
+  (table) => [
+    check(
+      'account_handoffs_token_digest_check',
+      sql`${table.tokenDigest} ~ '^[0-9a-f]{64}$'`,
+    ),
+    index('account_handoffs_expiry_idx').on(table.expiresAt),
+  ],
+);
+
+/**
+ * The counts of one calendar month in UTC, for each account and for the
+ * installation (record 0193). The row of the installation has no account.
+ *
+ * Each process adds its counts in memory and writes them here, and a check
+ * reads the stored total of the month. Plan 019 item 9 adds the counting and
+ * the flush; until then nothing writes a row, and every total reads zero.
+ */
+export const monthlyUsage = pgTable(
+  'monthly_usage',
+  {
+    month: date('month').notNull(),
+    accountId: uuid('account_id').references(() => accounts.id),
+    publishedTransferBytes: bigint('published_transfer_bytes', {
+      mode: 'bigint',
+    })
+      .notNull()
+      .default(sql`0`),
+    downloadBytes: bigint('download_bytes', { mode: 'bigint' })
+      .notNull()
+      .default(sql`0`),
+    objectWrites: bigint('object_writes', { mode: 'bigint' })
+      .notNull()
+      .default(sql`0`),
+    objectReads: bigint('object_reads', { mode: 'bigint' })
+      .notNull()
+      .default(sql`0`),
+  },
+  (table) => [
+    unique('monthly_usage_month_account_unique')
+      .on(table.month, table.accountId)
+      .nullsNotDistinct(),
+    check(
+      'monthly_usage_month_check',
+      sql`extract(day from ${table.month}) = 1`,
+    ),
+    check(
+      'monthly_usage_counts_check',
+      sql`${table.publishedTransferBytes} >= 0 and ${table.downloadBytes} >= 0 and ${table.objectWrites} >= 0 and ${table.objectReads} >= 0`,
+    ),
   ],
 );
 
@@ -288,13 +435,28 @@ export const workspaces = pgTable('workspaces', {
  *
  * The limit belongs to the account that owns the workspace, and a write
  * checks the sum of every workspace of that account (record 0112).
+ * `text_bytes` is the part of `bytes_used` that is text and history, which
+ * PostgreSQL holds, so the text limit of record 0189 checks it apart from
+ * the bytes of the attachments.
  */
-export const workspaceUsage = pgTable('workspace_usage', {
-  workspaceId: uuid('workspace_id')
-    .primaryKey()
-    .references(() => workspaces.id),
-  bytesUsed: bigint('bytes_used', { mode: 'bigint' }).notNull(),
-});
+export const workspaceUsage = pgTable(
+  'workspace_usage',
+  {
+    workspaceId: uuid('workspace_id')
+      .primaryKey()
+      .references(() => workspaces.id),
+    bytesUsed: bigint('bytes_used', { mode: 'bigint' }).notNull(),
+    textBytes: bigint('text_bytes', { mode: 'bigint' })
+      .notNull()
+      .default(sql`0`),
+  },
+  (table) => [
+    check(
+      'workspace_usage_text_bytes_check',
+      sql`${table.textBytes} >= 0 and ${table.textBytes} <= ${table.bytesUsed}`,
+    ),
+  ],
+);
 
 /**
  * The last allocated commit ordered cursor of one workspace.

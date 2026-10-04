@@ -129,6 +129,10 @@ that rule a client could grow the stored byte count without limit by
 resubmitting content the workspace already holds. `notesapp_add_usage` refuses
 a write past the limit again, whatever the layers above it do.
 
+The usage counts text and history apart from attachments, and `notesapp_add_usage`
+checks the text limit and the standing of the owner as well
+([record 0189](../decisions/0189-an-account-carries-limits-a-standing-and-feature-switches.md)).
+
 Every path takes its locks in one order: the installation lock, then the
 workspace locks by identifier, then the account locks by identifier. The
 guide of `packages/storage-server` names the path of each.

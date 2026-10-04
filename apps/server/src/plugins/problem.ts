@@ -84,7 +84,10 @@ export type ProblemCode =
   | 'setting_required'
   | 'legal_document_unfinished'
   | 'mail_password_required'
-  | 'mail_failed';
+  | 'mail_failed'
+  | 'account_locked'
+  | 'controls_changed'
+  | 'operator_off';
 
 /** Problem details body. Extra members are permitted by RFC 9457. */
 export type Problem = {
@@ -176,6 +179,9 @@ const titles: Readonly<Record<ProblemCode, string>> = {
   mail_password_required: 'A user name of the mail server needs its password.',
   mail_failed: 'The mail server did not take the message.',
   rate_limited: 'Too many attempts were made in a short time.',
+  account_locked: 'The account is locked.',
+  controls_changed: 'The controls of the account changed.',
+  operator_off: 'This installation serves no operator API.',
   route_not_found: 'No operation serves this method and path.',
   not_ready: 'The service cannot accept traffic yet.',
   shutting_down: 'The service is stopping and accepts no new traffic.',
@@ -529,6 +535,10 @@ const domainStatus: Readonly<
     code: 'legal_document_unfinished',
   },
   mail_password_required: { status: 400, code: 'mail_password_required' },
+  // A locked account keeps a fixed list of operations (record 0201).
+  account_locked: { status: 423, code: 'account_locked' },
+  // A write of the controls named an old revision (record 0189).
+  controls_changed: { status: 409, code: 'controls_changed' },
 };
 
 /** The explanation of one domain failure. It names no path and no content. */
@@ -604,6 +614,10 @@ const domainTitles: Readonly<Record<DomainErrorCode, string>> = {
     'The text still holds a blank of the template. Fill each blank first.',
   mail_password_required:
     'A user name of the mail server needs its password. Enter the password, or leave the user name empty.',
+  account_locked:
+    'The account is locked. It keeps only the operations that unlock it, export its notes or remove it.',
+  controls_changed:
+    'The controls of the account changed after they were read. Read them again, then write the change.',
 };
 
 /**

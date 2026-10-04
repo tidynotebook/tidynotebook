@@ -75,7 +75,7 @@ export async function bootstrapOwner(
       name: input.name,
       password: input.password,
       ground: { kind: 'first-run' },
-      limitBytes: input.config.accounts.limitBytes,
+      newAccount: input.config.accounts,
     });
     if (!made.ok)
       throw new Error(

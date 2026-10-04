@@ -434,7 +434,7 @@ await test('privileged functions: a stranger cannot move a cursor or add usage',
     ]);
     assert.equal(cursor.code, '42501');
     const usage = await session.failure(
-      'select notesapp_add_usage($1, 1000::bigint)',
+      'select notesapp_add_usage($1, 1000::bigint, 0::bigint)',
       [scoped.workspaceId],
     );
     assert.equal(usage.code, '42501');
@@ -450,17 +450,23 @@ await test('privileged functions: the owner cannot reduce the stored usage', asy
     // past the quota without limit, so every negative delta is refused, not
     // only one that would make the value negative.
     const added = await session.query<{ notesapp_add_usage: string }>(
-      'select notesapp_add_usage($1, 4096::bigint)',
+      'select notesapp_add_usage($1, 4096::bigint, 0::bigint)',
       [scoped.workspaceId],
     );
     assert.equal(added[0]?.notesapp_add_usage, '4096');
 
+    // Neither the text part nor the attachment part can be negative.
     for (const delta of ['-1', '-4096', '-1000000']) {
-      const failure = await session.failure(
-        `select notesapp_add_usage($1, (${delta})::bigint)`,
+      const text = await session.failure(
+        `select notesapp_add_usage($1, (${delta})::bigint, 0::bigint)`,
         [scoped.workspaceId],
       );
-      assert.equal(failure.code, '23514');
+      assert.equal(text.code, '23514');
+      const attachment = await session.failure(
+        `select notesapp_add_usage($1, 0::bigint, (${delta})::bigint)`,
+        [scoped.workspaceId],
+      );
+      assert.equal(attachment.code, '23514');
     }
 
     const current = await session.query<{ bytes_used: string }>(

@@ -15,6 +15,7 @@
  */
 import { randomUUID } from 'node:crypto';
 import type {
+  NewAccountSettings,
   RegistrationGround,
   RegistrationStore,
   Result,
@@ -40,7 +41,8 @@ export type RegistrationInput = {
   readonly name: string;
   readonly password: string;
   readonly ground: RegistrationGround;
-  readonly limitBytes: bigint;
+  /** The controls that a new account starts with (record 0189). */
+  readonly newAccount: NewAccountSettings;
 };
 
 /** The account that a registration made, and its identity user. */
@@ -120,7 +122,7 @@ export async function registerIdentity(
       accountId: randomUUID(),
       workspaceId: randomUUID(),
       workspaceName: personalWorkspaceName,
-      limitBytes: input.limitBytes,
+      newAccount: input.newAccount,
     });
   } catch (error) {
     await deleteIdentityUser(auth, authUserId);

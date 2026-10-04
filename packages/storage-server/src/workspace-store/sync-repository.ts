@@ -566,14 +566,22 @@ async function writeChangeset(
     .insert(contents)
     .values([...contentRows.values()])
     .onConflictDoNothing()
-    .returning({ size: contents.size });
+    .returning({ size: contents.size, kind: contents.kind });
   const contentBytes = stored.reduce((total, row) => total + row.size, 0n);
+  const attachmentBytes = stored.reduce(
+    (total, row) => (row.kind === 'attachment' ? total + row.size : total),
+    0n,
+  );
 
-  // Retained metadata and receipts count toward the workspace quota.
+  // Retained metadata and receipts count toward the workspace quota. They
+  // live in PostgreSQL beside the Markdown, so they count as text, and the
+  // bytes of an attachment count toward the storage limit alone (record
+  // 0189).
   const addedBytes =
     contentBytes +
     BigInt(input.revisions.length) * revisionOverheadBytes +
     receiptOverheadBytes;
+  const textBytes = addedBytes - attachmentBytes;
   // The limit belongs to the account that owns the workspace, and the owner
   // pays for every workspace it owns (record 0112). The read takes the lock of
   // that account after the workspace lock this transaction holds, so two writes
@@ -581,9 +589,14 @@ async function writeChangeset(
   const usageRows = await client.query<{
     used_bytes: string;
     limit_bytes: string;
-  }>('select used_bytes, limit_bytes from notesapp_account_usage($1)', [
-    workspaceId,
-  ]);
+    text_bytes: string;
+    text_limit_bytes: string | null;
+    standing: string;
+  }>(
+    `select used_bytes, limit_bytes, text_bytes, text_limit_bytes, standing
+       from notesapp_account_usage($1)`,
+    [workspaceId],
+  );
   const usageRow = usageRows.rows[0];
   if (usageRow === undefined) {
     throw new OperationalError(
@@ -591,9 +604,17 @@ async function writeChangeset(
       'notesapp: the workspace has no owner account.',
     );
   }
+  // A locked owner writes nothing, whoever sends the write, and the function
+  // below refuses the same write again (records 0189 and 0201).
+  if (usageRow.standing !== 'active') return fail('account_locked', fileIds);
   const usage = {
     bytesUsed: BigInt(usageRow.used_bytes),
     limitBytes: BigInt(usageRow.limit_bytes),
+    textBytes: BigInt(usageRow.text_bytes),
+    textLimitBytes:
+      usageRow.text_limit_bytes === null
+        ? null
+        : BigInt(usageRow.text_limit_bytes),
   };
   // Only a changeset that deletes every file it touches and adds no content
   // byte may use the control reserve. A deletion that carried new content
@@ -606,19 +627,26 @@ async function writeChangeset(
   const control =
     contentBytes === 0n &&
     input.revisions.every((revision) => revision.deleted);
-  const limit = control
-    ? usage.limitBytes
-    : usage.limitBytes - controlReserveBytes;
-  if (usage.bytesUsed + addedBytes > limit) {
+  const reserve = control ? 0n : controlReserveBytes;
+  if (usage.bytesUsed + addedBytes > usage.limitBytes - reserve) {
+    return fail('quota', fileIds);
+  }
+  // The text limit sits inside the storage limit and keeps the same reserve,
+  // so a deletion still works on an account whose text is full.
+  if (
+    usage.textLimitBytes !== null &&
+    usage.textBytes + textBytes > usage.textLimitBytes - reserve
+  ) {
     return fail('quota', fileIds);
   }
   // The runtime role holds no UPDATE right on the usage or the cursor record,
   // so both changes go through a membership checked function of the schema
   // owner. A member can therefore not raise its own quota or reset the commit
   // order.
-  await client.query('select notesapp_add_usage($1, $2::bigint)', [
+  await client.query('select notesapp_add_usage($1, $2::bigint, $3::bigint)', [
     workspaceId,
-    addedBytes.toString(),
+    textBytes.toString(),
+    attachmentBytes.toString(),
   ]);
   const allocated = await client.query<{ cursor: string }>(
     'select notesapp_next_cursor($1) as cursor',

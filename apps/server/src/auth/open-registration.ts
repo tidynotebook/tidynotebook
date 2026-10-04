@@ -35,6 +35,7 @@ import { randomUUID } from 'node:crypto';
 import type {
   ConsentVersions,
   LegalDocuments,
+  NewAccountSettings,
   RegistrationPolicy,
   RegistrationStore,
   Result,
@@ -87,8 +88,8 @@ export type OpenRegistrationDependencies = {
   readonly challenges: SignUpChallenges;
   /** Marks one challenge used, and answers whether this was the first use. */
   readonly useChallenge: (digest: string, expiresAt: Date) => Promise<boolean>;
-  /** The byte limit that a new account starts with. */
-  readonly limitBytes: bigint;
+  /** The controls that a new account starts with (record 0189). */
+  readonly newAccount: NewAccountSettings;
   readonly clock: () => Date;
 };
 
@@ -225,7 +226,7 @@ export async function verifyOpen(
     accountId: randomUUID(),
     workspaceId: randomUUID(),
     workspaceName: personalWorkspaceName,
-    limitBytes: dependencies.limitBytes,
+    newAccount: dependencies.newAccount,
   });
   if (!made.ok) return fail(made.error.code);
   // The account keeps the versions that the person accepted at the sign-up.

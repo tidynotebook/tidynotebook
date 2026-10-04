@@ -47,6 +47,20 @@ export {
   registrationPolicies,
 } from './identity/installation.ts';
 export type {
+  AccountControls,
+  AccountFeatures,
+  ControlStanding,
+  ControlsChange,
+  ControlsWrite,
+  NewAccountSettings,
+} from './identity/controls.ts';
+export {
+  applyControlsChange,
+  controlStandings,
+  maxRemoveAfterDays,
+  newAccountSettingsHold,
+} from './identity/controls.ts';
+export type {
   AccountRecord,
   InstallationSettingsReader,
   InstallationStore,

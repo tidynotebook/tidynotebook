@@ -117,8 +117,8 @@ async function registerDirect(
   const session = await openSession(database.runtimeUrl);
   try {
     const rows = await session.query<{ account: string | null }>(
-      `select notesapp_register_account($1, $2, $3, $4, $5, 'Personal', $6::bigint)
-         as account`,
+      `select notesapp_register_account($1, $2, $3, $4, $5, 'Personal', $6::bigint,
+         'active', null) as account`,
       [
         authUserId,
         ground,
@@ -172,7 +172,11 @@ async function member(): Promise<{
     accountId: randomUUID(),
     workspaceId: randomUUID(),
     workspaceName: 'Personal',
-    limitBytes: defaultAccountLimitBytes,
+    newAccount: {
+      limitBytes: defaultAccountLimitBytes,
+      standing: 'active',
+      removeAfterSeconds: null,
+    },
   });
   assert.ok(made.ok, 'the member was not registered');
   return { accountId: made.value, authUserId, email };
@@ -601,7 +605,7 @@ await test('the account limit counts every workspace the owner holds', async () 
   const session = await openSession(database.runtimeUrl, joined.accountId);
   try {
     const failure = await session.failure(
-      'select notesapp_add_usage($1, $2::bigint)',
+      'select notesapp_add_usage($1, $2::bigint, 0::bigint)',
       [second, ((1n << 20n) + 3000n).toString()],
     );
     assert.equal(failure.code, 'NA003');

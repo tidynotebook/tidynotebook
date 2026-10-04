@@ -18,9 +18,10 @@ identity store, the attachment bytes, and provisioning.
   path and `publication-unlock.ts` its one write (0031), one repository per
   context holds the SQL, `index.ts` is the composition root, and `admin.ts`,
   `identity-store.ts`, `profiles.ts`, `snapshots.ts`, `attachments.ts`,
-  `attachment-row.ts` (0019) and `installation-settings-row.ts` (0148) own the
-  rest. `coordination.ts` holds what every process shares (0121, 0129), and
-  `sync-listener.ts` and `sync-hints.ts` the hints (0125, 0144).
+  `attachment-row.ts` (0019), `installation-settings-row.ts` (0148) and
+  `account-controls-row.ts` (0189) own the rest. `coordination.ts` holds what
+  every process shares (0121, 0129), `sync-listener.ts` and `sync-hints.ts`
+  the hints (0125, 0144).
 - `src/migrate.ts` runs the migrations and exports `requiredSchemaVersion`.
   `src/search-text.ts` writes the text of a search row and `searchTextRule`;
   a raised rule makes `src/search-index-migration.ts` redo each row (0167).
@@ -28,10 +29,10 @@ identity store, the attachment bytes, and provisioning.
 
 ## The one lock order
 
-Locks go installation, then workspaces by identifier, then accounts by
-identifier (0112). A write and a new workspace take the account lock after the
-workspace lock, in `notesapp_account_usage` and `notesapp_create_workspace`.
-An installation transaction starts with the installation lock.
+Locks go installation, workspaces by identifier, accounts by identifier
+(0112), then the account events (0190). A write and a new workspace take the
+account lock after the workspace lock, in `notesapp_account_usage` and
+`notesapp_create_workspace`.
 
 ## Allowed imports
 
@@ -53,11 +54,10 @@ package is Node only, so a browser package cannot import it.
 
 ## Testing conventions here
 
-A pure module such as `excerpt.ts` or `search-text.ts` has a `*.test.ts` next
-to it under `pnpm test:unit`. Everything that needs a database is an
-integration test in `tests/integration/`, with one disposable database per file
-against the service that `tools/test-database/ensure-postgres.sh` starts. Such
-a test proves the row access rule as well: `row-access.test.ts` is the pattern.
+A pure module such as `excerpt.ts` has a `*.test.ts` beside it. A test that
+needs a database lives in `tests/integration/`, one disposable database per
+file on the service of `tools/test-database/ensure-postgres.sh`, and it proves
+the row access rule too, as `row-access.test.ts` does.
 
 ## Forbidden here
 
@@ -68,15 +68,15 @@ a test proves the row access rule as well: `row-access.test.ts` is the pattern.
   adopts the owner of the link that the token digest opened, and the SQL binds
   the scope (0030, 0031). Its one write is `publication-unlock.ts`, which
   answers no password digest to a route.
-- No raw token and no raw ticket at rest. A digest column takes a SHA-256 in
+- No raw token, ticket or handoff at rest. A digest column takes a SHA-256 in
   lower case hexadecimal and a check constraint refuses another shape.
 - No SQL function that reaches workspace data without a membership check, or
   the digest of a secret on the reader path.
-- No schema change without a migration file and a raised
-  `requiredSchemaVersion`, and no edit of an applied migration.
+- No schema change without a migration and a raised `requiredSchemaVersion`.
+  No edit of an applied migration.
 - No superuser and no `BYPASSRLS` on the migration role, and no browser import.
-- No `new pg.Pool` outside `src/pool.ts`. `openPool` keeps the error listener
-  of an idle client and waits for every socket on `end()` (0090).
+- No `new pg.Pool` outside `src/pool.ts`, which keeps the idle error listener
+  and waits for every socket on `end()` (0090).
 
 ## Key files
 

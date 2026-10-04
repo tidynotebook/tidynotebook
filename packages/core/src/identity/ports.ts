@@ -9,6 +9,11 @@
  */
 import type { Actor } from './actor.ts';
 import type {
+  AccountControls,
+  ControlsWrite,
+  NewAccountSettings,
+} from './controls.ts';
+import type {
   AccountStanding,
   AccountState,
   InstallationRole,
@@ -38,6 +43,8 @@ export type AccountRecord = {
   readonly lastActiveAt: string | null;
   readonly usedBytes: bigint;
   readonly limitBytes: bigint;
+  /** The controls of the account and their revision (record 0189). */
+  readonly controls: AccountControls;
 };
 
 /** One invitation that nobody used or revoked. It holds no token. */
@@ -97,8 +104,18 @@ export type InstallationTransaction = {
    * of it, in the same transaction.
    */
   setState(accountId: string, state: AccountState): Promise<void>;
-  /** Changes the byte limit of one account. */
+  /** Changes the byte limit of one account, and raises its revision. */
   setLimit(accountId: string, limitBytes: bigint): Promise<void>;
+  /**
+   * Writes every control of one account with the revision that the writer
+   * read (record 0189). The answer is `changed` with nothing written when the
+   * stored revision differs, and `missing` for no account.
+   */
+  setControls(
+    accountId: string,
+    revision: number,
+    controls: AccountControls,
+  ): Promise<ControlsWrite>;
   /**
    * Removes one account and every workspace it owns, and keeps its row as a
    * tombstone (record 0111).
@@ -166,7 +183,8 @@ export type RegistrationRequest = {
   readonly accountId: string;
   readonly workspaceId: string;
   readonly workspaceName: string;
-  readonly limitBytes: bigint;
+  /** The controls that a new account starts with (record 0189). */
+  readonly newAccount: NewAccountSettings;
 };
 
 /** The one registration path of the installation. */

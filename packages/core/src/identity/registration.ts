@@ -9,6 +9,7 @@
  */
 import { fail, ok, type Result } from '../files/model.ts';
 import type { RegistrationRequest, RegistrationStore } from './ports.ts';
+import { newAccountSettingsHold } from './controls.ts';
 
 /**
  * The shape of an invitation token: 32 random bytes in base64url, with no
@@ -28,11 +29,7 @@ export const maxInvitationLifetimeHours = 365 * 24;
 /** The byte limit of a new account when the configuration names nothing. */
 export const defaultAccountLimitBytes = 5n * 1024n * 1024n * 1024n;
 
-/**
- * The largest byte limit, which is the largest integer that a JSON number
- * carries without loss.
- */
-export const maxAccountLimitBytes = BigInt(Number.MAX_SAFE_INTEGER);
+export { maxAccountLimitBytes } from './controls.ts';
 
 /** The name of the workspace that every new account starts with. */
 export const personalWorkspaceName = 'Personal';
@@ -85,8 +82,7 @@ export async function registerAccount(
     !/^[0-9a-f]{64}$/.test(request.ground.tokenDigest)
   )
     return fail('invitation_invalid');
-  if (request.limitBytes < 1n || request.limitBytes > maxAccountLimitBytes)
-    return fail('forbidden');
+  if (!newAccountSettingsHold(request.newAccount)) return fail('forbidden');
   const accountId = await store.register(request);
   if (accountId !== null) return ok(accountId);
   if (request.ground.kind === 'open') return fail('registration_closed');

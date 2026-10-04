@@ -30,6 +30,9 @@ import {
   type MailSettingsProblem,
   type StoredMailSettings,
   productName,
+  controlStandings,
+  maxRemoveAfterDays,
+  type NewAccountSettings,
 } from '@notesapp/core';
 import { Buffer } from 'node:buffer';
 import { readFile } from 'node:fs/promises';
@@ -200,9 +203,12 @@ export type ServerConfig = {
    * `pendingHours` is how long a sign-up of open registration waits for its
    * verification before the hourly run removes it (record 0114).
    * `proofDifficulty` is how many leading zero bits the proof of work of a
-   * sign-up needs (record 0115).
+   * sign-up needs (record 0115). `standing` and `removeAfterSeconds` are the
+   * controls that a new account starts with (record 0189): with no setting
+   * it is active with no removal time, as before. These three members are
+   * the `NewAccountSettings` of a registration.
    */
-  readonly accounts: {
+  readonly accounts: NewAccountSettings & {
     readonly limitBytes: bigint;
     readonly invitationLifetimeHours: number;
     readonly pendingHours: number;
@@ -308,6 +314,8 @@ export const optionalVariables = [
   'NOTESAPP_PRIVACY_FILE',
   'NOTESAPP_PRIVACY_VERSION',
   'NOTESAPP_BREACH_CHECK',
+  'NOTESAPP_NEW_ACCOUNT_STANDING',
+  'NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER',
 ] as const;
 
 const protectedFiles = {
@@ -539,6 +547,14 @@ const configSchema: SchemaObject = {
       maxLength: maxLegalVersionLength,
     },
     NOTESAPP_BREACH_CHECK: { type: 'string', enum: ['on', 'off'] },
+    NOTESAPP_NEW_ACCOUNT_STANDING: {
+      type: 'string',
+      enum: [...controlStandings],
+    },
+    NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER: {
+      type: 'string',
+      pattern: '^[1-9][0-9]{0,3}d$',
+    },
   },
 };
 
@@ -957,6 +973,32 @@ function readAccounts(raw: RawConfig): ServerConfig['accounts'] {
     issues.push(
       `NOTESAPP_PENDING_ACCOUNT_HOURS: name at most ${String(maxPendingAccountHours)} hours.`,
     );
+  // The controls of a new account (record 0189). With no setting a new
+  // account is active and has no removal time, as before. Only a locked
+  // account has a removal time, so a time with no locked standing stops
+  // startup rather than doing nothing.
+  const standing =
+    raw.NOTESAPP_NEW_ACCOUNT_STANDING === 'locked' ? 'locked' : 'active';
+  const removeAfterDays =
+    raw.NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER === undefined
+      ? null
+      : Number(raw.NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER.slice(0, -1));
+  if (removeAfterDays !== null && standing !== 'locked')
+    issues.push(
+      'NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER: only a locked account has a removal time. Set NOTESAPP_NEW_ACCOUNT_STANDING to locked, or remove this setting.',
+    );
+  if (removeAfterDays !== null && removeAfterDays > maxRemoveAfterDays)
+    issues.push(
+      `NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER: name at most ${String(maxRemoveAfterDays)} days, for example 30d.`,
+    );
   if (issues.length > 0) throw new ConfigError(issues);
-  return { limitBytes, invitationLifetimeHours, pendingHours, proofDifficulty };
+  return {
+    limitBytes,
+    standing,
+    removeAfterSeconds:
+      removeAfterDays === null ? null : removeAfterDays * 24 * 60 * 60,
+    invitationLifetimeHours,
+    pendingHours,
+    proofDifficulty,
+  };
 }

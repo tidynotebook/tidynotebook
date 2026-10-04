@@ -93,13 +93,15 @@ See [Stopping the server](self-hosting.md#stopping-the-server).
 
 ## Accounts
 
-| Setting                              | What it does                                                                                                              |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| `NOTESAPP_ACCOUNT_LIMIT_BYTES`       | The storage limit that a new account starts with, in bytes. An administrator changes the limit of one account.            |
-| `NOTESAPP_INVITATION_LIFETIME_HOURS` | How long a new invitation works, in hours.                                                                                |
-| `NOTESAPP_PENDING_ACCOUNT_HOURS`     | How long a sign-up waits for the person to open the link in its message, in hours.                                        |
-| `NOTESAPP_SIGNUP_DIFFICULTY`         | How hard the check of the browser is at a sign-up, from 8 to 28. Each step doubles the time that it takes.                |
-| `NOTESAPP_BREACH_CHECK`              | `on` checks a new password against the range service of Have I Been Pwned. `off` suits a server with no outbound network. |
+| Setting                              | What it does                                                                                                                                                                                                                                                                                      |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NOTESAPP_ACCOUNT_LIMIT_BYTES`       | The storage limit that a new account starts with, in bytes. An administrator changes the limit of one account.                                                                                                                                                                                    |
+| `NOTESAPP_INVITATION_LIFETIME_HOURS` | How long a new invitation works, in hours.                                                                                                                                                                                                                                                        |
+| `NOTESAPP_PENDING_ACCOUNT_HOURS`     | How long a sign-up waits for the person to open the link in its message, in hours.                                                                                                                                                                                                                |
+| `NOTESAPP_SIGNUP_DIFFICULTY`         | How hard the check of the browser is at a sign-up, from 8 to 28. Each step doubles the time that it takes.                                                                                                                                                                                        |
+| `NOTESAPP_BREACH_CHECK`              | `on` checks a new password against the range service of Have I Been Pwned. `off` suits a server with no outbound network.                                                                                                                                                                         |
+| `NOTESAPP_NEW_ACCOUNT_STANDING`      | `active` or `locked`, the standing that a new account starts with. Empty is `active`, so a new account uses every operation, as before. A `locked` account signs in to one screen and can only export its notes, remove itself, or open the account portal. The first account is always `active`. |
+| `NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER`  | How long a new `locked` account lives before the daily run removes it, as a number of days and `d`, for example `30d`. It needs `NOTESAPP_NEW_ACCOUNT_STANDING` set to `locked`. Empty sets no removal time.                                                                                      |
 
 ## Mail
 

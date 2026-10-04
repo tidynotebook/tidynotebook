@@ -748,3 +748,53 @@ await test('the list of every variable names each one once', () => {
     assert.ok(serverVariables.includes(name), name);
   assert.ok(serverVariables.every((name) => /^NOTESAPP_[A-Z_]+$/.test(name)));
 });
+
+await test('a new account starts active with no removal time unless the operator names one', () => {
+  const plain = loadServerConfig(environment({})).accounts;
+  assert.equal(plain.standing, 'active');
+  assert.equal(plain.removeAfterSeconds, null);
+  const locked = loadServerConfig(
+    environment({
+      NOTESAPP_NEW_ACCOUNT_STANDING: 'locked',
+      NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER: '30d',
+    }),
+  ).accounts;
+  assert.equal(locked.standing, 'locked');
+  assert.equal(locked.removeAfterSeconds, 30 * 24 * 60 * 60);
+  // A locked account may have no removal time.
+  assert.equal(
+    loadServerConfig(environment({ NOTESAPP_NEW_ACCOUNT_STANDING: 'locked' }))
+      .accounts.removeAfterSeconds,
+    null,
+  );
+});
+
+await test('a removal time needs a locked new account and a count of days', () => {
+  for (const overrides of [
+    { NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER: '30d' },
+    {
+      NOTESAPP_NEW_ACCOUNT_STANDING: 'active',
+      NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER: '30d',
+    },
+    {
+      NOTESAPP_NEW_ACCOUNT_STANDING: 'locked',
+      NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER: '30',
+    },
+    {
+      NOTESAPP_NEW_ACCOUNT_STANDING: 'locked',
+      NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER: '0d',
+    },
+    {
+      NOTESAPP_NEW_ACCOUNT_STANDING: 'locked',
+      NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER: '3651d',
+    },
+    { NOTESAPP_NEW_ACCOUNT_STANDING: 'paused' },
+  ])
+    assert.throws(
+      () => loadServerConfig(environment(overrides)),
+      (error: unknown) =>
+        error instanceof ConfigError &&
+        error.issues.some((issue) => issue.includes('NOTESAPP_NEW_ACCOUNT_')),
+      JSON.stringify(overrides),
+    );
+});

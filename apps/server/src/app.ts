@@ -843,7 +843,7 @@ async function composeApp(
         identity,
         content,
         servedOrigins: config.servedOrigins,
-        accountLimitBytes: config.accounts.limitBytes,
+        newAccount: config.accounts,
         open: {
           mail: strangerMail,
           origin: config.origin,

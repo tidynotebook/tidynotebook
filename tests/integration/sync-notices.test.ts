@@ -500,7 +500,24 @@ await test('a session end and an account change send their own hints', async () 
       }),
       [`a:${accountId}`, `a:${accountId}`],
     );
-    // An update that changes neither the state nor the removal is silent.
+    // A change of a control raises the revision, so it sends the hint of
+    // record 0129 too (record 0189), and the open application reads the
+    // account again.
+    assert.deepEqual(
+      await hintsOf(async () => {
+        await session.query(
+          "update accounts set standing = 'locked', controls_revision = controls_revision + 1 where id = $1",
+          [accountId],
+        );
+        await session.query(
+          "update accounts set standing = 'active', controls_revision = controls_revision + 1 where id = $1",
+          [accountId],
+        );
+      }),
+      [`a:${accountId}`, `a:${accountId}`],
+    );
+    // An update that changes neither the state, the removal nor the controls
+    // is silent.
     assert.deepEqual(
       await hintsOf(async () => {
         await session.query(

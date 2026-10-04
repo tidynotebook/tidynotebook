@@ -139,7 +139,21 @@ function createFakeStore(): FakeStore {
         ),
       memberships: () => Promise.resolve(memberships(actor.accountId)),
       standing: () =>
-        Promise.resolve({ role: 'member', usedBytes: 0n, limitBytes: 1n }),
+        Promise.resolve({
+          role: 'member',
+          usedBytes: 0n,
+          limitBytes: 1n,
+          controls: {
+            revision: 1,
+            standing: 'active',
+            removalAt: null,
+            limitBytes: 1n,
+            textLimitBytes: null,
+            publishedTransferLimitBytes: null,
+            downloadLimitBytes: null,
+            features: { teams: true, collaboration: true },
+          },
+        }),
       sessions: () => Promise.resolve([]),
       revokeSession: () => Promise.resolve(false),
       revokeOtherSessions: () => Promise.resolve(0),

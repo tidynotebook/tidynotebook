@@ -89,6 +89,16 @@ function createStore(seed: readonly AccountStanding[]): FakeInstallation {
         lastActiveAt: null,
         usedBytes: 0n,
         limitBytes: 100n,
+        controls: {
+          revision: 1,
+          standing: 'active',
+          removalAt: null,
+          limitBytes: 100n,
+          textLimitBytes: null,
+          publishedTransferLimitBytes: null,
+          downloadLimitBytes: null,
+          features: { teams: true, collaboration: true },
+        },
       },
     ]),
   );
@@ -137,8 +147,28 @@ function createStore(seed: readonly AccountStanding[]): FakeInstallation {
         setLimit: (accountId, limitBytes) => {
           const found = accounts.get(accountId);
           if (found !== undefined)
-            accounts.set(accountId, { ...found, limitBytes });
+            accounts.set(accountId, {
+              ...found,
+              limitBytes,
+              controls: {
+                ...found.controls,
+                limitBytes,
+                revision: found.controls.revision + 1,
+              },
+            });
           return Promise.resolve();
+        },
+        setControls: (accountId, revision, controls) => {
+          const found = accounts.get(accountId);
+          if (found === undefined) return Promise.resolve('missing' as const);
+          if (found.controls.revision !== revision)
+            return Promise.resolve('changed' as const);
+          accounts.set(accountId, {
+            ...found,
+            limitBytes: controls.limitBytes,
+            controls: { ...controls, revision: revision + 1 },
+          });
+          return Promise.resolve('written' as const);
         },
         remove: (accountId) => {
           accounts.delete(accountId);

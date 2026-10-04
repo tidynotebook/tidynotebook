@@ -91,7 +91,11 @@ async function register(authUserId: string): Promise<void> {
     accountId: randomUUID(),
     workspaceId: randomUUID(),
     workspaceName: 'Personal',
-    limitBytes: defaultAccountLimitBytes,
+    newAccount: {
+      limitBytes: defaultAccountLimitBytes,
+      standing: 'active',
+      removeAfterSeconds: null,
+    },
   });
   assert.ok(account !== null);
 }

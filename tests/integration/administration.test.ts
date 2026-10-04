@@ -304,7 +304,11 @@ await test('a failed link deletes the identity user that it made', async () => {
         name: 'Compensated',
         password: 'compensated-password-1',
         ground: { kind: 'invitation', tokenDigest: 'c'.repeat(64) },
-        limitBytes: defaultAccountLimitBytes,
+        newAccount: {
+          limitBytes: defaultAccountLimitBytes,
+          standing: 'active',
+          removeAfterSeconds: null,
+        },
       },
     );
     assert.deepEqual(refused, {

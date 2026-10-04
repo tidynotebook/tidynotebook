@@ -292,6 +292,11 @@ export type AcceptedInput = Omit<ChangesetInput, 'revisions'> & {
  * not count (record 0115). `consent_required` refuses a sign-up or a consent
  * that does not name the current versions of the legal documents (record
  * 0120).
+ *
+ * `account_locked` refuses an operation of a locked account that the list of
+ * record 0201 does not name, and a write to a workspace whose owner is locked.
+ * `controls_changed` refuses a write of the controls of an account whose
+ * revision is not the one that the writer read (record 0189).
  */
 /**
  * The domain codes of a note over a limit of the Markdown grammar (record
@@ -349,7 +354,9 @@ export type DomainErrorCode =
   | 'setting_locked'
   | 'setting_required'
   | 'legal_document_unfinished'
-  | 'mail_password_required';
+  | 'mail_password_required'
+  | 'account_locked'
+  | 'controls_changed';
 
 /**
  * A domain failure and the files it refers to.

@@ -12,6 +12,7 @@
  */
 import type { Actor, Role } from '../identity/actor.ts';
 import type { InstallationRole } from '../identity/installation.ts';
+import type { AccountControls } from '../identity/controls.ts';
 import type { ConsentRecord, ConsentVersions } from '../identity/legal.ts';
 
 /** The three appearance choices that an account can store. */
@@ -85,6 +86,11 @@ export type AccountOwnStanding = {
   readonly role: InstallationRole;
   readonly usedBytes: bigint;
   readonly limitBytes: bigint;
+  /**
+   * The controls of the account (record 0189). A locked account reads them
+   * too, because the one screen that it opens names them (record 0201).
+   */
+  readonly controls: AccountControls;
 };
 
 /** One session of an account, as the account sees it. It holds no token. */
