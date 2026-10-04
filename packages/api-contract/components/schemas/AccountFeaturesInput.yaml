@@ -1,0 +1,15 @@
+type: object
+description: >-
+  The feature switches that a write changes. A member that is absent keeps
+  its stored value.
+additionalProperties: false
+minProperties: 1
+properties:
+  teams:
+    type: boolean
+    writeOnly: true
+    description: Whether the account can use teams.
+  collaboration:
+    type: boolean
+    writeOnly: true
+    description: Whether the account can use collaboration.

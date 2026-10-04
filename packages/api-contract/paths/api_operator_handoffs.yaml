@@ -1,0 +1,33 @@
+post:
+  operationId: redeemAccountHandoff
+  summary: Redeem the token of one portal handoff.
+  description: >-
+    The account portal of the operator redeems the token that it received
+    and learns the account and its address (record 0190). A token works once
+    and for 60 seconds. A used, an expired and an unknown token all answer
+    404 with the code not_found.
+  tags:
+    - operator
+  security:
+    - operatorToken: []
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+  requestBody:
+    $ref: '../components/requestBodies/HandoffRedeem.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/HandoffAccount.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '404':
+      $ref: '../components/responses/OperatorNotFound.yaml'
+    '413':
+      $ref: '../components/responses/PayloadTooLarge.yaml'
+    '415':
+      $ref: '../components/responses/UnsupportedMediaType.yaml'
+    '429':
+      $ref: '../components/responses/RateLimited.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

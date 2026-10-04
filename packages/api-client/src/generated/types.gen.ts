@@ -120,6 +120,164 @@ export type Account = {
      * Whether the account must accept the current legal documents before the application opens (record 0120).
      */
     readonly consentRequired: boolean;
+    /**
+     * The controls of the account (record 0189). A locked account opens one screen, which names the way to unlock it (record 0201).
+     */
+    readonly controls: AccountControls;
+    /**
+     * Whether the installation names an account portal, which openAccountPortal opens (record 0190).
+     */
+    readonly accountPortal: boolean;
+};
+
+/**
+ * The controls of one account and their revision (record 0189). With no setting of the operator, an account is active, has every feature, and has no text, transfer or download limit.
+ */
+export type AccountControls = {
+    /**
+     * The revision of these controls.
+     */
+    readonly revision: ControlRevision;
+    /**
+     * Whether the account is active or locked.
+     */
+    readonly standing: AccountStanding;
+    /**
+     * The instant after which the daily run removes a locked account, or null. Only a locked account has one (record 0201).
+     */
+    readonly removalAt: string | null;
+    /**
+     * The most bytes that the workspaces of the account can use (record 0112).
+     */
+    readonly limitBytes: ByteCount;
+    /**
+     * The most bytes of text and history that the workspaces of the account can use, inside the storage limit, or null for no limit.
+     */
+    readonly textLimitBytes: ByteLimit;
+    /**
+     * The most bytes that the published pages of the account send in one calendar month in UTC, or null for no limit (record 0193).
+     */
+    readonly publishedTransferLimitBytes: ByteLimit;
+    /**
+     * The most bytes that the account downloads in one calendar month in UTC, or null for no limit (record 0193).
+     */
+    readonly downloadLimitBytes: ByteLimit;
+    /**
+     * The switch of each switchable feature.
+     */
+    readonly features: AccountFeatures;
+};
+
+/**
+ * A change of the controls of one account (record 0189). The write names the revision that it read, and the server refuses it with 409 and the code controls_changed when the stored revision differs, so nothing changes. A member that is absent keeps its stored value. Setting the standing to active clears the removal time, and only a locked account can have one.
+ */
+export type AccountControlsInput = {
+    /**
+     * The revision of the controls that the writer read.
+     */
+    revision: ControlRevision;
+    /**
+     * The new standing.
+     */
+    standing?: AccountStanding;
+    /**
+     * The new removal time of a locked account, or null for none.
+     */
+    removalAt?: string | null;
+    /**
+     * The new storage limit, in bytes.
+     */
+    limitBytes?: number;
+    /**
+     * The new text limit, in bytes, or null for no limit.
+     */
+    textLimitBytes?: ByteLimit;
+    /**
+     * The new published transfer limit of one month, in bytes, or null for no limit.
+     */
+    publishedTransferLimitBytes?: ByteLimit;
+    /**
+     * The new download limit of one month, in bytes, or null for no limit.
+     */
+    downloadLimitBytes?: ByteLimit;
+    /**
+     * The feature switches to change.
+     */
+    features?: AccountFeaturesInput;
+};
+
+/**
+ * One account event. It names the account and nothing else of it.
+ */
+export type AccountEvent = {
+    /**
+     * The position of the event.
+     */
+    readonly cursor: AccountEventCursor;
+    /**
+     * Identifier of the account.
+     */
+    readonly accountId: Uuid;
+    /**
+     * What happened.
+     */
+    readonly kind: AccountEventKind;
+    /**
+     * Instant at which it happened.
+     */
+    readonly occurredAt: string;
+};
+
+/**
+ * The position of one account event. The positions follow the order in which the events committed, so a reader that continues after the last one that it read misses no event.
+ */
+export type AccountEventCursor = number;
+
+/**
+ * What happened to an account (record 0190).
+ */
+export type AccountEventKind = 'made' | 'verified' | 'removed';
+
+/**
+ * The account events after a cursor, oldest first, and the cursor to read after next.
+ */
+export type AccountEventList = {
+    /**
+     * The events, oldest first.
+     */
+    readonly events: Array<AccountEvent>;
+    /**
+     * The position of the last event of the answer, or the position that the request named when the answer holds none.
+     */
+    readonly cursor: AccountEventCursor;
+};
+
+/**
+ * The switch of each feature that a later design makes switchable (record 0189). Every switch is on by default, and a self-hosted installation never needs to turn one off.
+ */
+export type AccountFeatures = {
+    /**
+     * Whether the account can use teams.
+     */
+    readonly teams: boolean;
+    /**
+     * Whether the account can use collaboration.
+     */
+    readonly collaboration: boolean;
+};
+
+/**
+ * The feature switches that a write changes. A member that is absent keeps its stored value.
+ */
+export type AccountFeaturesInput = {
+    /**
+     * Whether the account can use teams.
+     */
+    teams?: boolean;
+    /**
+     * Whether the account can use collaboration.
+     */
+    collaboration?: boolean;
 };
 
 /**
@@ -183,6 +341,11 @@ export type AccountSessionList = {
 };
 
 /**
+ * The standing of an account (record 0189). An active account uses every operation. A locked account keeps a fixed list of operations, and every other operation answers 423 with the code account_locked (record 0201).
+ */
+export type AccountStanding = 'active' | 'locked';
+
+/**
  * Whether an account can sign in. A disabled account keeps its notes and gets no session.
  */
 export type AccountState = 'enabled' | 'disabled';
@@ -238,6 +401,10 @@ export type AccountSummary = {
      */
     readonly storage: AccountStorage;
     /**
+     * The controls of the account and their revision (record 0189).
+     */
+    readonly controls: AccountControls;
+    /**
      * True for the account that reads the list.
      */
     readonly self: boolean;
@@ -259,6 +426,36 @@ export type AccountUpdateInput = {
      * The new limit of the account, in bytes.
      */
     limitBytes?: number;
+    /**
+     * A change of the controls, with the revision that the administrator read (record 0189). It cannot name a storage limit together with limitBytes.
+     */
+    controls?: unknown;
+};
+
+/**
+ * What one account uses: the stored bytes, the part of them that is text and history, and the transfer of the current month in UTC (record 0193).
+ */
+export type AccountUsage = {
+    /**
+     * The bytes that the workspaces of the account use.
+     */
+    readonly usedBytes: ByteCount;
+    /**
+     * The part of the used bytes that is text and history.
+     */
+    readonly textBytes: ByteCount;
+    /**
+     * The month of the two transfer counts.
+     */
+    readonly month: UsageMonth;
+    /**
+     * The bytes that the published pages of the account sent in the month.
+     */
+    readonly publishedTransferBytes: ByteCount;
+    /**
+     * The bytes that the account downloaded in the month.
+     */
+    readonly downloadBytes: ByteCount;
 };
 
 /**
@@ -522,6 +719,11 @@ export type BlockingReference = {
 export type ByteCount = number;
 
 /**
+ * A most number of bytes, or null for no limit.
+ */
+export type ByteLimit = number | null;
+
+/**
  * One atomic change of one or more files.
  */
 export type ChangesetInput = {
@@ -581,6 +783,11 @@ export type ContentDigest = string;
  * The content of one submitted revision. A note carries document work; an attachment names finalized bytes. The kind states which form applies.
  */
 export type ContentInput = MarkdownContentInput | AttachmentContentInput;
+
+/**
+ * The revision of the controls of one account. The server raises it on each change of a control, and a write names the revision that it read (record 0189).
+ */
+export type ControlRevision = number;
 
 /**
  * The identifiers, the path, and the first content of a new file.
@@ -906,6 +1113,35 @@ export type FinalizeAttachmentInput = {
      */
     message?: CheckpointMessage;
 };
+
+/**
+ * The account that opened the portal.
+ */
+export type HandoffAccount = {
+    /**
+     * Identifier of the account.
+     */
+    readonly accountId: Uuid;
+    /**
+     * Sign-in address of the account.
+     */
+    readonly email: string | null;
+};
+
+/**
+ * The token of a handoff that the portal received.
+ */
+export type HandoffRedeemInput = {
+    /**
+     * The token from the query of the portal address.
+     */
+    token: HandoffToken;
+};
+
+/**
+ * A single-use token of one portal handoff (record 0190). It works once and for 60 seconds.
+ */
+export type HandoffToken = string;
 
 /**
  * Liveness report of the service process.
@@ -1368,9 +1604,90 @@ export type MutationReceipt = {
 };
 
 /**
+ * One account as a service of the operator reads it (record 0190). It holds no note, no workspace and no published link.
+ */
+export type OperatorAccount = {
+    /**
+     * Identifier of the account.
+     */
+    readonly accountId: Uuid;
+    /**
+     * Sign-in address of the account.
+     */
+    readonly email: string | null;
+    /**
+     * Whether the account can sign in.
+     */
+    readonly state: AccountState;
+    /**
+     * Instant at which the account was made.
+     */
+    readonly createdAt: string;
+    /**
+     * The controls of the account and their revision.
+     */
+    readonly controls: AccountControls;
+    /**
+     * What the account uses.
+     */
+    readonly usage: AccountUsage;
+};
+
+/**
+ * The totals of the whole installation for one calendar month in UTC (record 0193).
+ */
+export type OperatorTotals = {
+    /**
+     * The month of the totals.
+     */
+    readonly month: UsageMonth;
+    /**
+     * The bytes that every published page sent in the month.
+     */
+    readonly publishedTransferBytes: ByteCount;
+    /**
+     * The bytes that every account downloaded in the month.
+     */
+    readonly downloadBytes: ByteCount;
+    /**
+     * The write calls to the object store in the month.
+     */
+    readonly objectWrites: number;
+    /**
+     * The read calls to the object store in the month.
+     */
+    readonly objectReads: number;
+};
+
+/**
  * A new password. The bounds are the ones of NIST SP 800-63B revision 4 for a password that is the only factor, and passwordBounds of the core states the same bounds. The server also refuses a password that a list of leaked passwords holds.
  */
 export type Password = string;
+
+/**
+ * The address that opens the account portal for the signed in account. It carries a single-use token that works for 60 seconds.
+ */
+export type PortalAddress = {
+    /**
+     * The full address of the portal, with the token in the query.
+     */
+    readonly url: string;
+};
+
+/**
+ * The path on the account portal to open.
+ */
+export type PortalOpenInput = {
+    /**
+     * The path on the portal.
+     */
+    path: PortalPath;
+};
+
+/**
+ * A path on the account portal of the operator. It starts with a slash, and each part is letters, digits and the marks of an address.
+ */
+export type PortalPath = string;
 
 /**
  * Settings that follow one account to every device.
@@ -2439,6 +2756,11 @@ export type UploadAttachmentInput = {
 };
 
 /**
+ * One calendar month in UTC, as the year and the month.
+ */
+export type UsageMonth = string;
+
+/**
  * A UUID that names one record.
  */
 export type Uuid = string;
@@ -2626,6 +2948,28 @@ export type WorkspaceNameInput = {
  */
 export type AccountWritable = {
     [key: string]: never;
+};
+
+/**
+ * The facts of an account that an administrator changes. A member that is absent keeps its stored value.
+ */
+export type AccountUpdateInputWritable = {
+    /**
+     * The new role of the account in the installation.
+     */
+    installationRole?: InstallationRole;
+    /**
+     * The new state. A disabled account loses every session and gets no new one.
+     */
+    state?: AccountState;
+    /**
+     * The new limit of the account, in bytes.
+     */
+    limitBytes?: number;
+    /**
+     * A change of the controls, with the revision that the administrator read (record 0189). It cannot name a storage limit together with limitBytes.
+     */
+    controls?: AccountControlsInput;
 };
 
 /**
@@ -3090,6 +3434,21 @@ export type ReportId = Uuid;
 export type LegalDocumentName = 'terms' | 'privacy';
 
 /**
+ * The sign-in address of the account to find. The server compares it in its one written form, in lower case.
+ */
+export type AccountAddress = EmailAddress;
+
+/**
+ * The calendar month in UTC of the totals. The server uses the current month when the parameter is absent.
+ */
+export type UsageMonthQuery = UsageMonth;
+
+/**
+ * The position of the last event that the reader already read. The answer holds the events after it, oldest first. The server uses 0 when the parameter is absent, which reads from the first event.
+ */
+export type AccountEventAfter = AccountEventCursor;
+
+/**
  * The note of a folder link that the page shows. Leave it out to read the list of every note that the link opens. A link over one note opens that note, so it needs no value here.
  */
 export type PublishedNote = PublishedNoteReference;
@@ -3192,7 +3551,7 @@ export type UnlockPublishedLink = UnlockPublishedLinkInput;
 /**
  * The facts of the account to change.
  */
-export type AccountUpdate = AccountUpdateInput;
+export type AccountUpdate = AccountUpdateInputWritable;
 
 /**
  * The address to invite.
@@ -3228,6 +3587,21 @@ export type LegalDocumentUpdate = LegalDocumentInput;
  * The current password of the account.
  */
 export type AccountRemoval = AccountRemovalInput;
+
+/**
+ * The change of the controls and the revision that it read.
+ */
+export type AccountControlsUpdate = AccountControlsInput;
+
+/**
+ * The token of the handoff.
+ */
+export type HandoffRedeem = HandoffRedeemInput;
+
+/**
+ * The path on the account portal to open.
+ */
+export type PortalOpen = PortalOpenInput;
 
 /**
  * The address and the password of the account that a person asks for.
@@ -3354,6 +3728,64 @@ export type AcceptLegalDocumentsResponses = {
 };
 
 export type AcceptLegalDocumentsResponse = AcceptLegalDocumentsResponses[keyof AcceptLegalDocumentsResponses];
+
+export type OpenAccountPortalData = {
+    /**
+     * The path on the account portal to open.
+     */
+    body: PortalOpen;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/account/portal';
+};
+
+export type OpenAccountPortalErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The requested resource does not exist.
+     */
+    404: ProblemDetails;
+    /**
+     * The request body is larger than the configured limit. A save of a note adds document_too_large, which means that the update or the document it would produce passes a bound of the workspace. The work stays on the device, which offers recovery rather than sending the same bytes again.
+     */
+    413: ProblemDetails;
+    /**
+     * The request media type is not supported.
+     */
+    415: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type OpenAccountPortalError = OpenAccountPortalErrors[keyof OpenAccountPortalErrors];
+
+export type OpenAccountPortalResponses = {
+    /**
+     * The address that opens the account portal.
+     */
+    200: PortalAddress;
+};
+
+export type OpenAccountPortalResponse = OpenAccountPortalResponses[keyof OpenAccountPortalResponses];
 
 export type UpdatePreferencesData = {
     /**
@@ -3746,6 +4178,10 @@ export type ListAccountsErrors = {
      */
     403: ProblemDetails;
     /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
      * The service failed to complete the request.
      */
     500: ProblemDetails;
@@ -3802,6 +4238,10 @@ export type RemoveAccountErrors = {
      */
     409: ProblemDetails;
     /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
      * The service failed to complete the request.
      */
     500: ProblemDetails;
@@ -3857,7 +4297,7 @@ export type UpdateAccountErrors = {
      */
     404: ProblemDetails;
     /**
-     * The change would leave the installation with no enabled administrator. The code is last_administrator. Nothing changed.
+     * The change would leave the installation with no enabled administrator, with the code last_administrator, or the controls changed after the revision that the change names, with the code controls_changed. Nothing changed.
      */
     409: ProblemDetails;
     /**
@@ -3868,6 +4308,10 @@ export type UpdateAccountErrors = {
      * The request media type is not supported.
      */
     415: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
     /**
      * The service failed to complete the request.
      */
@@ -4190,6 +4634,10 @@ export type UpdateProfileErrors = {
      */
     415: ProblemDetails;
     /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
      * Too many attempts. Try again later.
      */
     429: ProblemDetails;
@@ -4272,6 +4720,10 @@ export type GetInstallationErrors = {
      */
     403: ProblemDetails;
     /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
      * The service failed to complete the request.
      */
     500: ProblemDetails;
@@ -4330,6 +4782,10 @@ export type UpdateInstallationErrors = {
      */
     422: ProblemDetails;
     /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
      * The service failed to complete the request.
      */
     500: ProblemDetails;
@@ -4382,6 +4838,10 @@ export type RemoveLegalDocumentErrors = {
      */
     409: ProblemDetails;
     /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
      * The service failed to complete the request.
      */
     500: ProblemDetails;
@@ -4429,6 +4889,10 @@ export type GetLegalDocumentSettingsErrors = {
      * The actor may not perform this operation.
      */
     403: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
     /**
      * The service failed to complete the request.
      */
@@ -4497,6 +4961,10 @@ export type UpdateLegalDocumentErrors = {
      */
     422: ProblemDetails;
     /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
      * The service failed to complete the request.
      */
     500: ProblemDetails;
@@ -4543,6 +5011,10 @@ export type RemoveMailSettingsErrors = {
      * The setting cannot change now. The code is setting_locked when the server environment sets it, and setting_required when open registration needs it. Nothing changed.
      */
     409: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
     /**
      * The service failed to complete the request.
      */
@@ -4602,6 +5074,10 @@ export type UpdateMailSettingsErrors = {
      */
     415: ProblemDetails;
     /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
      * The service failed to complete the request.
      */
     500: ProblemDetails;
@@ -4649,6 +5125,10 @@ export type SendTestMessageErrors = {
      */
     422: ProblemDetails;
     /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
      * The service failed to complete the request.
      */
     500: ProblemDetails;
@@ -4691,6 +5171,10 @@ export type ListInvitationsErrors = {
      * The actor may not perform this operation.
      */
     403: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
     /**
      * The service failed to complete the request.
      */
@@ -4750,6 +5234,10 @@ export type CreateInvitationErrors = {
      */
     415: ProblemDetails;
     /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
      * The service failed to complete the request.
      */
     500: ProblemDetails;
@@ -4802,6 +5290,10 @@ export type RevokeInvitationErrors = {
      */
     404: ProblemDetails;
     /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
      * The service failed to complete the request.
      */
     500: ProblemDetails;
@@ -4817,6 +5309,403 @@ export type RevokeInvitationResponses = {
 };
 
 export type RevokeInvitationResponse = RevokeInvitationResponses[keyof RevokeInvitationResponses];
+
+export type FindOperatorAccountData = {
+    body?: never;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path?: never;
+    query: {
+        /**
+         * The sign-in address of the account to find. The server compares it in its one written form, in lower case.
+         */
+        address: EmailAddress;
+    };
+    url: '/api/operator/accounts';
+};
+
+export type FindOperatorAccountErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The operator API is off, with the code operator_off, or the request names no account or no valid handoff, with the code not_found.
+     */
+    404: ProblemDetails;
+    /**
+     * Too many attempts were made in a short time.
+     */
+    429: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type FindOperatorAccountError = FindOperatorAccountErrors[keyof FindOperatorAccountErrors];
+
+export type FindOperatorAccountResponses = {
+    /**
+     * One account as a service of the operator reads it.
+     */
+    200: OperatorAccount;
+};
+
+export type FindOperatorAccountResponse = FindOperatorAccountResponses[keyof FindOperatorAccountResponses];
+
+export type RemoveOperatorAccountData = {
+    body?: never;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path: {
+        /**
+         * Identifier of the account that the operation acts on.
+         */
+        accountId: Uuid;
+    };
+    query?: never;
+    url: '/api/operator/accounts/{accountId}';
+};
+
+export type RemoveOperatorAccountErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The operator API is off, with the code operator_off, or the request names no account or no valid handoff, with the code not_found.
+     */
+    404: ProblemDetails;
+    /**
+     * The change would leave the installation with no enabled administrator. The code is last_administrator. Nothing changed.
+     */
+    409: ProblemDetails;
+    /**
+     * Too many attempts were made in a short time.
+     */
+    429: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type RemoveOperatorAccountError = RemoveOperatorAccountErrors[keyof RemoveOperatorAccountErrors];
+
+export type RemoveOperatorAccountResponses = {
+    /**
+     * The named record no longer exists.
+     */
+    200: Removed;
+};
+
+export type RemoveOperatorAccountResponse = RemoveOperatorAccountResponses[keyof RemoveOperatorAccountResponses];
+
+export type ReadOperatorAccountData = {
+    body?: never;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path: {
+        /**
+         * Identifier of the account that the operation acts on.
+         */
+        accountId: Uuid;
+    };
+    query?: never;
+    url: '/api/operator/accounts/{accountId}';
+};
+
+export type ReadOperatorAccountErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The operator API is off, with the code operator_off, or the request names no account or no valid handoff, with the code not_found.
+     */
+    404: ProblemDetails;
+    /**
+     * Too many attempts were made in a short time.
+     */
+    429: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type ReadOperatorAccountError = ReadOperatorAccountErrors[keyof ReadOperatorAccountErrors];
+
+export type ReadOperatorAccountResponses = {
+    /**
+     * One account as a service of the operator reads it.
+     */
+    200: OperatorAccount;
+};
+
+export type ReadOperatorAccountResponse = ReadOperatorAccountResponses[keyof ReadOperatorAccountResponses];
+
+export type SetOperatorAccountControlsData = {
+    /**
+     * The change of the controls and the revision that it read.
+     */
+    body: AccountControlsUpdate;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path: {
+        /**
+         * Identifier of the account that the operation acts on.
+         */
+        accountId: Uuid;
+    };
+    query?: never;
+    url: '/api/operator/accounts/{accountId}/controls';
+};
+
+export type SetOperatorAccountControlsErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The operator API is off, with the code operator_off, or the request names no account or no valid handoff, with the code not_found.
+     */
+    404: ProblemDetails;
+    /**
+     * The controls changed after the revision that the write names. The code is controls_changed. Nothing changed, and the writer reads the controls again.
+     */
+    409: ProblemDetails;
+    /**
+     * The request body is larger than the configured limit. A save of a note adds document_too_large, which means that the update or the document it would produce passes a bound of the workspace. The work stays on the device, which offers recovery rather than sending the same bytes again.
+     */
+    413: ProblemDetails;
+    /**
+     * The request media type is not supported.
+     */
+    415: ProblemDetails;
+    /**
+     * Too many attempts were made in a short time.
+     */
+    429: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type SetOperatorAccountControlsError = SetOperatorAccountControlsErrors[keyof SetOperatorAccountControlsErrors];
+
+export type SetOperatorAccountControlsResponses = {
+    /**
+     * One account as a service of the operator reads it.
+     */
+    200: OperatorAccount;
+};
+
+export type SetOperatorAccountControlsResponse = SetOperatorAccountControlsResponses[keyof SetOperatorAccountControlsResponses];
+
+export type ListOperatorAccountEventsData = {
+    body?: never;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path?: never;
+    query?: {
+        /**
+         * The position of the last event that the reader already read. The answer holds the events after it, oldest first. The server uses 0 when the parameter is absent, which reads from the first event.
+         */
+        after?: AccountEventCursor;
+        /**
+         * Largest number of entries in one page. The server uses 100 when the parameter is absent and never returns more than 500.
+         */
+        limit?: number;
+    };
+    url: '/api/operator/events';
+};
+
+export type ListOperatorAccountEventsErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The installation names no operator token, so the operator API is off (record 0190). The code is operator_off.
+     */
+    404: ProblemDetails;
+    /**
+     * Too many attempts were made in a short time.
+     */
+    429: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type ListOperatorAccountEventsError = ListOperatorAccountEventsErrors[keyof ListOperatorAccountEventsErrors];
+
+export type ListOperatorAccountEventsResponses = {
+    /**
+     * The account events after a cursor.
+     */
+    200: AccountEventList;
+};
+
+export type ListOperatorAccountEventsResponse = ListOperatorAccountEventsResponses[keyof ListOperatorAccountEventsResponses];
+
+export type RedeemAccountHandoffData = {
+    /**
+     * The token of the handoff.
+     */
+    body: HandoffRedeem;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/operator/handoffs';
+};
+
+export type RedeemAccountHandoffErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The operator API is off, with the code operator_off, or the request names no account or no valid handoff, with the code not_found.
+     */
+    404: ProblemDetails;
+    /**
+     * The request body is larger than the configured limit. A save of a note adds document_too_large, which means that the update or the document it would produce passes a bound of the workspace. The work stays on the device, which offers recovery rather than sending the same bytes again.
+     */
+    413: ProblemDetails;
+    /**
+     * The request media type is not supported.
+     */
+    415: ProblemDetails;
+    /**
+     * Too many attempts were made in a short time.
+     */
+    429: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type RedeemAccountHandoffError = RedeemAccountHandoffErrors[keyof RedeemAccountHandoffErrors];
+
+export type RedeemAccountHandoffResponses = {
+    /**
+     * The account that opened the portal.
+     */
+    200: HandoffAccount;
+};
+
+export type RedeemAccountHandoffResponse = RedeemAccountHandoffResponses[keyof RedeemAccountHandoffResponses];
+
+export type ReadOperatorTotalsData = {
+    body?: never;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path?: never;
+    query?: {
+        /**
+         * The calendar month in UTC of the totals. The server uses the current month when the parameter is absent.
+         */
+        month?: UsageMonth;
+    };
+    url: '/api/operator/totals';
+};
+
+export type ReadOperatorTotalsErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The installation names no operator token, so the operator API is off (record 0190). The code is operator_off.
+     */
+    404: ProblemDetails;
+    /**
+     * Too many attempts were made in a short time.
+     */
+    429: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type ReadOperatorTotalsError = ReadOperatorTotalsErrors[keyof ReadOperatorTotalsErrors];
+
+export type ReadOperatorTotalsResponses = {
+    /**
+     * The totals of the installation for one month.
+     */
+    200: OperatorTotals;
+};
+
+export type ReadOperatorTotalsResponse = ReadOperatorTotalsResponses[keyof ReadOperatorTotalsResponses];
 
 export type GetReadinessData = {
     body?: never;
@@ -5126,6 +6015,10 @@ export type ListReportsErrors = {
      */
     403: ProblemDetails;
     /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
      * The service failed to complete the request.
      */
     500: ProblemDetails;
@@ -5178,6 +6071,10 @@ export type DismissReportErrors = {
      */
     404: ProblemDetails;
     /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
      * The service failed to complete the request.
      */
     500: ProblemDetails;
@@ -5229,6 +6126,10 @@ export type TakeDownReportedLinkErrors = {
      * The requested resource does not exist.
      */
     404: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
     /**
      * The service failed to complete the request.
      */
@@ -5556,6 +6457,10 @@ export type DeleteWorkspaceErrors = {
      */
     404: ProblemDetails;
     /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
      * The service failed to complete the request.
      */
     500: ProblemDetails;
@@ -5618,6 +6523,10 @@ export type UpdateWorkspaceErrors = {
      * The request media type is not supported.
      */
     415: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
     /**
      * The service failed to complete the request.
      */
@@ -5689,6 +6598,10 @@ export type UploadAttachmentErrors = {
      * The request is well formed but its content cannot be accepted. The code names the reason: invalid_path, invalid_graph, invalid_content, or too_many_files. A save of a note adds document_malformed for bytes that are not an update, document_dependency_missing for work that names an insertion or a deletion the document lacks, and document_unsupported for work that writes anything other than the text of the note, and unrenderable_note for a note over a limit of the Markdown grammar, with the limit in noteRefusal. Each of them leaves the accepted state exactly as it was.
      */
     422: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
     /**
      * The service failed to complete the request.
      */
@@ -5777,6 +6690,10 @@ export type FinalizeAttachmentErrors = {
      */
     422: ProblemDetails;
     /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
      * The operation needs a precondition and the request carried none. Repeat the request with the entity tag of the head that was read.
      */
     428: ProblemDetails;
@@ -5836,6 +6753,10 @@ export type GetAttachmentRevisionErrors = {
      * The requested resource does not exist.
      */
     404: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
     /**
      * The service failed to complete the request.
      */
@@ -5916,6 +6837,10 @@ export type CommitChangesetErrors = {
      */
     422: ProblemDetails;
     /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
      * The service failed to complete the request.
      */
     500: ProblemDetails;
@@ -5971,6 +6896,10 @@ export type GetDailyNoteSettingsErrors = {
      * The requested resource does not exist.
      */
     404: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
     /**
      * The service failed to complete the request.
      */
@@ -6038,6 +6967,10 @@ export type UpdateDailyNoteSettingsErrors = {
      * The request is well formed but its content cannot be accepted. The code names the reason: invalid_path, invalid_graph, invalid_content, or too_many_files. A save of a note adds document_malformed for bytes that are not an update, document_dependency_missing for work that names an insertion or a deletion the document lacks, and document_unsupported for work that writes anything other than the text of the note, and unrenderable_note for a note over a limit of the Markdown grammar, with the limit in noteRefusal. Each of them leaves the accepted state exactly as it was.
      */
     422: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
     /**
      * The service failed to complete the request.
      */
@@ -6226,6 +7159,10 @@ export type ListFilesErrors = {
      */
     404: ProblemDetails;
     /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
      * The service failed to complete the request.
      */
     500: ProblemDetails;
@@ -6304,6 +7241,10 @@ export type CreateFileErrors = {
      * The request is well formed but its content cannot be accepted. The code names the reason: invalid_path, invalid_graph, invalid_content, or too_many_files. A save of a note adds document_malformed for bytes that are not an update, document_dependency_missing for work that names an insertion or a deletion the document lacks, and document_unsupported for work that writes anything other than the text of the note, and unrenderable_note for a note over a limit of the Markdown grammar, with the limit in noteRefusal. Each of them leaves the accepted state exactly as it was.
      */
     422: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
     /**
      * The service failed to complete the request.
      */
@@ -6392,6 +7333,10 @@ export type DeleteFileErrors = {
      */
     422: ProblemDetails;
     /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
      * The operation needs a precondition and the request carried none. Repeat the request with the entity tag of the head that was read.
      */
     428: ProblemDetails;
@@ -6464,6 +7409,10 @@ export type GetFileErrors = {
      * The file identifier was permanently purged. It can never be written again, so a late offline change must be recovered into a new file.
      */
     410: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
     /**
      * The service failed to complete the request.
      */
@@ -6552,6 +7501,10 @@ export type UpdateFileErrors = {
      */
     422: ProblemDetails;
     /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
      * The operation needs a precondition and the request carried none. Repeat the request with the entity tag of the head that was read.
      */
     428: ProblemDetails;
@@ -6612,6 +7565,10 @@ export type ListBacklinksErrors = {
      */
     404: ProblemDetails;
     /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
      * The service failed to complete the request.
      */
     500: ProblemDetails;
@@ -6671,6 +7628,10 @@ export type ExportNoteErrors = {
      * The file identifier was permanently purged. It can never be written again, so a late offline change must be recovered into a new file.
      */
     410: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
     /**
      * The service failed to complete the request.
      */
@@ -6740,6 +7701,10 @@ export type ListHistoryErrors = {
      * The file identifier was permanently purged. It can never be written again, so a late offline change must be recovered into a new file.
      */
     410: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
     /**
      * The service failed to complete the request.
      */
@@ -6824,6 +7789,10 @@ export type RestoreRevisionErrors = {
      */
     422: ProblemDetails;
     /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
      * The service failed to complete the request.
      */
     500: ProblemDetails;
@@ -6898,6 +7867,10 @@ export type ImportWorkspaceErrors = {
      * The request is well formed but its content cannot be accepted. The code names the reason: invalid_path, invalid_graph, invalid_content, or too_many_files. A save of a note adds document_malformed for bytes that are not an update, document_dependency_missing for work that names an insertion or a deletion the document lacks, and document_unsupported for work that writes anything other than the text of the note, and unrenderable_note for a note over a limit of the Markdown grammar, with the limit in noteRefusal. Each of them leaves the accepted state exactly as it was.
      */
     422: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
     /**
      * Too many attempts were made in a short time.
      */
@@ -6976,6 +7949,10 @@ export type GetMutationReceiptErrors = {
      */
     422: ProblemDetails;
     /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
      * The service failed to complete the request.
      */
     500: ProblemDetails;
@@ -7027,6 +8004,10 @@ export type ListPublishedLinksErrors = {
      * The requested resource does not exist.
      */
     404: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
     /**
      * The service failed to complete the request.
      */
@@ -7095,6 +8076,10 @@ export type CreatePublishedLinkErrors = {
      */
     422: ProblemDetails;
     /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
      * The service failed to complete the request.
      */
     500: ProblemDetails;
@@ -7150,6 +8135,10 @@ export type RevokePublishedLinkErrors = {
      * The requested resource does not exist.
      */
     404: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
     /**
      * The service failed to complete the request.
      */
@@ -7218,6 +8207,10 @@ export type PurgeFilesErrors = {
      */
     422: ProblemDetails;
     /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
      * The service failed to complete the request.
      */
     500: ProblemDetails;
@@ -7281,6 +8274,10 @@ export type PreviewPurgeErrors = {
      */
     422: ProblemDetails;
     /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
      * The service failed to complete the request.
      */
     500: ProblemDetails;
@@ -7336,6 +8333,10 @@ export type GetRevisionErrors = {
      * The requested resource does not exist.
      */
     404: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
     /**
      * The service failed to complete the request.
      */
@@ -7397,6 +8398,10 @@ export type SearchFilesErrors = {
      * The requested resource does not exist.
      */
     404: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
     /**
      * The service failed to complete the request.
      */
@@ -7466,6 +8471,10 @@ export type GetChangesErrors = {
      * The request is well formed but its content cannot be accepted. The code names the reason: invalid_path, invalid_graph, invalid_content, or too_many_files. A save of a note adds document_malformed for bytes that are not an update, document_dependency_missing for work that names an insertion or a deletion the document lacks, and document_unsupported for work that writes anything other than the text of the note, and unrenderable_note for a note over a limit of the Markdown grammar, with the limit in noteRefusal. Each of them leaves the accepted state exactly as it was.
      */
     422: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
     /**
      * The service failed to complete the request.
      */
@@ -7537,6 +8546,10 @@ export type StartSnapshotErrors = {
      * The request is well formed but its content cannot be accepted. The code names the reason: invalid_path, invalid_graph, invalid_content, or too_many_files. A save of a note adds document_malformed for bytes that are not an update, document_dependency_missing for work that names an insertion or a deletion the document lacks, and document_unsupported for work that writes anything other than the text of the note, and unrenderable_note for a note over a limit of the Markdown grammar, with the limit in noteRefusal. Each of them leaves the accepted state exactly as it was.
      */
     422: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
     /**
      * The service failed to complete the request.
      */
@@ -7611,6 +8624,10 @@ export type GetSnapshotPageErrors = {
      */
     410: ProblemDetails;
     /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
      * The service failed to complete the request.
      */
     500: ProblemDetails;
@@ -7666,6 +8683,10 @@ export type GetTemplateSettingsErrors = {
      * The requested resource does not exist.
      */
     404: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
     /**
      * The service failed to complete the request.
      */
@@ -7734,6 +8755,10 @@ export type UpdateTemplateSettingsErrors = {
      */
     422: ProblemDetails;
     /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
      * The service failed to complete the request.
      */
     500: ProblemDetails;
@@ -7798,6 +8823,10 @@ export type ListDeletedFilesErrors = {
      * The requested resource does not exist.
      */
     404: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
     /**
      * The service failed to complete the request.
      */
@@ -7881,6 +8910,10 @@ export type RestoreFileErrors = {
      * The request is well formed but its content cannot be accepted. The code names the reason: invalid_path, invalid_graph, invalid_content, or too_many_files. A save of a note adds document_malformed for bytes that are not an update, document_dependency_missing for work that names an insertion or a deletion the document lacks, and document_unsupported for work that writes anything other than the text of the note, and unrenderable_note for a note over a limit of the Markdown grammar, with the limit in noteRefusal. Each of them leaves the accepted state exactly as it was.
      */
     422: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
     /**
      * The service failed to complete the request.
      */

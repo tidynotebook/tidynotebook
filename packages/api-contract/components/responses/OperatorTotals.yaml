@@ -1,0 +1,5 @@
+description: The totals of the installation for one month.
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/OperatorTotals.yaml'

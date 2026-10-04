@@ -26,5 +26,7 @@ get:
       $ref: '../components/responses/NotFound.yaml'
     '410':
       $ref: '../components/responses/Gone.yaml'
+    '423':
+      $ref: '../components/responses/AccountLocked.yaml'
     '500':
       $ref: '../components/responses/ServerError.yaml'

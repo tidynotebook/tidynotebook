@@ -1,0 +1,7 @@
+type: integer
+description: >-
+  The position of one account event. The positions follow the order in which
+  the events committed, so a reader that continues after the last one that it
+  read misses no event.
+minimum: 0
+maximum: 9007199254740991

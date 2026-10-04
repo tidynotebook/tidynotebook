@@ -1,0 +1,46 @@
+type: object
+description: >-
+  One account as a service of the operator reads it (record 0190). It holds
+  no note, no workspace and no published link.
+additionalProperties: false
+required:
+  - accountId
+  - email
+  - state
+  - createdAt
+  - controls
+  - usage
+properties:
+  accountId:
+    allOf:
+      - $ref: './Uuid.yaml'
+    readOnly: true
+    description: Identifier of the account.
+  email:
+    type:
+      - string
+      - 'null'
+    readOnly: true
+    description: Sign-in address of the account.
+    maxLength: 320
+  state:
+    allOf:
+      - $ref: './AccountState.yaml'
+    readOnly: true
+    description: Whether the account can sign in.
+  createdAt:
+    type: string
+    readOnly: true
+    description: Instant at which the account was made.
+    format: date-time
+    maxLength: 64
+  controls:
+    allOf:
+      - $ref: './AccountControls.yaml'
+    readOnly: true
+    description: The controls of the account and their revision.
+  usage:
+    allOf:
+      - $ref: './AccountUsage.yaml'
+    readOnly: true
+    description: What the account uses.

@@ -1,0 +1,5 @@
+description: The address that opens the account portal.
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/PortalAddress.yaml'

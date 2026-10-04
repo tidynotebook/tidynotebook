@@ -1,0 +1,14 @@
+type: object
+description: >-
+  The address that opens the account portal for the signed in account. It
+  carries a single-use token that works for 60 seconds.
+additionalProperties: false
+required:
+  - url
+properties:
+  url:
+    type: string
+    readOnly: true
+    description: The full address of the portal, with the token in the query.
+    format: uri
+    maxLength: 2400

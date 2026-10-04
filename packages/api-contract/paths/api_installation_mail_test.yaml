@@ -20,5 +20,7 @@ post:
       $ref: '../components/responses/Forbidden.yaml'
     '422':
       $ref: '../components/responses/MailFailed.yaml'
+    '423':
+      $ref: '../components/responses/AccountLocked.yaml'
     '500':
       $ref: '../components/responses/ServerError.yaml'

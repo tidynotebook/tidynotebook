@@ -1,0 +1,10 @@
+name: month
+in: query
+required: false
+style: form
+explode: true
+description: >-
+  The calendar month in UTC of the totals. The server uses the current month
+  when the parameter is absent.
+schema:
+  $ref: '../schemas/UsageMonth.yaml'

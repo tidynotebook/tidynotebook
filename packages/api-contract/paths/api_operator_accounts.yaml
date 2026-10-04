@@ -1,0 +1,27 @@
+get:
+  operationId: findOperatorAccount
+  summary: Find one account by its sign-in address.
+  description: >-
+    A service of the operator finds an account by its address and reads its
+    controls with their revision and its usage (record 0190). The answer
+    holds no note, no workspace and no published link.
+  tags:
+    - operator
+  security:
+    - operatorToken: []
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+    - $ref: '../components/parameters/AccountAddress.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/OperatorAccount.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '404':
+      $ref: '../components/responses/OperatorNotFound.yaml'
+    '429':
+      $ref: '../components/responses/RateLimited.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

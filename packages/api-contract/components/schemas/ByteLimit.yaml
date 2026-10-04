@@ -1,0 +1,6 @@
+type:
+  - integer
+  - 'null'
+description: A most number of bytes, or null for no limit.
+minimum: 1
+maximum: 9007199254740991

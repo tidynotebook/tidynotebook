@@ -1,0 +1,19 @@
+type: object
+description: The account that opened the portal.
+additionalProperties: false
+required:
+  - accountId
+  - email
+properties:
+  accountId:
+    allOf:
+      - $ref: './Uuid.yaml'
+    readOnly: true
+    description: Identifier of the account.
+  email:
+    type:
+      - string
+      - 'null'
+    readOnly: true
+    description: Sign-in address of the account.
+    maxLength: 320

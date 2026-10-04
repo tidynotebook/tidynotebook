@@ -1,0 +1,28 @@
+get:
+  operationId: readOperatorTotals
+  summary: Read the totals of the installation for one month.
+  description: >-
+    A service of the operator reads the totals of the whole installation for
+    one calendar month in UTC: the published transfer, the downloads, and the
+    calls to the object store (record 0193). A month with no count answers
+    zero for each total.
+  tags:
+    - operator
+  security:
+    - operatorToken: []
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+    - $ref: '../components/parameters/UsageMonthQuery.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/OperatorTotals.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '404':
+      $ref: '../components/responses/OperatorOff.yaml'
+    '429':
+      $ref: '../components/responses/RateLimited.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

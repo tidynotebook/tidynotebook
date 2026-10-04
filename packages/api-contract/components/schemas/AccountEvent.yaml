@@ -1,0 +1,30 @@
+type: object
+description: One account event. It names the account and nothing else of it.
+additionalProperties: false
+required:
+  - cursor
+  - accountId
+  - kind
+  - occurredAt
+properties:
+  cursor:
+    allOf:
+      - $ref: './AccountEventCursor.yaml'
+    readOnly: true
+    description: The position of the event.
+  accountId:
+    allOf:
+      - $ref: './Uuid.yaml'
+    readOnly: true
+    description: Identifier of the account.
+  kind:
+    allOf:
+      - $ref: './AccountEventKind.yaml'
+    readOnly: true
+    description: What happened.
+  occurredAt:
+    type: string
+    readOnly: true
+    description: Instant at which it happened.
+    format: date-time
+    maxLength: 64

@@ -1,0 +1,7 @@
+type: string
+description: >-
+  A single-use token of one portal handoff (record 0190). It works once and
+  for 60 seconds.
+minLength: 43
+maxLength: 43
+pattern: ^[A-Za-z0-9_-]{43}$

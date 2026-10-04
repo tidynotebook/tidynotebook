@@ -1,0 +1,6 @@
+description: The path on the account portal to open.
+required: true
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/PortalOpenInput.yaml'

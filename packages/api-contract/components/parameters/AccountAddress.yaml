@@ -1,0 +1,10 @@
+name: address
+in: query
+required: true
+style: form
+explode: true
+description: >-
+  The sign-in address of the account to find. The server compares it in its
+  one written form, in lower case.
+schema:
+  $ref: '../schemas/EmailAddress.yaml'

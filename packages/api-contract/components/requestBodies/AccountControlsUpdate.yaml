@@ -1,0 +1,6 @@
+description: The change of the controls and the revision that it read.
+required: true
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/AccountControlsInput.yaml'

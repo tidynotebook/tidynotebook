@@ -1,0 +1,6 @@
+type: string
+description: What happened to an account (record 0190).
+enum:
+  - made
+  - verified
+  - removed

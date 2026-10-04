@@ -1,9 +1,11 @@
 patch:
   operationId: updateAccount
-  summary: Change the role, the state, or the limit of one account.
+  summary: Change the role, the state, the limit, or the controls of one account.
   description: >-
     Only an administrator changes an account. A change that would leave the
-    installation with no enabled administrator is refused.
+    installation with no enabled administrator is refused. A change of the
+    controls names the revision that the administrator read, and an old
+    revision answers 409 with the code controls_changed (record 0189).
   tags:
     - administration
   parameters:
@@ -23,11 +25,13 @@ patch:
     '404':
       $ref: '../components/responses/NotFound.yaml'
     '409':
-      $ref: '../components/responses/LastAdministrator.yaml'
+      $ref: '../components/responses/AccountChangeConflict.yaml'
     '413':
       $ref: '../components/responses/PayloadTooLarge.yaml'
     '415':
       $ref: '../components/responses/UnsupportedMediaType.yaml'
+    '423':
+      $ref: '../components/responses/AccountLocked.yaml'
     '500':
       $ref: '../components/responses/ServerError.yaml'
 delete:
@@ -56,5 +60,7 @@ delete:
       $ref: '../components/responses/NotFound.yaml'
     '409':
       $ref: '../components/responses/LastAdministrator.yaml'
+    '423':
+      $ref: '../components/responses/AccountLocked.yaml'
     '500':
       $ref: '../components/responses/ServerError.yaml'

@@ -1,0 +1,5 @@
+type: string
+description: One calendar month in UTC, as the year and the month.
+minLength: 7
+maxLength: 7
+pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$

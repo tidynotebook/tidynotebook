@@ -42,6 +42,16 @@ function account(extra: Partial<AccountSummary> = {}): AccountSummary {
     createdAt: '2026-09-01T12:00:00.000Z',
     lastActiveAt: '2026-09-26T10:00:00.000Z',
     storage: { usedBytes: 1536, limitBytes: 5 * 1024 * 1024 * 1024 },
+    controls: {
+      revision: 1,
+      standing: 'active',
+      removalAt: null,
+      limitBytes: 5 * 1024 * 1024 * 1024,
+      textLimitBytes: null,
+      publishedTransferLimitBytes: null,
+      downloadLimitBytes: null,
+      features: { teams: true, collaboration: true },
+    },
     self: false,
     ...extra,
   };

@@ -1,0 +1,7 @@
+description: >-
+  The account is locked, and a locked account keeps only a fixed list of
+  operations (record 0201). The code is account_locked. Nothing changed.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/ProblemDetails.yaml'

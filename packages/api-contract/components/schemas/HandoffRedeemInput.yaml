@@ -1,0 +1,11 @@
+type: object
+description: The token of a handoff that the portal received.
+additionalProperties: false
+required:
+  - token
+properties:
+  token:
+    allOf:
+      - $ref: './HandoffToken.yaml'
+    writeOnly: true
+    description: The token from the query of the portal address.

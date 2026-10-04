@@ -400,3 +400,96 @@ await test('a settings write names only the settings it changes', () => {
   assert.equal(validate({ spellCheck: 'no' }), false);
   assert.equal(validate({ spellCheck: true, language: 'en' }), false);
 });
+
+await test('a write of the controls names the revision that it read', () => {
+  const validate = requestValidator('setOperatorAccountControls', 'body');
+  assert.ok(validate !== undefined);
+  assert.equal(validate({ revision: 3, standing: 'locked' }), true);
+  assert.equal(
+    validate({
+      revision: 1,
+      standing: 'locked',
+      removalAt: '2026-11-04T00:00:00Z',
+      limitBytes: 10_000_000_000,
+      textLimitBytes: 2_000_000_000,
+      publishedTransferLimitBytes: null,
+      downloadLimitBytes: 20_000_000_000,
+      features: { teams: false },
+    }),
+    true,
+  );
+  // A write with no revision could replace a newer state (record 0189).
+  assert.equal(validate({ standing: 'active' }), false);
+  // A revision alone changes nothing, so it is not a write.
+  assert.equal(validate({ revision: 1 }), false);
+  assert.equal(validate({ revision: 0, standing: 'active' }), false);
+  assert.equal(validate({ revision: 1, standing: 'paused' }), false);
+  // The storage limit is never absent, so it takes no null.
+  assert.equal(validate({ revision: 1, limitBytes: null }), false);
+  assert.equal(validate({ revision: 1, textLimitBytes: 0 }), false);
+  assert.equal(validate({ revision: 1, features: {} }), false);
+  assert.equal(validate({ revision: 1, features: { sharing: true } }), false);
+  assert.equal(validate({ revision: 1, accountId: 'x' }), false);
+  // An administrator writes the same shape through updateAccount.
+  const update = requestValidator('updateAccount', 'body');
+  assert.ok(update !== undefined);
+  assert.equal(update({ controls: { revision: 2, standing: 'active' } }), true);
+  assert.equal(update({ controls: { standing: 'active' } }), false);
+});
+
+await test('a portal path cannot leave the portal', () => {
+  const validate = requestValidator('openAccountPortal', 'body');
+  assert.ok(validate !== undefined);
+  assert.equal(validate({ path: '/' }), true);
+  assert.equal(validate({ path: '/plans' }), true);
+  assert.equal(validate({ path: '/billing/plans/' }), true);
+  // A second slash would name another host once it follows the portal.
+  assert.equal(validate({ path: '//evil.example' }), false);
+  assert.equal(validate({ path: '/a//b' }), false);
+  assert.equal(validate({ path: '/../admin' }), false);
+  assert.equal(validate({ path: '/plans?x=1' }), false);
+  assert.equal(validate({ path: 'plans' }), false);
+  assert.equal(validate({ path: '/' + 'a'.repeat(256) }), false);
+  assert.equal(validate({}), false);
+});
+
+await test('a handoff is redeemed with its token alone', () => {
+  const validate = requestValidator('redeemAccountHandoff', 'body');
+  assert.ok(validate !== undefined);
+  assert.equal(validate({ token: 'a'.repeat(43) }), true);
+  assert.equal(validate({ token: 'a'.repeat(42) }), false);
+  assert.equal(validate({ token: 'a'.repeat(42) + '=' }), false);
+  assert.equal(validate({ token: 'a'.repeat(43), accountId: 'x' }), false);
+});
+
+await test('every operator operation takes the operator token alone', () => {
+  const operator = operations.filter((operation) =>
+    operation.path.startsWith('/api/operator/'),
+  );
+  assert.deepEqual(operator.map((operation) => operation.id).sort(), [
+    'findOperatorAccount',
+    'listOperatorAccountEvents',
+    'readOperatorAccount',
+    'readOperatorTotals',
+    'redeemAccountHandoff',
+    'removeOperatorAccount',
+    'setOperatorAccountControls',
+  ]);
+  for (const operation of operator) {
+    assert.deepEqual(operation.security, [{ operatorToken: [] }], operation.id);
+    // The operator API reaches no note, no workspace and no published link
+    // (record 0190), so no operator address names one.
+    assert.doesNotMatch(operation.path, /workspace|file|publication/);
+    assert.ok(responseMediaTypes(operation.id, 404).length > 0, operation.id);
+    assert.ok(responseMediaTypes(operation.id, 401).length > 0, operation.id);
+  }
+  // No other operation takes the operator token.
+  for (const operation of operations)
+    if (!operation.path.startsWith('/api/operator/'))
+      assert.ok(
+        operation.security.every(
+          (requirement) => !('operatorToken' in requirement),
+        ),
+        operation.id,
+      );
+});

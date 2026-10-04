@@ -161,6 +161,31 @@ function readProperty(value: unknown, key: string): unknown {
   return record[key];
 }
 
+/**
+ * The controls of a cached account, read again from browser storage.
+ *
+ * Only the standing and the removal time change what this device shows, so
+ * the other members take the values of an installation that sets nothing.
+ */
+function cachedControls(value: unknown, limit: unknown): Account['controls'] {
+  const removalAt = readProperty(value, 'removalAt');
+  const revision = readProperty(value, 'revision');
+  return {
+    revision:
+      typeof revision === 'number' && Number.isSafeInteger(revision)
+        ? revision
+        : 1,
+    standing:
+      readProperty(value, 'standing') === 'locked' ? 'locked' : 'active',
+    removalAt: typeof removalAt === 'string' ? removalAt : null,
+    limitBytes: typeof limit === 'number' ? limit : 0,
+    textLimitBytes: null,
+    publishedTransferLimitBytes: null,
+    downloadLimitBytes: null,
+    features: { teams: true, collaboration: true },
+  };
+}
+
 /** Reads only a previously validated account shape from browser storage. */
 function readCachedAccount(): Account | null {
   try {
@@ -218,6 +243,11 @@ function readCachedAccount(): Account | null {
       // An account cached by an earlier release holds no consent state. The
       // next read of the account answers it (record 0120).
       consentRequired: row['consentRequired'] === true,
+      // An account cached by an earlier release holds no controls. It reads
+      // as active with no new limit until the server answers (record 0189),
+      // and a cached locked account stays locked.
+      controls: cachedControls(row['controls'], limit),
+      accountPortal: row['accountPortal'] === true,
     };
   } catch {
     return null;

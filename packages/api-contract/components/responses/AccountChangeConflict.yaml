@@ -1,0 +1,8 @@
+description: >-
+  The change would leave the installation with no enabled administrator, with
+  the code last_administrator, or the controls changed after the revision
+  that the change names, with the code controls_changed. Nothing changed.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/ProblemDetails.yaml'

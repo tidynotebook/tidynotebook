@@ -1,0 +1,59 @@
+type: object
+description: >-
+  A change of the controls of one account (record 0189). The write names the
+  revision that it read, and the server refuses it with 409 and the code
+  controls_changed when the stored revision differs, so nothing changes. A
+  member that is absent keeps its stored value. Setting the standing to
+  active clears the removal time, and only a locked account can have one.
+additionalProperties: false
+required:
+  - revision
+minProperties: 2
+properties:
+  revision:
+    allOf:
+      - $ref: './ControlRevision.yaml'
+    writeOnly: true
+    description: The revision of the controls that the writer read.
+  standing:
+    allOf:
+      - $ref: './AccountStanding.yaml'
+    writeOnly: true
+    description: The new standing.
+  removalAt:
+    oneOf:
+      - type: string
+        format: date-time
+        maxLength: 64
+      - type: 'null'
+    writeOnly: true
+    description: The new removal time of a locked account, or null for none.
+  limitBytes:
+    type: integer
+    writeOnly: true
+    description: The new storage limit, in bytes.
+    minimum: 1
+    maximum: 9007199254740991
+  textLimitBytes:
+    allOf:
+      - $ref: './ByteLimit.yaml'
+    writeOnly: true
+    description: The new text limit, in bytes, or null for no limit.
+  publishedTransferLimitBytes:
+    allOf:
+      - $ref: './ByteLimit.yaml'
+    writeOnly: true
+    description: >-
+      The new published transfer limit of one month, in bytes, or null for no
+      limit.
+  downloadLimitBytes:
+    allOf:
+      - $ref: './ByteLimit.yaml'
+    writeOnly: true
+    description: >-
+      The new download limit of one month, in bytes, or null for no limit.
+  features:
+    allOf:
+      - $ref: './AccountFeaturesInput.yaml'
+    writeOnly: true
+    description: The feature switches to change.

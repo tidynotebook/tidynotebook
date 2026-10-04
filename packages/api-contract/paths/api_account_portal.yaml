@@ -1,0 +1,34 @@
+post:
+  operationId: openAccountPortal
+  summary: Open the account portal of the operator for the signed in account.
+  description: >-
+    Makes a single-use token that works for 60 seconds and answers the named
+    path of the account portal with the token in the query (record 0190).
+    The server stores only the digest of the token, and the portal redeems it
+    through the operator API to learn the account. A locked account keeps
+    this operation, because the portal is the way to unlock it (record 0201).
+    An installation that names no portal answers 404 with the code
+    not_found.
+  tags:
+    - accounts
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+  requestBody:
+    $ref: '../components/requestBodies/PortalOpen.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/PortalAddress.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../components/responses/NotFound.yaml'
+    '413':
+      $ref: '../components/responses/PayloadTooLarge.yaml'
+    '415':
+      $ref: '../components/responses/UnsupportedMediaType.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

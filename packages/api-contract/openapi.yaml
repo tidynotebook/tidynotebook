@@ -51,6 +51,12 @@ tags:
     description: >-
       Authentication protocol endpoints. Better Auth implements them; the
       contract records their shapes so the generated client owns every call.
+  - name: operator
+    description: >-
+      Operations of a service of the operator, such as a billing service
+      (record 0190). They take the operator token and no session, set no
+      cookie, and never read or write a note, a workspace or a published
+      link.
 security:
   - sessionCookie: []
 paths:
@@ -118,6 +124,20 @@ paths:
     $ref: './paths/api_account_themes.yaml'
   /api/account/themes/{themeId}:
     $ref: './paths/api_account_themes_themeId.yaml'
+  /api/account/portal:
+    $ref: './paths/api_account_portal.yaml'
+  /api/operator/accounts:
+    $ref: './paths/api_operator_accounts.yaml'
+  /api/operator/accounts/{accountId}:
+    $ref: './paths/api_operator_accounts_accountId.yaml'
+  /api/operator/accounts/{accountId}/controls:
+    $ref: './paths/api_operator_accounts_accountId_controls.yaml'
+  /api/operator/totals:
+    $ref: './paths/api_operator_totals.yaml'
+  /api/operator/events:
+    $ref: './paths/api_operator_events.yaml'
+  /api/operator/handoffs:
+    $ref: './paths/api_operator_handoffs.yaml'
   /api/workspaces:
     $ref: './paths/api_workspaces.yaml'
   /api/workspaces/{workspaceId}:
@@ -188,6 +208,8 @@ components:
   securitySchemes:
     sessionCookie:
       $ref: './components/securitySchemes/sessionCookie.yaml'
+    operatorToken:
+      $ref: './components/securitySchemes/operatorToken.yaml'
   parameters:
     MutationId:
       $ref: './components/parameters/MutationId.yaml'
@@ -255,6 +277,12 @@ components:
       $ref: './components/parameters/ReportId.yaml'
     LegalDocumentName:
       $ref: './components/parameters/LegalDocumentName.yaml'
+    AccountAddress:
+      $ref: './components/parameters/AccountAddress.yaml'
+    UsageMonthQuery:
+      $ref: './components/parameters/UsageMonthQuery.yaml'
+    AccountEventAfter:
+      $ref: './components/parameters/AccountEventAfter.yaml'
   requestBodies:
     PreferencesUpdate:
       $ref: './components/requestBodies/PreferencesUpdate.yaml'
@@ -310,6 +338,12 @@ components:
       $ref: './components/requestBodies/LegalDocumentUpdate.yaml'
     AccountRemoval:
       $ref: './components/requestBodies/AccountRemoval.yaml'
+    AccountControlsUpdate:
+      $ref: './components/requestBodies/AccountControlsUpdate.yaml'
+    HandoffRedeem:
+      $ref: './components/requestBodies/HandoffRedeem.yaml'
+    PortalOpen:
+      $ref: './components/requestBodies/PortalOpen.yaml'
   responses:
     Health:
       $ref: './components/responses/Health.yaml'
@@ -479,6 +513,26 @@ components:
       $ref: './components/responses/AccountSessionList.yaml'
     SessionsRevoked:
       $ref: './components/responses/SessionsRevoked.yaml'
+    AccountLocked:
+      $ref: './components/responses/AccountLocked.yaml'
+    OperatorOff:
+      $ref: './components/responses/OperatorOff.yaml'
+    OperatorNotFound:
+      $ref: './components/responses/OperatorNotFound.yaml'
+    ControlsChanged:
+      $ref: './components/responses/ControlsChanged.yaml'
+    AccountChangeConflict:
+      $ref: './components/responses/AccountChangeConflict.yaml'
+    OperatorAccount:
+      $ref: './components/responses/OperatorAccount.yaml'
+    OperatorTotals:
+      $ref: './components/responses/OperatorTotals.yaml'
+    AccountEventList:
+      $ref: './components/responses/AccountEventList.yaml'
+    HandoffAccount:
+      $ref: './components/responses/HandoffAccount.yaml'
+    PortalAddress:
+      $ref: './components/responses/PortalAddress.yaml'
   schemas:
     HealthReport:
       $ref: './components/schemas/HealthReport.yaml'
@@ -812,3 +866,45 @@ components:
       $ref: './components/schemas/AccountSessionList.yaml'
     SessionsRevoked:
       $ref: './components/schemas/SessionsRevoked.yaml'
+    AccountStanding:
+      $ref: './components/schemas/AccountStanding.yaml'
+    ControlRevision:
+      $ref: './components/schemas/ControlRevision.yaml'
+    ByteLimit:
+      $ref: './components/schemas/ByteLimit.yaml'
+    AccountFeatures:
+      $ref: './components/schemas/AccountFeatures.yaml'
+    AccountFeaturesInput:
+      $ref: './components/schemas/AccountFeaturesInput.yaml'
+    AccountControls:
+      $ref: './components/schemas/AccountControls.yaml'
+    AccountControlsInput:
+      $ref: './components/schemas/AccountControlsInput.yaml'
+    UsageMonth:
+      $ref: './components/schemas/UsageMonth.yaml'
+    AccountUsage:
+      $ref: './components/schemas/AccountUsage.yaml'
+    OperatorAccount:
+      $ref: './components/schemas/OperatorAccount.yaml'
+    OperatorTotals:
+      $ref: './components/schemas/OperatorTotals.yaml'
+    AccountEventKind:
+      $ref: './components/schemas/AccountEventKind.yaml'
+    AccountEventCursor:
+      $ref: './components/schemas/AccountEventCursor.yaml'
+    AccountEvent:
+      $ref: './components/schemas/AccountEvent.yaml'
+    AccountEventList:
+      $ref: './components/schemas/AccountEventList.yaml'
+    HandoffToken:
+      $ref: './components/schemas/HandoffToken.yaml'
+    HandoffRedeemInput:
+      $ref: './components/schemas/HandoffRedeemInput.yaml'
+    HandoffAccount:
+      $ref: './components/schemas/HandoffAccount.yaml'
+    PortalPath:
+      $ref: './components/schemas/PortalPath.yaml'
+    PortalOpenInput:
+      $ref: './components/schemas/PortalOpenInput.yaml'
+    PortalAddress:
+      $ref: './components/schemas/PortalAddress.yaml'

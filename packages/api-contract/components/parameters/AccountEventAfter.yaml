@@ -1,0 +1,11 @@
+name: after
+in: query
+required: false
+style: form
+explode: true
+description: >-
+  The position of the last event that the reader already read. The answer
+  holds the events after it, oldest first. The server uses 0 when the
+  parameter is absent, which reads from the first event.
+schema:
+  $ref: '../schemas/AccountEventCursor.yaml'

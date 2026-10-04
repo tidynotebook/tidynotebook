@@ -32,6 +32,8 @@ get:
       $ref: '../components/responses/NotFound.yaml'
     '410':
       $ref: '../components/responses/Gone.yaml'
+    '423':
+      $ref: '../components/responses/AccountLocked.yaml'
     '500':
       $ref: '../components/responses/ServerError.yaml'
 put:
@@ -76,6 +78,8 @@ put:
       $ref: '../components/responses/UnsupportedMediaType.yaml'
     '422':
       $ref: '../components/responses/UnprocessableContent.yaml'
+    '423':
+      $ref: '../components/responses/AccountLocked.yaml'
     '428':
       $ref: '../components/responses/PreconditionRequired.yaml'
     '500':
@@ -123,6 +127,8 @@ delete:
       $ref: '../components/responses/UnsupportedMediaType.yaml'
     '422':
       $ref: '../components/responses/UnprocessableContent.yaml'
+    '423':
+      $ref: '../components/responses/AccountLocked.yaml'
     '428':
       $ref: '../components/responses/PreconditionRequired.yaml'
     '500':

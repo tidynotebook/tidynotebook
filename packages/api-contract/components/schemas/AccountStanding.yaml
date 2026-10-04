@@ -1,0 +1,8 @@
+type: string
+description: >-
+  The standing of an account (record 0189). An active account uses every
+  operation. A locked account keeps a fixed list of operations, and every
+  other operation answers 423 with the code account_locked (record 0201).
+enum:
+  - active
+  - locked

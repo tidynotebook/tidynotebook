@@ -1,0 +1,38 @@
+type: object
+description: >-
+  What one account uses: the stored bytes, the part of them that is text and
+  history, and the transfer of the current month in UTC (record 0193).
+additionalProperties: false
+required:
+  - usedBytes
+  - textBytes
+  - month
+  - publishedTransferBytes
+  - downloadBytes
+properties:
+  usedBytes:
+    allOf:
+      - $ref: './ByteCount.yaml'
+    readOnly: true
+    description: The bytes that the workspaces of the account use.
+  textBytes:
+    allOf:
+      - $ref: './ByteCount.yaml'
+    readOnly: true
+    description: The part of the used bytes that is text and history.
+  month:
+    allOf:
+      - $ref: './UsageMonth.yaml'
+    readOnly: true
+    description: The month of the two transfer counts.
+  publishedTransferBytes:
+    allOf:
+      - $ref: './ByteCount.yaml'
+    readOnly: true
+    description: >-
+      The bytes that the published pages of the account sent in the month.
+  downloadBytes:
+    allOf:
+      - $ref: './ByteCount.yaml'
+    readOnly: true
+    description: The bytes that the account downloaded in the month.

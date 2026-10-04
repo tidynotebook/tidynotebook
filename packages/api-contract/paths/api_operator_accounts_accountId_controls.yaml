@@ -1,0 +1,38 @@
+patch:
+  operationId: setOperatorAccountControls
+  summary: Change the controls of one account.
+  description: >-
+    A service of the operator changes the controls of one account with the
+    revision that it read (record 0189). A write that names an old revision
+    answers 409 with the code controls_changed and changes nothing, so a
+    write that was made from an old state cannot replace a newer one.
+  tags:
+    - operator
+  security:
+    - operatorToken: []
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+    - $ref: '../components/parameters/AccountId.yaml'
+  requestBody:
+    $ref: '../components/requestBodies/AccountControlsUpdate.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/OperatorAccount.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../components/responses/OperatorNotFound.yaml'
+    '409':
+      $ref: '../components/responses/ControlsChanged.yaml'
+    '413':
+      $ref: '../components/responses/PayloadTooLarge.yaml'
+    '415':
+      $ref: '../components/responses/UnsupportedMediaType.yaml'
+    '429':
+      $ref: '../components/responses/RateLimited.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

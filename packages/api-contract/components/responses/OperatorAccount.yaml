@@ -1,0 +1,5 @@
+description: One account as a service of the operator reads it.
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/OperatorAccount.yaml'

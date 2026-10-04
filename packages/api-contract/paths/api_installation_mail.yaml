@@ -27,6 +27,8 @@ put:
       $ref: '../components/responses/PayloadTooLarge.yaml'
     '415':
       $ref: '../components/responses/UnsupportedMediaType.yaml'
+    '423':
+      $ref: '../components/responses/AccountLocked.yaml'
     '500':
       $ref: '../components/responses/ServerError.yaml'
 delete:
@@ -51,5 +53,7 @@ delete:
       $ref: '../components/responses/Forbidden.yaml'
     '409':
       $ref: '../components/responses/SettingConflict.yaml'
+    '423':
+      $ref: '../components/responses/AccountLocked.yaml'
     '500':
       $ref: '../components/responses/ServerError.yaml'

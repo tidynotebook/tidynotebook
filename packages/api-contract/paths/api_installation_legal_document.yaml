@@ -19,6 +19,8 @@ get:
       $ref: '../components/responses/Unauthorized.yaml'
     '403':
       $ref: '../components/responses/Forbidden.yaml'
+    '423':
+      $ref: '../components/responses/AccountLocked.yaml'
     '500':
       $ref: '../components/responses/ServerError.yaml'
 put:
@@ -53,6 +55,8 @@ put:
       $ref: '../components/responses/UnsupportedMediaType.yaml'
     '422':
       $ref: '../components/responses/LegalDocumentUnfinished.yaml'
+    '423':
+      $ref: '../components/responses/AccountLocked.yaml'
     '500':
       $ref: '../components/responses/ServerError.yaml'
 delete:
@@ -78,5 +82,7 @@ delete:
       $ref: '../components/responses/Forbidden.yaml'
     '409':
       $ref: '../components/responses/SettingConflict.yaml'
+    '423':
+      $ref: '../components/responses/AccountLocked.yaml'
     '500':
       $ref: '../components/responses/ServerError.yaml'

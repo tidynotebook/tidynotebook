@@ -1,0 +1,39 @@
+type: object
+description: >-
+  The totals of the whole installation for one calendar month in UTC (record
+  0193).
+additionalProperties: false
+required:
+  - month
+  - publishedTransferBytes
+  - downloadBytes
+  - objectWrites
+  - objectReads
+properties:
+  month:
+    allOf:
+      - $ref: './UsageMonth.yaml'
+    readOnly: true
+    description: The month of the totals.
+  publishedTransferBytes:
+    allOf:
+      - $ref: './ByteCount.yaml'
+    readOnly: true
+    description: The bytes that every published page sent in the month.
+  downloadBytes:
+    allOf:
+      - $ref: './ByteCount.yaml'
+    readOnly: true
+    description: The bytes that every account downloaded in the month.
+  objectWrites:
+    type: integer
+    readOnly: true
+    description: The write calls to the object store in the month.
+    minimum: 0
+    maximum: 9007199254740991
+  objectReads:
+    type: integer
+    readOnly: true
+    description: The read calls to the object store in the month.
+    minimum: 0
+    maximum: 9007199254740991

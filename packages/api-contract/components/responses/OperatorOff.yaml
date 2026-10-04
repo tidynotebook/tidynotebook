@@ -1,0 +1,7 @@
+description: >-
+  The installation names no operator token, so the operator API is off
+  (record 0190). The code is operator_off.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/ProblemDetails.yaml'

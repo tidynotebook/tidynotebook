@@ -17,6 +17,8 @@ get:
       $ref: '../components/responses/Unauthorized.yaml'
     '403':
       $ref: '../components/responses/Forbidden.yaml'
+    '423':
+      $ref: '../components/responses/AccountLocked.yaml'
     '500':
       $ref: '../components/responses/ServerError.yaml'
 post:
@@ -47,5 +49,7 @@ post:
       $ref: '../components/responses/PayloadTooLarge.yaml'
     '415':
       $ref: '../components/responses/UnsupportedMediaType.yaml'
+    '423':
+      $ref: '../components/responses/AccountLocked.yaml'
     '500':
       $ref: '../components/responses/ServerError.yaml'

@@ -2,7 +2,7 @@
 
 import { client } from './client.gen.js';
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape, urlSearchParamsBodySerializer } from './client/index.js';
-import type { AcceptLegalDocumentsData, AcceptLegalDocumentsErrors, AcceptLegalDocumentsResponses, CommitChangesetData, CommitChangesetErrors, CommitChangesetResponses, CreateFileData, CreateFileErrors, CreateFileResponses, CreateInvitationData, CreateInvitationErrors, CreateInvitationResponses, CreateOwnerData, CreateOwnerErrors, CreateOwnerResponses, CreatePublishedLinkData, CreatePublishedLinkErrors, CreatePublishedLinkResponses, CreateWorkspaceData, CreateWorkspaceErrors, CreateWorkspaceResponses, DeleteFileData, DeleteFileErrors, DeleteFileResponses, DeleteThemeData, DeleteThemeErrors, DeleteThemeResponses, DeleteWorkspaceData, DeleteWorkspaceErrors, DeleteWorkspaceResponses, DismissReportData, DismissReportErrors, DismissReportResponses, ExportNoteData, ExportNoteErrors, ExportNoteResponses, ExportWorkspaceData, ExportWorkspaceErrors, ExportWorkspaceResponses, FinalizeAttachmentData, FinalizeAttachmentErrors, FinalizeAttachmentResponses, GetAccountData, GetAccountErrors, GetAccountResponses, GetAttachmentRevisionData, GetAttachmentRevisionErrors, GetAttachmentRevisionResponses, GetAuthSessionData, GetAuthSessionErrors, GetAuthSessionResponses, GetChangesData, GetChangesErrors, GetChangesResponses, GetDailyNoteSettingsData, GetDailyNoteSettingsErrors, GetDailyNoteSettingsResponses, GetFileData, GetFileErrors, GetFileResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetInstallationData, GetInstallationErrors, GetInstallationResponses, GetLegalDocumentData, GetLegalDocumentErrors, GetLegalDocumentResponses, GetLegalDocumentSettingsData, GetLegalDocumentSettingsErrors, GetLegalDocumentSettingsResponses, GetMutationReceiptData, GetMutationReceiptErrors, GetMutationReceiptResponses, GetPublishedAttachmentData, GetPublishedAttachmentErrors, GetPublishedAttachmentResponses, GetPublishedPageData, GetPublishedPageErrors, GetPublishedPageResponses, GetReadinessData, GetReadinessErrors, GetReadinessResponses, GetReportPageData, GetReportPageErrors, GetReportPageResponses, GetRevisionData, GetRevisionErrors, GetRevisionResponses, GetRootHealthData, GetRootHealthErrors, GetRootHealthResponses, GetRootReadinessData, GetRootReadinessErrors, GetRootReadinessResponses, GetSetupStatusData, GetSetupStatusErrors, GetSetupStatusResponses, GetSignUpChallengeData, GetSignUpChallengeErrors, GetSignUpChallengeResponses, GetSnapshotPageData, GetSnapshotPageErrors, GetSnapshotPageResponses, GetSyncProtocolData, GetSyncProtocolErrors, GetSyncProtocolResponses, GetTemplateSettingsData, GetTemplateSettingsErrors, GetTemplateSettingsResponses, ImportThemeData, ImportThemeErrors, ImportThemeResponses, ImportWorkspaceData, ImportWorkspaceErrors, ImportWorkspaceResponses, InspectWorkspaceExportData, InspectWorkspaceExportErrors, InspectWorkspaceExportResponses, ListAccountsData, ListAccountsErrors, ListAccountsResponses, ListBacklinksData, ListBacklinksErrors, ListBacklinksResponses, ListDeletedFilesData, ListDeletedFilesErrors, ListDeletedFilesResponses, ListFilesData, ListFilesErrors, ListFilesResponses, ListHistoryData, ListHistoryErrors, ListHistoryResponses, ListInvitationsData, ListInvitationsErrors, ListInvitationsResponses, ListPublishedLinksData, ListPublishedLinksErrors, ListPublishedLinksResponses, ListReportsData, ListReportsErrors, ListReportsResponses, ListSessionsData, ListSessionsErrors, ListSessionsResponses, ListWorkspacesData, ListWorkspacesErrors, ListWorkspacesResponses, OpenPublishedPageData, OpenPublishedPageErrors, OpenPublishedPageResponses, OpenSyncNoticesData, OpenSyncNoticesErrors, PreviewPurgeData, PreviewPurgeErrors, PreviewPurgeResponses, PurgeFilesData, PurgeFilesErrors, PurgeFilesResponses, ReadInvitationData, ReadInvitationErrors, ReadInvitationResponses, RegisterAccountData, RegisterAccountErrors, RegisterAccountResponses, RemoveAccountData, RemoveAccountErrors, RemoveAccountResponses, RemoveLegalDocumentData, RemoveLegalDocumentErrors, RemoveLegalDocumentResponses, RemoveMailSettingsData, RemoveMailSettingsErrors, RemoveMailSettingsResponses, RemoveOwnAccountData, RemoveOwnAccountErrors, RemoveOwnAccountResponses, ReportPublishedLinkData, ReportPublishedLinkErrors, ReportPublishedLinkResponses, RequestPasswordResetData, RequestPasswordResetErrors, RequestPasswordResetResponses, ResetPasswordData, ResetPasswordErrors, ResetPasswordResponses, RestoreFileData, RestoreFileErrors, RestoreFileResponses, RestoreRevisionData, RestoreRevisionErrors, RestoreRevisionResponses, RevokeInvitationData, RevokeInvitationErrors, RevokeInvitationResponses, RevokeOtherSessionsData, RevokeOtherSessionsErrors, RevokeOtherSessionsResponses, RevokePublishedLinkData, RevokePublishedLinkErrors, RevokePublishedLinkResponses, RevokeSessionData, RevokeSessionErrors, RevokeSessionResponses, SearchFilesData, SearchFilesErrors, SearchFilesResponses, SendTestMessageData, SendTestMessageErrors, SendTestMessageResponses, SignInWithPasswordData, SignInWithPasswordErrors, SignInWithPasswordResponses, SignOutData, SignOutErrors, SignOutResponses, SignUpAccountData, SignUpAccountErrors, SignUpAccountResponses, StartSnapshotData, StartSnapshotErrors, StartSnapshotResponses, TakeDownReportedLinkData, TakeDownReportedLinkErrors, TakeDownReportedLinkResponses, UnlockPublishedLinkData, UnlockPublishedLinkErrors, UnlockPublishedLinkResponses, UpdateAccountData, UpdateAccountErrors, UpdateAccountResponses, UpdateDailyNoteSettingsData, UpdateDailyNoteSettingsErrors, UpdateDailyNoteSettingsResponses, UpdateFileData, UpdateFileErrors, UpdateFileResponses, UpdateInstallationData, UpdateInstallationErrors, UpdateInstallationResponses, UpdateLegalDocumentData, UpdateLegalDocumentErrors, UpdateLegalDocumentResponses, UpdateMailSettingsData, UpdateMailSettingsErrors, UpdateMailSettingsResponses, UpdatePreferencesData, UpdatePreferencesErrors, UpdatePreferencesResponses, UpdateProfileData, UpdateProfileErrors, UpdateProfileResponses, UpdateTemplateSettingsData, UpdateTemplateSettingsErrors, UpdateTemplateSettingsResponses, UpdateWorkspaceData, UpdateWorkspaceErrors, UpdateWorkspaceResponses, UploadAttachmentData, UploadAttachmentErrors, UploadAttachmentResponses, VerifyAddressData, VerifyAddressErrors, VerifyAddressResponses } from './types.gen.js';
+import type { AcceptLegalDocumentsData, AcceptLegalDocumentsErrors, AcceptLegalDocumentsResponses, CommitChangesetData, CommitChangesetErrors, CommitChangesetResponses, CreateFileData, CreateFileErrors, CreateFileResponses, CreateInvitationData, CreateInvitationErrors, CreateInvitationResponses, CreateOwnerData, CreateOwnerErrors, CreateOwnerResponses, CreatePublishedLinkData, CreatePublishedLinkErrors, CreatePublishedLinkResponses, CreateWorkspaceData, CreateWorkspaceErrors, CreateWorkspaceResponses, DeleteFileData, DeleteFileErrors, DeleteFileResponses, DeleteThemeData, DeleteThemeErrors, DeleteThemeResponses, DeleteWorkspaceData, DeleteWorkspaceErrors, DeleteWorkspaceResponses, DismissReportData, DismissReportErrors, DismissReportResponses, ExportNoteData, ExportNoteErrors, ExportNoteResponses, ExportWorkspaceData, ExportWorkspaceErrors, ExportWorkspaceResponses, FinalizeAttachmentData, FinalizeAttachmentErrors, FinalizeAttachmentResponses, FindOperatorAccountData, FindOperatorAccountErrors, FindOperatorAccountResponses, GetAccountData, GetAccountErrors, GetAccountResponses, GetAttachmentRevisionData, GetAttachmentRevisionErrors, GetAttachmentRevisionResponses, GetAuthSessionData, GetAuthSessionErrors, GetAuthSessionResponses, GetChangesData, GetChangesErrors, GetChangesResponses, GetDailyNoteSettingsData, GetDailyNoteSettingsErrors, GetDailyNoteSettingsResponses, GetFileData, GetFileErrors, GetFileResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetInstallationData, GetInstallationErrors, GetInstallationResponses, GetLegalDocumentData, GetLegalDocumentErrors, GetLegalDocumentResponses, GetLegalDocumentSettingsData, GetLegalDocumentSettingsErrors, GetLegalDocumentSettingsResponses, GetMutationReceiptData, GetMutationReceiptErrors, GetMutationReceiptResponses, GetPublishedAttachmentData, GetPublishedAttachmentErrors, GetPublishedAttachmentResponses, GetPublishedPageData, GetPublishedPageErrors, GetPublishedPageResponses, GetReadinessData, GetReadinessErrors, GetReadinessResponses, GetReportPageData, GetReportPageErrors, GetReportPageResponses, GetRevisionData, GetRevisionErrors, GetRevisionResponses, GetRootHealthData, GetRootHealthErrors, GetRootHealthResponses, GetRootReadinessData, GetRootReadinessErrors, GetRootReadinessResponses, GetSetupStatusData, GetSetupStatusErrors, GetSetupStatusResponses, GetSignUpChallengeData, GetSignUpChallengeErrors, GetSignUpChallengeResponses, GetSnapshotPageData, GetSnapshotPageErrors, GetSnapshotPageResponses, GetSyncProtocolData, GetSyncProtocolErrors, GetSyncProtocolResponses, GetTemplateSettingsData, GetTemplateSettingsErrors, GetTemplateSettingsResponses, ImportThemeData, ImportThemeErrors, ImportThemeResponses, ImportWorkspaceData, ImportWorkspaceErrors, ImportWorkspaceResponses, InspectWorkspaceExportData, InspectWorkspaceExportErrors, InspectWorkspaceExportResponses, ListAccountsData, ListAccountsErrors, ListAccountsResponses, ListBacklinksData, ListBacklinksErrors, ListBacklinksResponses, ListDeletedFilesData, ListDeletedFilesErrors, ListDeletedFilesResponses, ListFilesData, ListFilesErrors, ListFilesResponses, ListHistoryData, ListHistoryErrors, ListHistoryResponses, ListInvitationsData, ListInvitationsErrors, ListInvitationsResponses, ListOperatorAccountEventsData, ListOperatorAccountEventsErrors, ListOperatorAccountEventsResponses, ListPublishedLinksData, ListPublishedLinksErrors, ListPublishedLinksResponses, ListReportsData, ListReportsErrors, ListReportsResponses, ListSessionsData, ListSessionsErrors, ListSessionsResponses, ListWorkspacesData, ListWorkspacesErrors, ListWorkspacesResponses, OpenAccountPortalData, OpenAccountPortalErrors, OpenAccountPortalResponses, OpenPublishedPageData, OpenPublishedPageErrors, OpenPublishedPageResponses, OpenSyncNoticesData, OpenSyncNoticesErrors, PreviewPurgeData, PreviewPurgeErrors, PreviewPurgeResponses, PurgeFilesData, PurgeFilesErrors, PurgeFilesResponses, ReadInvitationData, ReadInvitationErrors, ReadInvitationResponses, ReadOperatorAccountData, ReadOperatorAccountErrors, ReadOperatorAccountResponses, ReadOperatorTotalsData, ReadOperatorTotalsErrors, ReadOperatorTotalsResponses, RedeemAccountHandoffData, RedeemAccountHandoffErrors, RedeemAccountHandoffResponses, RegisterAccountData, RegisterAccountErrors, RegisterAccountResponses, RemoveAccountData, RemoveAccountErrors, RemoveAccountResponses, RemoveLegalDocumentData, RemoveLegalDocumentErrors, RemoveLegalDocumentResponses, RemoveMailSettingsData, RemoveMailSettingsErrors, RemoveMailSettingsResponses, RemoveOperatorAccountData, RemoveOperatorAccountErrors, RemoveOperatorAccountResponses, RemoveOwnAccountData, RemoveOwnAccountErrors, RemoveOwnAccountResponses, ReportPublishedLinkData, ReportPublishedLinkErrors, ReportPublishedLinkResponses, RequestPasswordResetData, RequestPasswordResetErrors, RequestPasswordResetResponses, ResetPasswordData, ResetPasswordErrors, ResetPasswordResponses, RestoreFileData, RestoreFileErrors, RestoreFileResponses, RestoreRevisionData, RestoreRevisionErrors, RestoreRevisionResponses, RevokeInvitationData, RevokeInvitationErrors, RevokeInvitationResponses, RevokeOtherSessionsData, RevokeOtherSessionsErrors, RevokeOtherSessionsResponses, RevokePublishedLinkData, RevokePublishedLinkErrors, RevokePublishedLinkResponses, RevokeSessionData, RevokeSessionErrors, RevokeSessionResponses, SearchFilesData, SearchFilesErrors, SearchFilesResponses, SendTestMessageData, SendTestMessageErrors, SendTestMessageResponses, SetOperatorAccountControlsData, SetOperatorAccountControlsErrors, SetOperatorAccountControlsResponses, SignInWithPasswordData, SignInWithPasswordErrors, SignInWithPasswordResponses, SignOutData, SignOutErrors, SignOutResponses, SignUpAccountData, SignUpAccountErrors, SignUpAccountResponses, StartSnapshotData, StartSnapshotErrors, StartSnapshotResponses, TakeDownReportedLinkData, TakeDownReportedLinkErrors, TakeDownReportedLinkResponses, UnlockPublishedLinkData, UnlockPublishedLinkErrors, UnlockPublishedLinkResponses, UpdateAccountData, UpdateAccountErrors, UpdateAccountResponses, UpdateDailyNoteSettingsData, UpdateDailyNoteSettingsErrors, UpdateDailyNoteSettingsResponses, UpdateFileData, UpdateFileErrors, UpdateFileResponses, UpdateInstallationData, UpdateInstallationErrors, UpdateInstallationResponses, UpdateLegalDocumentData, UpdateLegalDocumentErrors, UpdateLegalDocumentResponses, UpdateMailSettingsData, UpdateMailSettingsErrors, UpdateMailSettingsResponses, UpdatePreferencesData, UpdatePreferencesErrors, UpdatePreferencesResponses, UpdateProfileData, UpdateProfileErrors, UpdateProfileResponses, UpdateTemplateSettingsData, UpdateTemplateSettingsErrors, UpdateTemplateSettingsResponses, UpdateWorkspaceData, UpdateWorkspaceErrors, UpdateWorkspaceResponses, UploadAttachmentData, UploadAttachmentErrors, UploadAttachmentResponses, VerifyAddressData, VerifyAddressErrors, VerifyAddressResponses } from './types.gen.js';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -45,6 +45,25 @@ export const acceptLegalDocuments = <ThrowOnError extends boolean = false>(optio
             type: 'apiKey'
         }],
     url: '/api/account/consent',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Open the account portal of the operator for the signed in account.
+ *
+ * Makes a single-use token that works for 60 seconds and answers the named path of the account portal with the token in the query (record 0190). The server stores only the digest of the token, and the portal redeems it through the operator API to learn the account. A locked account keeps this operation, because the portal is the way to unlock it (record 0201). An installation that names no portal answers 404 with the code not_found.
+ */
+export const openAccountPortal = <ThrowOnError extends boolean = false>(options: Options<OpenAccountPortalData, ThrowOnError>): RequestResult<OpenAccountPortalResponses, OpenAccountPortalErrors, ThrowOnError> => (options.client ?? client).post<OpenAccountPortalResponses, OpenAccountPortalErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'notesapp_session',
+            type: 'apiKey'
+        }],
+    url: '/api/account/portal',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -200,9 +219,9 @@ export const removeAccount = <ThrowOnError extends boolean = false>(options: Opt
 });
 
 /**
- * Change the role, the state, or the limit of one account.
+ * Change the role, the state, the limit, or the controls of one account.
  *
- * Only an administrator changes an account. A change that would leave the installation with no enabled administrator is refused.
+ * Only an administrator changes an account. A change that would leave the installation with no enabled administrator is refused. A change of the controls names the revision that the administrator read, and an old revision answers 409 with the code controls_changed (record 0189).
  */
 export const updateAccount = <ThrowOnError extends boolean = false>(options: Options<UpdateAccountData, ThrowOnError>): RequestResult<UpdateAccountResponses, UpdateAccountErrors, ThrowOnError> => (options.client ?? client).patch<UpdateAccountResponses, UpdateAccountErrors, ThrowOnError>({
     security: [{
@@ -480,6 +499,91 @@ export const revokeInvitation = <ThrowOnError extends boolean = false>(options: 
             type: 'apiKey'
         }],
     url: '/api/invitations/{invitationId}',
+    ...options
+});
+
+/**
+ * Find one account by its sign-in address.
+ *
+ * A service of the operator finds an account by its address and reads its controls with their revision and its usage (record 0190). The answer holds no note, no workspace and no published link.
+ */
+export const findOperatorAccount = <ThrowOnError extends boolean = false>(options: Options<FindOperatorAccountData, ThrowOnError>): RequestResult<FindOperatorAccountResponses, FindOperatorAccountErrors, ThrowOnError> => (options.client ?? client).get<FindOperatorAccountResponses, FindOperatorAccountErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/operator/accounts',
+    ...options
+});
+
+/**
+ * Remove one account and every note it owns.
+ *
+ * A service of the operator removes one account through the one removal of record 0111. The account, its workspaces, its sessions and its settings go, and a tombstone stays. The removal of the last enabled administrator is refused.
+ */
+export const removeOperatorAccount = <ThrowOnError extends boolean = false>(options: Options<RemoveOperatorAccountData, ThrowOnError>): RequestResult<RemoveOperatorAccountResponses, RemoveOperatorAccountErrors, ThrowOnError> => (options.client ?? client).delete<RemoveOperatorAccountResponses, RemoveOperatorAccountErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/operator/accounts/{accountId}',
+    ...options
+});
+
+/**
+ * Read the controls and the usage of one account.
+ *
+ * A service of the operator reads the controls of one account with their revision, and its usage (record 0190). A later write of the controls names that revision.
+ */
+export const readOperatorAccount = <ThrowOnError extends boolean = false>(options: Options<ReadOperatorAccountData, ThrowOnError>): RequestResult<ReadOperatorAccountResponses, ReadOperatorAccountErrors, ThrowOnError> => (options.client ?? client).get<ReadOperatorAccountResponses, ReadOperatorAccountErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/operator/accounts/{accountId}',
+    ...options
+});
+
+/**
+ * Change the controls of one account.
+ *
+ * A service of the operator changes the controls of one account with the revision that it read (record 0189). A write that names an old revision answers 409 with the code controls_changed and changes nothing, so a write that was made from an old state cannot replace a newer one.
+ */
+export const setOperatorAccountControls = <ThrowOnError extends boolean = false>(options: Options<SetOperatorAccountControlsData, ThrowOnError>): RequestResult<SetOperatorAccountControlsResponses, SetOperatorAccountControlsErrors, ThrowOnError> => (options.client ?? client).patch<SetOperatorAccountControlsResponses, SetOperatorAccountControlsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/operator/accounts/{accountId}/controls',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * List the account events after a cursor.
+ *
+ * A service of the operator reads the events of the accounts after its own cursor, oldest first: an account was made, its address was verified, or it was removed (record 0190). The core sends nothing out, so the service asks. The positions follow the order of the commits, so a reader that continues after the last position misses no event.
+ */
+export const listOperatorAccountEvents = <ThrowOnError extends boolean = false>(options?: Options<ListOperatorAccountEventsData, ThrowOnError>): RequestResult<ListOperatorAccountEventsResponses, ListOperatorAccountEventsErrors, ThrowOnError> => (options?.client ?? client).get<ListOperatorAccountEventsResponses, ListOperatorAccountEventsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/operator/events',
+    ...options
+});
+
+/**
+ * Redeem the token of one portal handoff.
+ *
+ * The account portal of the operator redeems the token that it received and learns the account and its address (record 0190). A token works once and for 60 seconds. A used, an expired and an unknown token all answer 404 with the code not_found.
+ */
+export const redeemAccountHandoff = <ThrowOnError extends boolean = false>(options: Options<RedeemAccountHandoffData, ThrowOnError>): RequestResult<RedeemAccountHandoffResponses, RedeemAccountHandoffErrors, ThrowOnError> => (options.client ?? client).post<RedeemAccountHandoffResponses, RedeemAccountHandoffErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/operator/handoffs',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Read the totals of the installation for one month.
+ *
+ * A service of the operator reads the totals of the whole installation for one calendar month in UTC: the published transfer, the downloads, and the calls to the object store (record 0193). A month with no count answers zero for each total.
+ */
+export const readOperatorTotals = <ThrowOnError extends boolean = false>(options?: Options<ReadOperatorTotalsData, ThrowOnError>): RequestResult<ReadOperatorTotalsResponses, ReadOperatorTotalsErrors, ThrowOnError> => (options?.client ?? client).get<ReadOperatorTotalsResponses, ReadOperatorTotalsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/operator/totals',
     ...options
 });
 

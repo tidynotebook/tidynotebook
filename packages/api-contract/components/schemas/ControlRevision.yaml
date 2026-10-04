@@ -1,0 +1,7 @@
+type: integer
+description: >-
+  The revision of the controls of one account. The server raises it on each
+  change of a control, and a write names the revision that it read (record
+  0189).
+minimum: 1
+maximum: 9007199254740991

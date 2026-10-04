@@ -20,3 +20,10 @@ properties:
     description: The new limit of the account, in bytes.
     minimum: 1
     maximum: 9007199254740991
+  controls:
+    allOf:
+      - $ref: './AccountControlsInput.yaml'
+    description: >-
+      A change of the controls, with the revision that the administrator
+      read (record 0189). It cannot name a storage limit together with
+      limitBytes.

@@ -1,0 +1,57 @@
+get:
+  operationId: readOperatorAccount
+  summary: Read the controls and the usage of one account.
+  description: >-
+    A service of the operator reads the controls of one account with their
+    revision, and its usage (record 0190). A later write of the controls
+    names that revision.
+  tags:
+    - operator
+  security:
+    - operatorToken: []
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+    - $ref: '../components/parameters/AccountId.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/OperatorAccount.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '404':
+      $ref: '../components/responses/OperatorNotFound.yaml'
+    '429':
+      $ref: '../components/responses/RateLimited.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'
+delete:
+  operationId: removeOperatorAccount
+  summary: Remove one account and every note it owns.
+  description: >-
+    A service of the operator removes one account through the one removal of
+    record 0111. The account, its workspaces, its sessions and its settings
+    go, and a tombstone stays. The removal of the last enabled administrator
+    is refused.
+  tags:
+    - operator
+  security:
+    - operatorToken: []
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+    - $ref: '../components/parameters/AccountId.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/Removed.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '404':
+      $ref: '../components/responses/OperatorNotFound.yaml'
+    '409':
+      $ref: '../components/responses/LastAdministrator.yaml'
+    '429':
+      $ref: '../components/responses/RateLimited.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

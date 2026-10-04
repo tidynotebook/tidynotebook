@@ -1,0 +1,5 @@
+description: The account that opened the portal.
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/HandoffAccount.yaml'

@@ -7,6 +7,8 @@ required:
   - storage
   - preferences
   - consentRequired
+  - controls
+  - accountPortal
 properties:
   accountId:
     allOf:
@@ -48,3 +50,16 @@ properties:
     description: >-
       Whether the account must accept the current legal documents before the
       application opens (record 0120).
+  controls:
+    allOf:
+      - $ref: './AccountControls.yaml'
+    readOnly: true
+    description: >-
+      The controls of the account (record 0189). A locked account opens one
+      screen, which names the way to unlock it (record 0201).
+  accountPortal:
+    type: boolean
+    readOnly: true
+    description: >-
+      Whether the installation names an account portal, which
+      openAccountPortal opens (record 0190).

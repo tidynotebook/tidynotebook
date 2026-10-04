@@ -12,6 +12,7 @@ required:
   - createdAt
   - lastActiveAt
   - storage
+  - controls
   - self
 properties:
   accountId:
@@ -64,6 +65,11 @@ properties:
       - $ref: './AccountStorage.yaml'
     readOnly: true
     description: The usage and the limit of the account.
+  controls:
+    allOf:
+      - $ref: './AccountControls.yaml'
+    readOnly: true
+    description: The controls of the account and their revision (record 0189).
   self:
     type: boolean
     readOnly: true

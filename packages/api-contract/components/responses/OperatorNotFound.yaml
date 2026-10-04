@@ -1,0 +1,7 @@
+description: >-
+  The operator API is off, with the code operator_off, or the request names
+  no account or no valid handoff, with the code not_found.
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/ProblemDetails.yaml'

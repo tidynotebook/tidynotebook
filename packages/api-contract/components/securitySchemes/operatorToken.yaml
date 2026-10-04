@@ -1,0 +1,8 @@
+type: http
+scheme: bearer
+description: >-
+  The one secret of the operator of the installation, from the file that
+  NOTESAPP_OPERATOR_TOKEN_FILE names (record 0190). A service of the operator
+  sends it on each operator operation. The server compares it in constant
+  time, and the attempt counters bound the failures. With no file, every
+  operator operation answers 404 with the code operator_off.

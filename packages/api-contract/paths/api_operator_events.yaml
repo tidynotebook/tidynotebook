@@ -1,0 +1,30 @@
+get:
+  operationId: listOperatorAccountEvents
+  summary: List the account events after a cursor.
+  description: >-
+    A service of the operator reads the events of the accounts after its own
+    cursor, oldest first: an account was made, its address was verified, or
+    it was removed (record 0190). The core sends nothing out, so the service
+    asks. The positions follow the order of the commits, so a reader that
+    continues after the last position misses no event.
+  tags:
+    - operator
+  security:
+    - operatorToken: []
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+    - $ref: '../components/parameters/AccountEventAfter.yaml'
+    - $ref: '../components/parameters/PageLimit.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/AccountEventList.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '404':
+      $ref: '../components/responses/OperatorOff.yaml'
+    '429':
+      $ref: '../components/responses/RateLimited.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

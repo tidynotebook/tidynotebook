@@ -1,0 +1,5 @@
+description: The account events after a cursor.
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/AccountEventList.yaml'

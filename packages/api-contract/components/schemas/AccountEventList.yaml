@@ -1,0 +1,23 @@
+type: object
+description: >-
+  The account events after a cursor, oldest first, and the cursor to read
+  after next.
+additionalProperties: false
+required:
+  - events
+  - cursor
+properties:
+  events:
+    type: array
+    readOnly: true
+    description: The events, oldest first.
+    maxItems: 500
+    items:
+      $ref: './AccountEvent.yaml'
+  cursor:
+    allOf:
+      - $ref: './AccountEventCursor.yaml'
+    readOnly: true
+    description: >-
+      The position of the last event of the answer, or the position that the
+      request named when the answer holds none.

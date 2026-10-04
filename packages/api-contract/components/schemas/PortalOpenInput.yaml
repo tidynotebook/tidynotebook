@@ -1,0 +1,11 @@
+type: object
+description: The path on the account portal to open.
+additionalProperties: false
+required:
+  - path
+properties:
+  path:
+    allOf:
+      - $ref: './PortalPath.yaml'
+    writeOnly: true
+    description: The path on the portal.
