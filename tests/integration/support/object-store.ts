@@ -52,6 +52,8 @@ export type TestBucket = {
    * rule of the service that ends a stale upload does.
    */
   abortBehindTheStore(key: string): Promise<void>;
+  /** The identifiers of the multipart uploads of exactly `key`. */
+  uploadsOf(key: string): Promise<readonly string[]>;
   /** Removes every upload, every object, the bucket and the key files. */
   destroy(): Promise<void>;
 };
@@ -104,6 +106,17 @@ export async function createTestBucket(): Promise<TestBucket> {
             UploadId: upload.UploadId,
           }),
         );
+    },
+    uploadsOf: async (key) => {
+      const uploads = await client.send(
+        new ListMultipartUploadsCommand({
+          Bucket: settings.bucket,
+          Prefix: key,
+        }),
+      );
+      return (uploads.Uploads ?? [])
+        .filter((upload) => upload.Key === key)
+        .map((upload) => upload.UploadId ?? '');
     },
     destroy: async () => {
       store.close();

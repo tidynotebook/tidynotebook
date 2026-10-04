@@ -6,7 +6,11 @@
  * under the root. A write goes to a file of `tmp/` first and moves into place
  * whole, so a reader never sees half an object. An upload in parts keeps one
  * folder under `uploads/`, named by the digest of its key, with the key in
- * the file `key` and one file for each part.
+ * the file `key` and one file for each part. Only `startUpload` makes that
+ * folder, so a part that arrives after an abort has nowhere to go.
+ *
+ * A file of `tmp/` that a stopped process left behind goes with the daily
+ * cleanup of `apps/server/src/jobs/object-cleanup.ts`.
  */
 import { createHash, randomUUID } from 'node:crypto';
 import { createReadStream, createWriteStream, type Stats } from 'node:fs';
@@ -19,6 +23,7 @@ import {
   rename,
   rm,
   stat,
+  statfs,
   writeFile,
 } from 'node:fs/promises';
 import { dirname, join, relative, sep } from 'node:path';
@@ -32,6 +37,11 @@ import type {
   StoredObject,
   StoredPart,
 } from './port.ts';
+
+/** The tag of one write of a part file: its size and its time. */
+function tagOf(found: Stats): string {
+  return `${String(found.size)}:${String(found.mtimeMs)}`;
+}
 
 /** The stat of a path, or `null` when nothing is there. */
 async function statOf(path: string): Promise<Stats | null> {
@@ -79,20 +89,30 @@ export function openFileObjectStore(root: string): ObjectStore {
   }
 
   /**
-   * Writes a checked body to `target`, through a file of `tmp/`.
+   * Writes a checked body to `target`, through a file of `tmp/`, and
+   * answers whether `target` holds it.
    *
    * The caller checks the body with `exactLength` before its first await, so
-   * a failure of the sender in between has a reader that takes it.
+   * a failure of the sender in between has a reader that takes it. An
+   * object makes the folder of its key. A part does not: when its upload
+   * folder went away while the part arrived, the part goes too and the
+   * answer is `false`.
    */
-  async function writeWhole(target: string, checked: Readable): Promise<void> {
+  async function writeWhole(
+    target: string,
+    checked: Readable,
+    folder: 'make' | 'exists',
+  ): Promise<boolean> {
     const temporary = join(scratch, `object-${randomUUID()}`);
     try {
       await mkdir(scratch, { recursive: true });
       await pipeline(checked, createWriteStream(temporary, { mode: 0o600 }));
-      await mkdir(dirname(target), { recursive: true });
+      if (folder === 'make') await mkdir(dirname(target), { recursive: true });
       await rename(temporary, target);
+      return true;
     } catch (error) {
       await rm(temporary, { force: true });
+      if (folder === 'exists' && isMissing(error)) return false;
       throw error;
     }
   }
@@ -105,7 +125,8 @@ export function openFileObjectStore(root: string): ObjectStore {
       const partNumber = partNumberOf(name);
       if (partNumber === null) continue;
       const found = await statOf(join(folder, name));
-      if (found !== null) parts.push({ partNumber, size: found.size });
+      if (found !== null)
+        parts.push({ partNumber, size: found.size, tag: tagOf(found) });
     }
     return parts.sort((a, b) => a.partNumber - b.partNumber);
   }
@@ -114,7 +135,7 @@ export function openFileObjectStore(root: string): ObjectStore {
     kind: 'filesystem',
 
     async write(key, body, size) {
-      await writeWhole(pathOf(key), exactLength(body, size));
+      await writeWhole(pathOf(key), exactLength(body, size), 'make');
     },
 
     async read(key) {
@@ -192,27 +213,28 @@ export function openFileObjectStore(root: string): ObjectStore {
         checked.destroy();
         return false;
       }
-      await writeWhole(join(folder, partName(partNumber)), checked);
-      return true;
+      return writeWhole(join(folder, partName(partNumber)), checked, 'exists');
     },
 
     listParts: partsOf,
 
-    async completeUpload(key) {
-      const parts = await partsOf(key);
-      if (parts === null) return false;
+    async completeUpload(key, parts) {
       const folder = uploadFolder(key);
+      if ((await statOf(join(folder, 'key'))) === null) return 'missing';
+      // Each part is still the write that the caller checked.
+      for (const part of parts) {
+        const found = await statOf(join(folder, partName(part.partNumber)));
+        if (found === null || tagOf(found) !== part.tag) return 'changed';
+      }
       await mkdir(scratch, { recursive: true });
       const temporary = join(scratch, `object-${randomUUID()}`);
       try {
         const out = createWriteStream(temporary, { mode: 0o600 });
-        // Each part leaves the volume as soon as the whole file holds it, so
-        // the join needs the room of one part beside the parts, not of the
-        // whole archive.
-        for (const part of parts) {
+        for (const part of [...parts].sort(
+          (a, b) => a.partNumber - b.partNumber,
+        )) {
           const path = join(folder, partName(part.partNumber));
           await pipeline(createReadStream(path), out, { end: false });
-          await rm(path, { force: true });
         }
         await new Promise<void>((resolve, reject) => {
           out.once('error', reject);
@@ -222,11 +244,13 @@ export function openFileObjectStore(root: string): ObjectStore {
         await mkdir(dirname(target), { recursive: true });
         await rename(temporary, target);
       } catch (error) {
+        // The parts stay, so a later completion joins them again.
         await rm(temporary, { force: true });
         throw error;
       }
+      // The parts go only once the whole object is in place.
       await rm(folder, { recursive: true, force: true });
-      return true;
+      return 'completed';
     },
 
     async abortUpload(key) {
@@ -257,6 +281,11 @@ export function openFileObjectStore(root: string): ObjectStore {
       } catch {
         return false;
       }
+    },
+
+    async room() {
+      const volume = await statfs(root);
+      return volume.bavail * volume.bsize;
     },
 
     close() {

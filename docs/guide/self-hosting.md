@@ -197,7 +197,11 @@ each import there for the time of one request. The readiness check reports
 `storage` as degraded when the store does not answer.
 
 Each day, the server removes an upload that nobody finished and an import that
-nobody completed, when they are older than one day. The backup script of
+nobody completed, when they are older than one day. Also add a lifecycle rule
+to the bucket that aborts an incomplete multipart upload after one day. The
+rule removes an upload that the server can no longer find, for example after
+a stop in the middle of a start. R2, MinIO and AWS each have such a rule. The
+backup script of
 [Backup and restore](backup-and-restore.md) copies the storage directory and
 not a bucket, so back up the bucket with the tools of the store.
 
@@ -494,10 +498,14 @@ is not, and it names both values. `.env.example` holds both.
 An import takes a zip file of up to 4 GiB. The browser sends it in parts of
 50 MiB, so a proxy that refuses a large request body does not stop it, and
 each part must arrive within `NOTESAPP_REQUEST_TIMEOUT_MS`. The parts wait in
-the object store until the last one arrives. The import then keeps its zip
-file on the storage volume while it runs, and the file goes when the import
-ends. The server refuses an import that the free space of the volume, less
-512 MiB and less the zip files of the other imports that run now, cannot hold.
+the object store until the last one arrives. One account has one open import:
+a new import removes an earlier one that did not end, and an import that fails
+removes its parts at once. With the storage directory as the object store, the
+server refuses an import, and each part of it, that the free space of the
+volume, less 512 MiB, cannot hold. The import then keeps its zip file on the
+storage volume while it runs, and the file goes when the import ends. The
+server refuses an import that the free space of the volume, less 512 MiB and
+less the zip files of the other imports that run now, cannot hold.
 An export writes no file on the server: it streams the zip file as it reads
 the notes.
 

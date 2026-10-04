@@ -27,17 +27,32 @@ export function stagingKey(objectId: string): string {
 }
 
 /**
+ * The key where the file store kept the bytes of an upload before record
+ * 0192. An upload that was in flight across the upgrade still finalizes
+ * from it.
+ */
+export function legacyStagingKey(objectId: string): string {
+  return `tmp/${uuid(objectId)}.tmp`;
+}
+
+/** The prefix of every import of one account, in every workspace. */
+export function accountImportPrefix(accountId: string): string {
+  return `${stagingPrefix}imports/${uuid(accountId)}/`;
+}
+
+/**
  * The key of the archive of one import, and of the upload of its parts.
  *
- * It names the account that started the import, so another member of the
- * workspace cannot send a part to it or complete it.
+ * It names the account that started the import first, so another member of
+ * the workspace cannot send a part to it or complete it, and the one open
+ * import of an account is found under one prefix.
  */
 export function importKey(
   workspaceId: string,
   accountId: string,
   importId: string,
 ): string {
-  return `${stagingPrefix}imports/${uuid(workspaceId)}/${uuid(accountId)}/${uuid(importId)}.zip`;
+  return `${accountImportPrefix(accountId)}${uuid(workspaceId)}/${uuid(importId)}.zip`;
 }
 
 /**

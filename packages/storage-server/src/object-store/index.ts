@@ -7,11 +7,18 @@ import type { ObjectStore } from './port.ts';
 import { openS3ObjectStore, type S3StoreSettings } from './s3-store.ts';
 
 export { openFileObjectStore } from './file-store.ts';
-export { openS3ObjectStore, type S3StoreSettings } from './s3-store.ts';
+export {
+  defaultS3Timeouts,
+  openS3ObjectStore,
+  type S3StoreSettings,
+  type S3Timeouts,
+} from './s3-store.ts';
 export { BodyLengthError } from './exact-length.ts';
 export {
+  accountImportPrefix,
   attachmentKey,
   importKey,
+  legacyStagingKey,
   isObjectKey,
   stagingKey,
   stagingPrefix,
@@ -28,6 +35,7 @@ export type {
   PendingUpload,
   StoredObject,
   StoredPart,
+  UploadCompletion,
 } from './port.ts';
 
 /** Which store an installation names, with what that store needs. */

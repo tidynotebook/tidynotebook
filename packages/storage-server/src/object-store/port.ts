@@ -30,7 +30,22 @@ export type PendingUpload = {
 export type StoredPart = {
   readonly partNumber: number;
   readonly size: number;
+  /**
+   * What names this one write of the part: the entity tag of an S3 store,
+   * the size and the time of the file of a file store. A part sent again
+   * has another tag.
+   */
+  readonly tag: string;
 };
+
+/** What a completion of an upload did. */
+export type UploadCompletion =
+  /** The parts are one object at the key of the upload now. */
+  | 'completed'
+  /** No upload of the key is open. */
+  | 'missing'
+  /** A part is not the part that the caller checked: it was sent again. */
+  | 'changed';
 
 /** Which adapter answers. */
 export type ObjectStoreKind = 'filesystem' | 's3';
@@ -89,11 +104,15 @@ export type ObjectStore = {
   listParts(key: string): Promise<readonly StoredPart[] | null>;
 
   /**
-   * Joins the parts of the open upload of `key`, in the order of their
-   * numbers, into the object at `key`. Answers `false` when no upload of
-   * `key` is open.
+   * Joins exactly `parts`, which the caller read with `listParts` and
+   * checked, in the order of their numbers, into the object at `key`. A part
+   * that another write replaced since then answers `changed` and joins
+   * nothing. The parts stay until the object is whole.
    */
-  completeUpload(key: string): Promise<boolean>;
+  completeUpload(
+    key: string,
+    parts: readonly StoredPart[],
+  ): Promise<UploadCompletion>;
 
   /** Removes the open upload of `key` and its parts, when there is one. */
   abortUpload(key: string): Promise<void>;
@@ -103,6 +122,13 @@ export type ObjectStore = {
 
   /** Whether the store answers a read and takes a write now. */
   probe(): Promise<boolean>;
+
+  /**
+   * The bytes that the store can still take, or `null` when the store states
+   * no bound. The file store answers the free space of its volume, which
+   * every other file of the server shares.
+   */
+  room(): Promise<number | null>;
 
   /** Closes the connections of the store, when it holds any. */
   close(): void;

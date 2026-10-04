@@ -56,6 +56,9 @@ export type DatabaseRead = () => Promise<DatabaseProbeResult>;
 /** How long one readiness read of the database may take. */
 export const databaseReadTimeoutMs = 3000;
 
+/** How long one readiness read of the object store may take. */
+export const storeReadTimeoutMs = 3000;
+
 /** The answer of a read that did not complete. */
 const unreachableDatabase: DatabaseProbeResult = {
   reachable: false,
@@ -109,7 +112,9 @@ export function storageProbe(
         detail: 'Storage directory is not accessible or writable.',
       };
     }
-    if (!(await objects.probe()))
+    // A store that never answers must not hold the readiness answer, as a
+    // database that drops every packet does not (record 0192).
+    if (!(await withDeadline(() => objects.probe(), storeReadTimeoutMs, false)))
       return {
         name: 'storage',
         status: 'degraded',

@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import { deletionForHead, useDocumentHeaders } from './support/documents.ts';
 import { createHash, randomUUID } from 'node:crypto';
 import { PassThrough, Readable } from 'node:stream';
-import { mkdtemp, readdir, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -1348,6 +1348,41 @@ await test('a reclaim cannot take the bytes of a concurrent finalize', async () 
     doomed.data.digest,
   );
   assert.equal(await objectState(doomed.data.objectId), 'unavailable');
+});
+
+await test('an upload in flight across the upgrade still finalizes', async () => {
+  // Review of record 0192. Before the record the file store staged an upload
+  // at tmp/<object>.tmp. An upload that was in flight across the upgrade
+  // answered not found at its finalize, and its file stayed for ever.
+  const bytes = await uniquePng(31, 41, 59);
+  const digest = sha256Hex(bytes);
+  const objectId = randomUUID();
+  const actor = memberActor(ownerAccountId, workspaceId);
+  await attachments.saveTemporaryAttachment(actor, workspaceId, {
+    id: objectId,
+    digest,
+    size: BigInt(bytes.length),
+    mediaType: 'image/png',
+    width: 100,
+    height: 100,
+  });
+  await mkdir(join(storageRoot, 'tmp'), { recursive: true });
+  const legacy = join(storageRoot, 'tmp', `${objectId}.tmp`);
+  await writeFile(legacy, bytes);
+  const finalized = await attachments.finalizeAttachmentObject(
+    actor,
+    workspaceId,
+    objectId,
+    digest,
+  );
+  assert.equal(finalized.ok, true);
+  assert.equal(await stored(attachmentKey(workspaceId, digest)), true);
+  assert.deepEqual(
+    (await readdir(join(storageRoot, 'tmp'))).filter((name) =>
+      name.startsWith(objectId),
+    ),
+    [],
+  );
 });
 
 await test('a workspace deletion sends its attachment bytes to the reclaim', async () => {

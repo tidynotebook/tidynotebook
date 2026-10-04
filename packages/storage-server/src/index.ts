@@ -49,13 +49,16 @@ export {
   type AttachmentStoreOptions,
 } from './attachments.ts';
 export {
+  accountImportPrefix,
   attachmentKey,
   BodyLengthError,
   importKey,
+  legacyStagingKey,
   isObjectKey,
   openFileObjectStore,
   openObjectStore,
   openS3ObjectStore,
+  defaultS3Timeouts,
   removeStaleObjects,
   stagingKey,
   stagingLifetimeMs,
@@ -66,9 +69,11 @@ export {
   type ObjectStoreSettings,
   type PendingUpload,
   type S3StoreSettings,
+  type S3Timeouts,
   type StaleObjectsRemoved,
   type StoredObject,
   type StoredPart,
+  type UploadCompletion,
 } from './object-store/index.ts';
 export {
   authRole,

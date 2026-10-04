@@ -46,6 +46,36 @@ import type {
   StoredPart,
 } from './port.ts';
 
+/**
+ * How long a call to the service may wait.
+ *
+ * A finalize calls the store while it holds the lock of its workspace, so a
+ * call that never answers must end. `connectionMs` bounds the connection,
+ * and `idleMs` bounds a gap with no byte in either direction, which ends a
+ * call that hangs and still lets a large object stream for as long as it
+ * keeps moving. The idle bound is longer than the idle bound of an upload
+ * body, so a part that a slow sender feeds ends at the route first.
+ */
+export type S3Timeouts = {
+  readonly connectionMs: number;
+  readonly idleMs: number;
+};
+
+/** The timeouts of a deployment. */
+export const defaultS3Timeouts: S3Timeouts = {
+  connectionMs: 5_000,
+  idleMs: 30_000,
+};
+
+/**
+ * The most connections to the service at once.
+ *
+ * Every image that a reader opens streams through one connection while it
+ * lasts. The client of the SDK allows 50, which a few published pages with
+ * many images reach, so the pool is larger.
+ */
+const maxConnections = 256;
+
 /** Where the store is and the key pair that signs each call. */
 export type S3StoreSettings = {
   readonly bucket: string;
@@ -118,7 +148,10 @@ function checkedPrefix(prefix: string): string {
 }
 
 /** Opens the object store on one bucket of an S3 compatible service. */
-export function openS3ObjectStore(settings: S3StoreSettings): ObjectStore {
+export function openS3ObjectStore(
+  settings: S3StoreSettings,
+  timeouts: S3Timeouts = defaultS3Timeouts,
+): ObjectStore {
   const client = new S3Client({
     region: settings.region,
     ...(settings.endpoint === null
@@ -135,6 +168,12 @@ export function openS3ObjectStore(settings: S3StoreSettings): ObjectStore {
     // already states that failure, and the server logs through its one
     // module (record 0020), so the client logs nothing.
     logger: silentLogger,
+    requestHandler: {
+      connectionTimeout: timeouts.connectionMs,
+      socketTimeout: timeouts.idleMs,
+      httpAgent: { keepAlive: true, maxSockets: maxConnections },
+      httpsAgent: { keepAlive: true, maxSockets: maxConnections },
+    },
   });
   const Bucket = settings.bucket;
 
@@ -156,8 +195,8 @@ export function openS3ObjectStore(settings: S3StoreSettings): ObjectStore {
   async function partsOf(
     key: string,
     uploadId: string,
-  ): Promise<readonly (StoredPart & { readonly tag: string })[]> {
-    const parts: (StoredPart & { readonly tag: string })[] = [];
+  ): Promise<readonly StoredPart[]> {
+    const parts: StoredPart[] = [];
     let marker: string | undefined;
     for (;;) {
       const page = await client.send(
@@ -309,14 +348,29 @@ export function openS3ObjectStore(settings: S3StoreSettings): ObjectStore {
       const identifier = created.UploadId;
       if (identifier === undefined || identifier === '')
         throw new Error('notesapp: the object store started no upload.');
-      await client.send(
-        new PutObjectCommand({
-          Bucket,
-          Key: `${key}${uploadMarker}`,
-          Body: identifier,
-          ContentLength: Buffer.byteLength(identifier),
-        }),
-      );
+      try {
+        await client.send(
+          new PutObjectCommand({
+            Bucket,
+            Key: `${key}${uploadMarker}`,
+            Body: identifier,
+            ContentLength: Buffer.byteLength(identifier),
+          }),
+        );
+      } catch (error) {
+        // An upload with no marker is one that nothing finds again, so it
+        // goes at once.
+        await client
+          .send(
+            new AbortMultipartUploadCommand({
+              Bucket,
+              Key: key,
+              UploadId: identifier,
+            }),
+          )
+          .catch(() => undefined);
+        throw error;
+      }
     },
 
     async writePart(key, partNumber, body, size) {
@@ -353,42 +407,44 @@ export function openS3ObjectStore(settings: S3StoreSettings): ObjectStore {
       const uploadId = await uploadIdOf(checkedKey(key));
       if (uploadId === null) return null;
       try {
-        return (await partsOf(key, uploadId)).map(({ partNumber, size }) => ({
-          partNumber,
-          size,
-        }));
+        return await partsOf(key, uploadId);
       } catch (error) {
         if (isMissing(error)) return null;
         throw error;
       }
     },
 
-    async completeUpload(key) {
+    async completeUpload(key, parts) {
       const uploadId = await uploadIdOf(checkedKey(key));
-      if (uploadId === null) return false;
+      if (uploadId === null) return 'missing';
       try {
-        const parts = await partsOf(key, uploadId);
+        // The service joins exactly these writes of the parts. A part sent
+        // again has another tag, which the service refuses.
         await client.send(
           new CompleteMultipartUploadCommand({
             Bucket,
             Key: key,
             UploadId: uploadId,
             MultipartUpload: {
-              Parts: parts.map((part) => ({
-                PartNumber: part.partNumber,
-                ETag: part.tag,
-              })),
+              Parts: [...parts]
+                .sort((a, b) => a.partNumber - b.partNumber)
+                .map((part) => ({
+                  PartNumber: part.partNumber,
+                  ETag: part.tag,
+                })),
             },
           }),
         );
       } catch (error) {
-        if (isMissing(error)) return false;
+        if (isMissing(error)) return 'missing';
+        if (error instanceof S3ServiceException && error.name === 'InvalidPart')
+          return 'changed';
         throw error;
       }
       await client.send(
         new DeleteObjectCommand({ Bucket, Key: `${key}${uploadMarker}` }),
       );
-      return true;
+      return 'completed';
     },
 
     async abortUpload(key) {
@@ -427,6 +483,10 @@ export function openS3ObjectStore(settings: S3StoreSettings): ObjectStore {
       } catch {
         return false;
       }
+    },
+
+    room() {
+      return Promise.resolve(null);
     },
 
     close() {

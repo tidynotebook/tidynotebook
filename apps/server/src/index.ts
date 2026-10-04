@@ -47,6 +47,7 @@ export {
   coordinatedArchiveJobs,
   type ArchiveJobs,
 } from './routes/archive-jobs.ts';
+export { archiveDiskReserveBytes } from './routes/import.ts';
 export type {
   DatabaseRead,
   ProbeRequest,

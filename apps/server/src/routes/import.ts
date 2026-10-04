@@ -18,6 +18,11 @@
  * as it is open, so it leaves nothing behind when the import ends, fails, or
  * the process stops. Record 0170 bounds the rest:
  *
+ * - An account has one open import: a start removes every earlier import of
+ *   the account, and a client that fails removes its own with the abort.
+ * - When the store is the disk of the server, a start and each part are
+ *   refused with 507 before a byte is read when the free space, less
+ *   `archiveDiskReserveBytes`, cannot hold them.
  * - One import of an account and a few of the installation run at once. The
  *   completion holds the job, and a part holds none.
  * - The completion reserves its job with the size of its parts, and an
@@ -68,6 +73,7 @@ import {
 } from '@notesapp/core';
 import { markdownLimits, parseMarkdown } from '@notesapp/markdown';
 import {
+  accountImportPrefix,
   BodyLengthError,
   importKey,
   markdownLimitCode,
@@ -188,10 +194,7 @@ async function checkBodyRoom(
     otherJobBytes,
   );
   if (refusal === 'too_large') throw archiveTooLarge();
-  if (refusal === 'no_room')
-    throw new StorageFullError(
-      'The server has no room for this zip file now. Try again later, or ask the administrator for more room.',
-    );
+  if (refusal === 'no_room') throw noRoom();
 }
 
 /** The image type that the name of an entry states, from the list of core. */
@@ -634,6 +637,45 @@ function writer(request: FastifyRequest): {
   return { actor, workspaceId };
 }
 
+/** The sentence of a refusal for want of room on the disk of the server. */
+function noRoom(): StorageFullError {
+  return new StorageFullError(
+    'The server has no room for this zip file now. Try again later, or ask the administrator for more room.',
+  );
+}
+
+/**
+ * Refuses `bytes` that the store cannot take and still leave
+ * `archiveDiskReserveBytes`. A store that states no bound takes them.
+ */
+async function checkStoreRoom(
+  attachments: AttachmentStore,
+  bytes: number,
+): Promise<void> {
+  const room = await attachments.objects.room();
+  if (room !== null && room - archiveDiskReserveBytes < bytes) throw noRoom();
+}
+
+/**
+ * Removes every open import of an account and the archive of every
+ * completion of it that a refusal stopped, so one account holds the room of
+ * one import at most.
+ */
+async function removeAccountImports(
+  attachments: AttachmentStore,
+  accountId: string,
+): Promise<void> {
+  const prefix = accountImportPrefix(accountId);
+  const uploads: string[] = [];
+  for await (const upload of attachments.objects.listUploads(prefix))
+    uploads.push(upload.key);
+  for (const key of uploads) await attachments.objects.abortUpload(key);
+  const joined: string[] = [];
+  for await (const item of attachments.objects.list(prefix))
+    joined.push(item.key);
+  for (const key of joined) await attachments.objects.remove(key);
+}
+
 /** The answer to a part or a completion of an import that is not there. */
 function noImport(): NotFoundError {
   return new NotFoundError(
@@ -740,8 +782,12 @@ export function createImportHandlers(
   return {
     startWorkspaceImport: async (request): Promise<HandlerResult> => {
       const { actor, workspaceId } = writer(request);
-      if (readCount(request.body, 'size') > maxArchiveBytes)
-        throw archiveTooLarge();
+      const size = readCount(request.body, 'size');
+      if (size > maxArchiveBytes) throw archiveTooLarge();
+      // The earlier imports of the account go first, so their room counts
+      // for this one.
+      await removeAccountImports(attachments, actor.accountId);
+      await checkStoreRoom(attachments, size);
       const importId = randomUUID();
       await attachments.objects.startUpload(
         importKey(workspaceId, actor.accountId, importId),
@@ -776,6 +822,7 @@ export function createImportHandlers(
             message: `An import has ${String(maxImportParts)} parts at the most.`,
           },
         ]);
+      await checkStoreRoom(attachments, stated);
       const stored = await receivePart(
         request,
         attachments,
@@ -821,8 +868,12 @@ export function createImportHandlers(
           maxArchiveBytes,
           lease.otherDiskBytes,
         );
-        if (parts !== null && !(await attachments.objects.completeUpload(key)))
-          throw noImport();
+        if (parts !== null) {
+          // The store joins exactly the parts that passed the check above.
+          const joined = await attachments.objects.completeUpload(key, parts);
+          if (joined === 'missing') throw noImport();
+          if (joined === 'changed') throw partsRefused();
+        }
         const handle = await openArchiveFile(scratch, 'import');
         try {
           const stream = await attachments.objects.read(key);
@@ -857,6 +908,22 @@ export function createImportHandlers(
       } finally {
         await lease.release();
       }
+    },
+
+    abortWorkspaceImport: async (request): Promise<HandlerResult> => {
+      const { actor, workspaceId } = writer(request);
+      const key = importKey(
+        workspaceId,
+        actor.accountId,
+        readText(request.params, 'importId'),
+      );
+      await attachments.objects.abortUpload(key);
+      await attachments.objects.remove(key);
+      return {
+        status: 200,
+        mediaType: 'application/json',
+        body: { removed: true },
+      };
     },
   };
 }

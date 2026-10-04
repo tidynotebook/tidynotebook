@@ -91,6 +91,7 @@ import {
 } from './request-log.ts';
 import { createAttachmentCleanup } from './jobs/attachment-cleanup.ts';
 import { createObjectCleanup } from './jobs/object-cleanup.ts';
+import { scratchFolder } from './routes/scratch.ts';
 import { createPublicationCleanup } from './jobs/publication-cleanup.ts';
 import { createSyncCleanup } from './jobs/sync-cleanup.ts';
 import { createServerLogger, errorName } from './logging.ts';
@@ -897,7 +898,10 @@ async function composeApp(
   };
   const cleanupSync = createSyncCleanup(content);
   const cleanupAttachments = createAttachmentCleanup(attachments);
-  const cleanupObjects = createObjectCleanup(objects);
+  const cleanupObjects = createObjectCleanup(
+    objects,
+    scratchFolder(config.storageRoot),
+  );
   const cleanupPublications = createPublicationCleanup(content);
   let cleanupRunning = false;
   // Each job runs under a lock that one process takes, so two processes of

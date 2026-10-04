@@ -6,6 +6,9 @@ import type {
   PendingUpload,
   StoredObject,
 } from '@notesapp/storage-server';
+import { mkdtemp, readdir, rm, utimes, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
   createObjectCleanup,
   objectCleanupIntervalMs,
@@ -34,6 +37,7 @@ function memoryStore(
     listParts: refuse,
     completeUpload: refuse,
     probe: refuse,
+    room: refuse,
     close: () => undefined,
     async remove(key) {
       const at = objects.findIndex((item) => item.key === key);
@@ -70,8 +74,8 @@ await test('the cleanup removes what waits under staging for more than a day', a
     { key: 'staging/imports/fresh.zip', startedAt: fresh },
   ];
   const { store } = memoryStore(objects, uploads);
-  const run = createObjectCleanup(store);
-  assert.deepEqual(await run(now), { objects: 1, uploads: 1 });
+  const run = createObjectCleanup(store, join(tmpdir(), 'notesapp-no-folder'));
+  assert.deepEqual(await run(now), { objects: 1, uploads: 1, files: 0 });
   assert.deepEqual(
     objects.map((item) => item.key),
     ['staging/attachments/fresh', 'workspaces/w/attachments/kept'],
@@ -84,7 +88,7 @@ await test('the cleanup removes what waits under staging for more than a day', a
 
 await test('one process lists the store once a day, though the run is hourly', async () => {
   const { store, lists } = memoryStore([], []);
-  const run = createObjectCleanup(store);
+  const run = createObjectCleanup(store, join(tmpdir(), 'notesapp-no-folder'));
   const start = new Date('2026-10-04T00:00:00Z');
   assert.notEqual(await run(start), null);
   assert.equal(lists(), 1);
@@ -100,4 +104,31 @@ await test('one process lists the store once a day, though the run is hourly', a
     null,
   );
   assert.equal(lists(), 2);
+});
+
+await test('the cleanup removes the files that a stopped request left behind', async () => {
+  // Review of record 0192. The file store writes a file of tmp/ before it
+  // moves it into place, a request inspects an upload there, and the file
+  // store staged an upload there before the record. A process that stopped
+  // in the middle left such a file for ever.
+  const scratch = await mkdtemp(join(tmpdir(), 'notesapp-scratch-'));
+  try {
+    const now = new Date();
+    const old = new Date(now.getTime() - day - 60_000);
+    for (const name of [
+      'object-0d5e',
+      'upload-1f2a',
+      '0b0f1d3e-7b8a-4c1d-9a2b-3c4d5e6f7a8b.tmp',
+    ]) {
+      await writeFile(join(scratch, name), 'x');
+      await utimes(join(scratch, name), old, old);
+    }
+    await writeFile(join(scratch, 'object-fresh'), 'x');
+    const { store } = memoryStore([], []);
+    const run = createObjectCleanup(store, scratch);
+    assert.deepEqual(await run(now), { objects: 0, uploads: 0, files: 3 });
+    assert.deepEqual(await readdir(scratch), ['object-fresh']);
+  } finally {
+    await rm(scratch, { recursive: true, force: true });
+  }
 });

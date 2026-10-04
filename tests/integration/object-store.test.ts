@@ -8,7 +8,8 @@
  */
 import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
+import { createServer, type Socket } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { PassThrough, Readable } from 'node:stream';
@@ -193,21 +194,72 @@ async function portContract(
       await assert.rejects(
         store.writePart(key, 3, cutBody(Buffer.from('x')), 9),
       );
-      assert.deepEqual(await store.listParts(key), [
-        { partNumber: 1, size: first.length },
-        { partNumber: 2, size: last.length },
-      ]);
+      const parts = (await store.listParts(key)) ?? [];
+      assert.deepEqual(
+        parts.map(({ partNumber, size }) => ({ partNumber, size })),
+        [
+          { partNumber: 1, size: first.length },
+          { partNumber: 2, size: last.length },
+        ],
+      );
       const open = await keysOf(store.listUploads('staging/'));
       assert.ok(open.includes(key));
-      assert.equal(await store.completeUpload(key), true);
+      assert.equal(await store.completeUpload(key, parts), 'completed');
       assert.equal(await store.listParts(key), null);
       assert.ok(!(await keysOf(store.listUploads('staging/'))).includes(key));
       const joined = await bytesOf(await store.read(key));
       assert.equal(joined.length, first.length + last.length);
       assert.ok(joined.subarray(0, first.length).equals(first));
       assert.equal(joined.subarray(first.length).toString(), 'the last part');
-      assert.equal(await store.completeUpload(key), false);
+      assert.equal(await store.completeUpload(key, parts), 'missing');
       await store.remove(key);
+    },
+  );
+
+  await t.test(
+    'a completion joins the parts that it checked, and no part sent after',
+    async () => {
+      // Review of record 0192. The store listed the parts again when it
+      // joined them, so a part sent between the check and the join made an
+      // archive that nobody checked.
+      const key = importKey(workspaceId, randomUUID(), randomUUID());
+      const first = Buffer.alloc(minimumPartBytes, 0x62);
+      await store.startUpload(key);
+      await store.writePart(key, 1, Readable.from([first]), first.length);
+      await store.writePart(key, 2, Readable.from([Buffer.from('end')]), 3);
+      const checked = (await store.listParts(key)) ?? [];
+      assert.equal(checked.length, 2);
+      await store.writePart(key, 2, Readable.from([Buffer.from('later')]), 5);
+      assert.equal(await store.completeUpload(key, checked), 'changed');
+      // The upload and its parts stay, so a new check can join them.
+      const again = (await store.listParts(key)) ?? [];
+      assert.deepEqual(
+        again.map((part) => part.size),
+        [first.length, 5],
+      );
+      assert.equal(await store.completeUpload(key, again), 'completed');
+      assert.equal(await store.size(key), first.length + 5);
+      await store.remove(key);
+    },
+  );
+
+  await t.test(
+    'a part that arrives after an abort leaves nothing behind',
+    async () => {
+      // Review of record 0192. The file store made the folder of the part
+      // again when it moved the part into place, so a part that arrived
+      // while the cleanup aborted its upload left a folder with no marker
+      // that nothing removed.
+      const key = importKey(workspaceId, randomUUID(), randomUUID());
+      await store.startUpload(key);
+      const body = new PassThrough();
+      body.write(Buffer.from('par'));
+      const written = store.writePart(key, 1, body, 4);
+      await store.abortUpload(key);
+      body.end(Buffer.from('t'));
+      assert.equal(await written, false);
+      assert.equal(await store.listParts(key), null);
+      assert.ok(!(await keysOf(store.listUploads('staging/'))).includes(key));
     },
   );
 
@@ -217,7 +269,7 @@ async function portContract(
     await store.writePart(key, 1, Readable.from([Buffer.from('part')]), 4);
     await store.abortUpload(key);
     assert.equal(await store.listParts(key), null);
-    assert.equal(await store.completeUpload(key), false);
+    assert.equal(await store.completeUpload(key, []), 'missing');
     assert.equal(await store.size(key), null);
     // An abort of an upload that is not open needs nothing.
     await store.abortUpload(key);
@@ -271,8 +323,36 @@ await test('the file store keeps the contract of the port', async (t) => {
       await openFileObjectStore(join(root, 'missing')).probe(),
       false,
     );
+    // The file store states the free space of its volume.
+    assert.ok(((await store.room()) ?? 0) > 0);
   } finally {
     store.close();
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+await test('a join that fails keeps the parts of the file store', async () => {
+  // Review of record 0192. The join removed each part as it went, so a join
+  // that failed, for example on a full disk, lost the first parts, and the
+  // next completion refused the archive.
+  const root = await mkdtemp(join(tmpdir(), 'notesapp-objects-join-'));
+  const store = openFileObjectStore(root);
+  try {
+    const key = importKey(randomUUID(), randomUUID(), randomUUID());
+    await store.startUpload(key);
+    await store.writePart(key, 1, Readable.from([Buffer.from('one')]), 3);
+    await store.writePart(key, 2, Readable.from([Buffer.from('two')]), 3);
+    const parts = (await store.listParts(key)) ?? [];
+    // A folder at the key makes the last move of the join fail.
+    await mkdir(join(root, key), { recursive: true });
+    await assert.rejects(store.completeUpload(key, parts));
+    assert.deepEqual(await store.listParts(key), parts);
+    // No file of the join stays behind.
+    assert.deepEqual(await readdir(join(root, 'tmp')), []);
+    await rm(join(root, key), { recursive: true });
+    assert.equal(await store.completeUpload(key, parts), 'completed');
+    assert.equal((await readFile(join(root, key))).toString(), 'onetwo');
+  } finally {
     await rm(root, { recursive: true, force: true });
   }
 });
@@ -294,6 +374,7 @@ await test('the S3 store keeps the contract of the port', async (t) => {
           Readable.from([Buffer.from('p')]),
           1,
         );
+        const parts = (await bucket.store.listParts(key)) ?? [];
         await bucket.abortBehindTheStore(key);
         assert.equal(await bucket.store.listParts(key), null);
         assert.equal(
@@ -305,7 +386,7 @@ await test('the S3 store keeps the contract of the port', async (t) => {
           ),
           false,
         );
-        assert.equal(await bucket.store.completeUpload(key), false);
+        assert.equal(await bucket.store.completeUpload(key, parts), 'missing');
         await bucket.store.abortUpload(key);
         assert.deepEqual(
           await keysOf(bucket.store.listUploads('staging/')),
@@ -313,6 +394,50 @@ await test('the S3 store keeps the contract of the port', async (t) => {
         );
       },
     );
+    await t.test(
+      'an upload whose marker cannot be written goes at once',
+      async () => {
+        // Review of record 0192. An upload whose marker write failed had no
+        // marker, so nothing found it again and nothing aborted it. MinIO
+        // refuses a name segment past 255 bytes, which the marker passes and
+        // the upload does not.
+        const key = `staging/imports/${'a'.repeat(250)}`;
+        await assert.rejects(bucket.store.startUpload(key));
+        assert.deepEqual(await bucket.uploadsOf(key), []);
+      },
+    );
+    await t.test('the S3 store states no bound of its room', async () => {
+      assert.equal(await bucket.store.room(), null);
+    });
+    await t.test('a service that never answers ends the call', async () => {
+      // Review of record 0192. The client had no timeout, so a call that
+      // hung held a finalize, and the lock of its workspace, for ever.
+      const silent = createServer(() => undefined);
+      const sockets: Socket[] = [];
+      silent.on('connection', (socket) => sockets.push(socket));
+      await new Promise<void>((resolve) =>
+        silent.listen(0, '127.0.0.1', resolve),
+      );
+      const address = silent.address();
+      assert.ok(address !== null && typeof address === 'object');
+      const hung = openS3ObjectStore(
+        {
+          ...bucket.settings,
+          endpoint: `http://127.0.0.1:${String(address.port)}`,
+        },
+        { connectionMs: 500, idleMs: 500 },
+      );
+      try {
+        const started = Date.now();
+        await assert.rejects(hung.size(stagingKey(randomUUID())));
+        assert.equal(await hung.probe(), false);
+        assert.ok(Date.now() - started < 10_000, 'the calls ended');
+      } finally {
+        hung.close();
+        for (const socket of sockets) socket.destroy();
+        await new Promise((resolve) => silent.close(resolve));
+      }
+    });
     // A bucket that is not there does not answer the probe.
     const absent = openS3ObjectStore({
       ...bucket.settings,

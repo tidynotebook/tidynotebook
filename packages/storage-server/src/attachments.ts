@@ -23,6 +23,7 @@ import { storedAttachmentState, storedMediaType } from './attachment-row.ts';
 import { attachmentObjects } from './schema.ts';
 import {
   attachmentKey,
+  legacyStagingKey,
   stagingKey,
   workspacePrefix,
   type ObjectStore,
@@ -469,12 +470,14 @@ export function openAttachmentStore(
 
         if (row.state === 'temporary') {
           // The staged bytes move to the key of their digest. When that key
-          // already holds the same bytes, the staged copy goes. An object
-          // whose bytes are in neither place has nothing to finalize.
-          const present = await objects.promote(
-            stagingKey(objectId),
-            attachmentKey(workspaceId, row.digest),
-          );
+          // already holds the same bytes, the staged copy goes. An upload
+          // that was in flight across the upgrade to record 0192 staged its
+          // bytes at the older path of the file store. An object whose bytes
+          // are in no place has nothing to finalize.
+          const target = attachmentKey(workspaceId, row.digest);
+          const present =
+            (await objects.promote(stagingKey(objectId), target)) ||
+            (await objects.promote(legacyStagingKey(objectId), target));
           if (!present) return { ok: false, error: 'not_found' };
           const updateResult = await client.query<{ finalized_at: Date }>(
             "UPDATE attachment_objects SET state = 'finalized', finalized_at = clock_timestamp() WHERE workspace_id = $1 AND id = $2 RETURNING finalized_at",

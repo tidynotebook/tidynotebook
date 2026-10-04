@@ -11,6 +11,7 @@
  */
 import type { ImportResult } from '../../lib/import-result.ts';
 import {
+  abortWorkspaceImport,
   completeWorkspaceImport,
   exportNote,
   exportWorkspaceAddress,
@@ -261,7 +262,9 @@ export async function downloadAll(workspaceId: string): Promise<void> {
  * The archive goes up in parts of the size that the server states, because
  * a proxy in front of the server refuses a large body (record 0192). Each
  * part is a slice of the file, so the browser never holds the whole archive
- * in memory, and the completion reads it on the server.
+ * in memory, and the completion reads it on the server. When a part or the
+ * completion fails, the import is removed at once, so its parts do not hold
+ * the storage of the server.
  */
 export async function importAll(
   workspaceId: string,
@@ -274,17 +277,25 @@ export async function importAll(
   if (started.error !== undefined || started.data === undefined)
     throw refuseImport(started.error);
   const { importId, partBytes } = started.data;
+  const abandon = async (error: unknown): Promise<never> => {
+    // The removal is a courtesy: the daily cleanup of the server takes an
+    // import that it leaves, so its own failure changes no answer.
+    await abortWorkspaceImport({ path: { workspaceId, importId } }).catch(
+      () => undefined,
+    );
+    throw refuseImport(error);
+  };
   for (const part of importPartRanges(file.size, partBytes)) {
     const sent = await sendWorkspaceImportPart({
       path: { workspaceId, importId, partNumber: part.partNumber },
       body: file.slice(part.start, part.end),
-    });
-    if (sent.error !== undefined) throw refuseImport(sent.error);
+    }).catch((failure: unknown) => ({ error: failure }));
+    if (sent.error !== undefined) return abandon(sent.error);
   }
   const answer = await completeWorkspaceImport({
     path: { workspaceId, importId },
   });
   if (answer.error !== undefined || answer.data === undefined)
-    throw refuseImport(answer.error);
+    return abandon(answer.error);
   return answer.data;
 }

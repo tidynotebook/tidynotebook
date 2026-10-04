@@ -9,7 +9,11 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import type { DatabaseProbeResult } from '@notesapp/storage-server';
+import { tmpdir } from 'node:os';
+import type {
+  DatabaseProbeResult,
+  ObjectStore,
+} from '@notesapp/storage-server';
 import { requiredSchemaVersion } from '@notesapp/storage-server';
 import { createServiceLifecycle, runningLifecycle } from '../lifecycle.ts';
 import type { ProbeRequest, ReadinessCheck, ReadinessProbe } from './health.ts';
@@ -20,6 +24,8 @@ import {
   livenessAnswer,
   readinessAnswer,
   singleFlight,
+  storageProbe,
+  storeReadTimeoutMs,
   withDeadline,
 } from './health.ts';
 import { problemMediaType } from '../plugins/problem.ts';
@@ -254,6 +260,66 @@ await test('a read that fails answers with the late value', async () => {
     'late',
   );
   assert.equal(answer, 'late');
+});
+
+/** An object store whose probe answers what `probe` answers. */
+function storeWithProbe(probe: () => Promise<boolean>): ObjectStore {
+  const refuse = (): never => {
+    throw new Error('The probe calls nothing else.');
+  };
+  return {
+    kind: 's3',
+    probe,
+    write: refuse,
+    read: refuse,
+    size: refuse,
+    promote: refuse,
+    remove: refuse,
+    removePrefix: refuse,
+    list: refuse,
+    startUpload: refuse,
+    writePart: refuse,
+    listParts: refuse,
+    completeUpload: refuse,
+    abortUpload: refuse,
+    listUploads: refuse,
+    room: refuse,
+    close: () => undefined,
+  };
+}
+
+await test('a store that never answers reports degraded at its deadline', async (t) => {
+  // Review of record 0192. The probe of the object store had no deadline,
+  // so a store that dropped every packet held the readiness answer.
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const probe = storageProbe(
+    tmpdir(),
+    storeWithProbe(() => new Promise<boolean>(() => undefined)),
+  );
+  let settled = false;
+  const answer = probe().then((check) => {
+    settled = true;
+    return check;
+  });
+  // The deadline starts once the directory is checked, which is real I/O.
+  for (let step = 0; step < 200 && !settled; step += 1) {
+    await new Promise((resolve) => setImmediate(resolve));
+    t.mock.timers.tick(storeReadTimeoutMs);
+  }
+  assert.deepEqual(await answer, {
+    name: 'storage',
+    status: 'degraded',
+    detail: 'The object store does not answer.',
+  });
+  assert.equal(
+    (
+      await storageProbe(
+        tmpdir(),
+        storeWithProbe(async () => true),
+      )()
+    ).status,
+    'ok',
+  );
 });
 
 await test('one running read serves every caller that asks while it runs', async () => {
