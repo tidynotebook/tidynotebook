@@ -67,6 +67,7 @@ import {
   isImportedFamilyId,
 } from './lib/imported-themes.ts';
 import { createFocusPass } from './lib/focus-pass.ts';
+import { isLocked } from './lib/locked.ts';
 import { displayNoteName } from './lib/note-name.ts';
 import {
   chooseWorkspace,
@@ -1390,15 +1391,17 @@ export function AppProviders({
 
   // Record 0050. The drain sits here and not in the shell, so a workspace that
   // still holds queued work keeps sending while the person reads another
-  // workspace, and while they are on a screen that has no shell at all.
-  const notices = useTabNotices(
-    storeValue.store,
-    session.account?.accountId ?? null,
-    syncSession,
-  );
+  // workspace, and while they are on a screen that has no shell at all. A
+  // locked account sends and reads nothing, and its queue waits until it is
+  // active again (record 0201).
+  const syncAccountId =
+    session.account === null || isLocked(session.account)
+      ? null
+      : session.account.accountId;
+  const notices = useTabNotices(storeValue.store, syncAccountId, syncSession);
   useBackgroundSync(
     storeValue.store,
-    session.account?.accountId ?? null,
+    syncAccountId,
     workspaceState.status === 'ready' ? workspaceState.workspaceId : null,
     syncSession,
     notices,

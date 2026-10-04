@@ -25,6 +25,7 @@ import {
 } from './installation-settings-row.ts';
 import type {
   AccountControls,
+  ControlStanding,
   AccountEvent,
   AccountEventKind,
   ControlsWrite,
@@ -80,6 +81,7 @@ import {
   accountControlsColumns,
   accountControlsOf,
   controlsParameters,
+  storedStanding,
   type AccountControlsRow,
 } from './account-controls-row.ts';
 import { openPool, poolSizes } from './pool.ts';
@@ -323,6 +325,12 @@ export type IdentityStoreHandle = WorkspaceAdminStore &
      */
     sessionAccount(authUserId: string): Promise<string | null>;
     /**
+     * The account that a session serves and its standing, or `null` for the
+     * same accounts as `sessionAccount` (records 0111 and 0201). The actor
+     * resolver reads it, so a locked account keeps only its list.
+     */
+    sessionStanding(authUserId: string): Promise<SessionStanding | null>;
+    /**
      * The workspaces that one notice stream may still hear about, or `null`
      * when its session ended or expired, or no longer serves an enabled
      * account (record 0129). Nothing caches the answer.
@@ -380,6 +388,12 @@ export type IdentityStoreHandle = WorkspaceAdminStore &
     /** Closes every pooled connection. */
     close(): Promise<void>;
   };
+
+/** The account of a session and its standing (record 0201). */
+export type SessionStanding = {
+  readonly accountId: string;
+  readonly standing: ControlStanding;
+};
 
 /** Options of one identity store pool. */
 export type IdentityStoreOptions = {
@@ -1373,6 +1387,24 @@ export function openIdentityStore(
           [authUserId],
         );
         return rows.rows[0]?.account ?? null;
+      });
+    },
+
+    async sessionStanding(authUserId: string): Promise<SessionStanding | null> {
+      return inTransaction(null, null, async (client) => {
+        const rows = await client.query<{
+          account_id: string;
+          standing: string;
+        }>('select account_id, standing from notesapp_session_standing($1)', [
+          authUserId,
+        ]);
+        const row = rows.rows[0];
+        return row === undefined
+          ? null
+          : {
+              accountId: row.account_id,
+              standing: storedStanding(row.standing),
+            };
       });
     },
 

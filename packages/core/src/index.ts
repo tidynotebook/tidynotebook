@@ -55,6 +55,10 @@ export type {
   NewAccountSettings,
 } from './identity/controls.ts';
 export {
+  lockedAccountKeeps,
+  lockedAccountOperations,
+} from './identity/locked.ts';
+export {
   applyControlsChange,
   controlsFitRole,
   controlStandings,

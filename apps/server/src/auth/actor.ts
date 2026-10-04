@@ -11,11 +11,12 @@
  */
 import { createHash, timingSafeEqual } from 'node:crypto';
 import type { FastifyRequest } from 'fastify';
-import type { Actor } from '@notesapp/core';
-import { sessionGrants, verifyActor } from '@notesapp/core';
+import type { Actor, ControlStanding } from '@notesapp/core';
+import { lockedAccountKeeps, sessionGrants, verifyActor } from '@notesapp/core';
 import type { IdentityStoreHandle } from '@notesapp/storage-server';
 import type { IdentityResolver } from '../plugins/register.ts';
 import {
+  AccountLockedError,
   AttemptsExceededError,
   ForbiddenError,
   OperatorOffError,
@@ -32,6 +33,8 @@ import { applicationOrigins, type ServedOrigin } from '../served-origins.ts';
 /** A verified actor and what the session knows about it. */
 export type ResolvedActor = {
   readonly actor: Actor;
+  /** Whether the account uses every operation or the list of record 0201. */
+  readonly standing: ControlStanding;
   /** The identity user of the session, which a password check names. */
   readonly authUserId: string;
   /** The identifier of the session, which is not its token (record 0122). */
@@ -134,6 +137,19 @@ export type IdentityAdapter = {
 
 /** The account call that resolves a session. */
 type SessionAccountStore = Pick<IdentityStoreHandle, 'sessionAccount'>;
+
+/**
+ * Refuses an operation of a locked account that the list of record 0201
+ * does not name. A locked account keeps the way to unlock it, to export its
+ * notes and to remove it, and every other operation answers `account_locked`.
+ */
+export function refuseLocked(
+  standing: ControlStanding,
+  operationId: string,
+): void {
+  if (standing === 'locked' && !lockedAccountKeeps(operationId))
+    throw new AccountLockedError();
+}
 
 /**
  * Returns the account that one session serves.
@@ -265,13 +281,15 @@ export function createIdentityAdapter(
     const user = readSessionUser(session);
     if (user === null) return null;
     // A session resolves to its enabled account and never makes one.
-    const linked = await accountForSession(dependencies.identity, user.id);
-    if (linked === null) return null;
+    const served = await dependencies.identity.sessionStanding(user.id);
+    if (served === null) return null;
+    const linked = served.accountId;
     const memberships = await dependencies.identity.memberships(linked);
     const verified = verifyActor(linked, sessionGrants(memberships));
     if (!verified.ok) return null;
     return {
       actor: verified.value,
+      standing: served.standing,
       authUserId: user.id,
       sessionId: user.sessionId,
       email: user.email === '' ? null : user.email,
@@ -334,6 +352,7 @@ export function createIdentityAdapter(
         'This operation does not accept the supplied credential.',
       );
     requireWriteOrigin(dependencies.servedOrigins, request);
+    refuseLocked(resolved.standing, operation.id);
     actors.set(request, resolved);
   };
 

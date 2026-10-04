@@ -684,11 +684,18 @@ function parseJson(text: string): { ok: true; value: unknown } | { ok: false } {
 export function createAuthProtocol(
   config: ServerConfig,
   auth: NotesappAuth,
+  /**
+   * Runs before the library and refuses a request by throwing, for example
+   * the change of a profile of a locked account (record 0201). A composition
+   * with no account store leaves it out.
+   */
+  before?: (request: FastifyRequest) => Promise<void>,
 ): ProtocolAdapter {
   return {
     protocol: betterAuthProtocol,
     routes: authRoutes,
     handle: async (request): Promise<ProtocolResult> => {
+      await before?.(request);
       const response = await auth.handler(toWebRequest(config.origin, request));
       const headers: [string, string][] = [];
       for (const [name, value] of response.headers) {

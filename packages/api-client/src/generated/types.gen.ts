@@ -3825,6 +3825,10 @@ export type UpdatePreferencesErrors = {
      */
     415: ProblemDetails;
     /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
      * The service failed to complete the request.
      */
     500: ProblemDetails;
@@ -4083,6 +4087,10 @@ export type ImportThemeErrors = {
      */
     415: ProblemDetails;
     /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
      * The service failed to complete the request.
      */
     500: ProblemDetails;
@@ -4134,6 +4142,10 @@ export type DeleteThemeErrors = {
      * The requested resource does not exist.
      */
     404: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
     /**
      * The service failed to complete the request.
      */
@@ -6404,6 +6416,10 @@ export type CreateWorkspaceErrors = {
      * The request media type is not supported.
      */
     415: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
     /**
      * The service failed to complete the request.
      */

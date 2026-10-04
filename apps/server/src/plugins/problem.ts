@@ -682,6 +682,19 @@ export class PublishedLinkUnavailableError extends Error {
 }
 
 /**
+ * The account of the session is locked, and the operation is not one that a
+ * locked account keeps (record 0201). The list of `packages/core` decides.
+ */
+export class AccountLockedError extends Error {
+  constructor() {
+    super(
+      'The account is locked. It keeps only the operations that unlock it, export its notes or remove it.',
+    );
+    this.name = 'AccountLockedError';
+  }
+}
+
+/**
  * The installation names no operator token, so the operator API is off
  * (record 0190). The answer is the not-found answer of the operation, with
  * its own code.
@@ -862,6 +875,13 @@ export function classifyError(error: unknown): {
       status: 500,
       code: 'invalid_response',
       detail: titles.invalid_response,
+      issues: [],
+    };
+  if (error instanceof AccountLockedError)
+    return {
+      status: 423,
+      code: 'account_locked',
+      detail: error.message,
       issues: [],
     };
   if (error instanceof OperatorOffError)

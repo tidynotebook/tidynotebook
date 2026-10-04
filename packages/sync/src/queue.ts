@@ -270,8 +270,9 @@ type SubmissionAction = 'preserve' | 'leave' | 'paused' | 'access-lost';
 /**
  * Classifies one failed submission.
  *
- * A quota failure stays queued for a later cycle because space may appear.
- * Anything else the server can never accept is preserved as a conflict so it
+ * A quota failure stays queued for a later cycle because space may appear,
+ * and so does the refusal of a locked account, because the account may
+ * become active again (record 0201). Anything else the server can never accept is preserved as a conflict so it
  * is neither dropped nor retried forever. A refused precondition reaches
  * `preserve` as well, and `submitSingle` recovers it before it parks the
  * entry.
@@ -280,6 +281,8 @@ function submissionAction(problem: Problem): SubmissionAction {
   if (problem.status === 401) return 'paused';
   if (problem.status === 403 || problem.status === 404) return 'access-lost';
   if (problem.status === 413) return 'leave';
+  if (problem.status === 423 || problem.code === 'account_locked')
+    return 'leave';
   return 'preserve';
 }
 

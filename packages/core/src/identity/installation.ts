@@ -42,6 +42,7 @@ export type InstallationAction =
   | 'remove-account'
   | 'change-role'
   | 'change-limit'
+  | 'change-controls'
   | 'change-policy'
   | 'change-settings'
   | 'list-reports'
@@ -66,6 +67,7 @@ const roleActions: Readonly<
     'remove-account',
     'change-role',
     'change-limit',
+    'change-controls',
     'change-policy',
     'change-settings',
     'list-reports',

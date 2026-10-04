@@ -248,6 +248,7 @@ await test('an administrator takes every action and a member takes none', () => 
     'remove-account',
     'change-role',
     'change-limit',
+    'change-controls',
     'change-policy',
     'change-settings',
     'list-reports',
@@ -304,6 +305,58 @@ await test('an administrator promotes, disables and limits another account', asy
   assert.equal(changed.value.role, 'administrator');
   assert.equal(changed.value.state, 'disabled');
   assert.equal(changed.value.limitBytes, 42n);
+});
+
+await test('an administrator locks a member with the revision that it read', async () => {
+  const store = createStore([admin(ada), member(bea)]);
+  const locked = await updateAccount(store, actorFor(ada), bea, {
+    controls: {
+      revision: 1,
+      standing: 'locked',
+      removalAt: '2030-01-01T00:00:00Z',
+      textLimitBytes: 50n,
+    },
+  });
+  assert.ok(locked.ok);
+  assert.equal(locked.value.controls.standing, 'locked');
+  assert.equal(locked.value.controls.textLimitBytes, 50n);
+  assert.equal(locked.value.controls.revision, 2);
+  // A second write that read the first revision changes nothing.
+  assert.deepEqual(
+    await updateAccount(store, actorFor(ada), bea, {
+      controls: { revision: 1, standing: 'active' },
+    }),
+    { ok: false, error: { code: 'controls_changed', fileIds: [] } },
+  );
+  assert.equal(store.accounts.get(bea)?.controls.standing, 'locked');
+  // A locked member becomes an administrator only once it is active.
+  assert.deepEqual(
+    await updateAccount(store, actorFor(ada), bea, { role: 'administrator' }),
+    { ok: false, error: { code: 'forbidden', fileIds: [] } },
+  );
+  const unlocked = await updateAccount(store, actorFor(ada), bea, {
+    controls: { revision: 2, standing: 'active' },
+  });
+  assert.ok(unlocked.ok);
+  assert.equal(unlocked.value.controls.removalAt, null);
+});
+
+await test('an administrator is never locked, and one change names the limit once', async () => {
+  const store = createStore([admin(ada), admin(bea)]);
+  assert.deepEqual(
+    await updateAccount(store, actorFor(ada), bea, {
+      controls: { revision: 1, standing: 'locked' },
+    }),
+    { ok: false, error: { code: 'forbidden', fileIds: [] } },
+  );
+  assert.deepEqual(
+    await updateAccount(store, actorFor(ada), bea, {
+      limitBytes: 10n,
+      controls: { revision: 1, limitBytes: 20n },
+    }),
+    { ok: false, error: { code: 'forbidden', fileIds: [] } },
+  );
+  assert.equal(store.accounts.get(bea)?.controls.revision, 1);
 });
 
 await test('a change of an account is refused whole when one part is not allowed', async () => {

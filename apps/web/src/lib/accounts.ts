@@ -218,6 +218,8 @@ export function accountFacts(account: AccountSummary, now: number): string[] {
   if (account.self) facts.push('You');
   facts.push(roleWord(account.installationRole));
   if (account.state === 'disabled') facts.push('Disabled');
+  // A locked account keeps only the way to unlock it (record 0201).
+  if (account.controls.standing === 'locked') facts.push('Locked');
   facts.push(
     // The last activity is the last use of a session that still exists, so
     // an account that signed out on every device has none.
@@ -253,7 +255,7 @@ export type AccountAction =
   | 'make-member'
   | 'disable'
   | 'enable'
-  | 'change-limit'
+  | 'change-controls'
   | 'remove';
 
 /**
@@ -277,7 +279,7 @@ export function accountActions(
   else if (!lastAdministrator) actions.push('make-member');
   if (account.state === 'disabled') actions.push('enable');
   else if (!lastAdministrator) actions.push('disable');
-  actions.push('change-limit');
+  actions.push('change-controls');
   if (!account.self && !lastAdministrator) actions.push('remove');
   return actions;
 }
@@ -293,8 +295,8 @@ export function accountActionLabel(action: AccountAction): string {
       return 'Disable';
     case 'enable':
       return 'Enable';
-    case 'change-limit':
-      return 'Change storage limit';
+    case 'change-controls':
+      return 'Change limits and access';
     case 'remove':
       return 'Remove account';
   }
@@ -302,7 +304,7 @@ export function accountActionLabel(action: AccountAction): string {
 
 /** The sentence after one account action succeeded. */
 export function accountActionNotice(
-  action: Exclude<AccountAction, 'remove' | 'change-limit'>,
+  action: Exclude<AccountAction, 'remove' | 'change-controls'>,
   name: string,
 ): string {
   switch (action) {

@@ -123,29 +123,44 @@ await test('the facts of a row name the role, the state and the activity', () =>
       'ada@example.test',
     ],
   );
+  // A locked account says so beside its role (record 0201).
+  const base = account();
+  assert.deepEqual(
+    accountFacts(
+      account({
+        controls: {
+          ...base.controls,
+          standing: 'locked',
+          removalAt: '2026-10-26T12:00:00.000Z',
+        },
+      }),
+      now,
+    ).slice(0, 2),
+    ['Member', 'Locked'],
+  );
 });
 
 await test('the last enabled administrator offers no change that would lose it', () => {
   const last = account({ installationRole: 'administrator', self: true });
   assert.equal(enabledAdministrators([last, account()]), 1);
-  assert.deepEqual(accountActions(last, 1), ['change-limit']);
+  assert.deepEqual(accountActions(last, 1), ['change-controls']);
   // With a second administrator the same row offers the changes, and the
   // own account still offers no removal here.
   assert.deepEqual(accountActions(last, 2), [
     'make-member',
     'disable',
-    'change-limit',
+    'change-controls',
   ]);
   assert.deepEqual(accountActions(account(), 1), [
     'make-administrator',
     'disable',
-    'change-limit',
+    'change-controls',
     'remove',
   ]);
   assert.deepEqual(accountActions(account({ state: 'disabled' }), 1), [
     'make-administrator',
     'enable',
-    'change-limit',
+    'change-controls',
     'remove',
   ]);
   for (const action of accountActions(account(), 1))

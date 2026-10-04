@@ -2288,7 +2288,9 @@ await test('a server with a later protocol gets no push and no pull', async () =
   controller.abort();
   await running;
   assert.equal(ops.commitCalls.length, 0);
-  assert.equal(store.queued()?.state, 'pending');
+  // The save waits with its frozen body, so the next send repeats it.
+  assert.notEqual(store.queued(), null);
+  assert.notEqual(store.queued()?.state, 'conflict');
   assert.equal(store.recovery.length, 0);
   assert.deepEqual(
     notices.filter((notice) => notice.kind === 'protocol'),
@@ -2430,6 +2432,59 @@ await test('a stop answer of 503 keeps a queued save queued', async () => {
   assert.notEqual(store.queued()?.state, 'conflict');
   assert.equal(store.recovery.length, 0);
   assert.equal(store.discarded.length, 0);
+});
+
+await test('a save refused for a locked account stays queued and goes once it is active', async () => {
+  // Record 0201. A locked account keeps a refused save in its queue, as a
+  // full account does, because the account can become active again.
+  const store = new FakeStore();
+  store.enqueue(queuedEntry('file-a', 'rev-b', '# B\n', 'rev-a', 'mutation-2'));
+  let locked = true;
+  const ops = stubOperations({
+    commit: () =>
+      locked
+        ? Promise.resolve({
+            ok: false as const,
+            problem: { status: 423, code: 'account_locked', fileIds: [] },
+          })
+        : Promise.resolve({
+            ok: true as const,
+            value: accepted('mutation-2', ['rev-b'], '8'),
+          }),
+  });
+  const notices: SyncNotice[] = [];
+  const refused = await pushQueue(
+    store,
+    accountId,
+    workspaceId,
+    ops,
+    testContext(notices, []),
+    noPull,
+  );
+  assert.equal(refused, 'done');
+  assert.equal(ops.commitCalls.length, 1);
+  // The save waits with its frozen body, so the next send repeats it.
+  assert.notEqual(store.queued(), null);
+  assert.notEqual(store.queued()?.state, 'conflict');
+  assert.equal(store.recovery.length, 0);
+  assert.equal(store.discarded.length, 0);
+  assert.deepEqual(
+    notices.filter((notice) => notice.kind === 'preserved'),
+    [],
+  );
+  // The account is active again, and the next cycle sends the same save.
+  locked = false;
+  await pushQueue(
+    store,
+    accountId,
+    workspaceId,
+    ops,
+    testContext([], []),
+    noPull,
+  );
+  assert.equal(ops.commitCalls.length, 2);
+  assert.deepEqual(store.acks, [accepted('mutation-2', ['rev-b'], '8')]);
+  assert.equal((await store.pending(accountId, workspaceId)).length, 0);
 });
 
 await test('the worker lease is exclusive, renewable, and taken over on expiry', async () => {

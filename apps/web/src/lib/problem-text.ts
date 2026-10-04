@@ -10,6 +10,8 @@
 /** A sentence for one known problem code. */
 const sentences: Readonly<Record<string, string>> = {
   account_exists: 'An account already uses this address.',
+  account_locked:
+    'Your account is locked. Your notes are safe. Open the account page to unlock it.',
   account_unavailable:
     'This account cannot sign in. Ask an administrator of this installation.',
   address_unverified:
@@ -30,6 +32,8 @@ const sentences: Readonly<Record<string, string>> = {
   verification_invalid:
     'This link is not valid any more. Sign up again to get a new link.',
   proof_invalid: 'The check of this browser did not finish. Try again.',
+  controls_changed:
+    'Somebody changed this account at the same time. Read the page again, then make the change.',
   consent_required:
     'The terms or the privacy notice changed. Read them again and accept them.',
   setting_locked:

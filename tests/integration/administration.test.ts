@@ -516,6 +516,59 @@ await test('the operator invites by mail or prints the link, and promotes', asyn
   }
 });
 
+await test('an administrator sets the controls of an account with the revision it read', async () => {
+  const joined = await member();
+  const listed = await listAccounts({ headers: admin });
+  const seen = listed.data?.accounts.find(
+    (entry) => entry.accountId === joined.accountId,
+  );
+  assert.equal(seen?.controls.standing, 'active');
+  const revision = seen?.controls.revision ?? 0;
+  const locked = await updateAccount({
+    headers: admin,
+    path: { accountId: joined.accountId },
+    body: {
+      controls: {
+        revision,
+        standing: 'locked',
+        removalAt: '2030-01-01T00:00:00.000Z',
+        textLimitBytes: 1_000_000,
+        features: { teams: false },
+      },
+    },
+  });
+  assert.equal(locked.error, undefined, JSON.stringify(locked.error));
+  assert.equal(locked.data?.controls.standing, 'locked');
+  assert.equal(locked.data?.controls.textLimitBytes, 1_000_000);
+  assert.deepEqual(locked.data?.controls.features, {
+    teams: false,
+    collaboration: true,
+  });
+  // The account reads its own lock, and an operation off its list refuses.
+  const own = await getAccount({ headers: joined.headers });
+  assert.equal(own.data?.controls.standing, 'locked');
+  const refused = await getInstallation({ headers: joined.headers });
+  assert.equal(responseOf(refused.response).status, 423);
+  // A second change that read the first revision changes nothing.
+  const stale = await updateAccount({
+    headers: admin,
+    path: { accountId: joined.accountId },
+    body: { controls: { revision, standing: 'active' } },
+  });
+  assert.equal(responseOf(stale.response).status, 409);
+  assert.equal(problemOf(stale.error)['code'], 'controls_changed');
+  // An administrator is never locked.
+  const self = listed.data?.accounts.find((entry) => entry.self);
+  const lockSelf = await updateAccount({
+    headers: admin,
+    path: { accountId: self?.accountId ?? '' },
+    body: {
+      controls: { revision: self?.controls.revision ?? 0, standing: 'locked' },
+    },
+  });
+  assert.equal(responseOf(lockSelf.response).status, 403);
+});
+
 await app.close();
 await database.destroy();
 await rm(storageRoot, { recursive: true, force: true });

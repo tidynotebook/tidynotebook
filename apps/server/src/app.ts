@@ -14,6 +14,7 @@ import Fastify, { LogController } from 'fastify';
 import rateLimit from '@fastify/rate-limit';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { ReaderRefusalCause } from '@notesapp/core';
+import { lockedAccountKeeps } from '@notesapp/core';
 import type { OperationId } from '@notesapp/api-contract';
 import { findChannel, findOperation } from '@notesapp/api-contract';
 import {
@@ -42,7 +43,7 @@ import {
   createAuthPool,
   createAuthProtocol,
 } from './auth/better-auth.ts';
-import { createIdentityAdapter } from './auth/actor.ts';
+import { createIdentityAdapter, refuseLocked } from './auth/actor.ts';
 import { createPublicationHasher } from './auth/publication-secrets.ts';
 import { createSetupHandlers } from './auth/setup.ts';
 import { passwordMatches, sessionAllowedBy } from './auth/registration.ts';
@@ -875,7 +876,14 @@ async function composeApp(
     },
     identity: adapter.resolver,
     protocols: [
-      createAuthProtocol(config, auth.auth),
+      // A locked account keeps the identity operations of the library and
+      // not the change of its profile (record 0201).
+      createAuthProtocol(config, auth.auth, async (request) => {
+        const id = request.routeOptions.config.operationId;
+        if (id === undefined || lockedAccountKeeps(id)) return;
+        const resolved = await adapter.resolveActor(request);
+        if (resolved !== null) refuseLocked(resolved.standing, id);
+      }),
       createSyncNoticesProtocol({
         gateway,
         servedOrigins: config.servedOrigins,

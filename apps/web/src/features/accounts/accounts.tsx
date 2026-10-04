@@ -22,7 +22,9 @@ import { Link, Navigate, useNavigate } from 'react-router';
 import {
   acceptLegalDocuments,
   createOwner,
+  getAccount,
   listWorkspaces,
+  openAccountPortal,
   type LegalDocuments,
   getSetupStatus,
   signInWithPassword,
@@ -48,6 +50,8 @@ import { problemMessage, useLocalStore, useSession } from '../../app.tsx';
 import { problemCode, problemStatus } from '../../lib/problem-text.ts';
 import { forgotPasswordRoute, signUpRoute } from '../../lib/accounts.ts';
 import { consentTo, waitsForConsent } from '../../lib/legal.ts';
+import { isLocked, lockedSentences, portalPath } from '../../lib/locked.ts';
+import { useNow } from '../../shell/now.ts';
 import { LegalLinks } from './legal-links.tsx';
 
 import { passwordProblem, passwordRule } from '../../lib/password-policy.ts';
@@ -80,7 +84,160 @@ export function RequireSession({
   // The application opens after consent to the current legal documents
   // (record 0120).
   if (waitsForConsent(session.account)) return <ConsentPage />;
+  // A locked account signs in to one screen (record 0201).
+  if (isLocked(session.account)) return <LockedPage />;
   return children;
+}
+
+/**
+ * Downloads the archive of each workspace that the account owns.
+ *
+ * A person who does not accept the terms, and a locked account, can still
+ * take the notes out (records 0120 and 0201).
+ */
+async function exportOwnedWorkspaces(): Promise<void> {
+  const listed = await listWorkspaces();
+  for (const workspace of listed.data?.workspaces ?? [])
+    if (workspace.role === 'owner') await downloadAll(workspace.workspaceId);
+}
+
+/**
+ * The one screen of a locked account (record 0201).
+ *
+ * When the installation names an account portal, the one filled action opens
+ * it, and the portal unlocks the account. The person can also export the
+ * notes, remove the account, or sign out. The screen reads the account again
+ * when the person comes back to the tab, so an unlock in another tab opens
+ * the application.
+ */
+function LockedPage(): ReactNode {
+  const session = useSession();
+  const store = useLocalStore();
+  const now = useNow();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [removing, setRemoving] = useState(false);
+  useDocumentTitle('Your account is locked');
+
+  useEffect(() => {
+    let checking = false;
+    const check = (): void => {
+      if (checking || document.visibilityState !== 'visible') return;
+      checking = true;
+      void getAccount().then((result) => {
+        checking = false;
+        // Only an unlock reads the session again, so a return to the tab
+        // shows no loading screen while the account stays locked.
+        if (result.data !== undefined && !isLocked(result.data))
+          session.refresh();
+      });
+    };
+    window.addEventListener('focus', check);
+    document.addEventListener('visibilitychange', check);
+    return () => {
+      window.removeEventListener('focus', check);
+      document.removeEventListener('visibilitychange', check);
+    };
+  }, [session]);
+
+  const account = session.account;
+  if (account === null) return <Navigate to="/login" replace />;
+
+  const openPortal = async (): Promise<void> => {
+    setBusy(true);
+    setError('');
+    const result = await openAccountPortal({ body: { path: portalPath } });
+    if (result.data === undefined) {
+      setBusy(false);
+      setError(problemMessage(result.error));
+      return;
+    }
+    window.location.assign(result.data.url);
+  };
+
+  const exportNotes = async (): Promise<void> => {
+    setBusy(true);
+    setError('');
+    try {
+      await exportOwnedWorkspaces();
+    } catch (failure: unknown) {
+      setError(transferFailureMessage(failure));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <AuthFrame title="Your account is locked">
+      {lockedSentences(account, now).map((sentence) => (
+        <p key={sentence} className="mb-3 mt-0 text-control text-muted">
+          {sentence}
+        </p>
+      ))}
+      {error === '' ? null : (
+        <Notice className="mb-4" tone="problem" message={error} />
+      )}
+      {account.accountPortal ? (
+        <Button
+          className="mt-2 w-full"
+          disabled={busy}
+          onClick={() => {
+            void openPortal();
+          }}
+        >
+          Open the account portal
+        </Button>
+      ) : null}
+      <p className="mb-2 mt-5 text-control text-muted">
+        You can export your notes or remove your account.
+      </p>
+      <div className="flex flex-wrap gap-cluster">
+        <Button
+          variant="secondary"
+          icon={<DownloadIcon />}
+          disabled={busy}
+          onClick={() => {
+            void exportNotes();
+          }}
+        >
+          Export my notes
+        </Button>
+        <Button
+          variant="secondary"
+          tone="danger"
+          icon={actionIcon(deleteGlyph)}
+          disabled={busy}
+          onClick={() => {
+            setRemoving(true);
+          }}
+        >
+          Remove my account
+        </Button>
+        <Button
+          variant="ghost"
+          icon={<SignOutIcon />}
+          disabled={busy}
+          onClick={() => {
+            session.signOut();
+          }}
+        >
+          Sign out
+        </Button>
+      </div>
+      {removing ? (
+        <RemoveOwnAccountDialog
+          store={store.store}
+          accountId={account.accountId}
+          onClose={() => {
+            setRemoving(false);
+          }}
+          onRemoved={() => {
+            session.refresh();
+          }}
+        />
+      ) : null}
+    </AuthFrame>
+  );
 }
 
 /** How far the read of the legal documents got. */
@@ -145,10 +302,7 @@ function ConsentPage(): ReactNode {
     setBusy(true);
     setError('');
     try {
-      const listed = await listWorkspaces();
-      for (const workspace of listed.data?.workspaces ?? [])
-        if (workspace.role === 'owner')
-          await downloadAll(workspace.workspaceId);
+      await exportOwnedWorkspaces();
     } catch (failure: unknown) {
       setError(transferFailureMessage(failure));
     } finally {

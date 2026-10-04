@@ -16,6 +16,11 @@
 import { fail, ok, type Result } from '../files/model.ts';
 import type { Actor } from './actor.ts';
 import {
+  applyControlsChange,
+  controlsFitRole,
+  type ControlsChange,
+} from './controls.ts';
+import {
   accountStates,
   installationRoles,
   leavesNoAdministrator,
@@ -75,6 +80,8 @@ export type AccountChange = {
   readonly role?: string | undefined;
   readonly state?: string | undefined;
   readonly limitBytes?: bigint | undefined;
+  /** A change of the controls with the revision that was read (0189). */
+  readonly controls?: ControlsChange | undefined;
 };
 
 /**
@@ -95,7 +102,14 @@ export function updateAccount(
     if (change.role !== undefined) needed.push('change-role');
     if (change.state !== undefined) needed.push('change-state');
     if (change.limitBytes !== undefined) needed.push('change-limit');
+    if (change.controls !== undefined) needed.push('change-controls');
     if (needed.length === 0) return fail<AccountRecord>('forbidden');
+    // The storage limit is one control, so one change names it once.
+    if (
+      change.limitBytes !== undefined &&
+      change.controls?.limitBytes !== undefined
+    )
+      return fail<AccountRecord>('forbidden');
     if (!needed.every((action) => mayAdminister(caller, action)))
       return fail<AccountRecord>('forbidden');
     const role =
@@ -124,6 +138,31 @@ export function updateAccount(
     };
     if (leavesNoAdministrator(target, after, await tx.enabledAdministrators()))
       return fail<AccountRecord>('last_administrator');
+    // The controls are decided before anything is written, under the lock of
+    // the installation, so a change never lands in part.
+    const current = (await tx.accounts()).find(
+      (record) => record.accountId === accountId,
+    );
+    if (current === undefined) return fail<AccountRecord>('not_found');
+    let controls = current.controls;
+    if (change.controls !== undefined) {
+      const next = applyControlsChange(current.controls, change.controls);
+      if (!next.ok) return fail<AccountRecord>(next.error.code);
+      controls = next.value;
+    }
+    // An administrator is never locked, so a locked account becomes one only
+    // once it is active (record 0201).
+    if (!controlsFitRole(after.role, controls))
+      return fail<AccountRecord>('forbidden');
+    if (change.controls !== undefined) {
+      const written = await tx.setControls(
+        accountId,
+        change.controls.revision,
+        controls,
+      );
+      if (written === 'missing') return fail<AccountRecord>('not_found');
+      if (written === 'changed') return fail<AccountRecord>('controls_changed');
+    }
     if (role !== undefined && role !== target.role)
       await tx.setRole(accountId, role);
     if (state !== undefined && state !== target.state)
