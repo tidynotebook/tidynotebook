@@ -107,10 +107,11 @@ await test('every answer carries the base security headers', async () => {
     // A plain HTTP deployment must not lock itself out of its own address.
     assert.equal(health.headers['strict-transport-security'], undefined);
 
-    // A refused answer carries them too.
+    // A refused answer carries them too. A probe answers any host (record
+    // 0199), so a normal operation stands for the refusal.
     const refused = await server.app.inject({
       method: 'GET',
-      url: '/api/health',
+      url: '/api/installation',
       headers: { host: 'attacker.invalid' },
     });
     assert.equal(refused.statusCode, 400);

@@ -143,14 +143,17 @@ await test('the root address rejects a query that the operation does not declare
   assert.equal(asProblem(response.json()).code, 'invalid_request');
 });
 
-await test('a forged Host header is rejected at the root address too', async () => {
-  const response = await server.app.inject({
-    method: 'GET',
-    url: '/ready',
-    headers: { host: 'evil.example' },
-  });
-  assert.equal(response.statusCode, 400);
-  assert.equal(asProblem(response.json()).code, 'host_not_allowed');
+await test('a root probe answers a forged Host, as its API address does', async () => {
+  // A platform probes a replica with a host of its own (record 0199), so the
+  // two addresses of each probe answer any host and stay equal.
+  for (const url of ['/health', '/api/health', '/ready', '/api/ready']) {
+    const response = await server.app.inject({
+      method: 'GET',
+      url,
+      headers: { host: 'evil.example' },
+    });
+    assert.equal(response.statusCode, 200, url);
+  }
 });
 
 await test('the server echoes a caller supplied request id', async () => {
@@ -245,7 +248,7 @@ await test('a method that no operation serves answers 404', async () => {
 await test('a forged Host header is rejected', async () => {
   const response = await server.app.inject({
     method: 'GET',
-    url: '/api/health',
+    url: '/api/installation',
     headers: { host: 'evil.example' },
   });
   assert.equal(response.statusCode, 400);
@@ -262,7 +265,7 @@ await test('a request that names no served Host is rejected', async () => {
   try {
     const response = await narrow.app.inject({
       method: 'GET',
-      url: '/api/health',
+      url: '/api/installation',
     });
     assert.equal(response.statusCode, 400);
     assert.equal(asProblem(response.json()).code, 'host_not_allowed');
