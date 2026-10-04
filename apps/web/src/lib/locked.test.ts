@@ -57,10 +57,38 @@ await test('the screen names the portal only when the installation has one', () 
 });
 
 await test('a read of the account again adopts it, signs out a gone account, and keeps it through a failure', () => {
-  assert.equal(accountReadOutcome(200, true), 'adopt');
+  const read = { startedIn: 3, finishedIn: 3 };
+  assert.equal(
+    accountReadOutcome({ ...read, status: 200, answered: true }),
+    'adopt',
+  );
   // The removal of a locked account ends its session, so the locked screen
   // goes to sign-in instead of standing still.
-  assert.equal(accountReadOutcome(401, false), 'signed-out');
-  assert.equal(accountReadOutcome(0, false), 'keep');
-  assert.equal(accountReadOutcome(503, false), 'keep');
+  assert.equal(
+    accountReadOutcome({ ...read, status: 401, answered: false }),
+    'signed-out',
+  );
+  assert.equal(
+    accountReadOutcome({ ...read, status: 0, answered: false }),
+    'keep',
+  );
+  assert.equal(
+    accountReadOutcome({ ...read, status: 503, answered: false }),
+    'keep',
+  );
+});
+
+await test('a read that finishes after a sign-out or a new session is dropped', () => {
+  // A notice started the read, and the person signed out before it answered,
+  // so the old account must not come back.
+  for (const status of [200, 401, 0])
+    assert.equal(
+      accountReadOutcome({
+        status,
+        answered: status === 200,
+        startedIn: 3,
+        finishedIn: 4,
+      }),
+      'drop',
+    );
 });

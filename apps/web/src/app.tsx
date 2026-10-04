@@ -403,13 +403,19 @@ function useSessionLoader(generation: number): {
   readonly adoptPreferences: (preferences: Preferences) => void;
   readonly adoptProfileName: (name: string) => void;
   readonly recheck: () => void;
+  /** Moves the session epoch on, so a read that runs is dropped. */
+  readonly invalidate: () => void;
 } {
   const [status, setStatus] = useState<SessionStatus>('loading');
   const [account, setAccount] = useState<Account | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // The session epoch. A load of the session and a sign-out move it on, and a
+  // read of the account again that started in an earlier one is dropped.
+  const epoch = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
+    epoch.current += 1;
     async function load(): Promise<void> {
       setStatus('loading');
       setError(null);
@@ -469,12 +475,15 @@ function useSessionLoader(generation: number): {
   const recheck = useCallback((): void => {
     if (checking.current) return;
     checking.current = true;
+    const startedIn = epoch.current;
     void getAccount().then((result) => {
       checking.current = false;
-      const outcome = accountReadOutcome(
-        result.response?.status ?? 0,
-        result.data !== undefined,
-      );
+      const outcome = accountReadOutcome({
+        status: result.response?.status ?? 0,
+        answered: result.data !== undefined,
+        startedIn,
+        finishedIn: epoch.current,
+      });
       if (outcome === 'adopt' && result.data !== undefined) {
         rememberAccount(result.data);
         setAccount(result.data);
@@ -488,6 +497,10 @@ function useSessionLoader(generation: number): {
     });
   }, []);
 
+  const invalidate = useCallback((): void => {
+    epoch.current += 1;
+  }, []);
+
   return {
     status,
     account,
@@ -495,6 +508,7 @@ function useSessionLoader(generation: number): {
     adoptPreferences,
     adoptProfileName,
     recheck,
+    invalidate,
   };
 }
 
@@ -1478,14 +1492,17 @@ export function AppProviders({
   }, []);
 
   const signedOutStore = storeValue.store;
+  const invalidateSession = session.invalidate;
   const doSignOut = useCallback(() => {
     async function end(): Promise<void> {
+      // A read of the account that runs now must not bring it back.
+      invalidateSession();
       rememberAccount(null);
       await signOutKeepingWork(signedOutStore);
       refresh();
     }
     void end();
-  }, [refresh, signedOutStore]);
+  }, [refresh, signedOutStore, invalidateSession]);
 
   const sessionValue = useMemo<SessionValue>(
     () => ({

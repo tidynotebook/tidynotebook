@@ -59,16 +59,24 @@ export function lockedSentences(
  *
  * The application reads the account again when the stream says that it
  * changed, when a save is refused for a locked account, and when a person
- * comes back to the locked screen. An answer replaces the account, so the
+ * comes back to the locked screen. Each read names the session epoch at its
+ * start, which a sign-in, a sign-out and a load of the session move on. A
+ * read that finishes in a later epoch is dropped, so a sign-out never brings
+ * the old account back. Otherwise an answer replaces the account, so the
  * screen follows a lock or an unlock with no reload. A 401 means that the
  * session ended or that the account is gone, for example after the removal
  * of a locked account, so the person goes to sign-in. Any other failure
  * keeps the account as it is, because it says nothing about the account.
  */
-export function accountReadOutcome(
-  status: number,
-  answered: boolean,
-): 'adopt' | 'signed-out' | 'keep' {
-  if (answered) return 'adopt';
-  return status === 401 ? 'signed-out' : 'keep';
+export function accountReadOutcome(read: {
+  readonly status: number;
+  readonly answered: boolean;
+  /** The session epoch when the read started. */
+  readonly startedIn: number;
+  /** The session epoch when the read finished. */
+  readonly finishedIn: number;
+}): 'adopt' | 'signed-out' | 'keep' | 'drop' {
+  if (read.startedIn !== read.finishedIn) return 'drop';
+  if (read.answered) return 'adopt';
+  return read.status === 401 ? 'signed-out' : 'keep';
 }
