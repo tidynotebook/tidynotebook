@@ -9,16 +9,23 @@
  * An actor is built only through `verifyActor`, so a parsed request object can
  * never be passed where the core expects a verified actor.
  */
+import { createHash, timingSafeEqual } from 'node:crypto';
 import type { FastifyRequest } from 'fastify';
 import type { Actor } from '@notesapp/core';
 import { sessionGrants, verifyActor } from '@notesapp/core';
 import type { IdentityStoreHandle } from '@notesapp/storage-server';
 import type { IdentityResolver } from '../plugins/register.ts';
 import {
+  AttemptsExceededError,
   ForbiddenError,
+  OperatorOffError,
   OriginRequiredError,
   UnauthenticatedError,
 } from '../plugins/problem.ts';
+import {
+  attemptAddress,
+  type AttemptCounter,
+} from '../plugins/attempt-store.ts';
 import { toRequestHeaders, type NotesappAuth } from './better-auth.ts';
 import { applicationOrigins, type ServedOrigin } from '../served-origins.ts';
 
@@ -37,6 +44,9 @@ export type ResolvedActor = {
 
 /** The security scheme name that the session transport satisfies. */
 const sessionScheme = 'sessionCookie';
+
+/** The security scheme of the operator API (record 0190). */
+export const operatorScheme = 'operatorToken';
 
 /** Methods that change no state, so they need no origin check. */
 const safeMethods = new Set(['GET', 'HEAD', 'OPTIONS']);
@@ -69,13 +79,50 @@ export function requireActor(request: FastifyRequest): ResolvedActor {
   return resolved;
 }
 
+/**
+ * The operator token and the bound of its failures (record 0190).
+ *
+ * A wrong token counts one attempt of the client address in the counter of
+ * record 0121, which every process shares, and a client past the limit gets
+ * the answer of the attempt limit before its token is compared again.
+ */
+export type OperatorAccess = {
+  /** The operator secret, or `null` when the installation names none. */
+  readonly token: string | null;
+  readonly attempts: AttemptCounter;
+  readonly windowMs: number;
+  readonly max: number;
+};
+
 /** What the identity adapter needs from the composition. */
 export type IdentityDependencies = {
   readonly auth: NotesappAuth;
   readonly identity: IdentityStoreHandle;
   /** The served origins of the deployment, from `config.servedOrigins`. */
   readonly servedOrigins: readonly ServedOrigin[];
+  /** The operator API, or nothing for a composition that serves none. */
+  readonly operator?: OperatorAccess;
 };
+
+/** The bearer token of an `Authorization` header, or `null`. */
+export function bearerToken(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const match = /^Bearer ([\x21-\x7e]{1,512})$/.exec(value);
+  return match?.[1] ?? null;
+}
+
+/**
+ * Whether a presented token is the operator token, in constant time.
+ *
+ * Both values are hashed first, so the comparison reads two values of one
+ * length and its time says nothing about the length or the prefix of the
+ * secret.
+ */
+export function sameSecret(presented: string, secret: string): boolean {
+  const digest = (value: string): Buffer =>
+    createHash('sha256').update(value, 'utf8').digest();
+  return timingSafeEqual(digest(presented), digest(secret));
+}
 
 /** The identity adapter of one deployment. */
 export type IdentityAdapter = {
@@ -243,7 +290,37 @@ export function createIdentityAdapter(
     return fromSession(request);
   }
 
+  /**
+   * Checks the operator token of a request (record 0190). The operation sets
+   * no actor, because the operator is no account.
+   */
+  async function checkOperator(request: FastifyRequest): Promise<void> {
+    const access = dependencies.operator;
+    if (access === undefined || access.token === null)
+      throw new OperatorOffError();
+    const key = `operator:${attemptAddress(request.ip)}`;
+    const now = Date.now();
+    const held = await access.attempts.read(key, access.windowMs, now);
+    if (held.current >= access.max) throw new AttemptsExceededError();
+    const presented = bearerToken(request.headers.authorization);
+    if (presented === null || !sameSecret(presented, access.token)) {
+      await access.attempts.count(key, access.windowMs, now);
+      throw new UnauthenticatedError(
+        'This operation needs the operator token.',
+      );
+    }
+  }
+
   const resolver: IdentityResolver = async (request, operation) => {
+    const schemes = operation.security.flatMap((requirement) =>
+      Object.keys(requirement),
+    );
+    // An operator operation takes the operator token alone, and a session
+    // never satisfies it.
+    if (schemes.includes(operatorScheme)) {
+      await checkOperator(request);
+      return;
+    }
     const resolved = await resolveActor(request);
     if (resolved === null)
       throw new UnauthenticatedError(

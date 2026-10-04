@@ -21,11 +21,11 @@ authentication routes on one origin, and it holds no domain rule.
   operations. `import-layout.ts` places the files of an import (0172).
   `sync-notices.ts` serves the notice stream and checks its origin (0128,
   0129). `legal.ts` serves the terms and the privacy notice of the operator,
-  and `legal-document.ts` writes their page like the published page (0140).
-- `src/notices/` holds the notice gateway and its bounds (0129). Only
-  `src/plugins/websocket.ts` imports a WebSocket library; the gateway reads its
-  `StreamSocket`.
-- `main.ts` wires the process to `src/lifecycle.ts`, which owns the order of the start and the stop, and holds no signal and no exit.
+  and `legal-document.ts` writes their page like the published page (0140). `operator.ts` serves the
+  operator API, which `host.ts` lets any host reach, and `account-controls.ts` the controls (0189, 0190).
+- `src/notices/` holds the notice gateway and its bounds (0129), and only `src/plugins/websocket.ts`
+  imports a WebSocket library. `main.ts` wires the process to `src/lifecycle.ts`, which owns the
+  order of the start and the stop, and holds no signal and no exit.
 - `src/auth/` holds the Better Auth adapter, the actor resolver, the secrets of a
   published link, the seal of a reported address and of the mail password
   (`seal.ts`, 0123, 0148), mail and its budget for each address (`mail.ts`), the words of every message

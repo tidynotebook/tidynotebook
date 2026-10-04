@@ -17,6 +17,7 @@
  * installation needs no action.
  */
 import { fail, ok, type Result } from '../files/model.ts';
+import type { InstallationRole } from './installation.ts';
 
 /**
  * The largest byte limit, which is the largest integer that a JSON number
@@ -153,6 +154,21 @@ export function applyControlsChange(
   )
     return fail('forbidden');
   return ok(next);
+}
+
+/**
+ * Whether the controls fit the installation role of their account.
+ *
+ * An administrator is never locked. A locked account keeps only the list of
+ * record 0201, so a locked administrator could administer nothing, and the
+ * last one would leave the installation with nobody to unlock it (record
+ * 0110). An administrator is made a member first.
+ */
+export function controlsFitRole(
+  role: InstallationRole,
+  controls: AccountControls,
+): boolean {
+  return !(role === 'administrator' && controls.standing === 'locked');
 }
 
 /** The controls that a new account starts with (record 0189). */

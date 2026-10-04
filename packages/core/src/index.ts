@@ -56,10 +56,37 @@ export type {
 } from './identity/controls.ts';
 export {
   applyControlsChange,
+  controlsFitRole,
   controlStandings,
   maxRemoveAfterDays,
   newAccountSettingsHold,
 } from './identity/controls.ts';
+export type {
+  AccountEvent,
+  AccountEventKind,
+  AccountUsage,
+  HandoffAccount,
+  HandoffStore,
+  OperatorAccountRecord,
+  OperatorRemoval,
+  OperatorStore,
+  OperatorTotals,
+  OperatorTransaction,
+} from './identity/operator.ts';
+export {
+  defaultAccountEventPage,
+  findOperatorAccount,
+  listAccountEvents,
+  maxAccountEventPage,
+  openAccountPortal,
+  portalAddress,
+  readOperatorAccount,
+  readOperatorTotals,
+  redeemHandoff,
+  removeOperatorAccount,
+  setOperatorControls,
+  usageMonth,
+} from './identity/operator.ts';
 export type {
   AccountRecord,
   InstallationSettingsReader,

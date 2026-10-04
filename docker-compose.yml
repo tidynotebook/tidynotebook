@@ -105,6 +105,12 @@ services:
       # account active with no removal time.
       NOTESAPP_NEW_ACCOUNT_STANDING: ${NOTESAPP_NEW_ACCOUNT_STANDING:-}
       NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER: ${NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER:-}
+      # The operator API of a service such as a billing service (record 0190).
+      # The file holds one secret, so mount it and name its path in the
+      # container. An empty value turns the operator API off.
+      NOTESAPP_OPERATOR_TOKEN_FILE: ${NOTESAPP_OPERATOR_TOKEN_FILE:-}
+      # The account portal that a locked account opens to unlock itself.
+      NOTESAPP_ACCOUNT_PORTAL_URL: ${NOTESAPP_ACCOUNT_PORTAL_URL:-}
       # The mail transport has a secret, so `docker/compose.mail.yaml` adds
       # it with its sender, or `docker/compose.mail-url.yaml` as one URL.
       # The terms and the privacy notice of a public installation. Name both

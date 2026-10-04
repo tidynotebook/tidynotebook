@@ -681,6 +681,31 @@ export class PublishedLinkUnavailableError extends Error {
   }
 }
 
+/**
+ * The installation names no operator token, so the operator API is off
+ * (record 0190). The answer is the not-found answer of the operation, with
+ * its own code.
+ */
+export class OperatorOffError extends Error {
+  constructor() {
+    super('This installation serves no operator API.');
+    this.name = 'OperatorOffError';
+  }
+}
+
+/**
+ * A caller that failed a credential too often in one window of the attempt
+ * counter (record 0121). The answer is the one of the attempt limit.
+ */
+export class AttemptsExceededError extends Error {
+  readonly statusCode = 429;
+
+  constructor() {
+    super(titles.rate_limited);
+    this.name = 'AttemptsExceededError';
+  }
+}
+
 /** The named resource does not exist, or the actor may not see that it does. */
 export class NotFoundError extends Error {
   constructor(detail = 'The requested resource does not exist.') {
@@ -837,6 +862,13 @@ export function classifyError(error: unknown): {
       status: 500,
       code: 'invalid_response',
       detail: titles.invalid_response,
+      issues: [],
+    };
+  if (error instanceof OperatorOffError)
+    return {
+      status: 404,
+      code: 'operator_off',
+      detail: error.message,
       issues: [],
     };
   if (error instanceof UnauthenticatedError)

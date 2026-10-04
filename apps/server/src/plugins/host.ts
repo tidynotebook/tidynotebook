@@ -2,6 +2,7 @@
  * Host name parsing utilities for HTTP request validation, and the one rule
  * that names the operations which answer any host.
  */
+import { operations } from '@notesapp/api-contract';
 import { probeOperations } from '../routes/health.ts';
 
 /**
@@ -29,7 +30,18 @@ export function hostName(host: string | undefined): string {
  * Another kind of operation that a caller outside the served origins asks for
  * joins this set, and the allowlist reads only `answersAnyHost`.
  */
-const anyHostOperations: ReadonlySet<string> = new Set<string>(probeOperations);
+const anyHostOperations: ReadonlySet<string> = new Set<string>([
+  ...probeOperations,
+  // The operator API takes the operator token and no session, sets no cookie
+  // and answers no page, and a service on a private network names the core by
+  // an internal host (record 0190). The contract decides which operations
+  // they are, by their security scheme, so a new one needs no change here.
+  ...operations
+    .filter((operation) =>
+      operation.security.some((requirement) => 'operatorToken' in requirement),
+    )
+    .map((operation) => operation.id),
+]);
 
 /**
  * Whether the operation of a route answers whatever host a request names.

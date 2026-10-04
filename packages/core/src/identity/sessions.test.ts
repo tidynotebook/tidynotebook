@@ -70,6 +70,7 @@ function storeWith(sessions: SessionRecord[]): WorkspaceAdminStore & {
         addTheme: fail,
         removeTheme: fail,
         consent: fail,
+        openHandoff: fail,
         recordConsent: fail,
         createWorkspace: fail,
         lockWorkspace: fail,

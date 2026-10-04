@@ -7,6 +7,7 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { operations } from '@notesapp/api-contract';
 import { answersAnyHost, hostName } from './host.ts';
 
 await test('the host name drops the port and keeps the brackets of IPv6', () => {
@@ -30,4 +31,22 @@ await test('every other operation, and an address with no operation, is checked'
     assert.equal(answersAnyHost(id), false, id);
   assert.equal(answersAnyHost(undefined), false);
   assert.equal(answersAnyHost(''), false);
+});
+
+await test('every operator operation answers any host, and no other operation of a session does', () => {
+  // A service on a private network names the core by an internal host
+  // (record 0190), so every operator operation answers it.
+  const operator = operations.filter((operation) =>
+    operation.path.startsWith('/api/operator/'),
+  );
+  assert.ok(operator.length > 0);
+  for (const operation of operator)
+    assert.equal(answersAnyHost(operation.id), true, operation.id);
+  // An operation of a session or of the reader path keeps the allowlist.
+  for (const operation of operations)
+    if (
+      operation.security.length > 0 &&
+      !operation.path.startsWith('/api/operator/')
+    )
+      assert.equal(answersAnyHost(operation.id), false, operation.id);
 });

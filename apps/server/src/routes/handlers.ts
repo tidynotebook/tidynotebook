@@ -8,6 +8,7 @@
  */
 import type {
   InstallationStore,
+  OperatorStore,
   PasswordHasher,
   ReaderRefusalCause,
   WorkspaceAdminStore,
@@ -20,6 +21,7 @@ import type { ServerConfig } from '../config.ts';
 import type { ServiceLifecycle } from '../lifecycle.ts';
 import { runningLifecycle } from '../lifecycle.ts';
 import { createAccountHandlers } from './accounts.ts';
+import { createOperatorHandlers } from './operator.ts';
 import { createExportHandlers } from './export.ts';
 import { createFileHandlers, missingWorkspaceStore } from './files.ts';
 import { createWorkspaceHandlers } from './workspaces.ts';
@@ -62,6 +64,15 @@ function missingStore(): WorkspaceAdminStore & InstallationStore {
     throw new Error('notesapp: the server was built without an account store.');
   };
   return { account: fail, workspace: fail, installation: fail };
+}
+
+function missingOperatorStore(): OperatorStore {
+  return {
+    operator: () =>
+      Promise.reject(
+        new Error('notesapp: the server was built without an operator store.'),
+      ),
+  };
 }
 
 function missingAttachmentStore(): AttachmentStore {
@@ -180,6 +191,12 @@ export type HandlerDependencies = {
    * found.
    */
   readonly legal?: LegalDependencies;
+  /**
+   * The store of the operator API (record 0190). A test that checks the
+   * service operations leaves it out, and an operator operation that passes
+   * the token then answers a server error.
+   */
+  readonly operator?: OperatorStore;
 };
 
 /**
@@ -217,7 +234,12 @@ export function createHandlers(
     ...createAccountHandlers(
       store,
       async () => (await settings.legal()).documents,
+      config.accountPortal,
     ),
+    ...createOperatorHandlers({
+      store: dependencies.operator ?? missingOperatorStore(),
+      clock: () => new Date(),
+    }),
     ...createFileHandlers(dependencies.content ?? missingWorkspaceStore()),
     ...createHistoryHandlers(dependencies.content ?? missingWorkspaceStore()),
     ...createSyncHandlers(

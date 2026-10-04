@@ -202,6 +202,7 @@ function createFakeStore(): FakeStore {
         return Promise.resolve(kept.length < held.length);
       },
       consent: () => Promise.resolve(consents.get(actor.accountId) ?? null),
+      openHandoff: () => Promise.resolve(),
       recordConsent: (versions) => {
         consents.set(actor.accountId, {
           ...versions,

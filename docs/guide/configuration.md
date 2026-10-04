@@ -103,6 +103,17 @@ See [Stopping the server](self-hosting.md#stopping-the-server).
 | `NOTESAPP_NEW_ACCOUNT_STANDING`      | `active` or `locked`, the standing that a new account starts with. Empty is `active`, so a new account uses every operation, as before. A `locked` account signs in to one screen and can only export its notes, remove itself, or open the account portal. The first account is always `active`. |
 | `NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER`  | How long a new `locked` account lives before the daily run removes it, as a number of days and `d`, for example `30d`. It needs `NOTESAPP_NEW_ACCOUNT_STANDING` set to `locked`. Empty sets no removal time.                                                                                      |
 
+## The operator API
+
+A service of the operator, such as a billing service, can read and set the
+controls of an account with one secret. With no setting, the operator API is
+off and the installation sends nothing anywhere.
+
+| Setting                        | What it does                                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NOTESAPP_OPERATOR_TOKEN_FILE` | The file that holds the one secret of the operator API, of at least 32 characters with no space. A service sends it as a bearer token to the operations under `/api/operator/`. These operations answer on any host name, so a service on a private network can reach them. Empty turns the operator API off, and each of its operations answers that it is off. |
+| `NOTESAPP_ACCOUNT_PORTAL_URL`  | The full address of the account portal of that service, with no query, for example `https://billing.example.com`. A locked account opens it to unlock itself. The server adds a single-use token that works for 60 seconds, and the portal gives the token back to the operator API to learn the account. Empty shows no portal.                                 |
+
 ## Mail
 
 The mail server sends invitations, the links of a sign-up and the links of a

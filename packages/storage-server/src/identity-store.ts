@@ -25,7 +25,14 @@ import {
 } from './installation-settings-row.ts';
 import type {
   AccountControls,
+  AccountEvent,
+  AccountEventKind,
   ControlsWrite,
+  OperatorAccountRecord,
+  OperatorRemoval,
+  OperatorStore,
+  OperatorTotals,
+  OperatorTransaction,
   AccountOwnStanding,
   AccountSettings,
   AccountRecord,
@@ -80,6 +87,7 @@ import {
   defaultConnectionTimeoutMs,
   WorkspaceUnavailableError,
 } from './workspace-store/index.ts';
+import { postgresFailure } from './workspace-store/errors.ts';
 
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -208,6 +216,20 @@ function asAccountState(value: string): AccountState {
   return known;
 }
 
+/** The kinds of an account event, in the order of the enum. */
+const eventKinds: readonly AccountEventKind[] = ['made', 'verified', 'removed'];
+
+/** Narrows a stored event kind. An unexpected value is a defect. */
+function asEventKind(value: string): AccountEventKind {
+  const known = eventKinds.find((kind) => kind === value);
+  if (known === undefined)
+    throw new OperationalError(
+      'unexpected',
+      'notesapp: an account event holds an unknown kind.',
+    );
+  return known;
+}
+
 /** Narrows a stored registration policy. An unexpected value is a defect. */
 /** The one read of the settings row (record 0148). */
 async function readInstallationSettings(
@@ -289,7 +311,8 @@ function asThemeFamily(value: string): string {
 export type IdentityStoreHandle = WorkspaceAdminStore &
   InstallationStore &
   InstallationSettingsReader &
-  RegistrationStore & {
+  RegistrationStore &
+  OperatorStore & {
     /** The account of a Better Auth user, or `null` when none is linked. */
     accountOf(authUserId: string): Promise<string | null>;
     /**
@@ -602,6 +625,15 @@ export function openIdentityStore(
         return rows.rows[0]?.ended ?? 0;
       },
 
+      async openHandoff(tokenDigest: string): Promise<void> {
+        if (!/^[0-9a-f]{64}$/.test(tokenDigest))
+          throw new OperationalError(
+            'unexpected',
+            'notesapp: a handoff is stored as a digest.',
+          );
+        await client.query('select notesapp_open_handoff($1)', [tokenDigest]);
+      },
+
       async consent(): Promise<ConsentRecord | null> {
         const rows = await client.query<{
           terms_version: string;
@@ -832,6 +864,63 @@ export function openIdentityStore(
   }
 
   /**
+   * One account with its controls and its usage of one month, for an
+   * administrator or the operator, or `null`.
+   */
+  async function readAccountControls(
+    client: pg.PoolClient,
+    accountId: string,
+    month: string,
+  ): Promise<OperatorAccountRecord | null> {
+    const rows = await client.query<
+      AccountControlsRow & {
+        account_id: string;
+        email: string | null;
+        installation_role: string;
+        state: string;
+        created_at: Date;
+        used_bytes: string;
+        text_bytes: string;
+        published_transfer_bytes: string;
+        download_bytes: string;
+      }
+    >(
+      `select c.account_id, c.email, c.installation_role, c.state,
+              c.created_at, c.standing,
+              c.removal_at, c.limit_bytes::text as limit_bytes,
+              c.text_limit_bytes::text as text_limit_bytes,
+              c.published_transfer_limit_bytes::text
+                as published_transfer_limit_bytes,
+              c.download_limit_bytes::text as download_limit_bytes,
+              c.teams, c.collaboration,
+              c.controls_revision::text as controls_revision,
+              c.used_bytes::text as used_bytes,
+              c.text_bytes::text as text_bytes,
+              c.published_transfer_bytes::text as published_transfer_bytes,
+              c.download_bytes::text as download_bytes
+         from notesapp_account_controls($1, $2::date) c`,
+      [accountId, `${month}-01`],
+    );
+    const row = rows.rows[0];
+    if (row === undefined) return null;
+    return {
+      accountId: row.account_id,
+      email: row.email,
+      role: asInstallationRole(row.installation_role),
+      state: asAccountState(row.state),
+      createdAt: isoOf(row.created_at),
+      controls: accountControlsOf(row),
+      usage: {
+        usedBytes: BigInt(row.used_bytes),
+        textBytes: BigInt(row.text_bytes),
+        month,
+        publishedTransferBytes: BigInt(row.published_transfer_bytes),
+        downloadBytes: BigInt(row.download_bytes),
+      },
+    };
+  }
+
+  /**
    * Writes every control of one account with the revision that the writer
    * read. The function refuses a caller that is neither an administrator nor
    * the operator.
@@ -855,6 +944,110 @@ export function openIdentityStore(
       'unexpected',
       'notesapp: the write of the controls answered no known outcome.',
     );
+  }
+
+  /** The reads and writes of the operator API (record 0190). */
+  function operatorTransaction(client: pg.PoolClient): OperatorTransaction {
+    return {
+      async findAccount(email: string): Promise<string | null> {
+        const rows = await client.query<{ account: string | null }>(
+          'select notesapp_operator_find_account($1) as account',
+          [email],
+        );
+        return rows.rows[0]?.account ?? null;
+      },
+
+      async account(
+        accountId: string,
+        month: string,
+      ): Promise<OperatorAccountRecord | null> {
+        assertUuid(accountId, 'the account');
+        return readAccountControls(client, accountId, month);
+      },
+
+      async setControls(accountId, revision, controls) {
+        assertUuid(accountId, 'the account');
+        return writeControls(client, accountId, revision, controls);
+      },
+
+      async remove(accountId: string): Promise<OperatorRemoval> {
+        assertUuid(accountId, 'the account');
+        // The refusal of the last administrator and of an unknown account
+        // are answers, so the statement runs in a savepoint and the
+        // transaction stays usable after it.
+        await client.query('savepoint operator_removal');
+        try {
+          await client.query('select notesapp_remove_account($1)', [accountId]);
+          await client.query('release savepoint operator_removal');
+          return 'removed';
+        } catch (error: unknown) {
+          await client.query('rollback to savepoint operator_removal');
+          const failure = postgresFailure(error);
+          if (failure?.code === 'NA002') return 'last_administrator';
+          if (failure?.code === 'P0002') return 'missing';
+          throw error;
+        }
+      },
+
+      async totals(month: string): Promise<OperatorTotals> {
+        const rows = await client.query<{
+          published_transfer_bytes: string;
+          download_bytes: string;
+          object_writes: string;
+          object_reads: string;
+        }>(
+          `select published_transfer_bytes::text as published_transfer_bytes,
+                  download_bytes::text as download_bytes,
+                  object_writes::text as object_writes,
+                  object_reads::text as object_reads
+             from notesapp_operator_totals($1::date)`,
+          [`${month}-01`],
+        );
+        const row = rows.rows[0];
+        return {
+          month,
+          publishedTransferBytes: BigInt(row?.published_transfer_bytes ?? '0'),
+          downloadBytes: BigInt(row?.download_bytes ?? '0'),
+          objectWrites: BigInt(row?.object_writes ?? '0'),
+          objectReads: BigInt(row?.object_reads ?? '0'),
+        };
+      },
+
+      async events(
+        after: number,
+        limit: number,
+      ): Promise<readonly AccountEvent[]> {
+        const rows = await client.query<{
+          cursor: string;
+          account_id: string;
+          kind: string;
+          occurred_at: Date;
+        }>(
+          `select cursor::text as cursor, account_id, kind, occurred_at
+             from notesapp_operator_account_events($1::bigint, $2)`,
+          [String(after), limit],
+        );
+        return rows.rows.map((row) => ({
+          cursor: Number(row.cursor),
+          accountId: row.account_id,
+          kind: asEventKind(row.kind),
+          occurredAt: isoOf(row.occurred_at),
+        }));
+      },
+
+      async redeemHandoff(tokenDigest: string) {
+        const rows = await client.query<{
+          account_id: string;
+          email: string | null;
+        }>('select account_id, email from notesapp_redeem_handoff($1)', [
+          tokenDigest,
+        ]);
+        const row = rows.rows[0];
+        return row === undefined
+          ? null
+          : { accountId: row.account_id, email: row.email };
+      },
+    };
   }
 
   function installationTransaction(
@@ -1201,6 +1394,10 @@ export function openIdentityStore(
       invitation: NewInvitation,
     ): Promise<InvitationRecord | null> {
       return asOperator((client) => writeInvitation(client, invitation));
+    },
+
+    operator<T>(run: (tx: OperatorTransaction) => Promise<T>): Promise<T> {
+      return asOperator((client) => run(operatorTransaction(client)));
     },
 
     operatorPromote(email: string): Promise<string | null> {

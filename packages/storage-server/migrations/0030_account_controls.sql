@@ -796,6 +796,7 @@ CREATE FUNCTION public.notesapp_account_controls(
 	RETURNS TABLE (
 		account_id uuid,
 		email text,
+		installation_role text,
 		state text,
 		created_at timestamptz,
 		standing text,
@@ -823,7 +824,8 @@ CREATE FUNCTION public.notesapp_account_controls(
 				USING ERRCODE = '42501';
 		END IF;
 		RETURN QUERY
-		SELECT a.id, u.email, a.state::text, a.created_at, a.standing::text,
+		SELECT a.id, u.email, a.installation_role::text, a.state::text,
+			a.created_at, a.standing::text,
 			a.removal_at, a.limit_bytes, a.text_limit_bytes,
 			a.published_transfer_limit_bytes, a.download_limit_bytes,
 			a.teams, a.collaboration, a.controls_revision,

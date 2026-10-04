@@ -7,6 +7,7 @@ import { maxArchiveBytes } from '@notesapp/core';
 import {
   ConfigError,
   loadLegalTexts,
+  loadOperatorToken,
   loadProtectedEnvironment,
   loadServerConfig,
   maxLegalDocumentBytes,
@@ -797,4 +798,68 @@ await test('a removal time needs a locked new account and a count of days', () =
         error.issues.some((issue) => issue.includes('NOTESAPP_NEW_ACCOUNT_')),
       JSON.stringify(overrides),
     );
+});
+
+await test('the account portal is a full address that a path can follow', () => {
+  assert.equal(loadServerConfig(environment({})).accountPortal, null);
+  assert.equal(
+    loadServerConfig(
+      environment({
+        NOTESAPP_ACCOUNT_PORTAL_URL: 'https://billing.example.test/portal/',
+      }),
+    ).accountPortal,
+    'https://billing.example.test/portal',
+  );
+  for (const value of [
+    'billing.example.test',
+    'ftp://billing.example.test',
+    'https://billing.example.test/?plan=pro',
+    'https://billing.example.test/#top',
+    'https://user:secret@billing.example.test',
+  ])
+    assert.throws(
+      () =>
+        loadServerConfig(environment({ NOTESAPP_ACCOUNT_PORTAL_URL: value })),
+      (error: unknown) =>
+        error instanceof ConfigError &&
+        error.issues.every(
+          (issue) =>
+            issue.startsWith('NOTESAPP_ACCOUNT_PORTAL_URL') &&
+            !issue.includes('secret'),
+        ),
+      value,
+    );
+});
+
+await test('the operator token comes from its file, whole and long enough', async () => {
+  assert.equal(await loadOperatorToken({ operatorTokenFile: null }), null);
+  const directory = await mkdtemp(join(tmpdir(), 'notesapp-operator-'));
+  try {
+    const file = join(directory, 'operator_token');
+    const secret = 'Zx9'.repeat(12);
+    await writeFile(file, `${secret}\n`);
+    const config = loadServerConfig(
+      environment({ NOTESAPP_OPERATOR_TOKEN_FILE: file }),
+    );
+    assert.equal(await loadOperatorToken(config), secret);
+    for (const text of ['short', `${'a'.repeat(20)} ${'b'.repeat(20)}`]) {
+      await writeFile(file, text);
+      await assert.rejects(
+        loadOperatorToken(config),
+        (error: unknown) =>
+          error instanceof ConfigError &&
+          error.issues.every(
+            (issue) =>
+              issue.startsWith('NOTESAPP_OPERATOR_TOKEN_FILE') &&
+              !issue.includes(text),
+          ),
+      );
+    }
+    await assert.rejects(
+      loadOperatorToken({ operatorTokenFile: join(directory, 'missing') }),
+      ConfigError,
+    );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
 });

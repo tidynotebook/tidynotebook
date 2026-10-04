@@ -108,3 +108,23 @@ export async function writeIssuerAccount(
   );
   return userId;
 }
+
+/**
+ * Makes the first account the way a release before migration 0030 did.
+ *
+ * The registration function of those releases takes the byte limit and no
+ * controls, so the store of this release cannot call it. The statement runs
+ * with the runtime role, as the store did.
+ */
+export async function registerFirstAccountOfEarlierRelease(
+  runtime: TestSession,
+  authUserId: string,
+  limitBytes: bigint,
+): Promise<string | null> {
+  const rows = await runtime.query<{ account: string | null }>(
+    `select notesapp_register_account($1, 'first-run', null, $2, $3,
+       'Personal', $4::bigint) as account`,
+    [authUserId, randomUUID(), randomUUID(), limitBytes.toString()],
+  );
+  return rows[0]?.account ?? null;
+}

@@ -18,6 +18,7 @@ import type { OperationId } from '@notesapp/api-contract';
 import { findChannel, findOperation } from '@notesapp/api-contract';
 import {
   loadLegalTexts,
+  loadOperatorToken,
   type LegalTexts,
   type ServerConfig,
 } from './config.ts';
@@ -358,7 +359,8 @@ export async function createAppWithHandlers(
   // is checked by the cookie write check and by the identity routes, which
   // both read the same served origin list. An operation that a caller outside
   // the served origins asks for, such as a probe of the platform, answers any
-  // host, and `answersAnyHost` is the one rule that names it (record 0199).
+  // host, and `answersAnyHost` is the one rule that names it (records 0190
+  // and 0199).
   const servedHosts = servedHostNames(config.servedOrigins);
   app.addHook('onRequest', async (request, reply) => {
     if (servedHosts.includes(hostName(request.headers.host))) return;
@@ -800,6 +802,15 @@ async function composeApp(
     auth: auth.auth,
     identity,
     servedOrigins: config.servedOrigins,
+    // The operator API of record 0190. With no token file every operator
+    // operation answers operator_off, and a wrong token counts in the shared
+    // attempt counter.
+    operator: {
+      token: await loadOperatorToken(config),
+      attempts,
+      windowMs: config.rateLimit.windowSeconds * 1000,
+      max: config.rateLimit.max,
+    },
   });
   const app = await createAppWithHandlers(config, {
     handlers: {
@@ -810,6 +821,7 @@ async function composeApp(
           passwordMatches(auth.auth, authUserId, password),
         content,
         attachments,
+        operator: identity,
         archiveJobs: coordinatedArchiveJobs(coordination),
         publications: {
           store: content,

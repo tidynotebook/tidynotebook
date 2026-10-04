@@ -59,6 +59,7 @@ import {
 } from '../plugins/problem.ts';
 import { readProperty } from '../values.ts';
 import { readParameter, readString } from './accounts.ts';
+import { controlsBody } from './account-controls.ts';
 
 /** Media type of every answer in this module. */
 const jsonMediaType = 'application/json';
@@ -112,6 +113,7 @@ function accountBody(
       usedBytes: byteNumber(record.usedBytes),
       limitBytes: byteNumber(record.limitBytes),
     },
+    controls: controlsBody(record.controls),
     self: record.accountId === selfId,
   };
 }

@@ -83,6 +83,19 @@ The byte limit belongs to the account and counts every workspace that it owns
 The configuration names the limit of a new account and the lifetime of an
 invitation. See [Database](database.md) for the lock order.
 
+## Controls and the operator API
+
+An account carries limits, a standing and feature switches, with a revision
+that guards each write
+([record 0189](../decisions/0189-an-account-carries-limits-a-standing-and-feature-switches.md)).
+A locked account keeps a fixed list of operations
+([record 0201](../decisions/0201-a-locked-account-keeps-a-fixed-list-of-operations.md)).
+A service of the operator reaches the controls through `/api/operator/` with
+one bearer token, and a person hands the portal of that service a single-use
+token ([record 0190](../decisions/0190-an-operator-api-reaches-the-account-controls.md)).
+`packages/core/src/identity/controls.ts` and `operator.ts` hold the rules, and
+`apps/server/src/routes/operator.ts` the handlers.
+
 ## Password recovery
 
 With a mail transport configured, sign in offers Forgot password

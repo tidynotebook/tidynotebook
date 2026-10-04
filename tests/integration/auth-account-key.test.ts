@@ -29,6 +29,7 @@ import {
 import { openSession, testServerUrl } from './support/database.ts';
 import {
   migrationsBefore,
+  registerFirstAccountOfEarlierRelease,
   writeIssuerAccount,
 } from './support/earlier-schema.ts';
 
@@ -83,21 +84,19 @@ async function signIn(email: string, password: string): Promise<number> {
   return response instanceof Response ? response.status : 0;
 }
 
-/** Links an identity user to a new account, as the first run does. */
+/** Links an identity user to a new account, as the first run did then. */
 async function register(authUserId: string): Promise<void> {
-  const account = await identity.register({
-    authUserId,
-    ground: { kind: 'first-run' },
-    accountId: randomUUID(),
-    workspaceId: randomUUID(),
-    workspaceName: 'Personal',
-    newAccount: {
-      limitBytes: defaultAccountLimitBytes,
-      standing: 'active',
-      removeAfterSeconds: null,
-    },
-  });
-  assert.ok(account !== null);
+  const runtime = await openSession(config.databaseUrl);
+  try {
+    const account = await registerFirstAccountOfEarlierRelease(
+      runtime,
+      authUserId,
+      defaultAccountLimitBytes,
+    );
+    assert.ok(account !== null);
+  } finally {
+    await runtime.close();
+  }
 }
 
 const kept = { email: 'kept@notes.invalid', password: 'kept-password-12345' };

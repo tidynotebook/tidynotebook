@@ -18,6 +18,7 @@ import type {
 import {
   acceptLegalDocuments,
   consentRequired,
+  openAccountPortal,
   deleteTheme,
   importTheme,
   listSessions,
@@ -29,6 +30,11 @@ import {
   updatePreferences,
 } from '@notesapp/core';
 import { requireActor } from '../auth/actor.ts';
+import {
+  newPublishedSecret,
+  secretDigest,
+} from '../auth/publication-secrets.ts';
+import { controlsBody } from './account-controls.ts';
 import { readProperty } from '../values.ts';
 import type { HandlerMap, HandlerResult } from '../plugins/register.ts';
 import {
@@ -150,8 +156,26 @@ export function createAccountHandlers(
   store: WorkspaceAdminStore,
   /** The legal documents that apply now (records 0120, 0148). */
   legalDocuments: () => Promise<LegalDocuments | null>,
+  /** The account portal of the operator, or `null` (record 0190). */
+  accountPortal: string | null,
 ): HandlerMap {
   return {
+    openAccountPortal: async (request): Promise<HandlerResult> => {
+      const resolved = requireActor(request);
+      // The token travels once, in the address, and only its digest is at
+      // rest, as the secret of a published link (record 0030).
+      const token = newPublishedSecret();
+      const url = unwrap(
+        await openAccountPortal(store, resolved.actor, {
+          portal: accountPortal,
+          path: readString(request.body, 'path'),
+          token,
+          tokenDigest: secretDigest.digest(token),
+        }),
+      );
+      return { status: 200, mediaType: jsonMediaType, body: { url } };
+    },
+
     getAccount: async (request): Promise<HandlerResult> => {
       const resolved = requireActor(request);
       const preferences = unwrap(await readPreferences(store, resolved.actor));
@@ -173,6 +197,10 @@ export function createAccountHandlers(
           // The application opens only after consent to the current legal
           // documents (record 0120).
           consentRequired: consentRequired(await legalDocuments(), consent),
+          // A locked account opens one screen, and the portal is its one
+          // action when the installation names one (record 0201).
+          controls: controlsBody(standing.controls),
+          accountPortal: accountPortal !== null,
         },
       };
     },

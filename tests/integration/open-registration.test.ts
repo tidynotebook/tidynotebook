@@ -56,6 +56,7 @@ import {
 } from './support/database.ts';
 import {
   migrationsBefore,
+  registerFirstAccountOfEarlierRelease,
   writeIssuerAccount,
 } from './support/earlier-schema.ts';
 
@@ -502,19 +503,17 @@ await test('an upgraded installation still signs in its existing accounts', asyn
         passwordHash: await (await auth.auth.$context).password.hash(password),
         emailVerified: false,
       });
-      const account = await identity.register({
-        authUserId: userId,
-        ground: { kind: 'first-run' },
-        accountId: randomUUID(),
-        workspaceId: randomUUID(),
-        workspaceName: 'Personal',
-        newAccount: {
-          limitBytes: defaultAccountLimitBytes,
-          standing: 'active',
-          removeAfterSeconds: null,
-        },
-      });
-      assert.ok(account !== null);
+      const runtime = await openSession(upgraded.databaseUrl);
+      try {
+        const account = await registerFirstAccountOfEarlierRelease(
+          runtime,
+          userId,
+          defaultAccountLimitBytes,
+        );
+        assert.ok(account !== null);
+      } finally {
+        await runtime.close();
+      }
       const signIn = async (): Promise<number> => {
         const response: unknown = await auth.auth.api.signInEmail({
           body: { email, password },

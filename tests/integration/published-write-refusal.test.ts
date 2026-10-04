@@ -354,12 +354,25 @@ await test('every write of the contract is guarded or named here', () => {
     assert.ok(!operation.path.startsWith('/published/'), operation.id);
 });
 
+/** Whether an operation takes the operator token of record 0190. */
+function takesOperatorToken(operation: OperationEntry): boolean {
+  return operation.security.some(
+    (requirement) => 'operatorToken' in requirement,
+  );
+}
+
 await test('every guarded write refuses a published token with no session', async () => {
   const guarded = writes.filter((operation) => operation.security.length > 0);
   for (const operation of guarded) {
     const response = await app.inject(readerAttempt(operation));
-    assert.equal(response.statusCode, 401, operation.id);
-    assert.equal(problemCodeOf(response.body), 'unauthenticated', operation.id);
+    // This installation names no operator token, so a write of the operator
+    // API answers that the API is off, whatever bearer token it carries. The
+    // operator tests prove the refusal of a wrong token where one is set.
+    const expected = takesOperatorToken(operation)
+      ? { status: 404, code: 'operator_off' }
+      : { status: 401, code: 'unauthenticated' };
+    assert.equal(response.statusCode, expected.status, operation.id);
+    assert.equal(problemCodeOf(response.body), expected.code, operation.id);
     // The refusal names no note, no link and neither secret.
     assert.ok(!response.body.includes(token), operation.id);
     assert.ok(!response.body.includes(ticket), operation.id);

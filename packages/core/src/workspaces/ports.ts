@@ -160,6 +160,11 @@ export type AccountTransaction = {
    * default family in the same write, so no setting names a removed theme.
    */
   removeTheme(themeId: string): Promise<boolean>;
+  /**
+   * Stores the digest of one portal handoff of the account, which lives 60
+   * seconds and works once (record 0190).
+   */
+  openHandoff(tokenDigest: string): Promise<void>;
   /** The legal documents that the account accepted, or `null` (0120). */
   consent(): Promise<ConsentRecord | null>;
   /** Stores the consent of the account to two versions, with the time. */

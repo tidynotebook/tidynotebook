@@ -234,6 +234,18 @@ export type ServerConfig = {
    */
   readonly legalFiles: LegalFiles;
   /**
+   * The file that holds the one secret of the operator API, or `null` for
+   * none (record 0190). With no file every operator operation answers 404
+   * with the code `operator_off`. `loadOperatorToken` reads it.
+   */
+  readonly operatorTokenFile: string | null;
+  /**
+   * The account portal of the operator, as a full address with no query, or
+   * `null` (record 0190). `openAccountPortal` answers a path of it with a
+   * handoff token, and a locked account links it (record 0201).
+   */
+  readonly accountPortal: string | null;
+  /**
    * The stop of this process.
    *
    * `gracePeriodMs` is the wait between the moment the readiness answer
@@ -316,6 +328,8 @@ export const optionalVariables = [
   'NOTESAPP_BREACH_CHECK',
   'NOTESAPP_NEW_ACCOUNT_STANDING',
   'NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER',
+  'NOTESAPP_OPERATOR_TOKEN_FILE',
+  'NOTESAPP_ACCOUNT_PORTAL_URL',
 ] as const;
 
 const protectedFiles = {
@@ -555,6 +569,12 @@ const configSchema: SchemaObject = {
       type: 'string',
       pattern: '^[1-9][0-9]{0,3}d$',
     },
+    NOTESAPP_OPERATOR_TOKEN_FILE: {
+      type: 'string',
+      pattern: '^/',
+      maxLength: 1024,
+    },
+    NOTESAPP_ACCOUNT_PORTAL_URL: { type: 'string', maxLength: 2048 },
   },
 };
 
@@ -684,6 +704,8 @@ export function loadServerConfig(
     shutdown,
     accounts: readAccounts(raw),
     breachCheck: raw.NOTESAPP_BREACH_CHECK !== 'off',
+    operatorTokenFile: raw.NOTESAPP_OPERATOR_TOKEN_FILE ?? null,
+    accountPortal: readAccountPortal(raw.NOTESAPP_ACCOUNT_PORTAL_URL),
     ...readLegalDocuments(raw, canonical),
   };
 }
@@ -782,6 +804,72 @@ function readMail(
   });
   if (!read.ok) return { ok: false, issues: [mailFieldIssues[read.problem]] };
   return { ok: true, mail: { kind: 'fields', fields: read.value } };
+}
+
+/**
+ * The account portal of the operator, or `null` (record 0190).
+ *
+ * A path joins it as text, so it is a full http or https address with no
+ * query, no fragment, no user and no final slash. Any other value stops
+ * startup rather than sending a person to an address that nobody named.
+ */
+function readAccountPortal(value: string | undefined): string | null {
+  if (value === undefined) return null;
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new ConfigError([
+      'NOTESAPP_ACCOUNT_PORTAL_URL: name a full http or https address.',
+    ]);
+  }
+  if (
+    (url.protocol !== 'https:' && url.protocol !== 'http:') ||
+    url.search !== '' ||
+    url.hash !== '' ||
+    url.username !== '' ||
+    url.password !== ''
+  )
+    throw new ConfigError([
+      'NOTESAPP_ACCOUNT_PORTAL_URL: name a full http or https address with no query, no fragment and no user, for example https://billing.example.com.',
+    ]);
+  return url.href.replace(/\/+$/, '');
+}
+
+/** The shortest operator token that the server takes. */
+export const minOperatorTokenLength = 32;
+
+/**
+ * Reads the one secret of the operator API (record 0190), or `null` when the
+ * configuration names no file.
+ *
+ * The file loses the space around its value. A file that cannot be read, a
+ * value shorter than 32 characters, and a value with a space or a control
+ * character inside it stop startup, so the API never opens with a guessable
+ * or a broken secret. The error never repeats the value.
+ */
+export async function loadOperatorToken(
+  config: Pick<ServerConfig, 'operatorTokenFile'>,
+): Promise<string | null> {
+  const path = config.operatorTokenFile;
+  if (path === null) return null;
+  let value: string;
+  try {
+    value = (await readFile(path, 'utf8')).trim();
+  } catch {
+    throw new ConfigError([
+      'NOTESAPP_OPERATOR_TOKEN_FILE: the file cannot be read.',
+    ]);
+  }
+  if (value.length < minOperatorTokenLength || value.length > 512)
+    throw new ConfigError([
+      `NOTESAPP_OPERATOR_TOKEN_FILE: the file must hold one secret of ${String(minOperatorTokenLength)} to 512 characters.`,
+    ]);
+  if (!/^[\x21-\x7e]+$/.test(value))
+    throw new ConfigError([
+      'NOTESAPP_OPERATOR_TOKEN_FILE: the secret must hold no space and no control character.',
+    ]);
+  return value;
 }
 
 /** The address of one document: a full http or https URL, or `null`. */
