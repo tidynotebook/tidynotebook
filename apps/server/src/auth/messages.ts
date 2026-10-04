@@ -168,3 +168,33 @@ export function testMessage(input: {
     ]),
   };
 }
+
+/**
+ * The message before the removal of a locked account (record 0201). It goes
+ * 30 days and 7 days before the removal, and says how to keep the account
+ * and how to take the notes out.
+ */
+export function removalNoticeMessage(input: {
+  readonly to: string;
+  readonly origin: string;
+  /** The whole days until the removal. */
+  readonly days: number;
+  /** Whether the installation names an account portal that unlocks it. */
+  readonly portal: boolean;
+}): MailMessage {
+  const name = signature(input.origin);
+  const when = lifetimeWords(input.days * 24);
+  return {
+    to: input.to,
+    subject: `Your account on ${name} is removed in ${when}`,
+    text: body([
+      `Your account on ${name} is locked. In ${when}, the account and every note in it are removed for good.`,
+      input.portal
+        ? `To keep the account, sign in on this page and open the account portal:\n${input.origin}/login`
+        : `To keep the account, ask the administrator of ${name} to unlock it. You can sign in on this page:\n${input.origin}/login`,
+      'To keep your notes without the account, sign in and select Export my notes.',
+      'If you do not want the account, you need to do nothing.',
+      `-- \n${name}`,
+    ]),
+  };
+}

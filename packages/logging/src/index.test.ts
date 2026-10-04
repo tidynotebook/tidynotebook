@@ -67,3 +67,18 @@ await test('a render failure names its boundary and never its message', () => {
     },
   ]);
 });
+
+await test('a failed run of a job names the job and nothing of an account', () => {
+  const memory = createMemorySink();
+  const logger = createLogger(memory.sink, () => '2026-10-04T10:00:00.000Z');
+  // The removal of locked accounts is a job of the hourly run (record 0201).
+  logger.emit('maintenance.failed', { job: 'removals' });
+  assert.deepEqual(memory.records, [
+    {
+      event: 'maintenance.failed',
+      level: 'error',
+      time: '2026-10-04T10:00:00.000Z',
+      job: 'removals',
+    },
+  ]);
+});

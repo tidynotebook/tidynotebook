@@ -34,6 +34,8 @@ import type {
   OperatorStore,
   OperatorTotals,
   OperatorTransaction,
+  RemovalCandidate,
+  RemovalStore,
   AccountOwnStanding,
   AccountSettings,
   AccountRecord,
@@ -314,7 +316,8 @@ export type IdentityStoreHandle = WorkspaceAdminStore &
   InstallationStore &
   InstallationSettingsReader &
   RegistrationStore &
-  OperatorStore & {
+  OperatorStore &
+  RemovalStore & {
     /** The account of a Better Auth user, or `null` when none is linked. */
     accountOf(authUserId: string): Promise<string | null>;
     /**
@@ -1426,6 +1429,55 @@ export function openIdentityStore(
       invitation: NewInvitation,
     ): Promise<InvitationRecord | null> {
       return asOperator((client) => writeInvitation(client, invitation));
+    },
+
+    async removalCandidates(
+      horizon: Date,
+    ): Promise<readonly RemovalCandidate[]> {
+      return asOperator(async (client) => {
+        const rows = await client.query<{
+          account_id: string;
+          email: string | null;
+          removal_at: Date;
+          removal_notices: number;
+        }>(
+          `select account_id, email, removal_at, removal_notices
+             from notesapp_removal_candidates($1)`,
+          [horizon],
+        );
+        return rows.rows.map((row) => ({
+          accountId: row.account_id,
+          email: row.email,
+          removalAt: isoOf(row.removal_at),
+          notices: row.removal_notices,
+        }));
+      });
+    },
+
+    async removeDueAccount(accountId: string): Promise<boolean> {
+      assertUuid(accountId, 'the account');
+      return asOperator(async (client) => {
+        const rows = await client.query<{ removed: boolean }>(
+          'select notesapp_remove_due_account($1) as removed',
+          [accountId],
+        );
+        return rows.rows[0]?.removed ?? false;
+      });
+    },
+
+    async markRemovalNotice(
+      accountId: string,
+      notices: number,
+      removalAt: string,
+    ): Promise<boolean> {
+      assertUuid(accountId, 'the account');
+      return asOperator(async (client) => {
+        const rows = await client.query<{ marked: boolean }>(
+          'select notesapp_mark_removal_notice($1, $2, $3) as marked',
+          [accountId, notices, removalAt],
+        );
+        return rows.rows[0]?.marked ?? false;
+      });
     },
 
     operator<T>(run: (tx: OperatorTransaction) => Promise<T>): Promise<T> {

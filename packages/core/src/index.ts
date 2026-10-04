@@ -54,6 +54,19 @@ export type {
   ControlsWrite,
   NewAccountSettings,
 } from './identity/controls.ts';
+export type {
+  RemovalCandidate,
+  RemovalNotifier,
+  RemovalRun,
+  RemovalStep,
+  RemovalStore,
+} from './identity/removal.ts';
+export {
+  removalHorizonDays,
+  removalNoticeDays,
+  removalStep,
+  runRemovals,
+} from './identity/removal.ts';
 export {
   lockedAccountKeeps,
   lockedAccountOperations,
