@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  completeWithRetries,
+  completionRefusalPasses,
+  completionRetryDelaysMs,
   downloadName,
   downloadRefusalMessage,
   exportCheckMessage,
@@ -191,3 +194,64 @@ await test('the check of an export names its cause by the status of its answer',
     'The download did not start. Try again.',
   );
 });
+
+await test('a completion that a busy server refused tries again, a few times', async () => {
+  // Codex review of PR 288. The server keeps the parts when it refuses a
+  // completion for another running job, and the client removed the import
+  // at once, so a short wait cost a large upload.
+  const waits: number[] = [];
+  const wait = (milliseconds: number): Promise<void> => {
+    waits.push(milliseconds);
+    return Promise.resolve();
+  };
+  const answers = [
+    { error: { code: 'archive_job_running' } },
+    { error: { code: 'archive_jobs_busy' } },
+    { error: undefined, data: 'imported' },
+  ];
+  let calls = 0;
+  const done = await completeWithRetries(
+    () => Promise.resolve(answers[calls++] ?? { error: undefined }),
+    wait,
+  );
+  assert.equal(done.error, undefined);
+  assert.equal(calls, 3);
+  assert.deepEqual(waits, completionRetryDelaysMs.slice(0, 2));
+});
+
+await test('a completion stops trying after the last wait, and at a final refusal', async () => {
+  const waits: number[] = [];
+  const wait = (milliseconds: number): Promise<void> => {
+    waits.push(milliseconds);
+    return Promise.resolve();
+  };
+  let calls = 0;
+  const busy = await completeWithRetries(() => {
+    calls += 1;
+    return Promise.resolve({ error: { code: 'archive_jobs_busy' } });
+  }, wait);
+  assert.equal(readCode(busy.error), 'archive_jobs_busy');
+  assert.equal(calls, completionRetryDelaysMs.length + 1);
+  assert.deepEqual(waits, completionRetryDelaysMs);
+  // No room does not come back in seconds, and a refusal of the zip file
+  // never passes, so neither waits.
+  for (const code of ['storage_full', 'archive_invalid', 'path_conflict']) {
+    waits.length = 0;
+    calls = 0;
+    const answer = await completeWithRetries(() => {
+      calls += 1;
+      return Promise.resolve({ error: { code } });
+    }, wait);
+    assert.equal(readCode(answer.error), code);
+    assert.equal(calls, 1);
+    assert.deepEqual(waits, []);
+    assert.equal(completionRefusalPasses({ code }), false);
+  }
+});
+
+/** The code of a problem in a test answer. */
+function readCode(error: unknown): unknown {
+  return error !== null && typeof error === 'object'
+    ? Object.fromEntries(Object.entries(error))['code']
+    : undefined;
+}

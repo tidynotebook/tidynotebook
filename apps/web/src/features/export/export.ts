@@ -255,6 +255,57 @@ export async function downloadAll(workspaceId: string): Promise<void> {
 }
 
 /**
+ * The waits before each new try of a completion that a busy server refused.
+ *
+ * The server keeps the parts when it refuses a completion because another
+ * import or export runs (record 0170), so the import tries again a few times
+ * before it gives up, and a short wait never costs the person the upload of
+ * a large zip file.
+ */
+export const completionRetryDelaysMs: readonly number[] = [
+  5_000, 10_000, 20_000,
+];
+
+/**
+ * Whether a refusal of the completion passes when another archive job ends.
+ *
+ * A server with no room (`storage_full`) does not gain room in seconds, and
+ * every other refusal names the zip file, so only these two wait.
+ */
+export function completionRefusalPasses(error: unknown): boolean {
+  const code = problemCode(error);
+  return code === 'archive_job_running' || code === 'archive_jobs_busy';
+}
+
+/**
+ * Completes an import, and tries again after each wait of `delays` while the
+ * server refuses it for a job that passes. It answers the last answer.
+ *
+ * @param wait the clock of the waits, which a test replaces.
+ */
+export async function completeWithRetries<
+  T extends { readonly error?: unknown },
+>(
+  complete: () => Promise<T>,
+  wait: (milliseconds: number) => Promise<void>,
+  delays: readonly number[] = completionRetryDelaysMs,
+): Promise<T> {
+  let answer = await complete();
+  for (const delay of delays) {
+    if (answer.error === undefined || !completionRefusalPasses(answer.error))
+      return answer;
+    await wait(delay);
+    answer = await complete();
+  }
+  return answer;
+}
+
+/** A wait on the clock of the browser. */
+function waitFor(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+/**
  * Imports one portable workspace archive. The server moves a picture into
  * the attachments folder and turns a wiki link into a standard link, and
  * names the files that it left out (record 0172).
@@ -262,9 +313,10 @@ export async function downloadAll(workspaceId: string): Promise<void> {
  * The archive goes up in parts of the size that the server states, because
  * a proxy in front of the server refuses a large body (record 0192). Each
  * part is a slice of the file, so the browser never holds the whole archive
- * in memory, and the completion reads it on the server. When a part or the
- * completion fails, the import is removed at once, so its parts do not hold
- * the storage of the server.
+ * in memory, and the completion reads it on the server. A completion that a
+ * busy server refused tries again, by `completeWithRetries`. When a part or
+ * the completion fails for good, the import is removed at once, so its parts
+ * do not hold the storage of the server.
  */
 export async function importAll(
   workspaceId: string,
@@ -292,9 +344,10 @@ export async function importAll(
     }).catch((failure: unknown) => ({ error: failure }));
     if (sent.error !== undefined) return abandon(sent.error);
   }
-  const answer = await completeWorkspaceImport({
-    path: { workspaceId, importId },
-  });
+  const answer = await completeWithRetries(
+    () => completeWorkspaceImport({ path: { workspaceId, importId } }),
+    waitFor,
+  );
   if (answer.error !== undefined || answer.data === undefined)
     return abandon(answer.error);
   return answer.data;
