@@ -24,12 +24,11 @@ exists after the person opens the link, and then the person signs in. A sign-up
 that nobody finishes goes away after a time that the server sets.
 
 By default, a person needs an invitation. Turn on **Let anybody sign up** in
-this section of the accounts page. The server allows this only when the installation has a mail
-server, a separate address for published pages, and the terms and the
-privacy notice of the service. If a part is missing, the page names it. You set
-the mail server and the two documents on the same page. The person who runs
-the server sets the address for published pages. Turn the choice off to
-require an invitation again.
+this section of the accounts page. The server allows this only when the
+installation has a mail server and the terms and the privacy notice of the
+service. If a part is missing, the page names it. You set the mail server and
+the two documents on the same page. Turn the choice off to require an
+invitation again.
 
 While anybody can sign up, the page does not let you remove the mail server or
 a legal document, because sign-up needs them.

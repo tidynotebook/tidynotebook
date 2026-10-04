@@ -27,7 +27,9 @@ The function takes one ground:
 - **Open.** The function refuses it unless the policy is open. The use case
   refuses the open policy until the parts of
   [record 0114](../decisions/0114-open-registration-verifies-the-address-before-the-first-session.md)
-  exist.
+  exist, mail and the legal documents.
+  [Record 0191](../decisions/0191-a-published-page-of-the-cloud-lives-on-the-application-origin.md)
+  states that a published origin is not one of them.
 
 The identity user and the account live in two stores. The path makes the
 identity user, calls the function, and deletes the identity user when the

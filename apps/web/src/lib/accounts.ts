@@ -11,6 +11,7 @@
  * (record 0110).
  */
 import type { AccountSummary, Invitation } from '@notesapp/api-client';
+import type { OpenRegistrationPart } from '@notesapp/core';
 import { relativeTime } from './relative-time.ts';
 
 /** The title of the accounts page, which is also its breadcrumb part. */
@@ -46,12 +47,18 @@ export function invitationTokenOf(hash: string): string | null {
   return tokenPattern.test(token) ? token : null;
 }
 
-/** The words of each part that open registration needs (record 0114). */
-const partWords: Readonly<Record<string, string>> = {
+/**
+ * The words of each part that open registration needs (records 0114 and
+ * 0191). The type of the core holds the keys, so a part that the core adds or
+ * drops fails the type check here.
+ */
+const words: Readonly<Record<OpenRegistrationPart, string>> = {
   mail: 'a mail server',
-  'published-origin': 'a separate address for published pages',
   'legal-documents': 'the terms and the privacy notice',
 };
+
+/** The words of a part, by the name that a refusal carries. */
+const partWords: ReadonlyMap<string, string> = new Map(Object.entries(words));
 
 /** The missing parts that a refusal of open registration names. */
 export function missingPartsOf(error: unknown): string[] {
@@ -69,28 +76,24 @@ export function missingPartsOf(error: unknown): string[] {
 export function openRegistrationMissingText(
   missing: readonly string[],
 ): string {
-  const words = missing.map((part) => partWords[part] ?? part);
-  if (words.length === 0)
+  const named = missing.map((part) => partWords.get(part) ?? part);
+  if (named.length === 0)
     return 'Open registration needs parts that this installation does not have.';
   const list =
-    words.length === 1
-      ? (words[0] ?? '')
-      : `${words.slice(0, -1).join(', ')} and ${words.at(-1) ?? ''}`;
+    named.length === 1
+      ? (named[0] ?? '')
+      : `${named.slice(0, -1).join(', ')} and ${named.at(-1) ?? ''}`;
   // An administrator sets the mail server and the legal documents on the
-  // accounts page (record 0148). Only the operator sets the published origin.
+  // accounts page (record 0148).
   const here = [
     missing.includes('mail') ? 'the mail server' : '',
     missing.includes('legal-documents') ? 'the legal documents' : '',
   ].filter(Boolean);
-  const advice = [
-    here.length === 0 ? '' : `Set up ${here.join(' and ')} on this page.`,
-    missing.includes('published-origin')
-      ? 'The operator of the server sets the address for published pages.'
-      : '',
-  ].filter(Boolean);
   return [
     `Anybody can sign up only when the installation has ${list}.`,
-    ...advice,
+    ...(here.length === 0
+      ? []
+      : [`Set up ${here.join(' and ')} on this page.`]),
   ].join(' ');
 }
 

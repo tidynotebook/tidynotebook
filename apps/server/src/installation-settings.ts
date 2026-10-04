@@ -32,7 +32,6 @@ import {
   type LegalTexts,
   type ServerConfig,
 } from './config.ts';
-import { publishedOrigin } from './served-origins.ts';
 
 /** Where a group of settings comes from. */
 export type SettingSource = 'environment' | 'application' | 'none';
@@ -151,7 +150,6 @@ export function createInstallationSettings(
     sealed === null ? null : input.passwordSeal.open(sealed);
   const environment: InstallationEnvironment = {
     mail: input.environmentMail !== null,
-    publishedOrigin: publishedOrigin(config.servedOrigins) !== null,
     legalDocuments: config.legalDocuments !== null,
     // A password that this key cannot open, after a change of the server
     // secret, is no transport. The accounts page then shows that the

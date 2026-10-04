@@ -187,12 +187,14 @@ await test('a refused open policy names each missing part in words', () => {
     'Anybody can sign up only when the installation has the terms and the privacy notice. Set up the legal documents on this page.',
   );
   assert.equal(
-    openRegistrationMissingText([
-      'mail',
-      'published-origin',
-      'legal-documents',
-    ]),
-    'Anybody can sign up only when the installation has a mail server, a separate address for published pages and the terms and the privacy notice. Set up the mail server and the legal documents on this page. The operator of the server sets the address for published pages.',
+    openRegistrationMissingText(['mail', 'legal-documents']),
+    'Anybody can sign up only when the installation has a mail server and the terms and the privacy notice. Set up the mail server and the legal documents on this page.',
+  );
+  // Record 0191: open registration needs no address for published pages, so
+  // the page never sends the administrator to the operator for one.
+  assert.doesNotMatch(
+    openRegistrationMissingText(['mail', 'legal-documents']),
+    /published|operator/,
   );
 });
 

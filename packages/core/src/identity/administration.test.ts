@@ -51,9 +51,9 @@ const ada = '11111111-1111-4111-8111-111111111111';
 const bea = '22222222-2222-4222-8222-222222222222';
 const cai = '33333333-3333-4333-8333-333333333333';
 const digest = 'a'.repeat(64);
+// No published origin: record 0191 opens an installation without one.
 const ready = {
   mail: true,
-  publishedOrigin: true,
   legalDocuments: true,
   mailUsable: () => true,
 };
@@ -422,7 +422,6 @@ await test('the open policy needs every part and a member changes nothing', asyn
   const store = createStore([admin(ada), member(bea)]);
   for (const readiness of [
     { ...ready, mail: false },
-    { ...ready, publishedOrigin: false },
     { ...ready, legalDocuments: false },
   ])
     assert.deepEqual(
@@ -454,7 +453,6 @@ await test('the open policy needs every part and a member changes nothing', asyn
 
 const none = {
   mail: false,
-  publishedOrigin: true,
   legalDocuments: false,
   mailUsable: () => true,
 };

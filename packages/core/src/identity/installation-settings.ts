@@ -84,8 +84,7 @@ export const emptyInstallationSettings: StoredInstallationSettings = {
 
 /**
  * What the server environment sets, and what the server can use. A group
- * that the environment sets is locked, and a published origin comes from the
- * environment only (record 0118).
+ * that the environment sets is locked.
  *
  * `mailUsable` answers whether the server can send with a stored transport.
  * The password of a transport is sealed with a key of the server, so a stored
@@ -117,7 +116,6 @@ export function settingsReadiness(
     mail:
       environment.mail ||
       (stored.mail !== null && environment.mailUsable(stored.mail)),
-    publishedOrigin: environment.publishedOrigin,
     legalDocuments:
       environment.legalDocuments ||
       (stored.terms !== null && stored.privacy !== null),

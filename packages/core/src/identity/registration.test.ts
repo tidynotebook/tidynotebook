@@ -126,19 +126,25 @@ await test('a valid invitation answers its address', async () => {
 
 await test('open registration names each part it lacks', () => {
   assert.deepEqual(
-    openRegistrationMissing({
-      mail: false,
-      publishedOrigin: false,
-      legalDocuments: false,
-    }),
-    ['mail', 'published-origin', 'legal-documents'],
+    openRegistrationMissing({ mail: false, legalDocuments: false }),
+    ['mail', 'legal-documents'],
   );
   assert.deepEqual(
-    openRegistrationMissing({
-      mail: true,
-      publishedOrigin: true,
-      legalDocuments: true,
-    }),
+    openRegistrationMissing({ mail: true, legalDocuments: false }),
+    ['legal-documents'],
+  );
+  assert.deepEqual(
+    openRegistrationMissing({ mail: false, legalDocuments: true }),
+    ['mail'],
+  );
+});
+
+await test('open registration needs no published origin', () => {
+  // Record 0191: with no published origin, the application origin serves
+  // the reader path, so mail and the legal documents are all that open
+  // registration needs.
+  assert.deepEqual(
+    openRegistrationMissing({ mail: true, legalDocuments: true }),
     [],
   );
 });

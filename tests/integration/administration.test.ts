@@ -403,11 +403,8 @@ await test('open registration names every part the installation lacks', async ()
   assert.equal(responseOf(refused.response).status, 422);
   const problem = problemOf(refused.error);
   assert.equal(problem['code'], 'open_registration_unavailable');
-  assert.deepEqual(problem['missing'], [
-    'mail',
-    'published-origin',
-    'legal-documents',
-  ]);
+  // A published origin is not a part (record 0191).
+  assert.deepEqual(problem['missing'], ['mail', 'legal-documents']);
   const kept = await updateInstallation({
     headers: admin,
     body: { registrationPolicy: 'invitation' },

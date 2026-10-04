@@ -180,14 +180,14 @@ one. One installation serves HTTP or HTTPS, not both, because one cookie policy
 serves all of its origins. An empty list serves `NOTESAPP_ORIGIN` and nothing
 else.
 
-A public installation shows published pages on an origin of their own. Set
+An empty `NOTESAPP_PUBLISHED_ORIGIN` shows published pages on
+`NOTESAPP_ORIGIN`. You can show them on an origin of their own instead. Set
 `NOTESAPP_PUBLISHED_ORIGIN` to that origin, for example
 `https://pages.example.net`, and point that host name at the same server. Use
 a host name that no other origin uses, and the scheme of `NOTESAPP_ORIGIN`. The
 published origin serves published pages and nothing else, and it sets no
-cookie, so a harmful page cannot reach an account. A browser block of one page
-then does not block the application. An empty value shows published pages on
-`NOTESAPP_ORIGIN`.
+cookie. When a browser blocks a harmful page that a person published, the
+block then stays on that origin and does not block the application.
 
 Set `NOTESAPP_SECRETS_DIR` and create the directory it names. This value is
 required and has no default, as `NOTESAPP_DATABASE_DIR` and
@@ -376,16 +376,19 @@ a program wrote it, so a vacation responder does not answer it.
 
 ## Open sign-up
 
-An installation lets anybody sign up only when it has a mail server, a
-separate address for published pages, and both legal documents. The accounts
-page names each part that is missing. Do these steps in order.
+An installation lets anybody sign up only when it has a mail server and both
+legal documents. The accounts page names each part that is missing. Do these
+steps in order.
 
 1. **Mail.** Set up the mail server and the three domain records, as
    [Mail](#mail) states.
-2. **Published pages.** Point a second host name at this server, for example
-   `pages.example.net`, and set `NOTESAPP_PUBLISHED_ORIGIN` to it. With the
-   `tls` profile, also set `NOTESAPP_PUBLISHED_DOMAIN` to that host name, so
-   that the proxy gets a certificate for it.
+2. **Published pages.** This step is optional. Without it, published pages
+   show on the address of the application. To show them on a second host
+   name, for example `pages.example.net`, point that name at this server and
+   set `NOTESAPP_PUBLISHED_ORIGIN` to it. With the `tls` profile, also set
+   `NOTESAPP_PUBLISHED_DOMAIN` to that host name, so that the proxy gets a
+   certificate for it. Then a browser block of a harmful page that a stranger
+   publishes does not block the application.
 3. **Legal documents.** Add the terms and the privacy notice on the accounts
    page, as [Accounts and invitations](accounts.md#legal-documents)
    states. Fill each blank of the template with the facts of your service:

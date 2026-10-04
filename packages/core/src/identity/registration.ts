@@ -134,19 +134,21 @@ export async function readInvitation(
   return email === null ? fail('invitation_invalid') : ok(email);
 }
 
-/** What the installation has of the parts that open registration needs. */
+/**
+ * What the installation has of the parts that open registration needs.
+ *
+ * A published origin is not one of them (record 0191). With none, the
+ * application origin serves the reader path (record 0118).
+ */
 export type OpenRegistrationReadiness = {
   /** A mail transport, so a verification link can reach an address. */
   readonly mail: boolean;
-  /** A second origin for published pages (record 0118). */
-  readonly publishedOrigin: boolean;
   /** The terms and the privacy notice (record 0120). */
   readonly legalDocuments: boolean;
 };
 
-/** One part that open registration needs (record 0114). */
-export type OpenRegistrationPart =
-  'mail' | 'published-origin' | 'legal-documents';
+/** One part that open registration needs (records 0114 and 0191). */
+export type OpenRegistrationPart = 'mail' | 'legal-documents';
 
 /** The parts that the installation lacks for open registration. */
 export function openRegistrationMissing(
@@ -154,7 +156,6 @@ export function openRegistrationMissing(
 ): readonly OpenRegistrationPart[] {
   const missing: OpenRegistrationPart[] = [];
   if (!readiness.mail) missing.push('mail');
-  if (!readiness.publishedOrigin) missing.push('published-origin');
   if (!readiness.legalDocuments) missing.push('legal-documents');
   return missing;
 }

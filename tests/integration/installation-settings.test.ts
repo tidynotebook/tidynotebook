@@ -60,9 +60,9 @@ function cookieHeader(values: readonly string[]): string {
 
 const database = await createDisposableDatabase();
 const storageRoot = await mkdtemp(join(tmpdir(), 'notesapp-settings-test-'));
+// No published origin: the open policy needs none (record 0191).
 const environment = {
   NOTESAPP_ORIGIN: 'http://127.0.0.1',
-  NOTESAPP_PUBLISHED_ORIGIN: 'http://pages.test',
   NOTESAPP_DATABASE_URL: database.runtimeUrl,
   NOTESAPP_AUTH_DATABASE_URL: database.authUrl,
   NOTESAPP_STORAGE_ROOT: storageRoot,

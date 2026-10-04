@@ -314,8 +314,8 @@ export function readRegistrationPolicy(
 /**
  * Changes the registration policy, for an administrator.
  *
- * The open policy needs every part that record 0114 names. The transport
- * states what the installation has, and the answer is
+ * The open policy needs every part that records 0114 and 0191 name. The
+ * transport states what the installation has, and the answer is
  * `open_registration_unavailable` while one part is missing, so no
  * installation opens to strangers before it can verify an address.
  */

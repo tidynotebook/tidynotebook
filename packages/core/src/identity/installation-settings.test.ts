@@ -236,13 +236,11 @@ await test('the readiness takes either source of each part', () => {
   const empty = { mail: null, terms: null, privacy: null };
   const environment = {
     mail: false,
-    publishedOrigin: true,
     legalDocuments: false,
     mailUsable: () => true,
   };
   assert.deepEqual(settingsReadiness(environment, empty), {
     mail: false,
-    publishedOrigin: true,
     legalDocuments: false,
   });
   // A stored transport counts only while the server can open it.
@@ -267,7 +265,7 @@ await test('the readiness takes either source of each part', () => {
       { ...environment, mail: true, legalDocuments: true },
       empty,
     ),
-    { mail: true, publishedOrigin: true, legalDocuments: true },
+    { mail: true, legalDocuments: true },
   );
   const document = { kind: 'text' as const, text: 'x', version: '1' };
   assert.equal(
