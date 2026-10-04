@@ -78,6 +78,10 @@ function limitOf(text: string): number | null | undefined {
  * The change names the revision that the page read, so a change that was
  * made from an old state is refused and changes nothing. The removal time is
  * sent only when its field changed, so a save that keeps it does not move it.
+ * A limit field that a person did not change sends the stored bytes, because
+ * two decimals of a gigabyte cannot show every limit exactly: a save of one
+ * control must not round another, and a limit that shows as 0 must not block
+ * the save.
  */
 export function controlsChangeOf(
   form: ControlsForm,
@@ -86,7 +90,11 @@ export function controlsChangeOf(
 ):
   | { readonly ok: true; readonly change: AccountControlsInput }
   | { readonly ok: false; readonly problem: ControlsProblem } {
-  const storage = bytesOfGigabytes(form.storageGigabytes);
+  const shown = controlsFormOf(read, now);
+  const storage =
+    form.storageGigabytes === shown.storageGigabytes
+      ? read.limitBytes
+      : bytesOfGigabytes(form.storageGigabytes);
   if (storage === null)
     return {
       ok: false,
@@ -95,9 +103,18 @@ export function controlsChangeOf(
         message: 'Enter a number of gigabytes above zero.',
       },
     };
-  const text = limitOf(form.textGigabytes);
-  const transfer = limitOf(form.transferGigabytes);
-  const download = limitOf(form.downloadGigabytes);
+  const text =
+    form.textGigabytes === shown.textGigabytes
+      ? read.textLimitBytes
+      : limitOf(form.textGigabytes);
+  const transfer =
+    form.transferGigabytes === shown.transferGigabytes
+      ? read.publishedTransferLimitBytes
+      : limitOf(form.transferGigabytes);
+  const download =
+    form.downloadGigabytes === shown.downloadGigabytes
+      ? read.downloadLimitBytes
+      : limitOf(form.downloadGigabytes);
   const limits: readonly (readonly [keyof ControlsForm, unknown])[] = [
     ['textGigabytes', text],
     ['transferGigabytes', transfer],
@@ -114,7 +131,7 @@ export function controlsChangeOf(
       };
   let removalAt: string | null | undefined;
   if (form.standing === 'active') removalAt = undefined;
-  else if (form.removeInDays === controlsFormOf(read, now).removeInDays)
+  else if (form.removeInDays === shown.removeInDays)
     removalAt = read.standing === 'locked' ? undefined : null;
   else if (form.removeInDays.trim() === '') removalAt = null;
   else {

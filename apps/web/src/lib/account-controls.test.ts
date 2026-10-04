@@ -112,3 +112,50 @@ await test('a form that a person must correct names its field', () => {
   );
   assert.equal(days.ok ? '' : days.problem.field, 'removeInDays');
 });
+
+await test('a save keeps each limit that a person did not change exactly', () => {
+  // Two decimals of a gigabyte cannot show these limits exactly. A save of
+  // another control must send them back as they are, and a 1 byte limit
+  // that shows as 0 must not block the save.
+  const odd: AccountControls = {
+    ...active,
+    limitBytes: 1,
+    textLimitBytes: 5 * gigabyte + 12_345,
+    publishedTransferLimitBytes: gigabyte + 7,
+    downloadLimitBytes: 3,
+  };
+  const saved = controlsChangeOf(
+    { ...controlsFormOf(odd, now), teams: false },
+    odd,
+    now,
+  );
+  assert.deepEqual(saved, {
+    ok: true,
+    change: {
+      revision: 3,
+      standing: 'active',
+      limitBytes: 1,
+      textLimitBytes: 5 * gigabyte + 12_345,
+      publishedTransferLimitBytes: gigabyte + 7,
+      downloadLimitBytes: 3,
+      features: { teams: false, collaboration: true },
+    },
+  });
+  // A field that a person edits is read from its text.
+  const edited = controlsChangeOf(
+    { ...controlsFormOf(odd, now), storageGigabytes: '6', textGigabytes: '' },
+    odd,
+    now,
+  );
+  assert.ok(edited.ok);
+  assert.equal(edited.change.limitBytes, 6 * gigabyte);
+  assert.equal(edited.change.textLimitBytes, null);
+  assert.equal(edited.change.downloadLimitBytes, 3);
+  // An edited field that shows 0 still needs a correction.
+  const zero = controlsChangeOf(
+    { ...controlsFormOf(odd, now), transferGigabytes: '0' },
+    odd,
+    now,
+  );
+  assert.equal(zero.ok ? '' : zero.problem.field, 'transferGigabytes');
+});
