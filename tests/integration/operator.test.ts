@@ -375,7 +375,9 @@ await test('the event cursor misses no event', async () => {
       seen
         .filter((event) => event.accountId === someone.accountId)
         .map((event) => event.kind),
-      ['made', 'verified'],
+      // This installation has no mail, so an invitation shows its link and
+      // no message proves the address: the account is made, not verified.
+      ['made'],
     );
 });
 

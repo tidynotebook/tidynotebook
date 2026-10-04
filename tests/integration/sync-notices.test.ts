@@ -505,12 +505,14 @@ await test('a session end and an account change send their own hints', async () 
     // account again.
     assert.deepEqual(
       await hintsOf(async () => {
+        // The account of this test administers the installation, which is
+        // never locked, so a limit changes.
         await session.query(
-          "update accounts set standing = 'locked', controls_revision = controls_revision + 1 where id = $1",
+          'update accounts set text_limit_bytes = 1000000000, controls_revision = controls_revision + 1 where id = $1',
           [accountId],
         );
         await session.query(
-          "update accounts set standing = 'active', controls_revision = controls_revision + 1 where id = $1",
+          'update accounts set text_limit_bytes = null, controls_revision = controls_revision + 1 where id = $1',
           [accountId],
         );
       }),
