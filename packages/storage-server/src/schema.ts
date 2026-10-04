@@ -225,6 +225,12 @@ export const accounts = pgTable(
       'accounts_controls_revision_check',
       sql`${table.controlsRevision} > 0`,
     ),
+    // An administrator is never locked (record 0201): a locked one could
+    // administer nothing, and the last one would leave nobody to unlock.
+    check(
+      'accounts_administrator_active_check',
+      sql`${table.installationRole} <> 'administrator' or ${table.standing} = 'active'`,
+    ),
     index('accounts_administrator_idx').on(table.installationRole, table.state),
     index('accounts_removal_idx').on(table.removalAt),
   ],
@@ -253,6 +259,16 @@ export const accountEvents = pgTable(
   },
   (table) => [check('account_events_cursor_check', sql`${table.cursor} > 0`)],
 );
+
+/**
+ * The last day in UTC on which one daily job ran, so every process of the
+ * installation runs it once a day (record 0201). The runtime role reaches it
+ * through one function.
+ */
+export const dailyRuns = pgTable('daily_runs', {
+  job: text('job').primaryKey(),
+  day: date('day').notNull(),
+});
 
 /**
  * One portal handoff of record 0190: the digest of a single-use token that

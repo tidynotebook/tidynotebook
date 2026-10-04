@@ -1465,7 +1465,7 @@ export function openIdentityStore(
       });
     },
 
-    async markRemovalNotice(
+    async claimRemovalNotice(
       accountId: string,
       notices: number,
       removalAt: string,
@@ -1477,6 +1477,21 @@ export function openIdentityStore(
           [accountId, notices, removalAt],
         );
         return rows.rows[0]?.marked ?? false;
+      });
+    },
+
+    async releaseRemovalNotice(
+      accountId: string,
+      notices: number,
+      removalAt: string,
+    ): Promise<boolean> {
+      assertUuid(accountId, 'the account');
+      return asOperator(async (client) => {
+        const rows = await client.query<{ released: boolean }>(
+          'select notesapp_release_removal_notice($1, $2, $3) as released',
+          [accountId, notices, removalAt],
+        );
+        return rows.rows[0]?.released ?? false;
       });
     },
 

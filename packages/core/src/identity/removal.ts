@@ -74,10 +74,18 @@ export type RemovalStore = {
    */
   removeDueAccount(accountId: string): Promise<boolean>;
   /**
-   * Records that one mail before the removal went, while the removal time
-   * is still the one that the mail named. Answers whether it did.
+   * Claims one mail before the removal: the count of mails becomes
+   * `notices`, while the removal time is still the one that the mail names
+   * and the mail did not go. Answers whether this call claimed it, so two
+   * runs never send one mail twice.
    */
-  markRemovalNotice(
+  claimRemovalNotice(
+    accountId: string,
+    notices: number,
+    removalAt: string,
+  ): Promise<boolean>;
+  /** Gives back a claim whose mail did not go, so the next run sends it. */
+  releaseRemovalNotice(
     accountId: string,
     notices: number,
     removalAt: string,
@@ -100,10 +108,11 @@ export type RemovalNotifier = (
 /**
  * One run of the removal (record 0201).
  *
- * Each candidate takes its step. A mail that cannot go now is not recorded,
- * so the next run tries it again, and an account with no address or with no
- * mail transport gets no mail and is still removed at its time. A failure of
- * one account does not stop the others.
+ * Each candidate takes its step. A mail is claimed before it goes, so two
+ * runs never send it twice, and a mail that cannot go gives its claim back,
+ * so the next run tries it again. An account with no address or with no mail
+ * transport gets no mail and is still removed at its time. A failure of one
+ * account does not stop the others.
  */
 export async function runRemovals(
   store: RemovalStore,
@@ -124,15 +133,24 @@ export async function runRemovals(
         notify !== null &&
         candidate.email !== null
       ) {
-        await notify({ ...candidate, email: candidate.email }, step.days);
-        if (
-          await store.markRemovalNotice(
-            candidate.accountId,
-            step.notices,
-            candidate.removalAt,
-          )
-        )
+        const claimed = await store.claimRemovalNotice(
+          candidate.accountId,
+          step.notices,
+          candidate.removalAt,
+        );
+        if (claimed) {
+          try {
+            await notify({ ...candidate, email: candidate.email }, step.days);
+          } catch (failure: unknown) {
+            await store.releaseRemovalNotice(
+              candidate.accountId,
+              step.notices,
+              candidate.removalAt,
+            );
+            throw failure;
+          }
           noticed += 1;
+        }
       }
     } catch {
       // A mail server or a database that failed for one account fails that

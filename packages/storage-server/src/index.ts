@@ -40,6 +40,7 @@ export {
 } from './workspace-store/index.ts';
 export { readOnlyTransactionCode } from './workspace-store/publication-transaction.ts';
 export { markdownLimitCode } from './markdown-limits.ts';
+export { isLockedRefusal } from './workspace-store/errors.ts';
 export {
   openAttachmentStore,
   type AttachmentBytes,

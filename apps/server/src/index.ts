@@ -105,6 +105,7 @@ export { createAdministrationHandlers } from './routes/administration.ts';
 export {
   createAccountRemoval,
   type AccountRemovalDependencies,
+  type AccountRemovalResult,
 } from './jobs/account-removal.ts';
 export { authProblemCode } from './auth/better-auth.ts';
 export {

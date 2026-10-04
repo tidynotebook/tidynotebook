@@ -108,6 +108,25 @@ export class DatabaseFailure extends Error {
   }
 }
 
+/**
+ * Whether the database refused a write because the owner of the workspace,
+ * or the account itself, is locked (NA004, records 0189 and 0201).
+ *
+ * The refusal comes from a driver failure, or from the `DatabaseFailure`
+ * that this package keeps of one, so both are read.
+ */
+export function isLockedRefusal(value: unknown): boolean {
+  if (postgresFailure(value)?.code === 'NA004') return true;
+  let current: unknown = value;
+  for (let depth = 0; depth < 5; depth += 1) {
+    if (current instanceof DatabaseFailure) return current.sqlState === 'NA004';
+    if (typeof current !== 'object' || current === null) return false;
+    if (!('cause' in current)) return false;
+    current = current.cause;
+  }
+  return false;
+}
+
 /** The name of a thrown value, without any of its content. */
 function failureName(value: unknown): string {
   if (value instanceof Error) return value.name;
@@ -171,6 +190,8 @@ export function domainFailure(
   if (refused !== null) return fail<never>(refused, fileIds);
   const failure = postgresFailure(value);
   if (failure === null) return null;
+  // A write to a workspace whose owner is locked (record 0201).
+  if (failure.code === 'NA004') return fail<never>('account_locked', fileIds);
   const constraint = failure.constraint ?? '';
   if (failure.code === '23505') {
     if (constraint === 'live_paths_path_key')

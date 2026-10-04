@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { MarkdownLimitError } from '@notesapp/markdown';
+import { DatabaseFailure } from '@notesapp/storage-server';
 import {
   classifyError,
   createProblem,
@@ -233,5 +234,28 @@ await test('the one reader refusal names no cause', () => {
   assert.equal(
     problem.type,
     'https://notesapp.invalid/problems/published_link_unavailable',
+  );
+});
+
+await test('a write that the database refuses for a locked owner answers account_locked', () => {
+  // The refusal of the database itself, as the driver reports it, and as the
+  // store keeps it in the cause of an operational failure (record 0201).
+  const driver = Object.assign(new Error('the owner account is locked'), {
+    code: 'NA004',
+  });
+  const kept = new Error('notesapp: the workspace store failed.', {
+    cause: new DatabaseFailure(
+      { code: 'NA004', constraint: null, table: null, routine: null },
+      'a write',
+    ),
+  });
+  for (const error of [driver, kept]) {
+    const classified = classifyError(error);
+    assert.equal(classified.status, 423);
+    assert.equal(classified.code, 'account_locked');
+  }
+  assert.equal(
+    classifyError(Object.assign(new Error('x'), { code: 'NA003' })).status,
+    500,
   );
 });

@@ -916,6 +916,8 @@ async function composeApp(
     mailer: mail,
     origin: config.origin,
     portal: config.accountPortal !== null,
+    // The run is daily (record 0201): one process claims each day in UTC.
+    claimDay: (day) => coordination.claimDailyRun('removals', day),
   });
   let cleanupRunning = false;
   // Each job runs under a lock that one process takes, so two processes of

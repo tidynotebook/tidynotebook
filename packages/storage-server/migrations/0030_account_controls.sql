@@ -16,6 +16,11 @@ CREATE TABLE "account_handoffs" (
 	CONSTRAINT "account_handoffs_token_digest_check" CHECK ("account_handoffs"."token_digest" ~ '^[0-9a-f]{64}$')
 );
 --> statement-breakpoint
+CREATE TABLE "daily_runs" (
+	"job" text PRIMARY KEY NOT NULL,
+	"day" date NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "monthly_usage" (
 	"month" date NOT NULL,
 	"account_id" uuid,
@@ -49,6 +54,7 @@ ALTER TABLE "accounts" ADD CONSTRAINT "accounts_download_limit_bytes_check" CHEC
 ALTER TABLE "accounts" ADD CONSTRAINT "accounts_removal_at_check" CHECK ("accounts"."removal_at" is null or "accounts"."standing" = 'locked');--> statement-breakpoint
 ALTER TABLE "accounts" ADD CONSTRAINT "accounts_removal_notices_check" CHECK ("accounts"."removal_notices" between 0 and 2);--> statement-breakpoint
 ALTER TABLE "accounts" ADD CONSTRAINT "accounts_controls_revision_check" CHECK ("accounts"."controls_revision" > 0);--> statement-breakpoint
+ALTER TABLE "accounts" ADD CONSTRAINT "accounts_administrator_active_check" CHECK ("accounts"."installation_role" <> 'administrator' or "accounts"."standing" = 'active');--> statement-breakpoint
 ALTER TABLE "workspace_usage" ADD CONSTRAINT "workspace_usage_text_bytes_check" CHECK ("workspace_usage"."text_bytes" >= 0 and "workspace_usage"."text_bytes" <= "workspace_usage"."bytes_used");--> statement-breakpoint
 
 -- The controls of an account, its events, the portal handoff and the totals
@@ -73,7 +79,7 @@ DO $$
 DECLARE
 	name text;
 BEGIN
-	FOREACH name IN ARRAY ARRAY['account_events', 'account_handoffs', 'monthly_usage'] LOOP
+	FOREACH name IN ARRAY ARRAY['account_events', 'account_handoffs', 'monthly_usage', 'daily_runs'] LOOP
 		EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', name);
 		EXECUTE format('ALTER TABLE public.%I FORCE ROW LEVEL SECURITY', name);
 		EXECUTE format(
@@ -232,6 +238,8 @@ BEGIN
 		RAISE EXCEPTION 'notesapp: only an owner can purge files'
 			USING ERRCODE = '42501';
 	END IF;
+	-- A locked owner purges nothing (record 0201).
+	PERFORM public.notesapp_require_writable(p_workspace_id);
 
 	SELECT coalesce(array_agg(id), ARRAY[]::uuid[]) INTO v_purged_file_ids
 	FROM public.files
@@ -377,9 +385,11 @@ CREATE FUNCTION public.notesapp_session_standing(p_auth_user_id text)
 -- The one registration path of record 0108, from migration 0012, with the
 -- controls of a new account (record 0189) and its two events (record 0190).
 -- The configuration gives the standing of a new account and, for a locked
--- one, how many seconds it lives before the daily run removes it. Every
--- account proves its address before the account exists (record 0114), so the
--- event `verified` follows `made` in the same transaction.
+-- one, how many seconds it lives before the daily run removes it. An account
+-- whose address a message proved before the account exists (record 0114) has
+-- the event `verified` after `made` in the same transaction. An account of an
+-- invitation that went with no mail has `made` alone, and nothing proves its
+-- address later.
 DROP FUNCTION public.notesapp_register_account(text, text, text, uuid, uuid, text, bigint);--> statement-breakpoint
 CREATE FUNCTION public.notesapp_register_account(
 		p_auth_user_id text,
@@ -454,9 +464,12 @@ CREATE FUNCTION public.notesapp_register_account(
 				removal_at)
 			VALUES (p_account_id, v_role, 'enabled', p_limit_bytes, v_proof,
 				CASE WHEN p_ground = 'first-run' THEN 'active' ELSE p_standing END,
+				-- A time is kept to the millisecond, which a reader in the
+				-- application holds, so a time that it gives back is equal.
 				CASE WHEN p_ground = 'first-run' OR p_remove_after_seconds IS NULL
 					THEN NULL
-					ELSE now() + make_interval(secs => p_remove_after_seconds) END);
+					ELSE date_trunc('milliseconds',
+						now() + make_interval(secs => p_remove_after_seconds)) END);
 		INSERT INTO public.account_identities (auth_user_id, account_id)
 			VALUES (p_auth_user_id, p_account_id);
 		INSERT INTO public.account_preferences (account_id) VALUES (p_account_id);
@@ -481,7 +494,11 @@ CREATE FUNCTION public.notesapp_register_account(
 			WHERE id = invitation.id;
 		END IF;
 		PERFORM public.notesapp_record_account_event(p_account_id, 'made');
-		PERFORM public.notesapp_record_account_event(p_account_id, 'verified');
+		-- An administrator who invites with no mail vouches for the address,
+		-- and no message proved it, so that account has no verified event.
+		IF v_proof IS DISTINCT FROM 'administrator' THEN
+			PERFORM public.notesapp_record_account_event(p_account_id, 'verified');
+		END IF;
 		RETURN p_account_id;
 	END
 	$$;--> statement-breakpoint
@@ -679,9 +696,10 @@ CREATE FUNCTION public.notesapp_set_account_controls(
 		END IF;
 		UPDATE public.accounts SET
 			standing = p_standing,
-			removal_notices = CASE WHEN removal_at IS DISTINCT FROM p_removal_at
+			removal_notices = CASE WHEN removal_at IS DISTINCT FROM
+					date_trunc('milliseconds', p_removal_at)
 				THEN 0 ELSE removal_notices END,
-			removal_at = p_removal_at,
+			removal_at = date_trunc('milliseconds', p_removal_at),
 			limit_bytes = p_limit_bytes,
 			text_limit_bytes = p_text_limit_bytes,
 			published_transfer_limit_bytes = p_published_transfer_limit_bytes,
@@ -729,8 +747,8 @@ CREATE OR REPLACE FUNCTION public.notesapp_notify_account_changed()
 	END
 	$$;--> statement-breakpoint
 
--- The one row of a published link, from migration 0004. A link of a locked
--- account opens nothing, so its reader path answers the closed page of
+-- The one row of a published link, from migration 0004. A link in a
+-- workspace whose owner is locked opens nothing, whoever made the link, so its reader path answers the closed page of
 -- record 0146 for each of its links, and the link comes back once the
 -- account is active again (record 0201). Rights survive a replacement.
 CREATE OR REPLACE FUNCTION public.notesapp_publication_by_token(p_token_digest text)
@@ -758,7 +776,8 @@ CREATE OR REPLACE FUNCTION public.notesapp_publication_by_token(p_token_digest t
 			pub.password_digest IS NOT NULL,
 			pub.created_at, pub.expires_at, pub.revoked_at
 		FROM public.publications pub
-		JOIN public.accounts a ON a.id = pub.owner_account_id
+		JOIN public.accounts a
+			ON a.id = public.notesapp_workspace_owner(pub.workspace_id)
 		WHERE pub.token_digest = p_token_digest
 			AND a.standing = 'active';
 	END;
@@ -1026,9 +1045,10 @@ CREATE FUNCTION public.notesapp_remove_due_account(p_account_id uuid)
 	END
 	$$;--> statement-breakpoint
 
--- Records that a notice before the removal went (record 0201), only while
--- the removal time is the one that the notice named, and answers whether it
--- did. A count never falls here.
+-- Claims one notice before the removal (record 0201), only while the
+-- removal time is the one that the notice names and the notice did not go,
+-- and answers whether this call claimed it. The run claims a notice before it
+-- sends the mail, so two runs never send one notice twice.
 CREATE FUNCTION public.notesapp_mark_removal_notice(
 		p_account_id uuid,
 		p_notices integer,
@@ -1053,6 +1073,338 @@ CREATE FUNCTION public.notesapp_mark_removal_notice(
 	END
 	$$;--> statement-breakpoint
 
+-- Gives back a notice that a run claimed and whose mail did not go, so the
+-- next run sends it. It moves the count back only from the claimed value.
+CREATE FUNCTION public.notesapp_release_removal_notice(
+		p_account_id uuid,
+		p_notices integer,
+		p_removal_at timestamptz)
+	RETURNS boolean
+	LANGUAGE plpgsql
+	SECURITY DEFINER
+	SET search_path = pg_catalog, public
+	AS $$
+	BEGIN
+		IF NOT public.notesapp_is_operator() THEN
+			RAISE EXCEPTION 'notesapp: only the operator releases a notice'
+				USING ERRCODE = '42501';
+		END IF;
+		UPDATE public.accounts SET removal_notices = p_notices - 1
+		WHERE id = p_account_id
+			AND removal_at = p_removal_at
+			AND removal_notices = p_notices
+			AND removed_at IS NULL;
+		RETURN FOUND;
+	END
+	$$;--> statement-breakpoint
+
+-- Whether a write may reach one workspace: its owner is active (records 0189
+-- and 0201). A workspace with no owner yet is being made, and the function
+-- that makes it checks the account that makes it. It answers one fact and no
+-- data of the workspace.
+CREATE FUNCTION public.notesapp_workspace_writable(p_workspace_id uuid)
+	RETURNS boolean
+	LANGUAGE sql
+	STABLE
+	SECURITY DEFINER
+	SET search_path = pg_catalog, public
+	AS $$
+		SELECT coalesce((
+			SELECT a.standing = 'active' FROM public.accounts a
+			WHERE a.id = public.notesapp_workspace_owner(p_workspace_id)
+		), true)
+	$$;--> statement-breakpoint
+
+-- Whether a write may reach one account: the account is active.
+CREATE FUNCTION public.notesapp_account_writable(p_account_id uuid)
+	RETURNS boolean
+	LANGUAGE sql
+	STABLE
+	SECURITY DEFINER
+	SET search_path = pg_catalog, public
+	AS $$
+		SELECT coalesce((
+			SELECT a.standing = 'active' FROM public.accounts a
+			WHERE a.id = p_account_id
+		), true)
+	$$;--> statement-breakpoint
+
+-- Refuses a write of the runtime role to a workspace whose owner is locked,
+-- or to an account that is locked, with NA004 (records 0189 and 0201).
+--
+-- The first argument names the column that holds the workspace or the
+-- account, and the second names which of the two it is. The function is not
+-- a security definer on purpose: `current_user` is then the role of the
+-- statement. A write that a function of the schema owner makes, such as the
+-- removal of record 0111, passes here, and each such function that a locked
+-- account could reach checks the standing itself.
+CREATE FUNCTION public.notesapp_guard_locked_write()
+	RETURNS trigger
+	LANGUAGE plpgsql
+	SET search_path = pg_catalog, public
+	AS $$
+	DECLARE
+		written jsonb;
+		target uuid;
+	BEGIN
+		IF current_user IS DISTINCT FROM 'notesapp_app' THEN
+			IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
+			RETURN NEW;
+		END IF;
+		IF TG_OP = 'DELETE' THEN
+			written := to_jsonb(OLD);
+		ELSE
+			written := to_jsonb(NEW);
+		END IF;
+		target := (written ->> TG_ARGV[0])::uuid;
+		IF (TG_ARGV[1] = 'account' AND NOT public.notesapp_account_writable(target))
+			OR (TG_ARGV[1] = 'workspace'
+				AND NOT public.notesapp_workspace_writable(target)) THEN
+			RAISE EXCEPTION 'notesapp: the owner account is locked'
+				USING ERRCODE = 'NA004';
+		END IF;
+		IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
+		RETURN NEW;
+	END
+	$$;--> statement-breakpoint
+
+-- One guard on each table that the runtime role writes and that belongs to
+-- a workspace or to an account. The consents, the audit trail and the
+-- tables of the identity role stay open, because a locked account keeps its
+-- consent and its sessions (record 0201).
+DO $$
+DECLARE
+	guarded record;
+BEGIN
+	FOR guarded IN
+		SELECT * FROM (VALUES
+			('workspaces', 'id', 'workspace'),
+			('memberships', 'workspace_id', 'workspace'),
+			('files', 'workspace_id', 'workspace'),
+			('live_paths', 'workspace_id', 'workspace'),
+			('contents', 'workspace_id', 'workspace'),
+			('revisions', 'workspace_id', 'workspace'),
+			('revision_parents', 'workspace_id', 'workspace'),
+			('changesets', 'workspace_id', 'workspace'),
+			('mutation_receipts', 'workspace_id', 'workspace'),
+			('purge_markers', 'workspace_id', 'workspace'),
+			('sync_changes', 'workspace_id', 'workspace'),
+			('snapshots', 'workspace_id', 'workspace'),
+			('snapshot_items', 'workspace_id', 'workspace'),
+			('search_index', 'workspace_id', 'workspace'),
+			('note_links', 'workspace_id', 'workspace'),
+			('note_documents', 'workspace_id', 'workspace'),
+			('attachment_objects', 'workspace_id', 'workspace'),
+			('publications', 'workspace_id', 'workspace'),
+			('reading_tickets', 'workspace_id', 'workspace'),
+			('daily_note_settings', 'workspace_id', 'workspace'),
+			('template_settings', 'workspace_id', 'workspace'),
+			('account_preferences', 'account_id', 'account'),
+			('account_themes', 'account_id', 'account')
+		) AS t(table_name, key_column, scope)
+	LOOP
+		EXECUTE format(
+			'CREATE TRIGGER %I BEFORE INSERT OR UPDATE OR DELETE ON public.%I '
+			'FOR EACH ROW EXECUTE FUNCTION public.notesapp_guard_locked_write(%L, %L)',
+			guarded.table_name || '_locked_guard', guarded.table_name,
+			guarded.key_column, guarded.scope);
+	END LOOP;
+END
+$$;--> statement-breakpoint
+
+-- Refuses a write of a function of the schema owner that a locked account
+-- could reach, by the standing of the owner of the workspace.
+CREATE FUNCTION public.notesapp_require_writable(p_workspace_id uuid)
+	RETURNS void
+	LANGUAGE plpgsql
+	STABLE
+	SET search_path = pg_catalog, public
+	AS $$
+	BEGIN
+		IF NOT public.notesapp_workspace_writable(p_workspace_id) THEN
+			RAISE EXCEPTION 'notesapp: the owner account is locked'
+				USING ERRCODE = 'NA004';
+		END IF;
+	END
+	$$;--> statement-breakpoint
+
+-- The cursor of a workspace, from migration 0000, which every write of the
+-- feed allocates. A workspace whose owner is locked allocates none.
+CREATE OR REPLACE FUNCTION public.notesapp_next_cursor(p_workspace_id uuid) RETURNS bigint
+	LANGUAGE plpgsql
+	SECURITY DEFINER
+	SET search_path = pg_catalog, public
+	AS $$
+	DECLARE
+		allocated bigint;
+	BEGIN
+		IF NOT public.notesapp_is_member(p_workspace_id) THEN
+			RAISE EXCEPTION 'notesapp: the account is not a member of this workspace'
+				USING ERRCODE = '42501';
+		END IF;
+		PERFORM public.notesapp_require_writable(p_workspace_id);
+		UPDATE public.workspace_cursors
+		SET last_cursor = last_cursor + 1
+		WHERE workspace_id = p_workspace_id
+		RETURNING last_cursor INTO allocated;
+		IF allocated IS NULL THEN
+			RAISE EXCEPTION 'notesapp: the workspace has no cursor record'
+				USING ERRCODE = '23503';
+		END IF;
+		RETURN allocated;
+	END
+	$$;--> statement-breakpoint
+
+-- The deletion of one workspace, from migration 0012. A locked owner deletes
+-- no workspace: its removal of record 0111 takes every workspace instead.
+CREATE OR REPLACE FUNCTION public.notesapp_delete_workspace(p_workspace_id uuid)
+	RETURNS void
+	LANGUAGE plpgsql
+	SECURITY DEFINER
+	SET search_path = pg_catalog, public
+	AS $$
+	DECLARE
+		caller uuid := public.notesapp_current_account();
+		held integer;
+	BEGIN
+		-- A null role is not the owner role either, so the comparison has to be
+		-- `IS DISTINCT FROM` and not `<>`.
+		IF public.notesapp_member_role(p_workspace_id) IS DISTINCT FROM 'owner' THEN
+			RAISE EXCEPTION 'notesapp: only an owner can delete a workspace'
+				USING ERRCODE = '42501';
+		END IF;
+		PERFORM public.notesapp_require_writable(p_workspace_id);
+		SELECT count(*) INTO held FROM public.memberships m
+			WHERE m.account_id = caller;
+		IF held <= 1 THEN
+			RAISE EXCEPTION 'notesapp: an account keeps its last workspace'
+				USING ERRCODE = '42501';
+		END IF;
+		PERFORM public.notesapp_erase_workspace(p_workspace_id);
+	END
+	$$;--> statement-breakpoint
+
+-- The creation of a workspace, from migration 0012. A locked account makes
+-- no workspace.
+CREATE OR REPLACE FUNCTION public.notesapp_create_workspace(
+		p_workspace_id uuid,
+		p_name text)
+	RETURNS void
+	LANGUAGE plpgsql
+	SECURITY DEFINER
+	SET search_path = pg_catalog, public
+	AS $$
+	DECLARE
+		creator uuid := public.notesapp_current_account();
+	BEGIN
+		IF creator IS NULL THEN
+			RAISE EXCEPTION 'notesapp: the transaction has no account identity'
+				USING ERRCODE = '42501';
+		END IF;
+		IF NOT public.notesapp_account_writable(creator) THEN
+			RAISE EXCEPTION 'notesapp: the account is locked'
+				USING ERRCODE = 'NA004';
+		END IF;
+		PERFORM public.notesapp_lock_account(creator);
+		INSERT INTO public.workspaces (id, name, personal)
+			VALUES (p_workspace_id, p_name, false);
+		INSERT INTO public.workspace_usage (workspace_id, bytes_used)
+			VALUES (p_workspace_id, 0);
+		INSERT INTO public.workspace_cursors (workspace_id, last_cursor)
+			VALUES (p_workspace_id, 0);
+		INSERT INTO public.memberships (workspace_id, account_id, role)
+			VALUES (p_workspace_id, creator, 'owner');
+	END
+	$$;--> statement-breakpoint
+
+-- Changes the installation role of one account, from migration 0012. The
+-- role decides which controls fit the account, so a change of it raises the
+-- revision of the controls, and a write of them that read the old role
+-- changes nothing. The table refuses a locked administrator.
+CREATE OR REPLACE FUNCTION public.notesapp_set_installation_role(
+		p_account_id uuid,
+		p_role public.installation_role)
+	RETURNS void
+	LANGUAGE plpgsql
+	SECURITY DEFINER
+	SET search_path = pg_catalog, public
+	AS $$
+	DECLARE
+		v_state public.account_state;
+	BEGIN
+		PERFORM public.notesapp_lock_installation();
+		PERFORM public.notesapp_require_administrator();
+		SELECT a.state INTO v_state FROM public.accounts a
+		WHERE a.id = p_account_id AND a.removed_at IS NULL;
+		IF v_state IS NULL THEN
+			RAISE EXCEPTION 'notesapp: no such account' USING ERRCODE = 'P0002';
+		END IF;
+		PERFORM public.notesapp_keep_administrator(p_account_id, p_role,
+			v_state, false);
+		UPDATE public.accounts SET installation_role = p_role,
+			controls_revision = controls_revision + 1
+		WHERE id = p_account_id;
+		PERFORM public.notesapp_audit_administration(p_account_id,
+			'installation.role');
+	END
+	$$;--> statement-breakpoint
+
+-- Makes one account an enabled administrator, for `pnpm account:promote`,
+-- from migration 0012. An administrator is always active, so a promotion of
+-- a locked account makes it active and takes its removal time away: the
+-- command is the way back into an installation, and it must work.
+CREATE OR REPLACE FUNCTION public.notesapp_operator_promote(p_email text)
+	RETURNS uuid
+	LANGUAGE plpgsql
+	SECURITY DEFINER
+	SET search_path = pg_catalog, public
+	AS $$
+	DECLARE
+		target uuid;
+	BEGIN
+		IF NOT public.notesapp_is_operator() THEN
+			RAISE EXCEPTION 'notesapp: only the operator command can promote'
+				USING ERRCODE = '42501';
+		END IF;
+		PERFORM public.notesapp_lock_installation();
+		SELECT ai.account_id INTO target FROM public.auth_user u
+		JOIN public.account_identities ai ON ai.auth_user_id = u.id
+		WHERE lower(u.email) = lower(p_email);
+		IF target IS NULL THEN
+			RETURN NULL;
+		END IF;
+		UPDATE public.accounts SET installation_role = 'administrator',
+			state = 'enabled', standing = 'active', removal_at = NULL,
+			removal_notices = 0, controls_revision = controls_revision + 1
+		WHERE id = target AND removed_at IS NULL;
+		INSERT INTO public.account_audit_events
+			(id, account_id, action, target_kind, target_id)
+		VALUES (gen_random_uuid(), target, 'installation.promote', 'operator', NULL);
+		RETURN target;
+	END
+	$$;--> statement-breakpoint
+
+-- Claims the run of one daily job for one day in UTC, and answers whether
+-- this call claimed it (record 0201). Every process of the installation asks
+-- before it runs the job, so the job runs once a day whatever the count of
+-- processes, and a later day claims it again.
+CREATE FUNCTION public.notesapp_claim_daily_run(p_job text, p_day date)
+	RETURNS boolean
+	LANGUAGE plpgsql
+	SECURITY DEFINER
+	SET search_path = pg_catalog, public
+	AS $$
+	DECLARE
+		claimed text;
+	BEGIN
+		INSERT INTO public.daily_runs (job, day) VALUES (p_job, p_day)
+		ON CONFLICT (job) DO UPDATE SET day = excluded.day
+			WHERE daily_runs.day < excluded.day
+		RETURNING daily_runs.job INTO claimed;
+		RETURN claimed IS NOT NULL;
+	END
+	$$;--> statement-breakpoint
+
 -- Function rights. The event writer stays with the schema owner, so an event
 -- comes only from a function above.
 REVOKE ALL ON FUNCTION public.notesapp_record_account_event(uuid, public.account_event_kind) FROM PUBLIC;--> statement-breakpoint
@@ -1071,6 +1423,12 @@ REVOKE ALL ON FUNCTION public.notesapp_redeem_handoff(text) FROM PUBLIC;--> stat
 REVOKE ALL ON FUNCTION public.notesapp_removal_candidates(timestamptz) FROM PUBLIC;--> statement-breakpoint
 REVOKE ALL ON FUNCTION public.notesapp_remove_due_account(uuid) FROM PUBLIC;--> statement-breakpoint
 REVOKE ALL ON FUNCTION public.notesapp_mark_removal_notice(uuid, integer, timestamptz) FROM PUBLIC;--> statement-breakpoint
+REVOKE ALL ON FUNCTION public.notesapp_release_removal_notice(uuid, integer, timestamptz) FROM PUBLIC;--> statement-breakpoint
+REVOKE ALL ON FUNCTION public.notesapp_workspace_writable(uuid) FROM PUBLIC;--> statement-breakpoint
+REVOKE ALL ON FUNCTION public.notesapp_account_writable(uuid) FROM PUBLIC;--> statement-breakpoint
+REVOKE ALL ON FUNCTION public.notesapp_guard_locked_write() FROM PUBLIC;--> statement-breakpoint
+REVOKE ALL ON FUNCTION public.notesapp_require_writable(uuid) FROM PUBLIC;--> statement-breakpoint
+REVOKE ALL ON FUNCTION public.notesapp_claim_daily_run(text, date) FROM PUBLIC;--> statement-breakpoint
 GRANT EXECUTE ON FUNCTION public.notesapp_account_usage(uuid) TO notesapp_app;--> statement-breakpoint
 GRANT EXECUTE ON FUNCTION public.notesapp_add_usage(uuid, bigint, bigint) TO notesapp_app;--> statement-breakpoint
 GRANT EXECUTE ON FUNCTION public.notesapp_session_standing(text) TO notesapp_app;--> statement-breakpoint
@@ -1086,6 +1444,12 @@ GRANT EXECUTE ON FUNCTION public.notesapp_redeem_handoff(text) TO notesapp_app;-
 GRANT EXECUTE ON FUNCTION public.notesapp_removal_candidates(timestamptz) TO notesapp_app;--> statement-breakpoint
 GRANT EXECUTE ON FUNCTION public.notesapp_remove_due_account(uuid) TO notesapp_app;--> statement-breakpoint
 GRANT EXECUTE ON FUNCTION public.notesapp_mark_removal_notice(uuid, integer, timestamptz) TO notesapp_app;--> statement-breakpoint
+GRANT EXECUTE ON FUNCTION public.notesapp_release_removal_notice(uuid, integer, timestamptz) TO notesapp_app;--> statement-breakpoint
+GRANT EXECUTE ON FUNCTION public.notesapp_workspace_writable(uuid) TO notesapp_app;--> statement-breakpoint
+GRANT EXECUTE ON FUNCTION public.notesapp_account_writable(uuid) TO notesapp_app;--> statement-breakpoint
+GRANT EXECUTE ON FUNCTION public.notesapp_guard_locked_write() TO notesapp_app;--> statement-breakpoint
+GRANT EXECUTE ON FUNCTION public.notesapp_require_writable(uuid) TO notesapp_app;--> statement-breakpoint
+GRANT EXECUTE ON FUNCTION public.notesapp_claim_daily_run(text, date) TO notesapp_app;--> statement-breakpoint
 
 -- The schema version is the number of entries in the migration journal. This
 -- migration is the thirty-first entry, so the function reports thirty-one.

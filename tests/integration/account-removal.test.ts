@@ -5,7 +5,7 @@
  * account 30 days and 7 days before, and never removes an active account.
  */
 import assert from 'node:assert/strict';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import test from 'node:test';
 import {
   createAccountRemoval,
@@ -13,7 +13,9 @@ import {
   type Mailer,
   type MailMessage,
 } from '@notesapp/server';
+import { defaultAccountLimitBytes, registerAccount } from '@notesapp/core';
 import {
+  openCoordination,
   openIdentityStore,
   type IdentityStoreHandle,
 } from '@notesapp/storage-server';
@@ -29,6 +31,9 @@ const identity: IdentityStoreHandle = openIdentityStore(database.runtimeUrl, {
   poolSize: 2,
 });
 const origin = 'https://notes.example.com';
+
+/** A gate that lets every call run, for a check of one step of the run. */
+const everyDay = (): Promise<boolean> => Promise.resolve(true);
 const day = 24 * 60 * 60 * 1000;
 
 /** A mailer that keeps each message. */
@@ -119,8 +124,10 @@ await test('the run removes a locked account past its time and never an active o
     mailer,
     origin,
     portal: true,
+    claimDay: everyDay,
   });
   const result = await run();
+  assert.ok(!('skipped' in result));
   assert.equal(result.removed, 1);
   assert.equal(await removed(due.accountId), true);
   assert.equal(await removed(unlocked.accountId), false);
@@ -146,6 +153,7 @@ await test('a mail goes 30 days and 7 days before the removal, and never twice',
     mailer,
     origin,
     portal: false,
+    claimDay: everyDay,
   });
   await run();
   const first = mailer.sent.filter((message) => message.to === person.email);
@@ -177,9 +185,109 @@ await test('with no mail transport the account is still removed at its time', as
     mailer: noMailer,
     origin,
     portal: true,
+    claimDay: everyDay,
   })();
+  assert.ok(!('skipped' in result));
   assert.equal(result.removed, 1);
   assert.equal(await removed(person.accountId), true);
+});
+
+await test('the run is daily: one claim for each day in UTC', async () => {
+  const coordination = openCoordination(database.runtimeUrl);
+  try {
+    const person = await account();
+    await control(person.accountId, 'locked', new Date(Date.now() - 1000));
+    const run = createAccountRemoval({
+      store: identity,
+      mailer: noMailer,
+      origin,
+      portal: true,
+      claimDay: (day) => coordination.claimDailyRun('removals', day),
+    });
+    const today = new Date();
+    assert.deepEqual(Object.keys(await run(today)).sort(), [
+      'failed',
+      'noticed',
+      'removed',
+    ]);
+    assert.equal(await removed(person.accountId), true);
+    // A second call on the same day, from this process or another, runs
+    // nothing.
+    assert.deepEqual(await run(today), { skipped: 'day' });
+    assert.deepEqual(await run(new Date(today.getTime() + 60_000)), {
+      skipped: 'day',
+    });
+    // The next day runs again, and a day before the last claimed one never.
+    const tomorrow = new Date(today.getTime() + day);
+    assert.ok(!('skipped' in (await run(tomorrow))));
+    assert.deepEqual(await run(today), { skipped: 'day' });
+  } finally {
+    await coordination.close();
+  }
+});
+
+await test('a removal time that the database gave sends each mail once', async () => {
+  // The configuration gives the time of a new locked account, so the
+  // database computes it, and the run gives the same time back to record a
+  // mail. A time kept finer than a JavaScript date would never match, and
+  // the mail would go on every run.
+  const email = `new-${randomUUID()}@notes.invalid`;
+  const token = randomUUID();
+  const digest = createHash('sha256').update(token).digest('hex');
+  await identity.operatorInvite({
+    invitationId: randomUUID(),
+    tokenDigest: digest,
+    email,
+    expiresAt: new Date(Date.now() + 3_600_000).toISOString(),
+    mailed: false,
+  });
+  const authUserId = `auth-${randomUUID()}`;
+  const setup = await openSession(database.migrationUrl);
+  try {
+    await setup.query(
+      `insert into auth_user (id, name, email, email_verified)
+       values ($1, 'Person', $2, true)`,
+      [authUserId, email],
+    );
+  } finally {
+    await setup.close();
+  }
+  const made = await registerAccount(identity, {
+    authUserId,
+    ground: { kind: 'invitation', tokenDigest: digest },
+    accountId: randomUUID(),
+    workspaceId: randomUUID(),
+    workspaceName: 'Personal',
+    newAccount: {
+      limitBytes: defaultAccountLimitBytes,
+      standing: 'locked',
+      removeAfterSeconds: 20 * 24 * 60 * 60,
+    },
+  });
+  assert.ok(made.ok);
+  const mailer = capture();
+  const run = createAccountRemoval({
+    store: identity,
+    mailer,
+    origin,
+    portal: true,
+    claimDay: everyDay,
+  });
+  await run();
+  await run();
+  await run();
+  assert.equal(mailer.sent.filter((message) => message.to === email).length, 1);
+  // A control write that gives the same time back keeps the count of mails.
+  const read = await identity.operator((tx) =>
+    tx.account(made.value, '2026-10'),
+  );
+  assert.ok(read !== null);
+  const written = await identity.operator((tx) =>
+    tx.setControls(made.value, read.controls.revision, read.controls),
+  );
+  assert.equal(written, 'written');
+  await run();
+  assert.equal(mailer.sent.filter((message) => message.to === email).length, 1);
 });
 
 await identity.close();

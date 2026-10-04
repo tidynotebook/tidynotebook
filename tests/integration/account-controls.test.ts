@@ -563,6 +563,194 @@ await test('an upgraded installation splits its usage and keeps every account ac
   }
 });
 
+/** One account that owns one workspace and is locked. */
+async function lockedOwner(): Promise<{
+  accountId: string;
+  workspaceId: string;
+}> {
+  const made = await owner();
+  assert.equal(
+    await writeControls(made.accountId, 1, { standing: 'locked' }),
+    'written',
+  );
+  return made;
+}
+
+await test('the database refuses each write of the runtime role for a locked owner', async () => {
+  const made = await lockedOwner();
+  const session = await openSession(database.runtimeUrl, made.accountId);
+  const digest = createHash('sha256').update(randomUUID()).digest('hex');
+  try {
+    // One statement of each group, as the runtime role would send it with
+    // the use case bypassed: the workspace, a published link, the settings
+    // of a member, a theme of the account, and the functions of the schema
+    // owner that the runtime role calls.
+    const refused: readonly (readonly [string, unknown[]])[] = [
+      [
+        'update workspaces set name = $2 where id = $1',
+        [made.workspaceId, 'x'],
+      ],
+      [
+        `insert into publications
+           (workspace_id, id, owner_account_id, token_digest, scope_kind, scope_path)
+         values ($1, $2, $3, $4, 'folder', 'notes')`,
+        [made.workspaceId, randomUUID(), made.accountId, digest],
+      ],
+      [
+        'insert into daily_note_settings (workspace_id, account_id) values ($1, $2)',
+        [made.workspaceId, made.accountId],
+      ],
+      [
+        `insert into account_themes (id, account_id, name, palettes)
+         values ($1, $2, 'Theme', '{}'::jsonb)`,
+        [randomUUID(), made.accountId],
+      ],
+      ['select notesapp_next_cursor($1)', [made.workspaceId]],
+      ['select notesapp_create_workspace($1, $2)', [randomUUID(), 'Second']],
+      [
+        'select * from notesapp_purge_files($1, array[]::uuid[])',
+        [made.workspaceId],
+      ],
+    ];
+    for (const [statement, parameters] of refused) {
+      const failure = await session.failure(statement, parameters);
+      assert.equal(failure.code, 'NA004', statement);
+    }
+  } finally {
+    await session.close();
+  }
+  // Active again, the same write goes through.
+  assert.equal(
+    await writeControls(made.accountId, 2, { standing: 'active' }),
+    'written',
+  );
+  const again = await openSession(database.runtimeUrl, made.accountId);
+  try {
+    await again.query('update workspaces set name = $2 where id = $1', [
+      made.workspaceId,
+      'Renamed',
+    ]);
+  } finally {
+    await again.close();
+  }
+});
+
+await test('every table that the runtime role writes carries the guard, or is named open', async () => {
+  // A table that a later migration adds and that the runtime role can write
+  // fails here until it takes the guard or this list names why it stays open.
+  const open = new Map([
+    // A locked account keeps its consent and its sessions (record 0201).
+    ['account_consents', 'the consent to the legal documents'],
+    ['account_audit_events', 'the trail of the sessions of the account'],
+    // The counters and the stream reservations hold no data of an account.
+    ['attempt_counters', 'the attempt counters of record 0121'],
+  ]);
+  const session = await openSession(database.migrationUrl);
+  try {
+    const rows = await session.query<{ table_name: string; guarded: boolean }>(
+      `select c.relname as table_name,
+              exists (select 1 from pg_trigger t
+                       where t.tgrelid = c.oid
+                         and t.tgname = c.relname || '_locked_guard') as guarded
+         from pg_class c
+         join pg_namespace n on n.oid = c.relnamespace
+        where n.nspname = 'public' and c.relkind = 'r'
+          and (has_table_privilege('notesapp_app', c.oid, 'INSERT')
+            or has_table_privilege('notesapp_app', c.oid, 'UPDATE')
+            or has_table_privilege('notesapp_app', c.oid, 'DELETE')
+            or has_any_column_privilege('notesapp_app', c.oid, 'UPDATE'))
+        order by 1`,
+    );
+    assert.ok(rows.length > 10);
+    for (const row of rows)
+      assert.ok(
+        row.guarded || open.has(row.table_name),
+        `${row.table_name} takes writes of the runtime role with no guard`,
+      );
+  } finally {
+    await session.close();
+  }
+});
+
+await test('a link in the workspace of a locked owner opens nothing, whoever made it', async () => {
+  const made = await owner();
+  const other = await owner();
+  const token = randomUUID();
+  const digest = createHash('sha256').update(token).digest('hex');
+  const setup = await openSession(database.migrationUrl);
+  try {
+    // A link whose recorded maker is another, active account.
+    await setup.query(
+      `insert into publications
+         (workspace_id, id, owner_account_id, token_digest, scope_kind, scope_path)
+       values ($1, $2, $3, $4, 'folder', 'notes')`,
+      [made.workspaceId, randomUUID(), other.accountId, digest],
+    );
+  } finally {
+    await setup.close();
+  }
+  const read = async (): Promise<number> => {
+    const reader = await openSession(database.runtimeUrl);
+    try {
+      return (
+        await reader.query('select * from notesapp_publication_by_token($1)', [
+          digest,
+        ])
+      ).length;
+    } finally {
+      await reader.close();
+    }
+  };
+  assert.equal(await read(), 1);
+  assert.equal(
+    await writeControls(made.accountId, 1, { standing: 'locked' }),
+    'written',
+  );
+  assert.equal(await read(), 0);
+  assert.equal(
+    await writeControls(made.accountId, 2, { standing: 'active' }),
+    'written',
+  );
+  assert.equal(await read(), 1);
+});
+
+await test('the table holds that an administrator is active, and a promotion unlocks', async () => {
+  const made = await lockedOwner();
+  const setup = await openSession(database.migrationUrl);
+  try {
+    const refused = await setup.failure(
+      `update accounts set installation_role = 'administrator' where id = $1`,
+      [made.accountId],
+    );
+    assert.equal(refused.code, '23514');
+    const email = `promoted-${randomUUID()}@notes.invalid`;
+    const authUserId = `auth-${randomUUID()}`;
+    await setup.query(
+      `insert into auth_user (id, name, email, email_verified)
+       values ($1, 'Person', $2, true)`,
+      [authUserId, email],
+    );
+    await setup.query(
+      'insert into account_identities (auth_user_id, account_id) values ($1, $2)',
+      [authUserId, made.accountId],
+    );
+    await setup.query(
+      `update accounts set removal_at = now() + interval '9 days'
+        where id = $1`,
+      [made.accountId],
+    );
+    // The command that brings an operator back in promotes a locked account
+    // too: it becomes active, and its removal time goes.
+    assert.equal(await identity.operatorPromote(email), made.accountId);
+  } finally {
+    await setup.close();
+  }
+  const controls = await storedControls(made.accountId);
+  assert.equal(controls.standing, 'active');
+  assert.equal(controls.removal_at, null);
+  assert.equal(controls.controls_revision, '3');
+});
+
 await identity.close();
 await content.close();
 await database.destroy();

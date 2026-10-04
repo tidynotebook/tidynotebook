@@ -14,6 +14,7 @@ import {
   type Result,
 } from '@notesapp/core';
 import {
+  isLockedRefusal,
   markdownLimitCode,
   WorkspaceUnavailableError,
 } from '@notesapp/storage-server';
@@ -875,6 +876,15 @@ export function classifyError(error: unknown): {
       status: 500,
       code: 'invalid_response',
       detail: titles.invalid_response,
+      issues: [],
+    };
+  // The database refused a write to a workspace whose owner is locked, for
+  // example the write of a member (records 0189 and 0201).
+  if (isLockedRefusal(error))
+    return {
+      status: 423,
+      code: 'account_locked',
+      detail: domainTitles.account_locked,
       issues: [],
     };
   if (error instanceof AccountLockedError)

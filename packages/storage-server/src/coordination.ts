@@ -35,6 +35,12 @@ export type CoordinationHandle = {
    */
   runExclusive(job: string, run: () => Promise<void>): Promise<boolean>;
   /**
+   * Claims the run of one daily job for one day in UTC, as `YYYY-MM-DD`, and
+   * answers whether this call claimed it. One process of the installation
+   * claims each day, and a day before the last claimed one claims nothing.
+   */
+  claimDailyRun(job: string, day: string): Promise<boolean>;
+  /**
    * Reserves one notice stream of an account, and answers false when the
    * account already holds `limit` live streams in any process.
    */
@@ -167,6 +173,14 @@ export function openCoordination(
         [before.toISOString()],
       );
       return result.rows[0]?.removed ?? 0;
+    },
+
+    async claimDailyRun(job, day) {
+      const result = await pool.query<{ claimed: boolean }>(
+        'select notesapp_claim_daily_run($1, $2::date) as claimed',
+        [job, day],
+      );
+      return result.rows[0]?.claimed ?? false;
     },
 
     async runExclusive(job, run) {

@@ -60,7 +60,11 @@ import {
   type PublicationUnlockResult,
 } from './publication-unlock.ts';
 
-export { DatabaseFailure, WorkspaceUnavailableError } from './errors.ts';
+export {
+  DatabaseFailure,
+  isLockedRefusal,
+  WorkspaceUnavailableError,
+} from './errors.ts';
 export type {
   OwnedPublishedLink,
   PublicationCleanupResult,

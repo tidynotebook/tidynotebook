@@ -638,6 +638,10 @@
         "accounts_controls_revision_check": {
           "name": "accounts_controls_revision_check",
           "value": "\"accounts\".\"controls_revision\" > 0"
+        },
+        "accounts_administrator_active_check": {
+          "name": "accounts_administrator_active_check",
+          "value": "\"accounts\".\"installation_role\" <> 'administrator' or \"accounts\".\"standing\" = 'active'"
         }
       },
       "isRLSEnabled": false
@@ -1637,6 +1641,31 @@
           "value": "char_length(\"daily_note_settings\".\"format\") between 1 and 255"
         }
       },
+      "isRLSEnabled": false
+    },
+    "public.daily_runs": {
+      "name": "daily_runs",
+      "schema": "",
+      "columns": {
+        "job": {
+          "name": "job",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "day": {
+          "name": "day",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.files": {

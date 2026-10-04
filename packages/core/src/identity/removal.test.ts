@@ -54,12 +54,18 @@ await test('a mail goes 30 days and 7 days before the removal, each once', () =>
 function storeOf(candidates: readonly RemovalCandidate[]): RemovalStore & {
   readonly removed: string[];
   readonly marked: string[];
+  readonly released: string[];
+  readonly order: string[];
 } {
   const removed: string[] = [];
   const marked: string[] = [];
+  const released: string[] = [];
+  const order: string[] = [];
   return {
     removed,
     marked,
+    released,
+    order,
     removalCandidates: (horizon) => {
       assert.equal(horizon.getTime(), now.getTime() + 30 * day);
       return Promise.resolve(candidates);
@@ -68,14 +74,19 @@ function storeOf(candidates: readonly RemovalCandidate[]): RemovalStore & {
       removed.push(accountId);
       return Promise.resolve(true);
     },
-    markRemovalNotice: (accountId, notices) => {
+    claimRemovalNotice: (accountId, notices) => {
       marked.push(`${accountId}:${String(notices)}`);
+      order.push(`claim ${accountId}`);
+      return Promise.resolve(true);
+    },
+    releaseRemovalNotice: (accountId, notices) => {
+      released.push(`${accountId}:${String(notices)}`);
       return Promise.resolve(true);
     },
   };
 }
 
-await test('a run removes, mails and records, and a failed mail is tried again later', async () => {
+await test('a run claims, then mails, and gives back the claim of a mail that failed', async () => {
   const due = candidate(-1);
   const soon = candidate(6, 1);
   const quiet = candidate(20, 1);
@@ -88,6 +99,7 @@ await test('a run removes, mails and records, and a failed mail is tried again l
       if (account.accountId === 'failing')
         return Promise.reject(new Error('the mail server is down'));
       sent.push(`${account.email}:${String(days)}`);
+      store.order.push(`send ${account.accountId}`);
       return Promise.resolve();
     },
     now,
@@ -95,8 +107,29 @@ await test('a run removes, mails and records, and a failed mail is tried again l
   assert.deepEqual(run, { removed: 1, noticed: 1, failed: 1 });
   assert.deepEqual(store.removed, [due.accountId]);
   assert.deepEqual(sent, ['ada@example.test:6']);
-  // A mail that failed is not recorded, so the next run sends it.
-  assert.deepEqual(store.marked, [`${soon.accountId}:2`]);
+  // The claim comes first, so a second run never sends one mail again.
+  assert.deepEqual(store.order.slice(0, 2), [
+    `claim ${soon.accountId}`,
+    `send ${soon.accountId}`,
+  ]);
+  // A mail that failed gives its claim back, so the next run sends it.
+  assert.deepEqual(store.marked, [`${soon.accountId}:2`, 'failing:1']);
+  assert.deepEqual(store.released, ['failing:1']);
+});
+
+await test('a mail that another run claimed is not sent again', async () => {
+  const store = storeOf([candidate(6, 1)]);
+  const sent: string[] = [];
+  const run = await runRemovals(
+    { ...store, claimRemovalNotice: () => Promise.resolve(false) },
+    (account) => {
+      sent.push(account.accountId);
+      return Promise.resolve();
+    },
+    now,
+  );
+  assert.deepEqual(run, { removed: 0, noticed: 0, failed: 0 });
+  assert.deepEqual(sent, []);
 });
 
 await test('with no mail transport or no address the account is still removed at its time', async () => {
