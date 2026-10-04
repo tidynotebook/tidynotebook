@@ -35,6 +35,13 @@ export type CoordinationHandle = {
    */
   runExclusive(job: string, run: () => Promise<void>): Promise<boolean>;
   /**
+   * Runs `run` while no other process runs work of the same `key`, and
+   * waits for such work to end first. It answers what `run` answers, and
+   * refuses with an unavailable error when the wait passes
+   * `serialWaitTimeoutMs`.
+   */
+  runSerialized<T>(key: string, run: () => Promise<T>): Promise<T>;
+  /**
    * Reserves one notice stream of an account, and answers false when the
    * account already holds `limit` live streams in any process.
    */
@@ -111,6 +118,14 @@ export const maxAttemptKeyLength = 512;
 function jobLockName(job: string): string {
   return `notesapp:job:${job}`;
 }
+
+/** The lock key of one serialized work, apart from every other lock. */
+function serialLockName(key: string): string {
+  return `notesapp:serial:${key}`;
+}
+
+/** How long a serialized work waits for the work before it. */
+export const serialWaitTimeoutMs = 30_000;
 
 /** Reads one count row of a counter function. */
 function countOf(
@@ -199,6 +214,53 @@ export function openCoordination(
         }
       } finally {
         client.release();
+      }
+    },
+
+    async runSerialized(key, run) {
+      checkKey(key);
+      let client: pg.PoolClient;
+      try {
+        client = await pool.connect();
+      } catch {
+        throw new OperationalError(
+          'unavailable',
+          'notesapp: the coordination store is not reachable.',
+        );
+      }
+      let failed = false;
+      try {
+        // A session lock, as a job takes, so the work may run calls of its
+        // own outside this connection. The wait is bounded, and a process
+        // that dies frees the lock with its connection.
+        try {
+          await client.query(`select set_config('lock_timeout', $1, false)`, [
+            `${String(serialWaitTimeoutMs)}ms`,
+          ]);
+          await client.query('select pg_advisory_lock(hashtext($1)::bigint)', [
+            serialLockName(key),
+          ]);
+        } catch {
+          failed = true;
+          throw new OperationalError(
+            'unavailable',
+            'notesapp: other work of the same kind did not end in time.',
+          );
+        }
+        try {
+          return await run();
+        } finally {
+          await client.query(
+            'select pg_advisory_unlock(hashtext($1)::bigint)',
+            [serialLockName(key)],
+          );
+        }
+      } finally {
+        if (!failed)
+          await client
+            .query(`select set_config('lock_timeout', '0', false)`)
+            .catch(() => undefined);
+        client.release(failed);
       }
     },
 

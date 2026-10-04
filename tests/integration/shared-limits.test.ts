@@ -172,6 +172,48 @@ await test('two instances run one job once', async () => {
   }
 });
 
+await test('serialized work of one key waits for the work before it in another process', async () => {
+  // Codex review of PR 288. Two starts of an import of one account ran at
+  // once on two processes, so the work that the second one did first
+  // waited for nothing.
+  const left = openCoordination(database.runtimeUrl, { poolSize: 2 });
+  const right = openCoordination(database.runtimeUrl, { poolSize: 2 });
+  try {
+    const order: string[] = [];
+    let release = (): void => {};
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let started = (): void => {};
+    const running = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    const first = left.runSerialized('import-start:one', async () => {
+      order.push('first starts');
+      started();
+      await held;
+      order.push('first ends');
+      return 'first';
+    });
+    await running;
+    const second = right.runSerialized('import-start:one', async () => {
+      order.push('second runs');
+      return 'second';
+    });
+    // Work of another key does not wait.
+    assert.equal(
+      await right.runSerialized('import-start:two', async () => 'other'),
+      'other',
+    );
+    release();
+    assert.deepEqual(await Promise.all([first, second]), ['first', 'second']);
+    assert.deepEqual(order, ['first starts', 'first ends', 'second runs']);
+  } finally {
+    await left.close();
+    await right.close();
+  }
+});
+
 await one.app.close();
 await two.app.close();
 await database.destroy();

@@ -55,16 +55,30 @@ export type ArchiveJobs = {
     accountId: string,
     diskBytes: number,
   ) => Promise<ArchiveJobLease>;
+  /**
+   * Runs `run` while no other process starts an import of the same account,
+   * so the removal of the earlier imports and the start of the new one are
+   * one step for every process (record 0192).
+   */
+  readonly serializeImportStart: <T>(
+    accountId: string,
+    run: () => Promise<T>,
+  ) => Promise<T>;
 };
 
 /** The archive jobs of one installation, held in PostgreSQL. */
 export function coordinatedArchiveJobs(
   coordination: Pick<
     CoordinationHandle,
-    'reserveArchiveJob' | 'renewArchiveJob' | 'releaseArchiveJob'
+    | 'reserveArchiveJob'
+    | 'renewArchiveJob'
+    | 'releaseArchiveJob'
+    | 'runSerialized'
   >,
 ): ArchiveJobs {
   return {
+    serializeImportStart: (accountId, run) =>
+      coordination.runSerialized(`import-start:${accountId}`, run),
     reserve: async (accountId, diskBytes) => {
       const id = randomUUID();
       const reservation = await coordination.reserveArchiveJob(

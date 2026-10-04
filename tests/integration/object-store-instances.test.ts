@@ -21,15 +21,18 @@ import test from 'node:test';
 import {
   createWorkspace,
   finalizeAttachment,
+  getAccount,
   getAttachmentRevision,
   getReadiness,
   listFiles,
   signInWithPassword,
+  startWorkspaceImport,
   uploadAttachment,
 } from '@notesapp/api-client';
 import { importPartBytes } from '@notesapp/core';
 import { bootstrapOwner, createApp, loadServerConfig } from '@notesapp/server';
 import {
+  accountImportPrefix,
   attachmentKey,
   openFileObjectStore,
   type ObjectStore,
@@ -301,6 +304,37 @@ for (const pair of pairs) {
       staged.filter((key) => key.includes(workspaceId)),
       [],
     );
+  });
+
+  await test(`${pair.kind}: starts at once on both instances leave one open import`, async () => {
+    // Codex review of PR 288. Two starts of one account that ran at once
+    // both removed the earlier imports before either opened its own, so
+    // both stayed open and the account held more than one import.
+    const workspaceId = await newWorkspace(
+      pair.one.baseUrl,
+      `Starts ${pair.kind}`,
+    );
+    const accountId =
+      (await getAccount({ baseUrl: pair.one.baseUrl, headers })).data
+        ?.accountId ?? '';
+    const answers = await Promise.all(
+      Array.from({ length: 8 }, (_, index) =>
+        startWorkspaceImport({
+          baseUrl: index % 2 === 0 ? pair.one.baseUrl : pair.two.baseUrl,
+          headers,
+          path: { workspaceId },
+          body: { size: 10 },
+        }),
+      ),
+    );
+    for (const answer of answers)
+      assert.equal(answer.error, undefined, JSON.stringify(answer.error));
+    const open: string[] = [];
+    for await (const upload of pair.store.listUploads(
+      accountImportPrefix(accountId),
+    ))
+      open.push(upload.key);
+    assert.equal(open.length, 1, open.join(', '));
   });
 }
 

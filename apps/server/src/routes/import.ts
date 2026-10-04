@@ -784,14 +784,17 @@ export function createImportHandlers(
       const { actor, workspaceId } = writer(request);
       const size = readCount(request.body, 'size');
       if (size > maxArchiveBytes) throw archiveTooLarge();
-      // The earlier imports of the account go first, so their room counts
-      // for this one.
-      await removeAccountImports(attachments, actor.accountId);
-      await checkStoreRoom(attachments, size);
       const importId = randomUUID();
-      await attachments.objects.startUpload(
-        importKey(workspaceId, actor.accountId, importId),
-      );
+      // The earlier imports of the account go first, so their room counts
+      // for this one. Two starts of one account on two processes run one
+      // after the other, so neither keeps an import that the other opened.
+      await jobs.serializeImportStart(actor.accountId, async () => {
+        await removeAccountImports(attachments, actor.accountId);
+        await checkStoreRoom(attachments, size);
+        await attachments.objects.startUpload(
+          importKey(workspaceId, actor.accountId, importId),
+        );
+      });
       return {
         status: 201,
         mediaType: 'application/json',

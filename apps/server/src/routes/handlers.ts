@@ -93,6 +93,10 @@ function missingArchiveJobs(): ArchiveJobs {
       Promise.reject(
         new Error('notesapp: the server was built without archive jobs.'),
       ),
+    serializeImportStart: () =>
+      Promise.reject(
+        new Error('notesapp: the server was built without archive jobs.'),
+      ),
   };
 }
 
