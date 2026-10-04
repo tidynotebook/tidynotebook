@@ -3,10 +3,11 @@ import test from 'node:test';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { maxArchiveBytes } from '@notesapp/core';
+import { importPartBytes, maxArchiveBytes } from '@notesapp/core';
 import {
   ConfigError,
   loadLegalTexts,
+  loadObjectStoreSettings,
   loadProtectedEnvironment,
   loadServerConfig,
   maxLegalDocumentBytes,
@@ -51,18 +52,16 @@ await test('a complete environment produces a configuration', () => {
 });
 
 await test('every body limit is one field of the limits', () => {
-  // The upload and the import each carry one file in a multipart body, so
-  // each body bound holds its file bound and the room of the form around it.
+  // The upload carries one file in a multipart body, so its body bound
+  // holds its file bound and the room of the form around it.
   const { limits } = loadServerConfig(valid);
   assert.equal(limits.attachmentBytes, 20 * mebibyte);
   // The import takes every archive that an export writes (issue 243).
   assert.equal(limits.archiveBytes, maxArchiveBytes);
   assert.ok(limits.uploadBodyBytes > limits.attachmentBytes);
-  assert.ok(limits.importBodyBytes > limits.archiveBytes);
-  assert.equal(
-    limits.uploadBodyBytes - limits.attachmentBytes,
-    limits.importBodyBytes - limits.archiveBytes,
-  );
+  // An import sends its archive in parts of the bytes alone (record 0192).
+  assert.equal(limits.importPartBytes, importPartBytes);
+  assert.ok(limits.importPartBytes < limits.archiveBytes);
 });
 
 await test('the public route rate limit is explicit and configurable', () => {
@@ -543,10 +542,10 @@ await test('a configuration error never repeats a rejected value', () => {
 await test('every optional setting reaches the container of the Compose file', async () => {
   // The Compose file passes a closed list of variables to the application.
   // A setting that the server reads and the list leaves out does nothing in a
-  // container, whatever the operator writes in .env. Two groups come from an
-  // override file that ships beside it: the mail transport, whose URL is a
-  // secret, and the files of the legal documents, which need a mounted
-  // directory.
+  // container, whatever the operator writes in .env. Three groups come from
+  // an override file that ships beside it: the mail transport, whose URL is a
+  // secret, the files of the legal documents, which need a mounted directory,
+  // and an S3 compatible store, whose key pair is a secret.
   const read = (path: string): Promise<string> =>
     readFile(new URL(`../../../${path}`, import.meta.url), 'utf8');
   const compose = await read('docker-compose.yml');
@@ -560,6 +559,13 @@ await test('every optional setting reaches the container of the Compose file', a
     NOTESAPP_MAIL_FROM: 'docker/compose.mail.yaml',
     NOTESAPP_TERMS_FILE: 'docker/compose.legal.yaml',
     NOTESAPP_PRIVACY_FILE: 'docker/compose.legal.yaml',
+    // An S3 compatible store has a key pair, which is a secret (record 0192).
+    NOTESAPP_OBJECT_STORE: 'docker/compose.s3.yaml',
+    NOTESAPP_S3_BUCKET: 'docker/compose.s3.yaml',
+    NOTESAPP_S3_REGION: 'docker/compose.s3.yaml',
+    NOTESAPP_S3_ENDPOINT: 'docker/compose.s3.yaml',
+    NOTESAPP_S3_ACCESS_KEY_ID_FILE: 'docker/compose.s3.yaml',
+    NOTESAPP_S3_SECRET_ACCESS_KEY_FILE: 'docker/compose.s3.yaml',
   };
   for (const name of optionalVariables) {
     const override = byOverride[name];
@@ -746,5 +752,153 @@ await test('the list of every variable names each one once', () => {
     ...optionalVariables,
   ])
     assert.ok(serverVariables.includes(name), name);
-  assert.ok(serverVariables.every((name) => /^NOTESAPP_[A-Z_]+$/.test(name)));
+  // A digit is allowed, as in NOTESAPP_S3_BUCKET (record 0192).
+  assert.ok(
+    serverVariables.every((name) => /^NOTESAPP_[A-Z0-9_]+$/.test(name)),
+  );
+});
+
+/** The settings of an S3 compatible store, with the two key files. */
+const s3: Record<string, string> = {
+  NOTESAPP_OBJECT_STORE: 's3',
+  NOTESAPP_S3_BUCKET: 'notes-uploads',
+  NOTESAPP_S3_REGION: 'auto',
+  NOTESAPP_S3_ENDPOINT: 'https://account.r2.cloudflarestorage.com',
+  NOTESAPP_S3_ACCESS_KEY_ID_FILE: '/run/secrets/s3_access_key_id',
+  NOTESAPP_S3_SECRET_ACCESS_KEY_FILE: '/run/secrets/s3_secret_access_key',
+};
+
+await test('the object store is the directory of the server by default', async () => {
+  // Record 0192. An installation that names no store keeps every byte in
+  // NOTESAPP_STORAGE_ROOT, as it did before the record.
+  const config = loadServerConfig(valid);
+  assert.deepEqual(config.objectStore, { kind: 'filesystem' });
+  assert.deepEqual(await loadObjectStoreSettings(config), {
+    kind: 'filesystem',
+    root: '/var/lib/notesapp',
+  });
+  assert.deepEqual(
+    loadServerConfig(environment({ NOTESAPP_OBJECT_STORE: 'filesystem' }))
+      .objectStore,
+    { kind: 'filesystem' },
+  );
+});
+
+await test('an S3 store names its bucket, its region, its endpoint and its key files', () => {
+  assert.deepEqual(loadServerConfig(environment(s3)).objectStore, {
+    kind: 's3',
+    bucket: 'notes-uploads',
+    region: 'auto',
+    endpoint: 'https://account.r2.cloudflarestorage.com',
+    accessKeyIdFile: '/run/secrets/s3_access_key_id',
+    secretAccessKeyFile: '/run/secrets/s3_secret_access_key',
+  });
+  // AWS itself needs no endpoint.
+  const aws = loadServerConfig(
+    environment({ ...s3, NOTESAPP_S3_ENDPOINT: undefined }),
+  ).objectStore;
+  assert.equal(aws.kind === 's3' ? aws.endpoint : 'none', null);
+});
+
+await test('an S3 store with a missing setting stops startup and names it', () => {
+  assert.throws(
+    () =>
+      loadServerConfig(
+        environment({
+          ...s3,
+          NOTESAPP_S3_BUCKET: undefined,
+          NOTESAPP_S3_SECRET_ACCESS_KEY_FILE: undefined,
+        }),
+      ),
+    (error: unknown) =>
+      error instanceof ConfigError &&
+      error.issues.length === 2 &&
+      error.issues.some((issue) => issue.startsWith('NOTESAPP_S3_BUCKET:')) &&
+      error.issues.some((issue) =>
+        issue.startsWith('NOTESAPP_S3_SECRET_ACCESS_KEY_FILE:'),
+      ),
+  );
+  assert.throws(
+    () =>
+      loadServerConfig(environment({ ...s3, NOTESAPP_S3_BUCKET: 'No_Bucket' })),
+    ConfigError,
+  );
+  assert.throws(
+    () =>
+      loadServerConfig(
+        environment({ ...s3, NOTESAPP_S3_ENDPOINT: 'ftp://store' }),
+      ),
+    ConfigError,
+  );
+  assert.throws(
+    () => loadServerConfig(environment({ NOTESAPP_OBJECT_STORE: 'gcs' })),
+    ConfigError,
+  );
+});
+
+await test('a setting of an S3 store beside the file store stops startup', () => {
+  // The operator meant one of the two stores, and the server cannot tell
+  // which, so it names the setting instead of a silent choice.
+  assert.throws(
+    () =>
+      loadServerConfig(environment({ NOTESAPP_S3_BUCKET: 'notes-uploads' })),
+    (error: unknown) =>
+      error instanceof ConfigError &&
+      error.issues.length === 1 &&
+      /NOTESAPP_S3_BUCKET: set NOTESAPP_OBJECT_STORE to s3/.test(
+        error.issues[0] ?? '',
+      ),
+  );
+});
+
+await test('the key pair of an S3 store comes from its files only', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'notesapp-s3-config-'));
+  try {
+    const keyId = join(directory, 'id');
+    const secret = join(directory, 'secret');
+    await writeFile(keyId, 'key-identifier\n');
+    await writeFile(secret, ' secret-value \n');
+    const config = loadServerConfig(
+      environment({
+        ...s3,
+        NOTESAPP_S3_ACCESS_KEY_ID_FILE: keyId,
+        NOTESAPP_S3_SECRET_ACCESS_KEY_FILE: secret,
+      }),
+    );
+    // The configuration value names the files and holds no secret.
+    assert.doesNotMatch(JSON.stringify(config.objectStore), /secret-value/);
+    assert.deepEqual(await loadObjectStoreSettings(config), {
+      kind: 's3',
+      bucket: 'notes-uploads',
+      region: 'auto',
+      endpoint: 'https://account.r2.cloudflarestorage.com',
+      accessKeyId: 'key-identifier',
+      secretAccessKey: 'secret-value',
+    });
+    await writeFile(secret, '\n');
+    await assert.rejects(
+      loadObjectStoreSettings(config),
+      (error: unknown) =>
+        error instanceof ConfigError &&
+        error.issues.join('\n') ===
+          'NOTESAPP_S3_SECRET_ACCESS_KEY_FILE: the file is empty.',
+    );
+    await assert.rejects(
+      loadObjectStoreSettings(
+        loadServerConfig(
+          environment({
+            ...s3,
+            NOTESAPP_S3_ACCESS_KEY_ID_FILE: join(directory, 'missing'),
+            NOTESAPP_S3_SECRET_ACCESS_KEY_FILE: keyId,
+          }),
+        ),
+      ),
+      (error: unknown) =>
+        error instanceof ConfigError &&
+        error.issues.join('\n') ===
+          'NOTESAPP_S3_ACCESS_KEY_ID_FILE: the file cannot be read.',
+    );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
 });

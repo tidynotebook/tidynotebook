@@ -49,6 +49,28 @@ export {
   type AttachmentStoreOptions,
 } from './attachments.ts';
 export {
+  attachmentKey,
+  BodyLengthError,
+  importKey,
+  isObjectKey,
+  openFileObjectStore,
+  openObjectStore,
+  openS3ObjectStore,
+  removeStaleObjects,
+  stagingKey,
+  stagingLifetimeMs,
+  stagingPrefix,
+  workspacePrefix,
+  type ObjectStore,
+  type ObjectStoreKind,
+  type ObjectStoreSettings,
+  type PendingUpload,
+  type S3StoreSettings,
+  type StaleObjectsRemoved,
+  type StoredObject,
+  type StoredPart,
+} from './object-store/index.ts';
+export {
   authRole,
   main as runMigrationCommand,
   migrationsFolder,

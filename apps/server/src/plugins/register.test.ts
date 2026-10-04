@@ -356,8 +356,8 @@ await test('a route that carries a file reads its body bound from the limits', (
     limits.uploadBodyBytes,
   );
   assert.equal(
-    routeBodyLimit('importWorkspace', limits),
-    limits.importBodyBytes,
+    routeBodyLimit('sendWorkspaceImportPart', limits),
+    limits.importPartBytes,
   );
   // Every other route takes the bound of the instance, `limits.bodyBytes`.
   assert.equal(routeBodyLimit('commitChangeset', limits), null);

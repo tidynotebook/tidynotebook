@@ -2,9 +2,9 @@
  * The file that holds one workspace archive while an import reads it.
  *
  * An archive of the largest export does not fit in memory, so the import
- * keeps the archive it receives in a file while it reads it (issue 243). The
- * file lives in the temporary folder of the attachment store, on the data
- * volume, and leaves the folder as soon as it is open. The open handle keeps
+ * keeps its archive in a file while it reads it (issue 243). The file lives
+ * in the scratch folder of `scratch.ts`, on the data volume, and leaves the
+ * folder as soon as it is open. The open handle keeps
  * its bytes until it closes, so no archive outlives its request, even when the
  * process stops.
  *
@@ -15,16 +15,15 @@
 import { Buffer } from 'node:buffer';
 import { randomUUID } from 'node:crypto';
 import { mkdir, open, unlink, type FileHandle } from 'node:fs/promises';
-import { dirname } from 'node:path';
-import type { AttachmentStore } from '@notesapp/storage-server';
+import { join } from 'node:path';
 
-/** Opens an empty archive file that no folder names. */
+/** Opens an empty archive file in `scratch` that no folder names. */
 export async function openArchiveFile(
-  attachments: AttachmentStore,
+  scratch: string,
   kind: 'import',
 ): Promise<FileHandle> {
-  const path = attachments.temporaryPath(`${kind}-${randomUUID()}`);
-  await mkdir(dirname(path), { recursive: true });
+  const path = join(scratch, `${kind}-${randomUUID()}`);
+  await mkdir(scratch, { recursive: true });
   const handle = await open(path, 'w+', 0o600);
   await unlink(path);
   return handle;

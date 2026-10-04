@@ -18,6 +18,7 @@ import type { OperationId } from '@notesapp/api-contract';
 import { findChannel, findOperation } from '@notesapp/api-contract';
 import {
   loadLegalTexts,
+  loadObjectStoreSettings,
   type LegalTexts,
   type ServerConfig,
 } from './config.ts';
@@ -59,8 +60,10 @@ import {
   openCoordination,
   openSyncListener,
   openIdentityStore,
+  openObjectStore,
   openWorkspaceStore,
   type ListenerSchedule,
+  type ObjectStoreSettings,
 } from '@notesapp/storage-server';
 import {
   classifyError,
@@ -87,6 +90,7 @@ import {
   redactUrl,
 } from './request-log.ts';
 import { createAttachmentCleanup } from './jobs/attachment-cleanup.ts';
+import { createObjectCleanup } from './jobs/object-cleanup.ts';
 import { createPublicationCleanup } from './jobs/publication-cleanup.ts';
 import { createSyncCleanup } from './jobs/sync-cleanup.ts';
 import { createServerLogger, errorName } from './logging.ts';
@@ -237,6 +241,13 @@ export type AppOptions = {
    * 0140).
    */
   readonly legalTexts?: LegalTexts;
+  /**
+   * The object store of the installation, with the key pair of an S3 store
+   * (record 0192). `main.ts` reads it before the start, so a refusal names
+   * its file. A caller that passes nothing gets the store of the
+   * configuration.
+   */
+  readonly objectStore?: ObjectStoreSettings;
   /**
    * The bounds of the notice gateway. A test passes shorter times, and a
    * deployment takes `defaultNoticeBounds` (record 0129).
@@ -654,18 +665,21 @@ async function composeApp(
     createDocumentService(),
   );
   opened.push(() => content.close());
+  // Every byte that a later request reads lives in the object store, so any
+  // process of the installation answers that request (record 0192).
+  const objects = openObjectStore(
+    options?.objectStore ?? (await loadObjectStoreSettings(config)),
+  );
+  opened.push(() => Promise.resolve(objects.close()));
   // The database probes read through the pool that serves the workspace
   // traffic, so a probe that an orchestrator repeats forever opens no
   // connection of its own and proves the path that a request takes.
   const probes = options?.probes ?? [
     configurationProbe(config),
-    storageProbe(config.storageRoot),
+    storageProbe(config.storageRoot, objects),
     ...databaseProbes(() => content.probeDatabase()),
   ];
-  const attachments = openAttachmentStore(
-    config.databaseUrl,
-    config.storageRoot,
-  );
+  const attachments = openAttachmentStore(config.databaseUrl, objects);
   opened.push(() => attachments.close());
   // The mail transport and the legal documents come from the environment or
   // from the settings of the application, and this one decider answers which
@@ -883,6 +897,7 @@ async function composeApp(
   };
   const cleanupSync = createSyncCleanup(content);
   const cleanupAttachments = createAttachmentCleanup(attachments);
+  const cleanupObjects = createObjectCleanup(objects);
   const cleanupPublications = createPublicationCleanup(content);
   let cleanupRunning = false;
   // Each job runs under a lock that one process takes, so two processes of
@@ -892,6 +907,7 @@ async function composeApp(
     readonly name:
       | 'sync'
       | 'attachments'
+      | 'objects'
       | 'publications'
       | 'attempts'
       | 'pending'
@@ -900,6 +916,8 @@ async function composeApp(
   }[] = [
     { name: 'sync', run: () => cleanupSync() },
     { name: 'attachments', run: () => cleanupAttachments() },
+    // Each staged upload and each import that nobody finished (record 0192).
+    { name: 'objects', run: () => cleanupObjects() },
     { name: 'publications', run: () => cleanupPublications() },
     {
       name: 'pending',
@@ -964,6 +982,7 @@ async function composeApp(
     await auth.close();
     await authPool.end();
     await attachments.close();
+    objects.close();
     await content.close();
     await coordination.close();
     await identity.close();

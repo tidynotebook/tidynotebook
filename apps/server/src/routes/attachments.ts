@@ -8,14 +8,19 @@
  * bound of `plugins/body-idle-timeout.ts`, which refuses a sender that holds
  * the connection while it delivers almost nothing.
  *
+ * The upload keeps its body in a file of this server for its own request
+ * only. It inspects the image there, then writes the checked bytes to a
+ * staging key of the object store before it answers, so the finalize that
+ * follows can reach any server instance (record 0192).
+ *
  * The download names its file. `plugins/content-disposition.ts` decides what
  * the browser does with the bytes and encodes the name that the person gave
  * the file, so no name can reach the header field unencoded.
  */
 import { createHash, randomUUID } from 'node:crypto';
-import { createWriteStream, existsSync } from 'node:fs';
+import { createReadStream, createWriteStream, existsSync } from 'node:fs';
 import { mkdir, unlink } from 'node:fs/promises';
-import { dirname } from 'node:path';
+import { join } from 'node:path';
 import { Busboy } from '@fastify/busboy';
 import type { AttachmentStore } from '@notesapp/storage-server';
 import type { WorkspaceStore } from '@notesapp/core';
@@ -64,6 +69,8 @@ const fallbackAttachmentName = 'image';
  *
  * @param limits the largest attachment file, and the longest gap between two
  * chunks of an upload body, both from `config.limits`.
+ * @param scratch the folder of the files of one request, from
+ * `scratchFolder`.
  */
 export function createAttachmentHandlers(
   workspaceStore: WorkspaceStore,
@@ -72,6 +79,7 @@ export function createAttachmentHandlers(
     readonly attachmentBytes: number;
     readonly uploadIdleTimeoutMs: number;
   },
+  scratch: string,
 ): HandlerMap {
   const { attachmentBytes, uploadIdleTimeoutMs } = limits;
   const tooLarge = `Attachment exceeds ${String(attachmentBytes / mebibyte)} MiB limit.`;
@@ -87,8 +95,8 @@ export function createAttachmentHandlers(
       }
 
       const objectId = randomUUID();
-      const tmpPath = attachmentStore.temporaryPath(objectId);
-      await mkdir(dirname(tmpPath), { recursive: true });
+      const tmpPath = join(scratch, `upload-${objectId}`);
+      await mkdir(scratch, { recursive: true });
 
       const hasher = createHash('sha256');
       let bytesCount = 0;
@@ -287,6 +295,18 @@ export function createAttachmentHandlers(
         throw new InvalidContentError(inspection.reason);
       }
 
+      // The checked bytes reach the store before the row names them, so a
+      // row of a temporary object always has its bytes. Bytes with no row go
+      // with the daily cleanup of staging keys.
+      try {
+        await attachmentStore.stageAttachmentBytes(
+          objectId,
+          createReadStream(tmpPath),
+          bytesCount,
+        );
+      } finally {
+        await unlink(tmpPath).catch(() => {});
+      }
       await attachmentStore.saveTemporaryAttachment(actor, workspaceId, {
         id: objectId,
         digest,

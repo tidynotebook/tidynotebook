@@ -6,18 +6,25 @@
  * bounds of the zip format, so an archive of the largest export is an archive
  * of the largest import.
  *
- * Such an archive does not fit in memory, so the import keeps it in a file of
- * the server. The file is removed from its folder as soon as it is open, so it
- * leaves nothing behind when the import ends, fails, or the process stops.
- * Record 0170 bounds the rest:
+ * A proxy in front of the server refuses a large request body, so the archive
+ * comes in parts (record 0192). The start opens an upload in the object store
+ * of the installation, each part goes to that upload, and the completion
+ * joins the parts. Any server instance takes each of these requests, because
+ * the upload lives in the store and its key names the workspace, the account
+ * and the import. The part rule is `importPartsProblem` of `@notesapp/core`.
  *
- * - One import of an account and a few of the installation run at once.
- * - A body longer than the bound is refused from `Content-Length`. Then the
- *   import reserves its job with the length of its body, and a body that the
- *   free space, less `archiveDiskReserveBytes` and less the bodies of the
- *   other running imports, cannot hold is refused with 507, before a byte of
- *   it is read.
- * - A body that stops ends the import, and its file closes.
+ * Such an archive does not fit in memory, so the completion keeps it in a file
+ * of the server while it reads it. The file is removed from its folder as soon
+ * as it is open, so it leaves nothing behind when the import ends, fails, or
+ * the process stops. Record 0170 bounds the rest:
+ *
+ * - One import of an account and a few of the installation run at once. The
+ *   completion holds the job, and a part holds none.
+ * - The completion reserves its job with the size of its parts, and an
+ *   archive that the free space, less `archiveDiskReserveBytes` and less the
+ *   archives of the other running imports, cannot hold is refused with 507
+ *   before the parts are joined. The parts stay for a later completion.
+ * - A part body that stops ends that part, and the store keeps none of it.
  * - Every entry is checked before the first commit: the paths in NFC, each
  *   free and each once, each note under the limits of the grammar, each
  *   image, and the room of the owner. Only a failure of the service stops the
@@ -35,25 +42,22 @@
  * the commit writes it.
  */
 import { createHash, randomUUID } from 'node:crypto';
-import {
-  mkdir,
-  statfs,
-  unlink,
-  writeFile,
-  type FileHandle,
-} from 'node:fs/promises';
-import { dirname } from 'node:path';
-import { pipeline } from 'node:stream/promises';
-import { Busboy } from '@fastify/busboy';
+import { mkdir, statfs, unlink, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { finished, PassThrough, Readable } from 'node:stream';
 import type { FastifyRequest } from 'fastify';
 import {
   attachmentMediaTypeOf,
   commitChangeset,
   createAttachmentChangeset,
   createFileChangeset,
+  importPartAllowed,
+  importPartsBytes,
+  importPartsProblem,
   listFiles,
   maxArchiveBytes,
   maxFilesPerChangeset,
+  maxImportParts,
   maxPageSize,
   workspaceText,
   normalizePath,
@@ -64,6 +68,8 @@ import {
 } from '@notesapp/core';
 import { markdownLimits, parseMarkdown } from '@notesapp/markdown';
 import {
+  BodyLengthError,
+  importKey,
   markdownLimitCode,
   writeChargeBytes,
   type AttachmentStore,
@@ -78,11 +84,11 @@ import {
   ImportIncompleteError,
   ImportNoteRefusedError,
   InvalidContentError,
+  NotFoundError,
   PayloadTooLargeError,
   RequestContractError,
   RequestTimeoutError,
   StorageFullError,
-  UnsupportedMediaTypeError,
 } from '../plugins/problem.ts';
 import type { HandlerMap, HandlerResult } from '../plugins/register.ts';
 import { mebibyte } from '../config.ts';
@@ -128,13 +134,6 @@ function archiveTooLarge(): PayloadTooLargeError {
   return new PayloadTooLargeError(
     `The workspace archive is larger than ${String(Math.floor(maxArchiveBytes / mebibyte))} MiB.`,
   );
-}
-
-function busboyHeaders(request: FastifyRequest): { 'content-type': string } {
-  const value = request.headers['content-type'];
-  if (typeof value !== 'string')
-    throw new UnsupportedMediaTypeError('The import needs a multipart body.');
-  return { 'content-type': value };
 }
 
 /**
@@ -193,97 +192,6 @@ async function checkBodyRoom(
     throw new StorageFullError(
       'The server has no room for this zip file now. Try again later, or ask the administrator for more room.',
     );
-}
-
-/**
- * Writes the one archive file of a bounded multipart request to `handle`,
- * and answers its size.
- *
- * The gap between two chunks is bounded, as it is for an upload. A sender
- * that stops in the middle used to hold its slot until the total receive
- * bound fired. `plugins/body-idle-timeout.ts` states why the bound is the gap
- * and not the whole: a big archive over a slow link is not an attack. A body
- * that ends before it is whole, because the sender closed its connection,
- * ends the read through `pipeline`, which destroys the parser, so the import
- * ends and its file closes.
- */
-async function receiveArchive(
-  request: FastifyRequest,
-  handle: FileHandle,
-  idleMs: number,
-): Promise<number> {
-  let size = 0;
-  let received = false;
-  let failure: Error | null = null;
-  const writes: Promise<void>[] = [];
-  const parser = new Busboy({
-    headers: busboyHeaders(request),
-    limits: { fileSize: maxArchiveBytes, files: 1, parts: 5 },
-  });
-  parser.on('file', (_name, stream) => {
-    if (received) {
-      stream.resume();
-      return;
-    }
-    received = true;
-    stream.on('limit', () => {
-      failure = archiveTooLarge();
-    });
-    const written = writeArchiveFile(handle, stream).then((bytes) => {
-      size = bytes;
-    });
-    // A body that stops leaves its write behind, and the answer is the stop.
-    written.catch(() => undefined);
-    writes.push(written);
-  });
-  parser.on('filesLimit', () => {
-    failure = new PayloadTooLargeError(
-      'The import has too many archive files.',
-    );
-  });
-  parser.on('partsLimit', () => {
-    failure = new PayloadTooLargeError('The import has too many form parts.');
-  });
-  let idleReject: (error: Error) => void = () => {};
-  const idle = new Promise<never>((_resolve, reject) => {
-    idleReject = reject;
-  });
-  idle.catch(() => undefined);
-  const parsed = new Promise<void>((resolve, reject) => {
-    parser.on('finish', resolve);
-    parser.on('error', reject);
-    pipeline(request.raw, parser).catch(reject);
-  });
-  // The bound is armed after the pipe, so no chunk of the body is lost to the
-  // watch, and it is stopped in every exit of the read below.
-  const watch = watchBodyIdle({
-    body: request.raw,
-    idleMs,
-    onIdle: () => {
-      const stopped = new RequestTimeoutError(
-        'The import stopped. Send the archive again.',
-      );
-      failure ??= stopped;
-      idleReject(stopped);
-    },
-  });
-  try {
-    await Promise.race([parsed, idle]);
-    await Promise.race([Promise.all(writes), idle]);
-  } catch {
-    if (failure !== null) throw failure;
-    throw new RequestTimeoutError(
-      'The import stopped before the whole archive came. Send the archive again.',
-    );
-  } finally {
-    watch.stop();
-  }
-  if (failure !== null) throw failure;
-  if (!received || size === 0)
-    throw new RequestContractError('body', [
-      { path: '/file', message: 'The archive file is missing.' },
-    ]);
-  return size;
 }
 
 /** The image type that the name of an entry states, from the list of core. */
@@ -368,11 +276,11 @@ async function inspectEntry(
   source: ArchiveSource,
   checked: CheckedEntry,
   declaredType: string,
-  attachments: AttachmentStore,
+  scratch: string,
 ): Promise<CheckedImage> {
   const bytes = await readArchiveEntry(source, checked.entry);
-  const path = attachments.temporaryPath(`inspect-${randomUUID()}`);
-  await mkdir(dirname(path), { recursive: true });
+  const path = join(scratch, `inspect-${randomUUID()}`);
+  await mkdir(scratch, { recursive: true });
   await writeFile(path, bytes);
   try {
     const inspection = await inspectImage(path, declaredType);
@@ -401,9 +309,11 @@ async function importAttachment(
   if (digest !== image.digest)
     throw new Error('notesapp: an image of the import changed in its file.');
   const objectId = randomUUID();
-  const temporaryPath = attachments.temporaryPath(objectId);
-  await mkdir(dirname(temporaryPath), { recursive: true });
-  await writeFile(temporaryPath, bytes);
+  await attachments.stageAttachmentBytes(
+    objectId,
+    Readable.from([bytes]),
+    bytes.length,
+  );
   await attachments.saveTemporaryAttachment(actor, workspaceId, {
     id: objectId,
     digest,
@@ -541,6 +451,8 @@ type ImportContext = {
   readonly workspaceId: string;
   readonly store: WorkspaceStore;
   readonly attachments: AttachmentStore;
+  /** The folder of the files of this request, from `scratch.ts`. */
+  readonly scratch: string;
 };
 
 /** What one import commits, after every check passed. */
@@ -646,7 +558,7 @@ async function checkArchive(
   }
   const images: CheckedImage[] = [];
   for (const { checked, type } of imageChecks)
-    images.push(await inspectEntry(source, checked, type, context.attachments));
+    images.push(await inspectEntry(source, checked, type, context.scratch));
   const contentBytes = [...notes, ...images].reduce(
     (total, item) => total + BigInt(item.bytes),
     0n,
@@ -698,15 +610,121 @@ async function commitArchive(
   }
 }
 
+/** A whole number of a validated request part. */
+function readCount(value: unknown, key: string): number {
+  const member: unknown =
+    value !== null && typeof value === 'object'
+      ? Object.fromEntries(Object.entries(value))[key]
+      : undefined;
+  if (typeof member !== 'number' || !Number.isSafeInteger(member))
+    throw new Error(`notesapp: the validated request has no ${key}.`);
+  return member;
+}
+
+/** The actor of a request that may write to the workspace of its path. */
+function writer(request: FastifyRequest): {
+  readonly actor: Actor;
+  readonly workspaceId: string;
+} {
+  const actor = requireActor(request).actor;
+  const workspaceId = readText(request.params, 'workspaceId');
+  const grant = actor.grants.find((entry) => entry.workspaceId === workspaceId);
+  if (grant === undefined || !grant.actions.includes('write'))
+    throw new ForbiddenError();
+  return { actor, workspaceId };
+}
+
+/** The answer to a part or a completion of an import that is not there. */
+function noImport(): NotFoundError {
+  return new NotFoundError(
+    'The import is not on the server. Start the import again.',
+  );
+}
+
+/** The refusal of parts that do not make one archive. */
+function partsRefused(): ArchiveRefusedError {
+  return new ArchiveRefusedError(
+    'archive_invalid',
+    'The parts of the zip file do not make one file. Send the zip file again.',
+  );
+}
+
 /**
- * Builds the portable workspace import handler.
+ * Writes the body of one part to the store, under the idle bound of an
+ * upload.
+ *
+ * The body goes through a stream of its own, so the watch sees every chunk
+ * that the store reads, and a sender that stops or closes its connection
+ * stops the write. The store keeps no byte of a part that did not arrive
+ * whole.
+ */
+async function receivePart(
+  request: FastifyRequest,
+  attachments: AttachmentStore,
+  key: string,
+  partNumber: number,
+  size: number,
+  idleMs: number,
+): Promise<boolean> {
+  // The request feeds `body` and is never destroyed by it, so a refusal of
+  // the part still reaches the sender as an answer. A sender that fails or
+  // goes away ends `body` with that failure, and so the write.
+  const body = new PassThrough();
+  request.raw.pipe(body);
+  finished(request.raw, (error) => {
+    if (error) body.destroy(error);
+  });
+  let idleReject: (error: Error) => void = () => {};
+  const idle = new Promise<never>((_resolve, reject) => {
+    idleReject = reject;
+  });
+  idle.catch(() => undefined);
+  // The watch is armed after the pipe, so no chunk of the body is lost to it.
+  const watch = watchBodyIdle({
+    body: request.raw,
+    idleMs,
+    onIdle: () => {
+      const stopped = new RequestTimeoutError(
+        'The import stopped. Send the zip file again.',
+      );
+      request.raw.unpipe(body);
+      body.destroy(stopped);
+      idleReject(stopped);
+    },
+  });
+  const written = attachments.objects.writePart(key, partNumber, body, size);
+  written.catch(() => undefined);
+  try {
+    const stored = await Promise.race([written, idle]);
+    if (!stored) {
+      request.raw.unpipe(body);
+      body.destroy();
+    }
+    return stored;
+  } catch (error) {
+    // The write ends before the answer, so a stopped part leaves no file.
+    await written.catch(() => undefined);
+    if (error instanceof RequestTimeoutError) throw error;
+    if (error instanceof BodyLengthError || request.raw.destroyed)
+      throw new RequestTimeoutError(
+        'The part ended before all its bytes came. Send the zip file again.',
+      );
+    throw error;
+  } finally {
+    watch.stop();
+  }
+}
+
+/**
+ * Builds the handlers of the portable workspace import in parts.
  *
  * @param limits the largest image of one upload, from
  * `config.limits.attachmentBytes`, which bounds an image of an archive too,
- * the largest body of one import, from `config.limits.importBodyBytes`, and
- * the longest gap between two chunks of the archive body, from
+ * the largest part of an import, from `config.limits.importPartBytes`, and
+ * the longest gap between two chunks of a part, from
  * `config.limits.uploadIdleTimeoutMs`. One idle bound serves both bodies that
  * this server streams, so a deployment states it once.
+ * @param scratch the folder of the files of one request, from `scratch.ts`.
  */
 export function createImportHandlers(
   store: WorkspaceStore,
@@ -714,45 +732,109 @@ export function createImportHandlers(
   jobs: ArchiveJobs,
   limits: {
     readonly attachmentBytes: number;
-    readonly importBodyBytes: number;
+    readonly importPartBytes: number;
     readonly uploadIdleTimeoutMs: number;
   },
+  scratch: string,
 ): HandlerMap {
   return {
-    importWorkspace: async (request, reply): Promise<HandlerResult> => {
-      const actor = requireActor(request).actor;
-      const workspaceId = readText(request.params, 'workspaceId');
-      const grant = actor.grants.find(
-        (entry) => entry.workspaceId === workspaceId,
-      );
-      if (grant === undefined || !grant.actions.includes('write'))
-        throw new ForbiddenError();
-      const stated = statedLength(request);
-      if (stated !== null && stated > limits.importBodyBytes)
+    startWorkspaceImport: async (request): Promise<HandlerResult> => {
+      const { actor, workspaceId } = writer(request);
+      if (readCount(request.body, 'size') > maxArchiveBytes)
         throw archiveTooLarge();
-      const lease = await reserveArchiveJob(
-        jobs,
-        reply,
-        actor.accountId,
-        stated ?? limits.importBodyBytes,
+      const importId = randomUUID();
+      await attachments.objects.startUpload(
+        importKey(workspaceId, actor.accountId, importId),
       );
+      return {
+        status: 201,
+        mediaType: 'application/json',
+        body: { importId, partBytes: limits.importPartBytes },
+      };
+    },
+
+    sendWorkspaceImportPart: async (request): Promise<HandlerResult> => {
+      const { actor, workspaceId } = writer(request);
+      const importId = readText(request.params, 'importId');
+      const partNumber = readCount(request.params, 'partNumber');
+      const stated = statedLength(request);
+      if (stated === null || stated === 0)
+        throw new RequestContractError('headers', [
+          {
+            path: '/content-length',
+            message: 'A part states the length of its bytes.',
+          },
+        ]);
+      if (stated > limits.importPartBytes)
+        throw new PayloadTooLargeError(
+          `A part of an import holds ${String(limits.importPartBytes / mebibyte)} MiB at the most.`,
+        );
+      if (!importPartAllowed(partNumber, stated))
+        throw new RequestContractError('params', [
+          {
+            path: '/partNumber',
+            message: `An import has ${String(maxImportParts)} parts at the most.`,
+          },
+        ]);
+      const stored = await receivePart(
+        request,
+        attachments,
+        importKey(workspaceId, actor.accountId, importId),
+        partNumber,
+        stated,
+        limits.uploadIdleTimeoutMs,
+      );
+      if (!stored) throw noImport();
+      return {
+        status: 200,
+        mediaType: 'application/json',
+        body: { partNumber, size: stated },
+      };
+    },
+
+    completeWorkspaceImport: async (request, reply): Promise<HandlerResult> => {
+      const { actor, workspaceId } = writer(request);
+      const key = importKey(
+        workspaceId,
+        actor.accountId,
+        readText(request.params, 'importId'),
+      );
+      // An open upload states its parts. An upload that a refusal below
+      // stopped after the join is one object of the store already.
+      const parts = await attachments.objects.listParts(key);
+      let size: number;
+      if (parts === null) {
+        const joined = await attachments.objects.size(key);
+        if (joined === null) throw noImport();
+        size = joined;
+      } else {
+        const problem = importPartsProblem(parts);
+        if (problem === 'too_large') throw archiveTooLarge();
+        if (problem !== null) throw partsRefused();
+        size = importPartsBytes(parts);
+      }
+      const lease = await reserveArchiveJob(jobs, reply, actor.accountId, size);
       try {
         await checkBodyRoom(
-          dirname(attachments.temporaryPath('import')),
-          stated,
-          limits.importBodyBytes,
+          scratch,
+          size,
+          maxArchiveBytes,
           lease.otherDiskBytes,
         );
-        const handle = await openArchiveFile(attachments, 'import');
+        if (parts !== null && !(await attachments.objects.completeUpload(key)))
+          throw noImport();
+        const handle = await openArchiveFile(scratch, 'import');
         try {
-          const size = await receiveArchive(
-            request,
-            handle,
-            limits.uploadIdleTimeoutMs,
-          );
+          const stream = await attachments.objects.read(key);
+          if (stream === null) throw noImport();
+          const written = await writeArchiveFile(handle, stream);
+          // The archive is in the file of this request now. The store keeps
+          // it no longer, whatever the import answers.
+          await attachments.objects.remove(key);
+          if (written !== size) throw partsRefused();
           const source = fileSource(handle, size);
           const entries = await readDirectory(source);
-          const context = { actor, workspaceId, store, attachments };
+          const context = { actor, workspaceId, store, attachments, scratch };
           const plan = await checkArchive(
             source,
             entries,

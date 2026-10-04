@@ -35,6 +35,15 @@ await test('an archive is cut into full parts and one last part', () => {
     importPartRanges(5).map((range) => range.size),
     [5],
   );
+  assert.deepEqual(
+    importPartRanges(10, 4).map((range) => [range.start, range.end]),
+    [
+      [0, 4],
+      [4, 8],
+      [8, 10],
+    ],
+  );
+  assert.deepEqual(importPartRanges(10, 0), []);
   assert.deepEqual(importPartRanges(0), []);
   assert.deepEqual(importPartRanges(-1), []);
   assert.deepEqual(importPartRanges(1.5), []);
@@ -65,7 +74,10 @@ await test('parts that make no archive name their problem', () => {
     ]),
     'missing_part',
   );
-  assert.equal(importPartsProblem([{ partNumber: 2, size: 1 }]), 'missing_part');
+  assert.equal(
+    importPartsProblem([{ partNumber: 2, size: 1 }]),
+    'missing_part',
+  );
   assert.equal(
     importPartsProblem([
       { partNumber: 1, size: importPartBytes - 1 },

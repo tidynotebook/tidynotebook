@@ -68,6 +68,24 @@ content of each one and a command that writes them.
   `auth_secret`, for every installation.
 - `smtp_password`, with `docker/compose.mail.yaml`.
 - `smtp_url`, with `docker/compose.mail-url.yaml`.
+- `s3_access_key_id` and `s3_secret_access_key`, with
+  `docker/compose.s3.yaml`.
+
+## Object storage
+
+The server keeps the images of the notes, an upload that waits for its note,
+and an import that arrives in parts in an object store. To use an S3
+compatible store, add `docker/compose.s3.yaml` to `COMPOSE_FILE`, then set
+these values. See [Object storage](self-hosting.md#object-storage).
+
+| Setting                              | What it does                                                                                                                              |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `NOTESAPP_OBJECT_STORE`              | `filesystem`, the default, keeps everything in the storage directory. `s3` uses an S3 compatible store. `docker/compose.s3.yaml` sets it. |
+| `NOTESAPP_S3_BUCKET`                 | The bucket of the store.                                                                                                                  |
+| `NOTESAPP_S3_REGION`                 | The region of the bucket, for example `auto` for Cloudflare R2 or `us-east-1` for AWS.                                                    |
+| `NOTESAPP_S3_ENDPOINT`               | The address of the store, for example the address of R2 or of a MinIO server. Empty uses AWS itself.                                      |
+| `NOTESAPP_S3_ACCESS_KEY_ID_FILE`     | The file that holds the access key ID, from `s3_access_key_id`. Compose sets it.                                                          |
+| `NOTESAPP_S3_SECRET_ACCESS_KEY_FILE` | The file that holds the secret access key, from `s3_secret_access_key`. Compose sets it.                                                  |
 
 ## Requests and limits
 

@@ -38,6 +38,7 @@ import { createHistoryHandlers } from './history.ts';
 import { createSyncHandlers } from './sync.ts';
 import { createSearchHandlers } from './search.ts';
 import { createImportHandlers } from './import.ts';
+import { scratchFolder } from './scratch.ts';
 import type { ArchiveJobs } from './archive-jobs.ts';
 import { createBacklinkHandlers } from './backlinks.ts';
 import { createDailyNoteHandlers } from './daily-notes.ts';
@@ -79,8 +80,10 @@ function missingAttachmentStore(): AttachmentStore {
     archivePlan: fail,
     workspaceRoom: fail,
     reclaimAttachments: fail,
-    temporaryPath: fail,
-    immutablePath: fail,
+    stageAttachmentBytes: fail,
+    get objects(): never {
+      return fail();
+    },
   };
 }
 
@@ -232,6 +235,7 @@ export function createHandlers(
       dependencies.content ?? missingWorkspaceStore(),
       dependencies.attachments ?? missingAttachmentStore(),
       config.limits,
+      scratchFolder(config.storageRoot),
     ),
     ...createExportHandlers(
       dependencies.content ?? missingWorkspaceStore(),
@@ -243,6 +247,7 @@ export function createHandlers(
       dependencies.attachments ?? missingAttachmentStore(),
       dependencies.archiveJobs ?? missingArchiveJobs(),
       config.limits,
+      scratchFolder(config.storageRoot),
     ),
     ...createWorkspaceHandlers(store),
     ...createAdministrationHandlers({

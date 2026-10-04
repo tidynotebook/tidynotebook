@@ -8,19 +8,19 @@ this directory. The recipe for a whole feature is in
 
 The PostgreSQL side: the schema, the migrations, the roles and row access
 policies, the workspace store, the reader path of a published link, the
-identity store, the attachment bytes, and provisioning.
+identity store, the object store of the attachment bytes, and provisioning.
 
 ## What lives here and what does not
 
 - `src/schema.ts` is the schema, `migrations/` the SQL, `meta/` the order.
-- `src/workspace-store/` implements `WorkspaceStore`: `transaction.ts` is the
-  unit of work, `publication-transaction.ts` the read-only one of the reader
-  path and `publication-unlock.ts` its one write (0031), one repository per
-  context holds the SQL, `index.ts` is the composition root, and `admin.ts`,
-  `identity-store.ts`, `profiles.ts`, `snapshots.ts`, `attachments.ts`,
-  `attachment-row.ts` (0019) and `installation-settings-row.ts` (0148) own the
-  rest. `coordination.ts` holds what every process shares (0121, 0129), and
+- `src/workspace-store/` implements `WorkspaceStore`: `transaction.ts` is the unit of work,
+  `publication-transaction.ts` the read-only one of the reader path and `publication-unlock.ts`
+  its one write (0031), one repository per context holds the SQL, `index.ts` is the composition
+  root, and `admin.ts`, `identity-store.ts`, `profiles.ts`, `snapshots.ts`, `attachments.ts`,
+  `attachment-row.ts` (0019) and `installation-settings-row.ts` (0148) own the rest. `coordination.ts` holds what every process shares (0121, 0129), and
   `sync-listener.ts` and `sync-hints.ts` the hints (0125, 0144).
+- `src/object-store/` holds the port of each byte that outlives a request, its
+  two adapters, the keys of `keys.ts` and the cleanup of `staging/` (0192).
 - `src/migrate.ts` runs the migrations and exports `requiredSchemaVersion`.
   `src/search-text.ts` writes the text of a search row and `searchTextRule`;
   a raised rule makes `src/search-index-migration.ts` redo each row (0167).
@@ -35,9 +35,9 @@ An installation transaction starts with the installation lock.
 
 ## Allowed imports
 
-`@notesapp/core` and `@notesapp/markdown`, plus `drizzle-orm` and `pg`. An
-index update, the search text and a published read parse Markdown. This
-package is Node only, so a browser package cannot import it.
+`@notesapp/core` and `@notesapp/markdown`, plus `drizzle-orm`, `pg`, and `@aws-sdk/client-s3`
+in `src/object-store/s3-store.ts` only. An index update, the search text and a published read
+parse Markdown. This package is Node only, so a browser package cannot import it.
 
 ## How to add a common thing here
 
@@ -53,11 +53,11 @@ package is Node only, so a browser package cannot import it.
 
 ## Testing conventions here
 
-A pure module such as `excerpt.ts` or `search-text.ts` has a `*.test.ts` next
-to it under `pnpm test:unit`. Everything that needs a database is an
-integration test in `tests/integration/`, with one disposable database per file
-against the service that `tools/test-database/ensure-postgres.sh` starts. Such
-a test proves the row access rule as well: `row-access.test.ts` is the pattern.
+A pure module such as `excerpt.ts` or `search-text.ts` has a `*.test.ts` next to it under
+`pnpm test:unit`. Everything that needs a database is an integration test in
+`tests/integration/`, with one disposable database per file against the service that
+`tools/test-database/ensure-postgres.sh` starts. Such a test proves the row access rule as
+well: `row-access.test.ts` is the pattern, and `object-store.test.ts` holds both adapters.
 
 ## Forbidden here
 
@@ -80,12 +80,13 @@ a test proves the row access rule as well: `row-access.test.ts` is the pattern.
 
 ## Key files
 
-| File                                 | Purpose                                    |
-| ------------------------------------ | ------------------------------------------ |
-| `src/index.ts`                       | The one public entry point                 |
-| `src/workspace-store/index.ts`       | The store and its per-context repositories |
-| `src/workspace-store/transaction.ts` | The transaction unit of work               |
-| `src/migrate.ts`                     | Migration run and `requiredSchemaVersion`  |
-| `src/pool.ts`                        | The one factory of a connection pool       |
-| `migrations/0000_initial.sql`        | The base schema, roles, and policies       |
-| `migrations/meta/_journal.json`      | The applied order and the version count    |
+| File                                 | Purpose                                          |
+| ------------------------------------ | ------------------------------------------------ |
+| `src/index.ts`                       | The one public entry point                       |
+| `src/workspace-store/index.ts`       | The store and its per-context repositories       |
+| `src/workspace-store/transaction.ts` | The transaction unit of work                     |
+| `src/migrate.ts`                     | Migration run and `requiredSchemaVersion`        |
+| `src/pool.ts`                        | The one factory of a connection pool             |
+| `src/object-store/port.ts`           | The port of every byte that outlives one request |
+| `migrations/0000_initial.sql`        | The base schema, roles, and policies             |
+| `migrations/meta/_journal.json`      | The applied order and the version count          |

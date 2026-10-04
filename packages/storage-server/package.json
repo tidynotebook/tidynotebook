@@ -16,6 +16,7 @@
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "catalog:",
     "@notesapp/core": "workspace:*",
     "@notesapp/markdown": "workspace:*",
     "@notesapp/note-document": "workspace:*",

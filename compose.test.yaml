@@ -1,8 +1,8 @@
-# Disposable PostgreSQL service for storage and row access integration tests.
+# Disposable PostgreSQL and MinIO services for the integration tests.
 #
-# This file is for local checks only. It is not a deployment. The service binds
-# a non default host port, so it cannot collide with an installed PostgreSQL.
-# The image is pinned by digest, as the design requires.
+# This file is for local checks only. It is not a deployment. Each service
+# binds a non default host port, so it cannot collide with an installed
+# PostgreSQL or MinIO. Each image is pinned by digest, as the design requires.
 #
 # `POSTGRES_USER` is the image superuser and is used for initialization only.
 # `tools/test-database/init.sql` then creates the migration role
@@ -26,3 +26,33 @@ services:
       timeout: 5s
       retries: 30
       start_period: 10s
+
+  # The S3 compatible store of the object store tests (record 0192). MinIO no
+  # longer publishes an image of its own, so this is the Chainguard build of
+  # MinIO. Its data lives in memory and goes with the container. Each test file
+  # makes a bucket of its own and removes it, so several worktrees share the
+  # service as they share PostgreSQL. The key pair is a test value of a
+  # throwaway local service.
+  minio:
+    image: cgr.dev/chainguard/minio@sha256:4cf4831a2bbcf13ddca09c1cbcc9faff716dd3c4247e0babc32864b8ee8e0034
+    command: ['server', '/data', '--address', ':9000']
+    environment:
+      MINIO_ROOT_USER: notesapp
+      MINIO_ROOT_PASSWORD: notesapp_test_secret
+    tmpfs:
+      - /data
+    ports:
+      - '127.0.0.1:59000:9000'
+    # The image holds bash and no HTTP client, so the check speaks HTTP itself.
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'bash',
+          '-c',
+          'exec 3<>/dev/tcp/127.0.0.1/9000 && printf "GET /minio/health/ready HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n" >&3 && read -r status <&3 && [[ $$status == *" 200 "* ]]',
+        ]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 5s

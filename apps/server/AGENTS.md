@@ -18,9 +18,9 @@ authentication routes on one origin, and it holds no domain rule.
   handler per operation id and the body lives in its area file. `published.ts` is the
   reader path of a published link and its report (0119), `published-document.ts`
   writes its one document (0031, 0047, 0146), and `publications.ts` holds the owner
-  operations. `import-layout.ts` places the files of an import (0172).
-  `sync-notices.ts` serves the notice stream and checks its origin (0128,
-  0129). `legal.ts` serves the terms and the privacy notice of the operator,
+  operations. `import-layout.ts` places the files of an import (0172), `scratch.ts` the
+  files of one request (0192), and `sync-notices.ts` serves the notice stream and checks
+  its origin (0128, 0129). `legal.ts` serves the terms and the privacy notice of the operator,
   and `legal-document.ts` writes their page like the published page (0140).
 - `src/notices/` holds the notice gateway and its bounds (0129). Only
   `src/plugins/websocket.ts` imports a WebSocket library; the gateway reads its

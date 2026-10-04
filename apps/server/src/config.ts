@@ -23,6 +23,7 @@ import {
   mailSecurities,
   readMailSettings,
   maxArchiveBytes,
+  importPartBytes,
   maxLegalTextBytes,
   templateBlanks,
   type LegalDocumentName,
@@ -33,6 +34,7 @@ import {
 } from '@notesapp/core';
 import { Buffer } from 'node:buffer';
 import { readFile } from 'node:fs/promises';
+import type { ObjectStoreSettings } from '@notesapp/storage-server';
 import { readServedOrigins, type ServedOrigin } from './served-origins.ts';
 import { readTrustedProxies } from './trusted-proxies.ts';
 
@@ -99,8 +101,18 @@ export type ServerConfig = {
    * token, a password hash, or a reset token through any query.
    */
   readonly authDatabaseUrl: string;
-  /** Directory that holds immutable attachment content. */
+  /**
+   * The directory of the server for the files of one request, and the
+   * object store itself when `objectStore` names the file store.
+   */
   readonly storageRoot: string;
+  /**
+   * Where every byte that outlives one request lives (record 0192): the
+   * directory of `storageRoot`, or an S3 compatible store. The key pair of an
+   * S3 store is read from its files by `loadObjectStoreSettings`, so no
+   * secret is in the configuration value.
+   */
+  readonly objectStore: ObjectStoreConfig;
   /** Secret that signs sessions and tokens. */
   readonly authSecret: string;
   /**
@@ -153,8 +165,11 @@ export type ServerConfig = {
     readonly uploadBodyBytes: number;
     /** The largest workspace archive of one import. */
     readonly archiveBytes: number;
-    /** The largest body of one import. */
-    readonly importBodyBytes: number;
+    /**
+     * The largest body of one part of an import (record 0192). A part is
+     * the bytes alone, with no form around them.
+     */
+    readonly importPartBytes: number;
     readonly headerBytes: number;
     /**
      * The total receive bound of every request.
@@ -246,6 +261,19 @@ export type ServerConfig = {
   };
 };
 
+/** The object store that the environment names (record 0192). */
+export type ObjectStoreConfig =
+  | { readonly kind: 'filesystem' }
+  | {
+      readonly kind: 's3';
+      readonly bucket: string;
+      readonly region: string;
+      /** The address of the service, or `null` for AWS itself. */
+      readonly endpoint: string | null;
+      readonly accessKeyIdFile: string;
+      readonly secretAccessKeyFile: string;
+    };
+
 /** Startup failure that names every rejected configuration entry. */
 export class ConfigError extends Error {
   readonly issues: readonly string[];
@@ -308,6 +336,12 @@ export const optionalVariables = [
   'NOTESAPP_PRIVACY_FILE',
   'NOTESAPP_PRIVACY_VERSION',
   'NOTESAPP_BREACH_CHECK',
+  'NOTESAPP_OBJECT_STORE',
+  'NOTESAPP_S3_BUCKET',
+  'NOTESAPP_S3_REGION',
+  'NOTESAPP_S3_ENDPOINT',
+  'NOTESAPP_S3_ACCESS_KEY_ID_FILE',
+  'NOTESAPP_S3_SECRET_ACCESS_KEY_FILE',
 ] as const;
 
 const protectedFiles = {
@@ -539,6 +573,30 @@ const configSchema: SchemaObject = {
       maxLength: maxLegalVersionLength,
     },
     NOTESAPP_BREACH_CHECK: { type: 'string', enum: ['on', 'off'] },
+    NOTESAPP_OBJECT_STORE: { type: 'string', enum: ['filesystem', 's3'] },
+    // The rule of a bucket name that every S3 compatible store shares.
+    NOTESAPP_S3_BUCKET: {
+      type: 'string',
+      pattern: '^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$',
+    },
+    // R2 names `auto`, and AWS and MinIO name a region such as `us-east-1`.
+    NOTESAPP_S3_REGION: { type: 'string', pattern: '^[a-z0-9-]{1,32}$' },
+    NOTESAPP_S3_ENDPOINT: {
+      type: 'string',
+      format: 'uri',
+      pattern: '^https?://',
+      maxLength: 1024,
+    },
+    NOTESAPP_S3_ACCESS_KEY_ID_FILE: {
+      type: 'string',
+      pattern: '^/',
+      maxLength: 1024,
+    },
+    NOTESAPP_S3_SECRET_ACCESS_KEY_FILE: {
+      type: 'string',
+      pattern: '^/',
+      maxLength: 1024,
+    },
   },
 };
 
@@ -633,6 +691,7 @@ export function loadServerConfig(
     databaseUrl: raw.NOTESAPP_DATABASE_URL,
     authDatabaseUrl: raw.NOTESAPP_AUTH_DATABASE_URL,
     storageRoot: raw.NOTESAPP_STORAGE_ROOT,
+    objectStore: readObjectStore(raw),
     authSecret: raw.NOTESAPP_AUTH_SECRET,
     servedOrigins: served.origins,
     listen,
@@ -645,7 +704,7 @@ export function loadServerConfig(
       attachmentBytes,
       uploadBodyBytes: attachmentBytes + multipartEnvelopeBytes,
       archiveBytes,
-      importBodyBytes: archiveBytes + multipartEnvelopeBytes,
+      importPartBytes,
       headerBytes: Number(raw.NOTESAPP_MAX_HEADER_BYTES),
       requestTimeoutMs,
       uploadIdleTimeoutMs,
@@ -669,6 +728,106 @@ export function loadServerConfig(
     accounts: readAccounts(raw),
     breachCheck: raw.NOTESAPP_BREACH_CHECK !== 'off',
     ...readLegalDocuments(raw, canonical),
+  };
+}
+
+/** The variables of an S3 store, in the order of the guide. */
+const s3Variables = [
+  'NOTESAPP_S3_BUCKET',
+  'NOTESAPP_S3_REGION',
+  'NOTESAPP_S3_ENDPOINT',
+  'NOTESAPP_S3_ACCESS_KEY_ID_FILE',
+  'NOTESAPP_S3_SECRET_ACCESS_KEY_FILE',
+] as const;
+
+/**
+ * The object store of the environment (record 0192).
+ *
+ * The file store is the default and needs nothing more. An S3 store needs
+ * its bucket, its region and the two files of its key pair, and names its
+ * endpoint unless it is AWS itself. A setting of an S3 store beside the file
+ * store stops startup, because the operator meant one of the two and the
+ * server cannot tell which.
+ */
+function readObjectStore(raw: RawConfig): ObjectStoreConfig {
+  const named = s3Variables.filter((name) => raw[name] !== undefined);
+  if (raw.NOTESAPP_OBJECT_STORE !== 's3') {
+    if (named.length > 0)
+      throw new ConfigError(
+        named.map(
+          (name) =>
+            `${name}: set NOTESAPP_OBJECT_STORE to s3 to use an S3 compatible store, or remove ${name}.`,
+        ),
+      );
+    return { kind: 'filesystem' };
+  }
+  const {
+    NOTESAPP_S3_BUCKET: bucket,
+    NOTESAPP_S3_REGION: region,
+    NOTESAPP_S3_ACCESS_KEY_ID_FILE: accessKeyIdFile,
+    NOTESAPP_S3_SECRET_ACCESS_KEY_FILE: secretAccessKeyFile,
+  } = raw;
+  if (
+    bucket === undefined ||
+    region === undefined ||
+    accessKeyIdFile === undefined ||
+    secretAccessKeyFile === undefined
+  )
+    throw new ConfigError(
+      s3Variables
+        .filter(
+          (name) => name !== 'NOTESAPP_S3_ENDPOINT' && raw[name] === undefined,
+        )
+        .map((name) => `${name}: an S3 compatible store needs it.`),
+    );
+  return {
+    kind: 's3',
+    bucket,
+    region,
+    endpoint: raw.NOTESAPP_S3_ENDPOINT ?? null,
+    accessKeyIdFile,
+    secretAccessKeyFile,
+  };
+}
+
+/**
+ * The settings that open the object store, with the key pair of an S3 store
+ * read from its files. A file that cannot be read, or that is empty, stops
+ * startup and names its variable.
+ */
+export async function loadObjectStoreSettings(
+  config: Pick<ServerConfig, 'objectStore' | 'storageRoot'>,
+): Promise<ObjectStoreSettings> {
+  const store = config.objectStore;
+  if (store.kind === 'filesystem')
+    return { kind: 'filesystem', root: config.storageRoot };
+  const issues: string[] = [];
+  const read = async (variable: string, path: string): Promise<string> => {
+    try {
+      const value = (await readFile(path, 'utf8')).trim();
+      if (value === '') issues.push(`${variable}: the file is empty.`);
+      return value;
+    } catch {
+      issues.push(`${variable}: the file cannot be read.`);
+      return '';
+    }
+  };
+  const accessKeyId = await read(
+    'NOTESAPP_S3_ACCESS_KEY_ID_FILE',
+    store.accessKeyIdFile,
+  );
+  const secretAccessKey = await read(
+    'NOTESAPP_S3_SECRET_ACCESS_KEY_FILE',
+    store.secretAccessKeyFile,
+  );
+  if (issues.length > 0) throw new ConfigError(issues);
+  return {
+    kind: 's3',
+    bucket: store.bucket,
+    region: store.region,
+    endpoint: store.endpoint,
+    accessKeyId,
+    secretAccessKey,
   };
 }
 

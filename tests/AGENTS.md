@@ -14,8 +14,9 @@ See
 ## What lives here and what does not
 
 - `integration/` holds one file per area. `integration/support/` holds the
-  disposable database, the identity provider, the listening server, and the
-  Tailwind compiler of the web build.
+  disposable database, the bucket of the test MinIO service (0192), the
+  identity provider, the listening server, and the Tailwind compiler of the
+  web build.
 - A unit test does not live here. It lives next to its module in a package
   `src` tree and runs under `pnpm test:unit`.
 - A test that drives a browser does not live here, and no gate starts one.

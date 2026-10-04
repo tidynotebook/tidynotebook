@@ -45,14 +45,16 @@ ajvFormats.default(ajv);
 ajv.addSchema(sharedDefinitions);
 
 /**
- * The validator of the query slot, which converts as well as checks.
+ * The validator of the query and the path slots, which converts as well as
+ * checks.
  *
- * A query value arrives as text on the wire. OpenAPI parameter serialization
- * describes how that text maps to the declared type, so this is the one place
- * that performs the conversion, and a handler then reads a number where the
- * contract declares one. The body and the header validators never convert: a
- * JSON body already carries typed values, and accepting the string "1" where a
- * number is declared would hide a client defect.
+ * A query value and a path segment arrive as text on the wire. OpenAPI
+ * parameter serialization describes how that text maps to the declared type,
+ * so this is the one place that performs the conversion, and a handler then
+ * reads a number where the contract declares one, such as the number of a
+ * part of an import (record 0192). The body and the header validators never
+ * convert: a JSON body already carries typed values, and accepting the string
+ * "1" where a number is declared would hide a client defect.
  */
 const ajvQuery = new Ajv2020({
   allErrors: false,
@@ -123,7 +125,7 @@ for (const operation of operations) {
   ];
   for (const [slot, schema] of slots) {
     if (schema === null) continue;
-    const instance = slot === 'query' ? ajvQuery : ajv;
+    const instance = slot === 'query' || slot === 'params' ? ajvQuery : ajv;
     requests.set(
       requestKey(operation.id, slot),
       validatorFor(instance, schema),

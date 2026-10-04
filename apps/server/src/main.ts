@@ -11,6 +11,7 @@ import { createApp } from './app.ts';
 import {
   ConfigError,
   loadLegalTexts,
+  loadObjectStoreSettings,
   loadProtectedEnvironment,
   loadServerConfig,
 } from './config.ts';
@@ -83,11 +84,14 @@ function reportStart(
 export async function main(): Promise<void> {
   let config;
   let legalTexts;
+  let objectStore;
   try {
     config = loadServerConfig(await loadProtectedEnvironment(process.env));
     // The legal documents are part of the configuration: a file that cannot
     // be read, or a template with a blank left, stops the start here.
     legalTexts = await loadLegalTexts(config);
+    // So is the key pair of an S3 store (record 0192).
+    objectStore = await loadObjectStoreSettings(config);
   } catch (error) {
     // A configuration error already states one line for each value it
     // refused, in the words of this server. Anything else is the message of a
@@ -111,7 +115,7 @@ export async function main(): Promise<void> {
 
   let app;
   try {
-    app = await createApp(config, { lifecycle, legalTexts });
+    app = await createApp(config, { lifecycle, legalTexts, objectStore });
   } catch {
     // The failure here is a database that refuses a connection, a storage
     // directory that cannot be written, or a mail transport that will not
@@ -119,7 +123,7 @@ export async function main(): Promise<void> {
     // code and sometimes a stack, so the operator reads the one sentence that
     // states where to look instead.
     process.stderr.write(
-      'notesapp: the server could not start. Check that the database accepts connections, that NOTESAPP_STORAGE_ROOT exists and can be written, and that the mail settings are complete.\n',
+      'notesapp: the server could not start. Check that the database accepts connections, that NOTESAPP_STORAGE_ROOT exists and can be written, that the object store answers, and that the mail settings are complete.\n',
     );
     process.exit(1);
   }

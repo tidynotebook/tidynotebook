@@ -400,3 +400,20 @@ await test('a settings write names only the settings it changes', () => {
   assert.equal(validate({ spellCheck: 'no' }), false);
   assert.equal(validate({ spellCheck: true, language: 'en' }), false);
 });
+
+await test('a number in a path arrives as text and is read as a number', () => {
+  // The number of a part of an import is a path segment (record 0192).
+  const validate = requestValidator('sendWorkspaceImportPart', 'params');
+  assert.ok(validate !== undefined);
+  const params: Json = {
+    workspaceId: '00000000-0000-4000-8000-000000000001',
+    importId: '00000000-0000-4000-8000-000000000002',
+    partNumber: '3',
+  };
+  assert.equal(validate(params), true);
+  assert.equal(params['partNumber'], 3);
+  for (const partNumber of ['0', '10001', 'x', '1.5'])
+    assert.equal(validate({ ...params, partNumber }), false, partNumber);
+  // A text path segment stays text.
+  assert.equal(typeof params['workspaceId'], 'string');
+});

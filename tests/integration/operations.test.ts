@@ -31,6 +31,7 @@ import {
 } from '@notesapp/server';
 import {
   createDocumentService,
+  openFileObjectStore,
   openWorkspaceStore,
 } from '@notesapp/storage-server';
 import {
@@ -120,7 +121,7 @@ await test('readiness reports degraded when a probe fails', async () => {
 
 await test('storage probe detects missing or unwritable directory', async () => {
   const missingDir = join(tmpdir(), `notesapp-nonexistent-${Date.now()}`);
-  const probe = storageProbe(missingDir);
+  const probe = storageProbe(missingDir, openFileObjectStore(missingDir));
   const result = await probe();
   assert.equal(result.name, 'storage');
   assert.equal(result.status, 'degraded');

@@ -11,12 +11,15 @@
  */
 import type { ImportResult } from '../../lib/import-result.ts';
 import {
+  completeWorkspaceImport,
   exportNote,
   exportWorkspaceAddress,
-  importWorkspace,
   inspectWorkspaceExport,
+  sendWorkspaceImportPart,
+  startWorkspaceImport,
 } from '@notesapp/api-client';
 import {
+  importPartRanges,
   maxArchiveBytes,
   maxArchiveEntries,
   productName,
@@ -92,6 +95,12 @@ const importRefusals: Readonly<Record<string, string>> = {
     'Your account has no room for these files. Delete some notes or images, then import again.',
   unrenderable_note:
     'A note in the zip file cannot be read as Markdown. Change the note, then import again.',
+  // The zip file goes up in parts (record 0192). A part that stops, and an
+  // import that the server no longer holds, both ask for the whole file.
+  request_timeout:
+    'The zip file stopped on its way to the server. Check the connection, then import again.',
+  not_found:
+    'The server no longer holds this import. Import the zip file again.',
 };
 
 /** The message of a refused import. */
@@ -248,14 +257,32 @@ export async function downloadAll(workspaceId: string): Promise<void> {
  * Imports one portable workspace archive. The server moves a picture into
  * the attachments folder and turns a wiki link into a standard link, and
  * names the files that it left out (record 0172).
+ *
+ * The archive goes up in parts of the size that the server states, because
+ * a proxy in front of the server refuses a large body (record 0192). Each
+ * part is a slice of the file, so the browser never holds the whole archive
+ * in memory, and the completion reads it on the server.
  */
 export async function importAll(
   workspaceId: string,
   file: File,
 ): Promise<ImportResult> {
-  const answer = await importWorkspace({
+  const started = await startWorkspaceImport({
     path: { workspaceId },
-    body: { file },
+    body: { size: file.size },
+  });
+  if (started.error !== undefined || started.data === undefined)
+    throw refuseImport(started.error);
+  const { importId, partBytes } = started.data;
+  for (const part of importPartRanges(file.size, partBytes)) {
+    const sent = await sendWorkspaceImportPart({
+      path: { workspaceId, importId, partNumber: part.partNumber },
+      body: file.slice(part.start, part.end),
+    });
+    if (sent.error !== undefined) throw refuseImport(sent.error);
+  }
+  const answer = await completeWorkspaceImport({
+    path: { workspaceId, importId },
   });
   if (answer.error !== undefined || answer.data === undefined)
     throw refuseImport(answer.error);

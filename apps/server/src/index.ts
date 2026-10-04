@@ -8,11 +8,13 @@ export type {
   LegalTexts,
   LogLevel,
   MailConfig,
+  ObjectStoreConfig,
   ServerConfig,
 } from './config.ts';
 export {
   ConfigError,
   loadLegalTexts,
+  loadObjectStoreSettings,
   loadProtectedEnvironment,
   loadServerConfig,
   serverVariables,
@@ -142,6 +144,10 @@ export { defaultNoticeBounds, type NoticeBounds } from './notices/bounds.ts';
 export { syncNoticesProtocol } from './routes/sync-notices.ts';
 export { createSyncCleanup } from './jobs/sync-cleanup.ts';
 export { createAttachmentCleanup } from './jobs/attachment-cleanup.ts';
+export {
+  createObjectCleanup,
+  objectCleanupIntervalMs,
+} from './jobs/object-cleanup.ts';
 export { createPublicationCleanup } from './jobs/publication-cleanup.ts';
 export {
   createPublicationHasher,

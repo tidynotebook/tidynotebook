@@ -29,7 +29,10 @@ Run a backup from the repository:
   --postgres-container notesapp-postgres-1
 ```
 
-The storage root is the host directory named by `NOTESAPP_STORAGE_DIR`. Omit
+The storage root is the host directory named by `NOTESAPP_STORAGE_DIR`. An
+installation that keeps its images in an S3 compatible store backs up the
+bucket with the tools of the store, because this command copies a directory.
+See [Object storage](self-hosting.md#object-storage). Omit
 `--postgres-container` when compatible `pg_dump` and `psql` commands can reach
 the database directly. The database URL does not appear in the host command
 arguments.

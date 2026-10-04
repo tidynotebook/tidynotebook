@@ -1,13 +1,13 @@
 /**
- * Attachment persistence and cleanup on the private server volume.
+ * Attachment persistence and cleanup.
  *
- * Attachment bytes are stored under the configured storage root, partitioned
- * by workspace and addressed by their verified SHA-256 digest. Deduplication
- * stays strictly inside one workspace.
+ * The metadata of each attachment lives in PostgreSQL, and its bytes live in
+ * the object store of the installation (record 0192), partitioned by
+ * workspace and addressed by their verified SHA-256 digest. Deduplication
+ * stays strictly inside one workspace. An upload stages its checked bytes
+ * under a key of its own, and a finalize on any server instance promotes
+ * them to the key of the digest.
  */
-import { createReadStream, existsSync } from 'node:fs';
-import { mkdir, rename, rm, unlink } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
 import type { Readable } from 'node:stream';
 import { and, eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
@@ -21,6 +21,12 @@ import type {
 import { OperationalError } from '@notesapp/core';
 import { storedAttachmentState, storedMediaType } from './attachment-row.ts';
 import { attachmentObjects } from './schema.ts';
+import {
+  attachmentKey,
+  stagingKey,
+  workspacePrefix,
+  type ObjectStore,
+} from './object-store/index.ts';
 import { contentWriteReserveBytes } from './workspace-store/sync-repository.ts';
 import {
   defaultConnectionTimeoutMs,
@@ -129,11 +135,18 @@ export type AttachmentStore = {
    */
   reclaimAttachments(now: Date): Promise<number>;
 
-  /** Absolute path for a temporary upload file. */
-  temporaryPath(objectId: string): string;
+  /**
+   * Writes the checked bytes of an upload to its staging key, before the
+   * upload answers, so a finalize on any server instance finds them.
+   */
+  stageAttachmentBytes(
+    objectId: string,
+    body: Readable,
+    size: number,
+  ): Promise<void>;
 
-  /** Absolute path for finalized attachment content. */
-  immutablePath(workspaceId: string, digest: string): string;
+  /** The object store that holds the bytes. */
+  readonly objects: ObjectStore;
 };
 
 /** The bytes of one accepted attachment revision, and what names them. */
@@ -186,20 +199,14 @@ function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(value);
 }
 
-/** Deletes one file and ignores a file that is already gone. */
-async function removeFile(path: string): Promise<void> {
-  if (!existsSync(path)) return;
-  try {
-    await unlink(path);
-  } catch {
-    // A file that another run removed first needs no report.
-  }
-}
-
-/** Opens an attachment store backed by PostgreSQL and local volume storage. */
+/**
+ * Opens an attachment store backed by PostgreSQL and the object store.
+ *
+ * The caller owns `objects` and closes it after this store.
+ */
 export function openAttachmentStore(
   databaseUrl: string,
-  storageRoot: string,
+  objects: ObjectStore,
   options: AttachmentStoreOptions = {},
 ): AttachmentStoreHandle {
   const pool = openPool({
@@ -212,14 +219,6 @@ export function openAttachmentStore(
       ? {}
       : { statement_timeout: options.statementTimeoutMs }),
   });
-
-  function temporaryPath(objectId: string): string {
-    return join(storageRoot, 'tmp', `${objectId}.tmp`);
-  }
-
-  function immutablePath(workspaceId: string, digest: string): string {
-    return join(storageRoot, 'workspaces', workspaceId, 'attachments', digest);
-  }
 
   /**
    * The bytes of one accepted revision, inside an open transaction.
@@ -259,13 +258,13 @@ export function openAttachmentStore(
     const row = result.rows[0];
     if (!row || row.deleted || row.state === 'unavailable') return null;
 
-    const target = immutablePath(workspaceId, row.digest);
-    const tmp = temporaryPath(row.object_id);
-    const filePath = existsSync(target) ? target : existsSync(tmp) ? tmp : null;
-    if (!filePath) return null;
+    const stream =
+      (await objects.read(attachmentKey(workspaceId, row.digest))) ??
+      (await objects.read(stagingKey(row.object_id)));
+    if (stream === null) return null;
 
     return {
-      stream: createReadStream(filePath),
+      stream,
       size: BigInt(row.size),
       mediaType: storedMediaType(row.media_type),
       digest: row.digest,
@@ -303,15 +302,13 @@ export function openAttachmentStore(
           return count;
         }
         for (const row of taken) {
-          await removeFile(temporaryPath(row.object_id));
+          if (isUuid(row.object_id))
+            await objects.remove(stagingKey(row.object_id));
         }
         const workspaces = new Set(taken.map((row) => row.workspace_id));
         for (const id of workspaces) {
           if (!isUuid(id)) continue;
-          await rm(join(storageRoot, 'workspaces', id), {
-            recursive: true,
-            force: true,
-          });
+          await objects.removePrefix(workspacePrefix(id));
         }
         await client.query('commit');
       } catch {
@@ -373,8 +370,11 @@ export function openAttachmentStore(
   }
 
   return {
-    temporaryPath,
-    immutablePath,
+    objects,
+
+    async stageAttachmentBytes(objectId, body, size): Promise<void> {
+      await objects.write(stagingKey(objectId), body, size);
+    },
 
     async saveTemporaryAttachment(actor, workspaceId, object): Promise<void> {
       await withClient(actor, workspaceId, async (client) => {
@@ -467,18 +467,15 @@ export function openAttachmentStore(
           return { ok: false, error: 'invalid_content' };
         }
 
-        const target = immutablePath(workspaceId, row.digest);
-        const tmp = temporaryPath(objectId);
-
         if (row.state === 'temporary') {
-          await mkdir(dirname(target), { recursive: true });
-          if (existsSync(tmp)) {
-            if (existsSync(target)) {
-              await unlink(tmp);
-            } else {
-              await rename(tmp, target);
-            }
-          }
+          // The staged bytes move to the key of their digest. When that key
+          // already holds the same bytes, the staged copy goes. An object
+          // whose bytes are in neither place has nothing to finalize.
+          const present = await objects.promote(
+            stagingKey(objectId),
+            attachmentKey(workspaceId, row.digest),
+          );
+          if (!present) return { ok: false, error: 'not_found' };
           const updateResult = await client.query<{ finalized_at: Date }>(
             "UPDATE attachment_objects SET state = 'finalized', finalized_at = clock_timestamp() WHERE workspace_id = $1 AND id = $2 RETURNING finalized_at",
             [workspaceId, objectId],
@@ -697,20 +694,21 @@ export function openAttachmentStore(
             // transaction. A finalize of another object with the same digest
             // holds the same workspace lock, so it cannot pass between the
             // check and the deletion and lose its bytes. It waits, sees no
-            // file at the immutable path, and moves its own upload there.
+            // object at the key of the digest, and moves its own upload there.
             const digestStillUsed = await client.query<{ exists: boolean }>(
               'SELECT public.notesapp_is_attachment_digest_used($1, $2) as exists',
               [candidate.workspace_id, candidate.digest],
             );
 
-            await removeFile(temporaryPath(candidate.id));
+            if (isUuid(candidate.id))
+              await objects.remove(stagingKey(candidate.id));
             if (
               !digestStillUsed.rows[0]?.exists &&
               isDigest(candidate.digest) &&
               isUuid(candidate.workspace_id)
             ) {
-              await removeFile(
-                immutablePath(candidate.workspace_id, candidate.digest),
+              await objects.remove(
+                attachmentKey(candidate.workspace_id, candidate.digest),
               );
             }
 

@@ -25,6 +25,7 @@ export type LogEventFields = {
     readonly job:
       | 'sync'
       | 'attachments'
+      | 'objects'
       | 'publications'
       | 'attempts'
       | 'pending'

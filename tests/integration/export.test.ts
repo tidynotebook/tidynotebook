@@ -21,7 +21,7 @@ import {
 } from './support/documents.ts';
 import { Buffer } from 'node:buffer';
 import { randomBytes, randomUUID } from 'node:crypto';
-import { mkdtemp, readdir, readlink, rm, statfs } from 'node:fs/promises';
+import { mkdtemp, readdir, rm, statfs } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -37,7 +37,9 @@ import {
   finalizeAttachment,
   exportWorkspaceAddress,
   getAccount,
-  importWorkspace,
+  startWorkspaceImport,
+  sendWorkspaceImportPart,
+  completeWorkspaceImport,
   inspectWorkspaceExport,
   listWorkspaces,
   signInWithPassword,
@@ -61,12 +63,17 @@ import {
   createDocumentService,
   openAttachmentStore,
   openCoordination,
+  openFileObjectStore,
   openIdentityStore,
-  provisionAccounts,
+  importKey,
   openWorkspaceStore,
+  provisionAccounts,
 } from '@notesapp/storage-server';
 import {
   commitChangeset,
+  importPartBytes,
+  maxArchiveBytes,
+  maxImportParts,
   maxArchiveEntries,
   maxFilesPerChangeset,
   maxPathBytes,
@@ -80,6 +87,8 @@ import {
   memberActor,
   seedWorkspace,
 } from './support/database.ts';
+import { importArchive } from './support/import.ts';
+import { storedArchive } from './support/zip.ts';
 import { startTestServer } from './support/server.ts';
 
 /** The HTTP response of a generated call, or a clear test failure. */
@@ -147,9 +156,13 @@ const content = openWorkspaceStore(
   createDocumentService(),
   { poolSize: 4 },
 );
-const attachments = openAttachmentStore(database.runtimeUrl, storageRoot, {
-  poolSize: 4,
-});
+const attachments = openAttachmentStore(
+  database.runtimeUrl,
+  openFileObjectStore(storageRoot),
+  {
+    poolSize: 4,
+  },
+);
 const coordination = openCoordination(database.runtimeUrl, { poolSize: 2 });
 
 /** Reads one property of an unknown value without asserting its shape. */
@@ -403,7 +416,7 @@ await test('the archive holds every live note and the images they use', async ()
   });
   const importedWorkspaceId = createdWorkspace.data?.workspaceId ?? '';
   assert.match(importedWorkspaceId, /^[0-9a-f-]{36}$/);
-  const imported = await importWorkspace({
+  const imported = await importArchive({
     headers: browser(cookie),
     path: { workspaceId: importedWorkspaceId },
     body: {
@@ -461,37 +474,38 @@ await test('a stranger cannot export a workspace', async () => {
   assert.equal(responseOf(answer.response).status, 404);
 });
 
-/** One multipart boundary of the hand built import body below. */
-const importBoundary = 'notesappImportBoundary';
+/** Starts an import of the owner, and answers its identifier. */
+async function startedImport(targetId: string, size: number): Promise<string> {
+  const started = await startWorkspaceImport({
+    headers: browser(cookie),
+    path: { workspaceId: targetId },
+    body: { size },
+  });
+  assert.equal(started.error, undefined, JSON.stringify(started.error));
+  return started.data?.importId ?? '';
+}
 
-await test('an import that stops arriving answers with the declared timeout', async () => {
+await test('a part that stops arriving answers with the declared timeout', async () => {
   // The defect this covers: the import route read its body with no idle
-  // bound, and its body limit is four times the limit of the upload route. A
-  // sender that stopped in the middle therefore held the more valuable slot
-  // until the total receive bound fired.
+  // bound. A sender that stopped in the middle therefore held its slot until
+  // the total receive bound fired. Each part of an import keeps that bound
+  // (record 0192).
   //
   // The generated operation cannot express a body that arrives in pieces, so
   // this drives the real instance through `app.inject`, which is the one
   // permitted way to send such a request.
+  const importId = await startedImport(workspaceId, 1000);
   const body = new PassThrough();
-  body.write(
-    [
-      `--${importBoundary}`,
-      'Content-Disposition: form-data; name="file"; filename="slow.zip"',
-      'Content-Type: application/zip',
-      '',
-      '',
-    ].join('\r\n'),
-  );
   body.write('PK');
 
   const started = Date.now();
   const answer = await server.app.inject({
-    method: 'POST',
-    url: `/api/workspaces/${workspaceId}/import`,
+    method: 'PUT',
+    url: `/api/workspaces/${workspaceId}/imports/${importId}/parts/1`,
     headers: {
       ...browser(cookie),
-      'content-type': `multipart/form-data; boundary=${importBoundary}`,
+      'content-type': 'application/octet-stream',
+      'content-length': '1000',
     },
     payload: body,
   });
@@ -506,7 +520,7 @@ await test('an import that stops arriving answers with the declared timeout', as
   assert.equal(readProperty(problem, 'code'), 'request_timeout');
   assert.equal(
     readProperty(problem, 'detail'),
-    'The import stopped. Send the archive again.',
+    'The import stopped. Send the zip file again.',
   );
   // The answer waits for the bound and not for the request bound of the whole
   // deployment, which is forty times longer.
@@ -518,6 +532,74 @@ await test('an import that stops arriving answers with the declared timeout', as
     Date.now() - started < 30_000,
     'the answer waited for the request bound',
   );
+  // The store keeps no byte of the part that stopped.
+  assert.deepEqual(
+    await attachments.objects.listParts(
+      importKey(workspaceId, account.data?.accountId ?? '', importId),
+    ),
+    [],
+  );
+});
+
+await test('a part states its length and stays inside the bound of a part', async () => {
+  const importId = await startedImport(workspaceId, 10);
+  const part = (partNumber: number, headers: Record<string, string>) =>
+    server.app.inject({
+      method: 'PUT',
+      url: `/api/workspaces/${workspaceId}/imports/${importId}/parts/${String(partNumber)}`,
+      headers: {
+        ...browser(cookie),
+        'content-type': 'application/octet-stream',
+        ...headers,
+      },
+      payload: Buffer.from('0123456789'),
+    });
+  // A body that states a length past one part is refused before it is read.
+  const large = await part(1, {
+    'content-length': String(importPartBytes + 1),
+  });
+  assert.equal(large.statusCode, 413);
+  // A number past the last part of the largest archive is refused.
+  const far = await part(maxImportParts + 1, { 'content-length': '10' });
+  assert.equal(far.statusCode, 400);
+  // A part of an import that is not there answers not found.
+  const missing = await sendWorkspaceImportPart({
+    headers: browser(cookie),
+    path: { workspaceId, importId: randomUUID(), partNumber: 1 },
+    body: new Blob(['0123456789']),
+  });
+  assert.equal(responseOf(missing.response).status, 404);
+  // The completion of parts that leave a gap makes no archive.
+  const gap = await sendWorkspaceImportPart({
+    headers: browser(cookie),
+    path: { workspaceId, importId, partNumber: 2 },
+    body: new Blob(['0123456789']),
+  });
+  assert.equal(gap.error, undefined, JSON.stringify(gap.error));
+  const refused = await completeWorkspaceImport({
+    headers: browser(cookie),
+    path: { workspaceId, importId },
+  });
+  assert.equal(responseOf(refused.response).status, 422);
+  assert.equal(readProperty(refused.error, 'code'), 'archive_invalid');
+  // Another account cannot send to the import of the owner or complete it:
+  // the key of the import names the account that started it.
+  assert.equal(
+    await attachments.objects.size(
+      importKey(workspaceId, randomUUID(), importId),
+    ),
+    null,
+  );
+});
+
+await test('a start states the size of the archive, which has a bound', async () => {
+  const refused = await startWorkspaceImport({
+    headers: browser(cookie),
+    path: { workspaceId },
+    body: { size: maxArchiveBytes + 1 },
+  });
+  assert.equal(responseOf(refused.response).status, 413);
+  assert.equal(readProperty(refused.error, 'code'), 'payload_too_large');
 });
 
 await test('an export of more than 1000 notes imports back whole', async () => {
@@ -581,7 +663,7 @@ await test('an export of more than 1000 notes imports back whole', async () => {
     body: { name: 'Large target' },
   });
   const targetId = target.data?.workspaceId ?? '';
-  const imported = await importWorkspace({
+  const imported = await importArchive({
     headers: browser(cookie),
     path: { workspaceId: targetId },
     body: {
@@ -675,7 +757,7 @@ await test('an export of more than 100 MiB imports back whole', async () => {
     body: { name: 'Large images back' },
   });
   const targetId = target.data?.workspaceId ?? '';
-  const imported = await importWorkspace({
+  const imported = await importArchive({
     headers: browser(cookie),
     path: { workspaceId: targetId },
     body: {
@@ -788,7 +870,7 @@ await test('an Obsidian vault imports with its links and its pictures', async ()
   });
   const targetId = target.data?.workspaceId ?? '';
   assert.match(targetId, /^[0-9a-f-]{36}$/);
-  const imported = await importWorkspace({
+  const imported = await importArchive({
     headers: browser(cookie),
     path: { workspaceId: targetId },
     body: {
@@ -890,7 +972,7 @@ await test('a backup with hidden notes comes back whole', async () => {
     body: { name: 'Hidden notes back' },
   });
   const targetId = target.data?.workspaceId ?? '';
-  const imported = await importWorkspace({
+  const imported = await importArchive({
     headers: browser(cookie),
     path: { workspaceId: targetId },
     body: {
@@ -938,7 +1020,7 @@ await test('a vault with other files imports its notes and its pictures and name
     body: { name: 'Vault of other files' },
   });
   const targetId = target.data?.workspaceId ?? '';
-  const imported = await importWorkspace({
+  const imported = await importArchive({
     headers: browser(cookie),
     path: { workspaceId: targetId },
     body: { file: new File([vault], 'vault.zip', { type: 'application/zip' }) },
@@ -1003,7 +1085,7 @@ await test('the room of an import counts the notes as their links convert', asyn
     BigInt(notes * 4) +
     BigInt(Math.floor((archived + converted) / 2));
   t.after(await limitAccountTo(database, account.data?.accountId ?? '', room));
-  const refused = await importWorkspace({
+  const refused = await importArchive({
     headers: browser(cookie),
     path: { workspaceId: targetId },
     body: { file: new File([vault], 'vault.zip', { type: 'application/zip' }) },
@@ -1031,7 +1113,7 @@ await test('an import refusal names its real cause', async () => {
   });
   const targetId = target.data?.workspaceId ?? '';
   const send = (bytes: Buffer<ArrayBuffer>) =>
-    importWorkspace({
+    importArchive({
       headers: browser(cookie),
       path: { workspaceId: targetId },
       body: {
@@ -1060,15 +1142,11 @@ await test('an import refusal names its real cause', async () => {
     assert.doesNotMatch(String(readProperty(problem, 'title')), /digest/);
 });
 
-/** The archive files of the imports of this process that are still open. */
-async function openArchiveFiles(): Promise<number> {
-  let open = 0;
-  for (const fd of await readdir('/proc/self/fd')) {
-    const target = await readlink(`/proc/self/fd/${fd}`).catch(() => '');
-    if (target.startsWith(storageRoot) && target.includes('/import-'))
-      open += 1;
-  }
-  return open;
+/** The files that the stores of this server are writing now. */
+async function filesBeingWritten(): Promise<number> {
+  const folder = join(storageRoot, 'tmp');
+  const names = await readdir(folder).catch(() => []);
+  return names.filter((name) => name.startsWith('object-')).length;
 }
 
 /** Waits for a state of the server that no answer states. */
@@ -1085,42 +1163,42 @@ async function until(
 }
 
 await test(
-  'a body that ends before it is whole ends the import and frees its file',
+  'a part that ends before it is whole leaves no part and no file',
   { timeout: 30_000 },
   async () => {
-    // Review of issue 243. A body that ended early never finished the parser,
-    // so the import waited for ever and its file kept its bytes.
+    // Review of issue 243. A body that ended early never finished the reader,
+    // so the import waited for ever and its file kept its bytes. A part of
+    // an import holds the same rule (record 0192).
+    const importId = await startedImport(workspaceId, 1024 * 1024);
     const body = new PassThrough();
-    body.write(
-      [
-        `--${importBoundary}`,
-        'Content-Disposition: form-data; name="file"; filename="cut.zip"',
-        'Content-Type: application/zip',
-        '',
-        '',
-      ].join('\r\n'),
-    );
     body.write(Buffer.alloc(64 * 1024, 0x50));
     const answered = server.app.inject({
-      method: 'POST',
-      url: `/api/workspaces/${workspaceId}/import`,
+      method: 'PUT',
+      url: `/api/workspaces/${workspaceId}/imports/${importId}/parts/1`,
       headers: {
         ...browser(cookie),
-        'content-type': `multipart/form-data; boundary=${importBoundary}`,
+        'content-type': 'application/octet-stream',
+        'content-length': String(1024 * 1024),
       },
       payload: body,
     });
     await until(
-      async () => (await openArchiveFiles()) > 0,
-      'the import opens its file',
+      async () => (await filesBeingWritten()) > 0,
+      'the part reaches the store',
     );
     // The sender is gone, so nobody reads an answer. The injected request
     // reports the closed connection as its failure.
     body.destroy(new Error('The connection of the sender closed.'));
     await assert.rejects(answered, /The connection of the sender closed/);
     await until(
-      async () => (await openArchiveFiles()) === 0,
-      'the import closes its file',
+      async () => (await filesBeingWritten()) === 0,
+      'the store removes the file of the part',
+    );
+    assert.deepEqual(
+      await attachments.objects.listParts(
+        importKey(workspaceId, account.data?.accountId ?? '', importId),
+      ),
+      [],
     );
   },
 );
@@ -1198,7 +1276,7 @@ await test('an import counts the room that the other running imports may take', 
   });
   const targetId = target.data?.workspaceId ?? '';
   const send = () =>
-    importWorkspace({
+    importArchive({
       headers: browser(cookie),
       path: { workspaceId: targetId },
       body: {
@@ -1212,6 +1290,7 @@ await test('an import counts the room that the other running imports may take', 
   const other = randomUUID();
   await provisionAccounts(database.migrationUrl, [other]);
   const held = randomUUID();
+  let keptImport = '';
   const volume = await statfs(storageRoot);
   // The other job is an import of another process that may still write as
   // many bytes as the volume has free now.
@@ -1241,9 +1320,31 @@ await test('an import counts the room that the other running imports may take', 
     const refused = await send();
     assert.equal(responseOf(refused.response).status, 507);
     assert.equal(readProperty(refused.error, 'code'), 'storage_full');
+    // A refusal before the join keeps the parts, so the same import
+    // completes once there is room (record 0192).
+    const kept = storedArchive([['room/kept.md', '# Kept\n']]);
+    const importId = await startedImport(targetId, kept.length);
+    const sent = await sendWorkspaceImportPart({
+      headers: browser(cookie),
+      path: { workspaceId: targetId, importId, partNumber: 1 },
+      body: new Blob([kept]),
+    });
+    assert.equal(sent.error, undefined, JSON.stringify(sent.error));
+    const full = await completeWorkspaceImport({
+      headers: browser(cookie),
+      path: { workspaceId: targetId, importId },
+    });
+    assert.equal(responseOf(full.response).status, 507);
+    keptImport = importId;
   } finally {
     await coordination.releaseArchiveJob(held);
   }
+  const completed = await completeWorkspaceImport({
+    headers: browser(cookie),
+    path: { workspaceId: targetId, importId: keptImport },
+  });
+  assert.equal(responseOf(completed.response).status, 200);
+  assert.equal(completed.data?.notes, 1);
   // The refused import released its own job, and the room is free again.
   const imported = await send();
   assert.equal(responseOf(imported.response).status, 200);
@@ -1343,49 +1444,6 @@ await test('the generated address of an export is the address that serves it', a
   assert.equal(answer.headers['content-type'], 'application/zip');
 });
 
-/** A stored zip archive of the given files. */
-function storedArchive(
-  files: readonly (readonly [string, string])[],
-): Buffer<ArrayBuffer> {
-  const bodies: Buffer[] = [];
-  const directory: Buffer[] = [];
-  let offset = 0;
-  for (const [path, text] of files) {
-    const name = Buffer.from(path);
-    const data = Buffer.from(text);
-    const local = Buffer.alloc(30);
-    local.writeUInt32LE(0x0403_4b50, 0);
-    local.writeUInt16LE(20, 4);
-    local.writeUInt16LE(0x0800, 6);
-    local.writeUInt32LE(crc32(data), 14);
-    local.writeUInt32LE(data.length, 18);
-    local.writeUInt32LE(data.length, 22);
-    local.writeUInt16LE(name.length, 26);
-    const central = Buffer.alloc(46);
-    central.writeUInt32LE(0x0201_4b50, 0);
-    central.writeUInt16LE(20, 4);
-    central.writeUInt16LE(20, 6);
-    central.writeUInt16LE(0x0800, 8);
-    central.writeUInt32LE(crc32(data), 16);
-    central.writeUInt32LE(data.length, 20);
-    central.writeUInt32LE(data.length, 24);
-    central.writeUInt16LE(name.length, 28);
-    central.writeUInt32LE(offset, 42);
-    const body = Buffer.concat([local, name, data]);
-    bodies.push(body);
-    directory.push(Buffer.concat([central, name]));
-    offset += body.length;
-  }
-  const central = Buffer.concat(directory);
-  const end = Buffer.alloc(22);
-  end.writeUInt32LE(0x0605_4b50, 0);
-  end.writeUInt16LE(files.length, 8);
-  end.writeUInt16LE(files.length, 10);
-  end.writeUInt32LE(central.length, 12);
-  end.writeUInt32LE(offset, 16);
-  return Buffer.concat([...bodies, central, end]);
-}
-
 await test('a name in another Unicode form of a live note is that note', async () => {
   // Review of issue 243. The checks compared the paths of the archive as
   // they came, and the commit stored them in NFC.
@@ -1406,7 +1464,7 @@ await test('a name in another Unicode form of a live note is that note', async (
     },
   });
   assert.equal(created.error, undefined, JSON.stringify(created.error));
-  const refused = await importWorkspace({
+  const refused = await importArchive({
     headers: browser(cookie),
     path: { workspaceId: targetId },
     body: {
@@ -1469,7 +1527,7 @@ await test('an archive of macOS imports its long names in NFD', async () => {
     body: { name: 'Long names' },
   });
   const targetId = target.data?.workspaceId ?? '';
-  const imported = await importWorkspace({
+  const imported = await importArchive({
     headers: browser(cookie),
     path: { workspaceId: targetId },
     body: {
@@ -1522,7 +1580,7 @@ await test('a note that a late batch refuses stops the import before any commit'
     ],
   );
   files.push(['many/deep.md', `${'> '.repeat(200)}deep\n`]);
-  const refused = await importWorkspace({
+  const refused = await importArchive({
     headers: browser(cookie),
     path: { workspaceId: targetId },
     body: {

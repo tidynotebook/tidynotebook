@@ -33,12 +33,19 @@ export type ImportPartRange = ImportPart & {
   readonly end: number;
 };
 
-/** The parts of an archive of `size` bytes, in order. */
-export function importPartRanges(size: number): readonly ImportPartRange[] {
+/**
+ * The parts of an archive of `size` bytes, in order, each of `partBytes`
+ * but the last. A browser passes the part size that the server answered.
+ */
+export function importPartRanges(
+  size: number,
+  partBytes: number = importPartBytes,
+): readonly ImportPartRange[] {
   if (!Number.isSafeInteger(size) || size <= 0) return [];
+  if (!Number.isSafeInteger(partBytes) || partBytes <= 0) return [];
   const ranges: ImportPartRange[] = [];
-  for (let start = 0; start < size; start += importPartBytes) {
-    const end = Math.min(size, start + importPartBytes);
+  for (let start = 0; start < size; start += partBytes) {
+    const end = Math.min(size, start + partBytes);
     ranges.push({
       partNumber: ranges.length + 1,
       size: end - start,

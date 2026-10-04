@@ -113,7 +113,7 @@ transport in a sink adapter.
 PostgreSQL holds the accepted state: files, the revision graph, attachment
 metadata, the search index, and identity. Row level security restricts every
 row to its workspace, and the runtime role has no migration rights. Attachment
-bytes live in a bind-mounted directory, content addressed by digest.
+bytes live in the object store of record 0192, content addressed by digest.
 
 The container entry point applies the migrations with the migration role before
 the server starts with the restricted runtime role, so a container that serves

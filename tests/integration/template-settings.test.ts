@@ -47,6 +47,7 @@ import {
 import {
   createDocumentService,
   openAttachmentStore,
+  openFileObjectStore,
   openIdentityStore,
   openWorkspaceStore,
 } from '@notesapp/storage-server';
@@ -97,9 +98,13 @@ const content = openWorkspaceStore(
   createDocumentService(),
   { poolSize: 4 },
 );
-const attachments = openAttachmentStore(database.runtimeUrl, storageRoot, {
-  poolSize: 4,
-});
+const attachments = openAttachmentStore(
+  database.runtimeUrl,
+  openFileObjectStore(storageRoot),
+  {
+    poolSize: 4,
+  },
+);
 const authPool = createAuthPool(config);
 const auth = createAuth(
   config,

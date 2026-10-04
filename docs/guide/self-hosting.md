@@ -168,6 +168,39 @@ the image. PostgreSQL sets the owner of its own directory. Name both paths in
 `.env` with `NOTESAPP_DATABASE_DIR` and `NOTESAPP_STORAGE_DIR`. Both are
 required and neither has a default.
 
+## Object storage
+
+By default, the server keeps the images of the notes, an upload that waits for
+its note, and an import that arrives in parts in the storage directory. One
+server needs nothing more.
+
+You can keep them in an S3 compatible store instead, such as Cloudflare R2,
+MinIO or AWS S3. Use a store when more than one server runs the same
+installation, because each server must read what another server wrote. The
+object keys of the images are the paths in the storage directory, so you can
+move an installation between the two by copying the files.
+
+To use a store:
+
+1. Make a bucket, and a key pair that can read, write, list and delete in it.
+   Do not make the bucket public. The server sends each image itself, so it
+   gives no address of the store to a browser.
+2. Write the access key ID to `s3_access_key_id` and the secret access key to
+   `s3_secret_access_key` in the secret directory, with mode `0600` and owner
+   uid 10001.
+3. Set `NOTESAPP_S3_BUCKET` and `NOTESAPP_S3_REGION` in `.env`. For R2 or
+   MinIO, also set `NOTESAPP_S3_ENDPOINT`. R2 takes the region `auto`.
+4. Add `docker/compose.s3.yaml` to `COMPOSE_FILE`.
+
+The server still needs the storage directory, because it checks each upload and
+each import there for the time of one request. The readiness check reports
+`storage` as degraded when the store does not answer.
+
+Each day, the server removes an upload that nobody finished and an import that
+nobody completed, when they are older than one day. The backup script of
+[Backup and restore](backup-and-restore.md) copies the storage directory and
+not a bucket, so back up the bucket with the tools of the store.
+
 ## Protected configuration
 
 Copy `.env.example` to `.env`. The `.env` file contains only nonsecret
@@ -458,14 +491,15 @@ arriving is not refused, because the gap is what this value measures. It must be
 shorter than `NOTESAPP_REQUEST_TIMEOUT_MS`. The server refuses to start when it
 is not, and it names both values. `.env.example` holds both.
 
-An import takes a zip file of up to 4 GiB, and the whole file must arrive within
-`NOTESAPP_REQUEST_TIMEOUT_MS`. To import a large workspace over a slow link,
-raise the value for the time of the import. An import keeps its zip file on the
-storage volume while it runs, and the file goes when the request ends, also
-when the sender stops. The server refuses an import that the free space of the
-volume, less 512 MiB and less the zip files of the other imports that run now,
-cannot hold. An export writes no file on the server: it
-streams the zip file as it reads the notes.
+An import takes a zip file of up to 4 GiB. The browser sends it in parts of
+50 MiB, so a proxy that refuses a large request body does not stop it, and
+each part must arrive within `NOTESAPP_REQUEST_TIMEOUT_MS`. The parts wait in
+the object store until the last one arrives. The import then keeps its zip
+file on the storage volume while it runs, and the file goes when the import
+ends. The server refuses an import that the free space of the volume, less
+512 MiB and less the zip files of the other imports that run now, cannot hold.
+An export writes no file on the server: it streams the zip file as it reads
+the notes.
 
 One account runs one import or export at a time, and the server runs two at a
 time for all accounts. A person who starts another one reads that the server is

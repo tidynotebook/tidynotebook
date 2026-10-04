@@ -16,7 +16,10 @@
  * its own, because an orchestrator repeats it every few seconds forever.
  */
 import { access, constants } from 'node:fs/promises';
-import type { DatabaseProbeResult } from '@notesapp/storage-server';
+import type {
+  DatabaseProbeResult,
+  ObjectStore,
+} from '@notesapp/storage-server';
 import { requiredSchemaVersion } from '@notesapp/storage-server';
 import type { ServerConfig } from '../config.ts';
 import type { ServiceLifecycle } from '../lifecycle.ts';
@@ -87,16 +90,18 @@ export function configurationProbe(config: ServerConfig): ReadinessProbe {
     );
 }
 
-/** Checks storage root accessibility and writability. */
-export function storageProbe(storageRoot: string): ReadinessProbe {
+/**
+ * Checks the storage of the server: the directory of the files of one
+ * request, and the object store that holds every byte a later request reads
+ * (record 0192). With the file store the two are one directory.
+ */
+export function storageProbe(
+  storageRoot: string,
+  objects: ObjectStore,
+): ReadinessProbe {
   return async () => {
     try {
       await access(storageRoot, constants.R_OK | constants.W_OK);
-      return {
-        name: 'storage',
-        status: 'ok',
-        detail: 'Storage directory is accessible and writable.',
-      };
     } catch {
       return {
         name: 'storage',
@@ -104,6 +109,20 @@ export function storageProbe(storageRoot: string): ReadinessProbe {
         detail: 'Storage directory is not accessible or writable.',
       };
     }
+    if (!(await objects.probe()))
+      return {
+        name: 'storage',
+        status: 'degraded',
+        detail: 'The object store does not answer.',
+      };
+    return {
+      name: 'storage',
+      status: 'ok',
+      detail:
+        objects.kind === 'filesystem'
+          ? 'Storage directory is accessible and writable.'
+          : 'Storage directory is accessible and writable, and the object store answers.',
+    };
   };
 }
 

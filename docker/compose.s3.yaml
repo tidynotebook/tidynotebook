@@ -1,0 +1,33 @@
+# Compose override that keeps the uploads, the images and the imports of the
+# notes in an S3 compatible store instead of NOTESAPP_STORAGE_DIR.
+#
+# Cloudflare R2, MinIO and AWS S3 all speak this API. Name this file after the
+# main one:
+#
+#   COMPOSE_FILE=docker-compose.yml:docker/compose.s3.yaml
+#
+# Set the bucket, the region and the endpoint in `.env`. The endpoint names R2
+# or MinIO, and AWS needs none. The key pair is a secret: write the access key
+# ID to `s3_access_key_id` and the secret access key to `s3_secret_access_key`
+# in NOTESAPP_SECRETS_DIR, each with mode 0600 and owner uid 10001. The server
+# still writes the files of one request to NOTESAPP_STORAGE_DIR. See
+# docs/guide/self-hosting.md.
+services:
+  app:
+    environment:
+      NOTESAPP_OBJECT_STORE: s3
+      NOTESAPP_S3_BUCKET: ${NOTESAPP_S3_BUCKET:?Set NOTESAPP_S3_BUCKET in .env. It names the bucket that holds the uploads and the images.}
+      NOTESAPP_S3_REGION: ${NOTESAPP_S3_REGION:?Set NOTESAPP_S3_REGION in .env, for example auto for Cloudflare R2 or us-east-1 for AWS.}
+      # An empty endpoint names AWS itself.
+      NOTESAPP_S3_ENDPOINT: ${NOTESAPP_S3_ENDPOINT:-}
+      NOTESAPP_S3_ACCESS_KEY_ID_FILE: /run/secrets/s3_access_key_id
+      NOTESAPP_S3_SECRET_ACCESS_KEY_FILE: /run/secrets/s3_secret_access_key
+    secrets:
+      - s3_access_key_id
+      - s3_secret_access_key
+
+secrets:
+  s3_access_key_id:
+    file: ${NOTESAPP_SECRETS_DIR:?Set NOTESAPP_SECRETS_DIR in .env. It names the host directory that holds the secrets, and it belongs outside this checkout.}/s3_access_key_id
+  s3_secret_access_key:
+    file: ${NOTESAPP_SECRETS_DIR:?Set NOTESAPP_SECRETS_DIR in .env. It names the host directory that holds the secrets, and it belongs outside this checkout.}/s3_secret_access_key

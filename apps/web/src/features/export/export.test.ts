@@ -59,6 +59,8 @@ await test('each refusal of an import names its cause and the next step', () => 
     'unsupported_media_type',
     'quota_exceeded',
     'unrenderable_note',
+    'request_timeout',
+    'not_found',
   ].map((code) => importRefusalMessage({ code }));
   assert.equal(
     new Set(messages).size,
@@ -67,6 +69,19 @@ await test('each refusal of an import names its cause and the next step', () => 
   );
   for (const message of messages)
     assert.doesNotMatch(message, /[\u2013\u2014]|_/);
+});
+
+await test('a part that stops and a lost import ask for the zip file again', () => {
+  // Record 0192. The zip file goes up in parts, so a part can stop on its
+  // way and the server can lose an import that waited for a day.
+  assert.equal(
+    importRefusalMessage({ code: 'request_timeout' }),
+    'The zip file stopped on its way to the server. Check the connection, then import again.',
+  );
+  assert.equal(
+    importRefusalMessage({ code: 'not_found' }),
+    'The server no longer holds this import. Import the zip file again.',
+  );
 });
 
 await test('a refused note of an import shows the note and the cause that the server names', () => {
