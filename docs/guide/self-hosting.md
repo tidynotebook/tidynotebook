@@ -253,6 +253,34 @@ is available only until this account exists. Use `pnpm owner:bootstrap` only
 when an unattended installation must create the same first account before a
 browser opens.
 
+## Migrate and serve as two steps
+
+The entry point of the image takes one optional command. With no command, it
+applies the migrations and then serves, as above. A Compose installation needs
+no command, and nothing changes for it.
+
+A platform that runs more than one copy of the application can do the two
+steps apart. Then only the migration step holds the migration secret.
+
+- `migrate` applies the migrations with the migration role, and then the
+  container stops. It reads `migration_database_url`,
+  `runtime_database_password` and `auth_database_password`.
+- `serve` starts the server with the restricted runtime role. It reads no
+  migration setting, so a serving container needs no migration secret.
+
+Run `migrate` once for each new version, and do not run it in each serving
+container. A serving container that starts before the migrations are complete
+does not report ready, so the platform sends it no traffic. It reports ready
+when the migrations are complete, with no restart.
+
+Give the command after the path of the entry point. On a platform, set it as
+the start command of the service, for example `/app/entrypoint.sh serve`. With
+Compose, run the migration step like this:
+
+```sh
+docker compose run --rm app /app/entrypoint.sh migrate
+```
+
 ## Accounts and invitations
 
 Every later account needs an invitation. An administrator invites a person in
