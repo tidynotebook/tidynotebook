@@ -14,7 +14,9 @@ before a change is ready.
 
 Start the disposable database once with `tools/test-database/ensure-postgres.sh`.
 It is safe to run again and safe to run while another checkout uses the same
-service.
+service. `pnpm test:integration` also starts the MinIO service of the object
+store tests with `tools/test-database/ensure-minio.sh`, and each test file
+makes a bucket of its own there.
 
 Select a subset by name while you work, for example
 `pnpm test:integration -- browser-storage`. Every supplied selector must exist,

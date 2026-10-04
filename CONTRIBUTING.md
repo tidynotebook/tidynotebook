@@ -39,6 +39,8 @@ pnpm verify
 `ensure-postgres.sh` starts the disposable PostgreSQL service from
 `compose.test.yaml` and applies the migrations. It is safe to run again, and
 it is safe to run while another checkout uses the same service.
+`pnpm test:integration` also starts the MinIO service of the same file with
+`tools/test-database/ensure-minio.sh`.
 
 `pnpm verify` runs the complete gate: contract lint, generated file
 comparison, typecheck, lint, format, unit tests, integration tests, all builds,

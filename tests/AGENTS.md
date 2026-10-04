@@ -45,7 +45,7 @@ a generated operation or `app.inject()`, never a handwritten HTTP call.
 ## Testing conventions here
 
 `integration` runs under `node --test` through `pnpm test:integration`, which
-starts the PostgreSQL service of `compose.test.yaml` and builds first. Each
+starts the PostgreSQL and MinIO services of `compose.test.yaml` and builds first. Each
 file makes its own disposable database. A test proves the result through a
 generated operation and checks the server state.
 
