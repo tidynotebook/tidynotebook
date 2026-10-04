@@ -242,7 +242,9 @@ export type ServerConfig = {
   /**
    * The account portal of the operator, as a full address with no query, or
    * `null` (record 0190). `openAccountPortal` answers a path of it with a
-   * handoff token, and a locked account links it (record 0201).
+   * handoff token, and a locked account links it (record 0201). A portal
+   * needs `operatorTokenFile`, because it redeems the handoff through the
+   * operator API, so startup stops when it has none.
    */
   readonly accountPortal: string | null;
   /**
@@ -664,6 +666,14 @@ export function loadServerConfig(
       'NOTESAPP_AUTH_DATABASE_URL: the identity connection must use its own role, not the runtime role.',
     );
   if (partial.length > 0) throw new ConfigError(partial);
+  const accountPortal = readAccountPortal(raw.NOTESAPP_ACCOUNT_PORTAL_URL);
+  const operatorTokenFile = raw.NOTESAPP_OPERATOR_TOKEN_FILE ?? null;
+  // The portal gives each handoff token back to the operator API, so a
+  // portal with the API off could never unlock an account (record 0190).
+  if (accountPortal !== null && operatorTokenFile === null)
+    throw new ConfigError([
+      'NOTESAPP_ACCOUNT_PORTAL_URL: the portal needs the operator API to unlock an account. Set NOTESAPP_OPERATOR_TOKEN_FILE too, or remove NOTESAPP_ACCOUNT_PORTAL_URL.',
+    ]);
   return {
     origin: canonical,
     databaseUrl: raw.NOTESAPP_DATABASE_URL,
@@ -704,8 +714,8 @@ export function loadServerConfig(
     shutdown,
     accounts: readAccounts(raw),
     breachCheck: raw.NOTESAPP_BREACH_CHECK !== 'off',
-    operatorTokenFile: raw.NOTESAPP_OPERATOR_TOKEN_FILE ?? null,
-    accountPortal: readAccountPortal(raw.NOTESAPP_ACCOUNT_PORTAL_URL),
+    operatorTokenFile,
+    accountPortal,
     ...readLegalDocuments(raw, canonical),
   };
 }

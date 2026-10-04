@@ -806,6 +806,7 @@ await test('the account portal is a full address that a path can follow', () => 
     loadServerConfig(
       environment({
         NOTESAPP_ACCOUNT_PORTAL_URL: 'https://billing.example.test/portal/',
+        NOTESAPP_OPERATOR_TOKEN_FILE: '/run/secrets/operator_token',
       }),
     ).accountPortal,
     'https://billing.example.test/portal',
@@ -829,6 +830,36 @@ await test('the account portal is a full address that a path can follow', () => 
         ),
       value,
     );
+});
+
+await test('an account portal needs the operator API to redeem its handoff', () => {
+  // The portal gives each handoff token back to the operator API. With no
+  // operator token the API is off, so no portal could unlock an account.
+  assert.throws(
+    () =>
+      loadServerConfig(
+        environment({
+          NOTESAPP_ACCOUNT_PORTAL_URL: 'https://billing.example.test',
+        }),
+      ),
+    (error: unknown) =>
+      error instanceof ConfigError &&
+      error.issues.length === 1 &&
+      error.issues.every(
+        (issue) =>
+          issue.startsWith('NOTESAPP_ACCOUNT_PORTAL_URL') &&
+          issue.includes('NOTESAPP_OPERATOR_TOKEN_FILE'),
+      ),
+  );
+  // The operator API alone stays allowed: a service can set the controls
+  // with no portal.
+  const alone = loadServerConfig(
+    environment({
+      NOTESAPP_OPERATOR_TOKEN_FILE: '/run/secrets/operator_token',
+    }),
+  );
+  assert.equal(alone.accountPortal, null);
+  assert.equal(alone.operatorTokenFile, '/run/secrets/operator_token');
 });
 
 await test('the operator token comes from its file, whole and long enough', async () => {

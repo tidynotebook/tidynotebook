@@ -260,7 +260,7 @@ function settingArguments(args) {
     const split = pair.indexOf('=');
     if (split < 1)
       throw new Error(
-        '--setting takes NAME=VALUE, for example --setting NOTESAPP_ACCOUNT_PORTAL_URL=https://billing.example.test.',
+        '--setting takes NAME=VALUE, for example --setting NOTESAPP_NEW_ACCOUNT_STANDING=locked.',
       );
     settings[pair.slice(0, split)] = pair.slice(split + 1);
   });
