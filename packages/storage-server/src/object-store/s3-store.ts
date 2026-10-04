@@ -4,16 +4,21 @@
  * Cloudflare R2, MinIO and AWS all speak this API, and the endpoint names
  * which one answers. The server streams every object itself, so no presigned
  * address leaves it and a revoked published link closes at once (record
- * 0030). An upload in parts is a multipart upload of the service, found by
- * its key, so any server instance can send the next part.
+ * 0030). An upload in parts is a multipart upload of the service, so any
+ * server instance can send the next part.
  *
  * The client sends a checksum only where the API requires one. A service of
  * the S3 API that is not AWS often refuses the newer checksum headers.
  *
- * MinIO lists the open uploads of one exact key only, so each upload also
- * writes a marker object, `<key>.upload`, that a listing of a prefix finds
- * in every service. The marker goes when the upload completes or aborts.
+ * Each open upload has a marker object, `<key>.upload`, that holds the
+ * identifier of the multipart upload. A part finds its upload with one read of
+ * the marker, and the daily cleanup finds a stale upload with a listing of
+ * objects, which every service answers for a prefix. A listing of the
+ * multipart uploads is not needed: MinIO answers it for one exact key only,
+ * and a listing costs more than a read. The marker goes when the upload
+ * completes or aborts.
  */
+import { Buffer } from 'node:buffer';
 import { Readable } from 'node:stream';
 import {
   AbortMultipartUploadCommand,
@@ -25,7 +30,6 @@ import {
   GetObjectCommand,
   HeadBucketCommand,
   HeadObjectCommand,
-  ListMultipartUploadsCommand,
   ListObjectsV2Command,
   ListPartsCommand,
   PutObjectCommand,
@@ -134,43 +138,18 @@ export function openS3ObjectStore(settings: S3StoreSettings): ObjectStore {
   });
   const Bucket = settings.bucket;
 
-  /** Every open upload whose key starts with `prefix`, with its identifier. */
-  async function* uploadsUnder(
-    prefix: string,
-  ): AsyncGenerator<PendingUpload & { readonly uploadId: string }> {
-    let keyMarker: string | undefined;
-    let uploadIdMarker: string | undefined;
-    for (;;) {
-      const page = await client.send(
-        new ListMultipartUploadsCommand({
-          Bucket,
-          Prefix: prefix,
-          KeyMarker: keyMarker,
-          UploadIdMarker: uploadIdMarker,
-        }),
-      );
-      for (const upload of page.Uploads ?? [])
-        if (upload.Key !== undefined && upload.UploadId !== undefined)
-          yield {
-            key: upload.Key,
-            uploadId: upload.UploadId,
-            startedAt: upload.Initiated ?? new Date(0),
-          };
-      if (page.IsTruncated !== true) return;
-      keyMarker = page.NextKeyMarker;
-      uploadIdMarker = page.NextUploadIdMarker;
-    }
-  }
-
-  /** The newest open upload of exactly `key`, or `null`. */
+  /** The identifier of the open upload of `key`, from its marker, or `null`. */
   async function uploadIdOf(key: string): Promise<string | null> {
-    let found: { id: string; at: number } | null = null;
-    for await (const upload of uploadsUnder(key)) {
-      if (upload.key !== key) continue;
-      const at = upload.startedAt.getTime();
-      if (found === null || at >= found.at) found = { id: upload.uploadId, at };
+    try {
+      const answer = await client.send(
+        new GetObjectCommand({ Bucket, Key: `${key}${uploadMarker}` }),
+      );
+      const identifier = (await answer.Body?.transformToString()) ?? '';
+      return identifier === '' ? null : identifier;
+    } catch (error) {
+      if (isMissing(error)) return null;
+      throw error;
     }
-    return found?.id ?? null;
   }
 
   /** Every part of one open upload, with the tag that completes it. */
@@ -324,15 +303,20 @@ export function openS3ObjectStore(settings: S3StoreSettings): ObjectStore {
     },
 
     async startUpload(key) {
+      const created = await client.send(
+        new CreateMultipartUploadCommand({ Bucket, Key: checkedKey(key) }),
+      );
+      const identifier = created.UploadId;
+      if (identifier === undefined || identifier === '')
+        throw new Error('notesapp: the object store started no upload.');
       await client.send(
         new PutObjectCommand({
           Bucket,
-          Key: `${checkedKey(key)}${uploadMarker}`,
-          Body: '',
-          ContentLength: 0,
+          Key: `${key}${uploadMarker}`,
+          Body: identifier,
+          ContentLength: Buffer.byteLength(identifier),
         }),
       );
-      await client.send(new CreateMultipartUploadCommand({ Bucket, Key: key }));
     },
 
     async writePart(key, partNumber, body, size) {
@@ -356,36 +340,51 @@ export function openS3ObjectStore(settings: S3StoreSettings): ObjectStore {
         );
         return true;
       } catch (error) {
-        throw guarded.failure() ?? error;
+        const failure = guarded.failure();
+        if (failure !== null) throw failure;
+        // The service removed the upload itself, for example by a rule of
+        // its own for an upload that waits too long.
+        if (isMissing(error)) return false;
+        throw error;
       }
     },
 
     async listParts(key) {
       const uploadId = await uploadIdOf(checkedKey(key));
       if (uploadId === null) return null;
-      return (await partsOf(key, uploadId)).map(({ partNumber, size }) => ({
-        partNumber,
-        size,
-      }));
+      try {
+        return (await partsOf(key, uploadId)).map(({ partNumber, size }) => ({
+          partNumber,
+          size,
+        }));
+      } catch (error) {
+        if (isMissing(error)) return null;
+        throw error;
+      }
     },
 
     async completeUpload(key) {
       const uploadId = await uploadIdOf(checkedKey(key));
       if (uploadId === null) return false;
-      const parts = await partsOf(key, uploadId);
-      await client.send(
-        new CompleteMultipartUploadCommand({
-          Bucket,
-          Key: key,
-          UploadId: uploadId,
-          MultipartUpload: {
-            Parts: parts.map((part) => ({
-              PartNumber: part.partNumber,
-              ETag: part.tag,
-            })),
-          },
-        }),
-      );
+      try {
+        const parts = await partsOf(key, uploadId);
+        await client.send(
+          new CompleteMultipartUploadCommand({
+            Bucket,
+            Key: key,
+            UploadId: uploadId,
+            MultipartUpload: {
+              Parts: parts.map((part) => ({
+                PartNumber: part.partNumber,
+                ETag: part.tag,
+              })),
+            },
+          }),
+        );
+      } catch (error) {
+        if (isMissing(error)) return false;
+        throw error;
+      }
       await client.send(
         new DeleteObjectCommand({ Bucket, Key: `${key}${uploadMarker}` }),
       );
@@ -393,10 +392,8 @@ export function openS3ObjectStore(settings: S3StoreSettings): ObjectStore {
     },
 
     async abortUpload(key) {
-      const open: string[] = [];
-      for await (const upload of uploadsUnder(checkedKey(key)))
-        if (upload.key === key) open.push(upload.uploadId);
-      for (const uploadId of open) {
+      const uploadId = await uploadIdOf(checkedKey(key));
+      if (uploadId !== null) {
         try {
           await client.send(
             new AbortMultipartUploadCommand({

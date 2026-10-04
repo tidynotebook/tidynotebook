@@ -1659,7 +1659,7 @@ await test('an upload stages its bytes, and a finalize with no staged bytes comm
   // store before it answers, so a finalize on another server finds them. A
   // finalize whose bytes are in neither place used to mark the object
   // finalized all the same, and the note named an image with no bytes.
-  const bytes = await uniquePng(160, 170, 180);
+  const bytes = await uniquePng(190, 200, 210);
   const uploaded = await uploadAttachment({
     headers: browser(cookie),
     path: { workspaceId },

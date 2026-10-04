@@ -47,6 +47,11 @@ export type TestBucket = {
    * pair written to a folder that `destroy` removes.
    */
   readonly environment: Readonly<Record<string, string>>;
+  /**
+   * Aborts the multipart uploads of one key and leaves their marker, as a
+   * rule of the service that ends a stale upload does.
+   */
+  abortBehindTheStore(key: string): Promise<void>;
   /** Removes every upload, every object, the bucket and the key files. */
   destroy(): Promise<void>;
 };
@@ -83,6 +88,22 @@ export async function createTestBucket(): Promise<TestBucket> {
       NOTESAPP_S3_ENDPOINT: testS3Endpoint,
       NOTESAPP_S3_ACCESS_KEY_ID_FILE: join(keys, 'access_key_id'),
       NOTESAPP_S3_SECRET_ACCESS_KEY_FILE: join(keys, 'secret_access_key'),
+    },
+    abortBehindTheStore: async (key) => {
+      const uploads = await client.send(
+        new ListMultipartUploadsCommand({
+          Bucket: settings.bucket,
+          Prefix: key,
+        }),
+      );
+      for (const upload of uploads.Uploads ?? [])
+        await client.send(
+          new AbortMultipartUploadCommand({
+            Bucket: settings.bucket,
+            Key: upload.Key,
+            UploadId: upload.UploadId,
+          }),
+        );
     },
     destroy: async () => {
       store.close();

@@ -281,6 +281,38 @@ await test('the S3 store keeps the contract of the port', async (t) => {
   const bucket = await createTestBucket();
   try {
     await portContract(t, bucket.store);
+    await t.test(
+      'an upload that the service ended answers as no upload',
+      async () => {
+        // A rule of R2 or of MinIO ends an upload that waits too long, and
+        // leaves the marker of the upload in place.
+        const key = importKey(randomUUID(), randomUUID(), randomUUID());
+        await bucket.store.startUpload(key);
+        await bucket.store.writePart(
+          key,
+          1,
+          Readable.from([Buffer.from('p')]),
+          1,
+        );
+        await bucket.abortBehindTheStore(key);
+        assert.equal(await bucket.store.listParts(key), null);
+        assert.equal(
+          await bucket.store.writePart(
+            key,
+            2,
+            Readable.from([Buffer.from('q')]),
+            1,
+          ),
+          false,
+        );
+        assert.equal(await bucket.store.completeUpload(key), false);
+        await bucket.store.abortUpload(key);
+        assert.deepEqual(
+          await keysOf(bucket.store.listUploads('staging/')),
+          [],
+        );
+      },
+    );
     // A bucket that is not there does not answer the probe.
     const absent = openS3ObjectStore({
       ...bucket.settings,
