@@ -154,16 +154,26 @@ export function updateAccount(
     // once it is active (record 0201).
     if (!controlsFitRole(after.role, controls))
       return fail<AccountRecord>('forbidden');
+    // The database holds that an administrator is active at every write, so
+    // the writes go in the order that never shows a locked administrator: a
+    // demotion writes the role before the controls, and a promotion writes
+    // the controls, which activate the account, before the role.
+    const roleChanges = role !== undefined && role !== target.role;
+    const demotion = roleChanges && role === 'member';
+    if (demotion) await tx.setRole(accountId, role);
     if (change.controls !== undefined) {
-      const written = await tx.setControls(
-        accountId,
-        change.controls.revision,
-        controls,
-      );
+      // The revision was checked under the lock of the installation above. A
+      // change of the role raises it, so the write names the one after it.
+      const revision = demotion
+        ? ((await tx.accounts()).find(
+            (record) => record.accountId === accountId,
+          )?.controls.revision ?? change.controls.revision)
+        : change.controls.revision;
+      const written = await tx.setControls(accountId, revision, controls);
       if (written === 'missing') return fail<AccountRecord>('not_found');
       if (written === 'changed') return fail<AccountRecord>('controls_changed');
     }
-    if (role !== undefined && role !== target.role)
+    if (roleChanges && !demotion && role !== undefined)
       await tx.setRole(accountId, role);
     if (state !== undefined && state !== target.state)
       await tx.setState(accountId, state);

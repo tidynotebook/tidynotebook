@@ -569,6 +569,47 @@ await test('an administrator sets the controls of an account with the revision i
   assert.equal(responseOf(lockSelf.response).status, 403);
 });
 
+await test('one request demotes and locks, and one unlocks and promotes', async () => {
+  const joined = await member();
+  const promoted = await updateAccount({
+    headers: admin,
+    path: { accountId: joined.accountId },
+    body: { installationRole: 'administrator' },
+  });
+  assert.equal(promoted.data?.installationRole, 'administrator');
+  // The database refuses a locked administrator at every write, so the
+  // demotion goes before the lock.
+  const demoted = await updateAccount({
+    headers: admin,
+    path: { accountId: joined.accountId },
+    body: {
+      installationRole: 'member',
+      controls: {
+        revision: promoted.data?.controls.revision ?? 0,
+        standing: 'locked',
+      },
+    },
+  });
+  assert.equal(demoted.error, undefined, JSON.stringify(demoted.error));
+  assert.equal(demoted.data?.installationRole, 'member');
+  assert.equal(demoted.data?.controls.standing, 'locked');
+  // And the unlock goes before the promotion.
+  const back = await updateAccount({
+    headers: admin,
+    path: { accountId: joined.accountId },
+    body: {
+      installationRole: 'administrator',
+      controls: {
+        revision: demoted.data?.controls.revision ?? 0,
+        standing: 'active',
+      },
+    },
+  });
+  assert.equal(back.error, undefined, JSON.stringify(back.error));
+  assert.equal(back.data?.installationRole, 'administrator');
+  assert.equal(back.data?.controls.standing, 'active');
+});
+
 await app.close();
 await database.destroy();
 await rm(storageRoot, { recursive: true, force: true });

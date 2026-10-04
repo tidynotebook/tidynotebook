@@ -75,6 +75,16 @@ type FakeInstallation = InstallationStore & {
   transactions: number;
 };
 
+/**
+ * The check of the account row: an administrator is active at every write,
+ * so a write that shows a locked administrator throws, as the database does.
+ */
+function holdsAdministratorActive(record: AccountRecord): AccountRecord {
+  if (record.role === 'administrator' && record.controls.standing === 'locked')
+    throw new Error('accounts_administrator_active_check');
+  return record;
+}
+
 function createStore(seed: readonly AccountStanding[]): FakeInstallation {
   const accounts = new Map<string, AccountRecord>(
     seed.map((standing) => [
@@ -136,7 +146,19 @@ function createStore(seed: readonly AccountStanding[]): FakeInstallation {
         accounts: () => Promise.resolve([...accounts.values()]),
         setRole: (accountId, role) => {
           const found = accounts.get(accountId);
-          if (found !== undefined) accounts.set(accountId, { ...found, role });
+          if (found !== undefined)
+            accounts.set(
+              accountId,
+              holdsAdministratorActive({
+                ...found,
+                role,
+                // The database raises the revision with the role.
+                controls: {
+                  ...found.controls,
+                  revision: found.controls.revision + 1,
+                },
+              }),
+            );
           return Promise.resolve();
         },
         setState: (accountId, state) => {
@@ -163,11 +185,14 @@ function createStore(seed: readonly AccountStanding[]): FakeInstallation {
           if (found === undefined) return Promise.resolve('missing' as const);
           if (found.controls.revision !== revision)
             return Promise.resolve('changed' as const);
-          accounts.set(accountId, {
-            ...found,
-            limitBytes: controls.limitBytes,
-            controls: { ...controls, revision: revision + 1 },
-          });
+          accounts.set(
+            accountId,
+            holdsAdministratorActive({
+              ...found,
+              limitBytes: controls.limitBytes,
+              controls: { ...controls, revision: revision + 1 },
+            }),
+          );
           return Promise.resolve('written' as const);
         },
         remove: (accountId) => {
@@ -339,6 +364,27 @@ await test('an administrator locks a member with the revision that it read', asy
   });
   assert.ok(unlocked.ok);
   assert.equal(unlocked.value.controls.removalAt, null);
+});
+
+await test('one change demotes and locks, or unlocks and promotes, in an order the database takes', async () => {
+  const store = createStore([admin(ada), admin(bea)]);
+  // A demotion writes the role first, so no write shows a locked
+  // administrator.
+  const demoted = await updateAccount(store, actorFor(ada), bea, {
+    role: 'member',
+    controls: { revision: 1, standing: 'locked' },
+  });
+  assert.ok(demoted.ok);
+  assert.equal(demoted.value.role, 'member');
+  assert.equal(demoted.value.controls.standing, 'locked');
+  // A promotion activates the account first.
+  const promoted = await updateAccount(store, actorFor(ada), bea, {
+    role: 'administrator',
+    controls: { revision: demoted.value.controls.revision, standing: 'active' },
+  });
+  assert.ok(promoted.ok);
+  assert.equal(promoted.value.role, 'administrator');
+  assert.equal(promoted.value.controls.standing, 'active');
 });
 
 await test('an administrator is never locked, and one change names the limit once', async () => {
