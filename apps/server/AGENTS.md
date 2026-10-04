@@ -10,7 +10,8 @@ authentication routes on one origin, and it holds no domain rule.
 
 - `src/plugins/` holds one cross-cutting Fastify concern per file and no business
   resource: `register.ts`, `problem.ts`, `security-headers.ts`, `static-assets.ts`,
-  `host.ts`, `content-disposition.ts`, `body-idle-timeout.ts`, `attempt-store.ts`,
+  `host.ts` with `answersAnyHost`, the one rule of the operations that skip
+  the Host allowlist (0199), `content-disposition.ts`, `body-idle-timeout.ts`, `attempt-store.ts`,
   `compression.ts` of a large JSON read (0169), and `published-origin.ts`, which
   keeps the published origin to the reader path and its files (0158) and sends
   a reader address to it (0118).

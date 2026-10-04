@@ -2,7 +2,8 @@
  * Container health check.
  *
  * It asks the local listener for readiness. The Host header names the host of
- * the configured origin, because the deployment answers that host only.
+ * the configured origin. A probe answers any host (record 0199), but the
+ * origin is the host that every other address of the deployment answers.
  *
  * A container that stops on purpose is not a container to replace. The server
  * reports that it is not ready as the first step of its stop, so this check

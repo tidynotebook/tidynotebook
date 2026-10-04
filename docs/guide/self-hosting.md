@@ -418,10 +418,13 @@ The application uses `/api/health` and `/api/ready`. The two addresses of
 each answer are one operation of the contract, so they always report the same
 result.
 
-The deployment answers the host name of each origin it serves, so the container
-health check sends the host name of the origin. A request that names another
-host is refused. Your reverse proxy must pass the original `Host` header to the
-application. See [Behind a reverse proxy](#behind-a-reverse-proxy).
+The deployment answers the host name of each origin it serves. A request that
+names another host is refused. Your reverse proxy must pass the original `Host`
+header to the application. See [Behind a reverse proxy](#behind-a-reverse-proxy).
+
+The four health and readiness addresses answer any host, because a platform
+such as Railway checks a container with a host name of its own. Their answers
+hold no address and set no cookie.
 
 ## Stopping the server
 

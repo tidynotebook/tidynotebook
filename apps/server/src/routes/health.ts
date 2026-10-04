@@ -16,6 +16,7 @@
  * its own, because an orchestrator repeats it every few seconds forever.
  */
 import { access, constants } from 'node:fs/promises';
+import type { OperationId } from '@notesapp/api-contract';
 import type { DatabaseProbeResult } from '@notesapp/storage-server';
 import { requiredSchemaVersion } from '@notesapp/storage-server';
 import type { ServerConfig } from '../config.ts';
@@ -304,6 +305,20 @@ export async function readinessAnswer(
     }),
   };
 }
+
+/**
+ * The four probe operations of record 0040: liveness and readiness, each at
+ * its API address and at its root address.
+ *
+ * A platform probes a replica with a host of its own, so these operations
+ * answer any host (record 0199). `src/plugins/host.ts` reads this list.
+ */
+export const probeOperations = [
+  'getHealth',
+  'getRootHealth',
+  'getReadiness',
+  'getRootReadiness',
+] as const satisfies readonly OperationId[];
 
 /**
  * The service handlers, one implementation for each answer.

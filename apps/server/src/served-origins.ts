@@ -169,8 +169,9 @@ export function publishedOrigin(
 /**
  * The role of the origin that a request names by its `Host` header.
  *
- * The Host allowlist runs first, so a host that no origin names never gets
- * here. A published origin has a host name of its own, so the host name
+ * The Host allowlist runs first, so a host that no origin names gets here only
+ * for an operation that answers any host, and its role is `null`. A published
+ * origin has a host name of its own, so the host name
  * alone decides the role.
  */
 export function roleOfHost(

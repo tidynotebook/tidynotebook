@@ -18,6 +18,7 @@ import {
   databaseProbes,
   evaluateReadiness,
   livenessAnswer,
+  probeOperations,
   readinessAnswer,
   singleFlight,
   withDeadline,
@@ -72,6 +73,14 @@ await test('one function answers both addresses of each question', () => {
   assert.equal(handlers.getReadiness, handlers.getRootReadiness);
   assert.notEqual(handlers.getHealth, undefined);
   assert.notEqual(handlers.getReadiness, undefined);
+});
+
+await test('the probe list names exactly the operations of the service handlers', () => {
+  // The Host allowlist skips the operations of this list (record 0199), so a
+  // probe that the list forgot would fail on the host of a platform, and an
+  // extra entry would answer any host for an operation that is no probe.
+  const handlers = createServiceHandlers([], runningLifecycle);
+  assert.deepEqual([...probeOperations].sort(), Object.keys(handlers).sort());
 });
 
 await test('liveness reports that the process runs', () => {

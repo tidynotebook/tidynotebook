@@ -123,7 +123,7 @@ export function requestId(supplied: unknown): string {
     : randomUUID();
 }
 
-import { hostName } from './plugins/host.ts';
+import { answersAnyHost, hostName } from './plugins/host.ts';
 export { hostName } from './plugins/host.ts';
 import {
   publishedOrigin,
@@ -356,11 +356,14 @@ export async function createAppWithHandlers(
   // rewriting through a forged Host header. The list is the host name of each
   // served origin, because a Host header carries no scheme. The origin itself
   // is checked by the cookie write check and by the identity routes, which
-  // both read the same served origin list.
+  // both read the same served origin list. An operation that a caller outside
+  // the served origins asks for, such as a probe of the platform, answers any
+  // host, and `answersAnyHost` is the one rule that names it (record 0199).
   const servedHosts = servedHostNames(config.servedOrigins);
   app.addHook('onRequest', async (request, reply) => {
     if (servedHosts.includes(hostName(request.headers.host))) return;
     const id = request.routeOptions.config.operationId;
+    if (answersAnyHost(id)) return;
     const status = contractStatus(id, 400);
     await reply
       .status(status)
