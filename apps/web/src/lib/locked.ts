@@ -53,3 +53,22 @@ export function lockedSentences(
     );
   return sentences;
 }
+
+/**
+ * What a read of the account again does to the session (record 0201).
+ *
+ * The application reads the account again when the stream says that it
+ * changed, when a save is refused for a locked account, and when a person
+ * comes back to the locked screen. An answer replaces the account, so the
+ * screen follows a lock or an unlock with no reload. A 401 means that the
+ * session ended or that the account is gone, for example after the removal
+ * of a locked account, so the person goes to sign-in. Any other failure
+ * keeps the account as it is, because it says nothing about the account.
+ */
+export function accountReadOutcome(
+  status: number,
+  answered: boolean,
+): 'adopt' | 'signed-out' | 'keep' {
+  if (answered) return 'adopt';
+  return status === 401 ? 'signed-out' : 'keep';
+}

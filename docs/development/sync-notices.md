@@ -38,6 +38,10 @@ Records [0125](../decisions/0125-postgresql-notifies-the-sync-gateways.md),
   switch turns the stream off (record 0131).
 - The gateway reads the access of a stream before each batch and caches no
   answer. A lost session stops the stream.
+- An account hint that keeps the access sends the message `account`, and the
+  lease tab tells every tab of the account, so a lock or an unlock of record
+  0201 changes the screen with no reload. A locked account keeps its stream
+  and runs no engine.
 - One tab of a browser profile holds the sender lease and the one stream of
   its account. A tab whose session serves another account gives the lease
   back and asks again later.

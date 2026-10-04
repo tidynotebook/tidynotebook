@@ -17270,7 +17270,7 @@ export type MessageDirection = 'client' | 'server';
 export type ClientMessageKind = 'subscribe';
 
 /** The kind of every message that the server sends. */
-export type ServerMessageKind = 'changed' | 'ready' | 'reconcile' | 'refused' | 'stop' | 'subscribed';
+export type ServerMessageKind = 'account' | 'changed' | 'ready' | 'reconcile' | 'refused' | 'stop' | 'subscribed';
 
 /** One message of a channel and the schema of its payload. */
 export type MessageEntry = {
@@ -17297,6 +17297,25 @@ export const channels: readonly ChannelEntry[] = [
     "operationId": "openSyncNotices",
     "subprotocol": "notesapp.sync.1",
     "messages": [
+      {
+        "kind": "account",
+        "direction": "server",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "description": "The state or the controls of the account of the stream changed, for example it was locked or unlocked (records 0189 and 0201). The client reads the account again. The message names nothing of the change.",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "account"
+            }
+          }
+        }
+      },
       {
         "kind": "changed",
         "direction": "server",

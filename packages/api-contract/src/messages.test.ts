@@ -132,6 +132,7 @@ await test('every server message is checked against its schema', () => {
     { kind: 'refused', generation: 2, reason: 'stale_generation' },
     { kind: 'changed', generation: 2, workspaceId },
     { kind: 'reconcile', generation: 2 },
+    { kind: 'account' },
     { kind: 'stop', reason: 'session_ended' },
     { kind: 'stop', reason: 'unavailable' },
   ];
@@ -148,6 +149,8 @@ await test('a server message outside its schema is refused', () => {
     [{ kind: 'changed', generation: 2 }, 'invalid'],
     [{ kind: 'changed', generation: 2, workspaceId, cursor: '9' }, 'invalid'],
     [{ kind: 'stop', reason: 'bored' }, 'invalid'],
+    // The message of a changed account names nothing of the change.
+    [{ kind: 'account', standing: 'locked' }, 'invalid'],
     [{ kind: 'refused', generation: 2 }, 'invalid'],
     // A server never sends the message that only a client sends.
     [{ kind: 'subscribe', generation: 1, workspaceIds: [] }, 'unknown_kind'],

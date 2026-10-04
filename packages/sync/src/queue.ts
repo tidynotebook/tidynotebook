@@ -118,6 +118,11 @@ export type SyncNotice =
       readonly reason: 'session' | 'other-account';
     }
   | { readonly kind: 'access-lost' }
+  /**
+   * The server refused a save because the account is locked (record 0201).
+   * The save waits in the queue, and the screen reads the account again.
+   */
+  | { readonly kind: 'account-locked' }
   /** The session serves this engine again after a pause or a lost access. */
   | { readonly kind: 'resumed' }
   | { readonly kind: 'lease-held' }
@@ -264,6 +269,11 @@ export async function sendWithRetry<T>(
   }
 }
 
+/** Whether the server refused a save because the account is locked. */
+function isLockedRefusal(problem: Problem): boolean {
+  return problem.status === 423 || problem.code === 'account_locked';
+}
+
 /** What one failed submission asks the queue to do next. */
 type SubmissionAction = 'preserve' | 'leave' | 'paused' | 'access-lost';
 
@@ -281,8 +291,7 @@ function submissionAction(problem: Problem): SubmissionAction {
   if (problem.status === 401) return 'paused';
   if (problem.status === 403 || problem.status === 404) return 'access-lost';
   if (problem.status === 413) return 'leave';
-  if (problem.status === 423 || problem.code === 'account_locked')
-    return 'leave';
+  if (isLockedRefusal(problem)) return 'leave';
   return 'preserve';
 }
 
@@ -757,6 +766,8 @@ async function submitBatch(
   const action = submissionAction(outcome.problem);
   if (action === 'paused') return 'paused';
   if (action === 'access-lost') return 'access-lost';
+  if (isLockedRefusal(outcome.problem))
+    ctx.announce({ kind: 'account-locked' });
   if (action === 'leave') return 'done';
   for (const sent of batch) {
     // Each entry is read again, because the answer to the one before it can
@@ -824,6 +835,8 @@ async function submitSingle(
   const action = submissionAction(outcome.problem);
   if (action === 'paused') return 'paused';
   if (action === 'access-lost') return 'access-lost';
+  if (isLockedRefusal(outcome.problem))
+    ctx.announce({ kind: 'account-locked' });
   if (action === 'leave') return 'done';
   // A purged file is gone on the server for good. Its queued mutation can never
   // apply, and keeping the mutation, or its text as a recovery copy, would put

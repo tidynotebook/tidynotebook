@@ -47,6 +47,13 @@ messages:
     contentType: application/json
     payload:
       $ref: '../components/schemas/SyncNoticeReconcile.yaml'
+  account:
+    name: account
+    title: Account changed
+    summary: The state or the controls of the account changed.
+    contentType: application/json
+    payload:
+      $ref: '../components/schemas/SyncNoticeAccount.yaml'
   stop:
     name: stop
     title: Stream stops

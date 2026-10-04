@@ -285,6 +285,23 @@ await test('an account hint rechecks every stream of the account', async () => {
   await target.close();
 });
 
+await test('an account hint that keeps the access tells the stream that the account changed', async () => {
+  // A lock or an unlock of the account sends the hint, and the open
+  // application reads the account again (records 0189 and 0201).
+  const { gateway: target, listener } = gateway();
+  await settle();
+  const socket = await openStream(target);
+  listener.hint({ kind: 'account', accountId: account });
+  await settle();
+  assert.deepEqual(socket.sent.at(-1), { kind: 'account' });
+  // A hint of another account says nothing to this stream.
+  const before = socket.sent.length;
+  listener.hint({ kind: 'account', accountId: 'another-account' });
+  await settle();
+  assert.equal(socket.sent.length, before);
+  await target.close();
+});
+
 await test('a frame outside the contract stops the stream', async () => {
   for (const frame of [null, 'not json', '{"kind":"changed"}']) {
     const { gateway: target } = gateway();

@@ -4,6 +4,7 @@
  */
 
 import type {
+  SyncNoticeAccount,
   SyncNoticeChanged,
   SyncNoticeReady,
   SyncNoticeReconcile,
@@ -23,9 +24,9 @@ export const syncNoticesProtocol = 'notesapp.sync.1';
 export type SyncNoticesClientMessage = SyncNoticeSubscribe;
 
 /** Every message that the server sends on the syncNotices channel. */
-export type SyncNoticesServerMessage = SyncNoticeChanged | SyncNoticeReady | SyncNoticeReconcile | SyncNoticeRefused | SyncNoticeStop | SyncNoticeSubscribed;
+export type SyncNoticesServerMessage = SyncNoticeAccount | SyncNoticeChanged | SyncNoticeReady | SyncNoticeReconcile | SyncNoticeRefused | SyncNoticeStop | SyncNoticeSubscribed;
 
-const syncNoticesServerKinds: readonly string[] = ["changed","ready","reconcile","refused","stop","subscribed"];
+const syncNoticesServerKinds: readonly string[] = ["account","changed","ready","reconcile","refused","stop","subscribed"];
 
 /**
  * The WebSocket address of the syncNotices channel on one origin.

@@ -74,6 +74,11 @@ export type CoordinatorPorts = {
   readonly wakeAll: () => void;
   /** The session ended, so the tab checks it through the HTTP operations. */
   readonly sessionEnded: () => void;
+  /**
+   * The state or the controls of the account changed, so the tab reads the
+   * account again (records 0189 and 0201).
+   */
+  readonly accountChanged: () => void;
   readonly schedule: Schedule;
   /** A number from 0 up to 1. Defaults to `Math.random`. */
   readonly random?: () => number;
@@ -171,6 +176,10 @@ export function createNoticeCoordinator(
     }
     if (message.kind === 'reconcile') {
       ports.wakeAll();
+      return;
+    }
+    if (message.kind === 'account') {
+      ports.accountChanged();
       return;
     }
     if (message.kind === 'refused') {

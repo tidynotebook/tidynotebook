@@ -22,7 +22,6 @@ import { Link, Navigate, useNavigate } from 'react-router';
 import {
   acceptLegalDocuments,
   createOwner,
-  getAccount,
   listWorkspaces,
   openAccountPortal,
   type LegalDocuments,
@@ -106,9 +105,9 @@ async function exportOwnedWorkspaces(): Promise<void> {
  *
  * When the installation names an account portal, the one filled action opens
  * it, and the portal unlocks the account. The person can also export the
- * notes, remove the account, or sign out. The screen reads the account again
- * when the person comes back to the tab, so an unlock in another tab opens
- * the application.
+ * notes, remove the account, or sign out. The stream of the account says
+ * when it changes, and the screen reads it again then and when the person
+ * comes back to the tab, so an unlock opens the application with no reload.
  */
 function LockedPage(): ReactNode {
   const session = useSession();
@@ -119,18 +118,13 @@ function LockedPage(): ReactNode {
   const [removing, setRemoving] = useState(false);
   useDocumentTitle('Your account is locked');
 
+  // The stream says when the account changes. A return to the tab reads it
+  // again too, for a browser whose stream is closed, and a removed account
+  // or an ended session goes to sign-in.
+  const recheck = session.recheck;
   useEffect(() => {
-    let checking = false;
     const check = (): void => {
-      if (checking || document.visibilityState !== 'visible') return;
-      checking = true;
-      void getAccount().then((result) => {
-        checking = false;
-        // Only an unlock reads the session again, so a return to the tab
-        // shows no loading screen while the account stays locked.
-        if (result.data !== undefined && !isLocked(result.data))
-          session.refresh();
-      });
+      if (document.visibilityState === 'visible') recheck();
     };
     window.addEventListener('focus', check);
     document.addEventListener('visibilitychange', check);
@@ -138,7 +132,7 @@ function LockedPage(): ReactNode {
       window.removeEventListener('focus', check);
       document.removeEventListener('visibilitychange', check);
     };
-  }, [session]);
+  }, [recheck]);
 
   const account = session.account;
   if (account === null) return <Navigate to="/login" replace />;

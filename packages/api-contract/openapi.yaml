@@ -550,6 +550,8 @@ components:
       $ref: './components/schemas/SyncNoticeReady.yaml'
     SyncNoticeReconcile:
       $ref: './components/schemas/SyncNoticeReconcile.yaml'
+    SyncNoticeAccount:
+      $ref: './components/schemas/SyncNoticeAccount.yaml'
     SyncNoticeRefused:
       $ref: './components/schemas/SyncNoticeRefused.yaml'
     SyncNoticeStop:

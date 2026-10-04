@@ -47,6 +47,7 @@ operations:
       - $ref: '#/channels/syncNotices/messages/refused'
       - $ref: '#/channels/syncNotices/messages/changed'
       - $ref: '#/channels/syncNotices/messages/reconcile'
+      - $ref: '#/channels/syncNotices/messages/account'
       - $ref: '#/channels/syncNotices/messages/stop'
 components:
   securitySchemes:

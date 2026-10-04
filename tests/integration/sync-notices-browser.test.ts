@@ -152,6 +152,8 @@ type Device = {
   readonly coordinator: ReturnType<typeof createNoticeCoordinator>;
   /** How many notices named a workspace, which only the stream can raise. */
   readonly notified: () => number;
+  /** How many messages said that the account changed (record 0201). */
+  readonly accountChanges: () => number;
   readonly stop: () => Promise<void>;
 };
 
@@ -165,6 +167,7 @@ async function startDevice(label: string): Promise<Device> {
   });
   const keeper = createLeaseKeeper(store, { ownerId: label, ttlMs: 30_000 });
   let notified = 0;
+  let accountChanges = 0;
   let wake: () => void = () => {};
   const coordinator = createNoticeCoordinator(accountId, {
     keeper,
@@ -190,6 +193,9 @@ async function startDevice(label: string): Promise<Device> {
       wake();
     },
     sessionEnded: () => {},
+    accountChanged: () => {
+      accountChanges += 1;
+    },
     schedule: timerSchedule,
   });
   const engine = createSyncEngine(store, accountId, workspaceId, {
@@ -217,6 +223,7 @@ async function startDevice(label: string): Promise<Device> {
     store,
     coordinator,
     notified: () => notified,
+    accountChanges: () => accountChanges,
     stop: async () => {
       coordinator.stop();
       stopQueue();
@@ -298,6 +305,27 @@ await test('a commit of another device reaches this device through a notice', as
   const cursor = await commitElsewhere('elsewhere', 1);
   await waitFor(() => device.notified() > before, 'the notice');
   await waitFor(() => reached(cursor), 'the pull');
+});
+
+await test('a change of the controls of the account reaches the open device', async () => {
+  // A lock or an unlock raises the revision of the controls, and the stream
+  // tells the device, so the application reads the account again with no
+  // reload (records 0189 and 0201). The administrator of this installation
+  // is never locked, so a limit changes here.
+  const before = device.accountChanges();
+  const session = await openSession(database.migrationUrl);
+  try {
+    await session.query(
+      `update accounts set text_limit_bytes = 1000000000,
+         controls_revision = controls_revision + 1 where id = $1`,
+      [accountId],
+    );
+  } finally {
+    await session.close();
+  }
+  await waitFor(() => device.accountChanges() > before, 'the account notice');
+  // The stream stays open and keeps its set.
+  assert.equal(coordinator.healthy(), true);
 });
 
 await test('a backlog of several pages drains to its end', async () => {

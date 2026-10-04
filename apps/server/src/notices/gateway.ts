@@ -129,6 +129,8 @@ type Stream = {
   readonly reservationId: string;
   subscription: NoticeSubscription;
   changed: Set<string>;
+  /** The account of the stream changed, so the next batch says so. */
+  accountChanged: boolean;
   batchQueued: boolean;
   work: Promise<void>;
   sent: number[];
@@ -276,8 +278,13 @@ export function createNoticeGateway(options: {
       stream.batchQueued = false;
       const changed = stream.changed;
       stream.changed = new Set();
+      const accountChanged = stream.accountChanged;
+      stream.accountChanged = false;
       const readable = await access(stream);
       if (readable === null) return;
+      // The account still reads the stream, so the client reads the account
+      // again and sees a lock or an unlock at once (records 0189 and 0201).
+      if (accountChanged) send(stream, { kind: 'account' });
       const batch = noticeBatch(stream.subscription, changed, readable);
       setSubscription(stream, batch.subscription);
       for (const workspaceId of batch.notify)
@@ -350,6 +357,7 @@ export function createNoticeGateway(options: {
       reservationId,
       subscription: emptySubscription,
       changed: new Set(),
+      accountChanged: false,
       batchQueued: false,
       work: Promise.resolve(),
       sent: [],
@@ -381,11 +389,12 @@ export function createNoticeGateway(options: {
     // A session or an account changed, so each of its streams checks its
     // access again with no changed workspace.
     for (const stream of streams)
-      if (
-        (hint.kind === 'session' && stream.sessionId === hint.sessionId) ||
-        (hint.kind === 'account' && stream.accountId === hint.accountId)
-      )
+      if (hint.kind === 'session' && stream.sessionId === hint.sessionId)
         queueBatch(stream);
+      else if (hint.kind === 'account' && stream.accountId === hint.accountId) {
+        stream.accountChanged = true;
+        queueBatch(stream);
+      }
   };
 
   const onLost = (): void => {

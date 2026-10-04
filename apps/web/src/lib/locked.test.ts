@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { Account } from '@notesapp/api-client';
-import { daysUntil, isLocked, lockedSentences } from './locked.ts';
+import {
+  accountReadOutcome,
+  daysUntil,
+  isLocked,
+  lockedSentences,
+} from './locked.ts';
 
 const now = Date.parse('2026-10-04T12:00:00.000Z');
 
@@ -49,4 +54,13 @@ await test('the screen names the portal only when the installation has one', () 
   ]);
   // No sentence carries a raw instant or a code.
   for (const sentence of plain) assert.doesNotMatch(sentence, /\d{4}-|_/);
+});
+
+await test('a read of the account again adopts it, signs out a gone account, and keeps it through a failure', () => {
+  assert.equal(accountReadOutcome(200, true), 'adopt');
+  // The removal of a locked account ends its session, so the locked screen
+  // goes to sign-in instead of standing still.
+  assert.equal(accountReadOutcome(401, false), 'signed-out');
+  assert.equal(accountReadOutcome(0, false), 'keep');
+  assert.equal(accountReadOutcome(503, false), 'keep');
 });

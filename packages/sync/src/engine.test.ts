@@ -2472,6 +2472,11 @@ await test('a save refused for a locked account stays queued and goes once it is
     notices.filter((notice) => notice.kind === 'preserved'),
     [],
   );
+  // The screen hears it, and reads the account again.
+  assert.deepEqual(
+    notices.filter((notice) => notice.kind === 'account-locked'),
+    [{ kind: 'account-locked' }],
+  );
   // The account is active again, and the next cycle sends the same save.
   locked = false;
   await pushQueue(

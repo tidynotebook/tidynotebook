@@ -85,6 +85,11 @@ export type TabNotices = {
    * account now. The tab asks for the lease again after `suspendMs`.
    */
   readonly suspend: () => Promise<void>;
+  /**
+   * Hears each change of the account that the stream of any tab of the
+   * account reports, and answers the function that stops it (record 0201).
+   */
+  readonly onAccountChanged: (listener: () => void) => () => void;
   /** Stops the stream and the channel, and gives the lease back. */
   readonly stop: () => Promise<void>;
 };
@@ -96,7 +101,9 @@ type TabMessage =
       readonly tabId: string;
       readonly workspaceId: string | null;
     }
-  | { readonly kind: 'bye'; readonly tabId: string };
+  | { readonly kind: 'bye'; readonly tabId: string }
+  /** The stream of the lease tab says that the account changed. */
+  | { readonly kind: 'account'; readonly tabId: string };
 
 /** Reads one message of the channel, or `null` for anything else. */
 export function readTabMessage(value: unknown): TabMessage | null {
@@ -106,7 +113,7 @@ export function readTabMessage(value: unknown): TabMessage | null {
   );
   const { kind, tabId, workspaceId } = members;
   if (typeof tabId !== 'string' || tabId === '') return null;
-  if (kind === 'bye') return { kind, tabId };
+  if (kind === 'bye' || kind === 'account') return { kind, tabId };
   if (
     kind === 'interest' &&
     (workspaceId === null || typeof workspaceId === 'string')
@@ -124,6 +131,10 @@ export function interestChannelName(accountId: string): string {
 export function startTabNotices(deps: TabNoticeDependencies): TabNotices {
   const wakes = new Map<string, Set<() => void>>();
   const servedListeners = new Set<() => void>();
+  const accountListeners = new Set<() => void>();
+  const accountChanged = (): void => {
+    for (const listener of [...accountListeners]) listener();
+  };
   const table = createInterestTable();
   let own: string | null = null;
   let queuedIds: readonly string[] = [];
@@ -158,6 +169,12 @@ export function startTabNotices(deps: TabNoticeDependencies): TabNotices {
     wakeAll,
     // Each engine checks the session before its next pass.
     sessionEnded: wakeAll,
+    // Only the lease tab holds the stream, so it tells the other tabs of
+    // the account too.
+    accountChanged: () => {
+      accountChanged();
+      channel.post({ kind: 'account', tabId: deps.tabId });
+    },
     schedule: deps.schedule,
   });
 
@@ -182,6 +199,10 @@ export function startTabNotices(deps: TabNoticeDependencies): TabNotices {
   channel.onMessage((value) => {
     const message = readTabMessage(value);
     if (message === null || message.tabId === deps.tabId) return;
+    if (message.kind === 'account') {
+      accountChanged();
+      return;
+    }
     const now = deps.clock();
     const changed =
       message.kind === 'bye'
@@ -237,6 +258,12 @@ export function startTabNotices(deps: TabNoticeDependencies): TabNotices {
       servedListeners.add(listener);
       return () => {
         servedListeners.delete(listener);
+      };
+    },
+    onAccountChanged: (listener) => {
+      accountListeners.add(listener);
+      return () => {
+        accountListeners.delete(listener);
       };
     },
     suspend: async () => {

@@ -192,6 +192,27 @@ await test('a notice wakes the engine of its workspace in the lease tab', async 
   await a.stop();
 });
 
+await test('a change of the account reaches every tab of the account', async () => {
+  // Only the lease tab holds the stream, and each tab shows the account, so
+  // a lock or an unlock reaches them all (record 0201).
+  const world = new World();
+  const a = world.tab('tab-a');
+  await world.advance(0);
+  const b = world.tab('tab-b');
+  await world.advance(0);
+  const heard: string[] = [];
+  const stopA = a.onAccountChanged(() => heard.push('tab-a'));
+  b.onAccountChanged(() => heard.push('tab-b'));
+  world.accept('tab-a');
+  world.streams.get('tab-a')?.handlers.onMessage({ kind: 'account' });
+  assert.deepEqual(heard.sort(), ['tab-a', 'tab-b']);
+  stopA();
+  world.streams.get('tab-a')?.handlers.onMessage({ kind: 'account' });
+  assert.deepEqual(heard.sort(), ['tab-a', 'tab-b', 'tab-b']);
+  await a.stop();
+  await b.stop();
+});
+
 await test('a tab that leaves or goes silent leaves the set', async () => {
   const world = new World();
   const a = world.tab('tab-a');

@@ -67,7 +67,7 @@ import {
   isImportedFamilyId,
 } from './lib/imported-themes.ts';
 import { createFocusPass } from './lib/focus-pass.ts';
-import { isLocked } from './lib/locked.ts';
+import { accountReadOutcome, isLocked } from './lib/locked.ts';
 import { displayNoteName } from './lib/note-name.ts';
 import {
   chooseWorkspace,
@@ -125,6 +125,12 @@ export type SessionValue = {
   readonly account: Account | null;
   readonly error: string | null;
   readonly refresh: () => void;
+  /**
+   * Reads the account again with no loading screen, so a lock or an unlock
+   * changes the screen in place, and a gone session goes to sign-in (record
+   * 0201).
+   */
+  readonly recheck: () => void;
   readonly signOut: () => void;
   /**
    * Takes the settings that the account answered after a write, so every
@@ -140,6 +146,7 @@ const SessionContext = createContext<SessionValue>({
   account: null,
   error: null,
   refresh: () => {},
+  recheck: () => {},
   signOut: () => {},
   adoptPreferences: () => {},
   adoptProfileName: () => {},
@@ -395,6 +402,7 @@ function useSessionLoader(generation: number): {
   readonly error: string | null;
   readonly adoptPreferences: (preferences: Preferences) => void;
   readonly adoptProfileName: (name: string) => void;
+  readonly recheck: () => void;
 } {
   const [status, setStatus] = useState<SessionStatus>('loading');
   const [account, setAccount] = useState<Account | null>(null);
@@ -456,7 +464,38 @@ function useSessionLoader(generation: number): {
     if (status === 'signed-in' && account !== null) rememberAccount(account);
   }, [status, account]);
 
-  return { status, account, error, adoptPreferences, adoptProfileName };
+  // One read at a time, so a burst of notices costs one request.
+  const checking = useRef(false);
+  const recheck = useCallback((): void => {
+    if (checking.current) return;
+    checking.current = true;
+    void getAccount().then((result) => {
+      checking.current = false;
+      const outcome = accountReadOutcome(
+        result.response?.status ?? 0,
+        result.data !== undefined,
+      );
+      if (outcome === 'adopt' && result.data !== undefined) {
+        rememberAccount(result.data);
+        setAccount(result.data);
+        setStatus('signed-in');
+        setError(null);
+      } else if (outcome === 'signed-out') {
+        rememberAccount(null);
+        setAccount(null);
+        setStatus('signed-out');
+      }
+    });
+  }, []);
+
+  return {
+    status,
+    account,
+    error,
+    adoptPreferences,
+    adoptProfileName,
+    recheck,
+  };
 }
 
 /**
@@ -1000,6 +1039,7 @@ export function useWorkspaceSync(
   const [noteName, setNoteName] = useState<string | null>(null);
   const syncSession = useSyncSession();
   const notices = useContext(NoticesContext);
+  const recheckAccount = useContext(SessionContext).recheck;
   const wake = useRef<() => void>(() => {});
 
   useEffect(() => {
@@ -1025,6 +1065,9 @@ export function useWorkspaceSync(
       // A paused session cannot send for this account. The lease goes to a
       // tab that can, so a tab of another account is not kept waiting.
       if (notice.kind === 'paused') void notices.suspend();
+      // A save refused for a locked account reads the account again, so the
+      // locked screen shows at once (record 0201).
+      if (notice.kind === 'account-locked') recheckAccount();
       const next = syncStateOfNotice(notice);
       if (next !== null) {
         setState(queue === null ? next : syncStateOfQueue(next, queue));
@@ -1138,7 +1181,7 @@ export function useWorkspaceSync(
       engine.stop();
       wake.current = () => {};
     };
-  }, [store, accountId, workspaceId, syncSession, notices]);
+  }, [store, accountId, workspaceId, syncSession, notices, recheckAccount]);
 
   const requestSync = useCallback((): void => {
     wake.current();
@@ -1392,13 +1435,24 @@ export function AppProviders({
   // Record 0050. The drain sits here and not in the shell, so a workspace that
   // still holds queued work keeps sending while the person reads another
   // workspace, and while they are on a screen that has no shell at all. A
-  // locked account sends and reads nothing, and its queue waits until it is
-  // active again (record 0201).
+  // locked account runs no engine, and its queue waits until it is active
+  // again (record 0201). Its notices still run, so the stream says when the
+  // account changes and the screen follows with no reload.
   const syncAccountId =
     session.account === null || isLocked(session.account)
       ? null
       : session.account.accountId;
-  const notices = useTabNotices(storeValue.store, syncAccountId, syncSession);
+  const notices = useTabNotices(
+    storeValue.store,
+    session.account?.accountId ?? null,
+    syncSession,
+  );
+  const recheckAccount = session.recheck;
+  useEffect(
+    () =>
+      notices === null ? undefined : notices.onAccountChanged(recheckAccount),
+    [notices, recheckAccount],
+  );
   useBackgroundSync(
     storeValue.store,
     syncAccountId,
@@ -1439,6 +1493,7 @@ export function AppProviders({
       account: session.account,
       error: session.error,
       refresh,
+      recheck: session.recheck,
       signOut: doSignOut,
       adoptPreferences: session.adoptPreferences,
       adoptProfileName: session.adoptProfileName,

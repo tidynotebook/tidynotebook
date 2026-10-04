@@ -2455,6 +2455,13 @@ export type SyncMembershipRecord = {
 };
 
 /**
+ * The state or the controls of the account of the stream changed, for example it was locked or unlocked (records 0189 and 0201). The client reads the account again. The message names nothing of the change.
+ */
+export type SyncNoticeAccount = {
+    kind: 'account';
+};
+
+/**
  * A commit changed the feed of one subscribed workspace. The client reads the feed of that workspace through the HTTP operations. The notice carries no cursor and no content, and only an applied feed page moves the stored cursor. A missed or repeated notice changes no result.
  */
 export type SyncNoticeChanged = {

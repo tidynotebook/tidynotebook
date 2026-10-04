@@ -31,6 +31,7 @@ class Harness {
   opens = 0;
   closes = 0;
   sessionEnds = 0;
+  accountChanges = 0;
   readonly sent: { generation: number; ids: readonly string[] }[] = [];
   readonly wakes: string[] = [];
   handlers: NoticeHandlers | null = null;
@@ -90,6 +91,9 @@ class Harness {
     wakeAll: () => this.wakes.push('*'),
     sessionEnded: () => {
       this.sessionEnds += 1;
+    },
+    accountChanged: () => {
+      this.accountChanges += 1;
     },
     schedule: this.schedule,
     random: () => this.randomValue,
@@ -188,6 +192,19 @@ await test('a notice of the accepted set wakes its engine and a late one nothing
   harness.receive({ kind: 'changed', generation: 1, workspaceId: first });
   harness.receive({ kind: 'changed', generation: 2, workspaceId: second });
   assert.deepEqual(harness.wakes, ['*', first, '*', second]);
+  harness.coordinator.stop();
+});
+
+await test('a change of the account reaches the tab and wakes no engine', async () => {
+  // A lock or an unlock of the account sends this message (record 0201), so
+  // the tab reads the account again. The stream stays open.
+  const harness = new Harness();
+  await harness.accepted([first]);
+  harness.receive({ kind: 'account' });
+  assert.equal(harness.accountChanges, 1);
+  assert.deepEqual(harness.wakes, ['*']);
+  assert.equal(harness.closes, 0);
+  assert.equal(harness.coordinator.healthy(), true);
   harness.coordinator.stop();
 });
 
