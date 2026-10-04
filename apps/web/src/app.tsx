@@ -67,7 +67,7 @@ import {
   isImportedFamilyId,
 } from './lib/imported-themes.ts';
 import { createFocusPass } from './lib/focus-pass.ts';
-import { accountReadOutcome, isLocked } from './lib/locked.ts';
+import { createAccountRecheck, isLocked } from './lib/locked.ts';
 import { displayNoteName } from './lib/note-name.ts';
 import {
   chooseWorkspace,
@@ -470,32 +470,31 @@ function useSessionLoader(generation: number): {
     if (status === 'signed-in' && account !== null) rememberAccount(account);
   }, [status, account]);
 
-  // One read at a time, so a burst of notices costs one request.
-  const checking = useRef(false);
-  const recheck = useCallback((): void => {
-    if (checking.current) return;
-    checking.current = true;
-    const startedIn = epoch.current;
-    void getAccount().then((result) => {
-      checking.current = false;
-      const outcome = accountReadOutcome({
-        status: result.response?.status ?? 0,
-        answered: result.data !== undefined,
-        startedIn,
-        finishedIn: epoch.current,
-      });
-      if (outcome === 'adopt' && result.data !== undefined) {
-        rememberAccount(result.data);
-        setAccount(result.data);
+  // One read at a time, and one more for the notices that came while it ran
+  // (`lib/locked.ts`). The recheck lives as long as the application.
+  const [recheck] = useState(() =>
+    createAccountRecheck<Account>({
+      read: async () => {
+        const result = await getAccount();
+        return {
+          status: result.response?.status ?? 0,
+          account: result.data,
+        };
+      },
+      epoch: () => epoch.current,
+      adopt: (read) => {
+        rememberAccount(read);
+        setAccount(read);
         setStatus('signed-in');
         setError(null);
-      } else if (outcome === 'signed-out') {
+      },
+      signOut: () => {
         rememberAccount(null);
         setAccount(null);
         setStatus('signed-out');
-      }
-    });
-  }, []);
+      },
+    }),
+  );
 
   const invalidate = useCallback((): void => {
     epoch.current += 1;

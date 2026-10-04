@@ -80,3 +80,67 @@ export function accountReadOutcome(read: {
   if (read.answered) return 'adopt';
   return read.status === 401 ? 'signed-out' : 'keep';
 }
+
+/** What the recheck of the account needs from the application. */
+export type AccountRecheckPorts<A> = {
+  /** Reads the account. A failure answers a status and no account. */
+  readonly read: () => Promise<{
+    readonly status: number;
+    readonly account: A | undefined;
+  }>;
+  /** The session epoch now. */
+  readonly epoch: () => number;
+  /** Takes the account that a read answered. */
+  readonly adopt: (account: A) => void;
+  /** Ends the session that a read found gone. */
+  readonly signOut: () => void;
+};
+
+/**
+ * The read of the account again that the application asks for.
+ *
+ * One read runs at a time, so a burst of notices costs few requests. A
+ * notice that comes while a read runs asks for one more read after it,
+ * because the read that runs can carry the state from before the change:
+ * a lock or an unlock must not stay on screen until the next notice. Many
+ * such notices still cost one more read. The read that waits belongs to the
+ * session epoch of its notice, so a sign-out drops it before it starts. A
+ * read that fails keeps the account and lets the next notice read again.
+ */
+export function createAccountRecheck<A>(
+  ports: AccountRecheckPorts<A>,
+): () => void {
+  let running = false;
+  // The session epoch of the latest notice that came while a read ran.
+  let waiting: number | null = null;
+  const start = (): void => {
+    running = true;
+    waiting = null;
+    const startedIn = ports.epoch();
+    void ports
+      .read()
+      .then((result) => {
+        const outcome = accountReadOutcome({
+          status: result.status,
+          answered: result.account !== undefined,
+          startedIn,
+          finishedIn: ports.epoch(),
+        });
+        if (outcome === 'adopt' && result.account !== undefined)
+          ports.adopt(result.account);
+        else if (outcome === 'signed-out') ports.signOut();
+      })
+      .catch(() => {
+        // A read with no answer says nothing about the account.
+      })
+      .finally(() => {
+        running = false;
+        if (waiting !== null && waiting === ports.epoch()) start();
+        else waiting = null;
+      });
+  };
+  return () => {
+    if (running) waiting = ports.epoch();
+    else start();
+  };
+}
