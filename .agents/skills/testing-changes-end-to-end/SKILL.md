@@ -44,6 +44,11 @@ whether it runs, what it built, and under `now` the state of the code today.
 When the two differ, run `app.mjs restart` before you drive it again. When a
 start fails, read `.local-app/app.log`.
 
+The run passes no `NOTESAPP_` variable of the shell to the server. To give it
+one more setting, add `--setting NAME=VALUE` to `start` or `restart`, once for
+each setting. A file that a setting names, such as a token file, goes in
+`.local-app/`.
+
 One worktree has one application, and every agent in that worktree shares
 it. Its database keeps what earlier drive scripts made until `stop`, so give
 what a script makes a name of its own, or restart for an empty workspace.

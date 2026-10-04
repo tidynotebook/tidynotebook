@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { loadServerConfig } from '@notesapp/server';
 import { createDisposableDatabase } from './support/database.ts';
-import { devEnvironment } from './support/dev-app.ts';
+import { devEnvironment, devSettings } from './support/dev-app.ts';
 
 await test('the local server config uses the selected port and separate roles', async () => {
   const database = await createDisposableDatabase();
@@ -28,4 +28,24 @@ await test('the local server config uses the selected port and separate roles', 
     await database.destroy();
     await rm(storageRoot, { recursive: true, force: true });
   }
+});
+
+await test('a local run takes more settings of its own and never replaces its own', () => {
+  assert.deepEqual(devSettings(undefined, []), {});
+  assert.deepEqual(
+    devSettings(
+      JSON.stringify({
+        NOTESAPP_ACCOUNT_PORTAL_URL: 'https://billing.example.test',
+      }),
+      ['NOTESAPP_ORIGIN'],
+    ),
+    { NOTESAPP_ACCOUNT_PORTAL_URL: 'https://billing.example.test' },
+  );
+  for (const text of [
+    '[]',
+    JSON.stringify({ PATH: '/bin' }),
+    JSON.stringify({ NOTESAPP_PORT: 3 }),
+    JSON.stringify({ NOTESAPP_ORIGIN: 'http://evil.test' }),
+  ])
+    assert.throws(() => devSettings(text, ['NOTESAPP_ORIGIN']), Error, text);
 });
