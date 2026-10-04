@@ -33,6 +33,7 @@ function memoryStore(
     promote: refuse,
     removePrefix: refuse,
     startUpload: refuse,
+    declaredSize: refuse,
     writePart: refuse,
     listParts: refuse,
     completeUpload: refuse,

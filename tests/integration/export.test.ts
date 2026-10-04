@@ -542,7 +542,8 @@ await test('a part that stops arriving answers with the declared timeout', async
 });
 
 await test('a part states its length and stays inside the bound of a part', async () => {
-  const importId = await startedImport(workspaceId, 10);
+  // The declared archive has a full first part and a second part of 10.
+  const importId = await startedImport(workspaceId, importPartBytes + 10);
   const part = (partNumber: number, headers: Record<string, string>) =>
     server.app.inject({
       method: 'PUT',

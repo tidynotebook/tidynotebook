@@ -18,6 +18,7 @@ import {
   access,
   constants,
   mkdir,
+  open,
   readdir,
   readFile,
   rename,
@@ -25,6 +26,7 @@ import {
   stat,
   statfs,
   writeFile,
+  type FileHandle,
 } from 'node:fs/promises';
 import { dirname, join, relative, sep } from 'node:path';
 import type { Readable } from 'node:stream';
@@ -72,7 +74,20 @@ function partNumberOf(name: string): number | null {
 }
 
 /** Opens the object store on the directory `root`. */
-export function openFileObjectStore(root: string): ObjectStore {
+/** What a test may do inside the file store. Production passes nothing. */
+export type FileStoreOptions = {
+  /**
+   * Runs inside a completion, after the parts are checked and before they
+   * are read. The check against a part sent again in that window needs it,
+   * and no public call reaches the window.
+   */
+  readonly onPartsChecked?: (folder: string) => Promise<void>;
+};
+
+export function openFileObjectStore(
+  root: string,
+  options: FileStoreOptions = {},
+): ObjectStore {
   const scratch = join(root, 'tmp');
   const uploads = join(root, 'uploads');
 
@@ -200,10 +215,21 @@ export function openFileObjectStore(root: string): ObjectStore {
       }
     },
 
-    async startUpload(key) {
+    async startUpload(key, size) {
       const folder = uploadFolder(key);
       await mkdir(folder, { recursive: true, mode: 0o700 });
+      // The size goes first, so an upload with a marker always has one.
+      await writeFile(join(folder, 'size'), String(size), { mode: 0o600 });
       await writeFile(join(folder, 'key'), key, { mode: 0o600 });
+    },
+
+    async declaredSize(key) {
+      const folder = uploadFolder(key);
+      if ((await statOf(join(folder, 'key'))) === null) return null;
+      const text = await readFile(join(folder, 'size'), 'utf8');
+      if (!/^[0-9]{1,16}$/.test(text))
+        throw new Error('notesapp: the size of an upload has no shape.');
+      return Number(text);
     },
 
     async writePart(key, partNumber, body, size) {
@@ -221,21 +247,34 @@ export function openFileObjectStore(root: string): ObjectStore {
     async completeUpload(key, parts) {
       const folder = uploadFolder(key);
       if ((await statOf(join(folder, 'key'))) === null) return 'missing';
-      // Each part is still the write that the caller checked.
-      for (const part of parts) {
-        const found = await statOf(join(folder, partName(part.partNumber)));
-        if (found === null || tagOf(found) !== part.tag) return 'changed';
-      }
-      await mkdir(scratch, { recursive: true });
+      // Each part opens first, and its tag is read from that open file, so
+      // a part sent again, which moves another file to the same name, cannot
+      // put other bytes in the join than the bytes that the caller checked.
+      const handles: FileHandle[] = [];
       const temporary = join(scratch, `object-${randomUUID()}`);
       try {
-        const out = createWriteStream(temporary, { mode: 0o600 });
         for (const part of [...parts].sort(
           (a, b) => a.partNumber - b.partNumber,
         )) {
-          const path = join(folder, partName(part.partNumber));
-          await pipeline(createReadStream(path), out, { end: false });
+          let handle: FileHandle;
+          try {
+            handle = await open(join(folder, partName(part.partNumber)), 'r');
+          } catch (error) {
+            if (isMissing(error)) return 'changed';
+            throw error;
+          }
+          handles.push(handle);
+          if (tagOf(await handle.stat()) !== part.tag) return 'changed';
         }
+        await options.onPartsChecked?.(folder);
+        await mkdir(scratch, { recursive: true });
+        const out = createWriteStream(temporary, { mode: 0o600 });
+        for (const handle of handles)
+          await pipeline(
+            handle.createReadStream({ start: 0, autoClose: false }),
+            out,
+            { end: false },
+          );
         await new Promise<void>((resolve, reject) => {
           out.once('error', reject);
           out.end(resolve);
@@ -247,6 +286,8 @@ export function openFileObjectStore(root: string): ObjectStore {
         // The parts stay, so a later completion joins them again.
         await rm(temporary, { force: true });
         throw error;
+      } finally {
+        for (const handle of handles) await handle.close();
       }
       // The parts go only once the whole object is in place.
       await rm(folder, { recursive: true, force: true });

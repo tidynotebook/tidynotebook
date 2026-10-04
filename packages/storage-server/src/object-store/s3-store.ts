@@ -11,7 +11,8 @@
  * the S3 API that is not AWS often refuses the newer checksum headers.
  *
  * Each open upload has a marker object, `<key>.upload`, that holds the
- * identifier of the multipart upload. A part finds its upload with one read of
+ * identifier of the multipart upload on its first line and the declared size
+ * on its second. A part finds its upload with one read of
  * the marker, and the daily cleanup finds a stale upload with a listing of
  * objects, which every service answers for a prefix. A listing of the
  * multipart uploads is not needed: MinIO answers it for one exact key only,
@@ -177,18 +178,29 @@ export function openS3ObjectStore(
   });
   const Bucket = settings.bucket;
 
-  /** The identifier of the open upload of `key`, from its marker, or `null`. */
-  async function uploadIdOf(key: string): Promise<string | null> {
+  /** The marker of the open upload of `key`, or `null`. */
+  async function markerOf(
+    key: string,
+  ): Promise<{ readonly uploadId: string; readonly size: number } | null> {
+    let text: string;
     try {
       const answer = await client.send(
         new GetObjectCommand({ Bucket, Key: `${key}${uploadMarker}` }),
       );
-      const identifier = (await answer.Body?.transformToString()) ?? '';
-      return identifier === '' ? null : identifier;
+      text = (await answer.Body?.transformToString()) ?? '';
     } catch (error) {
       if (isMissing(error)) return null;
       throw error;
     }
+    const [uploadId = '', size = ''] = text.split('\n');
+    if (uploadId === '' || !/^[0-9]{1,16}$/.test(size))
+      throw new Error('notesapp: the marker of an upload has no shape.');
+    return { uploadId, size: Number(size) };
+  }
+
+  /** The identifier of the open upload of `key`, from its marker, or `null`. */
+  async function uploadIdOf(key: string): Promise<string | null> {
+    return (await markerOf(key))?.uploadId ?? null;
   }
 
   /** Every part of one open upload, with the tag that completes it. */
@@ -341,20 +353,25 @@ export function openS3ObjectStore(
       return objectsUnder(checkedPrefix(prefix));
     },
 
-    async startUpload(key) {
+    async declaredSize(key) {
+      return (await markerOf(checkedKey(key)))?.size ?? null;
+    },
+
+    async startUpload(key, size) {
       const created = await client.send(
         new CreateMultipartUploadCommand({ Bucket, Key: checkedKey(key) }),
       );
       const identifier = created.UploadId;
       if (identifier === undefined || identifier === '')
         throw new Error('notesapp: the object store started no upload.');
+      const marker = `${identifier}\n${String(size)}`;
       try {
         await client.send(
           new PutObjectCommand({
             Bucket,
             Key: `${key}${uploadMarker}`,
-            Body: identifier,
-            ContentLength: Buffer.byteLength(identifier),
+            Body: marker,
+            ContentLength: Buffer.byteLength(marker),
           }),
         );
       } catch (error) {

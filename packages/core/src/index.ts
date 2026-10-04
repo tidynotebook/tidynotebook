@@ -179,10 +179,9 @@ export {
   maxArchiveNameBytes,
 } from './files/archive.ts';
 export {
-  importPartAllowed,
   importPartBytes,
   importPartRanges,
-  importPartsBytes,
+  importPartSize,
   importPartsProblem,
   maxImportParts,
   type ImportPart,

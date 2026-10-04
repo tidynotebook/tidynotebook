@@ -8,7 +8,15 @@
  */
 import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
-import { mkdir, mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
+import {
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  rename,
+  rm,
+  writeFile,
+} from 'node:fs/promises';
 import { createServer, type Socket } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -175,8 +183,11 @@ async function portContract(
         false,
       );
       assert.equal(await store.listParts(key), null);
-      await store.startUpload(key);
+      assert.equal(await store.declaredSize(key), null);
+      await store.startUpload(key, first.length + last.length);
       assert.deepEqual(await store.listParts(key), []);
+      // The upload keeps the size that its start declared.
+      assert.equal(await store.declaredSize(key), first.length + last.length);
       // The parts arrive out of order, and a part sent again replaces itself.
       assert.equal(
         await store.writePart(key, 2, Readable.from([Buffer.from('old')]), 3),
@@ -206,6 +217,7 @@ async function portContract(
       assert.ok(open.includes(key));
       assert.equal(await store.completeUpload(key, parts), 'completed');
       assert.equal(await store.listParts(key), null);
+      assert.equal(await store.declaredSize(key), null);
       assert.ok(!(await keysOf(store.listUploads('staging/'))).includes(key));
       const joined = await bytesOf(await store.read(key));
       assert.equal(joined.length, first.length + last.length);
@@ -224,7 +236,7 @@ async function portContract(
       // archive that nobody checked.
       const key = importKey(workspaceId, randomUUID(), randomUUID());
       const first = Buffer.alloc(minimumPartBytes, 0x62);
-      await store.startUpload(key);
+      await store.startUpload(key, 1);
       await store.writePart(key, 1, Readable.from([first]), first.length);
       await store.writePart(key, 2, Readable.from([Buffer.from('end')]), 3);
       const checked = (await store.listParts(key)) ?? [];
@@ -251,7 +263,7 @@ async function portContract(
       // while the cleanup aborted its upload left a folder with no marker
       // that nothing removed.
       const key = importKey(workspaceId, randomUUID(), randomUUID());
-      await store.startUpload(key);
+      await store.startUpload(key, 1);
       const body = new PassThrough();
       body.write(Buffer.from('par'));
       const written = store.writePart(key, 1, body, 4);
@@ -265,7 +277,7 @@ async function portContract(
 
   await t.test('an aborted upload leaves no part', async () => {
     const key = importKey(workspaceId, randomUUID(), randomUUID());
-    await store.startUpload(key);
+    await store.startUpload(key, 1);
     await store.writePart(key, 1, Readable.from([Buffer.from('part')]), 4);
     await store.abortUpload(key);
     assert.equal(await store.listParts(key), null);
@@ -283,7 +295,7 @@ async function portContract(
       const upload = importKey(workspaceId, randomUUID(), randomUUID());
       await store.write(staged, Readable.from([Buffer.from('s')]), 1);
       await store.write(finished, Readable.from([Buffer.from('f')]), 1);
-      await store.startUpload(upload);
+      await store.startUpload(upload, 1);
       await store.writePart(upload, 1, Readable.from([Buffer.from('p')]), 1);
       // Inside the day nothing goes.
       const early = await removeStaleObjects(store, new Date());
@@ -331,6 +343,32 @@ await test('the file store keeps the contract of the port', async (t) => {
   }
 });
 
+await test('a part sent again after the check cannot change the join', async () => {
+  // Codex review of PR 288. The file store checked the time and the size of
+  // each part by its name, then opened the part by its name again, so a part
+  // sent again in between put bytes in the join that nobody checked.
+  const root = await mkdtemp(join(tmpdir(), 'notesapp-objects-swap-'));
+  const store = openFileObjectStore(root, {
+    onPartsChecked: async (folder) => {
+      const swap = join(root, 'tmp', 'swap');
+      await mkdir(join(root, 'tmp'), { recursive: true });
+      await writeFile(swap, 'NEW');
+      await rename(swap, join(folder, 'part-00002'));
+    },
+  });
+  try {
+    const key = importKey(randomUUID(), randomUUID(), randomUUID());
+    await store.startUpload(key, 6);
+    await store.writePart(key, 1, Readable.from([Buffer.from('one')]), 3);
+    await store.writePart(key, 2, Readable.from([Buffer.from('two')]), 3);
+    const parts = (await store.listParts(key)) ?? [];
+    assert.equal(await store.completeUpload(key, parts), 'completed');
+    assert.equal((await readFile(join(root, key))).toString(), 'onetwo');
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 await test('a join that fails keeps the parts of the file store', async () => {
   // Review of record 0192. The join removed each part as it went, so a join
   // that failed, for example on a full disk, lost the first parts, and the
@@ -339,7 +377,7 @@ await test('a join that fails keeps the parts of the file store', async () => {
   const store = openFileObjectStore(root);
   try {
     const key = importKey(randomUUID(), randomUUID(), randomUUID());
-    await store.startUpload(key);
+    await store.startUpload(key, 1);
     await store.writePart(key, 1, Readable.from([Buffer.from('one')]), 3);
     await store.writePart(key, 2, Readable.from([Buffer.from('two')]), 3);
     const parts = (await store.listParts(key)) ?? [];
@@ -367,7 +405,7 @@ await test('the S3 store keeps the contract of the port', async (t) => {
         // A rule of R2 or of MinIO ends an upload that waits too long, and
         // leaves the marker of the upload in place.
         const key = importKey(randomUUID(), randomUUID(), randomUUID());
-        await bucket.store.startUpload(key);
+        await bucket.store.startUpload(key, 1);
         await bucket.store.writePart(
           key,
           1,
@@ -402,7 +440,7 @@ await test('the S3 store keeps the contract of the port', async (t) => {
         // refuses a name segment past 255 bytes, which the marker passes and
         // the upload does not.
         const key = `staging/imports/${'a'.repeat(250)}`;
-        await assert.rejects(bucket.store.startUpload(key));
+        await assert.rejects(bucket.store.startUpload(key, 1));
         assert.deepEqual(await bucket.uploadsOf(key), []);
       },
     );

@@ -56,6 +56,7 @@ export {
   legacyStagingKey,
   isObjectKey,
   openFileObjectStore,
+  type FileStoreOptions,
   openObjectStore,
   openS3ObjectStore,
   defaultS3Timeouts,

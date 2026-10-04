@@ -11,7 +11,10 @@
  * of the installation, each part goes to that upload, and the completion
  * joins the parts. Any server instance takes each of these requests, because
  * the upload lives in the store and its key names the workspace, the account
- * and the import. The part rule is `importPartsProblem` of `@notesapp/core`.
+ * and the import. The upload keeps the size that its start declared, and
+ * each part and the completion keep to it, by `importPartSize` and
+ * `importPartsProblem` of `@notesapp/core`, so the parts never hold more
+ * than the start checked.
  *
  * Such an archive does not fit in memory, so the completion keeps it in a file
  * of the server while it reads it. The file is removed from its folder as soon
@@ -56,8 +59,7 @@ import {
   commitChangeset,
   createAttachmentChangeset,
   createFileChangeset,
-  importPartAllowed,
-  importPartsBytes,
+  importPartSize,
   importPartsProblem,
   listFiles,
   maxArchiveBytes,
@@ -793,6 +795,7 @@ export function createImportHandlers(
         await checkStoreRoom(attachments, size);
         await attachments.objects.startUpload(
           importKey(workspaceId, actor.accountId, importId),
+          size,
         );
       });
       return {
@@ -818,18 +821,42 @@ export function createImportHandlers(
         throw new PayloadTooLargeError(
           `A part of an import holds ${String(limits.importPartBytes / mebibyte)} MiB at the most.`,
         );
-      if (!importPartAllowed(partNumber, stated))
+      if (partNumber > maxImportParts)
         throw new RequestContractError('params', [
           {
             path: '/partNumber',
             message: `An import has ${String(maxImportParts)} parts at the most.`,
           },
         ]);
+      const key = importKey(workspaceId, actor.accountId, importId);
+      // A part holds the bytes of its place in the archive that the start
+      // declared, and no part lies past that archive.
+      const declared = await attachments.objects.declaredSize(key);
+      if (declared === null) throw noImport();
+      const expected = importPartSize(declared, partNumber);
+      if (expected === null)
+        throw new RequestContractError('params', [
+          {
+            path: '/partNumber',
+            message: 'The zip file that the import declared has no such part.',
+          },
+        ]);
+      if (stated > expected)
+        throw new PayloadTooLargeError(
+          `This part of the zip file holds ${String(expected)} bytes.`,
+        );
+      if (stated !== expected)
+        throw new RequestContractError('headers', [
+          {
+            path: '/content-length',
+            message: `This part of the zip file holds ${String(expected)} bytes.`,
+          },
+        ]);
       await checkStoreRoom(attachments, stated);
       const stored = await receivePart(
         request,
         attachments,
-        importKey(workspaceId, actor.accountId, importId),
+        key,
         partNumber,
         stated,
         limits.uploadIdleTimeoutMs,
@@ -851,6 +878,8 @@ export function createImportHandlers(
       );
       // An open upload states its parts. An upload that a refusal below
       // stopped after the join is one object of the store already.
+      // The parts make the archive that the start declared, or nothing.
+      const declared = await attachments.objects.declaredSize(key);
       const parts = await attachments.objects.listParts(key);
       let size: number;
       if (parts === null) {
@@ -858,10 +887,11 @@ export function createImportHandlers(
         if (joined === null) throw noImport();
         size = joined;
       } else {
-        const problem = importPartsProblem(parts);
+        if (declared === null) throw noImport();
+        const problem = importPartsProblem(parts, declared);
         if (problem === 'too_large') throw archiveTooLarge();
         if (problem !== null) throw partsRefused();
-        size = importPartsBytes(parts);
+        size = declared;
       }
       const lease = await reserveArchiveJob(jobs, reply, actor.accountId, size);
       try {

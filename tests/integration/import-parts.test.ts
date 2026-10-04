@@ -186,14 +186,38 @@ await test('a start and a part that the disk cannot hold answer storage_full', a
   assert.equal(started.error, undefined, JSON.stringify(started.error));
   const importId = started.data?.importId ?? '';
   // The disk fills while the parts arrive.
-  statedRoom = archiveDiskReserveBytes + 10;
-  const refused = await part(importId, 1, new Uint8Array(11));
+  statedRoom = archiveDiskReserveBytes + 99;
+  const refused = await part(importId, 1, new Uint8Array(100));
   assert.equal(responseOf(refused.response).status, 507);
   assert.equal(readProperty(refused.error, 'code'), 'storage_full');
   assert.deepEqual(await partsOf(importId), []);
-  const fits = await part(importId, 1, new Uint8Array(10));
+  statedRoom = archiveDiskReserveBytes + 100;
+  const fits = await part(importId, 1, new Uint8Array(100));
   assert.equal(fits.error, undefined, JSON.stringify(fits.error));
   statedRoom = Number.MAX_SAFE_INTEGER;
+});
+
+await test('the parts keep to the size that the start declared', async () => {
+  // Codex review of PR 288. The start checked the size that it declared and
+  // kept it nowhere, so a start of 1 byte could send and complete a whole
+  // archive, past the room that the check counted.
+  const importId = (await start(1)).data?.importId ?? '';
+  const larger = await part(importId, 1, new Uint8Array(10));
+  assert.equal(responseOf(larger.response).status, 413);
+  const after = await part(importId, 2, new Uint8Array(1));
+  assert.equal(responseOf(after.response).status, 400);
+  assert.deepEqual(await partsOf(importId), []);
+  const declared = (await start(10)).data?.importId ?? '';
+  const smaller = await part(declared, 1, new Uint8Array(9));
+  assert.equal(responseOf(smaller.response).status, 400);
+  assert.deepEqual(await partsOf(declared), []);
+  // A completion with no part makes no archive.
+  const empty = await completeWorkspaceImport({
+    headers,
+    path: { workspaceId, importId: declared },
+  });
+  assert.equal(responseOf(empty.response).status, 422);
+  assert.equal(readProperty(empty.error, 'code'), 'archive_invalid');
 });
 
 await test('an account holds one open import', async () => {

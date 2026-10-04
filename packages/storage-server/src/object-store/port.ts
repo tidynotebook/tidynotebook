@@ -85,8 +85,17 @@ export type ObjectStore = {
   /** Every object whose key starts with `prefix`, in no stated order. */
   list(prefix: string): AsyncIterable<StoredObject>;
 
-  /** Starts an upload in parts that completes into the object at `key`. */
-  startUpload(key: string): Promise<void>;
+  /**
+   * Starts an upload in parts that completes into the object at `key`, and
+   * keeps `size`, the bytes that the whole object declares, with it.
+   */
+  startUpload(key: string, size: number): Promise<void>;
+
+  /**
+   * The size that the open upload of `key` declared at its start, or `null`
+   * when no upload of `key` is open.
+   */
+  declaredSize(key: string): Promise<number | null>;
 
   /**
    * Writes one part of the upload of `key` from a body of exactly `size`

@@ -6,7 +6,7 @@ import { openFileObjectStore } from './file-store.ts';
 import type { ObjectStore } from './port.ts';
 import { openS3ObjectStore, type S3StoreSettings } from './s3-store.ts';
 
-export { openFileObjectStore } from './file-store.ts';
+export { openFileObjectStore, type FileStoreOptions } from './file-store.ts';
 export {
   defaultS3Timeouts,
   openS3ObjectStore,
