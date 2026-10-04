@@ -194,7 +194,9 @@ To use a store:
 
 The server still needs the storage directory, because it checks each upload and
 each import there for the time of one request. The readiness check reports
-`storage` as degraded when the store does not answer.
+`storage` as degraded when the store does not answer, or when it does not
+take a write. To check the write, each server writes and removes one small
+object under `probe/` at most once in ten minutes.
 
 Each day, the server removes an upload that nobody finished and an import that
 nobody completed, when they are older than one day. Also add a lifecycle rule

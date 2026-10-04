@@ -28,6 +28,7 @@ import {
   importKey,
   openFileObjectStore,
   openS3ObjectStore,
+  probePrefix,
   removeStaleObjects,
   stagingKey,
   stagingLifetimeMs,
@@ -444,6 +445,13 @@ await test('the S3 store keeps the contract of the port', async (t) => {
         assert.deepEqual(await bucket.uploadsOf(key), []);
       },
     );
+    await t.test('the probe writes once and leaves no object', async () => {
+      // Codex review of PR 288. The probe of an S3 store writes, reads and
+      // removes one object under its own prefix, which no cleanup lists.
+      assert.equal(await bucket.store.probe(), true);
+      assert.equal(await bucket.store.probe(), true);
+      assert.deepEqual(await keysOf(bucket.store.list(probePrefix)), []);
+    });
     await t.test('the S3 store states no bound of its room', async () => {
       assert.equal(await bucket.store.room(), null);
     });

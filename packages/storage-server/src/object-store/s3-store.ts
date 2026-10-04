@@ -38,8 +38,10 @@ import {
   S3ServiceException,
   UploadPartCommand,
 } from '@aws-sdk/client-s3';
+import { randomUUID } from 'node:crypto';
 import { exactLength } from './exact-length.ts';
-import { isObjectKey, isObjectPrefix } from './keys.ts';
+import { isObjectKey, isObjectPrefix, probeKey } from './keys.ts';
+import { createWriteProbe } from './write-probe.ts';
 import type {
   ObjectStore,
   PendingUpload,
@@ -177,6 +179,38 @@ export function openS3ObjectStore(
     },
   });
   const Bucket = settings.bucket;
+  // One probe key for each process, so a probe object that a stop left
+  // behind is one small object at most.
+  const probeObject = probeKey(randomUUID());
+  const probe = createWriteProbe({
+    head: async () => {
+      try {
+        await client.send(new HeadBucketCommand({ Bucket }));
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    writeReadRemove: async () => {
+      const mark = randomUUID();
+      await client.send(
+        new PutObjectCommand({
+          Bucket,
+          Key: probeObject,
+          Body: mark,
+          ContentLength: Buffer.byteLength(mark),
+        }),
+      );
+      const read = await client.send(
+        new GetObjectCommand({ Bucket, Key: probeObject }),
+      );
+      const text = (await read.Body?.transformToString()) ?? '';
+      await client.send(new DeleteObjectCommand({ Bucket, Key: probeObject }));
+      if (text !== mark)
+        throw new Error('notesapp: the probe object read back other bytes.');
+    },
+    now: Date.now,
+  });
 
   /** The marker of the open upload of `key`, or `null`. */
   async function markerOf(
@@ -493,14 +527,7 @@ export function openS3ObjectStore(
           };
     },
 
-    async probe() {
-      try {
-        await client.send(new HeadBucketCommand({ Bucket }));
-        return true;
-      } catch {
-        return false;
-      }
-    },
+    probe,
 
     room() {
       return Promise.resolve(null);

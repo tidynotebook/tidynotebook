@@ -19,6 +19,7 @@ export {
   attachmentKey,
   importKey,
   legacyStagingKey,
+  probePrefix,
   isObjectKey,
   stagingKey,
   stagingPrefix,

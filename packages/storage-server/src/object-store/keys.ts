@@ -11,6 +11,17 @@
 /** The prefix of every staged object and every open upload. */
 export const stagingPrefix = 'staging/';
 
+/**
+ * The prefix of the objects that a readiness probe writes and removes at
+ * once. No cleanup lists it, and no other key starts with it.
+ */
+export const probePrefix = 'probe/';
+
+/** The key of the probe object of one process. */
+export function probeKey(processId: string): string {
+  return `${probePrefix}${uuid(processId)}`;
+}
+
 /** The prefix of every finished object of one workspace. */
 export function workspacePrefix(workspaceId: string): string {
   return `workspaces/${uuid(workspaceId)}/`;

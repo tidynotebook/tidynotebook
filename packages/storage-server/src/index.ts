@@ -54,6 +54,7 @@ export {
   BodyLengthError,
   importKey,
   legacyStagingKey,
+  probePrefix,
   isObjectKey,
   openFileObjectStore,
   type FileStoreOptions,

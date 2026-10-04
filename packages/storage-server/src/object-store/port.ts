@@ -129,7 +129,11 @@ export type ObjectStore = {
   /** Every open upload whose key starts with `prefix`. */
   listUploads(prefix: string): AsyncIterable<PendingUpload>;
 
-  /** Whether the store answers a read and takes a write now. */
+  /**
+   * Whether the store answers a read and takes a write now. The S3 store
+   * writes a probe object at most once in a while, as `write-probe.ts`
+   * states, and asks the bucket in between.
+   */
   probe(): Promise<boolean>;
 
   /**
