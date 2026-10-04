@@ -477,7 +477,7 @@ await test('a wrong or missing token changes nothing, and the failures are bound
   // The counter is the one of the installation, which every process shares,
   // so the failures of the checks above count too. The limit of this
   // installation is ten failures in one window: the next failures reach it,
-  // and then even the right token waits.
+  // and the answer of a wrong token turns to the attempt limit.
   const statuses: number[] = [];
   for (let attempt = 0; attempt < 10; attempt += 1) {
     const refused = await readOperatorAccount({
@@ -495,13 +495,14 @@ await test('a wrong or missing token changes nothing, and the failures are bound
     ),
     statuses.join(),
   );
-  const limited = await readOperatorAccount({
+  // The right token still passes, so wrong tokens from an address that the
+  // service shares never lock the service out.
+  const allowed = await readOperatorAccount({
     baseUrl: limitedUrl,
     headers: operator,
     path: { accountId: someone.accountId },
   });
-  assert.equal(responseOf(limited.response).status, 429);
-  assert.equal(codeOf(limited.error), 'rate_limited');
+  assert.equal(responseOf(allowed.response).status, 200);
   // Nothing changed.
   const setup = await openSession(database.migrationUrl);
   try {

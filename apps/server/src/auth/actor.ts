@@ -86,8 +86,8 @@ export function requireActor(request: FastifyRequest): ResolvedActor {
  * The operator token and the bound of its failures (record 0190).
  *
  * A wrong token counts one attempt of the client address in the counter of
- * record 0121, which every process shares, and a client past the limit gets
- * the answer of the attempt limit before its token is compared again.
+ * record 0121, which every process shares, and a wrong token past the limit
+ * gets the answer of the attempt limit. The right token always passes.
  */
 export type OperatorAccess = {
   /** The operator secret, or `null` when the installation names none. */
@@ -316,17 +316,20 @@ export function createIdentityAdapter(
     const access = dependencies.operator;
     if (access === undefined || access.token === null)
       throw new OperatorOffError();
-    const key = `operator:${attemptAddress(request.ip)}`;
-    const now = Date.now();
-    const held = await access.attempts.read(key, access.windowMs, now);
-    if (held.current >= access.max) throw new AttemptsExceededError();
+    // The right token always passes, so wrong tokens from an address that
+    // the service shares never lock the service out. A wrong token counts
+    // in one step, and its answer turns to the attempt limit past the bound.
+    // The secret holds at least 32 characters, so the bound limits the noise
+    // of the refusals and not the odds of a guess.
     const presented = bearerToken(request.headers.authorization);
-    if (presented === null || !sameSecret(presented, access.token)) {
-      await access.attempts.count(key, access.windowMs, now);
-      throw new UnauthenticatedError(
-        'This operation needs the operator token.',
-      );
-    }
+    if (presented !== null && sameSecret(presented, access.token)) return;
+    const counted = await access.attempts.count(
+      `operator:${attemptAddress(request.ip)}`,
+      access.windowMs,
+      Date.now(),
+    );
+    if (counted.current > access.max) throw new AttemptsExceededError();
+    throw new UnauthenticatedError('This operation needs the operator token.');
   }
 
   const resolver: IdentityResolver = async (request, operation) => {
