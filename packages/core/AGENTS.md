@@ -15,7 +15,8 @@ the role and action matrix, and the storage ports that a runtime implements.
 - `src/files/` holds the path rules, the digest rules, the revision graph,
   the changeset builders, `commit.ts`, the rules of a notice stream in
   `notices.ts` (0129), the bounds of an archive that export writes and import
-  reads in `archive.ts`, and the storage ports.
+  reads in `archive.ts`, the parts that an import sends in `import-parts.ts`
+  (0192), and the storage ports.
 - `src/identity/` holds the actor, the workspace role and action matrix, and
   the UUID helper. `installation.ts` holds the second matrix, the one of the
   installation role, and the two never read each other (0109).

@@ -1,0 +1,39 @@
+post:
+  operationId: startWorkspaceImport
+  summary: Start the upload of a portable workspace zip archive in parts.
+  description: >-
+    An import sends its archive in parts, because a proxy in front of the
+    server refuses a large request body (record 0192). This operation
+    starts the upload and answers its identifier and the size of each
+    part. The client then sends every part with sendWorkspaceImportPart
+    and ends with completeWorkspaceImport. The stated size is checked
+    against the bound of one archive, up to 4 GiB without ZIP64, so a
+    zip file that is too large is refused before a part is sent. Any
+    server instance of the installation takes the next request of the
+    upload. An upload that nobody completes is removed after one day.
+  tags:
+    - files
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+    - $ref: '../components/parameters/WorkspaceId.yaml'
+  requestBody:
+    $ref: '../components/requestBodies/StartWorkspaceImport.yaml'
+  responses:
+    '201':
+      $ref: '../components/responses/WorkspaceImportStarted.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../components/responses/NotFound.yaml'
+    '413':
+      $ref: '../components/responses/PayloadTooLarge.yaml'
+    '415':
+      $ref: '../components/responses/UnsupportedMediaType.yaml'
+    '429':
+      $ref: '../components/responses/RateLimited.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

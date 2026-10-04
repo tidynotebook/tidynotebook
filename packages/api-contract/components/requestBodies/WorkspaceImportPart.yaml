@@ -1,0 +1,6 @@
+description: The bytes of one part of a zip archive, with their stated length.
+required: true
+content:
+  application/octet-stream:
+    schema:
+      $ref: '../schemas/WorkspaceImportPart.yaml'

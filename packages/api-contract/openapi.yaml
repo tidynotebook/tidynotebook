@@ -160,8 +160,12 @@ paths:
     $ref: './paths/api_workspaces_workspaceId_sync_changes.yaml'
   /api/workspaces/{workspaceId}/export:
     $ref: './paths/api_workspaces_workspaceId_export.yaml'
-  /api/workspaces/{workspaceId}/import:
-    $ref: './paths/api_workspaces_workspaceId_import.yaml'
+  /api/workspaces/{workspaceId}/imports:
+    $ref: './paths/api_workspaces_workspaceId_imports.yaml'
+  /api/workspaces/{workspaceId}/imports/{importId}/parts/{partNumber}:
+    $ref: './paths/api_workspaces_workspaceId_imports_importId_parts_partNumber.yaml'
+  /api/workspaces/{workspaceId}/imports/{importId}/complete:
+    $ref: './paths/api_workspaces_workspaceId_imports_importId_complete.yaml'
   /api/workspaces/{workspaceId}/files/{fileId}/export:
     $ref: './paths/api_workspaces_workspaceId_files_fileId_export.yaml'
   /api/workspaces/{workspaceId}/files/{fileId}/backlinks:
@@ -205,6 +209,10 @@ components:
       $ref: './components/parameters/RevisionId.yaml'
     ObjectId:
       $ref: './components/parameters/ObjectId.yaml'
+    ImportId:
+      $ref: './components/parameters/ImportId.yaml'
+    PartNumber:
+      $ref: './components/parameters/PartNumber.yaml'
     PageCursor:
       $ref: './components/parameters/PageCursor.yaml'
     FilePageCursor:
@@ -276,8 +284,10 @@ components:
       $ref: './components/requestBodies/Changeset.yaml'
     UploadAttachment:
       $ref: './components/requestBodies/UploadAttachment.yaml'
-    ImportWorkspace:
-      $ref: './components/requestBodies/ImportWorkspace.yaml'
+    StartWorkspaceImport:
+      $ref: './components/requestBodies/StartWorkspaceImport.yaml'
+    WorkspaceImportPart:
+      $ref: './components/requestBodies/WorkspaceImportPart.yaml'
     FinalizeAttachment:
       $ref: './components/requestBodies/FinalizeAttachment.yaml'
     RestoreRevision:
@@ -393,6 +403,10 @@ components:
       $ref: './components/responses/WorkspaceArchive.yaml'
     WorkspaceImported:
       $ref: './components/responses/WorkspaceImported.yaml'
+    WorkspaceImportStarted:
+      $ref: './components/responses/WorkspaceImportStarted.yaml'
+    WorkspaceImportPartReceived:
+      $ref: './components/responses/WorkspaceImportPartReceived.yaml'
     AttachmentBinary:
       $ref: './components/responses/AttachmentBinary.yaml'
     HistoryPage:
@@ -620,8 +634,14 @@ components:
       $ref: './components/schemas/ChangesetInput.yaml'
     UploadAttachmentInput:
       $ref: './components/schemas/UploadAttachmentInput.yaml'
-    ImportWorkspaceInput:
-      $ref: './components/schemas/ImportWorkspaceInput.yaml'
+    StartWorkspaceImportInput:
+      $ref: './components/schemas/StartWorkspaceImportInput.yaml'
+    WorkspaceImportStarted:
+      $ref: './components/schemas/WorkspaceImportStarted.yaml'
+    WorkspaceImportPart:
+      $ref: './components/schemas/WorkspaceImportPart.yaml'
+    WorkspaceImportPartReceived:
+      $ref: './components/schemas/WorkspaceImportPartReceived.yaml'
     ImportWorkspaceResult:
       $ref: './components/schemas/ImportWorkspaceResult.yaml'
     AttachmentUploadResult:

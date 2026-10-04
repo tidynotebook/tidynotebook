@@ -1,6 +1,0 @@
-description: Multipart form upload that contains one portable zip archive.
-required: true
-content:
-  multipart/form-data:
-    schema:
-      $ref: '../schemas/ImportWorkspaceInput.yaml'

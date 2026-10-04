@@ -1,0 +1,15 @@
+type: object
+description: One part of an import that the server stored.
+additionalProperties: false
+required:
+  - partNumber
+  - size
+properties:
+  partNumber:
+    type: integer
+    minimum: 1
+    description: The place of the part in the archive, from 1.
+  size:
+    type: integer
+    minimum: 1
+    description: The bytes of the part that the server stored.

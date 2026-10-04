@@ -1,0 +1,40 @@
+put:
+  operationId: sendWorkspaceImportPart
+  summary: Send one part of a workspace zip archive.
+  description: >-
+    Stores one part of an import that startWorkspaceImport started (record
+    0192). The body is the bytes of the part, and it states its length.
+    Every part but the last holds exactly the part size that the start
+    answered, and no part holds more. A part sent again replaces the
+    earlier one. The gap between two chunks of the body is bounded, so a
+    sender that stops in the middle is answered and the part is not
+    stored. An import that does not exist, or that another account
+    started, answers not_found.
+  tags:
+    - files
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+    - $ref: '../components/parameters/WorkspaceId.yaml'
+    - $ref: '../components/parameters/ImportId.yaml'
+    - $ref: '../components/parameters/PartNumber.yaml'
+  requestBody:
+    $ref: '../components/requestBodies/WorkspaceImportPart.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/WorkspaceImportPartReceived.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../components/responses/NotFound.yaml'
+    '408':
+      $ref: '../components/responses/RequestTimeout.yaml'
+    '413':
+      $ref: '../components/responses/PayloadTooLarge.yaml'
+    '415':
+      $ref: '../components/responses/UnsupportedMediaType.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

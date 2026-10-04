@@ -952,16 +952,6 @@ export type HistoryRevisionItem = {
 };
 
 /**
- * Multipart form upload payload that contains one zip archive.
- */
-export type ImportWorkspaceInput = {
-    /**
-     * Portable workspace zip archive.
-     */
-    file: Blob | File;
-};
-
-/**
  * Counts of the files that one import wrote, and of the files of the archive that it left out: the settings of a tool, such as the .obsidian folder, and every file that is neither a note nor an image (record 0172).
  */
 export type ImportWorkspaceResult = {
@@ -2037,6 +2027,16 @@ export type StartSnapshotInput = {
 };
 
 /**
+ * The size of the zip archive that one import sends.
+ */
+export type StartWorkspaceImportInput = {
+    /**
+     * The bytes of the whole archive. An archive above the bound of one import answers payload_too_large before a part is sent.
+     */
+    size: number;
+};
+
+/**
  * One file whose accepted head moved between the read of the client and this changeset. The workspace rebased the save on the current head, so the later save still wins and the head that it passed stays in history. The record carries no text and no path: the accepted revision of the same answer already names the path.
  */
 export type SupersededHead = {
@@ -2602,6 +2602,39 @@ export type WorkspaceFileSummary = {
 };
 
 /**
+ * The bytes of one part of a portable workspace zip archive.
+ */
+export type WorkspaceImportPart = Blob | File;
+
+/**
+ * One part of an import that the server stored.
+ */
+export type WorkspaceImportPartReceived = {
+    /**
+     * The place of the part in the archive, from 1.
+     */
+    partNumber: number;
+    /**
+     * The bytes of the part that the server stored.
+     */
+    size: number;
+};
+
+/**
+ * An import upload that waits for its parts.
+ */
+export type WorkspaceImportStarted = {
+    /**
+     * The identifier that each part and the completion name.
+     */
+    importId: Uuid;
+    /**
+     * The bytes of each part but the last. The last part holds the rest of the archive.
+     */
+    partBytes: number;
+};
+
+/**
  * Every workspace of the signed in account.
  */
 export type WorkspaceList = {
@@ -2965,6 +2998,16 @@ export type RevisionId = Uuid;
 export type ObjectId = Uuid;
 
 /**
+ * Identifier of the import upload that startWorkspaceImport answered.
+ */
+export type ImportId = Uuid;
+
+/**
+ * The place of the part in the archive, from 1. The server takes as many parts as one archive of the largest size needs, and refuses a higher number.
+ */
+export type PartNumber = number;
+
+/**
  * Position to continue a listing from. Use the nextCursor value of the previous page. The first page names no cursor.
  */
 export type PageCursor = Uuid;
@@ -3145,9 +3188,14 @@ export type Changeset = ChangesetInput;
 export type UploadAttachment = UploadAttachmentInput;
 
 /**
- * Multipart form upload that contains one portable zip archive.
+ * The size of the zip archive that the import sends in parts.
  */
-export type ImportWorkspace = ImportWorkspaceInput;
+export type StartWorkspaceImport = StartWorkspaceImportInput;
+
+/**
+ * The bytes of one part of a zip archive, with their stated length.
+ */
+export type WorkspaceImportPart2 = WorkspaceImportPart;
 
 /**
  * Payload to finalize an attachment and create an immutable revision.
@@ -6840,11 +6888,11 @@ export type RestoreRevisionResponses = {
 
 export type RestoreRevisionResponse = RestoreRevisionResponses[keyof RestoreRevisionResponses];
 
-export type ImportWorkspaceData = {
+export type StartWorkspaceImportData = {
     /**
-     * Multipart form upload that contains one portable zip archive.
+     * The size of the zip archive that the import sends in parts.
      */
-    body: ImportWorkspace;
+    body: StartWorkspaceImport;
     headers?: {
         /**
          * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
@@ -6858,10 +6906,10 @@ export type ImportWorkspaceData = {
         workspaceId: Uuid;
     };
     query?: never;
-    url: '/api/workspaces/{workspaceId}/import';
+    url: '/api/workspaces/{workspaceId}/imports';
 };
 
-export type ImportWorkspaceErrors = {
+export type StartWorkspaceImportErrors = {
     /**
      * The request did not match the contract.
      */
@@ -6879,9 +6927,73 @@ export type ImportWorkspaceErrors = {
      */
     404: ProblemDetails;
     /**
-     * The request body stopped arriving before the operation could read all of it, so the operation did nothing.
+     * The request body is larger than the configured limit. A save of a note adds document_too_large, which means that the update or the document it would produce passes a bound of the workspace. The work stays on the device, which offers recovery rather than sending the same bytes again.
      */
-    408: ProblemDetails;
+    413: ProblemDetails;
+    /**
+     * The request media type is not supported.
+     */
+    415: ProblemDetails;
+    /**
+     * Too many attempts were made in a short time.
+     */
+    429: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type StartWorkspaceImportError = StartWorkspaceImportErrors[keyof StartWorkspaceImportErrors];
+
+export type StartWorkspaceImportResponses = {
+    /**
+     * The import upload and the size of each of its parts.
+     */
+    201: WorkspaceImportStarted;
+};
+
+export type StartWorkspaceImportResponse = StartWorkspaceImportResponses[keyof StartWorkspaceImportResponses];
+
+export type CompleteWorkspaceImportData = {
+    body?: never;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path: {
+        /**
+         * Identifier of the workspace that the operation acts on.
+         */
+        workspaceId: Uuid;
+        /**
+         * Identifier of the import upload that startWorkspaceImport answered.
+         */
+        importId: Uuid;
+    };
+    query?: never;
+    url: '/api/workspaces/{workspaceId}/imports/{importId}/complete';
+};
+
+export type CompleteWorkspaceImportErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The requested resource does not exist.
+     */
+    404: ProblemDetails;
     /**
      * The change cannot be accepted next to the state that the workspace holds. The code names the reason: path_conflict for a path that another live file occupies, and mutation_reused for a mutation identity that was already used for another operation. A save of a note adds epoch_mismatch, which means that the note holds another generation of its document, so the device reads the current document before it saves again.
      */
@@ -6890,10 +7002,6 @@ export type ImportWorkspaceErrors = {
      * The request body is larger than the configured limit. A save of a note adds document_too_large, which means that the update or the document it would produce passes a bound of the workspace. The work stays on the device, which offers recovery rather than sending the same bytes again.
      */
     413: ProblemDetails;
-    /**
-     * The request media type is not supported.
-     */
-    415: ProblemDetails;
     /**
      * The request is well formed but its content cannot be accepted. The code names the reason: invalid_path, invalid_graph, invalid_content, or too_many_files. A save of a note adds document_malformed for bytes that are not an update, document_dependency_missing for work that names an insertion or a deletion the document lacks, and document_unsupported for work that writes anything other than the text of the note, and unrenderable_note for a note over a limit of the Markdown grammar, with the limit in noteRefusal. Each of them leaves the accepted state exactly as it was.
      */
@@ -6916,16 +7024,91 @@ export type ImportWorkspaceErrors = {
     507: ProblemDetails;
 };
 
-export type ImportWorkspaceError = ImportWorkspaceErrors[keyof ImportWorkspaceErrors];
+export type CompleteWorkspaceImportError = CompleteWorkspaceImportErrors[keyof CompleteWorkspaceImportErrors];
 
-export type ImportWorkspaceResponses = {
+export type CompleteWorkspaceImportResponses = {
     /**
      * Counts of the files read from one portable archive.
      */
     200: ImportWorkspaceResult;
 };
 
-export type ImportWorkspaceResponse = ImportWorkspaceResponses[keyof ImportWorkspaceResponses];
+export type CompleteWorkspaceImportResponse = CompleteWorkspaceImportResponses[keyof CompleteWorkspaceImportResponses];
+
+export type SendWorkspaceImportPartData = {
+    /**
+     * The bytes of one part of a zip archive, with their stated length.
+     */
+    body: WorkspaceImportPart2;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path: {
+        /**
+         * Identifier of the workspace that the operation acts on.
+         */
+        workspaceId: Uuid;
+        /**
+         * Identifier of the import upload that startWorkspaceImport answered.
+         */
+        importId: Uuid;
+        /**
+         * The place of the part in the archive, from 1. The server takes as many parts as one archive of the largest size needs, and refuses a higher number.
+         */
+        partNumber: number;
+    };
+    query?: never;
+    url: '/api/workspaces/{workspaceId}/imports/{importId}/parts/{partNumber}';
+};
+
+export type SendWorkspaceImportPartErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The requested resource does not exist.
+     */
+    404: ProblemDetails;
+    /**
+     * The request body stopped arriving before the operation could read all of it, so the operation did nothing.
+     */
+    408: ProblemDetails;
+    /**
+     * The request body is larger than the configured limit. A save of a note adds document_too_large, which means that the update or the document it would produce passes a bound of the workspace. The work stays on the device, which offers recovery rather than sending the same bytes again.
+     */
+    413: ProblemDetails;
+    /**
+     * The request media type is not supported.
+     */
+    415: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type SendWorkspaceImportPartError = SendWorkspaceImportPartErrors[keyof SendWorkspaceImportPartErrors];
+
+export type SendWorkspaceImportPartResponses = {
+    /**
+     * The part that the server stored.
+     */
+    200: WorkspaceImportPartReceived;
+};
+
+export type SendWorkspaceImportPartResponse = SendWorkspaceImportPartResponses[keyof SendWorkspaceImportPartResponses];
 
 export type GetMutationReceiptData = {
     body?: never;

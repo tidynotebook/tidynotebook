@@ -1,0 +1,6 @@
+description: The size of the zip archive that the import sends in parts.
+required: true
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/StartWorkspaceImportInput.yaml'

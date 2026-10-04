@@ -1,0 +1,8 @@
+name: importId
+in: path
+required: true
+style: simple
+explode: false
+description: Identifier of the import upload that startWorkspaceImport answered.
+schema:
+  $ref: '../schemas/Uuid.yaml'

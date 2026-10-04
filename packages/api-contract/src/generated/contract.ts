@@ -9,6 +9,7 @@ import type { SchemaObject } from 'ajv';
 export type OperationId =
   | 'acceptLegalDocuments'
   | 'commitChangeset'
+  | 'completeWorkspaceImport'
   | 'createFile'
   | 'createInvitation'
   | 'createOwner'
@@ -45,7 +46,6 @@ export type OperationId =
   | 'getSyncProtocol'
   | 'getTemplateSettings'
   | 'importTheme'
-  | 'importWorkspace'
   | 'inspectWorkspaceExport'
   | 'listAccounts'
   | 'listBacklinks'
@@ -78,10 +78,12 @@ export type OperationId =
   | 'revokeSession'
   | 'searchFiles'
   | 'sendTestMessage'
+  | 'sendWorkspaceImportPart'
   | 'signInWithPassword'
   | 'signOut'
   | 'signUpAccount'
   | 'startSnapshot'
+  | 'startWorkspaceImport'
   | 'takeDownReportedLink'
   | 'unlockPublishedLink'
   | 'updateAccount'
@@ -3193,6 +3195,212 @@ export const operations: readonly OperationEntry[] = [
       },
       {
         "status": 503,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      }
+    ],
+    "noContent": []
+  },
+  {
+    "id": "completeWorkspaceImport",
+    "method": "post",
+    "path": "/api/workspaces/{workspaceId}/imports/{importId}/complete",
+    "protocol": null,
+    "security": [
+      {
+        "sessionCookie": []
+      }
+    ],
+    "parameters": [
+      {
+        "name": "x-request-id",
+        "location": "header",
+        "required": false,
+        "style": "simple",
+        "explode": false
+      },
+      {
+        "name": "workspaceId",
+        "location": "path",
+        "required": true,
+        "style": "simple",
+        "explode": false
+      },
+      {
+        "name": "importId",
+        "location": "path",
+        "required": true,
+        "style": "simple",
+        "explode": false
+      }
+    ],
+    "request": {
+      "params": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "workspaceId": {
+            "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Uuid"
+          },
+          "importId": {
+            "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Uuid"
+          }
+        },
+        "required": [
+          "importId",
+          "workspaceId"
+        ],
+        "additionalProperties": false
+      },
+      "query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "headers": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Shared1"
+      },
+      "body": null,
+      "bodyMediaType": null
+    },
+    "responses": [
+      {
+        "status": 200,
+        "mediaType": "application/json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "description": "Counts of the files that one import wrote, and of the files of the archive that it left out: the settings of a tool, such as the .obsidian folder, and every file that is neither a note nor an image (record 0172).",
+          "additionalProperties": false,
+          "required": [
+            "notes",
+            "attachments",
+            "skipped"
+          ],
+          "properties": {
+            "notes": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "attachments": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "skipped": {
+              "type": "object",
+              "description": "The files of the archive that the import left out.",
+              "additionalProperties": false,
+              "required": [
+                "files",
+                "kinds"
+              ],
+              "properties": {
+                "files": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "kinds": {
+                  "type": "array",
+                  "description": "The kinds of the files left out, in name order: the file extension in lower case, `settings` for the settings of a tool, and `file` for a file with no extension.",
+                  "maxItems": 50,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "status": 400,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 401,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 403,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 404,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 409,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 413,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 422,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 429,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 500,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 503,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 507,
         "mediaType": "application/problem+json",
         "schema": {
           "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -8097,223 +8305,6 @@ export const operations: readonly OperationEntry[] = [
     "noContent": []
   },
   {
-    "id": "importWorkspace",
-    "method": "post",
-    "path": "/api/workspaces/{workspaceId}/import",
-    "protocol": null,
-    "security": [
-      {
-        "sessionCookie": []
-      }
-    ],
-    "parameters": [
-      {
-        "name": "x-request-id",
-        "location": "header",
-        "required": false,
-        "style": "simple",
-        "explode": false
-      },
-      {
-        "name": "workspaceId",
-        "location": "path",
-        "required": true,
-        "style": "simple",
-        "explode": false
-      }
-    ],
-    "request": {
-      "params": {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Shared12"
-      },
-      "query": {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "type": "object",
-        "properties": {},
-        "additionalProperties": false
-      },
-      "headers": {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Shared1"
-      },
-      "body": {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "type": "object",
-        "description": "Multipart form upload payload that contains one zip archive.",
-        "additionalProperties": false,
-        "required": [
-          "file"
-        ],
-        "properties": {
-          "file": {
-            "type": "string",
-            "format": "binary",
-            "description": "Portable workspace zip archive."
-          }
-        }
-      },
-      "bodyMediaType": "multipart/form-data"
-    },
-    "responses": [
-      {
-        "status": 200,
-        "mediaType": "application/json",
-        "schema": {
-          "$schema": "https://json-schema.org/draft/2020-12/schema",
-          "type": "object",
-          "description": "Counts of the files that one import wrote, and of the files of the archive that it left out: the settings of a tool, such as the .obsidian folder, and every file that is neither a note nor an image (record 0172).",
-          "additionalProperties": false,
-          "required": [
-            "notes",
-            "attachments",
-            "skipped"
-          ],
-          "properties": {
-            "notes": {
-              "type": "integer",
-              "minimum": 0
-            },
-            "attachments": {
-              "type": "integer",
-              "minimum": 0
-            },
-            "skipped": {
-              "type": "object",
-              "description": "The files of the archive that the import left out.",
-              "additionalProperties": false,
-              "required": [
-                "files",
-                "kinds"
-              ],
-              "properties": {
-                "files": {
-                  "type": "integer",
-                  "minimum": 0
-                },
-                "kinds": {
-                  "type": "array",
-                  "description": "The kinds of the files left out, in name order: the file extension in lower case, `settings` for the settings of a tool, and `file` for a file with no extension.",
-                  "maxItems": 50,
-                  "items": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 40
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      {
-        "status": 400,
-        "mediaType": "application/problem+json",
-        "schema": {
-          "$schema": "https://json-schema.org/draft/2020-12/schema",
-          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
-        }
-      },
-      {
-        "status": 401,
-        "mediaType": "application/problem+json",
-        "schema": {
-          "$schema": "https://json-schema.org/draft/2020-12/schema",
-          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
-        }
-      },
-      {
-        "status": 403,
-        "mediaType": "application/problem+json",
-        "schema": {
-          "$schema": "https://json-schema.org/draft/2020-12/schema",
-          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
-        }
-      },
-      {
-        "status": 404,
-        "mediaType": "application/problem+json",
-        "schema": {
-          "$schema": "https://json-schema.org/draft/2020-12/schema",
-          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
-        }
-      },
-      {
-        "status": 408,
-        "mediaType": "application/problem+json",
-        "schema": {
-          "$schema": "https://json-schema.org/draft/2020-12/schema",
-          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
-        }
-      },
-      {
-        "status": 409,
-        "mediaType": "application/problem+json",
-        "schema": {
-          "$schema": "https://json-schema.org/draft/2020-12/schema",
-          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
-        }
-      },
-      {
-        "status": 413,
-        "mediaType": "application/problem+json",
-        "schema": {
-          "$schema": "https://json-schema.org/draft/2020-12/schema",
-          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
-        }
-      },
-      {
-        "status": 415,
-        "mediaType": "application/problem+json",
-        "schema": {
-          "$schema": "https://json-schema.org/draft/2020-12/schema",
-          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
-        }
-      },
-      {
-        "status": 422,
-        "mediaType": "application/problem+json",
-        "schema": {
-          "$schema": "https://json-schema.org/draft/2020-12/schema",
-          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
-        }
-      },
-      {
-        "status": 429,
-        "mediaType": "application/problem+json",
-        "schema": {
-          "$schema": "https://json-schema.org/draft/2020-12/schema",
-          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
-        }
-      },
-      {
-        "status": 500,
-        "mediaType": "application/problem+json",
-        "schema": {
-          "$schema": "https://json-schema.org/draft/2020-12/schema",
-          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
-        }
-      },
-      {
-        "status": 503,
-        "mediaType": "application/problem+json",
-        "schema": {
-          "$schema": "https://json-schema.org/draft/2020-12/schema",
-          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
-        }
-      },
-      {
-        "status": 507,
-        "mediaType": "application/problem+json",
-        "schema": {
-          "$schema": "https://json-schema.org/draft/2020-12/schema",
-          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
-        }
-      }
-    ],
-    "noContent": []
-  },
-  {
     "id": "inspectWorkspaceExport",
     "method": "head",
     "path": "/api/workspaces/{workspaceId}/export",
@@ -12591,6 +12582,182 @@ export const operations: readonly OperationEntry[] = [
     "noContent": []
   },
   {
+    "id": "sendWorkspaceImportPart",
+    "method": "put",
+    "path": "/api/workspaces/{workspaceId}/imports/{importId}/parts/{partNumber}",
+    "protocol": null,
+    "security": [
+      {
+        "sessionCookie": []
+      }
+    ],
+    "parameters": [
+      {
+        "name": "x-request-id",
+        "location": "header",
+        "required": false,
+        "style": "simple",
+        "explode": false
+      },
+      {
+        "name": "workspaceId",
+        "location": "path",
+        "required": true,
+        "style": "simple",
+        "explode": false
+      },
+      {
+        "name": "importId",
+        "location": "path",
+        "required": true,
+        "style": "simple",
+        "explode": false
+      },
+      {
+        "name": "partNumber",
+        "location": "path",
+        "required": true,
+        "style": "simple",
+        "explode": false
+      }
+    ],
+    "request": {
+      "params": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "workspaceId": {
+            "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Uuid"
+          },
+          "importId": {
+            "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Uuid"
+          },
+          "partNumber": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000
+          }
+        },
+        "required": [
+          "importId",
+          "partNumber",
+          "workspaceId"
+        ],
+        "additionalProperties": false
+      },
+      "query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "headers": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Shared1"
+      },
+      "body": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "string",
+        "format": "binary",
+        "description": "The bytes of one part of a portable workspace zip archive."
+      },
+      "bodyMediaType": "application/octet-stream"
+    },
+    "responses": [
+      {
+        "status": 200,
+        "mediaType": "application/json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "description": "One part of an import that the server stored.",
+          "additionalProperties": false,
+          "required": [
+            "partNumber",
+            "size"
+          ],
+          "properties": {
+            "partNumber": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "The place of the part in the archive, from 1."
+            },
+            "size": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "The bytes of the part that the server stored."
+            }
+          }
+        }
+      },
+      {
+        "status": 400,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 401,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 403,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 404,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 408,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 413,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 415,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 500,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      }
+    ],
+    "noContent": []
+  },
+  {
     "id": "signInWithPassword",
     "method": "post",
     "path": "/api/auth/sign-in/email",
@@ -13242,6 +13409,163 @@ export const operations: readonly OperationEntry[] = [
       },
       {
         "status": 503,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      }
+    ],
+    "noContent": []
+  },
+  {
+    "id": "startWorkspaceImport",
+    "method": "post",
+    "path": "/api/workspaces/{workspaceId}/imports",
+    "protocol": null,
+    "security": [
+      {
+        "sessionCookie": []
+      }
+    ],
+    "parameters": [
+      {
+        "name": "x-request-id",
+        "location": "header",
+        "required": false,
+        "style": "simple",
+        "explode": false
+      },
+      {
+        "name": "workspaceId",
+        "location": "path",
+        "required": true,
+        "style": "simple",
+        "explode": false
+      }
+    ],
+    "request": {
+      "params": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Shared12"
+      },
+      "query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "headers": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Shared1"
+      },
+      "body": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "description": "The size of the zip archive that one import sends.",
+        "additionalProperties": false,
+        "required": [
+          "size"
+        ],
+        "properties": {
+          "size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991,
+            "description": "The bytes of the whole archive. An archive above the bound of one import answers payload_too_large before a part is sent."
+          }
+        }
+      },
+      "bodyMediaType": "application/json"
+    },
+    "responses": [
+      {
+        "status": 201,
+        "mediaType": "application/json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "description": "An import upload that waits for its parts.",
+          "additionalProperties": false,
+          "required": [
+            "importId",
+            "partBytes"
+          ],
+          "properties": {
+            "importId": {
+              "allOf": [
+                {
+                  "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Uuid"
+                }
+              ],
+              "description": "The identifier that each part and the completion name."
+            },
+            "partBytes": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "The bytes of each part but the last. The last part holds the rest of the archive."
+            }
+          }
+        }
+      },
+      {
+        "status": 400,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 401,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 403,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 404,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 413,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 415,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 429,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 500,
         "mediaType": "application/problem+json",
         "schema": {
           "$schema": "https://json-schema.org/draft/2020-12/schema",

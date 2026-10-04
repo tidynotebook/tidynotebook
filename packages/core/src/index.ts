@@ -179,6 +179,17 @@ export {
   maxArchiveNameBytes,
 } from './files/archive.ts';
 export {
+  importPartAllowed,
+  importPartBytes,
+  importPartRanges,
+  importPartsBytes,
+  importPartsProblem,
+  maxImportParts,
+  type ImportPart,
+  type ImportPartRange,
+  type ImportPartsProblem,
+} from './files/import-parts.ts';
+export {
   emptySubscription,
   noticeBatch,
   replaceSubscription,

@@ -1,0 +1,12 @@
+name: partNumber
+in: path
+required: true
+style: simple
+explode: false
+description: >-
+  The place of the part in the archive, from 1. The server takes as many parts
+  as one archive of the largest size needs, and refuses a higher number.
+schema:
+  type: integer
+  minimum: 1
+  maximum: 10000

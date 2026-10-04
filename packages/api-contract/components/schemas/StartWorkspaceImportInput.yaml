@@ -1,0 +1,13 @@
+type: object
+description: The size of the zip archive that one import sends.
+additionalProperties: false
+required:
+  - size
+properties:
+  size:
+    type: integer
+    minimum: 1
+    maximum: 9007199254740991
+    description: >-
+      The bytes of the whole archive. An archive above the bound of one
+      import answers payload_too_large before a part is sent.

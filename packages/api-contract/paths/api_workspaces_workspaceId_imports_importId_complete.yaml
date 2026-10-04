@@ -1,0 +1,53 @@
+post:
+  operationId: completeWorkspaceImport
+  summary: Complete an import and read its zip archive into the workspace.
+  description: >-
+    Joins the parts of an import into one archive and imports it (record
+    0192). Parts that do not make one archive answer archive_invalid. The
+    import reads Markdown files and image files at their archive paths. An
+    image outside the attachments folder moves into it, and a wiki link
+    whose target is in the archive becomes a standard link (record 0172).
+    The settings of a tool and every other kind of file are left out, and
+    the answer counts them. Every imported path must be free in the
+    workspace. The operation takes every archive that exportWorkspace
+    answers: up to 65534 files and 4 GiB without ZIP64. A refused archive
+    answers archive_invalid, archive_too_many_files or archive_too_large.
+    Record 0170 bounds the work: one import or export of an account runs
+    at once (429 archive_job_running) and a few of the installation (503
+    archive_jobs_busy, with Retry-After), and an archive that the storage
+    cannot hold answers 507 storage_full. After such a refusal the parts
+    stay, so the client completes the import again later. Every file is
+    checked before the first commit, so only a failure of the service
+    stops an import after it (503 import_incomplete, which states how many
+    files came in). The upload is removed when the import ends.
+  tags:
+    - files
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+    - $ref: '../components/parameters/WorkspaceId.yaml'
+    - $ref: '../components/parameters/ImportId.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/WorkspaceImported.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../components/responses/Conflict.yaml'
+    '413':
+      $ref: '../components/responses/PayloadTooLarge.yaml'
+    '422':
+      $ref: '../components/responses/UnprocessableContent.yaml'
+    '429':
+      $ref: '../components/responses/RateLimited.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'
+    '503':
+      $ref: '../components/responses/ServiceBusy.yaml'
+    '507':
+      $ref: '../components/responses/InsufficientStorage.yaml'

@@ -1,0 +1,5 @@
+description: The part that the server stored.
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/WorkspaceImportPartReceived.yaml'

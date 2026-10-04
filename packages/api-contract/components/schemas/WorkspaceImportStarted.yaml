@@ -1,0 +1,17 @@
+type: object
+description: An import upload that waits for its parts.
+additionalProperties: false
+required:
+  - importId
+  - partBytes
+properties:
+  importId:
+    allOf:
+      - $ref: './Uuid.yaml'
+    description: The identifier that each part and the completion name.
+  partBytes:
+    type: integer
+    minimum: 1
+    description: >-
+      The bytes of each part but the last. The last part holds the rest of
+      the archive.

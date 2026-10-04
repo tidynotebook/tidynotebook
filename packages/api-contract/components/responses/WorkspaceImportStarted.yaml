@@ -1,0 +1,5 @@
+description: The import upload and the size of each of its parts.
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/WorkspaceImportStarted.yaml'
