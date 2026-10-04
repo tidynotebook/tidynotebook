@@ -162,6 +162,8 @@ paths:
     $ref: './paths/api_workspaces_workspaceId_export.yaml'
   /api/workspaces/{workspaceId}/imports:
     $ref: './paths/api_workspaces_workspaceId_imports.yaml'
+  /api/workspaces/{workspaceId}/imports/{importId}:
+    $ref: './paths/api_workspaces_workspaceId_imports_importId.yaml'
   /api/workspaces/{workspaceId}/imports/{importId}/parts/{partNumber}:
     $ref: './paths/api_workspaces_workspaceId_imports_importId_parts_partNumber.yaml'
   /api/workspaces/{workspaceId}/imports/{importId}/complete:

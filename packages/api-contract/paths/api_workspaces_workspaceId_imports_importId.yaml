@@ -1,0 +1,27 @@
+delete:
+  operationId: abortWorkspaceImport
+  summary: Remove an import upload and every part that it holds.
+  description: >-
+    Removes one import that startWorkspaceImport started, with its parts and
+    with the archive of a completion that a refusal stopped (record 0192). A
+    client calls it when a part or the completion fails, so the parts do not
+    hold the storage of the server for a day. An import that is not there,
+    or that another account started, answers removed as well, so a second
+    call changes nothing.
+  tags:
+    - files
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+    - $ref: '../components/parameters/WorkspaceId.yaml'
+    - $ref: '../components/parameters/ImportId.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/Removed.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../components/responses/Forbidden.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

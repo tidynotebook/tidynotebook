@@ -6942,6 +6942,10 @@ export type StartWorkspaceImportErrors = {
      * The service failed to complete the request.
      */
     500: ProblemDetails;
+    /**
+     * The storage of the server has no room for this request body now.
+     */
+    507: ProblemDetails;
 };
 
 export type StartWorkspaceImportError = StartWorkspaceImportErrors[keyof StartWorkspaceImportErrors];
@@ -6954,6 +6958,58 @@ export type StartWorkspaceImportResponses = {
 };
 
 export type StartWorkspaceImportResponse = StartWorkspaceImportResponses[keyof StartWorkspaceImportResponses];
+
+export type AbortWorkspaceImportData = {
+    body?: never;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path: {
+        /**
+         * Identifier of the workspace that the operation acts on.
+         */
+        workspaceId: Uuid;
+        /**
+         * Identifier of the import upload that startWorkspaceImport answered.
+         */
+        importId: Uuid;
+    };
+    query?: never;
+    url: '/api/workspaces/{workspaceId}/imports/{importId}';
+};
+
+export type AbortWorkspaceImportErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type AbortWorkspaceImportError = AbortWorkspaceImportErrors[keyof AbortWorkspaceImportErrors];
+
+export type AbortWorkspaceImportResponses = {
+    /**
+     * The named record no longer exists.
+     */
+    200: Removed;
+};
+
+export type AbortWorkspaceImportResponse = AbortWorkspaceImportResponses[keyof AbortWorkspaceImportResponses];
 
 export type CompleteWorkspaceImportData = {
     body?: never;
@@ -7097,6 +7153,10 @@ export type SendWorkspaceImportPartErrors = {
      * The service failed to complete the request.
      */
     500: ProblemDetails;
+    /**
+     * The storage of the server has no room for this request body now.
+     */
+    507: ProblemDetails;
 };
 
 export type SendWorkspaceImportPartError = SendWorkspaceImportPartErrors[keyof SendWorkspaceImportPartErrors];

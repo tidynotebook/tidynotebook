@@ -9,7 +9,9 @@ put:
     earlier one. The gap between two chunks of the body is bounded, so a
     sender that stops in the middle is answered and the part is not
     stored. An import that does not exist, or that another account
-    started, answers not_found.
+    started, answers not_found. When the server keeps the parts on its own
+    disk, a part that its free space cannot hold answers 507 storage_full
+    before a byte of it is read.
   tags:
     - files
   parameters:
@@ -38,3 +40,5 @@ put:
       $ref: '../components/responses/UnsupportedMediaType.yaml'
     '500':
       $ref: '../components/responses/ServerError.yaml'
+    '507':
+      $ref: '../components/responses/InsufficientStorage.yaml'
