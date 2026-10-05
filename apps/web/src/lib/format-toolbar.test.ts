@@ -20,7 +20,6 @@ import {
   keySignsText,
   pressKeepsTextFocus,
   slashMenuCommands,
-  stripOverflow,
   tableActions,
   toolApplies,
   toolbarFocusTarget,
@@ -270,43 +269,21 @@ await test('key caps join as the keyboard of the device writes them', () => {
   assert.equal(keySignsText(['Ctrl', 'B'], false), 'Ctrl + B');
 });
 
-await test('the ends of a row that scrolls state where tools hide', () => {
+await test('the row offers no control that scrolls it', async () => {
+  // An arrow at each end of the row stood beside the tools on a phone. A
+  // person swipes the row, so the row holds its tools and nothing else.
+  const toolbar = await import('./format-toolbar.ts');
   assert.deepEqual(
-    stripOverflow({ scrollLeft: 0, scrollWidth: 660, clientWidth: 360 }),
-    { start: false, end: true },
-  );
-  assert.deepEqual(
-    stripOverflow({ scrollLeft: 150, scrollWidth: 660, clientWidth: 360 }),
-    { start: true, end: true },
-  );
-  assert.deepEqual(
-    stripOverflow({ scrollLeft: 300, scrollWidth: 660, clientWidth: 360 }),
-    { start: true, end: false },
-  );
-  // A row that fits, as on a desktop, hides nothing.
-  assert.deepEqual(
-    stripOverflow({ scrollLeft: 0, scrollWidth: 640, clientWidth: 640 }),
-    { start: false, end: false },
-  );
-  assert.deepEqual(
-    stripOverflow({ scrollLeft: 0, scrollWidth: 641, clientWidth: 640 }),
-    { start: false, end: false },
+    Object.keys(toolbar).filter((name) => /scroll|overflow/i.test(name)),
+    [],
   );
 });
 
 await test('a press on a phone keeps the focus and the keyboard in the text', () => {
-  // Review of issue 261: a tap on a tool or on a scroll arrow gave it the
-  // focus, so the keyboard of a phone closed and opened again.
-  for (const pointerType of ['mouse', 'touch', 'pen'])
-    for (const composing of [false, true])
-      assert.equal(
-        pressKeepsTextFocus({ control: 'scroll', pointerType, composing }),
-        true,
-        `${pointerType} on an arrow`,
-      );
+  // Review of issue 261: a tap on a tool gave it the focus, so the keyboard
+  // of a phone closed and opened again.
   assert.equal(
     pressKeepsTextFocus({
-      control: 'tool',
       pointerType: 'touch',
       composing: false,
     }),
@@ -314,7 +291,6 @@ await test('a press on a phone keeps the focus and the keyboard in the text', ()
   );
   assert.equal(
     pressKeepsTextFocus({
-      control: 'tool',
       pointerType: 'pen',
       composing: false,
     }),
@@ -324,7 +300,6 @@ await test('a press on a phone keeps the focus and the keyboard in the text', ()
   // composes, because the focus ends the composition before the action.
   assert.equal(
     pressKeepsTextFocus({
-      control: 'tool',
       pointerType: 'mouse',
       composing: false,
     }),
@@ -332,7 +307,6 @@ await test('a press on a phone keeps the focus and the keyboard in the text', ()
   );
   assert.equal(
     pressKeepsTextFocus({
-      control: 'tool',
       pointerType: 'touch',
       composing: true,
     }),

@@ -13,8 +13,9 @@
  * Tab leave the row from the tool a person is on. When the focus leaves, the
  * stop goes back to the first tool that applies. Every tool is a button of
  * the row, and a row wider than the screen scrolls sideways, so no menu covers
- * the text. An arrow at an end that hides tools states them and scrolls the
- * row (issue 261). The row stands above the text at every width.
+ * the text. The row shows no arrow at an end, because a person swipes a row of
+ * tools, and an arrow takes room from the tools. The row stands above the
+ * text at every width.
  *
  * Where the caret stands decides which tools apply. In a table a block tool
  * is disabled, because a table line is a row. A table carries its own
@@ -23,8 +24,7 @@
  * A press of a mouse gives a tool the focus. That ends an IME composition in
  * the editor before the action runs, and the action then gives the focus back
  * to the editor. A finger on a phone keeps the focus in the text, so the
- * keyboard stays open, and a control that scrolls the row never takes the
- * focus (`pressKeepsTextFocus`).
+ * keyboard stays open (`pressKeepsTextFocus`).
  */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
@@ -32,15 +32,10 @@ import {
   type FormatActionId,
   type FormatContext,
 } from '@notesapp/editor';
-import { Button, ChevronLeftIcon, ChevronRightIcon } from '@notesapp/ui';
+import { Button } from '@notesapp/ui';
 import {
-  formatToolbarBandClassName,
   formatToolbarClassName,
   formatToolbarColumnClassName,
-  formatToolbarRowSlotClassName,
-  formatToolbarScrollWords,
-  stripOverflow,
-  type StripOverflow,
   type ToolbarPress,
   formatToolbarFrameClassName,
   formatToolbarLabel,
@@ -105,46 +100,6 @@ export function FormatToolbar({
       (tool) => !tool.disabled,
     );
 
-  // A row wider than the screen hides tools at an end, so a control at that
-  // end states it and scrolls the row (issue 261).
-  const [overflow, setOverflow] = useState<StripOverflow>({
-    start: false,
-    end: false,
-  });
-  useEffect(() => {
-    const row = rowRef.current;
-    if (row === null) return;
-    const measure = (): void => {
-      const next = stripOverflow(row);
-      setOverflow((current) =>
-        current.start === next.start && current.end === next.end
-          ? current
-          : next,
-      );
-    };
-    measure();
-    row.addEventListener('scroll', measure, { passive: true });
-    const resize = new ResizeObserver(measure);
-    resize.observe(row);
-    return () => {
-      row.removeEventListener('scroll', measure);
-      resize.disconnect();
-    };
-  }, []);
-
-  /** Scrolls the row by most of its width, toward one end. */
-  const scrollRow = (direction: 1 | -1): void => {
-    const row = rowRef.current;
-    if (row === null) return;
-    const reduced = window.matchMedia(
-      '(prefers-reduced-motion: reduce)',
-    ).matches;
-    row.scrollBy({
-      left: direction * row.clientWidth * 0.8,
-      behavior: reduced ? 'auto' : 'smooth',
-    });
-  };
-
   // Whether the note text holds an IME composition, which a press reads.
   const composing = useRef(false);
   useEffect(() => {
@@ -166,115 +121,82 @@ export function FormatToolbar({
   return (
     <div className={formatToolbarFrameClassName()}>
       <div
-        className={`${formatToolbarColumnClassName()} ${formatToolbarBandClassName()}`}
+        className={formatToolbarColumnClassName()}
         onPointerDown={(event): void => {
           const target = event.target;
           const control =
             target instanceof Element ? target.closest('button') : null;
           if (control === null) return;
           const press: ToolbarPress = {
-            control:
-              rowRef.current?.contains(control) === true ? 'tool' : 'scroll',
             pointerType: event.pointerType,
             composing: composing.current,
           };
           if (pressKeepsTextFocus(press)) event.preventDefault();
         }}
       >
-        {overflow.start ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            compact
-            label={formatToolbarScrollWords.start}
-            icon={<ChevronLeftIcon />}
-            tabIndex={-1}
-            onClick={() => {
-              scrollRow(-1);
-            }}
-          />
-        ) : null}
-        <div className={formatToolbarRowSlotClassName()}>
-          <div
-            ref={rowRef}
-            role="toolbar"
-            aria-label={formatToolbarLabel}
-            aria-orientation="horizontal"
-            className={formatToolbarClassName()}
-            onFocus={(event): void => {
-              // React types the target of a focus event as the row itself, but
-              // a focus event bubbles up from the tool that took the focus.
-              const focused: EventTarget = event.target;
-              const all = Array.from(
-                rowRef.current?.querySelectorAll('button') ?? [],
-              );
-              const at = all.findIndex((tool) => tool === focused);
-              if (at !== -1) setStop(at);
-            }}
-            onBlur={(event): void => {
-              const next = event.relatedTarget;
-              if (
-                next instanceof Node &&
-                rowRef.current?.contains(next) === true
-              )
-                return;
-              setStop(firstEnabled);
-            }}
-            onKeyDown={(event): void => {
-              const all = tools();
-              const at = all.findIndex((tool) => tool === event.target);
-              if (at === -1) return;
-              const target = toolbarFocusTarget(event.key, at, all.length);
-              if (target === null) return;
-              event.preventDefault();
-              // A browser scrolls a tool that takes the focus only when the tool
-              // is out of view, and a tool at the edge of a phone is half in
-              // view, so the row brings the whole tool into view itself.
-              const next = all[target];
-              next?.focus();
-              next?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-            }}
-          >
-            {groups.map((group) => (
-              <div
-                key={group.map((tool) => tool.id).join(' ')}
-                className={formatToolGroupClassName()}
-              >
-                {group.map((tool) => {
-                  const at = place;
-                  place += 1;
-                  return (
-                    <Button
-                      key={tool.id}
-                      variant="ghost"
-                      size="sm"
-                      compact
-                      label={formatActionOf(tool.id).label}
-                      title={titleOf(tool.id)}
-                      icon={actionIcon(tool.icon)}
-                      tabIndex={at === tabStop ? 0 : -1}
-                      disabled={enabled[at] !== true}
-                      onClick={() => onFormat(tool.id)}
-                    />
-                  );
-                })}
-              </div>
-            ))}
-          </div>
+        <div
+          ref={rowRef}
+          role="toolbar"
+          aria-label={formatToolbarLabel}
+          aria-orientation="horizontal"
+          className={formatToolbarClassName()}
+          onFocus={(event): void => {
+            // React types the target of a focus event as the row itself, but
+            // a focus event bubbles up from the tool that took the focus.
+            const focused: EventTarget = event.target;
+            const all = Array.from(
+              rowRef.current?.querySelectorAll('button') ?? [],
+            );
+            const at = all.findIndex((tool) => tool === focused);
+            if (at !== -1) setStop(at);
+          }}
+          onBlur={(event): void => {
+            const next = event.relatedTarget;
+            if (next instanceof Node && rowRef.current?.contains(next) === true)
+              return;
+            setStop(firstEnabled);
+          }}
+          onKeyDown={(event): void => {
+            const all = tools();
+            const at = all.findIndex((tool) => tool === event.target);
+            if (at === -1) return;
+            const target = toolbarFocusTarget(event.key, at, all.length);
+            if (target === null) return;
+            event.preventDefault();
+            // A browser scrolls a tool that takes the focus only when the tool
+            // is out of view, and a tool at the edge of a phone is half in
+            // view, so the row brings the whole tool into view itself.
+            const next = all[target];
+            next?.focus();
+            next?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+          }}
+        >
+          {groups.map((group) => (
+            <div
+              key={group.map((tool) => tool.id).join(' ')}
+              className={formatToolGroupClassName()}
+            >
+              {group.map((tool) => {
+                const at = place;
+                place += 1;
+                return (
+                  <Button
+                    key={tool.id}
+                    variant="ghost"
+                    size="sm"
+                    compact
+                    label={formatActionOf(tool.id).label}
+                    title={titleOf(tool.id)}
+                    icon={actionIcon(tool.icon)}
+                    tabIndex={at === tabStop ? 0 : -1}
+                    disabled={enabled[at] !== true}
+                    onClick={() => onFormat(tool.id)}
+                  />
+                );
+              })}
+            </div>
+          ))}
         </div>
-        {overflow.end ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            compact
-            label={formatToolbarScrollWords.end}
-            icon={<ChevronRightIcon />}
-            tabIndex={-1}
-            onClick={() => {
-              scrollRow(1);
-            }}
-          />
-        ) : null}
       </div>
     </div>
   );
