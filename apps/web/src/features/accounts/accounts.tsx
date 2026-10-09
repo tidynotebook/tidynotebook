@@ -48,7 +48,11 @@ import { problemMessage, useLocalStore, useSession } from '../../app.tsx';
 import { problemCode, problemStatus } from '../../lib/problem-text.ts';
 import { forgotPasswordRoute, signUpRoute } from '../../lib/accounts.ts';
 import { consentTo, waitsForConsent } from '../../lib/legal.ts';
-import { isLocked, lockedSentences } from '../../lib/locked.ts';
+import {
+  isLocked,
+  lockedSentences,
+  signedInSentence,
+} from '../../lib/locked.ts';
 import { portalHome } from '../../lib/portal.ts';
 import { returnOf } from '../../lib/sign-in-return.ts';
 import { useOpenPortal } from './open-portal.ts';
@@ -103,11 +107,50 @@ async function exportOwnedWorkspaces(): Promise<void> {
 }
 
 /**
+ * The account that is signed in, and Sign out, under the card of a screen
+ * that keeps a person out of the notes.
+ *
+ * Sign out leaves the screen and changes nothing of the account, so it sits
+ * outside the card with the other ways out, and the card keeps the choices
+ * about the account. `signedInSentence` decides the words.
+ */
+function SignedInFooter({
+  email,
+  disabled,
+  onSignOut,
+}: {
+  readonly email: string | null | undefined;
+  readonly disabled: boolean;
+  readonly onSignOut: () => void;
+}): ReactNode {
+  const sentence = signedInSentence(email);
+  return (
+    <div className="flex items-center justify-between gap-cluster">
+      <p
+        className="m-0 min-w-0 truncate text-control text-muted"
+        title={sentence}
+      >
+        {sentence}
+      </p>
+      <Button
+        variant="secondary"
+        size="sm"
+        icon={<SignOutIcon />}
+        disabled={disabled}
+        onClick={onSignOut}
+      >
+        Sign out
+      </Button>
+    </div>
+  );
+}
+
+/**
  * The one screen of a locked account (record 0201).
  *
  * When the installation names an account portal, the one filled action opens
  * it, and the portal unlocks the account. The person can also export the
- * notes, remove the account, or sign out. The stream of the account says
+ * notes, delete the account, or sign out. The stream of the account says
  * when it changes, and the screen reads it again then and when the person
  * comes back to the tab, so an unlock opens the application with no reload.
  */
@@ -157,7 +200,16 @@ function LockedPage(): ReactNode {
   };
 
   return (
-    <AuthFrame title="Your account is locked">
+    <AuthFrame
+      title="Your account is locked"
+      footer={
+        <SignedInFooter
+          email={account.email}
+          disabled={busy}
+          onSignOut={session.signOut}
+        />
+      }
+    >
       {lockedSentences(account, now).map((sentence) => (
         <p key={sentence} className="mb-3 mt-0 text-control text-muted">
           {sentence}
@@ -179,7 +231,7 @@ function LockedPage(): ReactNode {
         </Button>
       ) : null}
       <p className="mb-2 mt-5 text-control text-muted">
-        You can export your notes or remove your account.
+        You can export your notes or delete your account.
       </p>
       <div className="flex flex-wrap gap-cluster">
         <Button
@@ -201,17 +253,7 @@ function LockedPage(): ReactNode {
             setRemoving(true);
           }}
         >
-          Remove my account
-        </Button>
-        <Button
-          variant="ghost"
-          icon={<SignOutIcon />}
-          disabled={busy}
-          onClick={() => {
-            session.signOut();
-          }}
-        >
-          Sign out
+          Delete my account
         </Button>
       </div>
       {removing ? (
@@ -241,7 +283,7 @@ type DocumentsState =
  * of the terms or of the privacy notice (record 0120).
  *
  * The one filled action accepts. A person who does not accept can export
- * their notes, remove their account, or sign out, and the application stays
+ * their notes, delete their account, or sign out, and the application stays
  * closed until they accept.
  */
 function ConsentPage(): ReactNode {
@@ -301,7 +343,16 @@ function ConsentPage(): ReactNode {
   };
 
   return (
-    <AuthFrame title="Accept the terms">
+    <AuthFrame
+      title="Accept the terms"
+      footer={
+        <SignedInFooter
+          email={account.email}
+          disabled={busy}
+          onSignOut={session.signOut}
+        />
+      }
+    >
       {state.kind === 'loading' ? (
         <LoadingState label="The terms are loading." />
       ) : state.kind === 'failed' ? (
@@ -337,7 +388,7 @@ function ConsentPage(): ReactNode {
             {busy ? 'Saving your answer' : 'Accept and continue'}
           </Button>
           <p className="mb-2 mt-5 text-control text-muted">
-            If you do not accept them, you can export your notes and remove your
+            If you do not accept them, you can export your notes and delete your
             account.
           </p>
           <div className="flex flex-wrap gap-cluster">
@@ -360,17 +411,7 @@ function ConsentPage(): ReactNode {
                 setRemoving(true);
               }}
             >
-              Remove my account
-            </Button>
-            <Button
-              variant="ghost"
-              icon={<SignOutIcon />}
-              disabled={busy}
-              onClick={() => {
-                session.signOut();
-              }}
-            >
-              Sign out
+              Delete my account
             </Button>
           </div>
         </>

@@ -138,9 +138,9 @@ have not reached the server yet, the section says so, and you choose:
   sign-in.
 - **Sign out and remove them** removes them from this device for good.
 
-## Remove account
+## Delete account
 
-**Remove my account** removes your account and every note in your workspaces
+**Delete my account** deletes your account and every note in your workspaces
 for good, and signs you out on every device. Enter your password to confirm.
 Export your notes first if you want to keep them. The last administrator of an
 installation first makes another account an administrator.

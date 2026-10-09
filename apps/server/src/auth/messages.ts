@@ -186,9 +186,9 @@ export function removalNoticeMessage(input: {
   const when = lifetimeWords(input.days * 24);
   return {
     to: input.to,
-    subject: `Your account on ${name} is removed in ${when}`,
+    subject: `Your account on ${name} is deleted in ${when}`,
     text: body([
-      `Your account on ${name} is locked. In ${when}, the account and every note in it are removed for good.`,
+      `Your account on ${name} is locked. In ${when}, the account and every note in it are deleted for good.`,
       input.portal
         ? `To keep the account, sign in on this page and open billing:\n${input.origin}/login`
         : `To keep the account, ask the administrator of ${name} to unlock it. You can sign in on this page:\n${input.origin}/login`,

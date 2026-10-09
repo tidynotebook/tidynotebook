@@ -69,7 +69,7 @@ links the terms and the privacy notice of the installation.
 
 ## Leave the installation
 
-To remove your account, open **Settings** and select **Remove my account**.
+To delete your account, open **Settings** and select **Delete my account**.
 Enter your password to confirm. Your account and every note in your workspaces
 go for good. Export your notes first if you want to keep them. See
 [Export](export.md).

@@ -872,7 +872,7 @@ export function AccountSettingsPage(): ReactNode {
     'remove-account': (
       <SettingsSection
         section={settingsSection('remove-account')}
-        description="This removes your account and every note in your workspaces for good. Export your notes first if you want to keep them."
+        description="This deletes your account and every note in your workspaces for good. Export your notes first if you want to keep them."
       >
         <Button
           variant="secondary"
@@ -882,7 +882,7 @@ export function AccountSettingsPage(): ReactNode {
             setRemoving(true);
           }}
         >
-          Remove my account
+          Delete my account
         </Button>
       </SettingsSection>
     ),

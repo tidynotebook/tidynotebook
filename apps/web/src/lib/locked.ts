@@ -47,9 +47,20 @@ export function lockedSentences(
       : daysUntil(account.controls.removalAt, now);
   if (removal !== null)
     sentences.push(
-      `If the account stays locked, it and its notes are removed ${removal}.`,
+      `If the account stays locked, it and its notes are deleted ${removal}.`,
     );
   return sentences;
+}
+
+/**
+ * The line under the card of a screen that keeps a person out of the notes,
+ * the locked screen and the consent step. It names the account that is signed
+ * in, so the person knows which account Sign out leaves. An account with no
+ * address still reads one whole sentence.
+ */
+export function signedInSentence(email: string | null | undefined): string {
+  const address = email?.trim() ?? '';
+  return address === '' ? 'You are signed in.' : `Signed in as ${address}`;
 }
 
 /**

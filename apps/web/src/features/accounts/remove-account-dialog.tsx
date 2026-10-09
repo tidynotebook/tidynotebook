@@ -67,7 +67,7 @@ export function RemoveOwnAccountDialog({
   return (
     <Dialog
       open
-      title="Remove your account?"
+      title="Delete your account?"
       titleId="remove-own-account-title"
       width="small"
       onClose={onClose}
@@ -104,7 +104,7 @@ export function RemoveOwnAccountDialog({
             variant="danger"
             disabled={busy || password === ''}
           >
-            {busy ? 'Removing your account' : 'Remove account'}
+            {busy ? 'Deleting your account' : 'Delete account'}
           </Button>
         </DialogFooter>
       </form>

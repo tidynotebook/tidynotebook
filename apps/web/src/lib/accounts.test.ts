@@ -169,6 +169,8 @@ await test('the last enabled administrator offers no change that would lose it',
   ]);
   for (const action of accountActions(account(), 1))
     assert.match(accountActionLabel(action), /^[A-Z][a-z ]+$/);
+  // One term for one thing: an account that goes for good is deleted.
+  assert.equal(accountActionLabel('remove'), 'Delete account');
 });
 
 await test('an invitation row says when it expires and how it travelled', () => {

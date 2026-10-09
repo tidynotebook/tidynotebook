@@ -618,7 +618,7 @@ function AccountsPage(): ReactNode {
       {dialog.kind === 'remove' ? (
         <Dialog
           open
-          title={`Remove ${accountName(dialog.account)}?`}
+          title={`Delete ${accountName(dialog.account)}?`}
           titleId="remove-account-title"
           width="small"
           onClose={() => {
@@ -627,7 +627,7 @@ function AccountsPage(): ReactNode {
         >
           <DialogBody>
             <p className="m-0 text-ui text-strong">
-              This removes the account and every note in its workspaces for
+              This deletes the account and every note in its workspaces for
               good. The person is signed out on every device.
             </p>
           </DialogBody>
@@ -649,11 +649,11 @@ function AccountsPage(): ReactNode {
                     removeAccount({
                       path: { accountId: dialog.account.accountId },
                     }),
-                  `${accountName(dialog.account)} is removed.`,
+                  `${accountName(dialog.account)} is deleted.`,
                 );
               }}
             >
-              {busy ? 'Removing the account' : 'Remove account'}
+              {busy ? 'Deleting the account' : 'Delete account'}
             </Button>
           </DialogFooter>
         </Dialog>
@@ -870,7 +870,7 @@ function ControlsDialog({
             hint={
               administrator
                 ? 'An administrator is always active. Make the account a member to lock it.'
-                : 'A locked account can only export its notes, remove itself, or open billing.'
+                : 'A locked account can only export its notes, delete itself, or open billing.'
             }
             onChange={(value) => {
               set({ standing: value === 'locked' ? 'locked' : 'active' });

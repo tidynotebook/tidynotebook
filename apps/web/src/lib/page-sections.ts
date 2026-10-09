@@ -27,7 +27,7 @@ export const settingsSections = [
   {
     key: 'remove-account',
     id: 'remove-account-heading',
-    title: 'Remove account',
+    title: 'Delete account',
   },
 ] as const;
 

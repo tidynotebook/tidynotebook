@@ -305,7 +305,7 @@ export function accountActionLabel(action: AccountAction): string {
     case 'change-controls':
       return 'Change limits and access';
     case 'remove':
-      return 'Remove account';
+      return 'Delete account';
   }
 }
 

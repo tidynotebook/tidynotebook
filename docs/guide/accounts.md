@@ -8,7 +8,7 @@ other people and manages their accounts.
 The first account of an installation is an administrator. An administrator can
 make another account an administrator too. An installation always keeps at
 least one enabled administrator, so tidy notebook does not let the last one lose the
-role, disable the account, or remove it.
+role, disable the account, or delete it.
 
 An administrator manages accounts and does not read notes. You see the address,
 the name, the state, the last activity and the storage of each account. You
@@ -68,7 +68,7 @@ When the installation names its terms and its privacy notice, each person
 accepts them. The sign-up form and the invitation form link both and ask for
 consent. The sign-in screen and **Settings** link them too. When a new version
 comes out, each person accepts it at the next visit, before the notes open. A
-person who does not accept can export their notes, remove their account, or
+person who does not accept can export their notes, delete their account, or
 sign out.
 
 You add both documents in this section of the accounts page. They apply when
@@ -132,7 +132,7 @@ state, the last activity, the storage and the address. Each account row has a me
   The notes stay. **Enable** lets the person sign in again.
 - **Change storage limit** sets the space of the account, in gigabytes. The
   limit counts every workspace that the account owns.
-- **Remove account** removes the account and every note in its workspaces for
+- **Delete account** deletes the account and every note in its workspaces for
   good. The person cannot undo it, and neither can you.
 
 The menu does not show a change that would leave the installation without an
@@ -157,7 +157,7 @@ links**, with its reason and the words of the reader.
 row to sign out a device that you lost. Select **Sign out every other device**
 if another person can know your password, then change your password.
 
-You remove your own account in **Settings**, under **Remove account**, with your
+You delete your own account in **Settings**, under **Delete account**, with your
 password. If you are the last administrator, first make another account an
 administrator.
 

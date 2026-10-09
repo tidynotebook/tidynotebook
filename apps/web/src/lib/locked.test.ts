@@ -7,6 +7,7 @@ import {
   daysUntil,
   isLocked,
   lockedSentences,
+  signedInSentence,
 } from './locked.ts';
 
 const now = Date.parse('2026-10-04T12:00:00.000Z');
@@ -21,6 +22,14 @@ const controls: Account['controls'] = {
   downloadLimitBytes: null,
   features: { teams: true, collaboration: true },
 };
+
+await test('the line under the card names the account that is signed in', () => {
+  assert.equal(signedInSentence('a@example.com'), 'Signed in as a@example.com');
+  // An account with no address still reads a whole sentence.
+  assert.equal(signedInSentence(null), 'You are signed in.');
+  assert.equal(signedInSentence(undefined), 'You are signed in.');
+  assert.equal(signedInSentence('  '), 'You are signed in.');
+});
 
 await test('only a locked account opens the locked screen', () => {
   assert.equal(isLocked({ controls }), true);
@@ -43,7 +52,7 @@ await test('the screen names the portal only when the installation has one', () 
   assert.deepEqual(lockedSentences({ controls, accountPortal: true }, now), [
     'Your notes are safe, but you cannot change them now.',
     'Open billing to unlock the account.',
-    'If the account stays locked, it and its notes are removed in 30 days.',
+    'If the account stays locked, it and its notes are deleted in 30 days.',
   ]);
   const plain = lockedSentences(
     { controls: { ...controls, removalAt: null }, accountPortal: false },

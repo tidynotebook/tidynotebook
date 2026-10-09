@@ -158,7 +158,7 @@ await test('a mail goes 30 days and 7 days before the removal, and never twice',
   await run();
   const first = mailer.sent.filter((message) => message.to === person.email);
   assert.equal(first.length, 1);
-  assert.match(first[0]?.subject ?? '', /is removed in 20 days$/);
+  assert.match(first[0]?.subject ?? '', /is deleted in 20 days$/);
   assert.match(first[0]?.text ?? '', /ask the administrator/);
   await run();
   assert.equal(
@@ -169,7 +169,7 @@ await test('a mail goes 30 days and 7 days before the removal, and never twice',
   await run(new Date(Date.now() + 14 * day));
   const second = mailer.sent.filter((message) => message.to === person.email);
   assert.equal(second.length, 2);
-  assert.match(second[1]?.subject ?? '', /is removed in 6 days$/);
+  assert.match(second[1]?.subject ?? '', /is deleted in 6 days$/);
   await run(new Date(Date.now() + 15 * day));
   assert.equal(
     mailer.sent.filter((message) => message.to === person.email).length,

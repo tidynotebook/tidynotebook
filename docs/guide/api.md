@@ -28,7 +28,7 @@ program last used it. Select **Revoke**, then **Revoke key**. Access stops at
 once. To replace a key, create a new one, change the program's secret, then
 revoke the old one.
 
-A password change or reset revokes all keys. Disabling or removing an account
+A password change or reset revokes all keys. Disabling or deleting an account
 also revokes its keys. Enabling an account again does not bring its keys back.
 A locked account can list and revoke keys, but it cannot create a key or use a
 key to change notes.
