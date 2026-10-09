@@ -38,7 +38,7 @@ export function lockedSentences(
   const sentences = [
     'Your notes are safe, but you cannot change them now.',
     account.accountPortal
-      ? 'Open the account portal to unlock the account.'
+      ? 'Open billing to unlock the account.'
       : 'Ask the administrator of this installation to unlock the account.',
   ];
   const removal =

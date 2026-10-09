@@ -20,6 +20,7 @@ export const settingsSections = [
   { key: 'export', id: 'export-heading', title: 'Export' },
   { key: 'import', id: 'import-heading', title: 'Import' },
   { key: 'account', id: 'account-heading', title: 'Account' },
+  { key: 'billing', id: 'billing-heading', title: 'Billing' },
   { key: 'api-keys', id: 'api-keys-heading', title: 'API keys' },
   { key: 'sessions', id: 'sessions-heading', title: 'Sessions' },
   { key: 'sign-out', id: 'signout-heading', title: 'Sign out' },
@@ -32,6 +33,24 @@ export const settingsSections = [
 
 /** The name of one section of Settings. */
 export type SettingsSectionKey = (typeof settingsSections)[number]['key'];
+
+/** One section of Settings, with its name. */
+export type SettingsSection = (typeof settingsSections)[number];
+
+/**
+ * The sections of Settings that one account shows, in page order.
+ *
+ * Billing opens the account portal of the operator, so it shows only when
+ * the installation names one (record 0211). The page and its side list both
+ * read this list, so a hidden section is in neither.
+ */
+export function visibleSettingsSections(account: {
+  readonly accountPortal: boolean;
+}): readonly SettingsSection[] {
+  return settingsSections.filter(
+    (section) => section.key !== 'billing' || account.accountPortal,
+  );
+}
 
 /** The sections of the page that manages the accounts, in page order. */
 export const administrationSections = [

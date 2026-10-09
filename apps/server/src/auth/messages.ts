@@ -190,7 +190,7 @@ export function removalNoticeMessage(input: {
     text: body([
       `Your account on ${name} is locked. In ${when}, the account and every note in it are removed for good.`,
       input.portal
-        ? `To keep the account, sign in on this page and open the account portal:\n${input.origin}/login`
+        ? `To keep the account, sign in on this page and open billing:\n${input.origin}/login`
         : `To keep the account, ask the administrator of ${name} to unlock it. You can sign in on this page:\n${input.origin}/login`,
       'To keep your notes without the account, sign in and select Export my notes.',
       'If you do not want the account, you need to do nothing.',

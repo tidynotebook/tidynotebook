@@ -97,8 +97,11 @@ A service of the operator reaches the controls through `/api/operator/` with
 one bearer token, and a person hands the portal of that service a single-use
 token ([record 0190](../decisions/0190-an-operator-api-reaches-the-account-controls.md)).
 `packages/core/src/identity/controls.ts` and `operator.ts` hold the rules, and
-`apps/server/src/routes/operator.ts` the handlers. Settings opens the portal
-for any standing. The portal links back to the route `/portal` with a path,
+`apps/server/src/routes/operator.ts` the handlers. The Billing section of
+Settings opens the portal for any standing, and every word that a person
+reads names the portal billing
+([record 0211](../decisions/0211-the-application-names-the-account-portal-billing.md)).
+The portal links back to the route `/portal` with a path,
 which `apps/web/src/lib/portal.ts` decides, and sign-in returns to it through
 `apps/web/src/lib/sign-in-return.ts`, which takes a path of this origin only. [The operator API](operator-api.md)
 states what a service depends on and which change breaks it.

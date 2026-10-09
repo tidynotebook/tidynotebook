@@ -42,7 +42,7 @@ await test('the time to a removal reads in whole days', () => {
 await test('the screen names the portal only when the installation has one', () => {
   assert.deepEqual(lockedSentences({ controls, accountPortal: true }, now), [
     'Your notes are safe, but you cannot change them now.',
-    'Open the account portal to unlock the account.',
+    'Open billing to unlock the account.',
     'If the account stays locked, it and its notes are removed in 30 days.',
   ]);
   const plain = lockedSentences(

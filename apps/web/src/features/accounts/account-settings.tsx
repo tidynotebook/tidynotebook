@@ -3,10 +3,10 @@
  *
  * Settings is the one place for the profile, the palette, the spell check,
  * offline availability, and sign-out. When the installation names an account
- * portal, the account section opens it for any standing. It reads as sections and not as a
- * stack of cards: each section states its name and its sentence in a column
- * of its own and holds its controls beside them, and a hairline separates one
- * from the next. Theme changes apply locally first and sync in the background
+ * portal, the Billing section opens it for any standing (record 0211). It
+ * reads as sections and not as a stack of cards: each section states its name
+ * and its sentence in a column of its own and holds its controls beside them,
+ * and a hairline separates one from the next. Theme changes apply locally first and sync in the background
  * through the provider in `app.tsx`.
  *
  * The page loads when it opens, so the first screen of the frame reads none
@@ -87,6 +87,7 @@ import { ThemeSettings } from './theme-settings.tsx';
 import {
   sectionOf,
   settingsSections,
+  visibleSettingsSections,
   type SettingsSectionKey,
 } from '../../lib/page-sections.ts';
 import { useNow } from '../../shell/now.ts';
@@ -786,28 +787,6 @@ export function AccountSettingsPage(): ReactNode {
             {line}
           </p>
         ))}
-        {account.accountPortal ? (
-          // The portal of the operator, for any standing (record 0190). The
-          // one filled action of the page stays Save, so this is secondary.
-          <div className="mt-3">
-            <p className="mb-2 mt-0 text-control text-muted">
-              Use the account portal to change your account.
-            </p>
-            {portal.error === '' ? null : (
-              <Notice className="mb-3" tone="problem" message={portal.error} />
-            )}
-            <Button
-              variant="secondary"
-              icon={<ExternalLinkIcon />}
-              disabled={portal.busy}
-              onClick={() => {
-                void portal.open(portalHome);
-              }}
-            >
-              Open the account portal
-            </Button>
-          </div>
-        ) : null}
         {account.installationRole === 'administrator' &&
         workspaceId !== null ? (
           <Link
@@ -823,6 +802,30 @@ export function AccountSettingsPage(): ReactNode {
         {documents === null ? null : (
           <LegalLinks className="mt-3" documents={documents} />
         )}
+      </SettingsSection>
+    ),
+    billing: (
+      // The account portal of the operator, for any standing (records 0190
+      // and 0211). The one filled action of the page stays Save, so this is
+      // secondary. `visibleSettingsSections` shows the section only when the
+      // installation names a portal.
+      <SettingsSection
+        section={settingsSection('billing')}
+        description="See and change your plan, your payment method and your invoices."
+      >
+        {portal.error === '' ? null : (
+          <Notice className="mb-3" tone="problem" message={portal.error} />
+        )}
+        <Button
+          variant="secondary"
+          icon={<ExternalLinkIcon />}
+          disabled={portal.busy}
+          onClick={() => {
+            void portal.open(portalHome);
+          }}
+        >
+          Open billing
+        </Button>
       </SettingsSection>
     ),
     'api-keys': <ApiKeySettings />,
@@ -885,11 +888,12 @@ export function AccountSettingsPage(): ReactNode {
     ),
   };
 
+  const sections = visibleSettingsSections(account);
   return (
-    <Page sections={settingsSections}>
+    <Page sections={sections}>
       <PageHeader title={settingsTitle} />
       <div>
-        {settingsSections.map((section) => (
+        {sections.map((section) => (
           <Fragment key={section.key}>{sectionBodies[section.key]}</Fragment>
         ))}
       </div>

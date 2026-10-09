@@ -43,8 +43,7 @@ export function PortalPage(): ReactNode {
   const portal = useOpenPortal();
   const started = useRef(false);
   const step = portalStep(session, location.search);
-  const title =
-    step.kind === 'no-portal' ? 'No account portal' : 'Account portal';
+  const title = step.kind === 'no-portal' ? 'No billing' : 'Billing';
   useDocumentTitle(title);
 
   const open = portal.open;
@@ -60,7 +59,7 @@ export function PortalPage(): ReactNode {
     return (
       <AuthFrame title={title}>
         <p className="mb-3 mt-0 text-control text-muted">
-          This installation has no account portal.
+          This installation has no billing.
         </p>
         <BackToNotes />
       </AuthFrame>
@@ -68,7 +67,7 @@ export function PortalPage(): ReactNode {
   return (
     <AuthFrame title={title}>
       {portal.error === '' ? (
-        <LoadingState label="The account portal is opening." />
+        <LoadingState label="Billing is opening." />
       ) : (
         <>
           <Notice className="mb-4" tone="problem" message={portal.error} />

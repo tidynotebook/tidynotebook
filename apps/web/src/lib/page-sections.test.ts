@@ -6,6 +6,7 @@ import {
   noteGroupSections,
   sectionOf,
   settingsSections,
+  visibleSettingsSections,
 } from './page-sections.ts';
 import { groupNotesByRecency } from './note-groups.ts';
 import type { NoteSummary } from './note-list.ts';
@@ -31,6 +32,32 @@ await test('a section of a fixed list reads its title and its heading', () => {
   assert.deepEqual(sectionOf(administrationSections, 'reports'), {
     id: 'reports-heading',
     title: 'Reports of published links',
+  });
+});
+
+await test('Settings shows Billing only when the installation names a portal', () => {
+  const keys = (accountPortal: boolean): string[] =>
+    visibleSettingsSections({ accountPortal }).map((section) => section.key);
+  // Billing opens the portal, so with no portal it would be a dead section.
+  assert.ok(!keys(false).includes('billing'));
+  assert.deepEqual(
+    keys(false),
+    settingsSections
+      .map((section) => section.key)
+      .filter((key) => key !== 'billing'),
+  );
+  // With a portal, Billing follows Account, and every section stays in order.
+  assert.deepEqual(
+    keys(true),
+    settingsSections.map((section) => section.key),
+  );
+  assert.equal(
+    keys(true).indexOf('billing'),
+    keys(true).indexOf('account') + 1,
+  );
+  assert.deepEqual(sectionOf(settingsSections, 'billing'), {
+    id: 'billing-heading',
+    title: 'Billing',
   });
 });
 

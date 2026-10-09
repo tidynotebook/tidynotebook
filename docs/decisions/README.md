@@ -242,6 +242,7 @@ and needs no record.
 | [0208](0208-personal-keys-resolve-to-the-shared-actor.md)                             | Personal keys resolve to the shared actor                                       |
 | [0209](0209-generated-api-reference.md)                                               | The API reference comes from the client contract                                |
 | [0210](0210-railway-pro-keeps-private-images-within-the-compute-budget.md)            | Railway Pro keeps private images within the compute budget                      |
+| [0211](0211-the-application-names-the-account-portal-billing.md)                      | The application names the account portal Billing                                |
 
 Records 0001 to 0015 record the decisions D1 to D15 of
 [the v0.1 revamp plan](../plans/003-v0.1-revamp.md). Record 0016 records the
@@ -845,3 +846,7 @@ records 0190, 0192 and 0202.
 
 Record 0210 replaces Railway Hobby with Pro from the first deploy. It keeps
 the image publication policy and the compute limits of records 0199 and 0200.
+
+Record 0211 gives the account portal a Billing section in Settings and
+names it billing in every word that a person reads. It refines records
+0186, 0190 and 0201.

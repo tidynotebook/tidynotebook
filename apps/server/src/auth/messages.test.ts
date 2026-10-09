@@ -83,7 +83,7 @@ await test('the mail before a removal names the time, the way to keep the accoun
     'Your account on tidy notebook at notes.example.com is removed in 30 days',
   );
   assert.match(thirty.text, /In 30 days, the account and every note/);
-  assert.match(thirty.text, /open the account portal/);
+  assert.match(thirty.text, /open billing/);
   assert.ok(thirty.text.split('\n').includes(`${origin}/login`));
   assert.match(thirty.text, /select Export my notes/);
   const seven = removalNoticeMessage({
@@ -94,7 +94,7 @@ await test('the mail before a removal names the time, the way to keep the accoun
   });
   assert.match(seven.subject, /is removed in 7 days$/);
   assert.match(seven.text, /ask the administrator/);
-  assert.doesNotMatch(seven.text, /portal/);
+  assert.doesNotMatch(seven.text, /billing|portal/);
   const one = removalNoticeMessage({
     to: 'a@example.com',
     origin,

@@ -870,7 +870,7 @@ function ControlsDialog({
             hint={
               administrator
                 ? 'An administrator is always active. Make the account a member to lock it.'
-                : 'A locked account can only export its notes, remove itself, or open the account portal.'
+                : 'A locked account can only export its notes, remove itself, or open billing.'
             }
             onChange={(value) => {
               set({ standing: value === 'locked' ? 'locked' : 'active' });
