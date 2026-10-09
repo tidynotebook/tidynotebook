@@ -310,6 +310,11 @@ await test('a template fills the facts of the server and keeps the other blanks'
       assert.ok(blankLabel(blank).length <= 100, blank);
   }
   assert.ok(!templateBlanks(privacy).includes('{{pending sign-up hours}}'));
+  // The documents name the action that Settings shows (record 0211), and one
+  // term for it: an account is deleted, never removed.
+  assert.match(privacy, /Select Delete my account in Settings\./);
+  assert.match(terms, /You can delete your account in Settings/);
+  for (const text of [privacy, terms]) assert.doesNotMatch(text, /remov/i);
   // The page states the version, so no template names one.
   for (const text of [privacy, terms])
     assert.ok(!templateBlanks(text).includes('{{version}}'));

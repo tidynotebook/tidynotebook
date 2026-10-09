@@ -73,11 +73,11 @@ ${breach}- A person who has the address of a link that you publish can read what
 
 ## How long we keep it
 
-- Your account and your notes stay until you remove them. A note in Trash stays until you delete it.
+- Your account and your notes stay until you delete them. A note in Trash stays until you delete it.
 - A sign-up that nobody finishes goes after ${String(facts.pendingHours)} hours.
 - The record of a device goes when the device signs out. It stops working when its session ends.
 - An attempt count goes after its time window, which is one hour at most.
-- When you remove your account, your notes, your devices and your settings go at once. Only an identifier and the time of the removal stay, so that the history of a shared note stays correct. Backups keep a copy for {{backup retention}} at most.
+- When you delete your account, your notes, your devices and your settings go at once. Only an identifier and the time of the deletion stay, so that the history of a shared note stays correct. Backups keep a copy for {{backup retention}} at most.
 - The logs of ${productName} hold no note text, no password and no network address. We keep them for {{log retention}}.
 
 ## Cookies and storage on your device
@@ -88,7 +88,7 @@ ${productName} sets one cookie, which keeps you signed in. It is necessary for t
 
 - **See and take your data.** Select Export all notes in Settings to download every note and picture as Markdown files. Write to us for a copy of the other data.
 - **Correct your data.** Change your name in Settings. Write to us to change your address.
-- **Remove your data.** Select Remove my account in Settings.
+- **Delete your data.** Select Delete my account in Settings.
 - **Object or restrict.** Write to us if you object to a use of your data, or want us to stop it for a time.
 - **Complain.** You can complain to {{supervisory authority}}.
 
@@ -102,7 +102,7 @@ The service is not for a person under {{minimum age}} years old.
 
 ## Changes to this notice
 
-When this notice changes, its version changes. The application then shows the new version before your notes open, and you accept it or remove your account.
+When this notice changes, its version changes. The application then shows the new version before your notes open, and you accept it or delete your account.
 `;
 }
 
@@ -123,7 +123,7 @@ These terms are the agreement between you and {{operator name}}, {{postal addres
 
 ## Your notes
 
-Your notes are yours. You give us the right to store, copy, show and send them only as far as the service needs to work for you, for example to sync them to your devices and to show a link that you publish. This right ends when you delete the notes or remove your account, except for the copy in a backup until that backup expires.
+Your notes are yours. You give us the right to store, copy, show and send them only as far as the service needs to work for you, for example to sync them to your devices and to show a link that you publish. This right ends when you delete the notes or delete your account, except for the copy in a backup until that backup expires.
 
 Keep your own copy of notes that are important to you. Select Export all notes in Settings to download them at any time.
 
@@ -153,9 +153,9 @@ We can change the service. We try to keep it available, but we do not promise th
 
 ## When an account stops
 
-You can remove your account in Settings at any time. Your notes then go for good.
+You can delete your account in Settings at any time. Your notes then go for good.
 
-We can disable an account that breaks these terms, or remove it after we tell the owner and give a reasonable time to export the notes, except where the law or the safety of other people does not let us wait.
+We can disable an account that breaks these terms, or delete it after we tell the owner and give a reasonable time to export the notes, except where the law or the safety of other people does not let us wait.
 
 ## Liability
 
@@ -163,7 +163,7 @@ We give the service as it is. As far as the law allows, we are not liable for an
 
 ## Changes to these terms
 
-When these terms change, their version changes. The application then shows the new version before your notes open, and you accept it or remove your account.
+When these terms change, their version changes. The application then shows the new version before your notes open, and you accept it or delete your account.
 
 ## Law
 
