@@ -105,6 +105,14 @@ An administrator also sees **Manage accounts**, which opens the accounts page.
 See [Accounts and invitations](accounts.md). When the installation has terms
 and a privacy notice, this section links them.
 
+## Billing
+
+This section shows only when the installation has a billing service. Select
+**Open billing** to see and change your plan, your payment method and your
+invoices. The billing pages open in the same tab and know your account, so
+you do not sign in again.
+A locked account opens billing from the screen that it signs in to.
+
 ## API keys
 
 Create a separate key for each program that needs your account. Each key has
