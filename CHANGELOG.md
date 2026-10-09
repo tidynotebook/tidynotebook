@@ -5,6 +5,14 @@ All notable changes to this project are recorded here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.18.1 - 2026-10-09
+
+This release updates tidy notebook.
+
+### Fixed
+
+- Publish the tested image once and remove the required GitHub build certificate.
+
 ## 0.18.0 - 2026-10-09
 
 This release updates tidy notebook.
