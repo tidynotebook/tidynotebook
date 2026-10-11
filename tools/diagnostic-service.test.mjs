@@ -2,14 +2,14 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
-import { record } from '../workspace.mjs';
+import { record } from './workspace.mjs';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { parseSync } from 'oxc-parser';
-import { canonicalDigest, diagnosticSource } from './diagnostic-service.mjs';
-import { queryCategory } from './diagnostic-profile.mjs';
+import { canonicalDigest, diagnosticSource } from './performance/diagnostic-service.mjs';
+import { queryCategory } from './performance/diagnostic-profile.mjs';
 
-const source = await readFile(new URL('./service.ts', import.meta.url), 'utf8');
+const source = await readFile(new URL('./performance/service.ts', import.meta.url), 'utf8');
 
 await test('the diagnostic uses the accepted canonical workload and its exact timer scope', () => {
   assert.equal(
@@ -90,7 +90,7 @@ await test('query records contain only fixed categories and never literals or pa
 
 await test('the actual workflow keeps the canonical gate and runs only its failure diagnostic', async () => {
   const web = createRequire(
-    new URL('../../apps/web/package.json', import.meta.url),
+    new URL('../apps/web/package.json', import.meta.url),
   );
   const mermaid = createRequire(web.resolve('mermaid'));
   const parser = createRequire(mermaid.resolve('chevrotain'));
@@ -102,7 +102,7 @@ await test('the actual workflow keeps the canonical gate and runs only its failu
   const workflow = record(
     load(
       await readFile(
-        new URL('../../.github/workflows/ci.yml', import.meta.url),
+        new URL('../.github/workflows/ci.yml', import.meta.url),
         'utf8',
       ),
     ),
