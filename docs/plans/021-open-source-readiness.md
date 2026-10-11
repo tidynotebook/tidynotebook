@@ -24,15 +24,15 @@ Each issue has the launch milestone, a priority label and an area label. A
 completed local change still needs proof and landing. A new boundary or gate
 policy needs a decision record before its implementation.
 
-| Item | Issue                                                          | Result                                                                                                            | State                                                                                      |
-| ---- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| 1    | [315](https://github.com/tidynotebook/tidynotebook/issues/315) | Correct the public setup and current documents. Add community files and configuration tests.                      | Complete. PR 322 lands the proved source and image.                                        |
-| 2    | [316](https://github.com/tidynotebook/tidynotebook/issues/316) | Close or resolve each dependency finding under the version policy.                                                | Compatible fixes and refusal tests are implemented. Two transitive advisories remain open. |
-| 3    | [317](https://github.com/tidynotebook/tidynotebook/issues/317) | Retain the required notices in source and shipped output. Prove the actual shipped license graph and source path. | Open.                                                                                      |
-| 4    | [318](https://github.com/tidynotebook/tidynotebook/issues/318) | Review history, images, comments, logs, archives and release material for public use.                             | Retained-material review is complete. Its audit and proof still need landing.              |
-| 5    | [319](https://github.com/tidynotebook/tidynotebook/issues/319) | Set and read back the public GitHub controls and contributor access path.                                         | CI, alerts and security fixes are enabled and read back. Public controls remain.           |
-| 6    | [320](https://github.com/tidynotebook/tidynotebook/issues/320) | Prove a fresh standalone checkout, final source, image and self-hosted setup.                                     | Open for the final candidate.                                                              |
-| 7    | [284](https://github.com/tidynotebook/tidynotebook/issues/284) | Perform the accepted public launch after all dependencies pass.                                                   | Existing launch issue. Requires its release, deployment and visibility scope.              |
+| Item | Issue                                                          | Result                                                                                                            | State                                                                             |
+| ---- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| 1    | [315](https://github.com/tidynotebook/tidynotebook/issues/315) | Correct the public setup and current documents. Add community files and configuration tests.                      | Complete. PR 322 lands the proved source and image.                               |
+| 2    | [316](https://github.com/tidynotebook/tidynotebook/issues/316) | Close or resolve each dependency finding under the version policy.                                                | Complete. PR 323 lands the fixes and refusal tests with no dependency advisories. |
+| 3    | [317](https://github.com/tidynotebook/tidynotebook/issues/317) | Retain the required notices in source and shipped output. Prove the actual shipped license graph and source path. | Open.                                                                             |
+| 4    | [318](https://github.com/tidynotebook/tidynotebook/issues/318) | Review history, images, comments, logs, archives and release material for public use.                             | Retained-material review is complete. Its audit and proof still need landing.     |
+| 5    | [319](https://github.com/tidynotebook/tidynotebook/issues/319) | Set and read back the public GitHub controls and contributor access path.                                         | CI, alerts and security fixes are enabled and read back. Public controls remain.  |
+| 6    | [320](https://github.com/tidynotebook/tidynotebook/issues/320) | Prove a fresh standalone checkout, final source, image and self-hosted setup.                                     | Open for the final candidate.                                                     |
+| 7    | [284](https://github.com/tidynotebook/tidynotebook/issues/284) | Perform the accepted public launch after all dependencies pass.                                                   | Existing launch issue. Requires its release, deployment and visibility scope.     |
 
 ## Checklist
 
@@ -44,6 +44,8 @@ policy needs a decision record before its implementation.
 - [ ] Required copied and bundled notices reach each distributed artifact.
 - [ ] The shipped license graph has a recorded compatibility and source review.
 - [ ] Each public image maps to accessible corresponding source and build inputs.
+- [x] The owner accepts a separate core package for future compliant images.
+- [ ] The image policy uses that package and keeps the old package private and intact.
 
 ### Community and setup
 
@@ -61,7 +63,7 @@ policy needs a decision record before its implementation.
 - [x] An all-ref secret scan is checked against historical source.
 - [x] An issue, PR and issue-comment text scan is checked.
 - [x] Compatible dependency fixes remove the high-severity findings in this branch.
-- [ ] The remaining transitive advisories have fixes or supported dispositions.
+- [x] The remaining transitive advisories have fixes and refusal tests in PR 323.
 - [x] PR review comments, available attachments, screenshots and old logs are reviewed.
 - [x] The retained material follows the accepted ownership and intact-history decisions.
 - [ ] The final source, image and release assets pass a fresh secret review.

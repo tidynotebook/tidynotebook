@@ -4,9 +4,11 @@ This page owns the checks and control readback for the public core repository.
 
 The [readiness plan](../plans/021-open-source-readiness.md) tracks the work.
 [Record 0188](../decisions/0188-the-repository-opens-under-agpl-3-0-only.md)
-owns the launch timing. Resolve the image rights and package choice in
-[issue 317](https://github.com/tidynotebook/tidynotebook/issues/317) before a
-package becomes public. A source change does not start a release or deployment.
+owns the launch timing. The owner accepts a new core package for future
+compliant images. Keep the old package and all its versions private and intact.
+Complete the image rights proof in
+[issue 317](https://github.com/tidynotebook/tidynotebook/issues/317) before the
+new package becomes public. A source change does not start a release or deployment.
 
 ## Before visibility changes
 
@@ -92,7 +94,20 @@ notices and source path are present. A signed-in read is not this proof.
 
 GitHub package visibility is separate from repository visibility. Use the
 package settings only for the accepted compliant package. Read its visibility
-and test an anonymous pull. Never make the old package public as a shortcut.
+and test an anonymous pull. Read the accepted core package with this command:
+
+```sh
+gh api orgs/tidynotebook/packages/container/core
+```
+
+Read the old package to confirm that it stays private:
+
+```sh
+gh api orgs/tidynotebook/packages/container/tidynotebook
+```
+
+Never make the old package public as a shortcut. If the new package does not
+exist, complete the authorized release before its visibility step.
 
 After all readbacks pass, update the plan and the matching board issues.
 Save the exact source, image and remote check references in the task context.
