@@ -78,7 +78,41 @@ jobs:
 
       # `perf:service` starts the test database itself.
       - name: Enforce the service performance budgets
+        id: service_budget
         run: pnpm perf:service
+
+      - name: Record the failed Save workload
+        id: save_diagnostic
+        if: failure() && steps.service_budget.outcome == 'failure'
+        run: |
+          node tools/performance/diagnostic-service.mjs
+          docker compose -p notesapp-test -f compose.test.yaml exec -T postgres \
+            psql -U postgres -d notesapp_test \
+            -c "alter system set shared_preload_libraries = 'pg_stat_statements'" \
+            -c "alter system set track_io_timing = on" \
+            -c "alter system set track_wal_io_timing = on"
+          docker compose -p notesapp-test -f compose.test.yaml restart postgres
+          docker compose -p notesapp-test -f compose.test.yaml up -d --wait postgres
+          docker run --rm --cpus=2 --memory=4g --network=host \
+            --mount type=bind,src="$PWD",dst=/work,readonly \
+            --mount type=bind,src="$PWD/.tooling/performance-diagnostic",dst=/work/.tooling/performance-diagnostic \
+            -w /work \
+            node:26.10.0-bookworm-slim@sha256:662933cf47f013bc8e4beb31a6116448427a82057ba7c42c97e4c5ba766504c2 \
+            node .tooling/performance-diagnostic/generated-service.ts \
+            > .tooling/performance-diagnostic/run.log 2>&1
+
+      - name: Keep the private diagnostic evidence
+        if: always() && (steps.save_diagnostic.outcome == 'success' || steps.save_diagnostic.outcome == 'failure')
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: save-diagnostic-${{ github.sha }}
+          path: |
+            .tooling/performance-diagnostic/*.json
+            .tooling/performance-diagnostic/*.cpuprofile
+            .tooling/performance-diagnostic/run.log
+          include-hidden-files: true
+          retention-days: 1
+          if-no-files-found: error
 
       - name: Stop the disposable test database
         if: always()
