@@ -31,7 +31,7 @@
     "@codemirror/lang-xml": "6.1.0",
     "@codemirror/lang-yaml": "catalog:",
     "@codemirror/language": "catalog:",
-    "@codemirror/legacy-modes": "6.5.4",
+    "@codemirror/legacy-modes": "6.5.5",
     "@lezer/common": "catalog:",
     "@notesapp/core": "workspace:*",
     "@lezer/highlight": "catalog:",
