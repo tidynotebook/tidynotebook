@@ -10,6 +10,12 @@
 # Each file gets mode 0600 and owner uid 10001, the user of the image, because
 # the application cannot read a file of another owner. Only root can give a
 # file to another user, so this command runs with sudo.
+#
+# The database addresses name the user postgres and the database notesapp,
+# the defaults of POSTGRES_USER and POSTGRES_DB in .env.example.
+#
+# Every file is written into a temporary folder inside DIR first, and moved
+# into place only when all of them are ready. A failed run leaves no file.
 set -euo pipefail
 
 # The seven files that docker-compose.yml reads, then the two backup files.
@@ -66,10 +72,13 @@ uuid_hex="$(openssl rand -hex 16)"
 uuid_variant="$(printf '%x' $(( (16#${uuid_hex:16:1} & 3) | 8 )))"
 installation_id="${uuid_hex:0:8}-${uuid_hex:8:4}-4${uuid_hex:13:3}-${uuid_variant}${uuid_hex:17:3}-${uuid_hex:20:12}"
 
+STAGING="$(mktemp -d "$DIR/.create-secrets.XXXXXX")"
+trap 'rm -rf "$STAGING"' EXIT
+
 write_secret() {
-  printf '%s\n' "$2" > "$DIR/$1"
-  chmod 600 "$DIR/$1"
-  chown "$APP_UID:$APP_UID" "$DIR/$1"
+  printf '%s\n' "$2" > "$STAGING/$1"
+  chmod 600 "$STAGING/$1"
+  chown "$APP_UID:$APP_UID" "$STAGING/$1"
 }
 
 write_secret postgres_password "$postgres_password"
@@ -81,6 +90,10 @@ write_secret auth_database_url "postgres://notesapp_auth:$auth_password@postgres
 write_secret auth_secret "$(openssl rand -hex 32)"
 write_secret backup_key "$(openssl rand -base64 48 | tr -d '\n')"
 write_secret installation_id "$installation_id"
+
+for name in "${SECRET_NAMES[@]}"; do
+  mv "$STAGING/$name" "$DIR/$name"
+done
 
 printf 'notesapp secrets: wrote %s files to %s.\n' "${#SECRET_NAMES[@]}" "$DIR"
 printf '%s\n' \

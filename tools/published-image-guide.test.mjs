@@ -33,8 +33,9 @@ const manifest = {
   },
 };
 
-/** @param {string} tag @param {unknown} asset @param {string} [checkout] */
-function selectImage(tag, asset, checkout = commit) {
+/** @param {string} tag @param {unknown} asset @param {string} [checkout]
+ * @param {string} [top] The root folder that the fake Git answers. */
+function selectImage(tag, asset, checkout = commit, top) {
   mkdirSync(join(root, '.tooling'), { recursive: true });
   const cwd = mkdtempSync(join(root, '.tooling/published-image-guide-'));
   try {
@@ -45,7 +46,7 @@ function selectImage(tag, asset, checkout = commit) {
     );
     writeFileSync(
       join(cwd, 'bin/git'),
-      `#!${process.execPath}\nconst a=process.argv.slice(2);if(a[0]!=='rev-parse')process.exit(2);console.log(a[1]==='HEAD'?'${checkout}':'${commit}');\n`,
+      `#!${process.execPath}\nconst a=process.argv.slice(2);if(a[0]!=='rev-parse')process.exit(2);console.log(a[1]==='--show-toplevel'?${JSON.stringify(top ?? '')}||process.cwd():a[1]==='HEAD'?'${checkout}':'${commit}');\n`,
       { mode: 0o700 },
     );
     writeFileSync(
@@ -114,6 +115,14 @@ await test('the script refuses invalid tags before directory or CLI use', () => 
     assert.equal(result.calls, '', tag);
     assert.equal(result.directory, false, tag);
   }
+});
+
+await test('the script refuses to run outside the root folder of the checkout', () => {
+  const result = selectImage('v0.3.5', manifest, commit, '/elsewhere');
+  assert.notEqual(result.status, 0);
+  assert.equal(result.stdout, '');
+  assert.equal(result.calls, '');
+  assert.equal(result.directory, false);
 });
 
 await test('the script refuses a different checkout or malformed official asset', () => {

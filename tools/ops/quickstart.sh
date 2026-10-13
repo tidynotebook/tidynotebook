@@ -31,7 +31,7 @@ cd "$REPOSITORY"
 DATA="$REPOSITORY/.tooling/quickstart"
 
 [[ ! -e .env ]] || fail '.env exists. Use a new clone for the quick start.'
-[[ ! -e "$DATA" ]] || fail "$DATA exists. Remove it, or use a new clone."
+[[ ! -e "$DATA" ]] || fail "$DATA exists from an earlier run. Remove it with: sudo rm -rf .tooling/quickstart. Then run this command again."
 command -v openssl >/dev/null 2>&1 || fail 'openssl is required.'
 command -v docker >/dev/null 2>&1 || fail 'docker is required.'
 

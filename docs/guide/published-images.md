@@ -15,7 +15,8 @@ move to a new release, make and verify a backup. See [Upgrade](upgrade.md).
 
 - The GitHub CLI (`gh`) and `jq`. The script below uses both. Sign in to the
   GitHub CLI once with `gh auth login`.
-- A clone of the code that is checked out at the release tag.
+- A clone of the code that is checked out at the release tag. The release must
+  hold `tools/ops/select-image.sh`. Releases up to 0.18.1 do not hold it.
 
 ## 1. Check out the release tag
 

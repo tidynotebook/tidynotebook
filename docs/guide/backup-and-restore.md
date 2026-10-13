@@ -26,8 +26,10 @@ the storage layout.
 If you made these files yourself, each one must have mode `0600`. The key file
 holds at least 32 bytes of strong random data. The ID file holds one UUID.
 
-Keep a copy of `backup_key` and `installation_id` in a key store that is not
-on this host. A restore needs both. The backup holds only a hash of the
+Keep a copy of the files `backup_key` and `installation_id` away from this
+host, as [Create the secret files](self-hosting.md#create-the-secret-files)
+states. A restore needs both. Copy the files themselves: the backup checks the
+exact bytes of `installation_id`, so a retyped ID can fail. The backup holds only a hash of the
 installation ID, and a backup from a different installation is refused. If a
 volume key or the backup key is lost, stop. Never make a new key and claim
 that it can recover old data.
@@ -150,11 +152,19 @@ file `migration_database_url` of the new installation.
    docker compose stop app
    ```
 
-3. Get the saved copies of `backup_key` and `installation_id` from your key
-   store. The new installation made files of the same names with other values,
-   and they cannot open the old archives. Put the saved copies in a folder on
-   the host, for example `/root/restore`. Give each file mode `0600`, so that
-   only its owner can read it.
+3. Replace the files `backup_key` and `installation_id` of the new
+   installation with your saved copies. The new installation made files with
+   other values, and they cannot open the old archives. Later backups of the
+   restored installation must also use the saved values. Replace
+   `/media/usb/notesapp-keys` with the folder of your copies. The second and
+   the third command give the files to user 10001 with mode `0600`.
+
+   ```bash
+   sudo cp /media/usb/notesapp-keys/backup_key /media/usb/notesapp-keys/installation_id /etc/notesapp/secrets/
+   sudo chown 10001:10001 /etc/notesapp/secrets/backup_key /etc/notesapp/secrets/installation_id
+   sudo chmod 600 /etc/notesapp/secrets/backup_key /etc/notesapp/secrets/installation_id
+   ```
+
 4. Find the name of the new database container with `docker compose ps`, as in
    the backup steps.
 5. Run the restore. The storage root is the empty storage folder of the new
@@ -165,8 +175,8 @@ file `migration_database_url` of the new installation.
      --backup-file /mnt/separate-backups/notesapp/backup-20260906-120000Z.tar.gpg \
      --storage-root /srv/notesapp/storage \
      --database-url-file /etc/notesapp/secrets/migration_database_url \
-     --key-file /root/restore/backup_key \
-     --installation-id-file /root/restore/installation_id \
+     --key-file /etc/notesapp/secrets/backup_key \
+     --installation-id-file /etc/notesapp/secrets/installation_id \
      --postgres-container notesapp-postgres-1
    ```
 

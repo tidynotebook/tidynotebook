@@ -223,6 +223,7 @@ To use files, do these steps:
    - `NOTESAPP_PRIVACY_VERSION`: the version of the privacy notice.
 4. In the same file, add `docker/compose.legal.yaml` to the `COMPOSE_FILE`
    line.
+5. Start again with `docker compose up -d`.
 
 For an address on another site, set `NOTESAPP_TERMS_URL` and
 `NOTESAPP_PRIVACY_URL` instead of the folder. A change to a file with the same

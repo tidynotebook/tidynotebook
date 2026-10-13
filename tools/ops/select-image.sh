@@ -28,6 +28,8 @@ TAG="$1"
 command -v gh >/dev/null 2>&1 || fail 'the GitHub CLI, gh, is required.'
 command -v jq >/dev/null 2>&1 || fail 'jq is required.'
 
+[[ "$(git rev-parse --show-toplevel 2>/dev/null)" == "$PWD" ]] || \
+  fail 'run this command in the root folder of the checkout.'
 commit="$(git rev-parse --verify --quiet "$TAG^{commit}")" || fail "this checkout has no tag $TAG."
 [[ "$(git rev-parse HEAD)" == "$commit" ]] || fail "this checkout is not at $TAG. Check out $TAG first."
 

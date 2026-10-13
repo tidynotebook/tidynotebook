@@ -70,7 +70,8 @@ Compose names the containers after this folder. The backup steps use the
 container name, so keep the folder name in your installation notes.
 
 To install a fixed release, check out its tag in the clone, for example
-`git checkout v1.2.3`.
+`git checkout v1.2.3`. The release must hold `tools/ops/create-secrets.sh`,
+which the next steps use. Releases up to 0.18.1 do not hold it.
 
 ## Prepare encrypted storage
 
@@ -159,8 +160,20 @@ The first migration creates the two restricted roles and sets their passwords.
 Never give either role the right to change the database structure.
 
 Copy `backup_key` and `installation_id` to a safe place that is not this host,
-for example a password manager. Without them, no backup of this installation
-can be restored.
+for example an encrypted USB drive. Without them, no backup of this
+installation can be restored. The files belong to user 10001, so copy them
+with `sudo`. Replace `/media/usb/notesapp-keys` with a folder on that drive:
+
+```bash
+sudo cp /etc/notesapp/secrets/backup_key /etc/notesapp/secrets/installation_id /media/usb/notesapp-keys/
+```
+
+Copy the files themselves. Do not type or paste their content into another
+file, because the backup checks the exact bytes of `installation_id`.
+
+The database addresses in these files name the database `notesapp` and the
+administrator `postgres`. These are the values of `POSTGRES_DB` and
+`POSTGRES_USER` in `.env.example`. Keep those two lines as they are.
 
 The mail password and the S3 keys are not in this list. You add them later,
 only if you use them. [Server operations](operations.md) states how. An
