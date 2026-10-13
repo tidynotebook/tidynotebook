@@ -15,28 +15,29 @@ template, and so is every note in a subfolder of it.
 
 ## Insert a template
 
-1. Open the note that gets the text, and put the cursor where the text must go.
+1. Open the note that gets the text. Put the cursor where the text must go.
 2. Open the command palette with **Ctrl + P**, or **Cmd + P** on a Mac.
 3. Select **Insert from template**. The palette shows your templates.
 4. Type a part of the name to find a template, and press **Enter**.
 
-The text goes in at the cursor. If you selected text, the template replaces
-it. Press **Ctrl + Z** once to remove the inserted text again.
+The text goes in at the cursor. If you selected text, the template replaces it.
+Press **Ctrl + Z** once to remove the inserted text again.
 
-In the list of templates, press **Backspace** in the empty search field to go
-back to the actions. Press **Escape** to close the palette.
-
-If the folder has no notes, the palette offers **New template**. It makes a new
-note in the template folder.
+- In the list of templates, press **Backspace** in the empty search field to go
+  back to the actions.
+- Press **Escape** to close the palette.
+- If the folder has no notes, the palette offers **New template**. It makes a
+  new note in the template folder.
 
 ## Change the template folder
 
-Open **Settings** and go to **Templates**. Type the name of the folder, for
-example `Work/Templates`. The new folder applies when you leave the field or
-press Enter. The line under the field shows how many templates the folder has.
+1. Open **Settings** and go to **Templates**.
+2. In **Folder**, type the name of the folder, for example `Work/Templates`.
+3. Leave the field or press **Enter**.
 
-The setting applies to the open workspace, and it follows your account to
-every device. A change of the folder moves no note.
+The line under the field shows how many templates the folder has. The setting
+applies to the open workspace, and it follows your account to every device. A
+change of the folder moves no note.
 
 ## Placeholders in a template
 

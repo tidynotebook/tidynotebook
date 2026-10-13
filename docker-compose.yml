@@ -87,7 +87,7 @@ services:
       # The proxies whose forwarded headers this installation believes. An
       # empty value believes none of them, which is the default. Name the
       # address or the range of your proxy when one sits in front, and read
-      # docs/guide/self-hosting.md before you name a whole range.
+      # docs/guide/operations.md before you name a whole range.
       NOTESAPP_TRUSTED_PROXIES: ${NOTESAPP_TRUSTED_PROXIES:-}
       # The stop of the server. An empty value keeps the default that
       # apps/server/src/config.ts states.
@@ -178,7 +178,7 @@ services:
   # every request to the application container. It keeps the original Host
   # header, which the application requires, and it adds the forwarded headers.
   # The application believes those headers only when NOTESAPP_TRUSTED_PROXIES
-  # names this proxy. See docs/guide/self-hosting.md.
+  # names this proxy. See docs/guide/operations.md.
   caddy:
     image: caddy@sha256:0c994536bddb66445885237f1a5dcc1916bccea922661c76b4e9fc24061f9b52
     profiles:

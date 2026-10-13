@@ -1,63 +1,69 @@
 # Quick start
 
-This page is for the person who runs the server. It is the shortest path from a
-clone to the setup screen on your own machine. It sets each required directory
-under an ignored test directory. Read [Self-hosting](self-hosting.md) before you store
-data you care about: a real installation puts the secrets, the database and
-the attachments outside the repository, on encrypted storage, behind an HTTPS
-reverse proxy.
+This page is for the person who runs the server. It takes you from a clone of
+the code to a running tidy notebook on your own machine. You do four things:
+clone, prepare, start, and open the application in a browser.
 
-You need Docker Engine, Docker Compose v2 and `openssl`.
-Use a new clone for this test. Use the same shell for each step. Do not run
-these commands on an existing installation.
+This is a test installation. It keeps all data in a folder inside the clone and
+serves only your own machine. Read [Self-hosting](self-hosting.md) before you
+store data that you care about. A real installation puts the secrets, the
+database and the attachments outside the clone, on encrypted storage, behind
+HTTPS.
 
-## 1. Clone and configure
+## What you need
+
+- Docker Engine and Docker Compose.
+- Git, `openssl` and `sudo`.
+- A new clone. Do not use an existing installation. The script in step 2
+  refuses a clone that already has a `.env` file.
+
+## 1. Get the code
+
+This command copies the code to a new folder named `notesapp`. The second
+command goes into that folder. Run all later commands in it.
 
 ```bash
 git clone https://github.com/tidynotebook/tidynotebook.git notesapp
 cd notesapp
-umask 077
-test ! -e .env
-quickstart_data="$PWD/.tooling/quickstart"
-mkdir -p "$quickstart_data/secrets" "$quickstart_data/postgres" "$quickstart_data/storage"
-chmod 711 "$quickstart_data/postgres"
-printf 'NOTESAPP_ORIGIN=http://127.0.0.1:3000\nNOTESAPP_DATABASE_DIR=%s/postgres\nNOTESAPP_STORAGE_DIR=%s/storage\nNOTESAPP_SECRETS_DIR=%s/secrets\n' \
-  "$quickstart_data" "$quickstart_data" "$quickstart_data" > .env
 ```
 
-Compose requires the origin and all three directories. This test sets them
-in `.env`. It keeps the listener on the loopback address. The repository is
-private until launch. Before launch, a clone needs access from the owner.
+The repository is private until launch. Before launch, a clone needs access
+from the owner.
 
-The database user must pass through the parent directory of its data. The
-command gives that user access to pass through the PostgreSQL bind root. The
-data directory that PostgreSQL creates inside it stays private. The other
-directories and the secret files stay private.
+## 2. Prepare the test installation
 
-## 2. Create the secret files
-
-Compose reads seven secret files and creates none of them. Run this block
-once:
+This script does the whole setup. It needs `sudo` for two small steps, so it
+can ask for your password.
 
 ```bash
-( cd "$quickstart_data/secrets" &&
-  openssl rand -hex 24 > postgres_password &&
-  openssl rand -hex 24 > runtime_database_password &&
-  openssl rand -hex 24 > auth_database_password &&
-  openssl rand -hex 32 > auth_secret &&
-  printf 'postgres://postgres:%s@postgres:5432/notesapp\n' "$(cat postgres_password)" > migration_database_url &&
-  printf 'postgres://notesapp_app:%s@postgres:5432/notesapp\n' "$(cat runtime_database_password)" > runtime_database_url &&
-  printf 'postgres://notesapp_auth:%s@postgres:5432/notesapp\n' "$(cat auth_database_password)" > auth_database_url )
-sudo chown 10001:10001 "$quickstart_data/storage" "$quickstart_data/secrets/"*
-sudo chmod 600 "$quickstart_data/secrets/"*
+tools/ops/quickstart.sh
 ```
 
-`openssl rand -hex` writes characters that are safe inside a URL, so no
-password needs escaping. The application container runs as uid 10001 and
-cannot read a file that belongs to another owner. The migration creates the
-`notesapp_app` and `notesapp_auth` roles with the passwords above.
+The script does these things:
+
+1. It stops with a message when `.env` or the folder `.tooling/quickstart`
+   exists. It never changes an installation that exists.
+2. It makes three folders under `.tooling/quickstart`: one for the database
+   (`postgres`), one for the attachments (`storage`) and one for the secrets
+   (`secrets`).
+3. It runs `tools/ops/create-secrets.sh` with `sudo`. This writes the secret
+   files: random passwords and keys that the application and the database use.
+   [Create the secret files](self-hosting.md#create-the-secret-files) names
+   each file.
+4. It gives the attachments folder to user 10001 with `sudo`. That is the user
+   inside the application container. The container cannot write to a folder
+   that belongs to another user.
+5. It writes the settings file `.env`. The file sets the address
+   `http://127.0.0.1:3000` and the three folders.
+
+Git and the Docker build ignore `.env` and `.tooling/`, so none of this goes
+into a commit or an image.
 
 ## 3. Build and start
+
+The first command builds the application image from the code. This takes a few
+minutes the first time. The second command starts the database and the
+application in the background. The third command shows their state.
 
 ```bash
 docker compose build
@@ -65,44 +71,55 @@ docker compose up -d
 docker compose ps
 ```
 
-Compose waits for PostgreSQL. The application container then applies the
-migrations with the migration role and starts the server with the restricted
-runtime role.
+Wait until `docker compose ps` shows the application as healthy. Compose
+starts the database first. The application then updates the database and
+starts the server. Run `docker compose ps` again when the state is still
+starting.
 
-## Open the application
-
-Open `http://127.0.0.1:3000` in a browser.
-
-The first visit shows the setup screen. Enter an email address and a password
-for the first account, which is the administrator. The setup operation closes
-after that account exists, and every later visit shows the sign-in page.
-
-Check that the installation is ready:
+To see that the server is ready, run this command. It prints a short answer
+that starts with `{"status":"ok"` when the server is ready.
 
 ```bash
-curl -s http://127.0.0.1:3000/ready
-docker compose logs app --tail 20
+curl http://127.0.0.1:3000/ready
 ```
 
-The installation serves the origin that you set, and nothing else. A request
-that names another host is refused.
+When the application does not become healthy, read its log:
 
-## Test data
+```bash
+docker compose logs app
+```
 
-The database, attachments and secrets of this test stay in the directory you
-set in step 1. `.env` and `.tooling/` are in `.gitignore`. The Docker build
-also excludes them.
+## 4. Open the application
 
-`.env.example` holds the full list of settings with production values. Copy it
-when you move to a real installation, and change the three directory settings
-to paths outside the checkout.
+Open `http://127.0.0.1:3000` in a browser. Use this exact address. The server
+serves the address that is set in `.env` and refuses a request for any other
+host name, so `localhost` does not work.
+
+The first visit shows a screen to create the first account. Enter an email
+address and a password. This account is the administrator. The screen closes
+after that account exists, and every later visit shows the sign-in page.
 
 ## Stop and remove
+
+This command stops the application and the database. It keeps all your data.
 
 ```bash
 docker compose down
 ```
 
-The database and attachments are host directories. This command keeps them.
-The `-v` option does not remove data from a host directory. Remove the test
-directory yourself only after you stop the containers and no longer need it.
+To start again, run `docker compose up -d`.
+
+The data of the test stays in `.tooling/quickstart`. Files in that folder
+belong to the container user, so deleting the folder needs administrator
+rights. Stop the containers first. Then delete the folder and the settings
+file:
+
+```bash
+sudo rm -rf .tooling/quickstart
+rm .env
+```
+
+## Next steps
+
+When the test works, install for real. Follow [Self-hosting](self-hosting.md).
+It uses the same scripts, with folders outside the clone and HTTPS.

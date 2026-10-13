@@ -1,91 +1,110 @@
 # Security model
 
 This page is for the person who runs the server, and for the person who trusts
-that server with their notes. Read it before you decide whether tidy notebook fits
-your situation, and before you report a vulnerability.
+that server with their notes. Read it before you decide whether tidy notebook
+fits your situation, and before you report a vulnerability.
 
 To report a problem privately, read [SECURITY.md](../../SECURITY.md).
 
 ## What the operator can see
 
-**The server operator can read every note.** Notes are stored so that the
-server can index them and search them. There is no end-to-end encryption. The
-operator, and anyone with access to the database or the disk, can read the
-content, the note names, and the attachments.
+**The server operator can read every note.** The server stores notes so that it
+can index them and search them. There is no end-to-end encryption. The operator
+can read the content, the note names, and the attachments. So can anyone with
+access to the database or the disk.
 
-In a personal installation the operator and the reader are the same person.
-When the operator invites other people, or lets anybody sign up, each of them
-trusts the operator completely, and nothing in this product changes that. The
-operator of a public service must say so in its privacy notice. The template
-of that notice says it.
+- **Personal installation:** the operator and the reader are the same person.
+- **Shared installation:** the operator invites other people, or lets anybody
+  sign up. Each of them trusts the operator completely. Nothing in this product
+  changes that. The operator of a public service must say so in its privacy
+  notice. The template of that notice says it.
+- **Administrator:** an administrator of the installation is not the operator.
+  An administrator sees the address, the state, the last activity and the
+  storage use of each account. An administrator cannot open a note of another
+  account.
+- **Passwords:** the operator cannot read a password. The database stores a
+  password as a hash. Only the identity database role can reach the hash, and
+  the application role cannot read that table. See
+  [Accounts and identity](../development/identity.md).
 
-An administrator of the installation is not the operator. An administrator sees
-the address, the state, the last activity and the storage use of each account,
-and cannot open a note of another account.
+## What the product expects from you
 
-The operator cannot read a password. A password is stored as a hash that only
-the identity database role can reach, and the application role cannot read that
-table. See [Accounts and identity](../development/identity.md).
+The operator does these tasks. The product cannot do them.
 
-## What the product assumes
-
-- **An account comes in by invitation, or by a sign-up that proves its
-  address.** The setup screen creates the first account, an administrator, and
-  then closes itself. Every later account needs an invitation from an
-  administrator, unless an administrator lets anybody sign up. A sign-up then
-  makes an account only after the person opens the link in a message to the
-  address. A sign-up answers the same for a new and a known address, and it
-  costs the browser a short check. Each account has its own notes, and no
-  account reads the notes of another. The one way to show a note to another
-  person is a link that you publish yourself, and you can stop it at any
-  moment. See [Published links](published-links.md).
-- **Disk encryption is the operator's job.** The product expects encrypted host
-  storage for the database, the attachments, the temporary files, swap, crash
-  output, and the backups. See [Self-hosting](self-hosting.md).
-- **HTTPS is the operator's job.** The application publishes a plain HTTP
-  listener on the loopback address. Put a reverse proxy that terminates HTTPS
-  in front of it. The Compose file holds an optional profile that starts one.
-  See [Self-hosting](self-hosting.md).
-- **A forwarded header is believed only from a named proxy.** The application
-  reads the address of the caller from the connection. It reads a forwarded
-  header only from a proxy that you name, and it names none by default, so a
-  caller cannot state an address of its own choice.
-- **The origin is required.** The configured origin has no default. Cookies and
-  absolute URLs belong to that origin. The installation serves the origins that
-  you name and no other, and it adds no scheme and no port to them. A request
-  from another origin is refused.
-- **A backup key is not recoverable.** If a volume key or a backup key is lost,
-  the data it protects is lost. See
+- **Encrypt the disk.** Use encrypted host storage for the database, the
+  attachments, the temporary files, swap, crash output, and the backups. See
+  [Prepare encrypted storage](self-hosting.md#prepare-encrypted-storage).
+- **Provide HTTPS.** The application publishes a plain HTTP listener on the
+  loopback address. Put a reverse proxy that ends HTTPS in front of it. The
+  Compose file has an optional profile that starts one. See
+  [Set up HTTPS](self-hosting.md#set-up-https).
+- **Name your proxy.** The application reads the address of the caller from the
+  connection. It reads a forwarded header only from a proxy that you name. It
+  names none by default, so a caller cannot state an address of its own choice.
+- **Set the origin.** The origin has no default. Cookies and absolute addresses
+  belong to that origin. The installation serves the origins that you name and
+  no other, and it adds no scheme and no port to them. It refuses a request from
+  another origin.
+- **Keep your keys.** A lost volume key or backup key cannot be recovered. The
+  data that it protects is lost too. See
   [Backup and restore](backup-and-restore.md).
+
+## How accounts come in
+
+- An account comes in by invitation, or by a sign-up that proves its address.
+- The setup screen creates the first account, an administrator, and then closes
+  itself.
+- Every later account needs an invitation from an administrator, unless an
+  administrator lets anybody sign up.
+- A sign-up makes an account only after the person opens the link in a message
+  to the address. A sign-up answers the same for a new and a known address. It
+  costs the browser a short check.
+- Each account has its own notes. No account reads the notes of another.
+- The one way to show a note to another person is a link that you publish
+  yourself. You can stop it at any moment. See
+  [Published links](published-links.md).
 
 ## What the application does on its own
 
-- A browser session or a personal API key reaches the notes of its account.
-  A key does not reach another account. The session cookie is
-  `HttpOnly` and `SameSite`, and an HTTPS deployment marks it secure. A
-  published link carries its own secret in the address. That secret opens what
+**Sessions and keys**
+
+- A browser session or a personal API key reaches the notes of its account. A
+  key does not reach another account.
+- The session cookie is `HttpOnly` and `SameSite`. An HTTPS deployment marks it
+  secure.
+- A published link carries its own secret in the address. That secret opens what
   you published, for reading only, and it reaches nothing else.
 - A write with a browser session must name an origin that the installation
   serves. An API key uses its authorization header.
-- Note content is rendered through one sanitizer. It keeps a safe set of
-  HTML elements with no script, no style and no event, and a link to anything
-  other than a web address, a mail address, another note, or an attachment
-  loses its destination.
+
+**What a note can show**
+
+- The server cleans all note content before it shows it. It keeps a safe set of
+  HTML elements with no script, no style and no event. A link to anything other
+  than a web address, a mail address, another note, or an attachment loses its
+  destination.
 - A published page runs no script, except one file of the server. That file
   draws a diagram in a sandboxed frame and adds a **Copy** button to a code
   block. A page with no diagram and no code block runs no script.
-- An image from another site loads when you open the note. The image must
-  use HTTPS. Its server receives a request from your browser and can see your
+- An image from another site loads when you open the note. The image must use
+  HTTPS. Its server receives a request from your browser and can see your
   address. Do not open a note with an external image if you do not trust its
   source.
-- The database refuses on its own what the application refuses: row access
-  policies scope every row to its workspace, and the runtime role holds no
-  migration right and no right on the identity tables.
+
+**Data and logs**
+
+- The database refuses on its own what the application refuses. Its row rules
+  limit every row to its workspace. The role of the running application has no
+  right to migrate the database and no right on the identity tables.
 - No log holds a note, a search term, a header, a cookie, or a credential.
-- A password reset link goes only to the address of the account, works once
-  for 1 hour, and ends every session of the account. One address gets at most
-  three messages in an hour that a person with no session can cause, whoever
-  asks for them.
+
+**Password reset**
+
+- A reset link goes only to the address of the account.
+- A reset link works once, for 1 hour.
+- A reset ends every session of the account.
+- One address gets at most three messages in an hour that a person with no
+  session can cause, whoever asks for them.
 
 ## What is a vulnerability
 

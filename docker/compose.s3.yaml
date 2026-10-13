@@ -11,7 +11,7 @@
 # ID to `s3_access_key_id` and the secret access key to `s3_secret_access_key`
 # in NOTESAPP_SECRETS_DIR, each with mode 0600 and owner uid 10001. The server
 # still writes the files of one request to NOTESAPP_STORAGE_DIR. See
-# docs/guide/self-hosting.md.
+# docs/guide/operations.md.
 services:
   app:
     environment:

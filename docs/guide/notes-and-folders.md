@@ -1,175 +1,238 @@
 # Notes and folders
 
-This page is for the person who writes the notes. It covers how to make,
-name, sort, move, find, and remove a note.
+This page is for the person who writes the notes. It shows how to make, name,
+move, find, link, sort and remove a note, and how to use folders. The keyboard
+detail is at the end.
 
 ## Make a note
 
-Select **All notes** or a folder name to choose where a new note goes. Then
-select **New note**, the plus button above the tree, or **New note** in the
-command palette. You can also use **New note in this folder** in a folder
-menu. The note opens at once with a name such as `New note`, and the cursor is
-in the note, so you can write at once. A new note goes to your server when a
-connection is there. Until then the sidebar marks it **Local**.
+1. Select **All notes** or a folder name in the sidebar. This chooses where the
+   new note goes.
+2. Select **New note**, the plus button above the tree. You can also use **New
+   note** in the command palette, or **New note in this folder** in the menu
+   of a folder.
+
+The note opens at once with a name such as `New note`, and the cursor is in
+the note. Write now.
+
+A new note goes to your server when a connection is there. Until then, the
+sidebar marks it **Local**.
 
 ## Name a note
 
 Start a new note with a heading, for example `# Trip to Lisbon`. When you
-pause, the note takes the heading as its name. While the name is still the
-name that the heading gave, it follows the heading when you change it. When
-the folder already holds a note of that name, the note takes the name with a
-number after it, for example `Trip to Lisbon 2`. A note that starts with text
-and not with a heading keeps its name. Links to the note from other notes
-follow a new name.
+pause, the note takes the heading as its name. While the note keeps the name
+that the heading gave, the name follows the heading when you change it.
 
-To give a note a name of your own, select the name, which is the last part of
-the line at the top of the screen, and type. The name is kept when you press
-**Enter** or select something else. **Enter** then puts the cursor in the
-note. Press **Escape** to keep the name that the note had. A name that you
-type stays when the heading changes. A daily note keeps the name of its date.
+- When the folder already has a note of that name, the note takes the name
+  with a number after it, for example `Trip to Lisbon 2`.
+- A note that starts with text and not with a heading keeps its name.
+- Links to the note from other notes follow a new name.
 
-- A name needs no `.md` ending. If you type one it is removed, because every
-  note is already a Markdown file.
-- A name holds only the file name. It cannot contain a slash. Use Move to
-  folder to place the note in a folder, or New note in this folder to make a
-  note that starts there.
-- A backslash and a name another note already uses are refused, with one
-  sentence on the note. The last good name stays.
+To give a note a name of your own:
+
+1. Select the name. It is the last part of the line at the top of the screen.
+2. Type the new name.
+3. Press **Enter**, or select something else, to keep the name. **Enter** also
+   puts the cursor in the note. Press **Escape** to keep the old name.
+
+A name that you type stays when the heading changes. A daily note keeps the
+name of its date.
+
+Rules for a name:
+
+- A name needs no `.md` ending. If you type one, the application removes it,
+  because every note is already a Markdown file.
+- A name holds only the file name. It cannot contain a slash. To put a note in
+  a folder, use **Move to folder**. To make a note that starts in a folder, use
+  **New note in this folder**.
+- The application refuses a backslash and a name that another note uses. One
+  sentence on the note says why. The last good name stays.
 
 ## Make a folder
 
-Select **All notes** or a folder name to choose the parent. Then select
-**New folder**, the folder button beside **New note**, or **New folder** in the
-command palette. Type one child name and select **Make folder**. Select the
-chevron beside a folder to expand or collapse it.
+1. Select **All notes** or a folder name. This chooses the parent.
+2. Select **New folder**, the folder button next to **New note**. You can also
+   use **New folder** in the command palette.
+3. Type one name for the new folder, and select **Make folder**.
 
-**Expand all folders**, the last button above the tree, opens every folder.
-When a folder is open, the same button is **Collapse all folders** and closes
-every folder.
+Select the arrow next to a folder to open or close it. **Expand all folders**,
+the last button above the tree, opens every folder. When a folder is open, the
+same button is **Collapse all folders**, and it closes every folder.
 
 A folder is only a path. A new folder writes nothing to the server. It stays
-visible on this device, becomes real as soon as a note lives in it, and stays
-after a note delete.
+visible on this device. It becomes real when a note is in it. It stays when
+you move its last note to Trash.
 
-## Sort the notes
+## Move a note or a folder
 
-Select **Sort notes** above the tree and select an order:
+Drag a note or a folder onto another folder. Drag it onto **All notes** to
+move it to the top.
 
-- **Name, A to Z** and **Name, Z to A** put the notes in alphabet order.
-- **Date created, Newest first** and **Date created, Oldest first** use the
-  time you made each note.
-- **Date updated, Newest first** and **Date updated, Oldest first** use the
-  time you last changed each note.
+You can also use **Move to folder**. It is in the menu of a row, and in the
+note menu in the header, named **Note actions**.
 
-The order applies to the notes in each folder. Folders stay above the notes,
-in alphabet order from A to Z. This device keeps your order until you select another one.
+A move is refused when a note or a folder of that name is already there, or
+when a folder would move into itself. One line at the foot of the tree says
+why.
 
-## The menu of a row
+## Rename a note or a folder
 
-Each row of the tree has a menu. Open it with the button at the end of the
-row, with a right click on the row, or from the keyboard with **Shift + F10**
-or the **Menu** key.
+1. Select the row and press **F2**. You can also select **Rename** in the menu
+   of the row.
+2. Type the new name in the field that opens in the row.
+3. Press **Enter** to keep the new name, or **Escape** to keep the old one.
 
-- A note row offers **Open**, **History**, **Publish**, **Rename**,
-  **Move to folder**, **Duplicate**, **Copy link**, **Export as Markdown** and
-  **Move to Trash**. **Copy link** puts the address of the note on the
-  clipboard. The address opens the note for a person who signs in to your
-  account. To share a note with other people, use **Publish**.
-- A folder row offers **New note in this folder**, **New folder in this
-  folder**, **Rename**, **Move to folder**, **Publish** and **Move to Trash**.
+If you move away from the field, the row also keeps the new name. The focus
+stays where you moved it.
 
-## Move and rename
+When you rename a folder, every note inside it gets the new path.
 
-Drag a note or a folder onto another folder, or onto **All notes** to move it
-to the top. **Move to folder** in the menu of a row, and in the note menu in
-the header, marked **Note actions**, does the same with the keyboard.
-
-To rename a row, select it and press **F2**, or select **Rename** in its menu.
-The name becomes a field in the row. Press **Enter** to keep the new name, or
-**Escape** to keep the old one. When you move away from the field, the row
-also keeps the new name, and the focus stays where you moved it. Renaming a
-folder renames the path of every note inside it. A move or a rename is refused
-when a note or a folder of that name is already there, and when a folder would
-move into itself. The reason appears as one line at the foot of the tree.
-After **Enter**, the field stays open, so you can type a different name. After
-you move away, the row keeps its old name. Press **F2** to try again.
-
-## Select several notes
-
-Hold **Ctrl**, or **Cmd** on a Mac, and select rows to add them to a
-selection. Hold **Shift** and select a row to select every row between it and
-the last row you selected. **Shift + Down** and **Shift + Up** do the same
-from the keyboard, **Space** adds the row that has the focus, and **Ctrl + A**
-selects every row. The open note is part of the selection when you start it.
-
-The menu of a selected row then acts on the whole selection: **Move to folder**
-moves every selected note and folder, and **Move to Trash** moves them all to
-Trash. You can also drag a selected row to move the whole selection. Press
-**Escape** to clear the selection. A plain select of a row also clears it.
-
-## Move through the tree with the keyboard
-
-The tree takes one stop of **Tab**. **Up** and **Down** move between rows,
-**Home** and **End** go to the first and the last row, **Right** opens a
-folder and **Left** closes it or goes to the folder above. **Enter** opens a
-note or selects a folder. **Delete** moves the selection to Trash. When a row
-leaves the tree, for example after **Move to Trash** or **Move to folder**, the
-focus goes to the next row.
+If the application refuses the name, because a note or a folder of that name
+is already there, one line at the foot of the tree says why. After **Enter**,
+the field stays open, so you can type a different name. After you move away,
+the row keeps its old name. Press **F2** to try again.
 
 ## Find a note
 
-Select **Search** in the header, or press **Ctrl + P**. Type a few words.
-Notes whose name matches come first, then notes whose text matches, with a
-short excerpt around the match. An empty box lists the notes you changed most
-recently.
+Select **Search** in the header, or press **Ctrl + P**. Type a few words. The
+list shows notes whose name matches first. Then it shows notes whose text
+matches, with a short excerpt around the match. An empty box lists the notes
+that you changed most recently.
 
-Search works the same in every language. Each word also finds the longer words
-that start with it, so `plan` finds `planning`. A letter with an accent finds
-the same letter without one, so `cafe` finds `café`. Search reads the text as
-you see it in Read mode, so a link address and a Markdown mark do not count.
+- Search works the same in every language.
+- Each word also finds the longer words that start with it. For example,
+  `plan` finds `planning`.
+- A letter with an accent finds the same letter without one. For example,
+  `cafe` finds `café`.
+- Search reads the text as the formatted note shows it. A link address and a
+  Markdown mark do not count.
 
-To search inside the note you have open, use **Ctrl + F** in the editor, or
-**Cmd + F** on a Mac. A band opens above the note. Type in **Find**, then press
-Enter for the next match and Shift and Enter for the one before it, or select
-**Next** and **Previous**. **Select all** selects every match. Type the new
-text in **Replace with** and select **Replace** or **Replace all**, or press
-Enter in that field. **Match case**, **Regular expression** and **Whole word**
-change how the text matches. Press Escape or select the close button to close
-the band. **Ctrl + H**, or **Cmd + Option + F** on a Mac, opens it with the
-replace field.
+### Find text inside one note
+
+1. Press **Ctrl + F** in the editor, or **Cmd + F** on a Mac. A band opens
+   above the note.
+2. Type in **Find**.
+3. Press **Enter** for the next match, or **Shift + Enter** for the match
+   before it. You can also select **Next** and **Previous**.
+
+**Select all** selects every match. To replace text, type the new text in
+**Replace with**. Then select **Replace** or **Replace all**, or press
+**Enter** in that field. **Match case**, **Regular expression** and **Whole
+word** change how the text matches.
+
+Press **Escape**, or select **Close**, to close the band. **Ctrl + H**, or
+**Cmd + Option + F** on a Mac, opens the band with the replace field.
+
+## Remove a note or a folder
+
+1. Open the menu of the note row or the folder row.
+2. Select **Move to Trash**. You can also press **Delete** in the tree.
+
+The note menu in the header and the command palette offer the same action for
+the open note.
+
+The action runs at once. A bar offers **Restore** for a few seconds. A folder
+action moves every note under the folder to Trash. See [Trash](trash.md).
+
+## Sort the notes
+
+1. Select **Sort notes** above the tree.
+2. Select an order.
+
+- **Name** with **A to Z** or **Z to A** puts the notes in alphabet order.
+- **Date created** with **Newest first** or **Oldest first** uses the time you
+  made each note.
+- **Date updated** with **Newest first** or **Oldest first** uses the time you
+  last changed each note.
+
+The order applies to the notes in each folder. Folders stay above the notes,
+in alphabet order from A to Z. This device keeps your order until you select
+another one.
 
 ## Link one note to another
 
-Type `](` to get a list of your notes, and select one to insert a link. `[[`
-opens the same list and also inserts a normal Markdown link, so the file stays
-readable in any other editor.
+Type `](` to get a list of your notes. Select a note to insert a link. Type
+`[[` to open the same list. It also inserts a normal Markdown link, so the
+file stays readable in any other editor.
 
-You can also type a whole wiki link, such as `[[Plan]]`, `[[Plan|the plan]]`
-or `[[Plan#Next steps]]`, as you do in Obsidian. When you type the last `]`
-and a note of that name is in the workspace, the editor changes it to a normal
-link. A paste of plain text does the same. A wiki link that names no note stays as you
-wrote it.
+You can also type a whole wiki link, as you do in Obsidian. Examples are
+`[[Plan]]`, `[[Plan|the plan]]` and `[[Plan#Next steps]]`. When you type the
+last `]` and a note of that name is in the workspace, the editor changes the
+text to a normal link. A paste of plain text does the same. A wiki link that
+names no note stays as you wrote it.
 
 Select a link to open it. The pointer changes over a link, so you can see what
 one click does. To change the text of a link, move the cursor into it with an
-arrow key, or select the text beside it. The link then shows its Markdown
-source and you can edit it. **Alt + Enter** opens the link at the cursor.
+arrow key, or select the text next to it. The link then shows its Markdown
+source, and you can edit it. **Alt + Enter** opens the link at the cursor.
 
 ## See what links to a note
 
 **Links to this note** is at the side of the open note. It lists the notes that
 link to it. Select a name to open that note. Select the title of the list to
-collapse it or to open it again. A note that nothing links to says that no
-notes link here.
+close it or to open it again. When no note links to this note, the list says
+so. A narrow window hides this panel.
 
 The list works without a connection, because this device reads your notes and
 answers. It then says that the links come from this device. A link that you
-type is in the list before you save it. A narrow window hides this side panel.
+type is in the list before you save it.
 
-## Remove a note or a folder
+## The menu of a row
 
-Open the menu of a note row or a folder row and select **Move to Trash**, or
-press **Delete** in the tree. The note menu in the header and the command
-palette offer the same action for the open note. The action runs at once. A
-bar offers **Restore** for a few seconds. A folder action moves every note
-under the folder to Trash. See [Trash](trash.md).
+Each row of the tree has a menu. Open it in one of these ways:
+
+- Select the button at the end of the row.
+- Right click the row.
+- Press **Shift + F10** or the **Menu** key.
+
+A note row offers these items:
+
+- **Open**
+- **History**
+- **Publish**
+- **Rename**
+- **Move to folder**
+- **Duplicate**
+- **Copy link**
+- **Export as Markdown**
+- **Move to Trash**
+
+**Copy link** puts the address of the note on the clipboard. The address opens
+the note for a person who signs in to your account. To share a note with other
+people, use **Publish**.
+
+A folder row offers **New note in this folder**, **New folder in this
+folder**, **Rename**, **Move to folder**, **Publish** and **Move to Trash**.
+
+## Select several notes
+
+Hold **Ctrl**, or **Cmd** on a Mac, and select rows to add them to a
+selection. Hold **Shift** and select a row to select every row between it and
+the last row that you selected. The open note is part of the selection when
+you start it.
+
+The menu of a selected row then acts on the whole selection:
+
+- **Move to folder** moves every selected note and folder.
+- **Move to Trash** moves them all to Trash.
+
+You can also drag a selected row to move the whole selection. Press **Escape**
+to clear the selection. A plain select of a row also clears it.
+
+## Use the keyboard in the tree
+
+The tree takes one stop of **Tab**. Then use these keys:
+
+- **Up** and **Down** move between rows.
+- **Home** and **End** go to the first row and the last row.
+- **Right** opens a folder. **Left** closes it, or goes to the folder above.
+- **Enter** opens a note or selects a folder.
+- **Delete** moves the selection to Trash.
+- **Shift + Down** and **Shift + Up** extend the selection.
+- **Space** adds the row that has the focus to the selection.
+- **Ctrl + A** selects every row.
+- **F2** renames the row.
+
+When a row leaves the tree, for example after **Move to Trash** or **Move to
+folder**, the focus goes to the next row.

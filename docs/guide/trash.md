@@ -1,42 +1,57 @@
 # Trash
 
-This page is for the person who writes the notes. It explains what happens to a
-note you delete.
+This page is for the person who writes the notes. It shows how to get a
+removed note back, and how to delete a note for good.
 
-## Delete a note
+## Get a note back
 
-Open the note menu in the header and select **Move to Trash**. You return to
-the note list and a bar says the note moved to Trash. The bar offers **Restore**
-for a few seconds and then goes away by itself. The note stays in Trash either
-way.
+1. Select **Trash** at the bottom of the sidebar.
+2. Find the note. Each row shows the note name, the folder it came from, and
+   when you moved it to Trash.
+3. Select **Restore** on that row.
 
-## The Trash screen
+The note goes back where it was, and it opens. Its whole history comes back
+with it.
 
-Select **Trash** at the bottom of the sidebar. Each row gives the note name,
-the folder it came from, and when it was deleted. A row that has not reached
-your server yet is marked "waiting to go up".
+A row that has not reached your server yet is marked "waiting to go up".
 
-Two actions sit on every row.
+If the bar that says the note moved to Trash is still on the screen, select
+**Restore** on the bar.
 
-- **Restore** puts the note back where it was and opens it. Its whole history
-  comes back with it.
-- **Delete** shows a tick and a cross. Select the tick to remove the note and
-  every version of it for good. Select the cross to keep the note in Trash.
-  Delete also releases images that no other note uses. You cannot undo this
-  action, and it needs a connection.
+## Move a note to Trash
 
-Select **Clear all** at the top to delete all notes in Trash. Select the tick
-to continue or the cross to keep the notes.
+1. Open the note menu in the header, named **Note actions**.
+2. Select **Move to Trash**.
+
+You return to the note list. A bar says the note moved to Trash. The bar
+offers **Restore** for a few seconds and then goes away by itself. The note
+stays in Trash either way.
+
+You can also use **Move to Trash** in the menu of a row in the tree. See
+[Notes and folders](notes-and-folders.md).
+
+## Delete a note for good
+
+**Delete** removes a note and every version of it for good. You cannot undo
+this action, and it needs a connection. **Delete** also releases images that no
+other note uses.
+
+1. Select **Trash** at the bottom of the sidebar.
+2. Select **Delete** on the row of the note. The row shows a tick and a cross.
+3. Select the tick to remove the note. Select the cross to keep the note in
+   Trash.
+
+To delete all notes in Trash, select **Clear all** at the top. Then select the
+tick to continue, or the cross to keep the notes.
 
 ## What Trash does not do
 
-There is no automatic cleanup. A note stays in Trash until you restore it or
-delete it. Nothing expires.
+- There is no automatic cleanup. A note stays in Trash until you restore it or
+  delete it. Nothing expires.
+- A note that you move to Trash while offline appears in the same list. It
+  reaches your server when the connection returns.
 
-A note you delete while offline appears in the same list and reaches your
-server when the connection returns.
+## Go back to earlier text instead
 
-## If you need an older copy instead
-
-A note that is still in your list keeps every saved version. Use
-[History](saving-and-history.md) rather than Trash to go back to earlier text.
+A note that is still in your list keeps every saved version. To go back to
+earlier text, use [History](saving-and-history.md) and not Trash.

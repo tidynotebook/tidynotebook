@@ -11,7 +11,7 @@
 # X-Forwarded-Proto and X-Forwarded-Host. The application answers the host name
 # of each origin it serves, so the Host header must stay as the browser wrote
 # it. The application believes the forwarded headers only when
-# NOTESAPP_TRUSTED_PROXIES names this proxy. See docs/guide/self-hosting.md.
+# NOTESAPP_TRUSTED_PROXIES names this proxy. See docs/guide/operations.md.
 #
 # No timeout is written here. The application bounds the whole request with
 # NOTESAPP_REQUEST_TIMEOUT_MS and the gap in an upload body with

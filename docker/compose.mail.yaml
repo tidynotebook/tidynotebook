@@ -13,7 +13,7 @@
 # password is a secret: write it to `smtp_password` in NOTESAPP_SECRETS_DIR
 # with mode 0600 and owner uid 10001. An installation that keeps one SMTP URL,
 # or a relay with no sign-in such as `smtp://relay.internal:25`, uses
-# docker/compose.mail-url.yaml instead. See docs/guide/self-hosting.md.
+# docker/compose.mail-url.yaml instead. See docs/guide/operations.md.
 services:
   app:
     environment:

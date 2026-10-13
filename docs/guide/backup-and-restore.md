@@ -1,139 +1,219 @@
 # Backup and restore
 
-This page is for the person who runs the server. It covers encrypted backups,
-the restore procedure, and account recovery.
+This page is for the person who runs the server. It shows how to make an
+encrypted backup, check it, restore it, and what to do when a person loses a
+password.
 
-A backup is not evidence until a restore test passes. Test a restore on a
-separate empty installation, and do it again after every change to the storage
-layout.
+A backup is not proof that you can recover until a restore test passes. Test a
+restore on a separate empty installation. Test it again after every change to
+the storage layout.
 
-## Encrypted backups
+## What you need
 
-Use separate encrypted storage for backups. Create these mode `0600` files outside the backup destination:
+- The three files that the backup commands read. The script
+  `tools/ops/create-secrets.sh` made them in your secrets folder, as
+  [Self-hosting](self-hosting.md#create-the-secret-files) states:
+  - `migration_database_url`: the address of the database. It serves as the
+    database address file, because the backup script replaces the host name
+    when it runs inside the database container.
+  - `backup_key`: the passphrase that encrypts the backups.
+  - `installation_id`: the random ID of this installation.
+- A separate encrypted folder for the backups, for example
+  `/mnt/separate-backups/notesapp`. It must not be inside the storage folder.
+- Node.js, GnuPG and `tar` on the host. The scripts run them there. Under
+  `sudo`, the `PATH` must hold `node`.
 
-- A database URL file for the migration role.
-- A backup passphrase file with at least 32 bytes of strong random data.
-- A stable installation ID file that contains one UUID.
+If you made these files yourself, each one must have mode `0600`. The key file
+holds at least 32 bytes of strong random data. The ID file holds one UUID.
 
-Keep the passphrase and installation ID in an external key store and in the recovery runbook. The backup contains only a hash of the installation ID. A backup from a different installation is rejected.
+Keep a copy of `backup_key` and `installation_id` in a key store that is not
+on this host. A restore needs both. The backup holds only a hash of the
+installation ID, and a backup from a different installation is refused. If a
+volume key or the backup key is lost, stop. Never make a new key and claim
+that it can recover old data.
 
-Run a backup from the repository:
+## Make a backup
+
+Run these steps in the clone folder. The application writes while it runs. The
+database part of a backup is consistent on its own. The attachment files never
+change after they are written, so a save that lands during the backup is in the
+archive in full or not at all. To make the two parts consistent with each
+other, stop the application first.
+
+1. Stop the application:
+
+   ```bash
+   docker compose stop app
+   ```
+
+2. Find the name of the database container. Run this command and read the
+   `NAME` column of the `postgres` row:
+
+   ```bash
+   docker compose ps
+   ```
+
+   The name starts with the name of the clone folder. It is
+   `notesapp-postgres-1` only when the folder is named `notesapp`.
+
+3. Run the backup. Use `sudo`, because the secret files belong to user 10001
+   and only that user and `root` can read them. Put the name of your database
+   container after `--postgres-container`.
+
+   ```bash
+   sudo tools/ops/backup.sh \
+     --storage-root /srv/notesapp/storage \
+     --backup-root /mnt/separate-backups/notesapp \
+     --database-url-file /etc/notesapp/secrets/migration_database_url \
+     --key-file /etc/notesapp/secrets/backup_key \
+     --installation-id-file /etc/notesapp/secrets/installation_id \
+     --postgres-container notesapp-postgres-1
+   ```
+
+4. Start the application again:
+
+   ```bash
+   docker compose start app
+   ```
+
+A new file named `backup-` with the date and time appears in the backup
+folder.
+
+The options mean this:
+
+- `--storage-root` is the folder `NOTESAPP_STORAGE_DIR` in `.env`.
+- `--backup-root` is the folder for the encrypted archives.
+- `--postgres-container` runs the database dump inside the database container.
+  The database port is not published, so use this option with Compose. Leave
+  it out only when `pg_dump` and `psql` on the host can reach the database.
+  The database address never appears in the arguments of a host command.
+
+The command does these things:
+
+1. It lists the attachments that the database references.
+2. It dumps the database.
+3. It copies each referenced attachment, and checks its digest and size.
+4. It writes a manifest with the digests of the database and of each file.
+5. It encrypts the archive with GnuPG AES-256.
+6. It decrypts the finished archive and checks it.
+7. It keeps one backup for each of the newest seven UTC days, and one for each
+   of the newest four ISO weeks.
+
+An installation that keeps its images in an S3 compatible store must back up
+the bucket with the tools of the store, because this command copies a folder.
+See [Object storage](operations.md#object-storage).
+
+## Schedule and watch the backups
+
+Make at least one backup each day. Use the scheduler of your host. Copy the
+encrypted archives to storage that is separate from the application host. Never
+copy the backup key with the archives.
+
+To see the newest archive, list the backup folder. The newest file is first:
 
 ```bash
-./tools/ops/backup.sh \
-  --storage-root /srv/notesapp/storage \
-  --backup-root /mnt/separate-backups/notesapp \
-  --database-url-file /etc/notesapp/backup-database-url \
-  --key-file /etc/notesapp/backup-key \
-  --installation-id-file /etc/notesapp/installation-id \
-  --postgres-container notesapp-postgres-1
+ls -lt /mnt/separate-backups/notesapp
 ```
 
-The storage root is the host directory named by `NOTESAPP_STORAGE_DIR`. An
-installation that keeps its images in an S3 compatible store backs up the
-bucket with the tools of the store, because this command copies a directory.
-See [Object storage](self-hosting.md#object-storage). Omit
-`--postgres-container` when compatible `pg_dump` and `psql` commands can reach
-the database directly. The database URL does not appear in the host command
-arguments.
+Raise an alert when the newest archive is older than one day. Use your own
+monitoring for that.
 
-The command performs these steps:
+## Verify a backup
 
-1. Query the referenced finalized attachment set.
-2. Dump PostgreSQL.
-3. Copy each referenced attachment and verify its database digest and size.
-4. Create a manifest with database and object digests.
-5. Encrypt the archive with GnuPG AES-256 symmetric encryption.
-6. Decrypt and verify the completed archive.
-7. Keep one backup for each of the newest seven UTC days and one backup for each of the newest four ISO weeks.
-
-### Backup consistency
-
-The database part is consistent on its own, because `pg_dump` reads one
-transaction snapshot. The attachment files are content addressed by their
-digest, so a file that the dump references is never rewritten in place. A save
-that lands during the backup is therefore either fully in the archive or fully
-absent from it.
-
-For an archive that is also consistent across the two parts, stop the
-application first and start it again after the backup:
+This command decrypts one archive and checks its contents, and restores
+nothing. Use a file name from the listing above.
 
 ```bash
-docker compose stop app
-./tools/ops/backup.sh ...
-docker compose start app
-```
-
-Schedule at least one backup each day. Copy the encrypted archives to storage that is separate from the application host. Do not copy the backup key with the archives.
-
-Check the age of the newest archive in the backup directory:
-
-```bash
-ls -t /mnt/separate-backups/notesapp/backup-*.tar.gpg | head -1
-find /mnt/separate-backups/notesapp -name 'backup-*.tar.gpg' -mtime -1 | head -1
-```
-
-The second command prints nothing when no archive is newer than one day. Alert
-on that empty result.
-
-Verify an archive without a restore:
-
-```bash
-./tools/ops/verify-backup.sh \
+sudo tools/ops/verify-backup.sh \
   --backup-file /mnt/separate-backups/notesapp/backup-20260906-120000Z.tar.gpg \
-  --key-file /etc/notesapp/backup-key \
-  --installation-id-file /etc/notesapp/installation-id
+  --key-file /etc/notesapp/secrets/backup_key \
+  --installation-id-file /etc/notesapp/secrets/installation_id
 ```
 
 ## Restore
 
-Stop the application with `docker compose stop app`. Create a new empty database and an empty attachment directory. Use the same installation ID and the correct backup key.
+A restore puts one backup into a new, empty installation. It never replaces
+data that exists. The easiest way is a fresh installation that has started
+once and has no notes.
 
-```bash
-./tools/ops/restore.sh \
-  --backup-file /mnt/separate-backups/notesapp/backup-20260906-120000Z.tar.gpg \
-  --storage-root /srv/notesapp-restored/storage \
-  --database-url-file /etc/notesapp/restore-database-url \
-  --key-file /etc/notesapp/backup-key \
-  --installation-id-file /etc/notesapp/installation-id \
-  --postgres-container notesapp-postgres-1
-```
+The script refuses to run when the database already has a workspace or the
+storage folder is not empty. So the target is a new empty database and an empty
+storage folder. The database address file points at the new database. It is the
+file `migration_database_url` of the new installation.
 
-Restore refuses a nonempty storage target or a database that contains a workspace. It verifies the encrypted archive before it changes the target. After restore, it checks every database-referenced attachment against the restored byte digest and size.
+1. Make the new installation. Follow [Self-hosting](self-hosting.md) up to
+   [Start the server](self-hosting.md#start-the-server). Do not create an
+   account.
+2. Stop the application, so that nothing writes while you restore:
 
-Give the restored storage directory to uid 10001 before you start the
-application:
+   ```bash
+   docker compose stop app
+   ```
 
-```bash
-sudo chown -R 10001:10001 /srv/notesapp-restored/storage
-```
+3. Get the saved copies of `backup_key` and `installation_id` from your key
+   store. The new installation made files of the same names with other values,
+   and they cannot open the old archives. Put the saved copies in a folder on
+   the host, for example `/root/restore`. Give each file mode `0600`, so that
+   only its owner can read it.
+4. Find the name of the new database container with `docker compose ps`, as in
+   the backup steps.
+5. Run the restore. The storage root is the empty storage folder of the new
+   installation.
 
-Start the application only after the restore command succeeds. Check `/ready`, open representative notes and attachments, and run a new backup. Test restoration regularly on a separate empty installation. A backup is not accepted recovery evidence until this test passes.
+   ```bash
+   sudo tools/ops/restore.sh \
+     --backup-file /mnt/separate-backups/notesapp/backup-20260906-120000Z.tar.gpg \
+     --storage-root /srv/notesapp/storage \
+     --database-url-file /etc/notesapp/secrets/migration_database_url \
+     --key-file /root/restore/backup_key \
+     --installation-id-file /root/restore/installation_id \
+     --postgres-container notesapp-postgres-1
+   ```
 
-If a volume key or backup key is unavailable, stop. Do not create a replacement key and claim that it can recover old data.
+   The script verifies the archive before it changes anything. It then loads
+   the database and copies the attachments. At the end it checks each
+   attachment against the digest and the size in the database.
+
+6. Give the restored attachments to user 10001, the user inside the
+   application container:
+
+   ```bash
+   sudo chown -R 10001:10001 /srv/notesapp/storage
+   ```
+
+7. Start the application:
+
+   ```bash
+   docker compose start app
+   ```
+
+8. Check that the server is ready. Open some notes and attachments. Then make a
+   new backup.
+
+   ```bash
+   curl http://127.0.0.1:3000/ready
+   ```
 
 ## Two facts a restore depends on
 
-- The database row access policies name the migration role **by the name it had
-  when the migration ran**. A restore into a cluster where the schema owner has
-  a different name leaves that owner without a policy, and the forced row
-  access then hides every row from it. Restore under the same role name, or
-  repoint every owner policy before you use the installation.
-- The migration sets the runtime password with a DDL statement. An installation
-  that logs DDL, or captures it through an audit extension, holds that password
-  in its log. Rotate the runtime password after you enable such logging, and
-  keep the log under the same encryption policy as the data.
+- The row access rules of the database name the migration role by the name it
+  had when the migration ran. A restore into a database where the schema owner
+  has a different name leaves that owner without a rule. The database then
+  hides every row from it. Restore under the same role name, or change every
+  owner rule before you use the installation.
+- The migration sets the runtime password with a DDL statement. An
+  installation that logs DDL, or captures it with an audit extension, holds that
+  password in its log. Change the runtime password after you turn on such
+  logging. Keep the log under the same encryption rules as the data.
 
 ## Account recovery
 
-A person who loses the account password has no path inside the application. If
-a mail transport is configured, the sign-in page can send a reset link.
-Otherwise run this on the host, which reads a password from a protected file or
-a hidden prompt and revokes the old sessions:
+A person who loses the account password has no way to get it back inside the
+application. When the server can send mail, the sign-in page sends a reset link
+after the person selects **Forgot password**. Otherwise set a new password from
+the server. The command asks for it on the terminal and signs the account out
+everywhere. See [Account commands](operations.md#account-commands).
 
-```sh
-pnpm account:recover
+```bash
+docker compose exec app node server/dist/cli/recover-account.js --email person@example.com
 ```
-
-If a volume key or a backup key is unavailable, stop. Do not create a
-replacement key and claim that it can recover old data.

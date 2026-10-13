@@ -1,589 +1,305 @@
 # Self-hosting
 
-This page is for the person who runs the server. It is the production
-installation guide.
+This page is for the person who runs the server. It takes you from an empty
+Linux host to a tidy notebook server that runs behind HTTPS, with encrypted
+storage and a first administrator account. Do the steps in order.
 
-For the shortest path from a clone to the setup screen, read
-[Quick start](quickstart.md). When the installation runs, read
-[Backup and restore](backup-and-restore.md), [Upgrade](upgrade.md), and the
-[Security model](security-model.md).
+To try tidy notebook first, follow the [Quick start](quickstart.md). It sets up
+a test installation on your own machine with one script.
 
-tidy notebook runs as one application service and one PostgreSQL service. The
-application container applies the database migrations and then serves the web
-app, the REST API, and the authentication routes on one origin.
+tidy notebook runs as two Compose services: one application and one PostgreSQL
+database. The application updates the database when it starts. It then serves
+the web app, the REST API and the sign-in routes on one address. Do not
+publish the database port. The database network is private.
 
-Put an HTTPS reverse proxy in front of `127.0.0.1:3000`. The Compose file
-carries an optional profile that starts one for you. Read
-[Behind a reverse proxy](#behind-a-reverse-proxy) below. Do not publish the
-PostgreSQL port. The Compose database network is private. The application uses
-a second network for optional SMTP and other required outbound traffic.
+1. [What you need](#what-you-need): the tools and the host.
+2. [Get the code](#get-the-code): clone the repository.
+3. [Prepare encrypted storage](#prepare-encrypted-storage): check that all
+   data goes to an encrypted disk.
+4. [Create the data directories](#create-the-data-directories): make the
+   folders for the database and the attachments.
+5. [Create the secret files](#create-the-secret-files): make the passwords and
+   keys.
+6. [Write the settings file](#write-the-settings-file): copy `.env.example` to
+   `.env` and edit it.
+7. [Start the server](#start-the-server): build and start the containers.
+8. [Set up HTTPS](#set-up-https): put a TLS proxy in front.
+9. [Create the first account](#create-the-first-account): make the
+   administrator.
 
-The Compose file publishes the application on `127.0.0.1` only. For temporary
-access from a trusted local network, publish it on all interfaces and use the
-local-network URL as the origin:
+## What you need
 
-```bash
-NOTESAPP_BIND_HOST=0.0.0.0
-NOTESAPP_ORIGIN=http://192.0.2.10:3000
-```
+You need a Linux host that you control, and a user that can run `sudo`.
+Install these tools on the host:
 
-Replace the documentation address with the host address. Run only one
-application listener on port 3000. The core workspace, identifier, digest, and
-save paths work when a plain HTTP browser does not provide secure-context APIs.
-Some optional browser functions, such as service worker installation and the
-asynchronous clipboard, can still be unavailable on plain HTTP. Use HTTPS for
-a permanent deployment and for full offline installation behavior.
+- Docker Engine and Docker Compose. They run the server.
+- Git. It gets the code.
+- Node.js. The backup scripts run it on the host. Under `sudo`, the `PATH` of
+  `sudo` must hold `node`.
+- GnuPG. The backup scripts use it to encrypt the backups.
+- The PostgreSQL client tools. They give the backup scripts access to the
+  database when you do not use the container option.
+- `lsblk`. The encrypted storage check uses it.
 
-## Behind a reverse proxy
+The versions that this code was built with are in `docker-compose.yml`,
+`.node-version` and the root `package.json`. A newer compatible tool can work.
+Write down the versions that you use.
 
-A proxy terminates HTTPS and sends each request to the application. Three
-things belong to you.
+For HTTPS you also need a domain name that points to the host, and open ports
+80 and 443.
 
-**Pass the original `Host` header.** The application answers the host name of
-each origin it serves and refuses every other host. Caddy and Traefik pass the
-header on their own. nginx passes it when you set it.
+The database needs the `btree_gin` and `unaccent` extensions. The Compose
+database image has both. A database that you run yourself needs the contrib
+modules of PostgreSQL. The migrations add both extensions to the `public`
+schema, and they need no superuser.
 
-**Name the proxy.** A proxy replaces the address of the caller with its own,
-and it states the original address in a forwarded header. Any caller that
-reaches the listening port can write that header, so the application believes
-it only from a proxy that you name in `NOTESAPP_TRUSTED_PROXIES`. The value is
-empty by default, which believes no forwarded header at all. Name an IP
-address, a range in CIDR form, or one of `loopback`, `linklocal` and
-`uniquelocal`, and separate two entries with a comma. The attempt limits of the
-setup screen and the sign-in screen count each client only when this value
-names your proxy. Without it every client behind the proxy shares one count.
+## Get the code
 
-A range such as `uniquelocal` covers every private address, so name a range
-only when the proxy is the one caller that reaches the listening port. Keep
-`NOTESAPP_BIND_HOST` on the loopback address, and prefer the address of the
-proxy itself when you know it.
-
-**Name the listening port when your origin carries one.** `NOTESAPP_ORIGIN` is
-the public address, and `NOTESAPP_PORT` is the port that the server listens on.
-The two are different addresses when a proxy publishes the installation on
-another port. A server that starts with a port in the origin and no
-`NOTESAPP_PORT` stops and names the value to set. The Compose file and the
-image both set it already.
-
-The application compresses its own files and its large answers, so a proxy
-does not have to. A proxy that compresses too leaves those answers as they
-are.
-
-### The TLS profile
-
-The Compose file holds an optional Caddy service in the `tls` profile. It
-terminates HTTPS, gets the certificate on its own, passes the original `Host`,
-and adds the forwarded headers. `docker/Caddyfile` is its whole configuration.
-A default `docker compose up` does not start it.
-
-Name the domain and the trusted proxy in `.env`, then start the profile:
+This command copies the code to a folder named `notesapp`. The second command
+goes into that folder. Run all later commands in it.
 
 ```bash
-NOTESAPP_DOMAIN=notes.example.com
-NOTESAPP_ORIGIN=https://notes.example.com
-NOTESAPP_TRUSTED_PROXIES=uniquelocal
-NOTESAPP_TLS_DIR=/srv/notesapp/tls
+git clone https://github.com/tidynotebook/tidynotebook.git notesapp
+cd notesapp
 ```
 
-```bash
-docker compose --profile tls up -d
-docker compose --profile tls ps
-```
+The repository is private until launch. Before launch, a clone needs access
+from the owner.
 
-The domain must resolve to this host, and ports 80 and 443 must reach it, so
-that the certificate authority can answer the challenge. Caddy writes the
-certificate and its private key under `NOTESAPP_TLS_DIR`, so put that directory
-on encrypted host storage with the other data directories.
+Compose names the containers after this folder. The backup steps use the
+container name, so keep the folder name in your installation notes.
 
-An installation with a separate address for published pages names that host
-in `NOTESAPP_PUBLISHED_DOMAIN` too, and the proxy gets a certificate for each
-of the two.
+To install a fixed release, check out its tag in the clone, for example
+`git checkout v1.2.3`.
 
-With no `NOTESAPP_DOMAIN` the proxy answers `localhost` with a certificate that
-it makes itself. That serves a check on your own machine and nothing else,
-because no browser trusts that certificate.
-
-Stop the profile with the profile name, so that the proxy stops as well:
-
-```bash
-docker compose --profile tls down
-```
-
-The proxy does not read the readiness answer of the application. With one
-application container a stop is short, and the proxy reports a failure until
-the container serves again.
-
-## Host requirements
-
-Install Docker Engine, Docker Compose, GnuPG, the PostgreSQL client tools, and
-`lsblk`. The versions this installation was built against are in
-`docker-compose.yml`, `.node-version`, and the root `package.json`. A newer
-compatible host tool can work. Record the version you used in your own
-installation record.
-
-The database needs the `btree_gin` and `unaccent` extensions, which come with
-the contrib modules of PostgreSQL. The Compose image holds both. A database
-that you run yourself needs those modules installed. The migrations add both
-extensions to the `public` schema, and no superuser is needed.
+## Prepare encrypted storage
 
 Use encrypted host storage before you create the data directories. The
-encryption boundary must include:
+encryption must cover all of these:
 
-1. PostgreSQL data and WAL.
-2. tidy notebook attachment data.
+1. PostgreSQL data and its write-ahead log (WAL).
+2. The attachment data of tidy notebook.
 3. Persistent temporary files.
 4. Swap.
 5. Core files and other crash output.
 6. Local and remote backup storage.
 
-Run the host check with the real host paths:
+This command checks that each path is on an encrypted disk. Replace each path
+with a real path of your host. The paths are, in order: the attachments, the
+database (PostgreSQL keeps its WAL inside the database directory), the
+backups, the temporary files and the crash dumps. The command also checks
+active swap.
 
 ```bash
-./tools/ops/check-host.sh \
+tools/ops/check-host.sh \
   --storage-dir /srv/notesapp/storage \
   --db-dir /srv/notesapp/postgres \
-  --wal-dir /srv/notesapp/postgres-wal \
   --backup-dir /mnt/separate-backups/notesapp \
-  --temp-dir /srv/notesapp/tmp \
+  --temp-dir /tmp \
   --crash-dir /var/lib/systemd/coredump
 ```
 
-The command fails if it cannot prove that a target has an encrypted block-device parent. It also checks active swap and the configured core-dump target. A container cannot perform this host check reliably.
+The command prints `[OK]` for each path that it proves is encrypted. It fails
+when it cannot prove that a path has an encrypted disk. Run it on the host. A
+container cannot do this check.
 
-Store volume keys outside the data directories and outside all data backups. Use a protected key store, TPM policy, HSM, or an operator-held offline key. Record the unlock procedure. Test it after a restart. For LUKS rotation, add and test a new key slot before you remove the old key slot. Never generate an automatic replacement key when an existing key is missing.
+Store the volume keys outside the data directories and outside all backups.
+Use a protected key store, a TPM policy, an HSM or a key that you keep offline.
+Write down how to unlock the disk. Test the unlock after a restart. To rotate
+a LUKS key, add and test a new key slot before you remove the old one. When a
+key is missing, never make a new key to replace it.
 
-## Data directories
+## Create the data directories
 
-Both services bind-mount host directories, so the host check, the backup
-script, and the restore script all name the same paths. Create them before the
-first start:
+The database and the attachments live in folders on the host. The host check,
+the backup script and the restore script all use these same paths. Create the
+folders before the first start:
 
 ```bash
 sudo mkdir -p /srv/notesapp/postgres /srv/notesapp/storage
 sudo chown 10001:10001 /srv/notesapp/storage
 ```
 
-The storage directory must belong to uid 10001, which is the `notesapp` user of
-the image. PostgreSQL sets the owner of its own directory. Name both paths in
-`.env` with `NOTESAPP_DATABASE_DIR` and `NOTESAPP_STORAGE_DIR`. Both are
-required and neither has a default.
+The second command gives the attachments folder to user 10001. That is the
+`notesapp` user inside the application container. The container cannot write
+to a folder that belongs to another user. PostgreSQL sets the owner of its own
+folder.
 
-## Object storage
+## Create the secret files
 
-By default, the server keeps the images of the notes, an upload that waits for
-its note, and an import that arrives in parts in the storage directory. One
-server needs nothing more.
-
-You can keep them in an S3 compatible store instead, such as Cloudflare R2,
-MinIO or AWS S3. Use a store when more than one server runs the same
-installation, because each server must read what another server wrote. The
-object keys of the images are the paths in the storage directory, so you can
-move an installation between the two by copying the files.
-
-To use a store:
-
-1. Make a bucket, and a key pair that can read, write, list and delete in it.
-   Do not make the bucket public. The server sends each image itself, so it
-   gives no address of the store to a browser.
-2. Write the access key ID to `s3_access_key_id` and the secret access key to
-   `s3_secret_access_key` in the secret directory, with mode `0600` and owner
-   uid 10001.
-3. Set `NOTESAPP_S3_BUCKET` and `NOTESAPP_S3_REGION` in `.env`. For R2 or
-   MinIO, also set `NOTESAPP_S3_ENDPOINT`. R2 takes the region `auto`.
-4. Add `docker/compose.s3.yaml` to `COMPOSE_FILE`.
-
-The server still needs the storage directory, because it checks each upload and
-each import there for the time of one request. The readiness check reports
-`storage` as degraded when the store does not answer, or when it does not
-take a write. To check the write, each server writes and removes one small
-object under `probe/` at most once in ten minutes.
-
-Each day, the server removes an upload that nobody finished and an import that
-nobody completed, when they are older than one day. Also add a lifecycle rule
-to the bucket that aborts an incomplete multipart upload after one day. The
-rule removes an upload that the server can no longer find, for example after
-a stop in the middle of a start. R2, MinIO and AWS each have such a rule. The
-backup script of
-[Backup and restore](backup-and-restore.md) copies the storage directory and
-not a bucket, so back up the bucket with the tools of the store.
-
-## Protected configuration
-
-Copy `.env.example` to `.env`. The `.env` file contains only nonsecret
-settings. Set `NOTESAPP_ORIGIN` to the public HTTPS origin. This value is
-required and has no default: `docker compose up` stops with a message that
-names it when it is not set. Leave `NOTESAPP_ADDITIONAL_ORIGINS` empty unless a
-second address reaches this installation. Write each additional origin in full,
-with its scheme and its port, and use the scheme of `NOTESAPP_ORIGIN` for each
-one. One installation serves HTTP or HTTPS, not both, because one cookie policy
-serves all of its origins. An empty list serves `NOTESAPP_ORIGIN` and nothing
-else.
-
-An empty `NOTESAPP_PUBLISHED_ORIGIN` shows published pages on
-`NOTESAPP_ORIGIN`. You can show them on an origin of their own instead. Set
-`NOTESAPP_PUBLISHED_ORIGIN` to that origin, for example
-`https://pages.example.net`, and point that host name at the same server. Use
-a host name that no other origin uses, and the scheme of `NOTESAPP_ORIGIN`. The
-published origin serves published pages and nothing else, and it sets no
-cookie. When a browser blocks a harmful page that a person published, the
-block then stays on that origin and does not block the application.
-
-Set `NOTESAPP_SECRETS_DIR` and create the directory it names. This value is
-required and has no default, as `NOTESAPP_DATABASE_DIR` and
-`NOTESAPP_STORAGE_DIR` are: `docker compose up` stops with a message that
-names the one that is missing. Keep all three outside the repository, so that
-a checkout, a copy, or a `git clean` cannot carry the secrets or delete the
-data, and so that a service that writes its tree as its own user cannot leave
-a directory that you cannot read. `.env.example` already names
-`/etc/notesapp/secrets`.
-
-Create these files with mode `0600` and owner uid 10001, which is
-the `notesapp` user of the image. The application runs as that user and cannot
-read a file that belongs to another owner:
-
-| File                        | Content                                                                       |
-| --------------------------- | ----------------------------------------------------------------------------- |
-| `postgres_password`         | Password for the initial PostgreSQL administrator.                            |
-| `migration_database_url`    | PostgreSQL URL for the administrator or migration role, with host `postgres`. |
-| `runtime_database_password` | A unique password of at least 12 characters for `notesapp_app`.               |
-| `auth_database_password`    | A different password of at least 12 characters for `notesapp_auth`.           |
-| `runtime_database_url`      | URL for `notesapp_app`, with host `postgres`.                                 |
-| `auth_database_url`         | URL for `notesapp_auth`, with host `postgres`.                                |
-| `auth_secret`               | A random session-signing secret of at least 32 characters.                    |
-
-Set the owner and the mode after you write the files:
+Compose reads seven secret files and makes none of them. A secret never goes
+in `.env`. This script writes the seven files with new random passwords. It
+also writes two more files that the backup scripts use.
 
 ```bash
-sudo chown 10001:10001 /etc/notesapp/secrets/*
-sudo chmod 600 /etc/notesapp/secrets/*
+sudo tools/ops/create-secrets.sh /etc/notesapp/secrets
 ```
 
-The migration URL can use the initial PostgreSQL administrator for the first installation. The migration creates the restricted application roles and sets their passwords. Do not give either application role migration rights.
+The script makes the folder when it does not exist. Each file gets mode `0600`
+and owner 10001, because the application cannot read a file that belongs to
+another user. Only `root` can set that owner, so the script needs `sudo`. The
+script never replaces a file that exists. This protects the passwords that
+the database already holds.
 
-An administrator can set the mail server in the application, so it needs no
-secret file. When you set it in the environment instead, its password is a
-secret too. `docker/compose.mail.yaml` adds it, and [Mail](#mail) states how.
-Do not put credentials in `.env`, process arguments, logs, or Git.
+These are the nine files:
 
-Validate and start the installation:
+| File                        | Content                                                                                 |
+| --------------------------- | --------------------------------------------------------------------------------------- |
+| `postgres_password`         | The password of the database administrator.                                             |
+| `migration_database_url`    | The database address of the administrator, with host `postgres`. The migration uses it. |
+| `runtime_database_password` | The password of the restricted database role `notesapp_app`.                            |
+| `auth_database_password`    | A different password, for the restricted role `notesapp_auth`.                          |
+| `runtime_database_url`      | The database address of `notesapp_app`, with host `postgres`.                           |
+| `auth_database_url`         | The database address of `notesapp_auth`, with host `postgres`.                          |
+| `auth_secret`               | The random secret that signs the sessions.                                              |
+| `backup_key`                | The passphrase that encrypts the backups. Compose does not read it.                     |
+| `installation_id`           | A random ID of this installation, which each backup carries. Compose does not read it.  |
+
+The first migration creates the two restricted roles and sets their passwords.
+Never give either role the right to change the database structure.
+
+Copy `backup_key` and `installation_id` to a safe place that is not this host,
+for example a password manager. Without them, no backup of this installation
+can be restored.
+
+The mail password and the S3 keys are not in this list. You add them later,
+only if you use them. [Server operations](operations.md) states how. An
+administrator can also set the mail server in the application, and then it
+needs no secret file.
+
+## Write the settings file
+
+The file `.env` holds the settings that are not secret. Copy the example file:
+
+```bash
+cp .env.example .env
+```
+
+Open `.env` in a text editor. Change these lines. `.env.example` shows an
+example value for each one, and the examples match the folders of the steps
+above.
+
+- `NOTESAPP_ORIGIN`: the public address of the server, with `https://`. The
+  server serves this address and refuses a request for any other host.
+- `NOTESAPP_DATABASE_DIR`: the database folder.
+- `NOTESAPP_STORAGE_DIR`: the attachments folder.
+- `NOTESAPP_SECRETS_DIR`: the folder of the secret files.
+
+These four values are required and have no default. `docker compose up` stops
+and names the one that is missing. Keep the three folders outside the clone.
+Then a copy of the clone or `git clean` cannot carry the secrets or delete the
+data. A service that writes its folder as its own user also cannot leave a
+folder that you cannot read.
+
+One installation serves HTTP or HTTPS, never both, because one cookie policy
+serves all its addresses. Leave `NOTESAPP_ADDITIONAL_ORIGINS` empty unless a
+second address reaches this installation. Write each extra address in full,
+with its port, and with the same scheme as `NOTESAPP_ORIGIN`.
+
+Leave every other line as it is. [Configuration](configuration.md) states what
+each line does. Never put a password in `.env`.
+
+## Start the server
+
+First check the settings. This command prints nothing when the settings are
+valid. Otherwise it names the missing value.
 
 ```bash
 docker compose config --quiet
+```
+
+Then build the image, start the containers in the background, and show their
+state:
+
+```bash
 docker compose build
 docker compose up -d
 docker compose ps
 ```
 
-Compose waits for PostgreSQL. The application container then runs its entry
-point, which applies the migrations with the migration role and starts the
-server with the restricted runtime role.
+The build takes a few minutes the first time. Compose starts the database
+first. The application container then applies the database migrations with
+the administrator role. After that it starts the server with the restricted
+role. The application is ready when `docker compose ps` shows it as healthy.
+Run `docker compose ps` again if it still shows starting.
 
-When a migration fails, the entry point exits with a nonzero status and the
-container stops. The `unless-stopped` restart policy starts it again, so the
-container repeats the attempt until the cause is fixed. Read
-`docker compose logs app` for the failure, fix the cause, and the next attempt
-completes. Both services rotate their container logs, so a repeated attempt
-cannot fill the disk. Startup also fails when a required secret file, storage
-mount, or database connection is not usable.
+When the application does not become healthy, read its log:
 
-Open the web application after the first startup. Enter the email address and
-password of the first account, which is the administrator. The setup operation
-is available only until this account exists. Use `pnpm owner:bootstrap` only
-when an unattended installation must create the same first account before a
-browser opens.
-
-## Migrate and serve as two steps
-
-The entry point of the image takes one optional command. With no command, it
-applies the migrations and then serves, as above. A Compose installation needs
-no command, and nothing changes for it.
-
-A platform that runs more than one copy of the application can do the two
-steps apart. Then only the migration step holds the migration secret.
-
-- `migrate` applies the migrations with the migration role, and then the
-  container stops. It reads `migration_database_url`,
-  `runtime_database_password` and `auth_database_password`.
-- `serve` starts the server with the restricted runtime role. It reads no
-  migration setting, so a serving container needs no migration secret.
-
-A platform that mounts no file, such as a platform that gives a service
-variables only, sets each secret in a variable instead. `migrate` then reads
-`NOTESAPP_MIGRATION_DATABASE_URL`, `NOTESAPP_RUNTIME_PASSWORD` and
-`NOTESAPP_AUTH_PASSWORD`. `serve` reads `NOTESAPP_DATABASE_URL`,
-`NOTESAPP_AUTH_DATABASE_URL`, `NOTESAPP_AUTH_SECRET`, and the other secrets
-that you use. Each secret has a variable and a file. Set one of the two, never
-both. [Configuration](configuration.md) names each one.
-
-Run `migrate` once for each new version, and do not run it in each serving
-container. A serving container that starts before the migrations are complete
-does not report ready, so the platform sends it no traffic. It reports ready
-when the migrations are complete, with no restart.
-
-Give the command after the path of the entry point. On a platform, set it as
-the start command of the service, for example `/app/entrypoint.sh serve`. With
-Compose, run the migration step like this:
-
-```sh
-docker compose run --rm app /app/entrypoint.sh migrate
+```bash
+docker compose logs app
 ```
 
-## Accounts and invitations
+A failed migration stops the container. The restart policy starts it again, so
+it repeats the attempt until you fix the cause. The log names the cause. A
+missing secret file, storage folder or database connection also stops the
+start. Both services rotate their logs, so repeated attempts cannot fill the
+disk.
 
-Every later account needs an invitation. An administrator invites a person in
-the application, as [Accounts and invitations](accounts.md) states. You can
-also invite a person from the server:
+## Set up HTTPS
 
-```sh
-pnpm account:invite --email person@example.com
+The server must run behind HTTPS. The short way is the Caddy proxy in the
+Compose file. It gets a certificate for your domain on its own. To use your own
+proxy instead, read
+[Behind a reverse proxy](operations.md#behind-a-reverse-proxy).
+
+1. Point the domain at this host. Check that ports 80 and 443 reach it. The
+   certificate authority uses them to prove that the domain is yours.
+2. Open `.env` in a text editor and set these lines:
+   - `NOTESAPP_DOMAIN=notes.example.com`: your domain.
+   - `NOTESAPP_ORIGIN=https://notes.example.com`: the same domain, with
+     `https://`.
+   - `NOTESAPP_TRUSTED_PROXIES=uniquelocal`: this names the proxy as the one
+     caller that the server believes. Without it, every client behind the proxy
+     shares one count in the attempt limits of the sign-in screen.
+   - `NOTESAPP_TLS_DIR=/srv/notesapp/tls`: the folder where Caddy keeps the
+     certificate and its private key. Put it on encrypted host storage.
+3. Start the proxy with the application. This command starts the `tls`
+   profile.
+
+   ```bash
+   docker compose --profile tls up -d
+   docker compose --profile tls ps
+   ```
+
+4. Open your address in a browser. The setup screen shows. Continue with the
+   next step.
+
+The value `uniquelocal` covers every private address. It fits here because
+the application port is open only to the host itself and to the proxy. Read the warning in
+[Behind a reverse proxy](operations.md#behind-a-reverse-proxy) before you name
+a range for another setup.
+
+## Create the first account
+
+The first account is the administrator. The setup screen is open only until
+this account exists. Anyone who reaches it first can make the account, so
+create it as soon as the proxy runs. Use one of these ways.
+
+**In a browser.** Open the address from `NOTESAPP_ORIGIN`. Enter an email
+address and a password.
+
+**On the command line.** This needs no browser, and it works before HTTPS
+too. Use it to close the setup screen before the server is public. Run it in
+the clone folder. It asks for the password on the terminal and does not show
+it.
+
+```bash
+docker compose exec app node server/dist/cli/bootstrap.js --email you@example.com
 ```
 
-With a mail server, the link goes to the address. Without one, the command
-prints the link once. Send it to the person yourself.
+The command may print a Node.js warning about `localStorage` first. The
+warning is harmless. Add `--name "Your name"` to set the name of the account.
+The default name is Owner. Each later account needs an invitation. See
+[Account commands](operations.md#account-commands).
 
-When no administrator can sign in any more, make an account an administrator
-again. The command also enables the account:
+## Next steps
 
-```sh
-pnpm account:promote --email person@example.com
-```
+The server runs. Do these things next.
 
-These optional settings of `.env` apply to accounts.
-`NOTESAPP_ACCOUNT_LIMIT_BYTES` is the storage limit, in bytes, that a new
-account starts with. An administrator changes the limit of one account in the
-application. `NOTESAPP_INVITATION_LIFETIME_HOURS` is how long a new invitation
-works. `NOTESAPP_PENDING_ACCOUNT_HOURS` is how long a sign-up waits for the
-person to open the link in its message. After that the server removes the
-sign-up. `NOTESAPP_SIGNUP_DIFFICULTY` sets how hard the check of the browser is
-at a sign-up, from 8 to 28. Each step doubles the time that the browser takes.
-The check runs in the browser and sends nothing to another service.
-
-A public service names its terms and its privacy notice. An administrator
-writes both in the application, from a template, as
-[Accounts and invitations](accounts.md#legal-documents) states. Each
-account stores the versions that it accepted and when. When a version changes,
-each person accepts it again before the application opens. An installation
-with no documents asks for nothing.
-
-You can name both documents in the environment instead. The environment then
-wins, and the accounts page shows the documents and offers no change. Each
-document has a version, `NOTESAPP_TERMS_VERSION` and
-`NOTESAPP_PRIVACY_VERSION`, and one source: an address on another site,
-`NOTESAPP_TERMS_URL` and `NOTESAPP_PRIVACY_URL`, or a Markdown file that the
-server shows itself, as [Open sign-up](#open-sign-up) states. Name both
-documents or neither. A change of a file with the same version reaches a
-person at the next start and asks nobody again, which suits a fixed typo.
-
-A sign-in needs a proved address. The first account and an invited account
-prove their address when they are made, so an installation that upgrades keeps
-every account. When anybody can sign up, the server sends a link to the
-address, and the account exists only after the person opens it.
-
-A new password is checked against the range service of Have I Been Pwned. The
-server sends five characters of a digest of the password and never the
-password. When the service does not answer, the server accepts the password and
-writes a log event. Set `NOTESAPP_BREACH_CHECK` to `off` in `.env` for an
-installation with no outbound network.
-
-## Mail
-
-A mail server sends invitations, the links of a sign-up, and the links of a
-password reset. Without one, an invitation shows its link once, a person
-cannot reset a password alone, and nobody can sign up without an invitation.
-
-Set it up in the application: open **Settings**, select **Manage accounts**,
-and enter the values of your mail provider under **Mail**. Select **Save**,
-then **Send a test message**, as
-[Accounts and invitations](accounts.md#mail) states. The server keeps the
-password sealed with a key that it derives from `NOTESAPP_AUTH_SECRET`. When
-you change that secret, enter the mail password again.
-
-To set the mail server in the environment instead, do these steps. The
-environment then wins, and the accounts page shows the server and offers no
-change.
-
-1. Set these values in `.env`, as your mail provider gives them. Write each
-   value as it is. Do not encode a character such as `@` or `:`.
-   - `NOTESAPP_SMTP_HOST`: the host of the mail server, for example
-     `smtp.example.com`.
-   - `NOTESAPP_SMTP_PORT`: the port, usually `465` or `587`.
-   - `NOTESAPP_SMTP_SECURITY`: `tls` for a port that starts with TLS, usually
-     `465`. `starttls` for a port that upgrades the connection, usually
-     `587`.
-   - `NOTESAPP_SMTP_USERNAME`: the user name that signs in.
-   - `NOTESAPP_MAIL_FROM`: the sender, for example
-     `tidy notebook <no-reply@notes.example.com>`.
-2. Write the password to the file `smtp_password` in `NOTESAPP_SECRETS_DIR`,
-   with mode `0600` and owner uid 10001.
-3. Add `docker/compose.mail.yaml` to `COMPOSE_FILE` in `.env`, as
-   `.env.example` shows, and start again.
-4. Open **Settings**, select **Manage accounts**, and select
-   **Send a test message** under **Mail**. A wrong value shows here, before a
-   person waits for a link.
-
-The server does not start when a value is missing or not valid. The message
-names the value and never shows the password.
-
-A mail relay with no sign-in has no user name and no password. Use the URL
-form below for it, for example `smtp://relay.internal:25`.
-
-An installation that names its mail server as one SMTP URL can keep it. Write
-the URL to the file `smtp_url` in `NOTESAPP_SECRETS_DIR`, and use
-`docker/compose.mail-url.yaml` in place of `docker/compose.mail.yaml`. In the
-URL, encode each reserved character of the user name and the password, for
-example `@` as `%40`. Set the URL or the separate values, not both. The server
-does not start when it gets both.
-
-A mailbox provider refuses or hides a message that the domain of the sender
-does not vouch for. Before you open sign-up, publish these three records for
-that domain, with the values that your mail provider gives:
-
-- An SPF record that names the servers of the provider.
-- A DKIM key, so that each message carries a signature of the domain.
-- A DMARC policy, for example `p=quarantine`, so that a message that forges
-  the domain goes nowhere.
-
-Then select **Send a test message**, or send an invitation to an address of
-your own at a large mailbox provider, and check that it arrives in the inbox
-and not in spam. Each message is plain
-text. It names the product and the host of the installation, and it states that
-a program wrote it, so a vacation responder does not answer it.
-
-## Open sign-up
-
-An installation lets anybody sign up only when it has a mail server and both
-legal documents. The accounts page names each part that is missing. Do these
-steps in order.
-
-1. **Mail.** Set up the mail server and the three domain records, as
-   [Mail](#mail) states.
-2. **Published pages.** This step is optional. Without it, published pages
-   show on the address of the application. To show them on a second host
-   name, for example `pages.example.net`, point that name at this server and
-   set `NOTESAPP_PUBLISHED_ORIGIN` to it. With the `tls` profile, also set
-   `NOTESAPP_PUBLISHED_DOMAIN` to that host name, so that the proxy gets a
-   certificate for it. Then a browser block of a harmful page that a stranger
-   publishes does not block the application.
-3. **Legal documents.** Add the terms and the privacy notice on the accounts
-   page, as [Accounts and invitations](accounts.md#legal-documents)
-   states. Fill each blank of the template with the facts of your service:
-   who runs it, the address to write to, the law that applies, and how long
-   you keep backups and logs. Have a person who knows the law of your country
-   read both. The server shows a text at `/legal/terms` and `/legal/privacy`.
-
-   To keep the documents in files instead, copy each template from that page
-   to `terms.md` and `privacy.md` in a directory outside this checkout, and
-   name it in `NOTESAPP_LEGAL_DIR`. Fill each blank, set
-   `NOTESAPP_TERMS_VERSION` and `NOTESAPP_PRIVACY_VERSION`, for example to the
-   date, and add `docker/compose.legal.yaml` to `COMPOSE_FILE`. The server
-   refuses to start while a file still holds a blank.
-
-4. **The proxy.** Name the proxy in `NOTESAPP_TRUSTED_PROXIES`, so that the
-   attempt limits of sign-up and sign-in count each client on its own.
-5. **Backups.** Check that the backup runs, and that a restore works. See
-   [Backup and restore](backup-and-restore.md).
-6. **Turn it on.** Sign in as an administrator, open **Settings**, select
-   **Manage accounts**, and select **Let anybody sign up**. An installation
-   that is set up from its environment sets `NOTESAPP_REGISTRATION_POLICY` to
-   `open` instead. It then needs the mail server and both documents in the
-   environment too.
-
-Then sign up yourself with a new address from a private window, open the link,
-and sign in. Select **Forgot password** once, and check that the reset works.
-
-## Health and readiness
-
-`GET /health` reports process liveness. `GET /ready` checks configuration, database connectivity, storage access, and the required database schema version. The container health check uses readiness. A failed migration keeps the application unready.
-
-The application uses `/api/health` and `/api/ready`. The two addresses of
-each answer are one operation of the contract, so they always report the same
-result.
-
-The deployment answers the host name of each origin it serves. A request that
-names another host is refused. Your reverse proxy must pass the original `Host`
-header to the application. See [Behind a reverse proxy](#behind-a-reverse-proxy).
-
-The four health and readiness addresses answer any host, because a platform
-such as Railway checks a container with a host name of its own. Their answers
-hold no address and set no cookie.
-
-## Stopping the server
-
-`docker compose stop` and `docker compose down` send a stop signal to the
-application. The server does not stop at once. It first reports that it is not
-ready, so the reverse proxy in front of it sends new requests elsewhere. It then
-closes its listener, completes the requests that are already open, and closes
-its database connections. A deadline ends the process when one request does not
-complete, so a stop always finishes.
-
-`NOTESAPP_SHUTDOWN_GRACE_MS` is the time between the report and the close of the
-listener. Make it longer than the interval at which your proxy reads readiness.
-Set it to 0 when no proxy is in front of the server.
-`NOTESAPP_SHUTDOWN_DEADLINE_MS` is the whole time from the signal to a forced
-end. `.env.example` holds both values.
-
-A second stop signal changes nothing, because the server is already stopping.
-The container health check accepts the readiness answer of a server that stops,
-so a normal stop does not mark the container unhealthy. The Compose file gives
-the container more time than the deadline, so Docker never ends a stop that
-still runs.
-
-## Request and upload timing
-
-`NOTESAPP_REQUEST_TIMEOUT_MS` is the time that a whole request has to arrive. It
-covers the body of an image upload, so a large image over a slow link needs a
-value well above a few seconds. Keep the default unless you know the speed of
-every link that reaches the server.
-
-`NOTESAPP_UPLOAD_IDLE_TIMEOUT_MS` is the longest gap between two parts of an
-upload body. An upload that stops for longer than this gap is refused, and the
-person reads a message that asks for the image again. A large image that keeps
-arriving is not refused, because the gap is what this value measures. It must be
-shorter than `NOTESAPP_REQUEST_TIMEOUT_MS`. The server refuses to start when it
-is not, and it names both values. `.env.example` holds both.
-
-An import takes a zip file of up to 4 GiB. The browser sends it in parts of
-50 MiB, so a proxy that refuses a large request body does not stop it, and
-each part must arrive within `NOTESAPP_REQUEST_TIMEOUT_MS`. The parts wait in
-the object store until the last one arrives. One account has one open import:
-a new import removes an earlier one that did not end, and an import that fails
-removes its parts at once. With the storage directory as the object store, the
-server refuses an import, and each part of it, that the free space of the
-volume, less 512 MiB, cannot hold. The import then keeps its zip file on the
-storage volume while it runs, and the file goes when the import ends. The
-server refuses an import that the free space of the volume, less 512 MiB and
-less the zip files of the other imports that run now, cannot hold.
-An export writes no file on the server: it streams the zip file as it reads
-the notes.
-
-One account runs one import or export at a time, and the server runs two at a
-time for all accounts. A person who starts another one reads that the server is
-busy and tries again a minute later.
-
-## Live updates
-
-Each browser holds one WebSocket connection to the server. When another device
-saves a change, the server sends a short notice on that connection, and the
-browser reads the change in less than a second. A notice holds no note text.
-The browser reads the change itself over HTTP, so a missed notice costs time
-and never data. This needs no setting.
-
-The proxy in front of the server must pass a WebSocket upgrade on the address
-`/api/sync/notices` and keep the connection open. The Caddy service of the
-`tls` profile does this with no change. For nginx, pass the `Upgrade` and
-`Connection` headers and set a read timeout above one minute.
-
-A browser that cannot hold the connection, for example behind a proxy that
-refuses the upgrade, reads the changes on its own schedule, about every 15
-seconds. No saved or queued work depends on the connection.
-
-## Logs
-
-Structured request logs contain the request ID, method, redacted URL, status, and duration. They do not contain headers, cookies, credentials, request bodies, note text, search text, or query values.
-
-Both Compose services use the `json-file` driver with rotation.
-`NOTESAPP_LOG_MAX_SIZE` and `NOTESAPP_LOG_MAX_FILE` in `.env` set the size of
-one file and the number of files that are kept.
-
-This release serves no metrics route. Watch the readiness result, the container
-log, and the age of the newest backup archive.
+- Make a backup and test a restore, before you store notes that you care
+  about. See [Backup and restore](backup-and-restore.md).
+- Read [Upgrade](upgrade.md) before you move to a new release.
+- Set up mail, invite people, or open sign-up, in
+  [Server operations](operations.md).
+- Read the [Security model](security-model.md) to learn what the product
+  protects and what it does not.

@@ -1,53 +1,73 @@
 # Appearance and shortcuts
 
-This page is for the person who writes the notes. It covers the theme, the
-light and dark choice, and the keyboard.
+This page is for the person who writes the notes. It shows how to change the
+theme, how to choose light or dark, and how to use the keyboard.
 
-## Light, dark, and system
+## Switch between light and dark
 
-Open **Settings** from the **More actions** menu in the header. The
-**Appearance** card offers **System**, **Light**, and **Dark**. System follows
-your device.
+The fast way:
 
-The **Theme** item in the header menu cycles the same three choices, so you can
-change it without leaving the note.
+1. Select your avatar at the right end of the header. This opens the account
+   menu.
+2. Select **Theme**. Each selection moves from **System** to **Light** to
+   **Dark**.
 
-## Themes
+You can also run **Toggle theme** in the command palette.
 
-The **Appearance** card also lists the theme families, each with a swatch that
-shows how it will look in your current appearance. A family carries a light
-variant and a dark variant where the palette has both, so your light and dark
-choice keeps the same family.
+The menu of the avatar holds **Theme**, **Settings**, **Keyboard shortcuts**
+and **Sign out**.
 
-A theme change applies at once on this device and is sent to your account in
-the background, so your other browsers follow it.
+To choose one setting directly:
+
+1. Open the account menu and select **Settings**.
+2. In the **Appearance** section, select **System**, **Light** or **Dark**.
+   **System** follows your device.
+
+## Change the theme
+
+1. Open the account menu and select **Settings**.
+2. In the **Appearance** section, select a theme under **Theme**. Each theme
+   has a swatch that shows how it looks in your current light or dark choice.
+
+A theme can have a light version and a dark version. Your light or dark choice
+keeps the same theme.
+
+A change applies at once on this device. The application also sends it to your
+account in the background, so your other browsers follow it.
 
 To use colours of your own, import a theme file. See
 [Your own theme](custom-themes.md).
 
-## Offline storage
+## Choose what to keep on the device
 
-The **Available offline** card decides what else is kept on this device besides
-the note text, which is always kept. Two checkboxes control images and older
-versions. Both use more space, so turn them off on a device with little room.
+The **Available offline** section of **Settings** decides what the application
+keeps on this device besides the note text, which it always keeps. Two check
+boxes control images and older versions. Both use more space, so turn them off
+on a device with little room. See [Settings](settings.md#available-offline).
 
-## Keyboard shortcuts
+## Use keyboard shortcuts
 
-Select **Keyboard shortcuts** in the header menu, or open the command palette
-and select **Show keyboard shortcuts**. The dialog lists every combination and
-what it does, written for both Windows and Mac keyboards. It is built from the
-same table the application binds its keys from, so it is always current.
+To see every shortcut:
 
-Three keys are worth knowing before you open it.
+1. Open the account menu and select **Keyboard shortcuts**. You can also open
+   the command palette and select **Show keyboard shortcuts**.
+2. Read the list. It shows every key combination and what it does, for Windows
+   and for Mac keyboards.
 
-- **Ctrl + P** or **Cmd + P** opens the command palette, which searches your
+The list comes from the same table that the application uses for its keys, so
+it is always current.
+
+Four shortcuts help most people:
+
+- **Ctrl + P** or **Cmd + P** opens the command palette. It searches your
   notes and runs the common actions.
 - **Ctrl + K** or **Cmd + K** inserts a link in the note.
-- **Ctrl + S** or **Cmd + S** saves.
-- **Ctrl + F** or **Cmd + F** finds text inside the note you have open.
+- **Ctrl + S** or **Cmd + S** makes a version of the note at once. The note
+  also saves itself. See [Saving and history](saving-and-history.md).
+- **Ctrl + F** or **Cmd + F** finds text inside the note that you have open.
 
-## Installing the application
+## Install the application
 
-The application ships a web manifest, so a browser that supports installed web
-applications offers its own install control, usually in the address bar. There
-is no install button inside the application.
+Some browsers can install a web application. They offer their own install
+control, usually in the address bar. The application has no install button of
+its own.

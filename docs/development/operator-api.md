@@ -113,7 +113,7 @@ moves it.
 changes the package of future release images. The cloud pin format accepts
 the new package. Its release and image source checks need a private follow-up
 before it can use that package. Existing private pins stay intact. The HTTP
-contract and image commands stay the same. The [operator guide](../guide/operator.md)
+contract and image commands stay the same. The [published images guide](../guide/published-images.md)
 shows how a self-hosted installation selects the image from the official manifest.
 
 ## Before a change to the interface

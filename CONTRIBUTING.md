@@ -36,27 +36,43 @@ links to it.
 `pnpm lint` checks Node.js and pnpm against `engines` and `packageManager` in
 `package.json`. A different version fails the gate.
 
-Install Bash and jq before you run `pnpm verify`. The published image guide
-test runs the actual shell commands and manifest selection. A missing tool
-stops the test and names the tool to install.
+Install Bash and jq before you run `pnpm verify`. The tests of the scripts in
+`tools/ops/` run them with Bash, and the image selection script reads the
+release manifest with jq. A missing tool stops the test and names the tool to
+install.
 
 ## Setup
 
-```bash
-pnpm install --frozen-lockfile
-tools/test-database/ensure-postgres.sh
-pnpm verify
-```
+Do these three steps once, in the root of your checkout.
 
-`ensure-postgres.sh` starts the disposable PostgreSQL service from
-`compose.test.yaml` and applies the migrations. It is safe to run again, and
-it is safe to run while another checkout uses the same service.
-`pnpm test:integration` also starts the MinIO service of the same file with
+1. Install the dependencies. This command installs the exact versions from the
+   lock file, and it stops if the lock file and `package.json` disagree.
+
+   ```bash
+   pnpm install --frozen-lockfile
+   ```
+
+2. Start the test database. This command starts a disposable PostgreSQL service
+   with Docker and applies the migrations. It is safe to run again, and it is
+   safe to run while another checkout uses the same service.
+
+   ```bash
+   tools/test-database/ensure-postgres.sh
+   ```
+
+3. Run the complete gate. This command checks the whole project, and it must
+   pass before a change is ready.
+
+   ```bash
+   pnpm verify
+   ```
+
+The test database comes from `compose.test.yaml`. `pnpm test:integration` also
+starts the MinIO service of the same file with
 `tools/test-database/ensure-minio.sh`.
 
-`pnpm verify` runs the complete gate: contract lint, generated file
-comparison, typecheck, lint, format, unit tests, integration tests, all builds,
-and the type-aware lint. It must pass before a change is ready.
+`pnpm verify` runs contract lint, generated file comparison, typecheck, lint,
+format, unit tests, integration tests, all builds, and the type-aware lint.
 
 ## The order of the lint
 
@@ -98,6 +114,8 @@ through the real server with temporary data.
 | `pnpm test:unit`        | Runs unit tests                                                  |
 | `pnpm test:integration` | Runs the PostgreSQL and IndexedDB integration tests              |
 | `pnpm generate`         | Regenerates the API client from the contract                     |
+| `pnpm contract:lint`    | Checks the API contract; `packages/api-contract/` holds it       |
+| `pnpm generated:check`  | Checks that the generated client matches the contract            |
 
 Select a subset with a name, for example
 `pnpm test:integration -- browser-storage`.
@@ -127,19 +145,41 @@ There is no contributor license agreement.
 Each commit of a contribution carries a sign-off. The sign-off states that you
 agree to the [Developer Certificate of Origin](https://developercertificate.org):
 you wrote the change, or you have the right to give it under the license of
-this repository. Git writes the sign-off for you:
+this repository. Git writes the sign-off for you when you commit:
 
 ```bash
 git commit --signoff
 ```
 
 The sign-off is a `Signed-off-by: Your Name <your address>` line at the end of
-the commit message. The address must be the author address of the commit. To
-add the sign-off to each commit of a branch that you already wrote, run:
+the commit message. The address must be the author address of the commit.
 
-```bash
-git rebase --signoff origin/main
-```
+### Add a sign-off to commits that you already wrote
+
+This rewrites your commits. If you pushed the old commits, a normal push of the
+new commits fails, and this project never accepts a force push. So you push the
+new commits to a new branch and open a new pull request.
+
+1. Get the newest main branch from the remote.
+
+   ```bash
+   git fetch origin
+   ```
+
+2. Add the sign-off to each commit of your branch.
+
+   ```bash
+   git rebase --signoff origin/main
+   ```
+
+3. Push the result to a new branch. Use any new branch name in place of
+   `my-change-signed`.
+
+   ```bash
+   git push origin HEAD:my-change-signed
+   ```
+
+4. Open a new pull request from the new branch, and close the old pull request.
 
 The `DCO` workflow in `.github/workflows/dco.yml` runs on each pull request.
 It fails when a commit has no sign-off of its author. A commit of the owner
@@ -161,9 +201,7 @@ Use [Conventional Commits](https://www.conventionalcommits.org/):
 `type(scope): summary`. Common types are `feat`, `fix`, `refactor`, `perf`,
 `test`, `docs`, `chore`, `ci`. Add `!` after the type for a breaking change.
 
-```text
-fix(sync): keep a queued save after a refused precondition
-```
+For example: `fix(sync): keep a queued save after a refused precondition`.
 
 Write the summary in the imperative and in Simplified Technical English. Do
 not use an em dash or an en dash anywhere. Keep each commit small and

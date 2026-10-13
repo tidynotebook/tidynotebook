@@ -4,21 +4,25 @@ This page is for the person who writes the notes and wants colours of their own.
 
 ## Import a theme
 
-Open **Settings** and go to **Appearance**. Select **Import a theme** and choose
-a theme file. When the file is correct, the application says that the theme is
-imported, and the theme shows in the **Theme** list with the themes that ship
-with the application. Choose it there, as you choose any other theme.
+1. Open **Settings** and go to **Appearance**.
+2. Select **Import a theme** and choose a theme file.
+3. When the file is correct, the application says that the theme is imported.
+   The theme shows in the **Theme** list, with the themes that ship with the
+   application. Choose it there, as you choose any other theme.
 
 Your account keeps the theme, so it follows you to every browser where you sign
-in. An account keeps a limited number of imported themes. To remove one, select
-**Delete** next to its name under **Imported themes**. When you delete the theme
-in use, the application goes back to the default theme.
+in. An account keeps a limited number of imported themes.
+
+To remove an imported theme, select **Delete** next to its name under
+**Imported themes**. When you delete the theme in use, the application goes back
+to the default theme.
 
 ## Start from a theme you like
 
-Choose a theme, then select **Download this theme**. The file that you get is a
-correct theme file with every colour in it. Change its name and its colours, then
-import it.
+1. Choose a theme in the **Theme** list.
+2. Select **Download this theme**. The file is a correct theme file with every
+   colour in it.
+3. Change its name and its colours, then import it.
 
 ## The theme file
 

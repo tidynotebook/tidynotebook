@@ -16,19 +16,21 @@ report a problem of the code once.
 Do not open a public issue, a public discussion, or a pull request for a
 security problem.
 
-Use the GitHub **Security** tab of this repository and select **Report a
-vulnerability**. That opens a private advisory that the owner and the people
-who help with the advisory can read. If private reporting is not available,
-send the report to
-[hello@bhushankhanale.com](mailto:hello@bhushankhanale.com).
+1. Open the GitHub **Security** tab of this repository.
+2. Select **Report a vulnerability**. This opens a private advisory. The owner
+   and the people who help with the advisory can read it.
+3. If private reporting is not available, send the report to
+   [hello@bhushankhanale.com](mailto:hello@bhushankhanale.com).
 
-Include:
+Include these items in your report:
 
 - What the problem lets an attacker do.
 - The steps to reproduce it, or a short proof.
-- The edition. For tidy notebook self-hosted, the version, commit, or image
+- The edition. For tidy notebook self-hosted, add the version, commit, or image
   tag you tested.
 - Your deployment shape, for example the reverse proxy in front of the app.
+
+### What to expect
 
 The owner acknowledges a report and states whether it is accepted or refused.
 tidy notebook is a one-person project, so there is no service level agreement.
@@ -37,15 +39,21 @@ Please give the owner reasonable time to release a fix before you publish.
 ## Supported versions
 
 Only the newest release and the `main` branch get fixes. There is no long-term
-support branch. tidy notebook cloud runs a release, so it gets a fix when the
-owner deploys the release that holds it. A self-hosted operator installs that
-release.
+support branch.
+
+- **tidy notebook cloud** gets a fix when the owner deploys the release that
+  holds it.
+- **tidy notebook self-hosted** gets a fix when the operator installs that
+  release.
 
 ## Trust model
 
 Read [the security model](docs/guide/security-model.md) before you decide what
-is a vulnerability. The server operator can read every note. Each account has
-its own notes. Disk encryption and HTTPS are the operator's job.
+is a vulnerability. In short:
+
+- The server operator can read every note.
+- Each account has its own notes.
+- Disk encryption and HTTPS are the operator's job.
 
 ## In scope
 

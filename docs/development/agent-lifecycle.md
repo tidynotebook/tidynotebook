@@ -101,7 +101,7 @@ writes run inside that lock. The release skill owns stopped-write recovery.
 sets the future image package. `tools/release-registry.mjs` owns its address
 and read-only legacy selection. An old draft cannot publish. An old published
 release permits status only. Its fixed manifest selects its image for diagnostics.
-The [operator guide](../guide/operator.md) reads the published digest for Compose.
+The [published images guide](../guide/published-images.md) reads the published digest for Compose.
 
 `tools/release-check.mjs` keeps the older before and after diagnostic.
 Publication does not run it. The after gate reads
@@ -124,6 +124,9 @@ with invented proof. The lifecycle change takes a feature release classification
 ## Host procedures
 
 Existing tools in `tools/ops/` own host checks, backup, archive verification,
-and restore. Restore targets are empty and name the same installation identity.
+and restore. They also own the setup steps that the guide asks a person to
+run: the secret files, the quick start, and the selection of a published
+image. A guide page names the script and states what it does, so the person
+never runs a long block of shell that nobody tests. Restore targets are empty and name the same installation identity.
 No lifecycle unit clears live data to make recovery pass. Credentials stay in
 protected files. Machine cleanup stays outside the task lifecycle.

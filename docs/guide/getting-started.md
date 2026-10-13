@@ -3,74 +3,83 @@
 This page is for the person who writes the notes. It takes you from the first
 visit to your first saved note.
 
-## The first visit
+## Create the first account
 
-Open the address of your installation. Because no account exists yet, the page
-says **Create your account**. Enter an email address and a password of at least
-15 characters, and type the password again to confirm it. Select **Create
-account**. A password that a list of leaked passwords holds is refused, so
-choose one that you use nowhere else. A password that an earlier release
-accepted still signs in.
+Use this part if no account exists on your installation yet. If somebody
+invited you, read [Joining an installation](joining.md) instead.
 
-That first account is the administrator of the installation. It can invite
-other people, and each of them gets an account with its own notes. See
-[Accounts and invitations](accounts.md). If somebody invited you, read
-[Joining an installation](joining.md) instead.
+1. Open the address of your installation. The page says **Create your
+   account**.
+2. Enter an email address.
+3. Enter a password of at least 15 characters, and enter it again to confirm
+   it. Use a password that you use nowhere else. The application refuses a
+   password that appears in a list of leaked passwords.
+4. Select **Create account**.
 
-Every later visit shows **Sign in** instead. Enter the same address and
-password.
+This first account is the administrator of the installation. It can invite
+other people, and each person gets an account with its own notes. See
+[Accounts and invitations](accounts.md).
 
-If you forget the password, select **Forgot password** on the sign-in screen.
-A message with a link goes to your address. See
-[Joining an installation](joining.md#forgot-your-password). An installation that
-sends no mail shows no such link. Then the person who runs the server recovers
-the account with a command on the server. See
-[Backup and restore](backup-and-restore.md).
+Every later visit shows **Sign in**. Enter the same address and password. A
+password that an earlier release accepted still signs in.
+
+## Get back in after you forget your password
+
+1. Select **Forgot password** on the sign-in screen.
+2. Follow the steps in
+   [Forgot your password](joining.md#forgot-your-password).
+
+Some installations send no mail, so they show no **Forgot password**. On these
+installations, the person who runs the server recovers your account with a
+command. That person finds the command in
+[Server operations](operations.md#account-commands).
 
 ## What you see first
 
-Your new account already holds one note, **Welcome to tidy notebook**. It is a
-normal note: you can change it, rename it, or delete it.
+Your new account has one note, **Welcome to tidy notebook**. It is a normal
+note. You can change it, rename it, or move it to Trash.
 
 The screen has three parts.
 
-- The **header** says where you are: your workspace, the folders above the
-  note, and the name of the note or the page. Then the actions of that page,
-  then **Search** and your account.
-- The **sidebar** holds your workspace, a row of buttons for **New note**,
-  **New folder**, **Sort notes** and **Expand all folders**, the whole note
-  tree under **All notes**, and at the bottom a line that says where your
-  saves are, plus **Trash**.
-- The rest of the screen is the note you have open.
+- The **header** is at the top. It shows where you are: your workspace, the
+  folders above the note, and the name of the note or the page. At the right
+  end it has the actions of the page, **Search**, and your avatar. The avatar
+  opens the account menu, which holds **Theme**, **Settings**, **Keyboard
+  shortcuts** and **Sign out**.
+- The **sidebar** is on the left. It holds your workspace, the buttons **New
+  note**, **New folder**, **Sort notes** and **Expand all folders**, and the
+  tree of your notes under **All notes**. At the bottom it shows a line that
+  says where your saves are, and **Trash**.
+- The rest of the screen shows the note that you have open.
 
-On a phone the sidebar is hidden. Select the menu button in the header to open
-it, and **Escape** or a tap outside it to close it.
+On a phone, the sidebar is hidden. Select the menu button in the header to
+open it. Press **Escape**, or tap outside the sidebar, to close it.
 
-## Your first note
+## Write your first note
 
-1. Select **New note**, the plus button in the sidebar. The note opens at once
-   with the cursor in it.
+1. Select **New note** in the sidebar. The note opens with the cursor in it.
 2. Start with a heading, for example `# My first note`, and write. Markdown
    works here. See [Markdown](markdown.md).
-3. Stop typing for a moment. The note saves itself, makes a version, and takes
-   the heading as its name. **Ctrl + S**, or **Cmd + S** on a Mac, makes a
-   version at once. See [Notes and folders](notes-and-folders.md) to give a
-   note a name of your own.
+3. Stop typing for a moment. The note saves itself and takes the heading as
+   its name.
 
-The line at the bottom of the sidebar tells you where your work is. It reads
-**Everything is saved to the server.** when your server has it. See
+To make a version at once, press **Ctrl + S**, or **Cmd + S** on a Mac. To
+give the note a name of your own, see [Notes and folders](notes-and-folders.md).
+
+The line at the bottom of the sidebar says **Everything is saved to the
+server.** when your server has your work. See
 [Saving and history](saving-and-history.md).
 
-## When a page stops
+## If a page stops
 
-If an error stops a page, the page says so and offers **Reload** and **Open
+When an error stops a page, the page says so and offers **Reload** and **Open
 all notes**. The sidebar stays, so you can open another note. Your saved work
-does not change. If a part of the page did not load, make sure that the device
-has a connection, then reload the page.
+does not change. If a part of the page did not load, check the connection of
+your device, then select **Reload**.
 
 ## Where to go next
 
-- Organize your notes with [Notes and folders](notes-and-folders.md).
-- Press **Ctrl + P** or **Cmd + P** to open the command palette, which searches
-  your notes and runs the common actions.
-- Choose a theme in [Appearance and shortcuts](appearance-and-shortcuts.md).
+- Organize your notes: [Notes and folders](notes-and-folders.md).
+- Press **Ctrl + P**, or **Cmd + P** on a Mac, to open the command palette. It
+  searches your notes and runs the common actions.
+- Choose a theme: [Appearance and shortcuts](appearance-and-shortcuts.md).

@@ -12,7 +12,7 @@
 # template from the Legal documents section of the application to
 # NOTESAPP_LEGAL_DIR as terms.md and privacy.md, fill each blank in double
 # braces, and set both versions in `.env`. The application refuses to start
-# while a blank is left. See docs/guide/self-hosting.md.
+# while a blank is left. See docs/guide/operations.md.
 services:
   app:
     environment:
