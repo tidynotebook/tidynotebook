@@ -5,6 +5,9 @@
 # a manifest that already holds an exact version, so no range reaches a
 # manifest and the gate stays green.
 #
+# The cadence is monthly, to save the hosted CI minutes of the free plan
+# (record 0224).
+#
 # Each ecosystem groups its wave into one change, so a review reads one branch
 # and not forty. See docs/development/versions.md.
 version: 2
@@ -13,10 +16,9 @@ updates:
     # The root manifest and the pnpm workspace manifests that it names.
     directory: /
     schedule:
-      interval: weekly
-      day: monday
+      interval: monthly
     versioning-strategy: increase
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 2
     commit-message:
       prefix: chore
       prefix-development: chore
@@ -41,9 +43,8 @@ updates:
     # The workflows under .github/workflows/, which pin each action by digest.
     directory: /
     schedule:
-      interval: weekly
-      day: monday
-    open-pull-requests-limit: 2
+      interval: monthly
+    open-pull-requests-limit: 1
     commit-message:
       prefix: ci
       include: scope
@@ -58,9 +59,8 @@ updates:
     # engines.node and the perf:service script move to the same release.
     directory: /
     schedule:
-      interval: weekly
-      day: monday
-    open-pull-requests-limit: 2
+      interval: monthly
+    open-pull-requests-limit: 1
     commit-message:
       prefix: build
       include: scope
@@ -73,9 +73,8 @@ updates:
     # docker-compose.yml and compose.test.yaml, which pin PostgreSQL by digest.
     directory: /
     schedule:
-      interval: weekly
-      day: monday
-    open-pull-requests-limit: 2
+      interval: monthly
+    open-pull-requests-limit: 1
     commit-message:
       prefix: build
       include: scope

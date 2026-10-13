@@ -93,7 +93,7 @@ deleted branch, or a commit that no branch holds, fails to load.
 | Design rules                    | `tools/check-design-rules.mjs` and `tools/check-design-rules.test.mjs`.              |
 | Parallel migrations             | `tests/integration/concurrent-migrations.test.ts` over two databases of one cluster. |
 | A test with each change         | `tools/check-change-tests.mjs` against `main`, and its test (record 0154).           |
-| The commands of the image       | `pnpm test:image` in the image job of CI, over the built image (record 0202).        |
+| The commands of the image       | `pnpm test:image` in the image job, which only a manual CI start runs (0224).        |
 
 ## Performance
 

@@ -49,10 +49,11 @@ of `packages/markdown/test-data/shapes.ts` on the bump.
 
 ## Automated bumps
 
-`.github/dependabot.yml` opens the bump changes. It runs once a week. It groups
-each wave into one change per area: the runtime dependencies, the development
-and build tools, the GitHub Actions, and the container images of `Dockerfile`
-and the Compose files. Each change carries a conventional commit prefix.
+`.github/dependabot.yml` opens the bump changes. It runs once a month (record
+0224). It groups each wave into one change per area: the runtime dependencies,
+the development and build tools, the GitHub Actions, and the container images
+of `Dockerfile` and the Compose files. Each change carries a conventional
+commit prefix.
 
 The npm entry sets an increasing versioning strategy, so Dependabot writes a new
 exact version into a manifest that already holds one. No range reaches a

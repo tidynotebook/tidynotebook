@@ -14,13 +14,17 @@ new package becomes public. A source change does not start a release or deployme
 ## Before visibility changes
 
 - Read the final exact source and image proof from `tools/lifecycle.mjs`.
-- Read all jobs of `.github/workflows/ci.yml` for that commit, including the
-  performance jobs. A local source receipt does not prove those jobs.
+- Start `.github/workflows/ci.yml` by hand for the final commit, for example
+  with `gh workflow run ci.yml --ref <branch>`. Read all its jobs, including
+  the verify, performance and image jobs. A pull request runs only the fast
+  check (record 0224). A local source receipt does not prove those jobs.
 - Read the final source, image and release material secret review.
 - Complete the fresh standalone setup of the exact candidate.
 - Confirm the accepted launch dependencies and the authorized visibility scope.
 - Keep the shared project private. Contributors use repository issues.
 - Keep old signed tags, fixed image digests and `pr-screenshots` intact.
+- After the switch, a follow-up change puts the full jobs back on each pull
+  request (record 0224).
 
 Inspect existing settings before a write. Keep each response and read back
 every write. Stop when a response differs from the intended value. Never

@@ -20,8 +20,9 @@ See
   web build.
 - `image/` holds the tests of the built image (record 0202). They drive the
   Docker command line and a PostgreSQL of their own, import no workspace
-  package, and run in the image job of CI after the build, through
-  `pnpm test:image`. `pnpm verify` builds no image, so it does not run them.
+  package, and run in the image job after the build, through `pnpm test:image`.
+  That job runs when a person starts CI by hand (record 0224). `pnpm verify`
+  builds no image, so it does not run them.
   The distribution test runs the shipped runtime dependency check and binds
   its bytes to the source. It refuses schema tools and unresolved required
   dependencies or peers (record 0222).

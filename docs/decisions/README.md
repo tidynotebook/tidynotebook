@@ -255,6 +255,7 @@ and needs no record.
 | [0221](0221-save-latency-is-an-advisory-target.md)                                    | Save latency is an advisory target                                              |
 | [0222](0222-distribution-runtime-dependency-closure.md)                               | Distribution runtime dependencies form a complete graph                         |
 | [0223](0223-core-source-opens-before-distribution.md)                                 | Core source opens before distribution                                           |
+| [0224](0224-hosted-ci-runs-the-fast-check-on-each-pull-request.md)                    | Hosted CI runs the fast check on each pull request                              |
 
 Records 0001 to 0015 record the decisions D1 to D15 of
 [the v0.1 revamp plan](../plans/003-v0.1-revamp.md). Record 0016 records the
