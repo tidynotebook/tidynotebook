@@ -139,27 +139,51 @@ function checkIsolation(config, directory, origin) {
   }
 }
 
-await test('the quick start commands produce a valid isolated Compose configuration', async () => {
+/** A fake command for the quick start script, written into `bin`.
+ * @param {string} bin @param {string} name @param {string} body */
+async function fakeCommand(bin, name, body) {
+  await writeFile(join(bin, name), `#!/bin/sh\n${body}\n`, { mode: 0o700 });
+}
+
+/** Run the quick start script from a copy in a disposable checkout.
+ * `sudo` runs its command as it is, `id` answers root, and `chown` records
+ * its arguments, so the test needs no privilege.
+ * @param {string} directory */
+async function runQuickstart(directory) {
+  await mkdir(join(directory, 'tools/ops'), { recursive: true });
+  for (const name of ['quickstart.sh', 'create-secrets.sh'])
+    await writeFile(
+      join(directory, 'tools/ops', name),
+      await readFile(join(root, 'tools/ops', name)),
+      { mode: 0o700 },
+    );
+  const bin = join(directory, 'bin');
+  await mkdir(bin, { recursive: true });
+  await fakeCommand(bin, 'sudo', 'exec "$@"');
+  await fakeCommand(bin, 'id', 'echo 0');
+  await fakeCommand(
+    bin,
+    'chown',
+    `echo "$@" >> '${join(directory, 'chown.log')}'`,
+  );
+  return spawnSync('bash', [join(directory, 'tools/ops/quickstart.sh')], {
+    cwd: directory,
+    env: { ...cleanEnvironment(), PATH: `${bin}:${process.env.PATH ?? ''}` },
+    encoding: 'utf8',
+  });
+}
+
+await test('the guide prepares the quick start with the tested script', async () => {
+  const guide = await readFile(join(root, 'docs/guide/quickstart.md'), 'utf8');
+  assert.match(guide, /^tools\/ops\/quickstart\.sh$/m);
+});
+
+await test('the quick start script produces a valid isolated Compose configuration', async () => {
   await mkdir(join(root, '.tooling'), { recursive: true });
   const directory = await mkdtemp(join(root, '.tooling/quickstart-test-'));
   try {
-    const guide = await readFile(
-      join(root, 'docs/guide/quickstart.md'),
-      'utf8',
-    );
-    const setup = guide.match(/```bash\n([\s\S]*?)\n```/)?.[1];
-    assert.ok(setup, 'the quick start has no setup commands');
-    // The test already has its own checkout directory. It runs the actual
-    // configuration commands, without a network clone or a privileged write.
-    const commands = setup
-      .split('\n')
-      .filter((line) => !/^(git clone\b|cd notesapp\b)/.test(line))
-      .join('\n');
-    execFileSync('bash', ['-eu', '-c', commands], {
-      cwd: directory,
-      env: cleanEnvironment(),
-      stdio: 'pipe',
-    });
+    const result = await runQuickstart(directory);
+    assert.equal(result.status, 0, result.stderr);
     // The container changes the owner of PGDATA only. Its database user
     // must pass through this bind root before it can reach that private leaf.
     const data = join(directory, '.tooling/quickstart');
@@ -171,11 +195,36 @@ await test('the quick start commands produce a valid isolated Compose configurat
     for (const path of [data, join(data, 'secrets'), join(data, 'storage')])
       assert.equal((await stat(path)).mode & 0o777, 0o700);
     assert.equal((await stat(join(directory, '.env'))).mode & 0o777, 0o600);
+    const owners = await readFile(join(directory, 'chown.log'), 'utf8');
+    assert.match(owners, new RegExp(`^10001:10001 ${data}/storage$`, 'm'));
     checkIsolation(
       composeConfig(directory),
       directory,
       'http://127.0.0.1:3000',
     );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+await test('the quick start script never changes an existing installation', async () => {
+  await mkdir(join(root, '.tooling'), { recursive: true });
+  const directory = await mkdtemp(join(root, '.tooling/quickstart-test-'));
+  try {
+    await writeFile(join(directory, '.env'), 'NOTESAPP_ORIGIN=kept\n');
+    const withEnvironment = await runQuickstart(directory);
+    assert.notEqual(withEnvironment.status, 0);
+    assert.match(withEnvironment.stderr, /\.env exists/);
+    assert.equal(
+      await readFile(join(directory, '.env'), 'utf8'),
+      'NOTESAPP_ORIGIN=kept\n',
+    );
+    await rm(join(directory, '.env'));
+    await mkdir(join(directory, '.tooling/quickstart'), { recursive: true });
+    const withData = await runQuickstart(directory);
+    assert.notEqual(withData.status, 0);
+    assert.match(withData.stderr, /quickstart exists/);
+    await assert.rejects(stat(join(directory, '.env')));
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

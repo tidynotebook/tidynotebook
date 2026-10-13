@@ -20,10 +20,7 @@ for (const tool of ['bash', 'jq']) {
     );
 }
 
-const guide = readFileSync(join(root, 'docs/guide/operator.md'), 'utf8');
-const selection = /```bash\n([\s\S]*?)```/.exec(guide)?.[1];
-if (!selection) throw new Error('Missing published image selection commands.');
-const commands = selection;
+const script = join(root, 'tools/ops/select-image.sh');
 const commit = 'a'.repeat(40);
 const manifest = {
   repository: 'tidynotebook/tidynotebook',
@@ -61,10 +58,9 @@ function selectImage(tag, asset, checkout = commit) {
       '#!/bin/sh\nprintf docker >> cli.log\n',
       { mode: 0o700 },
     );
-    const result = spawnSync('bash', ['-c', commands], {
+    const result = spawnSync('bash', [script, tag], {
       cwd,
       env: { ...process.env, PATH: join(cwd, 'bin') + ':' + process.env.PATH },
-      input: tag + '\n',
       encoding: 'utf8',
     });
     return {
@@ -81,7 +77,15 @@ function selectImage(tag, asset, checkout = commit) {
   }
 }
 
-await test('the actual guide selects the official digest from the fixed checkout and manifest', () => {
+await test('the guide selects the image with the tested script', () => {
+  const guide = readFileSync(
+    join(root, 'docs/guide/published-images.md'),
+    'utf8',
+  );
+  assert.match(guide, /^tools\/ops\/select-image\.sh v\S+$/m);
+});
+
+await test('the script selects the official digest from the fixed checkout and manifest', () => {
   const result = selectImage('v0.3.5', manifest);
   assert.equal(result.status, 0, result.stderr);
   assert.match(
@@ -94,7 +98,7 @@ await test('the actual guide selects the official digest from the fixed checkout
   );
 });
 
-await test('the actual guide refuses invalid tags before directory or CLI use', () => {
+await test('the script refuses invalid tags before directory or CLI use', () => {
   for (const tag of [
     '',
     '../../escape',
@@ -112,7 +116,7 @@ await test('the actual guide refuses invalid tags before directory or CLI use', 
   }
 });
 
-await test('the actual guide refuses a different checkout or malformed official asset', () => {
+await test('the script refuses a different checkout or malformed official asset', () => {
   assert.notEqual(selectImage('v0.3.5', manifest, 'c'.repeat(40)).status, 0);
   for (const asset of [
     'invalid json',
