@@ -132,7 +132,10 @@ const socketFiles = new Set([
 ]);
 // These files connect maintained protocols or cache static application assets.
 // They remain subject to imports, dependency direction, and package cycle checks.
-const protocolFiles = new Set(['apps/server/src/auth/better-auth.ts']);
+const protocolFiles = new Set([
+  'apps/server/src/auth/better-auth.ts',
+  'apps/server/src/mcp/protocol.ts',
+]);
 // The installed worker routes by address, so it reads a URL that no generated
 // operation produced. `routing.ts` holds those decisions and the worker holds
 // their effects.
@@ -345,6 +348,15 @@ for (const item of packages) {
  * @param {boolean} [isTypeOnly]
  */
 function checkImport(file, specifier, isTest, isGenerated, isTypeOnly = false) {
+  const importPath = relative(directory, file).split(sep).join('/');
+  if (
+    specifier.startsWith('@modelcontextprotocol/') &&
+    !importPath.startsWith('apps/server/src/mcp/')
+  )
+    fail(
+      file,
+      'The MCP SDK belongs only in apps/server/src/mcp/ (record 0225).',
+    );
   const item = owner(file);
   if (!item) return;
   const isBuild = buildFiles.has(

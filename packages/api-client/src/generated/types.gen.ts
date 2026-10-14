@@ -1673,6 +1673,48 @@ export type MarkdownContentInput = {
 export type MarkdownText = string;
 
 /**
+ * A JSON-RPC error of the maintained MCP library (record 0225).
+ */
+export type McpError = {
+    jsonrpc: '2.0';
+    id: null;
+    error: {
+        code: number;
+        message: string;
+        /**
+         * Protocol details of the maintained MCP library.
+         */
+        data?: unknown;
+    };
+};
+
+/**
+ * A JSON-RPC message of the MCP protocol. The maintained MCP library validates the protocol envelope and the parameters of each method. This boundary does not define a second MCP schema.
+ */
+export type McpMessage = unknown;
+
+export type McpMetadata = {
+    /**
+     * The canonical MCP resource of this installation.
+     */
+    readonly resource: string;
+    /**
+     * The application authorization server.
+     */
+    readonly authorization_servers: [
+        string
+    ];
+    /**
+     * The access scopes of this resource.
+     */
+    readonly scopes_supported: Array<'notes:read' | 'notes:write'>;
+    /**
+     * A token travels only in the Authorization header.
+     */
+    readonly bearer_methods_supported: Array<'header'>;
+};
+
+/**
  * What the workspace knows about one mutation identity. A device reads it when it does not know whether a save reached the server, before it transforms work that may already have committed. The answer states the outcome and never the text of a note.
  */
 export type MutationReceipt = {
@@ -1748,7 +1790,7 @@ export type OAuthError = {
     /**
      * Protocol value.
      */
-    error: 'invalid_request' | 'invalid_client' | 'invalid_grant' | 'unauthorized_client' | 'unsupported_grant_type' | 'invalid_scope' | 'access_denied' | 'unsupported_response_type' | 'server_error' | 'temporarily_unavailable' | 'unsupported_token_type' | 'invalid_target' | 'invalid_redirect_uri' | 'invalid_client_metadata' | 'not_found';
+    error: 'invalid_token' | 'insufficient_scope' | 'invalid_request' | 'invalid_client' | 'invalid_grant' | 'unauthorized_client' | 'unsupported_grant_type' | 'invalid_scope' | 'access_denied' | 'unsupported_response_type' | 'server_error' | 'temporarily_unavailable' | 'unsupported_token_type' | 'invalid_target' | 'invalid_redirect_uri' | 'invalid_client_metadata' | 'not_found';
     /**
      * Protocol value.
      */
@@ -4189,6 +4231,120 @@ export type GetOAuthMetadataResponses = {
 };
 
 export type GetOAuthMetadataResponse = GetOAuthMetadataResponses[keyof GetOAuthMetadataResponses];
+
+export type GetRootMcpMetadataData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/.well-known/oauth-protected-resource';
+};
+
+export type GetRootMcpMetadataErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The requested resource does not exist.
+     */
+    404: ProblemDetails;
+    /**
+     * The request body is larger than the configured limit. A save of a note adds document_too_large, which means that the update or the document it would produce passes a bound of the workspace. The work stays on the device, which offers recovery rather than sending the same bytes again.
+     */
+    413: ProblemDetails;
+    /**
+     * The request media type is not supported.
+     */
+    415: ProblemDetails;
+    /**
+     * Too many requests. Too many attempts were made in a short time, the account runs its limit of archive jobs, or the account or the installation downloaded the most bytes or read the most objects that one calendar month in UTC allows (record 0193). The code names the cause: rate_limited, archive_job_running or download_limit. Nothing changed.
+     */
+    429: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+    /**
+     * The service cannot do this work now: it runs as many jobs of this kind as it can, a failure of the service stopped the work, or the object store of the installation took the most writes that one calendar month in UTC allows (record 0193). The code names the cause, for example storage_busy. Nothing changed.
+     */
+    503: ProblemDetails;
+};
+
+export type GetRootMcpMetadataError = GetRootMcpMetadataErrors[keyof GetRootMcpMetadataErrors];
+
+export type GetRootMcpMetadataResponses = {
+    /**
+     * The resource metadata of this installation.
+     */
+    200: McpMetadata;
+};
+
+export type GetRootMcpMetadataResponse = GetRootMcpMetadataResponses[keyof GetRootMcpMetadataResponses];
+
+export type GetMcpMetadataData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/.well-known/oauth-protected-resource/mcp';
+};
+
+export type GetMcpMetadataErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The requested resource does not exist.
+     */
+    404: ProblemDetails;
+    /**
+     * The request body is larger than the configured limit. A save of a note adds document_too_large, which means that the update or the document it would produce passes a bound of the workspace. The work stays on the device, which offers recovery rather than sending the same bytes again.
+     */
+    413: ProblemDetails;
+    /**
+     * The request media type is not supported.
+     */
+    415: ProblemDetails;
+    /**
+     * Too many requests. Too many attempts were made in a short time, the account runs its limit of archive jobs, or the account or the installation downloaded the most bytes or read the most objects that one calendar month in UTC allows (record 0193). The code names the cause: rate_limited, archive_job_running or download_limit. Nothing changed.
+     */
+    429: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+    /**
+     * The service cannot do this work now: it runs as many jobs of this kind as it can, a failure of the service stopped the work, or the object store of the installation took the most writes that one calendar month in UTC allows (record 0193). The code names the cause, for example storage_busy. Nothing changed.
+     */
+    503: ProblemDetails;
+};
+
+export type GetMcpMetadataError = GetMcpMetadataErrors[keyof GetMcpMetadataErrors];
+
+export type GetMcpMetadataResponses = {
+    /**
+     * The resource metadata of this installation.
+     */
+    200: McpMetadata;
+};
+
+export type GetMcpMetadataResponse = GetMcpMetadataResponses[keyof GetMcpMetadataResponses];
 
 export type GetAccountData = {
     body?: never;
@@ -10341,6 +10497,144 @@ export type GetLegalDocumentResponses = {
 };
 
 export type GetLegalDocumentResponse = GetLegalDocumentResponses[keyof GetLegalDocumentResponses];
+
+export type OpenMcpData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/mcp';
+};
+
+export type OpenMcpErrors = {
+    /**
+     * The protocol request is refused.
+     */
+    400: McpError;
+    /**
+     * The protocol request is refused.
+     */
+    401: OAuthError;
+    /**
+     * The protocol request is refused.
+     */
+    403: OAuthError | McpError;
+    /**
+     * The protocol request is refused.
+     */
+    404: McpError;
+    /**
+     * No event stream or session operation is served.
+     */
+    405: McpError;
+    /**
+     * The requested response media type is not supported.
+     */
+    406: McpError;
+    /**
+     * The protocol request is refused.
+     */
+    413: McpError;
+    /**
+     * The protocol request is refused.
+     */
+    415: McpError;
+    /**
+     * The protocol request is refused.
+     */
+    429: McpError;
+    /**
+     * The protocol request is refused.
+     */
+    500: McpError;
+    /**
+     * The protocol request is refused.
+     */
+    503: McpError;
+};
+
+export type OpenMcpError = OpenMcpErrors[keyof OpenMcpErrors];
+
+export type OpenMcpResponses = {
+    /**
+     * The MCP library answers the request.
+     */
+    200: McpMessage;
+    /**
+     * The notification is accepted. No response body is sent.
+     */
+    202: unknown;
+};
+
+export type OpenMcpResponse = OpenMcpResponses[keyof OpenMcpResponses];
+
+export type ServeMcpData = {
+    body: McpMessage;
+    path?: never;
+    query?: never;
+    url: '/mcp';
+};
+
+export type ServeMcpErrors = {
+    /**
+     * The protocol request is refused.
+     */
+    400: McpError;
+    /**
+     * The protocol request is refused.
+     */
+    401: OAuthError;
+    /**
+     * The protocol request is refused.
+     */
+    403: OAuthError | McpError;
+    /**
+     * The protocol request is refused.
+     */
+    404: McpError;
+    /**
+     * No event stream or session operation is served.
+     */
+    405: McpError;
+    /**
+     * The requested response media type is not supported.
+     */
+    406: McpError;
+    /**
+     * The protocol request is refused.
+     */
+    413: McpError;
+    /**
+     * The protocol request is refused.
+     */
+    415: McpError;
+    /**
+     * The protocol request is refused.
+     */
+    429: McpError;
+    /**
+     * The protocol request is refused.
+     */
+    500: McpError;
+    /**
+     * The protocol request is refused.
+     */
+    503: McpError;
+};
+
+export type ServeMcpError = ServeMcpErrors[keyof ServeMcpErrors];
+
+export type ServeMcpResponses = {
+    /**
+     * The MCP library answers the request.
+     */
+    200: McpMessage;
+    /**
+     * The notification is accepted. No response body is sent.
+     */
+    202: unknown;
+};
+
+export type ServeMcpResponse = ServeMcpResponses[keyof ServeMcpResponses];
 
 export type GetPublishedPageData = {
     body?: never;

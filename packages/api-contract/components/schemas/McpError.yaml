@@ -1,0 +1,21 @@
+description: A JSON-RPC error of the maintained MCP library (record 0225).
+type: object
+additionalProperties: false
+required: [jsonrpc, id, error]
+properties:
+  jsonrpc:
+    type: string
+    const: '2.0'
+  id:
+    type: 'null'
+  error:
+    type: object
+    additionalProperties: false
+    required: [code, message]
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+      data:
+        description: Protocol details of the maintained MCP library.

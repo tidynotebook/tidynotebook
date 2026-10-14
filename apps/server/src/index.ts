@@ -39,6 +39,18 @@ export {
 } from './lifecycle.ts';
 export type { AppOptions } from './app.ts';
 export { createApp, createAppWithHandlers } from './app.ts';
+export {
+  createMcpProtocol,
+  mcpRoutes,
+  mcpProtocolError,
+} from './mcp/protocol.ts';
+export {
+  mcpTools,
+  checkToolRegistry,
+  runTool,
+  type McpTool,
+} from './mcp/registry.ts';
+export { withToolDelegation } from './auth/actor.ts';
 export type { HandlerDependencies } from './routes/handlers.ts';
 export { createHandlers } from './routes/handlers.ts';
 export {

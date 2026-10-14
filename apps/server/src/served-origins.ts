@@ -18,7 +18,7 @@
  */
 
 /** What one served origin serves. */
-export type ServedOriginRole = 'application' | 'published';
+export type ServedOriginRole = 'application' | 'published' | 'mcp';
 
 /** One served origin and its role. */
 export type ServedOrigin = {
@@ -199,4 +199,14 @@ export function servedHostNames(
   return Array.from(
     new Set(served.map((entry) => new URL(entry.origin).hostname)),
   );
+}
+
+/** Adds the MCP origin without changing the cookie trust of application origins. */
+export function withMcpOrigin(
+  served: readonly ServedOrigin[],
+  origin: string | null,
+): readonly ServedOrigin[] {
+  return origin === null || served.some((entry) => entry.origin === origin)
+    ? served
+    : [...served, { origin, role: 'mcp' }];
 }

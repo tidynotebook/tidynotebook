@@ -45,6 +45,7 @@ import { readFile } from 'node:fs/promises';
 import type { ObjectStoreSettings } from '@notesapp/storage-server';
 import {
   readOrigin,
+  withMcpOrigin,
   readServedOrigins,
   type ServedOrigin,
 } from './served-origins.ts';
@@ -862,7 +863,7 @@ export function loadServerConfig(
     storageRoot: raw.NOTESAPP_STORAGE_ROOT,
     objectStore: readObjectStore(raw, environment),
     authSecret: raw.NOTESAPP_AUTH_SECRET,
-    servedOrigins: served.origins,
+    servedOrigins: withMcpOrigin(served.origins, mcpOrigin),
     listen,
     trustedProxies: trusted.proxies,
     logLevel: isLogLevel(raw.NOTESAPP_LOG_LEVEL)

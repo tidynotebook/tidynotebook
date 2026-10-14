@@ -9,6 +9,8 @@ properties:
     description: Protocol value.
     maxLength: 4096
     enum:
+      - invalid_token
+      - insufficient_scope
       - invalid_request
       - invalid_client
       - invalid_grant

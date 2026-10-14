@@ -621,3 +621,32 @@ await test('OAuth forms and RFC 6749 errors keep their declared boundary', () =>
     [200],
   );
 });
+
+await test('MCP refusals have one JSON media type and closed protocol bodies', () => {
+  const rpc = {
+    jsonrpc: '2.0',
+    id: null,
+    error: { code: -32600, message: 'The request is not valid.' },
+  };
+  for (const id of ['serveMcp', 'openMcp'] as const) {
+    const challenge = responseValidator(id, 401, 'application/json');
+    const forbidden = responseValidator(id, 403, 'application/json');
+    const refusal = responseValidator(id, 400, 'application/json');
+    assert.ok(challenge && forbidden && refusal);
+    assert.equal(challenge({ error: 'invalid_token' }), true);
+    assert.equal(challenge(rpc), false);
+    assert.equal(forbidden({ error: 'insufficient_scope' }), true);
+    assert.equal(forbidden(rpc), true);
+    assert.equal(refusal(rpc), true);
+    assert.equal(refusal({ ...rpc, id: 1 }), false);
+    assert.equal(refusal({ ...rpc, extra: true }), false);
+    assert.equal(
+      refusal({ ...rpc, error: { ...rpc.error, extra: true } }),
+      false,
+    );
+    assert.equal(refusal({ error: 'invalid_token' }), false);
+    for (const status of [400, 401, 403, 405, 413, 415, 429])
+      assert.deepEqual(responseMediaTypes(id, status), ['application/json']);
+  }
+  assert.deepEqual(responseMediaTypes('serveMcp', 202), []);
+});

@@ -19,6 +19,7 @@
  * after it.
  */
 import { randomUUID } from 'node:crypto';
+import { resolveOAuthToken, type OAuthTokenIdentity } from './oauth-store.ts';
 import { apiKeyOf, type ApiKeyRow } from './api-key-row.ts';
 import {
   installationSettingsOf,
@@ -338,6 +339,11 @@ export type IdentityStoreHandle = WorkspaceAdminStore &
     sessionStanding(authUserId: string): Promise<SessionStanding | null>;
     /** Resolve one unexpired key of an enabled account. No secret is returned. */
     apiKeyIdentity(tokenDigest: string): Promise<ApiKeyIdentity | null>;
+    /** Resolve an MCP access token through the existing runtime pool (0225). */
+    oauthTokenIdentity(
+      digest: string,
+      resource: string,
+    ): Promise<OAuthTokenIdentity | null>;
     /**
      * The workspaces that one notice stream may still hear about, or `null`
      * when its session ended or expired, or no longer serves an enabled
@@ -1367,6 +1373,8 @@ export function openIdentityStore(
   }
 
   return {
+    oauthTokenIdentity: (digest, resource) =>
+      resolveOAuthToken(pool, digest, resource),
     installation<T>(
       actor: Actor,
       run: (tx: InstallationTransaction) => Promise<T>,

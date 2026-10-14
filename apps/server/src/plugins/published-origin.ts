@@ -14,6 +14,7 @@
  * `app.ts` runs these rules in one request hook. They are pure, so a unit
  * test states every case.
  */
+import type { ServedOriginRole } from '../served-origins.ts';
 import {
   publishedDiagramFrameHref,
   publishedPageScriptFile,
@@ -64,7 +65,7 @@ export type PublishedOriginDecision =
  *   address of the request, with its query.
  */
 export function publishedOriginDecision(
-  role: 'application' | 'published' | null,
+  role: ServedOriginRole | null,
   published: string | null,
   request: {
     readonly operationId: string | undefined;

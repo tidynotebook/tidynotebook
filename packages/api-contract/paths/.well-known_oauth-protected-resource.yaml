@@ -1,0 +1,32 @@
+get:
+  operationId: getRootMcpMetadata
+  summary: Read the MCP Protected Resource Metadata.
+  description: Discover the canonical MCP resource and its authorization server.
+  tags: [mcp]
+  security: []
+  x-notesapp-protocol: mcp
+  responses:
+    '200':
+      description: The resource metadata of this installation.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/McpMetadata.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../components/responses/NotFound.yaml'
+    '413':
+      $ref: '../components/responses/PayloadTooLarge.yaml'
+    '415':
+      $ref: '../components/responses/UnsupportedMediaType.yaml'
+    '429':
+      $ref: '../components/responses/RateLimited.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'
+    '503':
+      $ref: '../components/responses/ServiceBusy.yaml'

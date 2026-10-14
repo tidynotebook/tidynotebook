@@ -6,7 +6,11 @@
  * or calls a transport. The generated client owns all of that.
  */
 import { client } from './generated/client.gen.ts';
-import type { ProblemDetails, OAuthError } from './generated/types.gen.ts';
+import type {
+  ProblemDetails,
+  OAuthError,
+  McpError,
+} from './generated/types.gen.ts';
 import {
   ResponseReadError,
   responseWithProgress,
@@ -94,6 +98,8 @@ export function configureClient(
 
 /** The declared RFC errors, including the extensions used by this server. */
 export const oauthErrorCodes = [
+  'invalid_token',
+  'insufficient_scope',
   'invalid_request',
   'invalid_client',
   'invalid_grant',
@@ -125,25 +131,59 @@ function isOAuthError(value: unknown): value is OAuthError {
   );
 }
 
-const oauthPathPrefix = '/api/auth/oauth2/';
+const oauthPathPrefixes = ['/api/auth/oauth2/', '/mcp'] as const;
+const mcpPathPrefixes = ['/mcp'] as const;
 
-/** Only the contract's OAuth paths preserve their RFC error shape (0226). */
+/** Parse the closed JSON-RPC refusal before a generated caller receives it. */
+function isMcpError(value: unknown): value is McpError {
+  if (value === null || typeof value !== 'object' || Array.isArray(value))
+    return false;
+  const fields = Object.fromEntries(Object.entries(value));
+  if (
+    fields.jsonrpc !== '2.0' ||
+    fields.id !== null ||
+    !Object.keys(fields).every((name) =>
+      ['jsonrpc', 'id', 'error'].includes(name),
+    )
+  )
+    return false;
+  const error: unknown = fields.error;
+  if (error === null || typeof error !== 'object' || Array.isArray(error))
+    return false;
+  const details = Object.fromEntries(Object.entries(error));
+  return (
+    typeof details.code === 'number' &&
+    Number.isInteger(details.code) &&
+    typeof details.message === 'string' &&
+    Object.keys(details).every((name) =>
+      ['code', 'message', 'data'].includes(name),
+    )
+  );
+}
+
+/** Only the contract's protocol paths preserve their closed errors (0225, 0226). */
 export function normalizeProtocolError(
   error: unknown,
   response: Response | undefined,
   request: Request | undefined,
-): ProblemDetails | OAuthError {
+): ProblemDetails | OAuthError | McpError {
   const type = response?.headers
     .get('content-type')
     ?.split(';')[0]
     ?.trim()
     .toLowerCase();
-  if (
-    request !== undefined &&
-    new URL(request.url).pathname.startsWith(oauthPathPrefix) &&
-    type === 'application/json' &&
-    isOAuthError(error)
-  )
-    return error;
+  if (request !== undefined && type === 'application/json') {
+    const path = new URL(request.url).pathname;
+    if (
+      oauthPathPrefixes.some((prefix) => path.startsWith(prefix)) &&
+      isOAuthError(error)
+    )
+      return error;
+    if (
+      mcpPathPrefixes.some((prefix) => path.startsWith(prefix)) &&
+      isMcpError(error)
+    )
+      return error;
+  }
   return normalizeProblem(error, response);
 }

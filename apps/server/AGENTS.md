@@ -1,7 +1,6 @@
 # apps/server
 
-Read the root [AGENTS.md](../../AGENTS.md) first. This file adds the rules of this
-directory. The Fastify HTTP adapter serves the web application, the REST API, and the
+Read the root [AGENTS.md](../../AGENTS.md) first. The Fastify HTTP adapter serves the web application, the REST API, and the
 authentication routes on one origin, and it holds no domain rule.
 
 ## What lives here and what does not
@@ -32,11 +31,12 @@ authentication routes on one origin, and it holds no domain rule.
   of open registration, `verification.ts` the token of its link (0114), and
   `proof-of-work.ts` the challenges of a sign-up (0115). `src/jobs/` holds background work, `src/cli/` the operator
   commands. `routes/administration.ts` serves the installation operations (0109).
+- `src/mcp/` holds the stateless adapter, metadata and empty registry (0225, 0227).
+  Only this directory imports the MCP SDK. Tools receive only a contract call port;
+  `src/auth/actor.ts` holds their delegation in an internal asynchronous context.
 - `src/auth/better-auth.ts` also holds the opt-in OAuth profile, exact discovery
   address, form transport and OAuth error boundary (0226). No MCP endpoint lives here.
 - `src/installation-settings.ts` decides the mail, the legal documents and the policy lock (0148, 0206).
-- A domain rule lives in `packages/core`, every SQL statement in
-  `packages/storage-server`, and every request shape in `packages/api-contract/`.
 
 ## Allowed imports
 
@@ -72,7 +72,7 @@ request that no generated operation can express uses `app.inject()`.
 - No second origin list, client address or settings decider (0039, 0043, 0148).
 - No rejected body, token, or password in a log line, which is why the whole reader
   path of a published link is redacted. A rejection names the request id and the reason.
-- No handwritten HTTP transport. `better-auth.ts` is the one listed protocol file.
+- No handwritten HTTP transport. `better-auth.ts` and `src/mcp/protocol.ts` are the listed protocol files.
 - No message text outside `src/auth/messages.ts`, and no message that a person
   with no session can cause outside the budgeted transport of `mail.ts` (0141).
 - No actor helper in `src/routes/published.ts`, no script but the page file (0158, 0174),

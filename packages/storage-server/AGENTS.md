@@ -20,6 +20,7 @@ The PostgreSQL schema, migrations, stores, row access rules and provisioning.
   two adapters, the keys of `keys.ts`, the cleanup of `staging/` (0192), and `calls.ts`, the kind of each S3 call that 0193 counts.
 - `src/oauth-store.ts` holds OAuth request transactions, expiry and the narrow
   token resolver (0226). The identity role owns the OAuth tables.
+  `identity-store.ts` exposes it through its existing runtime pool for MCP (0225).
 - `src/migrate.ts` runs the migrations and exports `requiredSchemaVersion`.
   `src/search-text.ts` writes the text of a search row and `searchTextRule`;
   a raised rule makes `src/search-index-migration.ts` redo each row (0167).

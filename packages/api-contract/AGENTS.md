@@ -21,7 +21,7 @@ from a path file, `'./<Name>.yaml'` in one section, and `'../<section>/<Name>.ya
 
 - `openapi.yaml`, `paths/` and `components/` are authoritative. `redocly.yaml`
   holds the rules of `pnpm contract:lint` and `.redocly.lint-ignore.yaml` its
-  exact exceptions for the 101 upgrade (0128) and OAuth RFC 6749 errors (0226).
+  exact exceptions for the 101 upgrade (0128), OAuth (0226) and MCP errors (0225).
 - `asyncapi.yaml` is the message root (0126), and `channels/` holds one file
   per channel. A payload is a schema that `openapi.yaml` also lists, in the
   keywords that AsyncAPI 3.0 and JSON Schema 2020-12 share.
@@ -58,7 +58,8 @@ No workspace package. Only `ajv` and `ajv-formats`.
   Mark a client only member `writeOnly` and a server only member `readOnly`.
   Reference the schema, because an orphan fails generation. A failure answers
   `ProblemDetails` with a stable `code`, or a closed narrowing of it. OAuth
-  operations use `OAuthError` (0226). Token and revocation requests use forms.
+  operations use `OAuthError` (0226). The MCP endpoint answers JSON-RPC errors
+  and `OAuthError` for its auth challenges (0225). Token and revocation requests use forms.
 
 ## Testing conventions here
 

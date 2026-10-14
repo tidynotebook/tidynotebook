@@ -1,4 +1,4 @@
-/** The client exception is the exact OAuth error set of the contract (0226). */
+/** Client protocol exceptions are the exact contract error sets (0225, 0226). */
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
@@ -24,8 +24,17 @@ await test('the client path exception and error enum match the generated contrac
       'utf8',
     ),
   ]);
-  const prefix = /const oauthPathPrefix = '([^']+)';/.exec(source)?.[1];
-  assert.equal(prefix, '/api/auth/oauth2/');
+  const prefixes = (name) => {
+    const list = new RegExp(`const ${name} = \\[([\\s\\S]*?)\\] as const`).exec(
+      source,
+    )?.[1];
+    assert.ok(list, name);
+    return [...list.matchAll(/'([^']+)'/g)].map((match) => match[1]);
+  };
+  const oauthPrefixes = prefixes('oauthPathPrefixes');
+  const mcpPrefixes = prefixes('mcpPathPrefixes');
+  assert.deepEqual(oauthPrefixes, ['/api/auth/oauth2/', '/mcp']);
+  assert.deepEqual(mcpPrefixes, ['/mcp']);
   const list = /export const oauthErrorCodes = \[([\s\S]*?)\] as const/.exec(
     source,
   )?.[1];
@@ -48,14 +57,19 @@ await test('the client path exception and error enum match the generated contrac
       const errors = Object.entries(record(record(operation).responses)).filter(
         ([status]) => Number(status) >= 400,
       );
-      const usesOAuth = errors.some(([, error]) =>
-        JSON.stringify(error).includes('#/components/schemas/OAuthError'),
-      );
-      assert.equal(
-        usesOAuth,
-        path.startsWith(prefix ?? ''),
-        `${method} ${path}`,
-      );
+      for (const [schema, prefixes] of [
+        ['OAuthError', oauthPrefixes],
+        ['McpError', mcpPrefixes],
+      ]) {
+        const declared = errors.some(([, error]) =>
+          JSON.stringify(error).includes(`#/components/schemas/${schema}`),
+        );
+        assert.equal(
+          declared,
+          prefixes.some((prefix) => path.startsWith(prefix)),
+          `${schema}: ${method} ${path}`,
+        );
+      }
     }
   }
 });

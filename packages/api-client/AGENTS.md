@@ -19,8 +19,8 @@ the contract in `packages/api-contract/`.
   `src/generated/addresses.gen.ts` the address of each download that a
   browser reads itself (0178). Never edit a file there.
 - `src/configure.ts` sets the base URL, the cookie behaviour, the token
-  provider, and it normalizes a problem answer. Its one exception preserves
-  the closed `OAuthError` of the OAuth contract (0226). `src/socket.ts` is the one
+  provider, and it normalizes a problem answer. Its protocol exception preserves
+  closed OAuth and MCP errors (0225, 0226). `src/socket.ts` is the one
   browser transport of the notice stream over PartySocket (0130).
 - `src/response-progress.ts` reports received headers and body chunks through
   the generated response hook. The sync caller owns the timing and retry rule.

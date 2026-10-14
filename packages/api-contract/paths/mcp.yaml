@@ -1,0 +1,180 @@
+post:
+  operationId: serveMcp
+  summary: Send a request to the MCP endpoint.
+  description: >-
+    The opt-in stateless MCP endpoint takes an access token of this resource.
+    It answers JSON and opens no event stream. Notifications receive no body.
+  tags: [mcp]
+  security:
+    - mcpAccessToken: ['notes:read']
+  x-notesapp-protocol: mcp
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../components/schemas/McpMessage.yaml'
+  responses:
+    '200':
+      description: The MCP library answers the request.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/McpMessage.yaml'
+    '202':
+      description: The notification is accepted. No response body is sent.
+    '405':
+      description: No event stream or session operation is served.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/McpError.yaml'
+    '406':
+      description: The requested response media type is not supported.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/McpError.yaml'
+    '400':
+      description: The protocol request is refused.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/McpError.yaml'
+    '401':
+      description: The protocol request is refused.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/OAuthError.yaml'
+    '403':
+      description: The protocol request is refused.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '../components/schemas/OAuthError.yaml'
+              - $ref: '../components/schemas/McpError.yaml'
+    '404':
+      description: The protocol request is refused.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/McpError.yaml'
+    '413':
+      description: The protocol request is refused.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/McpError.yaml'
+    '415':
+      description: The protocol request is refused.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/McpError.yaml'
+    '429':
+      description: The protocol request is refused.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/McpError.yaml'
+    '500':
+      description: The protocol request is refused.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/McpError.yaml'
+    '503':
+      description: The protocol request is refused.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/McpError.yaml'
+get:
+  operationId: openMcp
+  summary: Send a request to the MCP endpoint.
+  description: >-
+    The opt-in stateless MCP endpoint takes an access token of this resource.
+    It answers JSON and opens no event stream. Notifications receive no body.
+  tags: [mcp]
+  security:
+    - mcpAccessToken: ['notes:read']
+  x-notesapp-protocol: mcp
+  responses:
+    '200':
+      description: The MCP library answers the request.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/McpMessage.yaml'
+    '202':
+      description: The notification is accepted. No response body is sent.
+    '405':
+      description: No event stream or session operation is served.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/McpError.yaml'
+    '406':
+      description: The requested response media type is not supported.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/McpError.yaml'
+    '400':
+      description: The protocol request is refused.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/McpError.yaml'
+    '401':
+      description: The protocol request is refused.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/OAuthError.yaml'
+    '403':
+      description: The protocol request is refused.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '../components/schemas/OAuthError.yaml'
+              - $ref: '../components/schemas/McpError.yaml'
+    '404':
+      description: The protocol request is refused.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/McpError.yaml'
+    '413':
+      description: The protocol request is refused.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/McpError.yaml'
+    '415':
+      description: The protocol request is refused.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/McpError.yaml'
+    '429':
+      description: The protocol request is refused.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/McpError.yaml'
+    '500':
+      description: The protocol request is refused.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/McpError.yaml'
+    '503':
+      description: The protocol request is refused.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/McpError.yaml'

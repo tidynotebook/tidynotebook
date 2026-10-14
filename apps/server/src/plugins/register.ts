@@ -47,6 +47,8 @@ declare module 'fastify' {
   interface FastifyContextConfig {
     /** Contract operation that owns this route. */
     operationId?: OperationId;
+    /** A protocol owns the JSON error format of its endpoint. */
+    protocolError?: (status: number) => ProtocolResult;
   }
 }
 
@@ -196,9 +198,12 @@ export type ProtocolAdapter = {
     readonly path: string;
     readonly oauth?: boolean;
     readonly oauthErrors?: boolean;
+    readonly protocolErrors?: boolean;
   }[];
   /** Disabled opt-in routes answer as an unknown route. */
   readonly enabled?: (route: { readonly oauth?: boolean }) => boolean;
+  /** Format a refusal before the protocol library runs. */
+  readonly error?: (status: number) => ProtocolResult;
   /**
    * Serves one request and returns its answer.
    *
@@ -722,7 +727,7 @@ export function registerOperations(
       ]);
     if (issue === 'unsupported_media_type')
       throw new RequestMediaTypeError(operation.request.bodyMediaType ?? '');
-    if (operation.security.length === 0) return;
+    if (operation.security.length === 0 || operation.protocol === 'mcp') return;
     if (identity === undefined)
       throw new Error(`Operation ${id} has no identity resolver.`);
     await identity(request, { id, security: operation.security });
@@ -943,7 +948,16 @@ function registerProtocol(
       scope.route({
         method: route.method,
         url: route.path,
-        ...(id === undefined ? {} : { config: { operationId: id } }),
+        ...(id === undefined
+          ? {}
+          : {
+              config: {
+                operationId: id,
+                ...(adapter.error === undefined || route.protocolErrors !== true
+                  ? {}
+                  : { protocolError: adapter.error }),
+              },
+            }),
         ...(route.oauthErrors === true
           ? {
               errorHandler: (error, _request, reply) => {
@@ -1075,7 +1089,7 @@ function checkProtocolRequest(id: OperationId, request: FastifyRequest): void {
     ['params', request.params],
     ['query', request.query],
     ['headers', request.headers],
-    ...(operation.request.body === null
+    ...(operation.request.body === null || operation.protocol === 'mcp'
       ? []
       : ([['body', readRawJson(request)]] as const)),
   ];
@@ -1085,6 +1099,21 @@ function checkProtocolRequest(id: OperationId, request: FastifyRequest): void {
     if (!validate(value))
       throw new RequestContractError(slot, describeIssues(validate.errors));
   }
+}
+
+/** The normal error path still checks every protocol-specific refusal. */
+export async function answerProtocolError(
+  request: FastifyRequest,
+  reply: FastifyReply,
+  status: number,
+): Promise<boolean> {
+  const error = request.routeOptions.config.protocolError;
+  const id = request.routeOptions.config.operationId;
+  if (error === undefined || id === undefined) return false;
+  const result = error(status);
+  checkProtocolResponse(request, id, result);
+  await sendProtocolResult(reply, result);
+  return true;
 }
 
 /** Validates the answer of a protocol route against the contract. */

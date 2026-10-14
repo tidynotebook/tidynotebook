@@ -68,3 +68,25 @@ paths/api_auth_oauth2_public-client.yaml:
     - '#/get/responses/413'
     - '#/get/responses/415'
     - '#/get/responses/429'
+
+# MCP protocol errors and OAuth challenges use JSON (record 0225).
+paths/mcp.yaml:
+  operation-4xx-problem-details-rfc7807:
+    - '#/get/responses/400'
+    - '#/get/responses/401'
+    - '#/get/responses/403'
+    - '#/get/responses/404'
+    - '#/get/responses/405'
+    - '#/get/responses/406'
+    - '#/get/responses/413'
+    - '#/get/responses/415'
+    - '#/get/responses/429'
+    - '#/post/responses/400'
+    - '#/post/responses/401'
+    - '#/post/responses/403'
+    - '#/post/responses/404'
+    - '#/post/responses/405'
+    - '#/post/responses/406'
+    - '#/post/responses/413'
+    - '#/post/responses/415'
+    - '#/post/responses/429'

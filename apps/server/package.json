@@ -24,6 +24,7 @@
     "@fastify/busboy": "3.2.2",
     "@fastify/rate-limit": "11.2.0",
     "@fastify/websocket": "11.3.1",
+    "@modelcontextprotocol/server": "2.3.1",
     "@notesapp/api-contract": "workspace:*",
     "@notesapp/core": "workspace:*",
     "@notesapp/logging": "workspace:*",

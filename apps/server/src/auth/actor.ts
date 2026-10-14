@@ -10,10 +10,15 @@
  * never be passed where the core expects a verified actor.
  */
 import { createHash, timingSafeEqual } from 'node:crypto';
+import { AsyncLocalStorage } from 'node:async_hooks';
+import type { OperationId } from '@notesapp/api-contract';
 import type { FastifyRequest } from 'fastify';
 import type { Actor, ControlStanding } from '@notesapp/core';
 import { lockedAccountKeeps, sessionGrants, verifyActor } from '@notesapp/core';
-import type { IdentityStoreHandle } from '@notesapp/storage-server';
+import type {
+  IdentityStoreHandle,
+  OAuthTokenIdentity,
+} from '@notesapp/storage-server';
 import type { IdentityResolver } from '../plugins/register.ts';
 import {
   AccountLockedError,
@@ -64,6 +69,33 @@ const safeMethods = new Set(['GET', 'HEAD', 'OPTIONS']);
  * can reach it without asking for it and nothing serializes it by accident.
  */
 const actors = new WeakMap<FastifyRequest, ResolvedActor>();
+
+/** A capability exists only in the asynchronous work of one tool call. */
+type ToolDelegation = {
+  readonly grant: OAuthTokenIdentity;
+  readonly operations: ReadonlySet<OperationId>;
+  active: boolean;
+};
+const delegations = new AsyncLocalStorage<ToolDelegation>();
+
+/** No header, body, cookie or request property can install this capability. */
+export async function withToolDelegation<T>(
+  grant: OAuthTokenIdentity,
+  operations: readonly OperationId[],
+  run: () => Promise<T>,
+): Promise<T> {
+  const delegation: ToolDelegation = {
+    grant,
+    operations: new Set(operations),
+    active: true,
+  };
+  try {
+    return await delegations.run(delegation, run);
+  } finally {
+    // Descendant asynchronous work can retain the context, but never its right.
+    delegation.active = false;
+  }
+}
 
 /** The verified actor of a request, or undefined for a public operation. */
 export function requestActor(
@@ -368,6 +400,33 @@ export function createIdentityAdapter(
     const schemes = operation.security.flatMap((requirement) =>
       Object.keys(requirement),
     );
+    const delegation = delegations.getStore();
+    if (delegation !== undefined) {
+      if (
+        !delegation.active ||
+        !delegation.operations.has(operation.id) ||
+        !schemes.includes(apiKeyScheme) ||
+        schemes.includes(operatorScheme)
+      )
+        throw new UnauthenticatedError('This tool cannot call this operation.');
+      const current = await dependencies.identity.sessionStanding(
+        delegation.grant.authUserId,
+      );
+      if (current === null || current.accountId !== delegation.grant.accountId)
+        throw new UnauthenticatedError('This account cannot use this tool.');
+      const resolved = await withAccount({
+        ...current,
+        authUserId: delegation.grant.authUserId,
+        sessionId: null,
+        email: null,
+        name: null,
+      });
+      if (resolved === null)
+        throw new UnauthenticatedError('This account cannot use this tool.');
+      refuseLocked(resolved.standing, operation.id);
+      actors.set(request, resolved);
+      return;
+    }
     // An operator operation takes the operator token alone, and a session
     // never satisfies it.
     if (schemes.includes(operatorScheme)) {

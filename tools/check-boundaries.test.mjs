@@ -851,3 +851,47 @@ await test('the client script of the docs site imports only its own folder', () 
     'imports only modules of apps/docs/src/client/',
   );
 });
+
+await test('the MCP SDK stays inside the server mcp directory', () => {
+  const dependency = { '@modelcontextprotocol/server': '2.3.1' };
+  const files = {
+    'apps/server/package.json': manifest('server', dependency),
+    'apps/server/src/mcp/protocol.ts':
+      "import { createMcpHandler } from '@modelcontextprotocol/server';\nexport const handler = createMcpHandler;\n",
+  };
+  accepted(check(workspace(files)));
+  for (const path of [
+    'apps/server/src/routes/mcp.ts',
+    'apps/server/src/auth/mcp.ts',
+    'tests/integration/mcp.test.ts',
+  ])
+    rejected(
+      check(
+        workspace({
+          ...files,
+          [path]:
+            "import type { Server } from '@modelcontextprotocol/server';\nexport type Service = Server;\n",
+        }),
+      ),
+      'The MCP SDK belongs only in apps/server/src/mcp/',
+    );
+});
+
+await test('only the named MCP protocol file can use the library transport', () => {
+  const files = {
+    'apps/server/package.json': manifest('server'),
+    'apps/server/src/mcp/protocol.ts':
+      'export const send = (handler, request) => handler.fetch(request);\n',
+  };
+  accepted(check(workspace(files)));
+  rejected(
+    check(
+      workspace({
+        ...files,
+        'apps/server/src/mcp/registry.ts':
+          'export const send = (handler, request) => handler.fetch(request);\n',
+      }),
+    ),
+    'Handwritten fetch',
+  );
+});

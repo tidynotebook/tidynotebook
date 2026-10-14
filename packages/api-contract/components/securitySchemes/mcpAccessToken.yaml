@@ -1,0 +1,12 @@
+type: oauth2
+description: >-
+  An opaque access token bound to this MCP resource. A browser session and a
+  personal API key cannot satisfy this scheme. Discover the authorization
+  server through the Protected Resource Metadata of this installation.
+flows:
+  authorizationCode:
+    authorizationUrl: /api/auth/oauth2/authorize
+    tokenUrl: /api/auth/oauth2/token
+    scopes:
+      notes:read: Read notes in the account.
+      notes:write: Change notes in the account.

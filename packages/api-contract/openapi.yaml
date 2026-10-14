@@ -52,6 +52,8 @@ tags:
     description: >-
       Authentication protocol endpoints. Better Auth implements them; the
       contract records their shapes so the generated client owns every call.
+  - name: mcp
+    description: The opt-in remote Model Context Protocol endpoint.
   - name: operator
     description: >-
       Operations of a service of the operator, such as a billing service
@@ -62,6 +64,12 @@ security:
   - sessionCookie: []
   - personalApiKey: []
 paths:
+  /mcp:
+    $ref: './paths/mcp.yaml'
+  /.well-known/oauth-protected-resource/mcp:
+    $ref: './paths/.well-known_oauth-protected-resource_mcp.yaml'
+  /.well-known/oauth-protected-resource:
+    $ref: './paths/.well-known_oauth-protected-resource.yaml'
   /.well-known/oauth-authorization-server/api/auth:
     $ref: './paths/.well-known_oauth-authorization-server_api_auth.yaml'
   /api/auth/oauth2/register:
@@ -234,6 +242,8 @@ paths:
     $ref: './paths/published_token_attachments_fileId_revisionId.yaml'
 components:
   securitySchemes:
+    mcpAccessToken:
+      $ref: './components/securitySchemes/mcpAccessToken.yaml'
     personalApiKey:
       $ref: './components/securitySchemes/personalApiKey.yaml'
     sessionCookie:
@@ -574,6 +584,12 @@ components:
     PortalAddress:
       $ref: './components/responses/PortalAddress.yaml'
   schemas:
+    McpError:
+      $ref: './components/schemas/McpError.yaml'
+    McpMessage:
+      $ref: './components/schemas/McpMessage.yaml'
+    McpMetadata:
+      $ref: './components/schemas/McpMetadata.yaml'
     OAuthTokenRequest:
       $ref: './components/schemas/OAuthTokenRequest.yaml'
     OAuthToken:

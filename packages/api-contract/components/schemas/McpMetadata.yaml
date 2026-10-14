@@ -1,0 +1,36 @@
+type: object
+additionalProperties: false
+required:
+  - resource
+  - authorization_servers
+  - scopes_supported
+  - bearer_methods_supported
+properties:
+  resource:
+    type: string
+    format: uri
+    readOnly: true
+    description: The canonical MCP resource of this installation.
+  authorization_servers:
+    type: array
+    readOnly: true
+    minItems: 1
+    maxItems: 1
+    items:
+      type: string
+      format: uri
+    description: The application authorization server.
+  scopes_supported:
+    type: array
+    readOnly: true
+    items:
+      type: string
+      enum: ['notes:read', 'notes:write']
+    description: The access scopes of this resource.
+  bearer_methods_supported:
+    type: array
+    readOnly: true
+    items:
+      type: string
+      const: header
+    description: A token travels only in the Authorization header.

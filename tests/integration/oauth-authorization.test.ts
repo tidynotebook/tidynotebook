@@ -370,7 +370,6 @@ try {
       '/api/auth/.well-known/oauth-authorization-server',
       '/.well-known/openid-configuration',
       '/api/auth/.well-known/openid-configuration',
-      '/mcp',
     ]) {
       const answer = await app.inject({ url });
       assert.equal(answer.statusCode, 404, url);

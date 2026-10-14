@@ -41,7 +41,7 @@ import type {
   IdentityResolver,
   ProtocolAdapter,
 } from './plugins/register.ts';
-import { registerOperations } from './plugins/register.ts';
+import { answerProtocolError, registerOperations } from './plugins/register.ts';
 import type { AuthLogRecord, AuthOptions } from './auth/better-auth.ts';
 import {
   createAuth,
@@ -49,6 +49,8 @@ import {
   createAuthProtocol,
 } from './auth/better-auth.ts';
 import { createIdentityAdapter, refuseLocked } from './auth/actor.ts';
+import { createMcpProtocol } from './mcp/protocol.ts';
+import type { McpTool } from './mcp/registry.ts';
 import { createPublicationHasher } from './auth/publication-secrets.ts';
 import { createSetupHandlers } from './auth/setup.ts';
 import { passwordMatches, sessionAllowedBy } from './auth/registration.ts';
@@ -212,6 +214,8 @@ export function webAssetsDirectory(
 
 /** Everything that a deployment or a test supplies besides configuration. */
 export type AppOptions = {
+  /** Internal test composition. The production registry has no injected rows. */
+  readonly mcpTools?: readonly McpTool[];
   /** One handler per contract operation id. */
   readonly handlers: HandlerMap;
   /** Injected safe CIMD transport for protocol integration tests. */
@@ -405,6 +409,7 @@ export async function createAppWithHandlers(
     const id = request.routeOptions.config.operationId;
     if (answersAnyHost(id)) return;
     const status = contractStatus(id, 400);
+    if (await answerProtocolError(request, reply, status)) return;
     await reply
       .status(status)
       .header('content-type', `${problemMediaType}; charset=utf-8`)
@@ -568,6 +573,7 @@ export async function createAppWithHandlers(
         operationId: id ?? null,
         errorName: errorName(error),
       });
+    if (await answerProtocolError(request, reply, status)) return;
     await reply
       .status(status)
       .header('content-type', `${problemMediaType}; charset=utf-8`)
@@ -611,11 +617,22 @@ export async function createAppWithHandlers(
   // so every application serves its upgrade address. A composition with a
   // gateway supplies its own adapter, and every other one refuses the stream.
   const supplied = options.protocols ?? [];
-  const protocols = supplied.some(
+  const noticeProtocols = supplied.some(
     (adapter) => adapter.protocol === syncNoticesProtocol,
   )
     ? supplied
     : [...supplied, createSyncNoticesProtocol()];
+  const protocols = noticeProtocols.some((entry) => entry.protocol === 'mcp')
+    ? noticeProtocols
+    : [
+        ...noticeProtocols,
+        createMcpProtocol({
+          config,
+          app: () => app,
+          attempts: options.attempts ?? new AttemptCounters(),
+          identity: { oauthTokenIdentity: () => Promise.resolve(null) },
+        }),
+      ];
   const noticeBounds = { ...defaultNoticeBounds, ...options.noticeBounds };
   await registerWebSocket(app, {
     maxFrameBytes: noticeBounds.maxFrameBytes,
@@ -910,7 +927,7 @@ async function composeApp(
       max: config.rateLimit.max,
     },
   });
-  const app = await createAppWithHandlers(config, {
+  const app: FastifyInstance = await createAppWithHandlers(config, {
     handlers: {
       ...createHandlers(config, probes, {
         store: identity,
@@ -974,6 +991,13 @@ async function composeApp(
     },
     identity: adapter.resolver,
     protocols: [
+      createMcpProtocol({
+        config,
+        identity,
+        attempts,
+        app: () => app,
+        ...(options?.mcpTools === undefined ? {} : { tools: options.mcpTools }),
+      }),
       // A locked account keeps the identity operations of the library and
       // not the change of its profile (record 0201).
       createAuthProtocol(

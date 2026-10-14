@@ -1,0 +1,4 @@
+description: >-
+  A JSON-RPC message of the MCP protocol. The maintained MCP library validates
+  the protocol envelope and the parameters of each method. This boundary does
+  not define a second MCP schema.
