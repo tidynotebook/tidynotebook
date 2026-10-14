@@ -24,15 +24,16 @@ await test('the client path exception and error enum match the generated contrac
       'utf8',
     ),
   ]);
-  const prefixes = (name) => {
+  /** @param {string} name */
+  const readPrefixes = (name) => {
     const list = new RegExp(`const ${name} = \\[([\\s\\S]*?)\\] as const`).exec(
       source,
     )?.[1];
     assert.ok(list, name);
-    return [...list.matchAll(/'([^']+)'/g)].map((match) => match[1]);
+    return [...list.matchAll(/'([^']+)'/g)].map((match) => match[1] ?? '');
   };
-  const oauthPrefixes = prefixes('oauthPathPrefixes');
-  const mcpPrefixes = prefixes('mcpPathPrefixes');
+  const oauthPrefixes = readPrefixes('oauthPathPrefixes');
+  const mcpPrefixes = readPrefixes('mcpPathPrefixes');
   assert.deepEqual(oauthPrefixes, ['/api/auth/oauth2/', '/mcp']);
   assert.deepEqual(mcpPrefixes, ['/mcp']);
   const list = /export const oauthErrorCodes = \[([\s\S]*?)\] as const/.exec(
@@ -57,16 +58,17 @@ await test('the client path exception and error enum match the generated contrac
       const errors = Object.entries(record(record(operation).responses)).filter(
         ([status]) => Number(status) >= 400,
       );
-      for (const [schema, prefixes] of [
+      for (const [schema, pathPrefixes] of [
         ['OAuthError', oauthPrefixes],
         ['McpError', mcpPrefixes],
       ]) {
         const declared = errors.some(([, error]) =>
           JSON.stringify(error).includes(`#/components/schemas/${schema}`),
         );
+        assert.ok(Array.isArray(pathPrefixes));
         assert.equal(
           declared,
-          prefixes.some((prefix) => path.startsWith(prefix)),
+          pathPrefixes.some((prefix) => path.startsWith(prefix)),
           `${schema}: ${method} ${path}`,
         );
       }
