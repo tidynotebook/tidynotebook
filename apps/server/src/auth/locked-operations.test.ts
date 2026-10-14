@@ -27,10 +27,30 @@ function sessionReaches(operation: (typeof operations)[number]): boolean {
   return (
     operation.security.some((requirement) => 'sessionCookie' in requirement) ||
     (operation.protocol !== null &&
+      operation.protocol !== 'mcp' &&
       (!oauthRoutes.some((route) => route.path === operation.path) ||
         oauthCookieWritePaths.some((path) => path === operation.path)))
   );
 }
+
+await test('MCP and its public metadata never declare or resolve a browser session', () => {
+  const metadata = ['getMcpMetadata', 'getRootMcpMetadata'];
+  for (const id of metadata)
+    assert.ok(operations.some((operation) => operation.id === id));
+  const mcp = operations.filter(
+    (operation) =>
+      operation.protocol === 'mcp' || metadata.includes(operation.id),
+  );
+  assert.ok(mcp.length >= 4);
+  for (const operation of mcp) {
+    assert.equal(
+      operation.security.some((requirement) => 'sessionCookie' in requirement),
+      false,
+      operation.id,
+    );
+    assert.equal(sessionReaches(operation), false, operation.id);
+  }
+});
 
 await test('every operation that the list names is one of the contract', () => {
   for (const id of lockedAccountOperations)
