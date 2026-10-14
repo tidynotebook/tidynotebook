@@ -563,8 +563,24 @@ try {
         '/mcp',
         '/.well-known/oauth-protected-resource',
         '/.well-known/oauth-protected-resource/mcp',
-      ])
-        assert.equal((await disabled.inject({ url })).statusCode, 404, url);
+      ]) {
+        const answer = await disabled.inject({ url });
+        assert.equal(answer.statusCode, 404, url);
+        assert.match(
+          String(answer.headers['content-type']),
+          /^application\/problem\+json/,
+        );
+        assert.equal(answer.headers['www-authenticate'], undefined);
+        assert.deepEqual(answer.json(), {
+          type: 'https://notesapp.invalid/problems/route_not_found',
+          title: 'No operation serves this method and path.',
+          status: 404,
+          detail: 'No operation serves this method and path.',
+          instance: url,
+          code: 'route_not_found',
+          requestId: answer.headers['x-request-id'],
+        });
+      }
     } finally {
       await disabled.close();
     }
