@@ -58,14 +58,13 @@ await test('the client path exception and error enum match the generated contrac
       const errors = Object.entries(record(record(operation).responses)).filter(
         ([status]) => Number(status) >= 400,
       );
-      for (const [schema, pathPrefixes] of [
-        ['OAuthError', oauthPrefixes],
-        ['McpError', mcpPrefixes],
-      ]) {
+      for (const [schema, pathPrefixes] of Object.entries({
+        OAuthError: oauthPrefixes,
+        McpError: mcpPrefixes,
+      })) {
         const declared = errors.some(([, error]) =>
           JSON.stringify(error).includes(`#/components/schemas/${schema}`),
         );
-        assert.ok(Array.isArray(pathPrefixes));
         assert.equal(
           declared,
           pathPrefixes.some((prefix) => path.startsWith(prefix)),

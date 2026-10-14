@@ -140,7 +140,7 @@ function contractCall(
     );
     const result = await app().inject({
       method,
-      url: `${path}${query.size === 0 ? '' : `?${query}`}`,
+      url: `${path}${query.size === 0 ? '' : `?${query.toString()}`}`,
       headers: { host: new URL(origin).host },
       ...(input.body === undefined
         ? {}

@@ -86,9 +86,11 @@ await test('every installed server scenario has exactly one explicit classificat
   const listed = await command(['list', '--server']);
   assert.equal(listed.code, 0, listed.output);
   const actual = [...listed.output.matchAll(/^  - (\S+) /gm)]
-    .map((match) => match[1])
-    .sort();
-  const classified = [...selected, ...Object.keys(excluded)].sort();
+    .map((match) => match[1] ?? '')
+    .sort((a, b) => a.localeCompare(b));
+  const classified = [...selected, ...Object.keys(excluded)].sort((a, b) =>
+    a.localeCompare(b),
+  );
   assert.equal(new Set(classified).size, classified.length);
   assert.deepEqual(
     actual,
