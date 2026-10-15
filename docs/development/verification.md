@@ -19,9 +19,9 @@ successful result from every selected job. Main runs full proof after a merge.
 It does not run image or performance checks. `tools/run-tests.mjs` accepts
 `--shard=index/count` to split a suite across runners without losing test files.
 
-Start the disposable database once with `tools/test-database/ensure-postgres.sh`.
-It is safe to run again and safe to run while another checkout uses the same
-service. `pnpm test:integration` also starts the MinIO service of the object
+After the build, `tools/test-database/ensure-postgres.sh` starts the disposable
+service and migrates its setup database before test files start. A repeat call
+is safe. `pnpm test:integration` also starts the MinIO service of the object
 store tests with `tools/test-database/ensure-minio.sh`, and each test file
 makes a bucket of its own there.
 

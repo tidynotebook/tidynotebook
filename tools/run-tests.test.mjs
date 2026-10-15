@@ -56,7 +56,10 @@ await test('the real Node runner covers each file once across shards', () => {
         ),
       );
     }
-    assert.deepEqual(seen.sort(), ['0', '1', '2', '3', '4', '5']);
+    assert.deepEqual(
+      seen.sort((left, right) => Number(left) - Number(right)),
+      ['0', '1', '2', '3', '4', '5'],
+    );
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }

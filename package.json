@@ -16,7 +16,7 @@
     "format:check": "node tools/format.mjs --check",
     "format": "node tools/format.mjs --write",
     "test:unit": "pnpm --filter @notesapp/api-contract --filter @notesapp/api-client --filter @notesapp/core --filter @notesapp/ui run build && node tools/run-tests.mjs unit",
-    "test:integration": "tools/test-database/ensure-postgres.sh && tools/test-database/ensure-minio.sh && pnpm run build && node tools/run-tests.mjs integration",
+    "test:integration": "pnpm run build && tools/test-database/ensure-postgres.sh && tools/test-database/ensure-minio.sh && node tools/run-tests.mjs integration",
     "test:image": "node --test tests/image/",
     "build": "tsc -p tsconfig.json && pnpm -r --if-present build && node tools/distribution-notices.mjs",
     "contract:lint": "pnpm --filter @notesapp/sdk-codegen run contract:lint",

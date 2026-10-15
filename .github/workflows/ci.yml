@@ -104,7 +104,7 @@ jobs:
         run: pnpm lint:types
       - name: Start this runner's database and object store
         if: matrix.suite == 'integration'
-        run: docker compose -p notesapp-test -f compose.test.yaml up -d --wait
+        run: tools/test-database/ensure-postgres.sh && tools/test-database/ensure-minio.sh
       - name: Run the selected test shard
         env:
           SUITE: ${{ matrix.suite }}
