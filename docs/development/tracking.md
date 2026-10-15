@@ -24,9 +24,8 @@ Each row on the board is a GitHub issue. Each issue carries three fields:
 The issue body states the problem and the evidence. It points at code by path.
 It does not copy source.
 
-## How the work flows
+## Context
 
-A large task starts with a design and one or more decision records, then a plan.
-See [the feature workflow](feature-workflow.md) for one whole feature and
-[the decision records](../decisions/README.md) for when a choice needs a record.
-The plan turns into issues on the board, one row per issue.
+Use an issue to state the problem and link related work.
+Designs and plans are optional aids for larger changes.
+The development process is in [AGENTS.md](../../AGENTS.md).

@@ -43,7 +43,7 @@
  *    link names the audit or the code that holds it.
  *
  * A separate root permits a disposable negative check without real documents,
- * in the same shape as `tools/check-agents-md.mjs`.
+ * with disposable fixture files.
  */
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { dirname, join, relative, resolve, sep } from 'node:path';
@@ -78,7 +78,6 @@ export const repositoryRoots = [
   'tools/',
   'tests/',
   'docs/',
-  'rules/',
   'docker/',
 ];
 

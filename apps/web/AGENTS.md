@@ -1,10 +1,5 @@
 # apps/web
 
-Read the root [AGENTS.md](../../AGENTS.md), then the
-[feature workflow](../../docs/development/feature-workflow.md) and the
-[design guide](../../docs/development/design.md). This is the router, the
-screens, the worker and the diagram frame. It composes and holds no rule.
-
 ## What lives here and what does not
 
 - `src/shell/` is the frame: the header, the sidebar, the palette and the

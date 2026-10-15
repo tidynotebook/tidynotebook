@@ -10,4 +10,4 @@ record its retention location. Stop only the named service. Read that it stops.
 Keep database, object store, backups, and credentials unless the request names
 their removal. A credential revoke must name its consumer and replacement path.
 End when the requested service is stopped and retained data is documented.
-The owner-only machine cleanup skill is separate and never runs here.
+Local development cleanup does not apply to a remote host.

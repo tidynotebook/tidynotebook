@@ -73,8 +73,7 @@ interface of a library.
   startup, and `docs/guide/configuration.md` states each one for the
   operator.
 
-`tools/agent-context.mjs` holds the list of the files of this interface. A
-change to one of them lists this page before the first edit.
+The contract files and image commands define this interface.
 
 ## The compatibility rule
 
@@ -95,8 +94,7 @@ Each of these is a breaking change for a service of the operator:
   command does, or what a setting turns on.
 
 A breaking change is named in the CHANGELOG entry of the release that ships
-it, and a decision record states it before the code. The record names the
-effect on a service and what the service must change.
+it. The PR names the effect on a service and what the service must change.
 
 ## The known consumer
 
@@ -116,14 +114,11 @@ before it can use that package. Existing private pins stay intact. The HTTP
 contract and image commands stay the same. The [published images guide](../guide/published-images.md)
 shows how a self-hosted installation selects the image from the official manifest.
 
-## Before a change to the interface
+## Changes to the interface
 
-- Read this page.
-- When a checkout of the cloud repository sits beside this one at
-  `../cloud`, read its `AGENTS.md`, and state the effect on the cloud in the
-  commit body. `node tools/agent-context.mjs` lists that file when it is
-  there.
-- Keep the proof current. `tests/integration/operator.test.ts`,
-  `tests/integration/account-controls.test.ts`,
-  `tests/integration/monthly-limits.test.ts` and `tests/image/commands.test.ts`
-  hold the interface as it is.
+State the effect on the known cloud consumer in the PR.
+The consumer context can help when the change reaches its interface.
+`tests/integration/operator.test.ts`,
+`tests/integration/account-controls.test.ts`, and
+`tests/integration/monthly-limits.test.ts` check the interface.
+Local Docker testing checks the deployed image.

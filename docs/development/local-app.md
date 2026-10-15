@@ -1,17 +1,15 @@
-# Running the local application
+# Local Docker application
 
-This page states how a contributor starts the real application with temporary local data.
+This page explains the disposable local deployment.
 
-Run the launcher from the repository root:
+`docker-compose.yml` defines the production application and database.
+`compose.local.yaml` replaces their host data mounts with named volumes and
+disables automatic restart. Removing those volumes resets the local data.
+The fixed Compose project is `notesapp-local`.
 
-```sh
-pnpm dev:app
-```
+The optional `test-application` skill gives the setup and browser commands.
+It uses `tools/ops/create-secrets.sh` for temporary local credentials and keeps
+settings and screenshots in the ignored `.local-app/` directory.
 
-`tools/dev-app.mjs` builds the client and server and starts the shared test PostgreSQL service. `tests/integration/support/dev-app.ts` creates one disposable database through `tests/integration/support/database.ts` and calls the owner code in `apps/server/src/cli/bootstrap.ts`. The command prints the local address and sign-in details after the server starts.
-
-Press Ctrl+C to stop the server and remove this run's database and file storage. The shared PostgreSQL service stays up for tests. Each new run creates a new owner and fresh storage. Use `pnpm dev:app --port <port>` when the normal local port is busy.
-
-An agent starts, drives and stops the application of its worktree with the skill in `.agents/skills/test-application/`, which picks a free port and keeps its state in `.local-app/`.
-
-The owner removes the worktrees, the branches, the test database and the unused Docker data of the machine with the skill in `.agents/skills/cleaning-up-after-a-task/`. An agent never runs it on its own.
+The development process and cleanup requirements are in
+[AGENTS.md](../../AGENTS.md). No application replaces the test deployment after cleanup.

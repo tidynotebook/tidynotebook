@@ -17,10 +17,11 @@ docs
 apps/docs
 backups
 progress.md
-rules
 AGENTS.md
 tests
 tools/performance
 # The tests of the tools do not ship, and some read the docs site or tests.
 tools/*.test.mjs
 tools/test-database
+
+.local-app

@@ -144,7 +144,7 @@ validated against the contract at the HTTP boundary. See
 
 ## Verification
 
-Required hosted checks are the landing gate (record 0228). A pure module proves what a person sees, and
-an integration test reads the built or served result. See
-[Verification](verification.md) and
-[decision 0066](../decisions/0066-the-browser-suite-is-retired.md).
+Local unit and integration tests check behavior. Docker and browser checks
+exercise the deployed application. CI runs lint only.
+See [Verification](verification.md) for coverage and
+[AGENTS.md](../../AGENTS.md) for the process.

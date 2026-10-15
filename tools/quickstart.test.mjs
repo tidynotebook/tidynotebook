@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import {
   mkdir,
   mkdtemp,
@@ -8,76 +8,9 @@ import {
   stat,
   writeFile,
 } from 'node:fs/promises';
-import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import test from 'node:test';
 import { record, root } from './workspace.mjs';
-
-/** @param {unknown} value
- * @returns {value is {load: (source: string) => unknown}} */
-function yamlModule(value) {
-  return typeof record(value).load === 'function';
-}
-
-/** Read the actual workflow with the installed YAML parser. */
-async function workflowJobs() {
-  const web = createRequire(join(root, 'apps/web/package.json'));
-  const mermaid = createRequire(web.resolve('mermaid'));
-  const parser = createRequire(mermaid.resolve('chevrotain'));
-  /** @type {unknown} */
-  const yaml = parser('js-yaml');
-  assert.ok(yamlModule(yaml));
-  const source = await readFile(join(root, '.github/workflows/ci.yml'), 'utf8');
-  return record(record(yaml.load(source)).jobs);
-}
-
-/** GitHub's supported job environment contexts. A runner does not exist yet.
- * https://docs.github.com/en/actions/reference/workflows-and-actions/contexts
- * @param {Record<string, unknown>} jobs */
-function checkJobContexts(jobs) {
-  const allowed = new Set([
-    'github',
-    'needs',
-    'strategy',
-    'matrix',
-    'vars',
-    'secrets',
-    'inputs',
-  ]);
-  for (const [name, value] of Object.entries(jobs)) {
-    const environment = record(value).env;
-    if (environment === undefined) continue;
-    for (const setting of Object.values(record(environment))) {
-      if (typeof setting !== 'string') continue;
-      for (const expression of setting.matchAll(/\$\{\{([\s\S]*?)\}\}/g)) {
-        // GitHub escapes a quote inside a string by writing it twice.
-        const source = expression[1]?.replace(/'(?:[^']|'')*'/g, '') ?? '';
-        for (const context of source.matchAll(
-          /(?<![\w.])([A-Za-z_]\w*)\s*(?:\.|\[)/g,
-        )) {
-          assert.ok(
-            allowed.has(context[1] ?? ''),
-            `${name} job environment cannot read ${context[1]}`,
-          );
-        }
-      }
-    }
-  }
-}
-
-await test('job context checks permit quoted text and refuse a runner value', () => {
-  checkJobContexts({
-    image: {
-      env: {
-        NAME: "${{ format('foo.bar and it''s runner.temp', github.event.repository.name) }}",
-      },
-    },
-  });
-  assert.throws(
-    () => checkJobContexts({ image: { env: { PATH: '${{ runner.temp }}' } } }),
-    /job environment cannot read runner/,
-  );
-});
 
 /** A Compose check must not take installation settings from the caller. */
 function cleanEnvironment() {
@@ -89,8 +22,9 @@ function cleanEnvironment() {
 }
 
 /** Check the configuration only. Never start a container or remove data.
- * @param {string} directory */
-function composeConfig(directory) {
+ * @param {string} directory
+ * @param {boolean} [local] */
+function composeConfig(directory, local = false) {
   const result = spawnSync(
     'docker',
     [
@@ -99,6 +33,7 @@ function composeConfig(directory) {
       join(directory, '.env'),
       '-f',
       join(root, 'docker-compose.yml'),
+      ...(local ? ['-f', join(root, 'compose.local.yaml')] : []),
       'config',
       '--format',
       'json',
@@ -230,55 +165,23 @@ await test('the quick start script never changes an existing installation', asyn
   }
 });
 
-await test('the image CI job supplies every required Compose setting', async () => {
+await test('local Docker uses the production application with disposable data', async (t) => {
   await mkdir(join(root, '.tooling'), { recursive: true });
-  const directory = await mkdtemp(join(root, '.tooling/compose-ci-test-'));
-  try {
-    const jobs = await workflowJobs();
-    checkJobContexts(jobs);
-    const image = record(jobs.image);
-    const settings = Object.entries(record(image.env)).map(([name, value]) => {
-      assert.ok(typeof value === 'string');
-      return `${name}=${value}`;
-    });
-    assert.ok(Array.isArray(image.steps));
-    const steps = image.steps.map(record);
-    const setupIndex = steps.findIndex(
-      (step) => step.name === 'Set isolated deployment paths',
-    );
-    const setup = steps[setupIndex];
-    assert.ok(
-      setup && typeof setup.run === 'string',
-      'the image job has no runner path setup',
-    );
-    const firstUse = steps.findIndex(
-      (step) =>
-        typeof step.run === 'string' &&
-        /\$NOTESAPP_(SECRETS|DATABASE|STORAGE)_DIR/.test(step.run),
-    );
-    assert.ok(
-      firstUse > setupIndex,
-      'the image job uses paths before runner setup',
-    );
-    const environmentFile = join(directory, 'github-env');
-    await writeFile(environmentFile, '');
-    execFileSync('bash', ['-eu', '-c', setup.run], {
-      cwd: directory,
-      env: {
-        ...cleanEnvironment(),
-        RUNNER_TEMP: directory,
-        GITHUB_ENV: environmentFile,
-      },
-      stdio: 'pipe',
-    });
-    settings.push((await readFile(environmentFile, 'utf8')).trim());
-    await writeFile(join(directory, '.env'), `${settings.join('\n')}\n`);
-    checkIsolation(
-      composeConfig(directory),
-      directory,
-      'https://notes.example.com',
-    );
-  } finally {
-    await rm(directory, { recursive: true, force: true });
+  const directory = await mkdtemp(join(root, '.tooling/local-compose-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const result = await runQuickstart(directory);
+  assert.equal(result.status, 0, result.stderr);
+  const production = record(composeConfig(directory).services);
+  const local = record(composeConfig(directory, true).services);
+  for (const name of ['app', 'postgres']) {
+    const deployed = record(production[name]);
+    const temporary = record(local[name]);
+    assert.equal(temporary.image, deployed.image);
+    assert.deepEqual(temporary.environment, deployed.environment);
+    assert.deepEqual(temporary.healthcheck, deployed.healthcheck);
+    assert.equal(temporary.restart, 'no');
+    assert.ok(Array.isArray(temporary.volumes));
+    assert.equal(temporary.volumes.length, 1);
+    assert.equal(record(temporary.volumes[0]).type, 'volume');
   }
 });

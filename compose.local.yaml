@@ -1,0 +1,14 @@
+# Disposable local storage for the production application definition.
+services:
+  postgres:
+    restart: 'no'
+    volumes: !override
+      - database:/var/lib/postgresql
+  app:
+    restart: 'no'
+    volumes: !override
+      - storage:/var/lib/notesapp
+
+volumes:
+  database:
+  storage:

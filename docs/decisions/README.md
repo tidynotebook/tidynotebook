@@ -5,17 +5,11 @@ costs. A record is short and it does not change after it is accepted. When a
 later choice replaces an earlier one, add a new record and set the status of
 the old one to `Superseded by NNNN`.
 
-## The rule
+## When a record helps
 
-**A new architectural choice gets a record before the code.** A change that
-moves a boundary, adds or removes a package, changes the save model, adds a
-second parser or renderer, changes the contract emit rules, changes the
-database migration policy, or changes what the verification gate proves, is
-architectural. Write the record, then write the code, and name the record in
-the commit body.
-
-A change inside one package that keeps every boundary is not architectural
-and needs no record.
+A record can preserve the reason for a lasting architectural choice.
+It is optional. The code states the current behavior, and `AGENTS.md` states
+the development process. Old process records remain as history.
 
 ## How to add one
 

@@ -1,8 +1,5 @@
 # packages/logging
 
-Read the root [AGENTS.md](../../AGENTS.md) first. This file adds the rules of
-this directory.
-
 ## Purpose
 
 This package owns the browser-safe structured log event catalog, record shape,

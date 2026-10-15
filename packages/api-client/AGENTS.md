@@ -1,9 +1,5 @@
 # packages/api-client
 
-Read the root [AGENTS.md](../../AGENTS.md) first. This file adds the rules of
-this directory. The recipe for a whole feature is in
-[docs/development/feature-workflow.md](../../docs/development/feature-workflow.md).
-
 ## Purpose
 
 The typed HTTP client and the socket entry. Every application HTTP call uses

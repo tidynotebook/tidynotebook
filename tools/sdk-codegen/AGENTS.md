@@ -1,9 +1,5 @@
 # tools/sdk-codegen
 
-Read the root [AGENTS.md](../../AGENTS.md) first. This file adds the rules of
-this directory. The recipe for a whole feature is in
-[docs/development/feature-workflow.md](../../docs/development/feature-workflow.md).
-
 ## Purpose
 
 The generator. It lints both contract roots, merges the authentication

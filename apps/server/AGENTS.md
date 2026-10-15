@@ -1,6 +1,6 @@
 # apps/server
 
-Read the root [AGENTS.md](../../AGENTS.md) first. The Fastify HTTP adapter serves the web application, the REST API, and the
+The Fastify HTTP adapter serves the web application, the REST API, and the
 authentication routes on one origin, and it holds no domain rule.
 
 ## What lives here and what does not

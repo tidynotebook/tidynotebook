@@ -1,8 +1,5 @@
 # packages/core
 
-Read the root [AGENTS.md](../../AGENTS.md) first. This file adds the rules of
-this directory.
-
 ## Purpose
 
 The domain rules that both runtimes share: paths, the revision graph,

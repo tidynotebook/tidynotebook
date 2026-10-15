@@ -6,7 +6,7 @@ description: Creates or rotates a named credential for one self-hosted installat
 # Manage host credentials
 
 Start with the named installation, credential, consumers, and requested action.
-Read [configuration](../../../docs/guide/configuration.md). Check current health
+Check current health
 through `tools/ops/check-host.sh`. Check the protected file mode without printing
 its contents. Keep the old secret in a separate protected recovery file until
 all named consumers prove the replacement. Create the replacement in a new

@@ -1,9 +1,5 @@
 # packages/sync
 
-Read the root [AGENTS.md](../../AGENTS.md) first. This file adds the rules of
-this directory. The recipe for a whole feature is in
-[docs/development/feature-workflow.md](../../docs/development/feature-workflow.md).
-
 ## Purpose
 
 The rules of offline work: the local persistence port, the save queue, the

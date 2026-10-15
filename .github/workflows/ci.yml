@@ -1,224 +1,26 @@
 name: CI
 
-# Record 0228: hosted proof is the landing gate. Each runner owns its services.
 on:
   pull_request:
-  merge_group:
-  push:
-    branches: [main]
-  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: lint-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
-  scope:
-    name: Change scope
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
-    timeout-minutes: 2
-    outputs:
-      source: ${{ steps.scope.outputs.source }}
-      image: ${{ steps.scope.outputs.image }}
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: .node-version
-      - id: scope
-        name: Select checks from the complete diff
-        env:
-          BASE: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
-        run: |
-          node --input-type=module <<'JS'
-          import { execFileSync } from 'node:child_process';
-          import { appendFileSync } from 'node:fs';
-          import { classifyImpact } from './tools/agent-context.mjs';
-          const base = process.env.BASE;
-          const paths = base ? execFileSync('git', ['diff', '--name-only', '--no-renames', '-z', base, 'HEAD'], { encoding: 'utf8' }).split('\0').filter(Boolean) : [];
-          const impact = classifyImpact(paths);
-          appendFileSync(process.env.GITHUB_OUTPUT, `source=${!impact.documentsOnly}\nimage=${!base || impact.image}\n`);
-          JS
-
-  static:
-    name: Source or document checks
-    needs: scope
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Check documents only
-        if: needs.scope.outputs.source == 'false'
-        run: pnpm format:check && node tools/check-docs.mjs
-      - name: Check contract, generated output, types, lint, and format
-        if: needs.scope.outputs.source == 'true'
-        run: pnpm contract:lint && pnpm generated:check && pnpm typecheck && pnpm lint && pnpm format:check
-
-  tests:
-    name: ${{ matrix.suite }} ${{ matrix.shard }}
-    needs: scope
-    if: needs.scope.outputs.source == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - suite: unit
-            shard: 1/1
-          - suite: integration
-            shard: 1/4
-          - suite: integration
-            shard: 2/4
-          - suite: integration
-            shard: 3/4
-          - suite: integration
-            shard: 4/4
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: .node-version
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - name: Build all production outputs
-        run: pnpm build
-      - name: Check built declarations and typed lint
-        if: matrix.suite == 'unit'
-        run: pnpm lint:types
-      - name: Start this runner's database and object store
-        if: matrix.suite == 'integration'
-        run: tools/test-database/ensure-postgres.sh && tools/test-database/ensure-minio.sh
-      - name: Run the selected test shard
-        env:
-          SUITE: ${{ matrix.suite }}
-          SHARD: ${{ matrix.shard }}
-        run: node tools/run-tests.mjs "$SUITE" --shard="$SHARD"
-      - name: Remove this runner's test services
-        if: always() && matrix.suite == 'integration'
-        run: docker compose -p notesapp-test -f compose.test.yaml down --volumes
-
-  performance:
-    name: Performance budgets
-    needs: scope
-    if: needs.scope.outputs.source == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: .node-version
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm perf:bundle
-      - run: pnpm perf:service
-      - if: always()
-        run: docker compose -p notesapp-test -f compose.test.yaml down --volumes
-
-  image:
-    name: Image build
-    needs: scope
-    if: needs.scope.outputs.image == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    # The example values of `.env.example`. They prove that the deployment
-    # needs no private address and no undocumented variable.
-    env:
-      NOTESAPP_ORIGIN: https://notes.example.com
-      NOTESAPP_ADDITIONAL_ORIGINS: ''
-      NOTESAPP_BIND_HOST: 127.0.0.1
-      NOTESAPP_PORT: '3000'
-      NOTESAPP_LOG_LEVEL: info
-      POSTGRES_USER: postgres
-      POSTGRES_DB: notesapp
-    steps:
-      - name: Check out the repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Set isolated deployment paths
-        run: |
-          printf '%s\n' \
-            "NOTESAPP_SECRETS_DIR=$RUNNER_TEMP/notesapp-secrets" \
-            "NOTESAPP_DATABASE_DIR=$RUNNER_TEMP/notesapp-postgres" \
-            "NOTESAPP_STORAGE_DIR=$RUNNER_TEMP/notesapp-storage" >> "$GITHUB_ENV"
-
-      - name: Write throwaway deployment secrets
-        run: |
-          mkdir -p "$NOTESAPP_SECRETS_DIR"
-          chmod 700 "$NOTESAPP_SECRETS_DIR"
-          for name in postgres_password migration_database_url \
-            runtime_database_password auth_database_password \
-            runtime_database_url auth_database_url auth_secret; do
-            printf '%s' 'ci-placeholder' > "$NOTESAPP_SECRETS_DIR/$name"
-            chmod 600 "$NOTESAPP_SECRETS_DIR/$name"
-          done
-
-      - name: Check that the deployment Compose file parses
-        run: docker compose config --quiet
-
-      - name: Set up the pinned Node release
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: .node-version
-
-      - name: Restore source archives by manifest identity
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: tools/native-source-cache
-          key: source-archives-${{ hashFiles('tools/native-sources.json', 'tools/base-sources.json', 'tools/runner-sources.json') }}
-
-      - name: Check each archive hash and fetch missing or invalid bytes
-        run: |
-          node tools/native-sources.mjs tools/native-source-cache/native tools/native-source-cache/native
-          node tools/native-sources.mjs tools/native-source-cache/base tools/native-source-cache/base tools/base-sources.json
-          node tools/native-sources.mjs tools/native-source-cache/runner tools/native-source-cache/runner tools/runner-sources.json
-
-      - name: Build the application image
-        run: docker compose build
-
-      - name: Run the commands of the image entry point
-        run: node --test tests/image/
-
-  check:
-    name: Check
-    if: always()
-    needs: [scope, static, tests, performance, image]
-    runs-on: ubuntu-latest
-    timeout-minutes: 1
-    steps:
-      - name: Require every selected job to pass
-        env:
-          RESULTS: ${{ toJSON(needs) }}
-        run: |
-          node <<'JS'
-          const jobs = JSON.parse(process.env.RESULTS);
-          const source = jobs.scope.outputs.source;
-          const image = jobs.scope.outputs.image;
-          if (!['true', 'false'].includes(source) || !['true', 'false'].includes(image)) process.exit(1);
-          for (const [name, selected] of Object.entries({scope: true, static: true, tests: source === 'true', performance: source === 'true', image: image === 'true'})) {
-            if (jobs[name].result !== (selected ? 'success' : 'skipped')) {
-              console.error(`${name} has no passing result for its selected scope.`);
-              process.exit(1);
-            }
-          }
-          JS
+      - run: pnpm lint

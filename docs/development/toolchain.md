@@ -19,7 +19,7 @@ A package exposes only `exports["."]`. It publishes no internal path, so a
 consumer cannot reach past the public entry and a boundary stays provable.
 
 Each app, each package, and the `tests` tree carries its own `AGENTS.md` with
-the rules of that directory. Read it before you edit under it.
+the context of that directory.
 
 ## Compiler settings
 
@@ -63,7 +63,6 @@ An error class avoids a TypeScript parameter property for the same reason.
 | `oxlint`                       | The source rules that need no type information, with no warning.   |
 | `tools/check-boundaries.mjs`   | The package graph, the browser rule, and the transport rule.       |
 | `tools/check-casts.mjs`        | No JavaScript file asserts a type with a JSDoc cast (record 0019). |
-| `tools/check-agents-md.mjs`    | The root guide matches `rules/`, and each directory has its guide. |
 | `tools/check-docs.mjs`         | The documentation rules of `docs/README.md`.                       |
 | `tools/check-design-rules.mjs` | The styling and user-facing text rules of the interface code.      |
 

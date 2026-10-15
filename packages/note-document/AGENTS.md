@@ -1,9 +1,5 @@
 # packages/note-document
 
-Read the root [AGENTS.md](../../AGENTS.md) first. This file adds the rules of
-this directory. The recipe for a whole feature is in
-[docs/development/feature-workflow.md](../../docs/development/feature-workflow.md).
-
 ## Purpose
 
 The one Yjs document of a note, behind a byte API (records 0081, 0082, 0084).

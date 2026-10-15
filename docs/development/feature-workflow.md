@@ -1,16 +1,7 @@
-# Developing a feature
+# Feature locations
 
-This page is the order of work for one whole feature, from the contract to the
-merge. Each step names the directory that owns it, and each of those
-directories has an `AGENTS.md` with its own rules. **Read the `AGENTS.md` of a
-directory before you edit under it.**
-
-This page covers one feature. Work that is larger than one feature starts
-earlier, with a design, then the decision records, then a plan. See
-[the lifecycle of a large task](../README.md).
-
-An architectural choice needs a decision record first. See
-[the decision records](../decisions/README.md).
+This page maps feature code to its owner.
+The development process is in [AGENTS.md](../../AGENTS.md).
 
 ## Where does this go
 
@@ -33,7 +24,7 @@ An architectural choice needs a decision record first. See
 ## a. The contract first
 
 Write the operation in `packages/api-contract/` before any code that uses it,
-then run `pnpm contract:lint` and `pnpm generate` and commit the generated
+then run `pnpm generate` and commit the generated
 output with the contract. The contract source is a root document beside one
 file for each path item and one file for each component, so a new operation
 adds a file under `paths/` and one row in the root `paths` list. Never edit a file under a `src/generated/`
@@ -96,44 +87,3 @@ sanitizer change, or a URL policy change goes there. `packages/editor` keeps
 the Markdown source as the document and builds every decoration from the syntax
 tree. Any change to either side must keep the two paths equal, which the corpus
 test proves. See [Markdown](markdown.md).
-
-## g. Verification
-
-| When            | Command                                                       |
-| --------------- | ------------------------------------------------------------- |
-| While you work  | `pnpm test:unit -- <name>`, `pnpm test:integration -- <name>` |
-| Before you land | Required hosted Check and Sign-off                            |
-
-See [Verification](verification.md) for what each one proves.
-
-## h. Landing the change
-
-The [agent lifecycle](agent-lifecycle.md) owns hosted proof and protected landing.
-Use a worktree and a short-lived branch. Open a PR, resolve its threads and use
-the `land-change` skill to enter the merge queue. GitHub checks the combined
-source before merge. Review is optional. No actor bypasses protection.
-
-Local `pnpm verify` is optional. Main advancing alone does not require a manual
-rebase. Never force push. Worktree cleanup stays an owner action.
-
-## Definition of done
-
-- [ ] The contract change is in `packages/api-contract/`, and the generated
-      output is committed with it.
-- [ ] The domain rule is in `packages/core` with a unit test for the accepted
-      path and for the refusal.
-- [ ] The storage change has a migration, a raised `requiredSchemaVersion`, and
-      an integration test against real PostgreSQL.
-- [ ] The handler exists for every new operation id, and the coverage test
-      passes.
-- [ ] The screen uses generated operations, `packages/ui` primitives, and theme
-      tokens only.
-- [ ] Every fixed defect has a regression test that fails before the fix.
-- [ ] User-facing text follows [the copy rules](../../rules/08-copy.md). No
-      identifier, timestamp, error code, or engine notice reaches the person.
-- [ ] An architectural choice has a decision record.
-- [ ] A document you changed follows [the document rules](../README.md), and
-      the `AGENTS.md` of each directory you edited still describes the truth.
-- [ ] Required hosted checks pass and the merge queue lands the change.
-- [ ] Each screen that the change touches has a screenshot in light and in
-      dark, read against [the design guide](design.md).

@@ -1,6 +1,6 @@
 # Documentation
 
-Read this page before you write or move a document.
+This page describes the purpose and format of each documentation directory.
 
 ## The code is the source of truth
 
@@ -53,37 +53,17 @@ A file in `plans/` or `design/` carries a status line directly under the title:
 A superseded file stays where it is, with its kind. Nobody edits it again,
 except its status line.
 
-## Files at the repository root
+## Agent context
 
-- `AGENTS.md` holds every rule. `rules/link.sh` writes it from `rules/`.
-- `CLAUDE.md` imports `AGENTS.md` for Claude Code and holds nothing else.
-- `.claude/skills/` links to `.agents/skills/`, so one skill file serves every
-  agent harness.
-- `.claude/settings.json` holds the Stop hook of record 0154 and nothing
-  else.
+`AGENTS.md` holds the required agent context and the development process.
+Edit it directly. Keep it short and use simple statements.
+`CLAUDE.md` imports that file. `.claude/skills/` links to `.agents/skills/`.
+Skills contain optional Markdown instructions for repeated tasks.
+Code is the source of truth. Agents select additional context as needed.
 
-## Lifecycle of a large task
-
-1. A design in `design/` explores the problem, the options, and the trade-offs.
-   It names the questions that somebody must decide.
-2. The design concludes in one or more records in `decisions/`. The design
-   links each record that it produced, and each record links its design.
-3. A plan in `plans/` turns those records into ordered work. It links the
-   design and the records.
-4. The rows of the plan become issues on the
-   [GitHub project board](https://github.com/users/bkhanale/projects/2), one row
-   per issue, each with a milestone, a priority label, and an area label. See
-   [development/tracking.md](development/tracking.md).
-5. When the plan completes, the status of the plan becomes `complete` and the
-   status of the design becomes `complete` or `superseded by <link>`.
-
-A small task skips the design, and it can skip the plan. No task skips the
-decision record when it makes an architectural choice.
-
-Each stage has its own audience. A design is for a person: it argues in prose
-that a reviewer reads end to end. A decision record and a plan are for an
-agent: they are terse, structured, and full of pointers, because an agent
-loads them many times.
+Designs, plans, and decision records are optional. Use them when they preserve
+useful reasoning that the code cannot explain. They are not merge requirements.
+Existing records remain as history.
 
 ## guide/
 

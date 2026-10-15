@@ -1,9 +1,5 @@
 # packages/ui
 
-Read the root [AGENTS.md](../../AGENTS.md), then the
-[feature workflow](../../docs/development/feature-workflow.md) and the
-[design guide](../../docs/development/design.md), the system this holds.
-
 ## What lives here and what does not
 
 - `src/themes/` holds one file per family, `src/themes/index.ts` is the
@@ -40,7 +36,7 @@ Node only package, no server only package.
 
 - **A theme.** Copy a file in `src/themes`, register it in
   `src/themes/index.ts`, record the licence in `THIRD_PARTY_LICENSES.md`, and
-  read [themes.md](../../docs/development/themes.md). A failing token moves
+  use the existing theme conventions. A failing token moves
   along its lightness until `themeProblems` answers nothing, noted there.
 - **A control.** Add it in `src/controls.tsx`, read its classes from
   `src/control-classes.ts`, export it, and give an icon only action an

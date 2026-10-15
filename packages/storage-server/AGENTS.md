@@ -1,8 +1,5 @@
 # packages/storage-server
 
-Read the root [AGENTS.md](../../AGENTS.md) first. This file adds the rules of
-this directory.
-
 ## Purpose
 
 The PostgreSQL schema, migrations, stores, row access rules and provisioning.

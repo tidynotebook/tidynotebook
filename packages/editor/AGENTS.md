@@ -1,9 +1,5 @@
 # packages/editor
 
-Read the root [AGENTS.md](../../AGENTS.md) first. This file adds the rules of
-this directory. The recipe for a whole feature is in
-[the feature workflow](../../docs/development/feature-workflow.md).
-
 ## Purpose
 
 The CodeMirror Markdown editor: the extension set, the live preview

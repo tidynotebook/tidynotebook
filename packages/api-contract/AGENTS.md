@@ -1,6 +1,6 @@
 # packages/api-contract
 
-Read the root [AGENTS.md](../../AGENTS.md) first. This file adds the rules of
+This file adds the rules of
 this directory. This package is the only source of the notesapp HTTP interface and of the
 messages of its WebSocket channels. It also exposes the generated operation and
 channel index and the compiled Ajv 2020-12 validators that the server boundary

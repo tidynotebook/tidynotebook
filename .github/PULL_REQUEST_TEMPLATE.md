@@ -1,20 +1,11 @@
-## Result
+## Change
 
-State the problem and what this change does. Link the issue, if there is one.
+State the problem and the resulting behavior.
 
-## Checks
+## Tests
 
-State the focused tests and link the required hosted proof.
-For a screen change, add light and dark images through the screenshot tool.
+State the local verification and browser results. Add relevant screenshots.
 
-## Effect on users and operators
+## Limits
 
-State any effect on stored data, the operator API, configuration or upgrades.
-Name the decision record if the change needs one.
-
-## Contributor checks
-
-- [ ] I read the project rules and the code of conduct.
-- [ ] Each commit has my sign-off, as the contribution guide requires.
-- [ ] Each fixed defect has a test that fails with the old behavior.
-- [ ] The change includes no credential or private information.
+State known limits and effects on users or operators, if any.
