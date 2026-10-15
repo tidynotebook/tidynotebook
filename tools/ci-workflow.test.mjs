@@ -23,42 +23,38 @@ async function loadYaml(path) {
   return record(yaml.load(await readFile(join(root, path), 'utf8')));
 }
 
-const manual = "github.event_name == 'workflow_dispatch'";
-
-await test('the workflow runs on a pull request and by hand, never on a push', async () => {
+await test('proof runs on pull requests, merge groups, main and manual dispatch', async () => {
   const workflow = await loadYaml('.github/workflows/ci.yml');
   const triggers = record(workflow.on);
-  assert.ok('pull_request' in triggers);
-  assert.ok('workflow_dispatch' in triggers);
-  assert.ok(!('push' in triggers));
+  for (const event of ['pull_request', 'merge_group', 'workflow_dispatch'])
+    assert.ok(event in triggers, event);
+  assert.deepEqual(record(triggers.push).branches, ['main']);
 });
 
-await test('the Check job is fast and runs on every trigger', async () => {
+await test('the final Check waits for all selected proof even after a failure', async () => {
   const workflow = await loadYaml('.github/workflows/ci.yml');
   const job = record(record(workflow.jobs).check);
-  assert.equal(job.if, undefined);
-  assert.ok(Number(job['timeout-minutes']) <= 10);
-  const steps = Array.isArray(job.steps) ? job.steps.map(record) : [];
-  const commands = steps
-    .map((step) => (typeof step.run === 'string' ? step.run : ''))
-    .join('\n');
-  for (const command of [
-    'pnpm contract:lint',
-    'pnpm generated:check',
-    'pnpm typecheck',
-    'pnpm lint',
-    'pnpm format:check',
-  ])
-    assert.ok(commands.includes(command), command);
-  assert.ok(!commands.includes('pnpm verify'));
-  assert.ok(!commands.includes('pnpm build'));
+  assert.equal(job.if, 'always()');
+  assert.deepEqual(job.needs, [
+    'scope',
+    'static',
+    'tests',
+    'performance',
+    'image',
+  ]);
 });
 
-await test('the full jobs run only when a person starts the workflow', async () => {
+await test('source and image jobs follow the selected scope on every trigger', async () => {
   const workflow = await loadYaml('.github/workflows/ci.yml');
   const jobs = record(workflow.jobs);
-  for (const name of ['verify', 'performance', 'image'])
-    assert.equal(record(jobs[name]).if, manual, name);
+  for (const name of ['tests', 'performance'])
+    assert.equal(
+      record(jobs[name]).if,
+      "needs.scope.outputs.source == 'true'",
+      name,
+    );
+  assert.equal(record(jobs.image).if, "needs.scope.outputs.image == 'true'");
+  assert.equal(record(jobs.static).if, undefined);
 });
 
 await test('Dependabot opens its pull requests monthly', async () => {
