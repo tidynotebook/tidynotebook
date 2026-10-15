@@ -325,3 +325,55 @@ await test('image ignore, deployment, and package inputs carry image and operato
     assert.equal(impact.operator, true, path);
   }
 });
+
+await test('only named document paths select the short gate', () => {
+  assert.equal(
+    classifyImpact(['docs/development/verification.md', 'CHANGELOG.md'])
+      .documentsOnly,
+    true,
+  );
+  for (const path of [
+    'README.md',
+    'docs/example.mjs',
+    'rules/link.sh',
+    'package.json',
+    '.github/workflows/ci.yml',
+    'unknown.md',
+  ]) {
+    assert.equal(
+      classifyImpact(['docs/README.md', path]).documentsOnly,
+      false,
+      path,
+    );
+  }
+  assert.equal(classifyImpact([]).documentsOnly, false);
+});
+
+await test('every image input and unknown path selects image proof', () => {
+  for (const path of [
+    'apps/server/src/main.ts',
+    'apps/web/public/fonts/geist-latin.woff2',
+    'packages/core/src/product.ts',
+    'tools/native-sources.mjs',
+    'tools/base-sources.json',
+    '.pnpmfile.cjs',
+    'pnpm-workspace.yaml',
+    '.npmrc',
+    'tsconfig.json',
+    'patches/mermaid.patch',
+    'tests/image/commands.test.ts',
+    '.github/workflows/ci.yml',
+    'new-input',
+  ]) {
+    assert.equal(classifyImpact([path]).image, true, path);
+  }
+  for (const path of [
+    'docs/README.md',
+    'CHANGELOG.md',
+    'apps/docs/src/main.ts',
+    'tools/agent-context.test.mjs',
+    'tests/integration/sync.test.ts',
+  ]) {
+    assert.equal(classifyImpact([path]).image, false, path);
+  }
+});

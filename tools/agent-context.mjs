@@ -112,10 +112,20 @@ export function classifyImpact(paths, contract = new Set()) {
         path,
       ),
     ),
-    image: paths.some((path) =>
-      /^(?:Dockerfile|docker\/|compose\.yaml|docker-compose\.yml|\.dockerignore|package\.json|pnpm-lock\.yaml|\.github\/workflows\/release\.yml)/.test(
-        path,
+    documentsOnly:
+      paths.length > 0 &&
+      paths.every((path) =>
+        /^(?:docs\/.*\.md|(?:CHANGELOG|CONTRIBUTING|SECURITY|CODE_OF_CONDUCT)\.md)$/.test(
+          path,
+        ),
       ),
+    // Every copied source is an image input, including notice tools and fonts.
+    // Unknown paths take the full image gate. Exclusions mirror .dockerignore.
+    image: paths.some(
+      (path) =>
+        !/^(?:docs\/|apps\/docs\/|tests\/(?!image\/)|tools\/(?:[^/]+\.test\.mjs$|performance\/|test-database\/)|\.agents\/|\.claude\/|rules\/|(?:AGENTS|CLAUDE|CHANGELOG|CONTRIBUTING|SECURITY|CODE_OF_CONDUCT)\.md$)/.test(
+          path,
+        ),
     ),
     ui: paths.some((path) =>
       /^(?:apps\/(?:web|docs)\/|packages\/(?:ui|editor|markdown)\/|apps\/server\/src\/routes\/(?:published(?:-[\w-]+)?|legal(?:-[\w-]+)?)\.ts$)/.test(

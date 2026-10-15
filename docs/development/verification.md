@@ -1,16 +1,23 @@
 # Verification
 
-This page states what each check proves and where its result is written. It
-records no measured value and no test count. A measurement belongs in the
-report that the command writes, because prose does not fail when the code
-changes.
+This page owns checks and their evidence. Measured results belong in reports.
 
 ## The gate
 
-`pnpm verify` runs the contract lint, the generated file comparison, the strict
-type check, the lint set, the format check, the unit tests, the integration
-tests against a disposable PostgreSQL, and every production build. It must pass
-before a change is ready.
+[Record 0228](../decisions/0228-hosted-proof-and-release.md) makes hosted
+checks the landing gate. `.github/workflows/ci.yml` selects the checks from the
+complete diff through `tools/agent-context.mjs`. Only named document paths
+select format and the document check. DCO runs separately. Unknown paths run
+source proof. Image inputs also build and test the image.
+
+Source proof runs static checks, production builds, typed lint, unit tests,
+integration shards and performance budgets in parallel jobs. Each integration
+runner owns its PostgreSQL and MinIO services. The final Check job requires a
+successful result from every selected job. Main runs full proof after a merge.
+
+`pnpm verify` remains the optional local equivalent for source checks and tests.
+It does not run image or performance checks. `tools/run-tests.mjs` accepts
+`--shard=index/count` to split a suite across runners without losing test files.
 
 Start the disposable database once with `tools/test-database/ensure-postgres.sh`.
 It is safe to run again and safe to run while another checkout uses the same
@@ -39,7 +46,7 @@ The report is a measurement, not a gate. No coverage threshold can fail the
 run, so a number in the report never blocks a change. Read the report to find
 the code that no test touches.
 
-Turn the report off for a short result while you work:
+Turn coverage off while you work:
 
 ```sh
 NOTESAPP_COVERAGE=off pnpm test:unit
@@ -93,7 +100,7 @@ deleted branch, or a commit that no branch holds, fails to load.
 | Design rules                    | `tools/check-design-rules.mjs` and `tools/check-design-rules.test.mjs`.              |
 | Parallel migrations             | `tests/integration/concurrent-migrations.test.ts` over two databases of one cluster. |
 | A test with each change         | `tools/check-change-tests.mjs` against `main`, and its test (record 0154).           |
-| The commands of the image       | `pnpm test:image` in the image job, which only a manual CI start runs (0224).        |
+| The commands of the image       | `pnpm test:image` in the conditional hosted image job (0228).                        |
 
 ## Performance
 
@@ -124,16 +131,9 @@ the time and the size of the file list, of a note read and of search, so a
 change of a read path states its numbers before and after. The numbers go to
 the issue and not to a document.
 
-`pnpm perf:typing`, `pnpm perf:save` and `pnpm perf:start` hold no budget
-either. Each starts the built application on a disposable database, seeds
-the same workspace, and drives the headless Chromium of the
-`test-application` skill, because the repository holds no browser
-dependency (record 0066). `perf:typing` states the time from a key to its
-frame and the changes of the page outside the editor, `perf:save` the time
-from Ctrl + S to the server and to a second device and the time of a move to
-All notes, with every slow trial by its number, and `perf:start` the cold and
-the warm start and the scripts that they load. `tools/performance/browser.ts`
-holds what they share.
+`pnpm perf:typing`, `pnpm perf:save` and `pnpm perf:start` measure local
+interaction through the `test-application` skill. They hold no budget.
+`tools/performance/browser.ts` holds their shared browser setup.
 
 The local interaction checks bound the typing transaction, the local draft
 save, and a cached note read, using the Node adapters. They do not include

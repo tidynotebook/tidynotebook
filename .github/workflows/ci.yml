@@ -1,13 +1,11 @@
 name: CI
 
-# A change lands by a fast-forward push of a head that its pull request already
-# checked, and the landing needs local `pnpm verify` proof. A push run proves
-# nothing new, so the workflow has no `push` trigger. The `Check` job runs on
-# each pull request. The full jobs run only by hand, to save the limited minutes
-# of the free plan. See record 0224:
-# docs/decisions/0224-hosted-ci-runs-the-fast-check-on-each-pull-request.md
+# Record 0228: hosted proof is the landing gate. Each runner owns its services.
 on:
   pull_request:
+  merge_group:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -18,114 +16,129 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # The fast check. It needs no build and no database.
-  check:
-    name: Check
+  scope:
+    name: Change scope
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      source: ${{ steps.scope.outputs.source }}
+      image: ${{ steps.scope.outputs.image }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+      - id: scope
+        name: Select checks from the complete diff
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+        run: |
+          node --input-type=module <<'JS'
+          import { execFileSync } from 'node:child_process';
+          import { appendFileSync } from 'node:fs';
+          import { classifyImpact } from './tools/agent-context.mjs';
+          const base = process.env.BASE;
+          const paths = base ? execFileSync('git', ['diff', '--name-only', '--no-renames', '-z', base, 'HEAD'], { encoding: 'utf8' }).split('\0').filter(Boolean) : [];
+          const impact = classifyImpact(paths);
+          appendFileSync(process.env.GITHUB_OUTPUT, `source=${!impact.documentsOnly}\nimage=${!base || impact.image}\n`);
+          JS
+
+  static:
+    name: Source or document checks
+    needs: scope
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Check out the repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # The change test check of record 0154 compares the branch with
-          # main, so the checkout holds the history and origin/main.
           fetch-depth: 0
-
-      # This runs before the Node setup, because the dependency cache of
-      # `actions/setup-node` asks pnpm for its store directory.
-      - name: Install the pinned package manager
-        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-
-      - name: Set up the pinned Node release
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
           cache: pnpm
-
-      - name: Install exact dependencies
-        run: pnpm install --frozen-lockfile
-
+      - run: pnpm install --frozen-lockfile
+      - name: Check documents only
+        if: needs.scope.outputs.source == 'false'
+        run: pnpm format:check && node tools/check-docs.mjs
       - name: Check contract, generated output, types, lint, and format
+        if: needs.scope.outputs.source == 'true'
         run: pnpm contract:lint && pnpm generated:check && pnpm typecheck && pnpm lint && pnpm format:check
 
-  verify:
-    name: Verify
-    # Runs only when a person starts the workflow by hand, for example for the
-    # launch commit or a release candidate.
-    if: github.event_name == 'workflow_dispatch'
+  tests:
+    name: ${{ matrix.suite }} ${{ matrix.shard }}
+    needs: scope
+    if: needs.scope.outputs.source == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - suite: unit
+            shard: 1/1
+          - suite: integration
+            shard: 1/4
+          - suite: integration
+            shard: 2/4
+          - suite: integration
+            shard: 3/4
+          - suite: integration
+            shard: 4/4
     steps:
-      - name: Check out the repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # The change test check of record 0154 compares the branch with
-          # main, so the checkout holds the history and origin/main.
           fetch-depth: 0
-
-      # This runs before the Node setup, because the dependency cache of
-      # `actions/setup-node` asks pnpm for its store directory.
-      - name: Install the pinned package manager
-        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-
-      - name: Set up the pinned Node release
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
           cache: pnpm
-
-      - name: Install exact dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Start the disposable test database
+      - run: pnpm install --frozen-lockfile
+      - name: Build all production outputs
+        run: pnpm build
+      - name: Check built declarations and typed lint
+        if: matrix.suite == 'unit'
+        run: pnpm lint:types
+      - name: Start this runner's database and object store
+        if: matrix.suite == 'integration'
         run: docker compose -p notesapp-test -f compose.test.yaml up -d --wait
-
-      - name: Verify source, generated output, tests, and builds
-        run: pnpm verify
-
-      - name: Stop the disposable test database
-        if: always()
+      - name: Run the selected test shard
+        env:
+          SUITE: ${{ matrix.suite }}
+          SHARD: ${{ matrix.shard }}
+        run: node tools/run-tests.mjs "$SUITE" --shard="$SHARD"
+      - name: Remove this runner's test services
+        if: always() && matrix.suite == 'integration'
         run: docker compose -p notesapp-test -f compose.test.yaml down --volumes
 
   performance:
     name: Performance budgets
-    # Runs only when a person starts the workflow by hand, for example for the
-    # launch commit or a release candidate.
-    if: github.event_name == 'workflow_dispatch'
+    needs: scope
+    if: needs.scope.outputs.source == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
     steps:
-      - name: Check out the repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Install the pinned package manager
-        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-
-      - name: Set up the pinned Node release
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
           cache: pnpm
-
-      - name: Install exact dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Enforce the initial JavaScript budget
-        run: pnpm perf:bundle
-
-      # `perf:service` starts the test database itself.
-      - name: Check Search budget and measure advisory Save target
-        run: pnpm perf:service
-
-      - name: Stop the disposable test database
-        if: always()
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm perf:bundle
+      - run: pnpm perf:service
+      - if: always()
         run: docker compose -p notesapp-test -f compose.test.yaml down --volumes
 
   image:
     name: Image build
-    # Runs only when a person starts the workflow by hand, for example for the
-    # launch commit or a release candidate.
-    if: github.event_name == 'workflow_dispatch'
+    needs: scope
+    if: needs.scope.outputs.image == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # The example values of `.env.example`. They prove that the deployment
@@ -176,3 +189,27 @@ jobs:
 
       - name: Run the commands of the image entry point
         run: node --test tests/image/
+
+  check:
+    name: Check
+    if: always()
+    needs: [scope, static, tests, performance, image]
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Require every selected job to pass
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          node <<'JS'
+          const jobs = JSON.parse(process.env.RESULTS);
+          const source = jobs.scope.outputs.source;
+          const image = jobs.scope.outputs.image;
+          if (!['true', 'false'].includes(source) || !['true', 'false'].includes(image)) process.exit(1);
+          for (const [name, selected] of Object.entries({scope: true, static: true, tests: source === 'true', performance: source === 'true', image: image === 'true'})) {
+            if (jobs[name].result !== (selected ? 'success' : 'skipped')) {
+              console.error(`${name} has no passing result for its selected scope.`);
+              process.exit(1);
+            }
+          }
+          JS
