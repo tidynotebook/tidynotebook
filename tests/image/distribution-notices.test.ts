@@ -290,9 +290,40 @@ await test('the bundled first-party source rebuilds the builder context', async 
         await readFile(join(repository, file)),
         file,
       );
+    for (const bundle of ['native', 'base', 'runner']) {
+      const cache = join(directory, 'tools/native-source-cache', bundle);
+      await mkdir(cache, { recursive: true });
+      await run('docker', [
+        'cp',
+        `${container}:/app/licenses/${bundle}-source/.`,
+        cache,
+      ]);
+    }
+    // Limit only archive collection: package installation still needs its
+    // registry. No missing or changed bundled archive can be fetched again.
+    const dockerfile = await readFile(join(directory, 'Dockerfile'), 'utf8');
+    const collectors = /^RUN node tools\/native-sources\.mjs /gm;
+    assert.equal([...dockerfile.matchAll(collectors)].length, 3);
+    const offlineDockerfile = join(directory, 'Dockerfile.offline');
+    await writeFile(
+      offlineDockerfile,
+      dockerfile.replace(
+        collectors,
+        'RUN --network=none node tools/native-sources.mjs ',
+      ),
+    );
     await run(
       'docker',
-      ['build', '--platform', 'linux/amd64', '--target', 'builder', directory],
+      [
+        'build',
+        '--platform',
+        'linux/amd64',
+        '--target',
+        'builder',
+        '-f',
+        offlineDockerfile,
+        directory,
+      ],
       { maxBuffer: 32 * 1024 * 1024 },
     );
   } finally {
