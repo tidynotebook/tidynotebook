@@ -1,18 +1,23 @@
 ---
 name: land-change
-description: Lands an authorized core PR after current proof and checks. Use when the session permits landing. A review is optional. It does not release or deploy.
+description: Lands an authorized core PR through the protected GitHub merge queue after hosted checks. A review is optional. It does not release or deploy.
 ---
 
 # Land change
 
-Start with an authorized PR and current proof. Rebase onto current main when
-needed, then prove the new head. Never force push. A pushed branch
-that needs history changes gets a new branch and a new PR.
+Start with an authorized PR. Read its current head, required hosted checks and
+review threads. Resolve each open thread. Review is optional. Never bypass a
+protection, push directly to main, or force push.
+
+Add the PR to the queue with the head that you read:
 
 ```sh
-pnpm lifecycle land <PR> --execute
+gh pr merge "$PR" --auto --match-head-commit "$HEAD"
 ```
 
-The command reads current checks and review threads, requires no review, pushes the exact proved head without force, and reads the merged result. A pending or uncertain write needs a read
-before another write. End when saved state names the actual merged commit.
-Branch and worktree cleanup remains a separate owner action.
+GitHub runs checks on the merge group before it lands. Do not rebase just
+because main advances. A conflict needs a fix and new hosted proof.
+Use the PR watcher when available and end the turn while checks run. Otherwise,
+read status with a bound. Read back the merged commit before reporting success.
+An uncertain write needs a read before another write. Branch and worktree
+cleanup stays an owner action. No local receipt is a landing requirement.

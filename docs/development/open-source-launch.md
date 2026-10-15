@@ -13,18 +13,14 @@ new package becomes public. A source change does not start a release or deployme
 
 ## Before visibility changes
 
-- Read the final exact source and image proof from `tools/lifecycle.mjs`.
-- Start `.github/workflows/ci.yml` by hand for the final commit, for example
-  with `gh workflow run ci.yml --ref <branch>`. Read all its jobs, including
-  the verify, performance and image jobs. A pull request runs only the fast
-  check (record 0224). A local source receipt does not prove those jobs.
+- Read the required hosted source and image proof for the final commit.
+  `.github/workflows/ci.yml` runs full source jobs on PRs and selects image
+  proof from image inputs (record 0228).
 - Read the final source, image and release material secret review.
 - Complete the fresh standalone setup of the exact candidate.
 - Confirm the accepted launch dependencies and the authorized visibility scope.
 - Keep the shared project private. Contributors use repository issues.
 - Keep old signed tags, fixed image digests and `pr-screenshots` intact.
-- After the switch, a follow-up change puts the full jobs back on each pull
-  request (record 0224).
 
 Inspect existing settings before a write. Keep each response and read back
 every write. Stop when a response differs from the intended value. Never
@@ -83,16 +79,12 @@ gh api -X PATCH repos/tidynotebook/tidynotebook -f visibility=public
 gh api repos/tidynotebook/tidynotebook
 ```
 
-Read the existing rulesets first. Update a matching rule instead of creating
-a duplicate. The default branch must refuse deletion and a non-fast-forward
-push, and require linear history. These rules fit the exact-head landing of
-[record 0218](../decisions/0218-review-is-optional-for-landing.md).
+Read the existing rulesets first. Main requires PRs, resolved threads, Check,
+Sign-off, linear history and the merge queue. Deletion and force push are
+refused. No actor bypasses protection. See
+[record 0228](../decisions/0228-hosted-proof-and-release.md).
 
 ```sh
-gh api repos/tidynotebook/tidynotebook/rulesets
-gh api -X POST repos/tidynotebook/tidynotebook/rulesets --input - <<'JSON'
-{"name":"Public main","target":"branch","enforcement":"active","conditions":{"ref_name":{"include":["~DEFAULT_BRANCH"],"exclude":[]}},"rules":[{"type":"deletion"},{"type":"non_fast_forward"},{"type":"required_linear_history"}]}
-JSON
 gh api repos/tidynotebook/tidynotebook/rulesets
 gh api repos/tidynotebook/tidynotebook/rules/branches/main
 ```

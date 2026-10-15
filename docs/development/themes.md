@@ -90,7 +90,7 @@ A person imports a theme file, and the account keeps it. See
    to `themeProblems`, which names the exact colour, surface, and palette that
    misses a rule. Move that token along its own lightness until it passes, and note the
    change in the licence file.
-6. Run `pnpm verify`.
+6. Read the required hosted checks before landing.
 
 Nothing else changes. The settings screen, the pre-paint script, the manifest,
 the editor, and the diagram frame all read the registry, so a new family

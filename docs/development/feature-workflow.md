@@ -102,25 +102,19 @@ test proves. See [Markdown](markdown.md).
 | When            | Command                                                       |
 | --------------- | ------------------------------------------------------------- |
 | While you work  | `pnpm test:unit -- <name>`, `pnpm test:integration -- <name>` |
-| Before you land | `pnpm verify`                                                 |
+| Before you land | Required hosted Check and Sign-off                            |
 
 See [Verification](verification.md) for what each one proves.
 
 ## h. Landing the change
 
-The [agent lifecycle](agent-lifecycle.md) owns current proof, optional PR review,
-and landing. A change uses a worktree and a short-lived branch. A proved exact
-head lands with a non-force fast-forward push. Unseen main work refuses it.
-A branch protection refusal is a stop. No command bypasses it.
+The [agent lifecycle](agent-lifecycle.md) owns hosted proof and protected landing.
+Use a worktree and a short-lived branch. Open a PR, resolve its threads and use
+the `land-change` skill to enter the merge queue. GitHub checks the combined
+source before merge. Review is optional. No actor bypasses protection.
 
-```sh
-pnpm lifecycle prove
-pnpm lifecycle review-status <PR>
-pnpm lifecycle land <PR> --execute
-```
-
-A rebase changes the checked input. Prove it again. Never force push.
-Worktree and branch cleanup stays under the owner-only cleanup skill.
+Local `pnpm verify` is optional. Main advancing alone does not require a manual
+rebase. Never force push. Worktree cleanup stays an owner action.
 
 ## Definition of done
 
@@ -140,6 +134,6 @@ Worktree and branch cleanup stays under the owner-only cleanup skill.
 - [ ] An architectural choice has a decision record.
 - [ ] A document you changed follows [the document rules](../README.md), and
       the `AGENTS.md` of each directory you edited still describes the truth.
-- [ ] `pnpm verify` passes.
+- [ ] Required hosted checks pass and the merge queue lands the change.
 - [ ] Each screen that the change touches has a screenshot in light and in
       dark, read against [the design guide](design.md).

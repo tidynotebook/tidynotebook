@@ -13,7 +13,7 @@
 - To run the application of a worktree and drive it in a browser, follow the
   `test-application` skill. Each worktree runs its own application,
   so worktrees do not conflict.
-- Run focused tests while work is in progress. Run `pnpm verify` before a
-  change is ready to merge.
+- Run focused tests while work is in progress. Required hosted checks prove
+  the change before merge. Local `pnpm verify` is an optional diagnostic.
 - Do not weaken assertions, add fixed delays, or skip a failing test to make a
   suite pass.

@@ -1,18 +1,16 @@
 ---
 name: prove-change
-description: Runs and saves exact input proof for a completed core change. Use before PR review or after any fix, rebase, runtime change, or input change. It does not publish or merge.
+description: Reads required hosted proof for the current PR head. Use after a change or a failed check. It does not merge, release or deploy.
 ---
 
 # Prove change
 
-Start with a clean commit. Run the canonical proof command. It saves private
-logs and receipts for the exact input. Never edit a receipt to claim a pass.
+Run focused tests while you work. Push the branch through the normal PR path.
+Read the current head and every selected job in `.github/workflows/ci.yml`.
+The final Check must pass; failed, cancelled and missing work is not proof.
+Fix failures and push a new commit. Local `pnpm verify` is optional.
 
-```sh
-pnpm lifecycle prove
-```
-
-Use `--image` for image or release inputs. For a changed screen, use
-[test-application](../test-application/SKILL.md). Drive its actual paths and read
-light and dark screenshots. A pure test and a served result test prove the rule.
-End when current proof covers each claim. Fix a failure, then run proof again.
+For a changed screen, use [test-application](../test-application/SKILL.md).
+Drive its actual paths and read light and dark screenshots. A pure test and a
+served result test prove the rule. Record the hosted run and the screen evidence
+in the PR. No local proof receipt is needed (record 0228).

@@ -119,5 +119,4 @@ authorization proof is in `tests/integration/oauth-authorization.test.ts`.
 
 ```sh
 pnpm test:integration -- mcp-endpoint mcp-conformance oauth-authorization
-pnpm lifecycle prove
 ```

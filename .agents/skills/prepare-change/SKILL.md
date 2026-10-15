@@ -10,7 +10,7 @@ command. Read every listed file before an edit. Restate the change, the guides,
 the records, the board row, and the proof. Stop on a real rule conflict.
 
 ```sh
-pnpm task:prepare --task task-name --phase build --path tools/lifecycle.mjs
+pnpm task:prepare --task task-name --phase build --path tools/agent-context.mjs
 ```
 
 To resume, give the saved task name. Omit phase and paths to keep their saved

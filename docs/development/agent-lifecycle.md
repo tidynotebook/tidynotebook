@@ -1,21 +1,16 @@
 # Agent lifecycle
 
-This page owns phase routing, saved proof, and the public lifecycle boundary.
+This page owns phase routing, hosted proof, and the public lifecycle boundary.
 
-[Record 0212](../decisions/0212-agent-lifecycle-proof.md) sets the lifecycle.
-[Record 0213](../decisions/0213-build-and-publish-one-release-image.md) sets image publication.
-[Record 0214](../decisions/0214-read-the-completed-automatic-review.md) sets automatic review readback.
-[Record 0218](../decisions/0218-review-is-optional-for-landing.md) makes review optional for landing.
-Commands perform repeated operations. Skills make the choices of a unit.
-Each skill has one start state and one end state. The catalog below routes work.
-It does not repeat the instructions of a unit.
+[Record 0228](../decisions/0228-hosted-proof-and-release.md) owns hosted proof,
+protected landing and release. Skills route work through the catalog below.
 
 ## Scope and continuation
 
 A feature or fix request starts preparation and includes build, proof, and PR
 review. It includes landing when the session permits it. An agent continues
 through those units without asking for the same permission again. A release
-request includes preparation when needed, then publication. An
+request waits for the hosted release transition below. An
 interruption resumes the saved unit. A build request never starts a release,
 live deploy, host restore, retirement, or machine cleanup.
 
@@ -30,7 +25,7 @@ a completion event or a bounded read. It does not repeat an expensive gate.
 | `prepare-change`           | Core task or resume                      | Saved owner, context, scope, and phase     |
 | `design-change`            | Architectural choice                     | Accepted record and linked work            |
 | `build-change`             | Prepared approved change                 | Code and focused tests                     |
-| `prove-change`             | Clean source                             | Exact input proof and screen evidence      |
+| `prove-change`             | Clean source                             | Hosted proof and screen evidence           |
 | `test-application`         | Browser check request                    | Observed local application and screenshots |
 | `review-change`            | Current proof or review findings         | Optional review and resolved threads       |
 | `land-change`              | Proved head and landing scope            | Read back exact merged source              |
@@ -60,66 +55,31 @@ Optional consumer context adds a guide when present. Standalone work passes
 without it. Explicit internal work requires its private owner and sends context
 there. Private guide contents never enter a public archive.
 
-## Proof and review
+## Proof, review and landing
 
-`tools/lifecycle-state.mjs` binds a clean commit, tree, repository, environment
-hash, runtime, package manager, and gate definitions. `tools/lifecycle.mjs` owns
-canonical proof, saved logs, PR bodies, optional review reads, and exact landing.
-A local receipt is a same-user cache. It is not an external attestation. A
-partial receipt, missing log, changed log, changed input, or failed command
-cannot permit landing. A gate must leave the checked inputs unchanged.
-Image proof builds an archive of the checked commit for `linux/amd64` and tests
-that image.
+The [verification guide](verification.md) names the required hosted checks.
+Local `pnpm verify` is optional. The PR records focused tests, hosted runs,
+public compatibility effects and light and dark screen evidence when needed.
+Screenshots go through `tools/pr-screenshots.mjs`.
 
-The PR states the result, proof, public compatibility effect, reviewed release
-type and note, and light and dark screen evidence. Screenshots go through
-`tools/pr-screenshots.mjs`. For a known automatic review integration, `--auto-review-on-ready` uses the
-new PR trigger once. A changed head on an existing ready PR uses one manual
-request. A saved automatic intent survives a lost PR creation response.
-Landing needs no review (record 0218). A requested review keeps its rules.
-Every thread must be resolved. All observed checks must pass. A fast-forward
-push of the exact head refuses unseen main work. A rejected push never grants
-permission to bypass protection. The merged commit and tree must match proved source. A saved validated write
-attempt permits recovery of a successful push whose result was lost. A dry run
-keeps that attempt unchanged.
+Review is optional. Ask for it only when the owner or chief requests it.
+Resolve every open thread. Main requires a PR, Check, Sign-off and linear
+history. The merge queue tests combined changes before it lands them. No actor
+bypasses protection. Main advancing alone does not require a manual rebase.
+Use the `land-change` skill and read back the actual merged commit.
 
-## Release and consumers
+## Release transition
 
-[Record 0215](../decisions/0215-release-publishes-prepared-artifacts.md) separates
-preparation and publication. `tools/release.mjs` prepares notes, reviews source,
-runs source and image gates, and stores the prepared image and official assets
-remotely. The source image name is fixed. The draft release holds the assets.
-`tools/release-publish.mjs` publishes these artifacts from any runner. It uses
-no local proof receipt or build image and starts no tests or source review.
-It creates the signed tag, copies registry references, and publishes the draft.
-Milestone work is separate. A readback checks each remote write.
-[Record 0216](../decisions/0216-release-publication-has-one-remote-writer.md)
-gives all runners one remote publication lock. Latest version checks and
-writes run inside that lock. The release skill owns stopped-write recovery.
+Release is unavailable between steps 3 and 4 of
+[issue 390](https://github.com/tidynotebook/tidynotebook/issues/390).
+The old release preparation calls a landing function that pushes directly to
+main, which protection now refuses. No release is planned in this window.
+Do not run the old commands or add a bypass.
 
-[Record 0220](../decisions/0220-future-releases-use-a-new-public-image.md)
-sets the future image package. `tools/release-registry.mjs` owns its address
-and read-only legacy selection. An old draft cannot publish. An old published
-release permits status only. Its fixed manifest selects its image for diagnostics.
-The [published images guide](../guide/published-images.md) reads the published digest for Compose.
-
-`tools/release-check.mjs` keeps the older before and after diagnostic.
-Publication does not run it. The after gate reads
-the cryptographic tag result, immutable version digest, and image
-revision for the exact source commit. A later latest alias does not invalidate that release.
-`tools/release-manifest.mjs` validates the public asset. The release publishes
-its manifest and operator contract. It reads both exact asset byte streams before the next write. The after gate
-compares the assets with the fixed source, image, operator, migration, and proof.
-Migration and operator digests bind source. Historical checks read the tagged
-Git source and original public proof metadata. They need no current machine
-receipt. Saved publication digests also hold the original asset bytes.
-GitHub attestation is not a release requirement.
-A consumer reads the published digest. It never rebuilds a released artifact.
-
-A legacy release has no new manifest. A consumer keeps its existing pin under
-its existing verification policy. Moving to this lifecycle requires a new
-release with the manifest and exact published image. A missing legacy asset is not filled
-with invented proof. The lifecycle change takes a feature release classification.
+Step 4 adds the hosted release workflow and removes `tools/lifecycle.mjs`,
+its receipt helpers and the old release commands together. They remain on disk
+only for that deletion. No compatibility code or new local process tool replaces
+them. Historical release assets stay fixed and readable.
 
 ## Host procedures
 

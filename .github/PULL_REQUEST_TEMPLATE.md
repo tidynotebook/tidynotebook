@@ -4,7 +4,7 @@ State the problem and what this change does. Link the issue, if there is one.
 
 ## Checks
 
-State the focused tests and the result of `pnpm verify`.
+State the focused tests and link the required hosted proof.
 For a screen change, add light and dark images through the screenshot tool.
 
 ## Effect on users and operators

@@ -9,13 +9,14 @@ name: DCO
 # of the pull request.
 on:
   pull_request_target:
+  merge_group:
 
 permissions:
   contents: read
   pull-requests: read
 
 concurrency:
-  group: dco-${{ github.event.pull_request.number }}
+  group: dco-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -29,7 +30,7 @@ jobs:
       - name: Check out the base branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.pull_request.base.ref }}
+          ref: ${{ github.event.pull_request.base.ref || github.event.merge_group.base_ref }}
           persist-credentials: false
 
       - name: Set up the pinned Node release
@@ -42,7 +43,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           PULL_REQUEST: ${{ github.event.pull_request.number }}
-        run: >-
-          gh api --paginate
-          "repos/$GITHUB_REPOSITORY/pulls/$PULL_REQUEST/commits"
-          | node tools/check-dco.mjs
+          GROUP_BASE: ${{ github.event.merge_group.base_sha }}
+          GROUP_HEAD: ${{ github.event.merge_group.head_sha }}
+        run: |
+          if [[ -n "$PULL_REQUEST" ]]; then
+            gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/pulls/$PULL_REQUEST/commits" --jq 'add'
+          else
+            gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/compare/$GROUP_BASE...$GROUP_HEAD" --jq '[.[].commits[]]'
+          fi | node tools/check-dco.mjs

@@ -196,7 +196,7 @@ await test('the workflow runs the check of the tip of the base branch', () => {
   );
   assert.match(
     workflow,
-    /ref: \$\{\{ github\.event\.pull_request\.base\.ref \}\}/,
+    /ref: \$\{\{ github\.event\.pull_request\.base\.ref \|\| github\.event\.merge_group\.base_ref \}\}/,
   );
   assert.doesNotMatch(workflow, /pull_request\.base\.sha/);
 });
