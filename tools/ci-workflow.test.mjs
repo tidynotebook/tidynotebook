@@ -119,7 +119,9 @@ await test('DCO checks PR and merge-group commits using the trusted base script'
             GROUP_BASE: 'base',
             GROUP_HEAD: 'head',
             DCO_ARGS: join(directory, 'args'),
-            DCO_FIXTURE: JSON.stringify(commits),
+            DCO_FIXTURE: JSON.stringify(
+              pull ? [commits, []] : [{ commits }, { commits: [] }],
+            ),
             DCO_API_EXIT: apiExit,
           },
         });
@@ -137,6 +139,7 @@ await test('DCO checks PR and merge-group commits using the trusted base script'
           ),
         );
         assert.ok(args.includes('--paginate\n--slurp'));
+        assert.ok(!args.includes('--jq'));
       }
     }
   }

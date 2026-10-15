@@ -47,7 +47,7 @@ jobs:
           GROUP_HEAD: ${{ github.event.merge_group.head_sha }}
         run: |
           if [[ -n "$PULL_REQUEST" ]]; then
-            gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/pulls/$PULL_REQUEST/commits" --jq 'add'
+            gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/pulls/$PULL_REQUEST/commits" | jq 'add'
           else
-            gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/compare/$GROUP_BASE...$GROUP_HEAD" --jq '[.[].commits[]]'
+            gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/compare/$GROUP_BASE...$GROUP_HEAD" | jq '[.[].commits[]]'
           fi | node tools/check-dco.mjs
