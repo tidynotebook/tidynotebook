@@ -496,21 +496,23 @@ await test('backup and restore round-trip a note with its history and attachment
       installationIdFile,
     ])
       chmodSync(file, 0o600);
+    const postgresPort = new URL(sourceDb.migrationUrl).port;
+    assert.notEqual(postgresPort, '', 'The test database URL needs a port.');
     const postgresContainer = execFileSync(
       'docker',
-      [
-        'ps',
-        '--filter',
-        'publish=55432',
-        '--filter',
-        'label=com.docker.compose.service=postgres',
-        '--format',
-        '{{.ID}}',
-      ],
+      ['ps', '--filter', `publish=${postgresPort}`, '--format', '{{.ID}}'],
       { encoding: 'utf8' },
     ).trim();
-    assert.notEqual(postgresContainer, '');
-    assert.equal(postgresContainer.includes('\n'), false);
+    assert.notEqual(
+      postgresContainer,
+      '',
+      `No container publishes PostgreSQL port ${postgresPort}.`,
+    );
+    assert.equal(
+      postgresContainer.includes('\n'),
+      false,
+      `More than one container publishes PostgreSQL port ${postgresPort}.`,
+    );
 
     // Run backup script
     const backupScript = join(process.cwd(), 'tools/ops/backup.sh');
