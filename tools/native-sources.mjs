@@ -213,8 +213,18 @@ export async function prepareNativeSources(
   /** @param {{file:string, url:string, sha256:string}} row */
   async function download(row) {
     let bytes;
-    if (cache !== undefined) bytes = await readFile(join(cache, row.file));
-    else bytes = await downloadBytes(row, options);
+    if (cache !== undefined) {
+      const cached = join(cache, row.file);
+      bytes = await readFile(cached).catch((error) => {
+        if (record(error).code === 'ENOENT') return undefined;
+        throw error;
+      });
+      if (bytes !== undefined && !sourceMatches(bytes, row.sha256)) {
+        await rm(cached);
+        bytes = undefined;
+      }
+    }
+    if (bytes === undefined) bytes = await downloadBytes(row, options);
     if (!sourceMatches(bytes, row.sha256))
       throw new Error(`The native source hash differs: ${row.file}.`);
     const temporary = join(output, `${row.file}.partial`);

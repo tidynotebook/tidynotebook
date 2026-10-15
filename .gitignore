@@ -3,6 +3,7 @@ node_modules/
 # the test-application skill.
 .local-app/
 .tooling/
+tools/native-source-cache/
 dist/
 coverage/
 *.tsbuildinfo

@@ -286,6 +286,58 @@ await test(
   },
 );
 
+await test('a checked cache needs no upstream request', async (t) => {
+  const f = await fixture(t, (_request, response) =>
+    response.writeHead(503).end(),
+  );
+  await mkdir(f.output);
+  await writeFile(join(f.output, 'source.tar.gz'), bytes);
+  await prepareNativeSources(f.output, f.output, f.manifestFile, f.options);
+  assert.equal(f.requests(), 0);
+  assert.deepEqual(await f.saved(), bytes);
+});
+
+for (const cached of [undefined, 'corrupt archive']) {
+  await test(`a ${cached === undefined ? 'missing' : 'corrupt'} cache fetches and checks the archive`, async (t) => {
+    const f = await fixture(t, (_request, response) => response.end(bytes));
+    if (cached !== undefined) {
+      await mkdir(f.output);
+      await writeFile(join(f.output, 'source.tar.gz'), cached);
+    }
+    await prepareNativeSources(f.output, f.output, f.manifestFile, f.options);
+    assert.equal(f.requests(), 1);
+    assert.deepEqual(await f.saved(), bytes);
+    await prepareNativeSources(f.output, f.output, f.manifestFile, f.options);
+    assert.equal(f.requests(), 1);
+  });
+}
+
+await test('a corrupt cache and a wrong fetched hash leave no archive', async (t) => {
+  const f = await fixture(t, (_request, response) =>
+    response.end('wrong upstream bytes'),
+  );
+  await mkdir(f.output);
+  await writeFile(join(f.output, 'source.tar.gz'), 'corrupt archive');
+  await assert.rejects(
+    prepareNativeSources(f.output, f.output, f.manifestFile, f.options),
+    /hash differs: source\.tar\.gz/,
+  );
+  assert.equal(f.requests(), 1);
+  assert.deepEqual(await f.files(), []);
+});
+
+await test('the image copies checked cache bytes to its notices', async (t) => {
+  const f = await fixture(t, (_request, response) =>
+    response.writeHead(503).end(),
+  );
+  const cache = join(f.output, 'cache');
+  await mkdir(cache, { recursive: true });
+  await writeFile(join(cache, 'source.tar.gz'), bytes);
+  await prepareNativeSources(f.output, cache, f.manifestFile, f.options);
+  assert.equal(f.requests(), 0);
+  assert.deepEqual(await f.saved(), bytes);
+});
+
 await test(
   'HTTPS redirects retain integrity and refuse a move to HTTP',
   { timeout: 5_000 },
