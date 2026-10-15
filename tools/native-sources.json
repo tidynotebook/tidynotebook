@@ -144,7 +144,7 @@
     },
     {
       "file": "22-pixman-0.46.4.tar.gz",
-      "url": "https://www.x.org/releases/individual/lib/pixman-0.46.4.tar.gz",
+      "url": "https://xorg.freedesktop.org/archive/individual/lib/pixman-0.46.4.tar.gz",
       "sha256": "d09c44ebc3bd5bee7021c79f922fe8fb2fb57f7320f55e97ff9914d2346a591c"
     },
     {
