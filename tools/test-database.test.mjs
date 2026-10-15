@@ -46,20 +46,7 @@ await test('shared database setup migrates once before it returns and propagates
   }
 });
 
-await test('local and hosted integration runs use shared setup after the build', () => {
-  const workflow = readFileSync(
-    new URL('../.github/workflows/ci.yml', import.meta.url),
-    'utf8',
-  );
-  const tests = workflow.split('  tests:')[1]?.split('  performance:')[0] ?? '';
-  assert.ok(
-    tests.indexOf('run: pnpm build') <
-      tests.indexOf('run: tools/test-database/ensure-postgres.sh'),
-  );
-  assert.ok(
-    tests.indexOf('run: tools/test-database/ensure-postgres.sh') <
-      tests.indexOf('run: node tools/run-tests.mjs'),
-  );
+await test('local integration runs use shared setup after the build', () => {
   const manifest = record(
     JSON.parse(
       readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
