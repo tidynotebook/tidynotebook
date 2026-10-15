@@ -107,6 +107,7 @@ await test('DCO checks PR and merge-group commits using the trusted base script'
             },
           },
         ];
+        /** @type {import('node:child_process').SpawnSyncReturns<string>} */
         const result = spawnSync('bash', ['-eo', 'pipefail', '-c', script], {
           cwd: root,
           encoding: 'utf8',
