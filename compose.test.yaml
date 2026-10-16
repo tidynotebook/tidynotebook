@@ -12,7 +12,7 @@
 # model. The passwords below are test values of a throwaway local service.
 services:
   postgres:
-    image: postgres@sha256:5a5a84b19854a9ffaa54082c166ff4ec27473a361e496e5ea167f298f2da9722
+    image: postgres@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres_test
@@ -34,7 +34,7 @@ services:
   # service as they share PostgreSQL. The key pair is a test value of a
   # throwaway local service.
   minio:
-    image: cgr.dev/chainguard/minio@sha256:4cf4831a2bbcf13ddca09c1cbcc9faff716dd3c4247e0babc32864b8ee8e0034
+    image: cgr.dev/chainguard/minio@sha256:dc455cdd4db6e390b1b26514f15ff37681a777bf8dab41aac445a0259f751e56
     command: ['server', '/data', '--address', ':9000']
     environment:
       MINIO_ROOT_USER: notesapp
