@@ -255,9 +255,9 @@ in dark, with the caret kept and with no entry in local undo.
 
 `edit_note` keeps its input, its output and its refusals. The tool list grows
 by two tools, and clients see them on the next list. No setting, stored data,
-contract operation or image command changes. `docs/guide/mcp.md` must explain that an append or a
-patch does not refuse while the person types, and that the whole text form
-still does.
+contract operation or image command changes. `docs/guide/mcp.md` must
+explain that an append or a patch does not refuse while the person types, and
+that the whole text form still does.
 
 ## Initial scope
 
