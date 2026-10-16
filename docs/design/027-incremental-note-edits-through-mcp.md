@@ -213,17 +213,31 @@ probe from its input alone, before it reads anything.
    no changeset.
 3. Only for `absent` does the tool read the head, check the anchors, build
    the update and commit.
-4. Two copies of one call can both find `absent`. The workspace lock orders
-   their commits, so the second finds the receipt of the first and gets
+4. Two copies of one call can both find `absent`. Copy A can then commit
+   before copy B reads the head. A can remove its own anchor, and the note can
+   move to Trash or be purged after A commits. B then fails before it reaches
+   `commitChangeset`. So when step 3 refuses because of the state of the note,
+   the tool reads the receipt again, with the same identity and probe digest,
+   before it answers. This covers a note that is not available or not live,
+   an anchor or a heading that is missing or occurs more than once, and a text
+   that the document cannot hold. When the status is now other than `absent`,
+   the tool ends as in step 2. When it is still `absent`, the tool returns the
+   original error. That error states only what the tool found. It does not
+   claim that another copy of the call cannot commit later. A refusal of
+   authorization or of a locked account, from either receipt read or from the
+   note read, is returned as it is, with no second read.
+5. When B reaches `commitChangeset` after A committed, the workspace lock
+   orders the commits. The receipt check of the commit runs first, so B gets
    `mutation_reused`. The tool then ends as in step 2. Both `mutation_reused`
    and `epoch_mismatch` answer a conflict, so the tool reads the code of the
    problem and not only the status.
-5. A refused changeset writes no receipt. The tool can read the head again
+6. A refused changeset writes no receipt. The tool can read the head again
    and build again under the same identity. It does this once for a new
    document generation ([record 0084](../decisions/0084-compaction-keeps-identities-and-recovery-keeps-original-work.md)),
-   and then it refuses.
+   and then it refuses. A refusal of the note state on that second read
+   follows step 4.
 
-A call that ends at step 2 or step 4 is a success. Its answer names the
+A call that ends as in step 2 is a success. Its answer names the
 workspace and the file from the input, says that the change was made by an
 earlier attempt, and sets `changed` to false. It carries no version and no
 text. The probe answer holds no outcome, and the note can be in Trash or gone,
@@ -243,7 +257,8 @@ The tool sends the path of the head that it read. A rename on another device
 between the read and the commit therefore survives, because a rebased update
 takes the path of the current head.
 
-The tool refuses a note that is not live when it reads it. A move to Trash
+The tool refuses a note that is not live when it reads it, after the second
+receipt read of step 4. A move to Trash
 between the read and the commit is a different case. An update with new text
 work against a tombstone does not refuse. It brings the note back, because an
 edit wins over a concurrent Trash in either order
@@ -315,6 +330,13 @@ Integration tests in `tests/integration/mcp-endpoint.test.ts` prove:
   retry ends with the earlier attempt answer and writes nothing;
 - a lost answer followed by a move to Trash, and by a purge, where the retry
   ends the same way;
+- two copies of one call in a fixed order: copy B pauses after its first
+  receipt read finds `absent`, copy A commits, then B resumes. B ends with the
+  earlier attempt answer, and the note has one write. One variant has A
+  remove its own anchor. Two more variants move the note to Trash, or purge
+  it, after A commits and before B resumes;
+- a refusal of the note state with no other copy, where the second receipt
+  read finds `absent` and the tool returns the original error;
 - a concurrent device edit next to repeated characters, where the merge
   keeps the result of the exact range;
 - a move to Trash between the read and the commit, which brings the note
