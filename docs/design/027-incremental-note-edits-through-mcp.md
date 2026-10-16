@@ -101,8 +101,9 @@ a higher level. A heading that occurs more than once, or not at all,
 refuses the call. An append is always whole lines, so the tool adds line
 breaks by two rules.
 
-- It adds a line break before the text when the text before the insert point
-  does not end with one.
+- It adds a line break before the text when text precedes the insert point
+  and that text does not end with one. An append to an empty note adds no
+  line break before its text.
 - It adds a line break after the text when text follows the insert point and
   the appended text does not end with one. A section append inserts before the
   line of the next heading, so this rule keeps that heading on its own line.
@@ -313,7 +314,8 @@ the last `a` with `X` in another session, and merges both to `X`.
 Unit tests in `apps/server/src/mcp/write-tools.test.ts` prove the input
 schemas, the anchor and heading rules, the order of a patch list, the refusal
 of overlapping changes, and the shape of the one changeset. They prove both
-line break rules, including a section append before the next heading, which
+line break rules, including an append to an empty note, which adds no line
+break before its text, and a section append before the next heading, which
 keeps that heading on its own line. They prove that a used identity ends the
 call before any note read, and that the probe digest depends only on the
 input.
