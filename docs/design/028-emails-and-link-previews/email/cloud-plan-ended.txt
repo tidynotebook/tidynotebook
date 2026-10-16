@@ -1,0 +1,16 @@
+Subject: Your tidy notebook cloud plan ended
+
+A plan that covered your account ended.
+
+If you have a plan now, you do not need to act.
+
+Without a plan, your account is locked. You can sign in and export your notes.
+
+To keep the account, start a plan before 90 days pass after the plan ended. After this time, the service removes the account and its data.
+
+To start a plan or export your notes, sign in on this page:
+https://app.tidynotebook.com/login
+
+-- 
+tidy notebook cloud
+You get this message because a plan of tidy notebook cloud covered your account.

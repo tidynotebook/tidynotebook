@@ -1,0 +1,16 @@
+Subject: Your account on tidy notebook at notes.example.com is deleted in 7 days
+
+Your account on tidy notebook at notes.example.com is locked. In 7 days, the account and every note in it are deleted for good.
+
+To keep the account, ask the administrator of tidy notebook at notes.example.com to unlock it.
+
+You can sign in on this page:
+https://notes.example.com/login
+
+To keep your notes without the account, sign in and select Export my notes.
+
+If you do not want the account, you need to do nothing.
+
+-- 
+tidy notebook at notes.example.com
+You get this message because your account on notes.example.com is locked.

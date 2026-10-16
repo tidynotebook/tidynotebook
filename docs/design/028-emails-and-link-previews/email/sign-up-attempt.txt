@@ -1,0 +1,14 @@
+Subject: Somebody tried to make an account on tidy notebook at notes.example.com with your address
+
+Somebody asked for a new account on tidy notebook at notes.example.com with this address. The address already has an account, so nothing changed.
+
+To sign in, open this page:
+https://notes.example.com/login
+
+If you do not know your password, select Forgot password on that page.
+
+If you asked for the account yourself, you already have one. Otherwise, ignore this message.
+
+-- 
+tidy notebook at notes.example.com
+You get this message because somebody entered this address on notes.example.com.

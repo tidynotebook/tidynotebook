@@ -1,0 +1,13 @@
+Subject: Test message from tidy notebook at notes.example.com
+
+This message checks the mail settings of tidy notebook at notes.example.com.
+
+It arrived, so invitations, sign-up links and password resets can reach a person too.
+
+This message has an HTML part and a plain text part. Your mail program shows the part that it supports.
+
+If it is in your spam folder, check the SPF, DKIM and DMARC records of the domain of the sender.
+
+-- 
+tidy notebook at notes.example.com
+An administrator of notes.example.com sent this message from the mail settings.

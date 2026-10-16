@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <title>tidy notebook: Markdown notes that work offline</title>
+  <rect width="1200" height="630" fill="#f7f7f5"/>
+  <g transform="translate(-60 150) rotate(-8)"><rect width="280" height="360" rx="24" fill="#ffffff" stroke="#e6e4e0" stroke-width="2"/><rect x="40" y="48" width="96" height="22" rx="11" fill="#e8e7e3"/><rect x="40" y="96" width="150" height="18" rx="6" fill="#e8e7e3"/><rect x="40" y="130" width="200" height="12" rx="6" fill="#e8e7e3"/><rect x="40" y="164" width="120" height="12" rx="6" fill="#e8e7e3"/><rect x="40" y="198" width="200" height="12" rx="6" fill="#e8e7e3"/><rect x="40" y="232" width="200" height="12" rx="6" fill="#e8e7e3"/><rect x="40" y="266" width="120" height="12" rx="6" fill="#e8e7e3"/></g>
+  <g transform="translate(990 120) rotate(7)"><rect width="280" height="360" rx="24" fill="#ffffff" stroke="#e6e4e0" stroke-width="2"/><rect x="40" y="48" width="96" height="22" rx="11" fill="#e8e7e3"/><rect x="40" y="96" width="150" height="18" rx="6" fill="#e8e7e3"/><rect x="40" y="130" width="200" height="12" rx="6" fill="#e8e7e3"/><rect x="40" y="164" width="120" height="12" rx="6" fill="#e8e7e3"/><rect x="40" y="198" width="200" height="12" rx="6" fill="#e8e7e3"/><rect x="40" y="232" width="200" height="12" rx="6" fill="#e8e7e3"/><rect x="40" y="266" width="120" height="12" rx="6" fill="#e8e7e3"/></g>
+  <g transform="translate(528 128) scale(0.28125)">
+  
+  
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="#1a1917"/>
+  <g id="page">
+    <path d="M134 64H344L430 150V414a30 30 0 0 1-30 30H134a30 30 0 0 1-30-30V94a30 30 0 0 1 30-30z" fill="#f5f4f2"/>
+    <path d="M344 64 430 150H372a28 28 0 0 1-28-28z" fill="#d0cfcc"/>
+    <g fill="#1a1917">
+      <circle cx="128" cy="144" r="15"/>
+      <circle cx="128" cy="229" r="15"/>
+      <circle cx="128" cy="314" r="15"/>
+    </g>
+    <g fill="#f5f4f2">
+      <rect x="77" y="129" width="47" height="30" rx="15"/>
+      <rect x="77" y="214" width="47" height="30" rx="15"/>
+      <rect x="77" y="299" width="47" height="30" rx="15"/>
+    </g>
+    <path d="M187.3 185.3H239.6Q244.8 185.3 248.4 188.8Q251.9 192.4 251.9 197.7Q251.9 202.7 248.4 206.1Q244.8 209.6 239.6 209.6H187.3Q182.1 209.6 178.5 206Q175 202.5 175 197.2Q175 192.2 178.5 188.7Q182.1 185.3 187.3 185.3ZM210.9 157.8Q216.6 157.8 220.3 161.6Q223.9 165.5 223.9 171.2V269.3Q223.9 272.4 225.1 274.3Q226.3 276.3 228.4 277.2Q230.5 278.1 232.9 278.1Q235.6 278.1 237.8 277.1Q240 276.1 242.9 276.1Q245.9 276.1 248.5 279Q251 281.8 251 286.9Q251 293.1 244.3 297Q237.6 301 229.9 301Q225.2 301 219.6 300.2Q214 299.5 209 296.5Q204.1 293.5 200.8 287.3Q197.5 281.2 197.5 270.4V171.2Q197.5 165.5 201.3 161.6Q205.2 157.8 210.9 157.8Z" fill="#1a1917" stroke="#1a1917" stroke-width="10" stroke-linejoin="round"/>
+    <path d="M340.3 180.9Q356.6 180.9 365.1 187.7Q373.6 194.6 376.8 205.9Q380 217.3 380 231.2V287.6Q380 293.3 376.3 297.1Q372.5 301 366.8 301Q361.1 301 357.3 297.1Q353.6 293.3 353.6 287.6V231.2Q353.6 223.9 351.7 218Q349.8 212.2 345 208.7Q340.1 205.2 331.1 205.2Q322.3 205.2 316.2 208.7Q310.2 212.2 307 218Q303.8 223.9 303.8 231.2V287.6Q303.8 293.3 300 297.1Q296.3 301 290.5 301Q284.8 301 281.1 297.1Q277.3 293.3 277.3 287.6V196.6Q277.3 190.8 281.1 187Q284.8 183.1 290.5 183.1Q296.3 183.1 300 187Q303.8 190.8 303.8 196.6V206L300.5 205.4Q302.4 201.6 306.2 197.3Q309.9 193 315 189.3Q320.1 185.5 326.5 183.2Q332.8 180.9 340.3 180.9Z" fill="#67655f" stroke="#67655f" stroke-width="10" stroke-linejoin="round"/>
+    <g fill="#d0cfcc">
+      <rect x="170" y="332" width="215" height="16" rx="8"/>
+      <rect x="170" y="369" width="127" height="16" rx="8"/>
+    </g>
+    <path d="M330 367 316 377.5 330 388M373 367 387 377.5 373 388M356 362 347 393" fill="none" stroke="#a5a39e" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</g>
+  <text x="600" y="366" text-anchor="middle" font-family="'Liberation Sans', 'DejaVu Sans', Arial, sans-serif" font-size="84" font-weight="700" fill="#191917">tidy notebook</text>
+  <text x="600" y="436" text-anchor="middle" font-family="'Liberation Sans', 'DejaVu Sans', Arial, sans-serif" font-size="34" fill="#37352f">Markdown notes that work offline.</text>
+  <text x="600" y="482" text-anchor="middle" font-family="'Liberation Sans', 'DejaVu Sans', Arial, sans-serif" font-size="34" fill="#37352f">Every saved version stays in history.</text>
+</svg>

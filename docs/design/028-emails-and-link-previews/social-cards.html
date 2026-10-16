@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Link preview review: tidy notebook</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f7f7f5;
+        --card: #ffffff;
+        --ink: #37352f;
+        --strong: #191917;
+        --muted: #67655f;
+        --edge: #e6e4e0;
+        --link: #1a63c4;
+        --danger: #c02b3a;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #141414;
+          --card: #222222;
+          --ink: #d0cfcc;
+          --strong: #f5f4f2;
+          --muted: #a5a39e;
+          --edge: #2e2e2e;
+          --link: #6fa8f5;
+          --danger: #f5817d;
+        }
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font:
+          15px/1.55 -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif;
+      }
+      main {
+        max-width: 1500px;
+        margin: 0 auto;
+        padding: 32px 24px 64px;
+      }
+      h1 {
+        color: var(--strong);
+        font-size: 26px;
+        margin: 0 0 8px;
+      }
+      h2 {
+        color: var(--strong);
+        font-size: 19px;
+        margin: 40px 0 8px;
+      }
+      p {
+        margin: 0 0 8px;
+      }
+      .lede {
+        max-width: 80ch;
+        color: var(--muted);
+      }
+      code {
+        font:
+          13px/1.4 ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          Consolas,
+          monospace;
+        word-break: break-all;
+      }
+      .cards {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+      }
+      .cards figure {
+        margin: 0;
+      }
+      .cards img {
+        width: 560px;
+        max-width: 100%;
+        height: auto;
+        border: 1px solid var(--edge);
+        border-radius: 12px;
+        display: block;
+      }
+      figcaption {
+        font-size: 13px;
+        color: var(--muted);
+        margin: 6px 0 0;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      th,
+      td {
+        text-align: left;
+        vertical-align: top;
+        padding: 16px 12px;
+        border-top: 1px solid var(--edge);
+      }
+      thead th {
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 600;
+      }
+      tbody th {
+        width: 220px;
+        font-weight: 600;
+        color: var(--strong);
+      }
+      tbody th code {
+        font-weight: 400;
+        color: var(--muted);
+      }
+      .slack {
+        background: #ffffff;
+        color: #1d1c1d;
+        border-radius: 8px;
+        padding: 12px;
+        width: 420px;
+        font-family:
+          Lato,
+          -apple-system,
+          Helvetica,
+          Arial,
+          sans-serif;
+        border: 1px solid #dddddd;
+      }
+      .slack-msg {
+        display: flex;
+        gap: 10px;
+      }
+      .avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 6px;
+        background: #b7c4d6;
+        flex: none;
+      }
+      .who {
+        font-weight: 700;
+        margin: 0;
+      }
+      .who span {
+        font-weight: 400;
+        color: #616061;
+        font-size: 12px;
+      }
+      .url {
+        color: #1264a3;
+        margin: 0 0 6px;
+        word-break: break-all;
+      }
+      .slack-unfurl {
+        border-left: 4px solid #dddddd;
+        padding-left: 12px;
+      }
+      .site {
+        font-weight: 700;
+        font-size: 13px;
+        margin: 0;
+      }
+      .u-title {
+        color: #1264a3;
+        font-weight: 700;
+        margin: 0;
+      }
+      .u-desc {
+        margin: 0 0 6px;
+        font-size: 14px;
+      }
+      .slack-unfurl img {
+        border-radius: 8px;
+        display: block;
+        max-width: 100%;
+        height: auto;
+      }
+      .wa {
+        background: #efeae2;
+        padding: 12px;
+        border-radius: 8px;
+        width: 330px;
+      }
+      .wa-bubble {
+        background: #d9fdd3;
+        color: #111b21;
+        border-radius: 8px;
+        padding: 4px;
+        margin-left: auto;
+        width: 300px;
+      }
+      .wa-preview {
+        background: #d1f4cc;
+        border-radius: 6px;
+        overflow: hidden;
+      }
+      .wa-preview img {
+        width: 100%;
+        display: block;
+      }
+      .wa-preview div {
+        padding: 6px 8px;
+      }
+      .wa-title {
+        font-weight: 600;
+        margin: 0;
+        font-size: 14px;
+        color: #111b21;
+      }
+      .wa-desc {
+        font-size: 13px;
+        margin: 0;
+        color: #54656f;
+      }
+      .wa-host {
+        font-size: 12px;
+        margin: 0;
+        color: #667781;
+      }
+      .wa-url {
+        color: #027eb5;
+        font-size: 14px;
+        margin: 4px 6px 0;
+        word-break: break-all;
+      }
+      .wa-time {
+        font-size: 11px;
+        color: #667781;
+        text-align: right;
+        margin: 0 6px 2px;
+      }
+      .large {
+        width: 340px;
+        border: 1px solid #cfd9de;
+        border-radius: 16px;
+        overflow: hidden;
+        background: #ffffff;
+        position: relative;
+      }
+      .large img {
+        width: 100%;
+        display: block;
+      }
+      .large-meta {
+        padding: 8px 12px;
+      }
+      .large-meta .wa-title {
+        color: #0f1419;
+      }
+      .deferred {
+        border: 2px dashed var(--danger);
+        border-radius: 12px;
+        padding: 16px;
+        max-width: 900px;
+      }
+      .deferred .badge {
+        display: inline-block;
+        color: var(--danger);
+        font-weight: 700;
+        font-size: 13px;
+        margin: 0 0 8px;
+      }
+      .tags {
+        margin: 0;
+        background: var(--card);
+        border: 1px solid var(--edge);
+        border-radius: 10px;
+        padding: 16px;
+        overflow-x: auto;
+        font:
+          13px/1.6 ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          Consolas,
+          monospace;
+        white-space: pre;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Link preview review: tidy notebook</h1>
+      <p class="lede">
+        The first scope gives one branded product card to every address of the
+        application and to every published address, open or not. The card holds
+        no note title, no note text, no account name, no host of the reader and
+        no token. The server writes the same tags and the same HTML title for
+        every address, so a revoked or locked link shows the same card as
+        before. This promise covers the metadata only: a crawler that fetches an
+        open published note can still read and keep the text of the page. The
+        frames below are local drawings of each service. They are not captures
+        of a real share, and they do not show where a click goes.
+      </p>
+
+      <h2>The card</h2>
+      <div class="cards">
+        <figure>
+          <img
+            src="social-card-light.png"
+            alt="The light card: the tidy notebook icon, the name, and two lines of text."
+          />
+          <figcaption>
+            Chosen: light, 1200 by 630 pixels, PNG. Everything that a square
+            crop keeps sits in the centre.
+          </figcaption>
+        </figure>
+        <figure>
+          <img
+            src="social-card-dark.png"
+            alt="The dark card: the same layout on a dark background."
+          />
+          <figcaption>
+            Rejected: dark. The icon tile merges with the background. Kept for
+            the record.
+          </figcaption>
+        </figure>
+      </div>
+
+      <h2>The same card for every kind of address</h2>
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Shared address</th>
+            <th scope="col">Slack (classic unfurl)</th>
+            <th scope="col">WhatsApp</th>
+            <th scope="col">Large image card (X, iMessage and others)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">
+              A private note in the application<br /><code
+                >https://app.tidynotebook.com/w/7c1e…/notes/0f3c…</code
+              >
+            </th>
+            <td>
+              <div class="slack">
+                <div class="slack-msg">
+                  <span class="avatar" aria-hidden="true"></span>
+                  <div>
+                    <p class="who">Sam <span>10:42</span></p>
+                    <p class="url">
+                      https://app.tidynotebook.com/w/7c1e…/notes/0f3c…
+                    </p>
+                    <div class="slack-unfurl">
+                      <p class="site">tidy notebook</p>
+                      <p class="u-title">tidy notebook</p>
+                      <p class="u-desc">
+                        Markdown notes that work offline. Every saved version
+                        stays in history.
+                      </p>
+                      <img
+                        src="social-card-light.png"
+                        alt="tidy notebook: Markdown notes that work offline"
+                        width="360"
+                        height="189"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="wa">
+                <div class="wa-bubble">
+                  <div class="wa-preview">
+                    <img
+                      src="social-card-light.png"
+                      alt="tidy notebook: Markdown notes that work offline"
+                    />
+                    <div>
+                      <p class="wa-title">tidy notebook</p>
+                      <p class="wa-desc">
+                        Markdown notes that work offline. Every saved version
+                        stays in history.
+                      </p>
+                      <p class="wa-host">app.tidynotebook.com</p>
+                    </div>
+                  </div>
+                  <p class="wa-url">
+                    https://app.tidynotebook.com/w/7c1e…/notes/0f3c…
+                  </p>
+                  <p class="wa-time">10:42</p>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="large">
+                <img
+                  src="social-card-light.png"
+                  alt="tidy notebook: Markdown notes that work offline"
+                />
+                <div class="large-meta">
+                  <p class="wa-host">app.tidynotebook.com</p>
+                  <p class="wa-title">tidy notebook</p>
+                </div>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">
+              An invitation link (token in the fragment)<br /><code
+                >https://app.tidynotebook.com/invitation#…</code
+              >
+            </th>
+            <td>
+              <div class="slack">
+                <div class="slack-msg">
+                  <span class="avatar" aria-hidden="true"></span>
+                  <div>
+                    <p class="who">Sam <span>10:42</span></p>
+                    <p class="url">https://app.tidynotebook.com/invitation#…</p>
+                    <div class="slack-unfurl">
+                      <p class="site">tidy notebook</p>
+                      <p class="u-title">tidy notebook</p>
+                      <p class="u-desc">
+                        Markdown notes that work offline. Every saved version
+                        stays in history.
+                      </p>
+                      <img
+                        src="social-card-light.png"
+                        alt="tidy notebook: Markdown notes that work offline"
+                        width="360"
+                        height="189"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="wa">
+                <div class="wa-bubble">
+                  <div class="wa-preview">
+                    <img
+                      src="social-card-light.png"
+                      alt="tidy notebook: Markdown notes that work offline"
+                    />
+                    <div>
+                      <p class="wa-title">tidy notebook</p>
+                      <p class="wa-desc">
+                        Markdown notes that work offline. Every saved version
+                        stays in history.
+                      </p>
+                      <p class="wa-host">app.tidynotebook.com</p>
+                    </div>
+                  </div>
+                  <p class="wa-url">
+                    https://app.tidynotebook.com/invitation#…
+                  </p>
+                  <p class="wa-time">10:42</p>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="large">
+                <img
+                  src="social-card-light.png"
+                  alt="tidy notebook: Markdown notes that work offline"
+                />
+                <div class="large-meta">
+                  <p class="wa-host">app.tidynotebook.com</p>
+                  <p class="wa-title">tidy notebook</p>
+                </div>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">
+              An open published note<br /><code
+                >https://read.example.com/published/Tk9…</code
+              >
+            </th>
+            <td>
+              <div class="slack">
+                <div class="slack-msg">
+                  <span class="avatar" aria-hidden="true"></span>
+                  <div>
+                    <p class="who">Sam <span>10:42</span></p>
+                    <p class="url">https://read.example.com/published/Tk9…</p>
+                    <div class="slack-unfurl">
+                      <p class="site">tidy notebook</p>
+                      <p class="u-title">tidy notebook</p>
+                      <p class="u-desc">
+                        Markdown notes that work offline. Every saved version
+                        stays in history.
+                      </p>
+                      <img
+                        src="social-card-light.png"
+                        alt="tidy notebook: Markdown notes that work offline"
+                        width="360"
+                        height="189"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="wa">
+                <div class="wa-bubble">
+                  <div class="wa-preview">
+                    <img
+                      src="social-card-light.png"
+                      alt="tidy notebook: Markdown notes that work offline"
+                    />
+                    <div>
+                      <p class="wa-title">tidy notebook</p>
+                      <p class="wa-desc">
+                        Markdown notes that work offline. Every saved version
+                        stays in history.
+                      </p>
+                      <p class="wa-host">read.example.com</p>
+                    </div>
+                  </div>
+                  <p class="wa-url">https://read.example.com/published/Tk9…</p>
+                  <p class="wa-time">10:42</p>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="large">
+                <img
+                  src="social-card-light.png"
+                  alt="tidy notebook: Markdown notes that work offline"
+                />
+                <div class="large-meta">
+                  <p class="wa-host">read.example.com</p>
+                  <p class="wa-title">tidy notebook</p>
+                </div>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">
+              A published note with a password<br /><code
+                >https://read.example.com/published/Ab2…</code
+              >
+            </th>
+            <td>
+              <div class="slack">
+                <div class="slack-msg">
+                  <span class="avatar" aria-hidden="true"></span>
+                  <div>
+                    <p class="who">Sam <span>10:42</span></p>
+                    <p class="url">https://read.example.com/published/Ab2…</p>
+                    <div class="slack-unfurl">
+                      <p class="site">tidy notebook</p>
+                      <p class="u-title">tidy notebook</p>
+                      <p class="u-desc">
+                        Markdown notes that work offline. Every saved version
+                        stays in history.
+                      </p>
+                      <img
+                        src="social-card-light.png"
+                        alt="tidy notebook: Markdown notes that work offline"
+                        width="360"
+                        height="189"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="wa">
+                <div class="wa-bubble">
+                  <div class="wa-preview">
+                    <img
+                      src="social-card-light.png"
+                      alt="tidy notebook: Markdown notes that work offline"
+                    />
+                    <div>
+                      <p class="wa-title">tidy notebook</p>
+                      <p class="wa-desc">
+                        Markdown notes that work offline. Every saved version
+                        stays in history.
+                      </p>
+                      <p class="wa-host">read.example.com</p>
+                    </div>
+                  </div>
+                  <p class="wa-url">https://read.example.com/published/Ab2…</p>
+                  <p class="wa-time">10:42</p>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="large">
+                <img
+                  src="social-card-light.png"
+                  alt="tidy notebook: Markdown notes that work offline"
+                />
+                <div class="large-meta">
+                  <p class="wa-host">read.example.com</p>
+                  <p class="wa-title">tidy notebook</p>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Proposed tags</h2>
+      <p>
+        The application shell and every state of a published page carry the same
+        block. Every published view also writes the product name as its HTML
+        title, also an open note, because a service can read the title with no
+        tag. A separate test holds the title. The reader still sees the note
+        name in the heading of the page. <code>ORIGIN</code> is the canonical
+        application origin of the configuration, never the Host header of the
+        request. <code>HASH</code> is the build digest of the card file.
+      </p>
+      <pre class="tags">
+&lt;title&gt;tidy notebook&lt;/title&gt;
+&lt;meta property="og:type" content="website"&gt;
+&lt;meta property="og:site_name" content="tidy notebook"&gt;
+&lt;meta property="og:title" content="tidy notebook"&gt;
+&lt;meta property="og:description" content="Markdown notes that work offline. Every saved version stays in history."&gt;
+&lt;meta property="og:url" content="ORIGIN/"&gt;
+&lt;meta property="og:image" content="ORIGIN/assets/social-card-HASH.png"&gt;
+&lt;meta property="og:image:type" content="image/png"&gt;
+&lt;meta property="og:image:width" content="1200"&gt;
+&lt;meta property="og:image:height" content="630"&gt;
+&lt;meta property="og:image:alt" content="tidy notebook: Markdown notes that work offline"&gt;
+&lt;meta name="twitter:card" content="summary_large_image"&gt;
+&lt;meta name="description" content="Markdown notes that work offline. Every saved version stays in history."&gt;</pre>
+      <p>
+        <code>og:url</code> names the root of the application, so every share
+        stands for the product. A service can treat it as the canonical address
+        and send a click to the root. Before the runtime change is approved, a
+        person shares an approved public sample in Slack and in WhatsApp and
+        records where a click goes. If it does not reach the shared address, the
+        choice goes back to review, with the omission of <code>og:url</code> as
+        the first alternative.
+      </p>
+
+      <h2>Deferred, not approved: a title on an open published note</h2>
+      <div class="deferred">
+        <p class="badge">
+          Deferred. Illustration only. Not part of the first scope.
+        </p>
+        <p>
+          An open published note could show its own name in place of the product
+          name. The image stays the generic card, because an image keyed by the
+          token is itself a credential address. Risks to review first:
+        </p>
+        <ul>
+          <li>
+            A service keeps the preview after the owner revokes the link or adds
+            a password. Slack keeps an unfurl for a short time across the
+            service, and a message keeps the preview that it showed when it was
+            sent. The title can then outlive the publication.
+          </li>
+          <li>
+            The name is written into a public response for each crawler. A
+            change of the name, a password or a revocation does not reach a
+            preview that was already shown.
+          </li>
+          <li>
+            It undoes the generic HTML title of the first scope, and no service
+            document promises which of the title and the tags it reads.
+          </li>
+        </ul>
+        <div class="slack" aria-label="Deferred illustration">
+          <div class="slack-msg">
+            <span class="avatar" aria-hidden="true"></span>
+            <div>
+              <p class="who">Sam <span>10:42</span></p>
+              <p class="url">https://read.example.com/published/Tk9…</p>
+              <div class="slack-unfurl">
+                <p class="site">tidy notebook</p>
+                <p class="u-title">Trip plan for October</p>
+                <p class="u-desc">A published note on tidy notebook.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

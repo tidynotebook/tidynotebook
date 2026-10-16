@@ -1,0 +1,19 @@
+Subject: Your invitation to tidy notebook at notes.example.com
+
+You can make an account on tidy notebook at notes.example.com.
+
+Open this link to choose a password:
+https://notes.example.com/invitation#EXAMPLE-NOT-A-REAL-TOKEN
+
+The link works once, for 7 days.
+
+What you can do in tidy notebook:
+- Write in Markdown. The editor shows the format while you type.
+- Work offline. Your device keeps a draft until you save.
+- Go back to any version. History keeps every version that you save.
+
+If you do not want an account, ignore this message.
+
+-- 
+tidy notebook at notes.example.com
+You get this message because somebody invited this address to notes.example.com.

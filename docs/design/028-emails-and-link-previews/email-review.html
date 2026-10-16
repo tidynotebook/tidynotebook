@@ -1,0 +1,1135 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Email review: tidy notebook</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f7f7f5;
+        --card: #ffffff;
+        --ink: #37352f;
+        --strong: #191917;
+        --muted: #67655f;
+        --edge: #e6e4e0;
+        --link: #1a63c4;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #141414;
+          --card: #222222;
+          --ink: #d0cfcc;
+          --strong: #f5f4f2;
+          --muted: #a5a39e;
+          --edge: #2e2e2e;
+          --link: #6fa8f5;
+        }
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font:
+          15px/1.55 -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif;
+      }
+      main {
+        max-width: 1800px;
+        margin: 0 auto;
+        padding: 32px 24px 64px;
+      }
+      h1 {
+        color: var(--strong);
+        font-size: 26px;
+        margin: 0 0 8px;
+      }
+      h2 {
+        color: var(--strong);
+        font-size: 18px;
+        margin: 0 0 4px;
+      }
+      a {
+        color: var(--link);
+      }
+      .lede {
+        max-width: 72ch;
+        color: var(--muted);
+        margin: 0 0 24px;
+      }
+      .inbox {
+        list-style: none;
+        margin: 0 0 40px;
+        padding: 0;
+        max-width: 760px;
+        border: 1px solid var(--edge);
+        border-radius: 12px;
+        background: var(--card);
+        overflow: hidden;
+      }
+      .inbox-row a {
+        display: grid;
+        grid-template-columns: 200px 1fr;
+        gap: 2px 16px;
+        padding: 10px 16px;
+        color: inherit;
+        text-decoration: none;
+        border-top: 1px solid var(--edge);
+      }
+      .inbox-row:first-child a {
+        border-top: 0;
+      }
+      .inbox-row a:focus-visible {
+        outline: 2px solid var(--link);
+        outline-offset: -2px;
+      }
+      .from {
+        font-weight: 600;
+        color: var(--strong);
+        grid-row: span 2;
+      }
+      .subject {
+        color: var(--strong);
+      }
+      .pre {
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .message {
+        border-top: 1px solid var(--edge);
+        padding: 28px 0;
+      }
+      .owner {
+        display: inline-block;
+        margin: 0 0 6px;
+        padding: 1px 8px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        border: 1px solid var(--edge);
+        color: var(--muted);
+      }
+      .owner-cloud {
+        border-style: dashed;
+      }
+      .meta {
+        color: var(--muted);
+        margin: 0 0 16px;
+        font-size: 14px;
+      }
+      .frames {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        align-items: flex-start;
+      }
+      figure {
+        margin: 0;
+      }
+      figcaption {
+        font-size: 12px;
+        color: var(--muted);
+        margin: 0 0 6px;
+        max-width: 375px;
+      }
+      iframe.mail {
+        border: 1px solid var(--edge);
+        border-radius: 10px;
+        height: 900px;
+        display: block;
+        background: #ffffff;
+      }
+      iframe.dark {
+        color-scheme: dark;
+        background: #141414;
+      }
+      iframe.light {
+        color-scheme: light;
+      }
+      iframe.inverted {
+        filter: invert(1) hue-rotate(180deg);
+      }
+      .frame-text pre {
+        width: 420px;
+        max-width: 100%;
+        margin: 0;
+        padding: 16px;
+        box-sizing: border-box;
+        border: 1px solid var(--edge);
+        border-radius: 10px;
+        background: var(--card);
+        color: var(--ink);
+        font:
+          13px/1.5 ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          Consolas,
+          monospace;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Email review: tidy notebook</h1>
+      <p class="lede">
+        Every message of the core and the one cloud notice, in the proposed
+        design. Each message has an HTML part and a plain text part with the
+        same meaning. The HTML part loads no remote file, no picture, no font
+        and no tracking pixel. Every link is a link of the product. The token in
+        a sample link is a placeholder. The dark frames show a client that reads
+        the dark media query, such as Apple Mail. The inverted frame is a rough
+        approximation of a client that inverts colours by itself. Real clients
+        must be checked with an approved test inbox before release.
+      </p>
+      <h2>Inbox view</h2>
+      <ul class="inbox">
+        <li class="inbox-row">
+          <a href="#invitation"
+            ><span class="from">tidy notebook at notes.example.com</span
+            ><span class="subject"
+              >Your invitation to tidy notebook at notes.example.com</span
+            ><span class="pre"
+              >Choose a password to make your account. The link works for 7
+              days.</span
+            ></a
+          >
+        </li>
+        <li class="inbox-row">
+          <a href="#verification"
+            ><span class="from">tidy notebook at notes.example.com</span
+            ><span class="subject"
+              >Finish your account on tidy notebook at notes.example.com</span
+            ><span class="pre"
+              >Confirm that this address is yours. The link works for 24
+              hours.</span
+            ></a
+          >
+        </li>
+        <li class="inbox-row">
+          <a href="#sign-up-attempt"
+            ><span class="from">tidy notebook at notes.example.com</span
+            ><span class="subject"
+              >Somebody tried to make an account on tidy notebook at
+              notes.example.com with your address</span
+            ><span class="pre"
+              >Your address already has an account, so nothing changed.</span
+            ></a
+          >
+        </li>
+        <li class="inbox-row">
+          <a href="#password-reset"
+            ><span class="from">tidy notebook at notes.example.com</span
+            ><span class="subject"
+              >Reset your password on tidy notebook at notes.example.com</span
+            ><span class="pre"
+              >Choose a new password. The link works once, for 1 hour.</span
+            ></a
+          >
+        </li>
+        <li class="inbox-row">
+          <a href="#password-changed"
+            ><span class="from">tidy notebook at notes.example.com</span
+            ><span class="subject"
+              >Your password on tidy notebook at notes.example.com changed</span
+            ><span class="pre"
+              >Every device that was signed in is signed out.</span
+            ></a
+          >
+        </li>
+        <li class="inbox-row">
+          <a href="#test-message"
+            ><span class="from">tidy notebook at notes.example.com</span
+            ><span class="subject"
+              >Test message from tidy notebook at notes.example.com</span
+            ><span class="pre"
+              >The mail settings of this installation work.</span
+            ></a
+          >
+        </li>
+        <li class="inbox-row">
+          <a href="#removal-30-days-portal"
+            ><span class="from">tidy notebook at notes.example.com</span
+            ><span class="subject"
+              >Your account on tidy notebook at notes.example.com is deleted in
+              30 days</span
+            ><span class="pre"
+              >Your account is locked. Sign in to keep it or to export your
+              notes.</span
+            ></a
+          >
+        </li>
+        <li class="inbox-row">
+          <a href="#removal-7-days-administrator"
+            ><span class="from">tidy notebook at notes.example.com</span
+            ><span class="subject"
+              >Your account on tidy notebook at notes.example.com is deleted in
+              7 days</span
+            ><span class="pre"
+              >Your account is locked. Ask the administrator to unlock it.</span
+            ></a
+          >
+        </li>
+        <li class="inbox-row">
+          <a href="#cloud-plan-ended"
+            ><span class="from">tidy notebook cloud</span
+            ><span class="subject">Your tidy notebook cloud plan ended</span
+            ><span class="pre"
+              >If you have a plan now, you do not need to act.</span
+            ></a
+          >
+        </li>
+      </ul>
+
+      <section class="message" id="invitation">
+        <header>
+          <p class="owner owner-core">Core</p>
+          <h2>Your invitation to tidy notebook at notes.example.com</h2>
+          <p class="meta">
+            Source: <code>invitationMessage</code>. Preheader: Choose a password
+            to make your account. The link works for 7 days.
+          </p>
+        </header>
+        <div class="frames">
+          <figure class="frame-desktop">
+            <figcaption>Desktop, light</figcaption>
+            <iframe
+              title="Your invitation to tidy notebook at notes.example.com, desktop, light"
+              src="email/invitation.html"
+              loading="lazy"
+              class="mail light"
+              width="640"
+            ></iframe>
+          </figure>
+          <figure class="frame-desktop">
+            <figcaption>
+              Desktop, dark (client that reads the dark media query)
+            </figcaption>
+            <iframe
+              title="Your invitation to tidy notebook at notes.example.com, desktop, dark"
+              src="email/invitation.html"
+              loading="lazy"
+              class="mail dark"
+              width="640"
+            ></iframe>
+          </figure>
+          <figure class="frame-mobile">
+            <figcaption>Mobile, light</figcaption>
+            <iframe
+              title="Your invitation to tidy notebook at notes.example.com, mobile, light"
+              src="email/invitation.html"
+              loading="lazy"
+              class="mail light"
+              width="375"
+            ></iframe>
+          </figure>
+          <figure class="frame-mobile">
+            <figcaption>Mobile, dark</figcaption>
+            <iframe
+              title="Your invitation to tidy notebook at notes.example.com, mobile, dark"
+              src="email/invitation.html"
+              loading="lazy"
+              class="mail dark"
+              width="375"
+            ></iframe>
+          </figure>
+          <figure class="frame-mobile">
+            <figcaption>
+              Mobile, forced inversion (approximation of a client that inverts
+              colours)
+            </figcaption>
+            <iframe
+              title="Your invitation to tidy notebook at notes.example.com, mobile, forced inversion"
+              src="email/invitation.html"
+              loading="lazy"
+              class="mail light inverted"
+              width="375"
+            ></iframe>
+          </figure>
+          <figure class="frame-text">
+            <figcaption>
+              Plain text part (<a href="email/invitation.txt">invitation.txt</a
+              >)
+            </figcaption>
+            <pre>
+You can make an account on tidy notebook at notes.example.com.
+
+Open this link to choose a password:
+https://notes.example.com/invitation#EXAMPLE-NOT-A-REAL-TOKEN
+
+The link works once, for 7 days.
+
+What you can do in tidy notebook:
+- Write in Markdown. The editor shows the format while you type.
+- Work offline. Your device keeps a draft until you save.
+- Go back to any version. History keeps every version that you save.
+
+If you do not want an account, ignore this message.
+
+-- 
+tidy notebook at notes.example.com
+You get this message because somebody invited this address to notes.example.com.
+</pre>
+          </figure>
+        </div>
+      </section>
+
+      <section class="message" id="verification">
+        <header>
+          <p class="owner owner-core">Core</p>
+          <h2>Finish your account on tidy notebook at notes.example.com</h2>
+          <p class="meta">
+            Source: <code>verificationMessage</code>. Preheader: Confirm that
+            this address is yours. The link works for 24 hours.
+          </p>
+        </header>
+        <div class="frames">
+          <figure class="frame-desktop">
+            <figcaption>Desktop, light</figcaption>
+            <iframe
+              title="Finish your account on tidy notebook at notes.example.com, desktop, light"
+              src="email/verification.html"
+              loading="lazy"
+              class="mail light"
+              width="640"
+            ></iframe>
+          </figure>
+          <figure class="frame-desktop">
+            <figcaption>
+              Desktop, dark (client that reads the dark media query)
+            </figcaption>
+            <iframe
+              title="Finish your account on tidy notebook at notes.example.com, desktop, dark"
+              src="email/verification.html"
+              loading="lazy"
+              class="mail dark"
+              width="640"
+            ></iframe>
+          </figure>
+          <figure class="frame-mobile">
+            <figcaption>Mobile, light</figcaption>
+            <iframe
+              title="Finish your account on tidy notebook at notes.example.com, mobile, light"
+              src="email/verification.html"
+              loading="lazy"
+              class="mail light"
+              width="375"
+            ></iframe>
+          </figure>
+          <figure class="frame-mobile">
+            <figcaption>Mobile, dark</figcaption>
+            <iframe
+              title="Finish your account on tidy notebook at notes.example.com, mobile, dark"
+              src="email/verification.html"
+              loading="lazy"
+              class="mail dark"
+              width="375"
+            ></iframe>
+          </figure>
+          <figure class="frame-mobile">
+            <figcaption>
+              Mobile, forced inversion (approximation of a client that inverts
+              colours)
+            </figcaption>
+            <iframe
+              title="Finish your account on tidy notebook at notes.example.com, mobile, forced inversion"
+              src="email/verification.html"
+              loading="lazy"
+              class="mail light inverted"
+              width="375"
+            ></iframe>
+          </figure>
+          <figure class="frame-text">
+            <figcaption>
+              Plain text part (<a href="email/verification.txt"
+                >verification.txt</a
+              >)
+            </figcaption>
+            <pre>
+Somebody asked for an account on tidy notebook at notes.example.com with this address.
+
+Open this link to prove that the address is yours and finish the account:
+https://notes.example.com/verify#EXAMPLE-NOT-A-REAL-TOKEN
+
+The link works for 24 hours.
+
+What you can do in tidy notebook:
+- Write in Markdown. The editor shows the format while you type.
+- Work offline. Your device keeps a draft until you save.
+- Go back to any version. History keeps every version that you save.
+
+If you did not ask for an account, ignore this message. Without the link, no account is made.
+
+-- 
+tidy notebook at notes.example.com
+You get this message because somebody entered this address on notes.example.com.
+</pre>
+          </figure>
+        </div>
+      </section>
+
+      <section class="message" id="sign-up-attempt">
+        <header>
+          <p class="owner owner-core">Core</p>
+          <h2>
+            Somebody tried to make an account on tidy notebook at
+            notes.example.com with your address
+          </h2>
+          <p class="meta">
+            Source: <code>signUpAttemptMessage</code>. Preheader: Your address
+            already has an account, so nothing changed.
+          </p>
+        </header>
+        <div class="frames">
+          <figure class="frame-desktop">
+            <figcaption>Desktop, light</figcaption>
+            <iframe
+              title="Somebody tried to make an account on tidy notebook at notes.example.com with your address, desktop, light"
+              src="email/sign-up-attempt.html"
+              loading="lazy"
+              class="mail light"
+              width="640"
+            ></iframe>
+          </figure>
+          <figure class="frame-desktop">
+            <figcaption>
+              Desktop, dark (client that reads the dark media query)
+            </figcaption>
+            <iframe
+              title="Somebody tried to make an account on tidy notebook at notes.example.com with your address, desktop, dark"
+              src="email/sign-up-attempt.html"
+              loading="lazy"
+              class="mail dark"
+              width="640"
+            ></iframe>
+          </figure>
+          <figure class="frame-mobile">
+            <figcaption>Mobile, light</figcaption>
+            <iframe
+              title="Somebody tried to make an account on tidy notebook at notes.example.com with your address, mobile, light"
+              src="email/sign-up-attempt.html"
+              loading="lazy"
+              class="mail light"
+              width="375"
+            ></iframe>
+          </figure>
+          <figure class="frame-mobile">
+            <figcaption>Mobile, dark</figcaption>
+            <iframe
+              title="Somebody tried to make an account on tidy notebook at notes.example.com with your address, mobile, dark"
+              src="email/sign-up-attempt.html"
+              loading="lazy"
+              class="mail dark"
+              width="375"
+            ></iframe>
+          </figure>
+          <figure class="frame-mobile">
+            <figcaption>
+              Mobile, forced inversion (approximation of a client that inverts
+              colours)
+            </figcaption>
+            <iframe
+              title="Somebody tried to make an account on tidy notebook at notes.example.com with your address, mobile, forced inversion"
+              src="email/sign-up-attempt.html"
+              loading="lazy"
+              class="mail light inverted"
+              width="375"
+            ></iframe>
+          </figure>
+          <figure class="frame-text">
+            <figcaption>
+              Plain text part (<a href="email/sign-up-attempt.txt"
+                >sign-up-attempt.txt</a
+              >)
+            </figcaption>
+            <pre>
+Somebody asked for a new account on tidy notebook at notes.example.com with this address. The address already has an account, so nothing changed.
+
+To sign in, open this page:
+https://notes.example.com/login
+
+If you do not know your password, select Forgot password on that page.
+
+If you asked for the account yourself, you already have one. Otherwise, ignore this message.
+
+-- 
+tidy notebook at notes.example.com
+You get this message because somebody entered this address on notes.example.com.
+</pre>
+          </figure>
+        </div>
+      </section>
+
+      <section class="message" id="password-reset">
+        <header>
+          <p class="owner owner-core">Core</p>
+          <h2>Reset your password on tidy notebook at notes.example.com</h2>
+          <p class="meta">
+            Source: <code>passwordResetMessage</code>. Preheader: Choose a new
+            password. The link works once, for 1 hour.
+          </p>
+        </header>
+        <div class="frames">
+          <figure class="frame-desktop">
+            <figcaption>Desktop, light</figcaption>
+            <iframe
+              title="Reset your password on tidy notebook at notes.example.com, desktop, light"
+              src="email/password-reset.html"
+              loading="lazy"
+              class="mail light"
+              width="640"
+            ></iframe>
+          </figure>
+          <figure class="frame-desktop">
+            <figcaption>
+              Desktop, dark (client that reads the dark media query)
+            </figcaption>
+            <iframe
+              title="Reset your password on tidy notebook at notes.example.com, desktop, dark"
+              src="email/password-reset.html"
+              loading="lazy"
+              class="mail dark"
+              width="640"
+            ></iframe>
+          </figure>
+          <figure class="frame-mobile">
+            <figcaption>Mobile, light</figcaption>
+            <iframe
+              title="Reset your password on tidy notebook at notes.example.com, mobile, light"
+              src="email/password-reset.html"
+              loading="lazy"
+              class="mail light"
+              width="375"
+            ></iframe>
+          </figure>
+          <figure class="frame-mobile">
+            <figcaption>Mobile, dark</figcaption>
+            <iframe
+              title="Reset your password on tidy notebook at notes.example.com, mobile, dark"
+              src="email/password-reset.html"
+              loading="lazy"
+              class="mail dark"
+              width="375"
+            ></iframe>
+          </figure>
+          <figure class="frame-mobile">
+            <figcaption>
+              Mobile, forced inversion (approximation of a client that inverts
+              colours)
+            </figcaption>
+            <iframe
+              title="Reset your password on tidy notebook at notes.example.com, mobile, forced inversion"
+              src="email/password-reset.html"
+              loading="lazy"
+              class="mail light inverted"
+              width="375"
+            ></iframe>
+          </figure>
+          <figure class="frame-text">
+            <figcaption>
+              Plain text part (<a href="email/password-reset.txt"
+                >password-reset.txt</a
+              >)
+            </figcaption>
+            <pre>
+Somebody asked to reset the password of your account on tidy notebook at notes.example.com.
+
+Open this link to choose a new password:
+https://notes.example.com/reset-password#EXAMPLE-NOT-A-REAL-TOKEN
+
+The link works once, for 1 hour.
+
+If you did not ask for a new password, ignore this message. Your password does not change.
+
+-- 
+tidy notebook at notes.example.com
+You get this message because somebody asked for a password reset on notes.example.com.
+</pre>
+          </figure>
+        </div>
+      </section>
+
+      <section class="message" id="password-changed">
+        <header>
+          <p class="owner owner-core">Core</p>
+          <h2>Your password on tidy notebook at notes.example.com changed</h2>
+          <p class="meta">
+            Source: <code>passwordChangedMessage</code>. Preheader: Every device
+            that was signed in is signed out.
+          </p>
+        </header>
+        <div class="frames">
+          <figure class="frame-desktop">
+            <figcaption>Desktop, light</figcaption>
+            <iframe
+              title="Your password on tidy notebook at notes.example.com changed, desktop, light"
+              src="email/password-changed.html"
+              loading="lazy"
+              class="mail light"
+              width="640"
+            ></iframe>
+          </figure>
+          <figure class="frame-desktop">
+            <figcaption>
+              Desktop, dark (client that reads the dark media query)
+            </figcaption>
+            <iframe
+              title="Your password on tidy notebook at notes.example.com changed, desktop, dark"
+              src="email/password-changed.html"
+              loading="lazy"
+              class="mail dark"
+              width="640"
+            ></iframe>
+          </figure>
+          <figure class="frame-mobile">
+            <figcaption>Mobile, light</figcaption>
+            <iframe
+              title="Your password on tidy notebook at notes.example.com changed, mobile, light"
+              src="email/password-changed.html"
+              loading="lazy"
+              class="mail light"
+              width="375"
+            ></iframe>
+          </figure>
+          <figure class="frame-mobile">
+            <figcaption>Mobile, dark</figcaption>
+            <iframe
+              title="Your password on tidy notebook at notes.example.com changed, mobile, dark"
+              src="email/password-changed.html"
+              loading="lazy"
+              class="mail dark"
+              width="375"
+            ></iframe>
+          </figure>
+          <figure class="frame-mobile">
+            <figcaption>
+              Mobile, forced inversion (approximation of a client that inverts
+              colours)
+            </figcaption>
+            <iframe
+              title="Your password on tidy notebook at notes.example.com changed, mobile, forced inversion"
+              src="email/password-changed.html"
+              loading="lazy"
+              class="mail light inverted"
+              width="375"
+            ></iframe>
+          </figure>
+          <figure class="frame-text">
+            <figcaption>
+              Plain text part (<a href="email/password-changed.txt"
+                >password-changed.txt</a
+              >)
+            </figcaption>
+            <pre>
+The password of your account on tidy notebook at notes.example.com changed. Every device that was signed in is signed out.
+
+If you changed it, you need to do nothing.
+
+If you did not change it, reset your password at once on this page, and then tell an administrator:
+https://notes.example.com/forgot-password
+
+-- 
+tidy notebook at notes.example.com
+You get this message because the password of your account on notes.example.com changed.
+</pre>
+          </figure>
+        </div>
+      </section>
+
+      <section class="message" id="test-message">
+        <header>
+          <p class="owner owner-core">Core</p>
+          <h2>Test message from tidy notebook at notes.example.com</h2>
+          <p class="meta">
+            Source: <code>testMessage</code>. Preheader: The mail settings of
+            this installation work.
+          </p>
+        </header>
+        <div class="frames">
+          <figure class="frame-desktop">
+            <figcaption>Desktop, light</figcaption>
+            <iframe
+              title="Test message from tidy notebook at notes.example.com, desktop, light"
+              src="email/test-message.html"
+              loading="lazy"
+              class="mail light"
+              width="640"
+            ></iframe>
+          </figure>
+          <figure class="frame-desktop">
+            <figcaption>
+              Desktop, dark (client that reads the dark media query)
+            </figcaption>
+            <iframe
+              title="Test message from tidy notebook at notes.example.com, desktop, dark"
+              src="email/test-message.html"
+              loading="lazy"
+              class="mail dark"
+              width="640"
+            ></iframe>
+          </figure>
+          <figure class="frame-mobile">
+            <figcaption>Mobile, light</figcaption>
+            <iframe
+              title="Test message from tidy notebook at notes.example.com, mobile, light"
+              src="email/test-message.html"
+              loading="lazy"
+              class="mail light"
+              width="375"
+            ></iframe>
+          </figure>
+          <figure class="frame-mobile">
+            <figcaption>Mobile, dark</figcaption>
+            <iframe
+              title="Test message from tidy notebook at notes.example.com, mobile, dark"
+              src="email/test-message.html"
+              loading="lazy"
+              class="mail dark"
+              width="375"
+            ></iframe>
+          </figure>
+          <figure class="frame-mobile">
+            <figcaption>
+              Mobile, forced inversion (approximation of a client that inverts
+              colours)
+            </figcaption>
+            <iframe
+              title="Test message from tidy notebook at notes.example.com, mobile, forced inversion"
+              src="email/test-message.html"
+              loading="lazy"
+              class="mail light inverted"
+              width="375"
+            ></iframe>
+          </figure>
+          <figure class="frame-text">
+            <figcaption>
+              Plain text part (<a href="email/test-message.txt"
+                >test-message.txt</a
+              >)
+            </figcaption>
+            <pre>
+This message checks the mail settings of tidy notebook at notes.example.com.
+
+It arrived, so invitations, sign-up links and password resets can reach a person too.
+
+This message has an HTML part and a plain text part. Your mail program shows the part that it supports.
+
+If it is in your spam folder, check the SPF, DKIM and DMARC records of the domain of the sender.
+
+-- 
+tidy notebook at notes.example.com
+An administrator of notes.example.com sent this message from the mail settings.
+</pre>
+          </figure>
+        </div>
+      </section>
+
+      <section class="message" id="removal-30-days-portal">
+        <header>
+          <p class="owner owner-core">Core</p>
+          <h2>
+            Your account on tidy notebook at notes.example.com is deleted in 30
+            days
+          </h2>
+          <p class="meta">
+            Source:
+            <code>removalNoticeMessage (30 days, with an account portal)</code>.
+            Preheader: Your account is locked. Sign in to keep it or to export
+            your notes.
+          </p>
+        </header>
+        <div class="frames">
+          <figure class="frame-desktop">
+            <figcaption>Desktop, light</figcaption>
+            <iframe
+              title="Your account on tidy notebook at notes.example.com is deleted in 30 days, desktop, light"
+              src="email/removal-30-days-portal.html"
+              loading="lazy"
+              class="mail light"
+              width="640"
+            ></iframe>
+          </figure>
+          <figure class="frame-desktop">
+            <figcaption>
+              Desktop, dark (client that reads the dark media query)
+            </figcaption>
+            <iframe
+              title="Your account on tidy notebook at notes.example.com is deleted in 30 days, desktop, dark"
+              src="email/removal-30-days-portal.html"
+              loading="lazy"
+              class="mail dark"
+              width="640"
+            ></iframe>
+          </figure>
+          <figure class="frame-mobile">
+            <figcaption>Mobile, light</figcaption>
+            <iframe
+              title="Your account on tidy notebook at notes.example.com is deleted in 30 days, mobile, light"
+              src="email/removal-30-days-portal.html"
+              loading="lazy"
+              class="mail light"
+              width="375"
+            ></iframe>
+          </figure>
+          <figure class="frame-mobile">
+            <figcaption>Mobile, dark</figcaption>
+            <iframe
+              title="Your account on tidy notebook at notes.example.com is deleted in 30 days, mobile, dark"
+              src="email/removal-30-days-portal.html"
+              loading="lazy"
+              class="mail dark"
+              width="375"
+            ></iframe>
+          </figure>
+          <figure class="frame-mobile">
+            <figcaption>
+              Mobile, forced inversion (approximation of a client that inverts
+              colours)
+            </figcaption>
+            <iframe
+              title="Your account on tidy notebook at notes.example.com is deleted in 30 days, mobile, forced inversion"
+              src="email/removal-30-days-portal.html"
+              loading="lazy"
+              class="mail light inverted"
+              width="375"
+            ></iframe>
+          </figure>
+          <figure class="frame-text">
+            <figcaption>
+              Plain text part (<a href="email/removal-30-days-portal.txt"
+                >removal-30-days-portal.txt</a
+              >)
+            </figcaption>
+            <pre>
+Your account on tidy notebook at notes.example.com is locked. In 30 days, the account and every note in it are deleted for good.
+
+To keep the account, sign in on this page and open billing:
+https://notes.example.com/login
+
+To keep your notes without the account, sign in and select Export my notes.
+
+If you do not want the account, you need to do nothing.
+
+-- 
+tidy notebook at notes.example.com
+You get this message because your account on notes.example.com is locked.
+</pre>
+          </figure>
+        </div>
+      </section>
+
+      <section class="message" id="removal-7-days-administrator">
+        <header>
+          <p class="owner owner-core">Core</p>
+          <h2>
+            Your account on tidy notebook at notes.example.com is deleted in 7
+            days
+          </h2>
+          <p class="meta">
+            Source:
+            <code>removalNoticeMessage (7 days, no account portal)</code>.
+            Preheader: Your account is locked. Ask the administrator to unlock
+            it.
+          </p>
+        </header>
+        <div class="frames">
+          <figure class="frame-desktop">
+            <figcaption>Desktop, light</figcaption>
+            <iframe
+              title="Your account on tidy notebook at notes.example.com is deleted in 7 days, desktop, light"
+              src="email/removal-7-days-administrator.html"
+              loading="lazy"
+              class="mail light"
+              width="640"
+            ></iframe>
+          </figure>
+          <figure class="frame-desktop">
+            <figcaption>
+              Desktop, dark (client that reads the dark media query)
+            </figcaption>
+            <iframe
+              title="Your account on tidy notebook at notes.example.com is deleted in 7 days, desktop, dark"
+              src="email/removal-7-days-administrator.html"
+              loading="lazy"
+              class="mail dark"
+              width="640"
+            ></iframe>
+          </figure>
+          <figure class="frame-mobile">
+            <figcaption>Mobile, light</figcaption>
+            <iframe
+              title="Your account on tidy notebook at notes.example.com is deleted in 7 days, mobile, light"
+              src="email/removal-7-days-administrator.html"
+              loading="lazy"
+              class="mail light"
+              width="375"
+            ></iframe>
+          </figure>
+          <figure class="frame-mobile">
+            <figcaption>Mobile, dark</figcaption>
+            <iframe
+              title="Your account on tidy notebook at notes.example.com is deleted in 7 days, mobile, dark"
+              src="email/removal-7-days-administrator.html"
+              loading="lazy"
+              class="mail dark"
+              width="375"
+            ></iframe>
+          </figure>
+          <figure class="frame-mobile">
+            <figcaption>
+              Mobile, forced inversion (approximation of a client that inverts
+              colours)
+            </figcaption>
+            <iframe
+              title="Your account on tidy notebook at notes.example.com is deleted in 7 days, mobile, forced inversion"
+              src="email/removal-7-days-administrator.html"
+              loading="lazy"
+              class="mail light inverted"
+              width="375"
+            ></iframe>
+          </figure>
+          <figure class="frame-text">
+            <figcaption>
+              Plain text part (<a href="email/removal-7-days-administrator.txt"
+                >removal-7-days-administrator.txt</a
+              >)
+            </figcaption>
+            <pre>
+Your account on tidy notebook at notes.example.com is locked. In 7 days, the account and every note in it are deleted for good.
+
+To keep the account, ask the administrator of tidy notebook at notes.example.com to unlock it.
+
+You can sign in on this page:
+https://notes.example.com/login
+
+To keep your notes without the account, sign in and select Export my notes.
+
+If you do not want the account, you need to do nothing.
+
+-- 
+tidy notebook at notes.example.com
+You get this message because your account on notes.example.com is locked.
+</pre>
+          </figure>
+        </div>
+      </section>
+
+      <section class="message" id="cloud-plan-ended">
+        <header>
+          <p class="owner owner-cloud">Cloud concept, no change</p>
+          <h2>Your tidy notebook cloud plan ended</h2>
+          <p class="meta">
+            Source: <code>planEndNotice of the cloud (concept only)</code>.
+            Preheader: If you have a plan now, you do not need to act.
+          </p>
+        </header>
+        <div class="frames">
+          <figure class="frame-desktop">
+            <figcaption>Desktop, light</figcaption>
+            <iframe
+              title="Your tidy notebook cloud plan ended, desktop, light"
+              src="email/cloud-plan-ended.html"
+              loading="lazy"
+              class="mail light"
+              width="640"
+            ></iframe>
+          </figure>
+          <figure class="frame-desktop">
+            <figcaption>
+              Desktop, dark (client that reads the dark media query)
+            </figcaption>
+            <iframe
+              title="Your tidy notebook cloud plan ended, desktop, dark"
+              src="email/cloud-plan-ended.html"
+              loading="lazy"
+              class="mail dark"
+              width="640"
+            ></iframe>
+          </figure>
+          <figure class="frame-mobile">
+            <figcaption>Mobile, light</figcaption>
+            <iframe
+              title="Your tidy notebook cloud plan ended, mobile, light"
+              src="email/cloud-plan-ended.html"
+              loading="lazy"
+              class="mail light"
+              width="375"
+            ></iframe>
+          </figure>
+          <figure class="frame-mobile">
+            <figcaption>Mobile, dark</figcaption>
+            <iframe
+              title="Your tidy notebook cloud plan ended, mobile, dark"
+              src="email/cloud-plan-ended.html"
+              loading="lazy"
+              class="mail dark"
+              width="375"
+            ></iframe>
+          </figure>
+          <figure class="frame-mobile">
+            <figcaption>
+              Mobile, forced inversion (approximation of a client that inverts
+              colours)
+            </figcaption>
+            <iframe
+              title="Your tidy notebook cloud plan ended, mobile, forced inversion"
+              src="email/cloud-plan-ended.html"
+              loading="lazy"
+              class="mail light inverted"
+              width="375"
+            ></iframe>
+          </figure>
+          <figure class="frame-text">
+            <figcaption>
+              Plain text part (<a href="email/cloud-plan-ended.txt"
+                >cloud-plan-ended.txt</a
+              >)
+            </figcaption>
+            <pre>
+A plan that covered your account ended.
+
+If you have a plan now, you do not need to act.
+
+Without a plan, your account is locked. You can sign in and export your notes.
+
+To keep the account, start a plan before 90 days pass after the plan ended. After this time, the service removes the account and its data.
+
+To start a plan or export your notes, sign in on this page:
+https://app.tidynotebook.com/login
+
+-- 
+tidy notebook cloud
+You get this message because a plan of tidy notebook cloud covered your account.
+</pre>
+          </figure>
+        </div>
+      </section>
+    </main>
+    <script>
+      // Each frame shows one fixed appearance, whatever the appearance of
+      // this page: a dark frame applies the dark rules of the message, and a
+      // light frame drops them. Then the frame fits its message.
+      for (const frame of document.querySelectorAll('iframe.mail')) {
+        frame.addEventListener('load', () => {
+          const doc = frame.contentDocument;
+          if (!doc) return;
+          const query = frame.classList.contains('dark') ? 'all' : 'not all';
+          for (const style of doc.querySelectorAll('style'))
+            style.textContent = style.textContent.replace(
+              '@media (prefers-color-scheme: dark)',
+              '@media ' + query,
+            );
+          frame.style.height = '200px';
+          frame.style.height = doc.body.scrollHeight + 2 + 'px';
+        });
+      }
+    </script>
+  </body>
+</html>
