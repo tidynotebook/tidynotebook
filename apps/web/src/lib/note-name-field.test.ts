@@ -1,29 +1,22 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { touchFieldText } from '@notesapp/ui';
-import {
-  noteNameFieldClassName,
-  noteNameFieldMaximum,
-  noteNameFieldMinimum,
-  noteNameFieldSize,
-} from './note-name-field.ts';
+import { noteNameFieldClassName } from './note-name-field.ts';
 
-await test('the field is as wide as the name and no wider', () => {
-  assert.equal(noteNameFieldSize('Meeting notes'), 'Meeting notes'.length);
+await test('the field follows rendered text without a character minimum', () => {
   const classes = noteNameFieldClassName().split(' ');
-  // A field that took the free width of the header drew its hover fill over
-  // a thousand pixels of empty row. The width comes from the name.
+  // Native character-count sizing leaves a tail after narrow text.
+  // Let the browser fit the actual glyphs and caret instead.
+  assert.ok(classes.includes('field-sizing-content'));
+  assert.deepEqual(
+    classes.filter((name) => name.startsWith('min-w-')),
+    ['min-w-0'],
+  );
   assert.ok(classes.includes('w-auto'));
   assert.ok(!classes.includes('w-full'));
 });
 
-await test('a short name keeps the width of the placeholder', () => {
-  assert.equal(noteNameFieldSize(''), noteNameFieldMinimum);
-  assert.equal(noteNameFieldSize('Ab'), noteNameFieldMinimum);
-});
-
 await test('a long name stops at the width the header can hold', () => {
-  assert.equal(noteNameFieldSize('x'.repeat(500)), noteNameFieldMaximum);
   const classes = noteNameFieldClassName().split(' ');
   // The header holds it too, and the name ends in an ellipsis rather than
   // pushing Search off the row.

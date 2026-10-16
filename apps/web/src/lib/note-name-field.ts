@@ -12,10 +12,10 @@
  *
  * The field is as wide as the name and no wider. A field that took the free
  * width of the header drew its hover fill across a thousand pixels of empty
- * row, which reads as a control and not as a name. The native `size`
- * attribute states the width in characters, so the browser measures the face
- * and no script measures anything, and `max-w-full` holds the field inside
- * the room the breadcrumb leaves it.
+ * row, which reads as a control and not as a name. `field-sizing: content`
+ * follows the rendered text, including proportional character widths and
+ * room for the caret. `max-w-full` holds the field inside the room that the
+ * breadcrumb leaves it. An empty field follows its placeholder.
  *
  * The field has 4 px of padding on each side, so the hover fill has space
  * around the name. The text stays on the breadcrumb baseline.
@@ -27,26 +27,7 @@
  */
 import { focusOutline, touchFieldText, transitionSurface } from '@notesapp/ui';
 
-/** The fewest characters the field is wide, which is its placeholder. */
-export const noteNameFieldMinimum = 9;
-
-/** The most characters the field is wide before the header holds it. */
-export const noteNameFieldMaximum = 80;
-
-/**
- * How many characters wide the field is for one name.
- *
- * The browser turns this into a width from the face it renders, which is
- * why the field follows the name with no measurement of its own.
- */
-export function noteNameFieldSize(name: string): number {
-  return Math.min(
-    Math.max(name.length, noteNameFieldMinimum),
-    noteNameFieldMaximum,
-  );
-}
-
 /** The classes of the inline editable note name in the frame header. */
 export function noteNameFieldClassName(): string {
-  return `w-auto min-w-0 max-w-full truncate rounded-md border-0 bg-transparent px-1 py-1 text-ui ${touchFieldText} font-medium text-strong outline-none ${transitionSurface} hover:bg-hover ${focusOutline}`;
+  return `field-sizing-content w-auto min-w-0 max-w-full truncate rounded-md border-0 bg-transparent px-1 py-1 text-ui ${touchFieldText} font-medium text-strong outline-none ${transitionSurface} hover:bg-hover ${focusOutline}`;
 }

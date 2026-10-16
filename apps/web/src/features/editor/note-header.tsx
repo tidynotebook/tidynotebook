@@ -15,10 +15,7 @@
  * message on the note and this field points at it.
  */
 import { useRef, type ReactNode } from 'react';
-import {
-  noteNameFieldClassName,
-  noteNameFieldSize,
-} from '../../lib/note-name-field.ts';
+import { noteNameFieldClassName } from '../../lib/note-name-field.ts';
 import { noteNameInputPolicy } from '../../lib/note-name-input.ts';
 import { noteNameKey } from '../../lib/note-name-commit.ts';
 import { HeaderLeaf } from '../../shell/header-slot.tsx';
@@ -68,9 +65,6 @@ export function NoteHeader({
         id={`notes-path-${fileId}`}
         className={noteNameFieldClassName()}
         type="text"
-        // The field follows the name, so the hover fill covers the words and
-        // not the free width of the header.
-        size={noteNameFieldSize(name)}
         value={name}
         {...noteNameInputPolicy()}
         aria-label="Note name"
