@@ -305,22 +305,25 @@ The draft and the queued saves of the person stay intact
 
 ## Verification
 
-Unit tests in `packages/note-document` prove the range edit: repeated
+No test below exists yet. The implementation adds each one as planned
+coverage.
+
+Unit tests in `packages/note-document` must prove the range edit: repeated
 characters, edits applied from the last offset to the first, overlapping
 ranges, ranges outside the text, a split Unicode pair, and the bounds. One
 case starts from `aba`, deletes the range of `ab` in one session, replaces
 the last `a` with `X` in another session, and merges both to `X`.
 
-Unit tests in `apps/server/src/mcp/write-tools.test.ts` prove the input
+Unit tests in `apps/server/src/mcp/write-tools.test.ts` must prove the input
 schemas, the anchor and heading rules, the order of a patch list, the refusal
-of overlapping changes, and the shape of the one changeset. They prove both
+of overlapping changes, and the shape of the one changeset. They must prove both
 line break rules, including an append to an empty note, which adds no line
 break before its text, and a section append before the next heading, which
-keeps that heading on its own line. They prove that a used identity ends the
+keeps that heading on its own line. They must prove that a used identity ends the
 call before any note read, and that the probe digest depends only on the
 input.
 
-Integration tests in `tests/integration/mcp-endpoint.test.ts` prove:
+Integration tests in `tests/integration/mcp-endpoint.test.ts` must prove:
 
 - an append that commits while another device saves an edit of the same note,
   with the text of both in the head;
@@ -347,7 +350,7 @@ Integration tests in `tests/integration/mcp-endpoint.test.ts` prove:
 - a new document generation between the read and the commit;
 - a read grant that gets the challenge for write.
 
-A browser check proves that an append appears in the open note in light and
+A browser check must prove that an append appears in the open note in light and
 in dark, with the caret kept and with no entry in local undo.
 
 ## Compatibility
