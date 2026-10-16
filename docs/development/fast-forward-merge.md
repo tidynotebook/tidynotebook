@@ -35,8 +35,9 @@ holds the shape of both workflow files.
   the script refuses anything but a positive integer and a full lowercase SHA.
 - The manual job uses `GITHUB_TOKEN` with write access to contents and read
   access to pull requests, checks and statuses. It uses no other credential.
-- One concurrency group holds every run of both workflows, and a run never
-  cancels another.
+- One concurrency group holds every run of both workflows. It never cancels
+  a running job, and its `max` queue keeps the pending jobs in order, so a new
+  request does not cancel an earlier one that waits.
 
 ## Gates
 
@@ -122,8 +123,10 @@ A custom button needs a GitHub App and its own key, see
   `Lint` from the GitHub Actions app, a pull request with resolved threads and
   rebase merges only, no required approval, and no bypass actor. Classic branch
   protection answers "not found", which does not mean that `main` is open.
-- The ruleset accepts the compare and swap from `GITHUB_TOKEN` for the head of
-  an open pull request, and GitHub then shows the pull request as merged. If
+- A real run of the manual workflow showed that the ruleset accepts the
+  compare and swap from `GITHUB_TOKEN` for the head of an open pull request,
+  and that GitHub then shows the pull request as merged. The comment workflow
+  sends the same write, but it has not run on a real pull request yet. If
   GitHub refuses a write, the job fails and shows the refusal. Nobody relaxes
   a rule to make it pass.
 - The rebase merge button is not a fast forward: it writes new commits, so

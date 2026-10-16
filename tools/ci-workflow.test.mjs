@@ -71,6 +71,7 @@ await test('the fast forward workflow runs trusted code by hand with narrow acce
   assert.deepEqual(workflow.concurrency, {
     group: 'ff-only-main',
     'cancel-in-progress': false,
+    queue: 'max',
   });
   const jobs = Object.values(record(workflow.jobs)).map(record);
   assert.equal(jobs.length, 1);
@@ -133,6 +134,7 @@ await test('the comment workflow runs trusted code on new comments with narrow a
   assert.deepEqual(job.concurrency, {
     group: 'ff-only-main',
     'cancel-in-progress': false,
+    queue: 'max',
   });
   assert.ok(typeof job['timeout-minutes'] === 'number');
   assert.equal(job.permissions, undefined);

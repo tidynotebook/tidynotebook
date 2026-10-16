@@ -27,6 +27,7 @@ jobs:
     concurrency:
       group: ff-only-main
       cancel-in-progress: false
+      queue: max
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
