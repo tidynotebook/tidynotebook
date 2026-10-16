@@ -1,25 +1,34 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { touchFieldText } from '@notesapp/ui';
-import { noteNameFieldClassName } from './note-name-field.ts';
+import {
+  noteNameFieldClassName,
+  noteNameFieldContainer,
+  noteNameFieldMeasure,
+  noteNameFieldText,
+} from './note-name-field.ts';
 
-await test('the field follows rendered text without a character minimum', () => {
-  const classes = noteNameFieldClassName().split(' ');
-  // Native character-count sizing leaves a tail after narrow text.
-  // Let the browser fit the actual glyphs and caret instead.
-  assert.ok(classes.includes('field-sizing-content'));
-  assert.deepEqual(
-    classes.filter((name) => name.startsWith('min-w-')),
-    ['min-w-0'],
-  );
-  assert.ok(classes.includes('w-auto'));
-  assert.ok(!classes.includes('w-full'));
+await test('the rendered text sets the width and leaves room for the caret', () => {
+  // A character count gives narrow glyphs the same width as wide glyphs.
+  // The hidden span uses the input font and padding instead.
+  const input = noteNameFieldClassName();
+  assert.ok(input.includes(noteNameFieldText));
+  assert.ok(noteNameFieldMeasure.includes(noteNameFieldText));
+  const measure = noteNameFieldMeasure.split(' ');
+  assert.ok(measure.includes('whitespace-pre'));
+  assert.ok(measure.includes('after:w-px'));
+  assert.ok(measure.includes('invisible'));
+  // The input fills the span without contributing its native preferred width.
+  assert.ok(input.split(' ').includes('absolute'));
+  assert.ok(input.split(' ').includes('w-full'));
 });
 
 await test('a long name stops at the width the header can hold', () => {
   const classes = noteNameFieldClassName().split(' ');
   // The header holds it too, and the name ends in an ellipsis rather than
   // pushing Search off the row.
+  assert.ok(noteNameFieldContainer.split(' ').includes('max-w-full'));
+  assert.ok(noteNameFieldContainer.split(' ').includes('min-w-0'));
   assert.ok(classes.includes('max-w-full'));
   assert.ok(classes.includes('min-w-0'));
   assert.ok(classes.includes('truncate'));

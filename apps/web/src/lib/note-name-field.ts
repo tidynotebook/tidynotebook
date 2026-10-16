@@ -12,10 +12,11 @@
  *
  * The field is as wide as the name and no wider. A field that took the free
  * width of the header drew its hover fill across a thousand pixels of empty
- * row, which reads as a control and not as a name. `field-sizing: content`
- * follows the rendered text, including proportional character widths and
- * room for the caret. `max-w-full` holds the field inside the room that the
- * breadcrumb leaves it. An empty field follows its placeholder.
+ * row, which reads as a control and not as a name. A hidden text span sets
+ * the width from the same font and text as the input, plus 1 px for the caret.
+ * This works without native content sizing in older browsers. `max-w-full`
+ * holds the field inside the room that the breadcrumb leaves it. An empty
+ * field follows its placeholder.
  *
  * The field has 4 px of padding on each side, so the hover fill has space
  * around the name. The text stays on the breadcrumb baseline.
@@ -27,7 +28,19 @@
  */
 import { focusOutline, touchFieldText, transitionSurface } from '@notesapp/ui';
 
+/** The text shown when the note has no name. */
+export const noteNameFieldPlaceholder = 'Note name';
+
+/** Both the input and its width span must use the same text metrics. */
+export const noteNameFieldText = `px-1 py-1 text-ui ${touchFieldText} font-medium`;
+
+/** The span sets the width without a character minimum or script measurement. */
+export const noteNameFieldContainer = 'relative inline-grid min-w-0 max-w-full';
+
+/** Keep the width span out of sight and leave 1 px for the input caret. */
+export const noteNameFieldMeasure = `invisible overflow-hidden whitespace-pre ${noteNameFieldText} after:inline-block after:w-px after:content-['']`;
+
 /** The classes of the inline editable note name in the frame header. */
 export function noteNameFieldClassName(): string {
-  return `field-sizing-content w-auto min-w-0 max-w-full truncate rounded-md border-0 bg-transparent px-1 py-1 text-ui ${touchFieldText} font-medium text-strong outline-none ${transitionSurface} hover:bg-hover ${focusOutline}`;
+  return `absolute inset-0 w-full min-w-0 max-w-full truncate rounded-md border-0 bg-transparent ${noteNameFieldText} text-strong outline-none ${transitionSurface} hover:bg-hover ${focusOutline}`;
 }

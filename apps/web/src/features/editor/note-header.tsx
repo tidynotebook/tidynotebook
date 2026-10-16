@@ -15,7 +15,12 @@
  * message on the note and this field points at it.
  */
 import { useRef, type ReactNode } from 'react';
-import { noteNameFieldClassName } from '../../lib/note-name-field.ts';
+import {
+  noteNameFieldClassName,
+  noteNameFieldContainer,
+  noteNameFieldMeasure,
+  noteNameFieldPlaceholder,
+} from '../../lib/note-name-field.ts';
 import { noteNameInputPolicy } from '../../lib/note-name-input.ts';
 import { noteNameKey } from '../../lib/note-name-commit.ts';
 import { HeaderLeaf } from '../../shell/header-slot.tsx';
@@ -60,38 +65,46 @@ export function NoteHeader({
 
   return (
     <HeaderLeaf>
-      <input
-        ref={nameInputRef ?? fallbackRef}
-        id={`notes-path-${fileId}`}
-        className={noteNameFieldClassName()}
-        type="text"
-        value={name}
-        {...noteNameInputPolicy()}
-        aria-label="Note name"
-        aria-invalid={nameError !== ''}
-        aria-describedby={
-          nameError === '' ? undefined : noteNameErrorId(fileId)
-        }
-        placeholder="Note name"
-        onChange={(event): void => onNameChange(event.target.value)}
-        onFocus={(event): void => {
-          if (!selectOnFocus.current) return;
-          selectOnFocus.current = false;
-          event.currentTarget.select();
-        }}
-        onBlur={(): void => {
-          onNameCommit();
-        }}
-        onKeyDown={(event): void => {
-          const action = noteNameKey(event.key, event.nativeEvent.isComposing);
-          if (action === null) return;
-          event.preventDefault();
-          if (action === 'revert') onNameRevert();
-          // A refused name keeps the caret here, beside its reason.
-          else if (!onNameCommit()) return;
-          onNameDone();
-        }}
-      />
+      <span className={noteNameFieldContainer}>
+        <span aria-hidden="true" className={noteNameFieldMeasure}>
+          {name || noteNameFieldPlaceholder}
+        </span>
+        <input
+          ref={nameInputRef ?? fallbackRef}
+          id={`notes-path-${fileId}`}
+          className={noteNameFieldClassName()}
+          type="text"
+          value={name}
+          {...noteNameInputPolicy()}
+          aria-label="Note name"
+          aria-invalid={nameError !== ''}
+          aria-describedby={
+            nameError === '' ? undefined : noteNameErrorId(fileId)
+          }
+          placeholder={noteNameFieldPlaceholder}
+          onChange={(event): void => onNameChange(event.target.value)}
+          onFocus={(event): void => {
+            if (!selectOnFocus.current) return;
+            selectOnFocus.current = false;
+            event.currentTarget.select();
+          }}
+          onBlur={(): void => {
+            onNameCommit();
+          }}
+          onKeyDown={(event): void => {
+            const action = noteNameKey(
+              event.key,
+              event.nativeEvent.isComposing,
+            );
+            if (action === null) return;
+            event.preventDefault();
+            if (action === 'revert') onNameRevert();
+            // A refused name keeps the caret here, beside its reason.
+            else if (!onNameCommit()) return;
+            onNameDone();
+          }}
+        />
+      </span>
     </HeaderLeaf>
   );
 }
