@@ -16,7 +16,7 @@ await test('the rendered text sets the width and leaves room for the caret', () 
   assert.ok(noteNameFieldMeasure.includes(noteNameFieldText));
   const measure = noteNameFieldMeasure.split(' ');
   assert.ok(measure.includes('whitespace-pre'));
-  assert.ok(measure.includes('after:w-px'));
+  assert.ok(measure.includes('border-r'));
   assert.ok(measure.includes('invisible'));
   // The input fills the span without contributing its native preferred width.
   assert.ok(input.split(' ').includes('absolute'));

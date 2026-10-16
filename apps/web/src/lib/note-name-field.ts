@@ -38,7 +38,7 @@ export const noteNameFieldText = `px-1 py-1 text-ui ${touchFieldText} font-mediu
 export const noteNameFieldContainer = 'relative inline-grid min-w-0 max-w-full';
 
 /** Keep the width span out of sight and leave 1 px for the input caret. */
-export const noteNameFieldMeasure = `invisible overflow-hidden whitespace-pre ${noteNameFieldText} after:inline-block after:w-px after:content-['']`;
+export const noteNameFieldMeasure = `invisible overflow-hidden whitespace-pre border-r border-transparent ${noteNameFieldText}`;
 
 /** The classes of the inline editable note name in the frame header. */
 export function noteNameFieldClassName(): string {
