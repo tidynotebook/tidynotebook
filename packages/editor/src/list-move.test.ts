@@ -88,6 +88,44 @@ await test('a task item keeps its box and its state', () => {
   );
 });
 
+await test('a pointer reorder does not ask to scroll to a distant selection', () => {
+  const tasks = Array.from(
+    { length: 100 },
+    (_, index) => `- [ ] task ${String(index)}`,
+  ).join('\n');
+  const state = stateOf(`${tasks}\n\nReading place‸`);
+  const spec = moveListItemSpec(state, state.doc.line(2).from, 4);
+  assert.notEqual(spec, null);
+  const transaction = state.update(
+    editingTransaction({ ...spec, scrollIntoView: false }),
+  );
+  assert.equal(transaction.scrollIntoView, false);
+  assert.equal(transaction.isUserEvent('input.format'), true);
+  assert.equal(transaction.state.doc.line(5).text, '- [ ] task 1');
+  assert.deepEqual(transaction.state.selection, state.selection);
+  let restored = transaction.state;
+  assert.equal(
+    undo({
+      state: restored,
+      dispatch: (undone) => {
+        restored = undone.state;
+      },
+    }),
+    true,
+  );
+  assert.equal(restored.doc.toString(), state.doc.toString());
+  assert.deepEqual(restored.selection, state.selection);
+});
+
+await test('a keyboard item move still asks to show the moved caret', () => {
+  const state = stateOf('- [ ] first‸\n- [ ] second');
+  const spec = moveListItemDownSpec(state);
+  assert.notEqual(spec, null);
+  const transaction = state.update(editingTransaction(spec ?? {}));
+  assert.equal(transaction.scrollIntoView, true);
+  assert.equal(marked(transaction.state), '- [ ] second\n- [ ] first‸');
+});
+
 await test('an item moves with its later lines and its children', () => {
   assert.equal(
     move('- a\n- b‸\n  more of b\n  - child\n- c', 2),

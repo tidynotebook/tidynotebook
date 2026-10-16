@@ -26,8 +26,8 @@ import type { EditorView } from '@codemirror/view';
  * where it was. Typing one character needs no flag, because that change
  * arrives through the DOM and CodeMirror sets the flag itself.
  *
- * The flag scrolls nothing when the caret is already in view, so one rule
- * covers every command and no command decides for itself.
+ * Pointer edits can keep a selection outside the viewport. They can opt out
+ * of caret scrolling to keep the place where the person dropped an item.
  */
 export function editingTransaction(spec: TransactionSpec): TransactionSpec {
   // A command that names its own event, such as a toggle of a task box,
@@ -35,7 +35,7 @@ export function editingTransaction(spec: TransactionSpec): TransactionSpec {
   return {
     ...spec,
     userEvent: spec.userEvent ?? 'input.format',
-    scrollIntoView: true,
+    scrollIntoView: spec.scrollIntoView ?? true,
   };
 }
 

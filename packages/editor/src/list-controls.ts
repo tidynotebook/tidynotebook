@@ -215,7 +215,13 @@ class ListControls {
     if (step === 'end' && drag.moving && drag.to !== drag.from) {
       const spec = moveListItemSpec(this.view.state, drag.pos, drag.to);
       if (spec !== null) {
-        this.view.dispatch(this.view.state.update(editingTransaction(spec)));
+        // The grip keeps the selection, which can be far from the drop.
+        // Keep the reading place instead of scrolling to that selection.
+        this.view.dispatch(
+          this.view.state.update(
+            editingTransaction({ ...spec, scrollIntoView: false }),
+          ),
+        );
         this.view.focus();
       }
     }
