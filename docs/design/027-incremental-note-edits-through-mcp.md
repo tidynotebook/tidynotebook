@@ -316,12 +316,12 @@ the last `a` with `X` in another session, and merges both to `X`.
 
 Unit tests in `apps/server/src/mcp/write-tools.test.ts` must prove the input
 schemas, the anchor and heading rules, the order of a patch list, the refusal
-of overlapping changes, and the shape of the one changeset. They must prove both
-line break rules, including an append to an empty note, which adds no line
-break before its text, and a section append before the next heading, which
-keeps that heading on its own line. They must prove that a used identity ends the
-call before any note read, and that the probe digest depends only on the
-input.
+of overlapping changes, and the shape of the one changeset. They must prove
+both line break rules, including an append to an empty note, which adds no
+line break before its text, and a section append before the next heading,
+which keeps that heading on its own line. They must prove that a used
+identity ends the call before any note read, and that the probe digest
+depends only on the input.
 
 Integration tests in `tests/integration/mcp-endpoint.test.ts` must prove:
 
