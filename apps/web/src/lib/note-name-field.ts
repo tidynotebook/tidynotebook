@@ -17,8 +17,8 @@
  * and no script measures anything, and `max-w-full` holds the field inside
  * the room the breadcrumb leaves it.
  *
- * The field has no inline padding, so the name starts on the same pixel as
- * the folder part before it and the whole path reads as one line.
+ * The field has 4 px of padding on each side, so the hover fill has space
+ * around the name. The text stays on the breadcrumb baseline.
  *
  * Under touch the name takes the touch step of every field, so Safari on iOS
  * does not zoom the page into the header on a tap.
@@ -48,5 +48,5 @@ export function noteNameFieldSize(name: string): number {
 
 /** The classes of the inline editable note name in the frame header. */
 export function noteNameFieldClassName(): string {
-  return `w-auto min-w-0 max-w-full truncate rounded-md border-0 bg-transparent py-1 text-ui ${touchFieldText} font-medium text-strong outline-none ${transitionSurface} hover:bg-hover ${focusOutline}`;
+  return `w-auto min-w-0 max-w-full truncate rounded-md border-0 bg-transparent px-1 py-1 text-ui ${touchFieldText} font-medium text-strong outline-none ${transitionSurface} hover:bg-hover ${focusOutline}`;
 }

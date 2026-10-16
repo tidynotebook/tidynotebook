@@ -60,11 +60,11 @@ await test('the name field carries no box and no line in any state', () => {
   assert.ok(classes.includes('focus-visible:outline-focus'));
 });
 
-await test('the name field starts where the folder before it starts', () => {
+await test('the name field has equal padding on both sides', () => {
   const classes = noteNameFieldClassName().split(' ');
-  // No inline padding, so the whole path reads as one line.
-  assert.ok(!classes.some((name) => name.startsWith('px-')));
+  assert.ok(classes.includes('px-1'));
   assert.ok(!classes.some((name) => name.startsWith('pl-')));
+  assert.ok(!classes.some((name) => name.startsWith('pr-')));
 });
 
 await test('the name field sets its text at 16 px under touch', () => {
