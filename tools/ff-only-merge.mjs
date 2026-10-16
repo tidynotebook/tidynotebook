@@ -55,7 +55,7 @@ export const integer = (value) =>
   typeof value === 'number' && Number.isSafeInteger(value) ? value : null;
 
 /** @param {string} value */
-export const isSha = (value) => /^[0-9a-f]{40}$/.test(value);
+const isSha = (value) => /^[0-9a-f]{40}$/.test(value);
 
 /** @param {string} sha */
 export const short = (sha) => sha.slice(0, 12);
@@ -514,7 +514,7 @@ export function githubClient({ token, apiUrl, graphqlUrl, fetch }) {
     });
   return {
     /**
-     * One REST write. It returns the status and the parsed body.
+     * One REST write. It returns the status and the raw body.
      *
      * @param {string} method
      * @param {string} path
