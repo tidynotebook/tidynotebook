@@ -98,9 +98,18 @@ of a heading line. The tool finds headings with the Markdown parser of
 `packages/markdown`, not with a line match, so a line inside a code block is
 not a heading. The section ends before the next heading of the same level or
 a higher level. A heading that occurs more than once, or not at all,
-refuses the call. The tool adds a line break before the text when the text
-before the insert point does not end with one, so an append always starts a
-new line.
+refuses the call. An append is always whole lines, so the tool adds line
+breaks by two rules.
+
+- It adds a line break before the text when the text before the insert point
+  does not end with one.
+- It adds a line break after the text when text follows the insert point and
+  the appended text does not end with one. A section append inserts before the
+  line of the next heading, so this rule keeps that heading on its own line.
+  With `# A`, `body` and `# B` on three lines, an append of `new item` to
+  section A gives `new item` on its own line before `# B`.
+
+`patch_note` adds no line breaks. Its text is exact.
 
 **`patch_note`** applies an ordered list of changes in one revision. Each
 change is one of these:
@@ -133,13 +142,35 @@ no longer a precondition. It has two purposes.
 
 The guard against an edit of unseen text moves from the whole note to the
 span. The anchor is text that the assistant names exactly, and the check of
-the anchor runs against the head that the tool reads. An insert removes
-nothing. A replacement removes only the characters of the anchor in that
-head, because a Yjs deletion names the identities of the characters that it
-removes. A character that the person inserts inside the span after the read
-has a new identity, so the replacement does not remove it. The result can
-then hold the new text of the assistant and the new characters of the person
-side by side. The design does not promise more than this.
+the anchor runs against the head that the tool reads. The tool resolves each
+anchor to an offset and a length in that head. An insert removes nothing. A
+replacement removes only the characters of that range, because a Yjs
+deletion names the identities of the characters that it removes. A character
+that the person inserts inside the range after the read has a new identity,
+so the replacement does not remove it. The result can then hold the new text
+of the assistant and the new characters of the person side by side. The
+design does not promise more than this.
+
+This property needs a range edit. The existing document service cannot give
+it. `replaceDocumentText` in `packages/note-document/src/document.ts` takes a
+whole new text and computes a character difference against the current text.
+With repeated characters, that difference can delete other identities than
+the resolved range. For the source `aba` and the deletion of the unique
+anchor `ab`, the difference keeps the first `a` and deletes `ba`, which
+includes the last `a` outside the anchor. When another device replaces that
+last `a` with `X` at the same time, the merge gives `aX`. A deletion of the
+exact range gives `X`. An insert has the same problem, because the difference
+can place new text next to another copy of the same characters.
+
+So the implementation adds a bounded range edit to `packages/note-document`.
+It takes a document and a list of edits, each an offset, a length and a text,
+resolved against the text of that document. It applies them in one
+transaction directly at their offsets, from the last offset to the first, so
+an earlier edit does not move a later one. It refuses ranges that overlap,
+ranges outside the text, ranges that split a Unicode pair, and a list or a
+result past its bounds. The document service of `packages/storage-server`
+exposes it. The new tools use only this edit. This pull request does not add
+it.
 
 ## Retries and receipts
 
@@ -155,24 +186,52 @@ is a new call.
 The update bytes of a retry are not the same as the first bytes, because each
 document session has a new client identity
 ([record 0082](../decisions/0082-yjs-has-a-byte-api-and-a-private-editor-bridge.md)).
-The request digest covers the body, so it differs too. The commit of a retry
-therefore gets `mutation_reused`, and the tool uses that fact.
+The request digest covers the body, so it differs too. The tool therefore
+cannot know the digest of the first request, and it must not build a request
+before it knows whether the call already wrote. A replacement can remove its
+own anchor, and a note can move to Trash or be purged after the first commit.
+A retry that read the note first would then fail its anchor check, or find no
+note, and never learn that it succeeded. `readMutationReceipt` in
+`packages/core/src/files/read.ts` reads a receipt before the current head for
+the same reason.
 
-1. The tool builds the request and its digest through the request digest of
-   `packages/core/src/files/digest.ts`. It then reads the receipt of its
-   identity and that digest through `getMutationReceipt`. A status other
-   than absent means that this call already wrote. The tool sends nothing.
-   It returns the current head with an answer that says the change was
-   already made.
-2. Two copies of one call can both find no receipt. The first commit wins.
-   The workspace lock orders them, so the second finds the receipt of the
-   first and gets `mutation_reused`. The tool then answers as in step 1. Both
-   `mutation_reused` and `epoch_mismatch` answer a conflict, so the tool reads
-   the code of the problem and not only the status.
-3. A refused changeset writes no receipt. The tool can read the head again
+The lookup uses a probe digest. `getMutationReceipt` answers `absent` when
+the account holds no receipt for the identity, and `other_request` when it
+holds one with another digest. So any digest that can never be the digest of
+a changeset tells the tool whether the identity was used. The probe digest is
+the request digest of `packages/core/src/files/digest.ts` over a reserved
+operation name of the tool and its canonical input. A changeset digest always
+names `commitChangeset`, so the probe never matches one. The tool computes the
+probe from its input alone, before it reads anything.
+
+1. The tool checks its input schema. It derives the mutation identity and the
+   probe digest from the input.
+2. It reads the receipt through `getMutationReceipt`. This checks the write
+   right of the actor on the workspace, before any read of the note. A status
+   other than `absent` means that this call already wrote. The tool ends the
+   call there. It reads no note, checks no anchor, builds no update and sends
+   no changeset.
+3. Only for `absent` does the tool read the head, check the anchors, build
+   the update and commit.
+4. Two copies of one call can both find `absent`. The workspace lock orders
+   their commits, so the second finds the receipt of the first and gets
+   `mutation_reused`. The tool then ends as in step 2. Both `mutation_reused`
+   and `epoch_mismatch` answer a conflict, so the tool reads the code of the
+   problem and not only the status.
+5. A refused changeset writes no receipt. The tool can read the head again
    and build again under the same identity. It does this once for a new
    document generation ([record 0084](../decisions/0084-compaction-keeps-identities-and-recovery-keeps-original-work.md)),
    and then it refuses.
+
+A call that ends at step 2 or step 4 is a success. Its answer names the
+workspace and the file from the input, says that the change was made by an
+earlier attempt, and sets `changed` to false. It carries no version and no
+text. The probe answer holds no outcome, and the note can be in Trash or gone,
+so the tool states no state of the note. The answer is the same in each of
+these cases. It tells the client to read the note for its current version
+and not to send the change again. A read of a note in Trash or a purged note
+then says that the note is not available. A workspace that no longer exists,
+or a lost write right, refuses at step 2 with the existing tool errors.
 
 This deduplicates a retry of one call. It cannot tell a retry from a second
 call that has the same input and the same version. The tool treats both as
@@ -212,7 +271,7 @@ The draft and the queued saves of the person stay intact
 - Each accepted call is one version in History. An assistant that appends
   many small lines makes many versions. The request bounds of record 0227
   limit the rate.
-- The delegation of each new tool names `getFile`, `getMutationReceipt` and
+- The delegation of each new tool names `getMutationReceipt`, `getFile` and
   `commitChangeset`. A unit test must prove that the tool code builds one
   revision of one note and no other change.
 - The input text has the bound of the existing write tools. The update has
@@ -225,14 +284,24 @@ The draft and the queued saves of the person stay intact
   (record 0134), so a merged task box can differ from the text of the call.
 - `tools/check-boundaries.mjs` already limits Yjs to `packages/note-document`.
   The tools build every update through the document service of
-  `packages/storage-server`, as `edit_note` does.
+  `packages/storage-server`, with the range edit above. They do not use the
+  whole text replacement that `edit_note` uses.
 
 ## Verification
 
+Unit tests in `packages/note-document` prove the range edit: repeated
+characters, edits applied from the last offset to the first, overlapping
+ranges, ranges outside the text, a split Unicode pair, and the bounds. One
+case starts from `aba`, deletes the range of `ab` in one session, replaces
+the last `a` with `X` in another session, and merges both to `X`.
+
 Unit tests in `apps/server/src/mcp/write-tools.test.ts` prove the input
-schemas, the anchor and heading rules, the line break rule, the order of a
-patch list, the refusal of overlapping changes, and the shape of the one
-changeset.
+schemas, the anchor and heading rules, the order of a patch list, the refusal
+of overlapping changes, and the shape of the one changeset. They prove both
+line break rules, including a section append before the next heading, which
+keeps that heading on its own line. They prove that a used identity ends the
+call before any note read, and that the probe digest depends only on the
+input.
 
 Integration tests in `tests/integration/mcp-endpoint.test.ts` prove:
 
@@ -242,6 +311,12 @@ Integration tests in `tests/integration/mcp-endpoint.test.ts` prove:
   characters of the device in the head;
 - a repeated call, a lost answer and two concurrent copies of one call, each
   with one write;
+- a lost answer after a replacement that removed its own anchor, where the
+  retry ends with the earlier attempt answer and writes nothing;
+- a lost answer followed by a move to Trash, and by a purge, where the retry
+  ends the same way;
+- a concurrent device edit next to repeated characters, where the merge
+  keeps the result of the exact range;
 - a move to Trash between the read and the commit, which brings the note
   back with both versions in History;
 - a rename between the read and the commit, which keeps the new path;
