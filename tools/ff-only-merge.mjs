@@ -45,20 +45,20 @@ export class GateError extends Error {
 }
 
 /** @param {unknown} value @returns {unknown[]} */
-const list = (value) => (Array.isArray(value) ? value : []);
+export const list = (value) => (Array.isArray(value) ? value : []);
 
 /** @param {unknown} value */
-const text = (value) => (typeof value === 'string' ? value : '');
+export const text = (value) => (typeof value === 'string' ? value : '');
 
 /** @param {unknown} value */
-const integer = (value) =>
+export const integer = (value) =>
   typeof value === 'number' && Number.isSafeInteger(value) ? value : null;
 
 /** @param {string} value */
-const isSha = (value) => /^[0-9a-f]{40}$/.test(value);
+export const isSha = (value) => /^[0-9a-f]{40}$/.test(value);
 
 /** @param {string} sha */
-const short = (sha) => sha.slice(0, 12);
+export const short = (sha) => sha.slice(0, 12);
 
 /**
  * Reads the inputs as data and refuses anything else. A dry run checks every
@@ -513,6 +513,23 @@ export function githubClient({ token, apiUrl, graphqlUrl, fetch }) {
       body: JSON.stringify({ query, variables }),
     });
   return {
+    /**
+     * One REST write. It returns the status and the parsed body.
+     *
+     * @param {string} method
+     * @param {string} path
+     * @param {Record<string, unknown>} payload
+     */
+    async send(method, path, payload) {
+      const url = `${apiUrl}${path}`;
+      checkHost(url);
+      const reply = await fetch(url, {
+        method,
+        headers: { ...headers, 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      return { status: reply.status, text: await reply.text() };
+    },
     /** @param {string} path */
     async rest(path) {
       return (await get(`${apiUrl}${path}`)).body;
@@ -757,6 +774,78 @@ export async function writeMain(
 }
 
 /**
+ * Gates two snapshots, then writes `main` once unless it is a dry run. A
+ * caller can add a gate. It runs on each snapshot, and its result must not
+ * change between the two reads.
+ *
+ * @param {Client} client
+ * @param {{ fullName: string, owner: string, name: string }} repository
+ * @param {{ prNumber: number, expectedHead: string, dryRun: boolean }} inputs
+ * @param {string[]} rows
+ * @param {(snapshot: Snapshot, head: string) => Promise<string>} [extra]
+ */
+export async function fastForward(
+  client,
+  repository,
+  inputs,
+  rows,
+  extra = async () => '',
+) {
+  const firstSnapshot = await readSnapshot(client, repository, inputs.prNumber);
+  const first = evaluate(firstSnapshot, inputs);
+  const firstExtra = await extra(firstSnapshot, first.head);
+  rows.push(`| main before | ${first.base} |`);
+  const snapshot = await readSnapshot(client, repository, inputs.prNumber);
+  const second = evaluate(snapshot, inputs);
+  const secondExtra = await extra(snapshot, second.head);
+  if (second.fingerprint !== first.fingerprint || secondExtra !== firstExtra)
+    throw new GateError(
+      'The pull request, its reviews, its threads, its checks or main changed between the two reads.',
+    );
+  if (inputs.dryRun) {
+    rows.push('| Write | none, dry run |');
+    return report(
+      true,
+      `Every gate holds on ${second.head}. This was a dry run, so main did not move.`,
+      rows,
+    );
+  }
+  const repositoryId = text(snapshot.repository.node_id);
+  if (repositoryId === '')
+    throw new GateError('The repository ID is not readable.');
+  const outcome = await writeMain(client, {
+    fullName: repository.fullName,
+    repositoryId,
+    base: second.base,
+    head: second.head,
+  });
+  rows.push(
+    `| Write | ${outcome.answer} |`,
+    `| main after | ${outcome.after ?? 'unknown'} |`,
+  );
+  return report(outcome.ok, outcome.result, rows);
+}
+
+/**
+ * The API client of a run. It stops outside `main` and without a token.
+ *
+ * @param {Record<string, string | undefined>} env
+ * @param {Fetch} fetch
+ */
+export function clientFromEnv(env, fetch) {
+  if (env.GITHUB_REF !== mainRef)
+    throw new GateError('The workflow must run from main.');
+  const token = env.GITHUB_TOKEN ?? '';
+  if (token === '') throw new GateError('The workflow token is missing.');
+  return githubClient({
+    token,
+    apiUrl: env.GITHUB_API_URL ?? 'https://api.github.com',
+    graphqlUrl: env.GITHUB_GRAPHQL_URL ?? 'https://api.github.com/graphql',
+    fetch,
+  });
+}
+
+/**
  * Runs the whole procedure and returns the report.
  *
  * @param {Record<string, string | undefined>} env
@@ -772,49 +861,8 @@ export async function run(env, fetch) {
       `| Pull request | ${inputs.prNumber} |`,
       `| Expected head | ${inputs.expectedHead} |`,
     );
-    if (env.GITHUB_REF !== mainRef)
-      throw new GateError('The workflow must run from main.');
-    const token = env.GITHUB_TOKEN ?? '';
-    if (token === '') throw new GateError('The workflow token is missing.');
-    const client = githubClient({
-      token,
-      apiUrl: env.GITHUB_API_URL ?? 'https://api.github.com',
-      graphqlUrl: env.GITHUB_GRAPHQL_URL ?? 'https://api.github.com/graphql',
-      fetch,
-    });
-    const first = evaluate(
-      await readSnapshot(client, repository, inputs.prNumber),
-      inputs,
-    );
-    rows.push(`| main before | ${first.base} |`);
-    const snapshot = await readSnapshot(client, repository, inputs.prNumber);
-    const second = evaluate(snapshot, inputs);
-    if (second.fingerprint !== first.fingerprint)
-      throw new GateError(
-        'The pull request, its reviews, its threads, its checks or main changed between the two reads.',
-      );
-    if (inputs.dryRun) {
-      rows.push('| Write | none, dry run |');
-      return report(
-        true,
-        `Every gate holds on ${second.head}. This was a dry run, so main did not move.`,
-        rows,
-      );
-    }
-    const repositoryId = text(snapshot.repository.node_id);
-    if (repositoryId === '')
-      throw new GateError('The repository ID is not readable.');
-    const outcome = await writeMain(client, {
-      fullName: repository.fullName,
-      repositoryId,
-      base: second.base,
-      head: second.head,
-    });
-    rows.push(
-      `| Write | ${outcome.answer} |`,
-      `| main after | ${outcome.after ?? 'unknown'} |`,
-    );
-    return report(outcome.ok, outcome.result, rows);
+    const client = clientFromEnv(env, fetch);
+    return await fastForward(client, repository, inputs, rows);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return report(false, `Stopped before the write: ${message}`, rows);
@@ -822,7 +870,7 @@ export async function run(env, fetch) {
 }
 
 /** @param {boolean} ok @param {string} result @param {readonly string[]} rows */
-function report(ok, result, rows) {
+export function report(ok, result, rows) {
   const clean = result.replaceAll('|', '/');
   const summary = [
     `## Fast forward main: ${ok ? 'done' : 'not done'}`,

@@ -107,3 +107,60 @@ await test('the fast forward workflow runs trusted code by hand with narrow acce
     assert.match(line, /^[\w.-]+\/[\w.-]+@[0-9a-f]{40} # v\d+\.\d+\.\d+$/);
   assert.doesNotMatch(source, /secrets\./);
 });
+
+await test('the comment workflow runs trusted code on new comments with narrow access', async () => {
+  const path = '.github/workflows/ff-merge-comment.yml';
+  const workflow = await loadYaml(path);
+  assert.deepEqual(workflow.on, { issue_comment: { types: ['created'] } });
+  assert.deepEqual(workflow.permissions, {
+    contents: 'write',
+    'pull-requests': 'write',
+    checks: 'read',
+    statuses: 'read',
+  });
+  assert.equal(workflow.concurrency, undefined);
+  const jobs = Object.values(record(workflow.jobs)).map(record);
+  assert.equal(jobs.length, 1);
+  const job = record(jobs[0]);
+  for (const part of [
+    "github.ref == 'refs/heads/main'",
+    'github.event.issue.pull_request',
+    "github.event.comment.user.type == 'User'",
+    "startsWith(github.event.comment.body, '/ff-merge')",
+    'github.event.comment.author_association',
+  ])
+    assert.ok(String(job.if).includes(part), part);
+  assert.deepEqual(job.concurrency, {
+    group: 'ff-only-main',
+    'cancel-in-progress': false,
+  });
+  assert.ok(typeof job['timeout-minutes'] === 'number');
+  assert.equal(job.permissions, undefined);
+  const steps = Array.isArray(job.steps) ? job.steps.map(record) : [];
+  const checkout = record(
+    steps.find((step) => String(step.uses).startsWith('actions/checkout@'))
+      ?.with,
+  );
+  assert.equal(checkout.ref, '${{ github.workflow_sha }}');
+  assert.equal(checkout['persist-credentials'], false);
+  const runs = steps.filter((step) => step.run !== undefined);
+  assert.deepEqual(
+    runs.map((step) => step.run),
+    ['node tools/ff-merge-comment.mjs'],
+  );
+  assert.deepEqual(record(runs[0]?.env), {
+    GITHUB_TOKEN: '${{ github.token }}',
+    PR_NUMBER: '${{ github.event.issue.number }}',
+    COMMENT_ID: '${{ github.event.comment.id }}',
+    COMMENT_USER_ID: '${{ github.event.comment.user.id }}',
+    COMMENT_USER_LOGIN: '${{ github.event.comment.user.login }}',
+    COMMENT_CREATED_AT: '${{ github.event.comment.created_at }}',
+  });
+  const source = await readFile(join(root, path), 'utf8');
+  for (const match of source.matchAll(/^\s*- uses: (.+)$/gm))
+    assert.match(
+      match[1] ?? '',
+      /^[\w.-]+\/[\w.-]+@[0-9a-f]{40} # v\d+\.\d+\.\d+$/,
+    );
+  assert.doesNotMatch(source, /secrets\.|comment\.body \}\}/);
+});

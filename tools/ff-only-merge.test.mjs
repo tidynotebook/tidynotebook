@@ -11,213 +11,21 @@ import {
   requiredChecks,
   run,
 } from './ff-only-merge.mjs';
-import { record } from './workspace.mjs';
-
-const api = 'https://api.github.test';
-const graphqlUrl = `${api}/graphql`;
-const repo = 'owner/repo';
-const B = 'b'.repeat(40);
-const C = 'c'.repeat(40);
-const H = 'a'.repeat(40);
-const old = 'd'.repeat(40);
-
-const rabbit = { login: codeRabbit.login, type: 'Bot', id: codeRabbit.id };
-const person = { login: 'person', type: 'User', id: 7 };
-const actions = { id: 15368 };
-
-/** @param {number} id @param {object} user @param {string} state @param {string} commit */
-const review = (id, user, state, commit = H) => ({
-  id,
-  user,
-  state,
-  commit_id: commit,
-  submitted_at: `2026-10-16T10:${String(id).padStart(2, '0')}:00Z`,
-});
-
-/** The state of a pull request that passes every gate. */
-function passing() {
-  /** @type {unknown[]} A status is raw API data, also one with no creator. */
-  const statuses = [
-    { id: 21, context: 'CodeRabbit', state: 'success', creator: rabbit },
-    { id: 20, context: 'CodeRabbit', state: 'pending', creator: rabbit },
-  ];
-  return {
-    repository: { id: 1, node_id: 'R_1', full_name: repo },
-    pr: {
-      number: 5,
-      state: 'open',
-      merged: false,
-      draft: false,
-      head: { sha: H, ref: 'topic', repo: { id: 1 } },
-      base: { ref: 'main', repo: { id: 1 } },
-    },
-    main: B,
-    rules: [
-      { type: 'deletion' },
-      { type: 'non_fast_forward' },
-      { type: 'required_linear_history' },
-      {
-        type: 'required_status_checks',
-        parameters: {
-          required_status_checks: [{ context: 'Lint', integration_id: 15368 }],
-        },
-      },
-      {
-        type: 'pull_request',
-        parameters: {
-          required_approving_review_count: 0,
-          required_review_thread_resolution: true,
-          require_code_owner_review: false,
-          require_last_push_approval: false,
-          required_reviewers: [],
-          allowed_merge_methods: ['rebase'],
-        },
-      },
-    ],
-    reviews: [
-      review(1, rabbit, 'COMMENTED', old),
-      review(2, rabbit, 'APPROVED'),
-    ],
-    threads: [{ id: 'T1', isResolved: true, isOutdated: true }],
-    checkRuns: [
-      {
-        id: 10,
-        name: 'Lint',
-        head_sha: H,
-        status: 'completed',
-        conclusion: 'success',
-        app: actions,
-      },
-    ],
-    statuses,
-    compare: {
-      status: 'ahead',
-      ahead_by: 2,
-      behind_by: 0,
-      merge_base_commit: { sha: B },
-    },
-    commits: [
-      { sha: C, parents: [{ sha: B }] },
-      { sha: H, parents: [{ sha: C }] },
-    ],
-  };
-}
-
-/** @typedef {ReturnType<typeof passing>} State */
-
-/**
- * A fake GitHub API. It serves two items per page, so every list is paged.
- * `afterRead` runs once the first snapshot is complete, after its last read. `write` decides the
- * answer to the mutation.
- *
- * @param {State} state
- * @param {{
- *   afterRead?: (state: State) => void,
- *   write?: 'accept' | 'reject' | 'lost' | 'lost-applied',
- * }} [options]
- */
-function fakeGitHub(state, options = {}) {
-  /** @type {string[]} */
-  const calls = [];
-  /** @type {unknown[]} */
-  const mutations = [];
-  let snapshots = 0;
-  /** @param {number} status @param {unknown} body @param {string} [link] */
-  const reply = (status, body, link) => ({
-    status,
-    headers: {
-      get: (/** @type {string} */ name) =>
-        name === 'link' ? (link ?? null) : null,
-    },
-    text: async () => JSON.stringify(body),
-  });
-  /** @param {URL} url @param {unknown[]} items @param {(page: unknown[]) => unknown} wrap */
-  const paged = (url, items, wrap = (page) => page) => {
-    const page = Number(url.searchParams.get('page') ?? '1');
-    const slice = items.slice((page - 1) * 2, page * 2);
-    const next = new URL(url);
-    next.searchParams.set('page', String(page + 1));
-    return reply(
-      200,
-      wrap(slice),
-      page * 2 < items.length ? `<${next.href}>; rel="next"` : undefined,
-    );
-  };
-  /** @type {import('./ff-only-merge.mjs').Fetch} */
-  const fetch = async (address, init) => {
-    calls.push(`${init.method} ${address}`);
-    const url = new URL(address);
-    if (address === graphqlUrl) {
-      const body = record(JSON.parse(init.body ?? '{}'));
-      const query = String(body.query);
-      const variables = record(body.variables);
-      if (query.startsWith('mutation')) {
-        mutations.push(variables.input);
-        const update = record(list(record(variables.input).refUpdates)[0]);
-        if (options.write === 'reject')
-          return reply(200, {
-            data: { updateRefs: null },
-            errors: [
-              { message: 'Changes must be made through a pull request.' },
-            ],
-          });
-        if (options.write === 'lost') throw new Error('socket hang up');
-        if (update.beforeOid === state.main)
-          state.main = String(update.afterOid);
-        if (options.write === 'lost-applied') throw new Error('socket hang up');
-        return reply(200, { data: { updateRefs: { clientMutationId: null } } });
-      }
-      const all = state.threads;
-      const start = variables.cursor === null ? 0 : Number(variables.cursor);
-      const nodes = all.slice(start, start + 2);
-      const more = start + 2 < all.length;
-      return reply(200, {
-        data: {
-          repository: {
-            pullRequest: {
-              reviewThreads: {
-                totalCount: all.length,
-                pageInfo: { hasNextPage: more, endCursor: String(start + 2) },
-                nodes,
-              },
-            },
-          },
-        },
-      });
-    }
-    const path = url.pathname;
-    const base = `/repos/${repo}`;
-    if (path === base) return reply(200, state.repository);
-    if (path === `${base}/pulls/5`) return reply(200, state.pr);
-    if (path === `${base}/git/ref/heads/main`)
-      return reply(200, { ref: mainRef, object: { sha: state.main } });
-    if (path === `${base}/rules/branches/main`) return paged(url, state.rules);
-    if (path === `${base}/pulls/5/reviews`) return paged(url, state.reviews);
-    if (path === `${base}/commits/${state.pr.head.sha}/check-runs`)
-      return paged(url, state.checkRuns, (page) => ({
-        total_count: state.checkRuns.length,
-        check_runs: page,
-      }));
-    if (path === `${base}/commits/${state.pr.head.sha}/statuses`)
-      return paged(url, state.statuses);
-    if (path === `${base}/compare/${state.main}...${state.pr.head.sha}`) {
-      const answer = paged(url, state.commits, (page) => ({
-        ...state.compare,
-        commits: page,
-      }));
-      if (answer.headers.get('link') === null) {
-        snapshots += 1;
-        if (snapshots === 1) options.afterRead?.(state);
-      }
-      return answer;
-    }
-    return reply(404, { message: 'Not Found' });
-  };
-  return { fetch, calls, mutations };
-}
-
-/** @param {unknown} value @returns {unknown[]} */
-const list = (value) => (Array.isArray(value) ? value : []);
+import {
+  B,
+  C,
+  H,
+  actions,
+  api,
+  fakeGitHub,
+  graphqlUrl,
+  old,
+  passing,
+  person,
+  rabbit,
+  repo,
+  review,
+} from './ff-merge-fake.mjs';
 
 const env = {
   PR_NUMBER: '5',
@@ -234,7 +42,7 @@ const env = {
  * Runs the procedure against a changed passing state and expects a stop with
  * no write.
  *
- * @param {(state: State) => void} change
+ * @param {(state: import('./ff-merge-fake.mjs').State) => void} change
  * @param {RegExp} message
  */
 async function expectStop(change, message) {
@@ -702,7 +510,7 @@ await test('main must be an ancestor of H with no merge commit between them', as
 });
 
 await test('any change between the two reads stops the write', async () => {
-  /** @type {((state: State) => void)[]} */
+  /** @type {((state: import('./ff-merge-fake.mjs').State) => void)[]} */
   const changes = [
     (state) => state.reviews.push(review(3, person, 'COMMENTED')),
     (state) =>

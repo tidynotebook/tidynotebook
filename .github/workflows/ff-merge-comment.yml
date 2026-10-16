@@ -1,0 +1,56 @@
+name: Fast forward main by comment
+
+# An admin writes /ff-merge in a pull request. tools/ff-merge-comment.mjs
+# checks the comment, the author and every gate, moves main to the reviewed
+# head, and replies with the result. See docs/development/fast-forward-merge.md.
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+  statuses: read
+
+jobs:
+  fast-forward:
+    name: Fast forward main by comment
+    # A cheap filter only. The script checks the author with the API.
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      github.event.issue.pull_request &&
+      github.event.comment.user.type == 'User' &&
+      startsWith(github.event.comment.body, '/ff-merge') &&
+      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
+    concurrency:
+      group: ff-only-main
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /.node-version
+            /tools/ff-merge-comment.mjs
+            /tools/ff-only-merge.mjs
+            /tools/workspace.mjs
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - name: Check the comment and the gates and fast forward main
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+          COMMENT_USER_ID: ${{ github.event.comment.user.id }}
+          COMMENT_USER_LOGIN: ${{ github.event.comment.user.login }}
+          COMMENT_CREATED_AT: ${{ github.event.comment.created_at }}
+        run: node tools/ff-merge-comment.mjs
