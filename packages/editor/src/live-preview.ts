@@ -1283,6 +1283,11 @@ export function buildPreview(
         marker !== null &&
         /[xX]/.test(doc.sliceString(marker.from + 1, marker.to - 1));
       report({ kind: 'task', checked });
+      // The task node holds its text and continuation lines, but excludes
+      // nested lists. Keep the completed style inside that range so an
+      // unchecked child keeps its own text style.
+      if (checked && marker !== null)
+        mark(marker.to, node.to, 'cm-np-task-done');
       return true;
     }
 

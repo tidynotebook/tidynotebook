@@ -529,6 +529,37 @@ await test('a task marker becomes a checkbox that carries its own position', () 
   );
 });
 
+await test('completed task text includes continuation lines but excludes child tasks', () => {
+  const doc = '- [x] **done**\n  continued\n  - [ ] child\n- [ ] adjacent\n';
+  const completed = describe(doc).filter(
+    (item) => item.value === 'cm-np-task-done',
+  );
+  assert.deepEqual(completed, [
+    {
+      from: 5,
+      to: doc.indexOf('\n  -'),
+      kind: 'mark',
+      value: 'cm-np-task-done',
+    },
+  ]);
+});
+
+await test('completed task styling follows both marker cases and clears when unchecked', () => {
+  for (const marker of ['x', 'X', ' ']) {
+    const doc = `- [${marker}] done\n`;
+    for (const caret of [0, 3, 8]) {
+      assert.equal(
+        has(
+          describe(doc, { from: caret, to: caret }),
+          'mark',
+          'cm-np-task-done',
+        ),
+        marker !== ' ',
+      );
+    }
+  }
+});
+
 await test('a task box stays a box while its own line is edited', () => {
   // The defect this covers: a caret on the line turned the box back into
   // `- [ ]`, so the one moment a person wants to tick an item was the one

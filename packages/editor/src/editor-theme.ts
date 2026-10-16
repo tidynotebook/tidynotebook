@@ -769,6 +769,11 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
       pointerEvents: 'none',
     },
     '.cm-np-task:checked + .cm-np-task-mark': { display: 'block' },
+    '.cm-np-task-done': {
+      color: 'var(--notes-text-muted)',
+      textDecorationLine: 'line-through',
+    },
+    '.cm-np-task-done *': { color: 'var(--notes-text-muted)' },
 
     // A link states itself with the accent text color and a quiet underline.
     // The underline at full strength competes with the word, so it takes a
