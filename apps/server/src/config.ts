@@ -333,20 +333,36 @@ export class ConfigError extends Error {
 }
 
 /**
+ * A start that this server refuses for a cause that it states in its own
+ * words, such as a build that is not whole.
+ *
+ * The message names what to do and holds no value, no path and no stack, so
+ * the operator reads it as it is.
+ */
+export class StartRefusal extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'StartRefusal';
+  }
+}
+
+/**
  * What the operator reads when the start of the server fails.
  *
  * A configuration error states one line for each value that it refused, in
  * the words of this server. Each line names the variable and the form that it
  * needs, and never the value, so the operator reads it as it is, also when
- * the composition found it after the configuration was read. Any other
+ * the composition found it after the configuration was read. A
+ * `StartRefusal` is read as it is too. Any other
  * failure is the message of a library or of the operating system, which names
  * a file, a code or a stack, so the operator reads the one sentence of
  * `general` instead.
  */
 export function startFailureMessage(error: unknown, general: string): string {
-  return error instanceof ConfigError
-    ? `notesapp: configuration error:\n${error.issues.join('\n')}\n`
-    : `notesapp: ${general}\n`;
+  if (error instanceof ConfigError)
+    return `notesapp: configuration error:\n${error.issues.join('\n')}\n`;
+  if (error instanceof StartRefusal) return `notesapp: ${error.message}\n`;
+  return `notesapp: ${general}\n`;
 }
 
 const variables = [

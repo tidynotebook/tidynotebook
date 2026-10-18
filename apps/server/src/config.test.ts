@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { ApplicationShellError } from './plugins/static-assets.ts';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -565,6 +566,20 @@ await test('a failed start names each refused setting, and hides any other failu
     startFailureMessage('a thrown text', 'the server could not start.'),
     'notesapp: the server could not start.\n',
   );
+});
+
+await test('a build that is not whole names its repair, not the services', () => {
+  const message = startFailureMessage(
+    new ApplicationShellError(
+      'names a link preview, but assets/ holds no single card. Build the web application again.',
+    ),
+    'the server could not start. Check that the database accepts connections.',
+  );
+  assert.equal(
+    message,
+    'notesapp: the built application shell names a link preview, but assets/ holds no single card. Build the web application again.\n',
+  );
+  assert.ok(!message.includes('database'));
 });
 
 await test('every optional setting reaches the container of the Compose file', async () => {

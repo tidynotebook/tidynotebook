@@ -317,6 +317,14 @@ the preview goes. If a click goes to the root and not to the shared address,
 the choice goes back to the parent for review, with the omission of `og:url`
 as the first alternative.
 
+Decision of the owner: the click check moves to after the deployment. The
+runtime change ships with the root `og:url`, untested in Slack and WhatsApp.
+After the deployment the owner shares a public address that holds no secret
+in each service and records where a click on the preview goes. If a click
+goes to the root, the choice goes back to review, with the omission of
+`og:url` first. `tools/link-preview-gate/gate.ts` writes an optional static
+bundle for that check.
+
 ### What does not change
 
 The cache policy of the published page, its content policy, `noindex,
@@ -367,9 +375,9 @@ Link previews:
 - `noindex, nofollow` stays on every published view.
 - An unfurl test in a real service uses only an approved public address that
   holds no secret.
-- Before the runtime change is approved, that test records where a click on
-  the preview goes in Slack and in WhatsApp. A click that does not reach the
-  shared address sends the `og:url` choice back to review.
+- After the deployment, by decision of the owner, that test records where a
+  click on the preview goes in Slack and in WhatsApp. A click that does not
+  reach the shared address sends the `og:url` choice back to review.
 
 ## Risks
 
@@ -385,7 +393,7 @@ Link previews:
 - A crawler that holds the address of an open published note can read and
   keep its text. The first scope does not change this.
 - A service can treat the root `og:url` as the canonical address and send a
-  click to the root. The gate above checks this before approval.
+  click to the root. The owner checks this after the deployment.
 - Spam filters read HTML. A message with no image, no tracking and one link of
   its own origin keeps a small risk. The test message lets an administrator
   check it.
@@ -405,7 +413,7 @@ Each item is one pull request that merges and deploys alone.
 - The card is light.
 - The HTML title of every published view is generic in the first scope.
 - The invitation keeps its current sender identity and adds no personal data.
-- The root `og:url` is preferred, subject to the click gate above.
+- The root `og:url` is preferred, subject to the click check after the deployment.
 
 ## Decisions
 

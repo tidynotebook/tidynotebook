@@ -31,6 +31,7 @@ import type { Stats } from 'node:fs';
 import { basename, join } from 'node:path';
 import { brotliCompressSync, constants, gzipSync } from 'node:zlib';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import { StartRefusal } from '../config.ts';
 import {
   appShellContentPolicy,
   framedDocumentContentPolicy,
@@ -522,10 +523,13 @@ export type ApplicationShell = {
   readonly policy: string;
 };
 
-/** The failure of a start whose built shell cannot carry the preview. */
-export class ApplicationShellError extends Error {
+/**
+ * The failure of a start whose built shell cannot carry the preview. The
+ * operator reads its words as they are, because they name the repair.
+ */
+export class ApplicationShellError extends StartRefusal {
   constructor(detail: string) {
-    super(`notesapp: the built application shell ${detail}`);
+    super(`the built application shell ${detail}`);
     this.name = 'ApplicationShellError';
   }
 }
