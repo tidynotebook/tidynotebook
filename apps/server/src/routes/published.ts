@@ -122,6 +122,11 @@ export type PublishedDependencies = {
    */
   readonly pageScript: () => PublishedPageAssets | null;
   /**
+   * The link preview of the installation, or `null` when the build holds no
+   * card (design 028). It is the same for every view.
+   */
+  readonly linkPreview?: string | null;
+  /**
    * The renderer of a note, `renderMarkdown` unless a test counts its calls.
    * The handlers keep each body that it gives in a bounded cache.
    */
@@ -300,7 +305,6 @@ async function viewOf(
     };
   return {
     kind: 'note',
-    name: readableNoteName(page.note.path),
     body: await renderNote(page, token, ticket),
     // A link over one note has one page, so it offers no list to return to.
     listHref:
@@ -351,6 +355,7 @@ export function createPublishedHandlers(
       body: publishedDocument({
         view,
         stylesheets: parts.stylesheets(),
+        linkPreview: parts.linkPreview ?? null,
         // The form returns to the address that the reader is on, so an unlock
         // of a folder link opens the note that the reader asked for.
         formAction: pageAddress(token, null, note),
@@ -492,6 +497,7 @@ export function createPublishedHandlers(
         body: publishedDocument({
           view: { kind: 'report', reasons: reportReasons },
           stylesheets: parts.stylesheets(),
+          linkPreview: parts.linkPreview ?? null,
           formAction: reportAddress(token),
         }),
         headers: publishedDocumentHeaders,
@@ -517,6 +523,7 @@ export function createPublishedHandlers(
         body: publishedDocument({
           view: { kind: 'reported' },
           stylesheets: parts.stylesheets(),
+          linkPreview: parts.linkPreview ?? null,
           formAction: reportAddress(token),
         }),
         headers: publishedDocumentHeaders,

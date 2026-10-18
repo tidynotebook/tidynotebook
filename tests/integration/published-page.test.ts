@@ -31,9 +31,11 @@ import {
   getAccount,
   getPublishedAttachment,
   getPublishedPage,
+  getReportPage,
   listPublishedLinks,
   listWorkspaces,
   openPublishedPage,
+  reportPublishedLink,
   revokePublishedLink,
   signInWithPassword,
   unlockPublishedLink,
@@ -48,7 +50,9 @@ import {
   createIdentityAdapter,
   createPublicationCleanup,
   createPublicationHasher,
+  linkPreviewBlock,
   loadServerConfig,
+  publishedTitle,
   publishedScriptContentPolicy,
   publishedDocumentContentPolicy,
   type ServerConfig,
@@ -163,6 +167,12 @@ const diagramAssets = {
   frame: '/src/diagram/frame.html',
 };
 
+/** The link preview that a build with a card gives (design 028). */
+const linkPreview = linkPreviewBlock(
+  config.origin,
+  '/assets/social-card-TestTest.png',
+);
+
 const server = await startTestServer({
   environment: environment(),
   handlers: (value) =>
@@ -176,6 +186,7 @@ const server = await startTestServer({
         hasher,
         stylesheets: () => [stylesheet],
         pageScript: () => diagramAssets,
+        linkPreview,
         render: (source, options) => {
           renders.push(source);
           return renderMarkdown(source, options);
@@ -771,6 +782,75 @@ await test('a revoked link stops opening at the next request', async () => {
   const after = await readPage(link.token);
   assert.equal(after.response.status, 200);
   assert.ok(after.html.includes('This link is not available.'));
+});
+
+await test('every view carries the one generic preview and no private value in its head', async () => {
+  const note = await publish({ kind: 'note', fileId: dayOneId });
+  const locked = await publish(
+    { kind: 'folder', path: 'notes/trip' },
+    'a-preview-link-password',
+  );
+  const granted = await unlockPublishedLink({
+    path: { token: locked.token },
+    body: { password: 'a-preview-link-password' },
+  });
+  const ticket = granted.data?.ticket ?? '';
+  assert.match(ticket, /^[A-Za-z0-9_-]{22,64}$/);
+  const revoked = await publish({ kind: 'note', fileId: dayTwoId });
+  await revokePublishedLink({
+    headers: owner(),
+    path: { workspaceId, publicationId: revoked.publicationId },
+  });
+  const report = await getReportPage({ path: { token: folder.token } });
+  const reported = await reportPublishedLink({
+    path: { token: folder.token },
+    body: { reason: 'spam' },
+  });
+  const views: readonly (readonly [string, string, string])[] = [
+    ['folder', (await readPage(folder.token)).html, folder.token],
+    [
+      'folder note',
+      (await readPage(folder.token, { note: dayOneId })).html,
+      folder.token,
+    ],
+    ['note link', (await readPage(note.token)).html, note.token],
+    ['password', (await readPage(locked.token)).html, locked.token],
+    [
+      'unlocked',
+      (await readPage(locked.token, { ticket, note: dayOneId })).html,
+      locked.token,
+    ],
+    ['revoked', (await readPage(revoked.token)).html, revoked.token],
+    ['report', String(report.data ?? ''), folder.token],
+    ['reported', String(reported.data ?? ''), folder.token],
+  ];
+  const secrets = [
+    ticket,
+    dayOneId,
+    'Day one',
+    'day-one',
+    'notes/trip',
+    'trip',
+    'The first day',
+  ];
+  for (const [name, html, token] of views) {
+    const head = html.slice(0, html.indexOf('</head>'));
+    assert.ok(head.length > 0, name);
+    // The same block, byte for byte, once.
+    assert.equal(head.split(linkPreview).length - 1, 1, name);
+    assert.equal(head.split('og:').length - 1, 10, name);
+    assert.ok(head.includes(`<title>${publishedTitle}</title>`), name);
+    assert.ok(
+      head.includes('<meta name="robots" content="noindex, nofollow">'),
+      name,
+    );
+    assert.ok(!head.includes(token), name);
+    for (const secret of secrets) assert.ok(!head.includes(secret), name);
+  }
+  // The reader still reads the note in the body, unchanged.
+  const opened = views[2]?.[1] ?? '';
+  assert.match(opened, /<h1[^>]*>Day one<\/h1>/);
+  assert.ok(opened.includes('The first day.'));
 });
 
 await test('the hourly run removes a record that stopped', async () => {

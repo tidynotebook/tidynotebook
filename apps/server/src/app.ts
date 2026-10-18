@@ -7,7 +7,7 @@
  * validation, contract response validation, and problem details for every
  * failure.
  */
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { relative, resolve, sep } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import Fastify, { LogController } from 'fastify';
@@ -87,8 +87,12 @@ import {
   builtStylesheetHrefs,
   documentStylesheetHrefs,
   publishedDiagramFrameHref,
+  ApplicationShellError,
+  prepareApplicationShell,
   publishedPageScriptHref,
+  sendApplicationShell,
   sendStaticFile,
+  type ApplicationShell,
   servesApplicationShell,
   servesBrowserAssets,
   statFile,
@@ -105,6 +109,11 @@ import { createPublicationCleanup } from './jobs/publication-cleanup.ts';
 import { createAccountRemoval } from './jobs/account-removal.ts';
 import { createSyncCleanup } from './jobs/sync-cleanup.ts';
 import { createServerLogger, errorName } from './logging.ts';
+import {
+  linkPreviewBlock,
+  linkPreviewCardHref,
+  linkPreviewPlaceholder,
+} from './link-preview.ts';
 import {
   AttemptCounters,
   attemptStoreFor,
@@ -212,6 +221,46 @@ export function webAssetsDirectory(
   return existsSync(defaultWebDist) ? defaultWebDist : null;
 }
 
+/**
+ * The link preview of this configuration and this build, or `null` when the
+ * build holds no card (design 028).
+ *
+ * It reads the canonical origin of the configuration and never a request, so
+ * a forged Host header cannot change it.
+ */
+function linkPreviewOf(
+  config: ServerConfig,
+  webDist: string | null,
+): string | null {
+  const card = webDist === null ? null : linkPreviewCardHref(webDist);
+  return card === null ? null : linkPreviewBlock(config.origin, card);
+}
+
+/**
+ * The application shell of one start, or `null` when the server answers the
+ * built `index.html` from disk.
+ *
+ * A directory with no shell, or a shell with no placeholder, such as a site
+ * that is not this application, keeps the file answer and writes no preview.
+ * A shell with the placeholder and no single card, or with two placeholders,
+ * came from a broken build, so it refuses the start.
+ */
+function applicationShellOf(
+  config: ServerConfig,
+  webDist: string,
+): ApplicationShell | null {
+  const path = resolve(webDist, 'index.html');
+  if (statFile(path) === null) return null;
+  const html = readFileSync(path, 'utf8');
+  if (!html.includes(linkPreviewPlaceholder)) return null;
+  const block = linkPreviewOf(config, webDist);
+  if (block === null)
+    throw new ApplicationShellError(
+      'names a link preview, but assets/ holds no single card. Build the web application again.',
+    );
+  return prepareApplicationShell(html, linkPreviewPlaceholder, block);
+}
+
 /** Everything that a deployment or a test supplies besides configuration. */
 export type AppOptions = {
   /** Internal test composition. The production registry has no injected rows. */
@@ -298,6 +347,10 @@ export async function createAppWithHandlers(
   config: ServerConfig,
   options: AppOptions,
 ): Promise<FastifyInstance> {
+  // The shell is read before the instance exists, so a build that refuses
+  // the start leaves no listener and no timer behind.
+  const webDist = webAssetsDirectory(options.webDist);
+  const shell = webDist === null ? null : applicationShellOf(config, webDist);
   const app = Fastify({
     // Request headers are never logged. The serializer records the method,
     // the redacted URL, and the host name, and nothing else, so a credential
@@ -473,8 +526,6 @@ export async function createAppWithHandlers(
     });
   }
 
-  const webDist = webAssetsDirectory(options.webDist);
-
   app.setNotFoundHandler(async (request, reply) => {
     if (
       webDist !== null &&
@@ -503,6 +554,10 @@ export async function createAppWithHandlers(
           (decodedPath !== null && decodedPath.toLowerCase().endsWith('.map'));
         if (!isSourceMap && decodedPath !== null) {
           const targetPath = resolve(webDist, '.' + decodedPath);
+          // The shell on disk holds the placeholder of the link preview, so
+          // its own address answers the shell of this start too.
+          if (shell !== null && targetPath === resolve(webDist, 'index.html'))
+            return sendApplicationShell(request, reply, shell);
           if (
             targetPath.startsWith(`${webDist}/`) &&
             statFile(targetPath) !== null
@@ -517,16 +572,15 @@ export async function createAppWithHandlers(
         // router on the device receives the shell; an address that names a
         // file receives the not-found problem below, because a script that
         // arrives as HTML is refused by `nosniff` and hides the real cause.
-        const indexPath = resolve(webDist, 'index.html');
-        if (
-          !isSourceMap &&
-          servesApplicationShell(decodedPath ?? rawPath) &&
-          statFile(indexPath) !== null
-        ) {
-          return sendStaticFile(request, reply, {
-            filePath: indexPath,
-            relativePath: 'index.html',
-          });
+        if (!isSourceMap && servesApplicationShell(decodedPath ?? rawPath)) {
+          if (shell !== null)
+            return sendApplicationShell(request, reply, shell);
+          const indexPath = resolve(webDist, 'index.html');
+          if (statFile(indexPath) !== null)
+            return sendStaticFile(request, reply, {
+              filePath: indexPath,
+              relativePath: 'index.html',
+            });
         }
       }
     }
@@ -821,6 +875,10 @@ async function composeApp(
     const emitted = builtStylesheetHrefs(resolve(webDist, 'assets'));
     return [...shell, ...emitted.filter((href) => !shell.includes(href))];
   };
+  // Every view of a published link carries the link preview of the shell,
+  // byte for byte (design 028). The block reads the configuration only, so
+  // it is built once.
+  const publishedLinkPreview = linkPreviewOf(config, webDist);
   // A note that holds a diagram or a code block runs the one script of a
   // published page, which draws a diagram in the frame that the editor uses
   // and copies a code block (records 0158 and 0174). A deployment that serves
@@ -945,6 +1003,7 @@ async function composeApp(
           hasher: createPublicationHasher(auth.auth),
           stylesheets: publishedStylesheets,
           pageScript: publishedPage,
+          linkPreview: publishedLinkPreview,
           recordRefusal: (cause) => refusals.record?.(cause),
         },
         ...(options?.lifecycle === undefined

@@ -82,6 +82,27 @@ export const appIcons: readonly AppIcon[] = [
   },
 ];
 
+/** One image file that the build emits under a hashed name. */
+export type EmittedImage = Pick<AppIcon, 'file' | 'type'>;
+
+/**
+ * The card of a link preview (design 028).
+ *
+ * It sits beside the icons and takes their hashed name, but it is no icon:
+ * only a crawler reads it, through the tags that the server writes at start,
+ * so no document and no manifest name it and the worker does not precache
+ * it. Its text is drawn into the pixels, so no font loads. The server finds
+ * the emitted card by its stem, `linkPreviewCardFile` of
+ * `apps/server/src/link-preview.ts`.
+ */
+export const socialCard: EmittedImage = {
+  file: 'social-card.png',
+  type: 'image/png',
+};
+
+/** Every image that the build emits: each icon, then the card. */
+export const emittedImages: readonly EmittedImage[] = [...appIcons, socialCard];
+
 /** The address of every icon, by file name. */
 export type IconAddresses = Readonly<Record<string, string>>;
 

@@ -29,6 +29,7 @@ import { createHash } from 'node:crypto';
 import { createReadStream, readdirSync, readFileSync, statSync } from 'node:fs';
 import type { Stats } from 'node:fs';
 import { basename, join } from 'node:path';
+import { brotliCompressSync, constants, gzipSync } from 'node:zlib';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import {
   appShellContentPolicy,
@@ -496,6 +497,113 @@ export function sendStaticFile(
     .status(200)
     .header('content-length', String(bodyStats.size))
     .send(createReadStream(bodyPath));
+}
+
+/** One prepared representation of the application shell. */
+type ShellRepresentation = {
+  readonly bytes: Buffer;
+  readonly tag: string;
+};
+
+/**
+ * The application shell of one start, with every part of its answer.
+ *
+ * The built shell holds the placeholder of the link preview, and the block
+ * names the canonical origin of the configuration (design 028). The start
+ * fills it once and keeps the bytes in memory, so the image file system can
+ * stay read only. The precompressed neighbours of the build hold the
+ * placeholder, so the start compresses the filled bytes again, and each
+ * representation gets an entity tag from a digest of its own bytes.
+ */
+export type ApplicationShell = {
+  readonly identity: ShellRepresentation;
+  readonly encoded: Readonly<Record<StaticEncoding, ShellRepresentation>>;
+  /** The content policy, from the inline scripts of the filled shell. */
+  readonly policy: string;
+};
+
+/** The failure of a start whose built shell cannot carry the preview. */
+export class ApplicationShellError extends Error {
+  constructor(detail: string) {
+    super(`notesapp: the built application shell ${detail}`);
+    this.name = 'ApplicationShellError';
+  }
+}
+
+/** One representation and the tag of its bytes. */
+function shellRepresentation(bytes: Buffer): ShellRepresentation {
+  const digest = createHash('sha256')
+    .update(bytes)
+    .digest('base64url')
+    .slice(0, 27);
+  return { bytes, tag: `"${digest}"` };
+}
+
+/**
+ * Fills the placeholder of the built shell and prepares each encoding.
+ *
+ * The block must replace exactly one placeholder. A shell with two came from
+ * a broken build, and the start refuses it rather than serve two previews.
+ */
+export function prepareApplicationShell(
+  html: string,
+  placeholder: string,
+  block: string,
+): ApplicationShell {
+  const parts = html.split(placeholder);
+  if (parts.length !== 2)
+    throw new ApplicationShellError(
+      `holds ${String(parts.length - 1)} link preview placeholders, and it must hold one. Build the web application again.`,
+    );
+  const filled = parts.join(block);
+  const identity = Buffer.from(filled, 'utf8');
+  return {
+    identity: shellRepresentation(identity),
+    encoded: {
+      br: shellRepresentation(
+        brotliCompressSync(identity, {
+          params: {
+            [constants.BROTLI_PARAM_QUALITY]: constants.BROTLI_MAX_QUALITY,
+            [constants.BROTLI_PARAM_SIZE_HINT]: identity.byteLength,
+          },
+        }),
+      ),
+      gzip: shellRepresentation(gzipSync(identity, { level: 9 })),
+    },
+    policy: appShellContentPolicy(inlineScriptHashes(filled)),
+  };
+}
+
+/**
+ * Answers one request for the application shell from memory.
+ *
+ * The headers are those that `sendStaticFile` writes for `index.html`.
+ */
+export function sendApplicationShell(
+  request: FastifyRequest,
+  reply: FastifyReply,
+  shell: ApplicationShell,
+): FastifyReply {
+  const encoding =
+    acceptedEncodings(
+      typeof request.headers['accept-encoding'] === 'string'
+        ? request.headers['accept-encoding']
+        : undefined,
+    )[0] ?? null;
+  const body = encoding === null ? shell.identity : shell.encoded[encoding];
+  reply
+    .header('content-type', mimeTypeFor('index.html'))
+    .header('cache-control', cacheControlFor('index.html'))
+    .header('etag', body.tag)
+    .header('vary', 'Accept-Encoding')
+    .header('content-security-policy', shell.policy);
+  if (encoding !== null) reply.header('content-encoding', encoding);
+  if (matchesEntityTag(request.headers['if-none-match'], body.tag))
+    return reply.status(304).send();
+  return reply
+    .status(200)
+    .header('content-length', String(body.bytes.byteLength))
+    .send(body.bytes);
 }
 
 /** The stats of a file, or null when it is missing or is not a file. */

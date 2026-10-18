@@ -12,8 +12,17 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { brotliCompressSync, gzipSync } from 'node:zlib';
-import { createHandlers, type HandlerMap } from '@notesapp/server';
+import {
+  brotliCompressSync,
+  brotliDecompressSync,
+  gunzipSync,
+  gzipSync,
+} from 'node:zlib';
+import {
+  createHandlers,
+  linkPreviewBlock,
+  type HandlerMap,
+} from '@notesapp/server';
 import { portalAddress, portalRoute } from '../../apps/web/src/lib/portal.ts';
 import {
   returnAddress,
@@ -28,8 +37,17 @@ const inlineScriptHash = `sha256-${createHash('sha256')
   .update(inlineScript, 'utf8')
   .digest('base64')}`;
 
+/** The placeholder of the link preview, as the build writes it. */
+const previewPlaceholder = '<!-- __NOTESAPP_LINK_PREVIEW__ -->';
+
+/** The card of a link preview, with a hashed name (design 028). */
+const cardPath = '/assets/social-card-AbCdEfGh.png';
+const cardBody = Buffer.from('89504e470d0a1a0a00000000', 'hex');
+
 const shellHtml =
-  '<!doctype html><html><head><title>tidy notebook</title>' +
+  '<!doctype html><html><head>' +
+  previewPlaceholder +
+  '<title>tidy notebook</title>' +
   `<script>${inlineScript}</script>` +
   '<script type="module" src="/assets/main-AbCdEfGh.js"></script>' +
   '</head><body></body></html>';
@@ -55,12 +73,32 @@ const workerBody =
 const nextWorkerBody =
   "self.addEventListener;const cache='notesapp-app-22222222222222222222';\n";
 
+/** The shell that a server of one canonical origin answers. */
+function shellOf(origin: string): string {
+  return shellHtml.replace(
+    previewPlaceholder,
+    linkPreviewBlock(origin, cardPath),
+  );
+}
+
 /** Writes a build directory that looks like the emitted one. */
 async function writeBuild(): Promise<string> {
   const directory = await mkdtemp(join(tmpdir(), 'notesapp-web-dist-'));
   await mkdir(join(directory, 'assets'), { recursive: true });
   await mkdir(join(directory, 'src', 'diagram'), { recursive: true });
   await writeFile(join(directory, 'index.html'), shellHtml, 'utf8');
+  await writeFile(join(directory, cardPath), cardBody);
+  // The build compresses the shell with its placeholder. These neighbours
+  // must never reach a caller, because they name no origin.
+  const shellBytes = Buffer.from(shellHtml, 'utf8');
+  await writeFile(
+    join(directory, 'index.html.br'),
+    brotliCompressSync(shellBytes),
+  );
+  await writeFile(
+    join(directory, 'index.html.gz'),
+    gzipSync(shellBytes, { level: 9 }),
+  );
   await writeFile(join(directory, 'src/diagram/frame.html'), frameHtml, 'utf8');
   await writeFile(
     join(directory, 'assets/main-AbCdEfGh.js'),
@@ -170,6 +208,204 @@ await test('the shell names its inline script by hash and forbids inline script'
     assert.match(policy, /frame-ancestors 'none'/);
     assert.equal(answer.headers['cache-control'], 'no-cache');
     assert.equal(answer.headers['x-frame-options'], 'DENY');
+  } finally {
+    await server.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+await test('the shell names the configured origin in its preview, whatever the request names', async () => {
+  const directory = await writeBuild();
+  const server = await startTestServer({
+    webDist: directory,
+    environment: {
+      NOTESAPP_ORIGIN: 'https://notes.example.com:8443',
+      NOTESAPP_ADDITIONAL_ORIGINS: 'https://other.example.com:8443',
+      NOTESAPP_PORT: '3000',
+    },
+  });
+  const expected = shellOf('https://notes.example.com:8443');
+  try {
+    for (const headers of [
+      { host: 'notes.example.com:8443' },
+      // An additional origin of the installation still names the canonical one.
+      { host: 'other.example.com:8443' },
+      // A forwarded host that no trusted proxy wrote changes nothing.
+      {
+        host: 'notes.example.com:8443',
+        'x-forwarded-host': 'attacker.invalid',
+        'x-forwarded-proto': 'http',
+        forwarded: 'host=attacker.invalid;proto=http',
+      },
+    ]) {
+      for (const url of ['/', '/notes/abc?x=1', '/index.html']) {
+        const answer = await server.app.inject({ method: 'GET', url, headers });
+        assert.equal(answer.statusCode, 200, url);
+        assert.equal(answer.body, expected, url);
+        assert.ok(
+          answer.body.includes(
+            `<meta property="og:image" content="https://notes.example.com:8443${cardPath}">`,
+          ),
+        );
+        assert.ok(!answer.body.includes('attacker'));
+        assert.ok(!answer.body.includes('other.example.com'));
+        assert.ok(!answer.body.includes('notes/abc'));
+        assert.ok(!answer.body.includes('__NOTESAPP_LINK_PREVIEW__'));
+      }
+    }
+    // A host that the installation does not serve is refused, as before.
+    const forged = await server.app.inject({
+      method: 'GET',
+      url: '/',
+      headers: { host: 'attacker.invalid' },
+    });
+    assert.equal(forged.statusCode, 400);
+  } finally {
+    await server.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+await test('the filled shell is compressed at start and each encoding has its own tag', async () => {
+  const directory = await writeBuild();
+  const server = await startTestServer({ webDist: directory });
+  const expected = shellOf('http://127.0.0.1');
+  try {
+    const raw = await server.app.inject({ method: 'GET', url: '/' });
+    const brotli = await server.app.inject({
+      method: 'GET',
+      url: '/',
+      headers: { 'accept-encoding': 'gzip, br' },
+    });
+    const gzipped = await server.app.inject({
+      method: 'GET',
+      url: '/',
+      headers: { 'accept-encoding': 'gzip' },
+    });
+    assert.equal(raw.headers['content-encoding'], undefined);
+    assert.equal(raw.body, expected);
+    assert.equal(brotli.headers['content-encoding'], 'br');
+    assert.equal(brotliDecompressSync(brotli.rawPayload).toString(), expected);
+    assert.equal(gzipped.headers['content-encoding'], 'gzip');
+    assert.equal(gunzipSync(gzipped.rawPayload).toString(), expected);
+    for (const answer of [raw, brotli, gzipped]) {
+      assert.equal(answer.headers['vary'], 'Accept-Encoding');
+      assert.equal(answer.headers['cache-control'], 'no-cache');
+      assert.equal(
+        Number(answer.headers['content-length']),
+        answer.rawPayload.byteLength,
+      );
+      assert.ok(
+        String(answer.headers['content-security-policy']).includes(
+          `script-src 'self' '${inlineScriptHash}'`,
+        ),
+      );
+    }
+    const tags = new Set(
+      [raw, brotli, gzipped].map((answer) => String(answer.headers['etag'])),
+    );
+    assert.equal(tags.size, 3);
+    // A matching tag of the same encoding saves the body.
+    const revalidated = await server.app.inject({
+      method: 'GET',
+      url: '/notes/one',
+      headers: {
+        'accept-encoding': 'br',
+        'if-none-match': String(brotli.headers['etag']),
+      },
+    });
+    assert.equal(revalidated.statusCode, 304);
+    assert.equal(revalidated.body, '');
+    // The tag of another encoding does not.
+    const other = await server.app.inject({
+      method: 'GET',
+      url: '/',
+      headers: { 'if-none-match': String(brotli.headers['etag']) },
+    });
+    assert.equal(other.statusCode, 200);
+    // HEAD over a real socket answers the headers of GET and no body.
+    const head = await fetch(`${server.baseUrl}/`, {
+      method: 'HEAD',
+      headers: { 'accept-encoding': 'identity' },
+    });
+    assert.equal(head.status, 200);
+    assert.equal(head.headers.get('etag'), raw.headers['etag']);
+    assert.equal(await head.text(), '');
+  } finally {
+    await server.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+await test('a new configured origin gives a new shell tag', async () => {
+  const directory = await writeBuild();
+  const first = await startTestServer({ webDist: directory });
+  const second = await startTestServer({
+    webDist: directory,
+    environment: {
+      NOTESAPP_ORIGIN: 'http://127.0.0.1:8080',
+      NOTESAPP_ADDITIONAL_ORIGINS: '',
+      NOTESAPP_PORT: '3000',
+    },
+  });
+  try {
+    const one = await first.app.inject({ method: 'GET', url: '/' });
+    const two = await second.app.inject({
+      method: 'GET',
+      url: '/',
+      headers: { host: '127.0.0.1:8080' },
+    });
+    assert.notEqual(one.headers['etag'], two.headers['etag']);
+    assert.ok(two.body.includes('content="http://127.0.0.1:8080/"'));
+  } finally {
+    await first.close();
+    await second.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+await test('the card answers as an immutable picture', async () => {
+  const directory = await writeBuild();
+  const server = await startTestServer({ webDist: directory });
+  try {
+    const answer = await server.app.inject({ method: 'GET', url: cardPath });
+    assert.equal(answer.statusCode, 200);
+    assert.equal(answer.headers['content-type'], 'image/png');
+    assert.equal(
+      answer.headers['cache-control'],
+      'public, max-age=31536000, immutable',
+    );
+    assert.deepEqual(answer.rawPayload, cardBody);
+  } finally {
+    await server.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+await test('a shell that names a preview with no card refuses the start', async () => {
+  const directory = await writeBuild();
+  await rm(join(directory, cardPath));
+  try {
+    await assert.rejects(
+      startTestServer({ webDist: directory }),
+      /link preview/,
+    );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+await test('a shell with no placeholder is answered from its file, as before', async () => {
+  const directory = await writeBuild();
+  const plain = '<!doctype html><html><head><title>Site</title></head></html>';
+  await writeFile(join(directory, 'index.html'), plain, 'utf8');
+  await rm(join(directory, 'index.html.br'));
+  await rm(join(directory, 'index.html.gz'));
+  const server = await startTestServer({ webDist: directory });
+  try {
+    const answer = await server.app.inject({ method: 'GET', url: '/' });
+    assert.equal(answer.statusCode, 200);
+    assert.equal(answer.body, plain);
   } finally {
     await server.close();
     await rm(directory, { recursive: true, force: true });
@@ -357,7 +593,7 @@ await test('the address that an account portal links opens the application shell
       });
       assert.equal(answer.statusCode, 200, url);
       assert.equal(answer.headers['content-type'], 'text/html; charset=utf-8');
-      assert.equal(answer.body, shellHtml, url);
+      assert.equal(answer.body, shellOf('http://127.0.0.1'), url);
     }
   } finally {
     await server.close();

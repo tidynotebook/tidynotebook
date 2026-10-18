@@ -36,6 +36,7 @@ const mixedBuild: readonly BuiltFile[] = [
   file('/assets/main-AbCdEfGh.js.br'),
   file('/service-worker.js'),
   file('/src/diagram/frame.html'),
+  file('/assets/social-card-AbCdEfGh.png'),
 ];
 
 await test('the precache keeps the shell and drops the rest', () => {
@@ -58,6 +59,12 @@ await test('the worker stays out of its own precache', () => {
 await test('the diagram frame stays out of the precache', () => {
   const urls = derivePrecache(mixedBuild).urls;
   assert.ok(!urls.some((url) => url.startsWith('/src/diagram/')));
+});
+
+await test('the card of a link preview stays out of the precache', () => {
+  // Only a crawler reads it (design 028).
+  const urls = derivePrecache(mixedBuild).urls;
+  assert.ok(!urls.some((url) => url.includes('social-card')));
 });
 
 await test('a file over the size cap is reported and left out', () => {

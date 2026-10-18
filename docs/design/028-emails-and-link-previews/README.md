@@ -8,8 +8,8 @@ text part keeps the full meaning. The HTML part loads no remote file. The
 metadata that a link preview reads, the tags, the HTML title and the image,
 shows only the product, never a note, an account or a token. That promise
 covers the metadata only. A crawler that fetches an open published note can
-still read and keep the text of the page. This page is a proposal for
-review. It changes no runtime code.
+still read and keep the text of the page. Item 1 of the proposed work, the
+link preview, is implemented. The email part is still a proposal.
 
 ## Review files
 
@@ -244,10 +244,16 @@ application origin, and one fixed image. They name no path, no query, no
 fragment, no note, no folder, no account and no host of the request.
 
 The HTML title of every published view is the product name too, also for an
-open note. Today the title of an open note is its name, in `titleOf` of
-`apps/server/src/routes/published-document.ts`, and a service that reads the
-title would show it. The reader still sees the name of the note in the heading
-of the page. Only the metadata becomes generic.
+open note. Before this change the title of an open note was its name, in
+`titleOf` of `apps/server/src/routes/published-document.ts`, and a service that
+reads the title would show it. Only the metadata becomes generic.
+
+Correction after review of the source: the published page writes no heading
+with the name of an open note. The page shows the rendered Markdown of the
+note, and the name was only in the title. So the reader now sees the name only
+where the note text holds it, often its first heading. The implementation adds
+no heading, because a note that starts with its own heading would show two, and
+the layout of the reader page stays the same.
 
 The promise has a limit. A crawler that fetches an open published note gets
 the page, and the page holds the text of the note, because that is what the
@@ -273,12 +279,16 @@ The proposed block, the card and the drawings are in
 
 ### Where the tags come from
 
-- The application shell: the build writes the block into `index.html` with a
-  placeholder for the origin. The server puts the canonical origin of the
-  configuration into it once at start. It never reads the Host header for this,
-  so a forged host cannot poison a cache. The changed shell needs its own
-  precompressed forms and its own entity tag, which the start writes again.
-  The content policy does not change, because the block holds no script.
+- The application shell: the build writes one placeholder into `index.html`.
+  The server writes the whole block into it once at start, from the canonical
+  origin of the configuration, with the same function as the published page.
+  It never reads the Host header for this, so a forged host cannot poison a
+  cache. The start keeps the filled shell in memory, compresses it again, and
+  gives each encoding an entity tag from its bytes, so the image file system
+  can stay read only. The content policy does not change, because the block
+  holds no script. A shell with the placeholder and no card refuses the start.
+  A shell with no placeholder, which is not this application, is served from
+  its file as before.
 - The published page: `publishedDocument` writes the same block for every view
   kind. Its inputs are the canonical application origin and the card address.
   It reads nothing of the view. The image address is on the application
@@ -311,7 +321,7 @@ as the first alternative.
 
 The cache policy of the published page, its content policy, `noindex,
 nofollow`, the log redaction, the reader routes and the published origin. The
-heading of an open published note keeps its name.
+body of an open published note does not change.
 
 ### Deferred: a title on an open published note
 
@@ -348,7 +358,7 @@ Link previews:
   a report page proves that no answer holds the token, the ticket, the note
   name or the folder name in a tag.
 - A separate test proves that the `<title>` of each of those views is the
-  product name, and that the heading of an open note still shows its name.
+  product name, and that the body of an open note is unchanged.
 - The design and the guide state the limit: the metadata is generic, and a
   crawler that fetches an open page can still read its text.
 - A test proves that a forged Host header does not change the block.

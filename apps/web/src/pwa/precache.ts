@@ -26,6 +26,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { relative, resolve, sep } from 'node:path';
 import { build, type Plugin } from 'vite';
 import { isAssetPath } from './asset-kinds.ts';
+import { socialCard } from './icons.ts';
 
 /** The served name of the worker. The server and the page both know it. */
 export const workerFileName = 'service-worker.js';
@@ -43,6 +44,9 @@ export const appCachePrefix = 'notesapp-app-';
  * carries its whole renderer in one document, so it loads on demand.
  */
 const excludedPrefix = '/src/diagram/';
+
+/** The address prefix of the emitted card of a link preview. */
+const socialCardPrefix = `/assets/${socialCard.file.slice(0, socialCard.file.lastIndexOf('.'))}-`;
 
 /**
  * The largest file that the worker precaches.
@@ -91,6 +95,8 @@ export type Precache = {
 function isPrecached(file: BuiltFile): boolean {
   if (file.url === `/${workerFileName}`) return false;
   if (file.url.startsWith(excludedPrefix)) return false;
+  // Only a crawler reads the card of a link preview (design 028).
+  if (file.url.startsWith(socialCardPrefix)) return false;
   return isAssetPath(file.url);
 }
 

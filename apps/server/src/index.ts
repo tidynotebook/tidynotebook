@@ -195,6 +195,13 @@ export {
   publishedFieldClasses,
   publishedTaskBoxClasses,
   publishedCodeFigureClasses,
+  publishedTitle,
   type PublishedPageView,
 } from './routes/published-document.ts';
+export {
+  linkPreviewBlock,
+  linkPreviewCardFile,
+  linkPreviewImageSize,
+  linkPreviewPlaceholder,
+} from './link-preview.ts';
 export { createSearchHandlers } from './routes/search.ts';

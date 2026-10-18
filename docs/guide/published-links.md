@@ -96,6 +96,19 @@ A server can show published pages on an address of their own, for example
 `pages.example.net`. The reader then opens that address. An old address on the
 main site moves the reader there.
 
+## When you paste the link in a chat
+
+A chat service such as Slack or WhatsApp reads the page of a link and shows a
+small card. The card of every tidy notebook link is the same: the product name,
+one fixed sentence and one fixed picture. It does not show the name of the
+note, the name of the folder or your account. The browser tab of a published
+page also shows only the product name. The reader sees the name of the note in
+the note text.
+
+The card hides the note only from the card. A chat service that opens a link
+can read the page, as any reader can, and it can keep a copy of the text of an
+open note. A password link shows the service only the password form.
+
 ## What a published link does not do
 
 - It does not let anybody change your note.

@@ -3,8 +3,11 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
+import { brotliDecompressSync, gunzipSync } from 'node:zlib';
 import {
   acceptedEncodings,
+  ApplicationShellError,
+  prepareApplicationShell,
   cacheControlFor,
   isHashedAssetName,
   matchesEntityTag,
@@ -251,4 +254,44 @@ await test('MCP is reserved by the server and never receives the application she
   assert.equal(servesBrowserAssets('/mcp'), false);
   assert.equal(servesBrowserAssets('/mcp/unknown'), false);
   assert.equal(servesBrowserAssets('/mcp-notes'), true);
+});
+
+await test('the start fills the one placeholder of the shell and compresses the filled bytes', () => {
+  const html =
+    '<html><head><!-- P --><script>run()</script></head><body></body></html>';
+  const shell = prepareApplicationShell(html, '<!-- P -->', '<meta a>');
+  const filled =
+    '<html><head><meta a><script>run()</script></head><body></body></html>';
+  assert.equal(shell.identity.bytes.toString('utf8'), filled);
+  assert.equal(brotliDecompressSync(shell.encoded.br.bytes).toString(), filled);
+  assert.equal(gunzipSync(shell.encoded.gzip.bytes).toString(), filled);
+  // Each representation has a tag of its own bytes.
+  const tags = new Set([
+    shell.identity.tag,
+    shell.encoded.br.tag,
+    shell.encoded.gzip.tag,
+  ]);
+  assert.equal(tags.size, 3);
+  // The policy names the inline script of the filled shell.
+  assert.match(shell.policy, /'sha256-[A-Za-z0-9+/=]+'/);
+  // A new block gives new tags, so a cache that held the old shell asks again.
+  const next = prepareApplicationShell(html, '<!-- P -->', '<meta b>');
+  assert.notEqual(next.identity.tag, shell.identity.tag);
+  assert.notEqual(next.encoded.br.tag, shell.encoded.br.tag);
+  // The same inputs give the same tags across two starts.
+  assert.equal(
+    prepareApplicationShell(html, '<!-- P -->', '<meta a>').identity.tag,
+    shell.identity.tag,
+  );
+});
+
+await test('a shell with no placeholder or with two refuses the start', () => {
+  assert.throws(
+    () => prepareApplicationShell('<head></head>', '<!-- P -->', 'x'),
+    ApplicationShellError,
+  );
+  assert.throws(
+    () => prepareApplicationShell('<!-- P --><!-- P -->', '<!-- P -->', 'x'),
+    ApplicationShellError,
+  );
 });

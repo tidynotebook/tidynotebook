@@ -7,16 +7,19 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { productName } from '@notesapp/core';
 import {
   emptyListSentence,
   escapeAttribute,
   escapeText,
   lockedHint,
   lockedSentence,
+  noteBodyClasses,
   publishedDocument,
   publishedDocumentClasses,
   readableNoteName,
   reportedSentence,
+  reportHeading,
   reportReasonWords,
   unavailableHint,
   unavailableSentence,
@@ -70,7 +73,6 @@ await test('a page with no content is one short block in the middle', () => {
   // A note keeps the note column, so its text reads at the note measure.
   const note = documentOf({
     kind: 'note',
-    name: 'Day one',
     body: '<p>text</p>',
     listHref: null,
   });
@@ -112,11 +114,9 @@ await test('an empty folder names what is missing', () => {
 await test('a note of a folder link offers the way back to the list', () => {
   const html = documentOf({
     kind: 'note',
-    name: 'Day one',
     body: '<h1>Day one</h1>',
     listHref: '/published/abc',
   });
-  assert.ok(html.includes('<title>Day one</title>'));
   assert.ok(html.includes('All notes'));
   assert.ok(html.includes('<h1>Day one</h1>'));
 });
@@ -124,22 +124,66 @@ await test('a note of a folder link offers the way back to the list', () => {
 await test('a note link offers no list, because it opens one note', () => {
   const html = documentOf({
     kind: 'note',
-    name: 'Day one',
     body: '<p>text</p>',
     listHref: null,
   });
   assert.ok(!html.includes('All notes'));
 });
 
-await test('a name that holds markup cannot end an element', () => {
-  const html = documentOf({
-    kind: 'note',
-    name: '</title><script>alert(1)</script>',
-    body: '<p>safe</p>',
-    listHref: null,
-  });
-  assert.ok(!html.includes('<script'));
-  assert.ok(html.includes('&lt;/title&gt;'));
+await test('every state of the page has the product name as its title', () => {
+  const views: readonly PublishedPageView[] = [
+    { kind: 'unavailable' },
+    { kind: 'locked' },
+    { kind: 'note', body: '<h1>Day one</h1><p>text</p>', listHref: null },
+    { kind: 'list', notes: [{ name: 'Day one', href: '/published/abc' }] },
+    { kind: 'report', reasons: ['spam'] },
+    { kind: 'reported' },
+  ];
+  for (const view of views) {
+    const html = documentOf(view);
+    assert.equal(html.split('<title>').length - 1, 1, view.kind);
+    assert.ok(html.includes(`<title>${productName}</title>`), view.kind);
+  }
+});
+
+await test('the body of an open note is unchanged and is the only place of its words', () => {
+  const body = '<h1>Day one</h1><p>Secret plan</p>';
+  const html = documentOf({ kind: 'note', body, listHref: null });
+  assert.ok(
+    html.includes(`<article class="${noteBodyClasses}">${body}</article>`),
+  );
+  // The document writes no heading of its own above the body.
+  assert.equal(html.split('<h1').length - 1, 1);
+  const head = html.slice(0, html.indexOf('</head>'));
+  assert.ok(!head.includes('Day one'));
+  assert.ok(!head.includes('Secret plan'));
+});
+
+await test('every state writes the one link preview block in its head', () => {
+  const block = '<meta property="og:title" content="tidy notebook">';
+  const views: readonly PublishedPageView[] = [
+    { kind: 'unavailable' },
+    { kind: 'locked' },
+    { kind: 'note', body: '<p>text</p>', listHref: '/published/abc' },
+    { kind: 'list', notes: [] },
+    { kind: 'report', reasons: ['spam'] },
+    { kind: 'reported' },
+  ];
+  for (const view of views) {
+    const html = publishedDocument({
+      view,
+      stylesheets: [],
+      formAction: '/published/abc',
+      linkPreview: block,
+    });
+    const head = html.slice(0, html.indexOf('</head>'));
+    assert.equal(head.split(block).length - 1, 1, view.kind);
+    assert.ok(
+      head.includes('<meta name="robots" content="noindex, nofollow">'),
+    );
+  }
+  // A composition with no card writes no tag.
+  assert.ok(!documentOf({ kind: 'unavailable' }).includes('og:'));
 });
 
 await test('an address that holds a quote cannot start an attribute', () => {
@@ -194,7 +238,7 @@ await test('every class of the document is one token of the named scale', () => 
 await test('a note and a list carry the report link, and no other state does', () => {
   const reportHref = '/published/abc/report';
   const note = publishedDocument({
-    view: { kind: 'note', name: 'Day one', body: '<p>x</p>', listHref: null },
+    view: { kind: 'note', body: '<p>x</p>', listHref: null },
     stylesheets: [],
     formAction: '/published/abc',
     reportHref,
@@ -229,7 +273,7 @@ await test('the report form offers every reason and holds no script', () => {
     stylesheets: ['/assets/a.css'],
     formAction: '/published/abc/report',
   });
-  assert.ok(html.includes('<title>Report this page</title>'));
+  assert.ok(html.includes(`>${reportHeading}</h1>`));
   assert.ok(html.includes('action="/published/abc/report"'));
   assert.ok(html.includes('method="post"'));
   assert.ok(html.includes('value="phishing" checked'));
@@ -250,7 +294,6 @@ await test('a note with a diagram names the one diagram script and no inline one
   // document, and only the page of a note carries it.
   const view: PublishedPageView = {
     kind: 'note',
-    name: 'Plan',
     body: '<pre data-diagram="mermaid">graph TD;</pre>',
     listHref: null,
   };

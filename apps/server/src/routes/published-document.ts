@@ -80,7 +80,6 @@ export type PublishedPageView =
   /** One note, with the way back to the list of a folder link. */
   | {
       readonly kind: 'note';
-      readonly name: string;
       /** The sanitized HTML of the note. */
       readonly body: string;
       /** The address of the list of this link, or `null` for a note link. */
@@ -119,6 +118,12 @@ export type PublishedDocumentInput = {
    * content policy of the page names the same address.
    */
   readonly pageScript?: string | null;
+  /**
+   * The link preview of the installation, or `null` (design 028). It is the
+   * same block for every view, so the document reads nothing of the view
+   * for it.
+   */
+  readonly linkPreview?: string | null;
 };
 
 /**
@@ -412,15 +417,15 @@ export const publishedDocumentClasses: readonly string[] = [
   publishedFieldClasses,
 ].flatMap((group) => group.split(' '));
 
-/** The `<title>` of one state of the page. */
-function titleOf(view: PublishedPageView): string {
-  if (view.kind === 'note') return view.name;
-  if (view.kind === 'list') return listHeading;
-  if (view.kind === 'report') return reportHeading;
-  // A link that opens nothing and a link that asks for a password both name
-  // the product and never the note, so a browser tab discloses nothing.
-  return productName;
-}
+/**
+ * The `<title>` of every state of the page.
+ *
+ * It is the product name, also for an open note (design 028). A link preview
+ * service can read the title when it finds no tag, and a message keeps what
+ * it showed after a revocation, so the title names no note, no folder and no
+ * page. The note body is the only place that shows the words of a note.
+ */
+export const publishedTitle = productName;
 
 /** The classes of the main region of one state of the page. */
 function mainClassesOf(view: PublishedPageView): string {
@@ -543,13 +548,17 @@ export function publishedDocument(input: PublishedDocumentInput): string {
     input.pageScript !== null
       ? `<script src="${escapeAttribute(input.pageScript)}" defer></script>\n    `
       : '';
+  const preview =
+    input.linkPreview === undefined || input.linkPreview === null
+      ? ''
+      : `${input.linkPreview}\n    `;
   return `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow">
-    <title>${escapeText(titleOf(input.view))}</title>
+    ${preview}<title>${escapeText(publishedTitle)}</title>
     ${styles}${script}</head>
   <body class="${bodyClasses}">
     <main class="${mainClassesOf(input.view)}">

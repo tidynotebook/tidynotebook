@@ -21,6 +21,9 @@ import {
   publishedDiagramFrameHref,
   publishedPageScriptFile,
   publishedPageScriptHref,
+  linkPreviewCardFile,
+  linkPreviewImageSize,
+  linkPreviewPlaceholder,
 } from '@notesapp/server';
 import {
   diagramFontVariable,
@@ -28,7 +31,11 @@ import {
 } from '../../apps/web/src/diagram/frame.ts';
 import { frameEntry } from '../../apps/web/src/diagram/frame-document.ts';
 import { publishedPageScriptName } from '../../apps/web/vite.config.ts';
-import { appIcons, iconHashLength } from '../../apps/web/src/pwa/icons.ts';
+import {
+  appIcons,
+  iconHashLength,
+  socialCard,
+} from '../../apps/web/src/pwa/icons.ts';
 import {
   builtScripts,
   deferredLibraries,
@@ -263,10 +270,9 @@ await test('the built shell holds the screen of a start that failed', async () =
   // application screen of each cause and the script that shows it.
   const shell = await readFile(join(distribution, 'index.html'), 'utf8');
   assert.doesNotMatch(shell, /__NOTESAPP_START_FAILURE_/);
-  // Record 0187. The title and the description read the product name.
+  // Record 0187. The title reads the product name.
   assert.doesNotMatch(shell, /__NOTESAPP_PRODUCT_NAME__/);
   assert.match(shell, /<title>tidy notebook<\/title>/);
-  assert.match(shell, /content="tidy notebook: offline notes/);
   const load = /<template id="start-failure-load">([\s\S]*?)<\/template>/.exec(
     shell,
   )?.[1];
@@ -292,4 +298,43 @@ await test('the built shell preloads the entry only on a load that no worker con
   assert.ok(script !== undefined, 'no preload script');
   assert.match(script, /controller/);
   assert.match(script, /\["\/assets\/[^"]+\.js"/);
+});
+
+await test('the built shell leaves one place for the link preview and names no origin', async () => {
+  // Design 028. The server writes the block from its configured origin at
+  // start, so the build names no origin and no description of its own.
+  const shell = await readFile(join(distribution, 'index.html'), 'utf8');
+  assert.equal(shell.split(linkPreviewPlaceholder).length - 1, 1);
+  assert.doesNotMatch(shell, /og:|twitter:|name="description"/);
+  const head = shell.slice(0, shell.indexOf('</head>'));
+  // The block comes near the start of the head, where WhatsApp reads it.
+  assert.ok(head.indexOf(linkPreviewPlaceholder) < head.indexOf('<script'));
+});
+
+await test('the build emits one card of a link preview under a hashed name', async () => {
+  const names = await readdir(join(distribution, 'assets'));
+  const cards = names.filter((name) => linkPreviewCardFile.test(name));
+  assert.equal(cards.length, 1, cards.join(', '));
+  const stem = socialCard.file.slice(0, socialCard.file.lastIndexOf('.'));
+  assert.ok(cards[0]?.startsWith(`${stem}-`));
+  const card = `/assets/${cards[0] ?? ''}`;
+  assert.equal(
+    cacheControlFor(join(distribution, card)),
+    'public, max-age=31536000, immutable',
+  );
+  const bytes = await readFile(join(distribution, card));
+  // The PNG header states the size: width and height of the IHDR chunk.
+  assert.equal(bytes.subarray(1, 4).toString('latin1'), 'PNG');
+  assert.equal(bytes.readUInt32BE(16), linkPreviewImageSize.width);
+  assert.equal(bytes.readUInt32BE(20), linkPreviewImageSize.height);
+  // Well under the WhatsApp limit of 600 KB.
+  assert.ok(bytes.byteLength < 300 * 1024, String(bytes.byteLength));
+  // The worker does not precache it, and no document names it.
+  const precache = derivePrecache(await directoryFiles(distribution));
+  assert.ok(!precache.urls.includes(card));
+  const manifest = await readFile(
+    join(distribution, 'manifest.webmanifest'),
+    'utf8',
+  );
+  assert.ok(!manifest.includes('social-card'));
 });

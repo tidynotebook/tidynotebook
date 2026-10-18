@@ -2,11 +2,13 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   appIcons,
+  emittedImages,
   iconBuiltAddress,
   iconHashLength,
   iconLinkElements,
   iconSourceAddress,
   iconSourceAddresses,
+  socialCard,
 } from './icons.ts';
 
 await test('the shell links one icon of the build for each relation', () => {
@@ -50,4 +52,16 @@ await test('every icon states what it is for', () => {
   // The installed manifest needs a drawing for a round mask and a square one.
   assert.ok(appIcons.some((icon) => icon.purpose === 'maskable'));
   assert.ok(appIcons.some((icon) => icon.purpose === 'any'));
+});
+
+await test('the card of a link preview takes a hashed name and is no icon', () => {
+  assert.equal(
+    iconBuiltAddress(socialCard.file, 'abcdef0123456789'),
+    '/assets/social-card-abcdef01.png',
+  );
+  assert.equal(socialCard.type, 'image/png');
+  assert.ok(!appIcons.some((icon) => icon.file === socialCard.file));
+  assert.ok(emittedImages.includes(socialCard));
+  // No link of the shell names it.
+  assert.ok(!iconLinkElements(iconSourceAddresses()).includes('social-card'));
 });

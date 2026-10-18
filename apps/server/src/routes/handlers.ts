@@ -141,6 +141,11 @@ export type PublicationDependencies = {
    * every diagram as its source and every code block with no copy action.
    */
   readonly pageScript?: () => PublishedPageAssets | null;
+  /**
+   * The link preview of the installation (design 028). A composition that
+   * leaves it out writes no preview tags.
+   */
+  readonly linkPreview?: string | null;
   /** The renderer of a published note, for a test that counts its calls. */
   readonly render?: typeof renderMarkdown;
   /** Where the cause of a reader refusal goes, for the operator only. */
@@ -325,6 +330,7 @@ export function createHandlers(
             hasher: published.hasher,
             stylesheets: published.stylesheets,
             pageScript: published.pageScript ?? (() => null),
+            linkPreview: published.linkPreview ?? null,
             ...(published.render === undefined
               ? {}
               : { render: published.render }),
