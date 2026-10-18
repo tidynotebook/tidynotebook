@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "skipLibCheck": true
+  },
+  "include": ["**/*.ts"],
+  "references": [
+    { "path": "../../packages/core/tsconfig.build.json" },
+    { "path": "../../apps/server/tsconfig.build.json" }
+  ]
+}
