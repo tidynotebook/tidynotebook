@@ -10,30 +10,34 @@ type DraftFlushPorts = {
   readonly readIdentity: () => string | null;
 };
 
-/** Saves a current draft before a reload or an external protocol handoff. */
+/** Keeps update saves separate from the stricter protocol handoff check. */
 export function useNoteDraftFlush({
   cancelWrite,
   versionTimer,
   flushWork,
   saveDraft,
   readIdentity,
-}: DraftFlushPorts): () => Promise<void> {
+}: DraftFlushPorts): {
+  readonly flushDraft: () => Promise<void>;
+  readonly flushDraftForHandoff: () => Promise<void>;
+} {
   const identityRef = useRef(readIdentity);
   identityRef.current = readIdentity;
-  return useCallback(
-    () =>
-      flushUnchangedDraft(identityRef.current, async () => {
-        cancelWrite();
-        if (versionTimer.current !== null) {
-          window.clearTimeout(versionTimer.current);
-          versionTimer.current = null;
-        }
-        await flushWork();
-        if (!(await saveDraft.current()))
-          throw new Error(
-            'The open draft could not be stored. Keep this tab open and try again.',
-          );
-      }),
-    [cancelWrite, versionTimer, flushWork, saveDraft],
+  const flushDraft = useCallback(async (): Promise<void> => {
+    cancelWrite();
+    if (versionTimer.current !== null) {
+      window.clearTimeout(versionTimer.current);
+      versionTimer.current = null;
+    }
+    await flushWork();
+    if (!(await saveDraft.current()))
+      throw new Error(
+        'The open draft could not be stored. Keep this tab open and try again.',
+      );
+  }, [cancelWrite, versionTimer, flushWork, saveDraft]);
+  const flushDraftForHandoff = useCallback(
+    () => flushUnchangedDraft(identityRef.current, flushDraft),
+    [flushDraft],
   );
+  return { flushDraft, flushDraftForHandoff };
 }

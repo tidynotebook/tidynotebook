@@ -30,12 +30,12 @@ import {
 } from '@notesapp/editor';
 import type { LocalStore } from '@notesapp/sync';
 import { Notice } from '@notesapp/ui';
-import { blockedLinkNotice, resolveLinkAction } from '../../lib/note-link.ts';
+import { blockedLinkNotice } from '../../lib/note-link.ts';
 import {
   openExternalLink,
   protocolSaveFailureNotice,
 } from '../../lib/open-external-link.ts';
-import { useFlushNoteDraft } from '../editor/save-status.tsx';
+import { useFlushNoteDraftForHandoff } from '../editor/save-status.tsx';
 import { useTheme } from '../../app.tsx';
 import { createDiagramFrame, diagramFramePath } from '../../diagram/frame.ts';
 import { useAttachmentUrls } from '../editor/note-editor-attachments.ts';
@@ -65,7 +65,7 @@ export default function VersionPreview({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
   const [linkNotice, setLinkNotice] = useState('');
-  const flushDraft = useFlushNoteDraft();
+  const flushDraft = useFlushNoteDraftForHandoff();
   const { resolved } = useTheme();
   const themeRef = useRef(resolved);
   themeRef.current = resolved;
@@ -136,16 +136,14 @@ export default function VersionPreview({
       rich: richRef.current,
       navigation: {
         onOpenLink: (target) => {
-          const action = resolveLinkAction(target.target, pathRef.current);
+          const action = classifyUrl(target.target, pathRef.current);
           if (action.kind === 'external') {
             setLinkNotice('');
-            void openExternalLink(action.url, flushDraft).then((opened) => {
+            void openExternalLink(action.href, flushDraft).then((opened) => {
               if (opened === 'save-failed')
                 setLinkNotice(protocolSaveFailureNotice);
             });
-          } else if (
-            classifyUrl(target.target, pathRef.current).kind === 'blocked'
-          ) {
+          } else if (action.kind === 'blocked') {
             setLinkNotice(blockedLinkNotice);
           }
         },

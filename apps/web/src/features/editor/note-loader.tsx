@@ -30,6 +30,7 @@ import { Link, useLocation, useNavigate } from 'react-router';
 import { getFile } from '@notesapp/api-client';
 import type { LocalFileSummary, LocalStore } from '@notesapp/sync';
 import type { LinkTarget } from '@notesapp/editor';
+import { classifyUrl } from '@notesapp/markdown';
 import {
   LoadingState,
   Notice,
@@ -48,7 +49,7 @@ import {
   openExternalLink,
   protocolSaveFailureNotice,
 } from '../../lib/open-external-link.ts';
-import { useFlushNoteDraft } from './save-status.tsx';
+import { useFlushNoteDraftForHandoff } from './save-status.tsx';
 import {
   isSameNote,
   noteHoldMs,
@@ -112,7 +113,7 @@ export function NoteEditorLoader({
   readonly onPublish?: (() => void) | undefined;
 }): ReactNode {
   const navigate = useNavigate();
-  const flushDraft = useFlushNoteDraft();
+  const flushDraft = useFlushNoteDraftForHandoff();
   const location = useLocation();
   const identity: NoteLoadIdentity = { accountId, workspaceId, fileId };
   const [loadState, setLoadState] = useState<NoteLoadState>(() => ({
@@ -466,7 +467,8 @@ export function NoteEditorLoader({
             })();
             return;
           }
-          setLinkNotice(blockedLinkNotice);
+          if (classifyUrl(target.target, status.path).kind === 'blocked')
+            setLinkNotice(blockedLinkNotice);
         }}
       />
     </div>

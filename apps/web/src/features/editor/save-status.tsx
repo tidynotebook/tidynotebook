@@ -42,13 +42,18 @@ export type {
 type NoteSaveChannel = {
   readonly report: FactStore<NoteSaveReport | null>;
   readonly flushDraft: () => Promise<void>;
-  readonly registerDraftFlush: (flush: () => Promise<void>) => () => void;
+  readonly flushDraftForHandoff: () => Promise<void>;
+  readonly registerDraftFlush: (
+    flush: () => Promise<void>,
+    handoff: () => Promise<void>,
+  ) => () => void;
 };
 
 /** The channel outside a scope: no note, and nothing to flush. */
 const noChannel: NoteSaveChannel = {
   report: createFactStore<NoteSaveReport | null>(null, sameMembers),
   flushDraft: () => Promise.resolve(),
+  flushDraftForHandoff: () => Promise.resolve(),
   registerDraftFlush: () => () => {},
 };
 
@@ -70,19 +75,27 @@ export function NoteSaveScope({
   );
   const draftFlush = useRef<() => Promise<void>>(() => Promise.resolve());
   const flushDraft = useCallback((): Promise<void> => draftFlush.current(), []);
+  const handoffFlush = useRef<() => Promise<void>>(() => Promise.resolve());
+  const flushDraftForHandoff = useCallback(() => handoffFlush.current(), []);
   const registerDraftFlush = useCallback(
-    (flush: () => Promise<void>): (() => void) => {
+    (
+      flush: () => Promise<void>,
+      handoff: () => Promise<void>,
+    ): (() => void) => {
       draftFlush.current = flush;
+      handoffFlush.current = handoff;
       return () => {
         if (draftFlush.current === flush)
           draftFlush.current = () => Promise.resolve();
+        if (handoffFlush.current === handoff)
+          handoffFlush.current = () => Promise.resolve();
       };
     },
     [],
   );
   const value = useMemo<NoteSaveChannel>(
-    () => ({ report, flushDraft, registerDraftFlush }),
-    [report, flushDraft, registerDraftFlush],
+    () => ({ report, flushDraft, flushDraftForHandoff, registerDraftFlush }),
+    [report, flushDraft, flushDraftForHandoff, registerDraftFlush],
   );
   return (
     <NoteSaveContext.Provider value={value}>
@@ -109,10 +122,24 @@ export function useFlushNoteDraft(): () => Promise<void> {
   return useContext(NoteSaveContext).flushDraft;
 }
 
-/** Registers the local draft write of the open editor. */
-export function useRegisterNoteDraftFlush(flush: () => Promise<void>): void {
+/** Saves the draft and cancels handoff if its editor changes while waiting. */
+export function useFlushNoteDraftForHandoff(): () => Promise<void> {
+  return useContext(NoteSaveContext).flushDraftForHandoff;
+}
+
+/** Registers the local write and the guarded protocol handoff write. */
+export function useRegisterNoteDraftFlush({
+  flushDraft,
+  flushDraftForHandoff,
+}: {
+  readonly flushDraft: () => Promise<void>;
+  readonly flushDraftForHandoff: () => Promise<void>;
+}): void {
   const { registerDraftFlush } = useContext(NoteSaveContext);
-  useEffect(() => registerDraftFlush(flush), [registerDraftFlush, flush]);
+  useEffect(
+    () => registerDraftFlush(flushDraft, flushDraftForHandoff),
+    [registerDraftFlush, flushDraft, flushDraftForHandoff],
+  );
 }
 
 /**

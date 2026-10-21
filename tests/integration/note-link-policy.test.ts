@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { EditorState } from '../../packages/editor/node_modules/@codemirror/state/dist/index.js';
+import { EditorState } from '@codemirror/state';
 import { renderMarkdown } from '@notesapp/markdown';
 import { linkSpanAt } from '@notesapp/editor';
 import {
