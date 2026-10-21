@@ -26,7 +26,7 @@ import {
 import { useNavigate } from 'react-router';
 import { generateUUID } from '@notesapp/core';
 import { classifyUrl } from '@notesapp/markdown';
-import { flushUnchangedDraft } from '../../lib/draft-flush.ts';
+import { useNoteDraftFlush } from './note-draft-flush.ts';
 import {
   isLocalStorageError,
   saveCheckpointMessage,
@@ -748,27 +748,18 @@ const NoteEditorBody = memo(function NoteEditorBody({
     [],
   );
 
-  const flushDraftForUpdate = useCallback(async (): Promise<void> => {
-    await flushUnchangedDraft(
-      () =>
+  useRegisterNoteDraftFlush(
+    useNoteDraftFlush({
+      cancelWrite: localWrite.cancel,
+      versionTimer: versionTimerRef,
+      flushWork: noteWork.flush,
+      saveDraft: saveDraftNow,
+      readIdentity: () =>
         releasedRef.current
           ? null
           : `${live.current.workingCopyId}:${sequenceRef.current}`,
-      async () => {
-        localWrite.cancel();
-        if (versionTimerRef.current !== null) {
-          window.clearTimeout(versionTimerRef.current);
-          versionTimerRef.current = null;
-        }
-        await noteWork.flush();
-        if (!(await saveDraftNow.current()))
-          throw new Error(
-            'The open draft could not be stored. Keep this tab open and try again.',
-          );
-      },
-    );
-  }, [localWrite]);
-  useRegisterNoteDraftFlush(flushDraftForUpdate);
+    }),
+  );
 
   /**
    * Creates one immutable checkpoint from the current buffer.
