@@ -6,8 +6,8 @@
  * may survive rendering. The editor, the server, and the reading surface all
  * import the same policy, so a note renders under identical rules everywhere.
  *
- * The policy is an allow list. An unknown scheme, an unknown path shape, an
- * unknown element, and an unknown attribute are all removed. Nothing here
+ * External links use a deny list. Unknown path shapes, elements, and
+ * attributes are removed. Nothing here
  * fetches anything; a caller resolves an internal reference through the
  * generated API operations.
  */
@@ -76,8 +76,14 @@ function hasControlCharacter(value: string): boolean {
   return false;
 }
 
-/** The only schemes an author may write. */
-const allowedScheme = /^(?:https?|mailto):/i;
+/** Schemes that can run code or open local content. */
+const blockedSchemes = new Set([
+  'javascript:',
+  'vbscript:',
+  'data:',
+  'blob:',
+  'file:',
+]);
 const notePath = /^\/notes\/([^/?#]+)(#[A-Za-z0-9_-]+)?$/;
 const attachmentPath = /^\/attachments\/([^/?#]+)$/;
 const localFragment = /^#([A-Za-z0-9_-]+)$/;
@@ -122,11 +128,9 @@ function relativeTarget(url: string, sourcePath: string): string | null {
 /**
  * Classifies an author-supplied destination.
  *
- * Accepted forms are `https:`, `http:`, `mailto:`, `/notes/<id>`, and
- * `/attachments/<id>`. Everything else is blocked, including `javascript:`,
- * `data:`, `vbscript:`, `file:`, a protocol-relative `//host/path`, a bare
- * fragment, and any other relative path. A malformed identifier is blocked
- * too, so a broken reference can never become a working target.
+ * A parsed absolute URL is external unless its scheme can run code or open
+ * local content. Internal references, fragments, and portable paths keep
+ * their own checks. A malformed address or identifier is blocked.
  */
 export function classifyUrl(raw: string, sourcePath = ''): ContentUrl {
   const url = raw.trim();
@@ -161,8 +165,17 @@ export function classifyUrl(raw: string, sourcePath = ''): ContentUrl {
     }
     return blocked;
   }
-  if (allowedScheme.test(url)) return { kind: 'external', href: url };
-  if (anyScheme.test(url) || url.includes(':')) return blocked;
+  if (anyScheme.test(url)) {
+    try {
+      const parsed = new URL(url);
+      return blockedSchemes.has(parsed.protocol)
+        ? blocked
+        : { kind: 'external', href: url };
+    } catch {
+      return blocked;
+    }
+  }
+  if (url.includes(':')) return blocked;
   const path = relativeTarget(url, sourcePath);
   return path === null ? blocked : { kind: 'relative', path, href: url };
 }
@@ -282,7 +295,8 @@ export const sanitizeSchema: SanitizeSchema = {
   clobber: [],
   clobberPrefix: '',
   protocols: {
-    href: ['http', 'https', 'mailto'],
+    // applyUrlPolicy checks each href before this schema runs. A scheme list
+    // here would remove custom protocol handlers that the shared policy allows.
     // An image source is an internal attachment path, which carries no
     // scheme, or the secure external address that decision 0067 keeps. Every
     // other scheme, `javascript:` and `data:` first, is refused here.

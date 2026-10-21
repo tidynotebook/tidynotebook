@@ -518,3 +518,84 @@ await test('a fence is a diagram by the first word of its info string', async ()
       info,
     );
 });
+
+await test('external protocols survive the complete renderer and sanitizer', async () => {
+  for (const href of [
+    'mailto:a@example.com',
+    'tel:+123456789',
+    'sms:+123456789',
+    'slack://channel',
+    'vscode://file/note',
+    'obsidian://open',
+    'zoommtg://join',
+    'spotify:track:123',
+    'figma://file/123',
+    'notion://page/123',
+    'custom+app:target',
+  ]) {
+    assert.equal(
+      await renderMarkdown(`[Open](<${href}>)`),
+      `<p><a href="${href}" rel="noopener noreferrer">Open</a></p>`,
+    );
+    assert.equal(
+      await renderMarkdown(`![Image](<${href}>)`),
+      '<p><span data-blocked="image">Image</span></p>',
+    );
+  }
+});
+
+await test('unsafe addresses leave no href through default and resolved rendering', async () => {
+  for (const href of [
+    'javascript:alert(1)',
+    'JaVaScRiPt:alert(1)',
+    ' javascript:alert(1)',
+    'java&#x73;cript:alert(1)',
+    'java&#9;script:alert(1)',
+    'vbscript:msgbox(1)',
+    'data:text/html,test',
+    'blob:https://example.com/id',
+    'file:///etc/passwd',
+    'https://[invalid',
+  ]) {
+    for (const options of [
+      undefined,
+      { sourcePath: 'notes/test.md', noteHref: () => null },
+    ]) {
+      assert.equal(
+        await renderMarkdown(`[Open](<${href}>)`, options),
+        '<p><span data-blocked="link">Open</span></p>',
+      );
+      assert.equal(
+        await renderMarkdown(`<a href="${href}">Open</a>`, options),
+        '<p>Open</p>',
+      );
+    }
+  }
+});
+
+await test('the final URL check rejects unsafe resolver output after sanitize', async () => {
+  for (const href of [
+    'javascript:alert(1)',
+    'JaVaScRiPt:alert(1)',
+    ' javascript:alert(1)',
+    'java\tscript:alert(1)',
+    'vbscript:msgbox(1)',
+    'data:text/html,test',
+    'blob:https://example.com/id',
+    'file:///etc/passwd',
+    'https://[invalid',
+  ]) {
+    assert.equal(
+      await renderMarkdown(`[Note](/notes/${noteIdA})`, {
+        noteHref: () => href,
+      }),
+      '<p><a>Note</a></p>',
+    );
+  }
+  assert.equal(
+    await renderMarkdown(`[Note](/notes/${noteIdA})`, {
+      noteHref: () => '/published/token?note=one',
+    }),
+    '<p><a href="/published/token?note=one">Note</a></p>',
+  );
+});

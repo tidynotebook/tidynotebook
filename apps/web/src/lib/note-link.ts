@@ -6,9 +6,7 @@
  * navigates nowhere, and it reads no storage. The note screen performs the
  * decision, so the rule stays testable without a browser.
  *
- * Only `http:`, `https:`, and `mailto:` may leave the application. Every
- * other scheme, and a protocol relative destination, is refused, because a
- * note is author supplied text.
+ * The shared Markdown policy checks external schemes and internal targets.
  */
 
 import { classifyUrl } from '@notesapp/markdown';
@@ -26,7 +24,6 @@ export type LinkAction =
 
 const noAction: LinkAction = { kind: 'none' };
 
-/** The only schemes that may leave the application. */
 /**
  * Decides what one activated link destination asks the application to do.
  *
@@ -48,3 +45,7 @@ export function resolveLinkAction(
 
 /** The copy shown when a written note name matches no note. */
 export const missingNoteNotice = 'No note has that name yet.';
+
+/** The message for an address that the shared policy refuses. */
+export const blockedLinkNotice =
+  'This link is blocked because its address is unsafe or invalid.';

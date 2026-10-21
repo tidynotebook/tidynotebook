@@ -769,6 +769,26 @@ function renderMathPlaceholders(html: string): string {
     },
   );
 }
+/** Checks addresses again after the HTML sanitizer, with the shared policy. */
+function checkSanitizedUrls() {
+  return (tree: HastRoot): undefined => {
+    visit(tree, 'element', (node) => {
+      for (const name of ['href', 'src'] as const) {
+        const value = stringProperty(node, name);
+        if (value === null) continue;
+        const target = classifyUrl(value);
+        if (
+          (target.kind === 'blocked' && /^[^/?#]*:/.test(value)) ||
+          (name === 'src' &&
+            target.kind === 'external' &&
+            !allowsExternalImage(value))
+        )
+          delete node.properties[name];
+      }
+    });
+  };
+}
+
 function buildRenderProcessor(options: RenderMarkdownOptions = {}) {
   return createMarkdownProcessor()
     .use(showLineBreaks)
@@ -792,6 +812,7 @@ function buildRenderProcessor(options: RenderMarkdownOptions = {}) {
     .use(applyAlerts)
     .use(applyUrlPolicy, options)
     .use(rehypeSanitize, sanitizeSchema)
+    .use(checkSanitizedUrls)
     .use(rehypeStringify)
     .freeze();
 }

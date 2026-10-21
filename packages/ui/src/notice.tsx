@@ -15,6 +15,7 @@
  */
 import type { ReactNode } from 'react';
 import { AlertCircleIcon, CheckIcon, InfoIcon } from './icons.tsx';
+import { Button } from './controls.tsx';
 
 /** What kind of message the notice carries. */
 export type NoticeTone = 'info' | 'success' | 'problem';
@@ -43,12 +44,15 @@ export function Notice({
   message,
   children,
   className,
+  onDismiss,
 }: {
   readonly tone?: NoticeTone | undefined;
   readonly message: string;
   /** Actions of the notice, such as Undo or Reload. */
   readonly children?: ReactNode | undefined;
   readonly className?: string | undefined;
+  /** Removes the notice when the person selects Dismiss. */
+  readonly onDismiss?: (() => void) | undefined;
 }): ReactNode {
   const chosen = tones[tone];
   return (
@@ -62,6 +66,9 @@ export function Notice({
       </span>
       <span className="min-w-0 flex-1 text-strong">{message}</span>
       {children}
+      {onDismiss === undefined ? null : (
+        <Button onClick={onDismiss}>Dismiss</Button>
+      )}
     </div>
   );
 }

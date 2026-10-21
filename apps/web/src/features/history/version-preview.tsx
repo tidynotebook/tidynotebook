@@ -29,6 +29,8 @@ import {
   type RichWidgetResolvers,
 } from '@notesapp/editor';
 import type { LocalStore } from '@notesapp/sync';
+import { Notice } from '@notesapp/ui';
+import { blockedLinkNotice, resolveLinkAction } from '../../lib/note-link.ts';
 import { useTheme } from '../../app.tsx';
 import { createDiagramFrame, diagramFramePath } from '../../diagram/frame.ts';
 import { useAttachmentUrls } from '../editor/note-editor-attachments.ts';
@@ -57,6 +59,7 @@ export default function VersionPreview({
 }): ReactNode {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const [linkNotice, setLinkNotice] = useState('');
   const { resolved } = useTheme();
   const themeRef = useRef(resolved);
   themeRef.current = resolved;
@@ -125,6 +128,19 @@ export default function VersionPreview({
       readOnly: true,
       theme: themeRef.current,
       rich: richRef.current,
+      navigation: {
+        onOpenLink: (target) => {
+          const action = resolveLinkAction(target.target, pathRef.current);
+          if (action.kind === 'external') {
+            setLinkNotice('');
+            window.open(action.url, '_blank', 'noopener,noreferrer');
+          } else if (
+            classifyUrl(target.target, pathRef.current).kind === 'blocked'
+          ) {
+            setLinkNotice(blockedLinkNotice);
+          }
+        },
+      },
     });
     // The live preview shows the marks of the line that holds the caret. The
     // caret of a preview stands at the end, so the first line, which is
@@ -148,11 +164,16 @@ export default function VersionPreview({
   }, [rich]);
 
   return (
-    <div
-      ref={containerRef}
-      role="region"
-      aria-label={label}
-      className="max-h-96 overflow-y-auto rounded-lg border border-edge-subtle bg-app px-4 py-2"
-    />
+    <div>
+      {linkNotice === '' ? null : (
+        <Notice message={linkNotice} onDismiss={() => setLinkNotice('')} />
+      )}
+      <div
+        ref={containerRef}
+        role="region"
+        aria-label={label}
+        className="max-h-96 overflow-y-auto rounded-lg border border-edge-subtle bg-app px-4 py-2"
+      />
+    </div>
   );
 }

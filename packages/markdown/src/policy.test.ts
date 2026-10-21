@@ -89,17 +89,28 @@ await test('an identifier in upper case is normalized and the path is not', () =
   assert.deepEqual(classifyUrl(`/NOTES/${noteId}`), { kind: 'blocked' });
 });
 
-await test('the three external schemes are accepted', () => {
+await test('parsed external schemes are accepted', () => {
   for (const url of [
     'https://example.com/page',
     'http://example.com/page',
     'HTTPS://example.com/page',
     'mailto:someone@example.com',
+    'tel:+123456789',
+    'sms:+123456789',
+    'slack://channel?team=one&id=two',
+    'vscode://file/home/user/note',
+    'obsidian://open?vault=notes',
+    'zoommtg://zoom.us/join?confno=123',
+    'spotify:track:123',
+    'figma://file/123',
+    'notion://page/123',
+    'custom+app.test:opaque',
+    'ftp://example.com/file',
   ])
     assert.deepEqual(classifyUrl(url), { kind: 'external', href: url }, url);
 });
 
-await test('every other scheme and shape is blocked', () => {
+await test('unsafe schemes and malformed addresses are blocked', () => {
   for (const url of [
     '',
     '   ',
@@ -110,7 +121,10 @@ await test('every other scheme and shape is blocked', () => {
     'data:text/html;base64,PHNjcmlwdD4=',
     'vbscript:msgbox(1)',
     'file:///etc/passwd',
-    'ftp://example.com/file',
+    'blob:https://example.com/id',
+    'https://',
+    'https://[invalid',
+    '1invalid:target',
     '//evil.example.com/steal',
     '/notes/not-a-uuid',
     `/notes/${noteId}/extra`,

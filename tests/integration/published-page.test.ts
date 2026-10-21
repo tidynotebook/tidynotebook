@@ -328,6 +328,31 @@ const formulasText = [
   '',
 ].join('\n');
 const formulasId = await writeNote('notes/trip/formulas.md', formulasText);
+const allowedLinkAddresses = [
+  'mailto:a@example.com',
+  'tel:+123456789',
+  'sms:+123456789',
+  'slack://channel',
+  'vscode://file/note',
+  'obsidian://open',
+  'zoommtg://join',
+  'spotify:track:123',
+  'figma://file/123',
+  'notion://page/123',
+  'custom+app:target',
+];
+const blockedLinkAddresses = [
+  'javascript:alert(1)',
+  'JaVaScRiPt:alert(1)',
+  ' javascript:alert(1)',
+  'java&#x73;cript:alert(1)',
+  'java&#9;script:alert(1)',
+  'vbscript:msgbox(1)',
+  'data:text/html,test',
+  'blob:https://example.com/id',
+  'file:///etc/passwd',
+  'https://[invalid',
+];
 const elementsText = [
   '# Elements',
   '',
@@ -356,7 +381,13 @@ const elementsText = [
   '```',
   '',
 ].join('\n');
-const elementsId = await writeNote('notes/trip/elements.md', elementsText);
+const linksText = [
+  elementsText,
+  ...allowedLinkAddresses.map((href) => `[Allowed](<${href}>)`),
+  ...blockedLinkAddresses.map((href) => `[Blocked](<${href}>)`),
+  ...blockedLinkAddresses.map((href) => `<a href="${href}">Raw</a>`),
+].join('\n\n');
+const elementsId = await writeNote('notes/trip/elements.md', linksText);
 
 /** Publishes one link and answers its token. */
 async function publish(
@@ -619,6 +650,23 @@ await test('code, tasks and a table reach the reader as the editor draws them', 
   );
   assert.ok(page.html.includes('<th align="right">Right</th>'));
   assert.ok(page.html.includes('<h1 id="user-content-elements">Elements</h1>'));
+});
+
+await test('published links use the shared external protocol policy', async () => {
+  const page = await readPage(folder.token, { note: elementsId });
+  for (const href of allowedLinkAddresses) {
+    assert.ok(
+      page.html.includes(
+        `<a href="${href}" rel="noopener noreferrer">Allowed</a>`,
+      ),
+      href,
+    );
+  }
+  assert.equal(
+    page.html.split('<span data-blocked="link">Blocked</span>').length - 1,
+    blockedLinkAddresses.length,
+  );
+  assert.doesNotMatch(page.html, /<a[^>]*>Raw<\/a>/);
 });
 
 await test('a link inside the scope resolves and one outside it does not', async () => {

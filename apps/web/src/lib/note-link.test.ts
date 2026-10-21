@@ -37,6 +37,8 @@ await test('an unsafe or protocol relative address asks for nothing', () => {
     'data:text/html;base64,PHNjcmlwdD4=',
     'vbscript:msgbox(1)',
     'file:///etc/passwd',
+    'blob:https://example.com/id',
+    'https://[invalid',
     '//evil.example.com/steal',
     'java\tscript:alert(1)',
     '',
@@ -61,4 +63,21 @@ await test('a relative Markdown path names another note', () => {
 await test('an application path or a bare fragment names no note', () => {
   assert.deepEqual(resolveLinkAction('/settings'), { kind: 'none' });
   assert.deepEqual(resolveLinkAction('#section'), { kind: 'none' });
+});
+
+await test('custom protocols use the shared external link policy', () => {
+  for (const url of [
+    'tel:+123456789',
+    'sms:+123456789',
+    'slack://channel',
+    'vscode://file/note',
+    'obsidian://open',
+    'zoommtg://join',
+    'spotify:track:123',
+    'figma://file/123',
+    'notion://page/123',
+    'custom+app:target',
+  ]) {
+    assert.deepEqual(resolveLinkAction(url), { kind: 'external', url });
+  }
 });

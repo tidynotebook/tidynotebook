@@ -38,7 +38,11 @@ import {
   PageRegion,
 } from '@notesapp/ui';
 import { problemMessage } from '../../app.tsx';
-import { missingNoteNotice, resolveLinkAction } from '../../lib/note-link.ts';
+import {
+  blockedLinkNotice,
+  missingNoteNotice,
+  resolveLinkAction,
+} from '../../lib/note-link.ts';
 import { displayNoteName } from '../../lib/note-name.ts';
 import {
   isSameNote,
@@ -385,7 +389,11 @@ export function NoteEditorLoader({
     <div className="flex h-full min-h-0 flex-col">
       {linkNotice === '' ? null : (
         <div className={`${pageGutter} pt-4`}>
-          <Notice tone="info" message={linkNotice} />
+          <Notice
+            tone="info"
+            message={linkNotice}
+            onDismiss={() => setLinkNotice('')}
+          />
         </div>
       )}
       <NoteEditor
@@ -449,7 +457,7 @@ export function NoteEditorLoader({
             })();
             return;
           }
-          setLinkNotice('This link points at nothing that can open here.');
+          setLinkNotice(blockedLinkNotice);
         }}
       />
     </div>
