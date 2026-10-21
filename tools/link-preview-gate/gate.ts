@@ -3,8 +3,8 @@
  *
  * The preview block names the root of the origin in `og:url`. A chat service
  * could send a click on the preview there and not to the shared address. The
- * owner checks this in Slack and in WhatsApp before the runtime change is
- * approved. This tool writes the files for that check, and nothing more. It
+ * owner checks this in Slack and in WhatsApp after deployment.
+ * This tool writes the files for that check, and nothing more. It
  * sends nothing, uploads nothing and starts no server.
  *
  * The bundle holds two pages with the block that the server writes, byte for
