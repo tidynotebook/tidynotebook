@@ -56,7 +56,11 @@ export type ContentUrl =
       readonly href: string;
     }
   | { readonly kind: 'fragment'; readonly href: string }
-  | { readonly kind: 'external'; readonly href: string }
+  | {
+      readonly kind: 'external';
+      readonly href: string;
+      readonly protocol: string;
+    }
   | { readonly kind: 'blocked' };
 
 const blocked: ContentUrl = { kind: 'blocked' };
@@ -170,7 +174,7 @@ export function classifyUrl(raw: string, sourcePath = ''): ContentUrl {
       const parsed = new URL(url);
       return blockedSchemes.has(parsed.protocol)
         ? blocked
-        : { kind: 'external', href: url };
+        : { kind: 'external', href: url, protocol: parsed.protocol };
     } catch {
       return blocked;
     }

@@ -27,6 +27,14 @@ await test('web links open a protected tab and protocol handlers use the current
       await openExternalLink(href, async () => {});
       assert.deepEqual(tabs.at(-1), [href, '_blank', 'noopener,noreferrer']);
     }
+    await openExternalLink('  HtTpS://example.com  ', async () => {
+      throw new Error('Web links do not wait for a draft save.');
+    });
+    assert.deepEqual(tabs.at(-1), [
+      'HtTpS://example.com',
+      '_blank',
+      'noopener,noreferrer',
+    ]);
     const protocols = [
       'mailto:a@example.com',
       'tel:+123456789',
@@ -52,7 +60,7 @@ await test('web links open a protected tab and protocol handlers use the current
       '/notes/test',
     ])
       await openExternalLink(href, async () => {});
-    assert.equal(tabs.length, 2);
+    assert.equal(tabs.length, 3);
     assert.deepEqual(handlers, protocols);
   } finally {
     if (original === undefined) Reflect.deleteProperty(globalThis, 'window');

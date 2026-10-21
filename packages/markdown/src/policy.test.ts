@@ -107,7 +107,11 @@ await test('parsed external schemes are accepted', () => {
     'custom+app.test:opaque',
     'ftp://example.com/file',
   ])
-    assert.deepEqual(classifyUrl(url), { kind: 'external', href: url }, url);
+    assert.deepEqual(
+      classifyUrl(url),
+      { kind: 'external', href: url, protocol: new URL(url).protocol },
+      url,
+    );
 });
 
 await test('unsafe schemes and malformed addresses are blocked', () => {

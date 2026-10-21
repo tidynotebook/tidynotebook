@@ -11,7 +11,7 @@ export async function openExternalLink(
 ): Promise<boolean> {
   const target = classifyUrl(destination);
   if (target.kind !== 'external') return false;
-  if (/^https?:/i.test(target.href)) {
+  if (target.protocol === 'http:' || target.protocol === 'https:') {
     window.open(target.href, '_blank', 'noopener,noreferrer');
     return true;
   }
