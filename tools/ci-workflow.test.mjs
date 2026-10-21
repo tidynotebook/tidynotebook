@@ -269,7 +269,7 @@ await test('the image composite uses the job token and exports only on main', as
   assert.equal(record(login?.with).password, '${{ github.token }}');
 });
 
-await test('Check rejects every failed or cancelled selected job before nightly can run', () => {
+await test('checkResults rejects every failed, cancelled or skipped selected job', () => {
   for (const main of [false, true]) {
     const jobs = {
       scope: {
@@ -287,7 +287,7 @@ await test('Check rejects every failed or cancelled selected job before nightly 
     for (const job of Object.values(jobs).filter(
       (item) => item.result === 'success',
     )) {
-      for (const result of ['failure', 'cancelled']) {
+      for (const result of ['failure', 'cancelled', 'skipped']) {
         job.result = result;
         assert.throws(() => checkResults(jobs, main), /passing result/);
       }
