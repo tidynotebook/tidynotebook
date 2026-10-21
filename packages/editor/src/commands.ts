@@ -15,6 +15,7 @@ import type {
 import { EditorState } from '@codemirror/state';
 import type { SyntaxNode } from '@lezer/common';
 import type { EditorView } from '@codemirror/view';
+import { parseMarkdown } from '@notesapp/markdown';
 
 /**
  * The transaction that one editing command dispatches.
@@ -196,9 +197,20 @@ export type LinkSpan = {
   readonly target: LinkTarget;
 };
 
+/** Resolves a syntax-marked autolink as the Markdown renderer does. */
+function autolinkDestination(text: string): string {
+  const paragraph = parseMarkdown(text).children[0];
+  if (paragraph?.type !== 'paragraph' || paragraph.children.length !== 1)
+    return text;
+  const link = paragraph.children[0];
+  return link?.type === 'link' ? link.url : text;
+}
+
 /** The destination of one link node, or null when it names none. */
 function linkDestination(state: EditorState, node: SyntaxNode): string | null {
-  if (node.name === 'Link' || node.name === 'Autolink') {
+  if (node.name === 'Autolink')
+    return autolinkDestination(state.doc.sliceString(node.from, node.to));
+  if (node.name === 'Link') {
     const url = node.getChild('URL');
     if (url === null) return null;
     const text = state.doc.sliceString(url.from, url.to);
@@ -216,7 +228,7 @@ function linkDestination(state: EditorState, node: SyntaxNode): string | null {
     return null;
   if (owner === 'LinkReference') return null;
   const text = state.doc.sliceString(node.from, node.to);
-  return text === '' ? null : text;
+  return text === '' ? null : autolinkDestination(text);
 }
 
 /**

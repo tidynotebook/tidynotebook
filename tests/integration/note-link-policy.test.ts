@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { EditorState } from '../../packages/editor/node_modules/@codemirror/state/dist/index.js';
+import { renderMarkdown } from '@notesapp/markdown';
 import { linkSpanAt } from '@notesapp/editor';
 import {
   noteMarkdown,
@@ -50,6 +51,33 @@ await test('editor and history link targets use the shared scheme policy', () =>
         allowed.includes(href) ? 'external' : 'none',
         href,
       );
+    }
+  }
+});
+
+await test('editor and history autolinks reach the same address as rendered notes', async () => {
+  for (const [source, href] of [
+    ['<a@example.com>', 'mailto:a@example.com'],
+    ['a@example.com', 'mailto:a@example.com'],
+    ['www.example.com', 'http://www.example.com'],
+    ['<mailto:a@example.com>', 'mailto:a@example.com'],
+  ]) {
+    assert.ok(source !== undefined && href !== undefined);
+    const html = await renderMarkdown(source);
+    assert.ok(html.includes(`href="${href}"`));
+    for (const readOnly of [false, true]) {
+      const state = parsedWhole(
+        EditorState.create({
+          doc: source,
+          extensions: [noteMarkdown(), EditorState.readOnly.of(readOnly)],
+        }),
+      );
+      const span = linkSpanAt(state, 2);
+      assert.ok(span !== null);
+      assert.deepEqual(resolveLinkAction(span.target.target), {
+        kind: 'external',
+        url: href,
+      });
     }
   }
 });

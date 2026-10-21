@@ -146,3 +146,16 @@ await test('an inserted text replaces the selection', () => {
   assert.equal(next.selection.main.head, 7);
   assert.equal(next.selection.main.empty, true);
 });
+
+await test('syntax-marked email and web autolinks use their rendered destination', () => {
+  for (const [source, target] of [
+    ['<a@example.com>', 'mailto:a@example.com'],
+    ['a@example.com', 'mailto:a@example.com'],
+    ['www.example.com', 'http://www.example.com'],
+    ['<mailto:a@example.com>', 'mailto:a@example.com'],
+  ]) {
+    assert.equal(spanAt(source ?? '', 2)?.target, target);
+  }
+  assert.equal(spanAt('[Mail](a@example.com)', 2)?.target, 'a@example.com');
+  assert.equal(spanAt('[Site](www.example.com)', 2)?.target, 'www.example.com');
+});

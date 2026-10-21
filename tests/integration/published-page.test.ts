@@ -383,6 +383,10 @@ const elementsText = [
 ].join('\n');
 const linksText = [
   elementsText,
+  '<angle@example.com>',
+  'bare@example.com',
+  'www.example.com',
+  '<mailto:explicit@example.com>',
   ...allowedLinkAddresses.map((href) => `[Allowed](<${href}>)`),
   ...blockedLinkAddresses.map((href) => `[Blocked](<${href}>)`),
   ...blockedLinkAddresses.map((href) => `<a href="${href}">Raw</a>`),
@@ -654,6 +658,13 @@ await test('code, tasks and a table reach the reader as the editor draws them', 
 
 await test('published links use the shared external protocol policy', async () => {
   const page = await readPage(folder.token, { note: elementsId });
+  for (const href of [
+    'mailto:angle@example.com',
+    'mailto:bare@example.com',
+    'http://www.example.com',
+    'mailto:explicit@example.com',
+  ])
+    assert.ok(page.html.includes(`href="${href}"`), href);
   for (const href of allowedLinkAddresses) {
     assert.ok(
       page.html.includes(
