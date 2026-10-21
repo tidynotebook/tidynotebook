@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test, { after } from 'node:test';
 import { registerHooks } from 'node:module';
+import { setImmediate } from 'node:timers/promises';
 import { Window } from 'happy-dom';
 import { IDBFactory, IDBKeyRange } from 'fake-indexeddb';
 import { createElement, act, type ReactNode } from 'react';
@@ -74,11 +75,55 @@ const workspaceId = crypto.randomUUID();
 const fileId = crypto.randomUUID();
 const attachmentId = crypto.randomUUID();
 const text = `[Fragment](#intro)\n\n[Picture](./diagram.png)\n\n[Attachment](/attachments/${attachmentId})\n\n[Blocked](javascript:alert)\n\n[App](slack://channel)\n`;
-const store = await openLocalStore('http://localhost', {
+const localStore = await openLocalStore('http://localhost', {
   indexedDB: new IDBFactory(),
   IDBKeyRange,
   databaseName: `link-surfaces-${crypto.randomUUID()}`,
 });
+// Unmount starts writes without returning their promises. Track the real
+// store operations so cleanup waits for append, draft, and checkpoint work.
+const pendingStoreWork = new Set<Promise<unknown>>();
+const store = new Proxy(localStore, {
+  get(target, property) {
+    const value: unknown = Reflect.get(target, property);
+    if (typeof value !== 'function') return value;
+    return (...args: unknown[]): unknown => {
+      const result: unknown = Reflect.apply(value, target, args);
+      if (result instanceof Promise) {
+        pendingStoreWork.add(result);
+        void result.then(
+          () => pendingStoreWork.delete(result),
+          () => pendingStoreWork.delete(result),
+        );
+      }
+      return result;
+    };
+  },
+});
+
+/** Waits for writes and their queued continuations, without a timed delay. */
+async function finishStoreWork(): Promise<void> {
+  do {
+    await Promise.allSettled([...pendingStoreWork]);
+    await setImmediate();
+  } while (pendingStoreWork.size > 0);
+}
+
+/** Observes the asynchronous loader only while React can finish its work. */
+async function waitForEditor(container: ParentNode): Promise<void> {
+  const deadline = Date.now() + 10_000;
+  while (true) {
+    let mounted = false;
+    await act(async () => {
+      mounted = container.querySelector('.cm-editor') !== null;
+      if (!mounted) await setImmediate();
+    });
+    if (mounted) return;
+    if (Date.now() > deadline)
+      throw new Error('The note editor did not mount within 10 seconds.');
+  }
+}
+
 let flush = () => Promise.resolve();
 let handoff = () => Promise.resolve();
 function FlushReader(): ReactNode {
@@ -182,15 +227,7 @@ await test('loader and history keep valid inert links quiet and show a dismissib
     }),
   ]) {
     await render(surface);
-    // Store reads finish outside the first React render.
-    for (
-      let count = 0;
-      count < 20 && !container.querySelector('.cm-editor');
-      count += 1
-    )
-      await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 10));
-      });
+    await waitForEditor(container);
     for (const label of ['Fragment', 'Picture', 'Attachment']) {
       await clickLink(label);
       assert.doesNotMatch(container.textContent ?? '', /unsafe or invalid/);
@@ -326,7 +363,7 @@ await test('a current editor can finish the guarded handoff flush', async () => 
 
 after(async () => {
   await act(async () => root.unmount());
-  await new Promise((resolve) => setTimeout(resolve, 30));
+  await act(finishStoreWork);
   await store.close();
   await browser.happyDOM.close();
   for (const [name, descriptor] of originals) {
