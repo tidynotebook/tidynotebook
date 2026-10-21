@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import test from 'node:test';
 import { record, root } from './workspace.mjs';
+import { checkResults } from './ci-check.mjs';
 
 /** @param {unknown} value
  * @returns {value is {load: (source: string) => unknown}} */
@@ -71,10 +72,12 @@ await test('CI selects hosted checks and has one fail-closed aggregate', async (
   assert.equal(record(jobs.nightly).needs, 'check');
   assert.equal(
     record(jobs.nightly).if,
-    "github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')",
+    "${{ !cancelled() && needs.check.result == 'success' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')) }}",
   );
   assert.equal(record(record(jobs.image).permissions).packages, 'read');
   assert.equal(record(record(jobs.image_main).permissions).packages, 'write');
+  assert.equal(record(jobs.image_main).needs, 'scope');
+  assert.equal(record(jobs.image).needs, 'scope');
   assert.match(
     String(record(jobs.image_main).if),
     /github.ref == 'refs\/heads\/main'/,
@@ -264,4 +267,31 @@ await test('the image composite uses the job token and exports only on main', as
     .find((step) => String(step.uses).startsWith('docker/login-action@'));
   assert.match(String(login?.if), /github.ref == 'refs\/heads\/main'/);
   assert.equal(record(login?.with).password, '${{ github.token }}');
+});
+
+await test('Check rejects every failed or cancelled selected job before nightly can run', () => {
+  for (const main of [false, true]) {
+    const jobs = {
+      scope: {
+        result: 'success',
+        outputs: { source: 'true', image: 'true', workflows: 'true' },
+      },
+      static: { result: 'success' },
+      unit: { result: 'success' },
+      integration: { result: 'success' },
+      image: { result: main ? 'skipped' : 'success' },
+      image_main: { result: main ? 'success' : 'skipped' },
+      workflows: { result: 'success' },
+    };
+    checkResults(jobs, main);
+    for (const job of Object.values(jobs).filter(
+      (item) => item.result === 'success',
+    )) {
+      for (const result of ['failure', 'cancelled']) {
+        job.result = result;
+        assert.throws(() => checkResults(jobs, main), /passing result/);
+      }
+      job.result = 'success';
+    }
+  }
 });
