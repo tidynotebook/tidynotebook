@@ -240,12 +240,12 @@ for (const change of ['input', 'rename', 'unmount'] as const) {
       } else if (change === 'rename') {
         const input = container.querySelector('input[aria-label="Note name"]');
         assert.ok(input);
-        const setter = Object.getOwnPropertyDescriptor(
+        const descriptor = Object.getOwnPropertyDescriptor(
           HTMLInputElement.prototype,
           'value',
-        )?.set;
-        assert.ok(setter);
-        setter.call(input, 'Renamed');
+        );
+        assert.ok(descriptor);
+        descriptor.set?.call(input, 'Renamed');
         input.dispatchEvent(new Event('input', { bubbles: true }));
       } else
         root.render(
