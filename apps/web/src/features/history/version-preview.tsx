@@ -31,6 +31,11 @@ import {
 import type { LocalStore } from '@notesapp/sync';
 import { Notice } from '@notesapp/ui';
 import { blockedLinkNotice, resolveLinkAction } from '../../lib/note-link.ts';
+import {
+  openExternalLink,
+  protocolSaveFailureNotice,
+} from '../../lib/open-external-link.ts';
+import { useFlushNoteDraft } from '../editor/save-status.tsx';
 import { useTheme } from '../../app.tsx';
 import { createDiagramFrame, diagramFramePath } from '../../diagram/frame.ts';
 import { useAttachmentUrls } from '../editor/note-editor-attachments.ts';
@@ -60,6 +65,7 @@ export default function VersionPreview({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
   const [linkNotice, setLinkNotice] = useState('');
+  const flushDraft = useFlushNoteDraft();
   const { resolved } = useTheme();
   const themeRef = useRef(resolved);
   themeRef.current = resolved;
@@ -133,7 +139,9 @@ export default function VersionPreview({
           const action = resolveLinkAction(target.target, pathRef.current);
           if (action.kind === 'external') {
             setLinkNotice('');
-            window.open(action.url, '_blank', 'noopener,noreferrer');
+            void openExternalLink(action.url, flushDraft).then((opened) => {
+              if (!opened) setLinkNotice(protocolSaveFailureNotice);
+            });
           } else if (
             classifyUrl(target.target, pathRef.current).kind === 'blocked'
           ) {
@@ -151,7 +159,7 @@ export default function VersionPreview({
       viewRef.current = null;
       view.destroy();
     };
-  }, [text]);
+  }, [text, flushDraft]);
 
   useEffect(() => {
     const view = viewRef.current;

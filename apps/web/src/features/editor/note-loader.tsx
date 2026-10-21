@@ -45,6 +45,11 @@ import {
 } from '../../lib/note-link.ts';
 import { displayNoteName } from '../../lib/note-name.ts';
 import {
+  openExternalLink,
+  protocolSaveFailureNotice,
+} from '../../lib/open-external-link.ts';
+import { useFlushNoteDraft } from './save-status.tsx';
+import {
   isSameNote,
   noteHoldMs,
   noteLoadStatusFor,
@@ -107,6 +112,7 @@ export function NoteEditorLoader({
   readonly onPublish?: (() => void) | undefined;
 }): ReactNode {
   const navigate = useNavigate();
+  const flushDraft = useFlushNoteDraft();
   const location = useLocation();
   const identity: NoteLoadIdentity = { accountId, workspaceId, fileId };
   const [loadState, setLoadState] = useState<NoteLoadState>(() => ({
@@ -425,7 +431,9 @@ export function NoteEditorLoader({
           }
           if (action.kind === 'external') {
             setLinkNotice('');
-            window.open(action.url, '_blank', 'noopener,noreferrer');
+            void openExternalLink(action.url, flushDraft).then((opened) => {
+              if (!opened) setLinkNotice(protocolSaveFailureNotice);
+            });
             return;
           }
           if (action.kind === 'note-path') {
