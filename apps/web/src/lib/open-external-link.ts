@@ -1,4 +1,5 @@
 import { classifyUrl } from '@notesapp/markdown';
+import { DraftFlushCancelled } from './draft-flush.ts';
 
 export const protocolSaveTimeoutMs = 5000;
 export const protocolSaveFailureNotice =
@@ -8,12 +9,12 @@ export const protocolSaveFailureNotice =
 export async function openExternalLink(
   destination: string,
   flushDraft: () => Promise<void>,
-): Promise<boolean> {
+): Promise<'opened' | 'blocked' | 'save-failed' | 'cancelled'> {
   const target = classifyUrl(destination);
-  if (target.kind !== 'external') return false;
+  if (target.kind !== 'external') return 'blocked';
   if (target.protocol === 'http:' || target.protocol === 'https:') {
     window.open(target.href, '_blank', 'noopener,noreferrer');
-    return true;
+    return 'opened';
   }
   let timeout: ReturnType<typeof setTimeout> | undefined;
   try {
@@ -26,11 +27,11 @@ export async function openExternalLink(
         );
       }),
     ]);
-  } catch {
-    return false;
+  } catch (failure: unknown) {
+    return failure instanceof DraftFlushCancelled ? 'cancelled' : 'save-failed';
   } finally {
     clearTimeout(timeout);
   }
   window.location.assign(target.href);
-  return true;
+  return 'opened';
 }

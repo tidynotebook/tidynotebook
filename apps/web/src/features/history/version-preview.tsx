@@ -140,7 +140,8 @@ export default function VersionPreview({
           if (action.kind === 'external') {
             setLinkNotice('');
             void openExternalLink(action.url, flushDraft).then((opened) => {
-              if (!opened) setLinkNotice(protocolSaveFailureNotice);
+              if (opened === 'save-failed')
+                setLinkNotice(protocolSaveFailureNotice);
             });
           } else if (
             classifyUrl(target.target, pathRef.current).kind === 'blocked'

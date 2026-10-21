@@ -432,7 +432,8 @@ export function NoteEditorLoader({
           if (action.kind === 'external') {
             setLinkNotice('');
             void openExternalLink(action.url, flushDraft).then((opened) => {
-              if (!opened) setLinkNotice(protocolSaveFailureNotice);
+              if (opened === 'save-failed')
+                setLinkNotice(protocolSaveFailureNotice);
             });
             return;
           }

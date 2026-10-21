@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { flushUnchangedDraft } from './draft-flush.ts';
 import {
   openExternalLink,
   protocolSaveTimeoutMs,
@@ -92,7 +93,7 @@ await test('a protocol handoff waits for the draft write', async () => {
     });
     assert.deepEqual(events, ['flush']);
     finish();
-    assert.equal(await opened, true);
+    assert.equal(await opened, 'opened');
     assert.deepEqual(events, ['flush', 'slack://channel']);
   } finally {
     if (original === undefined) Reflect.deleteProperty(globalThis, 'window');
@@ -119,7 +120,7 @@ await test('a failed or slow draft write prevents handoff, including after a lat
       await openExternalLink('slack://channel', async () => {
         throw new Error('Storage failed.');
       }),
-      false,
+      'save-failed',
     );
     let finish = () => {};
     const saved = new Promise<void>((resolve) => {
@@ -127,7 +128,7 @@ await test('a failed or slow draft write prevents handoff, including after a lat
     });
     const opened = openExternalLink('slack://channel', () => saved);
     t.mock.timers.tick(protocolSaveTimeoutMs);
-    assert.equal(await opened, false);
+    assert.equal(await opened, 'save-failed');
     finish();
     await saved;
     assert.deepEqual(events, []);
@@ -136,3 +137,40 @@ await test('a failed or slow draft write prevents handoff, including after a lat
     else Object.defineProperty(globalThis, 'window', original);
   }
 });
+
+for (const change of ['edit', 'note switch'] as const) {
+  await test(`${change} during draft flush cancels the protocol handoff`, async () => {
+    const original = Object.getOwnPropertyDescriptor(globalThis, 'window');
+    const events: string[] = [];
+    Object.defineProperty(globalThis, 'window', {
+      configurable: true,
+      value: {
+        location: {
+          assign: (href: string) => {
+            events.push(href);
+          },
+        },
+      },
+    });
+    try {
+      let identity: string | null = 'note-one:1';
+      let finish = () => {};
+      const saved = new Promise<void>((resolve) => {
+        finish = resolve;
+      });
+      const opened = openExternalLink('slack://channel', () =>
+        flushUnchangedDraft(
+          () => identity,
+          () => saved,
+        ),
+      );
+      identity = change === 'edit' ? 'note-one:2' : null;
+      finish();
+      assert.equal(await opened, 'cancelled');
+      assert.deepEqual(events, []);
+    } finally {
+      if (original === undefined) Reflect.deleteProperty(globalThis, 'window');
+      else Object.defineProperty(globalThis, 'window', original);
+    }
+  });
+}
