@@ -17,6 +17,7 @@ import {
 } from '@codemirror/language';
 import { EditorState, type Transaction } from '@codemirror/state';
 import { tags, type Tag } from '@lezer/highlight';
+import { TreeFragment } from '@lezer/common';
 import {
   codeLanguages as fenceLanguages,
   codeTokenNames,
@@ -30,6 +31,79 @@ import {
   syntaxTokenNames,
 } from './language.ts';
 import { previewStructureOf } from './live-preview.ts';
+
+await test('a partial cached parse keeps math and the text after it at their source ranges', () => {
+  const doc =
+    '# Editor and math\n\n```javascript\nfunction greet(name) {\n  return `Hello, ${name}`;\n}\nconst count = 42;\n```\n\nInline math: $E = mc^2$.\n\n$$\n\\frac{a}{b} + \\sqrt{x^2 + y^2}\n$$\n\nEnd of smoke test.\n';
+  const parser = noteMarkdown({ headless: true }).language.parser;
+  const full = parser.parse(doc);
+  const partial = parser.parse(doc, TreeFragment.addTree(full), [
+    { from: 0, to: 137 },
+  ]);
+  const after = parser.parse(doc, TreeFragment.addTree(partial));
+  const blocks: { name: string; from: number; to: number; source: string }[] =
+    [];
+  after.iterate({
+    enter(node) {
+      if (
+        node.name === 'MathBlock' ||
+        node.name === 'InlineMath' ||
+        node.name === 'FencedCode' ||
+        node.name === 'Paragraph'
+      )
+        blocks.push({
+          name: node.name,
+          from: node.from,
+          to: node.to,
+          source: doc.slice(node.from, node.to),
+        });
+    },
+  });
+  assert.deepEqual(blocks, [
+    { name: 'FencedCode', from: 19, to: 106, source: doc.slice(19, 106) },
+    {
+      name: 'Paragraph',
+      from: 108,
+      to: 132,
+      source: 'Inline math: $E = mc^2$.',
+    },
+    { name: 'InlineMath', from: 121, to: 131, source: '$E = mc^2$' },
+    {
+      name: 'MathBlock',
+      from: 134,
+      to: 170,
+      source: '$$\n\\frac{a}{b} + \\sqrt{x^2 + y^2}\n$$',
+    },
+    { name: 'Paragraph', from: 172, to: 190, source: 'End of smoke test.' },
+  ]);
+  assert.equal(after.toString(), full.toString());
+});
+
+await test('partial cached parses inside code and math keep the complete tree', () => {
+  const doc = 'Text $x$.\n\n```text\ncode\n```\n\n$$\nx^2\n$$\n\ntail\n';
+  const parser = noteMarkdown({ headless: true }).language.parser;
+  const full = parser.parse(doc);
+  const nodesOf = (tree: typeof full): string[] => {
+    const nodes: string[] = [];
+    tree.iterate({
+      enter: (node) => {
+        nodes.push(`${node.name}:${String(node.from)}..${String(node.to)}`);
+      },
+    });
+    return nodes;
+  };
+  for (let end = 1; end < doc.length; end += 1) {
+    const partial = parser.parse(doc, TreeFragment.addTree(full), [
+      { from: 0, to: end },
+    ]);
+    const after = parser.parse(doc, TreeFragment.addTree(partial));
+    assert.deepEqual(
+      nodesOf(after),
+      nodesOf(full),
+      `partial end ${String(end)}`,
+    );
+  }
+});
 
 await test('the offline preview keeps the same structure before and after a fence language loads', async () => {
   const language = fenceLanguageOf('python');

@@ -23,6 +23,7 @@ import { yamlFrontmatter } from '@codemirror/lang-yaml';
 import {
   ensureSyntaxTree,
   HighlightStyle,
+  Language,
   LanguageDescription,
   LanguageSupport,
   syntaxHighlighting,
@@ -31,6 +32,12 @@ import {
 } from '@codemirror/language';
 import type { EditorState, Extension } from '@codemirror/state';
 import { GFM } from '@lezer/markdown';
+import {
+  Parser,
+  TreeFragment,
+  type Input,
+  type PartialParse,
+} from '@lezer/common';
 import {
   codeLanguageOf,
   codeLanguages as fenceLanguages,
@@ -152,6 +159,45 @@ export type NoteMarkdownOptions = {
   readonly headless?: boolean;
 };
 
+/** Keeps cached blocks within the end of a partial Markdown parse. */
+class PartialMarkdownParser extends Parser {
+  private readonly base: Parser;
+
+  constructor(base: Parser) {
+    super();
+    this.base = base;
+  }
+
+  createParse(
+    input: Input,
+    fragments: readonly TreeFragment[],
+    ranges: readonly { from: number; to: number }[],
+  ): PartialParse {
+    const end = ranges[0]?.to;
+    // Lezer Markdown 1.7.2 leaves a zero-length placeholder when a reused
+    // block crosses a single partial-parse end. Cap reuse before that end.
+    if (ranges.length === 1 && end !== undefined && end < input.length) {
+      fragments = fragments.flatMap((fragment) =>
+        fragment.from >= end
+          ? []
+          : fragment.to <= end
+            ? [fragment]
+            : [
+                new TreeFragment(
+                  fragment.from,
+                  end,
+                  fragment.tree,
+                  fragment.offset,
+                  fragment.openStart,
+                  true,
+                ),
+              ],
+      );
+    }
+    return this.base.createParse(input, fragments, ranges);
+  }
+}
+
 /**
  * The Markdown language support of the note editor.
  *
@@ -162,11 +208,20 @@ export type NoteMarkdownOptions = {
 export function noteMarkdown(
   options: NoteMarkdownOptions = {},
 ): LanguageSupport {
+  const content = markdown({
+    extensions: [GFM, mathMarkdownExtension, footnoteMarkdownExtension],
+    codeLanguages: options.headless === true ? () => null : fenceLanguageOf,
+  });
   return yamlFrontmatter({
-    content: markdown({
-      extensions: [GFM, mathMarkdownExtension, footnoteMarkdownExtension],
-      codeLanguages: options.headless === true ? () => null : fenceLanguageOf,
-    }),
+    content: new LanguageSupport(
+      new Language(
+        content.language.data,
+        new PartialMarkdownParser(content.language.parser),
+        [],
+        content.language.name,
+      ),
+      content.support,
+    ),
   });
 }
 
