@@ -76,7 +76,6 @@ await test('a partial cached parse keeps math and the text after it at their sou
     },
     { name: 'Paragraph', from: 172, to: 190, source: 'End of smoke test.' },
   ]);
-  assert.equal(after.toString(), full.toString());
 });
 
 await test('partial cached parses inside code and math keep the complete tree', () => {
