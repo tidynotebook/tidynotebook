@@ -33,9 +33,10 @@ the storage layout.
   AWS SDK.
 - `jq` to create the S3 settings file in the configuration step below.
 
-During a backup, allow free space of roughly three times the combined database
-and attachment size on the storage-root volume. The command holds the staged
-files, the plaintext tar, and the encrypted archive at the same time.
+Allow space for the staged files and plaintext archive on the storage-root
+volume, and for the encrypted archive in the backup folder. See
+[Object storage](operations.md#object-storage) and
+[Uploads and imports](operations.md#uploads-and-imports) for storage requirements.
 
 If you made these files yourself, each one must have mode `0600`. The key file
 holds at least 32 bytes of strong random data. The ID file holds one UUID.

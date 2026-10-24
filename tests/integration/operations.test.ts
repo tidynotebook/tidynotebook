@@ -355,7 +355,12 @@ await test('host encryption verification script', async () => {
   }
 });
 
-for (const backend of ['filesystem', 's3', 'filesystem-to-s3'])
+for (const backend of [
+  'filesystem',
+  's3',
+  'filesystem-to-s3',
+  's3-to-filesystem',
+])
   await test(`${backend} backup and restore round-trip a note with its history and attachments`, async () => {
     const sourceStorage = await mkdtemp(join(tmpdir(), 'notesapp-backup-src-'));
     const targetStorage = await mkdtemp(join(tmpdir(), 'notesapp-backup-tgt-'));
@@ -372,8 +377,10 @@ for (const backend of ['filesystem', 's3', 'filesystem-to-s3'])
     try {
       sourceDb = await createDisposableDatabase();
       targetDb = await createDisposableDatabase();
-      if (backend === 's3') sourceBucket = await createTestBucket();
-      if (backend !== 'filesystem') targetBucket = await createTestBucket();
+      if (backend === 's3' || backend === 's3-to-filesystem')
+        sourceBucket = await createTestBucket();
+      if (backend === 's3' || backend === 'filesystem-to-s3')
+        targetBucket = await createTestBucket();
       function configFile(bucket: TestBucket, label: string): string {
         const accessKeyIdFile = join(configRoot, `${label}-access`);
         const secretAccessKeyFile = join(configRoot, `${label}-secret`);
@@ -719,63 +726,120 @@ for (const backend of ['filesystem', 's3', 'filesystem-to-s3'])
         assert.deepEqual(readdirSync(failedRoot), []);
       }
 
-      // A nonempty bucket is refused before a restore writes the database.
-      if (targetBucket) {
-        await targetBucket.store.write(
-          'staging/existing',
-          Readable.from(['keep']),
-          4,
-        );
-        const refused = spawnSync(
-          join(process.cwd(), 'tools/ops/restore.sh'),
-          [
-            ...targetOptions,
-            '--backup-file',
-            backupFile,
-            '--storage-root',
-            targetStorage,
-            '--database-url-file',
-            targetDatabaseUrlFile,
-            '--key-file',
-            keyFile,
-            '--installation-id-file',
-            installationIdFile,
-            '--postgres-container',
-            postgresContainer,
-          ],
-          { encoding: 'utf8' },
-        );
-        assertNoS3Secrets(refused);
-        assert.notEqual(refused.status, 0);
-        assert.match(refused.stderr, /bucket is not empty/);
-        assert.equal(
-          refused.stdout.includes('Restoration completed successfully'),
-          false,
-        );
-        await targetBucket.store.remove('staging/existing');
+      const restoreScript = join(process.cwd(), 'tools/ops/restore.sh');
+      const restoreArguments = [
+        ...targetOptions,
+        '--backup-file',
+        backupFile,
+        '--storage-root',
+        targetStorage,
+        '--database-url-file',
+        targetDatabaseUrlFile,
+        '--key-file',
+        keyFile,
+        '--installation-id-file',
+        installationIdFile,
+        '--postgres-container',
+        postgresContainer,
+      ];
+      const targetClient = new pg.Client({
+        connectionString: targetDb.migrationUrl,
+      });
+      await targetClient.connect();
+      try {
+        // Compare all public table data, including existing target records.
+        async function databaseState() {
+          const tables = await targetClient.query<{ tablename: string }>(
+            "SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename",
+          );
+          const state = [];
+          for (const { tablename } of tables.rows) {
+            const name = tablename.replaceAll('"', '""');
+            const rows = await targetClient.query<{ value: unknown }>(
+              `SELECT to_jsonb(t) AS value FROM public."${name}" t ORDER BY to_jsonb(t)::text`,
+            );
+            state.push({ table: tablename, rows: rows.rows });
+          }
+          return state;
+        }
+        async function bucketState() {
+          const state = [];
+          if (targetBucket) {
+            for await (const { key } of targetBucket.store.list('')) {
+              const value = await targetBucket.store.read(key);
+              assert.ok(value);
+              state.push({ key, content: await buffer(value) });
+            }
+          }
+          return state.sort((a, b) => a.key.localeCompare(b.key));
+        }
+        for (const occupied of ['storage root', 'database', 'bucket']) {
+          if (occupied === 'bucket' && !targetBucket) continue;
+          const existingFile = join(targetStorage, 'existing');
+          const existingWorkspace = randomUUID();
+          if (occupied === 'storage root') writeFileSync(existingFile, 'keep');
+          if (occupied === 'database')
+            await targetClient.query(
+              'INSERT INTO workspaces (id, name, created_at) VALUES ($1, $2, now())',
+              [existingWorkspace, 'Keep this workspace'],
+            );
+          if (occupied === 'bucket') {
+            assert.ok(targetBucket);
+            await targetBucket.store.write(
+              'staging/existing',
+              Readable.from(['keep']),
+              4,
+            );
+          }
+          const beforeDatabase = await databaseState();
+          const beforeBucket = await bucketState();
+          const beforeFiles = readdirSync(targetStorage, { recursive: true });
+          const refused = spawnSync(restoreScript, restoreArguments, {
+            encoding: 'utf8',
+          });
+          assertNoS3Secrets(refused);
+          assert.equal(refused.error, undefined);
+          assert.notEqual(refused.status, null);
+          assert.notEqual(refused.status, 0);
+          assert.ok(
+            refused.stderr
+              .toLowerCase()
+              .includes(
+                `the target ${occupied === 'bucket' ? 'object storage bucket' : occupied} is not empty`,
+              ),
+            refused.stderr,
+          );
+          assert.equal(
+            refused.stdout.includes('Restoration completed successfully'),
+            false,
+          );
+          assert.deepEqual(await databaseState(), beforeDatabase);
+          assert.deepEqual(await bucketState(), beforeBucket);
+          assert.deepEqual(
+            readdirSync(targetStorage, { recursive: true }),
+            beforeFiles,
+          );
+          if (occupied === 'storage root') {
+            assert.equal(readFileSync(existingFile, 'utf8'), 'keep');
+            await rm(existingFile);
+          }
+          if (occupied === 'database')
+            await targetClient.query('DELETE FROM workspaces WHERE id = $1', [
+              existingWorkspace,
+            ]);
+          if (occupied === 'bucket') {
+            assert.ok(targetBucket);
+            await targetBucket.store.remove('staging/existing');
+          }
+        }
+      } finally {
+        await targetClient.end();
       }
 
-      // Run restore into target environment
-      const restoreScript = join(process.cwd(), 'tools/ops/restore.sh');
-      const restoreOutput = spawnSync(
-        restoreScript,
-        [
-          ...targetOptions,
-          '--backup-file',
-          backupFile,
-          '--storage-root',
-          targetStorage,
-          '--database-url-file',
-          targetDatabaseUrlFile,
-          '--key-file',
-          keyFile,
-          '--installation-id-file',
-          installationIdFile,
-          '--postgres-container',
-          postgresContainer,
-        ],
-        { encoding: 'utf8' },
-      );
+      // Run restore into target environment.
+      const restoreOutput = spawnSync(restoreScript, restoreArguments, {
+        encoding: 'utf8',
+      });
       assertNoS3Secrets(restoreOutput);
       assert.equal(restoreOutput.status, 0, 'Restore must succeed.');
       assert.ok(
