@@ -21,6 +21,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import pg from 'pg';
+import { ListObjectsV2Command, S3Client } from '@aws-sdk/client-s3';
 import {
   createAppWithHandlers,
   createHandlers,
@@ -765,10 +766,28 @@ for (const backend of [
         async function bucketState() {
           const state = [];
           if (targetBucket) {
-            for await (const { key } of targetBucket.store.list('')) {
-              const value = await targetBucket.store.read(key);
-              assert.ok(value);
-              state.push({ key, content: await buffer(value) });
+            assert.ok(targetBucket.settings.endpoint);
+            const client = new S3Client({
+              region: targetBucket.settings.region,
+              endpoint: targetBucket.settings.endpoint,
+              forcePathStyle: true,
+              credentials: targetBucket.settings,
+            });
+            try {
+              const objects = await client.send(
+                new ListObjectsV2Command({
+                  Bucket: targetBucket.settings.bucket,
+                }),
+              );
+              assert.notEqual(objects.IsTruncated, true);
+              for (const { Key: key } of objects.Contents ?? []) {
+                assert.ok(key);
+                const value = await targetBucket.store.read(key);
+                assert.ok(value);
+                state.push({ key, content: await buffer(value) });
+              }
+            } finally {
+              client.destroy();
             }
           }
           return state.sort((a, b) => a.key.localeCompare(b.key));
