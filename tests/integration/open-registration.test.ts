@@ -108,9 +108,17 @@ function environment(
 
 const database = await createDisposableDatabase();
 const storageRoot = await mkdtemp(join(tmpdir(), 'notesapp-open-test-'));
-const config = loadServerConfig(
-  environment(database.runtimeUrl, database.authUrl, storageRoot),
-);
+const config = loadServerConfig({
+  ...environment(database.runtimeUrl, database.authUrl, storageRoot),
+  NOTESAPP_ACCOUNT_LIMIT_BYTES: '10000000000',
+  NOTESAPP_NEW_ACCOUNT_TRIAL_SECONDS: '1209600',
+  NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER: '30d',
+  NOTESAPP_NEW_ACCOUNT_TEXT_LIMIT_BYTES: '2000000000',
+  NOTESAPP_NEW_ACCOUNT_PUBLISHED_TRANSFER_LIMIT_BYTES: '10000000000',
+  NOTESAPP_NEW_ACCOUNT_DOWNLOAD_LIMIT_BYTES: '20000000000',
+  NOTESAPP_NEW_ACCOUNT_TEAMS: 'false',
+  NOTESAPP_NEW_ACCOUNT_COLLABORATION: 'false',
+});
 const sent: MailMessage[] = [];
 const app = await createApp(config, {
   mail: {
@@ -285,10 +293,29 @@ await test('a pending account cannot sign in, and its link makes the account', a
   });
   assert.equal(account.data?.email, email);
   assert.equal(account.data?.installationRole, 'member');
-  assert.equal(
-    account.data?.storage.limitBytes,
-    Number(defaultAccountLimitBytes),
-  );
+  assert.equal(account.data?.controls.trialState, 'active');
+  assert.ok(account.data?.controls.trialEndsAt);
+  assert.equal(account.data?.controls.textLimitBytes, 2000000000);
+  assert.equal(account.data?.controls.publishedTransferLimitBytes, 10000000000);
+  assert.equal(account.data?.controls.downloadLimitBytes, 20000000000);
+  assert.deepEqual(account.data?.controls.features, {
+    teams: false,
+    collaboration: false,
+  });
+  const setup = await openSession(database.migrationUrl);
+  try {
+    const timing = await setup.query<{ access: string; removal: string }>(
+      `select extract(epoch from trial_ends_at-created_at)::bigint::text as access,
+         extract(epoch from trial_removal_at-created_at)::bigint::text as removal
+       from accounts where id=$1`,
+      [account.data.accountId],
+    );
+    assert.deepEqual(timing[0], { access: '1209600', removal: '2592000' });
+  } finally {
+    await setup.close();
+  }
+
+  assert.equal(account.data?.storage.limitBytes, 10000000000);
 });
 
 await test('a second sign-up for a pending address replaces it and its password', async () => {
