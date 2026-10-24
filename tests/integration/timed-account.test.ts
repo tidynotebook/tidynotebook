@@ -12,6 +12,8 @@ import {
   getAccount,
   getSetupStatus,
   createApiKey,
+  createPublishedLink,
+  getPublishedPage,
   listFiles,
   listWorkspaces,
   inspectWorkspaceExport,
@@ -119,6 +121,19 @@ try {
     const listed = await listWorkspaces({ headers });
     const workspaceId = listed.data?.workspaces[0]?.workspaceId;
     assert.ok(workspaceId);
+    const notes = await listFiles({ headers, path: { workspaceId } });
+    const fileId = notes.data?.files[0]?.fileId;
+    assert.ok(fileId);
+    const published = await createPublishedLink({
+      headers,
+      path: { workspaceId },
+      body: { scope: { kind: 'note', fileId } },
+    });
+    assert.ok(published.data);
+    const token = published.data.token;
+    const publicRead = async (): Promise<string> =>
+      String((await getPublishedPage({ path: { token } })).data ?? '');
+    assert.ok(!(await publicRead()).includes('This link is not available.'));
     const key = (await createApiKey({ headers, body: { name: 'Trial key' } }))
       .data;
     assert.ok(key);
@@ -144,6 +159,7 @@ try {
         423,
       );
     }
+    assert.ok((await publicRead()).includes('This link is not available.'));
     const expired = (await getAccount({ headers })).data;
     assert.equal(expired?.controls.trialState, 'expired');
     assert.equal(expired?.controls.standing, 'locked');
@@ -173,6 +189,7 @@ try {
     });
     assert.equal(paid.response?.status, 200);
     assert.equal(paid.data?.controls.trialState, 'ended');
+    assert.ok(!(await publicRead()).includes('This link is not available.'));
     assert.equal(
       (await listFiles({ headers: keyHeaders, path: { workspaceId } })).response
         ?.status,
