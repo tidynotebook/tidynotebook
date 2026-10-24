@@ -8,7 +8,9 @@ import { randomUUID } from 'node:crypto';
 import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { migrationsFolder } from '@notesapp/storage-server';
+import { migrationsFolder, provisionWorkspace } from '@notesapp/storage-server';
+import { defaultAccountLimitBytes, type Role } from '@notesapp/core';
+import { openSession, type TestDatabase } from './database.ts';
 import type { TestSession } from './database.ts';
 
 /** A copy of the migration set that ends before one entry. */
@@ -127,4 +129,30 @@ export async function registerFirstAccountOfEarlierRelease(
     [authUserId, randomUUID(), randomUUID(), limitBytes.toString()],
   );
   return rows[0]?.account ?? null;
+}
+
+/** Seed an earlier schema without columns introduced by the current release. */
+export async function seedEarlierWorkspace(
+  database: TestDatabase,
+  workspaceId: string,
+  members: readonly { readonly accountId: string; readonly role: Role }[],
+): Promise<void> {
+  const session = await openSession(database.migrationUrl);
+  try {
+    await session.query('begin');
+    for (const member of members) {
+      await session.query(
+        "insert into accounts (id, installation_role, limit_bytes) values ($1, 'member', $2::bigint) on conflict do nothing",
+        [member.accountId, defaultAccountLimitBytes.toString()],
+      );
+    }
+    await session.query('commit');
+  } finally {
+    await session.close();
+  }
+  await provisionWorkspace(database.migrationUrl, {
+    workspaceId,
+    name: `workspace ${workspaceId.slice(0, 8)}`,
+    members,
+  });
 }

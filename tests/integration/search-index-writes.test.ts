@@ -24,7 +24,10 @@ import {
   testPassword,
   testServerUrl,
 } from './support/database.ts';
-import { migrationsBefore } from './support/earlier-schema.ts';
+import {
+  migrationsBefore,
+  seedEarlierWorkspace,
+} from './support/earlier-schema.ts';
 
 await test('fresh note writes reach the main search index', async () => {
   const database = await createDisposableDatabase();
@@ -96,7 +99,9 @@ await test('an upgrade drains earlier writes and keeps future writes indexed', a
     const accountId = randomUUID();
     const workspaceId = randomUUID();
     const actor = memberActor(accountId, workspaceId);
-    await seedWorkspace(database, workspaceId, [{ accountId, role: 'owner' }]);
+    await seedEarlierWorkspace(database, workspaceId, [
+      { accountId, role: 'owner' },
+    ]);
     const owner = await openSession(migrationUrl);
     try {
       const indexBefore = await owner.query<{ oid: number }>(

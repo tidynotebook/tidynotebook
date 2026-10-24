@@ -77,6 +77,7 @@ export function completeTestHandlers(handlers: HandlerMap): HandlerMap {
         mediaType: 'application/json',
         body: {
           initialized: true,
+          newAccountTrialSeconds: null,
           openRegistration: false,
           passwordReset: false,
           legalDocuments: null,

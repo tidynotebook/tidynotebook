@@ -22,11 +22,13 @@ import {
 import {
   memberActor,
   openSession,
-  seedWorkspace,
   testServerUrl,
   type TestDatabase,
 } from './support/database.ts';
-import { migrationsBefore } from './support/earlier-schema.ts';
+import {
+  migrationsBefore,
+  seedEarlierWorkspace,
+} from './support/earlier-schema.ts';
 
 await test('the welcome note migration uses the UTC cutoff, account bytes, and retained note records', async () => {
   const earlier = await migrationsBefore('0040_kind_eternals');
@@ -58,7 +60,7 @@ await test('the welcome note migration uses the UTC cutoff, account bytes, and r
     async function account(createdAt = '2026-10-22T00:00:00Z') {
       const accountId = randomUUID();
       const workspaceId = randomUUID();
-      await seedWorkspace(database, workspaceId, [
+      await seedEarlierWorkspace(database, workspaceId, [
         { accountId, role: 'owner' },
       ]);
       await sql.query('update accounts set created_at = $2 where id = $1', [
@@ -91,7 +93,7 @@ await test('the welcome note migration uses the UTC cutoff, account bytes, and r
     excluded.push(used.workspaceId);
     const otherWorkspace = await account();
     const spareId = randomUUID();
-    await seedWorkspace(database, spareId, [
+    await seedEarlierWorkspace(database, spareId, [
       { accountId: otherWorkspace.accountId, role: 'owner' },
     ]);
     await sql.query(
