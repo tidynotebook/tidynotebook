@@ -426,6 +426,11 @@ export const optionalVariables = [
   'NOTESAPP_S3_ENDPOINT',
   'NOTESAPP_S3_ACCESS_KEY_ID',
   'NOTESAPP_S3_SECRET_ACCESS_KEY',
+  'NOTESAPP_NEW_ACCOUNT_TEXT_LIMIT_BYTES',
+  'NOTESAPP_NEW_ACCOUNT_PUBLISHED_TRANSFER_LIMIT_BYTES',
+  'NOTESAPP_NEW_ACCOUNT_DOWNLOAD_LIMIT_BYTES',
+  'NOTESAPP_NEW_ACCOUNT_TEAMS',
+  'NOTESAPP_NEW_ACCOUNT_COLLABORATION',
   'NOTESAPP_NEW_ACCOUNT_TRIAL_SECONDS',
   'NOTESAPP_NEW_ACCOUNT_STANDING',
   'NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER',
@@ -721,6 +726,23 @@ const configSchema: SchemaObject = {
     // describes it.
     NOTESAPP_S3_ACCESS_KEY_ID: { type: 'string' },
     NOTESAPP_S3_SECRET_ACCESS_KEY: { type: 'string' },
+    NOTESAPP_NEW_ACCOUNT_TEXT_LIMIT_BYTES: {
+      type: 'string',
+      pattern: '^[1-9][0-9]{0,15}$',
+    },
+    NOTESAPP_NEW_ACCOUNT_PUBLISHED_TRANSFER_LIMIT_BYTES: {
+      type: 'string',
+      pattern: '^[1-9][0-9]{0,15}$',
+    },
+    NOTESAPP_NEW_ACCOUNT_DOWNLOAD_LIMIT_BYTES: {
+      type: 'string',
+      pattern: '^[1-9][0-9]{0,15}$',
+    },
+    NOTESAPP_NEW_ACCOUNT_TEAMS: { type: 'string', enum: ['true', 'false'] },
+    NOTESAPP_NEW_ACCOUNT_COLLABORATION: {
+      type: 'string',
+      enum: ['true', 'false'],
+    },
     NOTESAPP_NEW_ACCOUNT_TRIAL_SECONDS: {
       type: 'string',
       pattern: '^[1-9][0-9]{0,8}$',
@@ -1448,6 +1470,26 @@ function readAccounts(raw: RawConfig): ServerConfig['accounts'] {
     raw.NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER === undefined
       ? null
       : Number(raw.NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER.slice(0, -1));
+  const initialLimit = (
+    name:
+      | 'TEXT_LIMIT_BYTES'
+      | 'PUBLISHED_TRANSFER_LIMIT_BYTES'
+      | 'DOWNLOAD_LIMIT_BYTES',
+  ): bigint | null => {
+    const value = raw[`NOTESAPP_NEW_ACCOUNT_${name}`];
+    if (value === undefined) return null;
+    const limit = BigInt(value);
+    if (limit > maxAccountLimitBytes)
+      issues.push(
+        `NOTESAPP_NEW_ACCOUNT_${name}: name at most ${maxAccountLimitBytes.toString()} bytes.`,
+      );
+    return limit;
+  };
+  const textLimitBytes = initialLimit('TEXT_LIMIT_BYTES');
+  const publishedTransferLimitBytes = initialLimit(
+    'PUBLISHED_TRANSFER_LIMIT_BYTES',
+  );
+  const downloadLimitBytes = initialLimit('DOWNLOAD_LIMIT_BYTES');
   const trialSeconds =
     raw.NOTESAPP_NEW_ACCOUNT_TRIAL_SECONDS === undefined
       ? null
@@ -1478,6 +1520,13 @@ function readAccounts(raw: RawConfig): ServerConfig['accounts'] {
     limitBytes,
     standing,
     trialSeconds,
+    textLimitBytes,
+    publishedTransferLimitBytes,
+    downloadLimitBytes,
+    features: {
+      teams: raw.NOTESAPP_NEW_ACCOUNT_TEAMS !== 'false',
+      collaboration: raw.NOTESAPP_NEW_ACCOUNT_COLLABORATION !== 'false',
+    },
     removeAfterSeconds:
       removeAfterDays === null ? null : removeAfterDays * 24 * 60 * 60,
     invitationLifetimeHours,

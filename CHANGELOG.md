@@ -7,6 +7,17 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## Unreleased
 
+## 0.21.0 - 2026-10-24
+
+### Added
+
+- Operators can give new member accounts a fixed free trial with initial limits and feature access. Direct signup and invitation acceptance set access in one transaction. Server checks enforce expiry without a login. Existing accounts and default self-hosted behavior stay unchanged.
+- Account and operator reads show the fixed trial end and state. Trial screens explain remaining access and the upgrade action, with no card requirement or automatic charge.
+
+### Changed
+
+- Revision-checked paid or manual control changes end a trial. Administrator promotion also ends it. Expiry keeps the original account-creation removal deadline. The internal registration SQL signature changes, so server processes must use the matching schema during an upgrade.
+
 ## 0.20.0 - 2026-10-24
 
 ### Added

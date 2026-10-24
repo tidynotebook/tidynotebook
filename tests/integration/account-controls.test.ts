@@ -860,6 +860,10 @@ for (const ground of ['open', 'invitation'] as const) {
         limitBytes: defaultAccountLimitBytes,
         standing: 'active' as const,
         trialSeconds: 14 * 86400,
+        textLimitBytes: 2000000000n,
+        publishedTransferLimitBytes: 10000000000n,
+        downloadLimitBytes: 20000000000n,
+        features: { teams: false, collaboration: false },
         removeAfterSeconds: 30 * 86400,
       },
     };
@@ -889,6 +893,12 @@ for (const ground of ['open', 'invitation'] as const) {
         standing: 'active',
         events: ground === 'open' ? '2' : '1',
       });
+      const initial = await storedControls(request.accountId);
+      assert.equal(initial.text_limit_bytes, '2000000000');
+      assert.equal(initial.published_transfer_limit_bytes, '10000000000');
+      assert.equal(initial.download_limit_bytes, '20000000000');
+      assert.equal(initial.teams, false);
+      assert.equal(initial.collaboration, false);
       assert.equal(
         (await identity.sessionStanding(authUserId))?.standing,
         'active',

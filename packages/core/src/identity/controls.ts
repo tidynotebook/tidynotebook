@@ -180,12 +180,16 @@ export type NewAccountSettings = {
   readonly limitBytes: bigint;
   readonly standing: ControlStanding;
   /**
-   * How many seconds a new locked account lives before the daily run removes
-   * it, or `null` for no removal time. Only a locked account has one.
+   * Removal deadline from creation, or null. A trial stores it separately
+   * until access expires. A locked account uses it directly.
    */
   readonly removeAfterSeconds: number | null;
   /** Opt-in access duration. Absence preserves existing registration. */
   readonly trialSeconds?: number | null;
+  readonly textLimitBytes?: bigint | null;
+  readonly publishedTransferLimitBytes?: bigint | null;
+  readonly downloadLimitBytes?: bigint | null;
+  readonly features?: AccountFeatures;
 };
 
 /** The longest life of a new locked account that the configuration takes. */
@@ -194,6 +198,12 @@ export const maxRemoveAfterDays = 3650;
 /** Whether the settings of a new account are ones that the store can hold. */
 export function newAccountSettingsHold(settings: NewAccountSettings): boolean {
   if (settings.limitBytes < 1n || settings.limitBytes > maxAccountLimitBytes)
+    return false;
+  if (
+    !holdsLimit(settings.textLimitBytes ?? null) ||
+    !holdsLimit(settings.publishedTransferLimitBytes ?? null) ||
+    !holdsLimit(settings.downloadLimitBytes ?? null)
+  )
     return false;
   const trial = settings.trialSeconds ?? null;
   if (

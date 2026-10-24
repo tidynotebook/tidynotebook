@@ -214,3 +214,35 @@ await test('a revision-checked manual change ends trial access and preserves its
     { ok: false, error: { code: 'controls_changed', fileIds: [] } },
   );
 });
+
+await test('initial member limits reject zero and values beyond exact JSON integers', () => {
+  const settings = {
+    limitBytes: 1000n,
+    standing: 'active',
+    removeAfterSeconds: null,
+  } as const;
+  assert.equal(
+    newAccountSettingsHold({
+      ...settings,
+      textLimitBytes: 1n,
+      downloadLimitBytes: null,
+      features: { teams: false, collaboration: false },
+    }),
+    true,
+  );
+  assert.equal(
+    newAccountSettingsHold({ ...settings, textLimitBytes: 0n }),
+    false,
+  );
+  assert.equal(
+    newAccountSettingsHold({
+      ...settings,
+      publishedTransferLimitBytes: maxAccountLimitBytes + 1n,
+    }),
+    false,
+  );
+  assert.equal(
+    newAccountSettingsHold({ ...settings, downloadLimitBytes: -1n }),
+    false,
+  );
+});

@@ -1416,7 +1416,7 @@ export function openIdentityStore(
       return inTransaction(null, null, async (client) => {
         const rows = await client.query<{ account: string | null }>(
           `select notesapp_register_account($1, $2, $3, $4, $5, $6, $7::bigint,
-             $8::account_standing, $9::bigint, $10::bigint) as account`,
+             $8::account_standing, $9::bigint, $10::bigint, $11::bigint, $12::bigint, $13::bigint, $14, $15) as account`,
           [
             request.authUserId,
             request.ground.kind,
@@ -1432,6 +1432,11 @@ export function openIdentityStore(
               ? null
               : String(request.newAccount.removeAfterSeconds),
             request.newAccount.trialSeconds ?? null,
+            request.newAccount.textLimitBytes?.toString() ?? null,
+            request.newAccount.publishedTransferLimitBytes?.toString() ?? null,
+            request.newAccount.downloadLimitBytes?.toString() ?? null,
+            request.newAccount.features?.teams ?? true,
+            request.newAccount.features?.collaboration ?? true,
           ],
         );
         return rows.rows[0]?.account ?? null;

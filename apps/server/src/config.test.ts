@@ -1425,3 +1425,40 @@ await test('timed registration accepts an active trial with the original day-30 
   ])
     assert.throws(() => loadServerConfig(environment(extra)), ConfigError);
 });
+
+await test('new member controls are optional installation settings with bounded limits', () => {
+  const defaults = loadServerConfig(environment({})).accounts;
+  assert.equal(defaults.textLimitBytes, null);
+  assert.equal(defaults.publishedTransferLimitBytes, null);
+  assert.equal(defaults.downloadLimitBytes, null);
+  assert.deepEqual(defaults.features, { teams: true, collaboration: true });
+  const standard = loadServerConfig(
+    environment({
+      NOTESAPP_ACCOUNT_LIMIT_BYTES: '10000000000',
+      NOTESAPP_NEW_ACCOUNT_TEXT_LIMIT_BYTES: '2000000000',
+      NOTESAPP_NEW_ACCOUNT_PUBLISHED_TRANSFER_LIMIT_BYTES: '10000000000',
+      NOTESAPP_NEW_ACCOUNT_DOWNLOAD_LIMIT_BYTES: '20000000000',
+      NOTESAPP_NEW_ACCOUNT_TEAMS: 'false',
+      NOTESAPP_NEW_ACCOUNT_COLLABORATION: 'false',
+    }),
+  ).accounts;
+  assert.equal(standard.limitBytes, 10000000000n);
+  assert.equal(standard.textLimitBytes, 2000000000n);
+  assert.equal(standard.publishedTransferLimitBytes, 10000000000n);
+  assert.equal(standard.downloadLimitBytes, 20000000000n);
+  assert.deepEqual(standard.features, { teams: false, collaboration: false });
+  for (const value of ['0', '-1', '1.5', '9007199254740992']) {
+    assert.throws(
+      () =>
+        loadServerConfig(
+          environment({ NOTESAPP_NEW_ACCOUNT_TEXT_LIMIT_BYTES: value }),
+        ),
+      ConfigError,
+    );
+  }
+  assert.throws(
+    () =>
+      loadServerConfig(environment({ NOTESAPP_NEW_ACCOUNT_TEAMS: 'disabled' })),
+    ConfigError,
+  );
+});

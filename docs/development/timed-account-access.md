@@ -7,6 +7,12 @@ The settings and their accepted values live in
 [the server configuration](../../apps/server/src/config.ts). The configuration
 example is in [the environment template](../../.env.example).
 
+Initial member limits and feature switches are also installation settings.
+Registration inserts them with trial access in the same transaction. The
+additional limits default to no limit, and both features default to enabled.
+They apply to new members only. The first administrator and existing rows
+keep their controls. No later cloud event is needed to reduce initial access.
+
 These are installation settings. Core does not force them onto self-hosted
 installations. Apply them together on every process. A trial account starts
 active. Its fixed end is `createdAt + 1209600 seconds`. Its removal deadline
@@ -89,5 +95,5 @@ expiry without login, a paid update before and after expiry, export, and the
 original day-30 deadline. Changing or removing the setting affects later
 accounts only. Existing stamped trials retain their fixed deadlines.
 
-No merge, release, deployment, production settings change, or production
-account mutation is part of this work.
+A core release does not deploy the cloud installation. The cloud owner checks
+the new pin in staging before a production change.

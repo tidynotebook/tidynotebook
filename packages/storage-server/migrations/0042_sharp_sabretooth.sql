@@ -35,7 +35,12 @@ CREATE FUNCTION public.notesapp_register_account(
 		p_limit_bytes bigint,
 		p_standing public.account_standing,
 		p_remove_after_seconds bigint,
-    p_trial_seconds bigint)
+    p_trial_seconds bigint,
+    p_text_limit_bytes bigint,
+    p_published_transfer_limit_bytes bigint,
+    p_download_limit_bytes bigint,
+    p_teams boolean,
+    p_collaboration boolean)
 	RETURNS uuid
 	LANGUAGE plpgsql
 	SECURITY DEFINER
@@ -102,7 +107,8 @@ CREATE FUNCTION public.notesapp_register_account(
 		-- active: a locked first account could not unlock anything.
 		INSERT INTO public.accounts
 			(id, installation_role, state, limit_bytes, address_proof, standing,
-				removal_at, created_at, trial_ends_at, trial_removal_at)
+				removal_at, created_at, trial_ends_at, trial_removal_at,
+        text_limit_bytes, published_transfer_limit_bytes, download_limit_bytes, teams, collaboration)
 			VALUES (p_account_id, v_role, 'enabled', p_limit_bytes, v_proof,
 				CASE WHEN p_ground = 'first-run' THEN 'active' ELSE p_standing END,
 				-- A time is kept to the millisecond, which a reader in the
@@ -115,7 +121,12 @@ CREATE FUNCTION public.notesapp_register_account(
         CASE WHEN p_ground <> 'first-run' AND p_trial_seconds IS NOT NULL
           THEN date_trunc('milliseconds', now()) + make_interval(secs => p_trial_seconds) END,
         CASE WHEN p_ground <> 'first-run' AND p_trial_seconds IS NOT NULL AND p_remove_after_seconds IS NOT NULL
-          THEN date_trunc('milliseconds', now()) + make_interval(secs => p_remove_after_seconds) END);
+          THEN date_trunc('milliseconds', now()) + make_interval(secs => p_remove_after_seconds) END,
+        CASE WHEN p_ground <> 'first-run' THEN p_text_limit_bytes END,
+        CASE WHEN p_ground <> 'first-run' THEN p_published_transfer_limit_bytes END,
+        CASE WHEN p_ground <> 'first-run' THEN p_download_limit_bytes END,
+        CASE WHEN p_ground = 'first-run' THEN true ELSE coalesce(p_teams, true) END,
+        CASE WHEN p_ground = 'first-run' THEN true ELSE coalesce(p_collaboration, true) END);
 		INSERT INTO public.account_identities (auth_user_id, account_id)
 			VALUES (p_auth_user_id, p_account_id);
 		INSERT INTO public.account_preferences (account_id) VALUES (p_account_id);
@@ -149,8 +160,8 @@ CREATE FUNCTION public.notesapp_register_account(
 	END
 	$$;
 --> statement-breakpoint
-REVOKE ALL ON FUNCTION public.notesapp_register_account(text,text,text,uuid,uuid,text,bigint,public.account_standing,bigint,bigint) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.notesapp_register_account(text,text,text,uuid,uuid,text,bigint,public.account_standing,bigint,bigint) TO notesapp_app;
+REVOKE ALL ON FUNCTION public.notesapp_register_account(text,text,text,uuid,uuid,text,bigint,public.account_standing,bigint,bigint,bigint,bigint,bigint,boolean,boolean) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.notesapp_register_account(text,text,text,uuid,uuid,text,bigint,public.account_standing,bigint,bigint,bigint,bigint,bigint,boolean,boolean) TO notesapp_app;
 --> statement-breakpoint
 CREATE OR REPLACE FUNCTION public.notesapp_session_standing(p_auth_user_id text)
 	RETURNS TABLE (account_id uuid, standing text)

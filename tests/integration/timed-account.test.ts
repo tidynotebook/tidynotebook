@@ -34,6 +34,12 @@ const app = await createApp(
     NOTESAPP_AUTH_SECRET: 'trial-account-test-secret-0123456789',
     NOTESAPP_LOG_LEVEL: 'silent',
     NOTESAPP_RATE_LIMIT_MAX: '10000',
+    NOTESAPP_ACCOUNT_LIMIT_BYTES: '10000000000',
+    NOTESAPP_NEW_ACCOUNT_TEXT_LIMIT_BYTES: '2000000000',
+    NOTESAPP_NEW_ACCOUNT_PUBLISHED_TRANSFER_LIMIT_BYTES: '10000000000',
+    NOTESAPP_NEW_ACCOUNT_DOWNLOAD_LIMIT_BYTES: '20000000000',
+    NOTESAPP_NEW_ACCOUNT_TEAMS: 'false',
+    NOTESAPP_NEW_ACCOUNT_COLLABORATION: 'false',
     NOTESAPP_NEW_ACCOUNT_TRIAL_SECONDS: '1209600',
     NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER: '30d',
     NOTESAPP_OPERATOR_TOKEN: operatorToken,
@@ -72,6 +78,13 @@ try {
     const adminAccount = await getAccount({ headers: admin });
     assert.equal(adminAccount.data?.controls.trialState, 'none');
     assert.equal(adminAccount.data?.controls.trialEndsAt, null);
+    assert.equal(adminAccount.data?.controls.textLimitBytes, null);
+    assert.equal(adminAccount.data?.controls.publishedTransferLimitBytes, null);
+    assert.equal(adminAccount.data?.controls.downloadLimitBytes, null);
+    assert.deepEqual(adminAccount.data?.controls.features, {
+      teams: true,
+      collaboration: true,
+    });
     const invite = await createInvitation({
       headers: admin,
       body: { email: 'trial-member@notes.invalid' },
@@ -91,6 +104,14 @@ try {
     assert.equal(account.controls.trialState, 'active');
     assert.equal(account.controls.standing, 'active');
     assert.equal(account.controls.removalAt, null);
+    assert.equal(account.controls.limitBytes, 10000000000);
+    assert.equal(account.controls.textLimitBytes, 2000000000);
+    assert.equal(account.controls.publishedTransferLimitBytes, 10000000000);
+    assert.equal(account.controls.downloadLimitBytes, 20000000000);
+    assert.deepEqual(account.controls.features, {
+      teams: false,
+      collaboration: false,
+    });
     const listed = await listWorkspaces({ headers });
     const workspaceId = listed.data?.workspaces[0]?.workspaceId;
     assert.ok(workspaceId);
