@@ -64,7 +64,7 @@
     "@types/ws": "catalog:",
     "fake-indexeddb": "6.2.6",
     "fastify": "catalog:",
-    "happy-dom": "21.0.3",
+    "happy-dom": "21.0.4",
     "oxc-parser": "0.154.0",
     "oxlint": "1.88.0",
     "oxlint-tsgolint": "7.0.2004",
