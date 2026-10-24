@@ -68,6 +68,7 @@ import {
 } from './lib/imported-themes.ts';
 import { createFocusPass } from './lib/focus-pass.ts';
 import { createAccountRecheck, isLocked } from './lib/locked.ts';
+import { createTrialRecheck } from './lib/trial.ts';
 import { openMonth } from './lib/monthly-limits.ts';
 import { displayNoteName } from './lib/note-name.ts';
 import {
@@ -514,6 +515,7 @@ function useSessionLoader(generation: number): {
     }),
   );
 
+  const [trialRecheck] = useState(() => createTrialRecheck(recheck));
   useEffect(() => {
     if (
       account?.controls.trialState !== 'active' ||
@@ -524,7 +526,8 @@ function useSessionLoader(generation: number): {
     let timer: number | undefined;
     const check = (): void => {
       window.clearTimeout(timer);
-      if (Date.now() >= end) recheck();
+      const now = Date.now();
+      if (now >= end) timer = window.setTimeout(check, trialRecheck(now));
       else
         timer = window.setTimeout(
           check,
@@ -537,7 +540,7 @@ function useSessionLoader(generation: number): {
       window.clearTimeout(timer);
       window.removeEventListener('focus', check);
     };
-  }, [account, recheck]);
+  }, [account, trialRecheck]);
 
   const invalidate = useCallback((): void => {
     epoch.current += 1;

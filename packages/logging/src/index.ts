@@ -30,6 +30,7 @@ export type LogEventFields = {
       | 'attempts'
       | 'pending'
       | 'streams'
+      | 'trials'
       | 'removals'
       | 'usage';
   };

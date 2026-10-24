@@ -3,10 +3,15 @@ import type { AccountControls } from '@notesapp/api-client';
 /** The offer applies only to a newly created member account. */
 export function trialOffer(seconds: number | null): string | null {
   if (seconds === null) return null;
-  const days = seconds / 86400;
-  const duration = Number.isInteger(days)
-    ? `${String(days)} days`
-    : `${String(seconds / 3600)} hours`;
+  const [count, unit] =
+    seconds % 86400 === 0
+      ? ([seconds / 86400, 'day'] as const)
+      : seconds % 3600 === 0
+        ? ([seconds / 3600, 'hour'] as const)
+        : seconds % 60 === 0
+          ? ([seconds / 60, 'minute'] as const)
+          : ([seconds, 'second'] as const);
+  const duration = `${String(count)} ${unit}${count === 1 ? '' : 's'}`;
   return `New accounts get a free trial for ${duration} from account creation. No card is required. There is no automatic charge. Upgrade to keep access after the trial.`;
 }
 
@@ -22,8 +27,10 @@ export function trialStatus(
   )
     return null;
   const end = Date.parse(controls.trialEndsAt);
-  if (controls.trialState === 'expired' || end <= now)
+  if (controls.trialState === 'expired')
     return 'Your free trial has ended. Upgrade to use your account again. There is no automatic charge.';
+  if (end <= now)
+    return 'Checking your trial access. Your account will update shortly.';
   const remainingMs = end - now;
   const hours = Math.ceil(remainingMs / 3600000);
   const minutes = Math.ceil(remainingMs / 60000);
@@ -40,4 +47,21 @@ export function trialStatus(
             ? '1 hour'
             : `${String(hours)} hours`;
   return `Your free trial ends on ${new Date(end).toLocaleString()}. Time left: ${remaining}. There is no automatic charge.`;
+}
+
+const trialRecheckIntervalMs = 30000;
+
+/** Bound clock-skew retries across account adoption and focus events. */
+export function createTrialRecheck(read: () => void): (now: number) => number {
+  let lastRequestAt: number | null = null;
+  return (now) => {
+    if (lastRequestAt !== null && now - lastRequestAt < trialRecheckIntervalMs)
+      return Math.min(
+        trialRecheckIntervalMs,
+        trialRecheckIntervalMs - (now - lastRequestAt),
+      );
+    lastRequestAt = now;
+    read();
+    return trialRecheckIntervalMs;
+  };
 }

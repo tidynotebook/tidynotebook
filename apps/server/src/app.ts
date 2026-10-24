@@ -118,6 +118,7 @@ import { createObjectCleanup } from './jobs/object-cleanup.ts';
 import { scratchFolder } from './routes/scratch.ts';
 import { createPublicationCleanup } from './jobs/publication-cleanup.ts';
 import { createAccountRemoval } from './jobs/account-removal.ts';
+import { createTrialExpiry } from './jobs/trials.ts';
 import { createSyncCleanup } from './jobs/sync-cleanup.ts';
 import { createServerLogger, errorName } from './logging.ts';
 import {
@@ -1183,6 +1184,7 @@ async function composeApp(
       | 'attempts'
       | 'pending'
       | 'streams'
+      | 'trials'
       | 'removals';
     readonly run: () => Promise<unknown>;
   }[] = [
@@ -1212,10 +1214,10 @@ async function composeApp(
     // A process that stopped without its drain leaves reservations that
     // expired (record 0129).
     { name: 'streams', run: () => coordination.pruneStreams() },
+    { name: 'trials', run: createTrialExpiry(identity) },
     {
       name: 'removals',
       run: async () => {
-        await identity.expireTrials();
         await removeAccounts();
         if (config.mcpOrigin !== null) await expireOAuthClients(authPool);
       },
