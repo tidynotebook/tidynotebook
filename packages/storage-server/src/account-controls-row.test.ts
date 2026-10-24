@@ -8,6 +8,9 @@ import {
 
 const row: AccountControlsRow = {
   standing: 'locked',
+  trial_ends_at: null,
+  trial_ended_at: null,
+  trial_state: 'none',
   removal_at: new Date('2026-11-04T00:00:00.000Z'),
   limit_bytes: '10000000000',
   text_limit_bytes: null,
@@ -24,6 +27,8 @@ await test('a row reads as the controls, with null as no limit', () => {
     revision: 7,
     standing: 'locked',
     removalAt: '2026-11-04T00:00:00.000Z',
+    trialEndsAt: null,
+    trialState: 'none',
     limitBytes: 10_000_000_000n,
     textLimitBytes: null,
     publishedTransferLimitBytes: 10_000_000_000n,

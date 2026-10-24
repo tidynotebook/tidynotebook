@@ -47,6 +47,8 @@ function account(extra: Partial<AccountSummary> = {}): AccountSummary {
       revision: 1,
       standing: 'active',
       removalAt: null,
+      trialEndsAt: null,
+      trialState: 'none',
       limitBytes: 5 * 1024 * 1024 * 1024,
       textLimitBytes: null,
       publishedTransferLimitBytes: null,

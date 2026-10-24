@@ -1399,3 +1399,29 @@ await test('the email support URL is optional and must be safe to open', () => {
     );
   }
 });
+
+await test('timed registration accepts an active trial with the original day-30 deadline', () => {
+  const config = loadServerConfig(
+    environment({
+      NOTESAPP_NEW_ACCOUNT_TRIAL_SECONDS: '1209600',
+      NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER: '30d',
+    }),
+  );
+  assert.equal(config.accounts.trialSeconds, 1209600);
+  assert.equal(config.accounts.removeAfterSeconds, 30 * 86400);
+  assert.equal(loadServerConfig(environment({})).accounts.trialSeconds, null);
+  for (const extra of [
+    { NOTESAPP_NEW_ACCOUNT_TRIAL_SECONDS: '0' },
+    { NOTESAPP_NEW_ACCOUNT_TRIAL_SECONDS: '1.5' },
+    { NOTESAPP_NEW_ACCOUNT_TRIAL_SECONDS: '315360001' },
+    {
+      NOTESAPP_NEW_ACCOUNT_TRIAL_SECONDS: '1209600',
+      NOTESAPP_NEW_ACCOUNT_STANDING: 'locked',
+    },
+    {
+      NOTESAPP_NEW_ACCOUNT_TRIAL_SECONDS: '1209600',
+      NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER: '14d',
+    },
+  ])
+    assert.throws(() => loadServerConfig(environment(extra)), ConfigError);
+});

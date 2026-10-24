@@ -174,6 +174,14 @@ export type AccountControls = {
      * The switch of each switchable feature.
      */
     readonly features: AccountFeatures;
+    /**
+     * The fixed trial end from account creation, or null for no trial.
+     */
+    readonly trialEndsAt: string | null;
+    /**
+     * Active means timed access remains. Expired means its deadline passed. Ended means an operator or administrator replaced trial access. Existing accounts have none. No state creates a new entitlement.
+     */
+    readonly trialState: 'none' | 'active' | 'expired' | 'ended';
 };
 
 /**
@@ -7594,6 +7602,10 @@ export type GetSetupStatusResponses = {
      * The setup state.
      */
     200: {
+        /**
+         * Trial duration for a new member account from creation, in seconds. Null means this installation grants no timed trial. No card or automatic charge.
+         */
+        readonly newAccountTrialSeconds: number | null;
         readonly initialized: boolean;
         /**
          * Whether a person can ask for an account without an invitation (record 0114).

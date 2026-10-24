@@ -295,6 +295,13 @@
       "when": 1792707794800,
       "tag": "0041_grey_rattler",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1792829735421,
+      "tag": "0042_sharp_sabretooth",
+      "breakpoints": true
     }
   ]
 }

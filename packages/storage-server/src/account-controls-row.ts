@@ -18,6 +18,9 @@ import {
 export type AccountControlsRow = {
   readonly standing: string;
   readonly removal_at: Date | string | null;
+  readonly trial_ends_at: Date | string | null;
+  readonly trial_ended_at: Date | string | null;
+  readonly trial_state: string;
   readonly limit_bytes: string;
   readonly text_limit_bytes: string | null;
   readonly published_transfer_limit_bytes: string | null;
@@ -28,8 +31,9 @@ export type AccountControlsRow = {
 };
 
 /** The SQL list of those columns of the table `accounts` named `a`. */
-export const accountControlsColumns = `a.standing::text as standing,
-  a.removal_at, a.limit_bytes::text as limit_bytes,
+export const accountControlsColumns = `public.notesapp_effective_standing(a)::text as standing,
+  CASE WHEN public.notesapp_effective_standing(a) = 'locked' AND a.trial_ended_at IS NULL AND a.trial_ends_at IS NOT NULL THEN coalesce(a.removal_at, a.trial_removal_at) ELSE a.removal_at END as removal_at,
+  a.trial_ends_at, a.trial_ended_at, public.notesapp_trial_state(a) as trial_state, a.limit_bytes::text as limit_bytes,
   a.text_limit_bytes::text as text_limit_bytes,
   a.published_transfer_limit_bytes::text as published_transfer_limit_bytes,
   a.download_limit_bytes::text as download_limit_bytes,
@@ -61,6 +65,11 @@ export function accountControlsOf(row: AccountControlsRow): AccountControls {
     );
   return {
     revision,
+    trialEndsAt:
+      row.trial_ends_at === null
+        ? null
+        : new Date(row.trial_ends_at).toISOString(),
+    trialState: trialStateOf(row.trial_state),
     standing: storedStanding(row.standing),
     removalAt:
       row.removal_at === null
@@ -95,4 +104,16 @@ export function controlsParameters(
     controls.features.teams,
     controls.features.collaboration,
   ];
+}
+
+/** The database decides trial state with the same clock as authorization. */
+function trialStateOf(value: string): AccountControls['trialState'] {
+  if (
+    value === 'none' ||
+    value === 'active' ||
+    value === 'expired' ||
+    value === 'ended'
+  )
+    return value;
+  throw new OperationalError('unexpected', 'notesapp: unknown trial state.');
 }

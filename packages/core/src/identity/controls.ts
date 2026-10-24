@@ -46,6 +46,8 @@ export type AccountControls = {
   readonly standing: ControlStanding;
   /** The removal time of a locked account, as ISO 8601, or `null`. */
   readonly removalAt: string | null;
+  readonly trialEndsAt: string | null;
+  readonly trialState: 'none' | 'active' | 'expired' | 'ended';
   readonly limitBytes: bigint;
   readonly textLimitBytes: bigint | null;
   readonly publishedTransferLimitBytes: bigint | null;
@@ -127,6 +129,8 @@ export function applyControlsChange(
     revision: current.revision,
     standing,
     removalAt,
+    trialEndsAt: current.trialEndsAt,
+    trialState: current.trialEndsAt === null ? 'none' : 'ended',
     limitBytes: change.limitBytes ?? current.limitBytes,
     textLimitBytes:
       change.textLimitBytes === undefined
@@ -180,6 +184,8 @@ export type NewAccountSettings = {
    * it, or `null` for no removal time. Only a locked account has one.
    */
   readonly removeAfterSeconds: number | null;
+  /** Opt-in access duration. Absence preserves existing registration. */
+  readonly trialSeconds?: number | null;
 };
 
 /** The longest life of a new locked account that the configuration takes. */
@@ -189,9 +195,20 @@ export const maxRemoveAfterDays = 3650;
 export function newAccountSettingsHold(settings: NewAccountSettings): boolean {
   if (settings.limitBytes < 1n || settings.limitBytes > maxAccountLimitBytes)
     return false;
+  const trial = settings.trialSeconds ?? null;
+  if (
+    trial !== null &&
+    (!Number.isSafeInteger(trial) ||
+      trial <= 0 ||
+      trial > maxRemoveAfterDays * 86400 ||
+      settings.standing !== 'active' ||
+      (settings.removeAfterSeconds !== null &&
+        settings.removeAfterSeconds <= trial))
+  )
+    return false;
   if (settings.removeAfterSeconds === null) return true;
   return (
-    settings.standing === 'locked' &&
+    (settings.standing === 'locked' || trial !== null) &&
     Number.isSafeInteger(settings.removeAfterSeconds) &&
     settings.removeAfterSeconds > 0 &&
     settings.removeAfterSeconds <= maxRemoveAfterDays * 24 * 60 * 60

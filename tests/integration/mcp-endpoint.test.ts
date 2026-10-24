@@ -2409,148 +2409,161 @@ try {
     }
   });
 
-  await test('an issued MCP token keeps only the locked-account operation list', async () => {
-    const invitation = await createInvitation({
-      headers: browserHeaders,
-      body: { email: 'mcp-locked@notes.invalid' },
-    });
-    assert.ok(invitation.data?.link);
-    const registered = await registerAccount({
-      headers: { origin: config.origin },
-      body: {
-        invitation: new URL(invitation.data.link).hash.slice(1),
-        password: 'locked-account-safe-password',
-      },
-    });
-    assert.equal(
-      registered.response?.status,
-      201,
-      JSON.stringify(registered.error),
-    );
-    const lockedCookie = registered.response.headers
-      .getSetCookie()
-      .map((value) => value.split(';')[0])
-      .join('; ');
-    const account = await getAccount({ headers: { cookie: lockedCookie } });
-    assert.ok(account.data);
-    const owned = await listWorkspaces({ headers: { cookie: lockedCookie } });
-    const lockedWorkspace = owned.data?.workspaces[0]?.workspaceId;
-    assert.ok(lockedWorkspace);
-    const lockedToken = await token('notes:read notes:write', lockedCookie);
-    const lockedFile = randomUUID();
-    const lockedVersion = randomUUID();
-    const madeNote = await createFile({
-      headers: { cookie: lockedCookie, origin: config.origin },
-      path: { workspaceId: lockedWorkspace },
-      body: {
-        fileId: lockedFile,
-        revisionId: lockedVersion,
-        mutationId: randomUUID(),
-        deviceId: 'locked-test',
-        path: 'Locked note.md',
-        document: firstSave('needleword'),
-      },
-    });
-    assert.equal(
-      madeNote.response?.status,
-      201,
-      JSON.stringify(madeNote.error),
-    );
-    success(
-      await callRead(
-        'read_note',
-        { workspaceId: lockedWorkspace, fileId: lockedFile },
-        'modern',
-        lockedToken,
-      ),
-    );
-    protectedValues.push(lockedCookie, 'locked-account-safe-password');
-    await admin.query("update accounts set standing='locked' where id=$1", [
-      account.data.accountId,
-    ]);
-    try {
-      success(await callRead('list_workspaces', {}, 'modern', lockedToken));
-      for (const [name, input] of [
-        [
-          'create_note',
-          { workspaceId: lockedWorkspace, path: 'Refused.md', text: 'Refused' },
-        ],
-        [
-          'edit_note',
-          {
-            workspaceId: lockedWorkspace,
-            fileId: lockedFile,
-            version: lockedVersion,
-            text: 'Refused',
-          },
-        ],
-        [
-          'move_note',
-          {
-            workspaceId: lockedWorkspace,
-            fileId: lockedFile,
-            version: lockedVersion,
-            path: 'Moved.md',
-          },
-        ],
-        [
-          'move_note_to_trash',
-          {
-            workspaceId: lockedWorkspace,
-            fileId: lockedFile,
-            version: lockedVersion,
-          },
-        ],
-        [
-          'append_to_note',
-          {
-            workspaceId: lockedWorkspace,
-            fileId: lockedFile,
-            version: lockedVersion,
-            text: 'Refused',
-          },
-        ],
-        [
-          'patch_note',
-          {
-            workspaceId: lockedWorkspace,
-            fileId: lockedFile,
-            version: lockedVersion,
-            changes: [{ operation: 'insert_at_end', text: 'Refused' }],
-          },
-        ],
-        ['list_notes', { workspaceId: lockedWorkspace }],
-        ['read_note', { workspaceId: lockedWorkspace, fileId: lockedFile }],
-        [
+  for (const lockCause of ['manual', 'trial'] as const) {
+    await test(`an issued MCP token keeps only the locked-account operation list after ${lockCause} expiry`, async () => {
+      const invitation = await createInvitation({
+        headers: browserHeaders,
+        body: { email: `mcp-locked-${lockCause}@notes.invalid` },
+      });
+      assert.ok(invitation.data?.link);
+      const registered = await registerAccount({
+        headers: { origin: config.origin },
+        body: {
+          invitation: new URL(invitation.data.link).hash.slice(1),
+          password: 'locked-account-safe-password',
+        },
+      });
+      assert.equal(
+        registered.response?.status,
+        201,
+        JSON.stringify(registered.error),
+      );
+      const lockedCookie = registered.response.headers
+        .getSetCookie()
+        .map((value) => value.split(';')[0])
+        .join('; ');
+      const account = await getAccount({ headers: { cookie: lockedCookie } });
+      assert.ok(account.data);
+      const owned = await listWorkspaces({ headers: { cookie: lockedCookie } });
+      const lockedWorkspace = owned.data?.workspaces[0]?.workspaceId;
+      assert.ok(lockedWorkspace);
+      const lockedToken = await token('notes:read notes:write', lockedCookie);
+      const lockedFile = randomUUID();
+      const lockedVersion = randomUUID();
+      const madeNote = await createFile({
+        headers: { cookie: lockedCookie, origin: config.origin },
+        path: { workspaceId: lockedWorkspace },
+        body: {
+          fileId: lockedFile,
+          revisionId: lockedVersion,
+          mutationId: randomUUID(),
+          deviceId: 'locked-test',
+          path: 'Locked note.md',
+          document: firstSave('needleword'),
+        },
+      });
+      assert.equal(
+        madeNote.response?.status,
+        201,
+        JSON.stringify(madeNote.error),
+      );
+      success(
+        await callRead(
           'read_note',
-          {
-            workspaceId: lockedWorkspace,
-            fileId: lockedFile,
-            version: lockedVersion,
-          },
-        ],
-        ['search_notes', { workspaceId: lockedWorkspace, query: 'needleword' }],
-        ['search_notes', { query: 'needleword' }],
-        [
-          'list_backlinks',
           { workspaceId: lockedWorkspace, fileId: lockedFile },
-        ],
-        [
-          'list_note_history',
-          { workspaceId: lockedWorkspace, fileId: lockedFile },
-        ],
-      ] as const) {
-        const result = await callRead(name, input, 'modern', lockedToken);
-        assert.equal(result.isError, true, JSON.stringify(result));
-        assert.equal(result.structuredContent, undefined);
-        assert.match(JSON.stringify(result.content), /account is locked/);
+          'modern',
+          lockedToken,
+        ),
+      );
+      protectedValues.push(lockedCookie, 'locked-account-safe-password');
+      await admin.query(
+        lockCause === 'manual'
+          ? "update accounts set standing='locked' where id=$1"
+          : 'update accounts set trial_ends_at=statement_timestamp(), trial_ended_at=null where id=$1',
+        [account.data.accountId],
+      );
+      try {
+        success(await callRead('list_workspaces', {}, 'modern', lockedToken));
+        for (const [name, input] of [
+          [
+            'create_note',
+            {
+              workspaceId: lockedWorkspace,
+              path: 'Refused.md',
+              text: 'Refused',
+            },
+          ],
+          [
+            'edit_note',
+            {
+              workspaceId: lockedWorkspace,
+              fileId: lockedFile,
+              version: lockedVersion,
+              text: 'Refused',
+            },
+          ],
+          [
+            'move_note',
+            {
+              workspaceId: lockedWorkspace,
+              fileId: lockedFile,
+              version: lockedVersion,
+              path: 'Moved.md',
+            },
+          ],
+          [
+            'move_note_to_trash',
+            {
+              workspaceId: lockedWorkspace,
+              fileId: lockedFile,
+              version: lockedVersion,
+            },
+          ],
+          [
+            'append_to_note',
+            {
+              workspaceId: lockedWorkspace,
+              fileId: lockedFile,
+              version: lockedVersion,
+              text: 'Refused',
+            },
+          ],
+          [
+            'patch_note',
+            {
+              workspaceId: lockedWorkspace,
+              fileId: lockedFile,
+              version: lockedVersion,
+              changes: [{ operation: 'insert_at_end', text: 'Refused' }],
+            },
+          ],
+          ['list_notes', { workspaceId: lockedWorkspace }],
+          ['read_note', { workspaceId: lockedWorkspace, fileId: lockedFile }],
+          [
+            'read_note',
+            {
+              workspaceId: lockedWorkspace,
+              fileId: lockedFile,
+              version: lockedVersion,
+            },
+          ],
+          [
+            'search_notes',
+            { workspaceId: lockedWorkspace, query: 'needleword' },
+          ],
+          ['search_notes', { query: 'needleword' }],
+          [
+            'list_backlinks',
+            { workspaceId: lockedWorkspace, fileId: lockedFile },
+          ],
+          [
+            'list_note_history',
+            { workspaceId: lockedWorkspace, fileId: lockedFile },
+          ],
+        ] as const) {
+          const result = await callRead(name, input, 'modern', lockedToken);
+          assert.equal(result.isError, true, JSON.stringify(result));
+          assert.equal(result.structuredContent, undefined);
+          assert.match(JSON.stringify(result.content), /account is locked/);
+        }
+      } finally {
+        await admin.query(
+          "update accounts set standing='active', trial_ended_at=clock_timestamp() where id=$1",
+          [account.data.accountId],
+        );
       }
-    } finally {
-      await admin.query("update accounts set standing='active' where id=$1", [
-        account.data.accountId,
-      ]);
-    }
-  });
+    });
+  }
 
   await test('no SDK notice or credential reaches a console or server log', () => {
     assert.deepEqual(notices, []);

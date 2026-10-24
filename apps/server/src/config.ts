@@ -426,6 +426,7 @@ export const optionalVariables = [
   'NOTESAPP_S3_ENDPOINT',
   'NOTESAPP_S3_ACCESS_KEY_ID',
   'NOTESAPP_S3_SECRET_ACCESS_KEY',
+  'NOTESAPP_NEW_ACCOUNT_TRIAL_SECONDS',
   'NOTESAPP_NEW_ACCOUNT_STANDING',
   'NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER',
   'NOTESAPP_OPERATOR_TOKEN',
@@ -720,6 +721,10 @@ const configSchema: SchemaObject = {
     // describes it.
     NOTESAPP_S3_ACCESS_KEY_ID: { type: 'string' },
     NOTESAPP_S3_SECRET_ACCESS_KEY: { type: 'string' },
+    NOTESAPP_NEW_ACCOUNT_TRIAL_SECONDS: {
+      type: 'string',
+      pattern: '^[1-9][0-9]{0,8}$',
+    },
     NOTESAPP_NEW_ACCOUNT_STANDING: {
       type: 'string',
       enum: [...controlStandings],
@@ -1443,7 +1448,24 @@ function readAccounts(raw: RawConfig): ServerConfig['accounts'] {
     raw.NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER === undefined
       ? null
       : Number(raw.NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER.slice(0, -1));
-  if (removeAfterDays !== null && standing !== 'locked')
+  const trialSeconds =
+    raw.NOTESAPP_NEW_ACCOUNT_TRIAL_SECONDS === undefined
+      ? null
+      : Number(raw.NOTESAPP_NEW_ACCOUNT_TRIAL_SECONDS);
+  if (
+    trialSeconds !== null &&
+    (standing !== 'active' ||
+      trialSeconds > maxRemoveAfterDays * 86400 ||
+      (removeAfterDays !== null && removeAfterDays * 86400 <= trialSeconds))
+  )
+    issues.push(
+      'NOTESAPP_NEW_ACCOUNT_TRIAL_SECONDS: use active standing and a removal deadline after the trial.',
+    );
+  if (
+    removeAfterDays !== null &&
+    standing !== 'locked' &&
+    trialSeconds === null
+  )
     issues.push(
       'NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER: only a locked account has a removal time. Set NOTESAPP_NEW_ACCOUNT_STANDING to locked, or remove this setting.',
     );
@@ -1455,6 +1477,7 @@ function readAccounts(raw: RawConfig): ServerConfig['accounts'] {
   return {
     limitBytes,
     standing,
+    trialSeconds,
     removeAfterSeconds:
       removeAfterDays === null ? null : removeAfterDays * 24 * 60 * 60,
     invitationLifetimeHours,

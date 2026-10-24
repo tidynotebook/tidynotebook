@@ -12,6 +12,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router';
 import {
   getSignUpChallenge,
+  getSetupStatus,
   signUpAccount,
   verifyAddress,
 } from '@notesapp/api-client';
@@ -30,6 +31,7 @@ import { passwordProblem, passwordRule } from '../../lib/password-policy.ts';
 import { solveChallenge } from '../../lib/proof-of-work.ts';
 import { consentTo } from '../../lib/legal.ts';
 import { useDocumentTitle } from '../../shell/document-title.ts';
+import { trialOffer } from '../../lib/trial.ts';
 import { AuthFrame } from './accounts.tsx';
 import { ConsentLabel, useLegalDocuments } from './legal-links.tsx';
 
@@ -50,6 +52,17 @@ export function SignUpPage(): ReactNode {
   // (record 0120). The form links both and asks for consent.
   const documents = useLegalDocuments();
   const [accepted, setAccepted] = useState(false);
+  const [trialSeconds, setTrialSeconds] = useState<number | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void getSetupStatus().then((result) => {
+      if (!cancelled)
+        setTrialSeconds(result.data?.newAccountTrialSeconds ?? null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   useDocumentTitle('Create an account');
 
   const submit = async (): Promise<void> => {
@@ -109,6 +122,9 @@ export function SignUpPage(): ReactNode {
 
   return (
     <AuthFrame title="Create an account">
+      {trialOffer(trialSeconds) === null ? null : (
+        <Notice className="mb-4" message={trialOffer(trialSeconds) ?? ''} />
+      )}
       <p className="mb-5 mt-0 text-control text-muted">
         Enter your address and choose a password. A link goes to the address to
         prove that it is yours.

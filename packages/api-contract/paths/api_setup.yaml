@@ -17,8 +17,19 @@ get:
               - initialized
               - openRegistration
               - passwordReset
+              - newAccountTrialSeconds
               - legalDocuments
             properties:
+              newAccountTrialSeconds:
+                oneOf:
+                  - type: integer
+                    minimum: 1
+                    maximum: 315360000
+                  - type: 'null'
+                readOnly: true
+                description: >-
+                  Trial duration for a new member account from creation, in seconds.
+                  Null means this installation grants no timed trial. No card or automatic charge.
               initialized:
                 type: boolean
                 readOnly: true

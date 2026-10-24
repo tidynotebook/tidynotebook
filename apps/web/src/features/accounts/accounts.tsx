@@ -234,7 +234,9 @@ function LockedPage(): ReactNode {
             void portal.open(portalHome);
           }}
         >
-          Open billing
+          {account.controls.trialState === 'expired'
+            ? 'Upgrade account'
+            : 'Open billing'}
         </Button>
       ) : null}
       <p className="mb-2 mt-5 text-control text-muted">

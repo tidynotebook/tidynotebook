@@ -105,6 +105,7 @@ services:
       # The standing of a new account and, for a locked one, its life before
       # the daily run removes it (record 0189). An empty value keeps every new
       # account active with no removal time.
+      NOTESAPP_NEW_ACCOUNT_TRIAL_SECONDS: ${NOTESAPP_NEW_ACCOUNT_TRIAL_SECONDS:-}
       NOTESAPP_NEW_ACCOUNT_STANDING: ${NOTESAPP_NEW_ACCOUNT_STANDING:-}
       NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER: ${NOTESAPP_NEW_ACCOUNT_REMOVE_AFTER:-}
       # Who can make an account, invitation or open (record 0206). A value here

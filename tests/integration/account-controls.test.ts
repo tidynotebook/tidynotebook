@@ -831,6 +831,199 @@ await test('the table holds that an administrator is active, and a promotion unl
   assert.equal(controls.controls_revision, '3');
 });
 
+for (const ground of ['open', 'invitation'] as const) {
+  await test(`${ground} registration stamps one fixed trial and expiry is independent of login`, async () => {
+    const email = `trial-${randomUUID()}@notes.invalid`;
+    const authUserId = await identityUser(email);
+    const digest = createHash('sha256').update(randomUUID()).digest('hex');
+    if (ground === 'invitation') {
+      await identity.operatorInvite({
+        invitationId: randomUUID(),
+        tokenDigest: digest,
+        email,
+        expiresAt: new Date(Date.now() + 3600000).toISOString(),
+        mailed: false,
+      });
+    } else {
+      await identity.applyRegistrationPolicy('open');
+    }
+    const request = {
+      authUserId,
+      ground:
+        ground === 'open'
+          ? { kind: 'open' as const }
+          : { kind: 'invitation' as const, tokenDigest: digest },
+      accountId: randomUUID(),
+      workspaceId: randomUUID(),
+      workspaceName: 'Personal',
+      newAccount: {
+        limitBytes: defaultAccountLimitBytes,
+        standing: 'active' as const,
+        trialSeconds: 14 * 86400,
+        removeAfterSeconds: 30 * 86400,
+      },
+    };
+    const [first, retry] = await Promise.all([
+      identity.register(request),
+      identity.register(request),
+    ]);
+    assert.equal(first, request.accountId);
+    assert.equal(retry, first);
+    const setup = await openSession(database.migrationUrl);
+    try {
+      const rows = await setup.query<{
+        access: string;
+        removal: string;
+        standing: string;
+        events: string;
+      }>(
+        `select extract(epoch from trial_ends_at-created_at)::bigint::text as access,
+          extract(epoch from trial_removal_at-created_at)::bigint::text as removal,
+          standing, (select count(*) from account_events where account_id = a.id)::text as events
+         from accounts a where id = $1`,
+        [first],
+      );
+      assert.deepEqual(rows[0], {
+        access: '1209600',
+        removal: '2592000',
+        standing: 'active',
+        events: ground === 'open' ? '2' : '1',
+      });
+      assert.equal(
+        (await identity.sessionStanding(authUserId))?.standing,
+        'active',
+      );
+      // At equality, access is already locked. The sweep has not run.
+      const boundary = await setup.query<{ standing: string; state: string }>(
+        `update accounts a set trial_ends_at = statement_timestamp(),
+          trial_removal_at = created_at + interval '30 days'
+         where id = $1 returning notesapp_effective_standing(a)::text as standing,
+           notesapp_trial_state(a) as state`,
+        [first],
+      );
+      assert.deepEqual(boundary[0], { standing: 'locked', state: 'expired' });
+      assert.equal(
+        (await identity.sessionStanding(authUserId))?.standing,
+        'locked',
+      );
+      const member = await openSession(database.runtimeUrl, request.accountId);
+      try {
+        const writable = await member.query<{ writable: boolean }>(
+          'select notesapp_workspace_writable($1) as writable',
+          [request.workspaceId],
+        );
+        assert.equal(writable[0]?.writable, false);
+      } finally {
+        await member.close();
+      }
+      assert.equal(await identity.expireTrials(), 1);
+      assert.equal(await identity.expireTrials(), 0);
+      const expired = await storedControls(request.accountId);
+      assert.equal(expired.standing, 'locked');
+      assert.equal(expired.controls_revision, '2');
+      const deadline = await setup.query<{ same: boolean }>(
+        "select removal_at = created_at + interval '30 days' as same from accounts where id = $1",
+        [first],
+      );
+      assert.equal(deadline[0]?.same, true);
+      // A paid write that read pre-expiry state must retry with revision 2.
+      assert.equal(
+        await writeControls(request.accountId, 1, { standing: 'active' }),
+        'changed',
+      );
+      assert.equal(
+        await writeControls(request.accountId, 2, { standing: 'active' }),
+        'written',
+      );
+      assert.equal(await identity.expireTrials(), 0);
+      assert.equal(
+        (await identity.sessionStanding(authUserId))?.standing,
+        'active',
+      );
+      // Reprocessing and a new invitation cannot reset the trial or its controls.
+      assert.equal(await identity.register(request), first);
+      assert.equal(
+        (await storedControls(request.accountId)).controls_revision,
+        '3',
+      );
+    } finally {
+      await setup.close();
+    }
+  });
+}
+
+await test('a paid controls write and expiry serialize without a stale lock', async () => {
+  const made = await owner();
+  const setup = await openSession(database.migrationUrl);
+  try {
+    await setup.query(
+      "update accounts set trial_ends_at=statement_timestamp(), trial_removal_at=created_at + interval '30 days' where id=$1",
+      [made.accountId],
+    );
+    const [, paid] = await Promise.all([
+      identity.expireTrials(),
+      writeControls(made.accountId, 1, { standing: 'active' }),
+    ]);
+    if (paid === 'changed') {
+      assert.equal(
+        await writeControls(made.accountId, 2, { standing: 'active' }),
+        'written',
+      );
+    } else assert.equal(paid, 'written');
+    assert.equal(await identity.expireTrials(), 0);
+    const controls = await storedControls(made.accountId);
+    assert.equal(controls.standing, 'active');
+    assert.equal(controls.removal_at, null);
+    const ended = await setup.query<{ state: string }>(
+      'select notesapp_trial_state(a) as state from accounts a where id=$1',
+      [made.accountId],
+    );
+    assert.equal(ended[0]?.state, 'ended');
+  } finally {
+    await setup.close();
+  }
+});
+
+await test('administrator promotion ends a trial before any later sweep', async () => {
+  const email = `trial-admin-${randomUUID()}@notes.invalid`;
+  const authUserId = await identityUser(email);
+  await identity.applyRegistrationPolicy('open');
+  const accountId = await identity.register({
+    authUserId,
+    ground: { kind: 'open' },
+    accountId: randomUUID(),
+    workspaceId: randomUUID(),
+    workspaceName: 'Personal',
+    newAccount: {
+      limitBytes: defaultAccountLimitBytes,
+      standing: 'active',
+      trialSeconds: 1209600,
+      removeAfterSeconds: 2592000,
+    },
+  });
+  assert.ok(accountId);
+  assert.equal(await identity.operatorPromote(email), accountId);
+  const setup = await openSession(database.migrationUrl);
+  try {
+    await setup.query(
+      'update accounts set trial_ends_at=statement_timestamp() where id=$1',
+      [accountId],
+    );
+    assert.equal(await identity.expireTrials(), 0);
+    assert.equal(
+      (await identity.sessionStanding(authUserId))?.standing,
+      'active',
+    );
+    const ended = await setup.query<{ state: string }>(
+      'select notesapp_trial_state(a) as state from accounts a where id=$1',
+      [accountId],
+    );
+    assert.equal(ended[0]?.state, 'ended');
+  } finally {
+    await setup.close();
+  }
+});
+
 await identity.close();
 await content.close();
 await database.destroy();

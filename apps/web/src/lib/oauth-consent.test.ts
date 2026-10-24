@@ -172,6 +172,8 @@ await test('a locked account cannot consent and gets one next action', () => {
               revision: 1,
               standing: 'locked',
               removalAt: null,
+              trialEndsAt: null,
+              trialState: 'none',
               limitBytes: 0,
               textLimitBytes: null,
               publishedTransferLimitBytes: null,

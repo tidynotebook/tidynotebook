@@ -1,3 +1,4 @@
+import { TrialNotice } from '../features/accounts/trial-notice.tsx';
 /**
  * The application shell: one frame for every signed in screen.
  *
@@ -1658,6 +1659,7 @@ function ShellFrame({
             */}
             <div className={`${frameNoticeRowClassName()} ${pageGutter}`}>
               <div className={`${pageColumnClassName()} pt-4 empty:hidden`}>
+                <TrialNotice />
                 <UpdateNotice
                   store={store.store}
                   ownerId={syncSession.ownerId}

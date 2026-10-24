@@ -105,6 +105,8 @@ function createStore(seed: readonly AccountStanding[]): FakeInstallation {
           revision: 1,
           standing: 'active',
           removalAt: null,
+          trialEndsAt: null,
+          trialState: 'none',
           limitBytes: 100n,
           textLimitBytes: null,
           publishedTransferLimitBytes: null,

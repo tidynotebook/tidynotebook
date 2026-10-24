@@ -345,6 +345,8 @@ export type IdentityStoreHandle = WorkspaceAdminStore &
       digest: string,
       resource: string,
     ): Promise<OAuthTokenIdentity | null>;
+    /** Persist expired trials without a session. Repeated runs change nothing. */
+    expireTrials(): Promise<number>;
     /**
      * The workspaces that one notice stream may still hear about, or `null`
      * when its session ended or expired, or no longer serves an enabled
@@ -963,7 +965,7 @@ export function openIdentityStore(
       }
     >(
       `select c.account_id, c.email, c.installation_role, c.state,
-              c.created_at, c.standing,
+              c.created_at, c.standing, c.trial_ends_at, c.trial_ended_at, c.trial_state,
               c.removal_at, c.limit_bytes::text as limit_bytes,
               c.text_limit_bytes::text as text_limit_bytes,
               c.published_transfer_limit_bytes::text
@@ -1172,7 +1174,7 @@ export function openIdentityStore(
         >(
           `select account_id, email, name, installation_role, state,
                   created_at, last_active_at, used_bytes::text as used_bytes,
-                  limit_bytes::text as limit_bytes, standing, removal_at,
+                  limit_bytes::text as limit_bytes, standing, removal_at, trial_ends_at, trial_ended_at, trial_state,
                   text_limit_bytes::text as text_limit_bytes,
                   published_transfer_limit_bytes::text
                     as published_transfer_limit_bytes,
@@ -1414,7 +1416,7 @@ export function openIdentityStore(
       return inTransaction(null, null, async (client) => {
         const rows = await client.query<{ account: string | null }>(
           `select notesapp_register_account($1, $2, $3, $4, $5, $6, $7::bigint,
-             $8::account_standing, $9::bigint) as account`,
+             $8::account_standing, $9::bigint, $10::bigint) as account`,
           [
             request.authUserId,
             request.ground.kind,
@@ -1429,6 +1431,7 @@ export function openIdentityStore(
             request.newAccount.removeAfterSeconds === null
               ? null
               : String(request.newAccount.removeAfterSeconds),
+            request.newAccount.trialSeconds ?? null,
           ],
         );
         return rows.rows[0]?.account ?? null;
@@ -1492,6 +1495,15 @@ export function openIdentityStore(
               accountId: row.account_id,
               standing: storedStanding(row.standing),
             };
+      });
+    },
+
+    async expireTrials(): Promise<number> {
+      return asOperator(async (client) => {
+        const result = await client.query<{ expired: number }>(
+          'select notesapp_expire_account_trials() as expired',
+        );
+        return result.rows[0]?.expired ?? 0;
       });
     },
 

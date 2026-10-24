@@ -118,7 +118,7 @@ async function registerDirect(
   try {
     const rows = await session.query<{ account: string | null }>(
       `select notesapp_register_account($1, $2, $3, $4, $5, 'Personal', $6::bigint,
-         'active', null) as account`,
+         'active', null, null) as account`,
       [
         authUserId,
         ground,

@@ -32,6 +32,8 @@ export function controlsBody(
     revision: controls.revision,
     standing: controls.standing,
     removalAt: controls.removalAt,
+    trialEndsAt: controls.trialEndsAt,
+    trialState: controls.trialState,
     limitBytes: byteNumber(controls.limitBytes),
     textLimitBytes: limitNumber(controls.textLimitBytes),
     publishedTransferLimitBytes: limitNumber(

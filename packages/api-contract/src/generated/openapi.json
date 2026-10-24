@@ -3568,9 +3568,24 @@
                     "initialized",
                     "openRegistration",
                     "passwordReset",
+                    "newAccountTrialSeconds",
                     "legalDocuments"
                   ],
                   "properties": {
+                    "newAccountTrialSeconds": {
+                      "oneOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 315360000
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "readOnly": true,
+                      "description": "Trial duration for a new member account from creation, in seconds. Null means this installation grants no timed trial. No card or automatic charge."
+                    },
                     "initialized": {
                       "type": "boolean",
                       "readOnly": true
@@ -8759,6 +8774,8 @@
         "required": [
           "revision",
           "standing",
+          "trialEndsAt",
+          "trialState",
           "removalAt",
           "limitBytes",
           "textLimitBytes",
@@ -8843,6 +8860,31 @@
             ],
             "readOnly": true,
             "description": "The switch of each switchable feature."
+          },
+          "trialEndsAt": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "readOnly": true,
+            "description": "The fixed trial end from account creation, or null for no trial."
+          },
+          "trialState": {
+            "type": "string",
+            "enum": [
+              "none",
+              "active",
+              "expired",
+              "ended"
+            ],
+            "readOnly": true,
+            "description": "Active means timed access remains. Expired means its deadline passed. Ended means an operator or administrator replaced trial access. Existing accounts have none. No state creates a new entitlement."
           }
         }
       },

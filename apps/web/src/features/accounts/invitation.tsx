@@ -32,6 +32,7 @@ import { invitationTokenOf } from '../../lib/accounts.ts';
 import { passwordProblem, passwordRule } from '../../lib/password-policy.ts';
 import { useDocumentTitle } from '../../shell/document-title.ts';
 import { consentTo } from '../../lib/legal.ts';
+import { trialOffer } from '../../lib/trial.ts';
 import { AuthFrame } from './accounts.tsx';
 import { ConsentLabel } from './legal-links.tsx';
 
@@ -45,6 +46,7 @@ type InvitationState =
   | { readonly kind: 'unreachable'; readonly message: string }
   | {
       readonly kind: 'ready';
+      readonly trialSeconds: number | null;
       readonly token: string;
       readonly email: string;
       /** The terms and the privacy notice, or `null` (record 0120). */
@@ -76,6 +78,7 @@ export function InvitationPage(): ReactNode {
       if (result.data !== undefined && setup.data !== undefined) {
         setState({
           kind: 'ready',
+          trialSeconds: setup.data.newAccountTrialSeconds,
           token,
           email: result.data.email,
           documents: setup.data.legalDocuments,
@@ -128,6 +131,7 @@ export function InvitationPage(): ReactNode {
           token={state.token}
           email={state.email}
           documents={state.documents}
+          trialSeconds={state.trialSeconds}
         />
       )}
     </AuthFrame>
@@ -139,10 +143,12 @@ function AcceptForm({
   token,
   email,
   documents,
+  trialSeconds,
 }: {
   readonly token: string;
   readonly email: string;
   readonly documents: LegalDocuments | null;
+  readonly trialSeconds: number | null;
 }): ReactNode {
   const session = useSession();
   const navigate = useNavigate();
@@ -199,6 +205,9 @@ function AcceptForm({
         You have an invitation to this installation. Choose a password, and your
         account and its own notes are ready.
       </p>
+      {trialOffer(trialSeconds) === null ? null : (
+        <Notice className="mb-4" message={trialOffer(trialSeconds) ?? ''} />
+      )}
       <form
         onSubmit={(event): void => {
           event.preventDefault();

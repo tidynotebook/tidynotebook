@@ -153,6 +153,8 @@ function createFakeStore(): FakeStore {
             revision: 1,
             standing: 'active',
             removalAt: null,
+            trialEndsAt: null,
+            trialState: 'none',
             limitBytes: 1n,
             textLimitBytes: null,
             publishedTransferLimitBytes: null,

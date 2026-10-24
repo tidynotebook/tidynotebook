@@ -7,6 +7,8 @@ additionalProperties: false
 required:
   - revision
   - standing
+  - trialEndsAt
+  - trialState
   - removalAt
   - limitBytes
   - textLimitBytes
@@ -67,3 +69,19 @@ properties:
       - $ref: './AccountFeatures.yaml'
     readOnly: true
     description: The switch of each switchable feature.
+  trialEndsAt:
+    oneOf:
+      - type: string
+        format: date-time
+        maxLength: 64
+      - type: 'null'
+    readOnly: true
+    description: The fixed trial end from account creation, or null for no trial.
+  trialState:
+    type: string
+    enum: [none, active, expired, ended]
+    readOnly: true
+    description: >-
+      Active means timed access remains. Expired means its deadline passed.
+      Ended means an operator or administrator replaced trial access.
+      Existing accounts have none. No state creates a new entitlement.

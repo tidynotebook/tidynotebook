@@ -27,6 +27,8 @@ const controls: AccountControls = {
   revision: 2,
   standing: 'locked',
   removalAt: '2026-11-03T00:00:00.000Z',
+  trialEndsAt: null,
+  trialState: 'none',
   limitBytes: 1000n,
   textLimitBytes: null,
   publishedTransferLimitBytes: null,

@@ -1215,6 +1215,7 @@ async function composeApp(
     {
       name: 'removals',
       run: async () => {
+        await identity.expireTrials();
         await removeAccounts();
         if (config.mcpOrigin !== null) await expireOAuthClients(authPool);
       },

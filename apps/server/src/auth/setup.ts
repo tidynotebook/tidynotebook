@@ -118,6 +118,7 @@ export function createSetupHandlers(
       mediaType: jsonMediaType,
       body: {
         initialized: await identity.hasAccount(),
+        newAccountTrialSeconds: dependencies.newAccount.trialSeconds ?? null,
         openRegistration: await openRegistration(identity, open.mail),
         // A reset link goes by mail, so a reset needs a transport (record
         // 0141).

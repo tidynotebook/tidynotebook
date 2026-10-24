@@ -12,6 +12,8 @@ const active: AccountControls = {
   revision: 4,
   standing: 'active',
   removalAt: null,
+  trialEndsAt: null,
+  trialState: 'none',
   limitBytes: 1000n,
   textLimitBytes: null,
   publishedTransferLimitBytes: null,
@@ -166,5 +168,49 @@ await test('a new account takes a removal time only when it starts locked', () =
       removeAfterSeconds: null,
     }),
     false,
+  );
+});
+
+await test('a trial is opt-in and its removal deadline must follow access expiry', () => {
+  const settings = {
+    limitBytes: 1000n,
+    standing: 'active',
+    trialSeconds: 14 * 86400,
+    removeAfterSeconds: 30 * 86400,
+  } as const;
+  assert.equal(newAccountSettingsHold(settings), true);
+  for (const trialSeconds of [0, -1, 1.5, Number.NaN, 315360001]) {
+    assert.equal(newAccountSettingsHold({ ...settings, trialSeconds }), false);
+  }
+  assert.equal(
+    newAccountSettingsHold({ ...settings, standing: 'locked' }),
+    false,
+  );
+  assert.equal(
+    newAccountSettingsHold({ ...settings, removeAfterSeconds: 14 * 86400 }),
+    false,
+  );
+  assert.equal(
+    newAccountSettingsHold({ ...settings, removeAfterSeconds: null }),
+    true,
+  );
+});
+
+await test('a revision-checked manual change ends trial access and preserves its fixed end', () => {
+  const current = {
+    ...active,
+    trialEndsAt: '2026-11-07T12:00:00.000Z',
+    trialState: 'active',
+  } as const;
+  const next = applyControlsChange(current, {
+    revision: 4,
+    standing: 'active',
+  });
+  assert.ok(next.ok);
+  assert.equal(next.value.trialState, 'ended');
+  assert.equal(next.value.trialEndsAt, current.trialEndsAt);
+  assert.deepEqual(
+    applyControlsChange(current, { revision: 3, standing: 'active' }),
+    { ok: false, error: { code: 'controls_changed', fileIds: [] } },
   );
 });

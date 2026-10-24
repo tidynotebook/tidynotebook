@@ -8,6 +8,7 @@
  * `portal.ts` names. Every word of the screen is decided here, so the screen
  * holds no rule.
  */
+import { trialStatus } from './trial.ts';
 import type { Account } from '@notesapp/api-client';
 
 /** Whether the account opens the one screen of a locked account. */
@@ -35,7 +36,9 @@ export function lockedSentences(
   account: Pick<Account, 'controls' | 'accountPortal'>,
   now: number,
 ): readonly string[] {
+  const trial = trialStatus(account.controls, now);
   const sentences = [
+    ...(trial === null ? [] : [trial]),
     'Your notes are safe, but you cannot change them now.',
     account.accountPortal
       ? 'Open billing to unlock the account.'

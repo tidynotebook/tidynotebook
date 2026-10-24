@@ -189,6 +189,18 @@ function cachedControls(value: unknown, limit: unknown): Account['controls'] {
     standing:
       readProperty(value, 'standing') === 'locked' ? 'locked' : 'active',
     removalAt: typeof removalAt === 'string' ? removalAt : null,
+    trialEndsAt:
+      typeof readProperty(value, 'trialEndsAt') === 'string'
+        ? String(readProperty(value, 'trialEndsAt'))
+        : null,
+    trialState:
+      readProperty(value, 'trialState') === 'active'
+        ? 'active'
+        : readProperty(value, 'trialState') === 'expired'
+          ? 'expired'
+          : readProperty(value, 'trialState') === 'ended'
+            ? 'ended'
+            : 'none',
     limitBytes: typeof limit === 'number' ? limit : 0,
     textLimitBytes: null,
     publishedTransferLimitBytes: null,
@@ -501,6 +513,31 @@ function useSessionLoader(generation: number): {
       },
     }),
   );
+
+  useEffect(() => {
+    if (
+      account?.controls.trialState !== 'active' ||
+      account.controls.trialEndsAt === null
+    )
+      return;
+    const end = Date.parse(account.controls.trialEndsAt);
+    let timer: number | undefined;
+    const check = (): void => {
+      window.clearTimeout(timer);
+      if (Date.now() >= end) recheck();
+      else
+        timer = window.setTimeout(
+          check,
+          Math.min(2147483647, end - Date.now()),
+        );
+    };
+    check();
+    window.addEventListener('focus', check);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('focus', check);
+    };
+  }, [account, recheck]);
 
   const invalidate = useCallback((): void => {
     epoch.current += 1;
