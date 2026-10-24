@@ -52,8 +52,6 @@ await test('a saved form names the revision that the page read', () => {
       revision: 3,
       standing: 'locked',
       removalAt: '2026-11-03T12:00:00.000Z',
-      trialEndsAt: null,
-      trialState: 'none',
       limitBytes: 5 * gigabyte,
       textLimitBytes: gigabyte,
       publishedTransferLimitBytes: null,

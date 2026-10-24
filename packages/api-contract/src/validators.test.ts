@@ -427,8 +427,6 @@ await test('a write of the controls names the revision that it read', () => {
       revision: 1,
       standing: 'locked',
       removalAt: '2026-11-04T00:00:00Z',
-      trialEndsAt: null,
-      trialState: 'none',
       limitBytes: 10_000_000_000,
       textLimitBytes: 2_000_000_000,
       publishedTransferLimitBytes: null,
@@ -449,6 +447,14 @@ await test('a write of the controls names the revision that it read', () => {
   assert.equal(validate({ revision: 1, features: {} }), false);
   assert.equal(validate({ revision: 1, features: { sharing: true } }), false);
   assert.equal(validate({ revision: 1, accountId: 'x' }), false);
+  assert.equal(
+    validate({ revision: 1, standing: 'active', trialEndsAt: null }),
+    false,
+  );
+  assert.equal(
+    validate({ revision: 1, standing: 'active', trialState: 'active' }),
+    false,
+  );
   // An administrator writes the same shape through updateAccount.
   const update = requestValidator('updateAccount', 'body');
   assert.ok(update !== undefined);
