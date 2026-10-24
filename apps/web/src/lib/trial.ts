@@ -24,12 +24,20 @@ export function trialStatus(
   const end = Date.parse(controls.trialEndsAt);
   if (controls.trialState === 'expired' || end <= now)
     return 'Your free trial has ended. Upgrade to use your account again. There is no automatic charge.';
-  const hours = Math.ceil((end - now) / 3600000);
+  const remainingMs = end - now;
+  const hours = Math.ceil(remainingMs / 3600000);
+  const minutes = Math.ceil(remainingMs / 60000);
   const remaining =
-    hours > 24
-      ? `${String(Math.ceil(hours / 24))} days`
-      : hours === 1
-        ? '1 hour'
-        : `${String(hours)} hours`;
+    remainingMs < 60000
+      ? 'less than 1 minute'
+      : remainingMs < 3600000
+        ? minutes === 1
+          ? '1 minute'
+          : `${String(minutes)} minutes`
+        : hours > 24
+          ? `${String(Math.ceil(hours / 24))} days`
+          : hours === 1
+            ? '1 hour'
+            : `${String(hours)} hours`;
   return `Your free trial ends on ${new Date(end).toLocaleString()}. Time left: ${remaining}. There is no automatic charge.`;
 }

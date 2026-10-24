@@ -22,7 +22,7 @@ await test('the trial notice changes at the exact deadline and never grants a tr
   );
   assert.match(
     trialStatus({ trialEndsAt: end, trialState: 'active' }, now - 1) ?? '',
-    /Time left: 1 hour/,
+    /Time left: less than 1 minute/,
   );
   assert.match(
     trialStatus({ trialEndsAt: end, trialState: 'active' }, now) ?? '',
@@ -32,4 +32,16 @@ await test('the trial notice changes at the exact deadline and never grants a tr
     trialStatus({ trialEndsAt: end, trialState: 'expired' }, now - 1) ?? '',
     /trial has ended/,
   );
+});
+
+await test('remaining time uses minutes near expiry', () => {
+  const end = '2026-11-07T12:00:00.000Z';
+  const controls = { trialEndsAt: end, trialState: 'active' } as const;
+  const now = Date.parse(end);
+  assert.match(trialStatus(controls, now - 60000) ?? '', /Time left: 1 minute/);
+  assert.match(
+    trialStatus(controls, now - 2 * 60000) ?? '',
+    /Time left: 2 minutes/,
+  );
+  assert.match(trialStatus(controls, now - 3600000) ?? '', /Time left: 1 hour/);
 });
