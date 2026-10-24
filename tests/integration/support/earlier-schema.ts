@@ -10,8 +10,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { migrationsFolder, provisionWorkspace } from '@notesapp/storage-server';
 import { defaultAccountLimitBytes, type Role } from '@notesapp/core';
-import { openSession, type TestDatabase } from './database.ts';
-import type { TestSession } from './database.ts';
+import {
+  openSession,
+  type TestDatabase,
+  type TestSession,
+} from './database.ts';
 
 /** A copy of the migration set that ends before one entry. */
 export type EarlierMigrations = {
