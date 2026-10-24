@@ -16,7 +16,7 @@ keep their controls. No later cloud event is needed to reduce initial access.
 These are installation settings. Core does not force them onto self-hosted
 installations. Apply them together on every process. A trial account starts
 active. Its fixed end is `createdAt + 1209600 seconds`. Its removal deadline
-is `createdAt + 30 days`, which leaves 16 days after trial expiry. The first
+is `createdAt + 30 days`. Trial expiry does not extend it. The first
 administrator and all existing rows keep their behavior. The migration does
 not grant or backfill a trial.
 
@@ -42,7 +42,7 @@ must read current state. When a paid or manual write gets `controls_changed`,
 read again, decide the current entitlement, and retry with that revision.
 A stale expiry must never write locked controls from an old event snapshot.
 Use the core expiry job for the trial lock. Keep the existing paid-loss
-90-day policy in the cloud owner. Core does not change it.
+removal policy in the cloud owner. Core does not change it.
 
 ## Enforcement and cache edges
 
@@ -89,11 +89,18 @@ write contract remains the same. Consumers must accept the new read fields.
 
 Before a future rollout, stop the cloud job from replacing active trial
 controls merely because no subscription exists. Ship the compatible cloud
-reader, then use the new core version and set the three values together.
+reader, then use the new core version and set the account creation settings
+together.
 Verify first-run administrator exclusion, both account creation paths, trial
 expiry without login, a paid update before and after expiry, export, and the
-original day-30 deadline. Changing or removing the setting affects later
+original removal deadline. Changing or removing the setting affects later
 accounts only. Existing stamped trials retain their fixed deadlines.
 
 A core release does not deploy the cloud installation. The cloud owner checks
 the new pin in staging before a production change.
+
+The staging check reads back the normal configured deadline and initial
+controls through approved flows. Core integration tests and a fresh local
+deployment prove expiry and races. The staging check does not claim observed
+expiry. Do not shorten a staging deadline or change clocks or trial settings
+for this proof.
