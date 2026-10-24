@@ -86,3 +86,20 @@ await test('a synchronous adoption cannot reenter an unrecorded request', () => 
   assert.equal(check(1000), 30000);
   assert.equal(reads, 1);
 });
+
+await test('retry intervals ignore forward and backward wall clock changes', (context) => {
+  let wallTime = 1000;
+  context.mock.method(Date, 'now', () => wallTime);
+  const reads: number[] = [];
+  const check = createTrialRecheck(() => {
+    reads.push(Date.now());
+  });
+  check(1000);
+  wallTime += 15 * 86400000;
+  assert.equal(check(1001), 29999);
+  wallTime = -100000;
+  assert.equal(check(2000), 29000);
+  assert.deepEqual(reads, [1000]);
+  assert.equal(check(31000), 30000);
+  assert.deepEqual(reads, [1000, -100000]);
+});

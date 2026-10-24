@@ -51,7 +51,7 @@ export function trialStatus(
 
 const trialRecheckIntervalMs = 30000;
 
-/** Bound clock-skew retries across account adoption and focus events. */
+/** Bound retries with monotonic time across account adoption and focus. */
 export function createTrialRecheck(read: () => void): (now: number) => number {
   let lastRequestAt: number | null = null;
   return (now) => {

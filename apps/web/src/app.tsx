@@ -527,7 +527,8 @@ function useSessionLoader(generation: number): {
     const check = (): void => {
       window.clearTimeout(timer);
       const now = Date.now();
-      if (now >= end) timer = window.setTimeout(check, trialRecheck(now));
+      if (now >= end)
+        timer = window.setTimeout(check, trialRecheck(performance.now()));
       else
         timer = window.setTimeout(
           check,
