@@ -1034,6 +1034,94 @@ await test('administrator promotion ends a trial before any later sweep', async 
   }
 });
 
+for (const sweepFirst of [false, true]) {
+  await test(`a quota-only admin update keeps trial access before expiry and locked access after expiry with sweep first=${String(sweepFirst)}`, async () => {
+    const administrator = await owner();
+    const member = await owner();
+    const setup = await openSession(database.migrationUrl);
+    let admin: TestSession | null = null;
+    try {
+      await setup.query(
+        "update accounts set installation_role='administrator' where id=$1",
+        [administrator.accountId],
+      );
+      await setup.query(
+        "update accounts set trial_ends_at=created_at + interval '14 days', trial_removal_at=created_at + interval '30 days' where id=$1",
+        [member.accountId],
+      );
+      admin = await openSession(database.runtimeUrl, administrator.accountId);
+      const read = async () => {
+        const rows = await setup.query<{
+          state: string;
+          effective: string;
+          trial_end: string;
+          removal_deadline: string;
+          unended: boolean;
+        }>(
+          `select notesapp_trial_state(a) as state,
+          notesapp_effective_standing(a)::text as effective,
+          trial_ends_at::text as trial_end, trial_removal_at::text as removal_deadline,
+          trial_ended_at is null as unended from accounts a where id=$1`,
+          [member.accountId],
+        );
+        assert.ok(rows[0]);
+        return rows[0];
+      };
+      const original = await read();
+      await admin.query('select notesapp_set_account_limit($1, $2::bigint)', [
+        member.accountId,
+        (defaultAccountLimitBytes + 1n).toString(),
+      ]);
+      const active = await read();
+      assert.deepEqual(active, original);
+      assert.equal(active.state, 'active');
+      assert.equal(active.effective, 'active');
+      // Move only this disposable fixture to the exact access deadline.
+      await setup.query(
+        'update accounts set trial_ends_at=statement_timestamp() where id=$1',
+        [member.accountId],
+      );
+      const expired = await read();
+      assert.equal(expired.state, 'expired');
+      assert.equal(expired.effective, 'locked');
+      if (sweepFirst) assert.equal(await identity.expireTrials(), 1);
+      await admin.query('select notesapp_set_account_limit($1, $2::bigint)', [
+        member.accountId,
+        (defaultAccountLimitBytes + 2n).toString(),
+      ]);
+      assert.deepEqual(await read(), expired);
+      if (!sweepFirst) assert.equal(await identity.expireTrials(), 1);
+      assert.equal(await identity.expireTrials(), 0);
+      assert.deepEqual(await read(), expired);
+      const stored = await storedControls(member.accountId);
+      assert.equal(stored.standing, 'locked');
+      const deadline = await setup.query<{ same: boolean }>(
+        'select removal_at=trial_removal_at as same from accounts where id=$1',
+        [member.accountId],
+      );
+      assert.equal(deadline[0]?.same, true);
+      // An explicit revision-checked access grant still ends the trial.
+      assert.equal(
+        await writeControls(
+          member.accountId,
+          Number(stored.controls_revision),
+          { standing: 'active' },
+        ),
+        'written',
+      );
+      const granted = await read();
+      assert.equal(granted.state, 'ended');
+      assert.equal(granted.effective, 'active');
+      assert.equal(granted.trial_end, expired.trial_end);
+      assert.equal(granted.removal_deadline, original.removal_deadline);
+      assert.equal(await identity.expireTrials(), 0);
+    } finally {
+      await admin?.close();
+      await setup.close();
+    }
+  });
+}
+
 await identity.close();
 await content.close();
 await database.destroy();

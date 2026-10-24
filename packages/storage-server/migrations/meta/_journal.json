@@ -302,6 +302,13 @@
       "when": 1792829735421,
       "tag": "0042_sharp_sabretooth",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1792835210661,
+      "tag": "0043_preserve_trial_on_quota_change",
+      "breakpoints": true
     }
   ]
 }

@@ -36,7 +36,8 @@ raises the controls revision once and sends the existing account-change hint.
 
 Paid and manual control updates use the existing operator controls operation
 and its revision. Every successful controls write ends the trial, including
-a write that keeps the same control values. Do not write unpaid controls
+a write that keeps the same control values. The legacy quota-only operation
+keeps the trial and does not grant access. Do not write unpaid controls
 from a subscription-missing event while `trialState` is active. Event replay
 must read current state. When a paid or manual write gets `controls_changed`,
 read again, decide the current entitlement, and retry with that revision.
