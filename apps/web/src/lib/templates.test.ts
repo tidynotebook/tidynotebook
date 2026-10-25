@@ -9,6 +9,7 @@ import {
   formatCachedTemplateSettings,
   parseCachedTemplateSettings,
   templateChoices,
+  templateDestinationFor,
   templateContextAt,
   templateCountLine,
   templateFolderSentences,
@@ -231,5 +232,24 @@ await test('the step says that it waits, or why it cannot list', () => {
       list: { notes, loading: false, complete: false },
     }).choices(),
     { status: 'ready', choices: [], notice: templateProblems.partial },
+  );
+});
+
+await test('workspace navigation cannot reuse the previous template destination before effects run', () => {
+  const chosen = { workspaceId: 'first', folder: 'Work/Projects' };
+  assert.equal(templateDestinationFor('first', chosen), 'Work/Projects');
+  // The first render in another workspace must already close the dialog.
+  assert.equal(templateDestinationFor('second', chosen), null);
+  assert.equal(templateDestinationFor('first', null), null);
+  assert.equal(
+    templateDestinationFor('second', { workspaceId: 'second', folder: '' }),
+    '',
+  );
+  assert.equal(
+    templateDestinationFor('second', {
+      workspaceId: 'second',
+      folder: 'Work/Projects',
+    }),
+    'Work/Projects',
   );
 });

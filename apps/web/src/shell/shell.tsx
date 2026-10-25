@@ -139,7 +139,11 @@ import {
   TemplatesProvider,
   useTemplates,
 } from '../features/templates/templates.tsx';
-import { templatePalettePick } from '../lib/templates.ts';
+import {
+  templatePalettePick,
+  templateDestinationFor,
+  type TemplateDestination,
+} from '../lib/templates.ts';
 import { SidebarCalendar } from '../features/daily-notes/calendar.tsx';
 import { dailyNoteDate, type PublicationScope } from '@notesapp/core';
 import { PublishDialog } from '../features/publishing/publish-dialog.tsx';
@@ -996,8 +1000,11 @@ function ShellFrame({
   const [workspaceDialog, setWorkspaceDialog] = useState<
     'create' | 'rename' | 'delete' | null
   >(null);
-  const [templateDestination, setTemplateDestination] = useState<string | null>(
-    null,
+  const [templateDestination, setTemplateDestination] =
+    useState<TemplateDestination | null>(null);
+  const templateFolder = templateDestinationFor(
+    workspaceId,
+    templateDestination,
   );
   useEffect(() => {
     setTemplateDestination(null);
@@ -1662,7 +1669,9 @@ function ShellFrame({
                   setMoveItems({ items, returnFocus })
                 }
                 onNewNoteIn={(folder) => newNote.create(folder)}
-                onFromTemplate={setTemplateDestination}
+                onFromTemplate={(folder) =>
+                  setTemplateDestination({ workspaceId, folder })
+                }
                 onNewWorkspace={() => setWorkspaceDialog('create')}
                 onRenameWorkspace={() => setWorkspaceDialog('rename')}
                 onDeleteWorkspace={() => setWorkspaceDialog('delete')}
@@ -1788,8 +1797,8 @@ function ShellFrame({
           <NewFromTemplateDialog
             key={workspaceId}
             workspaceId={workspaceId}
-            folder={templateDestination ?? ''}
-            open={templateDestination !== null}
+            folder={templateFolder ?? ''}
+            open={templateFolder !== null}
             onClose={() => setTemplateDestination(null)}
           />
           <NewFolderDialog

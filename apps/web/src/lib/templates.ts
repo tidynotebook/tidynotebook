@@ -29,6 +29,20 @@ export type TemplateCandidate = {
   readonly path: string;
 };
 
+/** A creation destination belongs to the workspace where it was chosen. */
+export type TemplateDestination = {
+  readonly workspaceId: string;
+  readonly folder: string;
+};
+
+/** Gate the dialog during the render before workspace-change effects run. */
+export function templateDestinationFor(
+  workspaceId: string,
+  destination: TemplateDestination | null,
+): string | null {
+  return destination?.workspaceId === workspaceId ? destination.folder : null;
+}
+
 /** The name of the template settings in their browser settings key. */
 export const templateSettingsName = 'templates';
 
