@@ -35,9 +35,7 @@ await test('a stopped reader hears nothing more', () => {
   assert.equal(store.get(), 2);
 });
 
-await test('a plain edit changes no fact that the frame reads', () => {
-  // Record 0175. The frame read the save state of the open note, which a
-  // key moved from saved to saving and back, so every key rendered it.
+await test('only the first edit changes the pending fact that the frame reads', () => {
   const store = createFactStore(
     noteSaveReport({ storageError: null, lastSavedAt: null }),
     sameMembers,
@@ -46,22 +44,31 @@ await test('a plain edit changes no fact that the frame reads', () => {
   store.subscribe(() => {
     heard += 1;
   });
-  // A key, a draft write and a queue read state the same two facts.
+  // Only the first key changes pending state. Further keys and draft writes
+  // keep it pending until the current work reaches the server.
   for (let step = 0; step < 50; step += 1)
-    store.set(noteSaveReport({ storageError: null, lastSavedAt: null }));
-  assert.equal(heard, 0);
+    store.set(
+      noteSaveReport({
+        pendingSave: true,
+        storageError: null,
+        lastSavedAt: null,
+      }),
+    );
+  assert.equal(heard, 1);
   // A version and a failed write are facts the frame shows.
   store.set(
     noteSaveReport({
+      pendingSave: true,
       storageError: null,
       lastSavedAt: '2026-10-02T10:00:00.000Z',
     }),
   );
   store.set(
     noteSaveReport({
+      pendingSave: true,
       storageError: 'quota',
       lastSavedAt: '2026-10-02T10:00:00.000Z',
     }),
   );
-  assert.equal(heard, 2);
+  assert.equal(heard, 3);
 });

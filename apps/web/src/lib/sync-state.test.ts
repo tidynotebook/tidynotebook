@@ -503,6 +503,33 @@ await test('the footer states sync while local writes succeed', () => {
   );
 });
 
+await test('pending editor work replaces only the server-saved claim', () => {
+  const input = {
+    state: { kind: 'in-step' } as const,
+    online: true,
+    noteName: null,
+    openNoteWriteFailed: false,
+  };
+  assert.deepEqual(syncFooter({ ...input, openNotePending: true }), {
+    line: 'Saving the open note to the server.',
+    dot: 'pending',
+  });
+  for (const state of states.filter((state) => state.kind !== 'in-step')) {
+    assert.deepEqual(
+      syncFooter({ ...input, state, openNotePending: true }),
+      syncFooter({ ...input, state }),
+    );
+  }
+  assert.deepEqual(
+    syncFooter({ ...input, online: false, openNotePending: true }),
+    syncFooter({ ...input, online: false }),
+  );
+  assert.deepEqual(
+    syncFooter({ ...input, openNoteWriteFailed: true, openNotePending: true }),
+    syncFooter({ ...input, openNoteWriteFailed: true }),
+  );
+});
+
 await test('every footer sentence fits two lines of the narrowest sidebar', () => {
   // The defect this covers: the footer cut its sentence at one line, so a
   // person read "No connection. Your notes stay on..." and never the end.

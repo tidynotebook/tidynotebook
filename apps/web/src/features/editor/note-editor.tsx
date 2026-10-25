@@ -343,6 +343,8 @@ const NoteEditorBody = memo(function NoteEditorBody({
     saveSnapshotRef,
     lastSavedAtRef,
     writtenSequenceRef,
+    checkpointTaken,
+    snapshotStarted,
     storageError,
     setStorageError,
     rootRef,
@@ -628,6 +630,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
     const current = live.current;
     if (join) await joinStoredWork.current();
     try {
+      const snapshotTaken = snapshotStarted();
       const [snapshot, checkpoints] = await Promise.all([
         current.store.readFileSaveSnapshot(
           current.accountId,
@@ -641,6 +644,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
         ),
       ]);
       saveSnapshotRef.current = snapshot;
+      snapshotTaken();
       // The note may have moved or reached the trash from the sidebar, from
       // another tab, or from another device. The editor takes both facts from
       // the store, so no later save writes either one back.
@@ -816,6 +820,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
       const outcome = await noteWork.version();
       if (outcome.kind === 'written') {
         const { entry, draft } = outcome;
+        checkpointTaken(draft.sequence);
         if (entry !== null) draftTaken.current(draft);
         // The new checkpoint is the parent of the next one. Holding it here
         // keeps the editor right even when its draft row is removed, so a

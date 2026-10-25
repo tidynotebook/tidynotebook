@@ -22,6 +22,10 @@ export type NoteSaveFacts = {
   readonly lastSavedAtRef: { current: string | null };
   /** The sequence that the store holds, to tell text that no write took. */
   readonly writtenSequenceRef: { current: number };
+  /** Records the sequence that this editor put in a checkpoint. */
+  readonly checkpointTaken: (sequence: number) => void;
+  /** Captures the checkpoint sequence before a read and records it on completion. */
+  readonly snapshotStarted: () => () => void;
   /** The cause of a failed local write, which the note states. */
   readonly storageError: LocalStorageErrorKind | null;
   readonly setStorageError: (kind: LocalStorageErrorKind | null) => void;
@@ -38,6 +42,8 @@ export function useNoteSaveFacts(
   const saveSnapshotRef = useRef<FileSaveSnapshot | null>(null);
   const lastSavedAtRef = useRef<string | null>(null);
   const writtenSequenceRef = useRef(initialSequence);
+  const checkpointedSequenceRef = useRef(initialSequence);
+  const snapshotSequenceRef = useRef(initialSequence);
   const [storageError, setStorageErrorState] =
     useState<LocalStorageErrorKind | null>(null);
   const storageErrorRef = useRef<LocalStorageErrorKind | null>(null);
@@ -60,6 +66,10 @@ export function useNoteSaveFacts(
       root.dataset.saveState = state;
     publishSave(
       noteSaveReport({
+        pendingSave:
+          sequenceRef.current !== writtenSequenceRef.current ||
+          sequenceRef.current !== snapshotSequenceRef.current ||
+          state !== 'saved-server',
         storageError: storageErrorRef.current,
         lastSavedAt: lastSavedAtRef.current,
       }),
@@ -84,6 +94,20 @@ export function useNoteSaveFacts(
     saveSnapshotRef,
     lastSavedAtRef,
     writtenSequenceRef,
+    checkpointTaken: (sequence) => {
+      checkpointedSequenceRef.current = Math.max(
+        checkpointedSequenceRef.current,
+        sequence,
+      );
+    },
+    snapshotStarted: () => {
+      // An older snapshot read cannot prove that a later checkpoint reached
+      // the server, even if its promise completes after that checkpoint.
+      const sequence = checkpointedSequenceRef.current;
+      return () => {
+        snapshotSequenceRef.current = sequence;
+      };
+    },
     storageError,
     setStorageError,
     rootRef,
