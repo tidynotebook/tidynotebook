@@ -999,6 +999,9 @@ function ShellFrame({
   const [templateDestination, setTemplateDestination] = useState<string | null>(
     null,
   );
+  useEffect(() => {
+    setTemplateDestination(null);
+  }, [workspaceId]);
   const [selectedFolder, setSelectedFolder] = useState('');
   const sidebar = useSidebarSize();
   const [sidebarView, setSidebarView] = useSidebarView();

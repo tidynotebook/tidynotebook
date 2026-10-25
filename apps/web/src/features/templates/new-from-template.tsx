@@ -5,6 +5,7 @@ import {
   DialogBody,
   DialogFooter,
   EmptyState,
+  focusOutline,
   LoadingState,
   Notice,
 } from '@notesapp/ui';
@@ -195,7 +196,10 @@ function TemplateChoices({
             ) : (
               <section aria-label="Template preview" className="mt-3">
                 <h2 className="m-0 text-ui font-medium">Template preview</h2>
-                <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded-lg bg-app p-3 text-control">
+                <pre
+                  tabIndex={0}
+                  className={`max-h-64 overflow-auto whitespace-pre-wrap rounded-lg bg-app p-3 text-control ${focusOutline}`}
+                >
                   {readyPreview.text === ''
                     ? 'This template is empty.'
                     : readyPreview.text}
