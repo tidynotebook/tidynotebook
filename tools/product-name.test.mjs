@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import test from 'node:test';
-import { root } from './workspace.mjs';
+import { record, root } from './workspace.mjs';
 import { productName, productShortName } from '../packages/core/src/product.ts';
 import { productName as docsProductName } from '../apps/docs/src/site.ts';
 
@@ -61,16 +61,24 @@ await test('no surface spells the product another way', async () => {
     if (file === 'integrations/chatgpt/tidy-notebook/plugin.json') {
       // The owner selected a title-case directory name. Check that exact
       // presentation separately; all other package text keeps the core name.
-      const manifest = JSON.parse(text);
+      const manifest = record(JSON.parse(text));
+      const extensions = record(manifest.extensions);
+      const openai = record(extensions['com.openai']);
+      const presentation = record(openai.interface);
       const directoryName = productName.replace(/\b\w/g, (letter) =>
         letter.toUpperCase(),
       );
-      assert.equal(
-        manifest.extensions['com.openai'].interface.displayName,
-        directoryName,
-      );
-      manifest.extensions['com.openai'].interface.displayName = productName;
-      text = JSON.stringify(manifest);
+      assert.equal(presentation.displayName, directoryName);
+      text = JSON.stringify({
+        ...manifest,
+        extensions: {
+          ...extensions,
+          'com.openai': {
+            ...openai,
+            interface: { ...presentation, displayName: productName },
+          },
+        },
+      });
     }
     for (const match of text.matchAll(spellings))
       if (match[0] !== productName) found.push(`${file}: ${match[0]}`);
