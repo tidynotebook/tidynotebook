@@ -58,7 +58,11 @@ import {
   type NoteLoadState,
   type NoteLoadStatus,
 } from '../../lib/note-load-state.ts';
-import { createDeviceOpens, readDeviceNote } from './device-note.ts';
+import {
+  createDeviceOpens,
+  readDeviceNote,
+  watchDeviceNote,
+} from './device-note.ts';
 import { NoteEditor } from './note-editor.tsx';
 import { recordTiming } from './timing.ts';
 
@@ -292,45 +296,28 @@ export function NoteEditorLoader({
   // its document, its undo history, and its selection.
   useEffect(() => {
     if (store === null) return;
-    const activeStore = store;
-    let cancelled = false;
-    const recheck = async (): Promise<void> => {
-      try {
-        const cached = await activeStore.readCachedNote(
-          accountId,
-          workspaceId,
-          fileId,
-        );
-        if (cancelled || cached === null) return;
+    return watchDeviceNote(
+      store,
+      { accountId, workspaceId, fileId },
+      (cached) => {
+        if (cached === null) return;
         if (cached.deleted && statusKind.current === 'ready') {
           setStatus({ kind: 'deleted', path: cached.path });
           return;
         }
-        // The note was in the trash and is not any more, so a restore
-        // reached this device. The loader reads it again.
         if (!cached.deleted && statusKind.current === 'deleted') readAgain();
-      } catch {
-        // The open note keeps its buffer. A failed recheck changes nothing.
-      }
-    };
-    const unsubscribe = activeStore.subscribe((change) => {
-      if (
-        change.accountId === accountId &&
-        change.workspaceId === workspaceId &&
-        (change.fileId === null || change.fileId === fileId)
-      ) {
-        if (change.kind === 'purge') {
-          setStatus({ kind: 'purged' });
-          return;
-        }
-        if (change.kind === 'file') void recheck();
-      }
-    });
-    return () => {
-      cancelled = true;
-      unsubscribe();
-    };
-  }, [store, accountId, workspaceId, fileId, setStatus, readAgain]);
+      },
+      () => setStatus({ kind: 'purged' }),
+    );
+  }, [
+    store,
+    accountId,
+    workspaceId,
+    fileId,
+    setStatus,
+    readAgain,
+    status.kind,
+  ]);
 
   if (status.kind === 'loading')
     return (

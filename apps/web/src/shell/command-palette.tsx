@@ -64,6 +64,12 @@ import {
   type PaletteNote,
 } from '../lib/palette-items.ts';
 
+import {
+  currentContentSearch,
+  startContentSearch,
+  type ContentSearchAnswer,
+} from '../lib/content-search-state.ts';
+
 /**
  * The search of the device reads the plain text of each note through the
  * Markdown parser, which the first screen does not need, so it loads with
@@ -105,52 +111,62 @@ function useContentHits(
   store: LocalStore | null,
   accountId: string | null,
   workspaceId: string,
-): { readonly hits: readonly PaletteHit[]; readonly offline: boolean } {
-  const [hits, setHits] = useState<readonly PaletteHit[]>([]);
-  const [offline, setOffline] = useState(false);
+): {
+  readonly hits: readonly PaletteHit[];
+  readonly offline: boolean;
+  readonly pending: boolean;
+} {
+  const request = useMemo(
+    () => ({ query, store, accountId, workspaceId }),
+    [query, store, accountId, workspaceId],
+  );
+  const [answer, setAnswer] = useState<ContentSearchAnswer | null>(null);
 
   useEffect(() => {
     const needle = query.trim();
-    if (needle === '') {
-      setHits([]);
-      setOffline(false);
-      return;
-    }
-    let cancelled = false;
+    if (needle === '') return;
+    let cancel = (): void => {};
     const timer = window.setTimeout(() => {
-      void (async (): Promise<void> => {
-        const found = await searchContent(
-          async () =>
-            store === null || accountId === null
-              ? []
-              : (await loadDeviceSearch())(
-                  needle,
-                  await store.listSearchFiles(accountId, workspaceId),
-                ),
-          navigator.onLine
-            ? async () => {
-                const result = await searchRemote({
-                  path: { workspaceId },
-                  query: { query: needle, limit: 50 },
-                });
-                return result.error !== undefined || result.data === undefined
-                  ? []
-                  : result.data.hits;
-              }
-            : null,
-        );
-        if (cancelled) return;
-        setOffline(found.offline);
-        setHits(found.hits);
-      })();
+      const search = startContentSearch(
+        request,
+        () =>
+          searchContent(
+            async () =>
+              store === null || accountId === null
+                ? []
+                : (await loadDeviceSearch())(
+                    needle,
+                    await store.listSearchFiles(accountId, workspaceId),
+                  ),
+            navigator.onLine
+              ? async () => {
+                  const result = await searchRemote({
+                    path: { workspaceId },
+                    query: { query: needle, limit: 50 },
+                  });
+                  return result.error !== undefined || result.data === undefined
+                    ? []
+                    : result.data.hits;
+                }
+              : null,
+          ),
+        setAnswer,
+      );
+      cancel = search.cancel;
+      void search.done;
     }, searchDelayMs);
     return () => {
-      cancelled = true;
+      cancel();
       window.clearTimeout(timer);
     };
-  }, [query, store, accountId, workspaceId]);
+  }, [query, store, accountId, workspaceId, request]);
 
-  return { hits, offline };
+  const current = currentContentSearch(request, answer);
+  return {
+    hits: current?.hits ?? [],
+    offline: current?.offline ?? false,
+    pending: query.trim() !== '' && current === null,
+  };
 }
 
 /** What the palette passes to the body of its open dialog. */
@@ -512,8 +528,12 @@ function PaletteDialog({
         ))}
       </ul>
       {step === null || stepChoices === null ? (
-        rows.length === 0 ? (
-          <p className="m-4 text-control text-muted">
+        content.pending ? (
+          <p className="m-4 text-control text-muted" role="status">
+            Searching this workspace...
+          </p>
+        ) : rows.length === 0 ? (
+          <p className="m-4 text-control text-muted" role="status">
             No note and no action matches that.
           </p>
         ) : null
