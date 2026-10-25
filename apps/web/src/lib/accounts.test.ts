@@ -67,14 +67,14 @@ await test('a byte count reads in one unit with at most one decimal', () => {
   assert.equal(formatBytes(1), '1 byte');
   assert.equal(formatBytes(512), '512 bytes');
   assert.equal(formatBytes(1536), '1.5 KB');
-  assert.equal(formatBytes(15 * 1024 * 1024), '15 MB');
-  assert.equal(formatBytes(5 * 1024 * 1024 * 1024), '5 GB');
+  assert.equal(formatBytes(15 * 1000 * 1000), '15 MB');
+  assert.equal(formatBytes(10_000_000_000), '10 GB');
   assert.equal(formatBytes(-1), '');
 });
 
 await test('the storage line is empty when the limit is unknown', () => {
   assert.equal(
-    storageLine({ usedBytes: 1536, limitBytes: 5 * 1024 ** 3 }),
+    storageLine({ usedBytes: 1536, limitBytes: 5 * 1000 ** 3 }),
     '1.5 KB of 5 GB used',
   );
   assert.equal(storageLine({ usedBytes: 0, limitBytes: 0 }), '');
@@ -107,7 +107,7 @@ await test('the facts of a row name the role, the state and the activity', () =>
   assert.deepEqual(accountFacts(account(), now), [
     'Member',
     'Active 2 hours ago',
-    '1.5 KB of 5 GB used',
+    '1.5 KB of 5.4 GB used',
   ]);
   assert.deepEqual(
     accountFacts(
@@ -125,7 +125,7 @@ await test('the facts of a row name the role, the state and the activity', () =>
       'Administrator',
       'Disabled',
       'Not signed in',
-      '1.5 KB of 5 GB used',
+      '1.5 KB of 5.4 GB used',
       'ada@example.test',
     ],
   );

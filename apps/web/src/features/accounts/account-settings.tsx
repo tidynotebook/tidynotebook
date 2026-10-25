@@ -14,7 +14,6 @@ import { ConnectedAppSettings } from './connected-apps.tsx';
  * of it (record 0177).
  */
 import {
-  Fragment,
   useCallback,
   useEffect,
   useRef,
@@ -89,10 +88,15 @@ import { ThemeSettings } from './theme-settings.tsx';
 import {
   sectionOf,
   settingsSections,
+  settingsGroups,
   visibleSettingsSections,
   type SettingsSectionKey,
 } from '../../lib/page-sections.ts';
 import { useNow } from '../../shell/now.ts';
+import {
+  offlineTargets,
+  allOfflineTargetsPinned,
+} from '../../lib/offline-files.ts';
 
 import { importResultSentence } from '../../lib/import-result.ts';
 import { settingsTitle } from './accounts.tsx';
@@ -198,6 +202,9 @@ function useOfflineChoices(
   readonly choices: OfflineChoices;
   readonly status: OfflineStatus;
   readonly setChoice: (kind: keyof OfflineChoices, keep: boolean) => void;
+  readonly available: OfflineChoices;
+  readonly busy: boolean;
+  readonly problem: string;
 } {
   const [choices, setChoices] = useState<OfflineChoices>({
     images: false,
@@ -205,6 +212,13 @@ function useOfflineChoices(
   });
   const [status, setStatus] = useState<OfflineStatus>('loading');
   const [generation, setGeneration] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const writing = useRef(false);
+  const [problem, setProblem] = useState('');
+  const [available, setAvailable] = useState<OfflineChoices>({
+    images: false,
+    history: false,
+  });
 
   useEffect(() => {
     if (store === null || accountId === null || workspaceId === null) {
@@ -219,43 +233,36 @@ function useOfflineChoices(
           accountId ?? '',
           workspaceId ?? '',
         );
-        const images = files.filter(
-          (file) => file.kind === 'attachment' && !file.deleted,
+        const images = offlineTargets(files, 'images');
+        const versions = offlineTargets(files, 'history');
+        const allImages = await allOfflineTargetsPinned(images, (target) =>
+          activeStore.isAttachmentPinned(
+            accountId ?? '',
+            workspaceId ?? '',
+            target,
+          ),
         );
-        const versions = files.filter((file) => !file.deleted);
-        let allImages = images.length > 0;
-        for (const file of images) {
-          if (file.acceptedHeadDigest === null) continue;
-          if (
-            !(await activeStore.isAttachmentPinned(
-              accountId ?? '',
-              workspaceId ?? '',
-              file.acceptedHeadDigest,
-            ))
-          ) {
-            allImages = false;
-            break;
-          }
-        }
-        let allHistory = versions.length > 0;
-        for (const file of versions) {
-          if (file.acceptedHeadRevisionId === null) continue;
-          if (
-            !(await activeStore.isHistoryPinned(
-              accountId ?? '',
-              workspaceId ?? '',
-              file.acceptedHeadRevisionId,
-            ))
-          ) {
-            allHistory = false;
-            break;
-          }
-        }
+        const allHistory = await allOfflineTargetsPinned(versions, (target) =>
+          activeStore.isHistoryPinned(
+            accountId ?? '',
+            workspaceId ?? '',
+            target,
+          ),
+        );
         if (cancelled) return;
         setChoices({ images: allImages, history: allHistory });
+        setAvailable({
+          images: images.length > 0,
+          history: versions.length > 0,
+        });
         setStatus('ready');
       } catch {
         if (!cancelled) setStatus('failed');
+      } finally {
+        if (!cancelled) {
+          writing.current = false;
+          setBusy(false);
+        }
       }
     }
     void read();
@@ -266,43 +273,56 @@ function useOfflineChoices(
 
   const setChoice = useCallback(
     (kind: keyof OfflineChoices, keep: boolean): void => {
-      if (store === null || accountId === null || workspaceId === null) return;
+      if (
+        store === null ||
+        accountId === null ||
+        workspaceId === null ||
+        writing.current
+      )
+        return;
+      writing.current = true;
+      setBusy(true);
+      setProblem('');
       const activeStore = store;
       const activeAccount = accountId;
       const activeWorkspace = workspaceId;
       setChoices((current) => ({ ...current, [kind]: keep }));
       void (async (): Promise<void> => {
-        const files = await activeStore.listAcceptedFiles(
-          activeAccount,
-          activeWorkspace,
-        );
-        for (const file of files) {
-          if (kind === 'images') {
-            if (file.kind !== 'attachment' || file.acceptedHeadDigest === null)
-              continue;
-            await activeStore.setAttachmentPinned(
-              activeAccount,
-              activeWorkspace,
-              file.acceptedHeadDigest,
-              keep,
-            );
-          } else {
-            if (file.acceptedHeadRevisionId === null) continue;
-            await activeStore.setHistoryPinned(
-              activeAccount,
-              activeWorkspace,
-              file.acceptedHeadRevisionId,
-              keep,
-            );
+        try {
+          const files = await activeStore.listAcceptedFiles(
+            activeAccount,
+            activeWorkspace,
+          );
+          for (const target of offlineTargets(files, kind)) {
+            if (kind === 'images') {
+              await activeStore.setAttachmentPinned(
+                activeAccount,
+                activeWorkspace,
+                target,
+                keep,
+              );
+            } else {
+              await activeStore.setHistoryPinned(
+                activeAccount,
+                activeWorkspace,
+                target,
+                keep,
+              );
+            }
           }
+        } catch {
+          setProblem(
+            'This device could not change offline storage. Check the available space and try again.',
+          );
+        } finally {
+          setGeneration((value) => value + 1);
         }
-        setGeneration((value) => value + 1);
       })();
     },
     [store, accountId, workspaceId],
   );
 
-  return { choices, status, setChoice };
+  return { choices, status, setChoice, available, busy, problem };
 }
 
 /** How far the list of sessions got. */
@@ -679,6 +699,8 @@ export function AccountSettingsPage(): ReactNode {
               id="offline-images"
               label="Keep images on this device"
               checked={offline.choices.images}
+              disabled={offline.busy || !offline.available.images}
+              describedBy="offline-help"
               onChange={(keep) => {
                 offline.setChoice('images', keep);
               }}
@@ -687,11 +709,20 @@ export function AccountSettingsPage(): ReactNode {
               id="offline-history"
               label="Keep older versions on this device"
               checked={offline.choices.history}
+              disabled={offline.busy || !offline.available.history}
+              describedBy="offline-help"
               onChange={(keep) => {
                 offline.setChoice('history', keep);
               }}
             />
+            <p id="offline-help" className="mb-0 mt-2 text-control text-muted">
+              These controls keep the current files on this device. Add an image
+              or save a version to make its control available.
+            </p>
           </div>
+        )}
+        {offline.problem === '' ? null : (
+          <Notice className="mt-3" tone="problem" message={offline.problem} />
         )}
       </SettingsSection>
     ),
@@ -900,11 +931,54 @@ export function AccountSettingsPage(): ReactNode {
   return (
     <Page sections={sections}>
       <PageHeader title={settingsTitle} />
-      <div>
-        {sections.map((section) => (
-          <Fragment key={section.key}>{sectionBodies[section.key]}</Fragment>
+      <nav
+        aria-label="Settings sections"
+        className="mb-6 grid gap-3 sm:grid-cols-2"
+      >
+        {settingsGroups.map((group) => (
+          <div key={group.title}>
+            <p className="mb-1 mt-0 text-control font-semibold text-strong">
+              {group.title}
+            </p>
+            <div className="flex flex-wrap gap-1">
+              {sections
+                .filter((section) => group.keys.includes(section.key))
+                .map((section) => (
+                  <a
+                    key={section.key}
+                    href={`#${section.id}`}
+                    className={buttonClassName({
+                      variant: 'ghost',
+                      size: 'sm',
+                    })}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      const heading = document.getElementById(section.id);
+                      heading?.scrollIntoView({ block: 'start' });
+                      heading?.focus({ preventScroll: true });
+                    }}
+                  >
+                    {section.title}
+                  </a>
+                ))}
+            </div>
+          </div>
         ))}
-      </div>
+      </nav>
+      {settingsGroups.map((group) => (
+        <section key={group.title} aria-label={group.title} className="mt-6">
+          <p
+            className={`mb-2 mt-0 text-ui font-semibold ${group.title === 'Danger zone' ? 'text-danger' : 'text-strong'}`}
+          >
+            {group.title}
+          </p>
+          {sections
+            .filter((section) => group.keys.includes(section.key))
+            .map((section) => (
+              <div key={section.key}>{sectionBodies[section.key]}</div>
+            ))}
+        </section>
+      ))}
       {removing ? (
         <RemoveOwnAccountDialog
           store={store.store}

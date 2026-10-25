@@ -114,7 +114,24 @@ export function SignUpPage(): ReactNode {
           A message goes to {sentTo}. Open the link in it to finish your
           account. Then sign in with your address and your password.
         </p>
-        <Link className={buttonClassName({ variant: 'secondary' })} to="/login">
+        <p className="mb-5 mt-0 text-control text-muted">
+          Check your spam folder if the message does not arrive. To send another
+          link or use a different address, return to the form. Email limits can
+          delay another message.
+        </p>
+        <Button
+          variant="secondary"
+          onClick={() => {
+            setSentTo(null);
+          }}
+        >
+          Change address or send another link
+        </Button>
+        <Link
+          className={buttonClassName({ variant: 'ghost' })}
+          to="/login"
+          state={{ email: sentTo }}
+        >
           Go to sign in
         </Link>
       </AuthFrame>
@@ -244,9 +261,7 @@ export function VerifyPage(): ReactNode {
   return (
     <AuthFrame
       title={
-        state.kind === 'verified'
-          ? 'Your account is ready'
-          : 'Finish your account'
+        state.kind === 'verified' ? 'Email verified' : 'Finish your account'
       }
     >
       {state.kind === 'loading' ? (
@@ -268,17 +283,21 @@ export function VerifyPage(): ReactNode {
             <Notice tone="problem" message={state.message} />
           ) : (
             <p className="mb-5 mt-0 text-control text-muted">
-              The address {state.email} is proved. Sign in with it and your
-              password.
+              Email verified for {state.email}. Enter your password to sign in.
             </p>
           )}
           <Link
             className={buttonClassName({
               variant: state.kind === 'verified' ? 'primary' : 'secondary',
             })}
-            to="/login"
+            to={state.kind === 'invalid' ? '/signup' : '/login'}
+            state={
+              state.kind === 'verified' ? { email: state.email } : undefined
+            }
           >
-            Go to sign in
+            {state.kind === 'invalid'
+              ? 'Get a new link'
+              : 'Continue to sign in'}
           </Link>
         </div>
       )}

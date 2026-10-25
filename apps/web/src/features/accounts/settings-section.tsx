@@ -32,7 +32,11 @@ export function SettingsSection({
     >
       <div className="md:grid md:grid-cols-3 md:gap-group">
         <div className="md:col-span-1">
-          <h2 className="m-0 text-ui font-semibold text-strong" id={section.id}>
+          <h2
+            className="m-0 text-ui font-semibold text-strong"
+            id={section.id}
+            tabIndex={-1}
+          >
             {section.title}
           </h2>
           {description === undefined ? null : (
