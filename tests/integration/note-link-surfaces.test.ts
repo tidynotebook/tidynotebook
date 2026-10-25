@@ -976,6 +976,75 @@ await test('purge blocks a restore reload queued in the same React batch even wh
   }
 });
 
+await test('returning to a purged note reaches a terminal state after another note opens', async () => {
+  const purgedId = crypto.randomUUID();
+  const otherId = crypto.randomUUID();
+  let purged = false;
+  const listeners = new Set<(change: LocalChange) => void>();
+  const local: LocalStore = {
+    ...store,
+    readCachedNote: (_a, _w, id) =>
+      Promise.resolve(
+        id === purgedId && purged
+          ? null
+          : {
+              fileId: id,
+              path: 'Review.md',
+              text: '',
+              deleted: true,
+              workingCopyId: crypto.randomUUID(),
+              sequence: 0,
+              baseRevisionId: null,
+              stale: false,
+              acceptedText: null,
+              acceptedPath: null,
+              acceptedRevisionId: null,
+              document: null,
+            },
+      ),
+    subscribe: (listener) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+  };
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = () => Promise.resolve(new Response(null, { status: 410 }));
+  const show = (id: string) =>
+    render(
+      createElement(NoteEditorLoader, {
+        store: local,
+        accountId,
+        workspaceId,
+        fileId: id,
+      }),
+    );
+  try {
+    await show(purgedId);
+    assert.match(container.textContent ?? '', /Note deleted on this device/);
+    await act(async () => {
+      purged = true;
+      for (const listener of [...listeners])
+        listener({ kind: 'purge', accountId, workspaceId, fileId: purgedId });
+    });
+    assert.match(container.textContent ?? '', /Note deleted permanently/);
+    await show(otherId);
+    await act(async () => {
+      await setImmediate();
+    });
+    assert.match(container.textContent ?? '', /Note deleted on this device/);
+    await show(purgedId);
+    await act(async () => {
+      await setImmediate();
+    });
+    assert.match(container.textContent ?? '', /Note deleted permanently/);
+  } finally {
+    await render(null);
+    globalThis.fetch = originalFetch;
+  }
+});
+
 after(async () => {
   await act(async () => root.unmount());
   await act(finishStoreWork);
