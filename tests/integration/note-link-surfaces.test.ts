@@ -61,6 +61,7 @@ Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', {
 const { createRoot } = await import('react-dom/client');
 const { EditorView } = await import('@codemirror/view');
 const { forceParsing } = await import('@codemirror/language');
+const { setEditorReadOnly } = await import('@notesapp/editor');
 const { NoteEditor } =
   await import('../../apps/web/dist/features/editor/note-editor.js');
 const { NoteEditorLoader } =
@@ -827,8 +828,18 @@ await test('visible toolbar controls undo and redo the open editor text', async 
     });
   });
   assert.equal(undoButton.disabled, false);
+  await act(async () => setEditorReadOnly(current, true));
+  assert.equal(undoButton.disabled, true);
+  assert.equal(redoButton.disabled, true);
+  await act(async () => setEditorReadOnly(current, false));
+  assert.equal(undoButton.disabled, false);
   await act(async () => undoButton.click());
   assert.equal(current.state.doc.toString(), text);
+  assert.equal(redoButton.disabled, false);
+  await act(async () => setEditorReadOnly(current, true));
+  assert.equal(undoButton.disabled, true);
+  assert.equal(redoButton.disabled, true);
+  await act(async () => setEditorReadOnly(current, false));
   assert.equal(redoButton.disabled, false);
   await act(async () => redoButton.click());
   assert.equal(current.state.doc.toString(), `${text}Toolbar edit`);
