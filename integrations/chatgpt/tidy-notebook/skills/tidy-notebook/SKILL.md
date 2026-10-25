@@ -3,7 +3,7 @@ name: tidy-notebook
 description: Find, read, summarize, create, and update notes in a connected tidy notebook account. Use for tidy notebook notes, backlinks, and saved versions.
 ---
 
-# Tidy notebook
+# tidy notebook
 
 Use the connected tidy notebook MCP tools. If the connection needs sign-in,
 direct the user to its OAuth connection flow. Personal API keys do not work at

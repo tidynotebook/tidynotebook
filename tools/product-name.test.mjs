@@ -56,8 +56,22 @@ await test('no surface spells the product another way', async () => {
   /** @type {string[]} */
   const found = [];
   for (const file of files) {
-    const text = await readFile(resolve(root, file), 'utf8').catch(() => '');
+    let text = await readFile(resolve(root, file), 'utf8').catch(() => '');
     if (text.includes('\0')) continue;
+    if (file === 'integrations/chatgpt/tidy-notebook/plugin.json') {
+      // The owner selected a title-case directory name. Check that exact
+      // presentation separately; all other package text keeps the core name.
+      const manifest = JSON.parse(text);
+      const directoryName = productName.replace(/\b\w/g, (letter) =>
+        letter.toUpperCase(),
+      );
+      assert.equal(
+        manifest.extensions['com.openai'].interface.displayName,
+        directoryName,
+      );
+      manifest.extensions['com.openai'].interface.displayName = productName;
+      text = JSON.stringify(manifest);
+    }
     for (const match of text.matchAll(spellings))
       if (match[0] !== productName) found.push(`${file}: ${match[0]}`);
   }

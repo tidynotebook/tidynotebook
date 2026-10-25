@@ -1,4 +1,4 @@
-# Tidy Notebook plugin
+# tidy notebook plugin
 
 This package connects ChatGPT and Codex to the hosted tidy notebook MCP server.
 It preserves the server's OAuth flow and account permissions. It changes no
@@ -12,7 +12,7 @@ Package only that directory, with the archive outside it:
 
 ```sh
 cd integrations/chatgpt
-zip -r /tmp/tidy-notebook-0.1.0.zip tidy-notebook
+zip -r /tmp/tidy-notebook-0.1.1.zip tidy-notebook
 ```
 
 The package requests note read, note write, and refresh access. The consent
@@ -20,13 +20,17 @@ screen lets the user choose read-only access. CIMD registration is preferred;
 the host can fall back to the discovered DCR endpoint. There are no packaged
 credentials or app bindings.
 
+Clients that use MCP annotations can request stronger confirmation before a
+replacement or patch removes text. The tool inputs, outputs, and scopes stay
+the same.
+
 ## Public submission preparation
 
 The package is a development draft. It is not ready for public submission.
 
-- The display name is **Tidy Notebook**. The verified public publisher identity
-  is pending. Add `developerName` only after that identity is confirmed. The
-  brand name does not establish business verification.
+- The display name uses title case in the manifest, as selected by the owner.
+  The public publisher uses the owner's verified individual identity. Confirm
+  the exact byline in the portal before submission.
 - The owner selected all available countries. The empty `countries` array
   deliberately removes country restrictions. Check the saved portal targeting.
 - The listing discloses a free trial followed by a paid cloud subscription.
@@ -37,12 +41,15 @@ The package is a development draft. It is not ready for public submission.
 - The five positive and three negative cases in the manifest are **Not run**.
   Each description contains its setup. Use a dedicated test account, reset
   fixtures between runs, and record actual tool calls and results.
-- Live OAuth discovery is verified. Authenticated initialization, tool
-  discovery, and review cases require a development connection and consent.
-- Tool annotations come from the server. Inspect the live tool scan. In the
-  current source, write tools mark only Move to Trash as destructive. Review
-  replacement and patch annotations before submission because they can remove
-  existing content. A package cannot override server annotations.
+- Live OAuth discovery and authenticated discovery of all tools are verified
+  through the local Codex connection. The installed private package did not
+  start its bundled server in the current desktop client. This local connection
+  does not establish a hosted ChatGPT connection or prove web compatibility.
+  The review cases still require the dedicated test account.
+- Tool annotations come from the server. The source marks replacement, patch,
+  and Move to Trash as destructive because they can remove content. Check the
+  live scan after an authorized core release and installation upgrade. A package
+  cannot override the annotations of the currently hosted server.
 
 ## Demo and reviewer access
 
