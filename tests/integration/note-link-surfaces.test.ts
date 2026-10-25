@@ -418,6 +418,99 @@ await test('a restored note opens editable content even when its first read stil
   }
 });
 
+await test('a delayed restore reread shows pending feedback before editable recovery', async () => {
+  const restoredId = crypto.randomUUID();
+  const restoredText = '# Delayed recovery\n';
+  await store.checkpoint(
+    {
+      accountId,
+      workspaceId,
+      fileId: restoredId,
+      workingCopyId: crypto.randomUUID(),
+      baseRevisionId: null,
+      path: 'Delayed recovery.md',
+      text: restoredText,
+      sequence: 1,
+      deleted: false,
+    },
+    null,
+    'text',
+  );
+  const saved = await store.readCachedNote(accountId, workspaceId, restoredId);
+  assert.ok(saved !== null);
+  let restored = false;
+  let restoreReads = 0;
+  const rereadStarted = Promise.withResolvers<void>();
+  const delayed = Promise.withResolvers<typeof saved>();
+  const listeners = new Set<(change: LocalChange) => void>();
+  const restoredStore: LocalStore = {
+    ...store,
+    readCachedNote: () => {
+      if (!restored) return Promise.resolve({ ...saved, deleted: true });
+      // The watch sees the restore first. Hold the loader's subsequent read,
+      // rather than the initial load, to inspect the visible recovery state.
+      if (++restoreReads === 2) {
+        rereadStarted.resolve();
+        return delayed.promise;
+      }
+      return Promise.resolve(saved);
+    },
+    subscribe: (listener) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+  };
+  await render(
+    createElement(NoteEditorLoader, {
+      store: restoredStore,
+      accountId,
+      workspaceId,
+      fileId: restoredId,
+    }),
+  );
+  assert.match(container.textContent ?? '', /Note deleted on this device/);
+  await act(async () => {
+    restored = true;
+    for (const listener of [...listeners])
+      listener({ kind: 'file', accountId, workspaceId, fileId: restoredId });
+  });
+  await rereadStarted.promise;
+  assert.equal(container.querySelector('.cm-editor'), null);
+  assert.doesNotMatch(
+    container.textContent ?? '',
+    /Note deleted on this device/,
+  );
+  const pending = container.querySelector('[role="status"][aria-busy="true"]');
+  assert.ok(pending);
+  assert.match(pending.textContent ?? '', /The note is loading\./);
+  await act(async () => {
+    delayed.resolve(saved);
+    await delayed.promise;
+  });
+  await waitForEditor(container);
+  assert.equal(view().state.doc.toString(), restoredText);
+  assert.equal(view().state.readOnly, false);
+  await act(async () => {
+    const current = view();
+    current.dispatch({
+      changes: {
+        from: current.state.doc.length,
+        insert: 'Edit after recovery\n',
+      },
+      userEvent: 'input.type',
+    });
+    await flush();
+  });
+  assert.equal(
+    view().state.doc.toString(),
+    `${restoredText}Edit after recovery\n`,
+  );
+  await render(null);
+  await act(finishStoreWork);
+});
+
 /** Accept only this test's queued writes, as the sync transport does. */
 async function acceptNoteWrites(noteId: string): Promise<void> {
   for (const entry of await store.pending(accountId, workspaceId)) {
