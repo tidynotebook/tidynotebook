@@ -23,6 +23,34 @@ export function NewFromTemplate({
   readonly workspaceId: string;
   readonly folder: string;
 }): ReactNode {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
+        From template
+      </Button>
+      <NewFromTemplateDialog
+        workspaceId={workspaceId}
+        folder={folder}
+        open={open}
+        onClose={() => setOpen(false)}
+      />
+    </>
+  );
+}
+
+/** A frame owns this dialog so transformed navigation cannot constrain it. */
+export function NewFromTemplateDialog({
+  workspaceId,
+  folder,
+  open,
+  onClose,
+}: {
+  readonly workspaceId: string;
+  readonly folder: string;
+  readonly open: boolean;
+  readonly onClose: () => void;
+}): ReactNode {
   const store = useLocalStore().store;
   const accountId = useSession().account?.accountId ?? null;
   const newNote = useCreateNote(store, accountId, workspaceId);
@@ -30,7 +58,6 @@ export function NewFromTemplate({
     readonly folder: string;
     readonly text?: string;
   } | null>(null);
-  const [open, setOpen] = useState(false);
   const create = newNote.create;
   // The closed dialog must release focus before the new editor mounts.
   useEffect(() => {
@@ -41,15 +68,12 @@ export function NewFromTemplate({
   const id = useId();
   return (
     <>
-      <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
-        From template
-      </Button>
       {newNote.error === null ? null : (
         <Notice tone="problem" message={newNote.error} />
       )}
       <Dialog
         open={open}
-        onClose={() => setOpen(false)}
+        onClose={onClose}
         title="New note from template"
         titleId={id}
         width="medium"
@@ -58,14 +82,14 @@ export function NewFromTemplate({
           <TemplateChoices
             workspaceId={workspaceId}
             folder={folder}
-            onClose={() => setOpen(false)}
+            onClose={onClose}
             onChoose={(destination, text) => {
               setChosen(
                 text === undefined
                   ? { folder: destination }
                   : { folder: destination, text },
               );
-              setOpen(false);
+              onClose();
             }}
           />
         ) : null}

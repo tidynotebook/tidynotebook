@@ -98,7 +98,7 @@ import {
   AttentionLink,
   useAttentionCount,
 } from '../features/attention/attention-link.tsx';
-import { NewFromTemplate } from '../features/templates/new-from-template.tsx';
+import { NewFromTemplateDialog } from '../features/templates/new-from-template.tsx';
 import { CommandPalette } from './command-palette.tsx';
 import type { ShortcutsDialog } from './shortcuts.tsx';
 import { createModuleLoad } from '../lib/module-load.ts';
@@ -372,6 +372,7 @@ function Sidebar({
   onPublish,
   onMove,
   onNewNoteIn,
+  onFromTemplate,
   onNewWorkspace,
   onRenameWorkspace,
   onDeleteWorkspace,
@@ -398,6 +399,7 @@ function Sidebar({
     returnFocus: () => void,
   ) => void;
   readonly onNewNoteIn: (folder: string) => void;
+  readonly onFromTemplate: (folder: string) => void;
   readonly onNewWorkspace: () => void;
   readonly onRenameWorkspace: () => void;
   readonly onDeleteWorkspace: () => void;
@@ -556,11 +558,13 @@ function Sidebar({
                 Create in: {workspaceName} /{' '}
                 {selectedFolder === '' ? 'workspace root' : selectedFolder}
               </p>
-              <NewFromTemplate
-                key={workspaceId}
-                workspaceId={workspaceId}
-                folder={selectedFolder}
-              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onFromTemplate(selectedFolder)}
+              >
+                From template
+              </Button>
               {newNoteProblem === null ? null : (
                 <p className="my-1 px-2 text-control text-danger" role="alert">
                   {newNoteProblem}
@@ -992,6 +996,9 @@ function ShellFrame({
   const [workspaceDialog, setWorkspaceDialog] = useState<
     'create' | 'rename' | 'delete' | null
   >(null);
+  const [templateDestination, setTemplateDestination] = useState<string | null>(
+    null,
+  );
   const [selectedFolder, setSelectedFolder] = useState('');
   const sidebar = useSidebarSize();
   const [sidebarView, setSidebarView] = useSidebarView();
@@ -1652,6 +1659,7 @@ function ShellFrame({
                   setMoveItems({ items, returnFocus })
                 }
                 onNewNoteIn={(folder) => newNote.create(folder)}
+                onFromTemplate={setTemplateDestination}
                 onNewWorkspace={() => setWorkspaceDialog('create')}
                 onRenameWorkspace={() => setWorkspaceDialog('rename')}
                 onDeleteWorkspace={() => setWorkspaceDialog('delete')}
@@ -1774,6 +1782,13 @@ function ShellFrame({
               />
             </>
           )}
+          <NewFromTemplateDialog
+            key={workspaceId}
+            workspaceId={workspaceId}
+            folder={templateDestination ?? ''}
+            open={templateDestination !== null}
+            onClose={() => setTemplateDestination(null)}
+          />
           <NewFolderDialog
             open={newFolderParent !== null}
             onClose={() => setNewFolderParent(null)}

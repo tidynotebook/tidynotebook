@@ -91,10 +91,6 @@ To find body text, write a phrase such as `blue umbrella` in a note. Open
 pending message until the request finishes. Select the matching note.
 Other workspaces have separate results.
 
-These paths need a user walkthrough before any claim about retention. Check
-first-note writing, return to a recent or daily note, and body search with a
-new user. Record any point where the next action is unclear.
-
 ## If a page stops
 
 When an error stops a page, the page says so and offers **Reload** and **Open
