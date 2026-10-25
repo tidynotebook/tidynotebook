@@ -52,3 +52,23 @@ export function createOfflineWriteGate(): (
     }
   };
 }
+
+/** A write failure belongs only to the account and workspace that started it. */
+export type OfflineProblem = {
+  readonly accountId: string;
+  readonly workspaceId: string;
+  readonly message: string;
+};
+
+/** A late failure from another scope must never appear in this scope. */
+export function offlineProblemFor(
+  problem: OfflineProblem | null,
+  accountId: string | null,
+  workspaceId: string | null,
+): string {
+  return problem !== null &&
+    problem.accountId === accountId &&
+    problem.workspaceId === workspaceId
+    ? problem.message
+    : '';
+}
