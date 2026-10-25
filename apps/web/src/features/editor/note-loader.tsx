@@ -186,8 +186,10 @@ export function NoteEditorLoader({
       if (
         purgedIdentity.current !== null &&
         isSameNote(purgedIdentity.current, opening)
-      )
+      ) {
+        setStatus({ kind: 'purged' });
         return;
+      }
       // The first render of this note started the read of the device and
       // waited for it, so that read answers here when the store has not
       // changed the note since. A note on the screen never goes back to the
