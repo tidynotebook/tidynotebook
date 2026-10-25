@@ -330,3 +330,43 @@ await test('an older deleted read cannot replace a newer restore or a purge', as
   assert.equal(seen.length, 1);
   stop();
 });
+
+await test('only a current failed watch read requests fallback', async () => {
+  const store = fakeStore();
+  const first = Promise.withResolvers<LocalCachedNote | null>();
+  const current = Promise.withResolvers<LocalCachedNote | null>();
+  const purged = Promise.withResolvers<LocalCachedNote | null>();
+  const closed = Promise.withResolvers<LocalCachedNote | null>();
+  const reads = [first, current, purged, closed];
+  const seen: (LocalCachedNote | null)[] = [];
+  const stop = watchDeviceNote(
+    {
+      ...store,
+      readCachedNote: () => {
+        const read = reads.shift();
+        assert.ok(read);
+        return read.promise;
+      },
+    },
+    identity,
+    (note) => seen.push(note),
+    () => {},
+  );
+  store.announce({ ...identity, kind: 'file' });
+  current.reject(new Error('current read failed'));
+  await current.promise.catch(() => {});
+  assert.deepEqual(seen, [null]);
+  first.reject(new Error('old read failed'));
+  await first.promise.catch(() => {});
+  assert.deepEqual(seen, [null]);
+  store.announce({ ...identity, kind: 'file' });
+  store.announce({ ...identity, kind: 'purge' });
+  purged.reject(new Error('purged read failed'));
+  await purged.promise.catch(() => {});
+  assert.deepEqual(seen, [null]);
+  store.announce({ ...identity, kind: 'file' });
+  stop();
+  closed.reject(new Error('closed read failed'));
+  await closed.promise.catch(() => {});
+  assert.deepEqual(seen, [null]);
+});
