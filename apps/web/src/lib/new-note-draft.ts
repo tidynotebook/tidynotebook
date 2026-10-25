@@ -2,13 +2,20 @@
  * What a new note is, as data.
  *
  * A new note is empty, because the one welcome note of an installation is
- * written by the server during setup. A daily note is the one exception: it
- * starts with the text of the template its member chose (record 0099). The
- * rules here stay pure, so the name choice and the starting text can be
+ * written by the server during setup. A daily note or a note from a template
+ * starts with text that its member chose. These rules are pure, so the name
+ * choice and the starting text can be
  * tested without a browser and without a store.
  */
+import { fillTemplate } from '@notesapp/core';
+import { templateContextAt } from './templates.ts';
 import type { Draft } from '@notesapp/sync';
-import { joinNotePath, storageNotePath } from './note-name.ts';
+import {
+  baseNameOf,
+  displayNoteName,
+  joinNotePath,
+  storageNotePath,
+} from './note-name.ts';
 
 /** The identifiers that the caller draws for one new note. */
 export type NewNoteIds = {
@@ -61,8 +68,7 @@ export function freeCopyPath(
 /**
  * The local draft of one new note.
  *
- * The text is empty unless the caller states one, which only a daily note
- * does, with the text of its template.
+ * The text is empty unless the caller supplies a chosen template.
  */
 export function newNoteDraft(input: {
   readonly accountId: string;
@@ -83,4 +89,18 @@ export function newNoteDraft(input: {
     deleted: false,
     sequence: 1,
   };
+}
+
+/** Fill only a template the person chose, using the new note's actual name. */
+export function newNoteTemplateText(
+  template: string | undefined,
+  path: string,
+  instant: Date,
+): string {
+  return template === undefined
+    ? ''
+    : fillTemplate(
+        template,
+        templateContextAt(instant, displayNoteName(baseNameOf(path))),
+      );
 }

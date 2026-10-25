@@ -82,6 +82,7 @@ export function Button({
   buttonRef,
   ariaControls,
   ariaExpanded,
+  ariaPressed,
   tabIndex,
   compact = false,
 }: {
@@ -99,6 +100,7 @@ export function Button({
   readonly buttonRef?: Ref<HTMLButtonElement> | undefined;
   readonly ariaControls?: string | undefined;
   readonly ariaExpanded?: boolean | undefined;
+  readonly ariaPressed?: boolean | undefined;
   /**
    * The place of the button in the tab order. A group with one tab stop,
    * such as a toolbar, passes -1 to every button but the one in reach.
@@ -142,6 +144,7 @@ export function Button({
       aria-label={name.ariaLabel}
       aria-controls={ariaControls}
       aria-expanded={ariaExpanded}
+      aria-pressed={ariaPressed}
       tabIndex={tabIndex}
       title={name.title}
     >

@@ -173,7 +173,7 @@ export function NewFolderDialog({
             label="Folder name"
             hint={
               parent === ''
-                ? 'The folder goes at the top and starts empty. Use New note in this folder to fill it.'
+                ? 'The folder goes in this workspace root and starts empty. Use New note in this folder to fill it.'
                 : `The folder goes inside ${parent} and starts empty. Use New note in this folder to fill it.`
             }
             value={name}

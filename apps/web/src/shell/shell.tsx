@@ -98,6 +98,7 @@ import {
   AttentionLink,
   useAttentionCount,
 } from '../features/attention/attention-link.tsx';
+import { NewFromTemplateDialog } from '../features/templates/new-from-template.tsx';
 import { CommandPalette } from './command-palette.tsx';
 import type { ShortcutsDialog } from './shortcuts.tsx';
 import { createModuleLoad } from '../lib/module-load.ts';
@@ -138,7 +139,11 @@ import {
   TemplatesProvider,
   useTemplates,
 } from '../features/templates/templates.tsx';
-import { templatePalettePick } from '../lib/templates.ts';
+import {
+  templatePalettePick,
+  templateDestinationFor,
+  type TemplateDestination,
+} from '../lib/templates.ts';
 import { SidebarCalendar } from '../features/daily-notes/calendar.tsx';
 import { dailyNoteDate, type PublicationScope } from '@notesapp/core';
 import { PublishDialog } from '../features/publishing/publish-dialog.tsx';
@@ -359,6 +364,7 @@ function Breadcrumb({
  */
 function Sidebar({
   workspaceId,
+  workspaceRootLabel,
   view,
   selectedFolder,
   folders,
@@ -370,12 +376,14 @@ function Sidebar({
   onPublish,
   onMove,
   onNewNoteIn,
+  onFromTemplate,
   onNewWorkspace,
   onRenameWorkspace,
   onDeleteWorkspace,
   onClose,
 }: {
   readonly workspaceId: string;
+  readonly workspaceRootLabel: string;
   /** What the panel shows, which the view bar chose (record 0105). */
   readonly view: SidebarView;
   readonly selectedFolder: string;
@@ -395,6 +403,7 @@ function Sidebar({
     returnFocus: () => void,
   ) => void;
   readonly onNewNoteIn: (folder: string) => void;
+  readonly onFromTemplate: (folder: string) => void;
   readonly onNewWorkspace: () => void;
   readonly onRenameWorkspace: () => void;
   readonly onDeleteWorkspace: () => void;
@@ -508,7 +517,7 @@ function Sidebar({
                   variant="ghost"
                   size="sm"
                   compact
-                  label="New note"
+                  label={`New note in ${selectedFolder === '' ? workspaceRootLabel : selectedFolder}`}
                   title="New note"
                   icon={actionIcon('new-note')}
                   onClick={() => onNewNoteIn(selectedFolder)}
@@ -517,7 +526,7 @@ function Sidebar({
                   variant="ghost"
                   size="sm"
                   compact
-                  label="New folder"
+                  label={`New folder in ${selectedFolder === '' ? workspaceRootLabel : selectedFolder}`}
                   title="New folder"
                   icon={actionIcon('new-folder')}
                   onClick={() => onNewFolderIn(selectedFolder)}
@@ -549,6 +558,17 @@ function Sidebar({
                   }
                 />
               </div>
+              <p className="my-1 px-2 text-control text-muted">
+                Create in:{' '}
+                {selectedFolder === '' ? workspaceRootLabel : selectedFolder}
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onFromTemplate(selectedFolder)}
+              >
+                From template
+              </Button>
               {newNoteProblem === null ? null : (
                 <p className="my-1 px-2 text-control text-danger" role="alert">
                   {newNoteProblem}
@@ -980,6 +1000,25 @@ function ShellFrame({
   const [workspaceDialog, setWorkspaceDialog] = useState<
     'create' | 'rename' | 'delete' | null
   >(null);
+  const [templateDestination, setTemplateDestination] =
+    useState<TemplateDestination | null>(null);
+  const [templateProblem, setTemplateProblem] = useState<{
+    readonly workspaceId: string;
+    readonly message: string | null;
+  } | null>(null);
+  const reportTemplateProblem = useCallback(
+    (message: string | null): void => {
+      setTemplateProblem({ workspaceId, message });
+    },
+    [workspaceId],
+  );
+  const templateFolder = templateDestinationFor(
+    workspaceId,
+    templateDestination,
+  );
+  useEffect(() => {
+    setTemplateDestination(null);
+  }, [workspaceId]);
   const [selectedFolder, setSelectedFolder] = useState('');
   const sidebar = useSidebarSize();
   const [sidebarView, setSidebarView] = useSidebarView();
@@ -1191,6 +1230,10 @@ function ShellFrame({
       allWorkspaces.find((entry) => entry.workspaceId === workspaceId) ?? null,
     [allWorkspaces, workspaceId],
   );
+  const workspaceRootLabel =
+    openWorkspace === null
+      ? 'workspace root'
+      : `${openWorkspace.name} workspace root`;
 
   // Every workspace the person can move to from here. The open one is absent,
   // because a row that goes where you already are is noise.
@@ -1229,14 +1272,14 @@ function ShellFrame({
     (): readonly PaletteAction[] => [
       {
         id: 'new-note',
-        label: 'New note',
+        label: `New note in ${selectedFolder === '' ? 'workspace root' : selectedFolder}`,
         keywords: 'create add',
         icon: 'new-note' as const,
         run: () => newNote.create(selectedFolder),
       },
       {
         id: 'new-folder',
-        label: 'New folder',
+        label: `New folder in ${selectedFolder === '' ? 'workspace root' : selectedFolder}`,
         keywords: 'create add group',
         icon: 'new-folder' as const,
         run: () => setNewFolderParent(selectedFolder),
@@ -1626,6 +1669,7 @@ function ShellFrame({
             <div className="flex min-w-0 flex-1 flex-col">
               <Sidebar
                 workspaceId={workspaceId}
+                workspaceRootLabel={workspaceRootLabel}
                 view={sidebarView}
                 selectedFolder={selectedFolder}
                 folders={folders}
@@ -1639,6 +1683,9 @@ function ShellFrame({
                   setMoveItems({ items, returnFocus })
                 }
                 onNewNoteIn={(folder) => newNote.create(folder)}
+                onFromTemplate={(folder) =>
+                  setTemplateDestination({ workspaceId, folder })
+                }
                 onNewWorkspace={() => setWorkspaceDialog('create')}
                 onRenameWorkspace={() => setWorkspaceDialog('rename')}
                 onDeleteWorkspace={() => setWorkspaceDialog('delete')}
@@ -1660,6 +1707,10 @@ function ShellFrame({
             <div className={`${frameNoticeRowClassName()} ${pageGutter}`}>
               <div className={`${pageColumnClassName()} pt-4 empty:hidden`}>
                 <TrialNotice />
+                {templateProblem?.workspaceId === workspaceId &&
+                templateProblem.message !== null ? (
+                  <Notice tone="problem" message={templateProblem.message} />
+                ) : null}
                 <UpdateNotice
                   store={store.store}
                   ownerId={syncSession.ownerId}
@@ -1715,6 +1766,7 @@ function ShellFrame({
             open={paletteOpen}
             onOpenChange={setPaletteOpen}
             workspaceId={workspaceId}
+            workspaceName={openWorkspace?.name ?? 'This workspace'}
             notes={files.notes}
             store={store.store}
             accountId={accountId}
@@ -1760,6 +1812,14 @@ function ShellFrame({
               />
             </>
           )}
+          <NewFromTemplateDialog
+            key={workspaceId}
+            workspaceId={workspaceId}
+            folder={templateFolder ?? ''}
+            open={templateFolder !== null}
+            onClose={() => setTemplateDestination(null)}
+            onError={reportTemplateProblem}
+          />
           <NewFolderDialog
             open={newFolderParent !== null}
             onClose={() => setNewFolderParent(null)}

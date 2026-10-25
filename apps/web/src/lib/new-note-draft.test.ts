@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { freeCopyPath, freeNotePath, newNoteDraft } from './new-note-draft.ts';
+import {
+  freeCopyPath,
+  freeNotePath,
+  newNoteDraft,
+  newNoteTemplateText,
+} from './new-note-draft.ts';
 
 await test('a new note is empty', () => {
   const draft = newNoteDraft({
@@ -61,5 +66,21 @@ await test('the copy of a note takes the first free copy name beside it', () => 
   assert.equal(
     freeCopyPath(['Home/Plan copy.md'], 'Work', 'Plan'),
     'Work/Plan copy.md',
+  );
+});
+
+await test('a chosen template fills the actual new name and keeps its heading', () => {
+  const instant = new Date(2026, 9, 25, 14, 30, 0);
+  assert.equal(
+    newNoteTemplateText(undefined, 'Work/New note 2.md', instant),
+    '',
+  );
+  assert.equal(
+    newNoteTemplateText(
+      '# Template heading\n{{title}} {{date}} {{time}}',
+      'Work/New note 2.md',
+      instant,
+    ),
+    '# Template heading\nNew note 2 2026-10-25 14:30',
   );
 });

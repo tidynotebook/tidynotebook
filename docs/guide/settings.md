@@ -97,7 +97,7 @@ stored state again. A new image can turn the box off again. See [Working offline
 
 ## Export
 
-**Export all notes** downloads every note and image of the workspace as one zip
+**Export this workspace** downloads every note and image of the workspace as one zip
 file. The files keep their folders, and any Markdown editor reads them. See
 [Export](export.md).
 
