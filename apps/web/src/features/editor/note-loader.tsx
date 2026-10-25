@@ -171,8 +171,12 @@ export function NoteEditorLoader({
     typeof routeState === 'object' &&
     Object.fromEntries(Object.entries(routeState))['focusNoteText'] === true;
 
+  const cancelLoad = useRef<() => void>(() => {});
   useEffect(() => {
     let cancelled = false;
+    cancelLoad.current = () => {
+      cancelled = true;
+    };
     async function load(): Promise<void> {
       const quiet = quietReload.current;
       quietReload.current = false;
@@ -307,7 +311,10 @@ export function NoteEditorLoader({
         }
         if (!cached.deleted && statusKind.current === 'deleted') readAgain();
       },
-      () => setStatus({ kind: 'purged' }),
+      () => {
+        cancelLoad.current();
+        setStatus({ kind: 'purged' });
+      },
     );
   }, [
     store,
