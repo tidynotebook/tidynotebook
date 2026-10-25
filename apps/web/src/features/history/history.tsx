@@ -107,7 +107,7 @@ type RevisionView = 'changes' | 'preview';
 
 /** The words of each view, as its tab reads. */
 const revisionViewLabels: Readonly<Record<RevisionView, string>> = {
-  changes: 'Changes',
+  changes: 'Compared with current',
   preview: 'Preview',
 };
 
@@ -561,7 +561,7 @@ function HistoryDetail({
     >
       <PageHeader
         title={`History of ${name}`}
-        description="Open a version to see what changed and how it looked. Restore brings it back as the newest version, and nothing is lost."
+        description="Each save summary compares with the previous saved version. Open a version to compare it with the current saved version or read its preview. Restore makes it the newest version."
       />
       <div className="space-y-4">
         {actionMessage === '' ? null : (
@@ -639,6 +639,7 @@ function HistoryDetail({
                                 {label}
                               </span>
                               <span className="truncate text-control text-muted">
+                                Changes at this save:{' '}
                                 {rowReading(change, item.merged)}
                               </span>
                             </span>

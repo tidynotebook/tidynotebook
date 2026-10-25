@@ -10,6 +10,7 @@ import type { NoteLoadStatus } from '../../lib/note-load-state.ts';
 import {
   createDeviceOpens,
   readDeviceNote,
+  watchDeviceNote,
   type DeviceNoteStore,
   type DeviceOpens,
   type WatchedStore,
@@ -282,4 +283,50 @@ await test('forgetting the reads ends their watch over the store', () => {
   assert.equal(store.watchers(), 2);
   opens.forget(store);
   assert.equal(store.watchers(), 0);
+});
+
+await test('a restore before subscription is read without another store event', async () => {
+  const store = fakeStore();
+  const seen: (LocalCachedNote | null)[] = [];
+  const stop = watchDeviceNote(
+    { ...store, readCachedNote: () => Promise.resolve(cachedNote) },
+    identity,
+    (note) => seen.push(note),
+    () => assert.fail('unexpected purge'),
+  );
+  await Promise.resolve();
+  assert.deepEqual(seen, [cachedNote]);
+  stop();
+  assert.equal(store.watchers(), 0);
+});
+
+await test('an older deleted read cannot replace a newer restore or a purge', async () => {
+  const store = fakeStore();
+  const before = Promise.withResolvers<LocalCachedNote | null>();
+  let reads = 0;
+  const seen: (LocalCachedNote | null)[] = [];
+  let purged = false;
+  const stop = watchDeviceNote(
+    {
+      ...store,
+      readCachedNote: () =>
+        ++reads === 1 ? before.promise : Promise.resolve(cachedNote),
+    },
+    identity,
+    (note) => seen.push(note),
+    () => {
+      purged = true;
+    },
+  );
+  store.announce({ ...identity, kind: 'file' });
+  await Promise.resolve();
+  before.resolve({ ...cachedNote, deleted: true });
+  await Promise.resolve();
+  assert.deepEqual(seen, [cachedNote]);
+  store.announce({ ...identity, kind: 'file' });
+  store.announce({ ...identity, kind: 'purge' });
+  await Promise.resolve();
+  assert.equal(purged, true);
+  assert.equal(seen.length, 1);
+  stop();
 });

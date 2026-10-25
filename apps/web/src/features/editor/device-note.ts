@@ -176,3 +176,43 @@ export function createDeviceOpens<Store extends WatchedStore>(
     },
   };
 }
+
+/**
+ * Watches the cached note and also reads it after subscribing. This closes
+ * the gap between the loader read and the arrival of a restore. Only the
+ * newest read can update the screen.
+ */
+export function watchDeviceNote(
+  store: Pick<LocalStore, 'subscribe' | 'readCachedNote'>,
+  identity: NoteLoadIdentity,
+  onRead: (note: Awaited<ReturnType<LocalStore['readCachedNote']>>) => void,
+  onPurge: () => void,
+): () => void {
+  let sequence = 0;
+  let stopped = false;
+  const recheck = async (): Promise<void> => {
+    const current = ++sequence;
+    try {
+      const note = await store.readCachedNote(
+        identity.accountId,
+        identity.workspaceId,
+        identity.fileId,
+      );
+      if (!stopped && current === sequence) onRead(note);
+    } catch {
+      // A failed recheck leaves the current buffer on the screen.
+    }
+  };
+  const unsubscribe = store.subscribe((change) => {
+    if (!touchesNote(change, identity)) return;
+    if (change.kind === 'purge') {
+      sequence += 1;
+      onPurge();
+    } else if (change.kind === 'file') void recheck();
+  });
+  void recheck();
+  return () => {
+    stopped = true;
+    unsubscribe();
+  };
+}
