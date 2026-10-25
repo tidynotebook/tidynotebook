@@ -471,11 +471,15 @@ function Sidebar({
   const openNoteWriteFailed = useNoteSaveFact(
     (report) => report?.localWriteFailed ?? false,
   );
+  const openNotePending = useNoteSaveFact(
+    (report) => report?.pendingSave ?? false,
+  );
   const footer = syncFooter({
     state: sync.state,
     online,
     noteName: sync.noteName,
     openNoteWriteFailed,
+    openNotePending,
   });
   const syncLine = footer.line;
 
