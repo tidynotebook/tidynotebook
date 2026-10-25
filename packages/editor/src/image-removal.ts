@@ -64,6 +64,8 @@ export function removeImageSpec(state: EditorState): TransactionSpec | null {
     state.doc.sliceString(target.from, target.to) !== target.source
   )
     return null;
+  const current = imageReferenceAt(state, target.from, target.source);
+  if (current?.from !== target.from || current.to !== target.to) return null;
   return editingTransaction({
     changes: { from: target.from, to: target.to, insert: '' },
     selection: { anchor: target.from },
