@@ -103,6 +103,7 @@ export type {
   NotesappAuth,
 } from './auth/better-auth.ts';
 export { createSetupHandlers, type SetupDependencies } from './auth/setup.ts';
+export { createVerificationTokens } from './auth/verification.ts';
 export {
   passwordMatches,
   registerIdentity,

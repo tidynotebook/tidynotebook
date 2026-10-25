@@ -4,7 +4,8 @@
  * A sign-up makes a pending identity user with an unverified address and sends
  * a verification link. No account and no session exist before the person
  * opens the link. The link makes the account through the one registration
- * path, with the `open` ground, and the person then signs in. A pending
+ * path, with the `open` ground. The signup browser can then continue once with
+ * its separate short-lived proof (0239), or the person signs in. A pending
  * identity user that nobody verifies expires, and the hourly run removes it.
  *
  * **One answer for every address.** A new address, a pending address and an
@@ -120,12 +121,13 @@ async function send(
 
 /**
  * Takes one sign-up. The answer is the same success for every address, and
- * a refusal only for a closed policy or a leaked password.
+ * a refusal only for a closed policy or a leaked password. The internal result
+ * names a newly pending identity for browser continuation, never a known one.
  */
 export async function signUpOpen(
   dependencies: OpenRegistrationDependencies,
   input: SignUpInput,
-): Promise<Result<void>> {
+): Promise<Result<string | null>> {
   if (!(await openRegistration(dependencies.identity, dependencies.mail)))
     return fail('registration_closed');
   const refusal = await dependencies.challenges.check(
@@ -140,7 +142,7 @@ export async function signUpOpen(
   if (await dependencies.breached(input.password))
     return fail('password_breached');
   const email = normalizeEmail(input.email);
-  if (email === null) return ok(undefined);
+  if (email === null) return ok(null);
   const { auth, identity } = dependencies;
   const context = await auth.$context;
   const existing = await context.internalAdapter.findUserByEmail(email);
@@ -160,7 +162,7 @@ export async function signUpOpen(
         supportUrl: dependencies.mail.supportUrl ?? null,
       }),
     );
-    return ok(undefined);
+    return ok(null);
   }
   if (action === 'replace' && existing !== null)
     await context.internalAdapter.deleteUser(existing.user.id);
@@ -170,12 +172,12 @@ export async function signUpOpen(
       body: { email, name: input.name ?? email, password: input.password },
     });
     const id = readProperty(readProperty(created, 'user'), 'id');
-    if (typeof id !== 'string' || id === '') return ok(undefined);
+    if (typeof id !== 'string' || id === '') return ok(null);
     authUserId = id;
   } catch {
     // Two sign-ups for one address race here, and the other one holds the
     // address now. That one sent its own message.
-    return ok(undefined);
+    return ok(null);
   }
   const expiresAt = new Date(
     dependencies.clock().getTime() + dependencies.pendingHours * 3_600_000,
@@ -195,11 +197,12 @@ export async function signUpOpen(
       lifetimeHours: dependencies.pendingHours,
     }),
   );
-  return ok(undefined);
+  return ok(authUserId);
 }
 
 /** What a verification made. */
 export type Verified = {
+  readonly authUserId: string;
   readonly accountId: string;
   readonly email: string;
   /** Whether this use made the account, so its first note goes in once. */
@@ -224,7 +227,12 @@ export async function verifyOpen(
   if (user === null) return fail('verification_invalid');
   const before = await dependencies.identity.accountOf(authUserId);
   if (before !== null)
-    return ok({ accountId: before, email: user.email, created: false });
+    return ok({
+      authUserId,
+      accountId: before,
+      email: user.email,
+      created: false,
+    });
   const made = await registerAccount(dependencies.identity, {
     authUserId,
     ground: { kind: 'open' },
@@ -245,7 +253,12 @@ export async function verifyOpen(
   // The account exists, so the address counts as proved from now on and the
   // person can sign in.
   await context.internalAdapter.updateUser(authUserId, { emailVerified: true });
-  return ok({ accountId: made.value, email: user.email, created: true });
+  return ok({
+    authUserId,
+    accountId: made.value,
+    email: user.email,
+    created: true,
+  });
 }
 
 /**
