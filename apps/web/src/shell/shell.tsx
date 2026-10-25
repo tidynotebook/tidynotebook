@@ -1002,6 +1002,16 @@ function ShellFrame({
   >(null);
   const [templateDestination, setTemplateDestination] =
     useState<TemplateDestination | null>(null);
+  const [templateProblem, setTemplateProblem] = useState<{
+    readonly workspaceId: string;
+    readonly message: string | null;
+  } | null>(null);
+  const reportTemplateProblem = useCallback(
+    (message: string | null): void => {
+      setTemplateProblem({ workspaceId, message });
+    },
+    [workspaceId],
+  );
   const templateFolder = templateDestinationFor(
     workspaceId,
     templateDestination,
@@ -1697,6 +1707,10 @@ function ShellFrame({
             <div className={`${frameNoticeRowClassName()} ${pageGutter}`}>
               <div className={`${pageColumnClassName()} pt-4 empty:hidden`}>
                 <TrialNotice />
+                {templateProblem?.workspaceId === workspaceId &&
+                templateProblem.message !== null ? (
+                  <Notice tone="problem" message={templateProblem.message} />
+                ) : null}
                 <UpdateNotice
                   store={store.store}
                   ownerId={syncSession.ownerId}
@@ -1804,6 +1818,7 @@ function ShellFrame({
             folder={templateFolder ?? ''}
             open={templateFolder !== null}
             onClose={() => setTemplateDestination(null)}
+            onError={reportTemplateProblem}
           />
           <NewFolderDialog
             open={newFolderParent !== null}

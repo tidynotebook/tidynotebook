@@ -7,6 +7,10 @@ export const reads: {
   finish: (note: LocalCachedNote | null) => void;
 }[] = [];
 export const creations: { folder: string; text: string | undefined }[] = [];
+let creationError: string | null = null;
+export function setCreationError(message: string | null): void {
+  creationError = message;
+}
 const store: Pick<LocalStore, 'readCachedNote'> = {
   readCachedNote: (_accountId, workspaceId, fileId) =>
     new Promise((finish) => reads.push({ workspaceId, fileId, finish })),
@@ -34,7 +38,7 @@ function create(folder: string, text?: string): void {
   creations.push({ folder, text });
 }
 export function useCreateNote() {
-  return { create, error: null };
+  return { create, error: creationError };
 }
 
 export function templateNote(text: string): LocalCachedNote {

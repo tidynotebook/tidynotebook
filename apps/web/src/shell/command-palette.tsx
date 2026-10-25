@@ -420,10 +420,12 @@ function PaletteDialog({
           {stepChoices.notice}
         </p>
       ) : null}
-      <p className="mx-4 my-2 text-control text-muted">
-        Search in: {workspaceName}. Results include note names and body text in
-        this workspace.
-      </p>
+      {step === null ? (
+        <p className="mx-4 my-2 text-control text-muted">
+          Search in: {workspaceName}. Results include note names and body text
+          in this workspace.
+        </p>
+      ) : null}
       {content.offline ? (
         <p className="m-0 border-b border-edge-line px-gutter py-2 text-control text-muted">
           No connection. These results come from this device.
