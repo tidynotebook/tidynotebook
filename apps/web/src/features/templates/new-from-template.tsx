@@ -116,6 +116,7 @@ function TemplateChoices({
   const accountId = useSession().account?.accountId ?? null;
 
   const [selected, setSelected] = useState<string | null>(null);
+  const [previewAttempt, setPreviewAttempt] = useState(0);
   const [preview, setPreview] = useState<{
     readonly fileId: string;
     readonly text: string | null;
@@ -134,7 +135,7 @@ function TemplateChoices({
     return () => {
       cancelled = true;
     };
-  }, [selected, store, accountId, workspaceId]);
+  }, [selected, store, accountId, workspaceId, previewAttempt]);
   return (
     <>
       <DialogBody>
@@ -192,7 +193,18 @@ function TemplateChoices({
                 label="The template preview is loading."
               />
             ) : readyPreview.text === null ? (
-              <Notice tone="problem" message={templateProblems.text} />
+              <>
+                <Notice tone="problem" message={templateProblems.text} />
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setPreview(null);
+                    setPreviewAttempt((attempt) => attempt + 1);
+                  }}
+                >
+                  Retry preview
+                </Button>
+              </>
             ) : (
               <section aria-label="Template preview" className="mt-3">
                 <h2 className="m-0 text-ui font-medium">Template preview</h2>
