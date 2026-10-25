@@ -34,6 +34,7 @@
  * the setext heading underline and the code fence lines are hidden here as
  * well.
  */
+import { prepareImageRemoval } from './image-removal.ts';
 import { syntaxTree } from '@codemirror/language';
 import {
   Prec,
@@ -186,6 +187,8 @@ export type RichWidgetResolvers = {
 
 /** The picture that a press on an image widget asks the host to open. */
 export type ImageOpenRequest = {
+  /** Removes only the selected reference, when the note permits editing. */
+  readonly remove?: (() => boolean) | undefined;
   /** The address the widget shows: a local blob address or an HTTPS one. */
   readonly url: string;
   readonly alt: string;
@@ -710,6 +713,7 @@ function widgetLabel(kind: RichWidgetKind): string {
 
 /** Renders one region as DOM. */
 class RichWidgetType extends WidgetType {
+  private editor: EditorView | null = null;
   readonly widget: RichWidget;
   readonly resolvers: RichWidgetResolvers;
 
@@ -755,7 +759,8 @@ class RichWidgetType extends WidgetType {
    * exactly the case where the previous DOM is stale. Returning true keeps
    * the same element and its position in the layout.
    */
-  override updateDOM(dom: HTMLElement): boolean {
+  override updateDOM(dom: HTMLElement, view: EditorView): boolean {
+    this.editor = view;
     releaseDiagram(dom);
     dom.textContent = '';
     this.fill(dom);
@@ -769,6 +774,7 @@ class RichWidgetType extends WidgetType {
   }
 
   toDOM(view: EditorView): HTMLElement {
+    this.editor = view;
     const container = document.createElement(
       this.widget.block ? 'div' : 'span',
     );
@@ -841,6 +847,14 @@ class RichWidgetType extends WidgetType {
       open.title = label;
       open.addEventListener('click', (): void => {
         this.resolvers.onOpenImage?.({
+          remove:
+            this.editor === null
+              ? undefined
+              : prepareImageRemoval(
+                  this.editor,
+                  this.editor.posAtDOM(parent),
+                  this.widget.source,
+                ),
           url: view.url,
           alt: view.alt,
           destination: this.widget.destination,

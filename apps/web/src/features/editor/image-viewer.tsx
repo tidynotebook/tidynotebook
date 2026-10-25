@@ -63,8 +63,10 @@ import { canCopyImage, copyPngImage, copyText } from '../../platform.ts';
 export function ImageViewer({
   image,
   onClose,
+  returnFocus,
 }: {
   readonly image: ImageOpenRequest | null;
+  readonly returnFocus: () => void;
   readonly onClose: () => void;
 }): ReactNode {
   const titleId = useId();
@@ -76,6 +78,7 @@ export function ImageViewer({
       onClose={onClose}
       title={imageTitle(image?.alt ?? '')}
       titleId={titleId}
+      returnFocus={returnFocus}
       width="screen"
     >
       {image === null ? null : (
@@ -317,7 +320,11 @@ function ImageViewerBody({
     });
   };
 
-  const status = viewerStatus({ failed, message });
+  const status =
+    viewerStatus({ failed, message }) ||
+    (image.remove === undefined
+      ? ''
+      : 'Remove image removes this reference from this note. You can undo it in the editor.');
   // The zoom means nothing until the picture states its size, so the tools
   // wait for it and no percentage shows that the picture does not have.
   const idle = failed || natural === null;
@@ -427,6 +434,22 @@ function ImageViewerBody({
               }}
             />
           ),
+        )}
+        {image.remove === undefined ? null : (
+          <Button
+            variant="ghost"
+            size="sm"
+            title="Remove this image reference from this note. The attachment stays available."
+            onClick={() => {
+              if (image.remove?.() === true) onClose();
+              else
+                setMessage(
+                  'This image changed. Close the viewer and open the image again.',
+                );
+            }}
+          >
+            Remove image
+          </Button>
         )}
         <Button
           variant="ghost"

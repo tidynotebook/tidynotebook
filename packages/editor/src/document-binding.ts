@@ -36,6 +36,7 @@ import {
   type DocumentResult,
   type DocumentSession,
 } from '@notesapp/note-document';
+import { documentHistory } from './history-controls.ts';
 import { editorBinding } from '@notesapp/note-document/editor-bridge';
 import {
   yCollab,
@@ -135,6 +136,25 @@ export function bindDocument(session: DocumentSession): DocumentBinding {
   return {
     ...gate,
     extension: [
+      documentHistory.of({
+        canUndo: () => binding.undoManager.canUndo(),
+        canRedo: () => binding.undoManager.canRedo(),
+        undo: () => binding.undoManager.undo() !== null,
+        redo: () => binding.undoManager.redo() !== null,
+        watch: (listener) => {
+          const events = [
+            'stack-item-added',
+            'stack-item-popped',
+            'stack-item-updated',
+            'stack-cleared',
+          ] as const;
+          for (const event of events) binding.undoManager.on(event, listener);
+          return () => {
+            for (const event of events)
+              binding.undoManager.off(event, listener);
+          };
+        },
+      }),
       yCollab(binding.text, null, { undoManager: binding.undoManager }),
       // Yjs holds the local undo of a bound editor, so the keys of the
       // shortcuts list run the undo manager rather than the CodeMirror

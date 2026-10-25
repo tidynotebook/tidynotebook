@@ -26,6 +26,7 @@ import {
 import { useNavigate } from 'react-router';
 import { generateUUID } from '@notesapp/core';
 import { classifyUrl } from '@notesapp/markdown';
+import { useEditorHistory } from './editor-history.ts';
 import { useNoteDraftFlush } from './note-draft-flush.ts';
 import {
   isLocalStorageError,
@@ -355,6 +356,8 @@ const NoteEditorBody = memo(function NoteEditorBody({
   formatContextRef.current = formatContext;
   // The menu of a row or a column that a handle of a table asked for.
   const [tableMenu, setTableMenu] = useState<TableMenuRequest | null>(null);
+  const history = useEditorHistory(viewRef);
+  const watchHistory = history.watch;
   // The picture that a press on an image of the note opened (record 0145).
   const [openImage, setOpenImage] = useState<ImageOpenRequest | null>(null);
   const [outlineOpen, setOutlineOpen] = useState(true);
@@ -1018,6 +1021,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
         },
       },
     );
+    const stopHistory = watchHistory(view);
     viewRef.current = view;
     viewRichRef.current = richResolvers;
     activeNote.current.register(view);
@@ -1025,13 +1029,14 @@ const NoteEditorBody = memo(function NoteEditorBody({
     const stopMarginTaps =
       margin === null ? null : takeMarginTaps(view, margin);
     return () => {
+      stopHistory();
       stopMarginTaps?.();
       viewRef.current = null;
       viewRichRef.current = null;
       activeNote.current.register(null);
       view.destroy();
     };
-  }, [workingCopyId, documentWork, localWrite]);
+  }, [workingCopyId, documentWork, localWrite, watchHistory]);
 
   // The local changes of the open document reach this device one frame
   // after they reach the editor, so a reload, a closed tab and a second tab
@@ -1513,11 +1518,13 @@ const NoteEditorBody = memo(function NoteEditorBody({
         */}
         <div className={noteRowClassName()}>
           <div className={noteFrameClassName()}>
-            {/*
-              The row of formatting tools is the one band above the text
-              (decision 0094). It holds no name and no note action.
-            */}
-            <FormatToolbar context={formatContext} onFormat={runFormat} />
+            {/* The tools use the one editor and its local history. */}
+            <FormatToolbar
+              context={formatContext}
+              onFormat={runFormat}
+              history={history.state}
+              onHistory={history.run}
+            />
             {tableMenu === null ? null : (
               <TableMenu
                 request={tableMenu}
@@ -1546,9 +1553,8 @@ const NoteEditorBody = memo(function NoteEditorBody({
             <NoteFooter initialText={initialText} />
             <ImageViewer
               image={openImage}
-              onClose={() => {
-                setOpenImage(null);
-              }}
+              onClose={() => setOpenImage(null)}
+              returnFocus={() => currentView()?.focus()}
             />
           </div>
           {/*
