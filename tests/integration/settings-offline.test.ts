@@ -121,12 +121,16 @@ function screen(store: OfflineSettingsStore) {
   const root = createRoot(container);
   return {
     container,
-    async render(accountId: string, workspaceId: string): Promise<void> {
+    async render(
+      accountId: string,
+      workspaceId: string,
+      currentStore = store,
+    ): Promise<void> {
       await act(async () => {
         // No key change: the production section and its lock stay mounted.
         root.render(
           createElement(OfflineSettingsSection, {
-            store,
+            store: currentStore,
             accountId,
             workspaceId,
           }),
@@ -215,7 +219,10 @@ await test(
         fixture.paused.reject(new Error('Old workspace write failed')),
       );
       assert.equal(page.images().disabled, false);
-      assert.equal(page.container.querySelector('[role="alert"]'), null);
+      assert.equal(
+        page.container.querySelector('[role="alert"]') === null,
+        true,
+      );
 
       fixture.refuseB();
       await act(async () => page.images().click());
@@ -224,10 +231,48 @@ await test(
         /could not change offline storage/,
       );
       await page.render(accountB, workspaceB);
-      assert.equal(page.container.querySelector('[role="alert"]'), null);
+      assert.equal(
+        page.container.querySelector('[role="alert"]') === null,
+        true,
+      );
       assert.equal(page.images().checked, false);
     } finally {
       fixture.paused.resolve();
+      await page.close();
+    }
+  },
+);
+
+await test(
+  'mounted Settings ignores an old store failure in the same account and workspace',
+  { timeout: 10000 },
+  async () => {
+    const oldStore = controlledStore();
+    const replacement = controlledStore();
+    const page = screen(oldStore.store);
+    try {
+      await page.render(accountA, workspaceA);
+      await act(async () => page.images().click());
+      await oldStore.started.promise;
+      assert.equal(page.images().checked, true);
+
+      await page.render(accountA, workspaceA, replacement.store);
+      // The replacement store is unpinned. Its read has reached the control,
+      // while the old store still owns the in-flight write.
+      assert.equal(page.images().checked, false);
+      assert.equal(page.images().disabled, true);
+      await act(async () =>
+        oldStore.paused.reject(new Error('Old store write failed')),
+      );
+      assert.equal(
+        page.container.querySelector('[role="alert"]') === null,
+        true,
+      );
+      assert.equal(page.images().disabled, false);
+      assert.equal(replacement.writes.length, 0);
+    } finally {
+      oldStore.paused.resolve();
+      replacement.paused.resolve();
       await page.close();
     }
   },
