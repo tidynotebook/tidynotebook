@@ -1,20 +1,33 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { EditorState, type TransactionSpec } from '@codemirror/state';
+import {
+  EditorState,
+  type EditorStateConfig,
+  type TransactionSpec,
+} from '@codemirror/state';
 import { history, undo, redo } from '@codemirror/commands';
-import { noteMarkdown } from './language.ts';
+import { noteMarkdown, parsedWhole } from './language.ts';
 import {
   imageReferenceAt,
   imageRemovalTarget,
   prepareImageRemoval,
 } from './image-removal.ts';
 
+/** Publish the complete parse before tests inspect image syntax. */
+function completeState(config: EditorStateConfig): EditorState {
+  return parsedWhole(EditorState.create(config));
+}
+
 await test('only the selected repeated reference is removed and removal can be undone', () => {
   const source = '![Map](https://example.invalid/map.png)';
   const original = `${source}\n\n${source}\n`;
-  let state = EditorState.create({
+  let state = completeState({
     doc: original,
-    extensions: [noteMarkdown(), imageRemovalTarget, history()],
+    extensions: [
+      noteMarkdown({ headless: true }),
+      imageRemovalTarget,
+      history(),
+    ],
   });
   const view = {
     get state() {
@@ -22,7 +35,7 @@ await test('only the selected repeated reference is removed and removal can be u
     },
     composing: false,
     dispatch: (spec: TransactionSpec) => {
-      state = state.update(spec).state;
+      state = parsedWhole(state.update(spec).state);
     },
   };
   const remove = prepareImageRemoval(view, source.length + 2, source);
@@ -56,9 +69,9 @@ await test('only the selected repeated reference is removed and removal can be u
 
 await test('changed references and read-only notes refuse removal', () => {
   const source = '![Map](https://example.invalid/map.png)';
-  let state = EditorState.create({
+  let state = completeState({
     doc: source,
-    extensions: [noteMarkdown(), imageRemovalTarget],
+    extensions: [noteMarkdown({ headless: true }), imageRemovalTarget],
   });
   const view = {
     get state() {
@@ -66,17 +79,17 @@ await test('changed references and read-only notes refuse removal', () => {
     },
     composing: false,
     dispatch: (spec: TransactionSpec) => {
-      state = state.update(spec).state;
+      state = parsedWhole(state.update(spec).state);
     },
   };
   const remove = prepareImageRemoval(view, 0, source);
   assert.ok(remove !== undefined);
   view.dispatch({ changes: { from: 2, to: 5, insert: 'New' } });
   assert.equal(remove(), false);
-  state = EditorState.create({
+  state = completeState({
     doc: source,
     extensions: [
-      noteMarkdown(),
+      noteMarkdown({ headless: true }),
       imageRemovalTarget,
       EditorState.readOnly.of(true),
     ],
@@ -88,9 +101,9 @@ await test('changed references and read-only notes refuse removal', () => {
 await test('a mapped reference that becomes code is not removed', () => {
   const source = '![Map](https://example.invalid/map.png)';
   const prefix = 'Before\n\n';
-  let state = EditorState.create({
+  let state = completeState({
     doc: `${prefix}${source}\n`,
-    extensions: [noteMarkdown(), imageRemovalTarget],
+    extensions: [noteMarkdown({ headless: true }), imageRemovalTarget],
   });
   const view = {
     get state() {
@@ -98,7 +111,7 @@ await test('a mapped reference that becomes code is not removed', () => {
     },
     composing: false,
     dispatch: (spec: TransactionSpec) => {
-      state = state.update(spec).state;
+      state = parsedWhole(state.update(spec).state);
     },
   };
   const remove = prepareImageRemoval(view, prefix.length, source);
