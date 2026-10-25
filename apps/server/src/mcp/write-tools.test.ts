@@ -43,7 +43,7 @@ await test('each write maps only to the operations of plan 022', () => {
     assert.equal(entry.definition.annotations?.readOnlyHint, false);
     assert.equal(
       entry.definition.annotations?.destructiveHint,
-      name === 'move_note_to_trash',
+      name === 'edit_note' || name === 'move_note_to_trash',
     );
     assert.equal(entry.definition.annotations?.openWorldHint, false);
     assert.equal(entry.definition.outputSchema?.type, 'object');
