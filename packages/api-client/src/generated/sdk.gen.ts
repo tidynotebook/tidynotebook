@@ -974,7 +974,7 @@ export const signUpAccount = <ThrowOnError extends boolean = false>(options: Opt
 /**
  * Prove the address of a pending account and make the account.
  *
- * Takes the token of a verification link. A valid token marks the address verified and makes the account, and the person then signs in. An expired, a replaced and an unknown token all take one refusal. The token travels in the body, so it reaches no address log.
+ * Takes the token of a verification link. A valid token marks the address verified and makes the account. A matching short-lived browser continuation proof can start one session after verification. Existing sessions are never replaced. Without that proof the person signs in with a password. Existing verification links remain valid and idempotent until expiry. An expired, a replaced and an unknown token all take one refusal. The token travels in the body, so it reaches no address log.
  */
 export const verifyAddress = <ThrowOnError extends boolean = false>(options: Options<VerifyAddressData, ThrowOnError>): RequestResult<VerifyAddressResponses, VerifyAddressErrors, ThrowOnError> => (options.client ?? client).post<VerifyAddressResponses, VerifyAddressErrors, ThrowOnError>({
     url: '/api/registrations/verification',

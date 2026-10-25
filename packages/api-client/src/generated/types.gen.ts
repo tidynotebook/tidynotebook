@@ -530,6 +530,10 @@ export type AddressVerified = {
      * The address of the new account, which signs in now.
      */
     readonly email: EmailAddress;
+    /**
+     * True only when this response starts a session using an unexpired, once-only continuation proof from the browser that signed up. Missing or false means that password sign-in is still required.
+     */
+    readonly signedIn?: boolean;
 };
 
 /**

@@ -34,6 +34,7 @@ import {
 import {
   createApp,
   createAuth,
+  createVerificationTokens,
   loadServerConfig,
   type MailMessage,
 } from '@notesapp/server';
@@ -563,6 +564,339 @@ await test('an upgraded installation still signs in its existing accounts', asyn
     await dropTestDatabase(serverUrl, name);
     await earlier.remove();
     await rm(root, { recursive: true, force: true });
+  }
+});
+
+/** The legal documents were enabled by the earlier installation checks. */
+async function signUpForContinuation(email: string, password: string) {
+  const result = await signUpAccount({
+    headers: origin,
+    body: {
+      email,
+      password,
+      proof: await proof(),
+      consent: { termsVersion: 't1', privacyVersion: 'p1' },
+    },
+  });
+  assert.equal(result.response?.status, 202, JSON.stringify(result.error));
+  return result;
+}
+
+/** Session count proves that a replay made no unused second session either. */
+async function sessionCount(email: string): Promise<number> {
+  const db = await openSession(database.migrationUrl);
+  try {
+    const result = await db.query<{ count: string }>(
+      'select count(*)::text as count from auth_session s join auth_user u on u.id = s.user_id where u.email = $1',
+      [email],
+    );
+    return Number(result[0]?.count ?? '-1');
+  } finally {
+    await db.close();
+  }
+}
+
+await test('the signup browser continues once after verification without storing its password', async () => {
+  await setPolicy('open');
+  const email = `continue-${randomUUID()}@notes.invalid`;
+  const signup = await signUpForContinuation(email, 'continue-password-123456');
+  const proofCookies = responseOf(signup.response).headers.getSetCookie();
+  assert.equal(proofCookies.length, 1);
+  assert.match(proofCookies[0] ?? '', /HttpOnly/i);
+  assert.match(proofCookies[0] ?? '', /SameSite=Lax/i);
+  assert.match(proofCookies[0] ?? '', /Max-Age=900/i);
+  const browser = { ...origin, cookie: cookieHeader(proofCookies) };
+  assert.equal((await getAccount({ headers: browser })).response?.status, 401);
+  assert.equal(await sessionCount(email), 0);
+  const verified = await verifyAddress({
+    headers: browser,
+    body: { token: lastToken(email) },
+  });
+  assert.deepEqual(verified.data, { email, signedIn: true });
+  const sessionCookies = responseOf(verified.response).headers.getSetCookie();
+  assert.ok(
+    sessionCookies.some((cookie) => cookie.startsWith('notesapp_session=')),
+  );
+  const account = await getAccount({
+    headers: { ...origin, cookie: cookieHeader(sessionCookies) },
+  });
+  assert.equal(account.data?.email, email);
+  assert.equal(await sessionCount(email), 1);
+  // Also models an interrupted first response: retaining only the old proof
+  // cannot mint another session. Normal password sign-in stays available.
+  const replay = await verifyAddress({
+    headers: browser,
+    body: { token: lastToken(email) },
+  });
+  assert.deepEqual(replay.data, { email });
+  assert.equal(await sessionCount(email), 1);
+  assert.equal(await signsIn(email, 'continue-password-123456'), true);
+});
+
+await test('concurrent continuation consumes one proof and creates exactly one session', async () => {
+  const email = `concurrent-${randomUUID()}@notes.invalid`;
+  const signup = await signUpForContinuation(email, 'continue-password-123456');
+  const browser = {
+    ...origin,
+    cookie: cookieHeader(responseOf(signup.response).headers.getSetCookie()),
+  };
+  const token = lastToken(email);
+  // A link on another device proves the address but creates no session there.
+  const otherDevice = await verifyAddress({ headers: origin, body: { token } });
+  assert.deepEqual(otherDevice.data, { email });
+  assert.equal(await sessionCount(email), 0);
+  const results = await Promise.all([
+    verifyAddress({ headers: browser, body: { token } }),
+    verifyAddress({ headers: browser, body: { token } }),
+  ]);
+  assert.ok(results.every((result) => result.response?.status === 200));
+  assert.equal(
+    results.filter((result) => result.data?.signedIn === true).length,
+    1,
+  );
+  assert.equal(await sessionCount(email), 1);
+});
+
+await test('concurrent first verification also creates only one session', async () => {
+  const email = `first-concurrent-${randomUUID()}@notes.invalid`;
+  const signup = await signUpForContinuation(email, 'continue-password-123456');
+  const browser = {
+    ...origin,
+    cookie: cookieHeader(responseOf(signup.response).headers.getSetCookie()),
+  };
+  const token = lastToken(email);
+  const results = await Promise.all([
+    verifyAddress({ headers: browser, body: { token } }),
+    verifyAddress({ headers: browser, body: { token } }),
+  ]);
+  assert.ok(results.every((result) => result.response?.status === 200));
+  assert.equal(
+    results.filter((result) => result.data?.signedIn === true).length,
+    1,
+  );
+  assert.equal(await sessionCount(email), 1);
+});
+
+await test('continuation is bound to the exact identity and a foreign link cannot consume it', async () => {
+  const first = `bound-a-${randomUUID()}@notes.invalid`;
+  const second = `bound-b-${randomUUID()}@notes.invalid`;
+  const signup = await signUpForContinuation(first, 'continue-password-123456');
+  const browser = {
+    ...origin,
+    cookie: cookieHeader(responseOf(signup.response).headers.getSetCookie()),
+  };
+  await signUpForContinuation(second, 'continue-password-123456');
+  const foreign = await verifyAddress({
+    headers: browser,
+    body: { token: lastToken(second) },
+  });
+  assert.deepEqual(foreign.data, { email: second });
+  assert.equal(await sessionCount(second), 0);
+  const own = await verifyAddress({
+    headers: browser,
+    body: { token: lastToken(first) },
+  });
+  assert.deepEqual(own.data, { email: first, signedIn: true });
+});
+
+await test('an expired proof still verifies the address and requires password sign-in', async () => {
+  const email = `expired-proof-${randomUUID()}@notes.invalid`;
+  const signup = await signUpForContinuation(email, 'continue-password-123456');
+  const browser = {
+    ...origin,
+    cookie: cookieHeader(responseOf(signup.response).headers.getSetCookie()),
+  };
+  const db = await openSession(database.migrationUrl);
+  try {
+    await db.query(
+      "update auth_verification set expires_at = now() - interval '1 second' where identifier like 'notesapp-registration:%' and value = (select id from auth_user where email = $1)",
+      [email],
+    );
+  } finally {
+    await db.close();
+  }
+  const verified = await verifyAddress({
+    headers: browser,
+    body: { token: lastToken(email) },
+  });
+  assert.deepEqual(verified.data, { email });
+  assert.equal(await sessionCount(email), 0);
+});
+
+await test('verification never replaces an existing session and consumes the unused proof', async () => {
+  const email = `existing-session-${randomUUID()}@notes.invalid`;
+  const signup = await signUpForContinuation(email, 'continue-password-123456');
+  const proof = cookieHeader(
+    responseOf(signup.response).headers.getSetCookie(),
+  );
+  const verified = await verifyAddress({
+    headers: { ...origin, cookie: `${owner.cookie}; ${proof}` },
+    body: { token: lastToken(email) },
+  });
+  assert.deepEqual(verified.data, { email });
+  assert.equal((await getAccount({ headers: owner })).data?.email, ownerEmail);
+  assert.equal(await sessionCount(email), 0);
+  const replay = await verifyAddress({
+    headers: { ...origin, cookie: proof },
+    body: { token: lastToken(email) },
+  });
+  assert.deepEqual(replay.data, { email });
+  assert.equal(await sessionCount(email), 0);
+});
+
+await test('the normal disabled-account session hook also refuses automatic continuation', async () => {
+  const email = `disabled-continue-${randomUUID()}@notes.invalid`;
+  const signup = await signUpForContinuation(email, 'continue-password-123456');
+  const browser = {
+    ...origin,
+    cookie: cookieHeader(responseOf(signup.response).headers.getSetCookie()),
+  };
+  const token = lastToken(email);
+  assert.deepEqual(
+    (await verifyAddress({ headers: origin, body: { token } })).data,
+    { email },
+  );
+  const db = await openSession(database.migrationUrl);
+  try {
+    await db.query(
+      "update accounts set state = 'disabled' where id = (select account_id from account_identities where auth_user_id = (select id from auth_user where email = $1))",
+      [email],
+    );
+  } finally {
+    await db.close();
+  }
+  const verified = await verifyAddress({ headers: browser, body: { token } });
+  assert.deepEqual(verified.data, { email });
+  assert.equal(await sessionCount(email), 0);
+  const replay = await verifyAddress({ headers: browser, body: { token } });
+  assert.deepEqual(replay.data, { email });
+  assert.equal(await sessionCount(email), 0);
+});
+
+await test('replacement and forged browser proofs cannot continue a different pending signup', async () => {
+  const email = `replaced-proof-${randomUUID()}@notes.invalid`;
+  const first = await signUpForContinuation(email, 'continue-password-123456');
+  const oldToken = lastToken(email);
+  const oldBrowser = {
+    ...origin,
+    cookie: cookieHeader(responseOf(first.response).headers.getSetCookie()),
+  };
+  const replacement = await signUpForContinuation(
+    email,
+    'replacement-password-123456',
+  );
+  const token = lastToken(email);
+  assert.equal(
+    (await verifyAddress({ headers: oldBrowser, body: { token: oldToken } }))
+      .response?.status,
+    403,
+  );
+  const wrongProof = await verifyAddress({
+    headers: oldBrowser,
+    body: { token },
+  });
+  assert.deepEqual(wrongProof.data, { email });
+  assert.equal(await sessionCount(email), 0);
+  const proof = cookieHeader(
+    responseOf(replacement.response).headers.getSetCookie(),
+  );
+  const forged = await verifyAddress({
+    headers: { ...origin, cookie: proof.replace(/=.+$/, '=' + 'A'.repeat(43)) },
+    body: { token },
+  });
+  assert.deepEqual(forged.data, { email });
+  assert.equal(await sessionCount(email), 0);
+  const foreign = await verifyAddress({
+    headers: { origin: 'https://foreign.example.test', cookie: proof },
+    body: { token },
+  });
+  assert.equal(foreign.response?.status, 403);
+  const verified = await verifyAddress({
+    headers: { ...origin, cookie: proof },
+    body: { token },
+  });
+  assert.deepEqual(verified.data, { email, signedIn: true });
+});
+
+await test('an expired verification link cannot use a valid browser continuation proof', async () => {
+  const email = `expired-link-${randomUUID()}@notes.invalid`;
+  const signup = await signUpForContinuation(email, 'continue-password-123456');
+  const browser = {
+    ...origin,
+    cookie: cookieHeader(responseOf(signup.response).headers.getSetCookie()),
+  };
+  const token = lastToken(email);
+  const tokens = createVerificationTokens(config.authSecret);
+  const claim = tokens.read(token, new Date());
+  assert.ok(claim !== null);
+  const expired = tokens.issue(
+    claim.authUserId,
+    new Date(Date.now() - 1000),
+    claim.consent,
+  );
+  const refused = await verifyAddress({
+    headers: browser,
+    body: { token: expired },
+  });
+  assert.equal(refused.response?.status, 403);
+  assert.equal(problemCode(refused.error), 'verification_invalid');
+  assert.equal(await sessionCount(email), 0);
+  const verified = await verifyAddress({ headers: browser, body: { token } });
+  assert.deepEqual(verified.data, { email, signedIn: true });
+});
+
+await test('a known-account signup keeps equal cookie treatment but grants no continuation', async () => {
+  const email = `known-proof-${randomUUID()}@notes.invalid`;
+  await signUpForContinuation(email, 'continue-password-123456');
+  const token = lastToken(email);
+  assert.deepEqual(
+    (await verifyAddress({ headers: origin, body: { token } })).data,
+    { email },
+  );
+  const known = await signUpForContinuation(email, 'other-password-1234567');
+  const cookies = responseOf(known.response).headers.getSetCookie();
+  assert.equal(cookies.length, 1);
+  assert.match(cookies[0] ?? '', /HttpOnly/i);
+  assert.deepEqual(known.data, { accepted: true });
+  const verified = await verifyAddress({
+    headers: { ...origin, cookie: cookieHeader(cookies) },
+    body: { token },
+  });
+  assert.deepEqual(verified.data, { email });
+  assert.equal(await sessionCount(email), 0);
+});
+
+await test('production continuation cookies are secure and internal calls have no public route', async () => {
+  const secure = await createAuth(
+    loadServerConfig({
+      ...environment(database.runtimeUrl, database.authUrl, storageRoot),
+      NOTESAPP_ORIGIN: 'https://notes.example.test',
+    }),
+    { mail: null, allowSignUp: false, sessionAllowed: async () => false },
+  );
+  try {
+    const response = await secure.auth.api.beginRegistrationContinuation({
+      asResponse: true,
+    });
+    const cookie = response.headers.getSetCookie().at(0) ?? '';
+    assert.match(cookie, /; Secure/i);
+    assert.match(cookie, /; HttpOnly/i);
+    assert.match(cookie, /; SameSite=Lax/i);
+    assert.match(cookie, /Max-Age=900/i);
+  } finally {
+    await secure.close();
+  }
+  for (const path of [
+    'beginRegistrationContinuation',
+    'completeRegistrationContinuation',
+  ]) {
+    const response = await app.inject({
+      method: 'POST',
+      url: `/api/auth/${path}`,
+      headers: { ...origin, host: '127.0.0.1' },
+      payload: {},
+    });
+    assert.equal(response.statusCode, 404);
   }
 });
 
