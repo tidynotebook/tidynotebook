@@ -1,5 +1,10 @@
-import { Facet, type EditorState } from '@codemirror/state';
-import type { EditorView } from '@codemirror/view';
+import {
+  Compartment,
+  Facet,
+  StateEffect,
+  type EditorState,
+} from '@codemirror/state';
+import { EditorView } from '@codemirror/view';
 /** The bound document supplies its existing local undo manager here. */
 export type DocumentHistory = {
   canUndo(): boolean;
@@ -47,7 +52,20 @@ export function watchEditorHistory(
   notify: (state: EditorHistoryState) => void,
 ): () => void {
   const update = (): void => notify(editorHistoryState(view.state));
+  const availability = new Compartment();
+  view.dispatch({
+    effects: StateEffect.appendConfig.of(
+      availability.of(
+        EditorView.updateListener.of((change) => {
+          if (change.startState.readOnly !== change.state.readOnly) update();
+        }),
+      ),
+    ),
+  });
   const stop = view.state.facet(documentHistory)?.watch(update);
   update();
-  return () => stop?.();
+  return () => {
+    stop?.();
+    view.dispatch({ effects: availability.reconfigure([]) });
+  };
 }
