@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Button } from '@notesapp/ui';
+import { TodayNoteAction } from './today-note-action.tsx';
 import { today, useDailyNotes } from '../daily-notes/daily-notes.tsx';
 
 /** Optional help on the note list, outside the writing area. */
@@ -41,14 +42,11 @@ export function WritingStart({
         </li>
       </ul>
       <div className="flex flex-wrap gap-2">
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={daily.waiting}
-          onClick={() => daily.open(today())}
-        >
-          Open today&apos;s note
-        </Button>
+        <TodayNoteAction
+          waiting={daily.waiting}
+          problem={daily.openProblem}
+          onOpen={() => daily.open(today())}
+        />
         <Button
           variant="ghost"
           size="sm"
