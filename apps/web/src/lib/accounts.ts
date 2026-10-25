@@ -147,8 +147,8 @@ export function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes < 0) return '';
   let value = bytes;
   let unit = 0;
-  while (value >= 1024 && unit < byteUnits.length - 1) {
-    value /= 1024;
+  while (value >= 1000 && unit < byteUnits.length - 1) {
+    value /= 1000;
     unit += 1;
   }
   if (unit === 0) {
@@ -173,22 +173,22 @@ export function storageLine(storage: {
   return `${formatBytes(storage.usedBytes)} of ${formatBytes(storage.limitBytes)} used`;
 }
 
-/** The bytes of one gigabyte, the unit in which a person states a limit. */
-const gigabyte = 1024 * 1024 * 1024;
+/** The bytes of one gibibyte. Keep existing administrator input semantics. */
+const gibibyte = 1024 * 1024 * 1024;
 
-/** A limit in gigabytes, as the limit field shows it. */
+/** A limit in GiB, as the administrator limit field shows it. */
 export function gigabytesOf(bytes: number): string {
-  return String(Math.round((bytes / gigabyte) * 100) / 100);
+  return String(Math.round((bytes / gibibyte) * 100) / 100);
 }
 
 /**
- * The bytes of a limit that a person typed in gigabytes, or `null` for a text
+ * The bytes of a limit that a person typed in GiB, or `null` for a text
  * that is not a positive number.
  */
 export function bytesOfGigabytes(text: string): number | null {
   const trimmed = text.trim().replace(',', '.');
   if (!/^\d+(\.\d+)?$/.test(trimmed)) return null;
-  const bytes = Math.round(Number(trimmed) * gigabyte);
+  const bytes = Math.round(Number(trimmed) * gibibyte);
   if (!Number.isSafeInteger(bytes) || bytes < 1) return null;
   return bytes;
 }

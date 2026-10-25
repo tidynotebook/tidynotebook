@@ -11,7 +11,9 @@ choice.
 
 You can also press **Ctrl + P**, or **Cmd + P** on a Mac, to open the command
 palette. Then select **Go to Settings**. The list under **On this page** jumps
-to each section.
+to each section. The index at the top groups controls under Appearance,
+Writing, Data, Account and Danger zone. Select a section to move to it without
+losing a pending edit.
 
 Some sections act on the workspace that you have open. A choice of this kind
 follows you to every device. A choice of a device stays on this browser only.
@@ -89,7 +91,9 @@ space, so this section asks whether to keep them too.
 
 This browser keeps each choice for your account and the workspace that you
 have open. A box shows as on only while the application keeps everything of its
-kind. A new image can turn it off again. See [Working offline](offline.md).
+kind. An empty group has no available control. Add an image or save a version
+to make its control available. A failed change shows a message and reads the
+stored state again. A new image can turn the box off again. See [Working offline](offline.md).
 
 ## Export
 
@@ -109,7 +113,8 @@ file of the zip has the path of a note that is already there.
 
 This section states how much of its storage limit your account uses. Your
 account owns every note in your workspaces, and no other account can read
-them.
+them. Storage and transfer usage use decimal units: 1 GB is 1,000,000,000
+bytes. Administrator limit fields use GiB: 1 GiB is 1,073,741,824 bytes.
 
 An administrator also sees **Manage accounts**, which opens the accounts page.
 See [Accounts and invitations](accounts.md). When the installation has terms

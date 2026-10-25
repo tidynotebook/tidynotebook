@@ -103,3 +103,13 @@ await test('retry intervals ignore forward and backward wall clock changes', (co
   assert.equal(check(31000), 30000);
   assert.deepEqual(reads, [1000, -100000]);
 });
+
+await test('active trial dates use a named month and omit the clock and seconds', () => {
+  const message =
+    trialStatus(
+      { trialEndsAt: '2026-11-07T12:34:56.000Z', trialState: 'active' },
+      Date.parse('2026-11-01T00:00:00.000Z'),
+    ) ?? '';
+  assert.match(message, /2026/);
+  assert.doesNotMatch(message, /12:34|:56/);
+});

@@ -6,6 +6,7 @@ import {
   noteGroupSections,
   sectionOf,
   settingsSections,
+  settingsGroups,
   visibleSettingsSections,
 } from './page-sections.ts';
 import { groupNotesByRecency } from './note-groups.ts';
@@ -114,4 +115,15 @@ await test('Settings shows connected apps only with MCP authorization', () => {
       mcpAuthorization: true,
     }).some((section) => section.key === 'connected-apps'),
   );
+});
+
+await test('Settings groups cover each section once in page order and separate deletion', () => {
+  assert.deepEqual(
+    settingsGroups.flatMap((group) => group.keys),
+    settingsSections.map((section) => section.key),
+  );
+  assert.deepEqual(settingsGroups.at(-1), {
+    title: 'Danger zone',
+    keys: ['remove-account'],
+  });
 });

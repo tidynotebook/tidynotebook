@@ -472,8 +472,17 @@ export function LoginPage({
   const session = useSession();
   const navigate = useNavigate();
   // Where sign-in goes back to: a path of this origin, or the root.
-  const back = returnOf(useLocation().search);
-  const [email, setEmail] = useState('');
+  const location = useLocation();
+  const back = returnOf(location.search);
+  const signInState: unknown = location.state;
+  const [email, setEmail] = useState(
+    signInState !== null &&
+      typeof signInState === 'object' &&
+      'email' in signInState &&
+      typeof signInState.email === 'string'
+      ? signInState.email
+      : '',
+  );
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [reveal, setReveal] = useState(false);

@@ -14,20 +14,38 @@ export function TrialNotice(): ReactNode {
   if (account === null) return null;
   const message = trialStatus(account.controls, now);
   if (message === null) return null;
+  const active =
+    account.controls.trialState === 'active' &&
+    Date.parse(account.controls.trialEndsAt ?? '') > now;
+  const action = account.accountPortal ? (
+    <Button
+      variant={active ? 'ghost' : 'secondary'}
+      size="sm"
+      disabled={portal.busy}
+      onClick={() => {
+        void portal.open(portalHome);
+      }}
+    >
+      Upgrade account
+    </Button>
+  ) : null;
+  if (active)
+    return (
+      <div
+        className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-1 text-control text-muted"
+        aria-label="Trial status"
+      >
+        <span>{message}</span>
+        {action}
+        {portal.error === '' ? null : (
+          <Notice tone="problem" message={portal.error} />
+        )}
+      </div>
+    );
   return (
     <Notice message={message}>
       {portal.error === '' ? null : <p>{portal.error}</p>}
-      {account.accountPortal ? (
-        <Button
-          variant="secondary"
-          disabled={portal.busy}
-          onClick={() => {
-            void portal.open(portalHome);
-          }}
-        >
-          Upgrade account
-        </Button>
-      ) : null}
+      {action}
     </Notice>
   );
 }

@@ -11,7 +11,6 @@ import type { NoteGroup } from './note-groups.ts';
 
 /** The sections of Settings, in page order. */
 export const settingsSections = [
-  { key: 'profile', id: 'profile-heading', title: 'Profile' },
   { key: 'appearance', id: 'theme-heading', title: 'Appearance' },
   { key: 'spelling', id: 'spelling-heading', title: 'Spelling' },
   { key: 'daily-notes', id: 'daily-notes-heading', title: 'Daily notes' },
@@ -19,6 +18,7 @@ export const settingsSections = [
   { key: 'offline', id: 'offline-heading', title: 'Available offline' },
   { key: 'export', id: 'export-heading', title: 'Export' },
   { key: 'import', id: 'import-heading', title: 'Import' },
+  { key: 'profile', id: 'profile-heading', title: 'Profile' },
   { key: 'account', id: 'account-heading', title: 'Account' },
   { key: 'billing', id: 'billing-heading', title: 'Billing' },
   { key: 'api-keys', id: 'api-keys-heading', title: 'API keys' },
@@ -38,6 +38,29 @@ export const settingsSections = [
 
 /** The name of one section of Settings. */
 export type SettingsSectionKey = (typeof settingsSections)[number]['key'];
+
+/** Related controls stay together, with deletion in its own region. */
+export const settingsGroups: readonly {
+  readonly title: string;
+  readonly keys: readonly SettingsSectionKey[];
+}[] = [
+  { title: 'Appearance', keys: ['appearance'] },
+  { title: 'Writing', keys: ['spelling', 'daily-notes', 'templates'] },
+  { title: 'Data', keys: ['offline', 'export', 'import'] },
+  {
+    title: 'Account',
+    keys: [
+      'profile',
+      'account',
+      'billing',
+      'api-keys',
+      'connected-apps',
+      'sessions',
+      'sign-out',
+    ],
+  },
+  { title: 'Danger zone', keys: ['remove-account'] },
+];
 
 /** One section of Settings, with its name. */
 export type SettingsSection = (typeof settingsSections)[number];

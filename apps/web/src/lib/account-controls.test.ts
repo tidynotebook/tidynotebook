@@ -97,7 +97,7 @@ await test('a form that a person must correct names its field', () => {
       ok: false,
       problem: {
         field: 'storageGigabytes',
-        message: 'Enter a number of gigabytes above zero.',
+        message: 'Enter a number of GiB above zero.',
       },
     },
   );

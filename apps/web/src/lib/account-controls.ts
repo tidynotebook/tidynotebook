@@ -100,7 +100,7 @@ export function controlsChangeOf(
       ok: false,
       problem: {
         field: 'storageGigabytes',
-        message: 'Enter a number of gigabytes above zero.',
+        message: 'Enter a number of GiB above zero.',
       },
     };
   const text =
@@ -126,7 +126,7 @@ export function controlsChangeOf(
         ok: false,
         problem: {
           field,
-          message: 'Enter a number of gigabytes above zero, or leave it empty.',
+          message: 'Enter a number of GiB above zero, or leave it empty.',
         },
       };
   let removalAt: string | null | undefined;

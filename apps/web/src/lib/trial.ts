@@ -46,7 +46,7 @@ export function trialStatus(
           : hours === 1
             ? '1 hour'
             : `${String(hours)} hours`;
-  return `Your free trial ends on ${new Date(end).toLocaleString()}. Time left: ${remaining}. There is no automatic charge.`;
+  return `Free trial ends on ${new Date(end).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}. Time left: ${remaining}.`;
 }
 
 const trialRecheckIntervalMs = 30000;
