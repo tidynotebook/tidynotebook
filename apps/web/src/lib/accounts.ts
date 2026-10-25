@@ -151,11 +151,11 @@ export function formatBytes(bytes: number): string {
     value /= 1000;
     unit += 1;
   }
-  if (unit === 0) {
-    const count = Math.round(value);
-    return count === 1 ? '1 byte' : `${String(count)} bytes`;
-  }
-  const shown = value < 10 ? Math.round(value * 10) / 10 : Math.round(value);
+  const shown =
+    unit === 0 || value >= 10 ? Math.round(value) : Math.round(value * 10) / 10;
+  if (shown >= 1000 && unit < byteUnits.length - 1)
+    return `1 ${byteUnits[unit + 1] ?? 'bytes'}`;
+  if (unit === 0) return shown === 1 ? '1 byte' : `${String(shown)} bytes`;
   return `${String(shown)} ${byteUnits[unit] ?? 'bytes'}`;
 }
 

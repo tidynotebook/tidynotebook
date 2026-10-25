@@ -258,11 +258,6 @@ function useOfflineChoices(
         setStatus('ready');
       } catch {
         if (!cancelled) setStatus('failed');
-      } finally {
-        if (!cancelled) {
-          writing.current = false;
-          setBusy(false);
-        }
       }
     }
     void read();
@@ -315,6 +310,8 @@ function useOfflineChoices(
             'This device could not change offline storage. Check the available space and try again.',
           );
         } finally {
+          writing.current = false;
+          setBusy(false);
           setGeneration((value) => value + 1);
         }
       })();

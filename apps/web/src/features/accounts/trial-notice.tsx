@@ -35,7 +35,7 @@ export function TrialNotice(): ReactNode {
         className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-1 text-control text-muted"
         aria-label="Trial status"
       >
-        <span>{message}</span>
+        <span role="status">{message}</span>
         {action}
         {portal.error === '' ? null : (
           <Notice tone="problem" message={portal.error} />

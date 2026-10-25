@@ -263,3 +263,11 @@ await test('a reset link carries its token in the fragment', () => {
   assert.equal(resetTokenOf('#a b'), null);
   assert.equal(resetTokenOf(`#${'a'.repeat(513)}`), null);
 });
+
+await test('decimal values that round to the next unit use that unit', () => {
+  assert.equal(formatBytes(999_499), '999 KB');
+  assert.equal(formatBytes(999_500), '1 MB');
+  assert.equal(formatBytes(999_999), '1 MB');
+  assert.equal(formatBytes(1_000_000), '1 MB');
+  assert.equal(formatBytes(999_999_999), '1 GB');
+});
