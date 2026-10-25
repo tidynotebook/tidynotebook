@@ -8,7 +8,11 @@
  * unchanged value writes nothing to the page.
  */
 import { useRef, useState, type RefObject } from 'react';
-import type { FileSaveSnapshot, LocalStorageErrorKind } from '@notesapp/sync';
+import type {
+  FileSaveSnapshot,
+  LocalStorageErrorKind,
+  LocalStore,
+} from '@notesapp/sync';
 import {
   noteSaveReport,
   resolveSaveState,
@@ -18,14 +22,17 @@ import {
 
 /** The save facts of one open note and the call that states them. */
 export type NoteSaveFacts = {
-  readonly saveSnapshotRef: { current: FileSaveSnapshot | null };
-  readonly lastSavedAtRef: { current: string | null };
+  /** Reads durable save facts with the checkpoint sequence at read start. */
+  readonly readSnapshot: (source: {
+    readonly store: LocalStore;
+    readonly accountId: string;
+    readonly workspaceId: string;
+    readonly fileId: string;
+  }) => Promise<FileSaveSnapshot>;
   /** The sequence that the store holds, to tell text that no write took. */
   readonly writtenSequenceRef: { current: number };
   /** Records the sequence that this editor put in a checkpoint. */
   readonly checkpointTaken: (sequence: number) => void;
-  /** Captures the checkpoint sequence before a read and records it on completion. */
-  readonly snapshotStarted: () => () => void;
   /** The cause of a failed local write, which the note states. */
   readonly storageError: LocalStorageErrorKind | null;
   readonly setStorageError: (kind: LocalStorageErrorKind | null) => void;
@@ -91,22 +98,30 @@ export function useNoteSaveFacts(
   }).current;
 
   return {
-    saveSnapshotRef,
-    lastSavedAtRef,
+    readSnapshot: async ({ store, accountId, workspaceId, fileId }) => {
+      // An older snapshot read cannot prove that a later checkpoint reached
+      // the server, even if its promise completes after that checkpoint.
+      const sequence = checkpointedSequenceRef.current;
+      const [snapshot, checkpoints] = await Promise.all([
+        store.readFileSaveSnapshot(accountId, workspaceId, fileId),
+        store.listCheckpoints(accountId, workspaceId, fileId),
+      ]);
+      saveSnapshotRef.current = snapshot;
+      snapshotSequenceRef.current = sequence;
+      lastSavedAtRef.current =
+        checkpoints
+          .filter((entry) => !entry.deleted)
+          .map((entry) => entry.clientTime)
+          .sort()
+          .at(-1) ?? null;
+      return snapshot;
+    },
     writtenSequenceRef,
     checkpointTaken: (sequence) => {
       checkpointedSequenceRef.current = Math.max(
         checkpointedSequenceRef.current,
         sequence,
       );
-    },
-    snapshotStarted: () => {
-      // An older snapshot read cannot prove that a later checkpoint reached
-      // the server, even if its promise completes after that checkpoint.
-      const sequence = checkpointedSequenceRef.current;
-      return () => {
-        snapshotSequenceRef.current = sequence;
-      };
     },
     storageError,
     setStorageError,
