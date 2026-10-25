@@ -35,3 +35,20 @@ export async function allOfflineTargetsPinned(
   for (const target of targets) if (!(await isPinned(target))) return false;
   return true;
 }
+
+/** Only completion of a write releases this gate, including after failure. */
+export function createOfflineWriteGate(): (
+  write: () => Promise<void>,
+) => Promise<boolean> {
+  let writing = false;
+  return async (write) => {
+    if (writing) return false;
+    writing = true;
+    try {
+      await write();
+      return true;
+    } finally {
+      writing = false;
+    }
+  };
+}
