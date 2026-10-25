@@ -27,6 +27,7 @@ import {
   type EditorNavigation,
   type LinkTarget,
 } from './commands.ts';
+import { imageRemovalTarget } from './image-removal.ts';
 import { isRemoteChange } from './document-binding.ts';
 
 /**
@@ -219,6 +220,7 @@ export function createEditor(
   const state = EditorState.create({
     doc: initialText,
     extensions: [
+      imageRemovalTarget,
       // A bound editor takes its undo from Yjs, so the two histories never
       // both answer the same key.
       ...(bound === undefined ? [history()] : [bound.extension]),

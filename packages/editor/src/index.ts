@@ -131,3 +131,10 @@ export {
   type DocumentBinding,
   type RemoteWorkGate,
 } from './document-binding.ts';
+
+export {
+  editorHistoryState,
+  runHistoryAction,
+  watchEditorHistory,
+} from './history-controls.ts';
+export type { EditorHistoryState, HistoryAction } from './history-controls.ts';

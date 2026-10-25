@@ -30,6 +30,8 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   formatActionOf,
   type FormatActionId,
+  type EditorHistoryState,
+  type HistoryAction,
   type FormatContext,
 } from '@notesapp/editor';
 import { Button } from '@notesapp/ui';
@@ -78,15 +80,23 @@ export const toolSlashCommands = slashMenuCommands((keys) =>
 export function FormatToolbar({
   context,
   onFormat,
+  history,
+  onHistory,
 }: {
   /** Where the caret stands, which decides the tools that apply. */
   readonly context: FormatContext;
+  readonly history: EditorHistoryState;
+  readonly onHistory: (action: HistoryAction) => void;
   /** Runs one format action on the editor of the open note. */
   readonly onFormat: (id: FormatActionId) => void;
 }): ReactNode {
   const rowRef = useRef<HTMLDivElement | null>(null);
   const groups = formatToolbar;
-  const enabled = groups.flat().map((tool) => toolApplies(tool, context));
+  const enabled = [
+    history.undo,
+    history.redo,
+    ...groups.flat().map((tool) => toolApplies(tool, context)),
+  ];
   // The place, in the order of the row, of the one tool in the tab order. A
   // disabled tool takes no focus, so the stop falls to the first tool that
   // applies, and the row stays one press of Tab away.
@@ -117,7 +127,7 @@ export function FormatToolbar({
     };
   }, []);
 
-  let place = 0;
+  let place = 2;
   return (
     <div className={formatToolbarFrameClassName()}>
       <div
@@ -171,6 +181,21 @@ export function FormatToolbar({
             next?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
           }}
         >
+          <div className={formatToolGroupClassName()}>
+            {(['undo', 'redo'] as const).map((action, at) => (
+              <Button
+                key={action}
+                variant="ghost"
+                size="sm"
+                compact
+                disabled={!history[action]}
+                tabIndex={at === tabStop ? 0 : -1}
+                onClick={() => onHistory(action)}
+              >
+                {action === 'undo' ? 'Undo' : 'Redo'}
+              </Button>
+            ))}
+          </div>
           {groups.map((group) => (
             <div
               key={group.map((tool) => tool.id).join(' ')}
