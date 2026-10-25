@@ -146,9 +146,9 @@ export function NoteEditorLoader({
   // so the screen follows the store without a page reload. A version of
   // another device joins the open editor instead (record 0179).
   const [reloadToken, setReloadToken] = useState(0);
-  // A second read of a note that is already on the screen keeps the screen it
-  // has. Only the first read of a note shows the loading state, so a version
-  // that arrives does not blank a note a person is reading.
+  // A refresh keeps a ready editor on screen. Recovery from deletion shows
+  // loading while its content is read, so an old deletion notice cannot
+  // describe a restore that is already in progress.
   const quietReload = useRef(false);
   const readAgain = useCallback((): void => {
     quietReload.current = true;
@@ -178,7 +178,7 @@ export function NoteEditorLoader({
       cancelled = true;
     };
     async function load(): Promise<void> {
-      const quiet = quietReload.current;
+      const quiet = quietReload.current && statusKind.current === 'ready';
       quietReload.current = false;
       const opening = { accountId, workspaceId, fileId };
       // The first render of this note started the read of the device and
