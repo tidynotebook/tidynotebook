@@ -8,7 +8,7 @@ import { createElement, act, useState, type ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
 import type { WorkspaceFile } from '@notesapp/api-client';
 import { contentDigest, type AcceptedChangeset } from '@notesapp/core';
-import { openLocalStore } from '@notesapp/storage-browser';
+import { createDatabase, openLocalStore } from '@notesapp/storage-browser';
 import type { Draft, LocalStore, LocalChange } from '@notesapp/sync';
 
 // Install the DOM before loading React DOM and CodeMirror. Layout and OS
@@ -86,11 +86,12 @@ const workspaceId = crypto.randomUUID();
 const fileId = crypto.randomUUID();
 const attachmentId = crypto.randomUUID();
 const text = `[Fragment](#intro)\n\n[Picture](./diagram.png)\n\n[Attachment](/attachments/${attachmentId})\n\n[Blocked](javascript:alert)\n\n[App](slack://channel)\n`;
-const localStore = await openLocalStore('http://localhost', {
+const storageOptions = {
   indexedDB: new IDBFactory(),
   IDBKeyRange,
   databaseName: `link-surfaces-${crypto.randomUUID()}`,
-});
+};
+const localStore = await openLocalStore('http://localhost', storageOptions);
 // Unmount starts writes without returning their promises. Track the real
 // store operations so cleanup waits for append, draft, and checkpoint work.
 const pendingStoreWork = new Set<Promise<unknown>>();
@@ -1092,6 +1093,197 @@ await test('returning to a purged note reaches a terminal state after another no
     globalThis.fetch = originalFetch;
   }
 });
+
+for (const missing of ['absent', 'null', 'present'] as const) {
+  await test(`a restored note recovers when cached text is ${missing}`, async () => {
+    const restoredText = `# Cache recovery ${missing}\n`;
+    const restoredId = await duplicateNote(store, {
+      accountId,
+      workspaceId,
+      path: 'Cache recovery.md',
+      text: restoredText,
+      takenPaths: ['Cache recovery.md'],
+    });
+    const saved = await store.readCachedNote(
+      accountId,
+      workspaceId,
+      restoredId,
+    );
+    assert.ok(saved !== null && saved.document !== null);
+    await acceptNoteWrites(restoredId);
+    assert.equal(
+      (
+        await deleteNotes(store, accountId, workspaceId, [
+          { fileId: restoredId, name: 'Cache recovery copy' },
+        ])
+      ).ok,
+      true,
+    );
+    await acceptNoteWrites(restoredId);
+    const reader = await openLocalStore('http://localhost', storageOptions);
+    const { db, tables } = createDatabase(
+      storageOptions.databaseName,
+      storageOptions,
+    );
+    await db.open();
+    const digest = await contentDigest(restoredText);
+    const revisionId = crypto.randomUUID();
+    const instant = '2026-10-25T20:41:11.610Z';
+    const served: WorkspaceFile = {
+      fileId: restoredId,
+      path: saved.path,
+      kind: 'note',
+      headRevisionId: revisionId,
+      createdAt: instant,
+      updatedAt: instant,
+      head: {
+        revisionId,
+        fileId: restoredId,
+        path: saved.path,
+        kind: 'note',
+        deleted: false,
+        parents: [],
+        digest,
+        size: new TextEncoder().encode(restoredText).length,
+        text: restoredText,
+        attachmentObjectId: null,
+        message: null,
+        restoredFrom: null,
+        clientTime: instant,
+        serverTime: instant,
+        document: Buffer.from(saved.document.bytes).toString('base64'),
+        epoch: saved.document.epoch,
+        merged: false,
+      },
+    };
+    const originalFetch = globalThis.fetch;
+    let serverReads = 0;
+    globalThis.fetch = () => {
+      serverReads += 1;
+      return Promise.resolve(Response.json(served));
+    };
+    const received = Promise.withResolvers<void>();
+    const stop = reader.subscribe((change) => {
+      if (change.fileId === restoredId && change.kind === 'file')
+        received.resolve();
+    });
+    try {
+      await render(
+        createElement(NoteEditorLoader, {
+          store: reader,
+          accountId,
+          workspaceId,
+          fileId: restoredId,
+        }),
+      );
+      const deadline = Date.now() + 10_000;
+      while (
+        !(container.textContent ?? '').includes('Note deleted on this device')
+      ) {
+        if (Date.now() > deadline)
+          assert.fail('The deleted note did not finish loading.');
+        await act(async () => {
+          await setImmediate();
+        });
+      }
+      assert.match(container.textContent ?? '', /Note deleted on this device/);
+      const key: [string, string, string, string] = [
+        'http://localhost',
+        accountId,
+        workspaceId,
+        digest,
+      ];
+      if (missing === 'absent') await tables.contents.delete(key);
+      else if (missing === 'null') {
+        const content = await tables.contents.get(key);
+        assert.ok(content);
+        await tables.contents.put({
+          ...content,
+          text: null,
+          bytes: new Blob([restoredText]),
+        });
+      }
+      await act(async () => {
+        // This is the real LocalStore transaction and cross-instance channel,
+        // not a manually delivered watcher callback. The metadata-only restore
+        // retains the complete document but supplies no cached Markdown body.
+        await store.applyRemoteChanges(
+          accountId,
+          workspaceId,
+          [
+            {
+              file: {
+                fileId: restoredId,
+                revisionId,
+                path: saved.path,
+                fileKind: 'note',
+                document: null,
+                deleted: false,
+                digest,
+                text: null,
+              },
+              purgedFileId: null,
+            },
+          ],
+          crypto.randomUUID(),
+        );
+        await received.promise;
+        const cached = await reader.readCachedNote(
+          accountId,
+          workspaceId,
+          restoredId,
+        );
+        if (missing === 'present') assert.equal(cached?.deleted, false);
+        else assert.equal(cached, null);
+      });
+      assert.equal(
+        (await reader.listLocalFiles(accountId, workspaceId)).find(
+          (row) => row.fileId === restoredId,
+        )?.deleted,
+        false,
+      );
+      assert.deepEqual(
+        await reader.readNoteDocument(accountId, workspaceId, restoredId),
+        saved.document,
+      );
+      try {
+        await waitForEditor(container);
+      } catch {
+        assert.fail(
+          `Restore stalled: variant=${missing}; UI=${container.textContent}; serverReads=${String(serverReads)}`,
+        );
+      }
+      if (missing === 'present') assert.equal(serverReads, 0);
+      else assert.ok(serverReads > 0);
+      assert.equal(view().state.doc.toString(), restoredText);
+      assert.equal(view().state.readOnly, false);
+      const edited = `${restoredText}Edited after restore\n`;
+      await act(async () => {
+        const current = view();
+        current.dispatch({
+          changes: {
+            from: current.state.doc.length,
+            insert: 'Edited after restore\n',
+          },
+          userEvent: 'input.type',
+        });
+        await flush();
+      });
+      assert.equal(view().state.doc.toString(), edited);
+      assert.equal(
+        (await reader.readCachedNote(accountId, workspaceId, restoredId))?.text,
+        edited,
+      );
+    } finally {
+      stop();
+      await render(null);
+      await act(finishStoreWork);
+      globalThis.fetch = originalFetch;
+      await reader.close();
+      db.close();
+    }
+  });
+}
 
 after(async () => {
   await act(async () => root.unmount());
