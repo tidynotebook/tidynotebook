@@ -6,6 +6,7 @@ import { Window } from 'happy-dom';
 import { IDBFactory, IDBKeyRange } from 'fake-indexeddb';
 import { createElement, act, type ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
+import type { WorkspaceFile } from '@notesapp/api-client';
 import { contentDigest, type AcceptedChangeset } from '@notesapp/core';
 import { openLocalStore } from '@notesapp/storage-browser';
 import type { Draft, LocalStore, LocalChange } from '@notesapp/sync';
@@ -771,6 +772,113 @@ await test('a purge keeps its visible state when the initial loader read finishe
   assert.match(container.textContent ?? '', /Note deleted permanently/);
   assert.equal(container.querySelector('.cm-editor'), null);
   await render(null);
+});
+
+await test('purge blocks a restore reload queued in the same React batch even when the server returns the note', async () => {
+  const purgedId = crypto.randomUUID();
+  const noteText = '# Stale server note\n';
+  await store.checkpoint(
+    {
+      accountId,
+      workspaceId,
+      fileId: purgedId,
+      workingCopyId: crypto.randomUUID(),
+      baseRevisionId: null,
+      path: 'Stale server note.md',
+      text: noteText,
+      sequence: 1,
+      deleted: false,
+    },
+    null,
+    'text',
+  );
+  const saved = await store.readCachedNote(accountId, workspaceId, purgedId);
+  assert.ok(saved !== null && saved.document !== null);
+  const revisionId = crypto.randomUUID();
+  const instant = '2026-10-25T12:00:00.000Z';
+  const served: WorkspaceFile = {
+    fileId: purgedId,
+    path: saved.path,
+    kind: 'note',
+    headRevisionId: revisionId,
+    createdAt: instant,
+    updatedAt: instant,
+    head: {
+      revisionId,
+      fileId: purgedId,
+      path: saved.path,
+      kind: 'note',
+      deleted: false,
+      parents: [],
+      digest: await contentDigest(noteText),
+      size: new TextEncoder().encode(noteText).length,
+      text: noteText,
+      attachmentObjectId: null,
+      message: null,
+      restoredFrom: null,
+      clientTime: instant,
+      serverTime: instant,
+      document: Buffer.from(saved.document.bytes).toString('base64'),
+      epoch: saved.document.epoch,
+      merged: false,
+    },
+  };
+  let restored = false;
+  let purged = false;
+  const listeners = new Set<(change: LocalChange) => void>();
+  const local: LocalStore = {
+    ...store,
+    readCachedNote: () =>
+      Promise.resolve(
+        purged ? null : restored ? saved : { ...saved, deleted: true },
+      ),
+    subscribe: (listener) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+  };
+  const originalFetch = globalThis.fetch;
+  let serverReads = 0;
+  globalThis.fetch = () => {
+    serverReads += 1;
+    return Promise.resolve(Response.json(served));
+  };
+  try {
+    await render(
+      createElement(NoteEditorLoader, {
+        store: local,
+        accountId,
+        workspaceId,
+        fileId: purgedId,
+      }),
+    );
+    assert.match(container.textContent ?? '', /Note deleted on this device/);
+    await act(async () => {
+      restored = true;
+      for (const listener of [...listeners])
+        listener({ kind: 'file', accountId, workspaceId, fileId: purgedId });
+      // Let the watch queue readAgain, but keep both callbacks in this batch.
+      await Promise.resolve();
+      purged = true;
+      for (const listener of [...listeners])
+        listener({ kind: 'purge', accountId, workspaceId, fileId: purgedId });
+    });
+    await act(async () => {
+      await setImmediate();
+    });
+    // If the queued request starts, let the successful stale response finish
+    // so the assertion observes its effect, rather than cancelling it early.
+    if (serverReads > 0) await waitForEditor(container);
+    assert.match(container.textContent ?? '', /Note deleted permanently/);
+    assert.equal(container.querySelector('.cm-editor'), null);
+    assert.equal(serverReads, 0);
+  } finally {
+    await render(null);
+    await act(finishStoreWork);
+    globalThis.fetch = originalFetch;
+  }
 });
 
 after(async () => {
