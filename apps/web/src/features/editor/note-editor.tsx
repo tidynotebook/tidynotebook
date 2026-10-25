@@ -1553,9 +1553,8 @@ const NoteEditorBody = memo(function NoteEditorBody({
             <NoteFooter initialText={initialText} />
             <ImageViewer
               image={openImage}
-              onClose={() => {
-                setOpenImage(null);
-              }}
+              onClose={() => setOpenImage(null)}
+              returnFocus={() => currentView()?.focus()}
             />
           </div>
           {/*

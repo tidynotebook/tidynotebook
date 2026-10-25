@@ -759,7 +759,8 @@ class RichWidgetType extends WidgetType {
    * exactly the case where the previous DOM is stale. Returning true keeps
    * the same element and its position in the layout.
    */
-  override updateDOM(dom: HTMLElement): boolean {
+  override updateDOM(dom: HTMLElement, view: EditorView): boolean {
+    this.editor = view;
     releaseDiagram(dom);
     dom.textContent = '';
     this.fill(dom);
