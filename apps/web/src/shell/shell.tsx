@@ -364,7 +364,7 @@ function Breadcrumb({
  */
 function Sidebar({
   workspaceId,
-  workspaceName,
+  workspaceRootLabel,
   view,
   selectedFolder,
   folders,
@@ -383,7 +383,7 @@ function Sidebar({
   onClose,
 }: {
   readonly workspaceId: string;
-  readonly workspaceName: string;
+  readonly workspaceRootLabel: string;
   /** What the panel shows, which the view bar chose (record 0105). */
   readonly view: SidebarView;
   readonly selectedFolder: string;
@@ -517,7 +517,7 @@ function Sidebar({
                   variant="ghost"
                   size="sm"
                   compact
-                  label={`New note in ${selectedFolder === '' ? workspaceName + ' workspace root' : selectedFolder}`}
+                  label={`New note in ${selectedFolder === '' ? workspaceRootLabel : selectedFolder}`}
                   title="New note"
                   icon={actionIcon('new-note')}
                   onClick={() => onNewNoteIn(selectedFolder)}
@@ -526,7 +526,7 @@ function Sidebar({
                   variant="ghost"
                   size="sm"
                   compact
-                  label={`New folder in ${selectedFolder === '' ? workspaceName + ' workspace root' : selectedFolder}`}
+                  label={`New folder in ${selectedFolder === '' ? workspaceRootLabel : selectedFolder}`}
                   title="New folder"
                   icon={actionIcon('new-folder')}
                   onClick={() => onNewFolderIn(selectedFolder)}
@@ -559,8 +559,8 @@ function Sidebar({
                 />
               </div>
               <p className="my-1 px-2 text-control text-muted">
-                Create in: {workspaceName} /{' '}
-                {selectedFolder === '' ? 'workspace root' : selectedFolder}
+                Create in:{' '}
+                {selectedFolder === '' ? workspaceRootLabel : selectedFolder}
               </p>
               <Button
                 variant="ghost"
@@ -1220,6 +1220,10 @@ function ShellFrame({
       allWorkspaces.find((entry) => entry.workspaceId === workspaceId) ?? null,
     [allWorkspaces, workspaceId],
   );
+  const workspaceRootLabel =
+    openWorkspace === null
+      ? 'workspace root'
+      : `${openWorkspace.name} workspace root`;
 
   // Every workspace the person can move to from here. The open one is absent,
   // because a row that goes where you already are is noise.
@@ -1655,7 +1659,7 @@ function ShellFrame({
             <div className="flex min-w-0 flex-1 flex-col">
               <Sidebar
                 workspaceId={workspaceId}
-                workspaceName={openWorkspace?.name ?? 'This workspace'}
+                workspaceRootLabel={workspaceRootLabel}
                 view={sidebarView}
                 selectedFolder={selectedFolder}
                 folders={folders}

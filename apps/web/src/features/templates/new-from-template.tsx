@@ -125,6 +125,8 @@ function TemplateChoices({
   const templateFolder =
     settings.status === 'ready' ? settings.settings.folder : '';
   const choices = templateChoices(files.notes, templateFolder, null);
+  const selectedLabel =
+    choices.find((choice) => choice.id === selected)?.label ?? 'the template';
   const readyPreview = preview?.fileId === selected ? preview : null;
   useEffect(() => {
     if (selected === null || store === null || accountId === null) return;
@@ -179,6 +181,7 @@ function TemplateChoices({
                     key={choice.id}
                     variant={selected === choice.id ? 'secondary' : 'ghost'}
                     size="sm"
+                    ariaPressed={selected === choice.id}
                     onClick={() => setSelected(choice.id)}
                   >
                     {choice.label}
@@ -206,8 +209,13 @@ function TemplateChoices({
                 </Button>
               </>
             ) : (
-              <section aria-label="Template preview" className="mt-3">
-                <h2 className="m-0 text-ui font-medium">Template preview</h2>
+              <section
+                aria-label={`Preview of ${selectedLabel}`}
+                className="mt-3"
+              >
+                <h2 className="m-0 text-ui font-medium">
+                  Preview of {selectedLabel}
+                </h2>
                 <pre
                   tabIndex={0}
                   className={`max-h-64 overflow-auto whitespace-pre-wrap rounded-lg bg-app p-3 text-control ${focusOutline}`}

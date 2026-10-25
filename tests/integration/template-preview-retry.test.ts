@@ -104,8 +104,10 @@ async function click(label: string): Promise<void> {
 
 await test('a failed preview retries the same selection and guards creation until success', async () => {
   await show('workspace-a');
+  assert.equal(button('Meeting').getAttribute('aria-pressed'), 'false');
   assert.equal(button('Create note').disabled, true);
   await click('Meeting');
+  assert.equal(button('Meeting').getAttribute('aria-pressed'), 'true');
   const first = reads.shift();
   assert.ok(first);
   assert.equal(first.fileId, templateId);
@@ -127,6 +129,9 @@ await test('a failed preview retries the same selection and guards creation unti
   assert.equal(creations.length, 0);
   await act(async () => retry.finish(templateNote('Recovered meeting text')));
   assert.match(container.textContent ?? '', /Recovered meeting text/);
+  assert.ok(
+    container.querySelector('section[aria-label="Preview of Meeting"]'),
+  );
   assert.equal(button('Create note').disabled, false);
   await click('Create note');
   assert.deepEqual(creations, [
