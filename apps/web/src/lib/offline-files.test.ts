@@ -4,6 +4,8 @@ import {
   allOfflineTargetsPinned,
   offlineTargets,
   createOfflineWriteGate,
+  offlineProblemFor,
+  type OfflineProblem,
 } from './offline-files.ts';
 
 await test('offline controls exclude deleted files and missing current targets', () => {
@@ -90,4 +92,55 @@ await test('a refused offline write releases the gate for the next change', asyn
     }),
   );
   assert.equal(await write(async () => {}), true);
+});
+
+await test('a delayed failure after a workspace read cannot publish in another workspace or account', async () => {
+  const write = createOfflineWriteGate();
+  for (const next of [
+    { accountId: 'account-a', workspaceId: 'workspace-b' },
+    { accountId: 'account-b', workspaceId: 'workspace-a' },
+  ]) {
+    const paused = Promise.withResolvers<void>();
+    let current = { accountId: 'account-a', workspaceId: 'workspace-a' };
+    const notices: OfflineProblem[] = [];
+    const oldWrite = write(async () => {
+      try {
+        await paused.promise;
+        throw new Error('Storage unavailable');
+      } catch {
+        const failure = {
+          accountId: 'account-a',
+          workspaceId: 'workspace-a',
+          message: 'Could not change storage',
+        };
+        if (
+          offlineProblemFor(failure, current.accountId, current.workspaceId) !==
+          ''
+        )
+          notices.push(failure);
+      }
+    });
+    current = next;
+    await allOfflineTargetsPinned(['new-scope-image'], async () => true);
+    assert.equal(await write(async () => {}), false);
+    paused.resolve();
+    await oldWrite;
+    assert.deepEqual(notices, []);
+    assert.equal(await write(async () => {}), true);
+  }
+});
+
+await test('a prior failure is visible only in the account and workspace that started it', () => {
+  const failure = {
+    accountId: 'account-a',
+    workspaceId: 'workspace-a',
+    message: 'Could not change storage',
+  };
+  assert.equal(
+    offlineProblemFor(failure, 'account-a', 'workspace-a'),
+    failure.message,
+  );
+  assert.equal(offlineProblemFor(failure, 'account-a', 'workspace-b'), '');
+  assert.equal(offlineProblemFor(failure, 'account-b', 'workspace-a'), '');
+  assert.equal(offlineProblemFor(null, 'account-a', 'workspace-a'), '');
 });

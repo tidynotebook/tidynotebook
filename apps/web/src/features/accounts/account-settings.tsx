@@ -97,6 +97,8 @@ import {
   offlineTargets,
   allOfflineTargetsPinned,
   createOfflineWriteGate,
+  offlineProblemFor,
+  type OfflineProblem,
 } from '../../lib/offline-files.ts';
 
 import { importResultSentence } from '../../lib/import-result.ts';
@@ -215,7 +217,12 @@ function useOfflineChoices(
   const [generation, setGeneration] = useState(0);
   const [busy, setBusy] = useState(false);
   const writeExclusive = useRef(createOfflineWriteGate());
-  const [problem, setProblem] = useState('');
+  const [problem, setProblem] = useState<OfflineProblem | null>(null);
+  const currentScope = useRef({ store, accountId, workspaceId });
+  useEffect(() => {
+    currentScope.current = { store, accountId, workspaceId };
+    setProblem(null);
+  }, [store, accountId, workspaceId]);
   const [available, setAvailable] = useState<OfflineChoices>({
     images: false,
     history: false,
@@ -276,7 +283,7 @@ function useOfflineChoices(
       const activeWorkspace = workspaceId;
       void writeExclusive.current(async () => {
         setBusy(true);
-        setProblem('');
+        setProblem(null);
         setChoices((current) => ({ ...current, [kind]: keep }));
         try {
           const files = await activeStore.listAcceptedFiles(
@@ -301,9 +308,19 @@ function useOfflineChoices(
             }
           }
         } catch {
-          setProblem(
-            'This device could not change offline storage. Check the available space and try again.',
-          );
+          const failure = {
+            accountId: activeAccount,
+            workspaceId: activeWorkspace,
+            message:
+              'This device could not change offline storage. Check the available space and try again.',
+          };
+          const scope = currentScope.current;
+          if (
+            scope.store === activeStore &&
+            offlineProblemFor(failure, scope.accountId, scope.workspaceId) !==
+              ''
+          )
+            setProblem(failure);
         } finally {
           setBusy(false);
           setGeneration((value) => value + 1);
@@ -313,7 +330,14 @@ function useOfflineChoices(
     [store, accountId, workspaceId],
   );
 
-  return { choices, status, setChoice, available, busy, problem };
+  return {
+    choices,
+    status,
+    setChoice,
+    available,
+    busy,
+    problem: offlineProblemFor(problem, accountId, workspaceId),
+  };
 }
 
 /** How far the list of sessions got. */
