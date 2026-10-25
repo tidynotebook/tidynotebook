@@ -110,6 +110,11 @@ await test('active trial dates use a named month and omit the clock and seconds'
       { trialEndsAt: '2026-11-07T12:34:56.000Z', trialState: 'active' },
       Date.parse('2026-11-01T00:00:00.000Z'),
     ) ?? '';
+  const month = new Date('2026-11-07T12:34:56.000Z').toLocaleDateString(
+    undefined,
+    { month: 'long' },
+  );
+  assert.ok(message.includes(month));
   assert.match(message, /2026/);
-  assert.doesNotMatch(message, /12:34|:56/);
+  assert.doesNotMatch(message, /\b\d{1,2}:\d{2}(?::\d{2})?\b/);
 });
