@@ -561,7 +561,11 @@ function HistoryDetail({
     >
       <PageHeader
         title={`History of ${name}`}
-        description="Each save summary compares with the previous saved version. Open a version to compare it with the current saved version or read its preview. Restore makes it the newest version."
+        description={
+          head.status === 'ready' && head.kind === 'attachment'
+            ? 'Open a version to preview the image. Restore makes it the newest version.'
+            : 'Each save summary compares with the previous saved version. Open a version to compare it with the current saved version or read its preview. Restore makes it the newest version.'
+        }
       />
       <div className="space-y-4">
         {actionMessage === '' ? null : (
