@@ -58,6 +58,7 @@ Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', {
 });
 const { createRoot } = await import('react-dom/client');
 const { EditorView } = await import('@codemirror/view');
+const { forceParsing } = await import('@codemirror/language');
 const { NoteEditor } =
   await import('../../apps/web/dist/features/editor/note-editor.js');
 const { NoteEditorLoader } =
@@ -465,6 +466,100 @@ await test('a purge keeps its visible state when the initial loader read finishe
   assert.match(container.textContent ?? '', /Note deleted permanently/);
   assert.equal(container.querySelector('.cm-editor'), null);
   await render(null);
+});
+
+async function renderFreshNote(noteText: string, path: string): Promise<void> {
+  const freshId = crypto.randomUUID();
+  await store.checkpoint(
+    {
+      accountId,
+      workspaceId,
+      fileId: freshId,
+      workingCopyId: crypto.randomUUID(),
+      baseRevisionId: null,
+      path,
+      text: noteText,
+      sequence: 1,
+      deleted: false,
+    },
+    null,
+    'text',
+  );
+  await render(
+    createElement(NoteEditorLoader, {
+      store,
+      accountId,
+      workspaceId,
+      fileId: freshId,
+    }),
+  );
+  await waitForEditor(container);
+}
+
+await test('visible toolbar controls undo and redo the open editor text', async () => {
+  await renderFreshNote(text, 'Toolbar.md');
+  const current = view();
+  const undoButton = [...container.querySelectorAll('button')].find(
+    (button) => button.textContent === 'Undo',
+  );
+  const redoButton = [...container.querySelectorAll('button')].find(
+    (button) => button.textContent === 'Redo',
+  );
+  assert.ok(undoButton);
+  assert.ok(redoButton);
+  assert.equal(undoButton.disabled, true);
+  assert.equal(redoButton.disabled, true);
+  await act(async () => {
+    current.dispatch({
+      changes: { from: current.state.doc.length, insert: 'Toolbar edit' },
+      userEvent: 'input.type',
+    });
+  });
+  assert.equal(undoButton.disabled, false);
+  await act(async () => undoButton.click());
+  assert.equal(current.state.doc.toString(), text);
+  assert.equal(redoButton.disabled, false);
+  await act(async () => redoButton.click());
+  assert.equal(current.state.doc.toString(), `${text}Toolbar edit`);
+  assert.equal(current.hasFocus, true);
+  await render(null);
+  await act(finishStoreWork);
+});
+
+await test('the image viewer removes only the selected occurrence and toolbar Undo restores it', async () => {
+  const source = '![Map](https://example.invalid/map.png)';
+  const imageText = `${source}\n\n${source}\n\nEnd.\n`;
+  await renderFreshNote(imageText, 'Images.md');
+  const current = view();
+  await act(async () => {
+    assert.equal(forceParsing(current, current.state.doc.length), true);
+    current.dispatch({ selection: { anchor: current.state.doc.length } });
+  });
+  const imageButtons = container.querySelectorAll(
+    'button[aria-label="Open image: Map"]',
+  );
+  const open = imageButtons[imageButtons.length - 1];
+  assert.ok(open instanceof HTMLElement);
+  await act(async () => open.click());
+  const remove = [...document.querySelectorAll('button')].find(
+    (button) => button.textContent === 'Remove image',
+  );
+  assert.ok(remove);
+  assert.match(
+    document.body.textContent ?? '',
+    /removes this reference from this note/,
+  );
+  await act(async () => remove.click());
+  assert.equal(current.state.doc.toString(), `${source}\n\n\n\nEnd.\n`);
+  assert.equal(current.hasFocus, true);
+  const undoButton = [...container.querySelectorAll('button')].find(
+    (button) => button.textContent === 'Undo',
+  );
+  assert.ok(undoButton);
+  await act(async () => undoButton.click());
+  assert.equal(current.state.doc.toString(), imageText);
+  await render(null);
+  await act(finishStoreWork);
 });
 
 after(async () => {

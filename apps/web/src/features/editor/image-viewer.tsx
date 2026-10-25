@@ -63,8 +63,10 @@ import { canCopyImage, copyPngImage, copyText } from '../../platform.ts';
 export function ImageViewer({
   image,
   onClose,
+  returnFocus,
 }: {
   readonly image: ImageOpenRequest | null;
+  readonly returnFocus: () => void;
   readonly onClose: () => void;
 }): ReactNode {
   const titleId = useId();
@@ -76,6 +78,7 @@ export function ImageViewer({
       onClose={onClose}
       title={imageTitle(image?.alt ?? '')}
       titleId={titleId}
+      returnFocus={returnFocus}
       width="screen"
     >
       {image === null ? null : (
