@@ -93,7 +93,7 @@ kind. A new image can turn it off again. See [Working offline](offline.md).
 
 ## Export
 
-**Export all notes** downloads every note and image of the workspace as one zip
+**Export this workspace** downloads every note and image of the workspace as one zip
 file. The files keep their folders, and any Markdown editor reads them. See
 [Export](export.md).
 

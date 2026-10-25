@@ -172,6 +172,7 @@ function useContentHits(
 /** What the palette passes to the body of its open dialog. */
 type PaletteProps = {
   readonly workspaceId: string;
+  readonly workspaceName: string;
   readonly notes: readonly PaletteNote[];
   readonly store: LocalStore | null;
   readonly accountId: string | null;
@@ -231,6 +232,7 @@ export function CommandPalette({
 /** The open palette: its field, its one list and its keys. */
 function PaletteDialog({
   workspaceId,
+  workspaceName,
   notes,
   store,
   accountId,
@@ -418,6 +420,10 @@ function PaletteDialog({
           {stepChoices.notice}
         </p>
       ) : null}
+      <p className="mx-4 my-2 text-control text-muted">
+        Search in: {workspaceName}. Results include note names and body text in
+        this workspace.
+      </p>
       {content.offline ? (
         <p className="m-0 border-b border-edge-line px-gutter py-2 text-control text-muted">
           No connection. These results come from this device.

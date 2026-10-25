@@ -57,7 +57,9 @@ open it. Press **Escape**, or tap outside the sidebar, to close it.
 
 ## Write your first note
 
-1. Select **New note** in the sidebar. The note opens with the cursor in it.
+1. Check **Create in** in the sidebar, then select **New note**. On a computer,
+   the note opens with the cursor in it. On a touch screen, tap the note to
+   open the keyboard.
 2. Start with a heading, for example `# My first note`, and write. Markdown
    works here. See [Markdown](markdown.md).
 3. Stop typing for a moment. The note saves itself and takes the heading as
@@ -69,6 +71,29 @@ give the note a name of your own, see [Notes and folders](notes-and-folders.md).
 The line at the bottom of the sidebar says **Everything is saved to the
 server.** when your server has your work. See
 [Saving and history](saving-and-history.md).
+
+## Find your next action
+
+Open **All notes** to see recent notes. Its writing tips are optional. Select
+**Dismiss tips** to keep them closed on this device for this workspace.
+
+To try a daily note, select **Open today's note** in the tips, or use the
+same action in Search. Return to that action to open the same note today.
+
+To link notes, type `[[` in a note and select a note from the list.
+To start with saved text, select **From template** beside note creation.
+Choose a template, read its preview, then select **Create note**. With no
+templates, select **New template** and write a note in the stated template
+folder. No sample text is added without your choice.
+
+To find body text, write a phrase such as `blue umbrella` in a note. Open
+**Search**, check the workspace name, and type that phrase. Search shows a
+pending message until the request finishes. Select the matching note.
+Other workspaces have separate results.
+
+These paths need a user walkthrough before any claim about retention. Check
+first-note writing, return to a recent or daily note, and body search with a
+new user. Record any point where the next action is unclear.
 
 ## If a page stops
 

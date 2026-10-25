@@ -98,6 +98,7 @@ import {
   AttentionLink,
   useAttentionCount,
 } from '../features/attention/attention-link.tsx';
+import { NewFromTemplate } from '../features/templates/new-from-template.tsx';
 import { CommandPalette } from './command-palette.tsx';
 import type { ShortcutsDialog } from './shortcuts.tsx';
 import { createModuleLoad } from '../lib/module-load.ts';
@@ -359,6 +360,7 @@ function Breadcrumb({
  */
 function Sidebar({
   workspaceId,
+  workspaceName,
   view,
   selectedFolder,
   folders,
@@ -376,6 +378,7 @@ function Sidebar({
   onClose,
 }: {
   readonly workspaceId: string;
+  readonly workspaceName: string;
   /** What the panel shows, which the view bar chose (record 0105). */
   readonly view: SidebarView;
   readonly selectedFolder: string;
@@ -508,7 +511,7 @@ function Sidebar({
                   variant="ghost"
                   size="sm"
                   compact
-                  label="New note"
+                  label={`New note in ${selectedFolder === '' ? workspaceName + ' workspace root' : selectedFolder}`}
                   title="New note"
                   icon={actionIcon('new-note')}
                   onClick={() => onNewNoteIn(selectedFolder)}
@@ -517,7 +520,7 @@ function Sidebar({
                   variant="ghost"
                   size="sm"
                   compact
-                  label="New folder"
+                  label={`New folder in ${selectedFolder === '' ? workspaceName + ' workspace root' : selectedFolder}`}
                   title="New folder"
                   icon={actionIcon('new-folder')}
                   onClick={() => onNewFolderIn(selectedFolder)}
@@ -549,6 +552,15 @@ function Sidebar({
                   }
                 />
               </div>
+              <p className="my-1 px-2 text-control text-muted">
+                Create in: {workspaceName} /{' '}
+                {selectedFolder === '' ? 'workspace root' : selectedFolder}
+              </p>
+              <NewFromTemplate
+                key={workspaceId}
+                workspaceId={workspaceId}
+                folder={selectedFolder}
+              />
               {newNoteProblem === null ? null : (
                 <p className="my-1 px-2 text-control text-danger" role="alert">
                   {newNoteProblem}
@@ -1229,14 +1241,14 @@ function ShellFrame({
     (): readonly PaletteAction[] => [
       {
         id: 'new-note',
-        label: 'New note',
+        label: `New note in ${selectedFolder === '' ? 'workspace root' : selectedFolder}`,
         keywords: 'create add',
         icon: 'new-note' as const,
         run: () => newNote.create(selectedFolder),
       },
       {
         id: 'new-folder',
-        label: 'New folder',
+        label: `New folder in ${selectedFolder === '' ? 'workspace root' : selectedFolder}`,
         keywords: 'create add group',
         icon: 'new-folder' as const,
         run: () => setNewFolderParent(selectedFolder),
@@ -1626,6 +1638,7 @@ function ShellFrame({
             <div className="flex min-w-0 flex-1 flex-col">
               <Sidebar
                 workspaceId={workspaceId}
+                workspaceName={openWorkspace?.name ?? 'This workspace'}
                 view={sidebarView}
                 selectedFolder={selectedFolder}
                 folders={folders}
@@ -1715,6 +1728,7 @@ function ShellFrame({
             open={paletteOpen}
             onOpenChange={setPaletteOpen}
             workspaceId={workspaceId}
+            workspaceName={openWorkspace?.name ?? 'This workspace'}
             notes={files.notes}
             store={store.store}
             accountId={accountId}

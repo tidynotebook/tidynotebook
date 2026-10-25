@@ -698,7 +698,7 @@ export function AccountSettingsPage(): ReactNode {
     export: (
       <SettingsSection
         section={settingsSection('export')}
-        description="Download every note and image as a zip. The files keep their folders and need no application to be read again."
+        description="Download every note and image in the active workspace as a zip. Other workspaces are not included. The files keep their folders and need no application to be read again."
       >
         {exportError === '' ? null : (
           <Notice className="mb-3" tone="problem" message={exportError} />
@@ -720,7 +720,7 @@ export function AccountSettingsPage(): ReactNode {
               });
           }}
         >
-          {exporting ? 'Preparing the download' : 'Export all notes'}
+          {exporting ? 'Preparing the download' : 'Export this workspace'}
         </Button>
       </SettingsSection>
     ),

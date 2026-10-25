@@ -50,6 +50,8 @@ import { useLocalStore, useSession } from '../../app.tsx';
 import { useDocumentTitle } from '../../shell/document-title.ts';
 import { useNow } from '../../shell/now.ts';
 import { useFiles } from '../../shell/files.tsx';
+import { WritingStart } from './writing-start.tsx';
+import { NewFromTemplate } from '../templates/new-from-template.tsx';
 import { useCreateNote } from './new-note.tsx';
 import { groupNotesByRecency } from '../../lib/note-groups.ts';
 import {
@@ -210,7 +212,7 @@ export function NotesHomeView(): ReactNode {
     >
       <PageHeader
         title="All notes"
-        description={`${String(total)} ${total === 1 ? 'note' : 'notes'}`}
+        description={`${String(total)} ${total === 1 ? 'note' : 'notes'}. New notes go in this workspace root.`}
         actions={
           showNewNoteInHeader(files.loading, total) ? (
             <Button
@@ -223,6 +225,13 @@ export function NotesHomeView(): ReactNode {
           ) : undefined
         }
       />
+      <NewFromTemplate key={workspaceId} workspaceId={workspaceId} folder="" />
+      {files.loading ? null : (
+        <WritingStart
+          key={`${accountId ?? ''}:${workspaceId}`}
+          preferenceKey={`notesapp.writing-tips:${accountId ?? ''}:${workspaceId}`}
+        />
+      )}
       {newNote.error === null ? null : (
         <Notice className="mb-4" tone="problem" message={newNote.error} />
       )}
