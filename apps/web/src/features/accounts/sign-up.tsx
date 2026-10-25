@@ -5,11 +5,11 @@
  * open the link in the message. It says the same for every address, because
  * the server answers the same, so the page never tells a stranger whether an
  * address has an account. The verification page opens the link: it makes the
- * account and offers sign in. The token travels in the fragment, so no server
- * log holds it.
+ * account. A matching browser proof continues once; other browsers offer
+ * sign in. The token travels in the fragment, so no server log holds it.
  */
 import { useEffect, useState, type ReactNode } from 'react';
-import { Link, useLocation } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import {
   getSignUpChallenge,
   getSetupStatus,
@@ -24,7 +24,7 @@ import {
   Notice,
   TextField,
 } from '@notesapp/ui';
-import { problemMessage } from '../../app.tsx';
+import { problemMessage, useSession } from '../../app.tsx';
 import {
   verificationTokenOf,
   verificationRecoveryOf,
@@ -115,7 +115,8 @@ export function SignUpPage(): ReactNode {
       <AuthFrame title="Open the link in your mail">
         <p className="mb-5 mt-0 text-control text-muted">
           A message goes to {sentTo}. Open the link in it to finish your
-          account. Then sign in with your address and your password.
+          account. This browser can sign you in after verification. On another
+          device, enter your password to sign in.
         </p>
         <p className="mb-5 mt-0 text-control text-muted">
           Check your spam folder if the message does not arrive. To send another
@@ -229,6 +230,8 @@ type VerifyState =
 /** The page that a verification link opens. */
 export function VerifyPage(): ReactNode {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { refresh } = useSession();
   const [state, setState] = useState<VerifyState>({ kind: 'loading' });
   const [attempt, setAttempt] = useState(0);
   useDocumentTitle('Finish your account');
@@ -248,6 +251,11 @@ export function VerifyPage(): ReactNode {
     void verifyAddress({ body: { token } }).then((result) => {
       if (cancelled) return;
       if (result.data !== undefined) {
+        if (result.data.signedIn === true) {
+          refresh();
+          void navigate('/', { replace: true });
+          return;
+        }
         setState({ kind: 'verified', email: result.data.email });
         return;
       }
@@ -266,7 +274,7 @@ export function VerifyPage(): ReactNode {
     return () => {
       cancelled = true;
     };
-  }, [location.hash, attempt]);
+  }, [location.hash, attempt, navigate, refresh]);
 
   const recovery =
     state.kind === 'invalid'
@@ -298,7 +306,8 @@ export function VerifyPage(): ReactNode {
             <Notice tone="problem" message={state.message} />
           ) : (
             <p className="mb-5 mt-0 text-control text-muted">
-              Email verified for {state.email}. Enter your password to sign in.
+              Email verified for {state.email}. Automatic sign-in is not
+              available in this browser. Enter your password to sign in.
             </p>
           )}
           <Link

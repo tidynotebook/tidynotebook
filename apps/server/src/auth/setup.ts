@@ -6,7 +6,8 @@
  * address of the invitation. Both go through `registerIdentity`, the one
  * registration path, and both start the session of the new account after it
  * exists. An open sign-up and its verification (record 0114) live in
- * `open-registration.ts`, and the person signs in after the verification.
+ * `open-registration.ts`. A short-lived browser proof can continue once after
+ * verification (0239); otherwise the person signs in with a password.
  * None of these operations declares a security scheme, so each applies the
  * origin rule itself.
  */
@@ -23,7 +24,11 @@ import { DomainProblemError, ForbiddenError } from '../plugins/problem.ts';
 import { readProperty } from '../values.ts';
 import { requireWriteOrigin } from './actor.ts';
 import { createServerLogger } from '../logging.ts';
-import type { NotesappAuth } from './better-auth.ts';
+import { toRequestHeaders, type NotesappAuth } from './better-auth.ts';
+import {
+  pendingRegistrationUserHeader,
+  verifiedRegistrationUserHeader,
+} from './registration-continuation.ts';
 import { secretDigest } from './publication-secrets.ts';
 import { registerIdentity, startSession } from './registration.ts';
 import { seedWelcomeNote } from './welcome-note.ts';
@@ -243,7 +248,7 @@ export function createSetupHandlers(
       };
     },
 
-    signUpAccount: async (request): Promise<HandlerResult> => {
+    signUpAccount: async (request, reply): Promise<HandlerResult> => {
       requireWriteOrigin(servedOrigins, request);
       const name = readProperty(request.body, 'name');
       const proof = readProperty(request.body, 'proof');
@@ -258,6 +263,15 @@ export function createSetupHandlers(
         consent: consentOf(request.body),
       });
       if (!taken.ok) throw new DomainProblemError(taken.error);
+      const headers = toRequestHeaders(request);
+      headers.set(pendingRegistrationUserHeader, taken.value ?? '');
+      const continuation = await auth.api.beginRegistrationContinuation({
+        headers,
+        asResponse: true,
+      });
+      if (!continuation.ok)
+        throw new Error('notesapp: registration continuation could not start.');
+      reply.header('set-cookie', continuation.headers.getSetCookie());
       return {
         status: 202,
         mediaType: jsonMediaType,
@@ -265,16 +279,35 @@ export function createSetupHandlers(
       };
     },
 
-    verifyAddress: async (request): Promise<HandlerResult> => {
+    verifyAddress: async (request, reply): Promise<HandlerResult> => {
       requireWriteOrigin(servedOrigins, request);
       const verified = await verifyOpen(open, text(request.body, 'token'));
       if (!verified.ok) throw new DomainProblemError(verified.error);
       if (verified.value.created)
         await welcome(verified.value.accountId, request);
+      const headers = toRequestHeaders(request);
+      headers.set(verifiedRegistrationUserHeader, verified.value.authUserId);
+      const continuation = await auth.api.completeRegistrationContinuation({
+        headers,
+        asResponse: true,
+      });
+      const cookies = continuation.headers.getSetCookie();
+      if (cookies.length > 0) reply.header('set-cookie', cookies);
+      if (!continuation.ok && continuation.status !== 403)
+        throw new Error(
+          'notesapp: registration continuation could not finish.',
+        );
+      const answer: unknown = continuation.ok
+        ? await continuation.json()
+        : null;
+      const signedIn = readProperty(answer, 'signedIn') === true;
       return {
         status: 200,
         mediaType: jsonMediaType,
-        body: { email: verified.value.email },
+        body: {
+          email: verified.value.email,
+          ...(signedIn ? { signedIn: true } : {}),
+        },
       };
     },
   };
