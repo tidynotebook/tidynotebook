@@ -313,7 +313,12 @@ export function NoteEditorLoader({
       store,
       { accountId, workspaceId, fileId },
       (cached) => {
-        if (cached === null) return;
+        if (cached === null) {
+          // A restored head can be live while its cached Markdown is absent.
+          // The loader can read it from the server; the watcher cannot.
+          if (statusKind.current === 'deleted') readAgain();
+          return;
+        }
         if (cached.deleted && statusKind.current === 'ready') {
           setStatus({ kind: 'deleted', path: cached.path });
           return;
