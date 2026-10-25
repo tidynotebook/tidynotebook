@@ -4,8 +4,8 @@ This page is for the person who runs the server. It takes you from an empty
 Linux host to a tidy notebook server that runs behind HTTPS, with encrypted
 storage and a first administrator account. Do the steps in order.
 
-To try tidy notebook first, follow the [Quick start](quickstart.md). It sets up
-a test installation on your own machine with one script.
+To try tidy notebook first, follow the [Quick start](quickstart.md). It guides
+you through a test installation on your own machine.
 
 tidy notebook runs as two Compose services: one application and one PostgreSQL
 database. The application updates the database when it starts. It then serves
@@ -302,8 +302,10 @@ create it as soon as the proxy runs. Use one of these ways.
    account**.
 2. Enter an email address.
 3. Enter a password of at least 15 characters, then enter it again to confirm
-   it. Use a password that you use nowhere else. The application refuses a
-   password that appears in a list of leaked passwords.
+   it. Use a password that you use nowhere else. When the password check
+   service responds, the application refuses passwords on its leaked-password
+   list. If the service does not respond, account creation can continue
+   without this check.
 4. Select **Create account**.
 
 **On the command line.** This needs no browser, and it works before HTTPS

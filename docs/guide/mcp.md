@@ -15,6 +15,7 @@ your account at `https://app.tidynotebook.com`. If you need an account, follow
 **Self-hosted:** ask the server operator for the full MCP address. The operator
 must [turn on MCP](self-hosting.md#turn-on-mcp). The address is the configured
 MCP origin followed by `/mcp`. It can use a different host from the application.
+Use an `https://` address for an installation that you access over a network.
 In the commands below, replace `https://mcp.tidynotebook.com/mcp` with that
 address. Sign in to your own installation when the browser opens.
 
@@ -100,10 +101,15 @@ in tidy notebook, then authenticate again and choose **Read and write**.
   log in again. In Claude Code, clear authentication for the server in
   `/mcp`, then authenticate again. To end server access, also
   [revoke the connected app](#revoke-a-connected-app).
-- If the server name already exists, check its address with
-  `claude mcp get tidy-notebook` or `codex mcp get tidy-notebook`. If it is
-  wrong, remove it with `claude mcp remove --scope user tidy-notebook` or
-  `codex mcp remove tidy-notebook`, then add it again.
+- If the Claude Code server name already exists, run `claude mcp list` and
+  `claude mcp get tidy-notebook`. Check the address and configuration scope.
+  Local and project entries take priority over user entries. Remove a wrong
+  entry with `claude mcp remove --scope local tidy-notebook`,
+  `claude mcp remove --scope project tidy-notebook`, or
+  `claude mcp remove --scope user tidy-notebook`, to match its scope. Then add
+  the user entry again if needed.
+- In Codex, check an existing entry with `codex mcp get tidy-notebook`. If its
+  address is wrong, run `codex mcp remove tidy-notebook`, then add it again.
 - If a self-hosted address does not connect, ask the operator to check MCP
   and HTTPS. Use the full `/mcp` address, not the application sign-in page.
 
