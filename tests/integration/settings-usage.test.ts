@@ -118,7 +118,7 @@ await test('Settings meters follow served account limits, and absent transfer li
       [
         `${formatBytes(storedBytes)} of ${formatBytes(storedBytes)} used`,
         'This month: 0 bytes of 2 KB sent by published pages',
-        `This month: ${formatBytes(downloadedBytes)} of 4 KB downloaded`,
+        `This month: ${formatBytes(downloadedBytes)} of 4.1 KB downloaded`,
       ],
     );
     const files = await directoryFiles(
