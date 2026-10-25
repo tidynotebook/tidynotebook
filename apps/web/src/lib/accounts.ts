@@ -137,6 +137,18 @@ export function resetTokenOf(hash: string): string | null {
 /** The units of a byte count, each 1024 times the one before. */
 const byteUnits = ['bytes', 'KB', 'MB', 'GB', 'TB'] as const;
 
+/** A closed registration cannot offer another signup verification link. */
+export function verificationRecoveryOf(
+  reason: 'registration_closed' | 'verification_invalid',
+): {
+  readonly path: string;
+  readonly label: string;
+} {
+  return reason === 'registration_closed'
+    ? { path: '/login', label: 'Go to sign in' }
+    : { path: signUpRoute, label: 'Get a new link' };
+}
+
 /**
  * A byte count in words, such as `512 bytes` or `1.5 GB`.
  *

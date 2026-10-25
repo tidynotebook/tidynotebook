@@ -20,6 +20,7 @@ import {
   storageLine,
   resetTokenOf,
   verificationTokenOf,
+  verificationRecoveryOf,
 } from './accounts.ts';
 
 const now = Date.parse('2026-09-26T12:00:00.000Z');
@@ -270,4 +271,15 @@ await test('decimal values that round to the next unit use that unit', () => {
   assert.equal(formatBytes(999_999), '1 MB');
   assert.equal(formatBytes(1_000_000), '1 MB');
   assert.equal(formatBytes(999_999_999), '1 GB');
+});
+
+await test('verification recovery does not offer signup when registration is closed', () => {
+  assert.deepEqual(verificationRecoveryOf('registration_closed'), {
+    path: '/login',
+    label: 'Go to sign in',
+  });
+  assert.deepEqual(verificationRecoveryOf('verification_invalid'), {
+    path: '/signup',
+    label: 'Get a new link',
+  });
 });

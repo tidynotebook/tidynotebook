@@ -25,7 +25,10 @@ import {
   TextField,
 } from '@notesapp/ui';
 import { problemMessage } from '../../app.tsx';
-import { verificationTokenOf } from '../../lib/accounts.ts';
+import {
+  verificationTokenOf,
+  verificationRecoveryOf,
+} from '../../lib/accounts.ts';
 import { problemCode } from '../../lib/problem-text.ts';
 import { passwordProblem, passwordRule } from '../../lib/password-policy.ts';
 import { solveChallenge } from '../../lib/proof-of-work.ts';
@@ -215,7 +218,11 @@ export function SignUpPage(): ReactNode {
 /** How far the verification got. */
 type VerifyState =
   | { readonly kind: 'loading' }
-  | { readonly kind: 'invalid'; readonly message: string }
+  | {
+      readonly kind: 'invalid';
+      readonly message: string;
+      readonly reason: 'registration_closed' | 'verification_invalid';
+    }
   | { readonly kind: 'unreachable'; readonly message: string }
   | { readonly kind: 'verified'; readonly email: string };
 
@@ -229,7 +236,11 @@ export function VerifyPage(): ReactNode {
   useEffect(() => {
     const token = verificationTokenOf(location.hash);
     if (token === null) {
-      setState({ kind: 'invalid', message: invalidLink });
+      setState({
+        kind: 'invalid',
+        message: invalidLink,
+        reason: 'verification_invalid',
+      });
       return;
     }
     let cancelled = false;
@@ -241,14 +252,13 @@ export function VerifyPage(): ReactNode {
         return;
       }
       const status = result.response?.status ?? 0;
+      const closed = problemCode(result.error) === 'registration_closed';
       setState(
         status === 403
           ? {
               kind: 'invalid',
-              message:
-                problemCode(result.error) === 'registration_closed'
-                  ? problemMessage(result.error)
-                  : invalidLink,
+              reason: closed ? 'registration_closed' : 'verification_invalid',
+              message: closed ? problemMessage(result.error) : invalidLink,
             }
           : { kind: 'unreachable', message: problemMessage(result.error) },
       );
@@ -257,6 +267,11 @@ export function VerifyPage(): ReactNode {
       cancelled = true;
     };
   }, [location.hash, attempt]);
+
+  const recovery =
+    state.kind === 'invalid'
+      ? verificationRecoveryOf(state.reason)
+      : { path: '/login', label: 'Continue to sign in' };
 
   return (
     <AuthFrame
@@ -290,14 +305,12 @@ export function VerifyPage(): ReactNode {
             className={buttonClassName({
               variant: state.kind === 'verified' ? 'primary' : 'secondary',
             })}
-            to={state.kind === 'invalid' ? '/signup' : '/login'}
+            to={recovery.path}
             state={
               state.kind === 'verified' ? { email: state.email } : undefined
             }
           >
-            {state.kind === 'invalid'
-              ? 'Get a new link'
-              : 'Continue to sign in'}
+            {recovery.label}
           </Link>
         </div>
       )}
