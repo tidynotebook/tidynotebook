@@ -30,6 +30,7 @@ import {
   verifiedRegistrationUserHeader,
 } from './registration-continuation.ts';
 import { secretDigest } from './publication-secrets.ts';
+import { tryRegistrationContinuation } from './registration-continuation-result.ts';
 import { registerIdentity, startSession } from './registration.ts';
 import { seedWelcomeNote } from './welcome-note.ts';
 import {
@@ -265,13 +266,16 @@ export function createSetupHandlers(
       if (!taken.ok) throw new DomainProblemError(taken.error);
       const headers = toRequestHeaders(request);
       headers.set(pendingRegistrationUserHeader, taken.value ?? '');
-      const continuation = await auth.api.beginRegistrationContinuation({
-        headers,
-        asResponse: true,
-      });
-      if (!continuation.ok)
-        throw new Error('notesapp: registration continuation could not start.');
-      reply.header('set-cookie', continuation.headers.getSetCookie());
+      const continuation = await tryRegistrationContinuation(
+        () =>
+          auth.api.beginRegistrationContinuation({ headers, asResponse: true }),
+        () =>
+          createServerLogger(request.log)
+            .bind({ requestId: request.id })
+            .emit('auth.failed', { source: 'better-auth' }),
+      );
+      if (continuation !== null && continuation.cookies.length > 0)
+        reply.header('set-cookie', continuation.cookies);
       return {
         status: 202,
         mediaType: jsonMediaType,
@@ -287,20 +291,20 @@ export function createSetupHandlers(
         await welcome(verified.value.accountId, request);
       const headers = toRequestHeaders(request);
       headers.set(verifiedRegistrationUserHeader, verified.value.authUserId);
-      const continuation = await auth.api.completeRegistrationContinuation({
-        headers,
-        asResponse: true,
-      });
-      const cookies = continuation.headers.getSetCookie();
-      if (cookies.length > 0) reply.header('set-cookie', cookies);
-      if (!continuation.ok && continuation.status !== 403)
-        throw new Error(
-          'notesapp: registration continuation could not finish.',
-        );
-      const answer: unknown = continuation.ok
-        ? await continuation.json()
-        : null;
-      const signedIn = readProperty(answer, 'signedIn') === true;
+      const continuation = await tryRegistrationContinuation(
+        () =>
+          auth.api.completeRegistrationContinuation({
+            headers,
+            asResponse: true,
+          }),
+        () =>
+          createServerLogger(request.log)
+            .bind({ requestId: request.id })
+            .emit('auth.failed', { source: 'better-auth' }),
+      );
+      if (continuation !== null && continuation.cookies.length > 0)
+        reply.header('set-cookie', continuation.cookies);
+      const signedIn = continuation?.signedIn === true;
       return {
         status: 200,
         mediaType: jsonMediaType,

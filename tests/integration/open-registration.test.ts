@@ -900,6 +900,86 @@ await test('production continuation cookies are secure and internal calls have n
   }
 });
 
+/** Fail only the optional proof store, inside this test's disposable database. */
+async function failContinuationStorage(operation: 'INSERT' | 'DELETE') {
+  const db = await openSession(database.migrationUrl);
+  try {
+    await db.query(`
+      create function refuse_registration_continuation() returns trigger
+      language plpgsql as $$
+      begin
+        raise exception 'test continuation storage failure';
+      end;
+      $$;
+    `);
+    await db.query(`
+      create trigger refuse_registration_continuation
+      before ${operation} on auth_verification
+      for each row
+      when (${operation === 'INSERT' ? 'new' : 'old'}.identifier like 'notesapp-registration:%')
+      execute function refuse_registration_continuation();
+    `);
+  } finally {
+    await db.close();
+  }
+  return async () => {
+    const cleanup = await openSession(database.migrationUrl);
+    try {
+      await cleanup.query(
+        'drop trigger refuse_registration_continuation on auth_verification',
+      );
+      await cleanup.query('drop function refuse_registration_continuation()');
+    } finally {
+      await cleanup.close();
+    }
+  };
+}
+
+await test('signup still returns accepted when optional proof storage fails', async () => {
+  const email = `begin-failed-${randomUUID()}@notes.invalid`;
+  const password = 'continue-password-123456';
+  const restore = await failContinuationStorage('INSERT');
+  try {
+    const signup = await signUpForContinuation(email, password);
+    assert.deepEqual(signup.data, { accepted: true });
+    assert.deepEqual(responseOf(signup.response).headers.getSetCookie(), []);
+    assert.equal(await sessionCount(email), 0);
+  } finally {
+    await restore();
+  }
+  const verified = await verifyAddress({
+    headers: origin,
+    body: { token: lastToken(email) },
+  });
+  assert.equal(verified.response?.status, 200);
+  assert.deepEqual(verified.data, { email });
+  assert.equal(await signsIn(email, password), true);
+});
+
+await test('email verification succeeds without a session when optional proof consumption fails', async () => {
+  const email = `complete-failed-${randomUUID()}@notes.invalid`;
+  const password = 'continue-password-123456';
+  const signup = await signUpForContinuation(email, password);
+  const browser = {
+    ...origin,
+    cookie: cookieHeader(responseOf(signup.response).headers.getSetCookie()),
+  };
+  const restore = await failContinuationStorage('DELETE');
+  try {
+    const verified = await verifyAddress({
+      headers: browser,
+      body: { token: lastToken(email) },
+    });
+    assert.equal(verified.response?.status, 200);
+    assert.deepEqual(verified.data, { email });
+    assert.deepEqual(responseOf(verified.response).headers.getSetCookie(), []);
+    assert.equal(await sessionCount(email), 0);
+  } finally {
+    await restore();
+  }
+  assert.equal(await signsIn(email, password), true);
+});
+
 await app.close();
 await database.destroy();
 await rm(storageRoot, { recursive: true, force: true });

@@ -29,6 +29,12 @@ response all use password sign-in with the verified email already filled in.
 A link for another identity cannot consume the browser's proof. Replacing a
 pending signup gives it a new identity, so old proof cannot continue it.
 
+Continuation is optional after the account operation succeeds. A failed
+library call or unreadable response keeps the accepted signup or verified
+email result and publishes no continuation cookies. The server records a
+fixed failure event with the request ID, without error bodies or credentials.
+Origin checks and email proof validation still fail normally.
+
 ## Consequences
 
 The verification response adds an optional `signedIn` result. Existing clients
