@@ -17,7 +17,7 @@
  * change of its note drops it, so no open mounts the editor on an answer that
  * a later write replaced (record 0085).
  */
-import type { LocalChange, LocalStore } from '@notesapp/sync';
+import type { LocalCachedNote, LocalChange, LocalStore } from '@notesapp/sync';
 import {
   opensFromDevice,
   type DeviceOpen,
@@ -192,16 +192,18 @@ export function watchDeviceNote(
   let stopped = false;
   const recheck = async (): Promise<void> => {
     const current = ++sequence;
+    let note: LocalCachedNote | null = null;
     try {
-      const note = await store.readCachedNote(
+      note = await store.readCachedNote(
         identity.accountId,
         identity.workspaceId,
         identity.fileId,
       );
-      if (!stopped && current === sequence) onRead(note);
     } catch {
-      // A failed recheck leaves the current buffer on the screen.
+      // A deleted note can retry through the loader when this read fails.
+      // A ready editor keeps its buffer when no cached answer is available.
     }
+    if (!stopped && current === sequence) onRead(note);
   };
   const unsubscribe = store.subscribe((change) => {
     if (!touchesNote(change, identity)) return;

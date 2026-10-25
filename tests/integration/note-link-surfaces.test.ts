@@ -90,23 +90,26 @@ const localStore = await openLocalStore('http://localhost', storageOptions);
 // Unmount starts writes without returning their promises. Track the real
 // store operations so cleanup waits for append, draft, and checkpoint work.
 const pendingStoreWork = new Set<Promise<unknown>>();
-const store = new Proxy(localStore, {
-  get(target, property) {
-    const value: unknown = Reflect.get(target, property);
-    if (typeof value !== 'function') return value;
-    return (...args: unknown[]): unknown => {
-      const result: unknown = Reflect.apply(value, target, args);
-      if (result instanceof Promise) {
-        pendingStoreWork.add(result);
-        void result.then(
-          () => pendingStoreWork.delete(result),
-          () => pendingStoreWork.delete(result),
-        );
-      }
-      return result;
-    };
-  },
-});
+function trackStoreWork(local: LocalStore): LocalStore {
+  return new Proxy(local, {
+    get(target, property) {
+      const value: unknown = Reflect.get(target, property);
+      if (typeof value !== 'function') return value;
+      return (...args: unknown[]): unknown => {
+        const result: unknown = Reflect.apply(value, target, args);
+        if (result instanceof Promise) {
+          pendingStoreWork.add(result);
+          void result.then(
+            () => pendingStoreWork.delete(result),
+            () => pendingStoreWork.delete(result),
+          );
+        }
+        return result;
+      };
+    },
+  });
+}
+const store = trackStoreWork(localStore);
 
 /** Waits for writes and their queued continuations, without a timed delay. */
 async function finishStoreWork(): Promise<void> {
@@ -951,8 +954,70 @@ await test('returning to a purged note reaches a terminal state after another no
   }
 });
 
-for (const missing of ['absent', 'null', 'present'] as const) {
-  await test(`a restored note recovers when cached text is ${missing}`, async () => {
+/** Abort real IndexedDB reads on one test connection, after it has opened. */
+async function readerWithAborts(control: {
+  remaining: number;
+  aborted: number;
+}): Promise<LocalStore> {
+  const originalDescriptor = Object.getOwnPropertyDescriptor(
+    storageOptions.indexedDB,
+    'open',
+  );
+  const originalOpen = storageOptions.indexedDB.open.bind(
+    storageOptions.indexedDB,
+  );
+  storageOptions.indexedDB.open = (...args: Parameters<IDBFactory['open']>) => {
+    const request = originalOpen(...args);
+    request.addEventListener('success', () => {
+      const database = request.result;
+      const originalTransaction = database.transaction.bind(database);
+      database.transaction = (
+        ...parameters: Parameters<IDBDatabase['transaction']>
+      ) => {
+        const transaction = originalTransaction(...parameters);
+        if (
+          control.remaining > 0 &&
+          parameters[1] === 'readonly' &&
+          transaction.objectStoreNames.contains('documents') &&
+          transaction.objectStoreNames.contains('drafts')
+        ) {
+          control.remaining -= 1;
+          control.aborted += 1;
+          queueMicrotask(() => transaction.abort());
+        }
+        return transaction;
+      };
+    });
+    return request;
+  };
+  try {
+    return await openLocalStore('http://localhost', storageOptions);
+  } finally {
+    if (originalDescriptor === undefined)
+      Reflect.deleteProperty(storageOptions.indexedDB, 'open');
+    else
+      Object.defineProperty(
+        storageOptions.indexedDB,
+        'open',
+        originalDescriptor,
+      );
+  }
+}
+
+for (const missing of [
+  'absent',
+  'null',
+  'present',
+  'read abort',
+  'repeated read abort',
+] as const) {
+  const label =
+    missing === 'read abort'
+      ? 'a restored note retries an aborted cached read'
+      : missing === 'repeated read abort'
+        ? 'a restored note falls back to the server after repeated cached read aborts'
+        : `a restored note recovers when cached text is ${missing}`;
+  await test(label, async () => {
     const restoredText = `# Cache recovery ${missing}\n`;
     const restoredId = await duplicateNote(store, {
       accountId,
@@ -977,7 +1042,8 @@ for (const missing of ['absent', 'null', 'present'] as const) {
       true,
     );
     await acceptNoteWrites(restoredId);
-    const reader = await openLocalStore('http://localhost', storageOptions);
+    const aborts = { remaining: 0, aborted: 0 };
+    const reader = trackStoreWork(await readerWithAborts(aborts));
     const { db, tables } = createDatabase(
       storageOptions.databaseName,
       storageOptions,
@@ -1060,6 +1126,12 @@ for (const missing of ['absent', 'null', 'present'] as const) {
           bytes: new Blob([restoredText]),
         });
       }
+      aborts.remaining =
+        missing === 'read abort'
+          ? 1
+          : missing === 'repeated read abort'
+            ? 2
+            : 0;
       await act(async () => {
         // This is the real LocalStore transaction and cross-instance channel,
         // not a manually delivered watcher callback. The metadata-only restore
@@ -1085,24 +1157,32 @@ for (const missing of ['absent', 'null', 'present'] as const) {
           crypto.randomUUID(),
         );
         await received.promise;
-        const cached = await reader.readCachedNote(
-          accountId,
-          workspaceId,
-          restoredId,
-        );
-        if (missing === 'present') assert.equal(cached?.deleted, false);
-        else assert.equal(cached, null);
+        if (
+          missing === 'present' ||
+          missing === 'absent' ||
+          missing === 'null'
+        ) {
+          const cached = await reader.readCachedNote(
+            accountId,
+            workspaceId,
+            restoredId,
+          );
+          if (missing === 'present') assert.equal(cached?.deleted, false);
+          else assert.equal(cached, null);
+        }
       });
-      assert.equal(
-        (await reader.listLocalFiles(accountId, workspaceId)).find(
-          (row) => row.fileId === restoredId,
-        )?.deleted,
-        false,
-      );
-      assert.deepEqual(
-        await reader.readNoteDocument(accountId, workspaceId, restoredId),
-        saved.document,
-      );
+      await act(async () => {
+        assert.equal(
+          (await reader.listLocalFiles(accountId, workspaceId)).find(
+            (row) => row.fileId === restoredId,
+          )?.deleted,
+          false,
+        );
+        assert.deepEqual(
+          await reader.readNoteDocument(accountId, workspaceId, restoredId),
+          saved.document,
+        );
+      });
       try {
         await waitForEditor(container);
       } catch {
@@ -1110,8 +1190,17 @@ for (const missing of ['absent', 'null', 'present'] as const) {
           `Restore stalled: variant=${missing}; UI=${container.textContent}; serverReads=${String(serverReads)}`,
         );
       }
-      if (missing === 'present') assert.equal(serverReads, 0);
+      if (missing === 'present' || missing === 'read abort')
+        assert.equal(serverReads, 0);
       else assert.ok(serverReads > 0);
+      assert.equal(
+        aborts.aborted,
+        missing === 'read abort'
+          ? 1
+          : missing === 'repeated read abort'
+            ? 2
+            : 0,
+      );
       assert.equal(view().state.doc.toString(), restoredText);
       assert.equal(view().state.readOnly, false);
       const edited = `${restoredText}Edited after restore\n`;
@@ -1127,10 +1216,13 @@ for (const missing of ['absent', 'null', 'present'] as const) {
         await flush();
       });
       assert.equal(view().state.doc.toString(), edited);
-      assert.equal(
-        (await reader.readCachedNote(accountId, workspaceId, restoredId))?.text,
-        edited,
-      );
+      await act(async () => {
+        assert.equal(
+          (await reader.readCachedNote(accountId, workspaceId, restoredId))
+            ?.text,
+          edited,
+        );
+      });
     } finally {
       stop();
       await render(null);
