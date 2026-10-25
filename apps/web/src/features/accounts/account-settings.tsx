@@ -96,6 +96,7 @@ import { useNow } from '../../shell/now.ts';
 import {
   offlineTargets,
   allOfflineTargetsPinned,
+  createOfflineWriteGate,
 } from '../../lib/offline-files.ts';
 
 import { importResultSentence } from '../../lib/import-result.ts';
@@ -213,7 +214,7 @@ function useOfflineChoices(
   const [status, setStatus] = useState<OfflineStatus>('loading');
   const [generation, setGeneration] = useState(0);
   const [busy, setBusy] = useState(false);
-  const writing = useRef(false);
+  const writeExclusive = useRef(createOfflineWriteGate());
   const [problem, setProblem] = useState('');
   const [available, setAvailable] = useState<OfflineChoices>({
     images: false,
@@ -268,21 +269,15 @@ function useOfflineChoices(
 
   const setChoice = useCallback(
     (kind: keyof OfflineChoices, keep: boolean): void => {
-      if (
-        store === null ||
-        accountId === null ||
-        workspaceId === null ||
-        writing.current
-      )
-        return;
-      writing.current = true;
-      setBusy(true);
-      setProblem('');
+      if (store === null || accountId === null || workspaceId === null) return;
+
       const activeStore = store;
       const activeAccount = accountId;
       const activeWorkspace = workspaceId;
-      setChoices((current) => ({ ...current, [kind]: keep }));
-      void (async (): Promise<void> => {
+      void writeExclusive.current(async () => {
+        setBusy(true);
+        setProblem('');
+        setChoices((current) => ({ ...current, [kind]: keep }));
         try {
           const files = await activeStore.listAcceptedFiles(
             activeAccount,
@@ -310,11 +305,10 @@ function useOfflineChoices(
             'This device could not change offline storage. Check the available space and try again.',
           );
         } finally {
-          writing.current = false;
           setBusy(false);
           setGeneration((value) => value + 1);
         }
-      })();
+      });
     },
     [store, accountId, workspaceId],
   );
