@@ -349,6 +349,8 @@ export type SyncFooter = {
 /**
  * The sentence and the dot of the sidebar footer.
  *
+ * The open note reports pending work before a checkpoint enters the queue.
+ * That fact prevents a server-saved claim while the queue is still empty.
  * Sync only knows about work that reached local storage. When a write of the
  * open note to local storage fails, the typed text is only in this tab, so a
  * line that reads that everything is saved would be false. That failure then
@@ -360,12 +362,15 @@ export function syncFooter(input: {
   readonly online: boolean;
   readonly noteName: string | null;
   readonly openNoteWriteFailed: boolean;
+  readonly openNotePending?: boolean;
 }): SyncFooter {
   if (input.openNoteWriteFailed)
     return {
       line: 'The open note is not saved.',
       dot: 'attention',
     };
+  if (input.online && input.state.kind === 'in-step' && input.openNotePending)
+    return { line: 'Saving the open note to the server.', dot: 'pending' };
   return {
     line: input.online
       ? syncStateMessage(input.state, input.noteName)
