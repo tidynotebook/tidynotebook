@@ -6,35 +6,109 @@ An assistant connects through the Model Context Protocol (MCP). You sign in
 to tidy notebook and choose what the app can do. You can end its access in
 Settings.
 
-## Find the server address
+## Choose your server
 
-Ask the server operator for the MCP address. MCP must be on before an app
-can connect. See [Self-hosting](self-hosting.md#turn-on-mcp).
+**tidy notebook cloud:** use `https://mcp.tidynotebook.com/mcp`. Sign in with
+your account at `https://app.tidynotebook.com`. If you need an account, follow
+[Getting started](getting-started.md#sign-up-for-cloud) first.
 
-The address is the MCP origin followed by `/mcp`. The operator can use the
-address of the application or a separate host. Use the full endpoint address
-in your assistant. A personal API key does not work at this endpoint.
+**Self-hosted:** ask the server operator for the full MCP address. The operator
+must [turn on MCP](self-hosting.md#turn-on-mcp). The address is the configured
+MCP origin followed by `/mcp`. It can use a different host from the application.
+In the commands below, replace `https://mcp.tidynotebook.com/mcp` with that
+address. Sign in to your own installation when the browser opens.
 
-## Connect the assistant
+A personal API key does not work at this endpoint. Use browser OAuth sign-in.
+You do not need to copy a password or token into the assistant configuration.
 
-Your assistant must support a remote MCP server with Streamable HTTP and
-OAuth sign-in. The name and place of its connection controls depend on the
-assistant.
+## Connect Claude Code
 
-1. Open the assistant's connection settings and add the MCP address.
-2. Start the connection from the assistant. Sign in to tidy notebook if asked.
-3. On **Allow access to your notes**, check the client identity and where your
+Install [Claude Code](https://code.claude.com/docs/en/setup) first. In a terminal, run:
+
+```bash
+claude mcp add --transport http --scope user tidy-notebook https://mcp.tidynotebook.com/mcp
+claude
+```
+
+The server is available to your user across projects. In Claude Code, enter
+`/mcp`, select **tidy-notebook**, and start authentication. Complete
+[Allow access](#allow-access) in the browser. Then return to Claude Code and
+check the server in `/mcp`.
+
+Command syntax was checked against Claude Code 2.1.310 help and the
+[official MCP instructions](https://code.claude.com/docs/en/mcp#authenticate-with-remote-mcp-servers)
+on 25 October 2026.
+
+## Connect Codex
+
+Install [Codex CLI](https://developers.openai.com/codex/cli/) first. In a terminal, run:
+
+```bash
+codex mcp add tidy-notebook --url https://mcp.tidynotebook.com/mcp
+```
+
+If the add command starts browser sign-in, complete
+[Allow access](#allow-access). To start sign-in separately, run:
+
+```bash
+codex mcp login tidy-notebook
+```
+
+Complete the browser steps, then run `codex`. Enter `/mcp` to check the server.
+
+Command syntax was checked against Codex CLI 0.164.0 help and the
+[official OpenAI MCP instructions](https://developers.openai.com/codex/mcp/)
+on 25 October 2026.
+
+## Allow access
+
+1. Sign in to tidy notebook in the browser if asked. Use the account whose
+   notes you want to connect.
+2. On **Allow access to your notes**, check the client identity and where your
    answer goes. The client chooses its own name. A name alone does not prove
    its identity. **Not verified** means the client registers itself. The page
    also warns when your answer goes to an app on this computer.
-4. If the app asks to change notes, choose **Read only** or **Read and write**
+3. If the app asks to change notes, choose **Read only** or **Read and write**
    in **Access to give**. If it asks only to read, there is no access choice.
-5. Select **Allow** to give access. Select **Deny** if you do not want to give
+4. Select **Allow** to give access. Select **Deny** if you do not want to give
    access.
+5. Return to the terminal when the browser finishes. Keep the client running
+   until it confirms the connection.
 
 Access covers all your workspaces. Each action still needs the current
 rights of your account. You cannot connect a new app while your account is
 locked.
+
+## Check the connection
+
+If the consent page offers an access choice, choose **Read only** for the first
+check. Ask the assistant: "Use tidy notebook to list my workspaces. Do not
+create or change any notes." The assistant uses
+`list_workspaces`. Check that the names match your account.
+
+To change from read-only access to write access later, revoke the connection
+in tidy notebook, then authenticate again and choose **Read and write**.
+
+## If sign-in fails
+
+- If the browser does not open, open the sign-in URL that the client shows.
+  Use the same computer as the client so the browser can return to it.
+- If access expired or you revoked it, authenticate again. In Claude Code,
+  use `/mcp` and the server's authentication action. In Codex, run
+  `codex mcp login tidy-notebook`.
+- If Codex keeps an old sign-in, run `codex mcp logout tidy-notebook`, then
+  log in again. In Claude Code, clear authentication for the server in
+  `/mcp`, then authenticate again. To end server access, also
+  [revoke the connected app](#revoke-a-connected-app).
+- If the server name already exists, check its address with
+  `claude mcp get tidy-notebook` or `codex mcp get tidy-notebook`. If it is
+  wrong, remove it with `claude mcp remove --scope user tidy-notebook` or
+  `codex mcp remove tidy-notebook`, then add it again.
+- If a self-hosted address does not connect, ask the operator to check MCP
+  and HTTPS. Use the full `/mcp` address, not the application sign-in page.
+
+Keep passwords, tokens and sign-in callback URLs out of notes and issue
+reports. Report the client version and the failed step instead.
 
 ## Choose the access
 

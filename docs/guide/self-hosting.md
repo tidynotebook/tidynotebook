@@ -296,8 +296,15 @@ The first account is the administrator. The setup screen is open only until
 this account exists. Anyone who reaches it first can make the account, so
 create it as soon as the proxy runs. Use one of these ways.
 
-**In a browser.** Open the address from `NOTESAPP_ORIGIN`. Enter an email
-address and a password.
+**In a browser.**
+
+1. Open the address from `NOTESAPP_ORIGIN`. The page says **Create your
+   account**.
+2. Enter an email address.
+3. Enter a password of at least 15 characters, then enter it again to confirm
+   it. Use a password that you use nowhere else. The application refuses a
+   password that appears in a list of leaked passwords.
+4. Select **Create account**.
 
 **On the command line.** This needs no browser, and it works before HTTPS
 too. Use it to close the setup screen before the server is public. Run it in
@@ -310,8 +317,17 @@ docker compose exec app node server/dist/cli/bootstrap.js --email you@example.co
 
 The command may print a Node.js warning about `localStorage` first. The
 warning is harmless. Add `--name "Your name"` to set the name of the account.
-The default name is Owner. Each later account needs an invitation. See
-[Account commands](operations.md#account-commands).
+The default name is Owner.
+
+Later visits show **Sign in**. Use the same email address and password. To
+invite other people, see [Accounts and invitations](accounts.md). Each person
+gets an account with its own notes. Give them the
+[Joining an installation](joining.md) guide.
+
+For your first note, see [Getting started](getting-started.md#write-your-first-note).
+For password recovery, see [Forgot your password](joining.md#forgot-your-password).
+If the installation sends no mail, use
+[Account commands](operations.md#account-commands) to recover an account.
 
 ## Turn on MCP
 

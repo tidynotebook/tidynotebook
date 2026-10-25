@@ -81,6 +81,11 @@ not serve the host name `localhost`.
 Create the first account with an email address and a password. This account
 is the administrator. Later visits show the sign-in page.
 
+To write and save a note, continue with
+[Write your first note](getting-started.md#write-your-first-note). To invite
+people, see [Accounts and invitations](accounts.md). For password recovery,
+see [Forgot your password](joining.md#forgot-your-password).
+
 ## Stop and remove
 
 To stop the containers and keep the data:

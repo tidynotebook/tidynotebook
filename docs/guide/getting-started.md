@@ -3,25 +3,35 @@
 This page is for the person who writes the notes. It takes you from the first
 visit to your first saved note.
 
-## Create the first account
+Choose the path that fits you:
 
-Use this part if no account exists on your installation yet. If somebody
-invited you, read [Joining an installation](joining.md) instead.
+- **Use tidy notebook cloud:** follow [Sign up for cloud](#sign-up-for-cloud)
+  below. The service runs the server for you.
+- **Set up a self-hosted installation:** follow [Self-hosting](self-hosting.md),
+  or use [Quick start](quickstart.md) for a local test. The operator creates
+  the [first administrator account](self-hosting.md#create-the-first-account).
+- **Join somebody else's installation:** follow
+  [Joining an installation](joining.md). Then return to
+  [Write your first note](#write-your-first-note).
 
-1. Open the address of your installation. The page says **Create your
-   account**.
-2. Enter an email address.
-3. Enter a password of at least 15 characters, and enter it again to confirm
-   it. Use a password that you use nowhere else. The application refuses a
-   password that appears in a list of leaked passwords.
-4. Select **Create account**.
+## Sign up for cloud
 
-This first account is the administrator of the installation. It can invite
-other people, and each person gets an account with its own notes. See
-[Accounts and invitations](accounts.md).
+1. Open [tidy notebook cloud](https://app.tidynotebook.com) and select
+   **Create an account**. If you already have an account, sign in and go to
+   [Write your first note](#write-your-first-note).
+2. Enter your email address and a password of at least 15 characters. Use a
+   password that you use nowhere else.
+3. Read the **terms** and **privacy notice** links. Select
+   **I accept the terms and the privacy notice**.
+4. Select **Create account**. The browser does a short check. Look for a
+   verification message in your email.
+5. Open the link in that message before it expires. The page says
+   **Your account is ready**.
+6. Sign in with your email address and password. Continue with
+   [Write your first note](#write-your-first-note).
 
-Every later visit shows **Sign in**. Enter the same address and password. A
-password that an earlier release accepted still signs in.
+If the message does not arrive, check your spam folder. You can sign up again
+to get a new link. See [Joining an installation](joining.md#sign-up-without-an-invitation).
 
 ## Get back in after you forget your password
 
