@@ -341,11 +341,9 @@ const NoteEditorBody = memo(function NoteEditorBody({
   const [pathError, setPathError] = useState('');
   // The save facts of the note change no render (record 0175).
   const {
-    saveSnapshotRef,
-    lastSavedAtRef,
+    readSnapshot,
     writtenSequenceRef,
     checkpointTaken,
-    snapshotStarted,
     storageError,
     setStorageError,
     rootRef,
@@ -633,21 +631,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
     const current = live.current;
     if (join) await joinStoredWork.current();
     try {
-      const snapshotTaken = snapshotStarted();
-      const [snapshot, checkpoints] = await Promise.all([
-        current.store.readFileSaveSnapshot(
-          current.accountId,
-          current.workspaceId,
-          current.fileId,
-        ),
-        current.store.listCheckpoints(
-          current.accountId,
-          current.workspaceId,
-          current.fileId,
-        ),
-      ]);
-      saveSnapshotRef.current = snapshot;
-      snapshotTaken();
+      const snapshot = await readSnapshot(current);
       // The note may have moved or reached the trash from the sidebar, from
       // another tab, or from another device. The editor takes both facts from
       // the store, so no later save writes either one back.
@@ -665,12 +649,6 @@ const NoteEditorBody = memo(function NoteEditorBody({
         });
         if (adopted !== null) baseRef.current = adopted;
       }
-      const latest = checkpoints
-        .filter((entry) => !entry.deleted)
-        .map((entry) => entry.clientTime)
-        .sort()
-        .at(-1);
-      lastSavedAtRef.current = latest ?? null;
       showSaveFacts.current();
     } catch {
       // Queue reads are feedback only. A failure here must not disturb the
