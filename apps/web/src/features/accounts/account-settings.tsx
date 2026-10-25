@@ -13,13 +13,7 @@ import { ConnectedAppSettings } from './connected-apps.tsx';
  * The page loads when it opens, so the first screen of the frame reads none
  * of it (record 0177).
  */
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, Navigate, useParams } from 'react-router';
 import {
   type AccountSession,
@@ -29,7 +23,6 @@ import {
   updatePreferences,
   updateProfile,
 } from '@notesapp/api-client';
-import type { LocalStore } from '@notesapp/sync';
 import {
   Button,
   buttonClassName,
@@ -93,13 +86,7 @@ import {
   type SettingsSectionKey,
 } from '../../lib/page-sections.ts';
 import { useNow } from '../../shell/now.ts';
-import {
-  offlineTargets,
-  allOfflineTargetsPinned,
-  createOfflineWriteGate,
-  offlineProblemFor,
-  type OfflineProblem,
-} from '../../lib/offline-files.ts';
+import { OfflineSettingsSection } from './offline-settings.tsx';
 
 import { importResultSentence } from '../../lib/import-result.ts';
 import { settingsTitle } from './accounts.tsx';
@@ -166,12 +153,6 @@ function SpellCheckSettings(): ReactNode {
   );
 }
 
-/** What is kept on this device for use without a connection. */
-type OfflineChoices = {
-  readonly images: boolean;
-  readonly history: boolean;
-};
-
 /**
  * What this device can say about the saves that never reached the server.
  *
@@ -182,163 +163,6 @@ type PendingSaves =
   | { readonly kind: 'loading' }
   | { readonly kind: 'failed' }
   | { readonly kind: 'ready'; readonly count: number };
-
-/** Whether this device could state what it keeps for offline use. */
-type OfflineStatus = 'loading' | 'ready' | 'failed';
-
-/**
- * Reads and writes what this device keeps for offline use.
- *
- * Notes are always kept. Images and older versions are larger, so each one
- * is a choice. A choice is on when every known item of that kind is already
- * kept, which is what the store records.
- *
- * A read that fails is not a pair of choices that are off (record 0038). The
- * status says that the read failed, so the card can name the failure instead
- * of showing two boxes that state something false about this device.
- */
-function useOfflineChoices(
-  store: LocalStore | null,
-  accountId: string | null,
-  workspaceId: string | null,
-): {
-  readonly choices: OfflineChoices;
-  readonly status: OfflineStatus;
-  readonly setChoice: (kind: keyof OfflineChoices, keep: boolean) => void;
-  readonly available: OfflineChoices;
-  readonly busy: boolean;
-  readonly problem: string;
-} {
-  const [choices, setChoices] = useState<OfflineChoices>({
-    images: false,
-    history: false,
-  });
-  const [status, setStatus] = useState<OfflineStatus>('loading');
-  const [generation, setGeneration] = useState(0);
-  const [busy, setBusy] = useState(false);
-  const writeExclusive = useRef(createOfflineWriteGate());
-  const [problem, setProblem] = useState<OfflineProblem | null>(null);
-  const currentScope = useRef({ store, accountId, workspaceId });
-  useEffect(() => {
-    currentScope.current = { store, accountId, workspaceId };
-    setProblem(null);
-  }, [store, accountId, workspaceId]);
-  const [available, setAvailable] = useState<OfflineChoices>({
-    images: false,
-    history: false,
-  });
-
-  useEffect(() => {
-    if (store === null || accountId === null || workspaceId === null) {
-      setStatus('loading');
-      return;
-    }
-    const activeStore = store;
-    let cancelled = false;
-    async function read(): Promise<void> {
-      try {
-        const files = await activeStore.listAcceptedFiles(
-          accountId ?? '',
-          workspaceId ?? '',
-        );
-        const images = offlineTargets(files, 'images');
-        const versions = offlineTargets(files, 'history');
-        const allImages = await allOfflineTargetsPinned(images, (target) =>
-          activeStore.isAttachmentPinned(
-            accountId ?? '',
-            workspaceId ?? '',
-            target,
-          ),
-        );
-        const allHistory = await allOfflineTargetsPinned(versions, (target) =>
-          activeStore.isHistoryPinned(
-            accountId ?? '',
-            workspaceId ?? '',
-            target,
-          ),
-        );
-        if (cancelled) return;
-        setChoices({ images: allImages, history: allHistory });
-        setAvailable({
-          images: images.length > 0,
-          history: versions.length > 0,
-        });
-        setStatus('ready');
-      } catch {
-        if (!cancelled) setStatus('failed');
-      }
-    }
-    void read();
-    return () => {
-      cancelled = true;
-    };
-  }, [store, accountId, workspaceId, generation]);
-
-  const setChoice = useCallback(
-    (kind: keyof OfflineChoices, keep: boolean): void => {
-      if (store === null || accountId === null || workspaceId === null) return;
-
-      const activeStore = store;
-      const activeAccount = accountId;
-      const activeWorkspace = workspaceId;
-      void writeExclusive.current(async () => {
-        setBusy(true);
-        setProblem(null);
-        setChoices((current) => ({ ...current, [kind]: keep }));
-        try {
-          const files = await activeStore.listAcceptedFiles(
-            activeAccount,
-            activeWorkspace,
-          );
-          for (const target of offlineTargets(files, kind)) {
-            if (kind === 'images') {
-              await activeStore.setAttachmentPinned(
-                activeAccount,
-                activeWorkspace,
-                target,
-                keep,
-              );
-            } else {
-              await activeStore.setHistoryPinned(
-                activeAccount,
-                activeWorkspace,
-                target,
-                keep,
-              );
-            }
-          }
-        } catch {
-          const failure = {
-            accountId: activeAccount,
-            workspaceId: activeWorkspace,
-            message:
-              'This device could not change offline storage. Check the available space and try again.',
-          };
-          const scope = currentScope.current;
-          if (
-            scope.store === activeStore &&
-            offlineProblemFor(failure, scope.accountId, scope.workspaceId) !==
-              ''
-          )
-            setProblem(failure);
-        } finally {
-          setBusy(false);
-          setGeneration((value) => value + 1);
-        }
-      });
-    },
-    [store, accountId, workspaceId],
-  );
-
-  return {
-    choices,
-    status,
-    setChoice,
-    available,
-    busy,
-    problem: offlineProblemFor(problem, accountId, workspaceId),
-  };
-}
 
 /** How far the list of sessions got. */
 type SessionsState =
@@ -599,7 +423,6 @@ export function AccountSettingsPage(): ReactNode {
   // The frame only renders this once the account holds that workspace.
   const workspaceId =
     typeof params.workspaceId === 'string' ? params.workspaceId : null;
-  const offline = useOfflineChoices(store.store, accountId, workspaceId);
   const documents = useLegalDocuments();
   const portal = useOpenPortal();
   useDocumentTitle(settingsTitle);
@@ -690,56 +513,11 @@ export function AccountSettingsPage(): ReactNode {
       </SettingsSection>
     ),
     offline: (
-      <SettingsSection
-        section={settingsSection('offline')}
-        description="Your notes are always kept on this device. Images and older versions take more space, so you choose whether to keep them too."
-      >
-        {offline.status === 'failed' ? (
-          <Notice
-            tone="problem"
-            message="This device cannot say what it keeps offline. Open Settings again to read it."
-          />
-        ) : offline.status === 'loading' ? (
-          // A choice that nothing has read yet is not a choice that is off
-          // (record 0038), and the `Checkbox` primitive states no waiting
-          // state, so the section shows the shape of the two rows instead.
-          <LoadingState
-            shape="list"
-            rows={2}
-            label="What this device keeps offline is loading."
-          />
-        ) : (
-          <div className="flex flex-col">
-            <Checkbox
-              id="offline-images"
-              label="Keep images on this device"
-              checked={offline.choices.images}
-              disabled={offline.busy || !offline.available.images}
-              describedBy="offline-help"
-              onChange={(keep) => {
-                offline.setChoice('images', keep);
-              }}
-            />
-            <Checkbox
-              id="offline-history"
-              label="Keep older versions on this device"
-              checked={offline.choices.history}
-              disabled={offline.busy || !offline.available.history}
-              describedBy="offline-help"
-              onChange={(keep) => {
-                offline.setChoice('history', keep);
-              }}
-            />
-            <p id="offline-help" className="mb-0 mt-2 text-control text-muted">
-              These controls keep the current files on this device. Add an image
-              or save a version to make its control available.
-            </p>
-          </div>
-        )}
-        {offline.problem === '' ? null : (
-          <Notice className="mt-3" tone="problem" message={offline.problem} />
-        )}
-      </SettingsSection>
+      <OfflineSettingsSection
+        store={store.store}
+        accountId={accountId}
+        workspaceId={workspaceId}
+      />
     ),
     export: (
       <SettingsSection
