@@ -6,6 +6,7 @@ import { Window } from 'happy-dom';
 import { IDBFactory, IDBKeyRange } from 'fake-indexeddb';
 import { createElement, act, type ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
+import { contentDigest, type AcceptedChangeset } from '@notesapp/core';
 import { openLocalStore } from '@notesapp/storage-browser';
 import type { Draft, LocalStore, LocalChange } from '@notesapp/sync';
 
@@ -63,6 +64,10 @@ const { NoteEditor } =
   await import('../../apps/web/dist/features/editor/note-editor.js');
 const { NoteEditorLoader } =
   await import('../../apps/web/dist/features/editor/note-loader.js');
+const { duplicateNote } =
+  await import('../../apps/web/dist/features/notes/duplicate-note.js');
+const { deleteNotes } =
+  await import('../../apps/web/dist/features/editor/note-delete.js');
 const { default: VersionPreview } =
   await import('../../apps/web/dist/features/history/version-preview.js');
 const { NoteSaveScope, useFlushNoteDraft, useFlushNoteDraftForHandoff } =
@@ -362,35 +367,139 @@ await test('a current editor can finish the guarded handoff flush', async () => 
   await render(null);
 });
 
-await test('a restored note opens editable content even when its first read still says deleted', async () => {
-  const restoredId = crypto.randomUUID();
-  const restoredText = '# Recovered note\n\nKeep this text.\n';
+/** Accept only this test's queued writes, as the sync transport does. */
+async function acceptNoteWrites(noteId: string): Promise<void> {
+  for (const entry of await store.pending(accountId, workspaceId)) {
+    if (!entry.input.revisions.some((revision) => revision.fileId === noteId))
+      continue;
+    const revisions: AcceptedChangeset['revisions'] = entry.input.revisions.map(
+      (revision) => ({
+        revisionId: revision.id,
+        fileId: revision.fileId,
+        parents: revision.parents,
+        path: revision.path,
+        deleted: revision.deleted,
+        digest:
+          revision.content.kind === 'attachment'
+            ? revision.content.digest
+            : 'a'.repeat(64),
+        size: 0,
+        actorAccountId: accountId,
+        serverTime: '2026-10-25T12:00:00.000Z',
+        message: revision.message,
+        epoch: revision.content.kind === 'markdown' ? 1 : null,
+        acceptedState: null,
+        merged: false,
+      }),
+    );
+    await store.acknowledge(accountId, {
+      mutationId: entry.input.mutationId,
+      revisionIds: revisions.map((revision) => revision.revisionId),
+      cursor: crypto.randomUUID(),
+      revisions,
+      superseded: [],
+    });
+  }
+}
+
+await test('duplicate, Trash and restore allow immediate editing through a second cycle', async () => {
+  const sourceId = crypto.randomUUID();
+  const sourceText = '# Recovery test\n\nKeep this text.\n';
   await store.checkpoint(
     {
       accountId,
       workspaceId,
-      fileId: restoredId,
+      fileId: sourceId,
       workingCopyId: crypto.randomUUID(),
       baseRevisionId: null,
-      path: 'Recovered.md',
-      text: restoredText,
+      path: 'Recovery test.md',
+      text: sourceText,
       sequence: 1,
       deleted: false,
     },
     null,
     'text',
   );
+  await acceptNoteWrites(sourceId);
+  const restoredId = await duplicateNote(store, {
+    accountId,
+    workspaceId,
+    path: 'Recovery test.md',
+    text: sourceText,
+    takenPaths: ['Recovery test.md'],
+  });
+  await acceptNoteWrites(restoredId);
+  let expected = sourceText;
   for (let cycle = 0; cycle < 2; cycle += 1) {
+    const saved = await store.readCachedNote(
+      accountId,
+      workspaceId,
+      restoredId,
+    );
+    assert.ok(saved !== null && saved.document !== null);
+    const savedDocument = saved.document;
+    assert.equal(saved.text, expected);
+    assert.equal(
+      (
+        await deleteNotes(store, accountId, workspaceId, [
+          { fileId: restoredId, name: 'Recovery test copy' },
+        ])
+      ).ok,
+      true,
+    );
+    await acceptNoteWrites(restoredId);
+    assert.equal(
+      (await store.readCachedNote(accountId, workspaceId, restoredId))?.deleted,
+      true,
+    );
+    const restored = Promise.withResolvers<void>();
     let reads = 0;
     const restoredStore: LocalStore = {
       ...store,
       readCachedNote: async (...args) => {
+        const initial = ++reads === 1;
         const cached = await store.readCachedNote(...args);
-        // Restore reached the store after this read began, before the loader
-        // subscribed. No later file event is needed to recover the editor.
-        return ++reads === 1 && cached !== null
-          ? { ...cached, deleted: true }
-          : cached;
+        if (initial) {
+          // Apply the accepted restore feed after the deleted read starts,
+          // before its watcher can receive events. Keep that old read delayed.
+          await store.applyRemoteChanges(
+            accountId,
+            workspaceId,
+            [
+              {
+                file: {
+                  fileId: restoredId,
+                  revisionId: crypto.randomUUID(),
+                  path: saved.path,
+                  fileKind: 'note',
+                  document: {
+                    kind: 'document',
+                    bytes: savedDocument.bytes,
+                    epoch: savedDocument.epoch,
+                  },
+                  deleted: false,
+                  digest: await contentDigest(expected),
+                  text: expected,
+                },
+                purgedFileId: null,
+              },
+            ],
+            crypto.randomUUID(),
+          );
+          restored.resolve();
+        }
+        return cached;
+      },
+      subscribe: (listener) => {
+        let stopped = false;
+        let unsubscribe = (): void => {};
+        void restored.promise.then(() => {
+          if (!stopped) unsubscribe = store.subscribe(listener);
+        });
+        return () => {
+          stopped = true;
+          unsubscribe();
+        };
       },
     };
     await render(
@@ -402,15 +511,35 @@ await test('a restored note opens editable content even when its first read stil
       }),
     );
     await waitForEditor(container);
-    assert.equal(view().state.doc.toString(), restoredText);
+    assert.equal(view().state.doc.toString(), expected);
     assert.equal(view().state.readOnly, false);
     assert.doesNotMatch(
       container.textContent ?? '',
       /Note deleted on this device/,
     );
+    const added = `Recovered edit ${String(cycle + 1)}\n`;
+    await act(async () => {
+      const current = view();
+      current.dispatch({
+        changes: { from: current.state.doc.length, insert: added },
+        userEvent: 'input.type',
+      });
+      await flush();
+    });
+    expected += added;
+    assert.equal(view().state.doc.toString(), expected);
     await render(null);
     await act(finishStoreWork);
+    await acceptNoteWrites(restoredId);
+    assert.equal(
+      (await store.readCachedNote(accountId, workspaceId, restoredId))?.text,
+      expected,
+    );
   }
+  assert.equal(
+    (await store.readCachedNote(accountId, workspaceId, sourceId))?.text,
+    sourceText,
+  );
 });
 
 await test('a purge keeps its visible state when the initial loader read finishes late', async () => {

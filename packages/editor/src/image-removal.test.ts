@@ -84,3 +84,27 @@ await test('changed references and read-only notes refuse removal', () => {
   assert.equal(prepareImageRemoval(view, 0, source), undefined);
   assert.equal(imageReferenceAt(state, 0, 'wrong image'), null);
 });
+
+await test('a mapped reference that becomes code is not removed', () => {
+  const source = '![Map](https://example.invalid/map.png)';
+  const prefix = 'Before\n\n';
+  let state = EditorState.create({
+    doc: `${prefix}${source}\n`,
+    extensions: [noteMarkdown(), imageRemovalTarget],
+  });
+  const view = {
+    get state() {
+      return state;
+    },
+    composing: false,
+    dispatch: (spec: TransactionSpec) => {
+      state = state.update(spec).state;
+    },
+  };
+  const remove = prepareImageRemoval(view, prefix.length, source);
+  assert.ok(remove !== undefined);
+  view.dispatch({ changes: { from: 0, insert: '```\n' } });
+  const code = state.doc.toString();
+  assert.equal(remove(), false);
+  assert.equal(state.doc.toString(), code);
+});
