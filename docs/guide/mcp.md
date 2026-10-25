@@ -28,13 +28,13 @@ Install [Claude Code](https://code.claude.com/docs/en/setup) first. In a termina
 
 ```bash
 claude mcp add --transport http --scope user tidy-notebook https://mcp.tidynotebook.com/mcp
-claude
+claude mcp login tidy-notebook
 ```
 
-The server is available to your user across projects. In Claude Code, enter
-`/mcp`, select **tidy-notebook**, and start authentication. Complete
-[Allow access](#allow-access) in the browser. Then return to Claude Code and
-check the server in `/mcp`.
+The server is available to your user across projects. Complete
+[Allow access](#allow-access) in the browser. Then run `claude` and enter
+`/mcp` to check the server. You can also start authentication from `/mcp`:
+select **tidy-notebook** and start authentication there.
 
 Command syntax was checked against Claude Code 2.1.310 help and the
 [official MCP instructions](https://code.claude.com/docs/en/mcp#authenticate-with-remote-mcp-servers)
