@@ -366,6 +366,57 @@ await test('a current editor can finish the guarded handoff flush', async () => 
   await render(null);
 });
 
+await test('a restored note opens editable content even when its first read still says deleted', async () => {
+  const restoredId = crypto.randomUUID();
+  const restoredText = '# Recovered note\n\nKeep this text.\n';
+  await store.checkpoint(
+    {
+      accountId,
+      workspaceId,
+      fileId: restoredId,
+      workingCopyId: crypto.randomUUID(),
+      baseRevisionId: null,
+      path: 'Recovered.md',
+      text: restoredText,
+      sequence: 1,
+      deleted: false,
+    },
+    null,
+    'text',
+  );
+  for (let cycle = 0; cycle < 2; cycle += 1) {
+    let reads = 0;
+    const restoredStore: LocalStore = {
+      ...store,
+      readCachedNote: async (...args) => {
+        const cached = await store.readCachedNote(...args);
+        // Restore reached the store after this read began, before the loader
+        // subscribed. No later file event is needed to recover the editor.
+        return ++reads === 1 && cached !== null
+          ? { ...cached, deleted: true }
+          : cached;
+      },
+    };
+    await render(
+      createElement(NoteEditorLoader, {
+        store: restoredStore,
+        accountId,
+        workspaceId,
+        fileId: restoredId,
+      }),
+    );
+    await waitForEditor(container);
+    assert.equal(view().state.doc.toString(), restoredText);
+    assert.equal(view().state.readOnly, false);
+    assert.doesNotMatch(
+      container.textContent ?? '',
+      /Note deleted on this device/,
+    );
+    await render(null);
+    await act(finishStoreWork);
+  }
+});
+
 /** Accept only this test's queued writes, as the sync transport does. */
 async function acceptNoteWrites(noteId: string): Promise<void> {
   for (const entry of await store.pending(accountId, workspaceId)) {
@@ -452,6 +503,8 @@ await test('duplicate, Trash and restore allow immediate editing through a secon
       true,
     );
     const restored = Promise.withResolvers<void>();
+    const restoreStarted = Promise.withResolvers<void>();
+    const continueRestore = Promise.withResolvers<void>();
     let reads = 0;
     const restoredStore: LocalStore = {
       ...store,
@@ -459,6 +512,8 @@ await test('duplicate, Trash and restore allow immediate editing through a secon
         const initial = ++reads === 1;
         const cached = await store.readCachedNote(...args);
         if (initial) {
+          restoreStarted.resolve();
+          await continueRestore.promise;
           // Apply the accepted restore feed after the deleted read starts,
           // before its watcher can receive events. Keep that old read delayed.
           await store.applyRemoteChanges(
@@ -509,7 +564,29 @@ await test('duplicate, Trash and restore allow immediate editing through a secon
         fileId: restoredId,
       }),
     );
+    await restoreStarted.promise;
+    assert.equal(container.querySelector('.cm-editor'), null);
+    assert.doesNotMatch(
+      container.textContent ?? '',
+      /Note deleted on this device/,
+    );
+    assert.equal(
+      (await store.listLocalFiles(accountId, workspaceId)).find(
+        (file) => file.fileId === restoredId,
+      )?.deleted,
+      true,
+    );
+    await act(async () => {
+      continueRestore.resolve();
+      await restored.promise;
+    });
     await waitForEditor(container);
+    assert.equal(
+      (await store.listLocalFiles(accountId, workspaceId)).find(
+        (file) => file.fileId === restoredId,
+      )?.deleted,
+      false,
+    );
     assert.equal(view().state.doc.toString(), expected);
     assert.equal(view().state.readOnly, false);
     assert.doesNotMatch(
@@ -534,6 +611,13 @@ await test('duplicate, Trash and restore allow immediate editing through a secon
       (await store.readCachedNote(accountId, workspaceId, restoredId))?.text,
       expected,
     );
+    const savedState = await store.readFileSaveSnapshot(
+      accountId,
+      workspaceId,
+      restoredId,
+    );
+    assert.equal(savedState.queueState, null);
+    assert.equal(savedState.hasUncheckpointedDraft, false);
   }
   assert.equal(
     (await store.readCachedNote(accountId, workspaceId, sourceId))?.text,
