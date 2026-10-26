@@ -6,7 +6,7 @@ PAGES = [
     ("03-editor.html", "Editor", "Undo and Redo icons, save status, version history, choose a version, images. 21 screens, 3 journeys."),
     ("04-settings.html", "Settings", "List, every page, confirmations, dark. 24 screens, 1 journey."),
     ("05-states.html", "States and account", "Note states, Needs attention, search, trial, sign up, limits. 22 screens."),
-    ("06-desktop.html", "Desktop", "All notes, template dialog, editor, settings, choose a version, search, history. 9 screens."),
+    ("06-desktop.html", "Desktop", "All notes, folders, calendar, template dialog, editor menus, settings, choose a version, search, history, medium width. 17 screens."),
 ]
 
 BEFORE_AFTER = [
@@ -50,7 +50,6 @@ COVERAGE = [
 
 OMITTED = [
     "Tablet widths (768 to 1023 px): phone layout with a wider column. Not drawn.",
-    "Desktop calendar view, folder page and note actions menu: follow A8, A9, D5 with desktop sizes. Not drawn.",
     "Move note dialog: reuses the folder picker B4. Not drawn on its own.",
     "Trash list, Publish dialog, workspace create, rename and delete dialogs, shortcuts dialog: not changed in v0.22.0. Out of scope. They take the new tokens and buttons when touched.",
     "Administration page apart from the limits form, documentation site, published pages: out of scope.",
@@ -181,9 +180,9 @@ def build():
     nb = '<ul style="margin:0;padding-left:20px;font-size:14px;line-height:1.7">' + "".join(f"<li>{o}</li>" for o in NEW_BEHAVIOUR) + "</ul>"
     chk = '<ol class="checklist">' + "".join(f'<li><div>{a}<span class="ref">{b}</span></div></li>' for a, b in CHECKLIST) + "</ol>"
     body = (
-        '<div class="hero"><span class="proto">PROTOTYPE FOR OWNER APPROVAL</span>'
+        '<div class="hero"><span class="proto">APPROVED DESIGN, FROZEN FOR IMPLEMENTATION</span>'
         '<h1>Redesign of the UI shipped in v0.22.0</h1>'
-        '<p>Mobile first, with desktop, light and dark. 107 screens across 6 pages. Every screen uses the tokens of the current Default theme. '
+        '<p>APPROVED by the owner on 2026-10-27 (structure, flows and icon-only Undo and Redo), with the condition that every fix also applies on desktop. Mobile first, with desktop at medium (1024 px) and wide widths, light and dark. 115 screens across 6 pages. Every screen uses the tokens of the current Default theme. '
         'No app code is changed. Implementation starts only after approval.</p></div>' +
         section("pages", "Pages", "Open a page. The switch at the top shows every frame in dark mode.", toc) +
         section("changes", "What changes", "Each problem in the shipped UI and its fix.", ba) +
@@ -191,6 +190,6 @@ def build():
         section("coverage", "Coverage map", "Every user-facing change between v0.21.0 and v0.22.0 and where it is designed.", cov) +
         section("new", "New behaviour to confirm", "These go beyond the shipped behaviour. Each needs a yes.", nb) +
         section("omitted", "Not drawn", "Listed so nothing is missed.", om) +
-        section("checklist", "Approval checklist", "Approve each item, or mark it with a change.",
+        section("checklist", "Approval checklist", "Approved by the owner. Desktop must match every item.",
                 f'<div class="card" style="max-width:920px">{chk}</div>'))
     return page("index.html", "Overview and system", "index.html", body)

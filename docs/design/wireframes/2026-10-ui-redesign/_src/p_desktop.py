@@ -2,13 +2,17 @@ from kit import *  # noqa: F403
 from p_templates import preview_doc, TEMPLATES
 
 
+DIS = 'aria-disabled="true"'
+
+
 def sidebar(sel="all", save=("dot", "All changes saved")):
     def r(key, icon, name, right=""):
         return nav_row(icon, name, right, "sel" if sel == key else "")
     folders = "".join(nav_row("folder", n, f'<span class="count">{c}</span>', "sel" if sel == n else "") for n, c in
                       [("Projects", 6), ("Templates", 4), ("Travel", 4)])
     return (f'<aside class="dside"><div class="dws"><span class="wsicon">P</span><span class="nm">Personal</span>'
-            f'<span class="ibtn" style="width:32px;height:32px">{ic("down", "s")}</span></div>'
+            f'<span class="ibtn" style="width:32px;height:32px" role="button" aria-label="Switch workspace">{ic("down", "s")}</span>'
+            f'<span class="ibtn" style="width:36px;height:36px" role="button" aria-label="Account menu"><span class="avatar" style="width:28px;height:28px;font-size:12px">M</span></span></div>'
             f'<div class="dsearch">{ic("search")}Search<kbd>Ctrl K</kbd></div>'
             f'<ul class="rows">{r("all", "file", "All notes", "<span class=count>28</span>")}{r("today", "today", "Today&#39;s note")}'
             f'{r("cal", "calendar", "Calendar")}{r("att", "bell", "Needs attention", "<span class=badge>1</span>")}{r("trash", "trash", "Trash")}</ul>'
@@ -17,7 +21,7 @@ def sidebar(sel="all", save=("dot", "All changes saved")):
             f'<ul class="rows">{folders}</ul>'
             f'<div style="margin-top:auto"><ul class="rows" style="padding-bottom:4px">{nav_row("settings", "Settings")}</ul>'
             f'<div class="dfoot" style="margin-top:0"><span class="dot {"" if save[0] == "dot" else save[0]}"></span>{save[1]}'
-            f'<span style="margin-left:auto" class="avatar">M</span></div></div></aside>')
+            f'</div></div></aside>')
 
 
 def drow(name, when, folder=None, cls=""):
@@ -166,6 +170,86 @@ def history_desk(theme=""):
                    "notes.example.com/w/personal/notes/launch-sync/history", theme, size="h-s")
 
 
+def folder_desk(theme="", menu=False, empty=False):
+    if empty:
+        content = (f'<div class="dpage-h"><div class="tt"><p class="eyebrow" style="font-size:13px">{ic("folder", "xs")}Folder</p><h1>Ideas</h1>'
+                   f'<p class="pmeta">Empty</p></div>{btn("Use template", "s md", "template")}{btn("New note", "p md", "plus")}</div>'
+                   f'<div class="empty" style="padding-top:80px"><span class="eic">{ic("folder")}</span><h2>This folder is empty</h2>'
+                   f'<p>New notes here go in Ideas.</p></div>')
+    else:
+        content = (f'<div class="dpage-h"><div class="tt"><p class="eyebrow" style="font-size:13px">{ic("folder", "xs")}Folder</p><h1>Projects</h1>'
+                   f'<p class="pmeta">2 folders, 6 notes</p></div>{ibtn("more", "Folder actions", "on" if menu else "")}'
+                   f'{btn("Use template", "s md", "template")}{btn("New note", "p md", "plus")}</div>'
+                   f'<div class="dlist"><div class="grouplabel">Folders</div><ul class="rows" style="padding:0">'
+                   f'{nav_row("folder", "Archive", "<span class=count>9</span>")}{nav_row("folder", "Clients", "<span class=count>3</span>")}</ul>'
+                   f'<div class="grouplabel">Notes</div><ul class="rows" style="padding:0">{drow("Q4 roadmap", "3 days ago")}'
+                   f'{drow("Hiring plan", "5 days ago", cls="hov")}{drow("Budget", "1 week ago")}{drow("Launch checklist", "2 weeks ago")}</ul></div>')
+    menu_html = ""
+    if menu:
+        menu_html = (f'<div class="menu" style="left:calc(50% + 20px);top:150px" role="menu">'
+                     f'<ul class="rows" style="padding:0">{nav_row("folderplus", "New folder inside")}{nav_row("pen", "Rename")}{nav_row("move", "Move")}</ul>'
+                     f'<div class="sep"></div><ul class="rows" style="padding:0">{nav_row("trash", "Delete folder", cls="danger")}</ul></div>')
+    name = "Ideas" if empty else "Projects"
+    main = f'<div class="dmain"><div class="dcontent"><div class="measure">{content}</div></div>{menu_html}</div>'
+    return desktop(f'<div class="dapp">{sidebar(name if not empty else "")}{main}</div>', f"notes.example.com/w/personal/folders/{name.lower()}", theme, size="h-s")
+
+
+def editor_menu_desk(theme=""):
+    top = (f'<div class="dtop"><span class="crumb">{ic("folder", "xs")}Projects <span style="opacity:.5">/</span> <b>Launch sync</b></span>'
+           f'<span style="flex:1"></span><span class="pill" style="border-color:var(--focus)"><span class="dot off"></span>Offline</span>{ibtn("more", "Note actions", "on")}</div>')
+    pop = (f'<div class="menu" style="right:60px;top:52px;width:300px;padding:14px 16px" role="dialog" aria-label="Save details">'
+           f'<div class="strong" style="margin-bottom:4px">Saved on this device</div>'
+           f'<p class="help" style="margin:0 0 10px">No connection. Your changes upload when you are online.</p>'
+           f'<div style="display:flex;justify-content:space-between;font-size:14px;padding:6px 0;border-top:1px solid var(--subtle)"><span>Waiting to upload</span><span class="muted">2 changes</span></div></div>')
+    acts = (f'<div class="menu" style="right:12px;top:290px" role="menu"><ul class="rows" style="padding:0">'
+            f'{nav_row("history", "Version history")}{nav_row("pen", "Rename")}{nav_row("move", "Move")}{nav_row("globe", "Publish")}{nav_row("copy", "Make a copy")}</ul>'
+            f'<div class="sep"></div><ul class="rows" style="padding:0">{nav_row("trash", "Move to Trash", cls="danger")}</ul></div>')
+    doc = ('<div class="dcontent" style="padding-top:28px"><div class="measure docv ddoc" style="padding:0">'
+           '<div style="font-size:32px;line-height:40px;font-weight:700;color:var(--strong);margin:0 0 16px">Launch sync</div>'
+           '<h2 style="margin-top:0">People</h2><p>Sam, Priya</p><h2>Notes</h2><p>We agreed on the new plan for the launch.</p></div></div>')
+    toolbar = (f'<div class="dtoolbar">{ibtn("undo", "Undo (Ctrl Z)")}{ibtn("redo", "Redo (Ctrl Shift Z)", "dis", DIS)}'
+               f'<span class="vr"></span>{ibtn("heading", "Heading")}{ibtn("bold", "Bold (Ctrl B)")}{ibtn("italic", "Italic (Ctrl I)")}'
+               f'<span class="vr"></span>{ibtn("list", "List")}{ibtn("task", "Checklist")}<span class="vr"></span>{ibtn("link", "Link")}{ibtn("image", "Image")}{ibtn("code", "Code")}</div>')
+    return desktop(f'<div class="dapp">{sidebar("Projects", ("off", "Offline. Saved on this device."))}<div class="dmain">{top}{toolbar}{doc}{pop}</div></div>',
+                   "notes.example.com/w/personal/notes/launch-sync", theme, size="h-s")
+
+
+def calendar_desk(theme=""):
+    days = "".join(f'<span style="text-align:center;font-size:11px;font-weight:600;color:var(--muted)">{d}</span>' for d in "MTWTFSS")
+    cells = "<span></span>" * 3
+    has = {3, 5, 9, 12, 14, 19, 20, 22, 23, 25, 26}
+    for n in range(1, 32):
+        st = "height:30px;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:13px;color:var(--strong);position:relative"
+        if n == 27:
+            st += ";background:var(--fill);color:var(--onfill);font-weight:700"
+        dot = '<i style="position:absolute;bottom:3px;width:3px;height:3px;border-radius:50%;background:var(--muted)"></i>' if n in has else ""
+        cells += f'<span style="{st}">{n}{dot}</span>'
+    pop = (f'<div class="menu" style="left:12px;top:150px;width:300px;padding:14px" role="dialog" aria-label="Calendar">'
+           f'<div style="display:flex;align-items:center;margin-bottom:8px"><span class="strong" style="flex:1">October 2026</span>'
+           f'<span class="ibtn" style="width:32px;height:32px">{ic("back", "s")}</span><span class="ibtn" style="width:32px;height:32px">{ic("chev", "s")}</span></div>'
+           f'<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">{days}{cells}</div>'
+           f'<div style="margin-top:12px">{btn("Open today&#39;s note", "p md full", "today")}</div></div>')
+    main = (f'<div class="dmain"><div class="dcontent"><div class="measure"><div class="dpage-h"><div class="tt"><h1>All notes</h1><p class="pmeta">28 notes</p></div>'
+            f'{btn("Use template", "s md", "template")}{btn("New note", "p md", "plus")}</div></div></div>{pop}</div>')
+    return desktop(f'<div class="dapp">{sidebar("cal")}{main}</div>', "notes.example.com/w/personal", theme, size="h-s")
+
+
+def empty_desk(theme=""):
+    main = (f'<div class="dmain"><div class="dcontent"><div class="measure"><div class="dpage-h"><div class="tt"><h1>All notes</h1></div></div>'
+            f'<div class="empty" style="padding-top:90px"><span class="eic">{ic("file")}</span><h2>No notes yet</h2><p>Write your first note.</p>'
+            f'<div class="btnrow" style="max-width:340px">{btn("New note", "p md", "plus")}{btn("Use template", "s md", "template")}</div></div>'
+            f'<div style="max-width:420px;margin:48px auto 0">{tipline("Notes save on this device first.")}</div></div></div></div>')
+    return desktop(f'<div class="dapp">{sidebar()}{main}</div>', "notes.example.com/w/personal", theme, size="h-s")
+
+
+def medium_notes(theme=""):
+    return all_notes_desk(theme).replace('<div class="desktop ">', '<div class="desktop m">', 1)
+
+
+def medium_settings(theme=""):
+    return settings_desk("devices", theme).replace('<div class="desktop h-s">', '<div class="desktop m h-s">', 1)
+
+
 def build():
     figs = [
         fig("G1", "All notes", all_notes_desk(),
@@ -187,9 +271,18 @@ def build():
         fig("G8", "Search (Ctrl K)", palette_desk(),
             ["Scope sits in the field as a quiet label.", "Key hints in the footer."], wide=True),
         fig("G9", "Version history", history_desk("dark"), ["List and comparison side by side."], wide=True),
+        fig("G10", "Folder page", folder_desk(), ["Same buttons as All notes. The title says where notes go.", "Folder actions sit in the &quot;...&quot; button."], wide=True),
+        fig("G11", "Folder actions menu, dark", folder_desk("dark", menu=True), ["Delete is red, last, and asks first."], wide=True),
+        fig("G12", "Empty folder", folder_desk(empty=True), ["No extra text about the workspace."], wide=True),
+        fig("G13", "All notes, empty", empty_desk(), ["Buttons centred under the message. Tip line low."], wide=True),
+        fig("G14", "Calendar", calendar_desk(), ["Opens from the Calendar row as a panel beside the menu.", "Today is filled. Open today&#39;s note is the one main action."], wide=True),
+        fig("G15", "Save details and note actions", editor_menu_desk(),
+            ["Pill opens a small panel, not a sheet. Focus ring shown on the pill.", "Note actions open from &quot;...&quot;. Two separate menus are shown together here only for review."], wide=True),
+        fig("G16", "Medium width (1024 px): All notes", medium_notes(), ["The menu stays open. The text column narrows. Buttons stay on one line."], wide=True),
+        fig("G17", "Medium width (1024 px): Settings, dark", medium_settings("dark"), ["Two panes still fit. Rows keep their buttons on one line."], wide=True),
     ]
     body = ('<div class="hero"><span class="proto">PROTOTYPE</span><h1>Desktop</h1>'
-            '<p>From 1024 px wide. Same words, tokens and button rules as phone. Sheets become centred dialogs. '
+            '<p>From 1024 px wide (medium) up to wide screens. Same words, tokens and button rules as phone. Sheets become centred dialogs. '
             'Tabs become side by side columns where space allows.</p></div>' +
             section("d", "Desktop screens", "Light and dark mixed. Use the switch at the top to see all in dark.",
                     '<div class="grid" style="flex-direction:column">' + "".join(figs) + "</div>"))
