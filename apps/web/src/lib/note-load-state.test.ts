@@ -154,9 +154,18 @@ await test('recovery choices require a stale draft and its readable accepted rev
   };
   assert.deepEqual(noteRecoveryFor(draft), {
     workingCopyId: 'copy',
+    draftText: draft.text,
     acceptedText: 'saved text',
     acceptedRevisionId: 'new-head',
   });
+  assert.equal(
+    noteRecoveryFor({
+      ...draft,
+      text: 'document text',
+      draftText: 'stored text',
+    })?.draftText,
+    'stored text',
+  );
   assert.equal(noteRecoveryFor(null), null);
   assert.equal(noteRecoveryFor({ ...draft, stale: false }), null);
   assert.equal(noteRecoveryFor({ ...draft, deleted: true }), null);

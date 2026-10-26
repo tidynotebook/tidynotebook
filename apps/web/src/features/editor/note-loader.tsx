@@ -415,6 +415,7 @@ export function NoteEditorLoader({
         workspaceId={workspaceId}
         workingCopyId={status.recovery.workingCopyId}
         sequence={status.sequence}
+        draftText={status.recovery.draftText}
         localText={status.text}
         acceptedText={status.recovery.acceptedText}
         onResolved={readAgain}

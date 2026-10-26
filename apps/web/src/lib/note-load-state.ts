@@ -3,6 +3,7 @@ import type { LocalCachedNote, NoteDocument } from '@notesapp/sync';
 /** The saved version against which an older draft needs a choice. */
 export type NoteRecovery = {
   readonly workingCopyId: string;
+  readonly draftText: string;
   readonly acceptedText: string;
   readonly acceptedRevisionId: string;
 };
@@ -22,6 +23,7 @@ export function noteRecoveryFor(
     return null;
   return {
     workingCopyId: note.workingCopyId,
+    draftText: note.draftText ?? note.text,
     acceptedText: note.acceptedText,
     acceptedRevisionId: note.acceptedRevisionId,
   };

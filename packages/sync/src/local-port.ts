@@ -344,6 +344,8 @@ export type LocalCachedNote = {
   readonly fileId: string;
   readonly path: string;
   readonly text: string;
+  /** Stored draft text, before a newer document supplies the display text. */
+  readonly draftText?: string | undefined;
   readonly deleted: boolean;
   /** Reuses the newest draft instead of opening a second working copy. */
   readonly workingCopyId?: string | undefined;
@@ -777,6 +779,8 @@ export type LocalStore = {
     recovery?: {
       readonly expected: Draft;
       readonly recoveryId: string;
+      /** The displayed recovery text, when the document leads the draft. */
+      readonly text?: string | undefined;
     },
   ): Promise<void>;
 

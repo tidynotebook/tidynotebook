@@ -659,7 +659,10 @@ await test('the open note stays pending from first edit through draft and checkp
 
     // A stale draft must not enter the editor and alter the accepted
     // document before its owner chooses to keep or discard it.
-    async function openStaleDraft(source = store): Promise<{
+    async function openStaleDraft(
+      source = store,
+      covered = false,
+    ): Promise<{
       copy: string;
       remote: string;
       remoteText: string;
@@ -698,6 +701,9 @@ await test('the open note stays pending from first edit through draft and checkp
         baseRevisionId: before.baseRevisionId,
         path: before.path,
         text: localText,
+        documentVector: covered
+          ? documentStateVector(startDocument(''))
+          : undefined,
         sequence: 40,
         deleted: false,
       });
@@ -878,6 +884,38 @@ await test('the open note stays pending from first edit through draft and checkp
       (await store.readCachedNote(accountId, workspaceId, fileId))?.text,
       discarded.remoteText,
     );
+    await act(async () => root.render(null));
+    await act(settle);
+
+    const coveredDraft = await openStaleDraft(store, true);
+    const coveredRead = await store.readCachedNote(
+      accountId,
+      workspaceId,
+      fileId,
+    );
+    assert.ok(coveredRead);
+    assert.equal(coveredRead.text, coveredDraft.remoteText);
+    assert.notEqual(coveredRead.text, coveredDraft.localText);
+    const coveredChoice = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent === 'Use saved version',
+    );
+    assert.ok(coveredChoice);
+    await act(async () => {
+      coveredChoice.click();
+      await settle();
+    });
+    assert.equal(
+      await store.readDraft(accountId, workspaceId, coveredDraft.copy),
+      null,
+      'A covered document must not make an unchanged draft fail its choice.',
+    );
+    assert.ok(
+      (await store.recover(accountId, workspaceId)).some(
+        (entry) =>
+          entry.fileId === fileId && entry.text === coveredDraft.remoteText,
+      ),
+    );
+    await waitFor(() => container.querySelector('.cm-editor') !== null);
     await act(async () => root.render(null));
     await act(settle);
 

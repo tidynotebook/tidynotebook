@@ -11,6 +11,7 @@ export function StaleDraftRecovery({
   workspaceId,
   workingCopyId,
   sequence,
+  draftText,
   localText,
   acceptedText,
   onResolved,
@@ -20,6 +21,7 @@ export function StaleDraftRecovery({
   readonly workspaceId: string;
   readonly workingCopyId: string;
   readonly sequence: number;
+  readonly draftText: string;
   readonly localText: string;
   readonly acceptedText: string;
   readonly onResolved: () => void;
@@ -61,13 +63,14 @@ export function StaleDraftRecovery({
           workingCopyId,
         );
         if (draft !== null) {
-          if (draft.sequence !== sequence || draft.text !== localText) {
+          if (draft.sequence !== sequence || draft.text !== draftText) {
             if (active.current) onResolved();
             return;
           }
           await store.dropDraft(accountId, workspaceId, workingCopyId, {
             expected: draft,
             recoveryId,
+            text: localText,
           });
         }
       }
