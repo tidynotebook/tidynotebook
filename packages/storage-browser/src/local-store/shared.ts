@@ -94,7 +94,9 @@ export function draftLeads(
 /**
  * Whether one draft holds text that no version of this device holds.
  *
- * A draft that names no checkpoint holds work. A draft that names one holds
+ * A confirmed merge compares with its canonical accepted body, because the
+ * retained checkpoint holds the original submission for Review. Otherwise,
+ * a draft that names no checkpoint holds work. A draft that names one holds
  * work when its text, its path, or its deletion state differs from that
  * checkpoint, or from the accepted head when the checkpoint is gone and the
  * accepted head is that revision. A draft whose version this device cannot
@@ -110,7 +112,6 @@ export const draftHoldsWork = async (
   draft: DraftRow,
   file: FileRow | null,
 ): Promise<boolean> => {
-  if (draft.lastCheckpointId === null) return true;
   const { tables } = ctx;
   const readText = async (digest: string): Promise<string | null> => {
     const stored: unknown = await tables.contents.get([
@@ -121,6 +122,40 @@ export const draftHoldsWork = async (
     ]);
     return stored === undefined ? null : validateContent(stored).text;
   };
+  // A merged receipt keeps the submitted checkpoint unchanged for Review.
+  // The current accepted body, not that older submitted text, proves what
+  // the server holds. A remote join can also write a new draft with no
+  // checkpoint receipt after the feed removed the submitted draft.
+  if (
+    file !== null &&
+    !file.deleted &&
+    !draft.deleted &&
+    file.acceptedHeadRevisionId !== null &&
+    (draft.lastCheckpointId ?? draft.baseRevisionId) ===
+      file.acceptedHeadRevisionId &&
+    file.acceptedHeadDigest !== null
+  ) {
+    const submitted: unknown = await tables.checkpoints.get([
+      draft.serverOrigin,
+      draft.accountId,
+      draft.workspaceId,
+      file.acceptedHeadRevisionId,
+    ]);
+    const checkpoint =
+      submitted === undefined ? null : validateCheckpoint(submitted);
+    if (
+      checkpoint?.accepted === true &&
+      checkpoint.digest !== file.acceptedHeadDigest
+    ) {
+      const acceptedText = await readText(file.acceptedHeadDigest);
+      return (
+        acceptedText === null ||
+        acceptedText !== draft.text ||
+        file.acceptedPath !== draft.path
+      );
+    }
+  }
+  if (draft.lastCheckpointId === null) return true;
   const storedCheckpoint: unknown = await tables.checkpoints.get([
     draft.serverOrigin,
     draft.accountId,

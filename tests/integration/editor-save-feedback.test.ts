@@ -19,7 +19,14 @@ import { MemoryRouter } from 'react-router';
 import { contentDigest, type AcceptedChangeset } from '@notesapp/core';
 import { openLocalStore } from '@notesapp/storage-browser';
 import { LocalStorageError } from '@notesapp/sync';
-import { startDocument, readDocumentText } from '@notesapp/note-document';
+import {
+  startDocument,
+  readDocumentText,
+  replaceDocumentText,
+  applyDocumentUpdate,
+  encodeDocumentDelta,
+  documentStateVector,
+} from '@notesapp/note-document';
 
 await test('the open note stays pending from first edit through draft and checkpoint until acknowledgement', async () => {
   const hooks = registerHooks({
@@ -331,6 +338,157 @@ await test('the open note stays pending from first edit through draft and checkp
       );
       await settle();
     });
+    // Two independent edits join on the server. Its accepted text differs
+    // from the immutable local checkpoint kept for Review. The remote join
+    // writes a fresh recovery draft after the feed dropped the submitted one.
+    const forkBase = await store.readNoteDocument(
+      accountId,
+      workspaceId,
+      fileId,
+    );
+    assert.ok(forkBase);
+    const profileA = replaceDocumentText(
+      forkBase.bytes,
+      `${readDocumentText(forkBase.bytes)}Profile A accepted text.\n`,
+    );
+    assert.ok(profileA.ok);
+    const submittedB = 'Profile B submitted text.\n';
+    await act(async () => {
+      view.dispatch({
+        changes: { from: 0, to: view.state.doc.length, insert: submittedB },
+        userEvent: 'input.type',
+      });
+      await settle();
+    });
+    await checkpoint();
+    const mergeEntry = (await store.pending(accountId, workspaceId))[0];
+    assert.ok(mergeEntry);
+    const submitted = mergeEntry.input.revisions[0];
+    assert.ok(submitted);
+    const profileB = await store.readNoteDocument(
+      accountId,
+      workspaceId,
+      fileId,
+    );
+    assert.ok(profileB);
+    const joined = applyDocumentUpdate(
+      profileA.value.document,
+      encodeDocumentDelta(
+        profileB.bytes,
+        documentStateVector(profileA.value.document),
+      ),
+    );
+    assert.ok(joined.ok);
+    const mergedDocument = joined.value.document;
+    const mergedText = readDocumentText(mergedDocument);
+    assert.ok(mergedText.includes('Profile A accepted text.'));
+    assert.ok(mergedText.includes('Profile B submitted text.'));
+    const mergedDigest = await contentDigest(mergedText);
+    await act(async () => {
+      await store.acknowledge(accountId, {
+        mutationId: mergeEntry.input.mutationId,
+        revisionIds: [submitted.id],
+        cursor: 'merged-receipt',
+        superseded: [],
+        revisions: [
+          {
+            revisionId: submitted.id,
+            fileId,
+            parents: submitted.parents,
+            path: submitted.path,
+            deleted: false,
+            digest: mergedDigest,
+            size: new TextEncoder().encode(mergedText).length,
+            actorAccountId: accountId,
+            serverTime: '2026-10-26T12:14:14.935Z',
+            message: null,
+            epoch: 1,
+            acceptedState: mergedDocument,
+            merged: true,
+          },
+        ],
+      });
+      await store.applyRemoteChanges(
+        accountId,
+        workspaceId,
+        [
+          {
+            file: {
+              fileId,
+              revisionId: submitted.id,
+              path: submitted.path,
+              fileKind: 'note',
+              document: { kind: 'document', bytes: mergedDocument, epoch: 1 },
+              deleted: false,
+              digest: mergedDigest,
+              text: mergedText,
+            },
+            purgedFileId: null,
+          },
+        ],
+        'merged-feed',
+      );
+      await settle();
+    });
+    assert.equal(view.state.doc.toString(), mergedText);
+    assert.equal((await store.pending(accountId, workspaceId)).length, 0);
+    const mergedCheckpoint = (
+      await store.listCheckpoints(accountId, workspaceId, fileId)
+    ).find((entry) => entry.revisionId === submitted.id);
+    assert.ok(mergedCheckpoint);
+    assert.equal(mergedCheckpoint.digest, await contentDigest(submittedB));
+    assert.equal(
+      await store.readRevisionText(accountId, workspaceId, submitted.id),
+      submittedB,
+    );
+    const mergedDraft = await store.readDraft(
+      accountId,
+      workspaceId,
+      mergedCheckpoint.workingCopyId,
+    );
+    assert.equal(mergedDraft?.text, mergedText);
+    const mergedSnapshot = await store.readFileSaveSnapshot(
+      accountId,
+      workspaceId,
+      fileId,
+    );
+    assert.equal(mergedSnapshot.acceptedHeadRevisionId, submitted.id);
+    assert.equal(mergedSnapshot.localHeadRevisionId, submitted.id);
+    assert.equal(
+      mergedSnapshot.hasUncheckpointedDraft,
+      false,
+      'A canonical merged draft already accepted by the server is not pending work.',
+    );
+    assert.ok(mergedDraft);
+    assert.equal(
+      await store.checkpoint(mergedDraft, null, { kind: 'document', epoch: 1 }),
+      null,
+    );
+    assert.equal(
+      (await store.readFileSaveSnapshot(accountId, workspaceId, fileId))
+        .hasUncheckpointedDraft,
+      false,
+      'The retained unmerged checkpoint must not override canonical acceptance.',
+    );
+    await waitFor(() => output() === 'Everything is saved to the server.');
+    // Newer local text must remain pending despite the prior merged receipt.
+    await edit('New work after the merged receipt.');
+    await act(async () => {
+      await flushDraft();
+      await settle();
+    });
+    assert.equal(
+      (await store.readFileSaveSnapshot(accountId, workspaceId, fileId))
+        .hasUncheckpointedDraft,
+      true,
+    );
+    assert.equal(output(), 'Saving the open note to the server.');
+    await checkpoint();
+    await act(async () => {
+      await acknowledge();
+      await settle();
+    });
+    await waitFor(() => output() === 'Everything is saved to the server.');
     await act(async () => root.render(null));
     await act(settle);
 

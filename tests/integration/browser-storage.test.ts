@@ -4442,6 +4442,170 @@ await test('a merged save keeps its own checkpoint for Review', async () => {
   }
 });
 
+await test('a canonical merged receipt settles only its matching readable draft', async () => {
+  const backend = createBackend('canonical-draft');
+  const store = await openLocalStore(origin, backend.options());
+  const account = randomUUID();
+  const workspace = randomUUID();
+  const file = randomUUID();
+  try {
+    const submitted = draftOf(
+      account,
+      workspace,
+      file,
+      'copy-b',
+      'Submitted B.\n',
+    );
+    const entry = await store.checkpoint(submitted, null, 'text');
+    assert.ok(entry);
+    const revision = entry.input.revisions[0]?.id;
+    assert.ok(revision);
+    const original = await store.readNoteDocument(account, workspace, file);
+    assert.ok(original);
+    const canonicalText = 'Submitted B.\nAccepted A.\n';
+    const canonical = replaceDocumentText(original.bytes, canonicalText);
+    assert.ok(canonical.ok);
+    const digest = await contentDigest(canonicalText);
+    const receipt = mergedAcceptanceOf(entry, account, '1');
+    await store.acknowledge(account, {
+      ...receipt,
+      revisions: receipt.revisions.map((item) => ({
+        ...item,
+        digest,
+        size: new TextEncoder().encode(canonicalText).length,
+        acceptedState: canonical.value.document,
+      })),
+    });
+    await store.applyRemoteChanges(
+      account,
+      workspace,
+      [
+        {
+          file: {
+            fileId: file,
+            revisionId: revision,
+            path: submitted.path,
+            fileKind: 'note',
+            document: {
+              kind: 'document',
+              bytes: canonical.value.document,
+              epoch: 1,
+            },
+            deleted: false,
+            digest,
+            text: canonicalText,
+          },
+          purgedFileId: null,
+        },
+      ],
+      '2',
+    );
+    const draft = {
+      ...submitted,
+      baseRevisionId: revision,
+      text: canonicalText,
+      sequence: 2,
+    };
+    await store.saveDraft(draft);
+    await withRawDatabase(backend, async (tables) => {
+      const row: unknown = await tables.drafts.get([
+        origin,
+        account,
+        workspace,
+        draft.workingCopyId,
+      ]);
+      assert.ok(typeof row === 'object' && row !== null);
+      assert.equal(Reflect.get(row, 'lastCheckpointId'), null);
+    });
+    assert.equal(
+      (await store.readFileSaveSnapshot(account, workspace, file))
+        .hasUncheckpointedDraft,
+      false,
+    );
+    assert.equal(await store.checkpoint(draft, null, 'text'), null);
+    await withRawDatabase(backend, async (tables) => {
+      const row: unknown = await tables.drafts.get([
+        origin,
+        account,
+        workspace,
+        draft.workingCopyId,
+      ]);
+      assert.ok(typeof row === 'object' && row !== null);
+      assert.equal(Reflect.get(row, 'lastCheckpointId'), revision);
+    });
+    assert.equal(
+      (await store.readFileSaveSnapshot(account, workspace, file))
+        .hasUncheckpointedDraft,
+      false,
+    );
+    assert.equal(
+      await store.readRevisionText(account, workspace, revision),
+      submitted.text,
+    );
+    assert.equal(
+      (await store.listReviews(account, workspace, file))[0]?.text,
+      submitted.text,
+    );
+    // A receipt alone cannot prove unreadable content. Keep pending until
+    // the canonical accepted body is available for comparison again.
+    await withRawDatabase(backend, async (tables) => {
+      await tables.contents.delete([origin, account, workspace, digest]);
+    });
+    assert.equal(
+      (await store.readFileSaveSnapshot(account, workspace, file))
+        .hasUncheckpointedDraft,
+      true,
+    );
+    await withRawDatabase(backend, async (tables) => {
+      await tables.contents.put({
+        serverOrigin: origin,
+        accountId: account,
+        workspaceId: workspace,
+        digest,
+        text: canonicalText,
+        bytes: null,
+        size: new TextEncoder().encode(canonicalText).length,
+      });
+    });
+    assert.equal(
+      (await store.readFileSaveSnapshot(account, workspace, file))
+        .hasUncheckpointedDraft,
+      false,
+    );
+    await store.saveDraft({
+      ...draft,
+      text: canonicalText + 'New local text.\n',
+      sequence: 3,
+    });
+    assert.equal(
+      (await store.readFileSaveSnapshot(account, workspace, file))
+        .hasUncheckpointedDraft,
+      true,
+    );
+    await store.saveDraft({ ...draft, path: 'Renamed.md', sequence: 4 });
+    assert.equal(
+      (await store.readFileSaveSnapshot(account, workspace, file))
+        .hasUncheckpointedDraft,
+      true,
+    );
+    await store.dropDraft(account, workspace, draft.workingCopyId);
+    await store.saveDraft({
+      ...draft,
+      workingCopyId: 'unknown-base',
+      baseRevisionId: null,
+      sequence: 5,
+    });
+    assert.equal(
+      (await store.readFileSaveSnapshot(account, workspace, file))
+        .hasUncheckpointedDraft,
+      true,
+    );
+    assert.deepEqual(await store.pending(account, workspace), []);
+  } finally {
+    await store.close();
+  }
+});
+
 await test('one commit makes one Review and a later merge makes another', async () => {
   const backend = createBackend('review-batch');
   const store = await openLocalStore(origin, backend.options());
