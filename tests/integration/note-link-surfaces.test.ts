@@ -816,35 +816,59 @@ await test('visible toolbar controls undo and redo the open editor text', async 
   await renderFreshNote(text, 'Toolbar.md');
   const current = view();
   const undoButton = [...container.querySelectorAll('button')].find(
-    (button) => button.textContent === 'Undo',
+    (button) => button.getAttribute('aria-label') === 'Undo',
   );
   const redoButton = [...container.querySelectorAll('button')].find(
-    (button) => button.textContent === 'Redo',
+    (button) => button.getAttribute('aria-label') === 'Redo',
   );
   assert.ok(undoButton);
   assert.ok(redoButton);
-  assert.equal(undoButton.disabled, true);
-  assert.equal(redoButton.disabled, true);
+  assert.equal(undoButton.disabled, false);
+  assert.equal(undoButton.getAttribute('aria-disabled'), 'true');
+  assert.equal(redoButton.disabled, false);
+  assert.equal(redoButton.getAttribute('aria-disabled'), 'true');
+  assert.equal(undoButton.textContent, '');
+  assert.equal(redoButton.textContent, '');
+  assert.equal(
+    undoButton.querySelector('svg')?.getAttribute('aria-hidden'),
+    'true',
+  );
+  assert.equal(undoButton.tabIndex, 0);
+  await act(async () => {
+    undoButton.focus();
+    undoButton.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }),
+    );
+  });
+  assert.equal(document.activeElement, redoButton);
+  assert.equal(redoButton.tabIndex, 0);
+  await act(async () => redoButton.click());
+  assert.equal(current.state.doc.toString(), text);
+
   await act(async () => {
     current.dispatch({
       changes: { from: current.state.doc.length, insert: 'Toolbar edit' },
       userEvent: 'input.type',
     });
   });
-  assert.equal(undoButton.disabled, false);
+  assert.equal(undoButton.getAttribute('aria-disabled'), 'false');
   await act(async () => setEditorReadOnly(current, true));
-  assert.equal(undoButton.disabled, true);
-  assert.equal(redoButton.disabled, true);
-  await act(async () => setEditorReadOnly(current, false));
   assert.equal(undoButton.disabled, false);
+  assert.equal(undoButton.getAttribute('aria-disabled'), 'true');
+  assert.equal(redoButton.disabled, false);
+  assert.equal(redoButton.getAttribute('aria-disabled'), 'true');
+  await act(async () => setEditorReadOnly(current, false));
+  assert.equal(undoButton.getAttribute('aria-disabled'), 'false');
   await act(async () => undoButton.click());
   assert.equal(current.state.doc.toString(), text);
-  assert.equal(redoButton.disabled, false);
+  assert.equal(redoButton.getAttribute('aria-disabled'), 'false');
   await act(async () => setEditorReadOnly(current, true));
-  assert.equal(undoButton.disabled, true);
-  assert.equal(redoButton.disabled, true);
-  await act(async () => setEditorReadOnly(current, false));
+  assert.equal(undoButton.disabled, false);
+  assert.equal(undoButton.getAttribute('aria-disabled'), 'true');
   assert.equal(redoButton.disabled, false);
+  assert.equal(redoButton.getAttribute('aria-disabled'), 'true');
+  await act(async () => setEditorReadOnly(current, false));
+  assert.equal(redoButton.getAttribute('aria-disabled'), 'false');
   await act(async () => redoButton.click());
   assert.equal(current.state.doc.toString(), `${text}Toolbar edit`);
   assert.equal(current.hasFocus, true);
@@ -879,7 +903,7 @@ await test('the image viewer removes only the selected occurrence and toolbar Un
   assert.equal(current.state.doc.toString(), `${source}\n\n\n\nEnd.\n`);
   assert.equal(current.hasFocus, true);
   const undoButton = [...container.querySelectorAll('button')].find(
-    (button) => button.textContent === 'Undo',
+    (button) => button.getAttribute('aria-label') === 'Undo',
   );
   assert.ok(undoButton);
   await act(async () => undoButton.click());
