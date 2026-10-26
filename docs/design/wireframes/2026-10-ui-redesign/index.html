@@ -1,0 +1,1268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prototype wireframes: tidy notebook UI redesign (for approval)</title>
+<style>
+/* Prototype wireframes only. Not product code. Tokens copy the Default theme. */
+:root{
+  --bg:#ffffff;--surface:#f7f7f5;--card:#ffffff;--hover:#f0efec;--active:#e8e7e3;
+  --text:#37352f;--strong:#191917;--muted:#67655f;--link:#1a63c4;
+  --fill:#1a1917;--onfill:#ffffff;--ok:#1c6f37;--danger:#c02b3a;--dangerfill:#c8303f;--ondanger:#fff;
+  --border:#85837d;--subtle:#e6e4e0;--focus:#2563c9;--warn:#8a5a00;
+}
+.dark{
+  --bg:#191919;--surface:#141414;--card:#222222;--hover:#2b2b2b;--active:#323232;
+  --text:#d0cfcc;--strong:#f5f4f2;--muted:#a5a39e;--link:#6fa8f5;
+  --fill:#ececea;--onfill:#141414;--ok:#59b871;--danger:#f5817d;--dangerfill:#e0524f;--ondanger:#0a0a0a;
+  --border:#807e79;--subtle:#2e2e2e;--focus:#4a90f0;--warn:#e7c07b;
+}
+#alldark:checked ~ main .frame{
+  --bg:#191919;--surface:#141414;--card:#222222;--hover:#2b2b2b;--active:#323232;
+  --text:#d0cfcc;--strong:#f5f4f2;--muted:#a5a39e;--link:#6fa8f5;
+  --fill:#ececea;--onfill:#141414;--ok:#59b871;--danger:#f5817d;--dangerfill:#e0524f;--ondanger:#0a0a0a;
+  --border:#807e79;--subtle:#2e2e2e;--focus:#4a90f0;--warn:#e7c07b;
+}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;background:#e9e8e4;color:#222}
+header.doc{padding:28px 32px 12px;max-width:1280px;margin:0 auto}
+header.doc h1{margin:0 0 6px;font-size:24px}
+.proto{display:inline-block;background:#ffd84d;color:#222;font-weight:700;font-size:12px;padding:3px 8px;border-radius:4px;letter-spacing:.02em}
+.toggle{display:inline-flex;align-items:center;gap:8px;margin:10px 0 0;font-weight:600;cursor:pointer}
+#alldark{position:absolute;opacity:0}
+#alldark + header .toggle .box{width:38px;height:22px;border-radius:11px;background:#bbb;position:relative}
+#alldark + header .toggle .box::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.15s}
+#alldark:checked + header .toggle .box{background:#333}
+#alldark:checked + header .toggle .box::after{left:19px}
+#alldark:focus-visible + header .toggle .box{outline:2px solid #2563c9;outline-offset:2px}
+main{max-width:1280px;margin:0 auto;padding:0 32px 64px}
+section.group{margin-top:36px}
+section.group > h2{font-size:19px;margin:0 0 4px}
+section.group > p.lead{margin:0 0 16px;color:#555;max-width:820px}
+.row{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+figure{margin:0;width:360px}
+figure.wide{width:100%}
+figcaption{margin:10px 2px 0;font-size:13px;color:#333}
+figcaption b{display:block;font-size:14px;margin-bottom:2px}
+figcaption ol{margin:6px 0 0;padding-left:18px}
+figcaption li{margin:2px 0}
+.id{font:600 11px ui-monospace,monospace;background:#222;color:#fff;border-radius:3px;padding:1px 5px;margin-right:6px}
+
+/* frame */
+.frame{background:var(--bg);color:var(--text);border-radius:22px;border:8px solid #111;overflow:hidden;position:relative;height:740px;display:flex;flex-direction:column}
+.frame.desk{border-radius:10px;border-width:6px;height:620px}
+.frame .tag{position:absolute;right:8px;bottom:8px;z-index:30;background:#ffd84d;color:#222;font:700 10px system-ui;padding:2px 6px;border-radius:3px;opacity:.95}
+.sb{height:26px;flex:none;display:flex;justify-content:space-between;align-items:center;padding:0 18px;font:600 12px system-ui;color:var(--strong)}
+.bar{height:52px;flex:none;display:flex;align-items:center;gap:4px;padding:0 6px;border-bottom:1px solid var(--subtle);background:var(--bg)}
+.bar .title{flex:1;font-weight:600;color:var(--strong);font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 4px}
+.ib{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;color:var(--strong);flex:none}
+.ib svg{width:22px;height:22px}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--active);display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:var(--strong)}
+.content{flex:1;overflow:hidden;padding:14px 16px;position:relative}
+.content.flush{padding:0}
+h3.pt{margin:2px 0 2px;font-size:24px;color:var(--strong);letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:13px;margin:0}
+.actions{display:flex;gap:8px;margin:12px 0 4px;flex-wrap:wrap}
+.actions.pair{flex-wrap:nowrap}
+.actions.pair .btn{flex:1;padding:0 10px}
+.empty .actions.pair{max-width:300px;margin-left:auto;margin-right:auto}
+.btn{min-height:44px;padding:0 16px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:15px;border:1px solid transparent;white-space:nowrap}
+.btn svg{width:18px;height:18px}
+.btn.pri{background:var(--fill);color:var(--onfill)}
+.btn.sec{background:var(--card);color:var(--strong);border-color:var(--border)}
+.btn.ghost{color:var(--strong)}
+.btn.danger{background:var(--dangerfill);color:var(--ondanger)}
+.btn.dangerline{color:var(--danger);border-color:var(--danger);background:transparent}
+.btn.full{width:100%}
+.btn.sm{min-height:36px;font-size:14px;padding:0 12px}
+.btn[disabled]{opacity:.45}
+.focusring{outline:2px solid var(--focus);outline-offset:2px}
+.grp{font-size:12px;font-weight:600;color:var(--muted);margin:16px 0 4px;text-transform:none}
+.list{margin:0;padding:0;list-style:none}
+.list li{display:flex;align-items:center;gap:12px;min-height:48px;padding:0 4px;border-radius:8px;color:var(--strong)}
+.list li .ic{color:var(--muted);display:inline-flex}
+.list li .ic svg{width:18px;height:18px}
+.list li .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15px}
+.list li .mt{color:var(--muted);font-size:13px;white-space:nowrap}
+.list li.sel{background:var(--active)}
+.list li.hl{background:var(--hover)}
+.tip{display:flex;align-items:center;gap:6px;font-size:13px !important;background:var(--surface);border:1px solid var(--subtle);border-radius:10px;padding:6px 6px 6px 12px;margin:10px 0 2px;font-size:14px;color:var(--text)}
+.tip .t{flex:1}
+.tip kbd,code{font:13px ui-monospace,monospace;background:var(--active);border-radius:4px;padding:0 4px;color:var(--strong)}
+.tip .ib{width:36px;height:36px}
+.tip .ib svg{width:16px;height:16px}
+.link{color:var(--link);font-weight:600}
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:10}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:11;background:var(--bg);border-radius:16px 16px 0 0;box-shadow:0 -6px 24px rgba(0,0,0,.2);display:flex;flex-direction:column}
+.sheet .grab{width:36px;height:4px;border-radius:2px;background:var(--subtle);margin:8px auto 2px}
+.sheet .sh{display:flex;align-items:center;padding:4px 8px 4px 16px;gap:4px}
+.sheet .sh .st{flex:1;font-weight:700;font-size:17px;color:var(--strong)}
+.sheet .sbody{padding:4px 16px 8px;overflow:hidden;flex:1}
+.sheet .sfoot{padding:10px 16px 18px;border-top:1px solid var(--subtle);display:flex;gap:8px}
+.drawer{position:absolute;top:0;bottom:0;left:0;width:300px;z-index:11;background:var(--surface);border-right:1px solid var(--subtle);display:flex;flex-direction:column}
+.field{display:flex;align-items:center;gap:8px;height:44px;border:1px solid var(--border);border-radius:10px;padding:0 12px;color:var(--muted);background:var(--card)}
+.field svg{width:18px;height:18px}
+.preview{background:var(--surface);border:1px solid var(--subtle);border-radius:10px;padding:12px;font:13px/1.55 ui-monospace,monospace;color:var(--text);white-space:pre-wrap;max-height:300px;overflow:hidden}
+.destrow{display:flex;align-items:center;gap:10px;min-height:48px;border:1px solid var(--subtle);border-radius:10px;padding:0 6px 0 12px;margin-top:12px}
+.destrow .lb{color:var(--muted);font-size:13px}
+.destrow .v{flex:1;color:var(--strong);font-weight:600}
+.notice{display:flex;gap:10px;align-items:flex-start;border-radius:10px;padding:10px 12px;font-size:14px;margin:10px 0}
+.notice svg{width:18px;height:18px;flex:none;margin-top:1px}
+.notice.problem{background:color-mix(in srgb,var(--danger) 10%,var(--bg));color:var(--strong);border:1px solid color-mix(in srgb,var(--danger) 40%,var(--bg))}
+.notice.problem svg{color:var(--danger)}
+.notice.info{background:var(--surface);border:1px solid var(--subtle);color:var(--strong)}
+.notice.info svg{color:var(--muted)}
+.notice .na{margin-left:auto}
+.empty{text-align:center;padding:48px 12px 0}
+.empty .eic{width:48px;height:48px;border-radius:12px;background:var(--surface);display:inline-flex;align-items:center;justify-content:center;color:var(--muted);margin-bottom:10px}
+.empty h4{margin:0 0 4px;font-size:17px;color:var(--strong)}
+.empty p{margin:0 0 16px;color:var(--muted)}
+.empty .actions{justify-content:center}
+.slist{list-style:none;margin:0 0 4px;padding:0;background:var(--card);border:1px solid var(--subtle);border-radius:12px;overflow:hidden}
+.slist li{display:flex;align-items:center;gap:12px;min-height:48px;padding:0 12px;border-top:1px solid var(--subtle);color:var(--strong);font-size:15px}
+.slist li:first-child{border-top:0}
+.slist li .ic{color:var(--muted);display:inline-flex}
+.slist li .ic svg{width:18px;height:18px}
+.slist li .nm{flex:1}
+.slist li .v{color:var(--muted);font-size:14px}
+.slist li .chev{color:var(--muted);display:inline-flex}
+.slist li .chev svg{width:16px;height:16px}
+.slist li.red{color:var(--danger)}
+.slist li .two{flex:1;display:flex;flex-direction:column;padding:8px 0}
+.slist li .two small{color:var(--muted);font-size:13px}
+.seg{display:flex;background:var(--surface);border:1px solid var(--subtle);border-radius:10px;padding:3px;gap:3px}
+.seg span{flex:1;min-height:40px;display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:8px;color:var(--muted);font-weight:600}
+.seg span svg{width:16px;height:16px}
+.seg span.on{background:var(--card);color:var(--strong);box-shadow:0 1px 2px rgba(0,0,0,.12);border:1px solid var(--subtle)}
+.sw{width:44px;height:26px;border-radius:13px;background:var(--active);position:relative;flex:none;border:1px solid var(--border)}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:var(--card);box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.sw.on{background:var(--fill);border-color:var(--fill)}
+.sw.on::after{left:20px;background:var(--onfill)}
+.sw.off-dis{opacity:.45}
+.meter{height:6px;border-radius:3px;background:var(--active);overflow:hidden;margin:6px 0 2px}
+.meter i{display:block;height:100%;width:28%;background:var(--fill)}
+.status{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;border-radius:16px;font-size:13px;font-weight:600;color:var(--muted);border:1px solid var(--subtle);background:var(--surface);white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);flex:none}
+.dot.pend{background:transparent;border:2px solid var(--muted)}
+.dot.off{background:var(--muted)}
+.dot.bad{background:var(--danger)}
+.status.bad{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 50%,var(--bg))}
+.doc{font-size:16px;line-height:1.6;color:var(--text)}
+.doc h1{font-size:24px;margin:4px 0 10px;color:var(--strong)}
+.doc p{margin:0 0 10px}
+.caret{display:inline-block;width:2px;height:18px;background:var(--link);vertical-align:-3px}
+.kbd{position:absolute;left:0;right:0;bottom:0;height:200px;background:var(--active);display:grid;grid-template-columns:repeat(10,1fr);gap:6px;padding:10px 6px;opacity:.9}
+.kbd i{background:var(--card);border-radius:5px}
+.toolbar{position:absolute;left:0;right:0;bottom:200px;height:48px;background:var(--surface);border-top:1px solid var(--subtle);display:flex;align-items:center;gap:2px;padding:0 4px;z-index:5}
+.toolbar .ib{width:40px;height:40px}
+.toolbar .ib svg{width:20px;height:20px}
+.toolbar .div{width:1px;height:24px;background:var(--subtle);margin:0 4px}
+.toolbar .ib.dis{opacity:.35}
+.toast{position:absolute;left:12px;right:12px;bottom:20px;z-index:20;background:var(--strong);color:var(--bg);border-radius:10px;padding:0 6px 0 14px;min-height:48px;display:flex;align-items:center;gap:8px;font-size:14px;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+.toast .btn{color:var(--bg);min-height:40px}
+.tabs2{display:flex;border-bottom:1px solid var(--subtle);margin:10px 0}
+.tabs2 span{flex:1;text-align:center;padding:10px 0;font-weight:600;color:var(--muted);border-bottom:2px solid transparent}
+.tabs2 span.on{color:var(--strong);border-color:var(--strong)}
+.cmp{border:1px solid var(--subtle);border-radius:10px;padding:12px;font-size:14px;background:var(--card)}
+.cmp .meta{font-size:12px;color:var(--muted);margin-bottom:6px}
+.cmp ins{background:color-mix(in srgb,var(--ok) 18%,var(--bg));text-decoration:none}
+.cmp del{background:color-mix(in srgb,var(--danger) 16%,var(--bg))}
+.trial{display:flex;align-items:center;gap:8px;background:var(--surface);border-bottom:1px solid var(--subtle);padding:0 8px 0 14px;min-height:40px;font-size:13px;color:var(--text)}
+.trial .t{flex:1}
+.badge{min-width:20px;height:20px;border-radius:10px;background:var(--fill);color:var(--onfill);font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;padding:0 6px}
+.foot{border-top:1px solid var(--subtle);padding:10px 14px;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.ws{display:flex;align-items:center;gap:10px;min-height:52px;padding:0 10px 0 14px;border-bottom:1px solid var(--subtle)}
+.ws .wsn{flex:1;font-weight:700;color:var(--strong)}
+.ws .wsi{width:28px;height:28px;border-radius:7px;background:var(--fill);color:var(--onfill);display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+.menu{position:absolute;z-index:12;background:var(--card);border:1px solid var(--subtle);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.2);padding:6px;min-width:220px}
+.menu .list li{min-height:44px;padding:0 10px}
+/* desktop */
+.dwrap{display:flex;flex:1;min-height:0}
+.side{width:248px;flex:none;background:var(--surface);border-right:1px solid var(--subtle);display:flex;flex-direction:column}
+.side .list li{min-height:34px;font-size:14px;padding:0 10px}
+.side .list li .nm{font-size:14px}
+.dmain{flex:1;overflow:hidden;padding:28px 40px;min-width:0}
+.dmain .measure{max-width:640px;margin:0 auto}
+.dlg{position:absolute;z-index:11;left:50%;top:50%;transform:translate(-50%,-50%);width:760px;background:var(--bg);border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:hidden}
+.dlg .dh{display:flex;align-items:center;padding:12px 10px 12px 20px;border-bottom:1px solid var(--subtle)}
+.dlg .dh .st{flex:1;font-weight:700;font-size:17px;color:var(--strong)}
+.dlg .db{display:flex;min-height:330px}
+.dlg .df{display:flex;align-items:center;gap:8px;padding:12px 16px;border-top:1px solid var(--subtle)}
+.spec{background:#fff;border:1px solid #d6d4cf;border-radius:10px;padding:14px 18px;font-size:13px;max-width:1216px}
+.spec table{border-collapse:collapse;width:100%}
+.spec th,.spec td{text-align:left;padding:6px 8px;border-top:1px solid #eee;vertical-align:top}
+.spec th{background:#f5f4f1;border-top:0}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:#444;margin:8px 0 0}
+.c-ok{color:#1c6f37;font-weight:600}.c-bad{color:#c02b3a;font-weight:600}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M16 16l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-tpl" viewBox="0 0 24 24"><rect x="4" y="3.5" width="16" height="17" rx="2" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M8 8h8M8 12h8M8 16h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M7 3.5h7l4 4V20a.5.5 0 0 1-.5.5h-10A.5.5 0 0 1 7 20z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/><path d="M14 3.5V8h4" stroke="currentColor" stroke-width="1.6" fill="none"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3.5 7a1.5 1.5 0 0 1 1.5-1.5h4l2 2h8a1.5 1.5 0 0 1 1.5 1.5v8.5A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5z" stroke="currentColor" stroke-width="1.6" fill="none"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14.5" rx="2" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M4 10h16M8 3.5v4M16 3.5v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M5 7h14M10 7V4.5h4V7M7 7l1 13h8l1-13" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M12 7.5v5.5M12 16.2v.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M12 11v5.5M12 7.8v.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 7L4.5 11.5 9 16" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 11.5h9a5 5 0 0 1 0 10h-2" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></symbol>
+    <symbol id="i-redo" viewBox="0 0 24 24"><path d="M15 7l4.5 4.5L15 16" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 11.5h-9a5 5 0 0 0 0 10h2" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></symbol>
+    <symbol id="i-bold" viewBox="0 0 24 24"><path d="M7 5h6a3.5 3.5 0 0 1 0 7H7zM7 12h7a3.5 3.5 0 0 1 0 7H7z" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 7h11M9 12h11M9 17h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="5" cy="7" r="1.2" fill="currentColor"/><circle cx="5" cy="12" r="1.2" fill="currentColor"/><circle cx="5" cy="17" r="1.2" fill="currentColor"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></symbol>
+    <symbol id="i-img" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2" stroke="currentColor" stroke-width="1.6" fill="none"/><circle cx="9" cy="10" r="1.6" fill="currentColor"/><path d="M4 17l5-4.5 4 3.5 3-2.5 4 3.5" stroke="currentColor" stroke-width="1.6" fill="none"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M19 14.5A7.5 7.5 0 0 1 9.5 5a7.5 7.5 0 1 0 9.5 9.5z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/></symbol>
+    <symbol id="i-screen" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="12" rx="1.5" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M9 20h6M12 16.5V20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="i-pen" viewBox="0 0 24 24"><path d="M4 20l1-4L16 5l3 3L8 19z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/></symbol>
+    <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18h10a4 4 0 0 0 .5-8A6 6 0 0 0 6 11a3.5 3.5 0 0 0 1 7z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.5" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M5 20a7 7 0 0 1 14 0" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="12" r="3.5" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M11.5 12H20M17 12v3M20 12v2.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M11 18h2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="i-out" viewBox="0 0 24 24"><path d="M14 4.5H6.5v15H14M10 12h10M17 8.5l3.5 3.5-3.5 3.5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-dl" viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19.5h14" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-ul" viewBox="0 0 24 24"><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5M5 19.5h14" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-apps" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6" fill="none"/><rect x="13" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6" fill="none"/><rect x="4" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6" fill="none"/><rect x="13" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6" fill="none"/></symbol>
+    <symbol id="i-card" viewBox="0 0 24 24"><rect x="3.5" y="6" width="17" height="12" rx="2" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M3.5 10h17" stroke="currentColor" stroke-width="1.6"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20.5h4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round" stroke-linecap="round"/></symbol>
+    <symbol id="i-spell" viewBox="0 0 24 24"><path d="M4 16l4-10 4 10M5.5 12.5h5M14 14l2.5 2.5L21 11" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<input type="checkbox" id="alldark" aria-label="Show every frame in dark mode">
+<header class="doc">
+  <span class="proto">PROTOTYPE WIREFRAMES. FOR APPROVAL ONLY. NOT THE SHIPPED APP.</span>
+  <h1>tidy notebook: redesign of the UI shipped in v0.22.0</h1>
+  <p style="margin:0;max-width:860px;color:#444">Mobile first. One filled button per screen. Real buttons with a visible edge. No "workspace root". Tips are one short line. Settings is a list that opens one page per topic. All data safety behavior stays the same. Copy in the frames is the proposed copy.</p>
+  <label class="toggle" for="alldark"><span class="box"></span>Show every frame in dark mode</label>
+  <div class="legend"><span><span class="id">A1</span>screen ID used in the flow map</span><span>Yellow tag: prototype marker</span><span>Frames: 360 px phone, 1180 px desktop</span></div>
+</header>
+
+<main>
+
+<!-- ============ A. NOTES AND NAVIGATION ============ -->
+<section class="group">
+  <h2>A. All notes and navigation</h2>
+  <p class="lead">Fixes: "Create in" line removed. "From template" becomes a real outlined button next to the one filled button. Tips shrink to one line with Next and Close. Today's note moves to navigation, where it always is.</p>
+  <div class="row">
+
+  <figure>
+    <div class="frame">
+      <div class="sb"><span>11:35</span><span>5G 80%</span></div>
+      <div class="bar">
+        <span class="ib"><svg><use href="#i-menu"/></svg></span>
+        <span class="title"></span>
+        <span class="ib"><svg><use href="#i-search"/></svg></span>
+        <span class="ib"><span class="avatar">M</span></span>
+      </div>
+      <div class="content">
+        <h3 class="pt">All notes</h3>
+        <p class="sub">28 notes</p>
+        <div class="actions pair">
+          <span class="btn pri"><svg><use href="#i-plus"/></svg>New note</span>
+          <span class="btn sec"><svg><use href="#i-tpl"/></svg>Use template</span>
+        </div>
+        <div class="tip"><span class="t">Type <kbd>[[</kbd> to link a note.</span><span class="btn ghost sm">Next</span><span class="ib" aria-label="Close tips"><svg><use href="#i-x"/></svg></span></div>
+        <div class="grp">Today</div>
+        <ul class="list">
+          <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">2026-10-26</span><span class="mt">22 min</span></li>
+          <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">Shared artefacts</span><span class="mt">4 h</span></li>
+          <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">Weight</span><span class="mt">14 h</span></li>
+        </ul>
+        <div class="grp">Yesterday</div>
+        <ul class="list">
+          <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">2026-10-25</span><span class="mt">24 h</span></li>
+          <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">Trip plan<span class="mt"> · Travel</span></span><span class="mt">1 d</span></li>
+          <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">Reading list</span><span class="mt">1 d</span></li>
+        </ul>
+      </div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">A1</span>All notes, with tip</b>
+      <ol><li>Count only. No sentence about where notes go.</li>
+      <li>"New note" is the one filled button. "Use template" is outlined, same height.</li>
+      <li>One tip, one line, max 6 words. "Next" shows the next tip. Close hides tips for good.</li>
+      <li>Short times ("22 min"). A note in a folder shows the folder name.</li></ol></figcaption>
+  </figure>
+
+  <figure>
+    <div class="frame">
+      <div class="sb"><span>11:35</span><span>5G 80%</span></div>
+      <div class="bar">
+        <span class="ib"><svg><use href="#i-menu"/></svg></span>
+        <span class="title"></span>
+        <span class="ib"><svg><use href="#i-search"/></svg></span>
+        <span class="ib"><span class="avatar">M</span></span>
+      </div>
+      <div class="content">
+        <h3 class="pt">All notes</h3>
+        <div class="empty">
+          <span class="eic"><svg width="24" height="24"><use href="#i-file"/></svg></span>
+          <h4>No notes yet</h4>
+          <p>Write your first note.</p>
+          <div class="actions pair">
+            <span class="btn pri"><svg><use href="#i-plus"/></svg>New note</span>
+            <span class="btn sec"><svg><use href="#i-tpl"/></svg>Use template</span>
+          </div>
+        </div>
+        <div class="tip" style="margin-top:40px"><span class="t">Today's note is in the menu.</span><span class="btn ghost sm">Next</span><span class="ib"><svg><use href="#i-x"/></svg></span></div>
+      </div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">A2</span>All notes, empty</b>
+      <ol><li>Same two buttons as A1, in the centre. They are not also in the header.</li>
+      <li>Tip line sits below, never above, the main action.</li></ol></figcaption>
+  </figure>
+
+  <figure>
+    <div class="frame">
+      <div class="sb"><span>11:35</span><span>5G 80%</span></div>
+      <div class="bar"><span class="ib"><svg><use href="#i-menu"/></svg></span><span class="title"></span></div>
+      <div class="content"></div>
+      <div class="scrim"></div>
+      <div class="drawer">
+        <div class="sb"></div>
+        <div class="ws"><span class="wsi">P</span><span class="wsn">Personal</span><span class="ib"><svg><use href="#i-down"/></svg></span></div>
+        <div style="padding:8px 8px 0;flex:1;overflow:hidden">
+          <ul class="list">
+            <li class="sel"><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">All notes</span></li>
+            <li><span class="ic"><svg><use href="#i-cal"/></svg></span><span class="nm">Today's note</span></li>
+            <li><span class="ic"><svg><use href="#i-bell"/></svg></span><span class="nm">Needs attention</span><span class="badge">1</span></li>
+            <li><span class="ic"><svg><use href="#i-trash"/></svg></span><span class="nm">Trash</span></li>
+          </ul>
+          <div class="grp" style="display:flex;align-items:center;padding-left:4px">Folders<span style="flex:1"></span><span class="ib" style="width:40px;height:40px" aria-label="New folder"><svg style="width:18px;height:18px"><use href="#i-plus"/></svg></span></div>
+          <ul class="list">
+            <li><span class="ic"><svg><use href="#i-folder"/></svg></span><span class="nm">Projects</span><span class="mt">6</span></li>
+            <li><span class="ic"><svg><use href="#i-folder"/></svg></span><span class="nm">Templates</span><span class="mt">3</span></li>
+            <li><span class="ic"><svg><use href="#i-folder"/></svg></span><span class="nm">Travel</span><span class="mt">4</span></li>
+          </ul>
+          <ul class="list" style="margin-top:10px;border-top:1px solid var(--subtle);padding-top:6px">
+            <li><span class="ic"><svg><use href="#i-gear"/></svg></span><span class="nm">Settings</span></li>
+          </ul>
+        </div>
+        <div class="foot"><span class="dot"></span>All changes saved</div>
+      </div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">A3</span>Navigation menu</b>
+      <ol><li>Workspace name at top. Tap to switch or add a workspace.</li>
+      <li>Today's note is a fixed row. The calendar opens from it.</li>
+      <li>"+" next to Folders makes a folder. No "Create in" line.</li>
+      <li>One short save line at the bottom (see E1 for all states).</li></ol></figcaption>
+  </figure>
+
+  <figure>
+    <div class="frame">
+      <div class="sb"><span>11:35</span><span>5G 80%</span></div>
+      <div class="bar">
+        <span class="ib"><svg><use href="#i-back"/></svg></span>
+        <span class="title"></span>
+        <span class="ib"><svg><use href="#i-search"/></svg></span>
+        <span class="ib"><svg><use href="#i-more"/></svg></span>
+      </div>
+      <div class="content">
+        <p class="sub" style="display:flex;align-items:center;gap:4px"><svg width="14" height="14"><use href="#i-folder"/></svg>Folder</p>
+        <h3 class="pt">Projects</h3>
+        <p class="sub">6 notes</p>
+        <div class="actions pair">
+          <span class="btn pri"><svg><use href="#i-plus"/></svg>New note</span>
+          <span class="btn sec"><svg><use href="#i-tpl"/></svg>Use template</span>
+        </div>
+        <ul class="list" style="margin-top:10px">
+          <li><span class="ic"><svg><use href="#i-folder"/></svg></span><span class="nm">Archive</span><span class="mt">2</span></li>
+          <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">Q4 roadmap</span><span class="mt">2 h</span></li>
+          <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">Hiring</span><span class="mt">3 d</span></li>
+          <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">Budget</span><span class="mt">5 d</span></li>
+        </ul>
+      </div>
+      <div class="menu" style="right:10px;top:84px">
+        <ul class="list">
+          <li><span class="ic"><svg><use href="#i-folder"/></svg></span><span class="nm">New folder here</span></li>
+          <li><span class="ic"><svg><use href="#i-pen"/></svg></span><span class="nm">Rename folder</span></li>
+          <li style="color:var(--danger)"><span class="ic" style="color:var(--danger)"><svg><use href="#i-trash"/></svg></span><span class="nm">Delete folder</span></li>
+        </ul>
+      </div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">A4</span>Folder page, "..." menu open</b>
+      <ol><li>The page title says where a new note goes. No extra label.</li>
+      <li>Same two buttons. Both create in "Projects".</li>
+      <li>Folder actions are in the "..." menu.</li></ol></figcaption>
+  </figure>
+
+  </div>
+</section>
+
+<!-- ============ B. TEMPLATES ============ -->
+<section class="group">
+  <h2>B. New note from a template</h2>
+  <p class="lead">Two steps in a bottom sheet: pick, then preview and create. The save place is one row, "Folder", with a Change button. "No folder" replaces "workspace root".</p>
+  <div class="row">
+
+  <figure>
+    <div class="frame">
+      <div class="sb"><span>11:36</span><span>5G 80%</span></div>
+      <div class="bar"><span class="ib"><svg><use href="#i-menu"/></svg></span><span class="title"></span></div>
+      <div class="content"><h3 class="pt">All notes</h3></div>
+      <div class="scrim"></div>
+      <div class="sheet" style="top:90px">
+        <div class="grab"></div>
+        <div class="sh"><span class="st">Choose a template</span><span class="ib" aria-label="Close"><svg><use href="#i-x"/></svg></span></div>
+        <div class="sbody">
+          <div class="field"><svg><use href="#i-search"/></svg>Search templates</div>
+          <ul class="list" style="margin-top:8px">
+            <li class="hl"><span class="ic"><svg><use href="#i-tpl"/></svg></span><span class="nm">Meeting notes<br><span class="mt">Date, attendees, actions</span></span><span class="ic"><svg width="16" height="16"><use href="#i-chev"/></svg></span></li>
+            <li><span class="ic"><svg><use href="#i-tpl"/></svg></span><span class="nm">Weekly review<br><span class="mt">Wins, misses, next week</span></span><span class="ic"><svg width="16" height="16"><use href="#i-chev"/></svg></span></li>
+            <li><span class="ic"><svg><use href="#i-tpl"/></svg></span><span class="nm">Trip plan<br><span class="mt">Dates, bookings, packing</span></span><span class="ic"><svg width="16" height="16"><use href="#i-chev"/></svg></span></li>
+          </ul>
+          <p class="sub" style="margin-top:14px">From the "Templates" folder. <span class="link">Manage</span></p>
+        </div>
+      </div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">B1</span>Choose a template</b>
+      <ol><li>Full-width rows, 56 px. First line of text under the name.</li>
+      <li>Search shows when there are more than 5 templates.</li>
+      <li>"Manage" opens Settings, Templates (C6).</li></ol></figcaption>
+  </figure>
+
+  <figure>
+    <div class="frame">
+      <div class="sb"><span>11:36</span><span>5G 80%</span></div>
+      <div class="bar"><span class="ib"><svg><use href="#i-menu"/></svg></span><span class="title"></span></div>
+      <div class="content"><h3 class="pt">All notes</h3></div>
+      <div class="scrim"></div>
+      <div class="sheet" style="top:60px">
+        <div class="grab"></div>
+        <div class="sh"><span class="ib" aria-label="Back"><svg><use href="#i-back"/></svg></span><span class="st">Meeting notes</span><span class="ib"><svg><use href="#i-x"/></svg></span></div>
+        <div class="sbody">
+          <div class="preview"># Meeting {{date}}
+
+Attendees:
+-
+
+## Notes
+
+## Actions
+- [ ] </div>
+          <p class="sub" style="margin-top:6px">{{date}} fills in when you create the note.</p>
+          <div class="destrow"><span class="lb">Folder</span><span class="v">No folder</span><span class="btn sec sm">Change</span></div>
+        </div>
+        <div class="sfoot"><span class="btn pri full">Create note</span></div>
+      </div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">B2</span>Preview and create</b>
+      <ol><li>Preview is read only and scrolls.</li>
+      <li>One line about fields, only if the template has fields.</li>
+      <li>"Folder: No folder" from All notes. From a folder page it shows that folder.</li>
+      <li>"Create note" is the one filled button, at thumb height.</li></ol></figcaption>
+  </figure>
+
+  <figure>
+    <div class="frame">
+      <div class="sb"><span>11:36</span><span>5G 80%</span></div>
+      <div class="bar"><span class="ib"><svg><use href="#i-menu"/></svg></span><span class="title"></span></div>
+      <div class="content"></div>
+      <div class="scrim"></div>
+      <div class="sheet" style="top:250px">
+        <div class="grab"></div>
+        <div class="sh"><span class="ib"><svg><use href="#i-back"/></svg></span><span class="st">Save in</span></div>
+        <div class="sbody">
+          <ul class="list">
+            <li class="sel"><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">No folder</span><span class="ic" style="color:var(--strong)"><svg><use href="#i-check"/></svg></span></li>
+            <li><span class="ic"><svg><use href="#i-folder"/></svg></span><span class="nm">Projects</span></li>
+            <li style="padding-left:28px"><span class="ic"><svg><use href="#i-folder"/></svg></span><span class="nm">Archive</span></li>
+            <li><span class="ic"><svg><use href="#i-folder"/></svg></span><span class="nm">Travel</span></li>
+          </ul>
+        </div>
+        <div class="sfoot"><span class="btn sec full">Done</span></div>
+      </div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">B3</span>Change folder</b>
+      <ol><li>Plain list of folders. Check mark on the current one.</li>
+      <li>"No folder" means the note is not in a folder. It still shows in All notes.</li></ol></figcaption>
+  </figure>
+
+  <figure>
+    <div class="frame">
+      <div class="sb"><span>11:36</span><span>5G 80%</span></div>
+      <div class="bar"><span class="ib"><svg><use href="#i-menu"/></svg></span><span class="title"></span></div>
+      <div class="content"></div>
+      <div class="scrim"></div>
+      <div class="sheet" style="top:330px">
+        <div class="grab"></div>
+        <div class="sh"><span class="st">Choose a template</span><span class="ib"><svg><use href="#i-x"/></svg></span></div>
+        <div class="sbody">
+          <div class="empty" style="padding-top:12px">
+            <span class="eic"><svg width="24" height="24"><use href="#i-tpl"/></svg></span>
+            <h4>No templates yet</h4>
+            <p>A template is a note in the "Templates" folder.</p>
+            <div class="actions"><span class="btn pri"><svg><use href="#i-plus"/></svg>Create a template</span></div>
+          </div>
+        </div>
+      </div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">B4</span>No templates</b>
+      <ol><li>One sentence. One button. It makes a note in the Templates folder and opens it.</li></ol></figcaption>
+  </figure>
+
+  <figure>
+    <div class="frame">
+      <div class="sb"><span>11:36</span><span>No signal</span></div>
+      <div class="bar"><span class="ib"><svg><use href="#i-menu"/></svg></span><span class="title"></span></div>
+      <div class="content"></div>
+      <div class="scrim"></div>
+      <div class="sheet" style="top:120px">
+        <div class="grab"></div>
+        <div class="sh"><span class="ib"><svg><use href="#i-back"/></svg></span><span class="st">Weekly review</span><span class="ib"><svg><use href="#i-x"/></svg></span></div>
+        <div class="sbody">
+          <div class="notice problem"><svg><use href="#i-alert"/></svg><span>Can't load this template. It is not on this device.</span></div>
+          <span class="btn sec">Try again</span>
+          <div class="destrow" style="margin-top:20px"><span class="lb">Folder</span><span class="v">No folder</span><span class="btn sec sm">Change</span></div>
+        </div>
+        <div class="sfoot"><span class="btn pri full" disabled>Create note</span></div>
+      </div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">B5</span>Preview failed</b>
+      <ol><li>Short problem line and "Try again".</li>
+      <li>"Create note" stays off until the text loads, so no empty note is made.</li>
+      <li>Other states: "Some templates may be missing." (info line) and "Templates did not load. Try again." (problem line).</li></ol></figcaption>
+  </figure>
+
+  </div>
+</section>
+
+<!-- ============ C. SETTINGS ============ -->
+<section class="group">
+  <h2>C. Settings</h2>
+  <p class="lead">Phone: one list of rows. Each row opens its own page with a Back button. Each page has a one line description at most. No duplicate titles. Desktop: list on the left, page on the right (D3).</p>
+  <div class="row">
+
+  <figure>
+    <div class="frame">
+      <div class="sb"><span>11:37</span><span>5G 80%</span></div>
+      <div class="bar"><span class="ib"><svg><use href="#i-back"/></svg></span><span class="title">Settings</span></div>
+      <div class="content" style="background:var(--surface)">
+        <div class="grp" style="margin-top:0">General</div>
+        <ul class="slist">
+          <li><span class="ic"><svg><use href="#i-sun"/></svg></span><span class="nm">Appearance</span><span class="v">System</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
+          <li><span class="ic"><svg><use href="#i-spell"/></svg></span><span class="nm">Spelling</span><span class="v">On</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
+        </ul>
+        <div class="grp">Notes</div>
+        <ul class="slist">
+          <li><span class="ic"><svg><use href="#i-cal"/></svg></span><span class="nm">Daily notes</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
+          <li><span class="ic"><svg><use href="#i-tpl"/></svg></span><span class="nm">Templates</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
+          <li><span class="ic"><svg><use href="#i-phone"/></svg></span><span class="nm">Offline</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
+          <li><span class="ic"><svg><use href="#i-dl"/></svg></span><span class="nm">Export and import</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
+        </ul>
+        <div class="grp">Account</div>
+        <ul class="slist">
+          <li><span class="ic"><svg><use href="#i-user"/></svg></span><span class="nm">Profile and email</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
+          <li><span class="ic"><svg><use href="#i-card"/></svg></span><span class="nm">Plan and billing</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
+          <li><span class="ic"><svg><use href="#i-screen"/></svg></span><span class="nm">Devices</span><span class="v">3</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
+          <li><span class="ic"><svg><use href="#i-key"/></svg></span><span class="nm">API keys and apps</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
+        </ul>
+        <ul class="slist" style="margin-top:14px">
+          <li><span class="ic"><svg><use href="#i-out"/></svg></span><span class="nm">Sign out</span></li>
+        </ul>
+      </div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">C1</span>Settings list</b>
+      <ol><li>Full-width rows, 48 px, icon, name, current value, arrow.</li>
+      <li>15 sections become 10 rows. Export and Import join. API keys and Connected apps join. Profile and Account join.</li>
+      <li>"Sessions" becomes "Devices". "Available offline" becomes "Offline".</li>
+      <li>Delete account moves to the bottom of Profile and email. It is not on the main list.</li>
+      <li>Billing row shows only when the server has a billing portal (same rule as now).</li></ol></figcaption>
+  </figure>
+
+  <figure>
+    <div class="frame">
+      <div class="sb"><span>11:37</span><span>5G 80%</span></div>
+      <div class="bar"><span class="ib"><svg><use href="#i-back"/></svg></span><span class="title">Appearance</span></div>
+      <div class="content">
+        <div class="grp" style="margin-top:0">Mode</div>
+        <div class="seg"><span class="on"><svg><use href="#i-screen"/></svg>System</span><span><svg><use href="#i-sun"/></svg>Light</span><span><svg><use href="#i-moon"/></svg>Dark</span></div>
+        <p class="sub" style="margin-top:6px">System follows your device.</p>
+        <div class="grp">Theme</div>
+        <ul class="slist">
+          <li><span class="nm">Default</span><span class="ic" style="color:var(--strong)"><svg><use href="#i-check"/></svg></span></li>
+          <li><span class="nm">Nord</span></li>
+          <li><span class="nm">Solarized</span></li>
+          <li><span class="nm">Tokyo Night</span></li>
+          <li><span class="nm v">8 more</span><span class="chev"><svg><use href="#i-down"/></svg></span></li>
+        </ul>
+        <div class="actions"><span class="btn sec"><svg><use href="#i-ul"/></svg>Import theme file</span></div>
+      </div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">C2</span>Appearance</b>
+      <ol><li>Title appears once, in the bar.</li>
+      <li>One helper line. Sync detail is removed from view. The choice still saves to the account.</li>
+      <li>Imported themes show in the same list with a Delete action in their row menu.</li></ol></figcaption>
+  </figure>
+
+  <figure>
+    <div class="frame">
+      <div class="sb"><span>11:37</span><span>5G 80%</span></div>
+      <div class="bar"><span class="ib"><svg><use href="#i-back"/></svg></span><span class="title">Offline</span></div>
+      <div class="content">
+        <p class="sub" style="margin-bottom:12px">Notes are always on this device. Choose what else to keep.</p>
+        <ul class="slist">
+          <li><span class="two">Images<small>Uses more space</small></span><span class="sw on"></span></li>
+          <li><span class="two">Older versions<small>Uses more space</small></span><span class="sw"></span></li>
+        </ul>
+        <div class="grp">This device</div>
+        <div class="meter"><i></i></div>
+        <p class="sub">120 MB used</p>
+        <div class="grp" style="margin-top:28px">If no image is added yet</div>
+        <ul class="slist">
+          <li><span class="two" style="opacity:.55">Images<small>No images yet</small></span><span class="sw off-dis"></span></li>
+        </ul>
+      </div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">C3</span>Offline</b>
+      <ol><li>Switches, not checkboxes. Whole row is the target.</li>
+      <li>Off state reason is in the row: "No images yet".</li>
+      <li>Error: "Can't read offline settings. Try again." with a Try again button.</li></ol></figcaption>
+  </figure>
+
+  <figure>
+    <div class="frame">
+      <div class="sb"><span>11:37</span><span>5G 80%</span></div>
+      <div class="bar"><span class="ib"><svg><use href="#i-back"/></svg></span><span class="title">Devices</span></div>
+      <div class="content">
+        <p class="sub" style="margin-bottom:12px">Signed in to your account.</p>
+        <ul class="slist">
+          <li><span class="ic"><svg><use href="#i-phone"/></svg></span><span class="two">iPhone, Safari<small>This device</small></span></li>
+          <li><span class="ic"><svg><use href="#i-screen"/></svg></span><span class="two">Mac, Firefox<small>Active 2 h ago</small></span><span class="btn sec sm">Sign out</span></li>
+          <li><span class="ic"><svg><use href="#i-screen"/></svg></span><span class="two">Linux, Chrome<small>Active 9 d ago</small></span><span class="btn sec sm">Sign out</span></li>
+        </ul>
+        <div class="actions" style="margin-top:16px"><span class="btn dangerline">Sign out all other devices</span></div>
+      </div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">C4</span>Devices</b>
+      <ol><li>Each row has its own visible Sign out button.</li>
+      <li>Bulk action is outlined red, with a confirm step.</li></ol></figcaption>
+  </figure>
+
+  <figure>
+    <div class="frame">
+      <div class="sb"><span>11:37</span><span>5G 80%</span></div>
+      <div class="bar"><span class="ib"><svg><use href="#i-back"/></svg></span><span class="title">Profile and email</span></div>
+      <div class="content">
+        <div class="grp" style="margin-top:0">Name</div>
+        <div class="field" style="color:var(--strong)">Bhushan</div>
+        <div class="actions"><span class="btn sec">Save name</span></div>
+        <div class="grp">Email</div>
+        <ul class="slist"><li><span class="nm">me@example.com</span><span class="v">Used to sign in</span></li></ul>
+        <div class="grp">Plan</div>
+        <ul class="slist"><li><span class="nm">Free trial</span><span class="v">12 days left</span></li></ul>
+        <div class="grp" style="margin-top:40px;color:var(--danger)">Delete account</div>
+        <p class="sub" style="margin-bottom:8px">Deletes your account and all notes. Export first.</p>
+        <span class="btn dangerline">Delete account</span>
+      </div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">C5</span>Profile and email</b>
+      <ol><li>Save is outlined: this page is a form, the main job is editing.</li>
+      <li>Delete is at the bottom, red outline, opens the existing confirm dialog.</li></ol></figcaption>
+  </figure>
+
+  <figure>
+    <div class="frame">
+      <div class="sb"><span>11:37</span><span>5G 80%</span></div>
+      <div class="bar"><span class="ib"><svg><use href="#i-back"/></svg></span><span class="title">Templates</span></div>
+      <div class="content">
+        <p class="sub" style="margin-bottom:12px">Notes in this folder show in "Use template".</p>
+        <div class="destrow" style="margin-top:0"><span class="lb">Folder</span><span class="v">Templates</span><span class="btn sec sm">Change</span></div>
+        <div class="grp">3 templates</div>
+        <ul class="list">
+          <li><span class="ic"><svg><use href="#i-tpl"/></svg></span><span class="nm">Meeting notes</span><span class="ic"><svg width="16" height="16"><use href="#i-chev"/></svg></span></li>
+          <li><span class="ic"><svg><use href="#i-tpl"/></svg></span><span class="nm">Weekly review</span><span class="ic"><svg width="16" height="16"><use href="#i-chev"/></svg></span></li>
+          <li><span class="ic"><svg><use href="#i-tpl"/></svg></span><span class="nm">Trip plan</span><span class="ic"><svg width="16" height="16"><use href="#i-chev"/></svg></span></li>
+        </ul>
+        <div class="actions"><span class="btn sec"><svg><use href="#i-plus"/></svg>New template</span></div>
+        <p class="sub" style="margin-top:14px">Applies to the Personal workspace.</p>
+      </div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">C6</span>Templates</b>
+      <ol><li>Same "Folder" row pattern as B2.</li>
+      <li>Workspace scope is one quiet line at the end, using its real name.</li>
+      <li>Daily notes page uses the same layout: Folder row, Name format row.</li></ol></figcaption>
+  </figure>
+
+  </div>
+</section>
+
+<!-- ============ D. EDITOR ============ -->
+<section class="group">
+  <h2>D. Editor, save status and recovery</h2>
+  <p class="lead">One status pill in the bar. Undo and Redo first in the format bar. Draft recovery is a choice between two tabs, not two long stacked blocks.</p>
+  <div class="row">
+
+  <figure>
+    <div class="frame">
+      <div class="sb"><span>11:40</span><span>5G 80%</span></div>
+      <div class="bar">
+        <span class="ib"><svg><use href="#i-back"/></svg></span>
+        <span class="title" style="font-size:15px">Meeting 2026-10-26</span>
+        <span class="status"><span class="dot"></span>Saved</span>
+        <span class="ib"><svg><use href="#i-more"/></svg></span>
+      </div>
+      <div class="content doc">
+        <h1>Meeting 2026-10-26</h1>
+        <p>Attendees: Sam, Priya</p>
+        <p><b>Notes</b></p>
+        <p>Agreed on the new plan for the launch<span class="caret"></span></p>
+      </div>
+      <div class="toolbar">
+        <span class="ib" aria-label="Undo"><svg><use href="#i-undo"/></svg></span>
+        <span class="ib dis" aria-label="Redo"><svg><use href="#i-redo"/></svg></span>
+        <span class="div"></span>
+        <span class="ib"><svg><use href="#i-bold"/></svg></span>
+        <span class="ib"><svg><use href="#i-list"/></svg></span>
+        <span class="ib"><svg><use href="#i-check"/></svg></span>
+        <span class="ib"><svg><use href="#i-link"/></svg></span>
+        <span class="ib"><svg><use href="#i-img"/></svg></span>
+        <span class="ib"><svg><use href="#i-more"/></svg></span>
+      </div>
+      <div class="kbd"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">D1</span>Editor</b>
+      <ol><li>Status pill: one word or two. Tap opens D2.</li>
+      <li>Undo and Redo lead the bar. Redo is dim when there is nothing to redo.</li>
+      <li>Bar sits on top of the keyboard. 40 px targets, scrolls sideways.</li></ol></figcaption>
+  </figure>
+
+  <figure>
+    <div class="frame">
+      <div class="sb"><span>11:41</span><span>No signal</span></div>
+      <div class="bar">
+        <span class="ib"><svg><use href="#i-back"/></svg></span>
+        <span class="title" style="font-size:15px">Meeting 2026-10-26</span>
+        <span class="status"><span class="dot off"></span>Offline</span>
+        <span class="ib"><svg><use href="#i-more"/></svg></span>
+      </div>
+      <div class="content doc"><h1>Meeting 2026-10-26</h1><p>Attendees: Sam, Priya</p></div>
+      <div class="scrim"></div>
+      <div class="sheet" style="top:400px">
+        <div class="grab"></div>
+        <div class="sh"><span class="st">Saved on this device</span><span class="ib"><svg><use href="#i-x"/></svg></span></div>
+        <div class="sbody">
+          <p style="margin:0 0 10px;color:var(--text)">No connection. Your changes are safe here and upload when you are online.</p>
+          <ul class="slist"><li><span class="nm">Last upload</span><span class="v">11:38</span></li><li><span class="nm">Waiting to upload</span><span class="v">2 changes</span></li></ul>
+        </div>
+        <div class="sfoot"><span class="btn sec full">Version history</span></div>
+      </div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">D2</span>Status details</b>
+      <ol><li>Detail lives here, not in the bar.</li>
+      <li>Full state list and copy: table E1.</li></ol></figcaption>
+  </figure>
+
+  <figure>
+    <div class="frame">
+      <div class="sb"><span>11:42</span><span>5G 80%</span></div>
+      <div class="bar">
+        <span class="ib"><svg><use href="#i-back"/></svg></span>
+        <span class="title" style="font-size:15px">Meeting 2026-10-26</span>
+      </div>
+      <div class="content">
+        <h3 class="pt" style="font-size:20px">Two versions of this note</h3>
+        <p class="sub">This note changed on another device. Choose which text to keep.</p>
+        <div class="tabs2"><span class="on">This device</span><span>Saved version</span></div>
+        <div class="cmp">
+          <div class="meta">Edited here, 11:31</div>
+          Attendees: Sam, Priya<br><br><b>Notes</b><br>Agreed on the <ins>new plan for the launch</ins>.<br><ins>Sam owns the budget.</ins>
+        </div>
+        <div class="notice info"><svg><use href="#i-info"/></svg><span>The other text is kept in Needs attention.</span></div>
+      </div>
+      <div class="sfoot" style="padding:10px 16px 18px;border-top:1px solid var(--subtle);display:flex;flex-direction:column;gap:8px">
+        <span class="btn pri full">Keep this device's text</span>
+        <span class="btn sec full">Use saved version</span>
+      </div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">D3</span>Recover a draft</b>
+      <ol><li>Tabs show one text at a time. Changed lines are marked.</li>
+      <li>Buttons say what happens. Safe default (keep local work) is filled.</li>
+      <li>Editing stays blocked until a choice. Same rule as now.</li></ol></figcaption>
+  </figure>
+
+  <figure>
+    <div class="frame">
+      <div class="sb"><span>11:42</span><span>5G 80%</span></div>
+      <div class="bar"><span class="ib"><svg><use href="#i-back"/></svg></span><span class="title" style="font-size:15px">Meeting 2026-10-26</span></div>
+      <div class="content">
+        <h3 class="pt" style="font-size:20px">Two versions of this note</h3>
+        <p class="sub">This note changed on another device. Choose which text to keep.</p>
+        <div class="tabs2"><span>This device</span><span class="on">Saved version</span></div>
+        <div class="cmp"><div class="meta">Saved from Mac, 11:35</div>Attendees: Sam, Priya<br><br><b>Notes</b><br>Agreed on the <del>old</del> plan.</div>
+        <div class="notice problem"><svg><use href="#i-alert"/></svg><span>Could not keep this text. Try again.</span></div>
+      </div>
+      <div class="sfoot" style="padding:10px 16px 18px;border-top:1px solid var(--subtle);display:flex;flex-direction:column;gap:8px">
+        <span class="btn pri full">Keep this device's text</span>
+        <span class="btn sec full">Use saved version</span>
+      </div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">D4</span>Recovery failed</b>
+      <ol><li>Problem line above the buttons. Both buttons stay on, so the person can try again.</li>
+      <li>While working: both buttons off, filled one says "Keeping...".</li></ol></figcaption>
+  </figure>
+
+  <figure>
+    <div class="frame" style="background:#0d0d0d">
+      <div class="sb" style="color:#fff"><span>11:43</span><span>5G 80%</span></div>
+      <div class="bar" style="background:#0d0d0d;border-color:#222;color:#fff">
+        <span class="ib" style="color:#fff"><svg><use href="#i-x"/></svg></span><span class="title" style="color:#fff">whiteboard.jpg</span>
+        <span class="ib" style="color:#fff"><svg><use href="#i-more"/></svg></span>
+      </div>
+      <div class="content" style="display:flex;align-items:center;justify-content:center">
+        <div style="width:300px;height:220px;border-radius:6px;background:linear-gradient(135deg,#555,#888);display:flex;align-items:center;justify-content:center;color:#ddd"><svg width="40" height="40"><use href="#i-img"/></svg></div>
+      </div>
+      <div style="display:flex;gap:8px;padding:12px 16px 80px;justify-content:center">
+        <span class="btn sec" style="background:#222;color:#fff;border-color:#666;padding:0 14px" aria-label="Zoom out">&minus;</span>
+        <span class="btn sec" style="background:#222;color:#fff;border-color:#666;padding:0 14px" aria-label="Zoom in">+</span>
+        <span class="btn sec" style="background:#222;color:#f5817d;border-color:#f5817d"><svg><use href="#i-trash"/></svg>Remove</span>
+      </div>
+      <div class="toast" style="background:#f5f4f2;color:#191917"><span style="flex:1">Image removed from note.</span><span class="btn ghost" style="color:#191917">Undo</span></div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">D5</span>Image viewer</b>
+      <ol><li>Zoom buttons are icons with labels for screen readers. "Remove" has a visible label. No long tooltip.</li>
+      <li>Toast with Undo. The image file stays in the account, as now.</li>
+      <li>Changed image: "This image changed. Open it again." with Reopen.</li></ol></figcaption>
+  </figure>
+
+  </div>
+</section>
+
+<!-- ============ E. STATES ============ -->
+<section class="group">
+  <h2>E. Note states, search, account notices</h2>
+  <div class="row">
+
+  <figure>
+    <div class="frame">
+      <div class="sb"><span>11:44</span><span>5G 80%</span></div>
+      <div class="bar"><span class="ib"><svg><use href="#i-back"/></svg></span><span class="title"></span></div>
+      <div class="content">
+        <div class="empty" style="padding-top:110px">
+          <span class="eic"><svg width="24" height="24"><use href="#i-trash"/></svg></span>
+          <h4>Weight is in Trash</h4>
+          <p>Restore it to edit.</p>
+          <div class="actions"><span class="btn pri">Restore note</span><span class="btn sec">All notes</span></div>
+        </div>
+      </div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">E2</span>Note in Trash</b>
+      <ol><li>Offline: "Deleted on this device. Uploads when online." Restore still works.</li></ol></figcaption>
+  </figure>
+
+  <figure>
+    <div class="frame">
+      <div class="sb"><span>11:44</span><span>5G 80%</span></div>
+      <div class="bar"><span class="ib"><svg><use href="#i-back"/></svg></span><span class="title"></span></div>
+      <div class="content">
+        <div class="empty" style="padding-top:110px">
+          <span class="eic"><svg width="24" height="24"><use href="#i-alert"/></svg></span>
+          <h4>This note was deleted</h4>
+          <p>It is gone for good. Unsaved text from this device is in Needs attention.</p>
+          <div class="actions"><span class="btn pri">Open Needs attention</span></div>
+          <div class="actions"><span class="btn ghost">All notes</span></div>
+        </div>
+        <div style="border-top:1px dashed var(--subtle);margin-top:40px;padding-top:12px">
+          <p class="sub"><b>Not found:</b> "Note not found. Check the link." [All notes]</p>
+          <p class="sub"><b>Unavailable:</b> "Can't open this note now." [Try again]</p>
+        </div>
+      </div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">E3</span>Deleted for good, not found</b>
+      <ol><li>"Needs attention" button only shows when local text exists.</li></ol></figcaption>
+  </figure>
+
+  <figure>
+    <div class="frame">
+      <div class="sb"><span>11:45</span><span>No signal</span></div>
+      <div class="bar" style="gap:8px;padding:0 8px">
+        <div class="field" style="flex:1;color:var(--strong)"><svg><use href="#i-search"/></svg>launch</div>
+        <span class="btn ghost sm">Cancel</span>
+      </div>
+      <div class="content">
+        <p class="sub" style="margin-bottom:6px">In Personal · Offline, results from this device</p>
+        <div class="grp">Notes</div>
+        <ul class="list">
+          <li class="hl"><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">Meeting 2026-10-26<br><span class="mt">...new plan for the <b>launch</b>.</span></span></li>
+          <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">Q4 roadmap<br><span class="mt">Projects · <b>launch</b> in March</span></span></li>
+        </ul>
+        <div class="grp">Actions</div>
+        <ul class="list">
+          <li><span class="ic"><svg><use href="#i-plus"/></svg></span><span class="nm">New note "launch"</span></li>
+        </ul>
+        <div style="border-top:1px dashed var(--subtle);margin-top:24px;padding-top:12px">
+          <p class="sub"><b>Waiting:</b> "Searching..."</p>
+          <p class="sub"><b>Nothing:</b> "No results for "launch"."</p>
+        </div>
+      </div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">E4</span>Search</b>
+      <ol><li>Scope is one quiet line with the workspace name. No "Search in:" sentence.</li>
+      <li>Offline note joins the same line.</li></ol></figcaption>
+  </figure>
+
+  <figure>
+    <div class="frame">
+      <div class="sb"><span>11:46</span><span>5G 80%</span></div>
+      <div class="bar">
+        <span class="ib"><svg><use href="#i-menu"/></svg></span><span class="title"></span>
+        <span class="ib"><svg><use href="#i-search"/></svg></span><span class="ib"><span class="avatar">M</span></span>
+      </div>
+      <div class="trial"><span class="t">Trial: 12 days left</span><span class="btn sec sm">Upgrade</span></div>
+      <div class="content">
+        <h3 class="pt">All notes</h3>
+        <p class="sub">28 notes</p>
+        <div class="actions pair"><span class="btn pri"><svg><use href="#i-plus"/></svg>New note</span><span class="btn sec"><svg><use href="#i-tpl"/></svg>Use template</span></div>
+        <div style="border-top:1px dashed var(--subtle);margin-top:20px;padding-top:12px">
+          <div class="grp" style="margin-top:0">Trial ended (replaces the strip)</div>
+          <div class="notice problem"><svg><use href="#i-alert"/></svg><span>Your trial ended. No charge was made.</span><span class="btn sec sm na">Upgrade</span></div>
+          <div class="grp">Device full (toast text)</div>
+          <p class="sub">"Note not made. This device is full."</p>
+        </div>
+      </div>
+      <div class="toast"><span style="flex:1">Could not make the note.</span><span class="btn ghost">Try again</span></div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">E5</span>Trial and create errors</b>
+      <ol><li>Trial is one strip, 40 px, with one button.</li>
+      <li>Create errors use a toast with Try again, not a block in the page.</li></ol></figcaption>
+  </figure>
+
+  <figure>
+    <div class="frame">
+      <div class="sb"><span>11:47</span><span>5G 80%</span></div>
+      <div class="content" style="display:flex;flex-direction:column;justify-content:center;text-align:center">
+        <div class="eic" style="margin:0 auto 12px;width:56px;height:56px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;color:var(--ok)"><svg width="28" height="28"><use href="#i-check"/></svg></div>
+        <h3 class="pt" style="font-size:22px">Email verified</h3>
+        <p class="sub" style="margin:4px 0 20px">me@example.com</p>
+        <span class="btn pri full">Continue</span>
+        <div style="border-top:1px dashed var(--subtle);margin-top:40px;padding-top:12px;text-align:left">
+          <p class="sub"><b>Link expired:</b> "This link no longer works." [Get a new link]</p>
+          <p class="sub"><b>Sign up closed:</b> "New accounts are closed." [Sign in]</p>
+        </div>
+      </div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">E6</span>Sign up result</b>
+      <ol><li>One button. No second link next to it.</li></ol></figcaption>
+  </figure>
+
+  </div>
+
+  <div class="spec" style="margin-top:28px">
+    <b><span class="id">E1</span>Save status: pill (D1), menu footer (A3) and details sheet (D2)</b>
+    <table>
+      <tr><th>State</th><th>Pill</th><th>Menu footer</th><th>Details sheet line</th></tr>
+      <tr><td>Saved to server</td><td><span class="c-ok">● Saved</span></td><td>All changes saved</td><td>Saved to your account.</td></tr>
+      <tr><td>Typing, not yet on device</td><td>○ Saving</td><td>Saving...</td><td>Saving on this device.</td></tr>
+      <tr><td>On device, upload pending</td><td>○ Saving</td><td>Uploading...</td><td>Saved on this device. Uploading now.</td></tr>
+      <tr><td>Offline</td><td>● Offline</td><td>Offline. Saved on this device.</td><td>No connection. Your changes are safe here and upload when you are online.</td></tr>
+      <tr><td>Monthly limit</td><td>● Paused</td><td>Upload paused until next month</td><td>Monthly upload limit reached. Changes stay on this device.</td></tr>
+      <tr><td>Signed out / other account</td><td>● Paused</td><td>Sign in to upload</td><td>You are signed out. Changes stay on this device. [Sign in]</td></tr>
+      <tr><td>Server needs update</td><td>● Paused</td><td>Waiting for server update</td><td>The server must update first. Changes stay on this device.</td></tr>
+      <tr><td>Local write failed</td><td><span class="c-bad">● Not saved</span></td><td><span class="c-bad">Not saved</span></td><td>Could not save on this device. Copy your text, then free space. [Copy text] [Try again]</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ============ F. DARK ============ -->
+<section class="group">
+  <h2>F. Dark mode, key screens</h2>
+  <p class="lead">Same layout. Filled button turns light on dark. Outlined buttons keep a visible edge. Use the toggle at the top to see every frame in dark.</p>
+  <div class="row">
+
+  <figure>
+    <div class="frame dark">
+      <div class="sb"><span>11:35</span><span>5G 80%</span></div>
+      <div class="bar"><span class="ib"><svg><use href="#i-menu"/></svg></span><span class="title"></span><span class="ib"><svg><use href="#i-search"/></svg></span><span class="ib"><span class="avatar">M</span></span></div>
+      <div class="content">
+        <h3 class="pt">All notes</h3><p class="sub">28 notes</p>
+        <div class="actions pair"><span class="btn pri"><svg><use href="#i-plus"/></svg>New note</span><span class="btn sec"><svg><use href="#i-tpl"/></svg>Use template</span></div>
+        <div class="tip"><span class="t">Type <kbd>[[</kbd> to link a note.</span><span class="btn ghost sm">Next</span><span class="ib"><svg><use href="#i-x"/></svg></span></div>
+        <div class="grp">Today</div>
+        <ul class="list">
+          <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">2026-10-26</span><span class="mt">22 min</span></li>
+          <li class="focusring"><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">Shared artefacts</span><span class="mt">4 h</span></li>
+          <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">Weight</span><span class="mt">14 h</span></li>
+        </ul>
+      </div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">F1</span>All notes, dark</b><ol><li>Keyboard focus ring shown on a row.</li></ol></figcaption>
+  </figure>
+
+  <figure>
+    <div class="frame dark">
+      <div class="sb"><span>11:36</span><span>5G 80%</span></div>
+      <div class="bar"><span class="ib"><svg><use href="#i-menu"/></svg></span><span class="title"></span></div>
+      <div class="content"></div>
+      <div class="scrim"></div>
+      <div class="sheet" style="top:60px">
+        <div class="grab"></div>
+        <div class="sh"><span class="ib"><svg><use href="#i-back"/></svg></span><span class="st">Meeting notes</span><span class="ib"><svg><use href="#i-x"/></svg></span></div>
+        <div class="sbody">
+          <div class="preview"># Meeting {{date}}
+
+Attendees:
+-
+
+## Notes
+
+## Actions
+- [ ] </div>
+          <div class="destrow"><span class="lb">Folder</span><span class="v">Projects</span><span class="btn sec sm">Change</span></div>
+        </div>
+        <div class="sfoot"><span class="btn pri full">Create note</span></div>
+      </div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">F2</span>Template preview, dark</b><ol><li>Opened from the Projects folder page.</li></ol></figcaption>
+  </figure>
+
+  <figure>
+    <div class="frame dark">
+      <div class="sb"><span>11:37</span><span>5G 80%</span></div>
+      <div class="bar"><span class="ib"><svg><use href="#i-back"/></svg></span><span class="title">Settings</span></div>
+      <div class="content" style="background:var(--surface)">
+        <div class="grp" style="margin-top:0">General</div>
+        <ul class="slist">
+          <li><span class="ic"><svg><use href="#i-sun"/></svg></span><span class="nm">Appearance</span><span class="v">Dark</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
+          <li><span class="ic"><svg><use href="#i-spell"/></svg></span><span class="nm">Spelling</span><span class="v">On</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
+        </ul>
+        <div class="grp">Notes</div>
+        <ul class="slist">
+          <li><span class="ic"><svg><use href="#i-cal"/></svg></span><span class="nm">Daily notes</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
+          <li><span class="ic"><svg><use href="#i-tpl"/></svg></span><span class="nm">Templates</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
+          <li><span class="ic"><svg><use href="#i-phone"/></svg></span><span class="nm">Offline</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
+          <li><span class="ic"><svg><use href="#i-dl"/></svg></span><span class="nm">Export and import</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
+        </ul>
+        <div class="grp">Account</div>
+        <ul class="slist">
+          <li><span class="ic"><svg><use href="#i-user"/></svg></span><span class="nm">Profile and email</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
+          <li><span class="ic"><svg><use href="#i-screen"/></svg></span><span class="nm">Devices</span><span class="v">3</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
+          <li><span class="ic"><svg><use href="#i-key"/></svg></span><span class="nm">API keys and apps</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
+        </ul>
+        <ul class="slist" style="margin-top:14px"><li><span class="ic"><svg><use href="#i-out"/></svg></span><span class="nm">Sign out</span></li></ul>
+      </div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">F3</span>Settings, dark</b><ol><li>No Billing row: this server has no billing portal.</li></ol></figcaption>
+  </figure>
+
+  <figure>
+    <div class="frame dark">
+      <div class="sb"><span>11:42</span><span>5G 80%</span></div>
+      <div class="bar"><span class="ib"><svg><use href="#i-back"/></svg></span><span class="title" style="font-size:15px">Meeting 2026-10-26</span></div>
+      <div class="content">
+        <h3 class="pt" style="font-size:20px">Two versions of this note</h3>
+        <p class="sub">This note changed on another device. Choose which text to keep.</p>
+        <div class="tabs2"><span class="on">This device</span><span>Saved version</span></div>
+        <div class="cmp"><div class="meta">Edited here, 11:31</div>Agreed on the <ins>new plan for the launch</ins>.<br><ins>Sam owns the budget.</ins></div>
+        <div class="notice info"><svg><use href="#i-info"/></svg><span>The other text is kept in Needs attention.</span></div>
+      </div>
+      <div style="padding:10px 16px 18px;border-top:1px solid var(--subtle);display:flex;flex-direction:column;gap:8px">
+        <span class="btn pri full">Keep this device's text</span><span class="btn sec full">Use saved version</span>
+      </div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">F4</span>Recovery, dark</b></figcaption>
+  </figure>
+
+  </div>
+</section>
+
+<!-- ============ G. DESKTOP ============ -->
+<section class="group">
+  <h2>G. Desktop (1180 px and wider)</h2>
+  <p class="lead">Navigation stays open on the left. Sheets become centred dialogs. Settings shows its list and the open page side by side.</p>
+
+  <figure class="wide" style="margin-bottom:28px">
+    <div class="frame desk">
+      <div class="dwrap">
+        <div class="side">
+          <div class="ws"><span class="wsi">P</span><span class="wsn">Personal</span><span class="ib" style="width:32px;height:32px"><svg style="width:16px;height:16px"><use href="#i-down"/></svg></span></div>
+          <div style="padding:8px;flex:1">
+            <div class="field" style="height:34px;margin-bottom:8px;font-size:13px"><svg style="width:16px;height:16px"><use href="#i-search"/></svg>Search<span style="flex:1"></span><code>Ctrl K</code></div>
+            <ul class="list">
+              <li class="sel"><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">All notes</span></li>
+              <li><span class="ic"><svg><use href="#i-cal"/></svg></span><span class="nm">Today's note</span></li>
+              <li><span class="ic"><svg><use href="#i-bell"/></svg></span><span class="nm">Needs attention</span><span class="badge">1</span></li>
+              <li><span class="ic"><svg><use href="#i-trash"/></svg></span><span class="nm">Trash</span></li>
+            </ul>
+            <div class="grp" style="display:flex;align-items:center;padding-left:10px">Folders<span style="flex:1"></span><span class="ib" style="width:28px;height:28px"><svg style="width:15px;height:15px"><use href="#i-plus"/></svg></span></div>
+            <ul class="list">
+              <li><span class="ic"><svg><use href="#i-folder"/></svg></span><span class="nm">Projects</span></li>
+              <li><span class="ic"><svg><use href="#i-folder"/></svg></span><span class="nm">Templates</span></li>
+              <li><span class="ic"><svg><use href="#i-folder"/></svg></span><span class="nm">Travel</span></li>
+            </ul>
+            <ul class="list" style="margin-top:8px"><li><span class="ic"><svg><use href="#i-gear"/></svg></span><span class="nm">Settings</span></li></ul>
+          </div>
+          <div class="foot"><span class="dot"></span>All changes saved</div>
+        </div>
+        <div class="dmain">
+          <div class="measure">
+            <div style="display:flex;align-items:flex-end;gap:12px">
+              <div style="flex:1"><h3 class="pt">All notes</h3><p class="sub">28 notes</p></div>
+              <span class="btn sec"><svg><use href="#i-tpl"/></svg>Use template</span>
+              <span class="btn pri"><svg><use href="#i-plus"/></svg>New note</span>
+            </div>
+            <div class="tip" style="margin-top:16px"><span class="t">Tip: Press <kbd>Ctrl K</kbd> to search or run a command.</span><span class="btn ghost sm">Next</span><span class="ib"><svg><use href="#i-x"/></svg></span></div>
+            <div class="grp">Today</div>
+            <ul class="list">
+              <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">2026-10-26</span><span class="mt">22 min ago</span></li>
+              <li class="hl"><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">Shared artefacts</span><span class="mt">4 hours ago</span></li>
+              <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">Weight</span><span class="mt">14 hours ago</span></li>
+            </ul>
+            <div class="grp">Yesterday</div>
+            <ul class="list">
+              <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">2026-10-25</span><span class="mt">24 hours ago</span></li>
+              <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">Trip plan <span class="mt">· Travel</span></span><span class="mt">1 day ago</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">G1</span>All notes, desktop</b> Buttons move to the right of the title. Filled button is last, nearest the reading edge.</figcaption>
+  </figure>
+
+  <figure class="wide" style="margin-bottom:28px">
+    <div class="frame desk">
+      <div class="dwrap">
+        <div class="side" style="opacity:.6"><div class="ws"><span class="wsi">P</span><span class="wsn">Personal</span></div></div>
+        <div class="dmain"><h3 class="pt">All notes</h3></div>
+      </div>
+      <div class="scrim"></div>
+      <div class="dlg">
+        <div class="dh"><span class="st">New note from template</span><span class="ib"><svg><use href="#i-x"/></svg></span></div>
+        <div class="db">
+          <div style="width:270px;border-right:1px solid var(--subtle);padding:12px">
+            <div class="field" style="height:36px;font-size:13px"><svg style="width:16px;height:16px"><use href="#i-search"/></svg>Search templates</div>
+            <ul class="list" style="margin-top:8px">
+              <li class="sel"><span class="ic"><svg><use href="#i-tpl"/></svg></span><span class="nm">Meeting notes</span></li>
+              <li><span class="ic"><svg><use href="#i-tpl"/></svg></span><span class="nm">Weekly review</span></li>
+              <li><span class="ic"><svg><use href="#i-tpl"/></svg></span><span class="nm">Trip plan</span></li>
+            </ul>
+          </div>
+          <div style="flex:1;padding:12px 16px">
+            <div class="preview" style="max-height:220px"># Meeting {{date}}
+
+Attendees:
+-
+
+## Notes
+
+## Actions
+- [ ] </div>
+            <p class="sub" style="margin-top:6px">{{date}} fills in when you create the note.</p>
+          </div>
+        </div>
+        <div class="df">
+          <span class="lb sub">Folder</span><span style="font-weight:600;color:var(--strong)">No folder</span><span class="btn sec sm">Change</span>
+          <span style="flex:1"></span>
+          <span class="btn ghost">Cancel</span><span class="btn pri">Create note</span>
+        </div>
+      </div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">G2</span>Template dialog, desktop</b> List and preview side by side. Arrow keys move the list. Enter creates.</figcaption>
+  </figure>
+
+  <figure class="wide" style="margin-bottom:28px">
+    <div class="frame desk">
+      <div class="dwrap">
+        <div class="side">
+          <div class="ws"><span class="ib" style="width:32px;height:32px"><svg style="width:18px;height:18px"><use href="#i-back"/></svg></span><span class="wsn">Settings</span></div>
+          <div style="padding:8px">
+            <div class="grp" style="padding-left:10px;margin-top:4px">General</div>
+            <ul class="list"><li class="sel"><span class="nm">Appearance</span></li><li><span class="nm">Spelling</span></li></ul>
+            <div class="grp" style="padding-left:10px">Notes</div>
+            <ul class="list"><li><span class="nm">Daily notes</span></li><li><span class="nm">Templates</span></li><li><span class="nm">Offline</span></li><li><span class="nm">Export and import</span></li></ul>
+            <div class="grp" style="padding-left:10px">Account</div>
+            <ul class="list"><li><span class="nm">Profile and email</span></li><li><span class="nm">Plan and billing</span></li><li><span class="nm">Devices</span></li><li><span class="nm">API keys and apps</span></li><li><span class="nm">Sign out</span></li></ul>
+          </div>
+        </div>
+        <div class="dmain">
+          <div class="measure" style="max-width:560px;margin:0">
+            <h3 class="pt">Appearance</h3>
+            <div class="grp">Mode</div>
+            <div class="seg" style="max-width:380px"><span><svg><use href="#i-screen"/></svg>System</span><span><svg><use href="#i-sun"/></svg>Light</span><span class="on"><svg><use href="#i-moon"/></svg>Dark</span></div>
+            <p class="sub" style="margin-top:6px">System follows your device.</p>
+            <div class="grp">Theme</div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+              <div style="border:2px solid var(--strong);border-radius:10px;padding:8px;font-weight:600;color:var(--strong)"><div style="height:44px;border-radius:6px;background:linear-gradient(90deg,#fff 50%,#191919 50%);border:1px solid var(--subtle);margin-bottom:6px"></div>Default</div>
+              <div style="border:1px solid var(--subtle);border-radius:10px;padding:8px;color:var(--strong)"><div style="height:44px;border-radius:6px;background:linear-gradient(90deg,#eceff4 50%,#2e3440 50%);margin-bottom:6px"></div>Nord</div>
+              <div style="border:1px solid var(--subtle);border-radius:10px;padding:8px;color:var(--strong)"><div style="height:44px;border-radius:6px;background:linear-gradient(90deg,#fdf6e3 50%,#002b36 50%);margin-bottom:6px"></div>Solarized</div>
+              <div style="border:1px solid var(--subtle);border-radius:10px;padding:8px;color:var(--strong)"><div style="height:44px;border-radius:6px;background:linear-gradient(90deg,#e1e2e7 50%,#1a1b26 50%);margin-bottom:6px"></div>Tokyo Night</div>
+            </div>
+            <div class="actions" style="margin-top:14px"><span class="btn sec"><svg><use href="#i-ul"/></svg>Import theme file</span></div>
+          </div>
+        </div>
+      </div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">G3</span>Settings, desktop</b> Left list replaces the app menu while in Settings. Back returns to notes. Each page has its own address, so links and the browser Back button work.</figcaption>
+  </figure>
+
+  <figure class="wide">
+    <div class="frame desk">
+      <div class="dwrap">
+        <div class="side">
+          <div class="ws"><span class="wsi">P</span><span class="wsn">Personal</span></div>
+          <div style="padding:8px;flex:1"><ul class="list"><li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">All notes</span></li><li><span class="ic"><svg><use href="#i-cal"/></svg></span><span class="nm">Today's note</span></li></ul></div>
+          <div class="foot"><span class="dot pend"></span>Uploading...</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+          <div class="bar" style="padding:0 12px">
+            <span class="sub" style="padding-left:6px">Projects /</span><span class="title" style="font-size:15px">Meeting 2026-10-26</span>
+            <span class="ib"><svg><use href="#i-undo"/></svg></span><span class="ib" style="opacity:.35"><svg><use href="#i-redo"/></svg></span>
+            <span class="status"><span class="dot pend"></span>Saving</span>
+            <span class="ib"><svg><use href="#i-more"/></svg></span>
+          </div>
+          <div class="dmain doc"><div class="measure"><h1>Meeting 2026-10-26</h1><p>Attendees: Sam, Priya</p><p><b>Notes</b></p><p>Agreed on the new plan for the launch<span class="caret"></span></p></div></div>
+        </div>
+      </div>
+      <span class="tag">PROTOTYPE</span>
+    </div>
+    <figcaption><b><span class="id">G4</span>Editor, desktop</b> Undo and Redo in the bar. Format tools appear on text selection and from the "..." menu. Status pill same as phone.</figcaption>
+  </figure>
+</section>
+
+</main>
+</body>
+</html>
