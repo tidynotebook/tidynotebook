@@ -7,7 +7,9 @@ export function FolderPicker({
   selected,
   onSelect,
   onDone,
+  includeNone = true,
 }: {
+  readonly includeNone?: boolean;
   readonly folders: readonly string[];
   readonly selected: string;
   readonly onSelect: (folder: string) => void;
@@ -20,7 +22,7 @@ export function FolderPicker({
         aria-label="Save in"
         className="flex max-h-80 flex-col overflow-auto"
       >
-        {['', ...folders].map((folder) => (
+        {(includeNone ? ['', ...folders] : folders).map((folder) => (
           <button
             key={folder}
             type="button"

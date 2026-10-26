@@ -26,13 +26,14 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { getFile } from '@notesapp/api-client';
 import type { LocalFileSummary, LocalStore } from '@notesapp/sync';
 import type { LinkTarget } from '@notesapp/editor';
 import { classifyUrl } from '@notesapp/markdown';
 import {
   LoadingState,
+  Button,
   Notice,
   pageGutter,
   PageHeader,
@@ -65,6 +66,11 @@ import {
   watchDeviceNote,
 } from './device-note.ts';
 import { NoteEditor } from './note-editor.tsx';
+import {
+  AllNotesAction,
+  DeletedNotePage,
+  PurgedNotePage,
+} from './note-state-pages.tsx';
 import { StaleDraftRecovery } from './stale-draft-recovery.tsx';
 import { recordTiming } from './timing.ts';
 
@@ -358,38 +364,40 @@ export function NoteEditorLoader({
       <PageRegion>
         <PageHeader
           title="Note not found"
-          description="The server knows no note at that address. It may be removed, or the address may be wrong. This is not an empty note."
+          description="Check the link, or find the note in All notes."
         />
+        <AllNotesAction workspaceId={workspaceId} />
       </PageRegion>
     );
   if (status.kind === 'purged')
     return (
-      <PageRegion>
-        <PageHeader
-          title="Note deleted permanently"
-          description="This note was deleted permanently. Work for it that waits on this device stays here and can go into a new note."
-        />
-      </PageRegion>
+      <PurgedNotePage
+        key={`${accountId}:${workspaceId}:${fileId}`}
+        store={store}
+        accountId={accountId}
+        workspaceId={workspaceId}
+        fileId={fileId}
+      />
     );
   if (status.kind === 'deleted')
     return (
-      <PageRegion>
-        <PageHeader
-          title="Note deleted on this device"
-          description={`${displayNoteName(status.path)} is in the trash. The deletion goes to the server when this device has a connection.`}
-        />
-        <p className="m-0 text-control">
-          <Link to={`/w/${workspaceId}/trash`}>Open Trash.</Link>
-        </p>
-      </PageRegion>
+      <DeletedNotePage
+        key={`${accountId}:${workspaceId}:${fileId}`}
+        store={store}
+        workspaceId={workspaceId}
+        fileId={fileId}
+        path={status.path}
+        onRestored={readAgain}
+      />
     );
   if (status.kind === 'unavailable')
     return (
       <PageRegion>
-        <PageHeader title="Note unavailable" />
-        <p className="text-control text-danger" role="alert">
-          {status.message}
-        </p>
+        <PageHeader title="Can't open this note" description={status.message} />
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={readAgain}>Try again</Button>
+          <AllNotesAction workspaceId={workspaceId} />
+        </div>
       </PageRegion>
     );
   if (store === null)
@@ -397,8 +405,7 @@ export function NoteEditorLoader({
       <PageRegion>
         <PageHeader title={displayNoteName(status.path)} />
         <p className="text-control text-danger" role="alert">
-          Local storage is unavailable, so editing is closed here. The saved
-          text follows and can be read.
+          Editing is unavailable on this device. You can read the saved text.
         </p>
         <pre className="overflow-x-auto rounded-lg border border-edge-subtle bg-card p-3 text-control">
           {status.text}

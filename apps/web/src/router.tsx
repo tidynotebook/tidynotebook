@@ -212,7 +212,7 @@ const routes: RouteObject[] = [
                   handle: page('accounts'),
                 },
                 {
-                  path: 'attention',
+                  path: 'attention/:recoveryId?',
                   element: deferred(<AttentionRoute />),
                   handle: page('attention'),
                 },

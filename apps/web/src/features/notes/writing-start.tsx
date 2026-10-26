@@ -32,6 +32,7 @@ export function WritingStart({
         variant="ghost"
         size="sm"
         label="Close tips"
+        className="size-11 md:size-11"
         icon={<CloseIcon />}
         onClick={() => {
           setDismissed(true);

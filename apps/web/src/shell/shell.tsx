@@ -135,6 +135,7 @@ import {
   today,
   useDailyNotes,
 } from '../features/daily-notes/daily-notes.tsx';
+import { saveStatusWords } from '../lib/save-status-words.ts';
 import { daysWithNotes } from '../lib/daily-note.ts';
 import {
   TemplatesProvider,
@@ -479,7 +480,13 @@ function Sidebar({
     openNoteWriteFailed,
     openNotePending,
   });
-  const syncLine = footer.line;
+  const syncLine = saveStatusWords({
+    state: sync.state,
+    online,
+    pending: openNotePending,
+    failed: openNoteWriteFailed,
+    noteName: sync.noteName,
+  }).line;
 
   return (
     <>
@@ -515,20 +522,6 @@ function Sidebar({
         quiet and every action stays in the tab order.
       */}
             <div className="px-2 pt-1">
-              <button
-                type="button"
-                className={rowClassName({ className: 'w-full' })}
-                disabled={daily.waiting}
-                onClick={() => daily.open(today())}
-              >
-                {actionIcon('today')}
-                <span>Today's note</span>
-              </button>
-              {daily.openProblem === null ? null : (
-                <Notice tone="problem" message={daily.openProblem} />
-              )}
-            </div>
-            <div className="px-2 pt-1">
               <div className="flex items-center gap-1">
                 <Button
                   variant="ghost"
@@ -547,14 +540,10 @@ function Sidebar({
                   variant="ghost"
                   size="sm"
                   compact
-                  label={
-                    selectedFolder === ''
-                      ? 'New folder'
-                      : `New folder in ${selectedFolder}`
-                  }
+                  label="New folder"
                   title="New folder"
                   icon={actionIcon('new-folder')}
-                  onClick={() => onNewFolderIn(selectedFolder)}
+                  onClick={() => onNewFolderIn('')}
                 />
                 <Menu
                   label="Sort notes"
@@ -584,8 +573,9 @@ function Sidebar({
                 />
               </div>
               <Button
-                variant="ghost"
+                variant="secondary"
                 size="sm"
+                icon={actionIcon('template')}
                 onClick={() => onFromTemplate(selectedFolder)}
               >
                 Use template
@@ -652,6 +642,20 @@ function Sidebar({
                       </span>
                     </Link>
                   </div>
+                </div>
+                <div className="px-2 pt-1">
+                  <button
+                    type="button"
+                    className={rowClassName({ className: 'w-full' })}
+                    disabled={daily.waiting}
+                    onClick={() => daily.open(today())}
+                  >
+                    {actionIcon('today')}
+                    <span>Today's note</span>
+                  </button>
+                  {daily.openProblem === null ? null : (
+                    <Notice tone="problem" message={daily.openProblem} />
+                  )}
                 </div>
                 {files.loading ? (
                   <div className="px-2 py-2">
@@ -1033,6 +1037,12 @@ function ShellFrame({
     setTemplateDestination(null);
   }, [workspaceId]);
   const [selectedFolder, setSelectedFolder] = useState('');
+  useEffect(() => {
+    if (location.pathname === `/w/${workspaceId}`) setSelectedFolder('');
+    else if (location.pathname.startsWith(`/w/${workspaceId}/folders/`))
+      setSelectedFolder(params['*'] ?? '');
+  }, [workspaceId, location.pathname, params]);
+
   const sidebar = useSidebarSize();
   const [sidebarView, setSidebarView] = useSidebarView();
   // The frame is the visible part of the screen, so iOS cannot scroll it

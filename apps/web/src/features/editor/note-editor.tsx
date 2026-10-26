@@ -54,7 +54,14 @@ import {
   type RichWidgetResolvers,
   type TableMenuRequest,
 } from '@notesapp/editor';
-import { Button, CollapsibleSection, Notice, pageGutter } from '@notesapp/ui';
+import {
+  Toast,
+  CloseIcon,
+  Button,
+  CollapsibleSection,
+  Notice,
+  pageGutter,
+} from '@notesapp/ui';
 import { useSpellCheck, useTheme } from '../../app.tsx';
 import { ActiveNoteScope, useActiveNoteControl } from './active-note.tsx';
 import { downloadNote, transferFailureMessage } from '../export/export.ts';
@@ -365,6 +372,15 @@ const NoteEditorBody = memo(function NoteEditorBody({
   const history = useEditorHistory(viewRef);
   const watchHistory = history.watch;
   // The picture that a press on an image of the note opened (record 0145).
+  const [imageUndo, setImageUndo] = useState<{
+    readonly run: () => void;
+  } | null>(null);
+  const imageUndoRef = useRef<{ readonly run: () => void } | null>(null);
+  const clearImageUndo = (): void => {
+    if (imageUndoRef.current === null) return;
+    imageUndoRef.current = null;
+    setImageUndo(null);
+  };
   const [openImage, setOpenImage] = useState<ImageOpenRequest | null>(null);
   const [outlineOpen, setOutlineOpen] = useState(true);
   const [backlinksOpen, setBacklinksOpen] = useState(true);
@@ -962,6 +978,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
         // the change and moves the timers. Its work goes to the store on the
         // next frame (record 0175).
         const startedAt = performance.now();
+        clearImageUndo();
         textReaderRef.current = readText;
         documentWork.schedule(readText);
         const first = sequenceRef.current === writtenSequenceRef.current;
@@ -1005,6 +1022,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
         // Work of another device is not input of this device: the screen
         // shows it and schedules no save of its own (record 0085).
         onRemoteChange: (readText) => {
+          clearImageUndo();
           textReaderRef.current = readText;
           documentWork.schedule(readText);
           // A draft is recovery data of local work, so remote work writes
@@ -1424,6 +1442,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
         workspaceId={workspaceId}
         fileId={fileId}
         onRename={renameNote}
+        onCopyText={copyNote.run}
         onMoveToFolder={onMoveToFolder}
         onDuplicate={duplicateNote}
         onAttachImage={attachImage}
@@ -1546,6 +1565,20 @@ const NoteEditorBody = memo(function NoteEditorBody({
             <NoteFooter initialText={initialText} />
             <ImageViewer
               image={openImage}
+              onRemoved={() => {
+                const view = currentView();
+                if (view === null) return;
+                const after = view.state.doc;
+                const notice = {
+                  run: (): void => {
+                    if (currentView() === view && view.state.doc === after)
+                      history.run('undo');
+                    clearImageUndo();
+                  },
+                };
+                imageUndoRef.current = notice;
+                setImageUndo(notice);
+              }}
               onClose={() => setOpenImage(null)}
               returnFocus={() => currentView()?.focus()}
             />
@@ -1585,7 +1618,22 @@ const NoteEditorBody = memo(function NoteEditorBody({
           </aside>
         </div>
       </div>
-      {copyNote.toast}
+      {imageUndo === null ? (
+        copyNote.toast
+      ) : (
+        <Toast message="Image removed from note.">
+          <Button variant="secondary" size="sm" onClick={imageUndo.run}>
+            Undo
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            label="Close message"
+            icon={<CloseIcon />}
+            onClick={clearImageUndo}
+          />
+        </Toast>
+      )}
     </div>
   );
 });

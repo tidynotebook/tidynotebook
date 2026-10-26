@@ -39,8 +39,7 @@ import { AuthFrame } from './accounts.tsx';
 import { ConsentLabel, useLegalDocuments } from './legal-links.tsx';
 
 /** The one sentence of a verification link that opens nothing. */
-const invalidLink =
-  'This link is not valid any more. Sign up again to get a new link.';
+const invalidLink = 'This link no longer works.';
 
 /** The page that asks for an account. */
 export function SignUpPage(): ReactNode {
@@ -69,6 +68,7 @@ export function SignUpPage(): ReactNode {
   useDocumentTitle('Create an account');
 
   const submit = async (): Promise<void> => {
+    if (busy !== null) return;
     setFieldError('');
     const problem = passwordProblem(password);
     if (problem !== null) {
@@ -112,32 +112,25 @@ export function SignUpPage(): ReactNode {
 
   if (sentTo !== null)
     return (
-      <AuthFrame title="Open the link in your mail">
-        <p className="mb-5 mt-0 text-control text-muted">
-          A message goes to {sentTo}. Open the link in it to finish your
-          account. This browser can sign you in after verification. On another
-          device, enter your password to sign in.
+      <AuthFrame title="Check your email">
+        <p className="mb-3 mt-0 text-control text-muted">
+          We sent a link to {sentTo}.
         </p>
         <p className="mb-5 mt-0 text-control text-muted">
-          Check your spam folder if the message does not arrive. To send another
-          link or use a different address, return to the form. Email limits can
-          delay another message.
+          No email? Check spam.
         </p>
+        {error === '' ? null : <Notice tone="problem" message={error} />}
         <Button
-          variant="secondary"
+          disabled={busy !== null}
           onClick={() => {
-            setSentTo(null);
+            void submit();
           }}
         >
-          Change address or send another link
+          {busy === null ? 'Send another link' : 'Sending'}
         </Button>
-        <Link
-          className={buttonClassName({ variant: 'ghost' })}
-          to="/login"
-          state={{ email: sentTo }}
-        >
-          Go to sign in
-        </Link>
+        <Button variant="secondary" onClick={() => setSentTo(null)}>
+          Use a different email
+        </Button>
       </AuthFrame>
     );
 
@@ -147,8 +140,7 @@ export function SignUpPage(): ReactNode {
         <Notice className="mb-4" message={trialOffer(trialSeconds) ?? ''} />
       )}
       <p className="mb-5 mt-0 text-control text-muted">
-        Enter your address and choose a password. A link goes to the address to
-        prove that it is yours.
+        We send a link to check your email.
       </p>
       <form
         onSubmit={(event): void => {
@@ -284,7 +276,13 @@ export function VerifyPage(): ReactNode {
   return (
     <AuthFrame
       title={
-        state.kind === 'verified' ? 'Email verified' : 'Finish your account'
+        state.kind === 'verified'
+          ? 'Email verified'
+          : state.kind === 'invalid'
+            ? state.reason === 'registration_closed'
+              ? 'New accounts are closed'
+              : 'This link no longer works'
+            : 'Check your email'
       }
     >
       {state.kind === 'loading' ? (
@@ -303,12 +301,13 @@ export function VerifyPage(): ReactNode {
       ) : (
         <div className="mt-4 space-y-3">
           {state.kind === 'invalid' ? (
-            <Notice tone="problem" message={state.message} />
-          ) : (
-            <p className="mb-5 mt-0 text-control text-muted">
-              Email verified for {state.email}. Automatic sign-in is not
-              available in this browser. Enter your password to sign in.
+            <p className="text-control text-muted">
+              {state.reason === 'registration_closed'
+                ? 'Ask the owner of this server for an invitation.'
+                : 'Links work once and for a short time.'}
             </p>
+          ) : (
+            <p className="mb-5 mt-0 text-control text-muted">{state.email}</p>
           )}
           <Link
             className={buttonClassName({
@@ -319,7 +318,7 @@ export function VerifyPage(): ReactNode {
               state.kind === 'verified' ? { email: state.email } : undefined
             }
           >
-            {recovery.label}
+            {state.kind === 'verified' ? 'Continue' : recovery.label}
           </Link>
         </div>
       )}

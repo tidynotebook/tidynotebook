@@ -740,7 +740,7 @@ await test('the open note stays pending from first edit through draft and checkp
       );
       await openEditor(source, true);
       await waitFor(
-        () => container.textContent?.includes('Recover local draft') === true,
+        () => container.textContent?.includes('Choose a version') === true,
       );
       await act(settle);
       assert.equal(container.querySelector('.cm-editor'), null);
@@ -1023,7 +1023,7 @@ await test('the open note stays pending from first edit through draft and checkp
       );
     };
     const keep = Array.from(container.querySelectorAll('button')).find(
-      (button) => button.textContent === 'Keep local draft',
+      (button) => button.textContent === "Keep this device's text",
     );
     assert.ok(keep);
     await act(async () => {
@@ -1036,7 +1036,7 @@ await test('the open note stays pending from first edit through draft and checkp
     const renewedChoices = Array.from(
       container.querySelectorAll('button'),
     ).filter((button) =>
-      ['Keep local draft', 'Use saved version'].includes(
+      ["Keep this device's text", 'Use saved version'].includes(
         button.textContent ?? '',
       ),
     );
@@ -1046,7 +1046,7 @@ await test('the open note stays pending from first edit through draft and checkp
       'A newer remote version must permit another recovery choice.',
     );
     const keepLatest = renewedChoices.find(
-      (button) => button.textContent === 'Keep local draft',
+      (button) => button.textContent === "Keep this device's text",
     );
     assert.ok(keepLatest);
     await act(async () => {

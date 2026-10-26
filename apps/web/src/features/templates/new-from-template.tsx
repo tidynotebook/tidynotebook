@@ -313,6 +313,7 @@ function TemplateChoices({
                             selected: selected === choice.id,
                             className: 'min-h-14 w-full text-left lg:min-h-14',
                           })}
+                          aria-label={choice.label}
                           aria-pressed={selected === choice.id}
                           onClick={() => {
                             setPreview(null);

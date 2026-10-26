@@ -52,6 +52,7 @@ import { useDocumentTitle } from '../../shell/document-title.ts';
 import { useNow } from '../../shell/now.ts';
 import { useFiles } from '../../shell/files.tsx';
 import { WritingStart } from './writing-start.tsx';
+import { FolderPageActions } from '../folders/folder-page-actions.tsx';
 import { NewFromTemplate } from '../templates/new-from-template.tsx';
 import { useCreateNote } from './new-note.tsx';
 import { groupNotesByRecency } from '../../lib/note-groups.ts';
@@ -243,6 +244,13 @@ export function NotesHomeView(): ReactNode {
         workspaceId={workspaceId}
         folder={folder}
       />
+      {folder === '' ? null : (
+        <FolderPageActions
+          key={`${workspaceId}:${folder}`}
+          workspaceId={workspaceId}
+          folder={folder}
+        />
+      )}
     </div>
   );
   const keepOffset = useKeptOffset(workspaceId, !files.loading && total > 0);

@@ -18,9 +18,11 @@
  * store (`parked-actions.ts`), and the sync engine sends the requeued save.
  */
 import { useState, type ReactNode } from 'react';
-import { useParams } from 'react-router';
+import { Link, useParams } from 'react-router';
 import {
   Button,
+  buttonClassName,
+  rowClassName,
   CheckIcon,
   CopyIcon,
   EmptyState,
@@ -46,7 +48,6 @@ import {
   type ParkedPlace,
 } from './parked-actions.ts';
 import { useNow } from '../../shell/now.ts';
-import { productName } from '@notesapp/core';
 
 /** One row of the list with its four actions. */
 function ParkedSaveRow({
@@ -69,34 +70,20 @@ function ParkedSaveRow({
   return (
     <ListRow className="flex-col items-stretch py-3">
       <div className="min-w-0">
-        <p className="m-0 truncate text-ui text-strong">{save.name}</p>
         <p className="m-0 text-control text-muted">{lines.cause}</p>
         <p className="m-0 text-control text-muted">{lines.kept}</p>
       </div>
-      <details>
-        <summary className="cursor-pointer text-control text-muted">
-          Kept text
-        </summary>
+      <section aria-label="Kept text">
         <pre
           className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap rounded-lg border border-edge-subtle bg-surface p-3 font-mono text-control text-strong"
           aria-label={`Kept text of ${save.name}`}
         >
           {save.text}
         </pre>
-      </details>
+      </section>
       <div className="flex flex-wrap items-center gap-cluster">
         <Button
           variant="primary"
-          size="sm"
-          label={`Retry the save of ${save.name}`}
-          onClick={() => {
-            onRetry(save);
-          }}
-        >
-          Retry
-        </Button>
-        <Button
-          variant="secondary"
           size="sm"
           label={`Save as new note from ${save.name}`}
           onClick={() => {
@@ -104,6 +91,16 @@ function ParkedSaveRow({
           }}
         >
           Save as new note
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          label={`Try saving again for the save of ${save.name}`}
+          onClick={() => {
+            onRetry(save);
+          }}
+        >
+          Try saving again
         </Button>
         <Button
           variant="secondary"
@@ -237,11 +234,20 @@ export function AttentionRoute(): ReactNode {
     }, 'The discard');
   };
 
+  const selected = saves.find((save) => save.recoveryId === params.recoveryId);
   return (
     <Page>
+      {params.recoveryId === undefined ? null : (
+        <Link
+          className={buttonClassName({ variant: 'ghost' })}
+          to={`/w/${workspaceId}/attention`}
+        >
+          Back
+        </Link>
+      )}
       <PageHeader
-        title={attentionTitle}
-        description={`${productName} keeps text here when it cannot complete a save. Retry the save, or create a new note from its text.`}
+        title={selected?.name ?? attentionTitle}
+        description="Kept text that did not save. Nothing here is lost."
       />
       <div className="space-y-4">
         {error === null ? null : <Notice tone="problem" message={error} />}
@@ -261,16 +267,38 @@ export function AttentionRoute(): ReactNode {
               Text to review
             </h2>
             <ul className={pageListClassName()}>
-              {saves.map((save) => (
+              {params.recoveryId === undefined ? (
+                saves.map((save) => (
+                  <li key={save.recoveryId}>
+                    <Link
+                      to={`/w/${workspaceId}/attention/${encodeURIComponent(save.recoveryId)}`}
+                      className={rowClassName({ className: 'min-h-14' })}
+                    >
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-ui text-strong">
+                          {save.name}
+                        </span>
+                        <span className="block text-control text-muted">
+                          {parkedSaveLines(save, now).kept}
+                        </span>
+                      </span>
+                    </Link>
+                  </li>
+                ))
+              ) : selected === undefined ? (
+                <li className="text-control text-muted">
+                  This kept text is no longer here.
+                </li>
+              ) : (
                 <ParkedSaveRow
-                  key={save.recoveryId}
-                  save={save}
+                  key={selected.recoveryId}
+                  save={selected}
                   now={now}
                   onRetry={onRetry}
                   onSaveAsNew={onSaveAsNew}
                   onDiscard={onDiscard}
                 />
-              ))}
+              )}
             </ul>
           </section>
         )}

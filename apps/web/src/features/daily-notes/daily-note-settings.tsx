@@ -21,11 +21,17 @@ import {
 } from '@notesapp/core';
 import {
   Checkbox,
+  Button,
+  Dialog,
+  DialogBody,
+  DialogFooter,
   LoadingState,
   Notice,
   SelectField,
   TextField,
 } from '@notesapp/ui';
+import { FolderPicker } from '../folders/folder-picker.tsx';
+import { knownFolderPaths } from '../../lib/folder-selection.ts';
 import { useFiles } from '../../shell/files.tsx';
 import { useStoreOnLeave } from '../../shell/store-on-leave.ts';
 import {
@@ -48,6 +54,8 @@ function LayoutFields({
   readonly onSave: (next: DailyNoteSettings) => void;
 }): ReactNode {
   const [folder, setFolder] = useState(settings.folder);
+  const files = useFiles();
+  const [editing, setEditing] = useState<'folder' | 'format' | null>(null);
   const [format, setFormat] = useState(settings.format);
   // A stored layout that changes, from this section or from another device,
   // is what the fields show next.
@@ -68,23 +76,92 @@ function LayoutFields({
   });
 
   return (
-    <div className="mt-4" onBlur={leave.onBlur} onKeyDown={leave.onKeyDown}>
-      <TextField
-        id="daily-folder"
-        label="Folder"
-        value={folder}
-        onChange={setFolder}
-        hint="Leave it empty to keep daily notes at the top of the workspace."
-        error={problem === 'folder' ? sentence : undefined}
-      />
-      <TextField
-        id="daily-format"
-        label="Name format"
-        value={format}
-        onChange={setFormat}
-        hint="Use date tokens such as YYYY, MM, DD and dddd. A slash makes a folder. Put other text in square brackets."
-        error={problem !== null && problem !== 'folder' ? sentence : undefined}
-      />
+    <div
+      className="mt-4"
+      onBlur={leave.onBlur}
+      onKeyDown={(event) => {
+        if (event.target instanceof HTMLInputElement) leave.onKeyDown(event);
+      }}
+    >
+      <div className="mb-3 flex items-center gap-2 text-control">
+        <span className="min-w-0 flex-1 break-words">
+          Folder: {folder === '' ? 'No folder' : folder}
+        </span>
+        <Button variant="secondary" onClick={() => setEditing('folder')}>
+          Change
+        </Button>
+      </div>
+      <div className="mb-3 flex items-center gap-2 text-control">
+        <span className="min-w-0 flex-1 break-words">
+          Name format: {format}
+        </span>
+        <Button variant="secondary" onClick={() => setEditing('format')}>
+          Change
+        </Button>
+      </div>
+      <Dialog
+        open={editing !== null}
+        onClose={() => {
+          leave.onBlur();
+          setEditing(null);
+        }}
+        title={editing === 'folder' ? 'Save in' : 'Name format'}
+        titleId="daily-layout-title"
+        width="small"
+        align="sheet"
+      >
+        <DialogBody>
+          {editing === 'folder' ? (
+            <>
+              <TextField
+                id="daily-folder"
+                label="Folder name"
+                value={folder}
+                onChange={setFolder}
+                error={problem === 'folder' ? sentence : undefined}
+              />
+              <FolderPicker
+                folders={knownFolderPaths(
+                  files.notes.map((note) => note.path),
+                  files.emptyFolders,
+                )}
+                selected={folder}
+                onSelect={setFolder}
+                onDone={() => {
+                  if (problem === null) {
+                    leave.onBlur();
+                    setEditing(null);
+                  }
+                }}
+              />
+            </>
+          ) : (
+            <TextField
+              id="daily-format"
+              label="Name format"
+              value={format}
+              onChange={setFormat}
+              hint="Use YYYY, MM and DD for the date."
+              error={
+                problem !== null && problem !== 'folder' ? sentence : undefined
+              }
+            />
+          )}
+        </DialogBody>
+        {editing === 'format' ? (
+          <DialogFooter>
+            <Button
+              disabled={problem !== null}
+              onClick={() => {
+                leave.onBlur();
+                setEditing(null);
+              }}
+            >
+              Done
+            </Button>
+          </DialogFooter>
+        ) : null}
+      </Dialog>
       <p className="mb-3 mt-0 text-control text-muted" aria-live="polite">
         {problem === null
           ? `Today's note: ${dailyNotePreview(today(), layout)}`
@@ -124,7 +201,6 @@ export function DailyNoteSettingsFields(): ReactNode {
         label="Template"
         value={effectiveTemplateId(settings, files.notes) ?? noTemplateValue}
         options={choices}
-        hint="A new daily note starts with a copy of the text of this note. Write {{date}}, {{date:dddd}}, {{time}} or {{title}} in the template to fill in the date, the time or the name."
         onChange={(value) => {
           daily.save({ ...settings, templateFileId: templateOfChoice(value) });
         }}

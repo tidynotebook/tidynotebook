@@ -3,6 +3,7 @@ import test, { after } from 'node:test';
 import { registerHooks } from 'node:module';
 import { Window } from 'happy-dom';
 import { act, createElement, useState } from 'react';
+import { MemoryRouter } from 'react-router';
 import {
   reads,
   creations,
@@ -108,25 +109,43 @@ async function show(workspaceId: string, frameNotices = false): Promise<void> {
   await act(async () => {
     // The shell keys this dialog by workspace, so navigation remounts it.
     root.render(
-      createElement(Dialog, { key: workspaceId, workspaceId, frameNotices }),
+      createElement(
+        MemoryRouter,
+        null,
+        createElement(Dialog, { key: workspaceId, workspaceId, frameNotices }),
+      ),
     );
   });
+  await finishRowSummary();
+}
+async function finishRowSummary(): Promise<void> {
+  const summary = reads.shift();
+  assert.ok(summary, 'The row reads only device text for its first line.');
+  assert.equal(summary.fileId, templateId);
+  await act(async () => summary.finish(null));
 }
 function button(label: string): HTMLButtonElement {
   const found = [...container.querySelectorAll('button')].find(
-    (candidate) => candidate.textContent === label,
+    (candidate) =>
+      candidate.textContent === label ||
+      candidate.getAttribute('aria-label') === label,
   );
   assert.ok(found, `Missing button: ${label}`);
   return found;
 }
 async function click(label: string): Promise<void> {
   await act(async () => button(label).click());
+  if (label === 'Open template dialog') await finishRowSummary();
 }
 
 await test('a failed preview retries the same selection and guards creation until success', async () => {
   await show('workspace-a');
   assert.equal(button('Meeting').getAttribute('aria-pressed'), 'false');
-  assert.equal(button('Create note').disabled, true);
+  assert.ok(
+    ![...container.querySelectorAll('button')].some(
+      (control) => control.textContent === 'Create note',
+    ),
+  );
   await click('Meeting');
   assert.equal(button('Meeting').getAttribute('aria-pressed'), 'true');
   const first = reads.shift();
@@ -135,16 +154,19 @@ await test('a failed preview retries the same selection and guards creation unti
   assert.equal(button('Create note').disabled, true);
   await act(async () => first.finish(null));
   assert.equal(serverReads, 1);
-  assert.match(container.textContent ?? '', /Connect to the internet/);
+  assert.match(
+    container.textContent ?? '',
+    /Can't load this template. It is not on this device./,
+  );
   assert.equal(button('Create note').disabled, true);
 
   // No second click on the template. Retry must read the retained selection.
-  await click('Retry preview');
+  await click('Try again');
   const retry = reads.shift();
   assert.ok(retry);
   assert.equal(retry.fileId, first.fileId);
   assert.equal(retry.workspaceId, first.workspaceId);
-  assert.match(container.textContent ?? '', /The template preview is loading/);
+  assert.match(container.textContent ?? '', /Loading preview/);
   assert.equal(button('Create note').disabled, true);
   await click('Create note');
   assert.equal(creations.length, 0);
@@ -166,12 +188,16 @@ await test('a retry completion from the previous workspace cannot replace the ne
   const first = reads.shift();
   assert.ok(first);
   await act(async () => first.finish(null));
-  await click('Retry preview');
+  await click('Try again');
   const oldRetry = reads.shift();
   assert.ok(oldRetry);
 
   await show('workspace-new');
-  assert.equal(button('Create note').disabled, true);
+  assert.ok(
+    ![...container.querySelectorAll('button')].some(
+      (control) => control.textContent === 'Create note',
+    ),
+  );
   await click('Meeting');
   const current = reads.shift();
   assert.ok(current);

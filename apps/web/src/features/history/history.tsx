@@ -107,7 +107,7 @@ type RevisionView = 'changes' | 'preview';
 
 /** The words of each view, as its tab reads. */
 const revisionViewLabels: Readonly<Record<RevisionView, string>> = {
-  changes: 'Compared with current',
+  changes: 'Changes',
   preview: 'Preview',
 };
 
@@ -169,7 +169,7 @@ export function HistoryView(): ReactNode {
   if (accountId === null)
     return (
       <Page>
-        <PageHeader title="History" />
+        <PageHeader title="Version history" />
         <LoadingState shape="list" rows={5} label="The history is loading." />
       </Page>
     );
@@ -193,7 +193,7 @@ function HistoryNotice({
 }): ReactNode {
   return (
     <Page>
-      <PageHeader title="History" />
+      <PageHeader title="Version history" />
       <EmptyState
         icon={<HistoryIcon size={20} />}
         title={title}
@@ -513,7 +513,7 @@ function HistoryDetail({
   if (head.status === 'loading')
     return (
       <Page>
-        <PageHeader title="History" />
+        <PageHeader title="Version history" />
         <LoadingState
           shape="list"
           rows={5}
@@ -549,173 +549,191 @@ function HistoryDetail({
     items.map((item) => ({ id: item.revisionId, instant: item.serverTime })),
     now,
   );
+  const selectedItem = items.find((item) => item.revisionId === selectedId);
+  const selectedIndex = items.findIndex(
+    (item) => item.revisionId === selectedId,
+  );
+  const selectedPanelId = `history-panel-${String(selectedIndex)}`;
   const indexOf = new Map(
     items.map((item, index) => [item.revisionId, index] as const),
   );
   return (
-    <Page
-      sections={days.map((day) => ({
-        id: dayHeadingId(day.key),
-        title: day.label,
-      }))}
-    >
+    <div className="mx-auto w-full max-w-5xl p-gutter">
       <PageHeader
-        title={`History of ${name}`}
-        description={
-          head.status === 'ready' && head.kind === 'attachment'
-            ? 'Open a version to preview the image. Restore makes it the newest version.'
-            : 'Each save summary compares with the previous saved version. Open a version to compare it with the current saved version or read its preview. Restore makes it the newest version.'
-        }
+        title="Version history"
+        description="Restore makes a version the newest. Nothing is lost."
       />
-      <div className="space-y-4">
-        {actionMessage === '' ? null : (
-          <Notice tone="success" message={actionMessage} />
-        )}
-        {actionError === null ? null : (
-          <Notice tone="problem" message={actionError} />
-        )}
-        {historyError === null ? null : (
-          <Notice tone="problem" message={historyError} />
-        )}
-        {items.length === 0 && historyError === null ? (
-          <EmptyState
-            icon={<HistoryIcon size={20} />}
-            title="No version yet"
-            description="Save this note once and its first version appears here."
-          />
-        ) : (
-          <div className="space-y-6">
-            {days.map((day) => (
-              <section key={day.key} aria-labelledby={dayHeadingId(day.key)}>
-                <h2
-                  className={pageGroupLabelClassName()}
-                  id={dayHeadingId(day.key)}
-                >
-                  {day.label}
-                </h2>
-                <ol className={pageListClassName()}>
-                  {day.rows.map((row) => {
-                    const index = indexOf.get(row.id);
-                    const item = index === undefined ? undefined : items[index];
-                    if (item === undefined) return null;
-                    const change = rowChangeOf({
-                      deleted: item.deleted,
-                      restored: item.restoredFrom !== null,
-                      first: item.parents.length === 0,
-                      count: counts.get(item.revisionId) ?? null,
-                    });
-                    const selected = item.revisionId === selectedId;
-                    const current = item.revisionId === head.headRevisionId;
-                    const panelId = `history-panel-${String(index)}`;
-                    const label = savedAtLabel(row.time);
-                    return (
-                      <Fragment key={item.revisionId}>
-                        <ListRow className="flex-wrap">
-                          <button
-                            type="button"
-                            className={rowClassName({
-                              selected,
-                              inset: false,
-                              className: 'min-w-0 flex-1 py-1',
-                            })}
-                            aria-expanded={selected}
-                            aria-controls={controlsWhenShown(panelId, selected)}
-                            onClick={() => {
-                              if (selected) {
-                                setSelectedId(null);
-                                return;
-                              }
-                              void openRevision(item);
-                            }}
-                          >
-                            <span
-                              className="inline-flex shrink-0 items-center text-muted"
-                              aria-hidden="true"
-                            >
-                              {selected ? (
-                                <ChevronDownIcon />
-                              ) : (
-                                <ChevronRightIcon />
-                              )}
-                            </span>
-                            <span className="flex min-w-0 flex-1 flex-col text-left">
-                              <span className="truncate text-ui text-strong">
-                                {label}
-                              </span>
-                              <span className="truncate text-control text-muted">
-                                Changes at this save:{' '}
-                                {rowReading(change, item.merged)}
-                              </span>
-                            </span>
-                          </button>
-                          {current ? (
-                            <span className="shrink-0 px-2">
-                              <Badge>Current version</Badge>
-                            </span>
-                          ) : (
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              disabled={busy || !restorable}
-                              label={`Restore the version ${label.toLowerCase()}`}
-                              onClick={() => {
-                                void restore(item.revisionId);
-                              }}
-                            >
-                              Restore
-                            </Button>
-                          )}
-                        </ListRow>
-                        {selected ? (
-                          <li className="px-2 pb-4 pt-1" id={panelId}>
-                            <RevisionPanel
-                              key={item.revisionId}
-                              detail={detail}
-                              diff={diff}
-                              kind={head.kind}
-                              preview={preview}
-                              name={name}
-                              current={current}
-                              panelId={panelId}
-                              note={
-                                store === null
-                                  ? null
-                                  : {
-                                      store,
-                                      accountId,
-                                      workspaceId,
-                                      path: head.path,
-                                    }
-                              }
-                            />
-                          </li>
-                        ) : null}
-                      </Fragment>
-                    );
-                  })}
-                </ol>
-              </section>
-            ))}
-            {nextCursor === null ? null : (
-              <div>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  disabled={loadingMore}
-                  onClick={() => {
-                    void loadMore();
-                  }}
-                >
-                  {loadingMore
-                    ? 'Loading older versions'
-                    : 'Show older versions'}
-                </Button>
+      <p className="mb-4 mt-0 text-control text-muted">{name}</p>
+      <div className="grid min-w-0 gap-6 lg:grid-cols-3">
+        <div
+          className={
+            selectedItem === undefined ? 'min-w-0' : 'hidden min-w-0 lg:block'
+          }
+        >
+          <div className="space-y-4">
+            {actionMessage === '' ? null : (
+              <Notice tone="success" message={actionMessage} />
+            )}
+            {actionError === null ? null : (
+              <Notice tone="problem" message={actionError} />
+            )}
+            {historyError === null ? null : (
+              <Notice tone="problem" message={historyError} />
+            )}
+            {items.length === 0 && historyError === null ? (
+              <EmptyState
+                icon={<HistoryIcon size={20} />}
+                title="No version yet"
+                description="Save this note once and its first version appears here."
+              />
+            ) : (
+              <div className="space-y-6">
+                {days.map((day) => (
+                  <section
+                    key={day.key}
+                    aria-labelledby={dayHeadingId(day.key)}
+                  >
+                    <h2
+                      className={pageGroupLabelClassName()}
+                      id={dayHeadingId(day.key)}
+                    >
+                      {day.label}
+                    </h2>
+                    <ol className={pageListClassName()}>
+                      {day.rows.map((row) => {
+                        const index = indexOf.get(row.id);
+                        const item =
+                          index === undefined ? undefined : items[index];
+                        if (item === undefined) return null;
+                        const change = rowChangeOf({
+                          deleted: item.deleted,
+                          restored: item.restoredFrom !== null,
+                          first: item.parents.length === 0,
+                          count: counts.get(item.revisionId) ?? null,
+                        });
+                        const selected = item.revisionId === selectedId;
+                        const current = item.revisionId === head.headRevisionId;
+                        const panelId = `history-panel-${String(index)}`;
+                        const label = savedAtLabel(row.time);
+                        return (
+                          <Fragment key={item.revisionId}>
+                            <ListRow className="flex-wrap">
+                              <button
+                                type="button"
+                                className={rowClassName({
+                                  selected,
+                                  inset: false,
+                                  className: 'min-w-0 flex-1 py-1',
+                                })}
+                                aria-expanded={selected}
+                                aria-controls={controlsWhenShown(
+                                  panelId,
+                                  selected,
+                                )}
+                                onClick={() => {
+                                  if (selected) {
+                                    setSelectedId(null);
+                                    return;
+                                  }
+                                  void openRevision(item);
+                                }}
+                              >
+                                <span
+                                  className="inline-flex shrink-0 items-center text-muted"
+                                  aria-hidden="true"
+                                >
+                                  {selected ? (
+                                    <ChevronDownIcon />
+                                  ) : (
+                                    <ChevronRightIcon />
+                                  )}
+                                </span>
+                                <span className="flex min-w-0 flex-1 flex-col text-left">
+                                  <span className="truncate text-ui text-strong">
+                                    {label}
+                                  </span>
+                                  <span className="truncate text-control text-muted">
+                                    {rowReading(change, item.merged)}
+                                  </span>
+                                </span>
+                              </button>
+                              {current ? (
+                                <span className="shrink-0 px-2">
+                                  <Badge>Current version</Badge>
+                                </span>
+                              ) : null}
+                            </ListRow>
+                          </Fragment>
+                        );
+                      })}
+                    </ol>
+                  </section>
+                ))}
+                {nextCursor === null ? null : (
+                  <div>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      disabled={loadingMore}
+                      onClick={() => {
+                        void loadMore();
+                      }}
+                    >
+                      {loadingMore
+                        ? 'Loading older versions'
+                        : 'Show older versions'}
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </div>
+        </div>
+        {selectedItem === undefined ? (
+          <p className="hidden text-control text-muted lg:col-span-2 lg:block">
+            Choose a version
+          </p>
+        ) : (
+          <section
+            className="min-w-0 lg:col-span-2"
+            id={selectedPanelId}
+            aria-label="Selected version"
+          >
+            <Button
+              variant="ghost"
+              className="mb-3 lg:hidden"
+              onClick={() => setSelectedId(null)}
+            >
+              Back
+            </Button>
+            <RevisionPanel
+              key={selectedItem.revisionId}
+              detail={detail}
+              diff={diff}
+              kind={head.kind}
+              preview={preview}
+              name={name}
+              current={selectedItem.revisionId === head.headRevisionId}
+              panelId={selectedPanelId}
+              note={
+                store === null
+                  ? null
+                  : { store, accountId, workspaceId, path: head.path }
+              }
+            />
+            {selectedItem.revisionId === head.headRevisionId ? null : (
+              <Button
+                className="mt-4"
+                disabled={busy || !restorable}
+                onClick={() => void restore(selectedItem.revisionId)}
+              >
+                {busy ? 'Restoring' : 'Restore this version'}
+              </Button>
+            )}
+          </section>
         )}
       </div>
-    </Page>
+    </div>
   );
 }
 
@@ -843,7 +861,12 @@ function RevisionPanel({
         }
       >
         {view === 'changes' ? (
-          <RevisionChanges diff={diff} revisionId={detail.item.revisionId} />
+          <>
+            <p className="mb-2 mt-0 text-control text-muted">
+              Compared with current
+            </p>
+            <RevisionChanges diff={diff} revisionId={detail.item.revisionId} />
+          </>
         ) : note === null ? (
           <pre
             className="m-0 max-h-96 overflow-auto whitespace-pre-wrap rounded-lg border border-edge-subtle bg-app p-3 font-mono text-control text-strong"

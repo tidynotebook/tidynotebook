@@ -20,6 +20,7 @@
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import { buttonClassName, Menu, MoreIcon, type MenuItem } from '@notesapp/ui';
+import { SavePill } from './save-pill.tsx';
 import { actionIcon } from '../../shell/action-icons.tsx';
 import { HeaderActions } from '../../shell/header-slot.tsx';
 import {
@@ -31,6 +32,7 @@ import {
 /** What the open note can do, as the header offers it. */
 export type NoteHeaderActionsProps = {
   readonly workspaceId: string;
+  readonly onCopyText: () => void;
   readonly fileId: string;
   /** Moves the caret into the note name, so the person can write a new one. */
   readonly onRename: () => void;
@@ -61,6 +63,7 @@ export function NoteHeaderActions({
   workspaceId,
   fileId,
   onRename,
+  onCopyText,
   onMoveToFolder,
   onDuplicate,
   onAttachImage,
@@ -107,6 +110,7 @@ export function NoteHeaderActions({
 
   return (
     <HeaderActions>
+      <SavePill workspaceId={workspaceId} onCopyText={onCopyText} />
       {/*
         Move to Trash is the one row that destroys something, so it takes the
         danger tone of the row recipe and stands in the pinned region under

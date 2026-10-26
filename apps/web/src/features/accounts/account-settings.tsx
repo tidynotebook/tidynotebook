@@ -30,6 +30,9 @@ import {
   ListRow,
   ComputerIcon,
   DownloadIcon,
+  Dialog,
+  DialogBody,
+  DialogFooter,
   ExternalLinkIcon,
   LoadingState,
   Meter,
@@ -54,6 +57,7 @@ import {
   useSession,
   useSpellCheck,
   useRequestSync,
+  useWorkspace,
 } from '../../app.tsx';
 
 import { profileNameProblem, storageLine } from '../../lib/accounts.ts';
@@ -188,6 +192,7 @@ function SessionsSettings(): ReactNode {
   const now = useNow();
   const [state, setState] = useState<SessionsState>({ kind: 'loading' });
   const [busy, setBusy] = useState(false);
+  const [confirmOthers, setConfirmOthers] = useState(false);
   const [notice, setNotice] = useState<{
     readonly tone: 'info' | 'problem';
     readonly message: string;
@@ -301,21 +306,46 @@ function SessionsSettings(): ReactNode {
               variant="secondary"
               icon={<SignOutIcon />}
               disabled={busy}
-              onClick={() => {
-                change(async () => {
-                  const ended = await revokeOtherSessions();
-                  return {
-                    error: ended.error,
-                    done: otherSessionsEndedText(ended.data?.revoked ?? 0),
-                  };
-                });
-              }}
+              onClick={() => setConfirmOthers(true)}
             >
-              Sign out every other device
+              Sign out all other devices
             </Button>
           )}
         </>
       )}
+      <Dialog
+        open={confirmOthers}
+        onClose={() => setConfirmOthers(false)}
+        title="Sign out all other devices?"
+        titleId="sign-out-devices-title"
+        width="small"
+      >
+        <DialogBody>
+          <p className="text-control text-muted">
+            This device stays signed in.
+          </p>
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => setConfirmOthers(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            onClick={() => {
+              setConfirmOthers(false);
+              change(async () => {
+                const ended = await revokeOtherSessions();
+                return {
+                  error: ended.error,
+                  done: otherSessionsEndedText(ended.data?.revoked ?? 0),
+                };
+              });
+            }}
+          >
+            Sign out all other devices
+          </Button>
+        </DialogFooter>
+      </Dialog>
     </SettingsSection>
   );
 }
@@ -434,6 +464,13 @@ export function AccountSettingsPage(): ReactNode {
   const workspaceId =
     typeof params.workspaceId === 'string' ? params.workspaceId : null;
   const documents = useLegalDocuments();
+  const workspace = useWorkspace();
+  const workspaceName =
+    workspace.state.status === 'ready'
+      ? workspace.state.workspaces.find(
+          (item) => item.workspaceId === workspaceId,
+        )?.name
+      : undefined;
   const portal = useOpenPortal();
   useDocumentTitle(
     visibleSettingsPages(account ?? { accountPortal: false }).find(
@@ -827,6 +864,13 @@ export function AccountSettingsPage(): ReactNode {
             {activePage?.sections.map((key) => (
               <div key={key}>{sectionBodies[key]}</div>
             ))}
+            {(activePage?.path === 'templates' ||
+              activePage?.path === 'daily-notes') &&
+            workspaceName !== undefined ? (
+              <p className="text-control text-muted">
+                Applies to the {workspaceName} workspace.
+              </p>
+            ) : null}
           </SettingsTopicContext.Provider>
         </div>
       </div>
