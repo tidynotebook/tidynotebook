@@ -1,6 +1,6 @@
 # UI redesign proposal: coverage map and approval checklist
 
-Status: prototype designs for owner approval. No app code is changed.
+Status: APPROVED by the owner on 2026-10-27: "Wireframes approved but ensure the issues are fixed for desktop as well." The approved structure, flows and icon-only Undo and Redo are frozen. Every fix applies on phone and on desktop at medium (1024 px) and wide widths.
 Scope: user-facing UI shipped between v0.21.0 and v0.22.0 (source b430eb97).
 
 ## Files
@@ -16,7 +16,7 @@ switch that shows every frame in dark mode.
 | [03-editor.html](03-editor.html)       | Undo and Redo icons, save status, history, choose a version, images  | 21      |
 | [04-settings.html](04-settings.html)   | Settings list, every page, confirmations                             | 24      |
 | [05-states.html](05-states.html)       | Note states, Needs attention, search, trial, sign up, limits         | 22      |
-| [06-desktop.html](06-desktop.html)     | Desktop versions of the main screens                                 | 9       |
+| [06-desktop.html](06-desktop.html)     | Desktop: all notes, folders, calendar, menus, settings, medium width | 17      |
 
 `_src/` holds the generator (`python3 -I _src/build.py`). It writes the pages
 above from one shared CSS kit and icon set, so all screens stay consistent.
@@ -46,7 +46,6 @@ above from one shared CSS kit and icon set, so all screens stay consistent.
 ## Not drawn
 
 - Tablet widths (768 to 1023 px): phone layout with a wider column.
-- Desktop calendar, desktop folder page and desktop note actions menu: follow A8, A9 and D5.
 - Move note dialog: reuses the folder picker B4.
 - Trash list, Publish dialog, workspace dialogs, shortcuts dialog, rest of administration, documentation site, published pages: not changed in v0.22.0.
 - Plain sign-in screen: E20 without the verified mark.
