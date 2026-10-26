@@ -33,6 +33,8 @@ export type NoteSaveFacts = {
   readonly writtenSequenceRef: { current: number };
   /** Records the sequence that this editor put in a checkpoint. */
   readonly checkpointTaken: (sequence: number) => void;
+  /** Claims one version of an opened recovery draft before any new typing. */
+  readonly claimRecoveredDraft: (snapshot: FileSaveSnapshot) => boolean;
   /** The cause of a failed local write, which the note states. */
   readonly storageError: LocalStorageErrorKind | null;
   readonly setStorageError: (kind: LocalStorageErrorKind | null) => void;
@@ -45,6 +47,7 @@ export type NoteSaveFacts = {
 export function useNoteSaveFacts(
   sequenceRef: { readonly current: number },
   initialSequence: number,
+  openedDraft = false,
 ): NoteSaveFacts {
   const saveSnapshotRef = useRef<FileSaveSnapshot | null>(null);
   const lastSavedAtRef = useRef<string | null>(null);
@@ -52,6 +55,7 @@ export function useNoteSaveFacts(
   const checkpointedSequenceRef = useRef(initialSequence);
   const snapshotSequenceRef = useRef(initialSequence);
   const snapshotReadGenerationRef = useRef(0);
+  const recoveryRequestedRef = useRef(false);
   useLayoutEffect(
     () => () => {
       snapshotReadGenerationRef.current += 1;
@@ -131,6 +135,18 @@ export function useNoteSaveFacts(
         checkpointedSequenceRef.current,
         sequence,
       );
+    },
+    claimRecoveredDraft: (snapshot) => {
+      if (
+        !openedDraft ||
+        recoveryRequestedRef.current ||
+        snapshot.deleted ||
+        !snapshot.hasUncheckpointedDraft ||
+        sequenceRef.current !== initialSequence
+      )
+        return false;
+      recoveryRequestedRef.current = true;
+      return true;
     },
     storageError,
     setStorageError,

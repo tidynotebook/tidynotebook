@@ -14,7 +14,7 @@ import {
   type ReactNode,
 } from 'react';
 import { MemoryRouter } from 'react-router';
-import type { AcceptedChangeset } from '@notesapp/core';
+import { contentDigest, type AcceptedChangeset } from '@notesapp/core';
 import { openLocalStore } from '@notesapp/storage-browser';
 
 await test('the open note stays pending from first edit through draft and checkpoint until acknowledgement', async () => {
@@ -109,22 +109,31 @@ await test('the open note stays pending from first edit through draft and checkp
   const fileId = crypto.randomUUID();
   async function acknowledge(): Promise<void> {
     for (const entry of await store.pending(accountId, workspaceId)) {
-      const revisions: AcceptedChangeset['revisions'] =
-        entry.input.revisions.map((revision) => ({
-          revisionId: revision.id,
-          fileId: revision.fileId,
-          parents: revision.parents,
-          path: revision.path,
-          deleted: revision.deleted,
-          digest: 'a'.repeat(64),
-          size: 0,
-          actorAccountId: accountId,
-          serverTime: '2026-10-25T12:00:00.000Z',
-          message: revision.message,
-          epoch: revision.content.kind === 'markdown' ? 1 : null,
-          acceptedState: null,
-          merged: false,
-        }));
+      const revisions: AcceptedChangeset['revisions'] = await Promise.all(
+        entry.input.revisions.map(async (revision) => {
+          const text = await store.readRevisionText(
+            accountId,
+            workspaceId,
+            revision.id,
+          );
+          assert.ok(text !== null);
+          return {
+            revisionId: revision.id,
+            fileId: revision.fileId,
+            parents: revision.parents,
+            path: revision.path,
+            deleted: revision.deleted,
+            digest: await contentDigest(text),
+            size: new TextEncoder().encode(text).length,
+            actorAccountId: accountId,
+            serverTime: '2026-10-25T12:00:00.000Z',
+            message: revision.message,
+            epoch: revision.content.kind === 'markdown' ? 1 : null,
+            acceptedState: null,
+            merged: false,
+          };
+        }),
+      );
       await store.acknowledge(accountId, {
         mutationId: entry.input.mutationId,
         revisionIds: revisions.map((revision) => revision.revisionId),
@@ -162,10 +171,41 @@ await test('the open note stays pending from first edit through draft and checkp
   const root = createRoot(container);
   async function waitFor(condition: () => boolean): Promise<void> {
     const deadline = Date.now() + 5000;
-    while (!condition()) {
+    while (true) {
+      let ready = false;
+      await act(async () => {
+        await settle();
+        ready = condition();
+      });
+      if (ready) return;
       assert.ok(Date.now() < deadline, 'The save feedback did not settle.');
-      await act(settle);
     }
+  }
+  async function openEditor(source = store): Promise<void> {
+    await act(async () =>
+      root.render(
+        createElement(
+          MemoryRouter,
+          null,
+          createElement(
+            NoteSaveScope,
+            null,
+            createElement(Footer),
+            createElement(
+              HeaderSlotProvider,
+              null,
+              createElement(HeaderLeafSlot),
+              createElement(NoteEditorLoader, {
+                store: source,
+                accountId,
+                workspaceId,
+                fileId,
+              }),
+            ),
+          ),
+        ),
+      ),
+    );
   }
   try {
     await store.checkpoint(
@@ -184,30 +224,7 @@ await test('the open note stays pending from first edit through draft and checkp
       'text',
     );
     await acknowledge();
-    await act(async () =>
-      root.render(
-        createElement(
-          MemoryRouter,
-          null,
-          createElement(
-            NoteSaveScope,
-            null,
-            createElement(Footer),
-            createElement(
-              HeaderSlotProvider,
-              null,
-              createElement(HeaderLeafSlot),
-              createElement(NoteEditorLoader, {
-                store,
-                accountId,
-                workspaceId,
-                fileId,
-              }),
-            ),
-          ),
-        ),
-      ),
-    );
+    await openEditor();
     const output = (): string =>
       container.querySelector('output')?.textContent ?? '';
     await waitFor(
@@ -276,15 +293,147 @@ await test('the open note stays pending from first edit through draft and checkp
       await settle();
     });
     await waitFor(() => output() === 'Everything is saved to the server.');
+    await act(async () => {
+      assert.equal(
+        (await store.readCachedNote(accountId, workspaceId, fileId))?.text,
+        view.state.doc.toString(),
+      );
+      await settle();
+    });
+    await act(async () => root.render(null));
+    await act(settle);
+
+    // A page can leave a durable draft before its old asynchronous checkpoint
+    // commits. Reopening it must queue that work without another edit or exit.
+    const accepted = await store.readCachedNote(accountId, workspaceId, fileId);
+    assert.ok(accepted);
+    assert.ok(accepted.baseRevisionId !== null);
+    const recoveredText = `${accepted.text}Recovered before checkpoint.\n`;
+    await store.saveDraft({
+      accountId,
+      workspaceId,
+      fileId,
+      workingCopyId: crypto.randomUUID(),
+      baseRevisionId: accepted.baseRevisionId,
+      path: accepted.path,
+      text: recoveredText,
+      sequence: 20,
+      deleted: false,
+    });
+    assert.equal((await store.pending(accountId, workspaceId)).length, 0);
+    let observedRecovery = false;
+    let recoveryFactsRead = false;
+    let recoveryCheckpoints = 0;
+    const recoveryStore = {
+      ...store,
+      listCheckpoints: async (
+        ...args: Parameters<typeof store.listCheckpoints>
+      ) => {
+        const checkpoints = await store.listCheckpoints(...args);
+        recoveryFactsRead = true;
+        return checkpoints;
+      },
+      readFileSaveSnapshot: async (
+        ...args: Parameters<typeof store.readFileSaveSnapshot>
+      ) => {
+        const snapshot = await store.readFileSaveSnapshot(...args);
+        if (snapshot.hasUncheckpointedDraft) observedRecovery = true;
+        return snapshot;
+      },
+      checkpoint: async (...args: Parameters<typeof store.checkpoint>) => {
+        const result = await store.checkpoint(...args);
+        recoveryCheckpoints += 1;
+        return result;
+      },
+    };
+    await openEditor(recoveryStore);
+    await waitFor(() => container.querySelector('.cm-editor') !== null);
+    await waitFor(() => observedRecovery && recoveryFactsRead);
+    await act(settle);
+    assert.equal(output(), 'Saving the open note to the server.');
+    await waitFor(() => recoveryCheckpoints > 0);
+    const recoveredElement = container.querySelector('.cm-editor');
+    assert.ok(recoveredElement instanceof HTMLElement);
+    const recoveredView = EditorView.findFromDOM(recoveredElement);
+    assert.ok(recoveredView);
+    assert.equal(recoveredView.state.doc.toString(), recoveredText);
     assert.equal(
-      (await store.readCachedNote(accountId, workspaceId, fileId))?.text,
-      view.state.doc.toString(),
+      (await store.readFileSaveSnapshot(accountId, workspaceId, fileId))
+        .queueState,
+      'pending',
+    );
+    assert.equal(output(), 'Saving the open note to the server.');
+    assert.equal(
+      (await store.readFileSaveSnapshot(accountId, workspaceId, fileId))
+        .acceptedHeadRevisionId,
+      accepted.baseRevisionId,
+    );
+    assert.equal(
+      await store.readRevisionText(
+        accountId,
+        workspaceId,
+        accepted.baseRevisionId,
+      ),
+      accepted.text,
+    );
+    await act(async () => {
+      await acknowledge();
+      await settle();
+    });
+    await waitFor(() => output() === 'Everything is saved to the server.');
+    await act(async () => {
+      const recoveredState = await store.readFileSaveSnapshot(
+        accountId,
+        workspaceId,
+        fileId,
+      );
+      assert.equal(recoveredState.hasUncheckpointedDraft, false);
+      assert.equal(
+        recoveredState.acceptedHeadRevisionId,
+        recoveredState.localHeadRevisionId,
+      );
+      assert.ok(recoveredState.acceptedHeadRevisionId !== null);
+      assert.equal(
+        await store.readRevisionText(
+          accountId,
+          workspaceId,
+          recoveredState.acceptedHeadRevisionId,
+        ),
+        recoveredText,
+      );
+      assert.equal(
+        (await store.readCachedNote(accountId, workspaceId, fileId))?.text,
+        recoveredText,
+      );
+      await settle();
+    });
+    assert.equal(recoveryCheckpoints, 1);
+    await act(async () => root.render(null));
+    await act(settle);
+    await openEditor(recoveryStore);
+    await waitFor(
+      () =>
+        output() === 'Everything is saved to the server.' &&
+        container.querySelector('.cm-editor') !== null,
+    );
+    assert.equal((await store.pending(accountId, workspaceId)).length, 0);
+    assert.equal(
+      recoveryCheckpoints,
+      1,
+      'An accepted recovered draft must not create another version on reopen.',
     );
     await act(async () => root.render(null));
     await act(settle);
 
     // Mount the actual save-facts reader under StrictMode. It stops and
     // restarts the effect scheduler while the first real cache read waits.
+    // Match the loader's cached read before testing its clean save facts.
+    await store.readCachedNote(accountId, workspaceId, fileId);
+    assert.equal(
+      (await store.readFileSaveSnapshot(accountId, workspaceId, fileId))
+        .hasUncheckpointedDraft,
+      false,
+    );
     const staleReadStarted = Promise.withResolvers<void>();
     const finishStaleRead = Promise.withResolvers<void>();
     let firstSnapshot = true;

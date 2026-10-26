@@ -344,11 +344,16 @@ const NoteEditorBody = memo(function NoteEditorBody({
     readSnapshot,
     writtenSequenceRef,
     checkpointTaken,
+    claimRecoveredDraft,
     storageError,
     setStorageError,
     rootRef,
     showSaveFacts,
-  } = useNoteSaveFacts(sequenceRef, initialSequence);
+  } = useNoteSaveFacts(
+    sequenceRef,
+    initialSequence,
+    initialWorkingCopyId !== undefined,
+  );
   // Where the caret stands, which decides the tools of the formatting row.
   const [formatContext, setFormatContext] =
     useState<FormatContext>(plainTextContext);
@@ -651,6 +656,8 @@ const NoteEditorBody = memo(function NoteEditorBody({
         if (adopted !== null) baseRef.current = adopted;
       }
       showSaveFacts.current();
+      // Recovery work needs a version even when this open has no new key.
+      if (claimRecoveredDraft(snapshot)) void checkpointNow.current();
     } catch {
       // Queue reads are feedback only. A failure here must not disturb the
       // buffer, the draft, or the draft timer.
