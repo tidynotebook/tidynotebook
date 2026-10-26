@@ -344,7 +344,8 @@ const NoteEditorBody = memo(function NoteEditorBody({
     readSnapshot,
     writtenSequenceRef,
     checkpointTaken,
-    claimRecoveredDraft,
+    recoverDraft,
+    retryRecoveredDraft,
     storageError,
     setStorageError,
     rootRef,
@@ -657,7 +658,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
       }
       showSaveFacts.current();
       // Recovery work needs a version even when this open has no new key.
-      if (claimRecoveredDraft(snapshot)) void checkpointNow.current();
+      recoverDraft(snapshot, () => checkpointNow.current());
     } catch {
       // Queue reads are feedback only. A failure here must not disturb the
       // buffer, the draft, or the draft timer.
@@ -874,6 +875,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
       if (read !== 'none') askQueue(read === 'join');
     });
     const polling = window.setInterval(() => {
+      retryRecoveredDraft();
       askQueue(true);
     }, saveStateFallbackMs);
     return () => {

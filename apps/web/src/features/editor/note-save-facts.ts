@@ -33,8 +33,13 @@ export type NoteSaveFacts = {
   readonly writtenSequenceRef: { current: number };
   /** Records the sequence that this editor put in a checkpoint. */
   readonly checkpointTaken: (sequence: number) => void;
-  /** Claims one version of an opened recovery draft before any new typing. */
-  readonly claimRecoveredDraft: (snapshot: FileSaveSnapshot) => boolean;
+  /** Starts one recovery checkpoint; failed attempts wait for the next poll. */
+  readonly recoverDraft: (
+    snapshot: FileSaveSnapshot,
+    checkpoint: () => Promise<boolean>,
+  ) => void;
+  /** Lets the next status poll retry a failed recovery checkpoint. */
+  readonly retryRecoveredDraft: () => void;
   /** The cause of a failed local write, which the note states. */
   readonly storageError: LocalStorageErrorKind | null;
   readonly setStorageError: (kind: LocalStorageErrorKind | null) => void;
@@ -55,13 +60,16 @@ export function useNoteSaveFacts(
   const checkpointedSequenceRef = useRef(initialSequence);
   const snapshotSequenceRef = useRef(initialSequence);
   const snapshotReadGenerationRef = useRef(0);
-  const recoveryRequestedRef = useRef(false);
-  useLayoutEffect(
-    () => () => {
+  const recoveryClaimRef = useRef<{ failed: boolean } | null>(null);
+  const mountedRef = useRef(false);
+  useLayoutEffect(() => {
+    mountedRef.current = true;
+    return () => {
       snapshotReadGenerationRef.current += 1;
-    },
-    [],
-  );
+      recoveryClaimRef.current = null;
+      mountedRef.current = false;
+    };
+  }, []);
   const [storageError, setStorageErrorState] =
     useState<LocalStorageErrorKind | null>(null);
   const storageErrorRef = useRef<LocalStorageErrorKind | null>(null);
@@ -136,17 +144,31 @@ export function useNoteSaveFacts(
         sequence,
       );
     },
-    claimRecoveredDraft: (snapshot) => {
+    recoverDraft: (snapshot, checkpoint) => {
       if (
         !openedDraft ||
-        recoveryRequestedRef.current ||
+        !mountedRef.current ||
+        recoveryClaimRef.current !== null ||
         snapshot.deleted ||
         !snapshot.hasUncheckpointedDraft ||
         sequenceRef.current !== initialSequence
       )
-        return false;
-      recoveryRequestedRef.current = true;
-      return true;
+        return;
+      const claim = { failed: false };
+      recoveryClaimRef.current = claim;
+      const failed = (): void => {
+        if (recoveryClaimRef.current === claim) claim.failed = true;
+      };
+      void Promise.resolve()
+        .then(() => (recoveryClaimRef.current === claim ? checkpoint() : false))
+        .then((succeeded) => {
+          if (!succeeded) failed();
+        }, failed);
+    },
+    retryRecoveredDraft: () => {
+      // Store events from a failed write must not start a tight retry loop.
+      // A poll retries only a settled failure, never work still in flight.
+      if (recoveryClaimRef.current?.failed) recoveryClaimRef.current = null;
     },
     storageError,
     setStorageError,

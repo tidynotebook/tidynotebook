@@ -6,6 +6,7 @@ import { Window } from 'happy-dom';
 import { IDBFactory, IDBKeyRange } from 'fake-indexeddb';
 import {
   act,
+  Activity,
   createElement,
   Fragment,
   StrictMode,
@@ -17,6 +18,7 @@ import {
 import { MemoryRouter } from 'react-router';
 import { contentDigest, type AcceptedChangeset } from '@notesapp/core';
 import { openLocalStore } from '@notesapp/storage-browser';
+import { LocalStorageError } from '@notesapp/sync';
 import { startDocument, readDocumentText } from '@notesapp/note-document';
 
 await test('the open note stays pending from first edit through draft and checkpoint until acknowledgement', async () => {
@@ -351,6 +353,9 @@ await test('the open note stays pending from first edit through draft and checkp
     let observedRecovery = false;
     let recoveryFactsRead = false;
     let recoveryCheckpoints = 0;
+    let recoveryAttempts = 0;
+    let recoveryPoll: (() => void) | undefined;
+    const setInterval = window.setInterval;
     const recoveryStore = {
       ...store,
       listCheckpoints: async (
@@ -368,17 +373,48 @@ await test('the open note stays pending from first edit through draft and checkp
         return snapshot;
       },
       checkpoint: async (...args: Parameters<typeof store.checkpoint>) => {
+        recoveryAttempts += 1;
+        if (recoveryAttempts === 1)
+          throw new LocalStorageError(
+            'aborted',
+            'forced recovery checkpoint failure',
+          );
         const result = await store.checkpoint(...args);
         recoveryCheckpoints += 1;
         return result;
       },
     };
-    await openEditor(recoveryStore);
-    await waitFor(() => container.querySelector('.cm-editor') !== null);
+    window.setInterval = new Proxy(setInterval, {
+      apply(target, receiver, args: unknown[]) {
+        const [handler, delay] = args;
+        if (typeof handler === 'function' && delay === 30_000)
+          recoveryPoll = () => {
+            Reflect.apply(handler, receiver, args.slice(2));
+          };
+        return Reflect.apply(target, receiver, args);
+      },
+    });
+    try {
+      await openEditor(recoveryStore);
+      await waitFor(() => container.querySelector('.cm-editor') !== null);
+    } finally {
+      window.setInterval = setInterval;
+    }
     await waitFor(() => observedRecovery && recoveryFactsRead);
     await act(settle);
     assert.equal(output(), 'Saving the open note to the server.');
+    await waitFor(() => recoveryAttempts === 1);
+    await act(settle);
+    assert.equal(recoveryCheckpoints, 0);
+    assert.equal((await store.pending(accountId, workspaceId)).length, 0);
+    const pollRecovery = recoveryPoll;
+    assert.ok(pollRecovery);
+    await act(async () => {
+      pollRecovery();
+      await settle();
+    });
     await waitFor(() => recoveryCheckpoints > 0);
+    assert.equal(recoveryAttempts, 2);
     const recoveredElement = container.querySelector('.cm-editor');
     assert.ok(recoveredElement instanceof HTMLElement);
     const recoveredView = EditorView.findFromDOM(recoveredElement);
@@ -435,6 +471,15 @@ await test('the open note stays pending from first edit through draft and checkp
       await settle();
     });
     assert.equal(recoveryCheckpoints, 1);
+    await act(async () => {
+      pollRecovery();
+      await settle();
+    });
+    assert.equal(
+      recoveryAttempts,
+      2,
+      'A successful claim must survive later polls.',
+    );
     await act(async () => root.render(null));
     await act(settle);
     await openEditor(recoveryStore);
@@ -744,6 +789,117 @@ await test('the open note stays pending from first edit through draft and checkp
     } finally {
       finishStaleRead.resolve();
       await act(settle);
+    }
+    // Hide and show the actual hook without discarding its React state.
+    // An old rejected checkpoint must not release the next effect's claim.
+    const tokenBase = await store.readCachedNote(
+      accountId,
+      workspaceId,
+      fileId,
+    );
+    assert.ok(tokenBase);
+    await act(async () => {
+      await store.saveDraft({
+        accountId,
+        workspaceId,
+        fileId,
+        workingCopyId: crypto.randomUUID(),
+        baseRevisionId: tokenBase.baseRevisionId,
+        path: tokenBase.path,
+        text: `${tokenBase.text}Token recovery.\n`,
+        sequence: 1,
+        deleted: false,
+      });
+      await settle();
+    });
+    const tokenSnapshot = await store.readFileSaveSnapshot(
+      accountId,
+      workspaceId,
+      fileId,
+    );
+    assert.equal(tokenSnapshot.hasUncheckpointedDraft, true);
+    const oldCheckpoint = Promise.withResolvers<boolean>();
+    const newCheckpoint = Promise.withResolvers<boolean>();
+    let claimAttempts = 0;
+    let claimFacts: ReturnType<typeof useNoteSaveFacts> | undefined;
+    function RecoveryClaims(): ReactNode {
+      const sequence = useRef(0);
+      const facts = useNoteSaveFacts(sequence, 0, true);
+      claimFacts = facts;
+      useEffect(() => {
+        facts.recoverDraft(tokenSnapshot, () => {
+          claimAttempts += 1;
+          return claimAttempts === 1
+            ? oldCheckpoint.promise
+            : newCheckpoint.promise;
+        });
+      }, []);
+      return null;
+    }
+    async function showClaims(mode: 'visible' | 'hidden'): Promise<void> {
+      await act(async () => {
+        root.render(
+          createElement(Activity, {
+            mode,
+            children: createElement(RecoveryClaims),
+          }),
+        );
+        await settle();
+      });
+    }
+    try {
+      await showClaims('visible');
+      assert.equal(claimAttempts, 1);
+      const firstFacts = claimFacts;
+      assert.ok(firstFacts);
+      await showClaims('hidden');
+      await showClaims('visible');
+      assert.ok(claimFacts);
+      assert.equal(
+        firstFacts.rootRef,
+        claimFacts.rootRef,
+        'The hook state must survive the effect remount.',
+      );
+      assert.equal(claimAttempts, 2);
+      await act(async () => {
+        oldCheckpoint.reject(new Error('obsolete failure'));
+        await settle();
+      });
+      const unexpected = (): Promise<boolean> => {
+        claimAttempts += 1;
+        return Promise.resolve(true);
+      };
+      claimFacts.retryRecoveredDraft();
+      claimFacts.recoverDraft(tokenSnapshot, unexpected);
+      await act(settle);
+      assert.equal(
+        claimAttempts,
+        2,
+        'An obsolete failure must not release an in-flight claim.',
+      );
+      await act(async () => {
+        newCheckpoint.resolve(true);
+        await settle();
+      });
+      claimFacts.retryRecoveredDraft();
+      claimFacts.recoverDraft(tokenSnapshot, unexpected);
+      await act(settle);
+      assert.equal(
+        claimAttempts,
+        2,
+        'A successful claim must not create another checkpoint.',
+      );
+      await showClaims('hidden');
+      claimFacts.recoverDraft(tokenSnapshot, unexpected);
+      await act(settle);
+      assert.equal(
+        claimAttempts,
+        2,
+        'A stopped effect cannot start recovery work.',
+      );
+    } finally {
+      oldCheckpoint.resolve(false);
+      newCheckpoint.resolve(false);
     }
   } finally {
     await act(async () => root.unmount());
