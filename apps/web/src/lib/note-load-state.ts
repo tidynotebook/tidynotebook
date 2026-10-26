@@ -21,6 +21,10 @@ export type NoteLoadStatus =
       readonly headRevisionId: string | null;
       readonly workingCopyId?: string | undefined;
       readonly sequence: number;
+      /** An older local draft needs a choice before an editor can save it. */
+      readonly recovery?:
+        | { readonly workingCopyId: string; readonly acceptedText: string }
+        | undefined;
       /**
        * The document of the note on this device with its generation, or
        * `null` when this device holds none yet (record 0081). The editor

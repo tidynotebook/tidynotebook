@@ -528,6 +528,28 @@ await test('a cached local deletion does not reopen accepted content', async () 
   await store.close();
 });
 
+await test('discarding a draft keeps its queued version and local head', async () => {
+  const backend = createBackend('drop-draft-queued');
+  const store = await openLocalStore(origin, backend.options());
+  const account = randomUUID();
+  const workspace = randomUUID();
+  const file = randomUUID();
+  const draft = draftOf(account, workspace, file, 'copy-a', 'queued text\n');
+  const entry = await store.checkpoint(draft, null, 'text');
+  assert.ok(entry);
+  const revision = entry.input.revisions[0]?.id;
+  await store.dropDraft(account, workspace, draft.workingCopyId);
+  assert.equal(
+    await store.readDraft(account, workspace, draft.workingCopyId),
+    null,
+  );
+  const snapshot = await store.readFileSaveSnapshot(account, workspace, file);
+  assert.equal(snapshot.localHeadRevisionId, revision);
+  assert.equal(snapshot.queueState, 'pending');
+  assert.equal((await store.pending(account, workspace)).length, 1);
+  await store.close();
+});
+
 await test('two working copies of one file create ordered local saves', async () => {
   const backend = createBackend('branch');
   const store = await openLocalStore(origin, backend.options());
@@ -2382,7 +2404,20 @@ await test('a draft that matches a newer accepted head is dropped on open', asyn
 
 await test('a draft over an older accepted head opens as stale', async () => {
   const backend = createBackend('draft-stale');
-  const store = await openLocalStore(origin, backend.options());
+  let failing = false;
+  const factory = createFailingFactory(backend.factory, () =>
+    failing
+      ? {
+          store: 'acceptedFiles',
+          method: 'put',
+          error: new DOMException('forced abort', 'AbortError'),
+        }
+      : null,
+  );
+  const store = await openLocalStore(
+    origin,
+    backend.options({ indexedDB: factory }),
+  );
   const account = randomUUID();
   const workspace = randomUUID();
   const file = randomUUID();
@@ -2425,6 +2460,25 @@ await test('a draft over an older accepted head opens as stale', async () => {
   assert.equal(cached?.acceptedRevisionId, remoteRevision);
   assert.equal(cached?.baseRevisionId, firstRevision);
   assert.equal(cached?.workingCopyId, 'copy-a');
+
+  // Discard and the head handoff are one transaction. A failed handoff
+  // must leave the old draft available for another decision.
+  failing = true;
+  await assert.rejects(
+    store.dropDraft(account, workspace, 'copy-a'),
+    (failure: unknown) =>
+      isLocalStorageError(failure) && failure.kind === 'aborted',
+  );
+  failing = false;
+  assert.equal(
+    (await store.readDraft(account, workspace, 'copy-a'))?.text,
+    'my own text\n',
+  );
+  assert.equal(
+    (await store.readFileSaveSnapshot(account, workspace, file))
+      .localHeadRevisionId,
+    firstRevision,
+  );
 
   // Keeping the text moves only its base, so the next save reaches the
   // server head instead of naming the one it replaced.

@@ -20,12 +20,18 @@ import {
   type LocalStore,
   type NoteDocument,
 } from '@notesapp/sync';
-import { guard, type DraftRow, type FileRow } from '../database.ts';
+import {
+  guard,
+  partitionRange,
+  type DraftRow,
+  type FileRow,
+} from '../database.ts';
 import { readDocumentRow } from './documents.ts';
 import {
   validateAcceptedFile,
   validateCheckpoint,
   validateDraft,
+  validateQueueRow,
 } from '../migrations.ts';
 import {
   bodyOfDigest,
@@ -503,7 +509,7 @@ export function createDraftsSlice(ctx: LocalStoreContext): DraftsSlice {
       const removed = await guard('removing a draft', () =>
         db.transaction(
           'rw',
-          tables.drafts,
+          [tables.drafts, tables.acceptedFiles, tables.queue],
           async (): Promise<string | null> => {
             const stored: unknown = await tables.drafts.get([
               serverOrigin,
@@ -519,6 +525,51 @@ export function createDraftsSlice(ctx: LocalStoreContext): DraftsSlice {
               workspaceId,
               workingCopyId,
             ]);
+            // A stale draft kept the old local head while the feed moved
+            // the accepted head. Once its owner discards the last working
+            // copy, with no queued version left, the accepted head owns the
+            // next open. Otherwise a clean editor would save over the old
+            // local head and create a new version for already accepted text.
+            const remaining = await draftsOfFile(
+              ctx,
+              accountId,
+              workspaceId,
+              draft.fileId,
+            );
+            const queued: unknown[] = await tables.queue
+              .where('[serverOrigin+accountId+workspaceId+sequence]')
+              .between(
+                partitionRange(serverOrigin, accountId, workspaceId).lower,
+                partitionRange(serverOrigin, accountId, workspaceId).upper,
+                true,
+                true,
+              )
+              .toArray();
+            const pending = queued.some((row) =>
+              validateQueueRow(row).input.revisions.some(
+                (revision) => revision.fileId === draft.fileId,
+              ),
+            );
+            const held: unknown = await tables.acceptedFiles.get([
+              serverOrigin,
+              accountId,
+              workspaceId,
+              draft.fileId,
+            ]);
+            if (remaining.length === 0 && !pending && held !== undefined) {
+              const file = validateAcceptedFile(held);
+              if (
+                file.acceptedHeadRevisionId !== null &&
+                file.acceptedPath !== null &&
+                !file.deleted
+              )
+                await tables.acceptedFiles.put({
+                  ...file,
+                  path: file.acceptedPath,
+                  localHeadRevisionId: file.acceptedHeadRevisionId,
+                  updatedAt: nowIso(),
+                });
+            }
             return draft.fileId;
           },
         ),

@@ -67,6 +67,16 @@ export async function readDeviceNote(
       headRevisionId: cached.baseRevisionId,
       workingCopyId: cached.workingCopyId,
       sequence: cached.sequence,
+      ...(cached.stale &&
+      cached.workingCopyId !== undefined &&
+      cached.acceptedText !== null
+        ? {
+            recovery: {
+              workingCopyId: cached.workingCopyId,
+              acceptedText: cached.acceptedText,
+            },
+          }
+        : {}),
       document,
     };
   } catch {

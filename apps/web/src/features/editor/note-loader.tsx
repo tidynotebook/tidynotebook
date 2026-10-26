@@ -64,6 +64,7 @@ import {
   watchDeviceNote,
 } from './device-note.ts';
 import { NoteEditor } from './note-editor.tsx';
+import { StaleDraftRecovery } from './stale-draft-recovery.tsx';
 import { recordTiming } from './timing.ts';
 
 /**
@@ -271,9 +272,21 @@ export function NoteEditorLoader({
       setStatus({
         kind: 'ready',
         path: result.data.path,
-        text: paired?.text ?? result.data.head?.text ?? '',
+        text: kept?.stale
+          ? kept.text
+          : (paired?.text ?? result.data.head?.text ?? ''),
         headRevisionId: result.data.headRevisionId,
         sequence: 0,
+        ...(kept?.stale &&
+        kept.workingCopyId !== undefined &&
+        kept.acceptedText !== null
+          ? {
+              recovery: {
+                workingCopyId: kept.workingCopyId,
+                acceptedText: kept.acceptedText,
+              },
+            }
+          : {}),
         document:
           paired?.document ??
           (servedDocument === null
@@ -398,6 +411,20 @@ export function NoteEditorLoader({
           {status.text}
         </pre>
       </PageRegion>
+    );
+
+  if (status.recovery !== undefined)
+    return (
+      <StaleDraftRecovery
+        key={`${accountId}:${workspaceId}:${fileId}:${status.recovery.workingCopyId}`}
+        store={store}
+        accountId={accountId}
+        workspaceId={workspaceId}
+        workingCopyId={status.recovery.workingCopyId}
+        localText={status.text}
+        acceptedText={status.recovery.acceptedText}
+        onResolved={readAgain}
+      />
     );
 
   const activeStore = store;

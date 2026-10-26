@@ -17,6 +17,7 @@ import {
 import { MemoryRouter } from 'react-router';
 import { contentDigest, type AcceptedChangeset } from '@notesapp/core';
 import { openLocalStore } from '@notesapp/storage-browser';
+import { startDocument, readDocumentText } from '@notesapp/note-document';
 
 await test('the open note stays pending from first edit through draft and checkpoint until acknowledgement', async () => {
   const hooks = registerHooks({
@@ -107,7 +108,7 @@ await test('the open note stays pending from first edit through draft and checkp
   }
   const accountId = crypto.randomUUID();
   const workspaceId = crypto.randomUUID();
-  const fileId = crypto.randomUUID();
+  let fileId = crypto.randomUUID();
   async function acknowledge(): Promise<void> {
     for (const entry of await store.pending(accountId, workspaceId)) {
       const revisions: AcceptedChangeset['revisions'] = await Promise.all(
@@ -447,6 +448,176 @@ await test('the open note stays pending from first edit through draft and checkp
       recoveryCheckpoints,
       1,
       'An accepted recovered draft must not create another version on reopen.',
+    );
+    await act(async () => root.render(null));
+    await act(settle);
+
+    // A stale draft must not enter the editor and alter the accepted
+    // document before its owner chooses to keep or discard it.
+    async function openStaleDraft(): Promise<{
+      copy: string;
+      remote: string;
+      remoteText: string;
+      localText: string;
+    }> {
+      // Give each choice its own note, so older working copies from the
+      // save lifecycle above cannot become another recovery candidate.
+      fileId = crypto.randomUUID();
+      const seedCopy = crypto.randomUUID();
+      await store.checkpoint(
+        {
+          accountId,
+          workspaceId,
+          fileId,
+          workingCopyId: seedCopy,
+          baseRevisionId: null,
+          path: `${fileId}.md`,
+          text: 'First accepted text.\n',
+          sequence: 1,
+          deleted: false,
+        },
+        null,
+        'text',
+      );
+      await acknowledge();
+      await store.dropDraft(accountId, workspaceId, seedCopy);
+      const before = await store.readCachedNote(accountId, workspaceId, fileId);
+      assert.ok(before?.baseRevisionId);
+      const copy = crypto.randomUUID();
+      const localText = `Local draft ${copy}.\n`;
+      await store.saveDraft({
+        accountId,
+        workspaceId,
+        fileId,
+        workingCopyId: copy,
+        baseRevisionId: before.baseRevisionId,
+        path: before.path,
+        text: localText,
+        sequence: 40,
+        deleted: false,
+      });
+      const remote = crypto.randomUUID();
+      const remoteText = `Accepted text ${remote}.\n`;
+      await store.applyRemoteChanges(
+        accountId,
+        workspaceId,
+        [
+          {
+            file: {
+              fileId,
+              revisionId: remote,
+              path: before.path,
+              fileKind: 'note',
+              document: {
+                kind: 'document',
+                bytes: startDocument(remoteText),
+                epoch: 1,
+              },
+              deleted: false,
+              digest: await contentDigest(remoteText),
+              text: remoteText,
+            },
+            purgedFileId: null,
+          },
+        ],
+        'remote',
+      );
+      assert.equal(
+        (await store.readCachedNote(accountId, workspaceId, fileId))?.stale,
+        true,
+      );
+      await openEditor(store, true);
+      await waitFor(
+        () => container.textContent?.includes('Recover local draft') === true,
+      );
+      await act(settle);
+      assert.equal(container.querySelector('.cm-editor'), null);
+      assert.equal((await store.pending(accountId, workspaceId)).length, 0);
+      assert.equal(
+        (await store.readDraft(accountId, workspaceId, copy))?.text,
+        localText,
+      );
+      const document = await store.readNoteDocument(
+        accountId,
+        workspaceId,
+        fileId,
+      );
+      assert.ok(document);
+      assert.equal(readDocumentText(document.bytes), remoteText);
+      assert.equal(output(), 'Saving the open note to the server.');
+      return { copy, remote, remoteText, localText };
+    }
+    const discarded = await openStaleDraft();
+    const discard = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent === 'Use saved version',
+    );
+    assert.ok(discard);
+    await act(async () => {
+      discard.click();
+      await settle();
+    });
+    await waitFor(
+      () =>
+        container.querySelector('.cm-editor') !== null &&
+        output() === 'Everything is saved to the server.',
+    );
+    assert.equal(
+      await store.readDraft(accountId, workspaceId, discarded.copy),
+      null,
+    );
+    const recovery = await store.recover(accountId, workspaceId);
+    assert.ok(
+      recovery.some(
+        (entry) =>
+          entry.reason === 'stale_draft' && entry.text === discarded.localText,
+      ),
+    );
+    assert.equal((await store.pending(accountId, workspaceId)).length, 0);
+    assert.equal(
+      (await store.readCachedNote(accountId, workspaceId, fileId))?.text,
+      discarded.remoteText,
+    );
+    await act(async () => root.render(null));
+    await act(settle);
+
+    const keptDraft = await openStaleDraft();
+    const keep = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent === 'Keep local draft',
+    );
+    assert.ok(keep);
+    await act(async () => {
+      keep.click();
+      await settle();
+    });
+    await waitFor(() => container.querySelector('.cm-editor') !== null);
+    await act(settle);
+    const keptQueue = await store.pending(accountId, workspaceId);
+    assert.equal(keptQueue.length, 1);
+    assert.deepEqual(keptQueue[0]?.input.revisions[0]?.parents, [
+      keptDraft.remote,
+    ]);
+    assert.deepEqual(keptQueue[0]?.input.expectedHeads, {
+      [fileId]: keptDraft.remote,
+    });
+    assert.equal(output(), 'Saving the open note to the server.');
+    await act(async () => {
+      await acknowledge();
+      await settle();
+    });
+    await waitFor(() => output() === 'Everything is saved to the server.');
+    const keptState = await store.readFileSaveSnapshot(
+      accountId,
+      workspaceId,
+      fileId,
+    );
+    assert.ok(keptState.acceptedHeadRevisionId);
+    assert.equal(
+      await store.readRevisionText(
+        accountId,
+        workspaceId,
+        keptState.acceptedHeadRevisionId,
+      ),
+      keptDraft.localText,
     );
     await act(async () => root.render(null));
     await act(settle);

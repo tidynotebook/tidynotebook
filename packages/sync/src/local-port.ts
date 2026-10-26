@@ -764,6 +764,8 @@ export type LocalStore = {
    * Used when a person takes the accepted head instead of a stale draft.
    * The caller keeps the text first, in the recovery area or the clipboard.
    * Checkpoints and queue entries are never touched.
+   * After the last draft is removed, with no queued version for the file,
+   * the local head follows the accepted head for the next open.
    */
   dropDraft(
     accountId: string,
