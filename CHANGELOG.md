@@ -7,6 +7,26 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## Unreleased
 
+## 0.22.0 - 2026-10-26
+
+### Added
+
+- Notes have Undo and Redo controls. Image removal affects one reference and supports Undo.
+- Note creation offers template previews and a visible destination. Today and recent notes are easier to find.
+
+### Changed
+
+- Search and export actions show their workspace scope. History shows the comparison baseline.
+- Signup, account settings, trial information, and offline settings use clearer actions and status messages.
+
+### Fixed
+
+- Restored notes recover their editor without a page reload. Purged notes keep their terminal state during navigation.
+- Search shows pending work and keeps results tied to the current query.
+- Template reads, errors, and creation navigation stay tied to the active workspace and request.
+- Save status includes open editor work before a checkpoint. Recovered drafts keep their save proof and require a choice when the accepted head changes.
+- The Use saved version action archives and removes the same draft in one transaction. A concurrent draft change keeps the newer text and shows a fresh choice.
+
 ## 0.21.0 - 2026-10-24
 
 ### Added
