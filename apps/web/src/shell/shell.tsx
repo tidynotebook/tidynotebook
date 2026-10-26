@@ -1003,7 +1003,7 @@ function ShellFrame({
   >(null);
   const [templateDestination, setTemplateDestination] =
     useState<TemplateDestination | null>(null);
-  const { problem: templateProblem, report: reportTemplateProblem } =
+  const { problem: templateProblem, begin: beginTemplateCreation } =
     useWorkspaceProblem(workspaceId);
   const templateFolder = templateDestinationFor(
     workspaceId,
@@ -1810,7 +1810,7 @@ function ShellFrame({
             folder={templateFolder ?? ''}
             open={templateFolder !== null}
             onClose={() => setTemplateDestination(null)}
-            onError={reportTemplateProblem}
+            onCreationStart={beginTemplateCreation}
           />
           <NewFolderDialog
             open={newFolderParent !== null}

@@ -100,7 +100,7 @@ function Dialog({
       folder: 'Meetings',
       open,
       onClose: () => setOpen(false),
-      onError: frameNotices ? setProblem : undefined,
+      onCreationStart: frameNotices ? () => setProblem : undefined,
     }),
   );
 }

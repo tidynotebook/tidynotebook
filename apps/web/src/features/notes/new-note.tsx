@@ -31,6 +31,7 @@ export function useCreateNote(
   accountId: string | null,
   workspaceId: string,
   onError?: (message: string | null) => void,
+  onCreationStart?: () => (message: string | null) => void,
 ): {
   /** Creates the note in the named folder, or at the root for an empty name. */
   readonly create: (folder?: string, template?: string) => void;
@@ -39,17 +40,17 @@ export function useCreateNote(
   const navigate = useNavigate();
   const creating = useRef(false);
   const [error, setError] = useState<string | null>(null);
-  const report = useCallback(
-    (message: string | null): void => {
-      setError(message);
-      onError?.(message);
-    },
-    [onError],
-  );
 
   const create = useCallback(
     (folder = '', template?: string): void => {
       if (creating.current) return;
+      // The surviving owner assigns order when work starts, so an older
+      // completion cannot replace the result of a newer creator instance.
+      const completed = onCreationStart?.() ?? onError;
+      const report = (message: string | null): void => {
+        setError(message);
+        completed?.(message);
+      };
       if (store === null || accountId === null) {
         report('Local storage is unavailable, so a note cannot be made.');
         return;
@@ -95,7 +96,7 @@ export function useCreateNote(
         }
       })();
     },
-    [store, accountId, workspaceId, navigate, report],
+    [store, accountId, workspaceId, navigate, onError, onCreationStart],
   );
 
   return { create, error };

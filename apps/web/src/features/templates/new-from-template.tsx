@@ -47,16 +47,25 @@ export function NewFromTemplateDialog({
   open,
   onClose,
   onError,
+  onCreationStart,
 }: {
   readonly workspaceId: string;
   readonly folder: string;
   readonly open: boolean;
   readonly onClose: () => void;
   readonly onError?: ((message: string | null) => void) | undefined;
+  readonly onCreationStart?:
+    (() => (message: string | null) => void) | undefined;
 }): ReactNode {
   const store = useLocalStore().store;
   const accountId = useSession().account?.accountId ?? null;
-  const newNote = useCreateNote(store, accountId, workspaceId, onError);
+  const newNote = useCreateNote(
+    store,
+    accountId,
+    workspaceId,
+    onError,
+    onCreationStart,
+  );
   const [chosen, setChosen] = useState<{
     readonly folder: string;
     readonly text?: string;
@@ -71,7 +80,9 @@ export function NewFromTemplateDialog({
   const id = useId();
   return (
     <>
-      {onError !== undefined || newNote.error === null ? null : (
+      {onError !== undefined ||
+      onCreationStart !== undefined ||
+      newNote.error === null ? null : (
         <Notice tone="problem" message={newNote.error} />
       )}
       <Dialog

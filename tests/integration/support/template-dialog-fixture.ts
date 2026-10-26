@@ -39,11 +39,13 @@ export function useCreateNote(
   _accountId: string | null,
   _workspaceId: string,
   onError?: (message: string | null) => void,
+  onCreationStart?: () => (message: string | null) => void,
 ) {
   return {
     create: (folder: string, text?: string): void => {
       creations.push({ folder, text });
-      onError?.(creationError);
+      const completed = onCreationStart?.() ?? onError;
+      completed?.(creationError);
     },
     error: creationError,
   };
