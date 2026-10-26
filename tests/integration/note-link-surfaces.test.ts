@@ -419,10 +419,7 @@ await test('a restored note opens editable content even when its first read stil
     await waitForEditor(container);
     assert.equal(view().state.doc.toString(), restoredText);
     assert.equal(view().state.readOnly, false);
-    assert.doesNotMatch(
-      container.textContent ?? '',
-      /Note deleted on this device/,
-    );
+    assert.doesNotMatch(container.textContent ?? '', /is in Trash/);
     await render(null);
     await act(finishStoreWork);
   }
@@ -480,7 +477,7 @@ await test('a delayed restore reread shows pending feedback before editable reco
       fileId: restoredId,
     }),
   );
-  assert.match(container.textContent ?? '', /Note deleted on this device/);
+  assert.match(container.textContent ?? '', /is in Trash/);
   await act(async () => {
     restored = true;
     for (const listener of [...listeners])
@@ -488,10 +485,7 @@ await test('a delayed restore reread shows pending feedback before editable reco
   });
   await rereadStarted.promise;
   assert.equal(container.querySelector('.cm-editor'), null);
-  assert.doesNotMatch(
-    container.textContent ?? '',
-    /Note deleted on this device/,
-  );
+  assert.doesNotMatch(container.textContent ?? '', /is in Trash/);
   const pending = container.querySelector('[role="status"][aria-busy="true"]');
   assert.ok(pending);
   assert.match(pending.textContent ?? '', /The note is loading\./);
@@ -670,10 +664,7 @@ await test('duplicate, Trash and restore allow immediate editing through a secon
     );
     await restoreStarted.promise;
     assert.equal(container.querySelector('.cm-editor'), null);
-    assert.doesNotMatch(
-      container.textContent ?? '',
-      /Note deleted on this device/,
-    );
+    assert.doesNotMatch(container.textContent ?? '', /is in Trash/);
     assert.equal(
       (await store.listLocalFiles(accountId, workspaceId)).find(
         (file) => file.fileId === restoredId,
@@ -693,10 +684,7 @@ await test('duplicate, Trash and restore allow immediate editing through a secon
     );
     assert.equal(view().state.doc.toString(), expected);
     assert.equal(view().state.readOnly, false);
-    assert.doesNotMatch(
-      container.textContent ?? '',
-      /Note deleted on this device/,
-    );
+    assert.doesNotMatch(container.textContent ?? '', /is in Trash/);
     const added = `Recovered edit ${String(cycle + 1)}\n`;
     await act(async () => {
       const current = view();
@@ -774,12 +762,12 @@ await test('a purge keeps its visible state when the initial loader read finishe
     for (const listener of [...listeners])
       listener({ kind: 'purge', accountId, workspaceId, fileId: purgedId });
   });
-  assert.match(container.textContent ?? '', /Note deleted permanently/);
+  assert.match(container.textContent ?? '', /This note was deleted/);
   await act(async () => {
     delayed.resolve(cached);
     await delayed.promise;
   });
-  assert.match(container.textContent ?? '', /Note deleted permanently/);
+  assert.match(container.textContent ?? '', /This note was deleted/);
   assert.equal(container.querySelector('.cm-editor'), null);
   await render(null);
 });
@@ -1034,7 +1022,7 @@ await test('purge blocks a restore reload queued in the same React batch even wh
         fileId: purgedId,
       }),
     );
-    assert.match(container.textContent ?? '', /Note deleted on this device/);
+    assert.match(container.textContent ?? '', /is in Trash/);
     await act(async () => {
       restored = true;
       for (const listener of [...listeners])
@@ -1051,7 +1039,7 @@ await test('purge blocks a restore reload queued in the same React batch even wh
     // If the queued request starts, let the successful stale response finish
     // so the assertion observes its effect, rather than cancelling it early.
     if (serverReads > 0) await waitForEditor(container);
-    assert.match(container.textContent ?? '', /Note deleted permanently/);
+    assert.match(container.textContent ?? '', /This note was deleted/);
     assert.equal(container.querySelector('.cm-editor'), null);
     assert.equal(serverReads, 0);
   } finally {
@@ -1107,23 +1095,23 @@ await test('returning to a purged note reaches a terminal state after another no
     );
   try {
     await show(purgedId);
-    assert.match(container.textContent ?? '', /Note deleted on this device/);
+    assert.match(container.textContent ?? '', /is in Trash/);
     await act(async () => {
       purged = true;
       for (const listener of [...listeners])
         listener({ kind: 'purge', accountId, workspaceId, fileId: purgedId });
     });
-    assert.match(container.textContent ?? '', /Note deleted permanently/);
+    assert.match(container.textContent ?? '', /This note was deleted/);
     await show(otherId);
     await act(async () => {
       await setImmediate();
     });
-    assert.match(container.textContent ?? '', /Note deleted on this device/);
+    assert.match(container.textContent ?? '', /is in Trash/);
     await show(purgedId);
     await act(async () => {
       await setImmediate();
     });
-    assert.match(container.textContent ?? '', /Note deleted permanently/);
+    assert.match(container.textContent ?? '', /This note was deleted/);
   } finally {
     await render(null);
     globalThis.fetch = originalFetch;
@@ -1276,16 +1264,14 @@ for (const missing of [
         }),
       );
       const deadline = Date.now() + 10_000;
-      while (
-        !(container.textContent ?? '').includes('Note deleted on this device')
-      ) {
+      while (!(container.textContent ?? '').includes('is in Trash')) {
         if (Date.now() > deadline)
           assert.fail('The deleted note did not finish loading.');
         await act(async () => {
           await setImmediate();
         });
       }
-      assert.match(container.textContent ?? '', /Note deleted on this device/);
+      assert.match(container.textContent ?? '', /is in Trash/);
       const key: [string, string, string, string] = [
         'http://localhost',
         accountId,
