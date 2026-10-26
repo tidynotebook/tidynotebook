@@ -632,6 +632,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
     if (join) await joinStoredWork.current();
     try {
       const snapshot = await readSnapshot(current);
+      if (snapshot === null) return;
       // The note may have moved or reached the trash from the sidebar, from
       // another tab, or from another device. The editor takes both facts from
       // the store, so no later save writes either one back.
