@@ -15,7 +15,7 @@ export const settingsSections = [
   { key: 'spelling', id: 'spelling-heading', title: 'Spelling' },
   { key: 'daily-notes', id: 'daily-notes-heading', title: 'Daily notes' },
   { key: 'templates', id: 'templates-heading', title: 'Templates' },
-  { key: 'offline', id: 'offline-heading', title: 'Available offline' },
+  { key: 'offline', id: 'offline-heading', title: 'Offline' },
   { key: 'export', id: 'export-heading', title: 'Export' },
   { key: 'import', id: 'import-heading', title: 'Import' },
   { key: 'profile', id: 'profile-heading', title: 'Profile' },
@@ -27,7 +27,7 @@ export const settingsSections = [
     id: 'connected-apps-heading',
     title: 'Connected apps',
   },
-  { key: 'sessions', id: 'sessions-heading', title: 'Sessions' },
+  { key: 'sessions', id: 'sessions-heading', title: 'Devices' },
   { key: 'sign-out', id: 'signout-heading', title: 'Sign out' },
   {
     key: 'remove-account',

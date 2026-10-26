@@ -12,8 +12,13 @@
  * (decision 0137). Settings and Accounts both take this one layout, because
  * Accounts is a part of Settings (record 0138).
  */
-import type { ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 import type { PageSection } from '@notesapp/ui';
+
+/** Topic pages show the title and help once, above their controls. */
+export const SettingsTopicContext = createContext<readonly string[] | null>(
+  null,
+);
 
 /** One section: its name and sentence, then its controls. */
 export function SettingsSection({
@@ -25,6 +30,24 @@ export function SettingsSection({
   readonly description?: string | undefined;
   readonly children: ReactNode;
 }): ReactNode {
+  const topic = useContext(SettingsTopicContext);
+  if (topic !== null)
+    return (
+      <section className="py-3" aria-label={section.title}>
+        {topic.includes(section.id) ? null : (
+          <h2
+            className="mb-3 mt-0 text-ui font-semibold text-strong"
+            id={section.id}
+          >
+            {section.title}
+          </h2>
+        )}
+        {section.id === 'signout-heading' && description !== undefined ? (
+          <p className="mb-3 mt-0 text-control text-muted">{description}</p>
+        ) : null}
+        <div className="min-w-0">{children}</div>
+      </section>
+    );
   return (
     <section
       className="border-t border-edge-subtle py-6"

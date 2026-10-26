@@ -271,3 +271,4 @@ export {
   historyButtonName,
 } from './control-classes.ts';
 export { UndoIcon, RedoIcon } from './icons.tsx';
+export { Switch } from './switch.tsx';

@@ -28,7 +28,7 @@ await test('each fixed list names each section and each heading once', () => {
 await test('a section of a fixed list reads its title and its heading', () => {
   assert.deepEqual(sectionOf(settingsSections, 'offline'), {
     id: 'offline-heading',
-    title: 'Available offline',
+    title: 'Offline',
   });
   assert.deepEqual(sectionOf(administrationSections, 'reports'), {
     id: 'reports-heading',

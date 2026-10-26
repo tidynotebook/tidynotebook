@@ -1673,7 +1673,11 @@ function ShellFrame({
           <aside
             ref={sidebarRef}
             id="notes-sidebar"
-            className={drawerClassName(drawerOpen, sidebar.size)}
+            className={
+              framePage === 'settings' && !drawerOpen
+                ? 'hidden'
+                : drawerClassName(drawerOpen, sidebar.size)
+            }
             aria-label="Notes navigation"
             aria-modal={drawerOpen ? true : undefined}
             role={drawerOpen ? 'dialog' : undefined}

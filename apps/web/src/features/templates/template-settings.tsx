@@ -59,7 +59,6 @@ function FolderField({
         label="Folder"
         value={folder}
         onChange={setFolder}
-        hint="Insert from template in the command palette lists the notes in this folder and in its subfolders."
         error={problem === null ? undefined : templateFolderSentences[problem]}
       />
       <p className="mb-3 mt-0 text-control text-muted" aria-live="polite">
