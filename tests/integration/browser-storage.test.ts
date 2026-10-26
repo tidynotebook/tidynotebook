@@ -566,6 +566,205 @@ await test('discarding a draft keeps its queued version and local head', async (
   await store.close();
 });
 
+await test('stale draft archival and checked removal are one version-bound transaction', async () => {
+  const backend = createBackend('atomic-stale-discard');
+  let failingStore: string | null = null;
+  const factory = createFailingFactory(backend.factory, () =>
+    failingStore === null
+      ? null
+      : {
+          store: failingStore,
+          method: 'put',
+          error: new DOMException('forced recovery abort', 'AbortError'),
+        },
+  );
+  const store = await openLocalStore(
+    origin,
+    backend.options({ indexedDB: factory }),
+  );
+  const account = randomUUID();
+  const workspace = randomUUID();
+  const file = randomUUID();
+  try {
+    const seed = draftOf(account, workspace, file, 'seed', 'Accepted A.\n');
+    const created = await store.checkpoint(seed, null, 'text');
+    assert.ok(created);
+    const base = created.input.revisions[0]?.id;
+    assert.ok(base);
+    await store.acknowledge(account, acceptanceOf(created, account, '1'));
+    await store.dropDraft(account, workspace, seed.workingCopyId);
+    const first = {
+      ...seed,
+      workingCopyId: 'changing-copy',
+      baseRevisionId: base,
+      text: 'First local draft.\n',
+    };
+    await store.saveDraft(first);
+    const accepted = randomUUID();
+    const before = await store.readNoteDocument(account, workspace, file);
+    assert.ok(before);
+    const remoteText = 'Accepted B.\n';
+    const remote = replaceDocumentText(before.bytes, remoteText);
+    assert.ok(remote.ok);
+    await store.applyRemoteChanges(
+      account,
+      workspace,
+      [
+        {
+          file: {
+            fileId: file,
+            revisionId: accepted,
+            path: first.path,
+            fileKind: 'note',
+            deleted: false,
+            digest: await contentDigest(remoteText),
+            text: remoteText,
+            document: {
+              kind: 'document',
+              bytes: remote.value.document,
+              epoch: 1,
+            },
+          },
+          purgedFileId: null,
+        },
+      ],
+      '2',
+    );
+    assert.equal(
+      (await store.readCachedNote(account, workspace, file))?.stale,
+      true,
+    );
+    const old = await store.readDraft(account, workspace, first.workingCopyId);
+    assert.ok(old);
+    const newer = {
+      ...old,
+      text: 'Newer same-copy draft.\n',
+      sequence: old.sequence + 1,
+    };
+    await store.saveDraft(newer);
+    const changes: string[] = [];
+    const stop = store.subscribe((change) => changes.push(change.kind));
+    try {
+      await assert.rejects(
+        store.dropDraft(account, workspace, first.workingCopyId, {
+          expected: old,
+          recoveryId: 'checked-recovery',
+        }),
+        (failure: unknown) =>
+          isLocalStorageError(failure) && failure.kind === 'stale',
+      );
+      assert.equal(
+        (await store.readDraft(account, workspace, first.workingCopyId))?.text,
+        newer.text,
+      );
+      assert.deepEqual(await store.recover(account, workspace), []);
+      assert.deepEqual(changes, []);
+      // A remote draft refresh can change text without advancing local keys.
+      const sameSequence = {
+        ...newer,
+        text: 'Changed text at the same sequence.\n',
+      };
+      await store.saveDraft(sameSequence);
+      changes.length = 0;
+      await assert.rejects(
+        store.dropDraft(account, workspace, first.workingCopyId, {
+          expected: newer,
+          recoveryId: 'checked-recovery',
+        }),
+        (failure: unknown) =>
+          isLocalStorageError(failure) && failure.kind === 'stale',
+      );
+      assert.equal(
+        (await store.readDraft(account, workspace, first.workingCopyId))?.text,
+        sameSequence.text,
+      );
+      assert.deepEqual(await store.recover(account, workspace), []);
+      assert.deepEqual(changes, []);
+      // Neither an archive failure nor a later head-write failure can leave
+      // a partial archive or discard behind.
+      for (const table of ['recovery', 'acceptedFiles']) {
+        failingStore = table;
+        await assert.rejects(
+          store.dropDraft(account, workspace, first.workingCopyId, {
+            expected: sameSequence,
+            recoveryId: 'checked-recovery',
+          }),
+          (failure: unknown) =>
+            isLocalStorageError(failure) && failure.kind === 'aborted',
+        );
+        failingStore = null;
+        assert.equal(
+          (await store.readDraft(account, workspace, first.workingCopyId))
+            ?.text,
+          sameSequence.text,
+        );
+        assert.equal(
+          (await store.readFileSaveSnapshot(account, workspace, file))
+            .localHeadRevisionId,
+          base,
+        );
+        assert.deepEqual(await store.recover(account, workspace), []);
+        assert.deepEqual(changes, []);
+      }
+      await store.dropDraft(account, workspace, first.workingCopyId, {
+        expected: sameSequence,
+        recoveryId: 'checked-recovery',
+      });
+      assert.equal(
+        await store.readDraft(account, workspace, first.workingCopyId),
+        null,
+      );
+      const archived = await store.recover(account, workspace);
+      assert.equal(archived.length, 1);
+      assert.equal(archived[0]?.text, sameSequence.text);
+      assert.equal(archived[0]?.reason, 'stale_draft');
+      assert.equal(
+        (await store.readFileSaveSnapshot(account, workspace, file))
+          .localHeadRevisionId,
+        accepted,
+      );
+      assert.deepEqual(changes, ['draft', 'conflict', 'file']);
+      changes.length = 0;
+      await store.dropDraft(account, workspace, first.workingCopyId, {
+        expected: sameSequence,
+        recoveryId: 'checked-recovery',
+      });
+      assert.deepEqual(await store.recover(account, workspace), archived);
+      assert.deepEqual(changes, []);
+      // An old decision retried after a new writer reused the identity must
+      // not remove the new lifetime's work or replace its existing archive.
+      const after = {
+        ...sameSequence,
+        baseRevisionId: accepted,
+        text: 'Work after discard.\n',
+        sequence: 3,
+      };
+      await store.saveDraft(after);
+      changes.length = 0;
+      await assert.rejects(
+        store.dropDraft(account, workspace, first.workingCopyId, {
+          expected: sameSequence,
+          recoveryId: 'checked-recovery',
+        }),
+        (failure: unknown) =>
+          isLocalStorageError(failure) && failure.kind === 'stale',
+      );
+      assert.equal(
+        (await store.readDraft(account, workspace, first.workingCopyId))?.text,
+        after.text,
+      );
+      assert.deepEqual(await store.recover(account, workspace), archived);
+      assert.deepEqual(changes, []);
+      assert.deepEqual(await store.pending(account, workspace), []);
+    } finally {
+      stop();
+    }
+  } finally {
+    failingStore = null;
+    await store.close();
+  }
+});
+
 await test('two working copies of one file create ordered local saves', async () => {
   const backend = createBackend('branch');
   const store = await openLocalStore(origin, backend.options());

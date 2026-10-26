@@ -752,7 +752,31 @@ await test('the open note stays pending from first edit through draft and checkp
       assert.equal(output(), 'Saving the open note to the server.');
       return { copy, remote, remoteText, localText };
     }
-    const discarded = await openStaleDraft();
+    let writeDuringDiscard: (() => Promise<void>) | undefined;
+    const discardingStore = {
+      ...store,
+      dropDraft: async (...args: Parameters<typeof store.dropDraft>) => {
+        const write = writeDuringDiscard;
+        writeDuringDiscard = undefined;
+        if (write) await write();
+        return store.dropDraft(...args);
+      },
+    };
+    const discarded = await openStaleDraft(discardingStore);
+    const newerDuringDiscard = `${discarded.localText}Newer same-copy work.\n`;
+    writeDuringDiscard = async () => {
+      const current = await store.readDraft(
+        accountId,
+        workspaceId,
+        discarded.copy,
+      );
+      assert.ok(current);
+      await store.saveDraft({
+        ...current,
+        text: newerDuringDiscard,
+        sequence: current.sequence + 1,
+      });
+    };
     const watchedHeads: (string | null)[] = [];
     const stopWatching = watchDeviceNote(
       store,
@@ -772,6 +796,65 @@ await test('the open note stays pending from first edit through draft and checkp
       discard.click();
       await settle();
     });
+    assert.equal(
+      (await store.readDraft(accountId, workspaceId, discarded.copy))?.text,
+      newerDuringDiscard,
+      'An intervening same-working-copy write must survive the recovery decision.',
+    );
+    await waitFor(
+      () => container.textContent?.includes(newerDuringDiscard.trim()) === true,
+    );
+    assert.equal(container.querySelector('.cm-editor'), null);
+    assert.equal((await store.pending(accountId, workspaceId)).length, 0);
+    const refreshedDiscard = Array.from(
+      container.querySelectorAll('button'),
+    ).find((button) => button.textContent === 'Use saved version');
+    assert.ok(refreshedDiscard && !refreshedDiscard.disabled);
+    assert.equal(
+      (await store.recover(accountId, workspaceId)).filter(
+        (entry) => entry.fileId === fileId,
+      ).length,
+      0,
+    );
+    // A writer can also refresh text at the same sequence before the next choice.
+    const latestBeforeDecision = `${newerDuringDiscard}More work before the next decision.\n`;
+    await act(async () => {
+      const current = await store.readDraft(
+        accountId,
+        workspaceId,
+        discarded.copy,
+      );
+      assert.ok(current);
+      await store.saveDraft({
+        ...current,
+        text: latestBeforeDecision,
+        sequence: current.sequence,
+      });
+      refreshedDiscard.click();
+      await settle();
+    });
+    await waitFor(
+      () =>
+        container.textContent?.includes(latestBeforeDecision.trim()) === true,
+    );
+    assert.equal(
+      (await store.readDraft(accountId, workspaceId, discarded.copy))?.text,
+      latestBeforeDecision,
+    );
+    assert.equal(
+      (await store.recover(accountId, workspaceId)).filter(
+        (entry) => entry.fileId === fileId,
+      ).length,
+      0,
+    );
+    const finalDiscard = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent === 'Use saved version',
+    );
+    assert.ok(finalDiscard && !finalDiscard.disabled);
+    await act(async () => {
+      finalDiscard.click();
+      await settle();
+    });
     await waitFor(
       () =>
         container.querySelector('.cm-editor') !== null &&
@@ -787,7 +870,7 @@ await test('the open note stays pending from first edit through draft and checkp
     assert.ok(
       recovery.some(
         (entry) =>
-          entry.reason === 'stale_draft' && entry.text === discarded.localText,
+          entry.reason === 'stale_draft' && entry.text === latestBeforeDecision,
       ),
     );
     assert.equal((await store.pending(accountId, workspaceId)).length, 0);

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { LocalStore } from '@notesapp/sync';
+import { isLocalStorageError, type LocalStore } from '@notesapp/sync';
 import { generateUUID } from '@notesapp/core';
 import { Button, PageHeader, PageRegion } from '@notesapp/ui';
 import { noteSaveReport, useNoteSavePublisher } from './save-status.tsx';
@@ -10,6 +10,7 @@ export function StaleDraftRecovery({
   accountId,
   workspaceId,
   workingCopyId,
+  sequence,
   localText,
   acceptedText,
   onResolved,
@@ -18,6 +19,7 @@ export function StaleDraftRecovery({
   readonly accountId: string;
   readonly workspaceId: string;
   readonly workingCopyId: string;
+  readonly sequence: number;
   readonly localText: string;
   readonly acceptedText: string;
   readonly onResolved: () => void;
@@ -59,21 +61,24 @@ export function StaleDraftRecovery({
           workingCopyId,
         );
         if (draft !== null) {
-          await store.addRecovery(accountId, workspaceId, {
+          if (draft.sequence !== sequence || draft.text !== localText) {
+            if (active.current) onResolved();
+            return;
+          }
+          await store.dropDraft(accountId, workspaceId, workingCopyId, {
+            expected: draft,
             recoveryId,
-            fileId: draft.fileId,
-            path: draft.path,
-            text: draft.text,
-            reason: 'stale_draft',
           });
-          await store.dropDraft(accountId, workspaceId, workingCopyId);
         }
       }
       resolved = true;
       if (active.current) onResolved();
-    } catch {
-      if (active.current)
-        setProblem('The draft could not be recovered. Try again.');
+    } catch (failure: unknown) {
+      if (active.current) {
+        if (isLocalStorageError(failure) && failure.kind === 'stale')
+          onResolved();
+        else setProblem('The draft could not be recovered. Try again.');
+      }
     } finally {
       if (!resolved) {
         busy.current = false;

@@ -15,6 +15,7 @@ import {
   stateVectorCovers,
 } from '@notesapp/note-document';
 import {
+  LocalStorageError,
   type Draft,
   type LocalCachedNote,
   type LocalStore,
@@ -32,6 +33,7 @@ import {
   validateCheckpoint,
   validateDraft,
   validateQueueRow,
+  validateRecovery,
 } from '../migrations.ts';
 import {
   bodyOfDigest,
@@ -505,11 +507,12 @@ export function createDraftsSlice(ctx: LocalStoreContext): DraftsSlice {
       accountId: string,
       workspaceId: string,
       workingCopyId: string,
+      recovery?: Parameters<LocalStore['dropDraft']>[3],
     ): Promise<void> {
       const removed = await guard('removing a draft', () =>
         db.transaction(
           'rw',
-          [tables.drafts, tables.acceptedFiles, tables.queue],
+          [tables.drafts, tables.acceptedFiles, tables.queue, tables.recovery],
           async (): Promise<{ fileId: string; handedOff: boolean } | null> => {
             const stored: unknown = await tables.drafts.get([
               serverOrigin,
@@ -519,6 +522,51 @@ export function createDraftsSlice(ctx: LocalStoreContext): DraftsSlice {
             ]);
             if (stored === undefined) return null;
             const draft = validateDraft(stored);
+            if (recovery !== undefined) {
+              const expected = recovery.expected;
+              const expectedVector = expected.documentVector ?? null;
+              const currentVector = draft.documentVector ?? null;
+              const vectorChanged =
+                expectedVector === null
+                  ? currentVector !== null
+                  : currentVector === null ||
+                    expectedVector.length !== currentVector.length ||
+                    expectedVector.some(
+                      (byte, index) => currentVector[index] !== byte,
+                    );
+              if (
+                expected.accountId !== accountId ||
+                expected.workspaceId !== workspaceId ||
+                expected.workingCopyId !== workingCopyId ||
+                expected.fileId !== draft.fileId ||
+                expected.sequence !== draft.sequence ||
+                expected.text !== draft.text ||
+                expected.path !== draft.path ||
+                expected.baseRevisionId !== draft.baseRevisionId ||
+                expected.deleted !== draft.deleted ||
+                vectorChanged
+              )
+                throw new LocalStorageError(
+                  'stale',
+                  'the draft changed before recovery completed',
+                );
+              await tables.recovery.put(
+                validateRecovery({
+                  serverOrigin,
+                  accountId,
+                  workspaceId,
+                  recoveryId: recovery.recoveryId,
+                  fileId: draft.fileId,
+                  path: draft.path,
+                  text: draft.text,
+                  reason: 'stale_draft',
+                  code: null,
+                  noteRefusal: null,
+                  mutationId: null,
+                  createdAt: nowIso(),
+                }),
+              );
+            }
             let handedOff = false;
             await tables.drafts.delete([
               serverOrigin,
@@ -586,6 +634,13 @@ export function createDraftsSlice(ctx: LocalStoreContext): DraftsSlice {
         fileId: removed.fileId,
         kind: 'draft',
       });
+      if (recovery !== undefined)
+        publish({
+          accountId,
+          workspaceId,
+          fileId: removed.fileId,
+          kind: 'conflict',
+        });
       if (removed.handedOff)
         publish({
           accountId,
