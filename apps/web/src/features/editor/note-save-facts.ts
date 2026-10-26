@@ -7,7 +7,7 @@
  * reads references only, so a call from the first render stays right, and an
  * unchanged value writes nothing to the page.
  */
-import { useRef, useState, type RefObject } from 'react';
+import { useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import type {
   FileSaveSnapshot,
   LocalStorageErrorKind,
@@ -28,7 +28,7 @@ export type NoteSaveFacts = {
     readonly accountId: string;
     readonly workspaceId: string;
     readonly fileId: string;
-  }) => Promise<FileSaveSnapshot>;
+  }) => Promise<FileSaveSnapshot | null>;
   /** The sequence that the store holds, to tell text that no write took. */
   readonly writtenSequenceRef: { current: number };
   /** Records the sequence that this editor put in a checkpoint. */
@@ -51,6 +51,13 @@ export function useNoteSaveFacts(
   const writtenSequenceRef = useRef(initialSequence);
   const checkpointedSequenceRef = useRef(initialSequence);
   const snapshotSequenceRef = useRef(initialSequence);
+  const snapshotReadGenerationRef = useRef(0);
+  useLayoutEffect(
+    () => () => {
+      snapshotReadGenerationRef.current += 1;
+    },
+    [],
+  );
   const [storageError, setStorageErrorState] =
     useState<LocalStorageErrorKind | null>(null);
   const storageErrorRef = useRef<LocalStorageErrorKind | null>(null);
@@ -99,6 +106,7 @@ export function useNoteSaveFacts(
 
   return {
     readSnapshot: async ({ store, accountId, workspaceId, fileId }) => {
+      const generation = ++snapshotReadGenerationRef.current;
       // An older snapshot read cannot prove that a later checkpoint reached
       // the server, even if its promise completes after that checkpoint.
       const sequence = checkpointedSequenceRef.current;
@@ -106,6 +114,7 @@ export function useNoteSaveFacts(
         store.readFileSaveSnapshot(accountId, workspaceId, fileId),
         store.listCheckpoints(accountId, workspaceId, fileId),
       ]);
+      if (generation !== snapshotReadGenerationRef.current) return null;
       saveSnapshotRef.current = snapshot;
       snapshotSequenceRef.current = sequence;
       lastSavedAtRef.current =

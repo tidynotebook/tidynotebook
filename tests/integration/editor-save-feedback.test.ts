@@ -4,7 +4,15 @@ import { registerHooks } from 'node:module';
 import { setImmediate } from 'node:timers/promises';
 import { Window } from 'happy-dom';
 import { IDBFactory, IDBKeyRange } from 'fake-indexeddb';
-import { act, createElement, type ReactNode } from 'react';
+import {
+  act,
+  createElement,
+  StrictMode,
+  useEffect,
+  useMemo,
+  useRef,
+  type ReactNode,
+} from 'react';
 import { MemoryRouter } from 'react-router';
 import type { AcceptedChangeset } from '@notesapp/core';
 import { openLocalStore } from '@notesapp/storage-browser';
@@ -63,6 +71,10 @@ await test('the open note stays pending from first edit through draft and checkp
   const { HeaderSlotProvider, HeaderLeafSlot } =
     await import('../../apps/web/dist/shell/header-slot.js');
   const { syncFooter } = await import('../../apps/web/dist/lib/sync-state.js');
+  const { useNoteSaveFacts } =
+    await import('../../apps/web/dist/features/editor/note-save-facts.js');
+  const { createMountedRead } =
+    await import('../../apps/web/dist/lib/coalesced-read.js');
   const local = await openLocalStore('http://localhost', {
     indexedDB: new IDBFactory(),
     IDBKeyRange,
@@ -268,6 +280,125 @@ await test('the open note stays pending from first edit through draft and checkp
       (await store.readCachedNote(accountId, workspaceId, fileId))?.text,
       view.state.doc.toString(),
     );
+    await act(async () => root.render(null));
+    await act(settle);
+
+    // Mount the actual save-facts reader under StrictMode. It stops and
+    // restarts the effect scheduler while the first real cache read waits.
+    const staleReadStarted = Promise.withResolvers<void>();
+    const finishStaleRead = Promise.withResolvers<void>();
+    let firstSnapshot = true;
+    const controlledStore = {
+      ...store,
+      readFileSaveSnapshot: async (
+        ...args: Parameters<typeof store.readFileSaveSnapshot>
+      ) => {
+        const hold = firstSnapshot;
+        firstSnapshot = false;
+        const snapshot = await store.readFileSaveSnapshot(...args);
+        if (hold) {
+          staleReadStarted.resolve();
+          await finishStaleRead.promise;
+        }
+        return snapshot;
+      },
+    };
+    const readers: {
+      sequence: { current: number };
+      facts: ReturnType<typeof useNoteSaveFacts>;
+      ask: () => void;
+    }[] = [];
+    function SnapshotReader(): ReactNode {
+      const sequence = useRef(5);
+      const facts = useNoteSaveFacts(sequence, 5);
+      const factsRef = useRef(facts);
+      factsRef.current = facts;
+      const scheduler = useMemo(
+        () =>
+          createMountedRead(async () => {
+            const current = factsRef.current;
+            const snapshot = await current.readSnapshot({
+              store: controlledStore,
+              accountId,
+              workspaceId,
+              fileId,
+            });
+            if (snapshot !== null) current.showSaveFacts.current();
+          }),
+        [],
+      );
+      useEffect(() => {
+        const stop = scheduler.mount();
+        scheduler.ask();
+        return stop;
+      }, [scheduler]);
+      readers.push({ sequence, facts, ask: scheduler.ask });
+      return createElement('div', { ref: facts.rootRef });
+    }
+    try {
+      await act(async () =>
+        root.render(
+          createElement(
+            StrictMode,
+            null,
+            createElement(
+              NoteSaveScope,
+              null,
+              createElement(Footer),
+              createElement(SnapshotReader),
+            ),
+          ),
+        ),
+      );
+      await staleReadStarted.promise;
+      await waitFor(() => output() === 'Everything is saved to the server.');
+      const reader = readers.at(-1);
+      assert.ok(reader);
+      const cached = await store.readCachedNote(accountId, workspaceId, fileId);
+      assert.ok(cached);
+      await act(async () => {
+        reader.sequence.current = 6;
+        reader.facts.writtenSequenceRef.current = 6;
+        reader.facts.showSaveFacts.current();
+        await store.checkpoint(
+          {
+            accountId,
+            workspaceId,
+            fileId,
+            workingCopyId: crypto.randomUUID(),
+            baseRevisionId: cached.baseRevisionId,
+            path: 'Latest snapshot.md',
+            text: `${cached.text}Latest snapshot.\n`,
+            sequence: 6,
+            deleted: false,
+          },
+          null,
+          'text',
+        );
+        reader.facts.checkpointTaken(6);
+        await acknowledge();
+        reader.ask();
+        await settle();
+      });
+      await waitFor(() => output() === 'Everything is saved to the server.');
+      assert.equal(
+        (await store.readFileSaveSnapshot(accountId, workspaceId, fileId))
+          .queueState,
+        null,
+      );
+      await act(async () => {
+        finishStaleRead.resolve();
+        await settle();
+      });
+      assert.equal(
+        output(),
+        'Everything is saved to the server.',
+        'An obsolete read from the stopped effect must not replace newer saved facts.',
+      );
+    } finally {
+      finishStaleRead.resolve();
+      await act(settle);
+    }
   } finally {
     await act(async () => root.unmount());
     await act(settle);
