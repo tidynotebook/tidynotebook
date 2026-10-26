@@ -191,7 +191,7 @@ services:
   # The application believes those headers only when NOTESAPP_TRUSTED_PROXIES
   # names this proxy. See docs/guide/operations.md.
   caddy:
-    image: caddy@sha256:0c994536bddb66445885237f1a5dcc1916bccea922661c76b4e9fc24061f9b52
+    image: caddy@sha256:685ae3d7c34d9b5f8caeddc5d14051db7bbd88ff1f5a2fa0c16bd8ca328fb7af
     profiles:
       - tls
     restart: unless-stopped
