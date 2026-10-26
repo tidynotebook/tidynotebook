@@ -99,6 +99,7 @@ import {
   useAttentionCount,
 } from '../features/attention/attention-link.tsx';
 import { NewFromTemplateDialog } from '../features/templates/new-from-template.tsx';
+import { useWorkspaceProblem } from '../features/templates/workspace-problem.ts';
 import { CommandPalette } from './command-palette.tsx';
 import type { ShortcutsDialog } from './shortcuts.tsx';
 import { createModuleLoad } from '../lib/module-load.ts';
@@ -1002,16 +1003,8 @@ function ShellFrame({
   >(null);
   const [templateDestination, setTemplateDestination] =
     useState<TemplateDestination | null>(null);
-  const [templateProblem, setTemplateProblem] = useState<{
-    readonly workspaceId: string;
-    readonly message: string | null;
-  } | null>(null);
-  const reportTemplateProblem = useCallback(
-    (message: string | null): void => {
-      setTemplateProblem({ workspaceId, message });
-    },
-    [workspaceId],
-  );
+  const { problem: templateProblem, report: reportTemplateProblem } =
+    useWorkspaceProblem(workspaceId);
   const templateFolder = templateDestinationFor(
     workspaceId,
     templateDestination,
@@ -1707,9 +1700,8 @@ function ShellFrame({
             <div className={`${frameNoticeRowClassName()} ${pageGutter}`}>
               <div className={`${pageColumnClassName()} pt-4 empty:hidden`}>
                 <TrialNotice />
-                {templateProblem?.workspaceId === workspaceId &&
-                templateProblem.message !== null ? (
-                  <Notice tone="problem" message={templateProblem.message} />
+                {templateProblem !== null ? (
+                  <Notice tone="problem" message={templateProblem} />
                 ) : null}
                 <UpdateNotice
                   store={store.store}

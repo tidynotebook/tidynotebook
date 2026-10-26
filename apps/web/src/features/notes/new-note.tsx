@@ -30,6 +30,7 @@ export function useCreateNote(
   store: LocalStore | null,
   accountId: string | null,
   workspaceId: string,
+  onError?: (message: string | null) => void,
 ): {
   /** Creates the note in the named folder, or at the root for an empty name. */
   readonly create: (folder?: string, template?: string) => void;
@@ -38,12 +39,19 @@ export function useCreateNote(
   const navigate = useNavigate();
   const creating = useRef(false);
   const [error, setError] = useState<string | null>(null);
+  const report = useCallback(
+    (message: string | null): void => {
+      setError(message);
+      onError?.(message);
+    },
+    [onError],
+  );
 
   const create = useCallback(
     (folder = '', template?: string): void => {
       if (creating.current) return;
       if (store === null || accountId === null) {
-        setError('Local storage is unavailable, so a note cannot be made.');
+        report('Local storage is unavailable, so a note cannot be made.');
         return;
       }
       creating.current = true;
@@ -71,14 +79,14 @@ export function useCreateNote(
           try {
             await createNote(store, draft);
           } catch (failure: unknown) {
-            setError(
+            report(
               isLocalStorageError(failure) && failure.kind === 'quota'
                 ? 'This device is full, so the note was not made. Free space and try again.'
                 : 'The note could not be made on this device.',
             );
             return;
           }
-          setError(null);
+          report(null);
           await navigate(`/w/${workspaceId}/notes/${fileId}`, {
             state: { focusNoteText: true, noteName: displayNoteName(path) },
           });
@@ -87,7 +95,7 @@ export function useCreateNote(
         }
       })();
     },
-    [store, accountId, workspaceId, navigate],
+    [store, accountId, workspaceId, navigate, report],
   );
 
   return { create, error };

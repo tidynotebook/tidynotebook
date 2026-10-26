@@ -89,6 +89,11 @@ function Dialog({
   return createElement(
     'div',
     null,
+    createElement(
+      'button',
+      { onClick: () => setOpen(true) },
+      'Open template dialog',
+    ),
     createElement('section', { 'aria-label': 'Frame notices' }, problem),
     createElement(NewFromTemplateDialog, {
       workspaceId,
@@ -183,6 +188,11 @@ await test('creation errors reach the frame and remain after the dialog closes u
   const message = 'The note could not be made on this device.';
   setCreationError(message);
   await show('workspace-error', true);
+  await click('Meeting');
+  const first = reads.shift();
+  assert.ok(first);
+  await act(async () => first.finish(templateNote('Create error test')));
+  await click('Create note');
   const notices = container.querySelector(
     'section[aria-label="Frame notices"]',
   );
@@ -192,11 +202,16 @@ await test('creation errors reach the frame and remain after the dialog closes u
     /The note could not be made/,
   );
   assert.equal(container.querySelectorAll('[role="alert"]').length, 0);
-  await click('Cancel');
   assert.equal(container.querySelector('[role="dialog"]'), null);
   assert.equal(notices?.textContent, message);
   setCreationError(null);
-  await show('workspace-error', true);
+  await click('Open template dialog');
+  assert.equal(notices?.textContent, message);
+  await click('Meeting');
+  const retry = reads.shift();
+  assert.ok(retry);
+  await act(async () => retry.finish(templateNote('Create success test')));
+  await click('Create note');
   assert.equal(notices?.textContent, '');
 });
 

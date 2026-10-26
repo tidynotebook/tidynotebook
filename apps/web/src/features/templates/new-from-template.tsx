@@ -56,10 +56,7 @@ export function NewFromTemplateDialog({
 }): ReactNode {
   const store = useLocalStore().store;
   const accountId = useSession().account?.accountId ?? null;
-  const newNote = useCreateNote(store, accountId, workspaceId);
-  useEffect(() => {
-    onError?.(newNote.error);
-  }, [onError, newNote.error]);
+  const newNote = useCreateNote(store, accountId, workspaceId, onError);
   const [chosen, setChosen] = useState<{
     readonly folder: string;
     readonly text?: string;

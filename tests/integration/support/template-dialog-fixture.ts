@@ -34,11 +34,19 @@ export function useFiles() {
 export function useTemplates() {
   return { settings: { status: 'ready', settings: { folder: 'Templates' } } };
 }
-function create(folder: string, text?: string): void {
-  creations.push({ folder, text });
-}
-export function useCreateNote() {
-  return { create, error: creationError };
+export function useCreateNote(
+  _store: unknown,
+  _accountId: string | null,
+  _workspaceId: string,
+  onError?: (message: string | null) => void,
+) {
+  return {
+    create: (folder: string, text?: string): void => {
+      creations.push({ folder, text });
+      onError?.(creationError);
+    },
+    error: creationError,
+  };
 }
 
 export function templateNote(text: string): LocalCachedNote {
