@@ -6,51 +6,51 @@ Scope: UI shipped between v0.21.0 and v0.22.0 (source b430eb97).
 
 ## Shipped problems this fixes
 
-| Shipped (v0.22.0) | Problem | Proposal |
-| --- | --- | --- |
-| "28 notes. New notes go in this workspace root." | Internal term, extra sentence | "28 notes" (A1) |
-| Sidebar "Create in: Personal workspace root" | Internal term, no action | Removed. The page title or the "Folder" row says where a note goes (A3, A4, B2) |
-| "From template" ghost button | Looks like a label | Outlined "Use template" button, same height as "New note" (A1) |
-| Tips card: heading, paragraph, 4 indented lines, 2 buttons | Too long, wrong indent | One line, one tip, "Next" and Close (A1) |
-| "Open today's note" inside tips | Hidden when tips close | Fixed "Today's note" row in the menu (A3) |
-| Template dialog: chips, "Create in: workspace root" paragraph | Weak choice, internal term | Row list, then preview with "Folder: No folder [Change]" (B1, B2, B3) |
-| Settings: wrapping link groups plus every section on one page | Hard to tap, duplicate "Appearance" titles, long copy | List of rows, one page per topic, one helper line (C1 to C6) |
-| Recovery: two long text blocks stacked | Hard to compare on a phone | Two tabs, changes marked, clear button names (D3, D4) |
-| Search "Search in: X. Results include..." paragraph | Long | One quiet line "In Personal" (E4) |
-| Long trial sentences | Long | One strip "Trial: 12 days left [Upgrade]" (E5) |
+| Shipped (v0.22.0)                                             | Problem                                               | Proposal                                                                        |
+| ------------------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
+| "28 notes. New notes go in this workspace root."              | Internal term, extra sentence                         | "28 notes" (A1)                                                                 |
+| Sidebar "Create in: Personal workspace root"                  | Internal term, no action                              | Removed. The page title or the "Folder" row says where a note goes (A3, A4, B2) |
+| "From template" ghost button                                  | Looks like a label                                    | Outlined "Use template" button, same height as "New note" (A1)                  |
+| Tips card: heading, paragraph, 4 indented lines, 2 buttons    | Too long, wrong indent                                | One line, one tip, "Next" and Close (A1)                                        |
+| "Open today's note" inside tips                               | Hidden when tips close                                | Fixed "Today's note" row in the menu (A3)                                       |
+| Template dialog: chips, "Create in: workspace root" paragraph | Weak choice, internal term                            | Row list, then preview with "Folder: No folder [Change]" (B1, B2, B3)           |
+| Settings: wrapping link groups plus every section on one page | Hard to tap, duplicate "Appearance" titles, long copy | List of rows, one page per topic, one helper line (C1 to C6)                    |
+| Recovery: two long text blocks stacked                        | Hard to compare on a phone                            | Two tabs, changes marked, clear button names (D3, D4)                           |
+| Search "Search in: X. Results include..." paragraph           | Long                                                  | One quiet line "In Personal" (E4)                                               |
+| Long trial sentences                                          | Long                                                  | One strip "Trial: 12 days left [Upgrade]" (E5)                                  |
 
 ## Screens
 
-| ID | Screen | Primary action | Other actions |
-| --- | --- | --- | --- |
-| A1 | All notes | New note | Use template, tip Next and Close |
-| A2 | All notes, empty | New note | Use template |
-| A3 | Menu (phone drawer, desktop sidebar) | none | Workspace switch, Today's note, Needs attention, Trash, folders, new folder, Settings |
-| A4 | Folder page | New note (in this folder) | Use template, "..." menu: new folder, rename, delete |
-| B1 | Choose a template | none (tap a row) | Search, Manage |
-| B2 | Template preview | Create note | Change folder, Back |
-| B3 | Save in (folder picker) | none | Done |
-| B4 | No templates | Create a template | Close |
-| B5 | Preview failed | Create note (off) | Try again |
-| C1 | Settings list | none | Rows open C2 to C6, Sign out |
-| C2 | Appearance | none | Mode, theme, Import theme file |
-| C3 | Offline | none | Images, Older versions switches |
-| C4 | Devices | none | Sign out per device, Sign out all other devices |
-| C5 | Profile and email | none | Save name, Delete account |
-| C6 | Templates | none | Change folder, New template |
-| D1 | Editor | none (writing) | Status pill, Undo, Redo, format bar |
-| D2 | Status details | none | Version history |
-| D3 | Recover a draft | Keep this device's text | Use saved version |
-| D4 | Recovery failed | Keep this device's text | Use saved version |
-| D5 | Image viewer | none | Zoom, Remove, Undo toast |
-| E1 | Save status copy table | n/a | n/a |
-| E2 | Note in Trash | Restore note | All notes |
-| E3 | Deleted for good, not found, unavailable | Open Needs attention (only with local text) | All notes, Try again |
-| E4 | Search | none | Results, New note action |
-| E5 | Trial strip and create errors | n/a | Upgrade, Try again |
-| E6 | Email verified | Continue | Get a new link, Sign in |
-| F1 to F4 | Dark versions of A1, B2, C1, D3 | same | same |
-| G1 to G4 | Desktop All notes, template dialog, Settings, editor | same | same |
+| ID       | Screen                                               | Primary action                              | Other actions                                                                         |
+| -------- | ---------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------- |
+| A1       | All notes                                            | New note                                    | Use template, tip Next and Close                                                      |
+| A2       | All notes, empty                                     | New note                                    | Use template                                                                          |
+| A3       | Menu (phone drawer, desktop sidebar)                 | none                                        | Workspace switch, Today's note, Needs attention, Trash, folders, new folder, Settings |
+| A4       | Folder page                                          | New note (in this folder)                   | Use template, "..." menu: new folder, rename, delete                                  |
+| B1       | Choose a template                                    | none (tap a row)                            | Search, Manage                                                                        |
+| B2       | Template preview                                     | Create note                                 | Change folder, Back                                                                   |
+| B3       | Save in (folder picker)                              | none                                        | Done                                                                                  |
+| B4       | No templates                                         | Create a template                           | Close                                                                                 |
+| B5       | Preview failed                                       | Create note (off)                           | Try again                                                                             |
+| C1       | Settings list                                        | none                                        | Rows open C2 to C6, Sign out                                                          |
+| C2       | Appearance                                           | none                                        | Mode, theme, Import theme file                                                        |
+| C3       | Offline                                              | none                                        | Images, Older versions switches                                                       |
+| C4       | Devices                                              | none                                        | Sign out per device, Sign out all other devices                                       |
+| C5       | Profile and email                                    | none                                        | Save name, Delete account                                                             |
+| C6       | Templates                                            | none                                        | Change folder, New template                                                           |
+| D1       | Editor                                               | none (writing)                              | Status pill, Undo, Redo, format bar                                                   |
+| D2       | Status details                                       | none                                        | Version history                                                                       |
+| D3       | Recover a draft                                      | Keep this device's text                     | Use saved version                                                                     |
+| D4       | Recovery failed                                      | Keep this device's text                     | Use saved version                                                                     |
+| D5       | Image viewer                                         | none                                        | Zoom, Remove, Undo toast                                                              |
+| E1       | Save status copy table                               | n/a                                         | n/a                                                                                   |
+| E2       | Note in Trash                                        | Restore note                                | All notes                                                                             |
+| E3       | Deleted for good, not found, unavailable             | Open Needs attention (only with local text) | All notes, Try again                                                                  |
+| E4       | Search                                               | none                                        | Results, New note action                                                              |
+| E5       | Trial strip and create errors                        | n/a                                         | Upgrade, Try again                                                                    |
+| E6       | Email verified                                       | Continue                                    | Get a new link, Sign in                                                               |
+| F1 to F4 | Dark versions of A1, B2, C1, D3                      | same                                        | same                                                                                  |
+| G1 to G4 | Desktop All notes, template dialog, Settings, editor | same                                        | same                                                                                  |
 
 ## Flows
 
