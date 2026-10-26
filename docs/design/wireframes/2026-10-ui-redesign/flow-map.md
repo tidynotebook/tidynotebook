@@ -1,117 +1,82 @@
-# UI redesign proposal: screen and flow map
+# UI redesign proposal: coverage map and approval checklist
 
-Status: prototype wireframes for owner approval. No app code changes.
-Wireframes: [index.html](index.html). Open it in a browser. No server is needed.
-Scope: UI shipped between v0.21.0 and v0.22.0 (source b430eb97).
+Status: prototype designs for owner approval. No app code is changed.
+Scope: user-facing UI shipped between v0.21.0 and v0.22.0 (source b430eb97).
 
-## Shipped problems this fixes
+## Files
 
-| Shipped (v0.22.0)                                             | Problem                                               | Proposal                                                                        |
-| ------------------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
-| "28 notes. New notes go in this workspace root."              | Internal term, extra sentence                         | "28 notes" (A1)                                                                 |
-| Sidebar "Create in: Personal workspace root"                  | Internal term, no action                              | Removed. The page title or the "Folder" row says where a note goes (A3, A4, B2) |
-| "From template" ghost button                                  | Looks like a label                                    | Outlined "Use template" button, same height as "New note" (A1)                  |
-| Tips card: heading, paragraph, 4 indented lines, 2 buttons    | Too long, wrong indent                                | One line, one tip, "Next" and Close (A1)                                        |
-| "Open today's note" inside tips                               | Hidden when tips close                                | Fixed "Today's note" row in the menu (A3)                                       |
-| Template dialog: chips, "Create in: workspace root" paragraph | Weak choice, internal term                            | Row list, then preview with "Folder: No folder [Change]" (B1, B2, B3)           |
-| Settings: wrapping link groups plus every section on one page | Hard to tap, duplicate "Appearance" titles, long copy | List of rows, one page per topic, one helper line (C1 to C6)                    |
-| Recovery: two long text blocks stacked                        | Hard to compare on a phone                            | Two tabs, changes marked, clear button names (D3, D4)                           |
-| Search "Search in: X. Results include..." paragraph           | Long                                                  | One quiet line "In Personal" (E4)                                               |
-| Long trial sentences                                          | Long                                                  | One strip "Trial: 12 days left [Upgrade]" (E5)                                  |
+Open any page from disk. No server or network is needed. Each page has a
+switch that shows every frame in dark mode.
 
-## Screens
+| Page                                   | Content                                                              | Screens |
+| -------------------------------------- | -------------------------------------------------------------------- | ------- |
+| [index.html](index.html)               | What changes, design foundations, coverage, new behaviour, checklist | system  |
+| [01-notes.html](01-notes.html)         | All notes, tips, menu, account menu, calendar, folders               | 14      |
+| [02-templates.html](02-templates.html) | Use template: pick, preview, folder, create, all states              | 17      |
+| [03-editor.html](03-editor.html)       | Undo and Redo icons, save status, history, choose a version, images  | 21      |
+| [04-settings.html](04-settings.html)   | Settings list, every page, confirmations                             | 24      |
+| [05-states.html](05-states.html)       | Note states, Needs attention, search, trial, sign up, limits         | 22      |
+| [06-desktop.html](06-desktop.html)     | Desktop versions of the main screens                                 | 9       |
 
-| ID       | Screen                                               | Primary action                              | Other actions                                                                         |
-| -------- | ---------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------- |
-| A1       | All notes                                            | New note                                    | Use template, tip Next and Close                                                      |
-| A2       | All notes, empty                                     | New note                                    | Use template                                                                          |
-| A3       | Menu (phone drawer, desktop sidebar)                 | none                                        | Workspace switch, Today's note, Needs attention, Trash, folders, new folder, Settings |
-| A4       | Folder page                                          | New note (in this folder)                   | Use template, "..." menu: new folder, rename, delete                                  |
-| B1       | Choose a template                                    | none (tap a row)                            | Search, Manage                                                                        |
-| B2       | Template preview                                     | Create note                                 | Change folder, Back                                                                   |
-| B3       | Save in (folder picker)                              | none                                        | Done                                                                                  |
-| B4       | No templates                                         | Create a template                           | Close                                                                                 |
-| B5       | Preview failed                                       | Create note (off)                           | Try again                                                                             |
-| C1       | Settings list                                        | none                                        | Rows open C2 to C6, Sign out                                                          |
-| C2       | Appearance                                           | none                                        | Mode, theme, Import theme file                                                        |
-| C3       | Offline                                              | none                                        | Images, Older versions switches                                                       |
-| C4       | Devices                                              | none                                        | Sign out per device, Sign out all other devices                                       |
-| C5       | Profile and email                                    | none                                        | Save name, Delete account                                                             |
-| C6       | Templates                                            | none                                        | Change folder, New template                                                           |
-| D1       | Editor                                               | none (writing)                              | Status pill, Undo and Redo icon buttons, format bar                                   |
-| D2       | Status details                                       | none                                        | Version history                                                                       |
-| D3       | Recover a draft                                      | Keep this device's text                     | Use saved version                                                                     |
-| D4       | Recovery failed                                      | Keep this device's text                     | Use saved version                                                                     |
-| D5       | Image viewer                                         | none                                        | Zoom, Remove, Undo toast                                                              |
-| D6       | Undo and Redo icon button spec                       | n/a                                         | States: active, disabled, focus, pressed, tooltip                                     |
-| E1       | Save status copy table                               | n/a                                         | n/a                                                                                   |
-| E2       | Note in Trash                                        | Restore note                                | All notes                                                                             |
-| E3       | Deleted for good, not found, unavailable             | Open Needs attention (only with local text) | All notes, Try again                                                                  |
-| E4       | Search                                               | none                                        | Results, New note action                                                              |
-| E5       | Trial strip and create errors                        | n/a                                         | Upgrade, Try again                                                                    |
-| E6       | Email verified                                       | Continue                                    | Get a new link, Sign in                                                               |
-| F1 to F4 | Dark versions of A1, B2, C1, D3                      | same                                        | same                                                                                  |
-| G1 to G4 | Desktop All notes, template dialog, Settings, editor | same                                        | same                                                                                  |
+`_src/` holds the generator (`python3 -I _src/build.py`). It writes the pages
+above from one shared CSS kit and icon set, so all screens stay consistent.
 
-## Flows
+## Coverage map
 
-1. New blank note: A1 or A4, New note, editor D1. Location: no folder from A1, the folder from A4.
-2. New note from template: A1 or A4, Use template, B1, row, B2, optional Change to B3, Create note, D1.
-3. No templates: B1 shows B4. Create a template makes a note in the template folder and opens it.
-4. Template text not on device: B2 shows B5. Create note stays off until the text loads.
-5. Today's note: menu A3, Today's note, editor. The calendar opens from the same row.
-6. Tips: A1 tip line. Next rotates. Close hides tips for this account and workspace (same stored key as now).
-7. Settings on phone: avatar or menu, C1, row, detail page, Back to C1. On desktop: G3, both at once. Each page has its own address.
-8. Save status: D1 pill, tap, D2. Copy for all states is in E1.
-9. Draft recovery: open note with an older local draft, D3. Choose. On failure D4. Editing stays blocked until a choice. The other text goes to Needs attention, as now.
-10. Image remove: D5 Remove, toast with Undo. The file stays in the account.
-11. Note states: Trash E2 with Restore. Deleted for good E3 links to Needs attention when local text exists.
+| Shipped UI change                              | Screens                      |
+| ---------------------------------------------- | ---------------------------- |
+| All notes header, New note, tips, today's note | A1 to A5, A13, G1, G2        |
+| Sidebar Create in, From template, save line    | A6, A9 to A12, A14, E1, G1   |
+| New folder text                                | A11                          |
+| New from template and its errors               | B1 to B17, G3                |
+| Search scope and pending state                 | E10 to E13, G8               |
+| Undo and Redo                                  | D1 to D3, Undo spec, D21, G4 |
+| Remove image                                   | D17 to D20                   |
+| Pending save and save status                   | D4 to D7, E1, A6             |
+| Recover local draft                            | D11 to D16, G7               |
+| Purged, deleted, restored, unavailable notes   | E2 to E7                     |
+| Kept text (Needs attention)                    | E8, E9                       |
+| Version history copy                           | D8 to D10, G9                |
+| Settings groups and sections                   | C1 to C24, G5, G6            |
+| Offline settings                               | C8, C14, C15, C24            |
+| Trial notice                                   | E14 to E16, C11              |
+| Sign-up verification, sign-in email            | E18 to E22                   |
+| Account limits in GiB                          | E23                          |
 
-## Copy rules used
+## Not drawn
 
-- Sentence case. Short sentences. No paragraphs in the app.
-- Familiar words: "No folder", "Devices", "Offline", "Use template", "Two versions of this note".
-- No internal terms: no "workspace root", "checkpoint", "draft sequence", "server version".
-- Workspace scope uses the workspace name, in one quiet line, only where it matters (C6, E4).
-- Buttons say what happens: "Keep this device's text", "Use saved version", "Restore note".
+- Tablet widths (768 to 1023 px): phone layout with a wider column.
+- Desktop calendar, desktop folder page and desktop note actions menu: follow A8, A9 and D5.
+- Move note dialog: reuses the folder picker B4.
+- Trash list, Publish dialog, workspace dialogs, shortcuts dialog, rest of administration, documentation site, published pages: not changed in v0.22.0.
+- Plain sign-in screen: E20 without the verified mark.
 
-## Layout rules used
+## New behaviour to confirm
 
-- One filled button per screen. Other buttons are outlined with a visible edge. Text-only buttons only for Cancel and Next.
-- Touch targets 44 px or more (rows 48 px). Format bar targets 40 px with 44 px spacing.
-- Bottom sheets on phone, centred dialogs on desktop.
-- Visible keyboard focus ring on rows and buttons (F1).
-- Undo and Redo are curved arrow icon buttons with no visible text (D1, G4, D6). Accessible names "Undo" and "Redo". Desktop tooltip with the shortcut on hover and focus. 44 px targets. Disabled: dimmed, inactive, stays in place.
-- Light and dark use the current Default theme tokens. No new colour tokens.
-
-## Behaviour that stays the same
-
-- Creation queue, free note names, draft storage and recovery rules.
-- Template text loads before Create note turns on.
-- Billing and Connected apps rows show only when the server supports them.
-- Delete account keeps its confirm dialog. Sign out all other devices gets a confirm step.
-
-## Compatibility effects if approved
-
-- Settings gets one address per page. Old `#section` links to Settings must redirect to the matching page.
-- Tips keep the current stored dismiss key, so a closed tips line stays closed.
-- No change to stored data, API contract, configuration or image commands.
+1. Tips have no Next button. A different tip shows each time All notes opens.
+2. Spelling is a switch in the Settings list, with no page of its own.
+3. Settings merges: Export with Import, API keys with Connected apps, Profile with Account. Delete account moves into Profile and email. Sessions becomes Devices.
+4. The avatar opens an account menu: Settings, Help, Sign out.
+5. Image removal shows a short message with Undo for 6 seconds. Editor Undo stays.
+6. The save details sheet shows the last upload time and waiting count only if the app can read them.
+7. Search with no results offers a new note with the search words as its name.
 
 ## Approval checklist
 
-1. No "workspace root" text. A "Folder" row or the page title shows where a note goes (A1, A4, B2).
-2. "Use template" is an outlined button beside the one filled "New note" button.
-3. Tips are one line with Next and Close. Today's note is a fixed menu row.
-4. Template flow: pick, then preview and Create note (B1 to B5, G2).
-5. Settings is a list with one page per topic. The merges and the move of Delete account are shown in C1 and C5.
-6. Save status is one pill. The copy for each state is in E1.
-7. Undo and Redo are arrow icons only, with no visible text. They have accessible names, desktop tooltips, a clear disabled state and 44 px targets (D1, G4, D6).
-8. Draft recovery uses two tabs. "Keep this device's text" is the filled button (D3, D4).
-9. Dark mode, desktop layout, empty states and error states (F, G, E).
-
-## Open questions for the owner
-
-1. Settings groups: merge Export and Import, API keys and Connected apps, Profile and Account, as shown in C1?
-2. Delete account inside "Profile and email" (C5), not on the main Settings list?
-3. "Use template" as the button name, or keep "From template"?
-4. In draft recovery, filled button on "Keep this device's text" (safe default), as shown?
+1. Look and feel: type, colour, spacing, icons and components (index.html).
+2. Button rules: one filled button per screen, outlined secondary buttons with icons, text buttons only for Cancel and Discard, red only for delete.
+3. All notes: count only, New note and Use template side by side, no "workspace root" (A1 to A5, G1).
+4. Tips: one line, 6 words or less, one tip per visit, Close only (A1).
+5. Menu: Today's note and Calendar rows, folders with +, short save line (A6, A8, G1).
+6. Where notes go: folder page title, "Folder: None [Change]", "Inside: Projects" (A9, A11, B3, B4).
+7. Template flow on phone and desktop, with all states (B1 to B17, G3).
+8. Undo and Redo are arrow icons with no visible text, accessible names, desktop tooltips with shortcuts, a dimmed disabled state and 44 px phone targets (D1 to D3, Undo spec, D21, G4).
+9. Save status: one pill and the words for each state (E1, D6, D7).
+10. Choose a version: tabs on phone, columns on desktop, "Keep this device's text" filled (D11 to D16, G7).
+11. Image: "Remove from note", then a short message with Undo (D17 to D20).
+12. Settings: 9 rows and 1 switch, one page each, merges and renames (C1 to C24, G5, G6).
+13. Sign out with waiting changes: "Sign out and keep them" filled (C21).
+14. States and account copy (E2 to E23).
+15. Dark mode matches light everywhere.
+16. The new behaviour list is acceptable.
+17. The screens that are not drawn can wait.
