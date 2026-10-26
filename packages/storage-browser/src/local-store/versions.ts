@@ -240,6 +240,7 @@ export function createVersionsSlice(ctx: LocalStoreContext): VersionsSlice {
             file,
           );
           let previous: {
+            revisionId: string;
             digest: string;
             path: string;
             deleted: boolean;
@@ -255,14 +256,16 @@ export function createVersionsSlice(ctx: LocalStoreContext): VersionsSlice {
           }
           // A working copy that has not checkpointed yet is compared with
           // the accepted head it started from, so opening a file and leaving
-          // it writes nothing.
+          // it writes no version.
           if (
             previous === null &&
             file !== null &&
+            file.acceptedHeadRevisionId !== null &&
             file.acceptedHeadDigest !== null &&
             file.acceptedHeadRevisionId === anchor
           )
             previous = {
+              revisionId: file.acceptedHeadRevisionId,
               digest: file.acceptedHeadDigest,
               path: file.path,
               deleted: file.deleted,
@@ -274,8 +277,16 @@ export function createVersionsSlice(ctx: LocalStoreContext): VersionsSlice {
               { digest, path: draft.path, deleted: draft.deleted },
               message,
             )
-          )
+          ) {
+            // A no-op still proves which version holds this work. Keep that
+            // receipt on the draft, including the first draft of a clean
+            // open. A later recovery write must not lose the proof and
+            // report already versioned text as uncheckpointed work.
+            await tables.drafts.put(
+              draftRow(ctx, draft, previous?.revisionId ?? lastCheckpointId),
+            );
             return null;
+          }
 
           // A note that the server holds gets its document from the server,
           // never from this text (record 0084).

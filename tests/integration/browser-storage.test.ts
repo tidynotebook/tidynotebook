@@ -409,9 +409,22 @@ await test('an unchanged checkpoint is suppressed and a named one is not', async
   await store.close();
 });
 
-await test('an unchanged working copy of an accepted file writes nothing', async () => {
+await test('an unchanged working copy retains its version receipt without a new version', async () => {
   const backend = createBackend('accepted');
-  const store = await openLocalStore(origin, backend.options());
+  let failing = false;
+  const factory = createFailingFactory(backend.factory, () =>
+    failing
+      ? {
+          store: 'drafts',
+          method: 'put',
+          error: new DOMException('forced abort', 'AbortError'),
+        }
+      : null,
+  );
+  const store = await openLocalStore(
+    origin,
+    backend.options({ indexedDB: factory }),
+  );
   const account = randomUUID();
   const workspace = randomUUID();
   const file = randomUUID();
@@ -442,7 +455,44 @@ await test('an unchanged working copy of an accepted file writes nothing', async
     baseRevisionId: revisionId,
   });
   await store.saveDraft(reopened);
+  assert.equal(
+    (await store.readFileSaveSnapshot(account, workspace, file))
+      .hasUncheckpointedDraft,
+    true,
+  );
+  failing = true;
+  await assert.rejects(
+    store.checkpoint(reopened, null, 'text'),
+    (failure: unknown) =>
+      isLocalStorageError(failure) && failure.kind === 'aborted',
+  );
+  failing = false;
+  assert.equal(
+    (await store.readFileSaveSnapshot(account, workspace, file))
+      .hasUncheckpointedDraft,
+    true,
+  );
+  assert.deepEqual(await store.pending(account, workspace), []);
   assert.equal(await store.checkpoint(reopened, null, 'text'), null);
+  // The editor asks for a recovery write after a no-op checkpoint. The
+  // proven version must survive that write and another save-state read.
+  await store.saveDraft(reopened);
+  assert.equal(
+    (await store.readFileSaveSnapshot(account, workspace, file))
+      .hasUncheckpointedDraft,
+    false,
+  );
+  assert.deepEqual(await store.pending(account, workspace), []);
+  assert.equal(
+    (await store.listCheckpoints(account, workspace, file)).length,
+    1,
+  );
+  // A newer edit is still uncheckpointed work. The prior receipt cannot
+  // claim that this text reached a version or the accepted head.
+  await store.saveDraft({ ...reopened, sequence: 2, text: 'new work\n' });
+  const newer = await store.readFileSaveSnapshot(account, workspace, file);
+  assert.equal(newer.hasUncheckpointedDraft, true);
+  assert.equal(newer.acceptedHeadRevisionId, revisionId);
   assert.deepEqual(await store.pending(account, workspace), []);
   await store.close();
 });

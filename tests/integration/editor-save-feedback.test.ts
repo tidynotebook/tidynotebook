@@ -7,6 +7,7 @@ import { IDBFactory, IDBKeyRange } from 'fake-indexeddb';
 import {
   act,
   createElement,
+  Fragment,
   StrictMode,
   useEffect,
   useMemo,
@@ -181,26 +182,30 @@ await test('the open note stays pending from first edit through draft and checkp
       assert.ok(Date.now() < deadline, 'The save feedback did not settle.');
     }
   }
-  async function openEditor(source = store): Promise<void> {
+  async function openEditor(source = store, strict = false): Promise<void> {
     await act(async () =>
       root.render(
         createElement(
-          MemoryRouter,
+          strict ? StrictMode : Fragment,
           null,
           createElement(
-            NoteSaveScope,
+            MemoryRouter,
             null,
-            createElement(Footer),
             createElement(
-              HeaderSlotProvider,
+              NoteSaveScope,
               null,
-              createElement(HeaderLeafSlot),
-              createElement(NoteEditorLoader, {
-                store: source,
-                accountId,
-                workspaceId,
-                fileId,
-              }),
+              createElement(Footer),
+              createElement(
+                HeaderSlotProvider,
+                null,
+                createElement(HeaderLeafSlot),
+                createElement(NoteEditorLoader, {
+                  store: source,
+                  accountId,
+                  workspaceId,
+                  fileId,
+                }),
+              ),
             ),
           ),
         ),
@@ -224,9 +229,30 @@ await test('the open note stays pending from first edit through draft and checkp
       'text',
     );
     await acknowledge();
-    await openEditor();
     const output = (): string =>
       container.querySelector('output')?.textContent ?? '';
+    // StrictMode replays the real editor's exit and mount. A no-op exit
+    // must keep the proof of the accepted version, not make unsent work.
+    await openEditor(store, true);
+    await waitFor(
+      () =>
+        output() === 'Everything is saved to the server.' &&
+        container.querySelector('.cm-editor') !== null,
+    );
+    assert.equal(
+      (await store.readFileSaveSnapshot(accountId, workspaceId, fileId))
+        .hasUncheckpointedDraft,
+      false,
+    );
+    await act(async () => root.render(null));
+    await act(settle);
+    assert.equal(
+      (await store.readFileSaveSnapshot(accountId, workspaceId, fileId))
+        .hasUncheckpointedDraft,
+      false,
+    );
+    assert.equal((await store.pending(accountId, workspaceId)).length, 0);
+    await openEditor();
     await waitFor(
       () =>
         output() === 'Everything is saved to the server.' &&
