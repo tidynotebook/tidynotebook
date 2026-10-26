@@ -731,7 +731,7 @@ export function AccountSettingsPage(): ReactNode {
         )}
         <div className="flex flex-wrap gap-cluster">
           <Button
-            variant="secondary"
+            variant="primary"
             icon={<SignOutIcon />}
             onClick={() => {
               endSignOut(false);
@@ -741,7 +741,8 @@ export function AccountSettingsPage(): ReactNode {
           </Button>
           {unsent ? (
             <Button
-              variant="danger"
+              variant="secondary"
+              tone="danger"
               onClick={() => {
                 endSignOut(true);
               }}

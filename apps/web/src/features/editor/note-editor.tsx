@@ -54,14 +54,7 @@ import {
   type RichWidgetResolvers,
   type TableMenuRequest,
 } from '@notesapp/editor';
-import {
-  Toast,
-  CloseIcon,
-  Button,
-  CollapsibleSection,
-  Notice,
-  pageGutter,
-} from '@notesapp/ui';
+import { Button, CollapsibleSection, Notice, pageGutter } from '@notesapp/ui';
 import { useSpellCheck, useTheme } from '../../app.tsx';
 import { ActiveNoteScope, useActiveNoteControl } from './active-note.tsx';
 import { downloadNote, transferFailureMessage } from '../export/export.ts';
@@ -87,6 +80,7 @@ import { useInsertTemplate } from './insert-template.ts';
 import { useImageUpload } from './image-upload.ts';
 import { useNoteLinkSource } from './note-link-source.ts';
 import { useNoteSaveFacts } from './note-save-facts.ts';
+import { useImageUndo } from './image-undo.tsx';
 import { useCopyNote } from './copy-note.tsx';
 import {
   baseNameOf,
@@ -372,15 +366,8 @@ const NoteEditorBody = memo(function NoteEditorBody({
   const history = useEditorHistory(viewRef);
   const watchHistory = history.watch;
   // The picture that a press on an image of the note opened (record 0145).
-  const [imageUndo, setImageUndo] = useState<{
-    readonly run: () => void;
-  } | null>(null);
-  const imageUndoRef = useRef<{ readonly run: () => void } | null>(null);
-  const clearImageUndo = (): void => {
-    if (imageUndoRef.current === null) return;
-    imageUndoRef.current = null;
-    setImageUndo(null);
-  };
+  const imageUndo = useImageUndo(viewRef);
+  const clearImageUndo = imageUndo.clear;
   const [openImage, setOpenImage] = useState<ImageOpenRequest | null>(null);
   const [outlineOpen, setOutlineOpen] = useState(true);
   const [backlinksOpen, setBacklinksOpen] = useState(true);
@@ -1565,20 +1552,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
             <NoteFooter initialText={initialText} />
             <ImageViewer
               image={openImage}
-              onRemoved={() => {
-                const view = currentView();
-                if (view === null) return;
-                const after = view.state.doc;
-                const notice = {
-                  run: (): void => {
-                    if (currentView() === view && view.state.doc === after)
-                      history.run('undo');
-                    clearImageUndo();
-                  },
-                };
-                imageUndoRef.current = notice;
-                setImageUndo(notice);
-              }}
+              onRemoved={imageUndo.removed}
               onClose={() => setOpenImage(null)}
               returnFocus={() => currentView()?.focus()}
             />
@@ -1618,22 +1592,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
           </aside>
         </div>
       </div>
-      {imageUndo === null ? (
-        copyNote.toast
-      ) : (
-        <Toast message="Image removed from note.">
-          <Button variant="secondary" size="sm" onClick={imageUndo.run}>
-            Undo
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            label="Close message"
-            icon={<CloseIcon />}
-            onClick={clearImageUndo}
-          />
-        </Toast>
-      )}
+      {imageUndo.toast ?? copyNote.toast}
     </div>
   );
 });

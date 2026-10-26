@@ -253,7 +253,10 @@ export function NotesHomeView(): ReactNode {
       )}
     </div>
   );
-  const keepOffset = useKeptOffset(workspaceId, !files.loading && total > 0);
+  const keepOffset = useKeptOffset(
+    `${workspaceId}:${folder}`,
+    !files.loading && total > 0,
+  );
 
   return (
     <Page
