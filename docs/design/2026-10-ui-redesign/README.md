@@ -56,7 +56,7 @@ above from one shared CSS kit and icon set, so all screens stay consistent.
 2. Spelling is a switch in the Settings list, with no page of its own.
 3. Settings merges: Export with Import, API keys with Connected apps, Profile with Account. Delete account moves into Profile and email. Sessions becomes Devices.
 4. The avatar opens an account menu: Settings, Help, Sign out.
-5. Image removal shows a short message with Undo for 6 seconds. Editor Undo stays.
+5. Image removal shows a short message with Undo for `6 seconds`. Editor Undo stays.
 6. The save details sheet shows the last upload time and waiting count only if the app can read them.
 7. Search with no results offers a new note with the search words as its name.
 
@@ -79,3 +79,7 @@ above from one shared CSS kit and icon set, so all screens stay consistent.
 15. Dark mode matches light everywhere.
 16. The new behaviour list is acceptable.
 17. The screens that are not drawn can wait.
+
+## Decisions
+
+No decision records were added for this design.
