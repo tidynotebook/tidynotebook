@@ -39,7 +39,7 @@ export function useCreateNote(
   _accountId: string | null,
   _workspaceId: string,
   onError?: (message: string | null) => void,
-  onCreationStart?: () => (message: string | null) => void,
+  onCreationStart?: () => (message: string | null) => boolean | void,
 ) {
   return {
     create: (folder: string, text?: string): void => {

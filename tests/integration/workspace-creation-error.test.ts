@@ -4,7 +4,14 @@ import { setImmediate } from 'node:timers/promises';
 import { Window } from 'happy-dom';
 import { IDBFactory, IDBKeyRange } from 'fake-indexeddb';
 import { act, createElement } from 'react';
-import { MemoryRouter } from 'react-router';
+import {
+  MemoryRouter,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+  useParams,
+} from 'react-router';
 import { openLocalStore } from '@notesapp/storage-browser';
 
 await test('creation results stay ordered within each surviving workspace', async (t) => {
@@ -44,7 +51,7 @@ await test('creation results stay ordered within each surviving workspace', asyn
   let cleanups = 0;
   let successes = 0;
   const writes: ReturnType<typeof Promise.withResolvers<void>>[] = [];
-  const store = {
+  const methods = {
     ...local,
     dropDraft: async (...args: Parameters<typeof local.dropDraft>) => {
       await local.dropDraft(...args);
@@ -61,17 +68,46 @@ await test('creation results stay ordered within each surviving workspace', asyn
       return result;
     },
   };
+  const pendingWork = new Set<Promise<unknown>>();
+  const store = new Proxy(methods, {
+    get(target, property) {
+      const value: unknown = Reflect.get(target, property);
+      if (typeof value !== 'function') return value;
+      return (...args: unknown[]): unknown => {
+        const result: unknown = Reflect.apply(value, target, args);
+        if (result instanceof Promise) {
+          pendingWork.add(result);
+          void result.then(
+            () => pendingWork.delete(result),
+            () => pendingWork.delete(result),
+          );
+        }
+        return result;
+      };
+    },
+  });
+  const finishWork = async () => {
+    do {
+      await Promise.allSettled([...pendingWork]);
+      await setImmediate();
+    } while (pendingWork.size > 0);
+  };
   const accountId = crypto.randomUUID();
   const workspaceA = crypto.randomUUID();
   const workspaceB = crypto.randomUUID();
+  let remountCreators = true;
+  const starts: string[] = [];
   function Creator({
     workspaceId,
     begin,
   }: {
     workspaceId: string;
-    begin: () => (message: string | null) => void;
+    begin: () => (message: string | null) => boolean;
   }) {
-    const note = useCreateNote(store, accountId, workspaceId, undefined, begin);
+    const note = useCreateNote(store, accountId, workspaceId, undefined, () => {
+      starts.push(workspaceId);
+      return begin();
+    });
     return createElement(
       'button',
       { onClick: () => note.create('', 'Chosen text') },
@@ -83,25 +119,57 @@ await test('creation results stay ordered within each surviving workspace', asyn
     return createElement(
       'div',
       null,
-      createElement('output', null, problem),
-      createElement(Creator, { key: workspaceId, workspaceId, begin }),
+      createElement('output', { 'aria-label': 'Problem' }, problem),
+      createElement(Creator, {
+        key: remountCreators ? workspaceId : 'shared',
+        workspaceId,
+        begin,
+      }),
     );
   }
   const container = document.createElement('div');
   document.body.append(container);
   const root = createRoot(container);
-  const show = async (workspaceId: string) => {
-    await act(async () =>
-      root.render(
-        createElement(
-          MemoryRouter,
-          null,
-          createElement(Frame, { workspaceId }),
-        ),
-      ),
+  const navigators: ReturnType<typeof useNavigate>[] = [];
+  function Navigation() {
+    navigators.push(useNavigate());
+    return createElement(
+      'output',
+      { 'aria-label': 'Location' },
+      useLocation().pathname,
     );
+  }
+  function WorkspaceFrame() {
+    const { workspaceId } = useParams();
+    assert.ok(workspaceId);
+    return createElement(Frame, { workspaceId });
+  }
+  const show = async (workspaceId: string) => {
+    const navigate = navigators.at(-1);
+    await act(async () => {
+      if (navigate !== undefined) await navigate(`/w/${workspaceId}`);
+      else
+        root.render(
+          createElement(
+            MemoryRouter,
+            { initialEntries: [`/w/${workspaceId}`] },
+            createElement(Navigation),
+            createElement(
+              Routes,
+              null,
+              createElement(Route, {
+                path: '/w/:workspaceId/*',
+                element: createElement(WorkspaceFrame),
+              }),
+            ),
+          ),
+        );
+    });
   };
-  const output = () => container.querySelector('output')?.textContent ?? '';
+  const output = () =>
+    container.querySelector('output[aria-label="Problem"]')?.textContent ?? '';
+  const location = () =>
+    container.querySelector('output[aria-label="Location"]')?.textContent ?? '';
   const click = async () => {
     await act(async () => {
       const button = container.querySelector('button');
@@ -158,12 +226,37 @@ await test('creation results stay ordered within each surviving workspace', asyn
       'Success in one workspace must not clear another workspace error.',
     );
     await t.test(
+      'a save finishes after leaving its workspace without navigating back',
+      async () => {
+        await show(workspaceA);
+        hold = true;
+        const index = writes.length;
+        const queued = (await local.pending(accountId, workspaceA)).length;
+        await click();
+        await waitFor(() => writes.length === index + 1);
+        await show(workspaceB);
+        const accepted = successes;
+        await act(async () => writes[index]?.resolve());
+        await waitFor(() => successes === accepted + 1);
+        assert.equal(
+          location(),
+          `/w/${workspaceB}`,
+          'A completed save must not take the user back to its old workspace.',
+        );
+        assert.equal(
+          (await local.pending(accountId, workspaceA)).length,
+          queued + 1,
+        );
+      },
+    );
+    await t.test(
       'an older failure cannot replace a newer success after returning to the workspace',
       async () => {
         await show(workspaceA);
         hold = true;
+        const index = writes.length;
         await click();
-        await waitFor(() => writes.length === 3);
+        await waitFor(() => writes.length === index + 1);
         await show(workspaceB);
         await show(workspaceA);
         hold = false;
@@ -173,7 +266,7 @@ await test('creation results stay ordered within each surviving workspace', asyn
         assert.equal(output(), '');
         const dropped = cleanups;
         await act(async () =>
-          writes[2]?.reject(new Error('Older creation failed.')),
+          writes[index]?.reject(new Error('Older creation failed.')),
         );
         await waitFor(() => cleanups === dropped + 1);
         assert.equal(
@@ -187,31 +280,67 @@ await test('creation results stay ordered within each surviving workspace', asyn
       'an older success cannot clear a newer failure after returning to the workspace',
       async () => {
         hold = true;
+        const index = writes.length;
         await click();
-        await waitFor(() => writes.length === 4);
+        await waitFor(() => writes.length === index + 1);
         await show(workspaceB);
         await show(workspaceA);
         await click();
-        await waitFor(() => writes.length === 5);
+        await waitFor(() => writes.length === index + 2);
         const dropped = cleanups;
         await act(async () =>
-          writes[4]?.reject(new Error('Newer creation failed.')),
+          writes[index + 1]?.reject(new Error('Newer creation failed.')),
         );
         await waitFor(() => cleanups === dropped + 1);
         assert.equal(output(), message);
         const accepted = successes;
-        await act(async () => writes[3]?.resolve());
+        const before = location();
+        await act(async () => writes[index]?.resolve());
         await waitFor(() => successes === accepted + 1);
         assert.equal(
           output(),
           message,
           'A stale success must not clear the newer failed result.',
         );
+        assert.equal(
+          location(),
+          before,
+          'A stale success after A/B/A must not navigate away from the newer result.',
+        );
+      },
+    );
+    await t.test(
+      'a reused creator keeps the new workspace attempt locked while the old save finishes',
+      async () => {
+        remountCreators = false;
+        await show(workspaceA);
+        hold = true;
+        const index = writes.length;
+        await click();
+        await waitFor(() => writes.length === index + 1);
+        await show(workspaceB);
+        await click();
+        await waitFor(() => writes.length === index + 2);
+        const accepted = successes;
+        await act(async () => writes[index]?.resolve());
+        await waitFor(() => successes === accepted + 1);
+        assert.equal(location(), `/w/${workspaceB}`);
+        const started = starts.length;
+        await click();
+        assert.equal(
+          starts.length,
+          started,
+          'An old finally block must not unlock the new workspace attempt.',
+        );
+        await act(async () => writes[index + 1]?.resolve());
+        await waitFor(() => successes === accepted + 2);
+        assert.ok(location().startsWith(`/w/${workspaceB}/notes/`));
       },
     );
   } finally {
     for (const pending of writes) pending.resolve();
     await act(async () => root.unmount());
+    await act(finishWork);
     await local.close();
     await browser.happyDOM.close();
     for (const [name, original] of originals) {

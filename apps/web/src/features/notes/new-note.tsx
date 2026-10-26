@@ -10,7 +10,7 @@
  * the screen and appears once (decision 0062), so the note list renders its own
  * primary button and the sidebar renders a row.
  */
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { generateUUID } from '@notesapp/core';
 import {
@@ -25,37 +25,61 @@ import {
 } from '../../lib/new-note-draft.ts';
 import { displayNoteName } from '../../lib/note-name.ts';
 
+type CreationScope = { readonly workspaceId: string; active: boolean };
+
 /** Creates one empty note and opens it. */
 export function useCreateNote(
   store: LocalStore | null,
   accountId: string | null,
   workspaceId: string,
   onError?: (message: string | null) => void,
-  onCreationStart?: () => (message: string | null) => void,
+  onCreationStart?: () => (message: string | null) => boolean | void,
 ): {
   /** Creates the note in the named folder, or at the root for an empty name. */
   readonly create: (folder?: string, template?: string) => void;
   readonly error: string | null;
 } {
   const navigate = useNavigate();
-  const creating = useRef(false);
+  const currentScope = useRef<CreationScope | null>(null);
+  const creating = useRef<{ readonly scope: CreationScope } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  useLayoutEffect(() => {
+    const scope: CreationScope = { workspaceId, active: true };
+    currentScope.current = scope;
+    setError(null);
+    return () => {
+      scope.active = false;
+      if (currentScope.current === scope) currentScope.current = null;
+    };
+  }, [store, accountId, workspaceId]);
 
   const create = useCallback(
     (folder = '', template?: string): void => {
-      if (creating.current) return;
+      const scope = currentScope.current;
+      if (scope === null || !scope.active || scope.workspaceId !== workspaceId)
+        return;
+      if (creating.current?.scope === scope) return;
+      const attempt = { scope };
+      creating.current = attempt;
+      const isCurrent = (): boolean =>
+        scope.active &&
+        currentScope.current === scope &&
+        creating.current === attempt;
       // The surviving owner assigns order when work starts, so an older
       // completion cannot replace the result of a newer creator instance.
-      const completed = onCreationStart?.() ?? onError;
-      const report = (message: string | null): void => {
-        setError(message);
-        completed?.(message);
+      const completed = onCreationStart?.();
+      const report = (message: string | null): boolean => {
+        let accepted = true;
+        if (completed === undefined) onError?.(message);
+        else accepted = completed(message) !== false;
+        if (accepted && isCurrent()) setError(message);
+        return accepted;
       };
       if (store === null || accountId === null) {
         report('Local storage is unavailable, so a note cannot be made.');
+        if (creating.current === attempt) creating.current = null;
         return;
       }
-      creating.current = true;
       void (async (): Promise<void> => {
         try {
           // The name avoids every path that the server holds or may hold, so
@@ -87,12 +111,12 @@ export function useCreateNote(
             );
             return;
           }
-          report(null);
+          if (!report(null) || !isCurrent()) return;
           await navigate(`/w/${workspaceId}/notes/${fileId}`, {
             state: { focusNoteText: true, noteName: displayNoteName(path) },
           });
         } finally {
-          creating.current = false;
+          if (creating.current === attempt) creating.current = null;
         }
       })();
     },

@@ -55,7 +55,7 @@ export function NewFromTemplateDialog({
   readonly onClose: () => void;
   readonly onError?: ((message: string | null) => void) | undefined;
   readonly onCreationStart?:
-    (() => (message: string | null) => void) | undefined;
+    (() => (message: string | null) => boolean | void) | undefined;
 }): ReactNode {
   const store = useLocalStore().store;
   const accountId = useSession().account?.accountId ?? null;
