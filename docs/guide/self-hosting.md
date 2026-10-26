@@ -65,7 +65,7 @@ This command copies the code to a folder named `notesapp`. The second command
 goes into that folder. Run all later commands in it.
 
 ```bash
-git clone --branch v0.21.0 --depth 1 \
+git clone --branch v0.22.0 --depth 1 \
   https://github.com/tidynotebook/tidynotebook.git notesapp
 cd notesapp
 ```
