@@ -54,6 +54,7 @@ import {
   isSameNote,
   noteHoldMs,
   noteLoadStatusFor,
+  noteRecoveryFor,
   type NoteLoadIdentity,
   type NoteLoadState,
   type NoteLoadStatus,
@@ -267,6 +268,7 @@ export function NoteEditorLoader({
       const servedDocument = head?.document ?? null;
       const paired =
         kept !== null && !kept.deleted && kept.document !== null ? kept : null;
+      const recovery = noteRecoveryFor(kept);
       // The generation goes with the document, so the editor names the one
       // that it opened from in each write (record 0181).
       setStatus({
@@ -277,16 +279,7 @@ export function NoteEditorLoader({
           : (paired?.text ?? result.data.head?.text ?? ''),
         headRevisionId: result.data.headRevisionId,
         sequence: 0,
-        ...(kept?.stale &&
-        kept.workingCopyId !== undefined &&
-        kept.acceptedText !== null
-          ? {
-              recovery: {
-                workingCopyId: kept.workingCopyId,
-                acceptedText: kept.acceptedText,
-              },
-            }
-          : {}),
+        ...(recovery === null ? {} : { recovery }),
         document:
           paired?.document ??
           (servedDocument === null
@@ -416,7 +409,7 @@ export function NoteEditorLoader({
   if (status.recovery !== undefined)
     return (
       <StaleDraftRecovery
-        key={`${accountId}:${workspaceId}:${fileId}:${status.recovery.workingCopyId}`}
+        key={`${accountId}:${workspaceId}:${fileId}:${status.recovery.workingCopyId}:${status.recovery.acceptedRevisionId}:${status.sequence}`}
         store={store}
         accountId={accountId}
         workspaceId={workspaceId}

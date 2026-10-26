@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import type { LocalCachedNote } from '@notesapp/sync';
 import {
   noteLoadStatusFor,
+  noteRecoveryFor,
   opensFromDevice,
   type NoteLoadState,
   type NoteLoadStatus,
@@ -133,4 +135,32 @@ await test('a note of the server opens from the device only with its document', 
   // A note that only this device holds has no accepted head, even with a
   // local version of release 0.4, and it starts its own document.
   assert.equal(opensFromDevice(null, null), true);
+});
+
+await test('recovery choices require a stale draft and its readable accepted revision', () => {
+  const draft: LocalCachedNote = {
+    fileId: 'note',
+    path: 'Note.md',
+    text: 'local text',
+    deleted: false,
+    workingCopyId: 'copy',
+    sequence: 2,
+    baseRevisionId: 'old-head',
+    stale: true,
+    acceptedText: 'saved text',
+    acceptedPath: 'Note.md',
+    acceptedRevisionId: 'new-head',
+    document: null,
+  };
+  assert.deepEqual(noteRecoveryFor(draft), {
+    workingCopyId: 'copy',
+    acceptedText: 'saved text',
+    acceptedRevisionId: 'new-head',
+  });
+  assert.equal(noteRecoveryFor(null), null);
+  assert.equal(noteRecoveryFor({ ...draft, stale: false }), null);
+  assert.equal(noteRecoveryFor({ ...draft, deleted: true }), null);
+  assert.equal(noteRecoveryFor({ ...draft, workingCopyId: undefined }), null);
+  assert.equal(noteRecoveryFor({ ...draft, acceptedText: null }), null);
+  assert.equal(noteRecoveryFor({ ...draft, acceptedRevisionId: null }), null);
 });

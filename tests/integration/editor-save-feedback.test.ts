@@ -68,6 +68,8 @@ await test('the open note stays pending from first edit through draft and checkp
   });
   const { createRoot } = await import('react-dom/client');
   const { EditorView } = await import('@codemirror/view');
+  const { watchDeviceNote } =
+    await import('../../apps/web/dist/features/editor/device-note.js');
   const { NoteEditorLoader } =
     await import('../../apps/web/dist/features/editor/note-loader.js');
   const { NoteSaveScope, useNoteSaveFact, useFlushNoteDraft } =
@@ -499,7 +501,7 @@ await test('the open note stays pending from first edit through draft and checkp
 
     // A stale draft must not enter the editor and alter the accepted
     // document before its owner chooses to keep or discard it.
-    async function openStaleDraft(): Promise<{
+    async function openStaleDraft(source = store): Promise<{
       copy: string;
       remote: string;
       remoteText: string;
@@ -571,7 +573,7 @@ await test('the open note stays pending from first edit through draft and checkp
         (await store.readCachedNote(accountId, workspaceId, fileId))?.stale,
         true,
       );
-      await openEditor(store, true);
+      await openEditor(source, true);
       await waitFor(
         () => container.textContent?.includes('Recover local draft') === true,
       );
@@ -593,6 +595,17 @@ await test('the open note stays pending from first edit through draft and checkp
       return { copy, remote, remoteText, localText };
     }
     const discarded = await openStaleDraft();
+    const watchedHeads: (string | null)[] = [];
+    const stopWatching = watchDeviceNote(
+      store,
+      { accountId, workspaceId, fileId },
+      (note) => {
+        watchedHeads.push(note?.baseRevisionId ?? null);
+      },
+      () => {},
+    );
+    await waitFor(() => watchedHeads.length > 0);
+    assert.notEqual(watchedHeads.at(-1), discarded.remote);
     const discard = Array.from(container.querySelectorAll('button')).find(
       (button) => button.textContent === 'Use saved version',
     );
@@ -610,6 +623,8 @@ await test('the open note stays pending from first edit through draft and checkp
       await store.readDraft(accountId, workspaceId, discarded.copy),
       null,
     );
+    await waitFor(() => watchedHeads.at(-1) === discarded.remote);
+    stopWatching();
     const recovery = await store.recover(accountId, workspaceId);
     assert.ok(
       recovery.some(
@@ -625,7 +640,51 @@ await test('the open note stays pending from first edit through draft and checkp
     await act(async () => root.render(null));
     await act(settle);
 
-    const keptDraft = await openStaleDraft();
+    let afterRebase: (() => Promise<void>) | undefined;
+    const rebasingStore = {
+      ...store,
+      rebaseDraft: async (...args: Parameters<typeof store.rebaseDraft>) => {
+        await store.rebaseDraft(...args);
+        const next = afterRebase;
+        afterRebase = undefined;
+        if (next) await next();
+      },
+    };
+    const keptDraft = await openStaleDraft(rebasingStore);
+    const newer = crypto.randomUUID();
+    const newerText = 'A newer remote version during recovery.\n';
+    afterRebase = async () => {
+      const draft = await store.readDraft(
+        accountId,
+        workspaceId,
+        keptDraft.copy,
+      );
+      assert.ok(draft);
+      await store.applyRemoteChanges(
+        accountId,
+        workspaceId,
+        [
+          {
+            file: {
+              fileId,
+              revisionId: newer,
+              path: draft.path,
+              fileKind: 'note',
+              document: {
+                kind: 'document',
+                bytes: startDocument(newerText),
+                epoch: 1,
+              },
+              deleted: false,
+              digest: await contentDigest(newerText),
+              text: newerText,
+            },
+            purgedFileId: null,
+          },
+        ],
+        'remote',
+      );
+    };
     const keep = Array.from(container.querySelectorAll('button')).find(
       (button) => button.textContent === 'Keep local draft',
     );
@@ -634,15 +693,36 @@ await test('the open note stays pending from first edit through draft and checkp
       keep.click();
       await settle();
     });
+    await waitFor(() => container.textContent?.includes(newerText) === true);
+    assert.equal(container.querySelector('.cm-editor'), null);
+    assert.equal((await store.pending(accountId, workspaceId)).length, 0);
+    const renewedChoices = Array.from(
+      container.querySelectorAll('button'),
+    ).filter((button) =>
+      ['Keep local draft', 'Use saved version'].includes(
+        button.textContent ?? '',
+      ),
+    );
+    assert.equal(renewedChoices.length, 2);
+    assert.ok(
+      renewedChoices.every((button) => !button.disabled),
+      'A newer remote version must permit another recovery choice.',
+    );
+    const keepLatest = renewedChoices.find(
+      (button) => button.textContent === 'Keep local draft',
+    );
+    assert.ok(keepLatest);
+    await act(async () => {
+      keepLatest.click();
+      await settle();
+    });
     await waitFor(() => container.querySelector('.cm-editor') !== null);
     await act(settle);
     const keptQueue = await store.pending(accountId, workspaceId);
     assert.equal(keptQueue.length, 1);
-    assert.deepEqual(keptQueue[0]?.input.revisions[0]?.parents, [
-      keptDraft.remote,
-    ]);
+    assert.deepEqual(keptQueue[0]?.input.revisions[0]?.parents, [newer]);
     assert.deepEqual(keptQueue[0]?.input.expectedHeads, {
-      [fileId]: keptDraft.remote,
+      [fileId]: newer,
     });
     assert.equal(output(), 'Saving the open note to the server.');
     await act(async () => {

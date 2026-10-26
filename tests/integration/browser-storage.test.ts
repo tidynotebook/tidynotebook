@@ -494,6 +494,15 @@ await test('an unchanged working copy retains its version receipt without a new 
   assert.equal(newer.hasUncheckpointedDraft, true);
   assert.equal(newer.acceptedHeadRevisionId, revisionId);
   assert.deepEqual(await store.pending(account, workspace), []);
+  const notifications: string[] = [];
+  const stop = store.subscribe((change) => notifications.push(change.kind));
+  await store.dropDraft(account, workspace, reopened.workingCopyId);
+  assert.deepEqual(
+    notifications,
+    ['draft'],
+    'An unchanged file needs no file notification.',
+  );
+  stop();
   await store.close();
 });
 
@@ -538,6 +547,8 @@ await test('discarding a draft keeps its queued version and local head', async (
   const entry = await store.checkpoint(draft, null, 'text');
   assert.ok(entry);
   const revision = entry.input.revisions[0]?.id;
+  const events: string[] = [];
+  const stop = store.subscribe((change) => events.push(change.kind));
   await store.dropDraft(account, workspace, draft.workingCopyId);
   assert.equal(
     await store.readDraft(account, workspace, draft.workingCopyId),
@@ -547,6 +558,11 @@ await test('discarding a draft keeps its queued version and local head', async (
   assert.equal(snapshot.localHeadRevisionId, revision);
   assert.equal(snapshot.queueState, 'pending');
   assert.equal((await store.pending(account, workspace)).length, 1);
+  assert.deepEqual(events, ['draft']);
+  events.length = 0;
+  await store.dropDraft(account, workspace, draft.workingCopyId);
+  assert.deepEqual(events, []);
+  stop();
   await store.close();
 });
 
@@ -2463,6 +2479,8 @@ await test('a draft over an older accepted head opens as stale', async () => {
 
   // Discard and the head handoff are one transaction. A failed handoff
   // must leave the old draft available for another decision.
+  const changes: string[] = [];
+  const stop = store.subscribe((change) => changes.push(change.kind));
   failing = true;
   await assert.rejects(
     store.dropDraft(account, workspace, 'copy-a'),
@@ -2470,6 +2488,8 @@ await test('a draft over an older accepted head opens as stale', async () => {
       isLocalStorageError(failure) && failure.kind === 'aborted',
   );
   failing = false;
+  assert.deepEqual(changes, [], 'A rolled-back handoff must publish nothing.');
+  stop();
   assert.equal(
     (await store.readDraft(account, workspace, 'copy-a'))?.text,
     'my own text\n',

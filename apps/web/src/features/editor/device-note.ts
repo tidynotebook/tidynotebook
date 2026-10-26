@@ -20,6 +20,7 @@
 import type { LocalCachedNote, LocalChange, LocalStore } from '@notesapp/sync';
 import {
   opensFromDevice,
+  noteRecoveryFor,
   type DeviceOpen,
   type NoteLoadIdentity,
   type NoteLoadStatus,
@@ -60,6 +61,7 @@ export async function readDeviceNote(
     );
     if (!opensFromDevice(document?.bytes ?? null, held.acceptedHeadRevisionId))
       return null;
+    const recovery = noteRecoveryFor(cached);
     return {
       kind: 'ready',
       path: cached.path,
@@ -67,16 +69,7 @@ export async function readDeviceNote(
       headRevisionId: cached.baseRevisionId,
       workingCopyId: cached.workingCopyId,
       sequence: cached.sequence,
-      ...(cached.stale &&
-      cached.workingCopyId !== undefined &&
-      cached.acceptedText !== null
-        ? {
-            recovery: {
-              workingCopyId: cached.workingCopyId,
-              acceptedText: cached.acceptedText,
-            },
-          }
-        : {}),
+      ...(recovery === null ? {} : { recovery }),
       document,
     };
   } catch {

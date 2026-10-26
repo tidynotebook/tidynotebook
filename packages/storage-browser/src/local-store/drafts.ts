@@ -510,7 +510,7 @@ export function createDraftsSlice(ctx: LocalStoreContext): DraftsSlice {
         db.transaction(
           'rw',
           [tables.drafts, tables.acceptedFiles, tables.queue],
-          async (): Promise<string | null> => {
+          async (): Promise<{ fileId: string; handedOff: boolean } | null> => {
             const stored: unknown = await tables.drafts.get([
               serverOrigin,
               accountId,
@@ -519,6 +519,7 @@ export function createDraftsSlice(ctx: LocalStoreContext): DraftsSlice {
             ]);
             if (stored === undefined) return null;
             const draft = validateDraft(stored);
+            let handedOff = false;
             await tables.drafts.delete([
               serverOrigin,
               accountId,
@@ -561,21 +562,37 @@ export function createDraftsSlice(ctx: LocalStoreContext): DraftsSlice {
               if (
                 file.acceptedHeadRevisionId !== null &&
                 file.acceptedPath !== null &&
-                !file.deleted
-              )
+                !file.deleted &&
+                (file.localHeadRevisionId !== file.acceptedHeadRevisionId ||
+                  file.path !== file.acceptedPath)
+              ) {
                 await tables.acceptedFiles.put({
                   ...file,
                   path: file.acceptedPath,
                   localHeadRevisionId: file.acceptedHeadRevisionId,
                   updatedAt: nowIso(),
                 });
+                handedOff = true;
+              }
             }
-            return draft.fileId;
+            return { fileId: draft.fileId, handedOff };
           },
         ),
       );
       if (removed === null) return;
-      publish({ accountId, workspaceId, fileId: removed, kind: 'draft' });
+      publish({
+        accountId,
+        workspaceId,
+        fileId: removed.fileId,
+        kind: 'draft',
+      });
+      if (removed.handedOff)
+        publish({
+          accountId,
+          workspaceId,
+          fileId: removed.fileId,
+          kind: 'file',
+        });
     },
   };
 }
