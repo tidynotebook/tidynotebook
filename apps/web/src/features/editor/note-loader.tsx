@@ -278,7 +278,7 @@ export function NoteEditorLoader({
           ? kept.text
           : (paired?.text ?? result.data.head?.text ?? ''),
         headRevisionId: result.data.headRevisionId,
-        sequence: 0,
+        sequence: kept?.sequence ?? 0,
         ...(recovery === null ? {} : { recovery }),
         document:
           paired?.document ??

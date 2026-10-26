@@ -19,6 +19,7 @@ import { MemoryRouter } from 'react-router';
 import { contentDigest, type AcceptedChangeset } from '@notesapp/core';
 import { openLocalStore } from '@notesapp/storage-browser';
 import { LocalStorageError } from '@notesapp/sync';
+import { configureClient } from '@notesapp/api-client';
 import {
   startDocument,
   readDocumentText,
@@ -918,6 +919,63 @@ await test('the open note stays pending from first edit through draft and checkp
     await waitFor(() => container.querySelector('.cm-editor') !== null);
     await act(async () => root.render(null));
     await act(settle);
+
+    const originalFetch = globalThis.fetch;
+    const fallbackStore = {
+      ...store,
+      readCachedNote: async (
+        ...args: Parameters<typeof store.readCachedNote>
+      ) => {
+        const cached = await store.readCachedNote(...args);
+        return cached === null ? null : { ...cached, document: null };
+      },
+      cacheServerNote: async () => {
+        throw new LocalStorageError('aborted', 'Document cache unavailable');
+      },
+    };
+    configureClient('http://127.0.0.1', undefined);
+    globalThis.fetch = async () => {
+      const cached = await store.readCachedNote(accountId, workspaceId, fileId);
+      assert.ok(cached?.acceptedText && cached.acceptedRevisionId);
+      return Response.json({
+        fileId,
+        path: cached.path,
+        kind: 'note',
+        headRevisionId: cached.acceptedRevisionId,
+        head: {
+          revisionId: cached.acceptedRevisionId,
+          digest: await contentDigest(cached.acceptedText),
+          text: cached.acceptedText,
+          document: null,
+        },
+      });
+    };
+    try {
+      const fallbackDraft = await openStaleDraft(fallbackStore);
+      const fallbackChoice = Array.from(
+        container.querySelectorAll('button'),
+      ).find((button) => button.textContent === 'Use saved version');
+      assert.ok(fallbackChoice);
+      await act(async () => {
+        fallbackChoice.click();
+        await settle();
+      });
+      assert.equal(
+        await store.readDraft(accountId, workspaceId, fallbackDraft.copy),
+        null,
+        'Server fallback must preserve the actual draft sequence for the recovery choice.',
+      );
+      assert.ok(
+        (await store.recover(accountId, workspaceId)).some(
+          (entry) =>
+            entry.fileId === fileId && entry.text === fallbackDraft.localText,
+        ),
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+      await act(async () => root.render(null));
+      await act(settle);
+    }
 
     let afterRebase: (() => Promise<void>) | undefined;
     const rebasingStore = {
