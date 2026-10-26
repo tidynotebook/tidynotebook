@@ -34,7 +34,7 @@ import {
   type HistoryAction,
   type FormatContext,
 } from '@notesapp/editor';
-import { Button } from '@notesapp/ui';
+import { Button, HistoryButton } from '@notesapp/ui';
 import {
   formatToolbarClassName,
   formatToolbarColumnClassName,
@@ -93,13 +93,13 @@ export function FormatToolbar({
   const rowRef = useRef<HTMLDivElement | null>(null);
   const groups = formatToolbar;
   const enabled = [
-    history.undo,
-    history.redo,
+    true,
+    true,
     ...groups.flat().map((tool) => toolApplies(tool, context)),
   ];
   // The place, in the order of the row, of the one tool in the tab order. A
-  // disabled tool takes no focus, so the stop falls to the first tool that
-  // applies, and the row stays one press of Tab away.
+  // unavailable format tool takes no focus. History controls keep focus
+  // through aria-disabled, so Undo stays the first stop.
   const [stop, setStop] = useState(0);
   const firstEnabled = Math.max(0, enabled.indexOf(true));
   const tabStop = enabled[stop] === true ? stop : firstEnabled;
@@ -183,17 +183,14 @@ export function FormatToolbar({
         >
           <div className={formatToolGroupClassName()}>
             {(['undo', 'redo'] as const).map((action, at) => (
-              <Button
+              <HistoryButton
                 key={action}
-                variant="ghost"
-                size="sm"
-                compact
-                disabled={!history[action]}
+                action={action}
+                available={history[action]}
+                apple={appleKeyboard}
                 tabIndex={at === tabStop ? 0 : -1}
                 onClick={() => onHistory(action)}
-              >
-                {action === 'undo' ? 'Undo' : 'Redo'}
-              </Button>
+              />
             ))}
           </div>
           {groups.map((group) => (

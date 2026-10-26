@@ -893,3 +893,22 @@ await test('the style of a menu that no class reaches is the style of its classe
     'padding',
   ]);
 });
+
+await test('history controls retain their size and focus when unavailable', async () => {
+  const { historyButtonClassName, historyButtonName } =
+    await import('./control-classes.ts');
+  const off = historyButtonClassName(true);
+  assert.ok(off.includes('size-11'));
+  assert.ok(off.includes('opacity-40'));
+  assert.ok(off.includes('focus-visible:outline-2'));
+  assert.ok(!off.includes('hover:'));
+  assert.ok(historyButtonClassName(false).includes('hover:bg-hover'));
+  assert.deepEqual(historyButtonName('undo', false), {
+    label: 'Undo',
+    tooltip: 'Undo (Ctrl+Z)',
+  });
+  assert.deepEqual(historyButtonName('redo', true), {
+    label: 'Redo',
+    tooltip: 'Redo (Cmd+Shift+Z)',
+  });
+});

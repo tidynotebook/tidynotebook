@@ -846,3 +846,23 @@ export function WorkspaceIcon(props: IconProps): ReactNode {
     </IconFrame>
   );
 }
+
+/** A curved arrow for the local history of the open note. */
+export function UndoIcon(props: IconProps): ReactNode {
+  return (
+    <IconFrame size={22} {...props}>
+      <path d="M3 9h11a7 7 0 0 1 0 14" />
+      <path d="m8 4-5 5 5 5" />
+    </IconFrame>
+  );
+}
+
+/** The forward action of the same local history. */
+export function RedoIcon(props: IconProps): ReactNode {
+  return (
+    <IconFrame size={22} {...props}>
+      <path d="M21 9H10a7 7 0 0 0 0 14" />
+      <path d="m16 4 5 5-5 5" />
+    </IconFrame>
+  );
+}

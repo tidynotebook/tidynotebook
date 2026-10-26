@@ -358,7 +358,12 @@ export const textRules = {
   /** @param {string} text @param {string} path @returns {string | null} */
   'faded-control'(text, path) {
     if (path === motionModule) return null;
-    const found = fadedOpacity.exec(text);
+    // The approved history controls alone use 40 percent opacity.
+    const checked =
+      path === controlRecipeModule
+        ? text.replace('cursor-not-allowed text-muted opacity-40', '')
+        : text;
+    const found = fadedOpacity.exec(checked);
     return found
       ? `Opacity utility ${found[1]} makes a colour that no contrast rule holds. A disabled control takes text-muted.`
       : null;
