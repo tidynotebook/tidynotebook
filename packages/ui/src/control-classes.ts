@@ -816,3 +816,28 @@ export function buttonName(options: {
     title: options.title ?? (options.hasText ? undefined : options.label),
   };
 }
+
+/** The approved history controls keep a 44 px target and stay focusable. */
+export function historyButtonClassName(disabled: boolean): string {
+  return [
+    `inline-flex size-11 shrink-0 items-center justify-center rounded-md bg-transparent ${focusOutline}`,
+    disabled
+      ? 'cursor-not-allowed text-muted opacity-40'
+      : 'cursor-pointer text-strong hover:bg-hover',
+  ].join(' ');
+}
+
+/** A history shortcut uses words that also work in a screen reader. */
+export function historyButtonName(
+  action: 'undo' | 'redo',
+  apple: boolean,
+): {
+  readonly label: string;
+  readonly tooltip: string;
+} {
+  const label = action === 'undo' ? 'Undo' : 'Redo';
+  return {
+    label,
+    tooltip: `${label} (${apple ? 'Cmd' : 'Ctrl'}+${action === 'redo' ? 'Shift+' : ''}Z)`,
+  };
+}

@@ -264,3 +264,10 @@ export type {
   FooterLink,
   PublicFooterOptions,
 } from './public-footer.ts';
+
+export { HistoryButton } from './history-button.tsx';
+export {
+  historyButtonClassName,
+  historyButtonName,
+} from './control-classes.ts';
+export { UndoIcon, RedoIcon } from './icons.tsx';

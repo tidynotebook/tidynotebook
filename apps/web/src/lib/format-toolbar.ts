@@ -297,5 +297,5 @@ export function formatToolbarClassName(): string {
 
 /** The classes of one group of the row, which never shrinks in the strip. */
 export function formatToolGroupClassName(): string {
-  return 'flex shrink-0 items-center md:gap-1';
+  return 'flex shrink-0 items-center gap-1';
 }

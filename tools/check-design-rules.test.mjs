@@ -902,3 +902,16 @@ await test('the normalised repository root runs the icon generation check', asyn
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+await test('only the history recipe can dim its unavailable control', () => {
+  const classes = 'cursor-not-allowed text-muted opacity-40';
+  assert.equal(textRules['faded-control'](classes, controlRecipeModule), null);
+  assert.notEqual(
+    textRules['faded-control'](classes, 'apps/web/src/screen.tsx'),
+    null,
+  );
+  assert.notEqual(
+    textRules['faded-control']('opacity-50', controlRecipeModule),
+    null,
+  );
+});
