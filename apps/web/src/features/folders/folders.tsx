@@ -30,6 +30,7 @@ import {
   rowClassName,
   TextField,
 } from '@notesapp/ui';
+import { FolderPicker } from './folder-picker.tsx';
 import { applyMoves } from './apply-moves.ts';
 import {
   planMove,
@@ -118,15 +119,19 @@ export function NewFolderDialog({
   readonly onCreated: (folder: string) => void;
 }): ReactNode {
   const [name, setName] = useState('');
+  const [inside, setInside] = useState(parent);
+  const [choosing, setChoosing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const nameRef = useRef('');
 
   useEffect(() => {
     if (!open) return;
+    setInside(parent);
+    setChoosing(false);
     nameRef.current = '';
     setName('');
     setError(null);
-  }, [open]);
+  }, [open, parent]);
 
   const create = (): void => {
     const child = cleanNoteBaseName(nameRef.current);
@@ -139,7 +144,7 @@ export function NewFolderDialog({
       setError(problem.replaceAll('note name', 'folder name'));
       return;
     }
-    const folder = childFolderPath(parent, child);
+    const folder = childFolderPath(inside, child);
     const pathProblem = noteNameProblem(folder);
     if (pathProblem !== null) {
       setError(pathProblem.replaceAll('note name', 'folder name'));
@@ -157,7 +162,7 @@ export function NewFolderDialog({
     <Dialog
       open={open}
       onClose={onClose}
-      title="New folder"
+      title={choosing ? 'Save in' : 'New folder'}
       titleId="new-folder-title"
       width="small"
     >
@@ -168,32 +173,48 @@ export function NewFolderDialog({
         }}
       >
         <DialogBody>
-          <TextField
-            id="new-folder-name"
-            label="Folder name"
-            hint={
-              parent === ''
-                ? 'The folder goes in this workspace root and starts empty. Use New note in this folder to fill it.'
-                : `The folder goes inside ${parent} and starts empty. Use New note in this folder to fill it.`
-            }
-            value={name}
-            error={error ?? undefined}
-            autoFocus
-            onChange={(value) => {
-              nameRef.current = value;
-              setName(value);
-              setError(null);
-            }}
-          />
+          {choosing ? (
+            <FolderPicker
+              folders={folders}
+              selected={inside}
+              onSelect={setInside}
+              onDone={() => setChoosing(false)}
+            />
+          ) : (
+            <>
+              <TextField
+                id="new-folder-name"
+                label="Name"
+                value={name}
+                error={error ?? undefined}
+                autoFocus
+                onChange={(value) => {
+                  nameRef.current = value;
+                  setName(value);
+                  setError(null);
+                }}
+              />
+              <div className="mt-3 flex items-center gap-2 text-control">
+                <span className="min-w-0 flex-1 break-words">
+                  Inside: {inside === '' ? 'No folder' : inside}
+                </span>
+                <Button variant="secondary" onClick={() => setChoosing(true)}>
+                  Change
+                </Button>
+              </div>
+            </>
+          )}
         </DialogBody>
-        <DialogFooter>
-          <Button variant="ghost" type="button" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button variant="primary" type="submit">
-            Make folder
-          </Button>
-        </DialogFooter>
+        {choosing ? null : (
+          <DialogFooter>
+            <Button variant="ghost" type="button" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit">
+              Create folder
+            </Button>
+          </DialogFooter>
+        )}
       </form>
     </Dialog>
   );

@@ -365,7 +365,6 @@ function Breadcrumb({
  */
 function Sidebar({
   workspaceId,
-  workspaceRootLabel,
   view,
   selectedFolder,
   folders,
@@ -384,7 +383,6 @@ function Sidebar({
   onClose,
 }: {
   readonly workspaceId: string;
-  readonly workspaceRootLabel: string;
   /** What the panel shows, which the view bar chose (record 0105). */
   readonly view: SidebarView;
   readonly selectedFolder: string;
@@ -517,12 +515,30 @@ function Sidebar({
         quiet and every action stays in the tab order.
       */}
             <div className="px-2 pt-1">
+              <button
+                type="button"
+                className={rowClassName({ className: 'w-full' })}
+                disabled={daily.waiting}
+                onClick={() => daily.open(today())}
+              >
+                {actionIcon('today')}
+                <span>Today's note</span>
+              </button>
+              {daily.openProblem === null ? null : (
+                <Notice tone="problem" message={daily.openProblem} />
+              )}
+            </div>
+            <div className="px-2 pt-1">
               <div className="flex items-center gap-1">
                 <Button
                   variant="ghost"
                   size="sm"
                   compact
-                  label={`New note in ${selectedFolder === '' ? workspaceRootLabel : selectedFolder}`}
+                  label={
+                    selectedFolder === ''
+                      ? 'New note'
+                      : `New note in ${selectedFolder}`
+                  }
                   title="New note"
                   icon={actionIcon('new-note')}
                   onClick={() => onNewNoteIn(selectedFolder)}
@@ -531,7 +547,11 @@ function Sidebar({
                   variant="ghost"
                   size="sm"
                   compact
-                  label={`New folder in ${selectedFolder === '' ? workspaceRootLabel : selectedFolder}`}
+                  label={
+                    selectedFolder === ''
+                      ? 'New folder'
+                      : `New folder in ${selectedFolder}`
+                  }
                   title="New folder"
                   icon={actionIcon('new-folder')}
                   onClick={() => onNewFolderIn(selectedFolder)}
@@ -563,16 +583,12 @@ function Sidebar({
                   }
                 />
               </div>
-              <p className="my-1 px-2 text-control text-muted">
-                Create in:{' '}
-                {selectedFolder === '' ? workspaceRootLabel : selectedFolder}
-              </p>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => onFromTemplate(selectedFolder)}
               >
-                From template
+                Use template
               </Button>
               {newNoteProblem === null ? null : (
                 <p className="my-1 px-2 text-control text-danger" role="alert">
@@ -1227,10 +1243,6 @@ function ShellFrame({
       allWorkspaces.find((entry) => entry.workspaceId === workspaceId) ?? null,
     [allWorkspaces, workspaceId],
   );
-  const workspaceRootLabel =
-    openWorkspace === null
-      ? 'workspace root'
-      : `${openWorkspace.name} workspace root`;
 
   // Every workspace the person can move to from here. The open one is absent,
   // because a row that goes where you already are is noise.
@@ -1269,14 +1281,18 @@ function ShellFrame({
     (): readonly PaletteAction[] => [
       {
         id: 'new-note',
-        label: `New note in ${selectedFolder === '' ? 'workspace root' : selectedFolder}`,
+        label:
+          selectedFolder === '' ? 'New note' : `New note in ${selectedFolder}`,
         keywords: 'create add',
         icon: 'new-note' as const,
         run: () => newNote.create(selectedFolder),
       },
       {
         id: 'new-folder',
-        label: `New folder in ${selectedFolder === '' ? 'workspace root' : selectedFolder}`,
+        label:
+          selectedFolder === ''
+            ? 'New folder'
+            : `New folder in ${selectedFolder}`,
         keywords: 'create add group',
         icon: 'new-folder' as const,
         run: () => setNewFolderParent(selectedFolder),
@@ -1666,13 +1682,20 @@ function ShellFrame({
             <div className="flex min-w-0 flex-1 flex-col">
               <Sidebar
                 workspaceId={workspaceId}
-                workspaceRootLabel={workspaceRootLabel}
                 view={sidebarView}
                 selectedFolder={selectedFolder}
                 folders={folders}
                 knownFolders={allFolders}
                 newNoteProblem={newNote.error}
-                onSelectFolder={setSelectedFolder}
+                onSelectFolder={(folder) => {
+                  setSelectedFolder(folder);
+                  if (folder !== '') {
+                    void navigate(
+                      `/w/${workspaceId}/folders/${folder.split('/').map(encodeURIComponent).join('/')}`,
+                    );
+                    setDrawerOpen(false);
+                  }
+                }}
                 onNavigate={() => setDrawerOpen(false)}
                 onNewFolderIn={(folder) => setNewFolderParent(folder)}
                 onPublish={setPublishScope}
@@ -1829,6 +1852,9 @@ function ShellFrame({
               for (const above of ancestorFolders(folder))
                 folders.openFolder(above);
               setSelectedFolder(folder);
+              void navigate(
+                `/w/${workspaceId}/folders/${folder.split('/').map(encodeURIComponent).join('/')}`,
+              );
             }}
           />
           {publishScope === null ? null : (

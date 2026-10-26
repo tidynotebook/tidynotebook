@@ -1,15 +1,14 @@
 import { useState, type ReactNode } from 'react';
-import { Button } from '@notesapp/ui';
-import { TodayNoteAction } from './today-note-action.tsx';
-import { today, useDailyNotes } from '../daily-notes/daily-notes.tsx';
+import { Button, CloseIcon } from '@notesapp/ui';
+import { nextWritingTip, writingTips } from '../../lib/writing-tips.ts';
 
-/** Optional help on the note list, outside the writing area. */
+/** Optional compact help keeps the existing account and workspace key. */
 export function WritingStart({
   preferenceKey,
 }: {
   readonly preferenceKey: string;
 }): ReactNode {
-  const daily = useDailyNotes();
+  const [tip, setTip] = useState(0);
   const [dismissed, setDismissed] = useState(() => {
     try {
       return window.localStorage.getItem(preferenceKey) === 'dismissed';
@@ -20,48 +19,29 @@ export function WritingStart({
   if (dismissed) return null;
   return (
     <section
-      className="mb-4 rounded-lg border border-edge-subtle bg-card p-4"
-      aria-label="Start writing"
+      className="my-4 flex min-h-13 items-center gap-1 rounded-lg border border-edge-subtle bg-card pl-3 pr-1"
+      aria-label="Writing tip"
     >
-      <h2 className="m-0 mb-2 text-ui font-medium">Start with a note</h2>
-      <p className="m-0 text-control text-muted">
-        Select New note and start writing. You can close these tips at any time.
+      <p className="m-0 min-w-0 flex-1 text-control text-muted">
+        {writingTips[tip]}
       </p>
-      <ul className="my-2 pl-4 text-control">
-        <li>
-          Type <code>[[</code> in a note to find and link another note.
-        </li>
-        <li>Use From template to preview text before you create a note.</li>
-        <li>
-          Use Search to find words in note names and body text in this
-          workspace.
-        </li>
-        <li>
-          Return to All notes to find your recent notes, or open today&apos;s
-          note below.
-        </li>
-      </ul>
-      <div className="flex flex-wrap gap-2">
-        <TodayNoteAction
-          waiting={daily.waiting}
-          problem={daily.openProblem}
-          onOpen={() => daily.open(today())}
-        />
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            setDismissed(true);
-            try {
-              window.localStorage.setItem(preferenceKey, 'dismissed');
-            } catch {
-              /* The tips still close when browser storage is unavailable. */
-            }
-          }}
-        >
-          Dismiss tips
-        </Button>
-      </div>
+      <Button variant="ghost" size="sm" onClick={() => setTip(nextWritingTip)}>
+        Next
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        label="Close tips"
+        icon={<CloseIcon />}
+        onClick={() => {
+          setDismissed(true);
+          try {
+            window.localStorage.setItem(preferenceKey, 'dismissed');
+          } catch {
+            /* Closing works without storage. */
+          }
+        }}
+      />
     </section>
   );
 }

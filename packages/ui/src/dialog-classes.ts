@@ -28,7 +28,7 @@
 export type DialogWidth = 'small' | 'medium' | 'large' | 'screen';
 
 /** Where a dialog panel sits on the screen. */
-export type DialogAlign = 'top' | 'center';
+export type DialogAlign = 'top' | 'center' | 'sheet';
 
 /** The scrim that holds the panel, as classes. */
 export function dialogRootClassName(
@@ -36,6 +36,7 @@ export function dialogRootClassName(
   align: DialogAlign,
 ): string {
   if (width === 'screen') return 'bg-scrim/80';
+  if (align === 'sheet') return 'bg-scrim/40 items-end lg:items-center lg:p-6';
   const position =
     align === 'center' ? 'items-center py-6' : 'items-start pb-6 pt-20';
   return `bg-scrim/40 px-gutter ${position}`;
