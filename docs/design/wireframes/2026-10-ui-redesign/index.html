@@ -159,6 +159,19 @@ h3.pt{margin:2px 0 2px;font-size:24px;color:var(--strong);letter-spacing:-.01em}
 .toolbar .ib svg{width:20px;height:20px}
 .toolbar .div{width:1px;height:24px;background:var(--subtle);margin:0 4px}
 .toolbar .ib.dis{opacity:.35}
+.toolbar .ib.ur{width:44px;height:44px}
+.ur-dis{color:var(--muted) !important;opacity:.4}
+.tipbox{position:absolute;z-index:6;background:var(--strong);color:var(--bg);font-size:12px;font-weight:600;padding:4px 8px;border-radius:6px;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.2)}
+.tipbox::before{content:"";position:absolute;top:-4px;left:50%;margin-left:-4px;border:4px solid transparent;border-top:0;border-bottom-color:var(--strong)}
+.urdemo{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
+.urcell{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12px;color:#444;width:120px;text-align:center}
+.urcell .pad{background:var(--bg);border:1px solid var(--subtle);border-radius:10px;padding:10px;display:flex;gap:4px;position:relative}
+.dark .urcell{color:#a5a39e}
+.urbtn{width:44px;height:44px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;color:var(--strong)}
+.urbtn svg{width:22px;height:22px}
+.urbtn.press{background:var(--active)}
+.urbtn.hov{background:var(--hover)}
+.urbtn.ring{outline:2px solid var(--focus);outline-offset:2px}
 .toast{position:absolute;left:12px;right:12px;bottom:20px;z-index:20;background:var(--strong);color:var(--bg);border-radius:10px;padding:0 6px 0 14px;min-height:48px;display:flex;align-items:center;gap:8px;font-size:14px;box-shadow:0 6px 18px rgba(0,0,0,.25)}
 .toast .btn{color:var(--bg);min-height:40px}
 .tabs2{display:flex;border-bottom:1px solid var(--subtle);margin:10px 0}
@@ -717,7 +730,7 @@ Attendees:
 <!-- ============ D. EDITOR ============ -->
 <section class="group">
   <h2>D. Editor, save status and recovery</h2>
-  <p class="lead">One status pill in the bar. Undo and Redo first in the format bar. Draft recovery is a choice between two tabs, not two long stacked blocks.</p>
+  <p class="lead">One status pill in the bar. Undo and Redo are arrow icon buttons with no visible text, first in the format bar. Draft recovery is a choice between two tabs, not two long stacked blocks.</p>
   <div class="row">
 
   <figure>
@@ -736,8 +749,8 @@ Attendees:
         <p>Agreed on the new plan for the launch<span class="caret"></span></p>
       </div>
       <div class="toolbar">
-        <span class="ib" aria-label="Undo"><svg><use href="#i-undo"/></svg></span>
-        <span class="ib dis" aria-label="Redo"><svg><use href="#i-redo"/></svg></span>
+        <span class="ib ur" role="button" aria-label="Undo" title="Undo"><svg aria-hidden="true"><use href="#i-undo"/></svg></span>
+        <span class="ib ur ur-dis" role="button" aria-label="Redo" aria-disabled="true" title="Redo"><svg aria-hidden="true"><use href="#i-redo"/></svg></span>
         <span class="div"></span>
         <span class="ib"><svg><use href="#i-bold"/></svg></span>
         <span class="ib"><svg><use href="#i-list"/></svg></span>
@@ -751,8 +764,8 @@ Attendees:
     </div>
     <figcaption><b><span class="id">D1</span>Editor</b>
       <ol><li>Status pill: one word or two. Tap opens D2.</li>
-      <li>Undo and Redo lead the bar. Redo is dim when there is nothing to redo.</li>
-      <li>Bar sits on top of the keyboard. 40 px targets, scrolls sideways.</li></ol></figcaption>
+      <li>Undo and Redo are arrow icons only, no text. 44 px targets. Screen readers say "Undo" and "Redo".</li><li>Redo is dimmed and inactive when there is nothing to redo. Spec: D6.</li>
+      <li>Bar sits on top of the keyboard. Other format buttons are 40 px. The bar scrolls sideways.</li></ol></figcaption>
   </figure>
 
   <figure>
@@ -857,6 +870,23 @@ Attendees:
       <li>Changed image: "This image changed. Open it again." with Reopen.</li></ol></figcaption>
   </figure>
 
+  </div>
+  <div class="spec" style="margin-top:28px">
+    <b><span class="id">D6</span>Undo and Redo icon buttons (prototype spec)</b>
+    <p style="margin:6px 0 10px">Curved arrow icons only. No visible "Undo" or "Redo" text in the editor. Light row, then dark row.</p>
+    <div class="frame " style="height:auto;border-width:0;border-radius:10px;padding:14px;background:transparent"><div class="urdemo"><div class="urcell"><div class="pad"><span class="urbtn" role="button" aria-label="Undo"><svg aria-hidden="true"><use href="#i-undo"/></svg></span><span class="urbtn" role="button" aria-label="Redo"><svg aria-hidden="true"><use href="#i-redo"/></svg></span></div>Both active</div><div class="urcell"><div class="pad"><span class="urbtn" role="button" aria-label="Undo"><svg aria-hidden="true"><use href="#i-undo"/></svg></span><span class="urbtn ur-dis" role="button" aria-label="Redo" aria-disabled="true"><svg aria-hidden="true"><use href="#i-redo"/></svg></span></div>Nothing to redo<br>(dimmed, inactive)</div><div class="urcell"><div class="pad"><span class="urbtn ur-dis" role="button" aria-label="Undo" aria-disabled="true"><svg aria-hidden="true"><use href="#i-undo"/></svg></span><span class="urbtn ur-dis" role="button" aria-label="Redo" aria-disabled="true"><svg aria-hidden="true"><use href="#i-redo"/></svg></span></div>Nothing to undo or redo</div><div class="urcell"><div class="pad"><span class="urbtn ring" role="button" aria-label="Undo"><svg aria-hidden="true"><use href="#i-undo"/></svg></span><span class="urbtn" role="button" aria-label="Redo"><svg aria-hidden="true"><use href="#i-redo"/></svg></span></div>Keyboard focus</div><div class="urcell"><div class="pad"><span class="urbtn press" role="button" aria-label="Undo"><svg aria-hidden="true"><use href="#i-undo"/></svg></span><span class="urbtn" role="button" aria-label="Redo"><svg aria-hidden="true"><use href="#i-redo"/></svg></span></div>Pressed (phone)</div><div class="urcell"><div class="pad" style="margin-bottom:26px"><span class="urbtn hov" role="button" aria-label="Undo"><svg aria-hidden="true"><use href="#i-undo"/></svg></span><span class="urbtn" role="button" aria-label="Redo"><svg aria-hidden="true"><use href="#i-redo"/></svg></span><span class="tipbox" style="top:62px;left:10px">Undo (Ctrl+Z)</span></div>Desktop hover tooltip</div></div></div>
+    <div style="background:#191919;border-radius:10px;margin-top:8px"><div class="frame dark" style="height:auto;border-width:0;border-radius:10px;padding:14px;background:transparent"><div class="urdemo"><div class="urcell"><div class="pad"><span class="urbtn" role="button" aria-label="Undo"><svg aria-hidden="true"><use href="#i-undo"/></svg></span><span class="urbtn" role="button" aria-label="Redo"><svg aria-hidden="true"><use href="#i-redo"/></svg></span></div>Both active</div><div class="urcell"><div class="pad"><span class="urbtn" role="button" aria-label="Undo"><svg aria-hidden="true"><use href="#i-undo"/></svg></span><span class="urbtn ur-dis" role="button" aria-label="Redo" aria-disabled="true"><svg aria-hidden="true"><use href="#i-redo"/></svg></span></div>Nothing to redo<br>(dimmed, inactive)</div><div class="urcell"><div class="pad"><span class="urbtn ur-dis" role="button" aria-label="Undo" aria-disabled="true"><svg aria-hidden="true"><use href="#i-undo"/></svg></span><span class="urbtn ur-dis" role="button" aria-label="Redo" aria-disabled="true"><svg aria-hidden="true"><use href="#i-redo"/></svg></span></div>Nothing to undo or redo</div><div class="urcell"><div class="pad"><span class="urbtn ring" role="button" aria-label="Undo"><svg aria-hidden="true"><use href="#i-undo"/></svg></span><span class="urbtn" role="button" aria-label="Redo"><svg aria-hidden="true"><use href="#i-redo"/></svg></span></div>Keyboard focus</div><div class="urcell"><div class="pad"><span class="urbtn press" role="button" aria-label="Undo"><svg aria-hidden="true"><use href="#i-undo"/></svg></span><span class="urbtn" role="button" aria-label="Redo"><svg aria-hidden="true"><use href="#i-redo"/></svg></span></div>Pressed (phone)</div><div class="urcell"><div class="pad" style="margin-bottom:26px"><span class="urbtn hov" role="button" aria-label="Undo"><svg aria-hidden="true"><use href="#i-undo"/></svg></span><span class="urbtn" role="button" aria-label="Redo"><svg aria-hidden="true"><use href="#i-redo"/></svg></span><span class="tipbox" style="top:62px;left:10px">Undo (Ctrl+Z)</span></div>Desktop hover tooltip</div></div></div></div>
+    <table style="margin-top:12px">
+      <tr><th>Rule</th><th>Value</th></tr>
+      <tr><td>Icon</td><td>Familiar curved arrow: Undo points left, Redo points right. 22 px glyph.</td></tr>
+      <tr><td>Touch target</td><td>44 x 44 px on phone and desktop. 4 px gap between the two buttons.</td></tr>
+      <tr><td>Accessible name</td><td>"Undo" and "Redo". The icon is hidden from screen readers.</td></tr>
+      <tr><td>Desktop tooltip</td><td>On hover and on keyboard focus: "Undo (Ctrl+Z)", "Redo (Ctrl+Shift+Z)". On Mac: Cmd.</td></tr>
+      <tr><td>Disabled</td><td>Muted colour at 40% opacity, no hover fill. It stays in place and stays focusable with aria-disabled, so the bar does not move.</td></tr>
+      <tr><td>Focus</td><td>The same 2 px focus ring as other controls.</td></tr>
+      <tr><td>Place</td><td>Phone: first two buttons of the format bar above the keyboard (D1). Desktop: editor top bar, left of the status pill (G4).</td></tr>
+      <tr><td>Not changed</td><td>The image toast keeps a text "Undo" action (D5). A toast action needs a word.</td></tr>
+    </table>
   </div>
 </section>
 
@@ -1250,7 +1280,7 @@ Attendees:
         <div style="flex:1;display:flex;flex-direction:column;min-width:0">
           <div class="bar" style="padding:0 12px">
             <span class="sub" style="padding-left:6px">Projects /</span><span class="title" style="font-size:15px">Meeting 2026-10-26</span>
-            <span class="ib"><svg><use href="#i-undo"/></svg></span><span class="ib" style="opacity:.35"><svg><use href="#i-redo"/></svg></span>
+            <span style="position:relative;display:inline-flex"><span class="ib hl" role="button" aria-label="Undo" title="Undo (Ctrl+Z)" style="background:var(--hover)"><svg aria-hidden="true"><use href="#i-undo"/></svg></span><span class="tipbox" style="top:50px;left:50%;transform:translateX(-50%)">Undo (Ctrl+Z)</span></span><span class="ib ur-dis" role="button" aria-label="Redo" aria-disabled="true" title="Redo (Ctrl+Shift+Z)"><svg aria-hidden="true"><use href="#i-redo"/></svg></span>
             <span class="status"><span class="dot pend"></span>Saving</span>
             <span class="ib"><svg><use href="#i-more"/></svg></span>
           </div>
@@ -1259,7 +1289,7 @@ Attendees:
       </div>
       <span class="tag">PROTOTYPE</span>
     </div>
-    <figcaption><b><span class="id">G4</span>Editor, desktop</b> Undo and Redo in the bar. Format tools appear on text selection and from the "..." menu. Status pill same as phone.</figcaption>
+    <figcaption><b><span class="id">G4</span>Editor, desktop</b> Undo and Redo are icon buttons in the bar. Hover or keyboard focus shows a tooltip with the name and shortcut. Redo is dimmed here because there is nothing to redo. Format tools appear on text selection and from the "..." menu. Status pill same as phone.</figcaption>
   </figure>
 </section>
 

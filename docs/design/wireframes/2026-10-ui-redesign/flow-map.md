@@ -38,11 +38,12 @@ Scope: UI shipped between v0.21.0 and v0.22.0 (source b430eb97).
 | C4       | Devices                                              | none                                        | Sign out per device, Sign out all other devices                                       |
 | C5       | Profile and email                                    | none                                        | Save name, Delete account                                                             |
 | C6       | Templates                                            | none                                        | Change folder, New template                                                           |
-| D1       | Editor                                               | none (writing)                              | Status pill, Undo, Redo, format bar                                                   |
+| D1       | Editor                                               | none (writing)                              | Status pill, Undo and Redo icon buttons, format bar                                   |
 | D2       | Status details                                       | none                                        | Version history                                                                       |
 | D3       | Recover a draft                                      | Keep this device's text                     | Use saved version                                                                     |
 | D4       | Recovery failed                                      | Keep this device's text                     | Use saved version                                                                     |
 | D5       | Image viewer                                         | none                                        | Zoom, Remove, Undo toast                                                              |
+| D6       | Undo and Redo icon button spec                       | n/a                                         | States: active, disabled, focus, pressed, tooltip                                     |
 | E1       | Save status copy table                               | n/a                                         | n/a                                                                                   |
 | E2       | Note in Trash                                        | Restore note                                | All notes                                                                             |
 | E3       | Deleted for good, not found, unavailable             | Open Needs attention (only with local text) | All notes, Try again                                                                  |
@@ -80,6 +81,7 @@ Scope: UI shipped between v0.21.0 and v0.22.0 (source b430eb97).
 - Touch targets 44 px or more (rows 48 px). Format bar targets 40 px with 44 px spacing.
 - Bottom sheets on phone, centred dialogs on desktop.
 - Visible keyboard focus ring on rows and buttons (F1).
+- Undo and Redo are curved arrow icon buttons with no visible text (D1, G4, D6). Accessible names "Undo" and "Redo". Desktop tooltip with the shortcut on hover and focus. 44 px targets. Disabled: dimmed, inactive, stays in place.
 - Light and dark use the current Default theme tokens. No new colour tokens.
 
 ## Behaviour that stays the same
@@ -94,6 +96,18 @@ Scope: UI shipped between v0.21.0 and v0.22.0 (source b430eb97).
 - Settings gets one address per page. Old `#section` links to Settings must redirect to the matching page.
 - Tips keep the current stored dismiss key, so a closed tips line stays closed.
 - No change to stored data, API contract, configuration or image commands.
+
+## Approval checklist
+
+1. No "workspace root" text. A "Folder" row or the page title shows where a note goes (A1, A4, B2).
+2. "Use template" is an outlined button beside the one filled "New note" button.
+3. Tips are one line with Next and Close. Today's note is a fixed menu row.
+4. Template flow: pick, then preview and Create note (B1 to B5, G2).
+5. Settings is a list with one page per topic. The merges and the move of Delete account are shown in C1 and C5.
+6. Save status is one pill. The copy for each state is in E1.
+7. Undo and Redo are arrow icons only, with no visible text. They have accessible names, desktop tooltips, a clear disabled state and 44 px targets (D1, G4, D6).
+8. Draft recovery uses two tabs. "Keep this device's text" is the filled button (D3, D4).
+9. Dark mode, desktop layout, empty states and error states (F, G, E).
 
 ## Open questions for the owner
 
