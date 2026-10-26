@@ -3,1296 +3,453 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Prototype wireframes: tidy notebook UI redesign (for approval)</title>
-<style>
-/* Prototype wireframes only. Not product code. Tokens copy the Default theme. */
-:root{
-  --bg:#ffffff;--surface:#f7f7f5;--card:#ffffff;--hover:#f0efec;--active:#e8e7e3;
-  --text:#37352f;--strong:#191917;--muted:#67655f;--link:#1a63c4;
-  --fill:#1a1917;--onfill:#ffffff;--ok:#1c6f37;--danger:#c02b3a;--dangerfill:#c8303f;--ondanger:#fff;
-  --border:#85837d;--subtle:#e6e4e0;--focus:#2563c9;--warn:#8a5a00;
+<title>Overview and system | tidy notebook redesign prototype</title>
+<style>/* Prototype design kit for approval. Not product code.
+   Tokens copy the Default theme of packages/ui. */
+:root {
+  --bg: #ffffff; --surface: #f7f7f5; --card: #ffffff; --hover: #f0efec; --active: #e8e7e3;
+  --text: #37352f; --strong: #191917; --muted: #67655f; --link: #1a63c4;
+  --fill: #1a1917; --onfill: #ffffff; --ok: #1c6f37; --danger: #c02b3a; --dangerfill: #c8303f; --ondanger: #ffffff;
+  --border: #85837d; --subtle: #e6e4e0; --focus: #2563c9; --warn: #8a5a00; --warnbg: #fdf5e4;
+  --okbg: #e9f4ec; --dangerbg: #fbecee; --infobg: #f7f7f5; --scrim: rgba(25,25,23,.42);
+  --shadow: 0 1px 2px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.08);
+  --sheetshadow: 0 -8px 32px rgba(0,0,0,.16);
+  --ins: #dff1e4; --del: #fbe3e5;
+  --page: #ecebe7; --ink: #1d1c1a; --note: #5a5852; --hot: #6e56cf;
+  --sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
 }
-.dark{
-  --bg:#191919;--surface:#141414;--card:#222222;--hover:#2b2b2b;--active:#323232;
-  --text:#d0cfcc;--strong:#f5f4f2;--muted:#a5a39e;--link:#6fa8f5;
-  --fill:#ececea;--onfill:#141414;--ok:#59b871;--danger:#f5817d;--dangerfill:#e0524f;--ondanger:#0a0a0a;
-  --border:#807e79;--subtle:#2e2e2e;--focus:#4a90f0;--warn:#e7c07b;
+.t-dark, #mode:checked ~ main .screen {
+  --bg: #191919; --surface: #141414; --card: #222222; --hover: #2b2b2b; --active: #323232;
+  --text: #d0cfcc; --strong: #f5f4f2; --muted: #a5a39e; --link: #6fa8f5;
+  --fill: #ececea; --onfill: #141414; --ok: #59b871; --danger: #f5817d; --dangerfill: #e0524f; --ondanger: #0a0a0a;
+  --border: #807e79; --subtle: #2e2e2e; --focus: #4a90f0; --warn: #e7c07b; --warnbg: #2b2416;
+  --okbg: #16261b; --dangerbg: #2d1a1a; --infobg: #222222; --scrim: rgba(0,0,0,.6);
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.4);
+  --sheetshadow: 0 -8px 32px rgba(0,0,0,.5);
+  --ins: #1d3324; --del: #3a2023;
 }
-#alldark:checked ~ main .frame{
-  --bg:#191919;--surface:#141414;--card:#222222;--hover:#2b2b2b;--active:#323232;
-  --text:#d0cfcc;--strong:#f5f4f2;--muted:#a5a39e;--link:#6fa8f5;
-  --fill:#ececea;--onfill:#141414;--ok:#59b871;--danger:#f5817d;--dangerfill:#e0524f;--ondanger:#0a0a0a;
-  --border:#807e79;--subtle:#2e2e2e;--focus:#4a90f0;--warn:#e7c07b;
-}
-*{box-sizing:border-box}
-body{margin:0;font:14px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;background:#e9e8e4;color:#222}
-header.doc{padding:28px 32px 12px;max-width:1280px;margin:0 auto}
-header.doc h1{margin:0 0 6px;font-size:24px}
-.proto{display:inline-block;background:#ffd84d;color:#222;font-weight:700;font-size:12px;padding:3px 8px;border-radius:4px;letter-spacing:.02em}
-.toggle{display:inline-flex;align-items:center;gap:8px;margin:10px 0 0;font-weight:600;cursor:pointer}
-#alldark{position:absolute;opacity:0}
-#alldark + header .toggle .box{width:38px;height:22px;border-radius:11px;background:#bbb;position:relative}
-#alldark + header .toggle .box::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.15s}
-#alldark:checked + header .toggle .box{background:#333}
-#alldark:checked + header .toggle .box::after{left:19px}
-#alldark:focus-visible + header .toggle .box{outline:2px solid #2563c9;outline-offset:2px}
-main{max-width:1280px;margin:0 auto;padding:0 32px 64px}
-section.group{margin-top:36px}
-section.group > h2{font-size:19px;margin:0 0 4px}
-section.group > p.lead{margin:0 0 16px;color:#555;max-width:820px}
-.row{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
-figure{margin:0;width:360px}
-figure.wide{width:100%}
-figcaption{margin:10px 2px 0;font-size:13px;color:#333}
-figcaption b{display:block;font-size:14px;margin-bottom:2px}
-figcaption ol{margin:6px 0 0;padding-left:18px}
-figcaption li{margin:2px 0}
-.id{font:600 11px ui-monospace,monospace;background:#222;color:#fff;border-radius:3px;padding:1px 5px;margin-right:6px}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { font: 14px/1.5 var(--sans); color: var(--ink); background: var(--page); -webkit-font-smoothing: antialiased; }
+a { color: inherit; }
 
-/* frame */
-.frame{background:var(--bg);color:var(--text);border-radius:22px;border:8px solid #111;overflow:hidden;position:relative;height:740px;display:flex;flex-direction:column}
-.frame.desk{border-radius:10px;border-width:6px;height:620px}
-.frame .tag{position:absolute;right:8px;bottom:8px;z-index:30;background:#ffd84d;color:#222;font:700 10px system-ui;padding:2px 6px;border-radius:3px;opacity:.95}
-.sb{height:26px;flex:none;display:flex;justify-content:space-between;align-items:center;padding:0 18px;font:600 12px system-ui;color:var(--strong)}
-.bar{height:52px;flex:none;display:flex;align-items:center;gap:4px;padding:0 6px;border-bottom:1px solid var(--subtle);background:var(--bg)}
-.bar .title{flex:1;font-weight:600;color:var(--strong);font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 4px}
-.ib{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;color:var(--strong);flex:none}
-.ib svg{width:22px;height:22px}
-.avatar{width:30px;height:30px;border-radius:50%;background:var(--active);display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:var(--strong)}
-.content{flex:1;overflow:hidden;padding:14px 16px;position:relative}
-.content.flush{padding:0}
-h3.pt{margin:2px 0 2px;font-size:24px;color:var(--strong);letter-spacing:-.01em}
-.sub{color:var(--muted);font-size:13px;margin:0}
-.actions{display:flex;gap:8px;margin:12px 0 4px;flex-wrap:wrap}
-.actions.pair{flex-wrap:nowrap}
-.actions.pair .btn{flex:1;padding:0 10px}
-.empty .actions.pair{max-width:300px;margin-left:auto;margin-right:auto}
-.btn{min-height:44px;padding:0 16px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:15px;border:1px solid transparent;white-space:nowrap}
-.btn svg{width:18px;height:18px}
-.btn.pri{background:var(--fill);color:var(--onfill)}
-.btn.sec{background:var(--card);color:var(--strong);border-color:var(--border)}
-.btn.ghost{color:var(--strong)}
-.btn.danger{background:var(--dangerfill);color:var(--ondanger)}
-.btn.dangerline{color:var(--danger);border-color:var(--danger);background:transparent}
-.btn.full{width:100%}
-.btn.sm{min-height:36px;font-size:14px;padding:0 12px}
-.btn[disabled]{opacity:.45}
-.focusring{outline:2px solid var(--focus);outline-offset:2px}
-.grp{font-size:12px;font-weight:600;color:var(--muted);margin:16px 0 4px;text-transform:none}
-.list{margin:0;padding:0;list-style:none}
-.list li{display:flex;align-items:center;gap:12px;min-height:48px;padding:0 4px;border-radius:8px;color:var(--strong)}
-.list li .ic{color:var(--muted);display:inline-flex}
-.list li .ic svg{width:18px;height:18px}
-.list li .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15px}
-.list li .mt{color:var(--muted);font-size:13px;white-space:nowrap}
-.list li.sel{background:var(--active)}
-.list li.hl{background:var(--hover)}
-.tip{display:flex;align-items:center;gap:6px;font-size:13px !important;background:var(--surface);border:1px solid var(--subtle);border-radius:10px;padding:6px 6px 6px 12px;margin:10px 0 2px;font-size:14px;color:var(--text)}
-.tip .t{flex:1}
-.tip kbd,code{font:13px ui-monospace,monospace;background:var(--active);border-radius:4px;padding:0 4px;color:var(--strong)}
-.tip .ib{width:36px;height:36px}
-.tip .ib svg{width:16px;height:16px}
-.link{color:var(--link);font-weight:600}
-.scrim{position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:10}
-.sheet{position:absolute;left:0;right:0;bottom:0;z-index:11;background:var(--bg);border-radius:16px 16px 0 0;box-shadow:0 -6px 24px rgba(0,0,0,.2);display:flex;flex-direction:column}
-.sheet .grab{width:36px;height:4px;border-radius:2px;background:var(--subtle);margin:8px auto 2px}
-.sheet .sh{display:flex;align-items:center;padding:4px 8px 4px 16px;gap:4px}
-.sheet .sh .st{flex:1;font-weight:700;font-size:17px;color:var(--strong)}
-.sheet .sbody{padding:4px 16px 8px;overflow:hidden;flex:1}
-.sheet .sfoot{padding:10px 16px 18px;border-top:1px solid var(--subtle);display:flex;gap:8px}
-.drawer{position:absolute;top:0;bottom:0;left:0;width:300px;z-index:11;background:var(--surface);border-right:1px solid var(--subtle);display:flex;flex-direction:column}
-.field{display:flex;align-items:center;gap:8px;height:44px;border:1px solid var(--border);border-radius:10px;padding:0 12px;color:var(--muted);background:var(--card)}
-.field svg{width:18px;height:18px}
-.preview{background:var(--surface);border:1px solid var(--subtle);border-radius:10px;padding:12px;font:13px/1.55 ui-monospace,monospace;color:var(--text);white-space:pre-wrap;max-height:300px;overflow:hidden}
-.destrow{display:flex;align-items:center;gap:10px;min-height:48px;border:1px solid var(--subtle);border-radius:10px;padding:0 6px 0 12px;margin-top:12px}
-.destrow .lb{color:var(--muted);font-size:13px}
-.destrow .v{flex:1;color:var(--strong);font-weight:600}
-.notice{display:flex;gap:10px;align-items:flex-start;border-radius:10px;padding:10px 12px;font-size:14px;margin:10px 0}
-.notice svg{width:18px;height:18px;flex:none;margin-top:1px}
-.notice.problem{background:color-mix(in srgb,var(--danger) 10%,var(--bg));color:var(--strong);border:1px solid color-mix(in srgb,var(--danger) 40%,var(--bg))}
-.notice.problem svg{color:var(--danger)}
-.notice.info{background:var(--surface);border:1px solid var(--subtle);color:var(--strong)}
-.notice.info svg{color:var(--muted)}
-.notice .na{margin-left:auto}
-.empty{text-align:center;padding:48px 12px 0}
-.empty .eic{width:48px;height:48px;border-radius:12px;background:var(--surface);display:inline-flex;align-items:center;justify-content:center;color:var(--muted);margin-bottom:10px}
-.empty h4{margin:0 0 4px;font-size:17px;color:var(--strong)}
-.empty p{margin:0 0 16px;color:var(--muted)}
-.empty .actions{justify-content:center}
-.slist{list-style:none;margin:0 0 4px;padding:0;background:var(--card);border:1px solid var(--subtle);border-radius:12px;overflow:hidden}
-.slist li{display:flex;align-items:center;gap:12px;min-height:48px;padding:0 12px;border-top:1px solid var(--subtle);color:var(--strong);font-size:15px}
-.slist li:first-child{border-top:0}
-.slist li .ic{color:var(--muted);display:inline-flex}
-.slist li .ic svg{width:18px;height:18px}
-.slist li .nm{flex:1}
-.slist li .v{color:var(--muted);font-size:14px}
-.slist li .chev{color:var(--muted);display:inline-flex}
-.slist li .chev svg{width:16px;height:16px}
-.slist li.red{color:var(--danger)}
-.slist li .two{flex:1;display:flex;flex-direction:column;padding:8px 0}
-.slist li .two small{color:var(--muted);font-size:13px}
-.seg{display:flex;background:var(--surface);border:1px solid var(--subtle);border-radius:10px;padding:3px;gap:3px}
-.seg span{flex:1;min-height:40px;display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:8px;color:var(--muted);font-weight:600}
-.seg span svg{width:16px;height:16px}
-.seg span.on{background:var(--card);color:var(--strong);box-shadow:0 1px 2px rgba(0,0,0,.12);border:1px solid var(--subtle)}
-.sw{width:44px;height:26px;border-radius:13px;background:var(--active);position:relative;flex:none;border:1px solid var(--border)}
-.sw::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:var(--card);box-shadow:0 1px 2px rgba(0,0,0,.3)}
-.sw.on{background:var(--fill);border-color:var(--fill)}
-.sw.on::after{left:20px;background:var(--onfill)}
-.sw.off-dis{opacity:.45}
-.meter{height:6px;border-radius:3px;background:var(--active);overflow:hidden;margin:6px 0 2px}
-.meter i{display:block;height:100%;width:28%;background:var(--fill)}
-.status{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;border-radius:16px;font-size:13px;font-weight:600;color:var(--muted);border:1px solid var(--subtle);background:var(--surface);white-space:nowrap}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);flex:none}
-.dot.pend{background:transparent;border:2px solid var(--muted)}
-.dot.off{background:var(--muted)}
-.dot.bad{background:var(--danger)}
-.status.bad{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 50%,var(--bg))}
-.doc{font-size:16px;line-height:1.6;color:var(--text)}
-.doc h1{font-size:24px;margin:4px 0 10px;color:var(--strong)}
-.doc p{margin:0 0 10px}
-.caret{display:inline-block;width:2px;height:18px;background:var(--link);vertical-align:-3px}
-.kbd{position:absolute;left:0;right:0;bottom:0;height:200px;background:var(--active);display:grid;grid-template-columns:repeat(10,1fr);gap:6px;padding:10px 6px;opacity:.9}
-.kbd i{background:var(--card);border-radius:5px}
-.toolbar{position:absolute;left:0;right:0;bottom:200px;height:48px;background:var(--surface);border-top:1px solid var(--subtle);display:flex;align-items:center;gap:2px;padding:0 4px;z-index:5}
-.toolbar .ib{width:40px;height:40px}
-.toolbar .ib svg{width:20px;height:20px}
-.toolbar .div{width:1px;height:24px;background:var(--subtle);margin:0 4px}
-.toolbar .ib.dis{opacity:.35}
-.toolbar .ib.ur{width:44px;height:44px}
-.ur-dis{color:var(--muted) !important;opacity:.4}
-.tipbox{position:absolute;z-index:6;background:var(--strong);color:var(--bg);font-size:12px;font-weight:600;padding:4px 8px;border-radius:6px;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.2)}
-.tipbox::before{content:"";position:absolute;top:-4px;left:50%;margin-left:-4px;border:4px solid transparent;border-top:0;border-bottom-color:var(--strong)}
-.urdemo{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
-.urcell{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12px;color:#444;width:120px;text-align:center}
-.urcell .pad{background:var(--bg);border:1px solid var(--subtle);border-radius:10px;padding:10px;display:flex;gap:4px;position:relative}
-.dark .urcell{color:#a5a39e}
-.urbtn{width:44px;height:44px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;color:var(--strong)}
-.urbtn svg{width:22px;height:22px}
-.urbtn.press{background:var(--active)}
-.urbtn.hov{background:var(--hover)}
-.urbtn.ring{outline:2px solid var(--focus);outline-offset:2px}
-.toast{position:absolute;left:12px;right:12px;bottom:20px;z-index:20;background:var(--strong);color:var(--bg);border-radius:10px;padding:0 6px 0 14px;min-height:48px;display:flex;align-items:center;gap:8px;font-size:14px;box-shadow:0 6px 18px rgba(0,0,0,.25)}
-.toast .btn{color:var(--bg);min-height:40px}
-.tabs2{display:flex;border-bottom:1px solid var(--subtle);margin:10px 0}
-.tabs2 span{flex:1;text-align:center;padding:10px 0;font-weight:600;color:var(--muted);border-bottom:2px solid transparent}
-.tabs2 span.on{color:var(--strong);border-color:var(--strong)}
-.cmp{border:1px solid var(--subtle);border-radius:10px;padding:12px;font-size:14px;background:var(--card)}
-.cmp .meta{font-size:12px;color:var(--muted);margin-bottom:6px}
-.cmp ins{background:color-mix(in srgb,var(--ok) 18%,var(--bg));text-decoration:none}
-.cmp del{background:color-mix(in srgb,var(--danger) 16%,var(--bg))}
-.trial{display:flex;align-items:center;gap:8px;background:var(--surface);border-bottom:1px solid var(--subtle);padding:0 8px 0 14px;min-height:40px;font-size:13px;color:var(--text)}
-.trial .t{flex:1}
-.badge{min-width:20px;height:20px;border-radius:10px;background:var(--fill);color:var(--onfill);font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;padding:0 6px}
-.foot{border-top:1px solid var(--subtle);padding:10px 14px;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
-.ws{display:flex;align-items:center;gap:10px;min-height:52px;padding:0 10px 0 14px;border-bottom:1px solid var(--subtle)}
-.ws .wsn{flex:1;font-weight:700;color:var(--strong)}
-.ws .wsi{width:28px;height:28px;border-radius:7px;background:var(--fill);color:var(--onfill);display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
-.menu{position:absolute;z-index:12;background:var(--card);border:1px solid var(--subtle);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.2);padding:6px;min-width:220px}
-.menu .list li{min-height:44px;padding:0 10px}
-/* desktop */
-.dwrap{display:flex;flex:1;min-height:0}
-.side{width:248px;flex:none;background:var(--surface);border-right:1px solid var(--subtle);display:flex;flex-direction:column}
-.side .list li{min-height:34px;font-size:14px;padding:0 10px}
-.side .list li .nm{font-size:14px}
-.dmain{flex:1;overflow:hidden;padding:28px 40px;min-width:0}
-.dmain .measure{max-width:640px;margin:0 auto}
-.dlg{position:absolute;z-index:11;left:50%;top:50%;transform:translate(-50%,-50%);width:760px;background:var(--bg);border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:hidden}
-.dlg .dh{display:flex;align-items:center;padding:12px 10px 12px 20px;border-bottom:1px solid var(--subtle)}
-.dlg .dh .st{flex:1;font-weight:700;font-size:17px;color:var(--strong)}
-.dlg .db{display:flex;min-height:330px}
-.dlg .df{display:flex;align-items:center;gap:8px;padding:12px 16px;border-top:1px solid var(--subtle)}
-.spec{background:#fff;border:1px solid #d6d4cf;border-radius:10px;padding:14px 18px;font-size:13px;max-width:1216px}
-.spec table{border-collapse:collapse;width:100%}
-.spec th,.spec td{text-align:left;padding:6px 8px;border-top:1px solid #eee;vertical-align:top}
-.spec th{background:#f5f4f1;border-top:0}
-.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:#444;margin:8px 0 0}
-.c-ok{color:#1c6f37;font-weight:600}.c-bad{color:#c02b3a;font-weight:600}
+/* ---------- document chrome (outside frames) ---------- */
+.doc-top { position: sticky; top: 0; z-index: 50; background: rgba(236,235,231,.92); backdrop-filter: blur(8px); border-bottom: 1px solid #d9d7d1; }
+.doc-top .in { max-width: 1400px; margin: 0 auto; padding: 10px 40px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.doc-top .brand { font-weight: 700; font-size: 14px; }
+.doc-top nav { display: flex; gap: 4px; flex-wrap: wrap; flex: 1; }
+.doc-top nav a { text-decoration: none; padding: 6px 10px; border-radius: 8px; font-size: 13px; font-weight: 600; color: #4b4a45; }
+.doc-top nav a.on { background: var(--ink); color: #fff; }
+.proto { display: inline-flex; align-items: center; gap: 6px; background: #ffd84d; color: #1d1c1a; font: 700 11px/1 var(--sans); padding: 5px 8px; border-radius: 5px; letter-spacing: .03em; }
+.modetoggle { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; cursor: pointer; user-select: none; }
+.modetoggle .bx { width: 36px; height: 20px; border-radius: 10px; background: #b9b7b1; position: relative; transition: .15s; }
+.modetoggle .bx::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: .15s; }
+#mode { position: absolute; opacity: 0; pointer-events: none; }
+#mode:checked ~ .doc-top .modetoggle .bx { background: #1d1c1a; }
+#mode:checked ~ .doc-top .modetoggle .bx::after { left: 18px; }
+#mode:focus-visible ~ .doc-top .modetoggle .bx { outline: 2px solid #2563c9; outline-offset: 2px; }
+main { max-width: 1400px; margin: 0 auto; padding: 8px 40px 96px; }
+.hero { padding: 28px 0 8px; }
+.hero h1 { margin: 10px 0 6px; font-size: 30px; letter-spacing: -.02em; line-height: 1.15; }
+.hero p { margin: 0; max-width: 820px; color: var(--note); font-size: 15px; }
+.sec { margin-top: 56px; }
+.sec > h2 { font-size: 21px; letter-spacing: -.01em; margin: 0 0 4px; display: flex; align-items: center; gap: 10px; }
+.sec > .lead { margin: 0 0 22px; color: var(--note); max-width: 860px; font-size: 14px; }
+.sec h3.sub { font-size: 15px; margin: 28px 0 12px; color: var(--ink); }
+.grid { display: flex; flex-wrap: wrap; gap: 36px 32px; align-items: flex-start; }
+.fig { margin: 0; width: 375px; flex: none; }
+.fig.w-desk { width: 100%; }
+.fig figcaption { margin-top: 14px; font-size: 13px; color: #3c3b37; }
+.fig figcaption .t { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; color: var(--ink); margin-bottom: 4px; }
+.fig figcaption ol { margin: 4px 0 0; padding-left: 20px; }
+.fig figcaption li { margin: 3px 0; }
+.fig figcaption li::marker { color: var(--hot); font-weight: 700; }
+.sid { font: 700 11px/1 var(--mono); background: var(--ink); color: #fff; padding: 4px 6px; border-radius: 4px; }
+.chiplist { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.chiplist span { font-size: 11px; font-weight: 600; background: #dedcd6; color: #3c3b37; padding: 2px 7px; border-radius: 10px; }
+
+/* journeys */
+.journey { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 36px 0; padding: 4px 0 18px; }
+.journey .fig { width: 375px; }
+.step-arrow { flex: none; width: 90px; padding: 0 4px; align-self: center; margin-top: -80px; display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--note); font-size: 12px; font-weight: 600; text-align: center; }
+.step-arrow svg { width: 56px; height: 20px; color: var(--hot); }
+.jhead { display: flex; align-items: baseline; gap: 12px; margin: 34px 0 12px; }
+.jhead h3 { margin: 0; font-size: 16px; }
+.jhead p { margin: 0; color: var(--note); font-size: 13px; }
+
+/* annotation hotspots and taps */
+.hot { position: absolute; z-index: 80; width: 22px; height: 22px; border-radius: 50%; background: var(--hot); color: #fff; font: 700 12px/22px var(--sans); text-align: center; box-shadow: 0 0 0 3px rgba(255,255,255,.85); pointer-events: none; }
+.tap { position: absolute; z-index: 79; width: 50px; height: 50px; margin: -25px 0 0 -25px; border-radius: 50%; background: rgba(110,86,207,.10); border: 2.5px solid var(--hot); box-shadow: 0 0 0 3px rgba(255,255,255,.6); pointer-events: none; }
+.tap::after { content: none; }
+
+/* ---------- device frames ---------- */
+.phone { width: 375px; height: 790px; border-radius: 50px; padding: 9px; background: #0c0c0c; box-shadow: 0 0 0 1px #2a2a2a inset, 0 18px 40px rgba(0,0,0,.18); position: relative; }
+.screen { position: relative; width: 100%; height: 100%; border-radius: 41px; overflow: hidden; background: var(--bg); color: var(--text); display: flex; flex-direction: column; font: 16px/1.5 var(--sans); }
+.screen .ptag { position: absolute; left: 50%; transform: translateX(-50%); bottom: 16px; z-index: 60; }
+.statusbar { height: 47px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 6px 28px 0 34px; font: 600 15px/1 var(--sans); color: var(--strong); position: relative; z-index: 30; }
+.statusbar .island { position: absolute; left: 50%; top: 10px; width: 112px; height: 32px; margin-left: -56px; border-radius: 18px; background: #000; }
+.statusbar .sys { display: flex; align-items: center; gap: 6px; }
+.statusbar .sys svg { width: 18px; height: 12px; }
+.statusbar .batt { width: 25px; height: 12px; border: 1.5px solid currentColor; border-radius: 4px; position: relative; opacity: .9; }
+.statusbar .batt::after { content: ""; position: absolute; inset: 1.5px; right: 6px; background: currentColor; border-radius: 1.5px; }
+.homebar { position: absolute; bottom: 8px; left: 50%; width: 134px; height: 5px; margin-left: -67px; border-radius: 3px; background: var(--strong); opacity: .9; z-index: 70; }
+.desktop { width: 100%; max-width: 1280px; height: 780px; border-radius: 12px; overflow: hidden; background: #d8d6d0; box-shadow: 0 18px 40px rgba(0,0,0,.16), 0 0 0 1px rgba(0,0,0,.08); display: flex; flex-direction: column; }
+.desktop.h-s { height: 640px; }
+.chrome { height: 40px; flex: none; display: flex; align-items: center; gap: 14px; padding: 0 14px; background: #e4e2dd; border-bottom: 1px solid #cfccc5; }
+.chrome .lights { display: flex; gap: 7px; }
+.chrome .lights i { width: 12px; height: 12px; border-radius: 50%; background: #d4d1ca; display: block; }
+.chrome .url { flex: 1; max-width: 560px; margin: 0 auto; height: 26px; border-radius: 7px; background: #f5f4f1; display: flex; align-items: center; justify-content: center; font: 12px var(--sans); color: #6b6964; }
+.desktop .screen { border-radius: 0; flex: 1; font-size: 15px; }
+
+/* ---------- in-app typography ---------- */
+.screen h1.pt { margin: 0; font-size: 30px; line-height: 36px; font-weight: 700; letter-spacing: -.02em; color: var(--strong); }
+.screen .pmeta { margin: 2px 0 0; font-size: 14px; line-height: 20px; color: var(--muted); }
+.screen .eyebrow { display: flex; align-items: center; gap: 6px; font-size: 13px; line-height: 18px; color: var(--muted); margin: 0 0 2px; }
+.screen .eyebrow svg { width: 15px; height: 15px; }
+.screen .label { font-size: 13px; line-height: 18px; font-weight: 600; color: var(--muted); margin: 24px 0 8px; }
+.screen .label:first-child { margin-top: 0; }
+.screen .help { font-size: 14px; line-height: 20px; color: var(--muted); margin: 8px 0 0; }
+.screen .body { font-size: 16px; line-height: 24px; color: var(--text); margin: 0; }
+.screen .muted { color: var(--muted); }
+.screen .strong { color: var(--strong); font-weight: 600; }
+.screen kbd, .screen code { font: 600 13px/1 var(--mono); background: var(--active); color: var(--strong); padding: 3px 5px; border-radius: 5px; }
+
+/* ---------- layout ---------- */
+.appbar { height: 56px; flex: none; display: flex; align-items: center; gap: 2px; padding: 0 8px; background: var(--bg); position: relative; z-index: 20; }
+.appbar.line { border-bottom: 1px solid var(--subtle); }
+.appbar .ttl { flex: 1; min-width: 0; font-size: 17px; font-weight: 600; color: var(--strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 4px; }
+.appbar .ttl.c { text-align: center; }
+.appbar .sp { flex: 1; }
+.scroll { flex: 1; min-height: 0; overflow: hidden; position: relative; }
+.pad { padding: 8px 16px 24px; }
+.pad-t { padding-top: 4px; }
+.stack > * + * { margin-top: 12px; }
+.hdr { padding: 4px 16px 0; }
+.hdr .acts { display: flex; gap: 8px; margin-top: 16px; }
+.hdr .acts .btn, .btnrow > .btn { flex: 1; padding: 0 10px; }
+.divider { height: 1px; background: var(--subtle); margin: 0; border: 0; }
+.fade-r { position: absolute; right: 0; top: 0; bottom: 0; width: 28px; background: linear-gradient(90deg, transparent, var(--surface)); pointer-events: none; }
+
+/* ---------- icons ---------- */
+.i { width: 24px; height: 24px; flex: none; display: inline-block; vertical-align: middle; }
+.i.s { width: 20px; height: 20px; }
+.i.xs { width: 16px; height: 16px; }
+.ibtn { width: 44px; height: 44px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; color: var(--strong); flex: none; position: relative; background: transparent; border: 0; }
+.ibtn.on { background: var(--active); }
+.ibtn.hov { background: var(--hover); }
+.ibtn.dis { color: var(--muted); opacity: .4; }
+.ibtn.ring, .btn.ring, .row.ring, .srow.ring, .seg .ring { outline: 2px solid var(--focus); outline-offset: 2px; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; background: #c9b8f0; color: #2b1d63; display: inline-flex; align-items: center; justify-content: center; font: 700 13px/1 var(--sans); }
+.t-dark .avatar, #mode:checked ~ main .avatar { background: #3d3360; color: #e4dcff; }
+
+/* ---------- buttons ---------- */
+.btn { height: 48px; padding: 0 18px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 600 16px/1 var(--sans); border: 1px solid transparent; white-space: nowrap; color: var(--strong); background: transparent; position: relative; }
+.btn .i { width: 20px; height: 20px; }
+.btn.p { background: var(--fill); color: var(--onfill); }
+.btn.s { background: var(--card); border-color: var(--border); }
+.btn.t { padding: 0 12px; }
+.btn.d { background: var(--dangerfill); color: var(--ondanger); }
+.btn.dl { color: var(--danger); border-color: var(--danger); background: transparent; }
+.btn.sm { height: 36px; padding: 0 12px; font-size: 14px; border-radius: 10px; }
+.btn.sm .i { width: 18px; height: 18px; }
+.btn.md { height: 40px; padding: 0 14px; font-size: 15px; border-radius: 10px; }
+.btn.full { width: 100%; }
+.btn.dis { opacity: .4; }
+.btn.hov.p { background: color-mix(in srgb, var(--fill) 86%, var(--bg)); }
+.btn.hov.s { background: var(--hover); }
+.btn.press.s { background: var(--active); }
+.spin { width: 18px; height: 18px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; display: inline-block; opacity: .8; }
+.btnrow { display: flex; gap: 8px; }
+.btnrow > .btn { flex: 1; }
+.btncol { display: flex; flex-direction: column; gap: 8px; }
+
+/* ---------- lists and rows ---------- */
+.grouplabel { font-size: 13px; line-height: 18px; font-weight: 600; color: var(--muted); padding: 20px 16px 6px; }
+.rows { list-style: none; margin: 0; padding: 0 8px; }
+.row { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 6px 8px; border-radius: 12px; color: var(--strong); position: relative; }
+.row .ic { color: var(--muted); display: inline-flex; }
+.row .ic .i { width: 20px; height: 20px; }
+.row .main { flex: 1; min-width: 0; }
+.row .nm { font-size: 16px; line-height: 22px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--strong); }
+.row .nm .fold { color: var(--muted); font-size: 13px; }
+.row .sub { font-size: 13px; line-height: 18px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row .meta { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.row .chev { color: var(--muted); display: inline-flex; }
+.row .chev .i { width: 18px; height: 18px; }
+.row.sel { background: var(--active); }
+.row.hov { background: var(--hover); }
+.row.danger, .row.danger .ic, .row.danger .nm { color: var(--danger); }
+.row .check { color: var(--strong); display: inline-flex; }
+.row.indent { padding-left: 36px; }
+.count { font-size: 13px; color: var(--muted); min-width: 20px; text-align: right; }
+.badge { min-width: 20px; height: 20px; border-radius: 10px; background: var(--danger); color: #fff; font: 700 11px/20px var(--sans); text-align: center; padding: 0 6px; }
+
+/* settings grouped list */
+.slist { list-style: none; margin: 0; padding: 0; background: var(--card); border-radius: 14px; overflow: hidden; border: 1px solid var(--subtle); }
+.srow { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 8px 14px; color: var(--strong); font-size: 16px; position: relative; }
+.srow + .srow { border-top: 1px solid var(--subtle); }
+.srow .ico { width: 30px; height: 30px; border-radius: 8px; background: var(--surface); color: var(--strong); display: inline-flex; align-items: center; justify-content: center; flex: none; border: 1px solid var(--subtle); }
+.srow .ico .i { width: 18px; height: 18px; }
+.srow .main { flex: 1; min-width: 0; }
+.srow .nm { line-height: 22px; }
+.srow .sub { display: block; font-size: 13px; line-height: 18px; color: var(--muted); }
+.srow .val { color: var(--muted); font-size: 15px; white-space: nowrap; }
+.srow .chev { color: var(--muted); display: inline-flex; }
+.srow .chev .i { width: 18px; height: 18px; }
+.srow.danger { color: var(--danger); }
+.srow.danger .ico { color: var(--danger); }
+.srow.dim { opacity: .5; }
+.srow.sel { background: var(--active); }
+.sbg { background: var(--surface); }
+.slabel { font-size: 13px; line-height: 18px; font-weight: 600; color: var(--muted); padding: 22px 4px 8px; }
+.slabel:first-child { padding-top: 6px; }
+.sfoot { font-size: 13px; line-height: 18px; color: var(--muted); padding: 8px 4px 0; }
+
+/* ---------- controls ---------- */
+.field { height: 48px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); display: flex; align-items: center; gap: 10px; padding: 0 14px; color: var(--strong); font-size: 16px; }
+.field.ph { color: var(--muted); }
+.field .i { width: 20px; height: 20px; color: var(--muted); }
+.field.focus { border-color: var(--focus); box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 25%, transparent); }
+.field.err { border-color: var(--danger); }
+.field.sm { height: 40px; font-size: 15px; border-radius: 10px; }
+.flabel { display: block; font-size: 14px; font-weight: 600; color: var(--strong); margin: 0 0 6px; }
+.ferr { font-size: 13px; color: var(--danger); margin-top: 6px; display: flex; gap: 6px; align-items: center; }
+.search { height: 44px; border-radius: 12px; background: var(--surface); display: flex; align-items: center; gap: 8px; padding: 0 12px; color: var(--muted); font-size: 16px; border: 1px solid var(--subtle); }
+.search .i { width: 20px; height: 20px; }
+.search.v { color: var(--strong); }
+.seg { display: flex; padding: 3px; gap: 2px; background: var(--surface); border: 1px solid var(--subtle); border-radius: 12px; }
+.seg > span { flex: 1; height: 40px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600; font-size: 15px; color: var(--muted); }
+.seg > span .i { width: 18px; height: 18px; }
+.seg > span.on { background: var(--card); color: var(--strong); box-shadow: 0 1px 2px rgba(0,0,0,.12), 0 0 0 1px var(--subtle); }
+.switch { width: 51px; height: 31px; border-radius: 16px; background: var(--active); position: relative; flex: none; border: 1px solid var(--border); }
+.switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 25px; height: 25px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+.switch.on { background: var(--fill); border-color: var(--fill); }
+.switch.on::after { left: 22px; background: var(--onfill); }
+.switch.dis { opacity: .4; }
+.destrow { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 6px 6px 6px 14px; border: 1px solid var(--subtle); border-radius: 14px; background: var(--card); }
+.destrow .ic { color: var(--muted); display: inline-flex; }
+.destrow .main { flex: 1; min-width: 0; }
+.destrow .k { font-size: 13px; line-height: 16px; color: var(--muted); }
+.destrow .v { font-size: 16px; line-height: 22px; font-weight: 600; color: var(--strong); }
+.radio { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); flex: none; }
+.radio.on { border: 7px solid var(--fill); }
+.meter { height: 8px; border-radius: 4px; background: var(--active); overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--fill); border-radius: 4px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 16px; font-size: 14px; font-weight: 600; white-space: nowrap; color: var(--muted); background: var(--surface); border: 1px solid var(--subtle); }
+.pill.bad { color: var(--danger); background: var(--dangerbg); border-color: color-mix(in srgb, var(--danger) 35%, transparent); }
+.pill.warn { color: var(--warn); background: var(--warnbg); border-color: color-mix(in srgb, var(--warn) 35%, transparent); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); flex: none; }
+.dot.pend { background: transparent; border: 2px solid var(--muted); width: 10px; height: 10px; }
+.dot.off { background: var(--muted); }
+.dot.warn { background: var(--warn); }
+.dot.bad { background: var(--danger); }
+.tabs { display: flex; gap: 4px; padding: 3px; background: var(--surface); border: 1px solid var(--subtle); border-radius: 12px; }
+.tabs > span { flex: 1; height: 40px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px; color: var(--muted); }
+.tabs > span.on { background: var(--card); color: var(--strong); box-shadow: 0 1px 2px rgba(0,0,0,.12), 0 0 0 1px var(--subtle); }
+
+/* ---------- feedback ---------- */
+.notice { display: flex; gap: 10px; align-items: flex-start; border-radius: 12px; padding: 12px 14px; font-size: 15px; line-height: 21px; color: var(--strong); }
+.notice > .i { width: 20px; height: 20px; margin-top: 0; }
+.notice .txt { flex: 1; }
+.notice.bad { background: var(--dangerbg); }
+.notice.bad > .i { color: var(--danger); }
+.notice.info { background: var(--infobg); border: 1px solid var(--subtle); }
+.notice.info > .i { color: var(--muted); }
+.notice.warn { background: var(--warnbg); }
+.notice.warn > .i { color: var(--warn); }
+.notice.ok { background: var(--okbg); }
+.notice.ok > .i { color: var(--ok); }
+.notice .act { margin-top: 8px; }
+.toast { position: absolute; left: 12px; right: 12px; bottom: 30px; z-index: 55; background: var(--strong); color: var(--bg); border-radius: 14px; min-height: 52px; padding: 4px 4px 4px 16px; display: flex; align-items: center; gap: 8px; font-size: 15px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+.toast .txt { flex: 1; }
+.toast .btn { color: var(--bg); height: 44px; }
+.toast .i.lead { width: 20px; height: 20px; }
+.tipline { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 4px 4px 4px 14px; white-space: nowrap; border-radius: 14px; background: var(--surface); border: 1px solid var(--subtle); font-size: 15px; color: var(--text); }
+.tipline > .i { width: 20px; height: 20px; color: var(--muted); }
+.tipline .txt { flex: 1; min-width: 0; }
+.tipline .btn { height: 44px; padding: 0 10px; font-size: 15px; }
+.skel { background: var(--active); border-radius: 6px; height: 12px; }
+.skelrow { display: flex; align-items: center; gap: 12px; height: 52px; padding: 0 16px; }
+.skelrow .skel.ic { width: 20px; height: 20px; border-radius: 5px; }
+.empty { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0 28px; }
+.empty .eic { width: 64px; height: 64px; border-radius: 20px; background: var(--surface); border: 1px solid var(--subtle); display: inline-flex; align-items: center; justify-content: center; color: var(--muted); margin-bottom: 16px; }
+.empty .eic .i { width: 28px; height: 28px; }
+.empty h2 { margin: 0; font-size: 20px; line-height: 26px; color: var(--strong); }
+.empty p { margin: 6px 0 20px; font-size: 15px; line-height: 21px; color: var(--muted); }
+.empty .btnrow, .empty .btncol { width: 100%; }
+
+/* ---------- overlays ---------- */
+.scrim { position: absolute; inset: 0; background: var(--scrim); z-index: 45; }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 50; background: var(--bg); border-radius: 22px 22px 0 0; box-shadow: var(--sheetshadow); display: flex; flex-direction: column; }
+.sheet .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--active); margin: 8px auto 0; flex: none; }
+.sheet .shd { display: flex; align-items: center; gap: 4px; padding: 6px 8px 6px 20px; flex: none; }
+.sheet .shd.back { padding-left: 4px; }
+.sheet .shd .st { flex: 1; min-width: 0; font-size: 18px; font-weight: 700; color: var(--strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sheet .sbody { flex: 1; min-height: 0; overflow: hidden; padding: 4px 16px 16px; position: relative; }
+.sheet .sbody.np { padding: 0 0 16px; }
+.sheet .sft { flex: none; padding: 12px 16px 34px; border-top: 1px solid var(--subtle); display: flex; flex-direction: column; gap: 8px; }
+.actionsheet .rows { padding: 0 8px 30px; }
+.drawer { position: absolute; left: 0; top: 0; bottom: 0; width: 304px; z-index: 50; background: var(--surface); border-right: 1px solid var(--subtle); display: flex; flex-direction: column; box-shadow: 8px 0 30px rgba(0,0,0,.18); }
+.dialog { position: absolute; z-index: 50; left: 50%; top: 50%; transform: translate(-50%, -50%); background: var(--bg); border-radius: 18px; box-shadow: 0 24px 60px rgba(0,0,0,.3); overflow: hidden; display: flex; flex-direction: column; }
+.dialog .dh { display: flex; align-items: center; gap: 8px; padding: 14px 12px 14px 24px; border-bottom: 1px solid var(--subtle); }
+.dialog .dh .st { flex: 1; font-size: 18px; font-weight: 700; color: var(--strong); }
+.dialog .df { display: flex; align-items: center; gap: 8px; padding: 14px 16px 14px 24px; border-top: 1px solid var(--subtle); }
+.alert { position: absolute; z-index: 50; left: 24px; right: 24px; top: 50%; transform: translateY(-50%); background: var(--bg); border-radius: 20px; padding: 22px 20px 16px; box-shadow: 0 24px 60px rgba(0,0,0,.3); }
+.alert h2 { margin: 0 0 6px; font-size: 19px; color: var(--strong); }
+.alert p { margin: 0 0 18px; font-size: 15px; line-height: 21px; color: var(--muted); }
+.menu { position: absolute; z-index: 50; background: var(--card); border-radius: 14px; box-shadow: 0 12px 36px rgba(0,0,0,.2), 0 0 0 1px var(--subtle); padding: 6px; min-width: 232px; }
+.menu .row { min-height: 44px; }
+.menu .sep { height: 1px; background: var(--subtle); margin: 6px 4px; }
+.tooltip { position: absolute; z-index: 56; background: var(--strong); color: var(--bg); font: 600 12px/1 var(--sans); padding: 7px 9px; border-radius: 7px; white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,.2); }
+.tooltip kbd { background: color-mix(in srgb, var(--bg) 22%, transparent); color: var(--bg); font-size: 11px; padding: 2px 4px; margin-left: 4px; }
+
+/* ---------- editor ---------- */
+.docv { padding: 12px 20px; font-size: 17px; line-height: 27px; color: var(--text); }
+.docv h1 { font-size: 28px; line-height: 34px; margin: 4px 0 14px; color: var(--strong); letter-spacing: -.015em; }
+.docv h2 { font-size: 19px; line-height: 26px; margin: 18px 0 6px; color: var(--strong); }
+.docv p { margin: 0 0 10px; }
+.docv ul { margin: 0 0 10px; padding-left: 22px; }
+.docv .task { display: flex; align-items: center; gap: 10px; margin: 4px 0; }
+.docv .task i { width: 18px; height: 18px; border: 1.5px solid var(--border); border-radius: 5px; display: inline-block; flex: none; }
+.docv .task.done i { background: var(--fill); border-color: var(--fill); }
+.docv .task.done span { color: var(--muted); text-decoration: line-through; }
+.docv .wl { color: var(--link); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--link) 40%, transparent); text-underline-offset: 3px; }
+.docv .img { height: 150px; border-radius: 12px; background: linear-gradient(135deg, #8aa5c9, #c8b6e2); margin: 6px 0 12px; position: relative; overflow: hidden; }
+.docv .img::after { content: ""; position: absolute; left: 18%; right: 18%; top: 22%; bottom: 22%; border: 2px dashed rgba(255,255,255,.7); border-radius: 8px; }
+.caret { display: inline-block; width: 2px; height: 22px; background: var(--link); vertical-align: -4px; margin-left: 1px; }
+.field-chip { display: inline-flex; align-items: center; height: 24px; padding: 0 8px; border-radius: 6px; background: color-mix(in srgb, var(--link) 14%, transparent); color: var(--link); font-size: 14px; font-weight: 600; vertical-align: 2px; }
+.ftool { position: absolute; left: 0; right: 0; height: 52px; background: var(--surface); border-top: 1px solid var(--subtle); display: flex; align-items: center; padding: 0 6px; gap: 0; z-index: 25; overflow: hidden; }
+.ftool .ibtn { width: 44px; height: 44px; border-radius: 10px; }
+.ftool .ibtn .i { width: 22px; height: 22px; }
+.ftool .vr { width: 1px; height: 24px; background: var(--subtle); margin: 0 4px; flex: none; }
+.kbd { position: absolute; left: 0; right: 0; bottom: 0; height: 291px; background: #d1d3d9; padding: 10px 4px 0; z-index: 24; display: flex; flex-direction: column; gap: 11px; }
+.t-dark .kbd, #mode:checked ~ main .kbd { background: #2b2b2d; }
+.kbd .kr { display: flex; gap: 6px; justify-content: center; }
+.kbd .kr i { width: 31px; height: 42px; border-radius: 5px; background: #fff; box-shadow: 0 1px 0 rgba(0,0,0,.3); display: block; }
+.t-dark .kbd .kr i, #mode:checked ~ main .kbd .kr i { background: #6b6b6e; }
+.kbd .kr i.w { width: 88px; } .kbd .kr i.xw { width: 182px; } .kbd .kr i.m { width: 42px; background: #abb0ba; }
+.t-dark .kbd .kr i.m, #mode:checked ~ main .kbd .kr i.m { background: #464648; }
+.cmp { border: 1px solid var(--subtle); border-radius: 14px; background: var(--card); padding: 14px 16px; font-size: 15px; line-height: 23px; color: var(--text); }
+.cmp .cm { font-size: 13px; color: var(--muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.cmp ins { background: var(--ins); text-decoration: none; border-radius: 3px; padding: 0 2px; }
+.cmp del { background: var(--del); border-radius: 3px; padding: 0 2px; }
+.cmp b { color: var(--strong); }
+
+/* ---------- desktop app ---------- */
+.dapp { display: flex; flex: 1; min-height: 0; }
+.dside { width: 264px; flex: none; background: var(--surface); border-right: 1px solid var(--subtle); display: flex; flex-direction: column; }
+.dside .rows { padding: 0 8px; }
+.dside .row { min-height: 36px; padding: 4px 10px; border-radius: 8px; gap: 10px; }
+.dside .row .nm { font-size: 14px; }
+.dside .row .ic .i { width: 18px; height: 18px; }
+.dside .grouplabel { padding: 16px 18px 4px; font-size: 12px; }
+.dws { display: flex; align-items: center; gap: 10px; height: 56px; padding: 0 10px 0 16px; }
+.wsicon { width: 28px; height: 28px; border-radius: 8px; background: var(--fill); color: var(--onfill); display: inline-flex; align-items: center; justify-content: center; font: 700 13px/1 var(--sans); flex: none; }
+.dws .nm { flex: 1; font-weight: 700; color: var(--strong); font-size: 15px; }
+.dsearch { margin: 4px 12px 10px; height: 36px; border-radius: 10px; border: 1px solid var(--subtle); background: var(--bg); display: flex; align-items: center; gap: 8px; padding: 0 10px; font-size: 14px; color: var(--muted); }
+.dsearch .i { width: 16px; height: 16px; }
+.dsearch kbd { margin-left: auto; font-size: 11px; }
+.dfoot { margin-top: auto; border-top: 1px solid var(--subtle); padding: 12px 18px; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.dmain { flex: 1; min-width: 0; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+.dtop { height: 52px; flex: none; display: flex; align-items: center; gap: 4px; padding: 0 12px 0 20px; border-bottom: 1px solid var(--subtle); }
+.dtop .crumb { font-size: 14px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.dtop .crumb b { color: var(--strong); font-weight: 600; }
+.dtop .ibtn { width: 36px; height: 36px; border-radius: 9px; }
+.dtop .ibtn .i { width: 20px; height: 20px; }
+.dtop .vr { width: 1px; height: 20px; background: var(--subtle); margin: 0 6px; }
+.dcontent { flex: 1; min-height: 0; overflow: hidden; padding: 36px 48px; }
+.measure { max-width: 680px; margin: 0 auto; }
+.dpage-h { display: flex; align-items: flex-end; gap: 10px; }
+.dpage-h .tt { flex: 1; }
+.dpage-h h1 { margin: 0; font-size: 30px; line-height: 36px; letter-spacing: -.02em; color: var(--strong); }
+.dlist .row { min-height: 44px; padding: 4px 12px; border-radius: 10px; }
+.dlist .row .nm { font-size: 15px; }
+.dlist .row .ic .i { width: 18px; height: 18px; }
+.dlist .grouplabel { padding: 22px 12px 6px; }
+.dtoolbar { display: flex; align-items: center; gap: 2px; padding: 6px 12px; border-bottom: 1px solid var(--subtle); background: var(--bg); }
+.dtoolbar .ibtn { width: 36px; height: 36px; border-radius: 8px; }
+.dtoolbar .ibtn .i { width: 20px; height: 20px; }
+.dtoolbar .vr { width: 1px; height: 20px; background: var(--subtle); margin: 0 6px; }
+.ddoc { font-size: 17px; line-height: 28px; }
+
+/* ---------- spec sheets ---------- */
+.card { background: #fff; border: 1px solid #dcdad4; border-radius: 16px; padding: 22px 24px; }
+.card h3 { margin: 0 0 4px; font-size: 16px; }
+.card .cl { color: var(--note); font-size: 13px; margin: 0 0 16px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 20px; }
+.spec { width: 100%; border-collapse: collapse; font-size: 13px; }
+.spec th, .spec td { text-align: left; padding: 9px 10px; border-top: 1px solid #ebe9e4; vertical-align: top; }
+.spec th { border-top: 0; background: #f4f3ef; font-weight: 700; color: #3c3b37; }
+.spec td.k { font-weight: 600; white-space: nowrap; color: var(--ink); }
+.spec .ok { color: #1c6f37; font-weight: 700; }
+.spec .no { color: #a1611a; font-weight: 700; }
+.swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.sw { border-radius: 10px; border: 1px solid #dcdad4; overflow: hidden; font-size: 11px; }
+.sw i { display: block; height: 40px; }
+.sw span { display: block; padding: 6px 8px; background: #fff; }
+.sw span b { display: block; font-size: 12px; color: var(--ink); }
+.typespec > div { display: flex; align-items: baseline; gap: 16px; padding: 8px 0; border-top: 1px solid #ebe9e4; }
+.typespec > div:first-child { border-top: 0; }
+.typespec .m { width: 150px; flex: none; font-size: 12px; color: var(--note); }
+.spacing { display: flex; align-items: flex-end; gap: 14px; }
+.spacing div { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; color: var(--note); }
+.spacing i { display: block; background: #c9b8f0; border-radius: 2px; }
+.surface { border-radius: 14px; padding: 18px; background: var(--bg); color: var(--text); border: 1px solid var(--subtle); }
+.surface + .surface { margin-top: 10px; }
+.iconset { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
+.iconset div { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 2px; border-radius: 10px; background: #f6f5f2; font-size: 10px; color: var(--note); text-align: center; }
+.iconset .i { width: 24px; height: 24px; color: #1d1c1a; }
+.statecells { display: flex; flex-wrap: wrap; gap: 16px 18px; }
+.statecells > div { display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); text-align: center; min-width: 96px; position: relative; }
+.toc { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.toc a { display: block; text-decoration: none; background: #fff; border: 1px solid #dcdad4; border-radius: 14px; padding: 16px 18px; }
+.toc a b { display: block; font-size: 15px; margin-bottom: 4px; }
+.toc a span { font-size: 13px; color: var(--note); }
+.checklist { list-style: none; margin: 0; padding: 0; counter-reset: c; }
+.checklist li { counter-increment: c; display: flex; gap: 12px; padding: 12px 0; border-top: 1px solid #ebe9e4; font-size: 14px; }
+.checklist li:first-child { border-top: 0; }
+.checklist li::before { content: counter(c); flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--ink); color: #fff; font: 700 12px/26px var(--sans); text-align: center; }
+.checklist li .ref { color: var(--note); font-size: 12px; display: block; margin-top: 2px; }
+.beforeafter { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid #dcdad4; border-radius: 14px; overflow: hidden; background: #fff; font-size: 13px; }
+.beforeafter > div { padding: 10px 14px; border-top: 1px solid #ebe9e4; }
+.beforeafter > div:nth-child(-n+2) { border-top: 0; background: #f4f3ef; font-weight: 700; }
+.beforeafter > div:nth-child(odd) { border-right: 1px solid #ebe9e4; color: #7a3a3a; }
+.beforeafter > div:nth-child(even) { color: #1c4f2a; }
+.beforeafter > div:nth-child(-n+2) { color: var(--ink); }
+
+.screen.sbgs .appbar { background: var(--surface); }
 </style>
 </head>
 <body>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <defs>
-    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></symbol>
-    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M16 16l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
-    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
-    <symbol id="i-tpl" viewBox="0 0 24 24"><rect x="4" y="3.5" width="16" height="17" rx="2" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M8 8h8M8 12h8M8 16h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
-    <symbol id="i-file" viewBox="0 0 24 24"><path d="M7 3.5h7l4 4V20a.5.5 0 0 1-.5.5h-10A.5.5 0 0 1 7 20z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/><path d="M14 3.5V8h4" stroke="currentColor" stroke-width="1.6" fill="none"/></symbol>
-    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3.5 7a1.5 1.5 0 0 1 1.5-1.5h4l2 2h8a1.5 1.5 0 0 1 1.5 1.5v8.5A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5z" stroke="currentColor" stroke-width="1.6" fill="none"/></symbol>
-    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
-    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-    <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/></symbol>
-    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14.5" rx="2" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M4 10h16M8 3.5v4M16 3.5v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
-    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M5 7h14M10 7V4.5h4V7M7 7l1 13h8l1-13" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/></symbol>
-    <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
-    <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M12 7.5v5.5M12 16.2v.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
-    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M12 11v5.5M12 7.8v.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
-    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 7L4.5 11.5 9 16" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 11.5h9a5 5 0 0 1 0 10h-2" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></symbol>
-    <symbol id="i-redo" viewBox="0 0 24 24"><path d="M15 7l4.5 4.5L15 16" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 11.5h-9a5 5 0 0 0 0 10h2" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></symbol>
-    <symbol id="i-bold" viewBox="0 0 24 24"><path d="M7 5h6a3.5 3.5 0 0 1 0 7H7zM7 12h7a3.5 3.5 0 0 1 0 7H7z" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round"/></symbol>
-    <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 7h11M9 12h11M9 17h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="5" cy="7" r="1.2" fill="currentColor"/><circle cx="5" cy="12" r="1.2" fill="currentColor"/><circle cx="5" cy="17" r="1.2" fill="currentColor"/></symbol>
-    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></symbol>
-    <symbol id="i-img" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2" stroke="currentColor" stroke-width="1.6" fill="none"/><circle cx="9" cy="10" r="1.6" fill="currentColor"/><path d="M4 17l5-4.5 4 3.5 3-2.5 4 3.5" stroke="currentColor" stroke-width="1.6" fill="none"/></symbol>
-    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
-    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M19 14.5A7.5 7.5 0 0 1 9.5 5a7.5 7.5 0 1 0 9.5 9.5z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/></symbol>
-    <symbol id="i-screen" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="12" rx="1.5" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M9 20h6M12 16.5V20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
-    <symbol id="i-pen" viewBox="0 0 24 24"><path d="M4 20l1-4L16 5l3 3L8 19z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/></symbol>
-    <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18h10a4 4 0 0 0 .5-8A6 6 0 0 0 6 11a3.5 3.5 0 0 0 1 7z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/></symbol>
-    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.5" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M5 20a7 7 0 0 1 14 0" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></symbol>
-    <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="12" r="3.5" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M11.5 12H20M17 12v3M20 12v2.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
-    <symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M11 18h2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
-    <symbol id="i-out" viewBox="0 0 24 24"><path d="M14 4.5H6.5v15H14M10 12h10M17 8.5l3.5 3.5-3.5 3.5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-    <symbol id="i-dl" viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19.5h14" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-    <symbol id="i-ul" viewBox="0 0 24 24"><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5M5 19.5h14" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-    <symbol id="i-apps" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6" fill="none"/><rect x="13" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6" fill="none"/><rect x="4" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6" fill="none"/><rect x="13" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6" fill="none"/></symbol>
-    <symbol id="i-card" viewBox="0 0 24 24"><rect x="3.5" y="6" width="17" height="12" rx="2" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M3.5 10h17" stroke="currentColor" stroke-width="1.6"/></symbol>
-    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20.5h4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round" stroke-linecap="round"/></symbol>
-    <symbol id="i-spell" viewBox="0 0 24 24"><path d="M4 16l4-10 4 10M5.5 12.5h5M14 14l2.5 2.5L21 11" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-  </defs>
-</svg>
-
-<input type="checkbox" id="alldark" aria-label="Show every frame in dark mode">
-<header class="doc">
-  <span class="proto">PROTOTYPE WIREFRAMES. FOR APPROVAL ONLY. NOT THE SHIPPED APP.</span>
-  <h1>tidy notebook: redesign of the UI shipped in v0.22.0</h1>
-  <p style="margin:0;max-width:860px;color:#444">Mobile first. One filled button per screen. Real buttons with a visible edge. No "workspace root". Tips are one short line. Settings is a list that opens one page per topic. All data safety behavior stays the same. Copy in the frames is the proposed copy.</p>
-  <label class="toggle" for="alldark"><span class="box"></span>Show every frame in dark mode</label>
-  <div class="legend"><span><span class="id">A1</span>screen ID used in the flow map</span><span>Yellow tag: prototype marker</span><span>Frames: 360 px phone, 1180 px desktop</span></div>
-</header>
-
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h16"/></symbol><symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></symbol><symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></symbol><symbol id="i-template" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h8M8 16h4"/></symbol><symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7.5A2.5 2.5 0 0 0 5 5.5v13A2.5 2.5 0 0 0 7.5 21h9a2.5 2.5 0 0 0 2.5-2.5V8z"/><path d="M14 3v5h5"/></symbol><symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5A2.5 2.5 0 0 1 6 5h3.6l2 2.2H18a2.5 2.5 0 0 1 2.5 2.5v7.8A2.5 2.5 0 0 1 18 20H6a2.5 2.5 0 0 1-2.5-2.5z"/></symbol><symbol id="i-folderplus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5A2.5 2.5 0 0 1 6 5h3.6l2 2.2H18a2.5 2.5 0 0 1 2.5 2.5v7.8A2.5 2.5 0 0 1 18 20H6a2.5 2.5 0 0 1-2.5-2.5z"/><path d="M12 10.5v6M9 13.5h6"/></symbol><symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"/></symbol><symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m15 5-7 7 7 7"/></symbol><symbol id="i-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></symbol><symbol id="i-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></symbol><symbol id="i-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="19" cy="12" r="1.3" fill="currentColor"/></symbol><symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 10h16M8.5 3v4M15.5 3v4"/></symbol><symbol id="i-today" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 10h16M8.5 3v4M15.5 3v4"/><rect x="8" y="13" width="3.5" height="3.5" rx=".8" fill="currentColor" stroke="none"/></symbol><symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l.9 12a1.8 1.8 0 0 0 1.8 1.6h5.6a1.8 1.8 0 0 0 1.8-1.6l.9-12"/></symbol><symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol><symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5"/><circle cx="12" cy="16.3" r=".6" fill="currentColor"/></symbol><symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><circle cx="12" cy="7.8" r=".6" fill="currentColor"/></symbol><symbol id="i-warn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 4.2 2.9 17a2 2 0 0 0 1.7 3h14.8a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0z"/><path d="M12 9.5v4"/><circle cx="12" cy="16.6" r=".6" fill="currentColor"/></symbol><symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol><symbol id="i-checkcircle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.2 12.3 2.6 2.6 5-5.3"/></symbol><symbol id="i-undo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol><symbol id="i-redo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></symbol><symbol id="i-bold" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M7 5h6a3.5 3.5 0 0 1 0 7H7zM7 12h7a3.5 3.5 0 0 1 0 7H7z"/></symbol><symbol id="i-italic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 5h5M5 19h5M15 5 9 19"/></symbol><symbol id="i-heading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 5v14M18 5v14M6 12h12"/></symbol><symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7h11M9 12h11M9 17h11"/><circle cx="4.5" cy="7" r=".9" fill="currentColor"/><circle cx="4.5" cy="12" r=".9" fill="currentColor"/><circle cx="4.5" cy="17" r=".9" fill="currentColor"/></symbol><symbol id="i-task" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol><symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol><symbol id="i-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="m20.5 16-4.5-4.5L6 19.5"/></symbol><symbol id="i-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m8 8-4 4 4 4M16 8l4 4-4 4"/></symbol><symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol><symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></symbol><symbol id="i-monitor" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12.5" rx="2"/><path d="M8.5 20h7M12 16.5V20"/></symbol><symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M11 18.5h2"/></symbol><symbol id="i-laptop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6.5A1.5 1.5 0 0 1 6.5 5h11A1.5 1.5 0 0 1 19 6.5V15H5z"/><path d="M3 18h18"/></symbol><symbol id="i-pen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4.5L16.5 4a2.1 2.1 0 0 1 3 3L8 18.5z"/></symbol><symbol id="i-cloud" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18.5h10a4 4 0 0 0 .6-8 6 6 0 0 0-11.5 1.4A3.4 3.4 0 0 0 7 18.5z"/></symbol><symbol id="i-cloudoff" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M9 5.4A6 6 0 0 1 17.6 10.5a4 4 0 0 1 2.3 7M17 18.5H7a3.4 3.4 0 0 1-.9-6.6 6 6 0 0 1 .4-2"/></symbol><symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"/></symbol><symbol id="i-key" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="m10.8 12.2 8.7-8.7M16 7l2.5 2.5M18.5 4.5 21 7"/></symbol><symbol id="i-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h-7.5A1.5 1.5 0 0 0 5 5.5v13A1.5 1.5 0 0 0 6.5 20H14"/><path d="M10 12h10.5M17 8.5l3.5 3.5-3.5 3.5"/></symbol><symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 20h14"/></symbol><symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 20h14"/></symbol><symbol id="i-card" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5.5" width="18" height="13" rx="2.5"/><path d="M3 10h18M7 15h3"/></symbol><symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2.5h-15z"/><path d="M10 21h4"/></symbol><symbol id="i-spell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m4 16 4-10 4 10M5.5 12.5h5"/><path d="m14 15 2.5 2.5L21 12"/></symbol><symbol id="i-palette" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 0 18c1 0 1.6-.8 1.6-1.7 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-.9.8-1.7 1.7-1.7H16a5 5 0 0 0 5-5C21 6.4 17 3 12 3z"/><circle cx="7.5" cy="11" r="1" fill="currentColor"/><circle cx="10.5" cy="7" r="1" fill="currentColor"/><circle cx="15.5" cy="7.5" r="1" fill="currentColor"/></symbol><symbol id="i-offline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M12 7.5v6M9.5 11 12 13.5l2.5-2.5"/></symbol><symbol id="i-archive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v9.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V9M10 13h4"/></symbol><symbol id="i-plug" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v5M15 3v5M6.5 8h11v3a5.5 5.5 0 0 1-11 0zM12 16.5V21"/></symbol><symbol id="i-history" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3.5 4.5V9H8"/><path d="M12 7.5V12l3 2"/></symbol><symbol id="i-move" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5A2.5 2.5 0 0 1 6 5h3.6l2 2.2H18a2.5 2.5 0 0 1 2.5 2.5v7.8A2.5 2.5 0 0 1 18 20H6a2.5 2.5 0 0 1-2.5-2.5z"/><path d="M9 13.5h6M12.5 11l2.5 2.5-2.5 2.5"/></symbol><symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol><symbol id="i-zoomin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2M11 8v6M8 11h6"/></symbol><symbol id="i-zoomout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2M8 11h6"/></symbol><symbol id="i-external" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></symbol><symbol id="i-bulb" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2V16h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></symbol><symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></symbol><symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m4 7 8 6 8-6"/></symbol><symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></symbol><symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8"/></symbol><symbol id="i-restore" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3.5 4.5V9H8"/></symbol><symbol id="i-wifi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8.5a15 15 0 0 1 20 0M5 12a10.5 10.5 0 0 1 14 0M8.5 15.5a5.5 5.5 0 0 1 7 0"/><circle cx="12" cy="19" r="1" fill="currentColor"/></symbol><symbol id="i-signal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 18v-2M9.5 18v-5M14 18v-8M18.5 18V7" stroke-width="2.4"/></symbol><symbol id="i-arrow" viewBox="0 0 52 20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10h48M42 3l8 7-8 7"/></symbol></defs></svg>
+<input type="checkbox" id="mode" aria-label="Show every frame in dark mode">
+<header class="doc-top"><div class="in">
+<span class="proto">PROTOTYPE FOR APPROVAL</span>
+<span class="brand">tidy notebook redesign</span>
+<nav><a href="index.html" class="on">Overview and system</a><a href="01-notes.html" class="">Notes and navigation</a><a href="02-templates.html" class="">New from template</a><a href="03-editor.html" class="">Editor</a><a href="04-settings.html" class="">Settings</a><a href="05-states.html" class="">States and account</a><a href="06-desktop.html" class="">Desktop</a></nav>
+<label class="modetoggle" for="mode"><span class="bx"></span>All frames dark</label>
+</div></header>
 <main>
-
-<!-- ============ A. NOTES AND NAVIGATION ============ -->
-<section class="group">
-  <h2>A. All notes and navigation</h2>
-  <p class="lead">Fixes: "Create in" line removed. "From template" becomes a real outlined button next to the one filled button. Tips shrink to one line with Next and Close. Today's note moves to navigation, where it always is.</p>
-  <div class="row">
-
-  <figure>
-    <div class="frame">
-      <div class="sb"><span>11:35</span><span>5G 80%</span></div>
-      <div class="bar">
-        <span class="ib"><svg><use href="#i-menu"/></svg></span>
-        <span class="title"></span>
-        <span class="ib"><svg><use href="#i-search"/></svg></span>
-        <span class="ib"><span class="avatar">M</span></span>
-      </div>
-      <div class="content">
-        <h3 class="pt">All notes</h3>
-        <p class="sub">28 notes</p>
-        <div class="actions pair">
-          <span class="btn pri"><svg><use href="#i-plus"/></svg>New note</span>
-          <span class="btn sec"><svg><use href="#i-tpl"/></svg>Use template</span>
-        </div>
-        <div class="tip"><span class="t">Type <kbd>[[</kbd> to link a note.</span><span class="btn ghost sm">Next</span><span class="ib" aria-label="Close tips"><svg><use href="#i-x"/></svg></span></div>
-        <div class="grp">Today</div>
-        <ul class="list">
-          <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">2026-10-26</span><span class="mt">22 min</span></li>
-          <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">Shared artefacts</span><span class="mt">4 h</span></li>
-          <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">Weight</span><span class="mt">14 h</span></li>
-        </ul>
-        <div class="grp">Yesterday</div>
-        <ul class="list">
-          <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">2026-10-25</span><span class="mt">24 h</span></li>
-          <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">Trip plan<span class="mt"> · Travel</span></span><span class="mt">1 d</span></li>
-          <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">Reading list</span><span class="mt">1 d</span></li>
-        </ul>
-      </div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">A1</span>All notes, with tip</b>
-      <ol><li>Count only. No sentence about where notes go.</li>
-      <li>"New note" is the one filled button. "Use template" is outlined, same height.</li>
-      <li>One tip, one line, max 6 words. "Next" shows the next tip. Close hides tips for good.</li>
-      <li>Short times ("22 min"). A note in a folder shows the folder name.</li></ol></figcaption>
-  </figure>
-
-  <figure>
-    <div class="frame">
-      <div class="sb"><span>11:35</span><span>5G 80%</span></div>
-      <div class="bar">
-        <span class="ib"><svg><use href="#i-menu"/></svg></span>
-        <span class="title"></span>
-        <span class="ib"><svg><use href="#i-search"/></svg></span>
-        <span class="ib"><span class="avatar">M</span></span>
-      </div>
-      <div class="content">
-        <h3 class="pt">All notes</h3>
-        <div class="empty">
-          <span class="eic"><svg width="24" height="24"><use href="#i-file"/></svg></span>
-          <h4>No notes yet</h4>
-          <p>Write your first note.</p>
-          <div class="actions pair">
-            <span class="btn pri"><svg><use href="#i-plus"/></svg>New note</span>
-            <span class="btn sec"><svg><use href="#i-tpl"/></svg>Use template</span>
-          </div>
-        </div>
-        <div class="tip" style="margin-top:40px"><span class="t">Today's note is in the menu.</span><span class="btn ghost sm">Next</span><span class="ib"><svg><use href="#i-x"/></svg></span></div>
-      </div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">A2</span>All notes, empty</b>
-      <ol><li>Same two buttons as A1, in the centre. They are not also in the header.</li>
-      <li>Tip line sits below, never above, the main action.</li></ol></figcaption>
-  </figure>
-
-  <figure>
-    <div class="frame">
-      <div class="sb"><span>11:35</span><span>5G 80%</span></div>
-      <div class="bar"><span class="ib"><svg><use href="#i-menu"/></svg></span><span class="title"></span></div>
-      <div class="content"></div>
-      <div class="scrim"></div>
-      <div class="drawer">
-        <div class="sb"></div>
-        <div class="ws"><span class="wsi">P</span><span class="wsn">Personal</span><span class="ib"><svg><use href="#i-down"/></svg></span></div>
-        <div style="padding:8px 8px 0;flex:1;overflow:hidden">
-          <ul class="list">
-            <li class="sel"><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">All notes</span></li>
-            <li><span class="ic"><svg><use href="#i-cal"/></svg></span><span class="nm">Today's note</span></li>
-            <li><span class="ic"><svg><use href="#i-bell"/></svg></span><span class="nm">Needs attention</span><span class="badge">1</span></li>
-            <li><span class="ic"><svg><use href="#i-trash"/></svg></span><span class="nm">Trash</span></li>
-          </ul>
-          <div class="grp" style="display:flex;align-items:center;padding-left:4px">Folders<span style="flex:1"></span><span class="ib" style="width:40px;height:40px" aria-label="New folder"><svg style="width:18px;height:18px"><use href="#i-plus"/></svg></span></div>
-          <ul class="list">
-            <li><span class="ic"><svg><use href="#i-folder"/></svg></span><span class="nm">Projects</span><span class="mt">6</span></li>
-            <li><span class="ic"><svg><use href="#i-folder"/></svg></span><span class="nm">Templates</span><span class="mt">3</span></li>
-            <li><span class="ic"><svg><use href="#i-folder"/></svg></span><span class="nm">Travel</span><span class="mt">4</span></li>
-          </ul>
-          <ul class="list" style="margin-top:10px;border-top:1px solid var(--subtle);padding-top:6px">
-            <li><span class="ic"><svg><use href="#i-gear"/></svg></span><span class="nm">Settings</span></li>
-          </ul>
-        </div>
-        <div class="foot"><span class="dot"></span>All changes saved</div>
-      </div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">A3</span>Navigation menu</b>
-      <ol><li>Workspace name at top. Tap to switch or add a workspace.</li>
-      <li>Today's note is a fixed row. The calendar opens from it.</li>
-      <li>"+" next to Folders makes a folder. No "Create in" line.</li>
-      <li>One short save line at the bottom (see E1 for all states).</li></ol></figcaption>
-  </figure>
-
-  <figure>
-    <div class="frame">
-      <div class="sb"><span>11:35</span><span>5G 80%</span></div>
-      <div class="bar">
-        <span class="ib"><svg><use href="#i-back"/></svg></span>
-        <span class="title"></span>
-        <span class="ib"><svg><use href="#i-search"/></svg></span>
-        <span class="ib"><svg><use href="#i-more"/></svg></span>
-      </div>
-      <div class="content">
-        <p class="sub" style="display:flex;align-items:center;gap:4px"><svg width="14" height="14"><use href="#i-folder"/></svg>Folder</p>
-        <h3 class="pt">Projects</h3>
-        <p class="sub">6 notes</p>
-        <div class="actions pair">
-          <span class="btn pri"><svg><use href="#i-plus"/></svg>New note</span>
-          <span class="btn sec"><svg><use href="#i-tpl"/></svg>Use template</span>
-        </div>
-        <ul class="list" style="margin-top:10px">
-          <li><span class="ic"><svg><use href="#i-folder"/></svg></span><span class="nm">Archive</span><span class="mt">2</span></li>
-          <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">Q4 roadmap</span><span class="mt">2 h</span></li>
-          <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">Hiring</span><span class="mt">3 d</span></li>
-          <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">Budget</span><span class="mt">5 d</span></li>
-        </ul>
-      </div>
-      <div class="menu" style="right:10px;top:84px">
-        <ul class="list">
-          <li><span class="ic"><svg><use href="#i-folder"/></svg></span><span class="nm">New folder here</span></li>
-          <li><span class="ic"><svg><use href="#i-pen"/></svg></span><span class="nm">Rename folder</span></li>
-          <li style="color:var(--danger)"><span class="ic" style="color:var(--danger)"><svg><use href="#i-trash"/></svg></span><span class="nm">Delete folder</span></li>
-        </ul>
-      </div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">A4</span>Folder page, "..." menu open</b>
-      <ol><li>The page title says where a new note goes. No extra label.</li>
-      <li>Same two buttons. Both create in "Projects".</li>
-      <li>Folder actions are in the "..." menu.</li></ol></figcaption>
-  </figure>
-
-  </div>
-</section>
-
-<!-- ============ B. TEMPLATES ============ -->
-<section class="group">
-  <h2>B. New note from a template</h2>
-  <p class="lead">Two steps in a bottom sheet: pick, then preview and create. The save place is one row, "Folder", with a Change button. "No folder" replaces "workspace root".</p>
-  <div class="row">
-
-  <figure>
-    <div class="frame">
-      <div class="sb"><span>11:36</span><span>5G 80%</span></div>
-      <div class="bar"><span class="ib"><svg><use href="#i-menu"/></svg></span><span class="title"></span></div>
-      <div class="content"><h3 class="pt">All notes</h3></div>
-      <div class="scrim"></div>
-      <div class="sheet" style="top:90px">
-        <div class="grab"></div>
-        <div class="sh"><span class="st">Choose a template</span><span class="ib" aria-label="Close"><svg><use href="#i-x"/></svg></span></div>
-        <div class="sbody">
-          <div class="field"><svg><use href="#i-search"/></svg>Search templates</div>
-          <ul class="list" style="margin-top:8px">
-            <li class="hl"><span class="ic"><svg><use href="#i-tpl"/></svg></span><span class="nm">Meeting notes<br><span class="mt">Date, attendees, actions</span></span><span class="ic"><svg width="16" height="16"><use href="#i-chev"/></svg></span></li>
-            <li><span class="ic"><svg><use href="#i-tpl"/></svg></span><span class="nm">Weekly review<br><span class="mt">Wins, misses, next week</span></span><span class="ic"><svg width="16" height="16"><use href="#i-chev"/></svg></span></li>
-            <li><span class="ic"><svg><use href="#i-tpl"/></svg></span><span class="nm">Trip plan<br><span class="mt">Dates, bookings, packing</span></span><span class="ic"><svg width="16" height="16"><use href="#i-chev"/></svg></span></li>
-          </ul>
-          <p class="sub" style="margin-top:14px">From the "Templates" folder. <span class="link">Manage</span></p>
-        </div>
-      </div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">B1</span>Choose a template</b>
-      <ol><li>Full-width rows, 56 px. First line of text under the name.</li>
-      <li>Search shows when there are more than 5 templates.</li>
-      <li>"Manage" opens Settings, Templates (C6).</li></ol></figcaption>
-  </figure>
-
-  <figure>
-    <div class="frame">
-      <div class="sb"><span>11:36</span><span>5G 80%</span></div>
-      <div class="bar"><span class="ib"><svg><use href="#i-menu"/></svg></span><span class="title"></span></div>
-      <div class="content"><h3 class="pt">All notes</h3></div>
-      <div class="scrim"></div>
-      <div class="sheet" style="top:60px">
-        <div class="grab"></div>
-        <div class="sh"><span class="ib" aria-label="Back"><svg><use href="#i-back"/></svg></span><span class="st">Meeting notes</span><span class="ib"><svg><use href="#i-x"/></svg></span></div>
-        <div class="sbody">
-          <div class="preview"># Meeting {{date}}
-
-Attendees:
--
-
-## Notes
-
-## Actions
-- [ ] </div>
-          <p class="sub" style="margin-top:6px">{{date}} fills in when you create the note.</p>
-          <div class="destrow"><span class="lb">Folder</span><span class="v">No folder</span><span class="btn sec sm">Change</span></div>
-        </div>
-        <div class="sfoot"><span class="btn pri full">Create note</span></div>
-      </div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">B2</span>Preview and create</b>
-      <ol><li>Preview is read only and scrolls.</li>
-      <li>One line about fields, only if the template has fields.</li>
-      <li>"Folder: No folder" from All notes. From a folder page it shows that folder.</li>
-      <li>"Create note" is the one filled button, at thumb height.</li></ol></figcaption>
-  </figure>
-
-  <figure>
-    <div class="frame">
-      <div class="sb"><span>11:36</span><span>5G 80%</span></div>
-      <div class="bar"><span class="ib"><svg><use href="#i-menu"/></svg></span><span class="title"></span></div>
-      <div class="content"></div>
-      <div class="scrim"></div>
-      <div class="sheet" style="top:250px">
-        <div class="grab"></div>
-        <div class="sh"><span class="ib"><svg><use href="#i-back"/></svg></span><span class="st">Save in</span></div>
-        <div class="sbody">
-          <ul class="list">
-            <li class="sel"><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">No folder</span><span class="ic" style="color:var(--strong)"><svg><use href="#i-check"/></svg></span></li>
-            <li><span class="ic"><svg><use href="#i-folder"/></svg></span><span class="nm">Projects</span></li>
-            <li style="padding-left:28px"><span class="ic"><svg><use href="#i-folder"/></svg></span><span class="nm">Archive</span></li>
-            <li><span class="ic"><svg><use href="#i-folder"/></svg></span><span class="nm">Travel</span></li>
-          </ul>
-        </div>
-        <div class="sfoot"><span class="btn sec full">Done</span></div>
-      </div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">B3</span>Change folder</b>
-      <ol><li>Plain list of folders. Check mark on the current one.</li>
-      <li>"No folder" means the note is not in a folder. It still shows in All notes.</li></ol></figcaption>
-  </figure>
-
-  <figure>
-    <div class="frame">
-      <div class="sb"><span>11:36</span><span>5G 80%</span></div>
-      <div class="bar"><span class="ib"><svg><use href="#i-menu"/></svg></span><span class="title"></span></div>
-      <div class="content"></div>
-      <div class="scrim"></div>
-      <div class="sheet" style="top:330px">
-        <div class="grab"></div>
-        <div class="sh"><span class="st">Choose a template</span><span class="ib"><svg><use href="#i-x"/></svg></span></div>
-        <div class="sbody">
-          <div class="empty" style="padding-top:12px">
-            <span class="eic"><svg width="24" height="24"><use href="#i-tpl"/></svg></span>
-            <h4>No templates yet</h4>
-            <p>A template is a note in the "Templates" folder.</p>
-            <div class="actions"><span class="btn pri"><svg><use href="#i-plus"/></svg>Create a template</span></div>
-          </div>
-        </div>
-      </div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">B4</span>No templates</b>
-      <ol><li>One sentence. One button. It makes a note in the Templates folder and opens it.</li></ol></figcaption>
-  </figure>
-
-  <figure>
-    <div class="frame">
-      <div class="sb"><span>11:36</span><span>No signal</span></div>
-      <div class="bar"><span class="ib"><svg><use href="#i-menu"/></svg></span><span class="title"></span></div>
-      <div class="content"></div>
-      <div class="scrim"></div>
-      <div class="sheet" style="top:120px">
-        <div class="grab"></div>
-        <div class="sh"><span class="ib"><svg><use href="#i-back"/></svg></span><span class="st">Weekly review</span><span class="ib"><svg><use href="#i-x"/></svg></span></div>
-        <div class="sbody">
-          <div class="notice problem"><svg><use href="#i-alert"/></svg><span>Can't load this template. It is not on this device.</span></div>
-          <span class="btn sec">Try again</span>
-          <div class="destrow" style="margin-top:20px"><span class="lb">Folder</span><span class="v">No folder</span><span class="btn sec sm">Change</span></div>
-        </div>
-        <div class="sfoot"><span class="btn pri full" disabled>Create note</span></div>
-      </div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">B5</span>Preview failed</b>
-      <ol><li>Short problem line and "Try again".</li>
-      <li>"Create note" stays off until the text loads, so no empty note is made.</li>
-      <li>Other states: "Some templates may be missing." (info line) and "Templates did not load. Try again." (problem line).</li></ol></figcaption>
-  </figure>
-
-  </div>
-</section>
-
-<!-- ============ C. SETTINGS ============ -->
-<section class="group">
-  <h2>C. Settings</h2>
-  <p class="lead">Phone: one list of rows. Each row opens its own page with a Back button. Each page has a one line description at most. No duplicate titles. Desktop: list on the left, page on the right (D3).</p>
-  <div class="row">
-
-  <figure>
-    <div class="frame">
-      <div class="sb"><span>11:37</span><span>5G 80%</span></div>
-      <div class="bar"><span class="ib"><svg><use href="#i-back"/></svg></span><span class="title">Settings</span></div>
-      <div class="content" style="background:var(--surface)">
-        <div class="grp" style="margin-top:0">General</div>
-        <ul class="slist">
-          <li><span class="ic"><svg><use href="#i-sun"/></svg></span><span class="nm">Appearance</span><span class="v">System</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
-          <li><span class="ic"><svg><use href="#i-spell"/></svg></span><span class="nm">Spelling</span><span class="v">On</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
-        </ul>
-        <div class="grp">Notes</div>
-        <ul class="slist">
-          <li><span class="ic"><svg><use href="#i-cal"/></svg></span><span class="nm">Daily notes</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
-          <li><span class="ic"><svg><use href="#i-tpl"/></svg></span><span class="nm">Templates</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
-          <li><span class="ic"><svg><use href="#i-phone"/></svg></span><span class="nm">Offline</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
-          <li><span class="ic"><svg><use href="#i-dl"/></svg></span><span class="nm">Export and import</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
-        </ul>
-        <div class="grp">Account</div>
-        <ul class="slist">
-          <li><span class="ic"><svg><use href="#i-user"/></svg></span><span class="nm">Profile and email</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
-          <li><span class="ic"><svg><use href="#i-card"/></svg></span><span class="nm">Plan and billing</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
-          <li><span class="ic"><svg><use href="#i-screen"/></svg></span><span class="nm">Devices</span><span class="v">3</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
-          <li><span class="ic"><svg><use href="#i-key"/></svg></span><span class="nm">API keys and apps</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
-        </ul>
-        <ul class="slist" style="margin-top:14px">
-          <li><span class="ic"><svg><use href="#i-out"/></svg></span><span class="nm">Sign out</span></li>
-        </ul>
-      </div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">C1</span>Settings list</b>
-      <ol><li>Full-width rows, 48 px, icon, name, current value, arrow.</li>
-      <li>15 sections become 10 rows. Export and Import join. API keys and Connected apps join. Profile and Account join.</li>
-      <li>"Sessions" becomes "Devices". "Available offline" becomes "Offline".</li>
-      <li>Delete account moves to the bottom of Profile and email. It is not on the main list.</li>
-      <li>Billing row shows only when the server has a billing portal (same rule as now).</li></ol></figcaption>
-  </figure>
-
-  <figure>
-    <div class="frame">
-      <div class="sb"><span>11:37</span><span>5G 80%</span></div>
-      <div class="bar"><span class="ib"><svg><use href="#i-back"/></svg></span><span class="title">Appearance</span></div>
-      <div class="content">
-        <div class="grp" style="margin-top:0">Mode</div>
-        <div class="seg"><span class="on"><svg><use href="#i-screen"/></svg>System</span><span><svg><use href="#i-sun"/></svg>Light</span><span><svg><use href="#i-moon"/></svg>Dark</span></div>
-        <p class="sub" style="margin-top:6px">System follows your device.</p>
-        <div class="grp">Theme</div>
-        <ul class="slist">
-          <li><span class="nm">Default</span><span class="ic" style="color:var(--strong)"><svg><use href="#i-check"/></svg></span></li>
-          <li><span class="nm">Nord</span></li>
-          <li><span class="nm">Solarized</span></li>
-          <li><span class="nm">Tokyo Night</span></li>
-          <li><span class="nm v">8 more</span><span class="chev"><svg><use href="#i-down"/></svg></span></li>
-        </ul>
-        <div class="actions"><span class="btn sec"><svg><use href="#i-ul"/></svg>Import theme file</span></div>
-      </div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">C2</span>Appearance</b>
-      <ol><li>Title appears once, in the bar.</li>
-      <li>One helper line. Sync detail is removed from view. The choice still saves to the account.</li>
-      <li>Imported themes show in the same list with a Delete action in their row menu.</li></ol></figcaption>
-  </figure>
-
-  <figure>
-    <div class="frame">
-      <div class="sb"><span>11:37</span><span>5G 80%</span></div>
-      <div class="bar"><span class="ib"><svg><use href="#i-back"/></svg></span><span class="title">Offline</span></div>
-      <div class="content">
-        <p class="sub" style="margin-bottom:12px">Notes are always on this device. Choose what else to keep.</p>
-        <ul class="slist">
-          <li><span class="two">Images<small>Uses more space</small></span><span class="sw on"></span></li>
-          <li><span class="two">Older versions<small>Uses more space</small></span><span class="sw"></span></li>
-        </ul>
-        <div class="grp">This device</div>
-        <div class="meter"><i></i></div>
-        <p class="sub">120 MB used</p>
-        <div class="grp" style="margin-top:28px">If no image is added yet</div>
-        <ul class="slist">
-          <li><span class="two" style="opacity:.55">Images<small>No images yet</small></span><span class="sw off-dis"></span></li>
-        </ul>
-      </div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">C3</span>Offline</b>
-      <ol><li>Switches, not checkboxes. Whole row is the target.</li>
-      <li>Off state reason is in the row: "No images yet".</li>
-      <li>Error: "Can't read offline settings. Try again." with a Try again button.</li></ol></figcaption>
-  </figure>
-
-  <figure>
-    <div class="frame">
-      <div class="sb"><span>11:37</span><span>5G 80%</span></div>
-      <div class="bar"><span class="ib"><svg><use href="#i-back"/></svg></span><span class="title">Devices</span></div>
-      <div class="content">
-        <p class="sub" style="margin-bottom:12px">Signed in to your account.</p>
-        <ul class="slist">
-          <li><span class="ic"><svg><use href="#i-phone"/></svg></span><span class="two">iPhone, Safari<small>This device</small></span></li>
-          <li><span class="ic"><svg><use href="#i-screen"/></svg></span><span class="two">Mac, Firefox<small>Active 2 h ago</small></span><span class="btn sec sm">Sign out</span></li>
-          <li><span class="ic"><svg><use href="#i-screen"/></svg></span><span class="two">Linux, Chrome<small>Active 9 d ago</small></span><span class="btn sec sm">Sign out</span></li>
-        </ul>
-        <div class="actions" style="margin-top:16px"><span class="btn dangerline">Sign out all other devices</span></div>
-      </div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">C4</span>Devices</b>
-      <ol><li>Each row has its own visible Sign out button.</li>
-      <li>Bulk action is outlined red, with a confirm step.</li></ol></figcaption>
-  </figure>
-
-  <figure>
-    <div class="frame">
-      <div class="sb"><span>11:37</span><span>5G 80%</span></div>
-      <div class="bar"><span class="ib"><svg><use href="#i-back"/></svg></span><span class="title">Profile and email</span></div>
-      <div class="content">
-        <div class="grp" style="margin-top:0">Name</div>
-        <div class="field" style="color:var(--strong)">Bhushan</div>
-        <div class="actions"><span class="btn sec">Save name</span></div>
-        <div class="grp">Email</div>
-        <ul class="slist"><li><span class="nm">me@example.com</span><span class="v">Used to sign in</span></li></ul>
-        <div class="grp">Plan</div>
-        <ul class="slist"><li><span class="nm">Free trial</span><span class="v">12 days left</span></li></ul>
-        <div class="grp" style="margin-top:40px;color:var(--danger)">Delete account</div>
-        <p class="sub" style="margin-bottom:8px">Deletes your account and all notes. Export first.</p>
-        <span class="btn dangerline">Delete account</span>
-      </div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">C5</span>Profile and email</b>
-      <ol><li>Save is outlined: this page is a form, the main job is editing.</li>
-      <li>Delete is at the bottom, red outline, opens the existing confirm dialog.</li></ol></figcaption>
-  </figure>
-
-  <figure>
-    <div class="frame">
-      <div class="sb"><span>11:37</span><span>5G 80%</span></div>
-      <div class="bar"><span class="ib"><svg><use href="#i-back"/></svg></span><span class="title">Templates</span></div>
-      <div class="content">
-        <p class="sub" style="margin-bottom:12px">Notes in this folder show in "Use template".</p>
-        <div class="destrow" style="margin-top:0"><span class="lb">Folder</span><span class="v">Templates</span><span class="btn sec sm">Change</span></div>
-        <div class="grp">3 templates</div>
-        <ul class="list">
-          <li><span class="ic"><svg><use href="#i-tpl"/></svg></span><span class="nm">Meeting notes</span><span class="ic"><svg width="16" height="16"><use href="#i-chev"/></svg></span></li>
-          <li><span class="ic"><svg><use href="#i-tpl"/></svg></span><span class="nm">Weekly review</span><span class="ic"><svg width="16" height="16"><use href="#i-chev"/></svg></span></li>
-          <li><span class="ic"><svg><use href="#i-tpl"/></svg></span><span class="nm">Trip plan</span><span class="ic"><svg width="16" height="16"><use href="#i-chev"/></svg></span></li>
-        </ul>
-        <div class="actions"><span class="btn sec"><svg><use href="#i-plus"/></svg>New template</span></div>
-        <p class="sub" style="margin-top:14px">Applies to the Personal workspace.</p>
-      </div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">C6</span>Templates</b>
-      <ol><li>Same "Folder" row pattern as B2.</li>
-      <li>Workspace scope is one quiet line at the end, using its real name.</li>
-      <li>Daily notes page uses the same layout: Folder row, Name format row.</li></ol></figcaption>
-  </figure>
-
-  </div>
-</section>
-
-<!-- ============ D. EDITOR ============ -->
-<section class="group">
-  <h2>D. Editor, save status and recovery</h2>
-  <p class="lead">One status pill in the bar. Undo and Redo are arrow icon buttons with no visible text, first in the format bar. Draft recovery is a choice between two tabs, not two long stacked blocks.</p>
-  <div class="row">
-
-  <figure>
-    <div class="frame">
-      <div class="sb"><span>11:40</span><span>5G 80%</span></div>
-      <div class="bar">
-        <span class="ib"><svg><use href="#i-back"/></svg></span>
-        <span class="title" style="font-size:15px">Meeting 2026-10-26</span>
-        <span class="status"><span class="dot"></span>Saved</span>
-        <span class="ib"><svg><use href="#i-more"/></svg></span>
-      </div>
-      <div class="content doc">
-        <h1>Meeting 2026-10-26</h1>
-        <p>Attendees: Sam, Priya</p>
-        <p><b>Notes</b></p>
-        <p>Agreed on the new plan for the launch<span class="caret"></span></p>
-      </div>
-      <div class="toolbar">
-        <span class="ib ur" role="button" aria-label="Undo" title="Undo"><svg aria-hidden="true"><use href="#i-undo"/></svg></span>
-        <span class="ib ur ur-dis" role="button" aria-label="Redo" aria-disabled="true" title="Redo"><svg aria-hidden="true"><use href="#i-redo"/></svg></span>
-        <span class="div"></span>
-        <span class="ib"><svg><use href="#i-bold"/></svg></span>
-        <span class="ib"><svg><use href="#i-list"/></svg></span>
-        <span class="ib"><svg><use href="#i-check"/></svg></span>
-        <span class="ib"><svg><use href="#i-link"/></svg></span>
-        <span class="ib"><svg><use href="#i-img"/></svg></span>
-        <span class="ib"><svg><use href="#i-more"/></svg></span>
-      </div>
-      <div class="kbd"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">D1</span>Editor</b>
-      <ol><li>Status pill: one word or two. Tap opens D2.</li>
-      <li>Undo and Redo are arrow icons only, no text. 44 px targets. Screen readers say "Undo" and "Redo".</li><li>Redo is dimmed and inactive when there is nothing to redo. Spec: D6.</li>
-      <li>Bar sits on top of the keyboard. Other format buttons are 40 px. The bar scrolls sideways.</li></ol></figcaption>
-  </figure>
-
-  <figure>
-    <div class="frame">
-      <div class="sb"><span>11:41</span><span>No signal</span></div>
-      <div class="bar">
-        <span class="ib"><svg><use href="#i-back"/></svg></span>
-        <span class="title" style="font-size:15px">Meeting 2026-10-26</span>
-        <span class="status"><span class="dot off"></span>Offline</span>
-        <span class="ib"><svg><use href="#i-more"/></svg></span>
-      </div>
-      <div class="content doc"><h1>Meeting 2026-10-26</h1><p>Attendees: Sam, Priya</p></div>
-      <div class="scrim"></div>
-      <div class="sheet" style="top:400px">
-        <div class="grab"></div>
-        <div class="sh"><span class="st">Saved on this device</span><span class="ib"><svg><use href="#i-x"/></svg></span></div>
-        <div class="sbody">
-          <p style="margin:0 0 10px;color:var(--text)">No connection. Your changes are safe here and upload when you are online.</p>
-          <ul class="slist"><li><span class="nm">Last upload</span><span class="v">11:38</span></li><li><span class="nm">Waiting to upload</span><span class="v">2 changes</span></li></ul>
-        </div>
-        <div class="sfoot"><span class="btn sec full">Version history</span></div>
-      </div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">D2</span>Status details</b>
-      <ol><li>Detail lives here, not in the bar.</li>
-      <li>Full state list and copy: table E1.</li></ol></figcaption>
-  </figure>
-
-  <figure>
-    <div class="frame">
-      <div class="sb"><span>11:42</span><span>5G 80%</span></div>
-      <div class="bar">
-        <span class="ib"><svg><use href="#i-back"/></svg></span>
-        <span class="title" style="font-size:15px">Meeting 2026-10-26</span>
-      </div>
-      <div class="content">
-        <h3 class="pt" style="font-size:20px">Two versions of this note</h3>
-        <p class="sub">This note changed on another device. Choose which text to keep.</p>
-        <div class="tabs2"><span class="on">This device</span><span>Saved version</span></div>
-        <div class="cmp">
-          <div class="meta">Edited here, 11:31</div>
-          Attendees: Sam, Priya<br><br><b>Notes</b><br>Agreed on the <ins>new plan for the launch</ins>.<br><ins>Sam owns the budget.</ins>
-        </div>
-        <div class="notice info"><svg><use href="#i-info"/></svg><span>The other text is kept in Needs attention.</span></div>
-      </div>
-      <div class="sfoot" style="padding:10px 16px 18px;border-top:1px solid var(--subtle);display:flex;flex-direction:column;gap:8px">
-        <span class="btn pri full">Keep this device's text</span>
-        <span class="btn sec full">Use saved version</span>
-      </div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">D3</span>Recover a draft</b>
-      <ol><li>Tabs show one text at a time. Changed lines are marked.</li>
-      <li>Buttons say what happens. Safe default (keep local work) is filled.</li>
-      <li>Editing stays blocked until a choice. Same rule as now.</li></ol></figcaption>
-  </figure>
-
-  <figure>
-    <div class="frame">
-      <div class="sb"><span>11:42</span><span>5G 80%</span></div>
-      <div class="bar"><span class="ib"><svg><use href="#i-back"/></svg></span><span class="title" style="font-size:15px">Meeting 2026-10-26</span></div>
-      <div class="content">
-        <h3 class="pt" style="font-size:20px">Two versions of this note</h3>
-        <p class="sub">This note changed on another device. Choose which text to keep.</p>
-        <div class="tabs2"><span>This device</span><span class="on">Saved version</span></div>
-        <div class="cmp"><div class="meta">Saved from Mac, 11:35</div>Attendees: Sam, Priya<br><br><b>Notes</b><br>Agreed on the <del>old</del> plan.</div>
-        <div class="notice problem"><svg><use href="#i-alert"/></svg><span>Could not keep this text. Try again.</span></div>
-      </div>
-      <div class="sfoot" style="padding:10px 16px 18px;border-top:1px solid var(--subtle);display:flex;flex-direction:column;gap:8px">
-        <span class="btn pri full">Keep this device's text</span>
-        <span class="btn sec full">Use saved version</span>
-      </div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">D4</span>Recovery failed</b>
-      <ol><li>Problem line above the buttons. Both buttons stay on, so the person can try again.</li>
-      <li>While working: both buttons off, filled one says "Keeping...".</li></ol></figcaption>
-  </figure>
-
-  <figure>
-    <div class="frame" style="background:#0d0d0d">
-      <div class="sb" style="color:#fff"><span>11:43</span><span>5G 80%</span></div>
-      <div class="bar" style="background:#0d0d0d;border-color:#222;color:#fff">
-        <span class="ib" style="color:#fff"><svg><use href="#i-x"/></svg></span><span class="title" style="color:#fff">whiteboard.jpg</span>
-        <span class="ib" style="color:#fff"><svg><use href="#i-more"/></svg></span>
-      </div>
-      <div class="content" style="display:flex;align-items:center;justify-content:center">
-        <div style="width:300px;height:220px;border-radius:6px;background:linear-gradient(135deg,#555,#888);display:flex;align-items:center;justify-content:center;color:#ddd"><svg width="40" height="40"><use href="#i-img"/></svg></div>
-      </div>
-      <div style="display:flex;gap:8px;padding:12px 16px 80px;justify-content:center">
-        <span class="btn sec" style="background:#222;color:#fff;border-color:#666;padding:0 14px" aria-label="Zoom out">&minus;</span>
-        <span class="btn sec" style="background:#222;color:#fff;border-color:#666;padding:0 14px" aria-label="Zoom in">+</span>
-        <span class="btn sec" style="background:#222;color:#f5817d;border-color:#f5817d"><svg><use href="#i-trash"/></svg>Remove</span>
-      </div>
-      <div class="toast" style="background:#f5f4f2;color:#191917"><span style="flex:1">Image removed from note.</span><span class="btn ghost" style="color:#191917">Undo</span></div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">D5</span>Image viewer</b>
-      <ol><li>Zoom buttons are icons with labels for screen readers. "Remove" has a visible label. No long tooltip.</li>
-      <li>Toast with Undo. The image file stays in the account, as now.</li>
-      <li>Changed image: "This image changed. Open it again." with Reopen.</li></ol></figcaption>
-  </figure>
-
-  </div>
-  <div class="spec" style="margin-top:28px">
-    <b><span class="id">D6</span>Undo and Redo icon buttons (prototype spec)</b>
-    <p style="margin:6px 0 10px">Curved arrow icons only. No visible "Undo" or "Redo" text in the editor. Light row, then dark row.</p>
-    <div class="frame " style="height:auto;border-width:0;border-radius:10px;padding:14px;background:transparent"><div class="urdemo"><div class="urcell"><div class="pad"><span class="urbtn" role="button" aria-label="Undo"><svg aria-hidden="true"><use href="#i-undo"/></svg></span><span class="urbtn" role="button" aria-label="Redo"><svg aria-hidden="true"><use href="#i-redo"/></svg></span></div>Both active</div><div class="urcell"><div class="pad"><span class="urbtn" role="button" aria-label="Undo"><svg aria-hidden="true"><use href="#i-undo"/></svg></span><span class="urbtn ur-dis" role="button" aria-label="Redo" aria-disabled="true"><svg aria-hidden="true"><use href="#i-redo"/></svg></span></div>Nothing to redo<br>(dimmed, inactive)</div><div class="urcell"><div class="pad"><span class="urbtn ur-dis" role="button" aria-label="Undo" aria-disabled="true"><svg aria-hidden="true"><use href="#i-undo"/></svg></span><span class="urbtn ur-dis" role="button" aria-label="Redo" aria-disabled="true"><svg aria-hidden="true"><use href="#i-redo"/></svg></span></div>Nothing to undo or redo</div><div class="urcell"><div class="pad"><span class="urbtn ring" role="button" aria-label="Undo"><svg aria-hidden="true"><use href="#i-undo"/></svg></span><span class="urbtn" role="button" aria-label="Redo"><svg aria-hidden="true"><use href="#i-redo"/></svg></span></div>Keyboard focus</div><div class="urcell"><div class="pad"><span class="urbtn press" role="button" aria-label="Undo"><svg aria-hidden="true"><use href="#i-undo"/></svg></span><span class="urbtn" role="button" aria-label="Redo"><svg aria-hidden="true"><use href="#i-redo"/></svg></span></div>Pressed (phone)</div><div class="urcell"><div class="pad" style="margin-bottom:26px"><span class="urbtn hov" role="button" aria-label="Undo"><svg aria-hidden="true"><use href="#i-undo"/></svg></span><span class="urbtn" role="button" aria-label="Redo"><svg aria-hidden="true"><use href="#i-redo"/></svg></span><span class="tipbox" style="top:62px;left:10px">Undo (Ctrl+Z)</span></div>Desktop hover tooltip</div></div></div>
-    <div style="background:#191919;border-radius:10px;margin-top:8px"><div class="frame dark" style="height:auto;border-width:0;border-radius:10px;padding:14px;background:transparent"><div class="urdemo"><div class="urcell"><div class="pad"><span class="urbtn" role="button" aria-label="Undo"><svg aria-hidden="true"><use href="#i-undo"/></svg></span><span class="urbtn" role="button" aria-label="Redo"><svg aria-hidden="true"><use href="#i-redo"/></svg></span></div>Both active</div><div class="urcell"><div class="pad"><span class="urbtn" role="button" aria-label="Undo"><svg aria-hidden="true"><use href="#i-undo"/></svg></span><span class="urbtn ur-dis" role="button" aria-label="Redo" aria-disabled="true"><svg aria-hidden="true"><use href="#i-redo"/></svg></span></div>Nothing to redo<br>(dimmed, inactive)</div><div class="urcell"><div class="pad"><span class="urbtn ur-dis" role="button" aria-label="Undo" aria-disabled="true"><svg aria-hidden="true"><use href="#i-undo"/></svg></span><span class="urbtn ur-dis" role="button" aria-label="Redo" aria-disabled="true"><svg aria-hidden="true"><use href="#i-redo"/></svg></span></div>Nothing to undo or redo</div><div class="urcell"><div class="pad"><span class="urbtn ring" role="button" aria-label="Undo"><svg aria-hidden="true"><use href="#i-undo"/></svg></span><span class="urbtn" role="button" aria-label="Redo"><svg aria-hidden="true"><use href="#i-redo"/></svg></span></div>Keyboard focus</div><div class="urcell"><div class="pad"><span class="urbtn press" role="button" aria-label="Undo"><svg aria-hidden="true"><use href="#i-undo"/></svg></span><span class="urbtn" role="button" aria-label="Redo"><svg aria-hidden="true"><use href="#i-redo"/></svg></span></div>Pressed (phone)</div><div class="urcell"><div class="pad" style="margin-bottom:26px"><span class="urbtn hov" role="button" aria-label="Undo"><svg aria-hidden="true"><use href="#i-undo"/></svg></span><span class="urbtn" role="button" aria-label="Redo"><svg aria-hidden="true"><use href="#i-redo"/></svg></span><span class="tipbox" style="top:62px;left:10px">Undo (Ctrl+Z)</span></div>Desktop hover tooltip</div></div></div></div>
-    <table style="margin-top:12px">
-      <tr><th>Rule</th><th>Value</th></tr>
-      <tr><td>Icon</td><td>Familiar curved arrow: Undo points left, Redo points right. 22 px glyph.</td></tr>
-      <tr><td>Touch target</td><td>44 x 44 px on phone and desktop. 4 px gap between the two buttons.</td></tr>
-      <tr><td>Accessible name</td><td>"Undo" and "Redo". The icon is hidden from screen readers.</td></tr>
-      <tr><td>Desktop tooltip</td><td>On hover and on keyboard focus: "Undo (Ctrl+Z)", "Redo (Ctrl+Shift+Z)". On Mac: Cmd.</td></tr>
-      <tr><td>Disabled</td><td>Muted colour at 40% opacity, no hover fill. It stays in place and stays focusable with aria-disabled, so the bar does not move.</td></tr>
-      <tr><td>Focus</td><td>The same 2 px focus ring as other controls.</td></tr>
-      <tr><td>Place</td><td>Phone: first two buttons of the format bar above the keyboard (D1). Desktop: editor top bar, left of the status pill (G4).</td></tr>
-      <tr><td>Not changed</td><td>The image toast keeps a text "Undo" action (D5). A toast action needs a word.</td></tr>
-    </table>
-  </div>
-</section>
-
-<!-- ============ E. STATES ============ -->
-<section class="group">
-  <h2>E. Note states, search, account notices</h2>
-  <div class="row">
-
-  <figure>
-    <div class="frame">
-      <div class="sb"><span>11:44</span><span>5G 80%</span></div>
-      <div class="bar"><span class="ib"><svg><use href="#i-back"/></svg></span><span class="title"></span></div>
-      <div class="content">
-        <div class="empty" style="padding-top:110px">
-          <span class="eic"><svg width="24" height="24"><use href="#i-trash"/></svg></span>
-          <h4>Weight is in Trash</h4>
-          <p>Restore it to edit.</p>
-          <div class="actions"><span class="btn pri">Restore note</span><span class="btn sec">All notes</span></div>
-        </div>
-      </div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">E2</span>Note in Trash</b>
-      <ol><li>Offline: "Deleted on this device. Uploads when online." Restore still works.</li></ol></figcaption>
-  </figure>
-
-  <figure>
-    <div class="frame">
-      <div class="sb"><span>11:44</span><span>5G 80%</span></div>
-      <div class="bar"><span class="ib"><svg><use href="#i-back"/></svg></span><span class="title"></span></div>
-      <div class="content">
-        <div class="empty" style="padding-top:110px">
-          <span class="eic"><svg width="24" height="24"><use href="#i-alert"/></svg></span>
-          <h4>This note was deleted</h4>
-          <p>It is gone for good. Unsaved text from this device is in Needs attention.</p>
-          <div class="actions"><span class="btn pri">Open Needs attention</span></div>
-          <div class="actions"><span class="btn ghost">All notes</span></div>
-        </div>
-        <div style="border-top:1px dashed var(--subtle);margin-top:40px;padding-top:12px">
-          <p class="sub"><b>Not found:</b> "Note not found. Check the link." [All notes]</p>
-          <p class="sub"><b>Unavailable:</b> "Can't open this note now." [Try again]</p>
-        </div>
-      </div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">E3</span>Deleted for good, not found</b>
-      <ol><li>"Needs attention" button only shows when local text exists.</li></ol></figcaption>
-  </figure>
-
-  <figure>
-    <div class="frame">
-      <div class="sb"><span>11:45</span><span>No signal</span></div>
-      <div class="bar" style="gap:8px;padding:0 8px">
-        <div class="field" style="flex:1;color:var(--strong)"><svg><use href="#i-search"/></svg>launch</div>
-        <span class="btn ghost sm">Cancel</span>
-      </div>
-      <div class="content">
-        <p class="sub" style="margin-bottom:6px">In Personal · Offline, results from this device</p>
-        <div class="grp">Notes</div>
-        <ul class="list">
-          <li class="hl"><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">Meeting 2026-10-26<br><span class="mt">...new plan for the <b>launch</b>.</span></span></li>
-          <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">Q4 roadmap<br><span class="mt">Projects · <b>launch</b> in March</span></span></li>
-        </ul>
-        <div class="grp">Actions</div>
-        <ul class="list">
-          <li><span class="ic"><svg><use href="#i-plus"/></svg></span><span class="nm">New note "launch"</span></li>
-        </ul>
-        <div style="border-top:1px dashed var(--subtle);margin-top:24px;padding-top:12px">
-          <p class="sub"><b>Waiting:</b> "Searching..."</p>
-          <p class="sub"><b>Nothing:</b> "No results for "launch"."</p>
-        </div>
-      </div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">E4</span>Search</b>
-      <ol><li>Scope is one quiet line with the workspace name. No "Search in:" sentence.</li>
-      <li>Offline note joins the same line.</li></ol></figcaption>
-  </figure>
-
-  <figure>
-    <div class="frame">
-      <div class="sb"><span>11:46</span><span>5G 80%</span></div>
-      <div class="bar">
-        <span class="ib"><svg><use href="#i-menu"/></svg></span><span class="title"></span>
-        <span class="ib"><svg><use href="#i-search"/></svg></span><span class="ib"><span class="avatar">M</span></span>
-      </div>
-      <div class="trial"><span class="t">Trial: 12 days left</span><span class="btn sec sm">Upgrade</span></div>
-      <div class="content">
-        <h3 class="pt">All notes</h3>
-        <p class="sub">28 notes</p>
-        <div class="actions pair"><span class="btn pri"><svg><use href="#i-plus"/></svg>New note</span><span class="btn sec"><svg><use href="#i-tpl"/></svg>Use template</span></div>
-        <div style="border-top:1px dashed var(--subtle);margin-top:20px;padding-top:12px">
-          <div class="grp" style="margin-top:0">Trial ended (replaces the strip)</div>
-          <div class="notice problem"><svg><use href="#i-alert"/></svg><span>Your trial ended. No charge was made.</span><span class="btn sec sm na">Upgrade</span></div>
-          <div class="grp">Device full (toast text)</div>
-          <p class="sub">"Note not made. This device is full."</p>
-        </div>
-      </div>
-      <div class="toast"><span style="flex:1">Could not make the note.</span><span class="btn ghost">Try again</span></div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">E5</span>Trial and create errors</b>
-      <ol><li>Trial is one strip, 40 px, with one button.</li>
-      <li>Create errors use a toast with Try again, not a block in the page.</li></ol></figcaption>
-  </figure>
-
-  <figure>
-    <div class="frame">
-      <div class="sb"><span>11:47</span><span>5G 80%</span></div>
-      <div class="content" style="display:flex;flex-direction:column;justify-content:center;text-align:center">
-        <div class="eic" style="margin:0 auto 12px;width:56px;height:56px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;color:var(--ok)"><svg width="28" height="28"><use href="#i-check"/></svg></div>
-        <h3 class="pt" style="font-size:22px">Email verified</h3>
-        <p class="sub" style="margin:4px 0 20px">me@example.com</p>
-        <span class="btn pri full">Continue</span>
-        <div style="border-top:1px dashed var(--subtle);margin-top:40px;padding-top:12px;text-align:left">
-          <p class="sub"><b>Link expired:</b> "This link no longer works." [Get a new link]</p>
-          <p class="sub"><b>Sign up closed:</b> "New accounts are closed." [Sign in]</p>
-        </div>
-      </div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">E6</span>Sign up result</b>
-      <ol><li>One button. No second link next to it.</li></ol></figcaption>
-  </figure>
-
-  </div>
-
-  <div class="spec" style="margin-top:28px">
-    <b><span class="id">E1</span>Save status: pill (D1), menu footer (A3) and details sheet (D2)</b>
-    <table>
-      <tr><th>State</th><th>Pill</th><th>Menu footer</th><th>Details sheet line</th></tr>
-      <tr><td>Saved to server</td><td><span class="c-ok">● Saved</span></td><td>All changes saved</td><td>Saved to your account.</td></tr>
-      <tr><td>Typing, not yet on device</td><td>○ Saving</td><td>Saving...</td><td>Saving on this device.</td></tr>
-      <tr><td>On device, upload pending</td><td>○ Saving</td><td>Uploading...</td><td>Saved on this device. Uploading now.</td></tr>
-      <tr><td>Offline</td><td>● Offline</td><td>Offline. Saved on this device.</td><td>No connection. Your changes are safe here and upload when you are online.</td></tr>
-      <tr><td>Monthly limit</td><td>● Paused</td><td>Upload paused until next month</td><td>Monthly upload limit reached. Changes stay on this device.</td></tr>
-      <tr><td>Signed out / other account</td><td>● Paused</td><td>Sign in to upload</td><td>You are signed out. Changes stay on this device. [Sign in]</td></tr>
-      <tr><td>Server needs update</td><td>● Paused</td><td>Waiting for server update</td><td>The server must update first. Changes stay on this device.</td></tr>
-      <tr><td>Local write failed</td><td><span class="c-bad">● Not saved</span></td><td><span class="c-bad">Not saved</span></td><td>Could not save on this device. Copy your text, then free space. [Copy text] [Try again]</td></tr>
-    </table>
-  </div>
-</section>
-
-<!-- ============ F. DARK ============ -->
-<section class="group">
-  <h2>F. Dark mode, key screens</h2>
-  <p class="lead">Same layout. Filled button turns light on dark. Outlined buttons keep a visible edge. Use the toggle at the top to see every frame in dark.</p>
-  <div class="row">
-
-  <figure>
-    <div class="frame dark">
-      <div class="sb"><span>11:35</span><span>5G 80%</span></div>
-      <div class="bar"><span class="ib"><svg><use href="#i-menu"/></svg></span><span class="title"></span><span class="ib"><svg><use href="#i-search"/></svg></span><span class="ib"><span class="avatar">M</span></span></div>
-      <div class="content">
-        <h3 class="pt">All notes</h3><p class="sub">28 notes</p>
-        <div class="actions pair"><span class="btn pri"><svg><use href="#i-plus"/></svg>New note</span><span class="btn sec"><svg><use href="#i-tpl"/></svg>Use template</span></div>
-        <div class="tip"><span class="t">Type <kbd>[[</kbd> to link a note.</span><span class="btn ghost sm">Next</span><span class="ib"><svg><use href="#i-x"/></svg></span></div>
-        <div class="grp">Today</div>
-        <ul class="list">
-          <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">2026-10-26</span><span class="mt">22 min</span></li>
-          <li class="focusring"><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">Shared artefacts</span><span class="mt">4 h</span></li>
-          <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">Weight</span><span class="mt">14 h</span></li>
-        </ul>
-      </div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">F1</span>All notes, dark</b><ol><li>Keyboard focus ring shown on a row.</li></ol></figcaption>
-  </figure>
-
-  <figure>
-    <div class="frame dark">
-      <div class="sb"><span>11:36</span><span>5G 80%</span></div>
-      <div class="bar"><span class="ib"><svg><use href="#i-menu"/></svg></span><span class="title"></span></div>
-      <div class="content"></div>
-      <div class="scrim"></div>
-      <div class="sheet" style="top:60px">
-        <div class="grab"></div>
-        <div class="sh"><span class="ib"><svg><use href="#i-back"/></svg></span><span class="st">Meeting notes</span><span class="ib"><svg><use href="#i-x"/></svg></span></div>
-        <div class="sbody">
-          <div class="preview"># Meeting {{date}}
-
-Attendees:
--
-
-## Notes
-
-## Actions
-- [ ] </div>
-          <div class="destrow"><span class="lb">Folder</span><span class="v">Projects</span><span class="btn sec sm">Change</span></div>
-        </div>
-        <div class="sfoot"><span class="btn pri full">Create note</span></div>
-      </div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">F2</span>Template preview, dark</b><ol><li>Opened from the Projects folder page.</li></ol></figcaption>
-  </figure>
-
-  <figure>
-    <div class="frame dark">
-      <div class="sb"><span>11:37</span><span>5G 80%</span></div>
-      <div class="bar"><span class="ib"><svg><use href="#i-back"/></svg></span><span class="title">Settings</span></div>
-      <div class="content" style="background:var(--surface)">
-        <div class="grp" style="margin-top:0">General</div>
-        <ul class="slist">
-          <li><span class="ic"><svg><use href="#i-sun"/></svg></span><span class="nm">Appearance</span><span class="v">Dark</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
-          <li><span class="ic"><svg><use href="#i-spell"/></svg></span><span class="nm">Spelling</span><span class="v">On</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
-        </ul>
-        <div class="grp">Notes</div>
-        <ul class="slist">
-          <li><span class="ic"><svg><use href="#i-cal"/></svg></span><span class="nm">Daily notes</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
-          <li><span class="ic"><svg><use href="#i-tpl"/></svg></span><span class="nm">Templates</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
-          <li><span class="ic"><svg><use href="#i-phone"/></svg></span><span class="nm">Offline</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
-          <li><span class="ic"><svg><use href="#i-dl"/></svg></span><span class="nm">Export and import</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
-        </ul>
-        <div class="grp">Account</div>
-        <ul class="slist">
-          <li><span class="ic"><svg><use href="#i-user"/></svg></span><span class="nm">Profile and email</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
-          <li><span class="ic"><svg><use href="#i-screen"/></svg></span><span class="nm">Devices</span><span class="v">3</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
-          <li><span class="ic"><svg><use href="#i-key"/></svg></span><span class="nm">API keys and apps</span><span class="chev"><svg><use href="#i-chev"/></svg></span></li>
-        </ul>
-        <ul class="slist" style="margin-top:14px"><li><span class="ic"><svg><use href="#i-out"/></svg></span><span class="nm">Sign out</span></li></ul>
-      </div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">F3</span>Settings, dark</b><ol><li>No Billing row: this server has no billing portal.</li></ol></figcaption>
-  </figure>
-
-  <figure>
-    <div class="frame dark">
-      <div class="sb"><span>11:42</span><span>5G 80%</span></div>
-      <div class="bar"><span class="ib"><svg><use href="#i-back"/></svg></span><span class="title" style="font-size:15px">Meeting 2026-10-26</span></div>
-      <div class="content">
-        <h3 class="pt" style="font-size:20px">Two versions of this note</h3>
-        <p class="sub">This note changed on another device. Choose which text to keep.</p>
-        <div class="tabs2"><span class="on">This device</span><span>Saved version</span></div>
-        <div class="cmp"><div class="meta">Edited here, 11:31</div>Agreed on the <ins>new plan for the launch</ins>.<br><ins>Sam owns the budget.</ins></div>
-        <div class="notice info"><svg><use href="#i-info"/></svg><span>The other text is kept in Needs attention.</span></div>
-      </div>
-      <div style="padding:10px 16px 18px;border-top:1px solid var(--subtle);display:flex;flex-direction:column;gap:8px">
-        <span class="btn pri full">Keep this device's text</span><span class="btn sec full">Use saved version</span>
-      </div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">F4</span>Recovery, dark</b></figcaption>
-  </figure>
-
-  </div>
-</section>
-
-<!-- ============ G. DESKTOP ============ -->
-<section class="group">
-  <h2>G. Desktop (1180 px and wider)</h2>
-  <p class="lead">Navigation stays open on the left. Sheets become centred dialogs. Settings shows its list and the open page side by side.</p>
-
-  <figure class="wide" style="margin-bottom:28px">
-    <div class="frame desk">
-      <div class="dwrap">
-        <div class="side">
-          <div class="ws"><span class="wsi">P</span><span class="wsn">Personal</span><span class="ib" style="width:32px;height:32px"><svg style="width:16px;height:16px"><use href="#i-down"/></svg></span></div>
-          <div style="padding:8px;flex:1">
-            <div class="field" style="height:34px;margin-bottom:8px;font-size:13px"><svg style="width:16px;height:16px"><use href="#i-search"/></svg>Search<span style="flex:1"></span><code>Ctrl K</code></div>
-            <ul class="list">
-              <li class="sel"><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">All notes</span></li>
-              <li><span class="ic"><svg><use href="#i-cal"/></svg></span><span class="nm">Today's note</span></li>
-              <li><span class="ic"><svg><use href="#i-bell"/></svg></span><span class="nm">Needs attention</span><span class="badge">1</span></li>
-              <li><span class="ic"><svg><use href="#i-trash"/></svg></span><span class="nm">Trash</span></li>
-            </ul>
-            <div class="grp" style="display:flex;align-items:center;padding-left:10px">Folders<span style="flex:1"></span><span class="ib" style="width:28px;height:28px"><svg style="width:15px;height:15px"><use href="#i-plus"/></svg></span></div>
-            <ul class="list">
-              <li><span class="ic"><svg><use href="#i-folder"/></svg></span><span class="nm">Projects</span></li>
-              <li><span class="ic"><svg><use href="#i-folder"/></svg></span><span class="nm">Templates</span></li>
-              <li><span class="ic"><svg><use href="#i-folder"/></svg></span><span class="nm">Travel</span></li>
-            </ul>
-            <ul class="list" style="margin-top:8px"><li><span class="ic"><svg><use href="#i-gear"/></svg></span><span class="nm">Settings</span></li></ul>
-          </div>
-          <div class="foot"><span class="dot"></span>All changes saved</div>
-        </div>
-        <div class="dmain">
-          <div class="measure">
-            <div style="display:flex;align-items:flex-end;gap:12px">
-              <div style="flex:1"><h3 class="pt">All notes</h3><p class="sub">28 notes</p></div>
-              <span class="btn sec"><svg><use href="#i-tpl"/></svg>Use template</span>
-              <span class="btn pri"><svg><use href="#i-plus"/></svg>New note</span>
-            </div>
-            <div class="tip" style="margin-top:16px"><span class="t">Tip: Press <kbd>Ctrl K</kbd> to search or run a command.</span><span class="btn ghost sm">Next</span><span class="ib"><svg><use href="#i-x"/></svg></span></div>
-            <div class="grp">Today</div>
-            <ul class="list">
-              <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">2026-10-26</span><span class="mt">22 min ago</span></li>
-              <li class="hl"><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">Shared artefacts</span><span class="mt">4 hours ago</span></li>
-              <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">Weight</span><span class="mt">14 hours ago</span></li>
-            </ul>
-            <div class="grp">Yesterday</div>
-            <ul class="list">
-              <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">2026-10-25</span><span class="mt">24 hours ago</span></li>
-              <li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">Trip plan <span class="mt">· Travel</span></span><span class="mt">1 day ago</span></li>
-            </ul>
-          </div>
-        </div>
-      </div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">G1</span>All notes, desktop</b> Buttons move to the right of the title. Filled button is last, nearest the reading edge.</figcaption>
-  </figure>
-
-  <figure class="wide" style="margin-bottom:28px">
-    <div class="frame desk">
-      <div class="dwrap">
-        <div class="side" style="opacity:.6"><div class="ws"><span class="wsi">P</span><span class="wsn">Personal</span></div></div>
-        <div class="dmain"><h3 class="pt">All notes</h3></div>
-      </div>
-      <div class="scrim"></div>
-      <div class="dlg">
-        <div class="dh"><span class="st">New note from template</span><span class="ib"><svg><use href="#i-x"/></svg></span></div>
-        <div class="db">
-          <div style="width:270px;border-right:1px solid var(--subtle);padding:12px">
-            <div class="field" style="height:36px;font-size:13px"><svg style="width:16px;height:16px"><use href="#i-search"/></svg>Search templates</div>
-            <ul class="list" style="margin-top:8px">
-              <li class="sel"><span class="ic"><svg><use href="#i-tpl"/></svg></span><span class="nm">Meeting notes</span></li>
-              <li><span class="ic"><svg><use href="#i-tpl"/></svg></span><span class="nm">Weekly review</span></li>
-              <li><span class="ic"><svg><use href="#i-tpl"/></svg></span><span class="nm">Trip plan</span></li>
-            </ul>
-          </div>
-          <div style="flex:1;padding:12px 16px">
-            <div class="preview" style="max-height:220px"># Meeting {{date}}
-
-Attendees:
--
-
-## Notes
-
-## Actions
-- [ ] </div>
-            <p class="sub" style="margin-top:6px">{{date}} fills in when you create the note.</p>
-          </div>
-        </div>
-        <div class="df">
-          <span class="lb sub">Folder</span><span style="font-weight:600;color:var(--strong)">No folder</span><span class="btn sec sm">Change</span>
-          <span style="flex:1"></span>
-          <span class="btn ghost">Cancel</span><span class="btn pri">Create note</span>
-        </div>
-      </div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">G2</span>Template dialog, desktop</b> List and preview side by side. Arrow keys move the list. Enter creates.</figcaption>
-  </figure>
-
-  <figure class="wide" style="margin-bottom:28px">
-    <div class="frame desk">
-      <div class="dwrap">
-        <div class="side">
-          <div class="ws"><span class="ib" style="width:32px;height:32px"><svg style="width:18px;height:18px"><use href="#i-back"/></svg></span><span class="wsn">Settings</span></div>
-          <div style="padding:8px">
-            <div class="grp" style="padding-left:10px;margin-top:4px">General</div>
-            <ul class="list"><li class="sel"><span class="nm">Appearance</span></li><li><span class="nm">Spelling</span></li></ul>
-            <div class="grp" style="padding-left:10px">Notes</div>
-            <ul class="list"><li><span class="nm">Daily notes</span></li><li><span class="nm">Templates</span></li><li><span class="nm">Offline</span></li><li><span class="nm">Export and import</span></li></ul>
-            <div class="grp" style="padding-left:10px">Account</div>
-            <ul class="list"><li><span class="nm">Profile and email</span></li><li><span class="nm">Plan and billing</span></li><li><span class="nm">Devices</span></li><li><span class="nm">API keys and apps</span></li><li><span class="nm">Sign out</span></li></ul>
-          </div>
-        </div>
-        <div class="dmain">
-          <div class="measure" style="max-width:560px;margin:0">
-            <h3 class="pt">Appearance</h3>
-            <div class="grp">Mode</div>
-            <div class="seg" style="max-width:380px"><span><svg><use href="#i-screen"/></svg>System</span><span><svg><use href="#i-sun"/></svg>Light</span><span class="on"><svg><use href="#i-moon"/></svg>Dark</span></div>
-            <p class="sub" style="margin-top:6px">System follows your device.</p>
-            <div class="grp">Theme</div>
-            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
-              <div style="border:2px solid var(--strong);border-radius:10px;padding:8px;font-weight:600;color:var(--strong)"><div style="height:44px;border-radius:6px;background:linear-gradient(90deg,#fff 50%,#191919 50%);border:1px solid var(--subtle);margin-bottom:6px"></div>Default</div>
-              <div style="border:1px solid var(--subtle);border-radius:10px;padding:8px;color:var(--strong)"><div style="height:44px;border-radius:6px;background:linear-gradient(90deg,#eceff4 50%,#2e3440 50%);margin-bottom:6px"></div>Nord</div>
-              <div style="border:1px solid var(--subtle);border-radius:10px;padding:8px;color:var(--strong)"><div style="height:44px;border-radius:6px;background:linear-gradient(90deg,#fdf6e3 50%,#002b36 50%);margin-bottom:6px"></div>Solarized</div>
-              <div style="border:1px solid var(--subtle);border-radius:10px;padding:8px;color:var(--strong)"><div style="height:44px;border-radius:6px;background:linear-gradient(90deg,#e1e2e7 50%,#1a1b26 50%);margin-bottom:6px"></div>Tokyo Night</div>
-            </div>
-            <div class="actions" style="margin-top:14px"><span class="btn sec"><svg><use href="#i-ul"/></svg>Import theme file</span></div>
-          </div>
-        </div>
-      </div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">G3</span>Settings, desktop</b> Left list replaces the app menu while in Settings. Back returns to notes. Each page has its own address, so links and the browser Back button work.</figcaption>
-  </figure>
-
-  <figure class="wide">
-    <div class="frame desk">
-      <div class="dwrap">
-        <div class="side">
-          <div class="ws"><span class="wsi">P</span><span class="wsn">Personal</span></div>
-          <div style="padding:8px;flex:1"><ul class="list"><li><span class="ic"><svg><use href="#i-file"/></svg></span><span class="nm">All notes</span></li><li><span class="ic"><svg><use href="#i-cal"/></svg></span><span class="nm">Today's note</span></li></ul></div>
-          <div class="foot"><span class="dot pend"></span>Uploading...</div>
-        </div>
-        <div style="flex:1;display:flex;flex-direction:column;min-width:0">
-          <div class="bar" style="padding:0 12px">
-            <span class="sub" style="padding-left:6px">Projects /</span><span class="title" style="font-size:15px">Meeting 2026-10-26</span>
-            <span style="position:relative;display:inline-flex"><span class="ib hl" role="button" aria-label="Undo" title="Undo (Ctrl+Z)" style="background:var(--hover)"><svg aria-hidden="true"><use href="#i-undo"/></svg></span><span class="tipbox" style="top:50px;left:50%;transform:translateX(-50%)">Undo (Ctrl+Z)</span></span><span class="ib ur-dis" role="button" aria-label="Redo" aria-disabled="true" title="Redo (Ctrl+Shift+Z)"><svg aria-hidden="true"><use href="#i-redo"/></svg></span>
-            <span class="status"><span class="dot pend"></span>Saving</span>
-            <span class="ib"><svg><use href="#i-more"/></svg></span>
-          </div>
-          <div class="dmain doc"><div class="measure"><h1>Meeting 2026-10-26</h1><p>Attendees: Sam, Priya</p><p><b>Notes</b></p><p>Agreed on the new plan for the launch<span class="caret"></span></p></div></div>
-        </div>
-      </div>
-      <span class="tag">PROTOTYPE</span>
-    </div>
-    <figcaption><b><span class="id">G4</span>Editor, desktop</b> Undo and Redo are icon buttons in the bar. Hover or keyboard focus shows a tooltip with the name and shortcut. Redo is dimmed here because there is nothing to redo. Format tools appear on text selection and from the "..." menu. Status pill same as phone.</figcaption>
-  </figure>
-</section>
-
+<div class="hero"><span class="proto">PROTOTYPE FOR OWNER APPROVAL</span><h1>Redesign of the UI shipped in v0.22.0</h1><p>Mobile first, with desktop, light and dark. 107 screens across 6 pages. Every screen uses the tokens of the current Default theme. No app code is changed. Implementation starts only after approval.</p></div><section class="sec" id="pages"><h2>Pages</h2><p class="lead">Open a page. The switch at the top shows every frame in dark mode.</p><div class="toc"><a href="01-notes.html"><b>Notes and navigation</b><span>All notes, tips, menu, account menu, calendar, folders. 14 screens, 1 journey.</span></a><a href="02-templates.html"><b>New from template</b><span>Pick, preview, choose folder, create. 17 screens, 1 journey.</span></a><a href="03-editor.html"><b>Editor</b><span>Undo and Redo icons, save status, version history, choose a version, images. 21 screens, 3 journeys.</span></a><a href="04-settings.html"><b>Settings</b><span>List, every page, confirmations, dark. 24 screens, 1 journey.</span></a><a href="05-states.html"><b>States and account</b><span>Note states, Needs attention, search, trial, sign up, limits. 22 screens.</span></a><a href="06-desktop.html"><b>Desktop</b><span>All notes, template dialog, editor, settings, choose a version, search, history. 9 screens.</span></a></div></section><section class="sec" id="changes"><h2>What changes</h2><p class="lead">Each problem in the shipped UI and its fix.</p><div class="beforeafter"><div>Shipped in v0.22.0</div><div>Proposed</div><div>&quot;28 notes. New notes go in this workspace root.&quot;</div><div>&quot;28 notes&quot;. The page title says where notes go.</div><div>Sidebar text &quot;Create in: Personal workspace root&quot;</div><div>Removed. Template preview has &quot;Folder: None [Change]&quot;.</div><div>&quot;From template&quot; as plain ghost text</div><div>&quot;Use template&quot;: outlined button with icon, same size as New note.</div><div>Tips card: heading, sentence, 4 indented lines, 2 buttons</div><div>One tip line, 6 words or less, one Close button.</div><div>&quot;Open today&#39;s note&quot; inside the tips</div><div>Fixed &quot;Today&#39;s note&quot; row in the menu.</div><div>Template dialog: chip buttons and a paragraph</div><div>Sheet with rows, then a real preview with field chips.</div><div>Settings: wrapping text links, then every section on one page</div><div>A list of rows. Each row opens one page with Back.</div><div>Repeated &quot;Appearance&quot; heading 3 times</div><div>Title once, in the bar.</div><div>Long settings paragraphs</div><div>One help line at most.</div><div>&quot;Undo&quot; and &quot;Redo&quot; as text buttons</div><div>Arrow icon buttons with names, tooltips and a dimmed state.</div><div>&quot;Recover local draft&quot;: two long text blocks</div><div>&quot;Choose a version&quot;: tabs on phone, columns on desktop.</div><div>&quot;Remove image&quot; with a long tooltip and status sentence</div><div>&quot;Remove from note&quot;, then a short message with Undo.</div><div>&quot;Search in: Personal. Results include note names and body text...&quot;</div><div>Quiet scope line: &quot;In Personal&quot;.</div><div>Trial: two long sentences</div><div>&quot;Trial: 12 days left [Upgrade]&quot;.</div><div>Sign-up: a paragraph about browsers, spam and limits</div><div>&quot;Check your email&quot;, two short lines, two clear buttons.</div></div></section><section class="sec" id="foundations"><h2>Design foundations</h2><p class="lead">The system every screen uses.</p><div class="cards"><div class="card"><h3>Typography</h3><p class="cl">System sans. Five sizes cover the app.</p><div class="typespec"><div><span class="m">Page title, phone<br>30 / 36, bold</span><span style="font-size:30px;font-weight:700;letter-spacing:-.02em">All notes</span></div><div><span class="m">Sheet and bar title<br>17 to 18 / 24, bold</span><span style="font-size:18px;font-weight:700">Use a template</span></div><div><span class="m">Body and rows<br>16 / 22</span><span style="font-size:16px">Shared artefacts</span></div><div><span class="m">Help and meta<br>14 / 20, muted</span><span style="font-size:14px;color:#67655f">System follows your device.</span></div><div><span class="m">Group label<br>13 / 18, semibold, muted</span><span style="font-size:13px;font-weight:600;color:#67655f">Today</span></div><div><span class="m">Note heading<br>28 / 34, bold</span><span style="font-size:28px;font-weight:700">Launch sync</span></div></div></div><div class="card"><h3>Rules</h3><p class="cl">Used on every screen.</p><table class="spec">
+<tr><th>Rule</th><th>How it shows</th></tr>
+<tr><td class="k">One main action</td><td>One filled button per screen. Confirm dialogs may use a red filled button.</td></tr>
+<tr><td class="k">Buttons look like buttons</td><td>Secondary buttons are outlined and most have an icon. Text-only buttons: Cancel, Discard, Show all.</td></tr>
+<tr><td class="k">Short words</td><td>One help line at most. No paragraphs in the app. No internal words like &quot;workspace root&quot; or &quot;checkpoint&quot;.</td></tr>
+<tr><td class="k">Progressive disclosure</td><td>Details sit one tap away: status sheet, settings pages, template preview.</td></tr>
+<tr><td class="k">Icons</td><td>One outline family, 24 px grid, 1.75 stroke, round ends. Icon-only buttons always have a name and, on desktop, a tooltip.</td></tr>
+<tr><td class="k">Data safety</td><td>The safe choice is the filled button. Delete and discard always ask first.</td></tr>
+</table></div><div class="card"><h3>Colour, light</h3><p class="cl">Default Light theme tokens, as shipped. No new colours.</p><div class="swatches"><div class="sw"><i style="background:#ffffff"></i><span><b>Background</b>#ffffff</span></div><div class="sw"><i style="background:#f7f7f5"></i><span><b>Surface</b>#f7f7f5</span></div><div class="sw"><i style="background:#f0efec"></i><span><b>Hover</b>#f0efec</span></div><div class="sw"><i style="background:#e8e7e3"></i><span><b>Active</b>#e8e7e3</span></div><div class="sw"><i style="background:#37352f"></i><span><b>Text</b>#37352f</span></div><div class="sw"><i style="background:#191917"></i><span><b>Strong</b>#191917</span></div><div class="sw"><i style="background:#67655f"></i><span><b>Muted</b>#67655f</span></div><div class="sw"><i style="background:#1a1917"></i><span><b>Fill (primary)</b>#1a1917</span></div><div class="sw"><i style="background:#1a63c4"></i><span><b>Link and focus</b>#1a63c4</span></div><div class="sw"><i style="background:#1c6f37"></i><span><b>Success</b>#1c6f37</span></div><div class="sw"><i style="background:#c02b3a"></i><span><b>Danger</b>#c02b3a</span></div><div class="sw"><i style="background:#85837d"></i><span><b>Border</b>#85837d</span></div></div></div><div class="card"><h3>Colour, dark</h3><p class="cl">Default Dark theme tokens, as shipped.</p><div class="swatches"><div class="sw"><i style="background:#191919"></i><span><b>Background</b>#191919</span></div><div class="sw"><i style="background:#141414"></i><span><b>Surface</b>#141414</span></div><div class="sw"><i style="background:#222222"></i><span><b>Card</b>#222222</span></div><div class="sw"><i style="background:#323232"></i><span><b>Active</b>#323232</span></div><div class="sw"><i style="background:#d0cfcc"></i><span><b>Text</b>#d0cfcc</span></div><div class="sw"><i style="background:#f5f4f2"></i><span><b>Strong</b>#f5f4f2</span></div><div class="sw"><i style="background:#a5a39e"></i><span><b>Muted</b>#a5a39e</span></div><div class="sw"><i style="background:#ececea"></i><span><b>Fill (primary)</b>#ececea</span></div><div class="sw"><i style="background:#6fa8f5"></i><span><b>Link</b>#6fa8f5</span></div><div class="sw"><i style="background:#59b871"></i><span><b>Success</b>#59b871</span></div><div class="sw"><i style="background:#f5817d"></i><span><b>Danger</b>#f5817d</span></div><div class="sw"><i style="background:#807e79"></i><span><b>Border</b>#807e79</span></div></div></div><div class="card"><h3>Spacing and sizes</h3><p class="cl">4 px grid.</p><div class="spacing"><div><i style="width:4px;height:4px"></i>4</div><div><i style="width:8px;height:8px"></i>8</div><div><i style="width:12px;height:12px"></i>12</div><div><i style="width:16px;height:16px"></i>16</div><div><i style="width:24px;height:24px"></i>24</div><div><i style="width:32px;height:32px"></i>32</div></div><div style="height:14px"></div><table class="spec">
+<tr><th>Element</th><th>Phone</th><th>Desktop</th></tr>
+<tr><td class="k">Button</td><td>48 px high, 12 px radius</td><td>40 px high, 10 px radius</td></tr>
+<tr><td class="k">Small button</td><td>36 px, inside a 52 px row</td><td>36 px</td></tr>
+<tr><td class="k">Icon button</td><td>44 x 44 px</td><td>36 x 36 px</td></tr>
+<tr><td class="k">Row</td><td>52 px, 64 px with a second line</td><td>36 to 44 px</td></tr>
+<tr><td class="k">Gutter</td><td>16 px</td><td>48 px, text column 680 px</td></tr>
+<tr><td class="k">Sheet and dialog</td><td>Bottom sheet, 22 px top radius</td><td>Centred dialog, 18 px radius</td></tr>
+<tr><td class="k">Focus</td><td colspan="2">2 px ring in the focus colour, 2 px offset, on every control</td></tr>
+<tr><td class="k">Contrast</td><td colspan="2">Theme tokens as shipped. Text and controls meet the contrast rules in theme.ts</td></tr>
+</table></div><div class="card"><h3>Icons</h3><p class="cl">One outline family.</p><div class="iconset"><div><svg class="i " aria-hidden="true"><use href="#i-menu"/></svg>menu</div><div><svg class="i " aria-hidden="true"><use href="#i-search"/></svg>search</div><div><svg class="i " aria-hidden="true"><use href="#i-plus"/></svg>plus</div><div><svg class="i " aria-hidden="true"><use href="#i-template"/></svg>template</div><div><svg class="i " aria-hidden="true"><use href="#i-file"/></svg>file</div><div><svg class="i " aria-hidden="true"><use href="#i-folder"/></svg>folder</div><div><svg class="i " aria-hidden="true"><use href="#i-folderplus"/></svg>folderplus</div><div><svg class="i " aria-hidden="true"><use href="#i-x"/></svg>x</div><div><svg class="i " aria-hidden="true"><use href="#i-back"/></svg>back</div><div><svg class="i " aria-hidden="true"><use href="#i-chev"/></svg>chev</div><div><svg class="i " aria-hidden="true"><use href="#i-down"/></svg>down</div><div><svg class="i " aria-hidden="true"><use href="#i-more"/></svg>more</div><div><svg class="i " aria-hidden="true"><use href="#i-calendar"/></svg>calendar</div><div><svg class="i " aria-hidden="true"><use href="#i-today"/></svg>today</div><div><svg class="i " aria-hidden="true"><use href="#i-trash"/></svg>trash</div><div><svg class="i " aria-hidden="true"><use href="#i-settings"/></svg>settings</div><div><svg class="i " aria-hidden="true"><use href="#i-alert"/></svg>alert</div><div><svg class="i " aria-hidden="true"><use href="#i-info"/></svg>info</div><div><svg class="i " aria-hidden="true"><use href="#i-warn"/></svg>warn</div><div><svg class="i " aria-hidden="true"><use href="#i-check"/></svg>check</div><div><svg class="i " aria-hidden="true"><use href="#i-checkcircle"/></svg>checkcircle</div><div><svg class="i " aria-hidden="true"><use href="#i-undo"/></svg>undo</div><div><svg class="i " aria-hidden="true"><use href="#i-redo"/></svg>redo</div><div><svg class="i " aria-hidden="true"><use href="#i-bold"/></svg>bold</div><div><svg class="i " aria-hidden="true"><use href="#i-italic"/></svg>italic</div><div><svg class="i " aria-hidden="true"><use href="#i-heading"/></svg>heading</div><div><svg class="i " aria-hidden="true"><use href="#i-list"/></svg>list</div><div><svg class="i " aria-hidden="true"><use href="#i-task"/></svg>task</div><div><svg class="i " aria-hidden="true"><use href="#i-link"/></svg>link</div><div><svg class="i " aria-hidden="true"><use href="#i-image"/></svg>image</div><div><svg class="i " aria-hidden="true"><use href="#i-code"/></svg>code</div><div><svg class="i " aria-hidden="true"><use href="#i-sun"/></svg>sun</div><div><svg class="i " aria-hidden="true"><use href="#i-moon"/></svg>moon</div><div><svg class="i " aria-hidden="true"><use href="#i-monitor"/></svg>monitor</div><div><svg class="i " aria-hidden="true"><use href="#i-phone"/></svg>phone</div><div><svg class="i " aria-hidden="true"><use href="#i-laptop"/></svg>laptop</div><div><svg class="i " aria-hidden="true"><use href="#i-pen"/></svg>pen</div><div><svg class="i " aria-hidden="true"><use href="#i-cloud"/></svg>cloud</div><div><svg class="i " aria-hidden="true"><use href="#i-cloudoff"/></svg>cloudoff</div><div><svg class="i " aria-hidden="true"><use href="#i-user"/></svg>user</div><div><svg class="i " aria-hidden="true"><use href="#i-key"/></svg>key</div><div><svg class="i " aria-hidden="true"><use href="#i-out"/></svg>out</div><div><svg class="i " aria-hidden="true"><use href="#i-download"/></svg>download</div><div><svg class="i " aria-hidden="true"><use href="#i-upload"/></svg>upload</div><div><svg class="i " aria-hidden="true"><use href="#i-card"/></svg>card</div><div><svg class="i " aria-hidden="true"><use href="#i-bell"/></svg>bell</div><div><svg class="i " aria-hidden="true"><use href="#i-spell"/></svg>spell</div><div><svg class="i " aria-hidden="true"><use href="#i-palette"/></svg>palette</div><div><svg class="i " aria-hidden="true"><use href="#i-offline"/></svg>offline</div><div><svg class="i " aria-hidden="true"><use href="#i-archive"/></svg>archive</div><div><svg class="i " aria-hidden="true"><use href="#i-plug"/></svg>plug</div><div><svg class="i " aria-hidden="true"><use href="#i-history"/></svg>history</div><div><svg class="i " aria-hidden="true"><use href="#i-move"/></svg>move</div><div><svg class="i " aria-hidden="true"><use href="#i-globe"/></svg>globe</div><div><svg class="i " aria-hidden="true"><use href="#i-zoomin"/></svg>zoomin</div><div><svg class="i " aria-hidden="true"><use href="#i-zoomout"/></svg>zoomout</div><div><svg class="i " aria-hidden="true"><use href="#i-external"/></svg>external</div><div><svg class="i " aria-hidden="true"><use href="#i-bulb"/></svg>bulb</div><div><svg class="i " aria-hidden="true"><use href="#i-refresh"/></svg>refresh</div><div><svg class="i " aria-hidden="true"><use href="#i-mail"/></svg>mail</div><div><svg class="i " aria-hidden="true"><use href="#i-lock"/></svg>lock</div><div><svg class="i " aria-hidden="true"><use href="#i-copy"/></svg>copy</div><div><svg class="i " aria-hidden="true"><use href="#i-restore"/></svg>restore</div></div></div></div><div class="cards" style="margin-top:20px"><div class="card"><h3>Buttons and states, light</h3><p class="cl">Hierarchy left to right, then states.</p><div class="screen" style="height:auto;border-radius:12px;padding:18px;border:1px solid var(--subtle)"><div class="statecells" style="align-items:flex-start"><div><span class="btn p md " role="button" ><svg class="i " aria-hidden="true"><use href="#i-plus"/></svg>New note</span><span>Primary</span></div><div><span class="btn s md " role="button" ><svg class="i " aria-hidden="true"><use href="#i-template"/></svg>Use template</span><span>Secondary</span></div><div><span class="btn t md " role="button" >Cancel</span><span>Text</span></div><div><span class="btn dl md " role="button" >Delete account</span><span>Danger outline</span></div><div><span class="btn d md " role="button" >Delete</span><span>Danger fill, confirm only</span></div><div><span class="btn p md hov " role="button" ><svg class="i " aria-hidden="true"><use href="#i-plus"/></svg>New note</span><span>Hover</span></div><div><span class="btn p md ring " role="button" ><svg class="i " aria-hidden="true"><use href="#i-plus"/></svg>New note</span><span>Focus</span></div><div><span class="btn p md dis " role="button" >Create note</span><span>Disabled</span></div><div><span class="btn p md dis " role="button" ><span class="spin"></span>Creating note</span><span>Busy</span></div></div></div></div><div class="card"><h3>Buttons and states, dark</h3><p class="cl">The filled button turns light.</p><div class="screen t-dark" style="height:auto;border-radius:12px;padding:18px;border:1px solid var(--subtle)"><div class="statecells" style="align-items:flex-start"><div><span class="btn p md " role="button" ><svg class="i " aria-hidden="true"><use href="#i-plus"/></svg>New note</span><span>Primary</span></div><div><span class="btn s md " role="button" ><svg class="i " aria-hidden="true"><use href="#i-template"/></svg>Use template</span><span>Secondary</span></div><div><span class="btn t md " role="button" >Cancel</span><span>Text</span></div><div><span class="btn dl md " role="button" >Delete account</span><span>Danger outline</span></div><div><span class="btn d md " role="button" >Delete</span><span>Danger fill, confirm only</span></div><div><span class="btn p md hov " role="button" ><svg class="i " aria-hidden="true"><use href="#i-plus"/></svg>New note</span><span>Hover</span></div><div><span class="btn p md ring " role="button" ><svg class="i " aria-hidden="true"><use href="#i-plus"/></svg>New note</span><span>Focus</span></div><div><span class="btn p md dis " role="button" >Create note</span><span>Disabled</span></div><div><span class="btn p md dis " role="button" ><span class="spin"></span>Creating note</span><span>Busy</span></div></div></div></div><div class="card"><h3>Components, light</h3><p class="cl">Rows, settings rows, Folder row, switches, pills, mode control, fields, notices, tip, message.</p><div class="screen" style="height:auto;border-radius:12px;padding:18px;border:1px solid var(--subtle);gap:12px"><ul class="rows" style="padding:0"><li class="row "><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-file"/></svg></span><span class="main"><span class="nm">Shared artefacts</span></span><span class="meta">4 h</span></li><li class="row hov"><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-file"/></svg></span><span class="main"><span class="nm">Trip plan <span class="fold">· Travel</span></span></span><span class="meta">1 d</span></li></ul><ul class="slist"><li class="srow "><span class="ico"><svg class="i " aria-hidden="true"><use href="#i-palette"/></svg></span><span class="main"><span class="nm">Appearance</span></span><span class="val">System</span><span class="chev"><svg class="i " aria-hidden="true"><use href="#i-chev"/></svg></span></li><li class="srow "><span class="ico"><svg class="i " aria-hidden="true"><use href="#i-spell"/></svg></span><span class="main"><span class="nm">Check spelling</span></span><span class="switch on" role="switch" aria-checked="true"></span></li></ul><div class="destrow"><span class="ic"><svg class="i s" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="main"><span class="k">Folder</span><span class="v" style="display:block">Projects</span></span><span class="btn s sm " role="button" >Change</span></div><div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center"><span class="switch on"></span><span class="switch"></span><span class="switch dis"></span><span class="pill"><span class="dot"></span>Saved</span><span class="pill bad"><span class="dot bad"></span>Not saved</span></div><div class="seg"><span class="on"><svg class="i " aria-hidden="true"><use href="#i-monitor"/></svg>System</span><span><svg class="i " aria-hidden="true"><use href="#i-sun"/></svg>Light</span><span><svg class="i " aria-hidden="true"><use href="#i-moon"/></svg>Dark</span></div><div class="field ph"><svg class="i " aria-hidden="true"><use href="#i-search"/></svg>Search templates</div><div class="field focus">Clients<span class="caret" style="height:20px"></span></div><div class="notice info"><svg class="i " aria-hidden="true"><use href="#i-info"/></svg><div class="txt">Some templates may be missing.</div></div><div class="notice bad"><svg class="i " aria-hidden="true"><use href="#i-alert"/></svg><div class="txt">Templates did not load.<div class="act"><span class="btn s sm " role="button" ><svg class="i " aria-hidden="true"><use href="#i-refresh"/></svg>Try again</span></div></div></div><div class="tipline" role="note" ><svg class="i " aria-hidden="true"><use href="#i-bulb"/></svg><span class="txt">Type <kbd>[[</kbd> to link a note.</span><span class="ibtn " role="button" aria-label="Hide tips" title="Hide tips" ><svg class="i " aria-hidden="true"><use href="#i-x"/></svg></span></div><div class="toast" style="position:static"><svg class="i lead" aria-hidden="true"><use href="#i-checkcircle"/></svg><span class="txt">Kept this device&#39;s text.</span></div></div></div><div class="card"><h3>Components, dark</h3><p class="cl">Same parts in dark.</p><div class="screen t-dark" style="height:auto;border-radius:12px;padding:18px;border:1px solid var(--subtle);gap:12px"><ul class="rows" style="padding:0"><li class="row "><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-file"/></svg></span><span class="main"><span class="nm">Shared artefacts</span></span><span class="meta">4 h</span></li><li class="row hov"><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-file"/></svg></span><span class="main"><span class="nm">Trip plan <span class="fold">· Travel</span></span></span><span class="meta">1 d</span></li></ul><ul class="slist"><li class="srow "><span class="ico"><svg class="i " aria-hidden="true"><use href="#i-palette"/></svg></span><span class="main"><span class="nm">Appearance</span></span><span class="val">System</span><span class="chev"><svg class="i " aria-hidden="true"><use href="#i-chev"/></svg></span></li><li class="srow "><span class="ico"><svg class="i " aria-hidden="true"><use href="#i-spell"/></svg></span><span class="main"><span class="nm">Check spelling</span></span><span class="switch on" role="switch" aria-checked="true"></span></li></ul><div class="destrow"><span class="ic"><svg class="i s" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="main"><span class="k">Folder</span><span class="v" style="display:block">Projects</span></span><span class="btn s sm " role="button" >Change</span></div><div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center"><span class="switch on"></span><span class="switch"></span><span class="switch dis"></span><span class="pill"><span class="dot"></span>Saved</span><span class="pill bad"><span class="dot bad"></span>Not saved</span></div><div class="seg"><span class="on"><svg class="i " aria-hidden="true"><use href="#i-monitor"/></svg>System</span><span><svg class="i " aria-hidden="true"><use href="#i-sun"/></svg>Light</span><span><svg class="i " aria-hidden="true"><use href="#i-moon"/></svg>Dark</span></div><div class="field ph"><svg class="i " aria-hidden="true"><use href="#i-search"/></svg>Search templates</div><div class="field focus">Clients<span class="caret" style="height:20px"></span></div><div class="notice info"><svg class="i " aria-hidden="true"><use href="#i-info"/></svg><div class="txt">Some templates may be missing.</div></div><div class="notice bad"><svg class="i " aria-hidden="true"><use href="#i-alert"/></svg><div class="txt">Templates did not load.<div class="act"><span class="btn s sm " role="button" ><svg class="i " aria-hidden="true"><use href="#i-refresh"/></svg>Try again</span></div></div></div><div class="tipline" role="note" ><svg class="i " aria-hidden="true"><use href="#i-bulb"/></svg><span class="txt">Type <kbd>[[</kbd> to link a note.</span><span class="ibtn " role="button" aria-label="Hide tips" title="Hide tips" ><svg class="i " aria-hidden="true"><use href="#i-x"/></svg></span></div><div class="toast" style="position:static"><svg class="i lead" aria-hidden="true"><use href="#i-checkcircle"/></svg><span class="txt">Kept this device&#39;s text.</span></div></div></div></div></section><section class="sec" id="coverage"><h2>Coverage map</h2><p class="lead">Every user-facing change between v0.21.0 and v0.22.0 and where it is designed.</p><table class="spec" style="background:#fff;border-radius:12px;overflow:hidden"><tr><th>Shipped UI change</th><th>Source area</th><th>Screens</th></tr><tr><td class="k" style="white-space:normal">All notes header, New note, tips, today&#39;s note</td><td>notes-home, writing-start, today-note-action, new-note</td><td>A1 to A5, A13, G1, G2</td></tr><tr><td class="k" style="white-space:normal">Sidebar: Create in, From template, save line</td><td>shell</td><td>A6, A9 to A12, A14, E1, G1</td></tr><tr><td class="k" style="white-space:normal">New folder text</td><td>folders</td><td>A11</td></tr><tr><td class="k" style="white-space:normal">New from template, errors by workspace</td><td>new-from-template, workspace-problem, templates</td><td>B1 to B17, G3</td></tr><tr><td class="k" style="white-space:normal">Search scope and pending state</td><td>command-palette, content-search-state</td><td>E10 to E13, G8</td></tr><tr><td class="k" style="white-space:normal">Undo and Redo</td><td>format-toolbar, editor-history</td><td>D1 to D3, Undo spec, D21, G4</td></tr><tr><td class="k" style="white-space:normal">Remove image</td><td>image-viewer</td><td>D17 to D20</td></tr><tr><td class="k" style="white-space:normal">Pending save, save line, open note status</td><td>note-editor, save-status, save-state, sync-state, note-save-facts</td><td>D4 to D7, E1, A6</td></tr><tr><td class="k" style="white-space:normal">Recover local draft</td><td>stale-draft-recovery, device-note</td><td>D11 to D16, G7</td></tr><tr><td class="k" style="white-space:normal">Purged, deleted, restored, unavailable notes</td><td>note-loader, note-load-state</td><td>E2 to E7</td></tr><tr><td class="k" style="white-space:normal">Kept text</td><td>Needs attention (target of recovery)</td><td>E8, E9</td></tr><tr><td class="k" style="white-space:normal">Version history copy</td><td>history, history-rows</td><td>D8 to D10, G9</td></tr><tr><td class="k" style="white-space:normal">Settings groups and sections</td><td>account-settings, settings-section, page-sections</td><td>C1 to C24, G5, G6</td></tr><tr><td class="k" style="white-space:normal">Offline settings</td><td>offline-settings, offline-files</td><td>C8, C14, C15, C24</td></tr><tr><td class="k" style="white-space:normal">Trial notice</td><td>trial-notice, trial</td><td>E14 to E16, C11</td></tr><tr><td class="k" style="white-space:normal">Sign-up verification and sign-in email</td><td>sign-up, accounts</td><td>E18 to E22</td></tr><tr><td class="k" style="white-space:normal">Account limits in GiB</td><td>administration</td><td>E23</td></tr><tr><td class="k" style="white-space:normal">Pressed state on buttons</td><td>packages/ui controls (ariaPressed)</td><td>Mode control, tabs, Undo spec</td></tr></table></section><section class="sec" id="new"><h2>New behaviour to confirm</h2><p class="lead">These go beyond the shipped behaviour. Each needs a yes.</p><ul style="margin:0;padding-left:20px;font-size:14px;line-height:1.7"><li>Tips: no Next button. A different tip shows each time All notes opens.</li><li>Spelling: a switch in the Settings list, with no page of its own.</li><li>Settings merges: Export with Import, API keys with Connected apps, Profile with Account. Delete account moves into Profile and email. Sessions is renamed Devices.</li><li>Account menu on the avatar: Settings, Help, Sign out.</li><li>Image removal: a short message with Undo for 6 seconds. Undo in the editor stays.</li><li>Save details sheet: shows last upload time and waiting count only if the app can read them.</li><li>Search with no results offers &quot;New note&quot; with the search words as its name.</li></ul></section><section class="sec" id="omitted"><h2>Not drawn</h2><p class="lead">Listed so nothing is missed.</p><ul style="margin:0;padding-left:20px;font-size:14px;line-height:1.7"><li>Tablet widths (768 to 1023 px): phone layout with a wider column. Not drawn.</li><li>Desktop calendar view, folder page and note actions menu: follow A8, A9, D5 with desktop sizes. Not drawn.</li><li>Move note dialog: reuses the folder picker B4. Not drawn on its own.</li><li>Trash list, Publish dialog, workspace create, rename and delete dialogs, shortcuts dialog: not changed in v0.22.0. Out of scope. They take the new tokens and buttons when touched.</li><li>Administration page apart from the limits form, documentation site, published pages: out of scope.</li><li>Plain sign-in screen: the same layout as E20 without the verified mark.</li></ul></section><section class="sec" id="checklist"><h2>Approval checklist</h2><p class="lead">Approve each item, or mark it with a change.</p><div class="card" style="max-width:920px"><ol class="checklist"><li><div>Look and feel: type, colour, spacing, icons and components on this page.<span class="ref">Foundations below</span></div></li><li><div>Button rules: one filled button per screen, outlined secondary with icon, text buttons only for Cancel and Discard, red only for delete.<span class="ref">Foundations, every page</span></div></li><li><div>All notes: count only, New note and Use template side by side, no &quot;workspace root&quot;.<span class="ref">A1 to A5, G1</span></div></li><li><div>Tips: one line, 6 words or less, one tip per visit, Close only.<span class="ref">A1, Tip line card</span></div></li><li><div>Menu: Today&#39;s note and Calendar rows, folders with +, short save line.<span class="ref">A6, A8, G1</span></div></li><li><div>Where notes go: folder page title, &quot;Folder: None [Change]&quot;, &quot;Inside: Projects&quot; for new folders.<span class="ref">A9, A11, B3, B4</span></div></li><li><div>Template flow: pick, preview, create on phone. One dialog on desktop. All states.<span class="ref">B1 to B17, G3</span></div></li><li><div>Undo and Redo are arrow icons only. No visible text. Names for screen readers, desktop tooltips with shortcut, dimmed when not available, 44 px on phone.<span class="ref">D1 to D3, Undo spec, D21, G4</span></div></li><li><div>Save status: one pill, words for each state.<span class="ref">E1, D6, D7</span></div></li><li><div>Choose a version: tabs on phone, columns on desktop, &quot;Keep this device&#39;s text&quot; filled.<span class="ref">D11 to D16, G7</span></div></li><li><div>Image: &quot;Remove from note&quot;, short message with Undo.<span class="ref">D17 to D20</span></div></li><li><div>Settings: list of 9 rows and 1 switch, one page each, merges and renames.<span class="ref">C1 to C24, G5, G6</span></div></li><li><div>Sign out with waiting changes: &quot;Sign out and keep them&quot; filled.<span class="ref">C21</span></div></li><li><div>States and account copy: Trash, deleted, not found, offline, trial, sign up, limits.<span class="ref">E2 to E23</span></div></li><li><div>Dark mode matches light in every screen.<span class="ref">Switch at top, A13, B16, C4, C23, D16, D21, G2, G6, G9</span></div></li><li><div>New behaviour listed below is acceptable.<span class="ref">New behaviour list</span></div></li><li><div>The omitted screens listed below can wait.<span class="ref">Omitted list</span></div></li></ol></div></section>
 </main>
 </body>
 </html>
