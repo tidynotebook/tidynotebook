@@ -27,6 +27,7 @@ export function useSession() {
 export function useFiles() {
   return {
     notes: [{ fileId: templateId, path: 'Templates/Meeting.md' }],
+    emptyFolders: [],
     loading: false,
     limitNotice: null,
   };
