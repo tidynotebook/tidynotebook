@@ -4,7 +4,7 @@
     {
       "file": "apps/web/src/features/accounts/theme-settings.tsx",
       "rule": "inline-style",
-      "reason": "The theme swatch paints four token values that it reads from the theme registry at run time, one set per family. A utility class names a value at build time, so it cannot express a colour that the registry chooses."
+      "reason": "The preview cards of Mode and Theme paint token values that they read from the theme registry at run time, one set per family and mode. A utility class names a value at build time, so it cannot express a colour that the registry chooses."
     },
     {
       "file": "apps/web/src/diagram/frame-main.ts",
