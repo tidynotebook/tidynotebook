@@ -473,6 +473,9 @@ function Sidebar({
   const openNotePending = useNoteSaveFact(
     (report) => report?.pendingSave ?? false,
   );
+  const localWritePending = useNoteSaveFact(
+    (report) => report?.localWritePending ?? false,
+  );
   const footer = syncFooter({
     state: sync.state,
     online,
@@ -484,6 +487,7 @@ function Sidebar({
     state: sync.state,
     online,
     pending: openNotePending,
+    localWritePending,
     failed: openNoteWriteFailed,
     noteName: sync.noteName,
   }).line;

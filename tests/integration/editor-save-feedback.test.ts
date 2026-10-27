@@ -166,11 +166,14 @@ await test('the open note stays pending from first edit through draft and checkp
     const openNoteWriteFailed = useNoteSaveFact(
       (report) => report?.localWriteFailed ?? false,
     );
+    const localWritePending = useNoteSaveFact(
+      (report) => report?.localWritePending ?? true,
+    );
     flushDraft = useFlushNoteDraft();
     states.push(openNotePending);
     return createElement(
       'output',
-      null,
+      { 'data-local-write-pending': String(localWritePending) },
       syncFooter({
         state: { kind: 'in-step' },
         online: true,
@@ -284,6 +287,12 @@ await test('the open note stays pending from first edit through draft and checkp
       );
     };
     await edit('First edit.');
+    assert.equal(
+      container
+        .querySelector('output')
+        ?.getAttribute('data-local-write-pending'),
+      'true',
+    );
     assert.equal(output(), 'Saving the open note to the server.');
     assert.equal((await store.pending(accountId, workspaceId)).length, 0);
     const renders = states.length;
@@ -304,6 +313,12 @@ await test('the open note stays pending from first edit through draft and checkp
     );
     assert.equal((await store.pending(accountId, workspaceId)).length, 0);
     assert.equal(output(), 'Saving the open note to the server.');
+    assert.equal(
+      container
+        .querySelector('output')
+        ?.getAttribute('data-local-write-pending'),
+      'false',
+    );
     const checkpoint = async (): Promise<void> => {
       await act(async () => {
         view.contentDOM.dispatchEvent(

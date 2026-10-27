@@ -65,6 +65,8 @@ const { forceParsing } = await import('@codemirror/language');
 const { setEditorReadOnly } = await import('@notesapp/editor');
 const { NoteEditor } =
   await import('../../apps/web/dist/features/editor/note-editor.js');
+const { DeletedNotePage } =
+  await import('../../apps/web/dist/features/editor/note-state-pages.js');
 const { NoteEditorLoader } =
   await import('../../apps/web/dist/features/editor/note-loader.js');
 const { duplicateNote } =
@@ -218,6 +220,72 @@ function editor(local: LocalStore = store): ReactNode {
     initialSequence: 1,
   });
 }
+
+await test('Restore gives offline guidance and retains retry after reconnect', async () => {
+  const connection = Object.getOwnPropertyDescriptor(navigator, 'onLine');
+  const originalFetch = globalThis.fetch;
+  let requests = 0;
+  let restored = 0;
+  globalThis.fetch = () => {
+    requests += 1;
+    return Promise.resolve(
+      requests === 1
+        ? Response.json({ message: 'Restore failed.' }, { status: 503 })
+        : Response.json({ revision: { path: 'one.md' } }),
+    );
+  };
+  const restoreButton = (): HTMLButtonElement => {
+    const found = [...container.querySelectorAll('button')].find(
+      (button) => button.textContent === 'Restore note',
+    );
+    assert.ok(found);
+    return found;
+  };
+  try {
+    Object.defineProperty(navigator, 'onLine', {
+      configurable: true,
+      value: false,
+    });
+    await render(
+      createElement(DeletedNotePage, {
+        store,
+        workspaceId,
+        fileId,
+        path: 'one.md',
+        onRestored: () => {
+          restored += 1;
+        },
+      }),
+    );
+    assert.match(
+      container.textContent ?? '',
+      /You are offline. Connect to restore this note./,
+    );
+    assert.equal(restoreButton().disabled, true);
+    await act(async () => restoreButton().click());
+    assert.equal(requests, 0);
+    assert.equal(restored, 0);
+    Object.defineProperty(navigator, 'onLine', {
+      configurable: true,
+      value: true,
+    });
+    await act(async () => window.dispatchEvent(new Event('online')));
+    assert.equal(restoreButton().disabled, false);
+    await act(async () => restoreButton().click());
+    assert.equal(requests, 1);
+    assert.equal(restored, 0);
+    assert.ok(container.querySelector('[role="alert"]'));
+    assert.equal(restoreButton().disabled, false);
+    await act(async () => restoreButton().click());
+    assert.equal(requests, 2);
+    assert.equal(restored, 1);
+  } finally {
+    await render(null);
+    globalThis.fetch = originalFetch;
+    if (connection === undefined) Reflect.deleteProperty(navigator, 'onLine');
+    else Object.defineProperty(navigator, 'onLine', connection);
+  }
+});
 
 await test('loader and history keep valid inert links quiet and show a dismissible blocked notice', async () => {
   const draft: Draft = {

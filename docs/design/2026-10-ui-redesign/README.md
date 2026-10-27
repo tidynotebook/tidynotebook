@@ -90,3 +90,11 @@ above from one shared CSS kit and icon set, so all screens stay consistent.
 ## Decisions
 
 No decision records were added for this design.
+
+## Open persistence outcome
+
+Approved baseline E2 requires Restore to work offline. This remains OPEN in
+[offline Restore follow-up](https://github.com/tidynotebook/tidynotebook/issues/513).
+The UI stack keeps server-only Restore and gives truthful offline guidance.
+Offline Restore is not implemented or accepted by this UI review. The follow-up
+must add and verify the local inverse transaction and reconnect queue behavior.

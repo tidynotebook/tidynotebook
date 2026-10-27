@@ -96,6 +96,7 @@ export function useNoteSaveFacts(
           sequenceRef.current !== writtenSequenceRef.current ||
           sequenceRef.current !== snapshotSequenceRef.current ||
           state !== 'saved-server',
+        localWritePending: sequenceRef.current !== writtenSequenceRef.current,
         storageError: storageErrorRef.current,
         lastSavedAt: lastSavedAtRef.current,
       }),

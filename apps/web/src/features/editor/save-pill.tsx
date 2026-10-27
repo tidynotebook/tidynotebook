@@ -27,6 +27,9 @@ export function SavePill({
   const sync = useSyncState();
   const online = useOnline();
   const pending = useNoteSaveFact((report) => report?.pendingSave ?? true);
+  const localWritePending = useNoteSaveFact(
+    (report) => report?.localWritePending ?? true,
+  );
   const failed = useNoteSaveFact((report) => report?.localWriteFailed ?? false);
   const flush = useFlushNoteDraft();
   const [open, setOpen] = useState(false);
@@ -38,6 +41,7 @@ export function SavePill({
     state: sync.state,
     online,
     pending,
+    localWritePending,
     failed,
     noteName: sync.noteName,
   });

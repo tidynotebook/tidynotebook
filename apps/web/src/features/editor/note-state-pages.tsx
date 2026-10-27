@@ -101,7 +101,7 @@ export function DeletedNotePage({
         description={
           online
             ? 'Restore it to edit.'
-            : 'Moved to Trash on this device. It uploads when you are online.'
+            : 'You are offline. Connect to restore this note.'
         }
       />
       {problem === '' ? null : (
@@ -109,9 +109,9 @@ export function DeletedNotePage({
       )}
       <div className="flex flex-wrap gap-2">
         <Button
-          disabled={busy}
+          disabled={busy || !online}
           onClick={() => {
-            if (busy) return;
+            if (busy || !online) return;
             setBusy(true);
             setProblem('');
             void restoreNote(

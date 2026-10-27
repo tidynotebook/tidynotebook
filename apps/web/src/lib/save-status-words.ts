@@ -5,6 +5,7 @@ export function saveStatusWords(input: {
   readonly state: SyncState;
   readonly online: boolean;
   readonly pending: boolean;
+  readonly localWritePending?: boolean;
   readonly failed: boolean;
   readonly noteName?: string | null;
 }): {
@@ -19,6 +20,14 @@ export function saveStatusWords(input: {
       line: 'Not saved',
       title: 'Not saved',
       detail: 'Could not save on this device. Copy your text, then free space.',
+    };
+  // Pending server work alone cannot prove that the current buffer is durable.
+  if (input.localWritePending ?? input.pending)
+    return {
+      pill: 'Saving',
+      line: 'Saving...',
+      title: 'Saving',
+      detail: 'Saving on this device.',
     };
   const kind = input.state.kind;
   if (kind === 'signed-out' || kind === 'other-account')

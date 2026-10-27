@@ -44,3 +44,36 @@ await test('a failed device write always blocks a saved claim', () => {
     assert.match(words.detail, /Copy your text/);
   }
 });
+
+await test('in-memory work never claims durable local storage', () => {
+  for (const state of [
+    { kind: 'in-step' },
+    { kind: 'sending' },
+    { kind: 'waiting' },
+    { kind: 'signed-out' },
+    { kind: 'other-account' },
+  ] satisfies readonly SyncState[]) {
+    for (const online of [true, false]) {
+      const words = saveStatusWords({ ...base, state, online, pending: true });
+      assert.equal(words.pill, 'Saving');
+      assert.equal(words.line, 'Saving...');
+      assert.equal(words.detail, 'Saving on this device.');
+    }
+  }
+});
+
+await test('existing device-write proof permits offline and uploading details', () => {
+  const durable = { ...base, pending: true, localWritePending: false };
+  assert.equal(
+    saveStatusWords({ ...durable, online: false }).title,
+    'Saved on this device',
+  );
+  assert.equal(
+    saveStatusWords({ ...durable, state: { kind: 'sending' } }).detail,
+    'Saved on this device. Uploading now.',
+  );
+  assert.equal(
+    saveStatusWords({ ...durable, state: { kind: 'signed-out' } }).pill,
+    'Paused',
+  );
+});
