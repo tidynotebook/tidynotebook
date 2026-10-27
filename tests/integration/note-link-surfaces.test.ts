@@ -294,6 +294,128 @@ for (const outcome of ['deleted', 'unknown', 'failed', 'left'] as const) {
   });
 }
 
+for (const outcome of [
+  'found',
+  'exhausted',
+  'error',
+  'left',
+  'purged',
+  'restored',
+] as const) {
+  await test(`a later Trash page handles ${outcome} with current scope guards`, async () => {
+    const id = crypto.randomUUID();
+    await store.checkpoint(
+      {
+        accountId,
+        workspaceId,
+        fileId: id,
+        workingCopyId: crypto.randomUUID(),
+        baseRevisionId: null,
+        path: 'Restored page.md',
+        text: 'Restored during page two',
+        sequence: 1,
+        deleted: false,
+      },
+      null,
+      'text',
+    );
+    const saved = await store.readCachedNote(accountId, workspaceId, id);
+    assert.ok(saved);
+    let restored = false;
+    let retried = false;
+    const listeners = new Set<(change: LocalChange) => void>();
+    const local: LocalStore = {
+      ...store,
+      readCachedNote: () => Promise.resolve(restored ? saved : null),
+      subscribe(listener) {
+        listeners.add(listener);
+        return () => {
+          listeners.delete(listener);
+        };
+      },
+    };
+    const page = Promise.withResolvers<Response>();
+    const originalFetch = globalThis.fetch;
+    const requests: URL[] = [];
+    globalThis.fetch = (input) => {
+      const url = new URL(input instanceof Request ? input.url : String(input));
+      requests.push(url);
+      if (!url.pathname.endsWith('/trash'))
+        return Promise.resolve(Response.json({}, { status: 404 }));
+      if (url.searchParams.get('cursor') === 'later') return page.promise;
+      return Promise.resolve(
+        Response.json(
+          retried ? { files: [] } : { files: [], nextCursor: 'later' },
+        ),
+      );
+    };
+    try {
+      await render(
+        createElement(NoteEditorLoader, {
+          store: local,
+          accountId,
+          workspaceId,
+          fileId: id,
+        }),
+      );
+      assert.equal(requests.length, 3);
+      assert.equal(requests[2]?.searchParams.get('cursor'), 'later');
+      if (outcome === 'left')
+        await render(createElement('p', null, 'Another account and workspace'));
+      if (outcome === 'purged')
+        await act(async () => {
+          for (const listener of [...listeners])
+            listener({ kind: 'purge', accountId, workspaceId, fileId: id });
+        });
+      if (outcome === 'restored')
+        await act(async () => {
+          restored = true;
+          for (const listener of [...listeners])
+            listener({ kind: 'file', accountId, workspaceId, fileId: id });
+        });
+      await act(async () => {
+        page.resolve(
+          outcome === 'error' || outcome === 'restored'
+            ? Response.json({}, { status: 503 })
+            : Response.json({
+                files:
+                  outcome === 'exhausted'
+                    ? []
+                    : [{ fileId: id, kind: 'note', path: 'Later deleted.md' }],
+                nextCursor: null,
+              }),
+        );
+      });
+      if (outcome === 'found')
+        assert.match(container.textContent ?? '', /Later deleted is in Trash/);
+      else if (outcome === 'exhausted')
+        assert.match(container.textContent ?? '', /Note not found/);
+      else if (outcome === 'left')
+        assert.equal(container.textContent, 'Another account and workspace');
+      else if (outcome === 'purged')
+        assert.match(container.textContent ?? '', /This note was deleted/);
+      else if (outcome === 'restored') {
+        await waitForEditor(container);
+        assert.equal(view().state.doc.toString(), 'Restored during page two');
+      } else {
+        assert.match(container.textContent ?? '', /Can't open this note/);
+        const retry = [...container.querySelectorAll('button')].find(
+          (button) => button.textContent === 'Try again',
+        );
+        assert.ok(retry);
+        retried = true;
+        await act(async () => retry.click());
+        assert.match(container.textContent ?? '', /Note not found/);
+        assert.equal(requests.at(-1)?.searchParams.get('cursor'), null);
+      }
+    } finally {
+      await render(null);
+      await act(finishStoreWork);
+      globalThis.fetch = originalFetch;
+    }
+  });
+}
+
 for (const responseStatus of [200, 503]) {
   await test(`review: restored device text wins while cold Trash lookup returns ${responseStatus}`, async () => {
     const id = crypto.randomUUID();

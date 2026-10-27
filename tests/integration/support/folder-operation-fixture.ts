@@ -55,11 +55,11 @@ const store: Pick<LocalStore, 'moveFiles' | 'trashFiles'> = {
     return [];
   },
 };
-export function resetFolderOperation(): void {
+export function resetFolderOperation(loading = false): void {
   state = {
-    notes: [initialNote],
+    notes: loading ? [] : [initialNote],
     emptyFolders: [],
-    loading: false,
+    loading,
     limitNotice: null,
   };
   finished = Promise.withResolvers<void>();
@@ -68,6 +68,11 @@ export function resetFolderOperation(): void {
   effects.announced = 0;
   effects.removed = [];
   effects.moved = [];
+}
+/** Complete the delayed public file-list read without mounting another page. */
+export function finishInitialFolderLoad(): void {
+  state = { ...state, notes: [initialNote], loading: false };
+  for (const listener of listeners) listener();
 }
 export function finishFolderOperation(): void {
   finished.resolve();

@@ -7,6 +7,7 @@ import { createMemoryRouter, RouterProvider } from 'react-router';
 import {
   resetFolderOperation,
   finishFolderOperation,
+  finishInitialFolderLoad,
   started,
   effects,
 } from './support/folder-operation-fixture.ts';
@@ -97,8 +98,8 @@ function button(name: string): HTMLButtonElement {
 async function click(name: string): Promise<void> {
   await act(async () => button(name).click());
 }
-async function setup() {
-  resetFolderOperation();
+async function setup(loading = false) {
+  resetFolderOperation(loading);
   const host = document.createElement('div');
   document.body.append(host);
   const root = createRoot(host);
@@ -123,6 +124,33 @@ async function setup() {
     },
   };
 }
+
+await test('folder operations are unavailable until the initial file list arrives', async () => {
+  const page = await setup(true);
+  try {
+    assert.equal(
+      document.querySelector('button[aria-label="Folder actions"]'),
+      null,
+    );
+    assert.equal(
+      page.router.state.location.pathname,
+      '/w/work/folders/Projects',
+    );
+    assert.equal(effects.sync, 0);
+    assert.deepEqual(effects.removed, []);
+    await act(async () => finishInitialFolderLoad());
+    await click('Folder actions');
+    await click('Delete folder');
+    assert.match(document.body.textContent ?? '', /Delete/);
+    assert.equal(effects.sync, 0);
+    assert.equal(
+      page.router.state.location.pathname,
+      '/w/work/folders/Projects',
+    );
+  } finally {
+    await page.close();
+  }
+});
 
 await test(
   'a pending folder rename keeps its owner when its direct list becomes empty',

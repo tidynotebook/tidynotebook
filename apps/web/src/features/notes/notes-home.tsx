@@ -267,7 +267,7 @@ export function NotesHomeView(): ReactNode {
               {showNewNoteInHeader(files.loading, total + subfolders.length)
                 ? actions
                 : null}
-              {folder === '' ? null : (
+              {folder === '' || files.loading ? null : (
                 <FolderPageActions
                   key={`${workspaceId}:${folder}`}
                   workspaceId={workspaceId}

@@ -228,34 +228,41 @@ export function NoteEditorLoader({
           // read also excludes them, so ask the same authorized list as
           // Trash before treating a link as unknown. Keep this read local
           // to the open screen; it must not manufacture a cached document.
-          const trash = await listDeletedFiles({ path: { workspaceId } });
-          if (cancelled) return;
-          // A restore can reach the device while the Trash request runs.
-          const current =
-            store === null ? null : await readDeviceNote(store, opening);
-          if (cancelled) return;
-          if (current !== null) {
-            serverDeletedIdentity.current = null;
-            setStatus(current);
-            return;
-          }
-          if (trash.error !== undefined || trash.data === undefined) {
-            setStatus({
-              kind: 'unavailable',
-              message: problemMessage(trash.error),
+          let cursor: string | undefined;
+          do {
+            const trash = await listDeletedFiles({
+              path: { workspaceId },
+              query: cursor === undefined ? {} : { cursor },
             });
-            return;
-          }
-          const deleted = trash.data.files.find(
-            (file) => file.fileId === fileId && file.kind === 'note',
-          );
-          serverDeletedIdentity.current =
-            deleted !== undefined ? opening : null;
-          setStatus(
-            deleted === undefined
-              ? { kind: 'unknown' }
-              : { kind: 'deleted', path: deleted.path },
-          );
+            if (cancelled) return;
+            // A restore can reach the device during any page or failed read.
+            const current =
+              store === null ? null : await readDeviceNote(store, opening);
+            if (cancelled) return;
+            if (current !== null) {
+              serverDeletedIdentity.current = null;
+              setStatus(current);
+              return;
+            }
+            if (trash.error !== undefined || trash.data === undefined) {
+              setStatus({
+                kind: 'unavailable',
+                message: problemMessage(trash.error),
+              });
+              return;
+            }
+            const deleted = trash.data.files.find(
+              (file) => file.fileId === fileId && file.kind === 'note',
+            );
+            if (deleted !== undefined) {
+              serverDeletedIdentity.current = opening;
+              setStatus({ kind: 'deleted', path: deleted.path });
+              return;
+            }
+            cursor = trash.data.nextCursor ?? undefined;
+          } while (cursor !== undefined);
+          serverDeletedIdentity.current = null;
+          setStatus({ kind: 'unknown' });
         } else if (code === 410) setStatus({ kind: 'purged' });
         else
           setStatus({
