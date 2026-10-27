@@ -100,7 +100,7 @@ import {
 } from '../features/attention/attention-link.tsx';
 import { NewFromTemplateDialog } from '../features/templates/new-from-template.tsx';
 import { useWorkspaceProblem } from '../features/templates/workspace-problem.ts';
-import { CommandPalette } from './command-palette.tsx';
+import type { CommandPalette } from './command-palette.tsx';
 import type { ShortcutsDialog } from './shortcuts.tsx';
 import { createModuleLoad } from '../lib/module-load.ts';
 import {
@@ -247,6 +247,10 @@ import { sidebarViewLabels, type SidebarView } from '../lib/sidebar-view.ts';
  * no editor code (record 0177). A dialog that does not arrive is stated in
  * place, and the screen stays.
  */
+const loadCommandPalette = createModuleLoad(
+  async () => (await import('./command-palette.tsx')).CommandPalette,
+);
+
 const loadShortcutsDialog = createModuleLoad(
   async () => (await import('./shortcuts.tsx')).ShortcutsDialog,
 );
@@ -984,6 +988,31 @@ function ShellFrame({
   const matches = useMatches();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [paletteView, setPaletteView] = useState<{
+    readonly view: typeof CommandPalette;
+  } | null>(null);
+  const [paletteFailed, setPaletteFailed] = useState(false);
+  const paletteOwner = useRef<object | null>(null);
+  useEffect(() => {
+    const owner = {};
+    paletteOwner.current = owner;
+    return () => {
+      paletteOwner.current = null;
+    };
+  }, [workspaceId]);
+  const openPalette = useCallback((): void => {
+    const owner = paletteOwner.current;
+    setPaletteFailed(false);
+    void loadCommandPalette().then((loaded) => {
+      if (owner === null || paletteOwner.current !== owner) return;
+      if (!loaded.ok) {
+        setPaletteFailed(true);
+        return;
+      }
+      setPaletteView({ view: loaded.value });
+      setPaletteOpen(true);
+    });
+  }, []);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [shortcutsDialog, setShortcutsDialog] = useState<{
     readonly view: typeof ShortcutsDialog;
@@ -1119,7 +1148,7 @@ function ShellFrame({
       if (!event.metaKey && !event.ctrlKey) return;
       if (key === 'p' || key === 'o') {
         event.preventDefault();
-        setPaletteOpen(true);
+        openPalette();
         return;
       }
       if (key === '\\') {
@@ -1129,7 +1158,7 @@ function ShellFrame({
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [sidebar.toggleCollapsed]);
+  }, [sidebar.toggleCollapsed, openPalette]);
 
   useEffect(() => {
     if (!drawerOpen) {
@@ -1528,6 +1557,7 @@ function ShellFrame({
   );
 
   const ShortcutsView = shortcutsDialog?.view ?? null;
+  const PaletteView = paletteView?.view ?? null;
 
   return (
     <SyncProvider value={sync}>
@@ -1627,7 +1657,7 @@ function ShellFrame({
               })}
               aria-label="Search"
               title="Search"
-              onClick={() => setPaletteOpen(true)}
+              onClick={openPalette}
             >
               <span
                 className={compactButtonVisualClassName({
@@ -1746,6 +1776,16 @@ function ShellFrame({
                 {theme.syncError === null ? null : (
                   <Notice tone="info" message={theme.syncError} />
                 )}
+                {paletteFailed ? (
+                  <Notice
+                    tone="problem"
+                    message="Search did not load. Try again."
+                  >
+                    <Button variant="secondary" size="sm" onClick={openPalette}>
+                      Try again
+                    </Button>
+                  </Notice>
+                ) : null}
                 {shortcutsFailed ? (
                   <Notice tone="problem" message={shortcutsLoadFailure}>
                     <Button
@@ -1784,16 +1824,18 @@ function ShellFrame({
 
           <DeleteNoticeBar />
 
-          <CommandPalette
-            open={paletteOpen}
-            onOpenChange={setPaletteOpen}
-            workspaceId={workspaceId}
-            workspaceName={openWorkspace?.name ?? 'This workspace'}
-            notes={files.notes}
-            store={store.store}
-            accountId={accountId}
-            actions={paletteActions}
-          />
+          {PaletteView === null ? null : (
+            <PaletteView
+              open={paletteOpen}
+              onOpenChange={setPaletteOpen}
+              workspaceId={workspaceId}
+              workspaceName={openWorkspace?.name ?? 'This workspace'}
+              notes={files.notes}
+              store={store.store}
+              accountId={accountId}
+              actions={paletteActions}
+            />
+          )}
           {shortcutsOpen && ShortcutsView !== null ? (
             <ShortcutsView open onClose={() => setShortcutsOpen(false)} />
           ) : null}
