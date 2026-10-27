@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 import { switchClassNames } from './control-classes.ts';
 
 /** A full row switch states its value and any unavailable reason. */
@@ -16,12 +16,14 @@ export function Switch({
   readonly onChange: (checked: boolean) => void;
 }): ReactNode {
   const classes = switchClassNames(checked);
+  const hintId = useId();
   return (
     <button
       type="button"
       role="switch"
       aria-checked={checked}
       aria-label={label}
+      aria-describedby={hint === undefined ? undefined : hintId}
       disabled={disabled}
       className={classes.row}
       onClick={() => onChange(!checked)}
@@ -29,7 +31,9 @@ export function Switch({
       <span className="min-w-0 flex-1">
         <span className="block">{label}</span>
         {hint === undefined ? null : (
-          <span className="block text-control text-muted">{hint}</span>
+          <span id={hintId} className="block text-control text-muted">
+            {hint}
+          </span>
         )}
       </span>
       <span className={classes.track} aria-hidden="true">

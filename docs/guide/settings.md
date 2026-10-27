@@ -86,17 +86,17 @@ every device. See [Templates](templates.md).
 ## Offline
 
 Your notes are always kept on this device. Images and older versions take more
-space, so this section asks whether to keep them too.
+space. The Offline page has two switches:
 
-- **Keep images on this device** is for the images of the workspace.
-- **Keep older versions on this device** is for the older versions of each
+- **Images** is for the images of the workspace.
+- **Older versions** is for the older versions of each
   note.
 
 This browser keeps each choice for your account and the workspace that you
-have open. A box shows as on only while the application keeps everything of its
+have open. A switch shows as on only while the application keeps everything of its
 kind. An empty group has no available control. Add an image or save a version
 to make its control available. A failed change shows a message and reads the
-stored state again. A new image can turn the box off again. See [Working offline](offline.md).
+stored state again. If settings cannot be read, select **Try again**. A new image can turn the switch off again. See [Working offline](offline.md).
 
 ## Export
 
@@ -174,7 +174,7 @@ have not reached the server yet, the section says so, and you choose:
 
 ## Delete account
 
-**Delete my account** deletes your account and every note in your workspaces
+**Delete account** deletes your account and every note in your workspaces
 for good. It also signs you out on every device. Enter your password to
 confirm. Export your notes first if you want to keep them.
 

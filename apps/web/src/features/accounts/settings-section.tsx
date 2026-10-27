@@ -16,25 +16,28 @@ import { createContext, useContext, type ReactNode } from 'react';
 import type { PageSection } from '@notesapp/ui';
 
 /** Topic pages show the title and help once, above their controls. */
-export const SettingsTopicContext = createContext<readonly string[] | null>(
-  null,
-);
+export const SettingsTopicContext = createContext<{
+  readonly hiddenTitles: readonly string[];
+  readonly helpSection: string | null;
+} | null>(null);
 
 /** One section: its name and sentence, then its controls. */
 export function SettingsSection({
   section,
   description,
+  warning,
   children,
 }: {
   readonly section: PageSection;
   readonly description?: string | undefined;
+  readonly warning?: string | undefined;
   readonly children: ReactNode;
 }): ReactNode {
   const topic = useContext(SettingsTopicContext);
   if (topic !== null)
     return (
       <section className="py-3" aria-label={section.title}>
-        {topic.includes(section.id) ? null : (
+        {topic.hiddenTitles.includes(section.id) ? null : (
           <h2
             className="mb-3 mt-0 text-ui font-semibold text-strong"
             id={section.id}
@@ -42,10 +45,15 @@ export function SettingsSection({
             {section.title}
           </h2>
         )}
-        {section.id === 'signout-heading' && description !== undefined ? (
+        {topic.helpSection === section.id && description !== undefined ? (
           <p className="mb-3 mt-0 text-control text-muted">{description}</p>
         ) : null}
-        <div className="min-w-0">{children}</div>
+        <div className="min-w-0">
+          {warning === undefined ? null : (
+            <p className="mb-3 mt-0 text-control text-muted">{warning}</p>
+          )}
+          {children}
+        </div>
       </section>
     );
   return (
@@ -66,7 +74,12 @@ export function SettingsSection({
             <p className="mb-0 mt-1 text-control text-muted">{description}</p>
           )}
         </div>
-        <div className="mt-3 min-w-0 md:col-span-2 md:mt-0">{children}</div>
+        <div className="mt-3 min-w-0 md:col-span-2 md:mt-0">
+          {warning === undefined ? null : (
+            <p className="mb-3 mt-0 text-control text-muted">{warning}</p>
+          )}
+          {children}
+        </div>
       </div>
     </section>
   );

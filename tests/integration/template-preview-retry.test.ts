@@ -10,6 +10,7 @@ import {
   templateId,
   templateNote,
   setCreationError,
+  setTemplateAvailability,
 } from './support/template-dialog-fixture.ts';
 
 const browser = new Window({ url: 'http://localhost/' });
@@ -105,7 +106,11 @@ function Dialog({
     }),
   );
 }
-async function show(workspaceId: string, frameNotices = false): Promise<void> {
+async function show(
+  workspaceId: string,
+  frameNotices = false,
+  hasTemplates = true,
+): Promise<void> {
   await act(async () => {
     // The shell keys this dialog by workspace, so navigation remounts it.
     root.render(
@@ -116,7 +121,7 @@ async function show(workspaceId: string, frameNotices = false): Promise<void> {
       ),
     );
   });
-  await finishRowSummary();
+  if (hasTemplates) await finishRowSummary();
 }
 async function finishRowSummary(): Promise<void> {
   const summary = reads.shift();
@@ -259,6 +264,42 @@ await test('selecting the same template keeps its pending read and ready preview
     folder: 'Meetings',
     text: 'Meeting preview text',
   });
+});
+
+await test('Back restores list focus only after the phone list is visible', async () => {
+  await show('workspace-back');
+  const row = button('Meeting');
+  await click('Meeting');
+  const preview = reads.shift();
+  assert.ok(preview);
+  await act(async () => preview.finish(templateNote('Back preview')));
+  let focusedWhileHidden = true;
+  row.addEventListener('focus', () => {
+    focusedWhileHidden = row.closest('.hidden') !== null;
+  });
+  await click('Back');
+  assert.equal(document.activeElement, row);
+  assert.equal(focusedWhileHidden, false);
+  assert.match(
+    container
+      .querySelector('a[href$="settings#templates-heading"]')
+      ?.getAttribute('href') ?? '',
+    /settings#templates-heading$/,
+  );
+});
+
+await test('an incomplete list with no available templates does not claim a search miss', async () => {
+  setTemplateAvailability({ empty: true, partial: true });
+  try {
+    await show('workspace-partial', false, false);
+    assert.match(container.textContent ?? '', /Some templates may be missing/);
+    assert.doesNotMatch(
+      container.textContent ?? '',
+      /No template matches|No templates yet/,
+    );
+  } finally {
+    setTemplateAvailability({ empty: false, partial: false });
+  }
 });
 
 after(async () => {

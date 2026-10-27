@@ -141,3 +141,12 @@ export function parseSidebarSize(value: unknown): SidebarSize {
 export function formatSidebarSize(size: SidebarSize): string {
   return JSON.stringify({ step: size.step, collapsed: size.collapsed });
 }
+
+/** Settings starts without notes navigation; opening it keeps layout and ARIA in step. */
+export function displayedSidebarSize(
+  size: SidebarSize,
+  settings: boolean,
+  open: boolean,
+): SidebarSize {
+  return settings ? { ...size, collapsed: !open } : size;
+}

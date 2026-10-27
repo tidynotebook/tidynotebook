@@ -166,6 +166,7 @@ function TemplateChoices({
   } | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
   const backRef = useRef<HTMLButtonElement | null>(null);
+  const returnToList = useRef(false);
   const settings = templates.settings;
   const templateFolder =
     settings.status === 'ready' ? settings.settings.folder : '';
@@ -201,6 +202,10 @@ function TemplateChoices({
   }, [choosingFolder, selected, selectedLabel, onTitle]);
   useEffect(() => {
     if (selected !== null) backRef.current?.focus();
+    else if (returnToList.current) {
+      returnToList.current = false;
+      listRef.current?.querySelector('button')?.focus();
+    }
   }, [selected]);
   useEffect(() => {
     if (selected === null || store === null || accountId === null) return;
@@ -258,16 +263,18 @@ function TemplateChoices({
                       onChange={setSearch}
                     />
                   ) : null}
-                  {choices.length === 0 && files.limitNotice === null ? (
-                    <EmptyState
-                      title="No templates yet"
-                      description={`A template is a note in the "${templateFolder}" folder.`}
-                      action={
-                        <Button onClick={() => onChoose(templateFolder)}>
-                          Create a template
-                        </Button>
-                      }
-                    />
+                  {choices.length === 0 ? (
+                    files.limitNotice !== null ? null : (
+                      <EmptyState
+                        title="No templates yet"
+                        description={`A template is a note in the "${templateFolder}" folder.`}
+                        action={
+                          <Button onClick={() => onChoose(templateFolder)}>
+                            Create a template
+                          </Button>
+                        }
+                      />
+                    )
                   ) : matching.length === 0 ? (
                     <p className="text-control text-muted">
                       No template matches "{search}".
@@ -343,7 +350,7 @@ function TemplateChoices({
                           variant: 'secondary',
                           size: 'sm',
                         })}
-                        to={`/w/${workspaceId}/settings/templates`}
+                        to={`/w/${workspaceId}/settings#templates-heading`}
                         onClick={onClose}
                       >
                         Manage
@@ -367,8 +374,8 @@ function TemplateChoices({
                     buttonRef={backRef}
                     icon={<ChevronLeftIcon />}
                     onClick={() => {
+                      returnToList.current = true;
                       setSelected(null);
-                      listRef.current?.querySelector('button')?.focus();
                     }}
                     className="lg:hidden"
                   >

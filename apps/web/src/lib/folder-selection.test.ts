@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   childFolderPath,
+  folderForRoute,
   knownFolderPaths,
   selectedFolderOrRoot,
   selectionForOpenNote,
@@ -36,4 +37,27 @@ await test('the open note decides the create parent', () => {
   assert.equal(selectionForOpenNote('Archive', 'One.md'), '');
   // No open note leaves the choice of the person alone.
   assert.equal(selectionForOpenNote('Archive', null), 'Archive');
+});
+
+await test('route destinations follow direct, nested and history navigation in one workspace', () => {
+  assert.equal(
+    folderForRoute('one', '/w/one/folders/Projects', 'Projects'),
+    'Projects',
+  );
+  assert.equal(
+    folderForRoute(
+      'one',
+      '/w/one/folders/Projects/Archive',
+      'Projects/Archive',
+    ),
+    'Projects/Archive',
+  );
+  assert.equal(
+    folderForRoute('one', '/w/one/folders/Projects', 'Projects'),
+    'Projects',
+  );
+  assert.equal(folderForRoute('one', '/w/one', undefined), '');
+  assert.equal(folderForRoute('one', '/w/one/', undefined), '');
+  assert.equal(folderForRoute('one', '/w/two/folders/Other', 'Other'), null);
+  assert.equal(folderForRoute('one', '/w/one/notes/note', undefined), null);
 });

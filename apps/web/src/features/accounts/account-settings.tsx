@@ -726,7 +726,7 @@ export function AccountSettingsPage(): ReactNode {
     'remove-account': (
       <SettingsSection
         section={settingsSection('remove-account')}
-        description="This deletes your account and every note in your workspaces for good. Export your notes first if you want to keep them."
+        warning="This deletes your account and every note in your workspaces for good. Export your notes first if you want to keep them."
       >
         <Button
           variant="secondary"
@@ -831,7 +831,15 @@ export function AccountSettingsPage(): ReactNode {
               description={activePage?.help}
             />
           </PageBackProvider>
-          <SettingsTopicContext.Provider value={hideTitles}>
+          <SettingsTopicContext.Provider
+            value={{
+              hiddenTitles: hideTitles,
+              helpSection:
+                activePage?.help || activePage?.sections[0] === undefined
+                  ? null
+                  : settingsSection(activePage.sections[0]).id,
+            }}
+          >
             {activePage?.sections.map((key) => (
               <div key={key}>{sectionBodies[key]}</div>
             ))}
