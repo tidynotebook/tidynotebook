@@ -152,20 +152,22 @@ export function verificationRecoveryOf(
 /**
  * A byte count in words, such as `512 bytes` or `1.5 GB`.
  *
- * One decimal under ten of a unit and none above, so a number reads at a
- * glance and does not change its width with every byte.
+ * Each unit is 1024 times the one before, so a limit of 5 GiB reads `5 GB`,
+ * as the administrator typed it, and not `5.4 GB`. One decimal under ten of
+ * a unit and none above, so a number reads at a glance and does not change
+ * its width with every byte.
  */
 export function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes < 0) return '';
   let value = bytes;
   let unit = 0;
-  while (value >= 1000 && unit < byteUnits.length - 1) {
-    value /= 1000;
+  while (value >= 1024 && unit < byteUnits.length - 1) {
+    value /= 1024;
     unit += 1;
   }
   const shown =
     unit === 0 || value >= 10 ? Math.round(value) : Math.round(value * 10) / 10;
-  if (shown >= 1000 && unit < byteUnits.length - 1)
+  if (shown >= 1024 && unit < byteUnits.length - 1)
     return `1 ${byteUnits[unit + 1] ?? 'bytes'}`;
   if (unit === 0) return shown === 1 ? '1 byte' : `${String(shown)} bytes`;
   return `${String(shown)} ${byteUnits[unit] ?? 'bytes'}`;

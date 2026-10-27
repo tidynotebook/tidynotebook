@@ -69,15 +69,21 @@ await test('a byte count reads in one unit with at most one decimal', () => {
   assert.equal(formatBytes(1), '1 byte');
   assert.equal(formatBytes(512), '512 bytes');
   assert.equal(formatBytes(1536), '1.5 KB');
-  assert.equal(formatBytes(15 * 1000 * 1000), '15 MB');
-  assert.equal(formatBytes(10_000_000_000), '10 GB');
+  assert.equal(formatBytes(12 * 1024 * 1024), '12 MB');
+  assert.equal(formatBytes(15 * 1000 * 1000), '14 MB');
+  assert.equal(formatBytes(10 * 1024 ** 3), '10 GB');
   assert.equal(formatBytes(-1), '');
 });
 
 await test('the storage line is empty when the limit is unknown', () => {
   assert.equal(
     storageLine({ usedBytes: 1536, limitBytes: 5 * 1000 ** 3 }),
-    '1.5 KB of 5 GB used',
+    '1.5 KB of 4.7 GB used',
+  );
+  // The default limit is 5 GiB, and it reads as the 5 GB a person expects.
+  assert.equal(
+    storageLine({ usedBytes: 12 * 1024 * 1024, limitBytes: 5 * 1024 ** 3 }),
+    '12 MB of 5 GB used',
   );
   assert.equal(storageLine({ usedBytes: 0, limitBytes: 0 }), '');
 });
@@ -109,7 +115,7 @@ await test('the facts of a row name the role, the state and the activity', () =>
   assert.deepEqual(accountFacts(account(), now), [
     'Member',
     'Active 2 hours ago',
-    '1.5 KB of 5.4 GB used',
+    '1.5 KB of 5 GB used',
   ]);
   assert.deepEqual(
     accountFacts(
@@ -127,7 +133,7 @@ await test('the facts of a row name the role, the state and the activity', () =>
       'Administrator',
       'Disabled',
       'Not signed in',
-      '1.5 KB of 5.4 GB used',
+      '1.5 KB of 5 GB used',
       'ada@example.test',
     ],
   );
@@ -266,12 +272,13 @@ await test('a reset link carries its token in the fragment', () => {
   assert.equal(resetTokenOf(`#${'a'.repeat(513)}`), null);
 });
 
-await test('decimal values that round to the next unit use that unit', () => {
-  assert.equal(formatBytes(999_499), '999 KB');
-  assert.equal(formatBytes(999_500), '1 MB');
-  assert.equal(formatBytes(999_999), '1 MB');
-  assert.equal(formatBytes(1_000_000), '1 MB');
-  assert.equal(formatBytes(999_999_999), '1 GB');
+await test('values that round to the next unit use that unit', () => {
+  assert.equal(formatBytes(1023 * 1024), '1023 KB');
+  assert.equal(formatBytes(1023.5 * 1024), '1 MB');
+  assert.equal(formatBytes(1024 ** 2 - 1), '1 MB');
+  assert.equal(formatBytes(1024 ** 2), '1 MB');
+  assert.equal(formatBytes(1_000_000), '977 KB');
+  assert.equal(formatBytes(1024 ** 3 - 1), '1 GB');
 });
 
 await test('verification recovery does not offer signup when registration is closed', () => {

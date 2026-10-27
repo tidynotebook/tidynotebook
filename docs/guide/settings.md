@@ -118,8 +118,9 @@ file of the zip has the path of a note that is already there.
 
 This section states how much of its storage limit your account uses. Your
 account owns every note in your workspaces, and no other account can read
-them. Storage and transfer usage use decimal units: 1 GB is 1,000,000,000
-bytes. Administrator limit fields use GiB: 1 GiB is 1,073,741,824 bytes.
+them. Storage and transfer usage use binary units: 1 GB is 1,073,741,824
+bytes, the same as 1 GiB in the administrator limit fields. A limit of 5 GiB
+shows as 5 GB.
 
 An administrator also sees **Manage accounts**, which opens the accounts page.
 See [Accounts and invitations](accounts.md). When the installation has terms

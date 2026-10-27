@@ -701,9 +701,14 @@ const meterWidths = [
   'w-full',
 ] as const;
 
+/** The fill of a positive value too small for one step: 2 px. */
+const meterHairline = 'w-0.5';
+
 /**
- * The nearest twelfth of a meter. A positive value shows at least one step.
- * Only a value at or above the maximum shows the full track.
+ * The nearest twelfth of a meter, so the fill is in proportion to the value.
+ * A positive value below half a step shows only a 2 px hairline, not a whole
+ * step (12 MB of 5 GB is not a twelfth). Only a value at or above the maximum
+ * shows the full track.
  */
 export function meterWidthClassName(value: number, max: number): string {
   if (!Number.isFinite(value) || value < 0 || !Number.isFinite(max) || max <= 0)
@@ -712,7 +717,8 @@ export function meterWidthClassName(value: number, max: number): string {
     );
   if (value === 0) return meterWidths[0];
   if (value >= max) return meterWidths[12];
-  const step = Math.max(1, Math.min(11, Math.round((value / max) * 12)));
+  const step = Math.min(11, Math.round((value / max) * 12));
+  if (step === 0) return meterHairline;
   return meterWidths[step] ?? meterWidths[0];
 }
 

@@ -7,6 +7,19 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## Unreleased
 
+### Changed
+
+- The sidebar has one row of icons: New note, New folder, New note from template, Sort and Collapse. The Use template button and the Today's note row are removed from the sidebar. The calendar view and Search still open today's note.
+- Storage use shows binary units, so the default limit of 5 GiB reads as 5 GB and not 5.4 GB.
+
+### Fixed
+
+- The storage meter is in proportion to the use. A small use shows a thin line and not a twelfth of the track.
+
+### Removed
+
+- The writing tips card on All notes. Its stored dismissal on a device is ignored.
+
 ## 0.22.1 - 2026-10-27
 
 ### Changed

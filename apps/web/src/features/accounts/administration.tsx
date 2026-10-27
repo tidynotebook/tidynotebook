@@ -891,7 +891,7 @@ function ControlsDialog({
           <TextField
             id="controls-storage"
             label="Storage limit in GiB"
-            hint="1 GiB is about 1.074 GB. Usage is shown in GB."
+            hint="Usage uses the same unit, so 5 GiB shows as 5 GB."
             value={form.storageGigabytes}
             required
             error={errorOf('storageGigabytes')}

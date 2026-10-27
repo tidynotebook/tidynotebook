@@ -61,7 +61,9 @@ const variants: readonly ButtonVariant[] = [
 
 for (const [value, width, almostFull] of [
   [0, 'w-0', false],
-  [1, 'w-1/12', false],
+  [1, 'w-0.5', false],
+  [4, 'w-0.5', false],
+  [5, 'w-1/12', false],
   [89, 'w-11/12', false],
   [90, 'w-11/12', true],
   [100, 'w-full', true],
@@ -85,6 +87,14 @@ for (const [value, width, almostFull] of [
     }
     assert.ok(classes.track.includes('bg-hover'));
   });
+
+await test('a small positive use shows a hairline, not a forced step', () => {
+  const gib = 1024 ** 3;
+  assert.equal(meterWidthClassName(12 * 1024 ** 2, 5 * gib), 'w-0.5');
+  assert.equal(meterWidthClassName(1, 5 * gib), 'w-0.5');
+  assert.equal(meterWidthClassName(0, 5 * gib), 'w-0');
+  assert.equal(meterWidthClassName(2.5 * gib, 5 * gib), 'w-6/12');
+});
 
 await test('a meter keeps the last incomplete step below its maximum', () => {
   assert.equal(meterWidthClassName(99, 100), 'w-11/12');
