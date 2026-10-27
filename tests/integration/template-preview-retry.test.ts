@@ -3,12 +3,14 @@ import test, { after } from 'node:test';
 import { registerHooks } from 'node:module';
 import { Window } from 'happy-dom';
 import { act, createElement, useState } from 'react';
+import { MemoryRouter } from 'react-router';
 import {
   reads,
   creations,
   templateId,
   templateNote,
   setCreationError,
+  setTemplateAvailability,
 } from './support/template-dialog-fixture.ts';
 
 const browser = new Window({ url: 'http://localhost/' });
@@ -104,29 +106,55 @@ function Dialog({
     }),
   );
 }
-async function show(workspaceId: string, frameNotices = false): Promise<void> {
+/** Mount the template dialog for a workspace and finish its row summary read. */
+async function show(
+  workspaceId: string,
+  frameNotices = false,
+  hasTemplates = true,
+): Promise<void> {
   await act(async () => {
     // The shell keys this dialog by workspace, so navigation remounts it.
     root.render(
-      createElement(Dialog, { key: workspaceId, workspaceId, frameNotices }),
+      createElement(
+        MemoryRouter,
+        null,
+        createElement(Dialog, { key: workspaceId, workspaceId, frameNotices }),
+      ),
     );
   });
+  if (hasTemplates) await finishRowSummary();
 }
+/** Complete the pending first-line read for the template row. */
+async function finishRowSummary(): Promise<void> {
+  const summary = reads.shift();
+  assert.ok(summary, 'The row reads only device text for its first line.');
+  assert.equal(summary.fileId, templateId);
+  await act(async () => summary.finish(null));
+}
+/** Find a button by its text or accessible label. */
 function button(label: string): HTMLButtonElement {
   const found = [...container.querySelectorAll('button')].find(
-    (candidate) => candidate.textContent === label,
+    (candidate) =>
+      candidate.textContent === label ||
+      candidate.getAttribute('aria-label') === label,
   );
   assert.ok(found, `Missing button: ${label}`);
   return found;
 }
+/** Click a button, then finish the row read that opening the dialog starts. */
 async function click(label: string): Promise<void> {
   await act(async () => button(label).click());
+  if (label === 'Open template dialog') await finishRowSummary();
 }
 
 await test('a failed preview retries the same selection and guards creation until success', async () => {
   await show('workspace-a');
   assert.equal(button('Meeting').getAttribute('aria-pressed'), 'false');
-  assert.equal(button('Create note').disabled, true);
+  assert.ok(
+    ![...container.querySelectorAll('button')].some(
+      (control) => control.textContent === 'Create note',
+    ),
+  );
   await click('Meeting');
   assert.equal(button('Meeting').getAttribute('aria-pressed'), 'true');
   const first = reads.shift();
@@ -135,16 +163,19 @@ await test('a failed preview retries the same selection and guards creation unti
   assert.equal(button('Create note').disabled, true);
   await act(async () => first.finish(null));
   assert.equal(serverReads, 1);
-  assert.match(container.textContent ?? '', /Connect to the internet/);
+  assert.match(
+    container.textContent ?? '',
+    /Can't load this template. It is not on this device./,
+  );
   assert.equal(button('Create note').disabled, true);
 
   // No second click on the template. Retry must read the retained selection.
-  await click('Retry preview');
+  await click('Try again');
   const retry = reads.shift();
   assert.ok(retry);
   assert.equal(retry.fileId, first.fileId);
   assert.equal(retry.workspaceId, first.workspaceId);
-  assert.match(container.textContent ?? '', /The template preview is loading/);
+  assert.match(container.textContent ?? '', /Loading preview/);
   assert.equal(button('Create note').disabled, true);
   await click('Create note');
   assert.equal(creations.length, 0);
@@ -166,12 +197,16 @@ await test('a retry completion from the previous workspace cannot replace the ne
   const first = reads.shift();
   assert.ok(first);
   await act(async () => first.finish(null));
-  await click('Retry preview');
+  await click('Try again');
   const oldRetry = reads.shift();
   assert.ok(oldRetry);
 
   await show('workspace-new');
-  assert.equal(button('Create note').disabled, true);
+  assert.ok(
+    ![...container.querySelectorAll('button')].some(
+      (control) => control.textContent === 'Create note',
+    ),
+  );
   await click('Meeting');
   const current = reads.shift();
   assert.ok(current);
@@ -213,6 +248,62 @@ await test('creation errors reach the frame and remain after the dialog closes u
   await act(async () => retry.finish(templateNote('Create success test')));
   await click('Create note');
   assert.equal(notices?.textContent, '');
+});
+
+await test('selecting the same template keeps its pending read and ready preview', async () => {
+  await show('workspace-repeat');
+  await click('Meeting');
+  const preview = reads.shift();
+  assert.ok(preview);
+  await click('Meeting');
+  assert.equal(reads.length, 0, 'The pending selection must keep its read.');
+  await act(async () => preview.finish(templateNote('Meeting preview text')));
+  assert.equal(button('Create note').disabled, false);
+  await click('Meeting');
+  assert.equal(reads.length, 0, 'The ready selection needs no new read.');
+  assert.match(container.textContent ?? '', /Meeting preview text/);
+  assert.equal(button('Create note').disabled, false);
+  await click('Create note');
+  assert.deepEqual(creations.at(-1), {
+    folder: 'Meetings',
+    text: 'Meeting preview text',
+  });
+});
+
+await test('Back restores list focus only after the phone list is visible', async () => {
+  await show('workspace-back');
+  const row = button('Meeting');
+  await click('Meeting');
+  const preview = reads.shift();
+  assert.ok(preview);
+  await act(async () => preview.finish(templateNote('Back preview')));
+  let focusedWhileHidden = true;
+  row.addEventListener('focus', () => {
+    focusedWhileHidden = row.closest('.hidden') !== null;
+  });
+  await click('Back');
+  assert.equal(document.activeElement, row);
+  assert.equal(focusedWhileHidden, false);
+  assert.match(
+    container
+      .querySelector('a[href$="settings#templates-heading"]')
+      ?.getAttribute('href') ?? '',
+    /settings#templates-heading$/,
+  );
+});
+
+await test('an incomplete list with no available templates does not claim a search miss', async () => {
+  setTemplateAvailability({ empty: true, partial: true });
+  try {
+    await show('workspace-partial', false, false);
+    assert.match(container.textContent ?? '', /Some templates may be missing/);
+    assert.doesNotMatch(
+      container.textContent ?? '',
+      /No template matches|No templates yet/,
+    );
+  } finally {
+    setTemplateAvailability({ empty: false, partial: false });
+  }
 });
 
 after(async () => {

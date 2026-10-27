@@ -24,6 +24,7 @@ import {
 /** What a provider of a member setting reads from this hook. */
 export type MemberSettings<T> = {
   readonly settings: MemberSettingsState<T>;
+  readonly retry?: () => void;
   /** Stores new settings. The visible choice moves at once. */
   readonly save: (next: T) => void;
   /** Why the last change of a setting did not reach the server. */
@@ -182,5 +183,10 @@ export function useMemberSettings<T>(
     [source, accountId, workspaceId],
   );
 
-  return { settings, save, saveProblem };
+  return {
+    settings,
+    save,
+    saveProblem,
+    retry: () => setAttempt((value) => value + 1),
+  };
 }

@@ -8,6 +8,11 @@ export const reads: {
 }[] = [];
 export const creations: { folder: string; text: string | undefined }[] = [];
 let creationError: string | null = null;
+let availability = { empty: false, partial: false };
+/** Set whether the template list is empty or incomplete for the next render. */
+export function setTemplateAvailability(value: typeof availability): void {
+  availability = value;
+}
 export function setCreationError(message: string | null): void {
   creationError = message;
 }
@@ -24,11 +29,15 @@ export function useLocalStore() {
 export function useSession() {
   return { account: { accountId: 'template-test-account' } };
 }
+/** Return the template list for the current availability. */
 export function useFiles() {
   return {
-    notes: [{ fileId: templateId, path: 'Templates/Meeting.md' }],
+    notes: availability.empty
+      ? []
+      : [{ fileId: templateId, path: 'Templates/Meeting.md' }],
+    emptyFolders: [],
     loading: false,
-    limitNotice: null,
+    limitNotice: availability.partial ? 'The list is incomplete.' : null,
   };
 }
 export function useTemplates() {
