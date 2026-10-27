@@ -1,3 +1,4 @@
+import { useNavigationDrawer } from './use-navigation-drawer.ts';
 import { TrialNotice } from '../features/accounts/trial-notice.tsx';
 /**
  * The application shell: one frame for every signed in screen.
@@ -1073,10 +1074,21 @@ function ShellFrame({
     framePage === 'settings',
     drawerOpen,
   );
-  const toggleSidebar = useCallback((): void => {
-    if (framePage === 'settings') setDrawerOpen((open) => !open);
-    else sidebar.toggleCollapsed();
-  }, [framePage, sidebar.toggleCollapsed]);
+  const {
+    phoneButton: menuButtonRef,
+    desktopButton: desktopMenuButtonRef,
+    panel: sidebarRef,
+    rememberOpener,
+  } = useNavigationDrawer(drawerOpen, setDrawerOpen);
+  const toggleSidebar = useCallback(
+    (opener?: HTMLElement | null): void => {
+      if (framePage === 'settings') {
+        if (!drawerOpen) rememberOpener(opener);
+        setDrawerOpen((open) => !open);
+      } else sidebar.toggleCollapsed();
+    },
+    [framePage, sidebar.toggleCollapsed, drawerOpen, rememberOpener],
+  );
   const [sidebarView, setSidebarView] = useSidebarView();
   // The frame is the visible part of the screen, so iOS cannot scroll it
   // away under an open keyboard.
@@ -1084,9 +1096,6 @@ function ShellFrame({
   // The frame owns the open folders of the tree, because the New folder
   // dialog sits here and has to show the folder it made.
   const folders = useOpenFolders(workspaceId);
-  const menuButtonRef = useRef<HTMLButtonElement | null>(null);
-  const sidebarRef = useRef<HTMLElement | null>(null);
-  const drawerWasOpenRef = useRef(false);
   const session = useSession();
   const store = useLocalStore();
   const theme = useTheme();
@@ -1170,51 +1179,6 @@ function ShellFrame({
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [toggleSidebar, openPalette]);
-
-  useEffect(() => {
-    if (!drawerOpen) {
-      if (drawerWasOpenRef.current) menuButtonRef.current?.focus();
-      drawerWasOpenRef.current = false;
-      return;
-    }
-    drawerWasOpenRef.current = true;
-    const sidebar = sidebarRef.current;
-    const focusable = (): HTMLElement[] =>
-      sidebar === null
-        ? []
-        : Array.from(
-            sidebar.querySelectorAll<HTMLElement>(
-              'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
-            ),
-          );
-    window.requestAnimationFrame(() => focusable()[0]?.focus());
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const onKey = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        setDrawerOpen(false);
-        return;
-      }
-      if (event.key !== 'Tab') return;
-      const targets = focusable();
-      const first = targets[0];
-      const last = targets.at(-1);
-      if (first === undefined || last === undefined) return;
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => {
-      window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [drawerOpen]);
 
   const cycleTheme = useCallback((): void => {
     const order = ['system', 'light', 'dark'] as const;
@@ -1614,10 +1578,12 @@ function ShellFrame({
               ariaControls="notes-sidebar"
               ariaExpanded={drawerOpen}
               onClick={() => {
+                if (!drawerOpen) rememberOpener(menuButtonRef.current);
                 setDrawerOpen((open) => !open);
               }}
             />
             <Button
+              buttonRef={desktopMenuButtonRef}
               variant="ghost"
               size="sm"
               compact
@@ -1635,7 +1601,9 @@ function ShellFrame({
               icon={<PanelLeftIcon />}
               ariaControls="notes-sidebar"
               ariaExpanded={!displayedSidebar.collapsed}
-              onClick={toggleSidebar}
+              onClick={() => {
+                toggleSidebar(desktopMenuButtonRef.current);
+              }}
             />
 
             <Breadcrumb
