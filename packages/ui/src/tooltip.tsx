@@ -17,6 +17,7 @@ export function Tooltip({
 }): ReactNode {
   const tipRef = useRef<HTMLSpanElement | null>(null);
   useLayoutEffect(() => {
+    /** Place the tooltip next to its anchor inside the visible area. */
     const place = (): void => {
       const tip = tipRef.current;
       if (tip === null) return;

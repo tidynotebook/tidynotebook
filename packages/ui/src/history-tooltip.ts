@@ -19,14 +19,17 @@ export function useHistoryTooltip(): {
     dismissed: false,
   });
   const timer = useRef<number | null>(null);
+  /** Record and render the open state together so key handlers read the latest value. */
   const show = useCallback((next: boolean): void => {
     shown.current = next;
     setVisible(next);
   }, []);
+  /** Cancel a pending close, for example when the pointer reaches the other region. */
   const cancelClose = useCallback((): void => {
     if (timer.current !== null) window.clearTimeout(timer.current);
     timer.current = null;
   }, []);
+  /** Close after a short delay unless the pointer or focus enters a region again. */
   const closeOutside = useCallback((): void => {
     cancelClose();
     timer.current = window.setTimeout(() => {
@@ -38,6 +41,7 @@ export function useHistoryTooltip(): {
       show(false);
     }, transferDelayMs);
   }, [cancelClose, show]);
+  /** Open when a region gains the pointer or focus, unless Escape dismissed this visit. */
   const enter = useCallback(
     (part: Region): void => {
       cancelClose();
@@ -49,6 +53,7 @@ export function useHistoryTooltip(): {
     },
     [cancelClose, show],
   );
+  /** Release one region and close if no other region holds the tooltip. */
   const leave = useCallback(
     (part: Region): void => {
       region.current[part] = false;
@@ -57,6 +62,7 @@ export function useHistoryTooltip(): {
     [closeOutside],
   );
   useEffect(() => {
+    /** Close on Escape without moving focus, and keep it closed until the visit ends. */
     const dismiss = (event: KeyboardEvent): void => {
       if (event.key !== 'Escape' || !shown.current) return;
       region.current.dismissed = true;

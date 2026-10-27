@@ -18,6 +18,7 @@ NOTES_WEEK = [
 
 
 def rows(items, sel=None):
+    """Return note rows with an optional selected row."""
     out = []
     for k, it in enumerate(items):
         out.append(note_row(it[0], it[1], it[2] if len(it) > 2 else None, "hov" if sel == k else ""))
@@ -25,12 +26,14 @@ def rows(items, sel=None):
 
 
 def home_header(count="28 notes", ring=None):
+    """Return the All notes header with the note count."""
     r = " ring" if ring else ""
     return (f'<div class="hdr"><h1 class="pt">All notes</h1><p class="pmeta">{count}</p>'
             f'<div class="acts">{btn("New note", "p" + r, "plus")}{btn("Use template", "s", "template")}</div></div>')
 
 
 def all_notes(tip=True, sel=None, theme="", hots="", ring=None, extra_overlay=""):
+    """Return the phone All notes screen."""
     t = f'<div style="padding:16px 16px 0">{tipline("Type <kbd>[[</kbd> to link a note.")}</div>' if tip else ""
     body = (topbar_home() + '<div class="scroll">' + home_header(ring=ring) + t +
             '<div class="grouplabel">Today</div>' + rows(NOTES_TODAY, sel) +
@@ -40,7 +43,9 @@ def all_notes(tip=True, sel=None, theme="", hots="", ring=None, extra_overlay=""
 
 
 def drawer(theme="", sel="all", hots=""):
+    """Return the phone navigation drawer."""
     def r(key, icon, name, right=""):
+        """Return one drawer row."""
         return nav_row(icon, name, right, "sel" if sel == key else "")
     d = (f'<div class="drawer">{statusbar()}'
          f'<div class="dws"><span class="wsicon">P</span><span class="nm">Personal</span>{ibtn("down", "Switch workspace")}</div>'
@@ -61,6 +66,7 @@ def drawer(theme="", sel="all", hots=""):
 
 
 def folder_page(theme="", overlay="", hots="", empty=False):
+    """Return the phone folder page, with an optional empty state."""
     if empty:
         content = (f'<div class="hdr"><p class="eyebrow">{ic("folder")}Folder</p><h1 class="pt">Ideas</h1>'
                    f'<p class="pmeta">Empty</p></div>'
@@ -81,6 +87,7 @@ def folder_page(theme="", overlay="", hots="", empty=False):
 
 
 def folder_actions():
+    """Return the folder actions sheet."""
     rows_ = (nav_row("folderplus", "New folder inside") + nav_row("pen", "Rename") + nav_row("move", "Move") +
              nav_row("trash", "Delete folder", cls="danger"))
     return (f'<div class="scrim"></div><div class="sheet actionsheet"><span class="grab"></span>'
@@ -89,12 +96,14 @@ def folder_actions():
 
 
 def new_folder_sheet():
+    """Return the New folder sheet."""
     body = (f'<label class="flabel">Name</label><div class="field focus">Clients<span class="caret" style="height:20px"></span></div>'
             f'<div style="height:12px"></div>{destrow("Inside", "Projects")}')
     return sheet("New folder", body, btn("Create folder", "p full"))
 
 
 def account_menu():
+    """Return the account menu sheet."""
     head = (f'<div style="display:flex;align-items:center;gap:12px;padding:4px 20px 12px">'
             f'<span class="avatar" style="width:44px;height:44px;font-size:17px">M</span>'
             f'<div><div class="strong">Mira Patel</div><div class="muted" style="font-size:14px">mira@example.com</div></div></div>')
@@ -105,6 +114,7 @@ def account_menu():
 
 
 def calendar_sheet():
+    """Return the daily note calendar sheet."""
     days = ["M", "T", "W", "T", "F", "S", "S"]
     head = "".join(f'<span style="text-align:center;font-size:12px;font-weight:600;color:var(--muted)">{d}</span>' for d in days)
     cells = []
@@ -126,6 +136,7 @@ def calendar_sheet():
 
 
 def new_note_editor(theme="", hots=""):
+    """Return the editor for a new empty note."""
     body = (appbar("back", "", '<span class="pill"><span class="dot pend"></span>Saving</span>' + ibtn("more", "Note actions"), line=True) +
             '<div class="scroll"><div class="docv">'
             '<div style="font-size:28px;line-height:34px;font-weight:700;color:var(--strong);margin:4px 0 14px">'
@@ -136,6 +147,7 @@ def new_note_editor(theme="", hots=""):
 
 
 def loading_home():
+    """Return the loading All notes screen."""
     body = (topbar_home() + '<div class="scroll">' +
             '<div class="hdr"><h1 class="pt">All notes</h1><p class="pmeta"><span class="skel" style="display:inline-block;width:70px;height:10px"></span></p>'
             f'<div class="acts">{btn("New note", "p", "plus")}{btn("Use template", "s", "template")}</div></div>'
@@ -145,6 +157,7 @@ def loading_home():
 
 
 def empty_home(theme=""):
+    """Return the empty workspace screen."""
     body = (topbar_home() + '<div class="scroll"><div class="hdr"><h1 class="pt">All notes</h1></div>'
             f'<div class="empty" style="padding-top:110px"><span class="eic">{ic("file")}</span>'
             f'<h2>No notes yet</h2><p>Write your first note.</p>'
@@ -154,6 +167,7 @@ def empty_home(theme=""):
 
 
 def tips_card():
+    """Return the writing tips card."""
     tips = [
         ("Type <kbd>[[</kbd> to link a note.", "1"),
         ("Templates save repeat typing.", "2"),
@@ -168,6 +182,7 @@ def tips_card():
 
 
 def build():
+    """Build the notes prototype page."""
     j1 = journey("Journey 1: write a new note", "Two taps from the list to typing.", [
         fig("A1", "All notes", all_notes(hots=tap(98, 205)),
             ["Count only. No sentence about where notes go.",
