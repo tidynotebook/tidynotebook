@@ -123,7 +123,7 @@ def foundations():
     icons = '<div class="iconset">' + "".join(f'<div>{ic(n)}{n}</div>' for n in ICONS if n not in ("arrow", "signal", "wifi", "quote", "sparkle", "users", "eye", "share")) + "</div>"
 
     def comps(dark_):
-        spelling_switch = '<span class="switch on" role="switch" aria-checked="true"></span>'
+        spelling_switch = '<span class="switch on" role="switch" aria-checked="true" aria-label="Check spelling"></span>'
         cls = " t-dark" if dark_ else ""
         return (f'<div class="screen{cls}" style="height:auto;border-radius:12px;padding:18px;border:1px solid var(--subtle);gap:12px">'
                 f'<ul class="rows" style="padding:0">{note_row("Shared artefacts", "4 h")}{note_row("Trip plan", "1 d", "Travel", "hov")}</ul>'
