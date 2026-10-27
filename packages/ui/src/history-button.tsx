@@ -1,4 +1,5 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
+import { useHistoryTooltip } from './history-tooltip.ts';
 import { Tooltip } from './tooltip.tsx';
 import {
   historyButtonClassName,
@@ -22,26 +23,15 @@ export function HistoryButton({
 }): ReactNode {
   const name = historyButtonName(action, apple);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
-  const [hovered, setHovered] = useState(false);
-  const [focused, setFocused] = useState(false);
-  const [hidden, setHidden] = useState(false);
+  const tip = useHistoryTooltip();
   return (
     <span className="group relative inline-flex shrink-0">
       <button
         ref={buttonRef}
-        onPointerEnter={() => {
-          setHovered(true);
-          setHidden(false);
-        }}
-        onPointerLeave={() => setHovered(false)}
-        onFocus={() => {
-          setFocused(true);
-          setHidden(false);
-        }}
-        onBlur={() => setFocused(false)}
-        onKeyDown={(event) => {
-          if (event.key === 'Escape') setHidden(true);
-        }}
+        onPointerEnter={() => tip.enter('trigger')}
+        onPointerLeave={() => tip.leave('trigger')}
+        onFocus={() => tip.enter('focus')}
+        onBlur={() => tip.leave('focus')}
         type="button"
         className={historyButtonClassName(!available)}
         aria-label={name.label}
@@ -53,8 +43,13 @@ export function HistoryButton({
       >
         {action === 'undo' ? <UndoIcon /> : <RedoIcon />}
       </button>
-      {(hovered || focused) && !hidden && buttonRef.current !== null ? (
-        <Tooltip text={name.tooltip} anchor={buttonRef.current} />
+      {tip.visible && buttonRef.current !== null ? (
+        <Tooltip
+          text={name.tooltip}
+          anchor={buttonRef.current}
+          onPointerEnter={() => tip.enter('tooltip')}
+          onPointerLeave={() => tip.leave('tooltip')}
+        />
       ) : null}
     </span>
   );

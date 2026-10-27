@@ -3,6 +3,11 @@
 Status: APPROVED by the owner on 2026-10-27: "Wireframes approved but ensure the issues are fixed for desktop as well." The approved structure, flows and icon-only Undo and Redo are frozen. Every fix applies on phone and on desktop at medium (1024 px) and wide widths.
 Scope: user-facing UI shipped between v0.21.0 and v0.22.0 (source b430eb97).
 
+Implementation authority: [Approved implementation scope](approved-scope.md).
+The baseline is frozen at `2b7a9ebf`. The later pages guide styling only.
+The new behaviour proposals below do not change that scope.
+The original frozen parent remains `4f70eab1d32ed9241a0f31bfc2e46a2a3aa8c3a0`.
+
 ## Files
 
 Open any page from disk. No server or network is needed. Each page has a
