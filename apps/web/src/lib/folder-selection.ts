@@ -49,3 +49,14 @@ export function selectionForOpenNote(
   if (openNotePath === null) return selected;
   return folderOf(openNotePath);
 }
+
+/** A folder route states its destination before any create action can run. */
+export function folderForRoute(
+  workspaceId: string,
+  pathname: string,
+  matchedFolder: string | undefined,
+): string | null {
+  const base = `/w/${workspaceId}`;
+  if (pathname === base || pathname === `${base}/`) return '';
+  return pathname.startsWith(`${base}/folders/`) ? (matchedFolder ?? '') : null;
+}

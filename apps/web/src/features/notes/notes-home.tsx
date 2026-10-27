@@ -81,7 +81,7 @@ const keptOffsets = new Map<string, number>();
 
 /** Keeps the scroll offset of the list of one workspace while it mounts. */
 function useKeptOffset(
-  workspaceId: string,
+  scopeKey: string,
   ready: boolean,
 ): (element: HTMLElement | null) => void {
   const elementRef = useRef<HTMLElement | null>(null);
@@ -90,16 +90,16 @@ function useKeptOffset(
     if (!ready || element === null) return;
     const scroller = scrollerOf(element);
     if (scroller === null) return;
-    const kept = keptOffsets.get(workspaceId);
-    if (kept !== undefined) scroller.scrollTop = kept;
+    const kept = keptOffsets.get(scopeKey);
+    scroller.scrollTop = kept ?? 0;
     const remember = (): void => {
-      keptOffsets.set(workspaceId, scroller.scrollTop);
+      keptOffsets.set(scopeKey, scroller.scrollTop);
     };
     scroller.addEventListener('scroll', remember, { passive: true });
     return () => {
       scroller.removeEventListener('scroll', remember);
     };
-  }, [workspaceId, ready]);
+  }, [scopeKey, ready]);
   return (element) => {
     elementRef.current = element;
   };
@@ -245,7 +245,7 @@ export function NotesHomeView(): ReactNode {
       />
     </div>
   );
-  const keepOffset = useKeptOffset(workspaceId, !files.loading && total > 0);
+  const keepOffset = useKeptOffset(`${workspaceId}:${folder}`, !files.loading);
 
   return (
     <Page
@@ -253,91 +253,93 @@ export function NotesHomeView(): ReactNode {
         files.loading || total === 0 ? undefined : noteGroupSections(groups)
       }
     >
-      <PageHeader
-        title={folder === '' ? 'All notes' : folder}
-        description={
-          files.loading || total === 0
-            ? undefined
-            : `${subfolders.length === 0 ? '' : `${String(subfolders.length)} folders, `}${String(total)} ${total === 1 ? 'note' : 'notes'}`
-        }
-        actions={
-          showNewNoteInHeader(files.loading, total + subfolders.length)
-            ? actions
-            : undefined
-        }
-      />
-      {files.loading || total === 0 || folder !== '' ? null : (
-        <WritingStart
-          key={`${accountId ?? ''}:${workspaceId}`}
-          preferenceKey={`notesapp.writing-tips:${accountId ?? ''}:${workspaceId}`}
+      <div ref={keepOffset}>
+        <PageHeader
+          title={folder === '' ? 'All notes' : folder}
+          description={
+            files.loading || total === 0
+              ? undefined
+              : `${subfolders.length === 0 ? '' : `${String(subfolders.length)} ${subfolders.length === 1 ? 'folder' : 'folders'}, `}${String(total)} ${total === 1 ? 'note' : 'notes'}`
+          }
+          actions={
+            showNewNoteInHeader(files.loading, total + subfolders.length)
+              ? actions
+              : undefined
+          }
         />
-      )}
-      {newNote.error === null ? null : (
-        <Notice className="mb-4" tone="problem" message={newNote.error} />
-      )}
-      {subfolders.length === 0 ? null : (
-        <section aria-label="Folders">
-          <h2 className={groupLabelClassName}>Folders</h2>
-          <ul className={pageListClassName()}>
-            {subfolders.map((path) => (
-              <li key={path}>
-                <Link
-                  to={`/w/${workspaceId}/folders/${path.split('/').map(encodeURIComponent).join('/')}`}
-                  className={rowClassName()}
-                >
-                  <FolderIcon />
-                  <span className="truncate">
-                    {path.slice(folder.length + 1)}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-      {files.loading ? (
-        <LoadingState shape="list" rows={6} label="Your notes are loading." />
-      ) : total === 0 ? (
-        subfolders.length > 0 ? null : (
-          <EmptyState
-            icon={<FileTextIcon size={20} />}
-            title={folder === '' ? 'No notes yet' : 'This folder is empty'}
-            description={
-              folder === ''
-                ? 'Write your first note.'
-                : `New notes here go in ${folder}.`
-            }
-            action={actions}
+        {files.loading || total === 0 || folder !== '' ? null : (
+          <WritingStart
+            key={`${accountId ?? ''}:${workspaceId}`}
+            preferenceKey={`notesapp.writing-tips:${accountId ?? ''}:${workspaceId}`}
           />
-        )
-      ) : (
-        <div ref={keepOffset}>
-          {groups.map((group) => (
-            <section
-              key={group.label}
-              aria-labelledby={noteGroupHeadingId(group.label)}
-            >
-              <h2
-                className={groupLabelClassName}
-                id={noteGroupHeadingId(group.label)}
+        )}
+        {newNote.error === null ? null : (
+          <Notice className="mb-4" tone="problem" message={newNote.error} />
+        )}
+        {subfolders.length === 0 ? null : (
+          <section aria-label="Folders">
+            <h2 className={groupLabelClassName}>Folders</h2>
+            <ul className={pageListClassName()}>
+              {subfolders.map((path) => (
+                <li key={path}>
+                  <Link
+                    to={`/w/${workspaceId}/folders/${path.split('/').map(encodeURIComponent).join('/')}`}
+                    className={rowClassName()}
+                  >
+                    <FolderIcon />
+                    <span className="truncate">
+                      {path.slice(folder.length + 1)}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+        {files.loading ? (
+          <LoadingState shape="list" rows={6} label="Your notes are loading." />
+        ) : total === 0 ? (
+          subfolders.length > 0 ? null : (
+            <EmptyState
+              icon={<FileTextIcon size={20} />}
+              title={folder === '' ? 'No notes yet' : 'This folder is empty'}
+              description={
+                folder === ''
+                  ? 'Write your first note.'
+                  : `New notes here go in ${folder}.`
+              }
+              action={actions}
+            />
+          )
+        ) : (
+          <div>
+            {groups.map((group) => (
+              <section
+                key={group.label}
+                aria-labelledby={noteGroupHeadingId(group.label)}
               >
-                {group.label}
-              </h2>
-              <NoteGroupList
-                notes={group.notes}
-                workspaceId={workspaceId}
-                now={now}
-              />
-            </section>
-          ))}
-        </div>
-      )}
-      {!files.loading && total === 0 && folder === '' ? (
-        <WritingStart
-          key={`${accountId ?? ''}:${workspaceId}`}
-          preferenceKey={`notesapp.writing-tips:${accountId ?? ''}:${workspaceId}`}
-        />
-      ) : null}
+                <h2
+                  className={groupLabelClassName}
+                  id={noteGroupHeadingId(group.label)}
+                >
+                  {group.label}
+                </h2>
+                <NoteGroupList
+                  notes={group.notes}
+                  workspaceId={workspaceId}
+                  now={now}
+                />
+              </section>
+            ))}
+          </div>
+        )}
+        {!files.loading && total === 0 && folder === '' ? (
+          <WritingStart
+            key={`${accountId ?? ''}:${workspaceId}`}
+            preferenceKey={`notesapp.writing-tips:${accountId ?? ''}:${workspaceId}`}
+          />
+        ) : null}
+      </div>
     </Page>
   );
 }

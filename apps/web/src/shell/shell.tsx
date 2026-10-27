@@ -187,6 +187,7 @@ import { initialOf } from '../lib/initial.ts';
 import { workspaceAfterRemoval } from '../lib/workspace-choice.ts';
 import {
   knownFolderPaths,
+  folderForRoute,
   selectedFolderOrRoot,
   selectionForOpenNote,
 } from '../lib/folder-selection.ts';
@@ -1032,7 +1033,9 @@ function ShellFrame({
   useEffect(() => {
     setTemplateDestination(null);
   }, [workspaceId]);
-  const [selectedFolder, setSelectedFolder] = useState('');
+  const [chosenFolder, setSelectedFolder] = useState('');
+  const selectedFolder =
+    folderForRoute(workspaceId, location.pathname, params['*']) ?? chosenFolder;
   const sidebar = useSidebarSize();
   const [sidebarView, setSidebarView] = useSidebarView();
   // The frame is the visible part of the screen, so iOS cannot scroll it
