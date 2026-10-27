@@ -64,7 +64,7 @@ const ReviewView = lazy(async () => ({
   default: (await import('./features/review/review.tsx')).ReviewView,
 }));
 const TrashView = lazy(async () => ({
-  default: (await import('./features/trash/trash.tsx')).TrashView,
+  default: (await import('./features/trash/trash-page.tsx')).TrashView,
 }));
 const AttentionRoute = lazy(async () => ({
   default: (await import('./features/attention/attention.tsx')).AttentionRoute,
