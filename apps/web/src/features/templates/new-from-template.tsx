@@ -316,6 +316,7 @@ function TemplateChoices({
                           aria-label={choice.label}
                           aria-pressed={selected === choice.id}
                           onClick={() => {
+                            if (selected === choice.id) return;
                             setPreview(null);
                             setSelected(choice.id);
                           }}

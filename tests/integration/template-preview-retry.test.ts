@@ -241,6 +241,26 @@ await test('creation errors reach the frame and remain after the dialog closes u
   assert.equal(notices?.textContent, '');
 });
 
+await test('selecting the same template keeps its pending read and ready preview', async () => {
+  await show('workspace-repeat');
+  await click('Meeting');
+  const preview = reads.shift();
+  assert.ok(preview);
+  await click('Meeting');
+  assert.equal(reads.length, 0, 'The pending selection must keep its read.');
+  await act(async () => preview.finish(templateNote('Meeting preview text')));
+  assert.equal(button('Create note').disabled, false);
+  await click('Meeting');
+  assert.equal(reads.length, 0, 'The ready selection needs no new read.');
+  assert.match(container.textContent ?? '', /Meeting preview text/);
+  assert.equal(button('Create note').disabled, false);
+  await click('Create note');
+  assert.deepEqual(creations.at(-1), {
+    folder: 'Meetings',
+    text: 'Meeting preview text',
+  });
+});
+
 after(async () => {
   await act(async () => root.unmount());
   hooks.deregister();

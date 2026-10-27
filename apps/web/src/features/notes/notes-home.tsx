@@ -272,7 +272,7 @@ export function NotesHomeView(): ReactNode {
             : `${subfolders.length === 0 ? '' : `${String(subfolders.length)} folders, `}${String(total)} ${total === 1 ? 'note' : 'notes'}`
         }
         actions={
-          showNewNoteInHeader(files.loading, total) ? actions : undefined
+          showNewNoteInHeader(files.loading, total + subfolders.length) ? actions : undefined
         }
       />
       {files.loading || total === 0 || folder !== '' ? null : (
