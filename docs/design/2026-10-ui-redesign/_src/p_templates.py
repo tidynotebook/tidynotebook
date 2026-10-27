@@ -10,11 +10,13 @@ TEMPLATES = [
 
 
 def tpl_row(name, sub, cls=""):
+    """Return one template row."""
     return (f'<li class="row {cls}"><span class="ic">{ic("template")}</span><span class="main"><span class="nm">{name}</span>'
             f'<span class="sub" style="display:block">{sub}</span></span><span class="chev">{ic("chev")}</span></li>')
 
 
 def chooser_body(sel=None, search=False, items=TEMPLATES, query=""):
+    """Return the template chooser list, with optional search."""
     s = ""
     if search:
         s = (f'<div class="search{" v" if query else ""}" style="margin:0 16px 8px">{ic("search")}'
@@ -25,10 +27,12 @@ def chooser_body(sel=None, search=False, items=TEMPLATES, query=""):
 
 
 def chooser(sel=None, top=None, search=False, items=TEMPLATES, query=""):
+    """Return the template chooser sheet."""
     return sheet("Use a template", chooser_body(sel, search, items, query), top=top, np=True)
 
 
 def preview_doc(compact=False):
+    """Return the template preview document."""
     return ('<div class="cmp" style="padding:16px 18px;font-size:15px;line-height:23px">'
             '<div style="font-size:21px;line-height:28px;font-weight:700;color:var(--strong);margin-bottom:10px">Meeting <span class="field-chip">Date</span></div>'
             '<div class="muted" style="font-size:13px;font-weight:600;margin-top:4px">People</div><div>&nbsp;</div>'
@@ -39,6 +43,7 @@ def preview_doc(compact=False):
 
 
 def preview_sheet(folder="None", state="ready", top=None, title="Meeting notes"):
+    """Return the template preview sheet in one state."""
     help_ = f'<p class="help" style="display:flex;align-items:center;gap:6px">{ic("info", "xs")}Date fills in when you create the note.</p>'
     if state == "loading":
         main = ('<div class="cmp" style="height:230px;display:flex;flex-direction:column;gap:12px">'
@@ -67,7 +72,9 @@ def preview_sheet(folder="None", state="ready", top=None, title="Meeting notes")
 
 
 def folder_picker(sel="Projects", top=None):
+    """Return the folder picker sheet."""
     def r(name, ind=False, icon="folder", sub=""):
+        """Return one folder picker row."""
         on = name == sel
         s = f'<span class="sub" style="display:block">{sub}</span>' if sub else ""
         chk = f'<span class="check">{ic("check")}</span>' if on else ""
@@ -79,6 +86,7 @@ def folder_picker(sel="Projects", top=None):
 
 
 def created_editor(folder="Clients", theme=""):
+    """Return the editor after a note is created from a template."""
     body = (appbar("back", "", '<span class="pill"><span class="dot"></span>Saved</span>' + ibtn("more", "Note actions"), line=True) +
             '<div class="scroll"><div class="docv" style="padding-top:8px">'
             f'<p class="eyebrow" style="font-size:13px">{ic("folder", "xs")}{folder}</p>'
@@ -90,10 +98,12 @@ def created_editor(folder="Clients", theme=""):
 
 
 def templates_desktop_note():
+    """Return the desktop note for the templates page."""
     return ""
 
 
 def build():
+    """Build the templates prototype page."""
     j = journey("Journey 2: note from a template, in a folder", "Five taps. Every step has one clear action.", [
         fig("B1", "Folder page", folder_page(hots=tap(261, 225)), ["Tap Use template. The folder is already known."]),
         arrow("Tap Use template"),
