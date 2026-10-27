@@ -82,6 +82,7 @@ import {
   settingsPageForAnchor,
   visibleSettingsPages,
 } from '../../lib/settings-routes.ts';
+import { useSettingsListFocus } from './settings-list-focus.ts';
 import { SettingsTopicContext, SettingsSection } from './settings-section.tsx';
 import { ApiKeySettings } from './api-keys.tsx';
 import { ThemeSettings } from './theme-settings.tsx';
@@ -467,6 +468,9 @@ export function AccountSettingsPage(): ReactNode {
     };
   }, [store.store, accountId, workspaceId]);
 
+  const path = params.settingsPage;
+  const base = `/w/${workspaceId ?? ''}/settings`;
+  const settingsList = useSettingsListFocus(base, path);
   if (account === null) return <Navigate to="/login" replace />;
   // Only a count that arrived can offer the action that removes work. An
   // unknown count keeps the safe action alone (record 0038).
@@ -735,10 +739,8 @@ export function AccountSettingsPage(): ReactNode {
   };
 
   const pages = visibleSettingsPages(account);
-  const path = params.settingsPage;
   const activePage = pages.find((page) => page.path === path) ?? pages[0];
   const legacyPage = settingsPageForAnchor(location.hash);
-  const base = `/w/${workspaceId ?? ''}/settings`;
   if (legacyPage !== null)
     return <Navigate to={`${base}/${legacyPage}`} replace />;
   if (path !== undefined && !pages.some((page) => page.path === path))
@@ -753,6 +755,7 @@ export function AccountSettingsPage(): ReactNode {
     <div className="mx-auto w-full max-w-5xl p-gutter">
       <div className="grid min-w-0 gap-6 lg:grid-cols-3">
         <nav
+          ref={settingsList}
           aria-label="Settings"
           className={path === undefined ? 'min-w-0' : 'hidden min-w-0 lg:block'}
         >
