@@ -1000,6 +1000,7 @@ function ShellFrame({
       paletteOwner.current = null;
     };
   }, [workspaceId]);
+  /** Load the palette on demand and open it only if the same shell still owns the request. */
   const openPalette = useCallback((): void => {
     const owner = paletteOwner.current;
     setPaletteFailed(false);
@@ -1143,6 +1144,7 @@ function ShellFrame({
   }, [location.pathname]);
 
   useEffect(() => {
+    /** Open the palette with Ctrl or Cmd P or O, and collapse the sidebar with Ctrl or Cmd backslash. */
     const onKeyDown = (event: KeyboardEvent): void => {
       const key = event.key.toLowerCase();
       if (!event.metaKey && !event.ctrlKey) return;
@@ -1309,6 +1311,7 @@ function ShellFrame({
   // The palette reads its actions when it opens, so the rows of the
   // formatting tools follow the caret of the note at that moment. A list
   // that a render built kept the tools of an earlier caret.
+  /** Build the palette actions when the palette opens. */
   const paletteActions = useCallback(
     (): readonly PaletteAction[] => [
       {

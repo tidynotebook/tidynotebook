@@ -9,6 +9,7 @@ export const reads: {
 export const creations: { folder: string; text: string | undefined }[] = [];
 let creationError: string | null = null;
 let availability = { empty: false, partial: false };
+/** Set whether the template list is empty or incomplete for the next render. */
 export function setTemplateAvailability(value: typeof availability): void {
   availability = value;
 }
@@ -28,6 +29,7 @@ export function useLocalStore() {
 export function useSession() {
   return { account: { accountId: 'template-test-account' } };
 }
+/** Return the template list for the current availability. */
 export function useFiles() {
   return {
     notes: availability.empty
