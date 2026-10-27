@@ -47,7 +47,7 @@ def appearance(mode="System", theme="", hots=""):
 
 
 def spelling():
-    spelling_switch = '<span class="switch on" role="switch" aria-checked="true"></span>'
+    spelling_switch = '<span class="switch on" role="switch" aria-checked="true" aria-label="Check spelling"></span>'
     inner = (f'<div style="height:8px"></div><ul class="slist">{srow("", "Check spelling", chev=False, sub="Uses your browser languages", right=spelling_switch)}</ul>'
              f'<p class="sfoot">Code and web addresses are not checked.</p>')
     return detail("Spelling", inner)
@@ -76,8 +76,8 @@ def templates_settings():
 
 
 def offline(state="ready", theme=""):
-    sw = '<span class="switch on" role="switch" aria-checked="true"></span>'
-    swo = '<span class="switch" role="switch" aria-checked="false"></span>'
+    sw = '<span class="switch on" role="switch" aria-checked="true" aria-label="Images"></span>'
+    swo = '<span class="switch" role="switch" aria-checked="false" aria-label="Older versions"></span>'
     if state == "loading":
         lst = ('<ul class="slist">' + '<li class="srow"><span class="main"><span class="skel" style="display:block;width:40%"></span></span><span class="skel" style="width:51px;height:31px;border-radius:16px"></span></li>' * 2 + '</ul>')
     elif state == "failed":
@@ -110,8 +110,9 @@ def export_import(state="ready"):
 
 
 def profile(overlay=""):
+    save_name = btn("Save name", "s md dis", extra='aria-disabled="true"')
     inner = (f'<div style="height:8px"></div><label class="flabel">Name</label><div class="field">Mira Patel</div>'
-             f'<div style="margin-top:10px">{btn("Save name", "s md dis", extra='aria-disabled="true"')}</div>'
+             f'<div style="margin-top:10px">{save_name}</div>'
              f'<div class="slabel">Email</div><ul class="slist">{srow("mail", "mira@example.com", chev=False, sub="Used to sign in")}</ul>'
              f'<div class="slabel" style="margin-top:32px">Delete account</div><div class="slist" style="padding:14px">'
              f'<p class="help" style="margin:0 0 12px">Deletes your account and all notes. Export first.</p>{btn("Delete account", "dl md", "trash")}</div>')
