@@ -176,8 +176,9 @@ import {
   type SidebarSize,
 } from './sidebar-size.ts';
 import { useTreeDrag } from './tree-drag.ts';
-import { NoteTree, rowSpacerClassName } from './tree.tsx';
+import { NoteTree } from './tree.tsx';
 import {
+  rowSpacerClassName,
   treeListClassName,
   treeMessageClassName,
   treeRowClassName,

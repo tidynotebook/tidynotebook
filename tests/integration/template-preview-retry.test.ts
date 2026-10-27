@@ -56,11 +56,17 @@ const boundaries = new Set([
   '../../shell/files.js',
   './templates.js',
   '../notes/new-note.js',
+  '../history/version-preview.js',
 ]);
 const hooks = registerHooks({
   resolve(specifier, context, next) {
     if (
-      context.parentURL?.endsWith('/features/templates/new-from-template.js') &&
+      (context.parentURL?.endsWith(
+        '/features/templates/new-from-template.js',
+      ) ||
+        context.parentURL?.endsWith(
+          '/features/templates/template-choices.js',
+        )) &&
       boundaries.has(specifier)
     )
       return { url: fixtureUrl, shortCircuit: true };
@@ -107,12 +113,8 @@ function Dialog({
     }),
   );
 }
-/** Mount the template dialog for a workspace and finish its row summary read. */
-async function show(
-  workspaceId: string,
-  frameNotices = false,
-  hasTemplates = true,
-): Promise<void> {
+/** Mount the template dialog for a workspace. */
+async function show(workspaceId: string, frameNotices = false): Promise<void> {
   await act(async () => {
     // The shell keys this dialog by workspace, so navigation remounts it.
     root.render(
@@ -123,14 +125,14 @@ async function show(
       ),
     );
   });
-  if (hasTemplates) await finishRowSummary();
+  await settle();
 }
-/** Complete the pending first-line read for the template row. */
-async function finishRowSummary(): Promise<void> {
-  const summary = reads.shift();
-  assert.ok(summary, 'The row reads only device text for its first line.');
-  assert.equal(summary.fileId, templateId);
-  await act(async () => summary.finish(null));
+/** Let the lazy preview module and deferred values settle. */
+async function settle(): Promise<void> {
+  for (let round = 0; round < 3; round += 1)
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
 }
 /** Find a button by its text or accessible label. */
 function button(label: string): HTMLButtonElement {
@@ -143,14 +145,67 @@ function button(label: string): HTMLButtonElement {
   assert.ok(found, `Missing button: ${label}`);
   return found;
 }
-/** Click a button, then finish the row read that opening the dialog starts. */
+/** Click a button. */
 async function click(label: string): Promise<void> {
   await act(async () => button(label).click());
-  if (label === 'Open template dialog') await finishRowSummary();
+}
+/** The input of a labelled field. */
+function field(id: string): HTMLInputElement {
+  const found = container.querySelector(`#${id}`);
+  assert.ok(found instanceof window.HTMLInputElement, `Missing field: ${id}`);
+  return found;
+}
+/** Type a value into a React field. */
+async function type(id: string, value: string): Promise<void> {
+  const input = field(id);
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      'value',
+    )?.set?.call(input, value);
+    input.dispatchEvent(new window.Event('input', { bubbles: true }));
+  });
+}
+/** The Save in field, a button named by its label and its value. */
+function saveIn(): HTMLButtonElement {
+  const found = container.querySelector('#template-note-folder');
+  assert.ok(
+    found instanceof window.HTMLButtonElement,
+    'Missing field: Save in',
+  );
+  return found;
+}
+/** Submit the dialog form, as Enter in a field does. */
+async function submit(): Promise<void> {
+  const form = container.querySelector('[role="dialog"] form');
+  assert.ok(form);
+  await act(async () =>
+    form.dispatchEvent(
+      new window.Event('submit', { bubbles: true, cancelable: true }),
+    ),
+  );
+}
+/** Today in the written form of a date, as the name default uses it. */
+function todayText(): string {
+  const now = new Date();
+  return [
+    String(now.getFullYear()).padStart(4, '0'),
+    String(now.getMonth() + 1).padStart(2, '0'),
+    String(now.getDate()).padStart(2, '0'),
+  ].join('-');
+}
+/** Choose the Meeting template and finish its read with this text. */
+async function chooseMeeting(text: string): Promise<void> {
+  await click('Meeting');
+  const read = reads.shift();
+  assert.ok(read);
+  await act(async () => read.finish(templateNote(text)));
+  await settle();
 }
 
 await test('a failed preview retries the same selection and guards creation until success', async () => {
   await show('workspace-a');
+  assert.equal(reads.length, 0, 'The list reads no template text.');
   assert.equal(button('Meeting').getAttribute('aria-pressed'), 'false');
   assert.ok(
     ![...container.querySelectorAll('button')].some(
@@ -182,15 +237,18 @@ await test('a failed preview retries the same selection and guards creation unti
   await click('Create note');
   assert.equal(creations.length, 0);
   await act(async () => retry.finish(templateNote('Recovered meeting text')));
+  await settle();
   assert.match(container.textContent ?? '', /Recovered meeting text/);
   assert.ok(
     container.querySelector('section[aria-label="Preview of Meeting"]'),
   );
   assert.equal(button('Create note').disabled, false);
   await click('Create note');
-  assert.deepEqual(creations, [
-    { folder: 'Meetings', text: 'Recovered meeting text' },
-  ]);
+  assert.deepEqual(creations.at(-1), {
+    folder: 'Meetings',
+    text: 'Recovered meeting text',
+    name: `Meeting ${todayText()}`,
+  });
 });
 
 await test('a retry completion from the previous workspace cannot replace the new preview', async () => {
@@ -214,6 +272,7 @@ await test('a retry completion from the previous workspace cannot replace the ne
   assert.ok(current);
   assert.equal(current.workspaceId, 'workspace-new');
   await act(async () => current.finish(templateNote('Current workspace text')));
+  await settle();
   assert.equal(button('Create note').disabled, false);
   await act(async () => oldRetry.finish(templateNote('Stale workspace text')));
   assert.match(container.textContent ?? '', /Current workspace text/);
@@ -225,29 +284,19 @@ await test('creation errors reach the frame and remain after the dialog closes u
   const message = 'The note could not be made on this device.';
   setCreationError(message);
   await show('workspace-error', true);
-  await click('Meeting');
-  const first = reads.shift();
-  assert.ok(first);
-  await act(async () => first.finish(templateNote('Create error test')));
+  await chooseMeeting('Create error test');
   await click('Create note');
   const notices = container.querySelector(
     'section[aria-label="Frame notices"]',
   );
   assert.equal(notices?.textContent, message);
-  assert.doesNotMatch(
-    container.querySelector('[role="dialog"]')?.textContent ?? '',
-    /The note could not be made/,
-  );
   assert.equal(container.querySelectorAll('[role="alert"]').length, 0);
   assert.equal(container.querySelector('[role="dialog"]'), null);
-  assert.equal(notices?.textContent, message);
   setCreationError(null);
   await click('Open template dialog');
+  await settle();
   assert.equal(notices?.textContent, message);
-  await click('Meeting');
-  const retry = reads.shift();
-  assert.ok(retry);
-  await act(async () => retry.finish(templateNote('Create success test')));
+  await chooseMeeting('Create success test');
   await click('Create note');
   assert.equal(notices?.textContent, '');
 });
@@ -260,25 +309,118 @@ await test('selecting the same template keeps its pending read and ready preview
   await click('Meeting');
   assert.equal(reads.length, 0, 'The pending selection must keep its read.');
   await act(async () => preview.finish(templateNote('Meeting preview text')));
+  await settle();
   assert.equal(button('Create note').disabled, false);
   await click('Meeting');
   assert.equal(reads.length, 0, 'The ready selection needs no new read.');
   assert.match(container.textContent ?? '', /Meeting preview text/);
-  assert.equal(button('Create note').disabled, false);
-  await click('Create note');
+});
+
+await test('the preview shows the rendered note with the date, the time and the typed name', async () => {
+  await show('workspace-render');
+  await chooseMeeting('# {{title}}\n\nOn {{date}} at {{time}}\n');
+  const region = (): string =>
+    container.querySelector('[role="region"][aria-label="The new note"]')
+      ?.textContent ?? '';
+  assert.match(
+    region(),
+    new RegExp(
+      `^# Meeting ${todayText()}\n\nOn ${todayText()} at \\d\\d:\\d\\d\n$`,
+    ),
+  );
+  assert.doesNotMatch(region(), /\{\{/);
+  assert.equal(field('template-note-name').value, `Meeting ${todayText()}`);
+  await type('template-note-name', 'Kickoff');
+  await settle();
+  assert.match(region(), /^# Kickoff\n/);
+  assert.equal(
+    container
+      .querySelector('[role="region"][aria-label="The new note"]')
+      ?.getAttribute('data-path'),
+    'Meetings/Kickoff.md',
+  );
+  await submit();
   assert.deepEqual(creations.at(-1), {
     folder: 'Meetings',
-    text: 'Meeting preview text',
+    text: '# {{title}}\n\nOn {{date}} at {{time}}\n',
+    name: 'Kickoff',
   });
 });
 
-await test('Back restores list focus only after the phone list is visible', async () => {
+await test('the name is checked for empty, invalid characters and a clash in the folder', async () => {
+  await show('workspace-names');
+  await chooseMeeting('Body');
+  const count = creations.length;
+  const problem = (): string =>
+    container.querySelector('#template-note-name-error')?.textContent ?? '';
+  await type('template-note-name', '   ');
+  await submit();
+  assert.equal(creations.length, count);
+  assert.match(problem(), /Type a note name/);
+  await type('template-note-name', 'a/b');
+  assert.match(problem(), /cannot contain a slash/);
+  await type('template-note-name', 'plan');
+  assert.match(problem(), /A note named plan is already in this folder/);
+  await submit();
+  assert.equal(creations.length, count);
+  assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
+  await type('template-note-name', 'Plan 2');
+  assert.equal(problem(), '');
+  await submit();
+  assert.deepEqual(creations.at(-1), {
+    folder: 'Meetings',
+    text: 'Body',
+    name: 'Plan 2',
+  });
+});
+
+await test('Save in opens the folder tree in the same dialog and creates the note there', async () => {
+  await show('workspace-folder');
+  await chooseMeeting('Body');
+  assert.equal(saveIn().getAttribute('aria-expanded'), 'false');
+  assert.equal(
+    saveIn().getAttribute('aria-labelledby'),
+    'template-note-folder-label template-note-folder',
+  );
+  await act(async () => saveIn().click());
+  const tree = container.querySelector('[role="tree"]');
+  assert.ok(tree);
+  assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
+  assert.ok(tree.closest('[role="dialog"]'));
+  // The details stay: the folder choice does not replace the dialog body.
+  assert.ok(field('template-note-name'));
+  const chosen = tree.querySelector('[aria-selected="true"]');
+  assert.match(chosen?.textContent ?? '', /Meetings/);
+  // Escape closes the tree only.
+  await act(async () =>
+    tree.dispatchEvent(
+      new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+    ),
+  );
+  assert.equal(container.querySelector('[role="tree"]'), null);
+  assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
+  await act(async () => saveIn().click());
+  await click('Open Projects');
+  const launch = [
+    ...container.querySelectorAll<HTMLElement>('[role="treeitem"]'),
+  ].find((row) => row.textContent === 'Launch');
+  assert.ok(launch);
+  await act(async () => launch.click());
+  assert.equal(container.querySelector('[role="tree"]'), null);
+  assert.match(saveIn().textContent ?? '', /Launch/);
+  assert.equal(field('template-note-name').value, `Meeting ${todayText()}`);
+  await click('Create note');
+  assert.deepEqual(creations.at(-1), {
+    folder: 'Projects/Launch',
+    text: 'Body',
+    name: `Meeting ${todayText()}`,
+  });
+});
+
+await test('Back restores list focus and Manage templates sits in the header', async () => {
   await show('workspace-back');
   const row = button('Meeting');
-  await click('Meeting');
-  const preview = reads.shift();
-  assert.ok(preview);
-  await act(async () => preview.finish(templateNote('Back preview')));
+  await chooseMeeting('Back preview');
   let focusedWhileHidden = true;
   row.addEventListener('focus', () => {
     focusedWhileHidden = row.closest('.hidden') !== null;
@@ -286,18 +428,19 @@ await test('Back restores list focus only after the phone list is visible', asyn
   await click('Back');
   assert.equal(document.activeElement, row);
   assert.equal(focusedWhileHidden, false);
+  const manage = container.querySelector('a[aria-label="Manage templates"]');
   assert.match(
-    container
-      .querySelector('a[href$="settings#templates-heading"]')
-      ?.getAttribute('href') ?? '',
+    manage?.getAttribute('href') ?? '',
     /settings#templates-heading$/,
   );
+  // The link is in the title row, before the list.
+  assert.ok(manage?.parentElement?.querySelector('h2'));
 });
 
 await test('an incomplete list with no available templates does not claim a search miss', async () => {
   setTemplateAvailability({ empty: true, partial: true });
   try {
-    await show('workspace-partial', false, false);
+    await show('workspace-partial');
     assert.match(container.textContent ?? '', /Some templates may be missing/);
     assert.doesNotMatch(
       container.textContent ?? '',
@@ -308,27 +451,24 @@ await test('an incomplete list with no available templates does not claim a sear
   }
 });
 
-await test('duplicate template names retain their first lines as accessible button text', async () => {
+await test('rows show only the name, and the subfolder only for a repeated name', async () => {
   setDuplicateTemplates(true);
   try {
-    await show('workspace-duplicates', false, false);
-    const summaries = reads.splice(0);
-    assert.equal(summaries.length, 2);
-    await act(async () => {
-      for (const [index, summary] of summaries.entries())
-        summary.finish({
-          ...templateNote(`Team ${index + 1} notes`),
-          fileId: summary.fileId,
-        });
-    });
+    await show('workspace-duplicates');
+    assert.equal(reads.length, 0);
     const choices = [...container.querySelectorAll('button[aria-pressed]')];
     assert.equal(choices.length, 2);
-    assert.match(choices[0]?.textContent ?? '', /MeetingTeam 1 notes/);
-    assert.match(choices[1]?.textContent ?? '', /MeetingTeam 2 notes/);
-    assert.ok(choices.every((choice) => !choice.hasAttribute('aria-label')));
+    assert.equal(choices[0]?.textContent, 'MeetingFirst');
+    assert.equal(choices[1]?.textContent, 'MeetingSecond');
   } finally {
     setDuplicateTemplates(false);
   }
+  await show('workspace-single');
+  assert.equal(button('Meeting').textContent, 'Meeting');
+  assert.doesNotMatch(
+    container.textContent ?? '',
+    /From the "Templates" folder/,
+  );
 });
 
 after(async () => {

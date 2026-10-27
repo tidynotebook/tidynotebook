@@ -61,6 +61,16 @@ export function dialogTitleClassName(hidden: boolean): string {
     : 'sticky top-0 z-10 m-0 bg-card px-5 pb-1 pt-4 text-ui font-semibold text-strong';
 }
 
+/** The title row of a dialog that has controls next to its title. */
+export function dialogHeaderClassName(): string {
+  return 'sticky top-0 z-10 flex items-center gap-2 bg-card pb-1 pl-5 pr-3 pt-3';
+}
+
+/** The title inside the title row of {@link dialogHeaderClassName}. */
+export function dialogHeaderTitleClassName(): string {
+  return 'm-0 min-w-0 flex-1 truncate text-ui font-semibold text-strong';
+}
+
 /** The action row at the bottom of a dialog, as classes. */
 export function dialogFooterClassName(): string {
   return 'sticky bottom-0 z-10 flex flex-wrap justify-end gap-cluster bg-card px-5 pb-4 pt-2';

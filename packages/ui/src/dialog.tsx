@@ -25,6 +25,8 @@ import {
   dialogFooterClassName,
   dialogPanelClassName,
   dialogRootClassName,
+  dialogHeaderClassName,
+  dialogHeaderTitleClassName,
   dialogTitleClassName,
   type DialogAlign,
   type DialogWidth,
@@ -79,8 +81,11 @@ export function Dialog({
   describedBy,
   returnFocus,
   anchor,
+  actions,
 }: {
   readonly anchor?: HTMLElement | null;
+  /** Controls at the end of the title row, such as a link to settings. */
+  readonly actions?: ReactNode;
   readonly open: boolean;
   readonly onClose: () => void;
   readonly title: string;
@@ -129,6 +134,13 @@ export function Dialog({
     });
     const onKeyDown = (event: KeyboardEvent): void => {
       if (event.key === 'Escape') {
+        // A popup inside the dialog, such as a folder tree under a field,
+        // closes itself first, and the dialog stays open.
+        if (
+          event.target instanceof Element &&
+          event.target.closest('[data-dialog-escape="local"]') !== null
+        )
+          return;
         event.preventDefault();
         event.stopImmediatePropagation();
         closeRef.current();
@@ -221,9 +233,21 @@ export function Dialog({
         aria-describedby={describedBy}
         tabIndex={-1}
       >
-        <h2 className={dialogTitleClassName(hideTitle || screen)} id={titleId}>
-          {title}
-        </h2>
+        {actions === undefined || hideTitle || screen ? (
+          <h2
+            className={dialogTitleClassName(hideTitle || screen)}
+            id={titleId}
+          >
+            {title}
+          </h2>
+        ) : (
+          <div className={dialogHeaderClassName()}>
+            <h2 className={dialogHeaderTitleClassName()} id={titleId}>
+              {title}
+            </h2>
+            {actions}
+          </div>
+        )}
         {children}
       </div>
     </div>

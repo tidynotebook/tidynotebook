@@ -60,3 +60,8 @@ export function folderForRoute(
   if (pathname === base || pathname === `${base}/`) return '';
   return pathname.startsWith(`${base}/folders/`) ? (matchedFolder ?? '') : null;
 }
+
+/** Whether `folder` is `moved` or one of its children. */
+export function isInsideFolder(folder: string, moved: string): boolean {
+  return folder === moved || folder.startsWith(`${moved}/`);
+}

@@ -30,7 +30,7 @@ import {
   SelectField,
   TextField,
 } from '@notesapp/ui';
-import { FolderPicker } from '../folders/folder-picker.tsx';
+import { FolderTreePicker } from '../folders/folder-tree-picker.tsx';
 import { knownFolderPaths } from '../../lib/folder-selection.ts';
 import { useFiles } from '../../shell/files.tsx';
 import { useStoreOnLeave } from '../../shell/store-on-leave.ts';
@@ -120,19 +120,14 @@ function LayoutFields({
                 onChange={setFolder}
                 error={problem === 'folder' ? sentence : undefined}
               />
-              <FolderPicker
+              <FolderTreePicker
+                label="Folders"
                 folders={knownFolderPaths(
                   files.notes.map((note) => note.path),
                   files.emptyFolders,
                 )}
                 selected={folder}
                 onSelect={setFolder}
-                onDone={() => {
-                  if (problem === null) {
-                    leave.onBlur();
-                    setEditing(null);
-                  }
-                }}
               />
             </>
           ) : (
@@ -148,7 +143,7 @@ function LayoutFields({
             />
           )}
         </DialogBody>
-        {editing === 'format' ? (
+        {editing !== null ? (
           <DialogFooter>
             <Button
               disabled={problem !== null}

@@ -18,11 +18,12 @@ import {
   Button,
   Dialog,
   DialogBody,
+  DialogFooter,
   LoadingState,
   Notice,
   TextField,
 } from '@notesapp/ui';
-import { FolderPicker } from '../folders/folder-picker.tsx';
+import { FolderTreePicker } from '../folders/folder-tree-picker.tsx';
 import { knownFolderPaths } from '../../lib/folder-selection.ts';
 import { useFiles } from '../../shell/files.tsx';
 import { useStoreOnLeave } from '../../shell/store-on-leave.ts';
@@ -97,8 +98,9 @@ function FolderField({
               problem === null ? undefined : templateFolderSentences[problem]
             }
           />
-          <FolderPicker
-            includeNone={false}
+          <FolderTreePicker
+            includeRoot={false}
+            label="Folders"
             folders={Array.from(
               new Set([
                 settings.folder,
@@ -110,14 +112,20 @@ function FolderField({
             )}
             selected={folder}
             onSelect={setFolder}
-            onDone={() => {
+          />
+        </DialogBody>
+        <DialogFooter>
+          <Button
+            onClick={() => {
               if (problem === null) {
                 leave.onBlur();
                 setChanging(false);
               }
             }}
-          />
-        </DialogBody>
+          >
+            Done
+          </Button>
+        </DialogFooter>
       </Dialog>
       <p className="mb-3 mt-0 text-control text-muted" aria-live="polite">
         {problem !== null || files.loading

@@ -31,7 +31,7 @@
  * `packages/ui`: `textStrong` meets 4.5 to 1 on the sidebar surface and on
  * both fills, and `focus` meets the 3 to 1 non-text minimum.
  */
-import { rowClassName } from '@notesapp/ui';
+import { buttonClassName, rowClassName } from '@notesapp/ui';
 
 /** What one row of the tree is right now. */
 export type TreeRowState = {
@@ -161,3 +161,18 @@ export const treeListClassName = 'mt-0.5';
 export function treeMessageClassName(tone: 'status' | 'problem'): string {
   return `sticky -bottom-2 z-10 bg-surface px-2 py-2 text-control ${tone === 'problem' ? 'text-danger' : 'text-muted'}`;
 }
+
+/**
+ * One icon action that sits on a row: the chevron and the row menu.
+ *
+ * A ghost control of the one recipe, square, and as small as a row allows on
+ * a desktop while it keeps the 44 px touch target under the medium width.
+ */
+export const rowActionClassName = buttonClassName({
+  variant: 'ghost',
+  size: 'sm',
+  className: 'size-11 shrink-0 px-0 md:size-7',
+});
+
+/** The column that a row with no chevron keeps for one, so names line up. */
+export const rowSpacerClassName = 'size-11 shrink-0 md:size-7';

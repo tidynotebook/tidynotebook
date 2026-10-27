@@ -37,7 +37,6 @@ import type { PublicationScope } from '@notesapp/core';
 import {
   AnchoredMenu,
   Badge,
-  buttonClassName,
   ChevronDownIcon,
   ChevronRightIcon,
   FileTextIcon,
@@ -87,6 +86,8 @@ import {
   treeRowClassName,
   treeRowLeadingClassName,
   treeRowNameClassName,
+  rowActionClassName,
+  rowSpacerClassName,
 } from '../lib/tree-row.ts';
 import {
   blurLeavesRow,
@@ -121,21 +122,6 @@ import {
   type TreeSelection,
 } from '../lib/tree-selection.ts';
 import { trashPlan } from '../lib/tree-trash.ts';
-
-/**
- * One icon action that sits on a row: the chevron and the row menu.
- *
- * A ghost control of the one recipe, square, and as small as a row allows on
- * a desktop while it keeps the 44 px touch target under the medium width.
- */
-export const rowActionClassName = buttonClassName({
-  variant: 'ghost',
-  size: 'sm',
-  className: 'size-11 shrink-0 px-0 md:size-7',
-});
-
-/** The column that a row with no chevron keeps for one, so names line up. */
-export const rowSpacerClassName = 'size-11 shrink-0 md:size-7';
 
 /** What the tree asks the frame to do, and what it reads from it. */
 export type NoteTreeProps = {

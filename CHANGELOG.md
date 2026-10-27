@@ -11,6 +11,8 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 - The sidebar has one row of icons: New note, New folder, New note from template, Sort and Collapse. The Use template button and the Today's note row are removed from the sidebar. The calendar view and Search still open today's note.
 - Storage use shows binary units, so the default limit of 5 GiB reads as 5 GB and not 5.4 GB.
+- New note from template is one dialog. The list shows template names only, with Manage templates in the title row. You set the name of the note (the template name and today's date by default) and the folder in the same dialog. The preview shows the note as it will read, with the date, the time and the name filled in. A name that is empty, has a character that cannot be stored, or is already in the folder shows an error before the note is made.
+- Every folder choice is a tree like the sidebar: the template destination, the parent of New folder, Move to folder, and the Templates and Daily notes folder settings. The tree opens at the current folder, has Filter folders for more than 8 folders, supports the arrow keys, and has New folder here. Move to folder shows the moved folder and its children as unavailable.
 
 ### Fixed
 

@@ -19,11 +19,12 @@ import {
   type LocalStore,
 } from '@notesapp/sync';
 import {
+  freeNamedPath,
   freeNotePath,
   newNoteDraft,
   newNoteTemplateText,
 } from '../../lib/new-note-draft.ts';
-import { displayNoteName } from '../../lib/note-name.ts';
+import { cleanNoteBaseName, displayNoteName } from '../../lib/note-name.ts';
 
 type CreationScope = { readonly workspaceId: string; active: boolean };
 
@@ -35,8 +36,11 @@ export function useCreateNote(
   onError?: (message: string | null) => void,
   onCreationStart?: () => (message: string | null) => boolean | void,
 ): {
-  /** Creates the note in the named folder, or at the root for an empty name. */
-  readonly create: (folder?: string, template?: string) => void;
+  /**
+   * Creates the note in the named folder, or at the root for an empty name.
+   * A chosen name is made free in the folder; with none, "New note" is.
+   */
+  readonly create: (folder?: string, template?: string, name?: string) => void;
   readonly error: string | null;
 } {
   const navigate = useNavigate();
@@ -54,7 +58,7 @@ export function useCreateNote(
   }, [store, accountId, workspaceId]);
 
   const create = useCallback(
-    (folder = '', template?: string): void => {
+    (folder = '', template?: string, name?: string): void => {
       const scope = currentScope.current;
       if (scope === null || !scope.active || scope.workspaceId !== workspaceId)
         return;
@@ -92,7 +96,12 @@ export function useCreateNote(
           } catch {
             taken = [];
           }
-          const path = freeNotePath(taken, folder);
+          // A name that became taken since the dialog checked it is made
+          // free, so the note is never lost to a clash.
+          const path =
+            name === undefined
+              ? freeNotePath(taken, folder)
+              : freeNamedPath(taken, folder, cleanNoteBaseName(name));
           const fileId = generateUUID();
           const draft = newNoteDraft({
             accountId,
