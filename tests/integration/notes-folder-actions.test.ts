@@ -20,7 +20,6 @@ const boundaries = new Set([
   '../../shell/files.js',
   '../../shell/now.js',
   '../../shell/document-title.js',
-  './writing-start.js',
   '../templates/new-from-template.js',
   './new-note.js',
   '../folders/folder-page-actions.js',

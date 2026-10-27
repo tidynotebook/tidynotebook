@@ -51,7 +51,6 @@ import { useLocalStore, useSession } from '../../app.tsx';
 import { useDocumentTitle } from '../../shell/document-title.ts';
 import { useNow } from '../../shell/now.ts';
 import { useFiles } from '../../shell/files.tsx';
-import { WritingStart } from './writing-start.tsx';
 import { FolderPageActions } from '../folders/folder-page-actions.tsx';
 import { NewFromTemplate } from '../templates/new-from-template.tsx';
 import { useCreateNote } from './new-note.tsx';
@@ -278,12 +277,6 @@ export function NotesHomeView(): ReactNode {
             </div>
           }
         />
-        {files.loading || total === 0 || folder !== '' ? null : (
-          <WritingStart
-            key={`${accountId ?? ''}:${workspaceId}`}
-            preferenceKey={`notesapp.writing-tips:${accountId ?? ''}:${workspaceId}`}
-          />
-        )}
         {newNote.error === null ? null : (
           <Notice className="mb-4" tone="problem" message={newNote.error} />
         )}
@@ -344,12 +337,6 @@ export function NotesHomeView(): ReactNode {
             ))}
           </div>
         )}
-        {!files.loading && total === 0 && folder === '' ? (
-          <WritingStart
-            key={`${accountId ?? ''}:${workspaceId}`}
-            preferenceKey={`notesapp.writing-tips:${accountId ?? ''}:${workspaceId}`}
-          />
-        ) : null}
       </div>
     </Page>
   );

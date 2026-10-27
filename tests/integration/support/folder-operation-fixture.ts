@@ -134,10 +134,6 @@ export function useNow() {
 }
 /** Ignore document title changes. */
 export function useDocumentTitle() {}
-/** Render no writing start panel. */
-export function WritingStart() {
-  return null;
-}
 /** Render a placeholder Use template button. */
 export function NewFromTemplate() {
   return createElement('button', null, 'Use template');

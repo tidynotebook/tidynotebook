@@ -84,11 +84,10 @@ server.** when your server has your work. See
 
 ## Find your next action
 
-Open **All notes** to see recent notes. Its writing tips are optional. Select
-**Dismiss tips** to keep them closed on this device for this workspace.
+Open **All notes** to see recent notes.
 
-To try a daily note, select **Open today's note** in the tips, or use the
-same action in Search. Return to that action to open the same note today.
+To try a daily note, open the calendar view of the sidebar and select
+**Open today's note**, or use the same action in Search. Return to that action to open the same note today.
 
 To link notes, type `[[` in a note and select a note from the list.
 To start with saved text, select **From template** beside note creation.
