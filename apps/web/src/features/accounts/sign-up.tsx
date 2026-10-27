@@ -68,7 +68,6 @@ export function SignUpPage(): ReactNode {
   useDocumentTitle('Create an account');
 
   const submit = async (): Promise<void> => {
-    if (busy !== null) return;
     setFieldError('');
     const problem = passwordProblem(password);
     if (problem !== null) {
@@ -112,25 +111,32 @@ export function SignUpPage(): ReactNode {
 
   if (sentTo !== null)
     return (
-      <AuthFrame title="Check your email">
-        <p className="mb-3 mt-0 text-control text-muted">
-          We sent a link to {sentTo}.
+      <AuthFrame title="Open the link in your mail">
+        <p className="mb-5 mt-0 text-control text-muted">
+          A message goes to {sentTo}. Open the link in it to finish your
+          account. This browser can sign you in after verification. On another
+          device, enter your password to sign in.
         </p>
         <p className="mb-5 mt-0 text-control text-muted">
-          No email? Check spam.
+          Check your spam folder if the message does not arrive. To send another
+          link or use a different address, return to the form. Email limits can
+          delay another message.
         </p>
-        {error === '' ? null : <Notice tone="problem" message={error} />}
         <Button
-          disabled={busy !== null}
+          variant="secondary"
           onClick={() => {
-            void submit();
+            setSentTo(null);
           }}
         >
-          {busy === null ? 'Send another link' : 'Sending'}
+          Change address or send another link
         </Button>
-        <Button variant="secondary" onClick={() => setSentTo(null)}>
-          Use a different email
-        </Button>
+        <Link
+          className={buttonClassName({ variant: 'ghost' })}
+          to="/login"
+          state={{ email: sentTo }}
+        >
+          Go to sign in
+        </Link>
       </AuthFrame>
     );
 
@@ -140,7 +146,8 @@ export function SignUpPage(): ReactNode {
         <Notice className="mb-4" message={trialOffer(trialSeconds) ?? ''} />
       )}
       <p className="mb-5 mt-0 text-control text-muted">
-        We send a link to check your email.
+        Enter your address and choose a password. A link goes to the address to
+        prove that it is yours.
       </p>
       <form
         onSubmit={(event): void => {

@@ -1,11 +1,13 @@
 import {
   useCallback,
+  useEffect,
   useRef,
   useState,
   type ReactNode,
   type RefObject,
 } from 'react';
 import { runHistoryAction, type EditorView } from '@notesapp/editor';
+import { copyNoticeMs } from '../../lib/copy-note.ts';
 import { Button, CloseIcon, Toast } from '@notesapp/ui';
 
 /** Offer the existing editor Undo only while this removal is still latest. */
@@ -37,6 +39,11 @@ export function useImageUndo(viewRef: RefObject<EditorView | null>): {
     current.current = next;
     setNotice(next);
   }, [viewRef, clear]);
+  useEffect(() => {
+    if (notice === null) return;
+    const timer = window.setTimeout(clear, copyNoticeMs);
+    return () => window.clearTimeout(timer);
+  }, [notice, clear]);
   return {
     clear,
     removed,

@@ -740,7 +740,8 @@ await test('the open note stays pending from first edit through draft and checkp
       );
       await openEditor(source, true);
       await waitFor(
-        () => container.textContent?.includes('Choose a version') === true,
+        () =>
+          container.textContent?.includes('Two versions of this note') === true,
       );
       await act(settle);
       assert.equal(container.querySelector('.cm-editor'), null);

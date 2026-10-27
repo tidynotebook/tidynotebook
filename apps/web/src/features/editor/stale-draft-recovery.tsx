@@ -103,7 +103,7 @@ export function StaleDraftRecovery({
   return (
     <PageRegion>
       <PageHeader
-        title="Choose a version"
+        title="Two versions of this note"
         description="This note changed on another device. Choose which text to keep."
       />
       <div

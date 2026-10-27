@@ -30,9 +30,6 @@ import {
   ListRow,
   ComputerIcon,
   DownloadIcon,
-  Dialog,
-  DialogBody,
-  DialogFooter,
   ExternalLinkIcon,
   LoadingState,
   Meter,
@@ -192,7 +189,6 @@ function SessionsSettings(): ReactNode {
   const now = useNow();
   const [state, setState] = useState<SessionsState>({ kind: 'loading' });
   const [busy, setBusy] = useState(false);
-  const [confirmOthers, setConfirmOthers] = useState(false);
   const [notice, setNotice] = useState<{
     readonly tone: 'info' | 'problem';
     readonly message: string;
@@ -306,46 +302,21 @@ function SessionsSettings(): ReactNode {
               variant="secondary"
               icon={<SignOutIcon />}
               disabled={busy}
-              onClick={() => setConfirmOthers(true)}
+              onClick={() => {
+                change(async () => {
+                  const ended = await revokeOtherSessions();
+                  return {
+                    error: ended.error,
+                    done: otherSessionsEndedText(ended.data?.revoked ?? 0),
+                  };
+                });
+              }}
             >
-              Sign out all other devices
+              Sign out every other device
             </Button>
           )}
         </>
       )}
-      <Dialog
-        open={confirmOthers}
-        onClose={() => setConfirmOthers(false)}
-        title="Sign out all other devices?"
-        titleId="sign-out-devices-title"
-        width="small"
-      >
-        <DialogBody>
-          <p className="text-control text-muted">
-            This device stays signed in.
-          </p>
-        </DialogBody>
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => setConfirmOthers(false)}>
-            Cancel
-          </Button>
-          <Button
-            variant="danger"
-            onClick={() => {
-              setConfirmOthers(false);
-              change(async () => {
-                const ended = await revokeOtherSessions();
-                return {
-                  error: ended.error,
-                  done: otherSessionsEndedText(ended.data?.revoked ?? 0),
-                };
-              });
-            }}
-          >
-            Sign out all other devices
-          </Button>
-        </DialogFooter>
-      </Dialog>
     </SettingsSection>
   );
 }
@@ -731,7 +702,7 @@ export function AccountSettingsPage(): ReactNode {
         )}
         <div className="flex flex-wrap gap-cluster">
           <Button
-            variant="primary"
+            variant="secondary"
             icon={<SignOutIcon />}
             onClick={() => {
               endSignOut(false);
@@ -741,8 +712,7 @@ export function AccountSettingsPage(): ReactNode {
           </Button>
           {unsent ? (
             <Button
-              variant="secondary"
-              tone="danger"
+              variant="danger"
               onClick={() => {
                 endSignOut(true);
               }}

@@ -880,7 +880,7 @@ await test('the image viewer removes only the selected occurrence and toolbar Un
   assert.ok(open instanceof HTMLElement);
   await act(async () => open.click());
   const remove = [...document.querySelectorAll('button')].find(
-    (button) => button.textContent === 'Remove from note',
+    (button) => button.textContent === 'Remove',
   );
   assert.ok(remove);
   assert.equal(remove.getAttribute('title'), null);

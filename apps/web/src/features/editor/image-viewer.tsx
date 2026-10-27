@@ -451,7 +451,7 @@ function ImageViewerBody({
               } else setMessage('This image changed. Open it again.');
             }}
           >
-            Remove from note
+            Remove
           </Button>
         )}
         <Button
