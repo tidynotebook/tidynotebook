@@ -578,6 +578,7 @@ await test('Restore gives offline guidance and retains retry after reconnect', a
         : Response.json({ revision: { path: 'one.md' } }),
     );
   };
+  /** Find the Restore note button. */
   const restoreButton = (): HTMLButtonElement => {
     const found = [...container.querySelectorAll('button')].find(
       (button) => button.textContent === 'Restore note',

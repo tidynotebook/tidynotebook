@@ -159,6 +159,7 @@ await test('the open note stays pending from first edit through draft and checkp
   }
   let flushDraft = () => Promise.resolve();
   const states: boolean[] = [];
+  /** Render the save facts that the page footer reads. */
   function Footer(): ReactNode {
     const openNotePending = useNoteSaveFact(
       (report) => report?.pendingSave ?? false,
@@ -675,6 +676,7 @@ await test('the open note stays pending from first edit through draft and checkp
 
     // A stale draft must not enter the editor and alter the accepted
     // document before its owner chooses to keep or discard it.
+    /** Open a note that has a stale device draft and return its texts. */
     async function openStaleDraft(
       source = store,
       covered = false,

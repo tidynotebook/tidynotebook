@@ -30,6 +30,7 @@ export const effects: {
   removed: [],
   moved: [],
 };
+/** Publish a new note list to the subscribed pages. */
 function change(notes: NoteSummary[]): void {
   state = { ...state, notes };
   for (const listener of listeners) listener();
@@ -55,6 +56,7 @@ const store: Pick<LocalStore, 'moveFiles' | 'trashFiles'> = {
     return [];
   },
 };
+/** Reset the note list, pending operation and recorded effects for a test. */
 export function resetFolderOperation(loading = false): void {
   state = {
     notes: loading ? [] : [initialNote],
@@ -74,9 +76,11 @@ export function finishInitialFolderLoad(): void {
   state = { ...state, notes: [initialNote], loading: false };
   for (const listener of listeners) listener();
 }
+/** Let the pending move or Trash operation complete. */
 export function finishFolderOperation(): void {
   finished.resolve();
 }
+/** Return the live test file list with the folder update helpers. */
 export function useFiles() {
   const files = useSyncExternalStore(
     (changed) => {
@@ -98,17 +102,21 @@ export function useFiles() {
     },
   };
 }
+/** Return the delayed test store. */
 export function useLocalStore() {
   return { store };
 }
+/** Return a signed-in test account. */
 export function useSession() {
   return { account: { accountId: 'folder-account' } };
 }
+/** Count sync requests. */
 export function useRequestSync() {
   return () => {
     effects.sync += 1;
   };
 }
+/** Count delete notices. */
 export function useDeleteNotice() {
   return {
     announce: () => {
@@ -116,16 +124,21 @@ export function useDeleteNotice() {
     },
   };
 }
+/** Return a note creator that does nothing. */
 export function useCreateNote() {
   return { create: () => {}, error: null };
 }
+/** Return a fixed time. */
 export function useNow() {
   return Date.parse('2026-10-27T00:00:00.000Z');
 }
+/** Ignore document title changes. */
 export function useDocumentTitle() {}
+/** Render no writing start panel. */
 export function WritingStart() {
   return null;
 }
+/** Render a placeholder Use template button. */
 export function NewFromTemplate() {
   return createElement('button', null, 'Use template');
 }

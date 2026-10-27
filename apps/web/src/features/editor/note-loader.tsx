@@ -188,6 +188,7 @@ export function NoteEditorLoader({
     cancelLoad.current = () => {
       cancelled = true;
     };
+    /** Open the note from the device first, then the server, and check Trash for a deleted note. */
     async function load(): Promise<void> {
       const quiet = quietReload.current && statusKind.current === 'ready';
       quietReload.current = false;

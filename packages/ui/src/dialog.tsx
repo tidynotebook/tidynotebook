@@ -164,6 +164,7 @@ export function Dialog({
 
   useLayoutEffect(() => {
     if (!open || anchor === undefined || anchor === null) return;
+    /** Place the dialog next to its anchor on wide screens. */
     const place = (): void => {
       const panel = panelRef.current;
       if (panel === null) return;

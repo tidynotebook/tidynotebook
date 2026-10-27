@@ -68,6 +68,7 @@ export function StaleDraftRecovery({
     };
   }, []);
 
+  /** Keep the device draft or use the saved version, one choice at a time. */
   const resolve = async (keep: boolean): Promise<void> => {
     if (busy.current) return;
     busy.current = true;

@@ -87,6 +87,7 @@ const hooks = registerHooks({
 const { createRoot } = await import('react-dom/client');
 const { NotesHomeView } =
   await import('../../apps/web/dist/features/notes/notes-home.js');
+/** Find a button by its text or accessible label. */
 function button(name: string): HTMLButtonElement {
   const found = [...document.querySelectorAll('button')].find(
     (button) =>
@@ -95,9 +96,11 @@ function button(name: string): HTMLButtonElement {
   assert.ok(found, `Missing button ${name}`);
   return found;
 }
+/** Click a button by its text or accessible label. */
 async function click(name: string): Promise<void> {
   await act(async () => button(name).click());
 }
+/** Mount the real folder page, with an optional delayed first file list. */
 async function setup(loading = false) {
   resetFolderOperation(loading);
   const host = document.createElement('div');

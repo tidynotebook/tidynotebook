@@ -267,6 +267,7 @@ function TrashList({
       )
         setGeneration((value) => value + 1);
     });
+    /** Read Trash again when the window gets focus or the connection returns. */
     const refresh = (): void => setGeneration((value) => value + 1);
     window.addEventListener('focus', refresh);
     window.addEventListener('online', refresh);
@@ -315,6 +316,7 @@ function TrashList({
   );
   const now = useNow();
 
+  /** Restore one note and report the result. */
   const restore = (item: TrashItem): void => {
     if (busy) return;
     setBusy(true);
@@ -336,6 +338,7 @@ function TrashList({
     })();
   };
 
+  /** Delete the confirmed notes permanently and report the result. */
   const deleteForever = (targets: readonly TrashItem[]): void => {
     if (busy) return;
     setConfirming(null);

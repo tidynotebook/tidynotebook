@@ -9,6 +9,7 @@ export const reads: {
 export const creations: { folder: string; text: string | undefined }[] = [];
 let creationError: string | null = null;
 let duplicates = false;
+/** Set whether two templates share a name for the next render. */
 export function setDuplicateTemplates(value: boolean): void {
   duplicates = value;
 }

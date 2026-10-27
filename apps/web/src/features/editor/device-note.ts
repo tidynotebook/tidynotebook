@@ -196,6 +196,7 @@ export function watchDeviceNote(
 ): () => void {
   let sequence = 0;
   let stopped = false;
+  /** Read the device note again and report it. Only the latest recheck reports its result. */
   const recheck = async (fromChange: boolean): Promise<void> => {
     const current = ++sequence;
     let note: LocalCachedNote | null = null;

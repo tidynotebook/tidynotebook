@@ -63,6 +63,7 @@ const HistoryView = lazy(async () => ({
 const ReviewView = lazy(async () => ({
   default: (await import('./features/review/review.tsx')).ReviewView,
 }));
+/** Load the Trash page only when its route opens. */
 const TrashView = lazy(async () => ({
   default: (await import('./features/trash/trash-page.tsx')).TrashView,
 }));

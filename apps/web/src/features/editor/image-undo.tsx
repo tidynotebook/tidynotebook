@@ -20,11 +20,13 @@ export function useImageUndo(viewRef: RefObject<EditorView | null>): {
     null,
   );
   const current = useRef<{ readonly run: () => void } | null>(null);
+  /** Remove the image Undo notice and its action. */
   const clear = useCallback((): void => {
     if (current.current === null) return;
     current.current = null;
     setNotice(null);
   }, []);
+  /** Offer Undo for a removed image while the document is unchanged after the removal. */
   const removed = useCallback((): void => {
     const view = viewRef.current;
     if (view === null) return;

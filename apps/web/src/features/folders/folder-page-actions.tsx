@@ -54,6 +54,7 @@ export function FolderPageActions({
     files.notes.map((note) => note.path),
     files.emptyFolders,
   );
+  /** Open a folder page, or All notes for the root folder. */
   const openFolder = (path: string): void => {
     void navigate(
       path === ''
@@ -61,6 +62,7 @@ export function FolderPageActions({
         : `/w/${workspaceId}/folders/${path.split('/').map(encodeURIComponent).join('/')}`,
     );
   };
+  /** Rename the folder and move its notes, then open the new folder if this page still owns the result. */
   const rename = async (): Promise<void> => {
     if (busy) return;
     const owner = scope.current;
@@ -98,6 +100,7 @@ export function FolderPageActions({
     requestSync();
     setDialog(null);
   };
+  /** Move the folder notes to Trash, then leave the folder if this page still owns the result. */
   const remove = async (): Promise<void> => {
     if (busy) return;
     const owner = scope.current;
