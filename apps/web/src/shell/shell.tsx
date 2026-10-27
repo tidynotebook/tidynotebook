@@ -166,6 +166,7 @@ import {
   formatSidebarSize,
   parseSidebarSize,
   sidebarInsetClass,
+  displayedSidebarSize,
   sidebarSizeStorageKey,
   sidebarWidthPx,
   stepAfterKey,
@@ -1036,7 +1037,17 @@ function ShellFrame({
   const [chosenFolder, setSelectedFolder] = useState('');
   const selectedFolder =
     folderForRoute(workspaceId, location.pathname, params['*']) ?? chosenFolder;
+  const framePage = framePageOf(matches.map((match) => match.handle));
   const sidebar = useSidebarSize();
+  const displayedSidebar = displayedSidebarSize(
+    sidebar.size,
+    framePage === 'settings',
+    drawerOpen,
+  );
+  const toggleSidebar = useCallback((): void => {
+    if (framePage === 'settings') setDrawerOpen((open) => !open);
+    else sidebar.toggleCollapsed();
+  }, [framePage, sidebar.toggleCollapsed]);
   const [sidebarView, setSidebarView] = useSidebarView();
   // The frame is the visible part of the screen, so iOS cannot scroll it
   // away under an open keyboard.
@@ -1124,12 +1135,12 @@ function ShellFrame({
       }
       if (key === '\\') {
         event.preventDefault();
-        sidebar.toggleCollapsed();
+        toggleSidebar();
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [sidebar.toggleCollapsed]);
+  }, [toggleSidebar]);
 
   useEffect(() => {
     if (!drawerOpen) {
@@ -1260,7 +1271,6 @@ function ShellFrame({
   // own when the workspace part does not already name it.
   const noteName =
     openNotePath === null ? null : displayNoteName(baseNameOf(openNotePath));
-  const framePage = framePageOf(matches.map((match) => match.handle));
   const routeName = leafOf(framePage, noteName);
   const routeParent = parentPartOf(framePage, {
     workspaceId,
@@ -1313,7 +1323,7 @@ function ShellFrame({
         keywords: 'sidebar panel collapse expand navigation tree',
         icon: 'sidebar' as const,
         keys: sidebarKeys,
-        run: sidebar.toggleCollapsed,
+        run: toggleSidebar,
       },
       {
         id: 'toggle-theme',
@@ -1520,7 +1530,7 @@ function ShellFrame({
       noteActions,
       otherWorkspaces,
       selectedFolder,
-      sidebar.toggleCollapsed,
+      toggleSidebar,
       templates.settings,
       themeIconName,
       workspaceId,
@@ -1583,15 +1593,19 @@ function ShellFrame({
               compact
               className={`shrink-0 max-md:hidden ${edgeControlClassName({ edge: 'start', mark: 'icon' })}`}
               label={
-                sidebar.size.collapsed ? 'Show the sidebar' : 'Hide the sidebar'
+                displayedSidebar.collapsed
+                  ? 'Show the sidebar'
+                  : 'Hide the sidebar'
               }
               title={
-                sidebar.size.collapsed ? 'Show the sidebar' : 'Hide the sidebar'
+                displayedSidebar.collapsed
+                  ? 'Show the sidebar'
+                  : 'Hide the sidebar'
               }
               icon={<PanelLeftIcon />}
               ariaControls="notes-sidebar"
-              ariaExpanded={!sidebar.size.collapsed}
-              onClick={sidebar.toggleCollapsed}
+              ariaExpanded={!displayedSidebar.collapsed}
+              onClick={toggleSidebar}
             />
 
             <Breadcrumb
@@ -1676,11 +1690,7 @@ function ShellFrame({
           <aside
             ref={sidebarRef}
             id="notes-sidebar"
-            className={
-              framePage === 'settings' && !drawerOpen
-                ? 'hidden'
-                : drawerClassName(drawerOpen, sidebar.size)
-            }
+            className={drawerClassName(drawerOpen, displayedSidebar)}
             aria-label="Notes navigation"
             aria-modal={drawerOpen ? true : undefined}
             role={drawerOpen ? 'dialog' : undefined}
@@ -1724,7 +1734,7 @@ function ShellFrame({
 
           <div
             id="notes-content"
-            className={`${frameContentClassName()} ${sidebarInsetClass(sidebar.size)}`}
+            className={`${frameContentClassName()} ${sidebarInsetClass(displayedSidebar)}`}
           >
             {/*
               The frame notices stand in the column of the page under them
