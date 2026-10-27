@@ -27,7 +27,7 @@ import {
   type ReactNode,
 } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import { getFile } from '@notesapp/api-client';
+import { getFile, listDeletedFiles } from '@notesapp/api-client';
 import type { LocalFileSummary, LocalStore } from '@notesapp/sync';
 import type { LinkTarget } from '@notesapp/editor';
 import { classifyUrl } from '@notesapp/markdown';
@@ -182,6 +182,7 @@ export function NoteEditorLoader({
   const cancelLoad = useRef<() => void>(() => {});
   // A purge also blocks a reload queued before React commits its state.
   const purgedIdentity = useRef<NoteLoadIdentity | null>(null);
+  const serverDeletedIdentity = useRef<NoteLoadIdentity | null>(null);
   useEffect(() => {
     let cancelled = false;
     cancelLoad.current = () => {
@@ -222,8 +223,36 @@ export function NoteEditorLoader({
       if (cancelled) return;
       if (result.error !== undefined || result.data === undefined) {
         const code = result.response?.status ?? 0;
-        if (code === 404) setStatus({ kind: 'unknown' });
-        else if (code === 410) setStatus({ kind: 'purged' });
+        if (code === 404) {
+          // A cold snapshot need not hold deleted files. The regular file
+          // read also excludes them, so ask the same authorized list as
+          // Trash before treating a link as unknown. Keep this read local
+          // to the open screen; it must not manufacture a cached document.
+          const trash = await listDeletedFiles({ path: { workspaceId } });
+          if (cancelled) return;
+          if (trash.error !== undefined || trash.data === undefined) {
+            setStatus({
+              kind: 'unavailable',
+              message: problemMessage(trash.error),
+            });
+            return;
+          }
+          // A restore can reach the device while the Trash request runs.
+          const current =
+            store === null ? null : await readDeviceNote(store, opening);
+          if (cancelled) return;
+          const deleted = trash.data.files.find(
+            (file) => file.fileId === fileId && file.kind === 'note',
+          );
+          serverDeletedIdentity.current =
+            current === null && deleted !== undefined ? opening : null;
+          setStatus(
+            current ??
+              (deleted === undefined
+                ? { kind: 'unknown' }
+                : { kind: 'deleted', path: deleted.path }),
+          );
+        } else if (code === 410) setStatus({ kind: 'purged' });
         else
           setStatus({
             kind: 'unavailable',
@@ -324,11 +353,21 @@ export function NoteEditorLoader({
     return watchDeviceNote(
       store,
       { accountId, workspaceId, fileId },
-      (cached) => {
+      (cached, fromChange) => {
         if (cached === null) {
           // A restored head can be live while its cached Markdown is absent.
           // The loader can read it from the server; the watcher cannot.
-          if (statusKind.current === 'deleted') readAgain();
+          if (
+            statusKind.current === 'deleted' &&
+            (fromChange ||
+              serverDeletedIdentity.current === null ||
+              !isSameNote(serverDeletedIdentity.current, {
+                accountId,
+                workspaceId,
+                fileId,
+              }))
+          )
+            readAgain();
           return;
         }
         if (cached.deleted && statusKind.current === 'ready') {

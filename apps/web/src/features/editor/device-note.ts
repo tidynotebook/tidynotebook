@@ -188,12 +188,15 @@ export function createDeviceOpens<Store extends WatchedStore>(
 export function watchDeviceNote(
   store: Pick<LocalStore, 'subscribe' | 'readCachedNote'>,
   identity: NoteLoadIdentity,
-  onRead: (note: Awaited<ReturnType<LocalStore['readCachedNote']>>) => void,
+  onRead: (
+    note: Awaited<ReturnType<LocalStore['readCachedNote']>>,
+    fromChange: boolean,
+  ) => void,
   onPurge: () => void,
 ): () => void {
   let sequence = 0;
   let stopped = false;
-  const recheck = async (): Promise<void> => {
+  const recheck = async (fromChange: boolean): Promise<void> => {
     const current = ++sequence;
     let note: LocalCachedNote | null = null;
     try {
@@ -206,16 +209,16 @@ export function watchDeviceNote(
       // A deleted note can retry through the loader when this read fails.
       // A ready editor keeps its buffer when no cached answer is available.
     }
-    if (!stopped && current === sequence) onRead(note);
+    if (!stopped && current === sequence) onRead(note, fromChange);
   };
   const unsubscribe = store.subscribe((change) => {
     if (!touchesNote(change, identity)) return;
     if (change.kind === 'purge') {
       sequence += 1;
       onPurge();
-    } else if (change.kind === 'file') void recheck();
+    } else if (change.kind === 'file') void recheck(true);
   });
-  void recheck();
+  void recheck(false);
   return () => {
     stopped = true;
     unsubscribe();

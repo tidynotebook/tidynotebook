@@ -221,6 +221,79 @@ function editor(local: LocalStore = store): ReactNode {
   });
 }
 
+for (const outcome of ['deleted', 'unknown', 'failed', 'left'] as const) {
+  await test(`a cold deleted-note lookup handles ${outcome} without a cached document`, async () => {
+    const coldId = crypto.randomUUID();
+    const requests: string[] = [];
+    const lookup = Promise.withResolvers<Response>();
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (input) => {
+      const url = String(input instanceof Request ? input.url : input);
+      requests.push(url);
+      return Promise.resolve(
+        requests.length === 1
+          ? Response.json({ code: 'not_found' }, { status: 404 })
+          : lookup.promise,
+      );
+    };
+    const coldStore: LocalStore = {
+      ...store,
+      readCachedNote: () => Promise.resolve(null),
+    };
+    try {
+      await render(
+        createElement(NoteEditorLoader, {
+          store: coldStore,
+          accountId,
+          workspaceId,
+          fileId: coldId,
+        }),
+      );
+      assert.equal(requests.length, 2);
+      assert.ok(requests.every((url) => url.includes(workspaceId)));
+      if (outcome === 'left')
+        await render(createElement('p', null, 'Another workspace'));
+      await act(async () => {
+        lookup.resolve(
+          outcome === 'failed'
+            ? Response.json({}, { status: 503 })
+            : Response.json({
+                files:
+                  outcome === 'unknown'
+                    ? []
+                    : [
+                        {
+                          fileId: coldId,
+                          path: 'Cold deleted.md',
+                          kind: 'note',
+                          headRevisionId: crypto.randomUUID(),
+                          createdAt: '2026-10-27T00:00:00Z',
+                          deletedAt: '2026-10-27T00:00:00Z',
+                        },
+                      ],
+              }),
+        );
+      });
+      const content = container.textContent ?? '';
+      if (outcome === 'deleted') {
+        assert.match(content, /Cold deleted is in Trash/);
+        assert.ok(
+          [...container.querySelectorAll('button')].some(
+            (button) => button.textContent === 'Restore note',
+          ),
+        );
+      } else if (outcome === 'unknown') assert.match(content, /Note not found/);
+      else if (outcome === 'failed')
+        assert.match(content, /Can't open this note/);
+      else assert.equal(content, 'Another workspace');
+      assert.equal(container.querySelectorAll('.cm-editor').length, 0);
+    } finally {
+      await render(null);
+      globalThis.fetch = originalFetch;
+    }
+  });
+}
+
 await test('Restore gives offline guidance and retains retry after reconnect', async () => {
   const connection = Object.getOwnPropertyDescriptor(navigator, 'onLine');
   const originalFetch = globalThis.fetch;
