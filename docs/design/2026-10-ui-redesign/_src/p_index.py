@@ -123,10 +123,11 @@ def foundations():
     icons = '<div class="iconset">' + "".join(f'<div>{ic(n)}{n}</div>' for n in ICONS if n not in ("arrow", "signal", "wifi", "quote", "sparkle", "users", "eye", "share")) + "</div>"
 
     def comps(dark_):
+        spelling_switch = '<span class="switch on" role="switch" aria-checked="true"></span>'
         cls = " t-dark" if dark_ else ""
         return (f'<div class="screen{cls}" style="height:auto;border-radius:12px;padding:18px;border:1px solid var(--subtle);gap:12px">'
                 f'<ul class="rows" style="padding:0">{note_row("Shared artefacts", "4 h")}{note_row("Trip plan", "1 d", "Travel", "hov")}</ul>'
-                f'<ul class="slist">{srow("palette", "Appearance", "System")}{srow("spell", "Check spelling", chev=False, right='<span class="switch on" role="switch" aria-checked="true"></span>')}</ul>'
+                f'<ul class="slist">{srow("palette", "Appearance", "System")}{srow("spell", "Check spelling", chev=False, right=spelling_switch)}</ul>'
                 f'{destrow("Folder", "Projects")}'
                 f'<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center"><span class="switch on"></span><span class="switch"></span><span class="switch dis"></span>'
                 f'<span class="pill"><span class="dot"></span>Saved</span><span class="pill bad"><span class="dot bad"></span>Not saved</span></div>'
