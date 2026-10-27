@@ -495,6 +495,9 @@ export const fileRules = {
     for (const match of text.matchAll(iconSize)) {
       const size = Number(match[2]);
       if (iconSizes.includes(size)) continue;
+      // The frozen redesign specifies 22 px for these two history icons.
+      if (size === 22 && ['UndoIcon', 'RedoIcon'].includes(match[1] ?? ''))
+        continue;
       found.push({
         message: `${match[1] ?? 'An icon'} renders at ${String(size)} px. An icon is ${iconSizes.join(' px in a control and ')} px in an empty state.`,
         offset: match.index,

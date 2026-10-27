@@ -915,3 +915,15 @@ await test('only the history recipe can dim its unavailable control', () => {
     null,
   );
 });
+
+await test('only approved history icons can use 22 px', () => {
+  for (const name of ['UndoIcon', 'RedoIcon'])
+    assert.deepEqual(
+      fileRules['icon-size'](`<${name} size={22} />`, 'a/b.tsx'),
+      [],
+    );
+  assert.equal(
+    fileRules['icon-size']('<TrashIcon size={22} />', 'a/b.tsx').length,
+    1,
+  );
+});

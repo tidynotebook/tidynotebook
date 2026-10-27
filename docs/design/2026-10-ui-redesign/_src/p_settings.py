@@ -47,7 +47,8 @@ def appearance(mode="System", theme="", hots=""):
 
 
 def spelling():
-    inner = (f'<div style="height:8px"></div><ul class="slist">{srow("", "Check spelling", chev=False, sub="Uses your browser languages", right='<span class="switch on" role="switch" aria-checked="true"></span>')}</ul>'
+    spelling_switch = '<span class="switch on" role="switch" aria-checked="true"></span>'
+    inner = (f'<div style="height:8px"></div><ul class="slist">{srow("", "Check spelling", chev=False, sub="Uses your browser languages", right=spelling_switch)}</ul>'
              f'<p class="sfoot">Code and web addresses are not checked.</p>')
     return detail("Spelling", inner)
 
