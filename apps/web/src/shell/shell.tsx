@@ -20,8 +20,8 @@ import { TrialNotice } from '../features/accounts/trial-notice.tsx';
  * medium width, which is what leaves the name its room.
  *
  * The sidebar is a column of rows: the workspace switcher, one row of icon
- * actions for the tree (New note, New folder, Sort notes, and Expand or
- * Collapse all folders), the tree and the footer (decision 0093). Search is
+ * actions for the tree (New note, New folder, New note from template, Sort
+ * notes, and Expand or Collapse all folders), the tree and the footer (decision 0093). Search is
  * not one of them: the header carries it at every width and `Cmd or Ctrl + P`
  * opens it from the keyboard, so the row it held is space the tree has now
  * (decision 0069). No row of it is a filled button, because the one
@@ -556,6 +556,15 @@ function Sidebar({
                   icon={actionIcon('new-folder')}
                   onClick={() => onNewFolderIn('')}
                 />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  compact
+                  label="New note from template"
+                  title="New note from template"
+                  icon={actionIcon('template')}
+                  onClick={() => onFromTemplate(selectedFolder)}
+                />
                 <Menu
                   label="Sort notes"
                   icon={actionIcon('sort')}
@@ -583,14 +592,6 @@ function Sidebar({
                   }
                 />
               </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={actionIcon('template')}
-                onClick={() => onFromTemplate(selectedFolder)}
-              >
-                Use template
-              </Button>
               {newNoteProblem === null ? null : (
                 <p className="my-1 px-2 text-control text-danger" role="alert">
                   {newNoteProblem}
@@ -653,20 +654,6 @@ function Sidebar({
                       </span>
                     </Link>
                   </div>
-                </div>
-                <div className="px-2 pt-1">
-                  <button
-                    type="button"
-                    className={rowClassName({ className: 'w-full' })}
-                    disabled={daily.waiting}
-                    onClick={() => daily.open(today())}
-                  >
-                    {actionIcon('today')}
-                    <span>Today's note</span>
-                  </button>
-                  {daily.openProblem === null ? null : (
-                    <Notice tone="problem" message={daily.openProblem} />
-                  )}
                 </div>
                 {files.loading ? (
                   <div className="px-2 py-2">
