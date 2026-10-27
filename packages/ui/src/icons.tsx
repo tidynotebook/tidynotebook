@@ -3,7 +3,7 @@
  *
  * Every icon is drawn on the 24 by 24 grid of `./icon-grid.ts` at a stroke of
  * 1.5, and renders at 16 px in a control, a row or a label, and at 20 px in an
- * empty state. No other size exists. One frame component spreads the shared
+ * empty state. The approved Undo and Redo controls use 22 px. One frame component spreads the shared
  * attributes, so no icon states a stroke, a viewport or a line join of its
  * own, and `icons.test.ts` proves that none of them does.
  *

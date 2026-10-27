@@ -63,7 +63,7 @@ def template_dialog(theme=""):
 def editor_desk(theme="", tooltip=True):
     tip = ('<span class="tooltip" style="left:6px;top:46px">Undo <kbd>Ctrl Z</kbd></span>' if tooltip else "")
     toolbar = (f'<div class="dtoolbar" role="toolbar" aria-label="Format"><span style="position:relative;display:inline-flex">'
-               f'{ibtn("undo", "Undo (Ctrl Z)", "hov")}{tip}</span>{ibtn("redo", "Redo (Ctrl Shift Z)", "dis", "aria-disabled=\"true\"")}'
+               f'{ibtn("undo", "Undo (Ctrl Z)", "hov")}{tip}</span>{ibtn("redo", "Redo (Ctrl Shift Z)", "dis", DIS)}'
                f'<span class="vr"></span>{ibtn("heading", "Heading")}{ibtn("bold", "Bold (Ctrl B)")}{ibtn("italic", "Italic (Ctrl I)")}'
                f'<span class="vr"></span>{ibtn("list", "List")}{ibtn("task", "Checklist")}<span class="vr"></span>'
                f'{ibtn("link", "Link")}{ibtn("image", "Image")}{ibtn("code", "Code")}</div>')
