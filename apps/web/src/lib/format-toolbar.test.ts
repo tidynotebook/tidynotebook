@@ -311,5 +311,22 @@ await test('a press on a phone keeps the focus and the keyboard in the text', ()
       composing: true,
     }),
     false,
+  ); // Undo and Redo keep the focus for a mouse too (issue 517), but not while
+  // the text composes.
+  assert.equal(
+    pressKeepsTextFocus({
+      pointerType: 'mouse',
+      composing: false,
+      history: true,
+    }),
+    true,
+  );
+  assert.equal(
+    pressKeepsTextFocus({
+      pointerType: 'mouse',
+      composing: true,
+      history: true,
+    }),
+    false,
   );
 });

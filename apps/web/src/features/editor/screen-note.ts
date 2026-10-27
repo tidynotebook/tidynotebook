@@ -10,7 +10,7 @@
  *
  * The clean up of the effects of the screen releases the note. React mounts
  * the effects twice in development, so each mount takes the note through
- * `mountNote`, which opens it again with every change after a release
+ * `holdNote`, which opens it again with every change after a release
  * (record 0181).
  *
  * A render opens nothing. The note opens at the first use by a mount or an
@@ -30,25 +30,44 @@ export type ScreenBoundNote<Note> = {
   reopen(): Note;
 };
 
+/** One hold of the note by one effect of the screen. */
+export type ScreenNoteHold<Note> = {
+  /** The note that this hold keeps open. */
+  readonly note: Note;
+  /** Ends this hold. The note ends with its last hold. */
+  readonly release: () => void;
+};
+
 /** The note that the mounted effects of one screen use. */
 export type ScreenNote<Note = BoundNote> = {
   /** The note now, which opens at the first read. A render never reads it. */
   readonly noteRef: { readonly current: Note };
-  /** The note of this mount, opened again after a clean up released it. */
-  readonly mountNote: () => Note;
+  /**
+   * Holds the note of this mount, opened again after its last hold ended.
+   *
+   * The effect that makes the view and the effect that writes the work each
+   * hold the note. React runs the set up of a layout effect before the clean
+   * up of a passive effect, so a release by one effect alone ended the note
+   * of a view that the other effect had just made. The undo of that view
+   * was gone (issue 517). With holds, the note ends only when no effect
+   * holds it, and a view never outlives its note.
+   */
+  readonly holdNote: () => ScreenNoteHold<Note>;
 };
 
 /**
  * The life of the note of one screen, from the function that opens it.
  *
- * Nothing opens until a mount or an effect asks for the note. `mountNote`
- * opens the note on the first mount and opens it again after a clean up
- * released it, so each mount holds exactly one open note.
+ * Nothing opens until a mount or an effect asks for the note. `holdNote`
+ * opens the note on the first mount and opens it again after the last hold
+ * ended, so each mount holds exactly one open note.
  */
 export function createScreenNote<Note extends ScreenBoundNote<Note>>(
   open: () => Note,
 ): ScreenNote<Note> {
   let note: Note | null = null;
+  // The holds of the open note. Only an open note has a hold.
+  let holds = 0;
   const current = (): Note => {
     note ??= open();
     return note;
@@ -59,9 +78,21 @@ export function createScreenNote<Note extends ScreenBoundNote<Note>>(
         return current();
       },
     },
-    mountNote: (): Note => {
-      note = note === null ? open() : note.reopen();
-      return note;
+    holdNote: (): ScreenNoteHold<Note> => {
+      // A note with a hold is open, so `reopen` gives the same note.
+      const held = note === null ? open() : note.reopen();
+      note = held;
+      holds += 1;
+      let ended = false;
+      return {
+        note: held,
+        release: (): void => {
+          if (ended) return;
+          ended = true;
+          holds -= 1;
+          if (holds === 0) held.release();
+        },
+      };
     },
   };
 }

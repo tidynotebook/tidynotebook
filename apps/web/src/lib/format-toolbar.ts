@@ -242,6 +242,8 @@ export type ToolbarPress = {
   readonly pointerType: string;
   /** Whether the text holds an IME composition. */
   readonly composing: boolean;
+  /** Whether the press is on Undo or Redo. */
+  readonly history?: boolean;
 };
 
 /**
@@ -254,9 +256,12 @@ export type ToolbarPress = {
  * While the text composes, a tool takes the focus as a mouse tool does,
  * because that ends the composition, and a format action never runs inside
  * one. The action then gives the focus back to the text.
+ * Undo and Redo keep the focus in the text for a mouse too, so the caret
+ * stays where the step put it (issue 517).
  */
 export function pressKeepsTextFocus(press: ToolbarPress): boolean {
-  return press.pointerType !== 'mouse' && !press.composing;
+  if (press.composing) return false;
+  return press.pointerType !== 'mouse' || press.history === true;
 }
 
 /**

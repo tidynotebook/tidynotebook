@@ -24,7 +24,8 @@
  * A press of a mouse gives a tool the focus. That ends an IME composition in
  * the editor before the action runs, and the action then gives the focus back
  * to the editor. A finger on a phone keeps the focus in the text, so the
- * keyboard stays open (`pressKeepsTextFocus`).
+ * keyboard stays open, and so does any press on Undo or Redo
+ * (`pressKeepsTextFocus`).
  */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
@@ -127,21 +128,37 @@ export function FormatToolbar({
     };
   }, []);
 
+  const historyRef = useRef<HTMLDivElement | null>(null);
+  /** The press on a tool of the row, or `null` off the tools. */
+  const pressOf = (
+    target: EventTarget | null,
+    pointerType: string,
+  ): ToolbarPress | null => {
+    const control = target instanceof Element ? target.closest('button') : null;
+    if (control === null) return null;
+    return {
+      pointerType,
+      composing: composing.current,
+      history: historyRef.current?.contains(control) === true,
+    };
+  };
+
   let place = 2;
   return (
     <div className={formatToolbarFrameClassName()}>
       <div
         className={formatToolbarColumnClassName()}
         onPointerDown={(event): void => {
-          const target = event.target;
-          const control =
-            target instanceof Element ? target.closest('button') : null;
-          if (control === null) return;
-          const press: ToolbarPress = {
-            pointerType: event.pointerType,
-            composing: composing.current,
-          };
-          if (pressKeepsTextFocus(press)) event.preventDefault();
+          const press = pressOf(event.target, event.pointerType);
+          if (press !== null && pressKeepsTextFocus(press))
+            event.preventDefault();
+        }}
+        // A browser moves the focus on the mouse down, which the default of
+        // a pointer down does not hold back.
+        onMouseDown={(event): void => {
+          const press = pressOf(event.target, 'mouse');
+          if (press !== null && pressKeepsTextFocus(press))
+            event.preventDefault();
         }}
       >
         <div
@@ -181,7 +198,7 @@ export function FormatToolbar({
             next?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
           }}
         >
-          <div className={formatToolGroupClassName()}>
+          <div ref={historyRef} className={formatToolGroupClassName()}>
             {(['undo', 'redo'] as const).map((action, at) => (
               <HistoryButton
                 key={action}

@@ -333,8 +333,8 @@ const NoteEditorBody = memo(function NoteEditorBody({
   // vector of a closed document.
   const releasedRef = useRef(false);
   const sequenceRef = useRef(initialSequence);
-  // The live document of this note (`screen-note.ts`).
-  const { noteRef: sessionRef, mountNote: mountSession } = useScreenNote(
+  // The live document of this note. Each effect holds it (`screen-note.ts`).
+  const { noteRef: sessionRef, holdNote: holdSession } = useScreenNote(
     initialDocument,
     initialText,
   );
@@ -956,7 +956,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
   useLayoutEffect(() => {
     const container = containerRef.current;
     if (container === null) return;
-    const bound = mountSession();
+    const { note: bound, release: releaseNote } = holdSession();
     const view = createEditor(
       container,
       bufferRef.current,
@@ -1033,6 +1033,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
       viewRichRef.current = null;
       activeNote.current.register(null);
       view.destroy();
+      releaseNote();
     };
   }, [workingCopyId, documentWork, localWrite, watchHistory]);
 
@@ -1042,7 +1043,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
   // the one source of the text, so the save path that follows sends exactly
   // the work this device added.
   useEffect(() => {
-    const bound = mountSession();
+    const { note: bound, release: releaseNote } = holdSession();
     releasedRef.current = false;
     const start = bound.startWork;
     if (start !== null) {
@@ -1074,7 +1075,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
       localWrite.flush();
       flushVersion.current();
       releasedRef.current = true;
-      bound.release();
+      releaseNote();
     };
   }, [workingCopyId, localWrite, noteWork]);
 
