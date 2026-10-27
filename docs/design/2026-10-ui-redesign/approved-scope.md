@@ -1,5 +1,7 @@
 # Approved implementation scope
 
+Status: active
+
 The owner approved the wireframes in commit 2b7a9ebf ("baseline") and asked
 that every fix also apply on desktop. The later commits c3a81551 and 4f70eab1
 ("polish") can guide visual styling only. Behaviour that the polish adds is
