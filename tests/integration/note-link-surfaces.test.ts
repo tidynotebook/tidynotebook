@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test, { after } from 'node:test';
 import { registerHooks } from 'node:module';
-import { setImmediate } from 'node:timers/promises';
+import { setImmediate, setTimeout as delay } from 'node:timers/promises';
 import { Window } from 'happy-dom';
 import { IDBFactory, IDBKeyRange } from 'fake-indexeddb';
 import { createElement, act, useState, type ReactNode } from 'react';
@@ -35,6 +35,7 @@ const globals = [
   'Range',
   'getComputedStyle',
   'MouseEvent',
+  'PointerEvent',
   'KeyboardEvent',
   'Event',
   'HTMLInputElement',
@@ -871,6 +872,21 @@ await test('visible toolbar controls undo and redo the open editor text', async 
   assert.equal(redoButton.getAttribute('aria-disabled'), 'false');
   await act(async () => redoButton.click());
   assert.equal(current.state.doc.toString(), `${text}Toolbar edit`);
+  assert.equal(current.hasFocus, true);
+  await act(async () => {
+    undoButton.dispatchEvent(
+      new PointerEvent('pointerover', { bubbles: true, pointerType: 'mouse' }),
+    );
+    await delay(180);
+  });
+  assert.ok(document.querySelector('[role="tooltip"]'));
+  assert.equal(current.hasFocus, true);
+  await act(async () =>
+    current.contentDOM.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+    ),
+  );
+  assert.equal(document.querySelector('[role="tooltip"]'), null);
   assert.equal(current.hasFocus, true);
   await render(null);
   await act(finishStoreWork);
