@@ -14,7 +14,7 @@ import { ConnectedAppSettings } from './connected-apps.tsx';
  * of it (record 0177).
  */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Link, Navigate, useParams } from 'react-router';
+import { Link, Navigate, useLocation, useParams } from 'react-router';
 import {
   type AccountSession,
   listSessions,
@@ -34,14 +34,18 @@ import {
   LoadingState,
   Meter,
   Notice,
-  Page,
   PageHeader,
+  pageGutter,
   pageListClassName,
   SignOutIcon,
   TextField,
   UsersIcon,
   UploadIcon,
   type PageSection,
+  ChevronRightIcon,
+  ChevronLeftIcon,
+  PageBackProvider,
+  rowClassName,
 } from '@notesapp/ui';
 import { actionIcon } from '../../shell/action-icons.tsx';
 import { deleteGlyph } from '../../lib/delete-label.ts';
@@ -75,14 +79,17 @@ import {
 import { DailyNoteSettingsFields } from '../daily-notes/daily-note-settings.tsx';
 import { TemplateSettingsFields } from '../templates/template-settings.tsx';
 import { useDocumentTitle } from '../../shell/document-title.ts';
-import { SettingsSection } from './settings-section.tsx';
+import {
+  settingsPageForAnchor,
+  visibleSettingsPages,
+} from '../../lib/settings-routes.ts';
+import { useSettingsListFocus } from './settings-list-focus.ts';
+import { SettingsTopicContext, SettingsSection } from './settings-section.tsx';
 import { ApiKeySettings } from './api-keys.tsx';
 import { ThemeSettings } from './theme-settings.tsx';
 import {
   sectionOf,
   settingsSections,
-  settingsGroups,
-  visibleSettingsSections,
   type SettingsSectionKey,
 } from '../../lib/page-sections.ts';
 import { useNow } from '../../shell/now.ts';
@@ -114,11 +121,13 @@ function SpellCheckSettings(): ReactNode {
   const [problem, setProblem] = useState('');
   const lastChange = useRef(0);
 
+  /** Show the chosen spelling value while its latest account write completes. */
   function change(next: boolean): void {
     lastChange.current += 1;
     const current = lastChange.current;
     setPending(next);
     setProblem('');
+    /** Ignore stale replies so a slow write cannot undo a later selection. */
     async function write(): Promise<void> {
       try {
         const result = await updatePreferences({ body: { spellCheck: next } });
@@ -334,6 +343,7 @@ function ProfileSettings({
     setDraft(name ?? '');
   }, [name]);
 
+  /** Save the profile name, then update the current account and avatar together. */
   async function save(): Promise<void> {
     setAttempted(true);
     setSaved(false);
@@ -393,8 +403,12 @@ function ProfileSettings({
             message="Your new name appears in your account."
           />
         ) : null}
-        <Button type="submit" disabled={busy || draft.trim() === name}>
-          {busy ? 'Saving' : 'Save'}
+        <Button
+          type="submit"
+          variant="secondary"
+          disabled={busy || draft.trim() === name}
+        >
+          {busy ? 'Saving' : 'Save name'}
         </Button>
       </form>
     </SettingsSection>
@@ -406,6 +420,7 @@ export function AccountSettingsPage(): ReactNode {
   const session = useSession();
   const store = useLocalStore();
   const params = useParams();
+  const location = useLocation();
   const [pending, setPending] = useState<PendingSaves>({ kind: 'loading' });
   const [signOutError, setSignOutError] = useState('');
   const [exporting, setExporting] = useState(false);
@@ -425,7 +440,11 @@ export function AccountSettingsPage(): ReactNode {
     typeof params.workspaceId === 'string' ? params.workspaceId : null;
   const documents = useLegalDocuments();
   const portal = useOpenPortal();
-  useDocumentTitle(settingsTitle);
+  useDocumentTitle(
+    visibleSettingsPages(account ?? { accountPortal: false }).find(
+      (page) => page.path === params.settingsPage,
+    )?.title ?? settingsTitle,
+  );
   // The limits of the month change with no notice to this device, so the
   // page reads the account again when it opens (record 0193).
   const recheckAccount = session.recheck;
@@ -453,6 +472,9 @@ export function AccountSettingsPage(): ReactNode {
     };
   }, [store.store, accountId, workspaceId]);
 
+  const path = params.settingsPage;
+  const base = `/w/${workspaceId ?? ''}/settings`;
+  const settingsList = useSettingsListFocus(base, path);
   if (account === null) return <Navigate to="/login" replace />;
   // Only a count that arrived can offer the action that removes work. An
   // unknown count keeps the safe action alone (record 0038).
@@ -466,6 +488,7 @@ export function AccountSettingsPage(): ReactNode {
    * sign-out records a marker, so the session is revoked on reconnect before
    * any content comes back.
    */
+  /** Keep the approved wait or discard choice bound to the current account. */
   function endSignOut(discard: boolean): void {
     setSignOutError('');
     const activeStore = store.store;
@@ -704,7 +727,7 @@ export function AccountSettingsPage(): ReactNode {
     'remove-account': (
       <SettingsSection
         section={settingsSection('remove-account')}
-        description="This deletes your account and every note in your workspaces for good. Export your notes first if you want to keep them."
+        warning="This deletes your account and every note in your workspaces for good. Export your notes first if you want to keep them."
       >
         <Button
           variant="secondary"
@@ -714,64 +737,115 @@ export function AccountSettingsPage(): ReactNode {
             setRemoving(true);
           }}
         >
-          Delete my account
+          Delete account
         </Button>
       </SettingsSection>
     ),
   };
 
-  const sections = visibleSettingsSections(account);
+  const pages = visibleSettingsPages(account);
+  const activePage = pages.find((page) => page.path === path) ?? pages[0];
+  const legacyPage = settingsPageForAnchor(location.hash);
+  if (legacyPage !== null)
+    return <Navigate to={`${base}/${legacyPage}`} replace />;
+  if (path !== undefined && !pages.some((page) => page.path === path))
+    return <Navigate to={base} replace />;
+  const hideTitles =
+    activePage?.sections.length === 1
+      ? activePage.sections.map((key) => settingsSection(key).id)
+      : activePage?.path === 'profile'
+        ? ['profile-heading', 'account-heading']
+        : [];
   return (
-    <Page sections={sections}>
-      <PageHeader title={settingsTitle} />
-      <nav
-        aria-label="Settings sections"
-        className="mb-6 grid gap-3 sm:grid-cols-2"
-      >
-        {settingsGroups.map((group) => (
-          <div key={group.title}>
-            <p className="mb-1 mt-0 text-control font-semibold text-strong">
-              {group.title}
-            </p>
-            <div className="flex flex-wrap gap-1">
-              {sections
-                .filter((section) => group.keys.includes(section.key))
-                .map((section) => (
-                  <a
-                    key={section.key}
-                    href={`#${section.id}`}
-                    className={buttonClassName({
-                      variant: 'ghost',
-                      size: 'sm',
+    <div className={`mx-auto w-full max-w-5xl py-gutter ${pageGutter}`}>
+      <div className="grid min-w-0 gap-6 lg:grid-cols-3">
+        <nav
+          ref={settingsList}
+          aria-label="Settings"
+          className={path === undefined ? 'min-w-0' : 'hidden min-w-0 lg:block'}
+        >
+          <PageHeader title={settingsTitle} />
+          {['General', 'Notes', 'Account'].map((group) => (
+            <section key={group} aria-label={group} className="mb-5">
+              <h2 className="mb-1 mt-0 text-control font-medium text-muted">
+                {group}
+              </h2>
+              {pages
+                .filter((page) => page.group === group)
+                .map((page) => (
+                  <Link
+                    key={page.path}
+                    to={`${base}/${page.path}`}
+                    className={rowClassName({
+                      current: activePage?.path === page.path,
+                      className: 'min-h-12 lg:min-h-12',
                     })}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      const heading = document.getElementById(section.id);
-                      heading?.scrollIntoView({ block: 'start' });
-                      heading?.focus({ preventScroll: true });
-                    }}
+                    aria-current={
+                      activePage?.path === page.path ? 'page' : undefined
+                    }
                   >
-                    {section.title}
-                  </a>
+                    {page.path === 'devices' ? (
+                      <ComputerIcon />
+                    ) : (
+                      actionIcon(
+                        page.path === 'appearance'
+                          ? 'theme-system'
+                          : page.path === 'daily-notes'
+                            ? 'today'
+                            : page.path === 'templates'
+                              ? 'template'
+                              : 'settings',
+                      )
+                    )}
+                    <span className="min-w-0 flex-1">{page.title}</span>
+                    <ChevronRightIcon />
+                  </Link>
                 ))}
-            </div>
-          </div>
-        ))}
-      </nav>
-      {settingsGroups.map((group) => (
-        <section key={group.title} aria-label={group.title} className="mt-6">
-          <p
-            className={`mb-2 mt-0 text-ui font-semibold ${group.title === 'Danger zone' ? 'text-danger' : 'text-strong'}`}
+            </section>
+          ))}
+        </nav>
+        <div
+          className={
+            path === undefined
+              ? 'hidden min-w-0 lg:col-span-2 lg:block'
+              : 'min-w-0 lg:col-span-2'
+          }
+        >
+          <PageBackProvider
+            value={
+              <Link
+                to={base}
+                aria-label="Back to Settings"
+                className={buttonClassName({
+                  variant: 'ghost',
+                  iconOnly: true,
+                  className: 'lg:hidden',
+                })}
+              >
+                <ChevronLeftIcon />
+              </Link>
+            }
           >
-            {group.title}
-          </p>
-          {sections
-            .filter((section) => group.keys.includes(section.key))
-            .map((section) => (
-              <div key={section.key}>{sectionBodies[section.key]}</div>
+            <PageHeader
+              title={activePage?.title ?? settingsTitle}
+              description={activePage?.help}
+            />
+          </PageBackProvider>
+          <SettingsTopicContext.Provider
+            value={{
+              hiddenTitles: hideTitles,
+              helpSection:
+                activePage?.help || activePage?.sections[0] === undefined
+                  ? null
+                  : settingsSection(activePage.sections[0]).id,
+            }}
+          >
+            {activePage?.sections.map((key) => (
+              <div key={key}>{sectionBodies[key]}</div>
             ))}
-        </section>
-      ))}
+          </SettingsTopicContext.Provider>
+        </div>
+      </div>
       {removing ? (
         <RemoveOwnAccountDialog
           store={store.store}
@@ -784,6 +858,6 @@ export function AccountSettingsPage(): ReactNode {
           }}
         />
       ) : null}
-    </Page>
+    </div>
   );
 }

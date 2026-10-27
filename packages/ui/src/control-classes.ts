@@ -841,3 +841,16 @@ export function historyButtonName(
     tooltip: `${label} (${apple ? 'Cmd' : 'Ctrl'}+${action === 'redo' ? 'Shift+' : ''}Z)`,
   };
 }
+
+/** The parts of an offline choice. The full row is the control. */
+export function switchClassNames(checked: boolean): {
+  readonly row: string;
+  readonly track: string;
+  readonly thumb: string;
+} {
+  return {
+    row: rowClassName({ className: 'min-h-12 w-full text-left lg:min-h-12' }),
+    track: `inline-flex h-6 w-10 shrink-0 items-center rounded-full border border-edge-line p-1 ${checked ? 'justify-end bg-accent-fill' : 'justify-start bg-hover'}`,
+    thumb: `size-4 rounded-full ${checked ? 'bg-on-accent' : 'bg-muted'}`,
+  };
+}

@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 import type { LocalStore } from '@notesapp/sync';
-import { Checkbox, LoadingState, Notice } from '@notesapp/ui';
+import { Switch, Button, LoadingState, Notice } from '@notesapp/ui';
 import {
   offlineTargets,
   allOfflineTargetsPinned,
@@ -53,6 +53,7 @@ function useOfflineChoices(
   accountId: string | null,
   workspaceId: string | null,
 ): {
+  readonly retry: () => void;
   readonly choices: OfflineChoices;
   readonly status: OfflineStatus;
   readonly setChoice: (kind: keyof OfflineChoices, keep: boolean) => void;
@@ -183,6 +184,10 @@ function useOfflineChoices(
 
   return {
     choices,
+    retry: () => {
+      setStatus('loading');
+      setGeneration((value) => value + 1);
+    },
     status,
     setChoice,
     available,
@@ -208,10 +213,15 @@ export function OfflineSettingsSection({
       description="Your notes are always kept on this device. Images and older versions take more space, so you choose whether to keep them too."
     >
       {offline.status === 'failed' ? (
-        <Notice
-          tone="problem"
-          message="This device cannot say what it keeps offline. Open Settings again to read it."
-        />
+        <>
+          <Notice
+            tone="problem"
+            message="Can't read offline settings. Try again."
+          />
+          <Button variant="secondary" onClick={offline.retry}>
+            Try again
+          </Button>
+        </>
       ) : offline.status === 'loading' ? (
         // A choice that nothing has read yet is not a choice that is off
         // (record 0038), and the `Checkbox` primitive states no waiting
@@ -223,30 +233,30 @@ export function OfflineSettingsSection({
         />
       ) : (
         <div className="flex flex-col">
-          <Checkbox
-            id="offline-images"
-            label="Keep images on this device"
+          <Switch
+            label="Images"
+            hint={
+              offline.available.images ? 'Uses more space' : 'No images yet'
+            }
             checked={offline.choices.images}
             disabled={offline.busy || !offline.available.images}
-            describedBy="offline-help"
             onChange={(keep) => {
               offline.setChoice('images', keep);
             }}
           />
-          <Checkbox
-            id="offline-history"
-            label="Keep older versions on this device"
+          <Switch
+            label="Older versions"
+            hint={
+              offline.available.history
+                ? 'Uses more space'
+                : 'No older versions yet'
+            }
             checked={offline.choices.history}
             disabled={offline.busy || !offline.available.history}
-            describedBy="offline-help"
             onChange={(keep) => {
               offline.setChoice('history', keep);
             }}
           />
-          <p id="offline-help" className="mb-0 mt-2 text-control text-muted">
-            These controls keep the current files on this device. Add an image
-            or save a version to make its control available.
-          </p>
         </div>
       )}
       {offline.problem === '' ? null : (
