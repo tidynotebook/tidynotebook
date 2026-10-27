@@ -7,6 +7,21 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## Unreleased
 
+## 0.22.1 - 2026-10-27
+
+### Changed
+
+- The notes, folder, template, editor, Settings, Trash and recovery screens use the approved redesign on phone and desktop.
+- Undo and Redo are icon buttons with accessible names. Their tooltips stay open when the pointer moves onto them, and Escape closes them without moving focus.
+- Each Settings topic has its own page. Old Settings links open the matching topic.
+- Note creation shows a simpler destination choice, including No folder.
+
+### Fixed
+
+- The navigation drawer traps focus and locks scrolling only on phone screens. Desktop Tab and scrolling stay free, and Escape returns focus to a visible control.
+- A link to a deleted note finds the note in Trash, also when Trash has more than one page. Restored device text has priority over a failed Trash lookup.
+- Folder actions are not available until the folder list loads, so a folder cannot be removed from an incomplete list.
+
 ## 0.22.0 - 2026-10-26
 
 ### Added
