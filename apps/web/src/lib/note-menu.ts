@@ -81,7 +81,7 @@ const allRows: readonly (NoteMenuRow & {
   { id: 'open', label: 'Open', icon: 'open', surfaces: ['tree'] },
   {
     id: 'history',
-    label: 'History',
+    label: 'Version history',
     icon: 'history',
     surfaces: ['header', 'tree'],
   },
@@ -99,13 +99,13 @@ const allRows: readonly (NoteMenuRow & {
   },
   {
     id: 'move',
-    label: 'Move to folder',
+    label: 'Move',
     icon: 'move',
     surfaces: ['header', 'tree'],
   },
   {
     id: 'duplicate',
-    label: 'Duplicate',
+    label: 'Make a copy',
     icon: 'duplicate',
     surfaces: ['header', 'tree'],
   },

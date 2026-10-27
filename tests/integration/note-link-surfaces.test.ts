@@ -65,6 +65,8 @@ const { forceParsing } = await import('@codemirror/language');
 const { setEditorReadOnly } = await import('@notesapp/editor');
 const { NoteEditor } =
   await import('../../apps/web/dist/features/editor/note-editor.js');
+const { DeletedNotePage } =
+  await import('../../apps/web/dist/features/editor/note-state-pages.js');
 const { NoteEditorLoader } =
   await import('../../apps/web/dist/features/editor/note-loader.js');
 const { duplicateNote } =
@@ -218,6 +220,417 @@ function editor(local: LocalStore = store): ReactNode {
     initialSequence: 1,
   });
 }
+
+for (const outcome of ['deleted', 'unknown', 'failed', 'left'] as const) {
+  await test(`a cold deleted-note lookup handles ${outcome} without a cached document`, async () => {
+    const coldId = crypto.randomUUID();
+    const requests: string[] = [];
+    const lookup = Promise.withResolvers<Response>();
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (input) => {
+      const url = String(input instanceof Request ? input.url : input);
+      requests.push(url);
+      return Promise.resolve(
+        requests.length === 1
+          ? Response.json({ code: 'not_found' }, { status: 404 })
+          : lookup.promise,
+      );
+    };
+    const coldStore: LocalStore = {
+      ...store,
+      readCachedNote: () => Promise.resolve(null),
+    };
+    try {
+      await render(
+        createElement(NoteEditorLoader, {
+          store: coldStore,
+          accountId,
+          workspaceId,
+          fileId: coldId,
+        }),
+      );
+      assert.equal(requests.length, 2);
+      assert.ok(requests.every((url) => url.includes(workspaceId)));
+      if (outcome === 'left')
+        await render(createElement('p', null, 'Another workspace'));
+      await act(async () => {
+        lookup.resolve(
+          outcome === 'failed'
+            ? Response.json({}, { status: 503 })
+            : Response.json({
+                files:
+                  outcome === 'unknown'
+                    ? []
+                    : [
+                        {
+                          fileId: coldId,
+                          path: 'Cold deleted.md',
+                          kind: 'note',
+                          headRevisionId: crypto.randomUUID(),
+                          createdAt: '2026-10-27T00:00:00Z',
+                          deletedAt: '2026-10-27T00:00:00Z',
+                        },
+                      ],
+              }),
+        );
+      });
+      const content = container.textContent ?? '';
+      if (outcome === 'deleted') {
+        assert.match(content, /Cold deleted is in Trash/);
+        assert.ok(
+          [...container.querySelectorAll('button')].some(
+            (button) => button.textContent === 'Restore note',
+          ),
+        );
+      } else if (outcome === 'unknown') assert.match(content, /Note not found/);
+      else if (outcome === 'failed')
+        assert.match(content, /Can't open this note/);
+      else assert.equal(content, 'Another workspace');
+      assert.equal(container.querySelectorAll('.cm-editor').length, 0);
+    } finally {
+      await render(null);
+      globalThis.fetch = originalFetch;
+    }
+  });
+}
+
+for (const outcome of [
+  'found',
+  'exhausted',
+  'error',
+  'left',
+  'purged',
+  'restored',
+] as const) {
+  await test(`a later Trash page handles ${outcome} with current scope guards`, async () => {
+    const id = crypto.randomUUID();
+    await store.checkpoint(
+      {
+        accountId,
+        workspaceId,
+        fileId: id,
+        workingCopyId: crypto.randomUUID(),
+        baseRevisionId: null,
+        path: 'Restored page.md',
+        text: 'Restored during page two',
+        sequence: 1,
+        deleted: false,
+      },
+      null,
+      'text',
+    );
+    const saved = await store.readCachedNote(accountId, workspaceId, id);
+    assert.ok(saved);
+    let restored = false;
+    let retried = false;
+    const listeners = new Set<(change: LocalChange) => void>();
+    const local: LocalStore = {
+      ...store,
+      readCachedNote: () => Promise.resolve(restored ? saved : null),
+      subscribe(listener) {
+        listeners.add(listener);
+        return () => {
+          listeners.delete(listener);
+        };
+      },
+    };
+    const page = Promise.withResolvers<Response>();
+    const originalFetch = globalThis.fetch;
+    const requests: URL[] = [];
+    globalThis.fetch = (input) => {
+      const url = new URL(input instanceof Request ? input.url : String(input));
+      requests.push(url);
+      if (!url.pathname.endsWith('/trash'))
+        return Promise.resolve(Response.json({}, { status: 404 }));
+      if (url.searchParams.get('cursor') === 'later') return page.promise;
+      return Promise.resolve(
+        Response.json(
+          retried ? { files: [] } : { files: [], nextCursor: 'later' },
+        ),
+      );
+    };
+    try {
+      await render(
+        createElement(NoteEditorLoader, {
+          store: local,
+          accountId,
+          workspaceId,
+          fileId: id,
+        }),
+      );
+      assert.equal(requests.length, 3);
+      assert.equal(requests[2]?.searchParams.get('cursor'), 'later');
+      if (outcome === 'left')
+        await render(createElement('p', null, 'Another account and workspace'));
+      if (outcome === 'purged')
+        await act(async () => {
+          for (const listener of [...listeners])
+            listener({ kind: 'purge', accountId, workspaceId, fileId: id });
+        });
+      if (outcome === 'restored')
+        await act(async () => {
+          restored = true;
+          for (const listener of [...listeners])
+            listener({ kind: 'file', accountId, workspaceId, fileId: id });
+        });
+      await act(async () => {
+        page.resolve(
+          outcome === 'error' || outcome === 'restored'
+            ? Response.json({}, { status: 503 })
+            : Response.json({
+                files:
+                  outcome === 'exhausted'
+                    ? []
+                    : [{ fileId: id, kind: 'note', path: 'Later deleted.md' }],
+                nextCursor: null,
+              }),
+        );
+      });
+      if (outcome === 'found')
+        assert.match(container.textContent ?? '', /Later deleted is in Trash/);
+      else if (outcome === 'exhausted')
+        assert.match(container.textContent ?? '', /Note not found/);
+      else if (outcome === 'left')
+        assert.equal(container.textContent, 'Another account and workspace');
+      else if (outcome === 'purged')
+        assert.match(container.textContent ?? '', /This note was deleted/);
+      else if (outcome === 'restored') {
+        await waitForEditor(container);
+        assert.equal(view().state.doc.toString(), 'Restored during page two');
+      } else {
+        assert.match(container.textContent ?? '', /Can't open this note/);
+        const retry = [...container.querySelectorAll('button')].find(
+          (button) => button.textContent === 'Try again',
+        );
+        assert.ok(retry);
+        retried = true;
+        await act(async () => retry.click());
+        assert.match(container.textContent ?? '', /Note not found/);
+        assert.equal(requests.at(-1)?.searchParams.get('cursor'), null);
+      }
+    } finally {
+      await render(null);
+      await act(finishStoreWork);
+      globalThis.fetch = originalFetch;
+    }
+  });
+}
+
+for (const responseStatus of [200, 503]) {
+  await test(`review: restored device text wins while cold Trash lookup returns ${responseStatus}`, async () => {
+    const id = crypto.randomUUID();
+    await store.checkpoint(
+      {
+        accountId,
+        workspaceId,
+        fileId: id,
+        workingCopyId: crypto.randomUUID(),
+        baseRevisionId: null,
+        path: 'Restored.md',
+        text: 'Restored device text',
+        sequence: 1,
+        deleted: false,
+      },
+      null,
+      'text',
+    );
+    const saved = await store.readCachedNote(accountId, workspaceId, id);
+    assert.ok(saved);
+    let restored = false;
+    const listeners = new Set<(change: LocalChange) => void>();
+    const local: LocalStore = {
+      ...store,
+      readCachedNote: () => Promise.resolve(restored ? saved : null),
+      subscribe(listener) {
+        listeners.add(listener);
+        return () => {
+          listeners.delete(listener);
+        };
+      },
+    };
+    const lookup = Promise.withResolvers<Response>();
+    const originalFetch = globalThis.fetch;
+    let requests = 0;
+    globalThis.fetch = () =>
+      Promise.resolve(
+        ++requests === 1 ? Response.json({}, { status: 404 }) : lookup.promise,
+      );
+    try {
+      await render(
+        createElement(NoteEditorLoader, {
+          store: local,
+          accountId,
+          workspaceId,
+          fileId: id,
+        }),
+      );
+      assert.equal(requests, 2);
+      await act(async () => {
+        restored = true;
+        for (const listener of [...listeners])
+          listener({ kind: 'file', accountId, workspaceId, fileId: id });
+      });
+      await act(async () => {
+        lookup.resolve(
+          responseStatus === 503
+            ? Response.json({}, { status: 503 })
+            : Response.json({
+                files: [{ fileId: id, path: 'Stale deleted.md', kind: 'note' }],
+              }),
+        );
+        await setImmediate();
+      });
+      await act(finishStoreWork);
+      await waitForEditor(container);
+      assert.ok(
+        container.querySelector('.cm-editor'),
+        `Expected restored editor; received: ${container.textContent}`,
+      );
+      assert.equal(view().state.doc.toString(), 'Restored device text');
+    } finally {
+      await render(null);
+      await act(finishStoreWork);
+      globalThis.fetch = originalFetch;
+    }
+  });
+}
+
+for (const outcome of ['purged', 'retry'] as const) {
+  await test(`review: cold lookup ${outcome} guard`, async () => {
+    const id = crypto.randomUUID();
+    const listeners = new Set<(change: LocalChange) => void>();
+    const local: LocalStore = {
+      ...store,
+      readCachedNote: () => Promise.resolve(null),
+      subscribe(listener) {
+        listeners.add(listener);
+        return () => {
+          listeners.delete(listener);
+        };
+      },
+    };
+    const originalFetch = globalThis.fetch;
+    const lookup = Promise.withResolvers<Response>();
+    let requests = 0;
+    globalThis.fetch = () => {
+      requests++;
+      return Promise.resolve(
+        requests === 1 || requests === 3
+          ? Response.json({}, { status: 404 })
+          : requests === 2
+            ? lookup.promise
+            : Response.json({ files: [] }),
+      );
+    };
+    try {
+      await render(
+        createElement(NoteEditorLoader, {
+          store: local,
+          accountId,
+          workspaceId,
+          fileId: id,
+        }),
+      );
+      assert.equal(requests, 2);
+      if (outcome === 'purged')
+        await act(async () => {
+          for (const listener of [...listeners])
+            listener({ kind: 'purge', accountId, workspaceId, fileId: id });
+        });
+      await act(async () => {
+        lookup.resolve(
+          outcome === 'retry'
+            ? Response.json({}, { status: 503 })
+            : Response.json({
+                files: [{ fileId: id, kind: 'note', path: 'Stale.md' }],
+              }),
+        );
+      });
+      if (outcome === 'purged') {
+        assert.match(container.textContent ?? '', /This note was deleted/);
+        assert.equal(container.querySelector('.cm-editor'), null);
+      } else {
+        const retry = [...container.querySelectorAll('button')].find(
+          (b) => b.textContent === 'Try again',
+        );
+        assert.ok(retry);
+        await act(async () => retry.click());
+        assert.equal(requests, 4);
+        assert.match(container.textContent ?? '', /Note not found/);
+      }
+    } finally {
+      await render(null);
+      globalThis.fetch = originalFetch;
+    }
+  });
+}
+
+await test('Restore gives offline guidance and retains retry after reconnect', async () => {
+  const connection = Object.getOwnPropertyDescriptor(navigator, 'onLine');
+  const originalFetch = globalThis.fetch;
+  let requests = 0;
+  let restored = 0;
+  globalThis.fetch = () => {
+    requests += 1;
+    return Promise.resolve(
+      requests === 1
+        ? Response.json({ message: 'Restore failed.' }, { status: 503 })
+        : Response.json({ revision: { path: 'one.md' } }),
+    );
+  };
+  /** Find the Restore note button. */
+  const restoreButton = (): HTMLButtonElement => {
+    const found = [...container.querySelectorAll('button')].find(
+      (button) => button.textContent === 'Restore note',
+    );
+    assert.ok(found);
+    return found;
+  };
+  try {
+    Object.defineProperty(navigator, 'onLine', {
+      configurable: true,
+      value: false,
+    });
+    await render(
+      createElement(DeletedNotePage, {
+        store,
+        workspaceId,
+        fileId,
+        path: 'one.md',
+        onRestored: () => {
+          restored += 1;
+        },
+      }),
+    );
+    assert.match(
+      container.textContent ?? '',
+      /You are offline. Connect to restore this note./,
+    );
+    assert.equal(restoreButton().disabled, true);
+    await act(async () => restoreButton().click());
+    assert.equal(requests, 0);
+    assert.equal(restored, 0);
+    Object.defineProperty(navigator, 'onLine', {
+      configurable: true,
+      value: true,
+    });
+    await act(async () => window.dispatchEvent(new Event('online')));
+    assert.equal(restoreButton().disabled, false);
+    await act(async () => restoreButton().click());
+    assert.equal(requests, 1);
+    assert.equal(restored, 0);
+    assert.ok(container.querySelector('[role="alert"]'));
+    assert.equal(restoreButton().disabled, false);
+    await act(async () => restoreButton().click());
+    assert.equal(requests, 2);
+    assert.equal(restored, 1);
+  } finally {
+    await render(null);
+    globalThis.fetch = originalFetch;
+    if (connection === undefined) Reflect.deleteProperty(navigator, 'onLine');
+    else Object.defineProperty(navigator, 'onLine', connection);
+  }
+});
 
 await test('loader and history keep valid inert links quiet and show a dismissible blocked notice', async () => {
   const draft: Draft = {
@@ -420,10 +833,7 @@ await test('a restored note opens editable content even when its first read stil
     await waitForEditor(container);
     assert.equal(view().state.doc.toString(), restoredText);
     assert.equal(view().state.readOnly, false);
-    assert.doesNotMatch(
-      container.textContent ?? '',
-      /Note deleted on this device/,
-    );
+    assert.doesNotMatch(container.textContent ?? '', /is in Trash/);
     await render(null);
     await act(finishStoreWork);
   }
@@ -481,7 +891,7 @@ await test('a delayed restore reread shows pending feedback before editable reco
       fileId: restoredId,
     }),
   );
-  assert.match(container.textContent ?? '', /Note deleted on this device/);
+  assert.match(container.textContent ?? '', /is in Trash/);
   await act(async () => {
     restored = true;
     for (const listener of [...listeners])
@@ -489,10 +899,7 @@ await test('a delayed restore reread shows pending feedback before editable reco
   });
   await rereadStarted.promise;
   assert.equal(container.querySelector('.cm-editor'), null);
-  assert.doesNotMatch(
-    container.textContent ?? '',
-    /Note deleted on this device/,
-  );
+  assert.doesNotMatch(container.textContent ?? '', /is in Trash/);
   const pending = container.querySelector('[role="status"][aria-busy="true"]');
   assert.ok(pending);
   assert.match(pending.textContent ?? '', /The note is loading\./);
@@ -671,10 +1078,7 @@ await test('duplicate, Trash and restore allow immediate editing through a secon
     );
     await restoreStarted.promise;
     assert.equal(container.querySelector('.cm-editor'), null);
-    assert.doesNotMatch(
-      container.textContent ?? '',
-      /Note deleted on this device/,
-    );
+    assert.doesNotMatch(container.textContent ?? '', /is in Trash/);
     assert.equal(
       (await store.listLocalFiles(accountId, workspaceId)).find(
         (file) => file.fileId === restoredId,
@@ -694,10 +1098,7 @@ await test('duplicate, Trash and restore allow immediate editing through a secon
     );
     assert.equal(view().state.doc.toString(), expected);
     assert.equal(view().state.readOnly, false);
-    assert.doesNotMatch(
-      container.textContent ?? '',
-      /Note deleted on this device/,
-    );
+    assert.doesNotMatch(container.textContent ?? '', /is in Trash/);
     const added = `Recovered edit ${String(cycle + 1)}\n`;
     await act(async () => {
       const current = view();
@@ -775,12 +1176,12 @@ await test('a purge keeps its visible state when the initial loader read finishe
     for (const listener of [...listeners])
       listener({ kind: 'purge', accountId, workspaceId, fileId: purgedId });
   });
-  assert.match(container.textContent ?? '', /Note deleted permanently/);
+  assert.match(container.textContent ?? '', /This note was deleted/);
   await act(async () => {
     delayed.resolve(cached);
     await delayed.promise;
   });
-  assert.match(container.textContent ?? '', /Note deleted permanently/);
+  assert.match(container.textContent ?? '', /This note was deleted/);
   assert.equal(container.querySelector('.cm-editor'), null);
   await render(null);
 });
@@ -907,15 +1308,13 @@ await test('the image viewer removes only the selected occurrence and toolbar Un
   assert.ok(open instanceof HTMLElement);
   await act(async () => open.click());
   const remove = [...document.querySelectorAll('button')].find(
-    (button) => button.textContent === 'Remove image',
+    (button) => button.textContent === 'Remove',
   );
   assert.ok(remove);
-  assert.match(
-    document.body.textContent ?? '',
-    /removes this reference from this note/,
-  );
+  assert.equal(remove.getAttribute('title'), null);
   await act(async () => remove.click());
   assert.equal(current.state.doc.toString(), `${source}\n\n\n\nEnd.\n`);
+  assert.ok(document.body.textContent?.includes('Image removed from note.'));
   assert.equal(current.hasFocus, true);
   const undoButton = [...container.querySelectorAll('button')].find(
     (button) => button.getAttribute('aria-label') === 'Undo',
@@ -1051,7 +1450,7 @@ await test('purge blocks a restore reload queued in the same React batch even wh
         fileId: purgedId,
       }),
     );
-    assert.match(container.textContent ?? '', /Note deleted on this device/);
+    assert.match(container.textContent ?? '', /is in Trash/);
     await act(async () => {
       restored = true;
       for (const listener of [...listeners])
@@ -1068,7 +1467,7 @@ await test('purge blocks a restore reload queued in the same React batch even wh
     // If the queued request starts, let the successful stale response finish
     // so the assertion observes its effect, rather than cancelling it early.
     if (serverReads > 0) await waitForEditor(container);
-    assert.match(container.textContent ?? '', /Note deleted permanently/);
+    assert.match(container.textContent ?? '', /This note was deleted/);
     assert.equal(container.querySelector('.cm-editor'), null);
     assert.equal(serverReads, 0);
   } finally {
@@ -1124,23 +1523,23 @@ await test('returning to a purged note reaches a terminal state after another no
     );
   try {
     await show(purgedId);
-    assert.match(container.textContent ?? '', /Note deleted on this device/);
+    assert.match(container.textContent ?? '', /is in Trash/);
     await act(async () => {
       purged = true;
       for (const listener of [...listeners])
         listener({ kind: 'purge', accountId, workspaceId, fileId: purgedId });
     });
-    assert.match(container.textContent ?? '', /Note deleted permanently/);
+    assert.match(container.textContent ?? '', /This note was deleted/);
     await show(otherId);
     await act(async () => {
       await setImmediate();
     });
-    assert.match(container.textContent ?? '', /Note deleted on this device/);
+    assert.match(container.textContent ?? '', /is in Trash/);
     await show(purgedId);
     await act(async () => {
       await setImmediate();
     });
-    assert.match(container.textContent ?? '', /Note deleted permanently/);
+    assert.match(container.textContent ?? '', /This note was deleted/);
   } finally {
     await render(null);
     globalThis.fetch = originalFetch;
@@ -1293,16 +1692,14 @@ for (const missing of [
         }),
       );
       const deadline = Date.now() + 10_000;
-      while (
-        !(container.textContent ?? '').includes('Note deleted on this device')
-      ) {
+      while (!(container.textContent ?? '').includes('is in Trash')) {
         if (Date.now() > deadline)
           assert.fail('The deleted note did not finish loading.');
         await act(async () => {
           await setImmediate();
         });
       }
-      assert.match(container.textContent ?? '', /Note deleted on this device/);
+      assert.match(container.textContent ?? '', /is in Trash/);
       const key: [string, string, string, string] = [
         'http://localhost',
         accountId,

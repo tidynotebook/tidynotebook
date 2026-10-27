@@ -11,6 +11,7 @@ import {
   templateNote,
   setCreationError,
   setTemplateAvailability,
+  setDuplicateTemplates,
 } from './support/template-dialog-fixture.ts';
 
 const browser = new Window({ url: 'http://localhost/' });
@@ -136,7 +137,8 @@ function button(label: string): HTMLButtonElement {
   const found = [...container.querySelectorAll('button')].find(
     (candidate) =>
       candidate.textContent === label ||
-      candidate.getAttribute('aria-label') === label,
+      candidate.getAttribute('aria-label') === label ||
+      candidate.textContent?.startsWith(label),
   );
   assert.ok(found, `Missing button: ${label}`);
   return found;
@@ -303,6 +305,29 @@ await test('an incomplete list with no available templates does not claim a sear
     );
   } finally {
     setTemplateAvailability({ empty: false, partial: false });
+  }
+});
+
+await test('duplicate template names retain their first lines as accessible button text', async () => {
+  setDuplicateTemplates(true);
+  try {
+    await show('workspace-duplicates', false, false);
+    const summaries = reads.splice(0);
+    assert.equal(summaries.length, 2);
+    await act(async () => {
+      for (const [index, summary] of summaries.entries())
+        summary.finish({
+          ...templateNote(`Team ${index + 1} notes`),
+          fileId: summary.fileId,
+        });
+    });
+    const choices = [...container.querySelectorAll('button[aria-pressed]')];
+    assert.equal(choices.length, 2);
+    assert.match(choices[0]?.textContent ?? '', /MeetingTeam 1 notes/);
+    assert.match(choices[1]?.textContent ?? '', /MeetingTeam 2 notes/);
+    assert.ok(choices.every((choice) => !choice.hasAttribute('aria-label')));
+  } finally {
+    setDuplicateTemplates(false);
   }
 });
 

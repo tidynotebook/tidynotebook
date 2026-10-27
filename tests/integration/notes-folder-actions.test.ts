@@ -60,6 +60,7 @@ await test('a folder with only subfolders keeps its creation actions', () => {
   assert.match(html, /Archive/);
   assert.match(html, /New note/);
   assert.match(html, /Use template/);
+  assert.match(html, /Folder actions/);
 });
 
 await test('folder counts use the singular label', () => {

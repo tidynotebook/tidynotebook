@@ -80,6 +80,7 @@ import { useInsertTemplate } from './insert-template.ts';
 import { useImageUpload } from './image-upload.ts';
 import { useNoteLinkSource } from './note-link-source.ts';
 import { useNoteSaveFacts } from './note-save-facts.ts';
+import { useImageUndo } from './image-undo.tsx';
 import { useCopyNote } from './copy-note.tsx';
 import {
   baseNameOf,
@@ -365,6 +366,8 @@ const NoteEditorBody = memo(function NoteEditorBody({
   const history = useEditorHistory(viewRef);
   const watchHistory = history.watch;
   // The picture that a press on an image of the note opened (record 0145).
+  const imageUndo = useImageUndo(viewRef);
+  const clearImageUndo = imageUndo.clear;
   const [openImage, setOpenImage] = useState<ImageOpenRequest | null>(null);
   const [outlineOpen, setOutlineOpen] = useState(true);
   const [backlinksOpen, setBacklinksOpen] = useState(true);
@@ -962,6 +965,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
         // the change and moves the timers. Its work goes to the store on the
         // next frame (record 0175).
         const startedAt = performance.now();
+        clearImageUndo();
         textReaderRef.current = readText;
         documentWork.schedule(readText);
         const first = sequenceRef.current === writtenSequenceRef.current;
@@ -1005,6 +1009,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
         // Work of another device is not input of this device: the screen
         // shows it and schedules no save of its own (record 0085).
         onRemoteChange: (readText) => {
+          clearImageUndo();
           textReaderRef.current = readText;
           documentWork.schedule(readText);
           // A draft is recovery data of local work, so remote work writes
@@ -1424,6 +1429,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
         workspaceId={workspaceId}
         fileId={fileId}
         onRename={renameNote}
+        onCopyText={copyNote.run}
         onMoveToFolder={onMoveToFolder}
         onDuplicate={duplicateNote}
         onAttachImage={attachImage}
@@ -1546,6 +1552,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
             <NoteFooter initialText={initialText} />
             <ImageViewer
               image={openImage}
+              onRemoved={imageUndo.removed}
               onClose={() => setOpenImage(null)}
               returnFocus={() => currentView()?.focus()}
             />
@@ -1585,7 +1592,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
           </aside>
         </div>
       </div>
-      {copyNote.toast}
+      {imageUndo.toast ?? copyNote.toast}
     </div>
   );
 });

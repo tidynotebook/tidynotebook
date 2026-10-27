@@ -26,13 +26,14 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router';
-import { getFile } from '@notesapp/api-client';
+import { useLocation, useNavigate } from 'react-router';
+import { getFile, listDeletedFiles } from '@notesapp/api-client';
 import type { LocalFileSummary, LocalStore } from '@notesapp/sync';
 import type { LinkTarget } from '@notesapp/editor';
 import { classifyUrl } from '@notesapp/markdown';
 import {
   LoadingState,
+  Button,
   Notice,
   pageGutter,
   PageHeader,
@@ -65,6 +66,11 @@ import {
   watchDeviceNote,
 } from './device-note.ts';
 import { NoteEditor } from './note-editor.tsx';
+import {
+  AllNotesAction,
+  DeletedNotePage,
+  PurgedNotePage,
+} from './note-state-pages.tsx';
 import { StaleDraftRecovery } from './stale-draft-recovery.tsx';
 import { recordTiming } from './timing.ts';
 
@@ -176,11 +182,13 @@ export function NoteEditorLoader({
   const cancelLoad = useRef<() => void>(() => {});
   // A purge also blocks a reload queued before React commits its state.
   const purgedIdentity = useRef<NoteLoadIdentity | null>(null);
+  const serverDeletedIdentity = useRef<NoteLoadIdentity | null>(null);
   useEffect(() => {
     let cancelled = false;
     cancelLoad.current = () => {
       cancelled = true;
     };
+    /** Open the note from the device first, then the server, and check Trash for a deleted note. */
     async function load(): Promise<void> {
       const quiet = quietReload.current && statusKind.current === 'ready';
       quietReload.current = false;
@@ -216,8 +224,47 @@ export function NoteEditorLoader({
       if (cancelled) return;
       if (result.error !== undefined || result.data === undefined) {
         const code = result.response?.status ?? 0;
-        if (code === 404) setStatus({ kind: 'unknown' });
-        else if (code === 410) setStatus({ kind: 'purged' });
+        if (code === 404) {
+          // A cold snapshot need not hold deleted files. The regular file
+          // read also excludes them, so ask the same authorized list as
+          // Trash before treating a link as unknown. Keep this read local
+          // to the open screen; it must not manufacture a cached document.
+          let cursor: string | undefined;
+          do {
+            const trash = await listDeletedFiles({
+              path: { workspaceId },
+              query: cursor === undefined ? {} : { cursor },
+            });
+            if (cancelled) return;
+            // A restore can reach the device during any page or failed read.
+            const current =
+              store === null ? null : await readDeviceNote(store, opening);
+            if (cancelled) return;
+            if (current !== null) {
+              serverDeletedIdentity.current = null;
+              setStatus(current);
+              return;
+            }
+            if (trash.error !== undefined || trash.data === undefined) {
+              setStatus({
+                kind: 'unavailable',
+                message: problemMessage(trash.error),
+              });
+              return;
+            }
+            const deleted = trash.data.files.find(
+              (file) => file.fileId === fileId && file.kind === 'note',
+            );
+            if (deleted !== undefined) {
+              serverDeletedIdentity.current = opening;
+              setStatus({ kind: 'deleted', path: deleted.path });
+              return;
+            }
+            cursor = trash.data.nextCursor ?? undefined;
+          } while (cursor !== undefined);
+          serverDeletedIdentity.current = null;
+          setStatus({ kind: 'unknown' });
+        } else if (code === 410) setStatus({ kind: 'purged' });
         else
           setStatus({
             kind: 'unavailable',
@@ -318,11 +365,21 @@ export function NoteEditorLoader({
     return watchDeviceNote(
       store,
       { accountId, workspaceId, fileId },
-      (cached) => {
+      (cached, fromChange) => {
         if (cached === null) {
           // A restored head can be live while its cached Markdown is absent.
           // The loader can read it from the server; the watcher cannot.
-          if (statusKind.current === 'deleted') readAgain();
+          if (
+            statusKind.current === 'deleted' &&
+            (fromChange ||
+              serverDeletedIdentity.current === null ||
+              !isSameNote(serverDeletedIdentity.current, {
+                accountId,
+                workspaceId,
+                fileId,
+              }))
+          )
+            readAgain();
           return;
         }
         if (cached.deleted && statusKind.current === 'ready') {
@@ -358,38 +415,40 @@ export function NoteEditorLoader({
       <PageRegion>
         <PageHeader
           title="Note not found"
-          description="The server knows no note at that address. It may be removed, or the address may be wrong. This is not an empty note."
+          description="Check the link, or find the note in All notes."
         />
+        <AllNotesAction workspaceId={workspaceId} />
       </PageRegion>
     );
   if (status.kind === 'purged')
     return (
-      <PageRegion>
-        <PageHeader
-          title="Note deleted permanently"
-          description="This note was deleted permanently. Work for it that waits on this device stays here and can go into a new note."
-        />
-      </PageRegion>
+      <PurgedNotePage
+        key={`${accountId}:${workspaceId}:${fileId}`}
+        store={store}
+        accountId={accountId}
+        workspaceId={workspaceId}
+        fileId={fileId}
+      />
     );
   if (status.kind === 'deleted')
     return (
-      <PageRegion>
-        <PageHeader
-          title="Note deleted on this device"
-          description={`${displayNoteName(status.path)} is in the trash. The deletion goes to the server when this device has a connection.`}
-        />
-        <p className="m-0 text-control">
-          <Link to={`/w/${workspaceId}/trash`}>Open Trash.</Link>
-        </p>
-      </PageRegion>
+      <DeletedNotePage
+        key={`${accountId}:${workspaceId}:${fileId}`}
+        store={store}
+        workspaceId={workspaceId}
+        fileId={fileId}
+        path={status.path}
+        onRestored={readAgain}
+      />
     );
   if (status.kind === 'unavailable')
     return (
       <PageRegion>
-        <PageHeader title="Note unavailable" />
-        <p className="text-control text-danger" role="alert">
-          {status.message}
-        </p>
+        <PageHeader title="Can't open this note" description={status.message} />
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={readAgain}>Try again</Button>
+          <AllNotesAction workspaceId={workspaceId} />
+        </div>
       </PageRegion>
     );
   if (store === null)
@@ -397,8 +456,7 @@ export function NoteEditorLoader({
       <PageRegion>
         <PageHeader title={displayNoteName(status.path)} />
         <p className="text-control text-danger" role="alert">
-          Local storage is unavailable, so editing is closed here. The saved
-          text follows and can be read.
+          Editing is unavailable on this device. You can read the saved text.
         </p>
         <pre className="overflow-x-auto rounded-lg border border-edge-subtle bg-card p-3 text-control">
           {status.text}

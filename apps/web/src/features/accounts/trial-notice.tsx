@@ -19,20 +19,20 @@ export function TrialNotice(): ReactNode {
     Date.parse(account.controls.trialEndsAt ?? '') > now;
   const action = account.accountPortal ? (
     <Button
-      variant={active ? 'ghost' : 'secondary'}
+      variant="secondary"
       size="sm"
       disabled={portal.busy}
       onClick={() => {
         void portal.open(portalHome);
       }}
     >
-      Upgrade account
+      Upgrade
     </Button>
   ) : null;
   if (active)
     return (
       <div
-        className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-1 text-control text-muted"
+        className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-1 min-h-10 text-control text-muted"
         aria-label="Trial status"
       >
         <span role="status">{message}</span>

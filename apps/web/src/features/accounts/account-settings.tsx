@@ -55,6 +55,7 @@ import {
   useSession,
   useSpellCheck,
   useRequestSync,
+  useWorkspace,
 } from '../../app.tsx';
 
 import { profileNameProblem, storageLine } from '../../lib/accounts.ts';
@@ -439,6 +440,13 @@ export function AccountSettingsPage(): ReactNode {
   const workspaceId =
     typeof params.workspaceId === 'string' ? params.workspaceId : null;
   const documents = useLegalDocuments();
+  const workspace = useWorkspace();
+  const workspaceName =
+    workspace.state.status === 'ready'
+      ? workspace.state.workspaces.find(
+          (item) => item.workspaceId === workspaceId,
+        )?.name
+      : undefined;
   const portal = useOpenPortal();
   useDocumentTitle(
     visibleSettingsPages(account ?? { accountPortal: false }).find(
@@ -843,6 +851,13 @@ export function AccountSettingsPage(): ReactNode {
             {activePage?.sections.map((key) => (
               <div key={key}>{sectionBodies[key]}</div>
             ))}
+            {(activePage?.path === 'templates' ||
+              activePage?.path === 'daily-notes') &&
+            workspaceName !== undefined ? (
+              <p className="text-control text-muted">
+                Applies to the {workspaceName} workspace.
+              </p>
+            ) : null}
           </SettingsTopicContext.Provider>
         </div>
       </div>

@@ -54,6 +54,8 @@ export type NoteSaveReport = {
    * `lib/local-write.ts` decides it.
    */
   readonly localWriteFailed: boolean;
+  /** The current buffer is ahead of the sequence already written locally. */
+  readonly localWritePending: boolean;
   /** When the last version of this note was created, as an ISO instant. */
   readonly lastSavedAt: string | null;
 };
@@ -61,11 +63,13 @@ export type NoteSaveReport = {
 /** The pending work, write failure, and last checkpoint of the open note. */
 export function noteSaveReport(input: {
   readonly pendingSave?: boolean;
+  readonly localWritePending?: boolean;
   readonly storageError: LocalStorageErrorKind | null;
   readonly lastSavedAt: string | null;
 }): NoteSaveReport {
   return {
     pendingSave: input.pendingSave ?? false,
+    localWritePending: input.localWritePending ?? input.pendingSave ?? false,
     localWriteFailed: localWriteFailed(input.storageError),
     lastSavedAt: input.lastSavedAt,
   };

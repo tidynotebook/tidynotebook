@@ -107,7 +107,7 @@ type RevisionView = 'changes' | 'preview';
 
 /** The words of each view, as its tab reads. */
 const revisionViewLabels: Readonly<Record<RevisionView, string>> = {
-  changes: 'Compared with current',
+  changes: 'Changes',
   preview: 'Preview',
 };
 
@@ -169,7 +169,7 @@ export function HistoryView(): ReactNode {
   if (accountId === null)
     return (
       <Page>
-        <PageHeader title="History" />
+        <PageHeader title="Version history" />
         <LoadingState shape="list" rows={5} label="The history is loading." />
       </Page>
     );
@@ -193,7 +193,7 @@ function HistoryNotice({
 }): ReactNode {
   return (
     <Page>
-      <PageHeader title="History" />
+      <PageHeader title="Version history" />
       <EmptyState
         icon={<HistoryIcon size={20} />}
         title={title}
@@ -513,7 +513,7 @@ function HistoryDetail({
   if (head.status === 'loading')
     return (
       <Page>
-        <PageHeader title="History" />
+        <PageHeader title="Version history" />
         <LoadingState
           shape="list"
           rows={5}
@@ -560,11 +560,11 @@ function HistoryDetail({
       }))}
     >
       <PageHeader
-        title={`History of ${name}`}
+        title={`Version history of ${name}`}
         description={
           head.status === 'ready' && head.kind === 'attachment'
             ? 'Open a version to preview the image. Restore makes it the newest version.'
-            : 'Each save summary compares with the previous saved version. Open a version to compare it with the current saved version or read its preview. Restore makes it the newest version.'
+            : 'Restore makes a version the newest. Nothing is lost.'
         }
       />
       <div className="space-y-4">
@@ -843,7 +843,12 @@ function RevisionPanel({
         }
       >
         {view === 'changes' ? (
-          <RevisionChanges diff={diff} revisionId={detail.item.revisionId} />
+          <>
+            <p className="mb-2 mt-0 text-control text-muted">
+              Compared with current
+            </p>
+            <RevisionChanges diff={diff} revisionId={detail.item.revisionId} />
+          </>
         ) : note === null ? (
           <pre
             className="m-0 max-h-96 overflow-auto whitespace-pre-wrap rounded-lg border border-edge-subtle bg-app p-3 font-mono text-control text-strong"
