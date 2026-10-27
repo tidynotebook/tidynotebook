@@ -22,6 +22,7 @@ await test('desktop drawer Escape restores its visible opener, keyboard and pale
   const root = createRoot(container);
   let desktop = true;
   document.body.style.overflow = 'auto';
+  /** Mount the real drawer hook with phone, desktop, keyboard and palette openers. */
   function App() {
     const [open, setOpen] = useState(false);
     const drawer = useNavigationDrawer(open, setOpen);
@@ -84,6 +85,7 @@ await test('desktop drawer Escape restores its visible opener, keyboard and pale
       ),
     );
   }
+  /** Find a button by its text. */
   function button(label: string) {
     const element = [...container.querySelectorAll('button')].find(
       (node) => node.textContent === label,
@@ -91,6 +93,7 @@ await test('desktop drawer Escape restores its visible opener, keyboard and pale
     assert.ok(element);
     return element;
   }
+  /** Wait one animation frame for the initial drawer focus. */
   async function frame() {
     await act(async () => {
       await new Promise<void>((resolve) =>
@@ -98,6 +101,7 @@ await test('desktop drawer Escape restores its visible opener, keyboard and pale
       );
     });
   }
+  /** Press Tab on the last drawer control and report if the hook trapped it. */
   function tab() {
     button('Inside').focus();
     const event = new browser.KeyboardEvent('keydown', {
@@ -107,6 +111,7 @@ await test('desktop drawer Escape restores its visible opener, keyboard and pale
     browser.dispatchEvent(event);
     return event.defaultPrevented;
   }
+  /** Check that the desktop drawer has no dialog semantics, scroll lock or Tab trap. */
   function assertDesktop() {
     assert.equal(container.querySelector('aside')?.getAttribute('role'), null);
     assert.equal(
@@ -116,6 +121,7 @@ await test('desktop drawer Escape restores its visible opener, keyboard and pale
     assert.equal(document.body.style.overflow, 'auto');
     assert.equal(tab(), false);
   }
+  /** Press Escape inside the drawer. */
   async function escape() {
     button('Inside').focus();
     await act(async () => {

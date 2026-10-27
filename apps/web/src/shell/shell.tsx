@@ -1082,6 +1082,7 @@ function ShellFrame({
     rememberOpener,
     modal: navigationModal,
   } = useNavigationDrawer(drawerOpen, setDrawerOpen);
+  /** Settings opens or closes its navigation drawer and remembers the opener. Other pages collapse the sidebar. */
   const toggleSidebar = useCallback(
     (opener?: HTMLElement | null): void => {
       if (framePage === 'settings') {
