@@ -28,6 +28,7 @@ import { problemMessage, useSession } from '../../app.tsx';
 import {
   verificationTokenOf,
   verificationRecoveryOf,
+  verificationTitleOf,
 } from '../../lib/accounts.ts';
 import { problemCode } from '../../lib/problem-text.ts';
 import { passwordProblem, passwordRule } from '../../lib/password-policy.ts';
@@ -39,8 +40,7 @@ import { AuthFrame } from './accounts.tsx';
 import { ConsentLabel, useLegalDocuments } from './legal-links.tsx';
 
 /** The one sentence of a verification link that opens nothing. */
-const invalidLink =
-  'This link is not valid any more. Sign up again to get a new link.';
+const invalidLink = 'This link no longer works.';
 
 /** The page that asks for an account. */
 export function SignUpPage(): ReactNode {
@@ -234,7 +234,11 @@ export function VerifyPage(): ReactNode {
   const { refresh } = useSession();
   const [state, setState] = useState<VerifyState>({ kind: 'loading' });
   const [attempt, setAttempt] = useState(0);
-  useDocumentTitle('Finish your account');
+  const title = verificationTitleOf(
+    state.kind,
+    state.kind === 'invalid' ? state.reason : undefined,
+  );
+  useDocumentTitle(title);
 
   useEffect(() => {
     const token = verificationTokenOf(location.hash);
@@ -282,11 +286,7 @@ export function VerifyPage(): ReactNode {
       : { path: '/login', label: 'Continue to sign in' };
 
   return (
-    <AuthFrame
-      title={
-        state.kind === 'verified' ? 'Email verified' : 'Finish your account'
-      }
-    >
+    <AuthFrame title={title}>
       {state.kind === 'loading' ? (
         <LoadingState label="The link is loading." />
       ) : state.kind === 'unreachable' ? (
@@ -303,12 +303,13 @@ export function VerifyPage(): ReactNode {
       ) : (
         <div className="mt-4 space-y-3">
           {state.kind === 'invalid' ? (
-            <Notice tone="problem" message={state.message} />
-          ) : (
-            <p className="mb-5 mt-0 text-control text-muted">
-              Email verified for {state.email}. Automatic sign-in is not
-              available in this browser. Enter your password to sign in.
+            <p className="text-control text-muted">
+              {state.reason === 'registration_closed'
+                ? 'Ask the owner of this server for an invitation.'
+                : 'Links work once and for a short time.'}
             </p>
+          ) : (
+            <p className="mb-5 mt-0 text-control text-muted">{state.email}</p>
           )}
           <Link
             className={buttonClassName({
@@ -319,7 +320,7 @@ export function VerifyPage(): ReactNode {
               state.kind === 'verified' ? { email: state.email } : undefined
             }
           >
-            {recovery.label}
+            {state.kind === 'verified' ? 'Continue' : recovery.label}
           </Link>
         </div>
       )}

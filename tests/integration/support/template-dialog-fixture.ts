@@ -8,6 +8,11 @@ export const reads: {
 }[] = [];
 export const creations: { folder: string; text: string | undefined }[] = [];
 let creationError: string | null = null;
+let duplicates = false;
+/** Set whether two templates share a name for the next render. */
+export function setDuplicateTemplates(value: boolean): void {
+  duplicates = value;
+}
 let availability = { empty: false, partial: false };
 /** Set whether the template list is empty or incomplete for the next render. */
 export function setTemplateAvailability(value: typeof availability): void {
@@ -34,7 +39,12 @@ export function useFiles() {
   return {
     notes: availability.empty
       ? []
-      : [{ fileId: templateId, path: 'Templates/Meeting.md' }],
+      : duplicates
+        ? [
+            { fileId: templateId, path: 'Templates/First/Meeting.md' },
+            { fileId: 'second-template', path: 'Templates/Second/Meeting.md' },
+          ]
+        : [{ fileId: templateId, path: 'Templates/Meeting.md' }],
     emptyFolders: [],
     loading: false,
     limitNotice: availability.partial ? 'The list is incomplete.' : null,

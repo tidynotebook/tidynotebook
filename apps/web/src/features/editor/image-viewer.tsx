@@ -64,7 +64,9 @@ export function ImageViewer({
   image,
   onClose,
   returnFocus,
+  onRemoved,
 }: {
+  readonly onRemoved?: () => void;
   readonly image: ImageOpenRequest | null;
   readonly returnFocus: () => void;
   readonly onClose: () => void;
@@ -82,7 +84,12 @@ export function ImageViewer({
       width="screen"
     >
       {image === null ? null : (
-        <ImageViewerBody key={image.url} image={image} onClose={onClose} />
+        <ImageViewerBody
+          key={image.url}
+          image={image}
+          onClose={onClose}
+          onRemoved={onRemoved}
+        />
       )}
     </Dialog>
   );
@@ -164,7 +171,9 @@ function contentBox(element: HTMLElement): ImageSize {
 function ImageViewerBody({
   image,
   onClose,
+  onRemoved,
 }: {
+  readonly onRemoved?: (() => void) | undefined;
   readonly image: ImageOpenRequest;
   readonly onClose: () => void;
 }): ReactNode {
@@ -320,11 +329,7 @@ function ImageViewerBody({
     });
   };
 
-  const status =
-    viewerStatus({ failed, message }) ||
-    (image.remove === undefined
-      ? ''
-      : 'Remove image removes this reference from this note. You can undo it in the editor.');
+  const status = viewerStatus({ failed, message });
   // The zoom means nothing until the picture states its size, so the tools
   // wait for it and no percentage shows that the picture does not have.
   const idle = failed || natural === null;
@@ -439,16 +444,14 @@ function ImageViewerBody({
           <Button
             variant="ghost"
             size="sm"
-            title="Remove this image reference from this note. The attachment stays available."
             onClick={() => {
-              if (image.remove?.() === true) onClose();
-              else
-                setMessage(
-                  'This image changed. Close the viewer and open the image again.',
-                );
+              if (image.remove?.() === true) {
+                onRemoved?.();
+                onClose();
+              } else setMessage('This image changed. Open it again.');
             }}
           >
-            Remove image
+            Remove
           </Button>
         )}
         <Button

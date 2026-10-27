@@ -30,7 +30,7 @@ export function WritingStart({
       </Button>
       <Button
         variant="ghost"
-        size="sm"
+        size="touch"
         label="Close tips"
         icon={<CloseIcon />}
         onClick={() => {

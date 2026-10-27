@@ -52,6 +52,7 @@ import { useDocumentTitle } from '../../shell/document-title.ts';
 import { useNow } from '../../shell/now.ts';
 import { useFiles } from '../../shell/files.tsx';
 import { WritingStart } from './writing-start.tsx';
+import { FolderPageActions } from '../folders/folder-page-actions.tsx';
 import { NewFromTemplate } from '../templates/new-from-template.tsx';
 import { useCreateNote } from './new-note.tsx';
 import { groupNotesByRecency } from '../../lib/note-groups.ts';
@@ -263,9 +264,18 @@ export function NotesHomeView(): ReactNode {
               : `${subfolders.length === 0 ? '' : `${String(subfolders.length)} ${subfolders.length === 1 ? 'folder' : 'folders'}, `}${String(total)} ${total === 1 ? 'note' : 'notes'}`
           }
           actions={
-            showNewNoteInHeader(files.loading, total + subfolders.length)
-              ? actions
-              : undefined
+            <div className="flex flex-wrap items-center gap-2">
+              {showNewNoteInHeader(files.loading, total + subfolders.length)
+                ? actions
+                : null}
+              {folder === '' || files.loading ? null : (
+                <FolderPageActions
+                  key={`${workspaceId}:${folder}`}
+                  workspaceId={workspaceId}
+                  folder={folder}
+                />
+              )}
+            </div>
           }
         />
         {files.loading || total === 0 || folder !== '' ? null : (

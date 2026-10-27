@@ -912,3 +912,10 @@ await test('history controls retain their size and focus when unavailable', asyn
     tooltip: 'Redo (Cmd+Shift+Z)',
   });
 });
+
+await test('the touch button recipe keeps the approved 44 px target on every width', () => {
+  const classes = buttonClassName({ size: 'touch', iconOnly: true });
+  assert.ok(classes.split(' ').includes('size-11'));
+  assert.ok(!/md:size-[78]/.test(classes));
+  assert.ok(!/md:min-h-[78]/.test(buttonClassName({ size: 'touch' })));
+});

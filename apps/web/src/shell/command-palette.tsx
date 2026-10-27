@@ -422,13 +422,8 @@ function PaletteDialog({
       ) : null}
       {step === null ? (
         <p className="mx-4 my-2 text-control text-muted">
-          Search in: {workspaceName}. Results include note names and body text
-          in this workspace.
-        </p>
-      ) : null}
-      {content.offline ? (
-        <p className="m-0 border-b border-edge-line px-gutter py-2 text-control text-muted">
-          No connection. These results come from this device.
+          In {workspaceName}
+          {content.offline ? ' · Offline, results from this device' : ''}
         </p>
       ) : null}
       <ul
@@ -538,7 +533,7 @@ function PaletteDialog({
       {step === null || stepChoices === null ? (
         content.pending ? (
           <p className="m-4 text-control text-muted" role="status">
-            Searching this workspace...
+            Searching...
           </p>
         ) : rows.length === 0 ? (
           <p className="m-4 text-control text-muted" role="status">

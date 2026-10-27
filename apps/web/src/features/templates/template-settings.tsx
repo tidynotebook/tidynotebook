@@ -14,7 +14,16 @@ import {
   templateFolderProblem,
   type TemplateSettings,
 } from '@notesapp/core';
-import { LoadingState, Notice, TextField } from '@notesapp/ui';
+import {
+  Button,
+  Dialog,
+  DialogBody,
+  LoadingState,
+  Notice,
+  TextField,
+} from '@notesapp/ui';
+import { FolderPicker } from '../folders/folder-picker.tsx';
+import { knownFolderPaths } from '../../lib/folder-selection.ts';
 import { useFiles } from '../../shell/files.tsx';
 import { useStoreOnLeave } from '../../shell/store-on-leave.ts';
 import {
@@ -35,6 +44,7 @@ function FolderField({
 }): ReactNode {
   const files = useFiles();
   const [folder, setFolder] = useState(settings.folder);
+  const [changing, setChanging] = useState(false);
   // A stored folder that changes, from this section or from another device,
   // is what the field shows next.
   useEffect(() => {
@@ -53,14 +63,62 @@ function FolderField({
   });
 
   return (
-    <div onBlur={leave.onBlur} onKeyDown={leave.onKeyDown}>
-      <TextField
-        id="template-folder"
-        label="Folder"
-        value={folder}
-        onChange={setFolder}
-        error={problem === null ? undefined : templateFolderSentences[problem]}
-      />
+    <div
+      onBlur={leave.onBlur}
+      onKeyDown={(event) => {
+        if (event.target instanceof HTMLInputElement) leave.onKeyDown(event);
+      }}
+    >
+      <div className="mb-3 flex items-center gap-2 text-control">
+        <span className="min-w-0 flex-1 break-words">Folder: {folder}</span>
+        <Button variant="secondary" onClick={() => setChanging(true)}>
+          Change
+        </Button>
+      </div>
+      <Dialog
+        open={changing}
+        onClose={() => {
+          leave.onBlur();
+          if (problem !== null) setFolder(settings.folder);
+          setChanging(false);
+        }}
+        title="Save in"
+        titleId="template-folder-title"
+        width="small"
+        align="sheet"
+      >
+        <DialogBody>
+          <TextField
+            id="template-folder"
+            label="Folder name"
+            value={folder}
+            onChange={setFolder}
+            error={
+              problem === null ? undefined : templateFolderSentences[problem]
+            }
+          />
+          <FolderPicker
+            includeNone={false}
+            folders={Array.from(
+              new Set([
+                settings.folder,
+                ...knownFolderPaths(
+                  files.notes.map((note) => note.path),
+                  files.emptyFolders,
+                ),
+              ]),
+            )}
+            selected={folder}
+            onSelect={setFolder}
+            onDone={() => {
+              if (problem === null) {
+                leave.onBlur();
+                setChanging(false);
+              }
+            }}
+          />
+        </DialogBody>
+      </Dialog>
       <p className="mb-3 mt-0 text-control text-muted" aria-live="polite">
         {problem !== null || files.loading
           ? ''

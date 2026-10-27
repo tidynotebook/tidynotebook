@@ -20,7 +20,7 @@
  * and
  * [decision 0065](../../../docs/decisions/0065-one-recipe-for-a-control-and-one-grid-for-an-icon.md).
  */
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 import {
   dialogFooterClassName,
   dialogPanelClassName,
@@ -29,6 +29,8 @@ import {
   type DialogAlign,
   type DialogWidth,
 } from './dialog-classes.ts';
+import { placeOverlay } from './overlay-position.ts';
+import { followVisibleArea, readVisibleArea } from './visible-area.ts';
 import { giveFocusBack } from './dialog-focus.ts';
 import { transitionRaise } from './motion.ts';
 
@@ -76,7 +78,9 @@ export function Dialog({
   children,
   describedBy,
   returnFocus,
+  anchor,
 }: {
+  readonly anchor?: HTMLElement | null;
   readonly open: boolean;
   readonly onClose: () => void;
   readonly title: string;
@@ -158,10 +162,44 @@ export function Dialog({
     };
   }, [open]);
 
+  useLayoutEffect(() => {
+    if (!open || anchor === undefined || anchor === null) return;
+    /** Place the dialog next to its anchor on wide screens. */
+    const place = (): void => {
+      const panel = panelRef.current;
+      if (panel === null) return;
+      if (!window.matchMedia('(min-width: 1024px)').matches) {
+        panel.style.position = '';
+        panel.style.top = '';
+        panel.style.left = '';
+        panel.style.maxHeight = '';
+        return;
+      }
+      panel.style.position = 'fixed';
+      panel.style.maxHeight = '';
+      const position = placeOverlay({
+        anchor: anchor.getBoundingClientRect(),
+        overlay: panel.getBoundingClientRect(),
+        screen: readVisibleArea(),
+        align: 'end',
+      });
+      panel.style.top = `${String(position.top)}px`;
+      panel.style.left = `${String(position.left)}px`;
+      panel.style.maxHeight = `${String(position.maxHeight)}px`;
+    };
+    place();
+    const stop = followVisibleArea(place);
+    window.addEventListener('scroll', place, true);
+    return () => {
+      stop();
+      window.removeEventListener('scroll', place, true);
+    };
+  }, [open, anchor]);
+
   if (!open) return null;
 
   const screen = width === 'screen';
-  const root = dialogRootClassName(width, align);
+  const root = `${dialogRootClassName(width, align)} ${anchor == null ? '' : 'lg:bg-transparent'}`;
   const panel = dialogPanelClassName(width);
 
   return (
@@ -175,6 +213,7 @@ export function Dialog({
     >
       <div
         ref={panelRef}
+        id={`${titleId}-panel`}
         className={`${panel} ${transitionRaise}`}
         role="dialog"
         aria-modal="true"

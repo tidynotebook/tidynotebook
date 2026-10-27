@@ -21,6 +21,7 @@ import {
   resetTokenOf,
   verificationTokenOf,
   verificationRecoveryOf,
+  verificationTitleOf,
 } from './accounts.ts';
 
 const now = Date.parse('2026-09-26T12:00:00.000Z');
@@ -282,4 +283,18 @@ await test('verification recovery does not offer signup when registration is clo
     path: '/signup',
     label: 'Get a new link',
   });
+});
+
+await test('verification document titles match each visible outcome', () => {
+  assert.equal(verificationTitleOf('verified'), 'Email verified');
+  assert.equal(
+    verificationTitleOf('invalid', 'registration_closed'),
+    'New accounts are closed',
+  );
+  assert.equal(
+    verificationTitleOf('invalid', 'verification_invalid'),
+    'This link no longer works',
+  );
+  assert.equal(verificationTitleOf('loading'), 'Check your email');
+  assert.equal(verificationTitleOf('unreachable'), 'Check your email');
 });

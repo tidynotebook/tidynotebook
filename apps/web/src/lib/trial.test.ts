@@ -22,7 +22,7 @@ await test('the trial notice changes at the exact deadline and never grants a tr
   );
   assert.match(
     trialStatus({ trialEndsAt: end, trialState: 'active' }, now - 1) ?? '',
-    /Time left: less than 1 minute/,
+    /Trial: less than 1 minute/,
   );
   assert.match(
     trialStatus({ trialEndsAt: end, trialState: 'active' }, now) ?? '',
@@ -30,7 +30,7 @@ await test('the trial notice changes at the exact deadline and never grants a tr
   );
   assert.match(
     trialStatus({ trialEndsAt: end, trialState: 'expired' }, now - 1) ?? '',
-    /trial has ended/,
+    /trial ended/,
   );
 });
 
@@ -38,12 +38,12 @@ await test('remaining time uses minutes near expiry', () => {
   const end = '2026-11-07T12:00:00.000Z';
   const controls = { trialEndsAt: end, trialState: 'active' } as const;
   const now = Date.parse(end);
-  assert.match(trialStatus(controls, now - 60000) ?? '', /Time left: 1 minute/);
+  assert.match(trialStatus(controls, now - 60000) ?? '', /Trial: 1 minute/);
   assert.match(
     trialStatus(controls, now - 2 * 60000) ?? '',
-    /Time left: 2 minutes/,
+    /Trial: 2 minutes/,
   );
-  assert.match(trialStatus(controls, now - 3600000) ?? '', /Time left: 1 hour/);
+  assert.match(trialStatus(controls, now - 3600000) ?? '', /Trial: 1 hour/);
 });
 
 await test('trial offers use exact durations and singular units', () => {
@@ -104,25 +104,11 @@ await test('retry intervals ignore forward and backward wall clock changes', (co
   assert.deepEqual(reads, [1000, -100000]);
 });
 
-await test('active trial dates use a named month and omit the clock and seconds', () => {
-  const message =
-    trialStatus(
-      { trialEndsAt: '2026-11-07T12:34:56.000Z', trialState: 'active' },
-      Date.parse('2026-11-01T00:00:00.000Z'),
-    ) ?? '';
-  const parts = new Intl.DateTimeFormat(undefined, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }).formatToParts(new Date('2026-11-07T12:34:56.000Z'));
-  const month = parts.find((part) => part.type === 'month');
-  const year = parts.find((part) => part.type === 'year');
-  assert.ok(month !== undefined);
-  assert.ok(year !== undefined);
-  assert.ok(message.includes(month.value));
-  assert.ok(message.includes(year.value));
-  assert.doesNotMatch(
-    message,
-    /\p{Number}{1,2}:\p{Number}{2}(?::\p{Number}{2})?/u,
+await test('the trial strip has a short remaining time and no timestamp', () => {
+  const message = trialStatus(
+    { trialEndsAt: '2026-11-07T12:34:56.000Z', trialState: 'active' },
+    Date.parse('2026-11-01T00:00:00.000Z'),
   );
+  assert.equal(message, 'Trial: 7 days left');
+  assert.doesNotMatch(message ?? '', /\d{1,2}:\d{2}/);
 });
