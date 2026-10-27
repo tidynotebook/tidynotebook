@@ -100,7 +100,7 @@ import {
 } from '../features/attention/attention-link.tsx';
 import { NewFromTemplateDialog } from '../features/templates/new-from-template.tsx';
 import { useWorkspaceProblem } from '../features/templates/workspace-problem.ts';
-import { CommandPalette } from './command-palette.tsx';
+import type { CommandPalette } from './command-palette.tsx';
 import type { ShortcutsDialog } from './shortcuts.tsx';
 import { createModuleLoad } from '../lib/module-load.ts';
 import {
@@ -187,6 +187,7 @@ import { initialOf } from '../lib/initial.ts';
 import { workspaceAfterRemoval } from '../lib/workspace-choice.ts';
 import {
   knownFolderPaths,
+  folderForRoute,
   selectedFolderOrRoot,
   selectionForOpenNote,
 } from '../lib/folder-selection.ts';
@@ -246,6 +247,10 @@ import { sidebarViewLabels, type SidebarView } from '../lib/sidebar-view.ts';
  * no editor code (record 0177). A dialog that does not arrive is stated in
  * place, and the screen stays.
  */
+const loadCommandPalette = createModuleLoad(
+  async () => (await import('./command-palette.tsx')).CommandPalette,
+);
+
 const loadShortcutsDialog = createModuleLoad(
   async () => (await import('./shortcuts.tsx')).ShortcutsDialog,
 );
@@ -365,7 +370,6 @@ function Breadcrumb({
  */
 function Sidebar({
   workspaceId,
-  workspaceRootLabel,
   view,
   selectedFolder,
   folders,
@@ -384,7 +388,6 @@ function Sidebar({
   onClose,
 }: {
   readonly workspaceId: string;
-  readonly workspaceRootLabel: string;
   /** What the panel shows, which the view bar chose (record 0105). */
   readonly view: SidebarView;
   readonly selectedFolder: string;
@@ -517,12 +520,30 @@ function Sidebar({
         quiet and every action stays in the tab order.
       */}
             <div className="px-2 pt-1">
+              <button
+                type="button"
+                className={rowClassName({ className: 'w-full' })}
+                disabled={daily.waiting}
+                onClick={() => daily.open(today())}
+              >
+                {actionIcon('today')}
+                <span>Today's note</span>
+              </button>
+              {daily.openProblem === null ? null : (
+                <Notice tone="problem" message={daily.openProblem} />
+              )}
+            </div>
+            <div className="px-2 pt-1">
               <div className="flex items-center gap-1">
                 <Button
                   variant="ghost"
                   size="sm"
                   compact
-                  label={`New note in ${selectedFolder === '' ? workspaceRootLabel : selectedFolder}`}
+                  label={
+                    selectedFolder === ''
+                      ? 'New note'
+                      : `New note in ${selectedFolder}`
+                  }
                   title="New note"
                   icon={actionIcon('new-note')}
                   onClick={() => onNewNoteIn(selectedFolder)}
@@ -531,7 +552,11 @@ function Sidebar({
                   variant="ghost"
                   size="sm"
                   compact
-                  label={`New folder in ${selectedFolder === '' ? workspaceRootLabel : selectedFolder}`}
+                  label={
+                    selectedFolder === ''
+                      ? 'New folder'
+                      : `New folder in ${selectedFolder}`
+                  }
                   title="New folder"
                   icon={actionIcon('new-folder')}
                   onClick={() => onNewFolderIn(selectedFolder)}
@@ -563,16 +588,12 @@ function Sidebar({
                   }
                 />
               </div>
-              <p className="my-1 px-2 text-control text-muted">
-                Create in:{' '}
-                {selectedFolder === '' ? workspaceRootLabel : selectedFolder}
-              </p>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => onFromTemplate(selectedFolder)}
               >
-                From template
+                Use template
               </Button>
               {newNoteProblem === null ? null : (
                 <p className="my-1 px-2 text-control text-danger" role="alert">
@@ -967,6 +988,32 @@ function ShellFrame({
   const matches = useMatches();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [paletteView, setPaletteView] = useState<{
+    readonly view: typeof CommandPalette;
+  } | null>(null);
+  const [paletteFailed, setPaletteFailed] = useState(false);
+  const paletteOwner = useRef<object | null>(null);
+  useEffect(() => {
+    const owner = {};
+    paletteOwner.current = owner;
+    return () => {
+      paletteOwner.current = null;
+    };
+  }, [workspaceId]);
+  /** Load the palette on demand and open it only if the same shell still owns the request. */
+  const openPalette = useCallback((): void => {
+    const owner = paletteOwner.current;
+    setPaletteFailed(false);
+    void loadCommandPalette().then((loaded) => {
+      if (owner === null || paletteOwner.current !== owner) return;
+      if (!loaded.ok) {
+        setPaletteFailed(true);
+        return;
+      }
+      setPaletteView({ view: loaded.value });
+      setPaletteOpen(true);
+    });
+  }, []);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [shortcutsDialog, setShortcutsDialog] = useState<{
     readonly view: typeof ShortcutsDialog;
@@ -1016,7 +1063,9 @@ function ShellFrame({
   useEffect(() => {
     setTemplateDestination(null);
   }, [workspaceId]);
-  const [selectedFolder, setSelectedFolder] = useState('');
+  const [chosenFolder, setSelectedFolder] = useState('');
+  const selectedFolder =
+    folderForRoute(workspaceId, location.pathname, params['*']) ?? chosenFolder;
   const sidebar = useSidebarSize();
   const [sidebarView, setSidebarView] = useSidebarView();
   // The frame is the visible part of the screen, so iOS cannot scroll it
@@ -1095,12 +1144,13 @@ function ShellFrame({
   }, [location.pathname]);
 
   useEffect(() => {
+    /** Open the palette with Ctrl or Cmd P or O, and collapse the sidebar with Ctrl or Cmd backslash. */
     const onKeyDown = (event: KeyboardEvent): void => {
       const key = event.key.toLowerCase();
       if (!event.metaKey && !event.ctrlKey) return;
       if (key === 'p' || key === 'o') {
         event.preventDefault();
-        setPaletteOpen(true);
+        openPalette();
         return;
       }
       if (key === '\\') {
@@ -1110,7 +1160,7 @@ function ShellFrame({
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [sidebar.toggleCollapsed]);
+  }, [sidebar.toggleCollapsed, openPalette]);
 
   useEffect(() => {
     if (!drawerOpen) {
@@ -1227,10 +1277,6 @@ function ShellFrame({
       allWorkspaces.find((entry) => entry.workspaceId === workspaceId) ?? null,
     [allWorkspaces, workspaceId],
   );
-  const workspaceRootLabel =
-    openWorkspace === null
-      ? 'workspace root'
-      : `${openWorkspace.name} workspace root`;
 
   // Every workspace the person can move to from here. The open one is absent,
   // because a row that goes where you already are is noise.
@@ -1265,18 +1311,23 @@ function ShellFrame({
   // The palette reads its actions when it opens, so the rows of the
   // formatting tools follow the caret of the note at that moment. A list
   // that a render built kept the tools of an earlier caret.
+  /** Build the palette actions when the palette opens. */
   const paletteActions = useCallback(
     (): readonly PaletteAction[] => [
       {
         id: 'new-note',
-        label: `New note in ${selectedFolder === '' ? 'workspace root' : selectedFolder}`,
+        label:
+          selectedFolder === '' ? 'New note' : `New note in ${selectedFolder}`,
         keywords: 'create add',
         icon: 'new-note' as const,
         run: () => newNote.create(selectedFolder),
       },
       {
         id: 'new-folder',
-        label: `New folder in ${selectedFolder === '' ? 'workspace root' : selectedFolder}`,
+        label:
+          selectedFolder === ''
+            ? 'New folder'
+            : `New folder in ${selectedFolder}`,
         keywords: 'create add group',
         icon: 'new-folder' as const,
         run: () => setNewFolderParent(selectedFolder),
@@ -1509,6 +1560,7 @@ function ShellFrame({
   );
 
   const ShortcutsView = shortcutsDialog?.view ?? null;
+  const PaletteView = paletteView?.view ?? null;
 
   return (
     <SyncProvider value={sync}>
@@ -1608,7 +1660,7 @@ function ShellFrame({
               })}
               aria-label="Search"
               title="Search"
-              onClick={() => setPaletteOpen(true)}
+              onClick={openPalette}
             >
               <span
                 className={compactButtonVisualClassName({
@@ -1666,13 +1718,20 @@ function ShellFrame({
             <div className="flex min-w-0 flex-1 flex-col">
               <Sidebar
                 workspaceId={workspaceId}
-                workspaceRootLabel={workspaceRootLabel}
                 view={sidebarView}
                 selectedFolder={selectedFolder}
                 folders={folders}
                 knownFolders={allFolders}
                 newNoteProblem={newNote.error}
-                onSelectFolder={setSelectedFolder}
+                onSelectFolder={(folder) => {
+                  setSelectedFolder(folder);
+                  if (folder !== '') {
+                    void navigate(
+                      `/w/${workspaceId}/folders/${folder.split('/').map(encodeURIComponent).join('/')}`,
+                    );
+                    setDrawerOpen(false);
+                  }
+                }}
                 onNavigate={() => setDrawerOpen(false)}
                 onNewFolderIn={(folder) => setNewFolderParent(folder)}
                 onPublish={setPublishScope}
@@ -1720,6 +1779,16 @@ function ShellFrame({
                 {theme.syncError === null ? null : (
                   <Notice tone="info" message={theme.syncError} />
                 )}
+                {paletteFailed ? (
+                  <Notice
+                    tone="problem"
+                    message="Search did not load. Try again."
+                  >
+                    <Button variant="secondary" size="sm" onClick={openPalette}>
+                      Try again
+                    </Button>
+                  </Notice>
+                ) : null}
                 {shortcutsFailed ? (
                   <Notice tone="problem" message={shortcutsLoadFailure}>
                     <Button
@@ -1758,16 +1827,18 @@ function ShellFrame({
 
           <DeleteNoticeBar />
 
-          <CommandPalette
-            open={paletteOpen}
-            onOpenChange={setPaletteOpen}
-            workspaceId={workspaceId}
-            workspaceName={openWorkspace?.name ?? 'This workspace'}
-            notes={files.notes}
-            store={store.store}
-            accountId={accountId}
-            actions={paletteActions}
-          />
+          {PaletteView === null ? null : (
+            <PaletteView
+              open={paletteOpen}
+              onOpenChange={setPaletteOpen}
+              workspaceId={workspaceId}
+              workspaceName={openWorkspace?.name ?? 'This workspace'}
+              notes={files.notes}
+              store={store.store}
+              accountId={accountId}
+              actions={paletteActions}
+            />
+          )}
           {shortcutsOpen && ShortcutsView !== null ? (
             <ShortcutsView open onClose={() => setShortcutsOpen(false)} />
           ) : null}
@@ -1829,6 +1900,9 @@ function ShellFrame({
               for (const above of ancestorFolders(folder))
                 folders.openFolder(above);
               setSelectedFolder(folder);
+              void navigate(
+                `/w/${workspaceId}/folders/${folder.split('/').map(encodeURIComponent).join('/')}`,
+              );
             }}
           />
           {publishScope === null ? null : (

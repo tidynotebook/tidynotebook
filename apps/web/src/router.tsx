@@ -192,6 +192,11 @@ const routes: RouteObject[] = [
                   handle: page('review'),
                 },
                 {
+                  path: 'folders/*',
+                  element: deferred(<NotesHomeView />),
+                  handle: page('notes'),
+                },
+                {
                   path: 'trash',
                   element: deferred(<TrashView />),
                   handle: page('trash'),
