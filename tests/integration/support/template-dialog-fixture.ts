@@ -8,6 +8,10 @@ export const reads: {
 }[] = [];
 export const creations: { folder: string; text: string | undefined }[] = [];
 let creationError: string | null = null;
+let availability = { empty: false, partial: false };
+export function setTemplateAvailability(value: typeof availability): void {
+  availability = value;
+}
 export function setCreationError(message: string | null): void {
   creationError = message;
 }
@@ -26,10 +30,12 @@ export function useSession() {
 }
 export function useFiles() {
   return {
-    notes: [{ fileId: templateId, path: 'Templates/Meeting.md' }],
+    notes: availability.empty
+      ? []
+      : [{ fileId: templateId, path: 'Templates/Meeting.md' }],
     emptyFolders: [],
     loading: false,
-    limitNotice: null,
+    limitNotice: availability.partial ? 'The list is incomplete.' : null,
   };
 }
 export function useTemplates() {
