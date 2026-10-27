@@ -21,6 +21,7 @@ await test('desktop drawer Escape restores its visible opener, keyboard and pale
   document.body.append(container);
   const root = createRoot(container);
   let desktop = true;
+  document.body.style.overflow = 'auto';
   function App() {
     const [open, setOpen] = useState(false);
     const drawer = useNavigationDrawer(open, setOpen);
@@ -73,7 +74,12 @@ await test('desktop drawer Escape restores its visible opener, keyboard and pale
           ),
       createElement(
         'aside',
-        { ref: drawer.panel, hidden: !open },
+        {
+          ref: drawer.panel,
+          hidden: !open,
+          role: drawer.modal ? 'dialog' : undefined,
+          'aria-modal': drawer.modal ? true : undefined,
+        },
         createElement('button', null, 'Inside'),
       ),
     );
@@ -84,6 +90,31 @@ await test('desktop drawer Escape restores its visible opener, keyboard and pale
     );
     assert.ok(element);
     return element;
+  }
+  async function frame() {
+    await act(async () => {
+      await new Promise<void>((resolve) =>
+        browser.requestAnimationFrame(() => resolve()),
+      );
+    });
+  }
+  function tab() {
+    button('Inside').focus();
+    const event = new browser.KeyboardEvent('keydown', {
+      key: 'Tab',
+      cancelable: true,
+    });
+    browser.dispatchEvent(event);
+    return event.defaultPrevented;
+  }
+  function assertDesktop() {
+    assert.equal(container.querySelector('aside')?.getAttribute('role'), null);
+    assert.equal(
+      container.querySelector('aside')?.getAttribute('aria-modal'),
+      null,
+    );
+    assert.equal(document.body.style.overflow, 'auto');
+    assert.equal(tab(), false);
   }
   async function escape() {
     button('Inside').focus();
@@ -109,6 +140,9 @@ await test('desktop drawer Escape restores its visible opener, keyboard and pale
       });
     button('Desktop').focus();
     await act(async () => button('Desktop').click());
+    await frame();
+    assert.equal(document.activeElement, button('Desktop'));
+    assertDesktop();
     await escape();
     assert.equal(document.activeElement, button('Desktop'));
     button('Keyboard').focus();
@@ -120,11 +154,31 @@ await test('desktop drawer Escape restores its visible opener, keyboard and pale
     await escape();
     assert.equal(document.activeElement, button('Desktop'));
     await act(async () => button('Desktop').click());
-    desktop = false;
+    await act(async () => {
+      desktop = false;
+      browser.happyDOM.setWindowSize({ width: 767, height: 844 });
+    });
+    await frame();
+    assert.equal(document.activeElement, button('Inside'));
+    assert.equal(document.body.style.overflow, 'hidden');
+    assert.equal(
+      container.querySelector('aside')?.getAttribute('role'),
+      'dialog',
+    );
+    assert.equal(
+      container.querySelector('aside')?.getAttribute('aria-modal'),
+      'true',
+    );
+    assert.equal(tab(), true);
     await escape();
+    assert.equal(document.body.style.overflow, 'auto');
     assert.equal(document.activeElement, button('Phone'));
     await act(async () => button('Phone').click());
-    desktop = true;
+    await act(async () => {
+      desktop = true;
+      browser.happyDOM.setWindowSize({ width: 768, height: 900 });
+    });
+    assertDesktop();
     await escape();
     assert.equal(document.activeElement, button('Desktop'));
   } finally {

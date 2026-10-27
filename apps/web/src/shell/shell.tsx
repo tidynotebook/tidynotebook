@@ -1079,6 +1079,7 @@ function ShellFrame({
     desktopButton: desktopMenuButtonRef,
     panel: sidebarRef,
     rememberOpener,
+    modal: navigationModal,
   } = useNavigationDrawer(drawerOpen, setDrawerOpen);
   const toggleSidebar = useCallback(
     (opener?: HTMLElement | null): void => {
@@ -1690,8 +1691,8 @@ function ShellFrame({
             id="notes-sidebar"
             className={drawerClassName(drawerOpen, displayedSidebar)}
             aria-label="Notes navigation"
-            aria-modal={drawerOpen ? true : undefined}
-            role={drawerOpen ? 'dialog' : undefined}
+            aria-modal={navigationModal ? true : undefined}
+            role={navigationModal ? 'dialog' : undefined}
           >
             <SidebarViewBar view={sidebarView} onChoose={setSidebarView} />
             <div className="flex min-w-0 flex-1 flex-col">
