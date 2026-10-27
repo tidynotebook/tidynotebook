@@ -1,13 +1,17 @@
 import { useLayoutEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { placeOverlay } from './overlay-position.ts';
+import { overlayGap, placeOverlay } from './overlay-position.ts';
 import { followVisibleArea, readVisibleArea } from './visible-area.ts';
 
 /** A tooltip leaves scrolling controls so its text cannot be clipped. */
 export function Tooltip({
   text,
   anchor,
+  onPointerEnter,
+  onPointerLeave,
 }: {
+  readonly onPointerEnter: () => void;
+  readonly onPointerLeave: () => void;
   readonly text: string;
   readonly anchor: HTMLElement;
 }): ReactNode {
@@ -22,7 +26,7 @@ export function Tooltip({
         screen: readVisibleArea(),
         align: 'start',
       });
-      tip.style.top = `${String(position.top)}px`;
+      tip.style.top = `${String(position.top + (position.above ? overlayGap : -overlayGap))}px`;
       tip.style.left = `${String(position.left)}px`;
     };
     place();
@@ -37,9 +41,14 @@ export function Tooltip({
     <span
       ref={tipRef}
       aria-hidden="true"
-      className="pointer-events-none fixed z-50 hidden whitespace-nowrap rounded-md border border-edge-line bg-card px-2 py-1 text-control text-strong shadow-overlay pointer-fine:block"
+      role="tooltip"
+      onPointerEnter={onPointerEnter}
+      onPointerLeave={onPointerLeave}
+      className="fixed z-50 hidden py-1 pointer-fine:block"
     >
-      {text}
+      <span className="block whitespace-nowrap rounded-md border border-edge-line bg-card px-2 py-1 text-control text-strong shadow-overlay">
+        {text}
+      </span>
     </span>,
     document.body,
   );
