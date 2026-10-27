@@ -1,77 +1,81 @@
 import { ConnectedAppSettings } from './connected-apps.tsx';
 /**
- * The Settings page of the workspace frame (record 0091).
+ * The Settings modal (issue 517, items 5, 7, 8 and 10).
  *
- * Settings is the one place for the profile, the palette, the spell check,
- * offline availability, and sign-out. When the installation names an account
- * portal, the Billing section opens it for any standing (record 0211). It
- * reads as sections and not as a stack of cards: each section states its name
- * and its sentence in a column of its own and holds its controls beside them,
- * and a hairline separates one from the next. Theme changes apply locally first and sync in the background
- * through the provider in `app.tsx`.
+ * Settings opens over the current page and never replaces it. The frame
+ * mounts this body through `shell/settings-modal.tsx`, which reads the open
+ * section from the `settings` search parameter of the address. From the
+ * large width the modal is a panel with a sidebar of three groups: General
+ * for this account and device, Workspace with the name of the workspace, and
+ * Account. On a phone it is a full-screen sheet: the section list first, then
+ * the section with Back and Close.
  *
- * The page loads when it opens, so the first screen of the frame reads none
- * of it (record 0177).
+ * Each section is compact: a title, one short scope line, then rows with the
+ * label and one line of help on the left and the control on the right. Sign
+ * out is not a section; the account menu holds it. When the installation
+ * names an account portal, Plan and billing opens it for any standing
+ * (record 0211). Theme changes apply locally first and sync in the
+ * background through the provider in `app.tsx`.
+ *
+ * The body loads when the modal first opens, so the first screen of the
+ * frame reads none of it (record 0177).
  */
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Link, Navigate, useLocation, useParams } from 'react-router';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { Link } from 'react-router';
 import {
-  type AccountSession,
   listSessions,
   revokeOtherSessions,
   revokeSession,
   updatePreferences,
   updateProfile,
+  type AccountSession,
 } from '@notesapp/api-client';
 import {
+  avatarClassName,
   Button,
-  buttonClassName,
-  Checkbox,
-  ListRow,
+  CalendarIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  CloseIcon,
   ComputerIcon,
+  Dialog,
   DownloadIcon,
   ExternalLinkIcon,
+  FileTextIcon,
+  LinkIcon,
+  ListRow,
   LoadingState,
   Meter,
   Notice,
-  PageHeader,
-  pageGutter,
   pageListClassName,
-  SignOutIcon,
-  TextField,
-  UsersIcon,
-  UploadIcon,
-  type PageSection,
-  ChevronRightIcon,
-  ChevronLeftIcon,
-  PageBackProvider,
   rowClassName,
+  SettingsIcon,
+  SignOutIcon,
+  Switch,
+  TemplateIcon,
+  TextField,
+  UploadIcon,
+  UsersIcon,
+  type PageSection,
 } from '@notesapp/ui';
 import { actionIcon } from '../../shell/action-icons.tsx';
 import { deleteGlyph } from '../../lib/delete-label.ts';
 import {
   problemMessage,
   useLocalStore,
+  useRequestSync,
   useSession,
   useSpellCheck,
-  useRequestSync,
   useWorkspace,
 } from '../../app.tsx';
-
 import { profileNameProblem, storageLine } from '../../lib/accounts.ts';
 import { monthNotices, transferUsage } from '../../lib/monthly-limits.ts';
-
 import { LegalLinks, useLegalDocuments } from './legal-links.tsx';
 import {
   deviceName,
   otherSessionsEndedText,
   sessionFacts,
 } from '../../lib/sessions.ts';
-
-import {
-  signOut as endSession,
-  revokeSessionViaClient,
-} from '../../pwa/lifecycle.ts';
 import {
   downloadAll,
   importAll,
@@ -79,13 +83,18 @@ import {
 } from '../export/export.ts';
 import { DailyNoteSettingsFields } from '../daily-notes/daily-note-settings.tsx';
 import { TemplateSettingsFields } from '../templates/template-settings.tsx';
-import { useDocumentTitle } from '../../shell/document-title.ts';
 import {
-  settingsPageForAnchor,
+  settingsPageGroups,
+  settingsPageOf,
   visibleSettingsPages,
+  type SettingsPagePath,
 } from '../../lib/settings-routes.ts';
 import { useSettingsListFocus } from './settings-list-focus.ts';
-import { SettingsTopicContext, SettingsSection } from './settings-section.tsx';
+import {
+  SettingRow,
+  SettingsSection,
+  SettingsTopicContext,
+} from './settings-section.tsx';
 import { ApiKeySettings } from './api-keys.tsx';
 import { ThemeSettings } from './theme-settings.tsx';
 import {
@@ -95,7 +104,6 @@ import {
 } from '../../lib/page-sections.ts';
 import { useNow } from '../../shell/now.ts';
 import { OfflineSettingsSection } from './offline-settings.tsx';
-
 import { importResultSentence } from '../../lib/import-result.ts';
 import { settingsTitle } from './accounts.tsx';
 import { RemoveOwnAccountDialog } from './remove-account-dialog.tsx';
@@ -107,12 +115,26 @@ function settingsSection(key: SettingsSectionKey): PageSection {
   return sectionOf(settingsSections, key);
 }
 
+/** The icon of each page in the modal sidebar. */
+const pageIcons: Readonly<Record<SettingsPagePath, ReactNode>> = {
+  appearance: actionIcon('theme-system'),
+  offline: <DownloadIcon />,
+  'daily-notes': <CalendarIcon />,
+  templates: <TemplateIcon />,
+  'export-import': <UploadIcon />,
+  account: <SettingsIcon />,
+  billing: <FileTextIcon />,
+  devices: <ComputerIcon />,
+  'api-keys-apps': <LinkIcon />,
+};
+
 /**
- * The spell check of the editor (record 0103).
+ * The spell check of the editor (record 0103), in the Editor group of
+ * Appearance and editor (issue 517, item 7).
  *
- * The box shows the choice at once and the account stores it in the
+ * The switch shows the choice at once and the account stores it in the
  * background. The editor reads the stored value, so a write that fails puts
- * the box back and says so, and the two never disagree. Only the answer to
+ * the switch back and says so, and the two never disagree. Only the answer to
  * the last change counts, so two quick changes end on the second one.
  */
 function SpellCheckSettings(): ReactNode {
@@ -148,31 +170,21 @@ function SpellCheckSettings(): ReactNode {
   return (
     <SettingsSection
       section={settingsSection('spelling')}
+      heading="Editor"
       description="Your browser marks the words that it does not know in a note. It does not check code or addresses. The settings of your browser choose the languages."
     >
-      <Checkbox
-        id="spell-check"
+      <Switch
         label="Check spelling"
+        hint="Underline words that the browser does not know."
         checked={pending ?? stored}
         onChange={change}
       />
       {problem === '' ? null : (
-        <Notice className="mt-4" tone="problem" message={problem} />
+        <Notice className="mt-3" tone="problem" message={problem} />
       )}
     </SettingsSection>
   );
 }
-
-/**
- * What this device can say about the saves that never reached the server.
- *
- * A read that did not answer is not a count of zero (record 0038). The card
- * says that it cannot tell, and it offers the action that keeps the work.
- */
-type PendingSaves =
-  | { readonly kind: 'loading' }
-  | { readonly kind: 'failed' }
-  | { readonly kind: 'ready'; readonly count: number };
 
 /** How far the list of sessions got. */
 type SessionsState =
@@ -183,8 +195,8 @@ type SessionsState =
 /**
  * The devices that are signed in to this account (record 0122).
  *
- * The current device is first and has no action here, because the Sign out
- * section ends it. Each other device has its own Sign out, for a lost phone,
+ * The current device is first and has no action here, because the account
+ * menu signs it out (issue 517). Each other device has its own Sign out, for a lost phone,
  * and one action ends every other device, for a password that somebody else
  * may know. Only the identifier of a session leaves the server, never its
  * token.
@@ -321,11 +333,17 @@ function SessionsSettings(): ReactNode {
           )}
         </>
       )}
+      <p className="mb-0 mt-3 text-control text-muted">
+        To sign out of this device, use the account menu.
+      </p>
     </SettingsSection>
   );
 }
 
-/** The name a person can change and the sign-in address they can read. */
+/**
+ * The name a person can change and the sign-in address they can read, as
+ * two rows. Edit opens the name field in place.
+ */
 function ProfileSettings({
   name,
   email,
@@ -334,6 +352,7 @@ function ProfileSettings({
   readonly email: string | null | undefined;
 }): ReactNode {
   const session = useSession();
+  const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(name ?? '');
   const [attempted, setAttempted] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -352,7 +371,10 @@ function ProfileSettings({
     const fieldProblem = profileNameProblem(draft);
     if (fieldProblem !== null) return;
     const nextName = draft.trim();
-    if (nextName === name) return;
+    if (nextName === name) {
+      setEditing(false);
+      return;
+    }
     setBusy(true);
     const result = await updateProfile({ body: { name: nextName } });
     setBusy(false);
@@ -362,6 +384,7 @@ function ProfileSettings({
     }
     session.adoptProfileName(nextName);
     setSaved(true);
+    setEditing(false);
   }
 
   return (
@@ -369,61 +392,116 @@ function ProfileSettings({
       section={settingsSection('profile')}
       description="Your name appears with your account. Use your email address to sign in."
     >
-      <form
-        onSubmit={(event): void => {
-          event.preventDefault();
-          void save();
-        }}
-      >
-        <TextField
-          id="profile-name"
-          label="Name"
-          value={draft}
-          autoComplete="name"
-          hint="Use no more than 256 characters."
-          error={attempted ? (profileNameProblem(draft) ?? '') : ''}
-          onChange={(value) => {
-            setDraft(value);
-            setSaved(false);
-            setProblem('');
+      {editing ? (
+        <form
+          className="border-b border-edge-subtle py-3"
+          onSubmit={(event): void => {
+            event.preventDefault();
+            void save();
           }}
-        />
-        <p className="mb-1 mt-0 text-control font-medium text-strong">
-          Email address
-        </p>
-        <p className="mb-4 mt-0 text-ui text-strong">
-          {email ?? 'No address linked'}
-        </p>
-        {problem === '' ? null : (
-          <Notice className="mb-3" tone="problem" message={problem} />
-        )}
-        {saved ? (
-          <Notice
-            className="mb-3"
-            tone="info"
-            message="Your new name appears in your account."
-          />
-        ) : null}
-        <Button
-          type="submit"
-          variant="secondary"
-          disabled={busy || draft.trim() === name}
         >
-          {busy ? 'Saving' : 'Save name'}
-        </Button>
-      </form>
+          <TextField
+            id="profile-name"
+            label="Name"
+            value={draft}
+            autoComplete="name"
+            hint="Use no more than 256 characters."
+            error={attempted ? (profileNameProblem(draft) ?? '') : ''}
+            onChange={(value) => {
+              setDraft(value);
+              setSaved(false);
+              setProblem('');
+            }}
+          />
+          {problem === '' ? null : (
+            <Notice className="mb-3" tone="problem" message={problem} />
+          )}
+          <div className="flex flex-wrap gap-cluster">
+            <Button type="submit" variant="secondary" disabled={busy}>
+              {busy ? 'Saving' : 'Save name'}
+            </Button>
+            <Button
+              variant="ghost"
+              disabled={busy}
+              onClick={() => {
+                setEditing(false);
+                setAttempted(false);
+                setProblem('');
+                setDraft(name ?? '');
+              }}
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
+      ) : (
+        <SettingRow label="Name">
+          <span className="min-w-0 truncate text-ui font-medium text-strong">
+            {name ?? ''}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            label="Edit name"
+            onClick={() => {
+              setEditing(true);
+              setSaved(false);
+            }}
+          >
+            Edit
+          </Button>
+        </SettingRow>
+      )}
+      {saved ? (
+        <Notice
+          className="my-2"
+          tone="info"
+          message="Your new name appears in your account."
+        />
+      ) : null}
+      <SettingRow label="Email" help="Use this address to sign in.">
+        <span className="min-w-0 truncate text-ui font-medium text-strong">
+          {email ?? 'No address linked'}
+        </span>
+      </SettingRow>
     </SettingsSection>
   );
 }
 
-/** Account page: profile, theme, offline availability, and sign-out. */
-export function AccountSettingsPage(): ReactNode {
+/**
+ * The page that the value of the `settings` parameter opens, among the pages
+ * that this account shows. An old page reads as its new page, and a value
+ * that names none, or a page this account does not show, as the first page.
+ */
+function chosenPage<T extends { readonly path: string }>(
+  pages: readonly T[],
+  value: string,
+): T | undefined {
+  const path = settingsPageOf(value);
+  return pages.find((page) => page.path === path) ?? pages[0];
+}
+
+/** The Settings modal over the current page. */
+export function SettingsModal({
+  workspaceId,
+  initial,
+  value,
+  onChoose,
+  onClose,
+  returnFocus,
+}: {
+  readonly workspaceId: string;
+  /** The first letter of the account, as the avatar of the header shows it. */
+  readonly initial: string;
+  /** The open section, or an empty string for the section list. */
+  readonly value: string;
+  /** Opens one section, or the section list for an empty string. */
+  readonly onChoose: (page: string) => void;
+  readonly onClose: () => void;
+  readonly returnFocus: (() => void) | undefined;
+}): ReactNode {
   const session = useSession();
   const store = useLocalStore();
-  const params = useParams();
-  const location = useLocation();
-  const [pending, setPending] = useState<PendingSaves>({ kind: 'loading' });
-  const [signOutError, setSignOutError] = useState('');
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState('');
   const [importing, setImporting] = useState(false);
@@ -433,104 +511,49 @@ export function AccountSettingsPage(): ReactNode {
   const [removing, setRemoving] = useState(false);
   const importInput = useRef<HTMLInputElement | null>(null);
   const requestSync = useRequestSync();
+  const titleId = useId();
+  const pageTitleId = useId();
   const account = session.account;
   const accountId = account?.accountId ?? null;
-  // The address names the workspace, as it does for every page of the frame.
-  // The frame only renders this once the account holds that workspace.
-  const workspaceId =
-    typeof params.workspaceId === 'string' ? params.workspaceId : null;
   const documents = useLegalDocuments();
   const workspace = useWorkspace();
   const workspaceName =
     workspace.state.status === 'ready'
-      ? workspace.state.workspaces.find(
+      ? (workspace.state.workspaces.find(
           (item) => item.workspaceId === workspaceId,
-        )?.name
-      : undefined;
+        )?.name ?? '')
+      : '';
   const portal = useOpenPortal();
-  useDocumentTitle(
-    visibleSettingsPages(account ?? { accountPortal: false }).find(
-      (page) => page.path === params.settingsPage,
-    )?.title ?? settingsTitle,
-  );
   // The limits of the month change with no notice to this device, so the
-  // page reads the account again when it opens (record 0193).
+  // modal reads the account again when it opens (record 0193).
   const recheckAccount = session.recheck;
   useEffect(() => {
     recheckAccount();
   }, [recheckAccount]);
 
+  const pages = visibleSettingsPages(account ?? { accountPortal: false });
+  const activePage = chosenPage(pages, value);
+  const listLevel = value === '';
+  const settingsList = useSettingsListFocus(
+    workspaceId,
+    listLevel ? undefined : activePage?.path,
+  );
+  // An old or unknown value becomes the address of the page it opens.
   useEffect(() => {
-    if (store.store === null || accountId === null || workspaceId === null) {
-      setPending({ kind: 'loading' });
-      return;
-    }
-    const activeStore = store.store;
-    let cancelled = false;
-    void activeStore
-      .pending(accountId, workspaceId)
-      .then((queue) => {
-        if (!cancelled) setPending({ kind: 'ready', count: queue.length });
-      })
-      .catch(() => {
-        if (!cancelled) setPending({ kind: 'failed' });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [store.store, accountId, workspaceId]);
+    if (value !== '' && activePage !== undefined && value !== activePage.path)
+      onChoose(activePage.path);
+  }, [value, activePage, onChoose]);
+  if (account === null) return null;
 
-  const path = params.settingsPage;
-  const base = `/w/${workspaceId ?? ''}/settings`;
-  const settingsList = useSettingsListFocus(base, path);
-  if (account === null) return <Navigate to="/login" replace />;
-  // Only a count that arrived can offer the action that removes work. An
-  // unknown count keeps the safe action alone (record 0038).
-  const unsent = pending.kind === 'ready' && pending.count > 0;
-
-  /**
-   * Ends the session on this device.
-   *
-   * `discard` removes the work that never reached the server. Without it the
-   * queued work stays on this device and waits for the next sign-in. Offline
-   * sign-out records a marker, so the session is revoked on reconnect before
-   * any content comes back.
-   */
-  /** Keep the approved wait or discard choice bound to the current account. */
-  function endSignOut(discard: boolean): void {
-    setSignOutError('');
-    const activeStore = store.store;
-    if (!discard || activeStore === null || workspaceId === null) {
-      session.signOut();
-      return;
-    }
-    const online = typeof navigator === 'undefined' ? true : navigator.onLine;
-    void endSession(
-      activeStore,
-      account?.accountId ?? '',
-      [workspaceId],
-      online,
-      true,
-      revokeSessionViaClient,
-    )
-      .then(() => {
-        session.refresh();
-      })
-      .catch((failure: unknown) => {
-        setSignOutError(problemMessage(failure));
-      });
-  }
-
-  // Each section renders in the order of the list that the side region reads,
-  // and the type holds one body for each name of the list (decision 0137).
+  // Each section renders in the order of the page, and the type holds one
+  // body for each name of the list (decision 0137).
   const sectionBodies: Record<SettingsSectionKey, ReactNode> = {
-    profile: <ProfileSettings name={account.name} email={account.email} />,
     appearance: <ThemeSettings />,
     spelling: <SpellCheckSettings />,
     'daily-notes': (
       <SettingsSection
         section={settingsSection('daily-notes')}
-        description="Each day has one note, and the calendar in the sidebar opens it. These settings apply to this workspace and follow you to every device."
+        description="Each day has one note, and the calendar in the sidebar opens it."
       >
         <DailyNoteSettingsFields />
       </SettingsSection>
@@ -538,7 +561,7 @@ export function AccountSettingsPage(): ReactNode {
     templates: (
       <SettingsSection
         section={settingsSection('templates')}
-        description="A template is a note that you copy into another note. Select Insert from template in the command palette, and the copy goes in at the cursor. This setting applies to this workspace and follows you to every device."
+        description="Notes in this folder show in New note from template."
       >
         <TemplateSettingsFields />
       </SettingsSection>
@@ -553,43 +576,42 @@ export function AccountSettingsPage(): ReactNode {
     export: (
       <SettingsSection
         section={settingsSection('export')}
-        description="Download every note and image in the active workspace as a zip. Other workspaces are not included. The files keep their folders and need no application to be read again."
+        description="A zip of every note and image, with their folders."
       >
-        {exportError === '' ? null : (
-          <Notice className="mb-3" tone="problem" message={exportError} />
-        )}
-        <Button
-          variant="secondary"
-          icon={<DownloadIcon />}
-          disabled={exporting || workspaceId === null}
-          onClick={() => {
-            if (workspaceId === null) return;
-            setExportError('');
-            setExporting(true);
-            void downloadAll(workspaceId)
-              .catch((failure: unknown) => {
-                setExportError(transferFailureMessage(failure));
-              })
-              .finally(() => {
-                setExporting(false);
-              });
-          }}
+        <SettingRow
+          label="Export this workspace"
+          help="A zip of every note and image, with their folders."
         >
-          {exporting ? 'Preparing the download' : 'Export this workspace'}
-        </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<DownloadIcon />}
+            disabled={exporting}
+            onClick={() => {
+              setExportError('');
+              setExporting(true);
+              void downloadAll(workspaceId)
+                .catch((failure: unknown) => {
+                  setExportError(transferFailureMessage(failure));
+                })
+                .finally(() => {
+                  setExporting(false);
+                });
+            }}
+          >
+            {exporting ? 'Preparing the download' : 'Export'}
+          </Button>
+        </SettingRow>
+        {exportError === '' ? null : (
+          <Notice className="my-2" tone="problem" message={exportError} />
+        )}
       </SettingsSection>
     ),
     import: (
       <SettingsSection
         section={settingsSection('import')}
-        description="Import a zip of Markdown files and images. The files keep their paths and links."
+        description="A zip of Markdown files and images. Paths and links are kept."
       >
-        {importNotice === '' ? null : (
-          <Notice className="mb-3" tone="info" message={importNotice} />
-        )}
-        {importError === '' ? null : (
-          <Notice className="mb-3" tone="problem" message={importError} />
-        )}
         <input
           ref={importInput}
           className="sr-only"
@@ -598,7 +620,7 @@ export function AccountSettingsPage(): ReactNode {
           aria-label="Choose a workspace zip archive"
           onChange={(event): void => {
             const file = event.target.files?.[0];
-            if (file === undefined || workspaceId === null) return;
+            if (file === undefined) return;
             setImporting(true);
             setImportNotice('');
             setImportError('');
@@ -616,23 +638,37 @@ export function AccountSettingsPage(): ReactNode {
               });
           }}
         />
-        <Button
-          variant="secondary"
-          icon={<UploadIcon />}
-          disabled={importing || workspaceId === null}
-          onClick={() => importInput.current?.click()}
+        <SettingRow
+          label="Import workspace"
+          help="A zip of Markdown files and images. Paths and links are kept."
         >
-          {importing ? 'Importing files' : 'Import workspace'}
-        </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<UploadIcon />}
+            disabled={importing}
+            onClick={() => importInput.current?.click()}
+          >
+            {importing ? 'Importing files' : 'Import'}
+          </Button>
+        </SettingRow>
+        {importNotice === '' ? null : (
+          <Notice className="my-2" tone="info" message={importNotice} />
+        )}
+        {importError === '' ? null : (
+          <Notice className="my-2" tone="problem" message={importError} />
+        )}
       </SettingsSection>
     ),
+    profile: <ProfileSettings name={account.name} email={account.email} />,
     account: (
       <SettingsSection
         section={settingsSection('account')}
+        heading="Usage"
         description="Your account owns every note in your workspaces. No other account can read them."
       >
         {monthNotices(account.month).map((notice) => (
-          <Notice key={notice} className="mb-3" tone="info" message={notice} />
+          <Notice key={notice} className="mt-3" tone="info" message={notice} />
         ))}
         {storageLine(account.storage) === '' ? null : (
           <div className="mt-3">
@@ -649,217 +685,263 @@ export function AccountSettingsPage(): ReactNode {
             <Meter {...usage} />
           </div>
         ))}
-        {account.installationRole === 'administrator' &&
-        workspaceId !== null ? (
-          <Link
-            className={`mt-3 ${buttonClassName({ variant: 'secondary' })}`}
-            to={`/w/${workspaceId}/accounts`}
-          >
-            <span className="inline-flex items-center" aria-hidden="true">
-              <UsersIcon />
-            </span>
-            <span>Manage accounts</span>
-          </Link>
-        ) : null}
         {documents === null ? null : (
           <LegalLinks className="mt-3" documents={documents} />
         )}
       </SettingsSection>
     ),
+    'remove-account': (
+      <SettingsSection
+        section={settingsSection('remove-account')}
+        heading="Danger zone"
+        danger
+      >
+        <SettingRow
+          label="Delete account"
+          help="Deletes every workspace and note for good. Export your notes first."
+        >
+          <Button
+            variant="secondary"
+            size="sm"
+            tone="danger"
+            icon={actionIcon(deleteGlyph)}
+            onClick={() => {
+              setRemoving(true);
+            }}
+          >
+            Delete account
+          </Button>
+        </SettingRow>
+      </SettingsSection>
+    ),
     billing: (
       // The account portal of the operator, for any standing (records 0190
-      // and 0211). The one filled action of the page stays Save, so this is
-      // secondary. `visibleSettingsSections` shows the section only when the
+      // and 0211). `visibleSettingsPages` shows the page only when the
       // installation names a portal.
       <SettingsSection
         section={settingsSection('billing')}
         description="See and change your plan, your payment method and your invoices."
       >
-        {portal.error === '' ? null : (
-          <Notice className="mb-3" tone="problem" message={portal.error} />
-        )}
-        <Button
-          variant="secondary"
-          icon={<ExternalLinkIcon />}
-          disabled={portal.busy}
-          onClick={() => {
-            void portal.open(portalHome);
-          }}
+        <SettingRow
+          label="Payment method, invoices, plan changes"
+          help="Opens the billing portal."
         >
-          Open billing
-        </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<ExternalLinkIcon />}
+            disabled={portal.busy}
+            onClick={() => {
+              void portal.open(portalHome);
+            }}
+          >
+            Open billing
+          </Button>
+        </SettingRow>
+        {portal.error === '' ? null : (
+          <Notice className="my-2" tone="problem" message={portal.error} />
+        )}
       </SettingsSection>
     ),
     'api-keys': <ApiKeySettings />,
     'connected-apps': <ConnectedAppSettings />,
     sessions: <SessionsSettings />,
-    'sign-out': (
-      <SettingsSection
-        section={settingsSection('sign-out')}
-        description={
-          pending.kind === 'loading'
-            ? undefined
-            : unsent
-              ? 'Some saves have not reached the server yet. Keep them on this device for the next sign-in, or remove them now.'
-              : pending.kind === 'failed'
-                ? 'This device cannot say what is still waiting to reach the server. Sign out keeps your work on this device.'
-                : 'Every save on this device reached the server.'
-        }
-      >
-        {signOutError === '' ? null : (
-          <Notice className="mb-3" tone="problem" message={signOutError} />
-        )}
-        <div className="flex flex-wrap gap-cluster">
-          <Button
-            variant="secondary"
-            icon={<SignOutIcon />}
-            onClick={() => {
-              endSignOut(false);
-            }}
-          >
-            {unsent ? 'Sign out and keep them' : 'Sign out on this device'}
-          </Button>
-          {unsent ? (
-            <Button
-              variant="danger"
-              onClick={() => {
-                endSignOut(true);
-              }}
-            >
-              Sign out and remove them
-            </Button>
-          ) : null}
-        </div>
-      </SettingsSection>
-    ),
-    'remove-account': (
-      <SettingsSection
-        section={settingsSection('remove-account')}
-        warning="This deletes your account and every note in your workspaces for good. Export your notes first if you want to keep them."
-      >
-        <Button
-          variant="secondary"
-          tone="danger"
-          icon={actionIcon(deleteGlyph)}
-          onClick={() => {
-            setRemoving(true);
-          }}
-        >
-          Delete account
-        </Button>
-      </SettingsSection>
-    ),
   };
 
-  const pages = visibleSettingsPages(account);
-  const activePage = pages.find((page) => page.path === path) ?? pages[0];
-  const legacyPage = settingsPageForAnchor(location.hash);
-  if (legacyPage !== null)
-    return <Navigate to={`${base}/${legacyPage}`} replace />;
-  if (path !== undefined && !pages.some((page) => page.path === path))
-    return <Navigate to={base} replace />;
-  const hideTitles =
-    activePage?.sections.length === 1
-      ? activePage.sections.map((key) => settingsSection(key).id)
-      : activePage?.path === 'profile'
-        ? ['profile-heading', 'account-heading']
-        : [];
+  // A page of one section, Export and import, and Account name their
+  // sections by the page title and their rows.
+  const hiddenTitles =
+    activePage === undefined
+      ? []
+      : activePage.sections.length === 1 || activePage.path === 'export-import'
+        ? activePage.sections.map((key) => settingsSection(key).id)
+        : activePage.path === 'account'
+          ? [settingsSection('profile').id]
+          : activePage.path === 'appearance'
+            ? [settingsSection('appearance').id]
+            : [];
+  const scope =
+    activePage?.group === 'Workspace'
+      ? `${workspaceName === '' ? 'This' : workspaceName} ${activePage.scope}`
+      : activePage?.scope;
+
   return (
-    <div className={`mx-auto w-full max-w-5xl py-gutter ${pageGutter}`}>
-      <div className="grid min-w-0 gap-6 lg:grid-cols-3">
-        <nav
-          ref={settingsList}
-          aria-label="Settings"
-          className={path === undefined ? 'min-w-0' : 'hidden min-w-0 lg:block'}
-        >
-          <PageHeader title={settingsTitle} />
-          {['General', 'Notes', 'Account'].map((group) => (
-            <section key={group} aria-label={group} className="mb-5">
-              <h2 className="mb-1 mt-0 text-control font-medium text-muted">
-                {group}
-              </h2>
-              {pages
-                .filter((page) => page.group === group)
-                .map((page) => (
-                  <Link
-                    key={page.path}
-                    to={`${base}/${page.path}`}
-                    className={rowClassName({
-                      current: activePage?.path === page.path,
-                      className: 'min-h-12 lg:min-h-12',
-                    })}
-                    aria-current={
-                      activePage?.path === page.path ? 'page' : undefined
-                    }
-                  >
-                    {page.path === 'devices' ? (
-                      <ComputerIcon />
-                    ) : (
-                      actionIcon(
-                        page.path === 'appearance'
-                          ? 'theme-system'
-                          : page.path === 'daily-notes'
-                            ? 'today'
-                            : page.path === 'templates'
-                              ? 'template'
-                              : 'settings',
-                      )
-                    )}
-                    <span className="min-w-0 flex-1">{page.title}</span>
-                    <ChevronRightIcon />
-                  </Link>
-                ))}
-            </section>
-          ))}
-        </nav>
+    <Dialog
+      open
+      onClose={onClose}
+      title={settingsTitle}
+      titleId={titleId}
+      hideTitle
+      width="settings"
+      align="center"
+      returnFocus={returnFocus}
+    >
+      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         <div
-          className={
-            path === undefined
-              ? 'hidden min-w-0 lg:col-span-2 lg:block'
-              : 'min-w-0 lg:col-span-2'
-          }
+          className={`${listLevel ? 'flex' : 'hidden'} min-h-0 flex-1 flex-col bg-surface lg:flex lg:w-72 lg:flex-none lg:border-r lg:border-edge-subtle`}
         >
-          <PageBackProvider
-            value={
-              <Link
-                to={base}
-                aria-label="Back to Settings"
-                className={buttonClassName({
-                  variant: 'ghost',
-                  iconOnly: true,
-                  className: 'lg:hidden',
-                })}
-              >
-                <ChevronLeftIcon />
-              </Link>
-            }
-          >
-            <PageHeader
-              title={activePage?.title ?? settingsTitle}
-              description={activePage?.help}
+          <div className="flex items-center gap-cluster px-3 pt-3 lg:hidden">
+            <Button
+              variant="ghost"
+              icon={<CloseIcon />}
+              label="Close Settings"
+              onClick={onClose}
             />
-          </PageBackProvider>
-          <SettingsTopicContext.Provider
-            value={{
-              hiddenTitles: hideTitles,
-              helpSection:
-                activePage?.help || activePage?.sections[0] === undefined
-                  ? null
-                  : settingsSection(activePage.sections[0]).id,
-            }}
-          >
-            {activePage?.sections.map((key) => (
-              <div key={key}>{sectionBodies[key]}</div>
-            ))}
-            {(activePage?.path === 'templates' ||
-              activePage?.path === 'daily-notes') &&
-            workspaceName !== undefined ? (
-              <p className="text-control text-muted">
-                Applies to the {workspaceName} workspace.
-              </p>
-            ) : null}
-          </SettingsTopicContext.Provider>
+            <p className="m-0 min-w-0 flex-1 text-center text-ui font-semibold text-strong">
+              {settingsTitle}
+            </p>
+            <span className="w-11 shrink-0" aria-hidden="true" />
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
+            <div className="flex items-center gap-2.5 border-b border-edge-subtle px-2 pb-3">
+              <span className={avatarClassName()} aria-hidden="true">
+                {initial}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-ui font-semibold text-strong">
+                  {account.name ?? account.email ?? ''}
+                </span>
+                {account.email === null ||
+                account.email === undefined ? null : (
+                  <span className="block truncate text-control text-muted">
+                    {account.email}
+                  </span>
+                )}
+              </span>
+            </div>
+            <nav ref={settingsList} aria-label="Settings sections">
+              {settingsPageGroups.map((group) => (
+                <section
+                  key={group}
+                  aria-label={
+                    group === 'Workspace' && workspaceName !== ''
+                      ? `Workspace ${workspaceName}`
+                      : group
+                  }
+                  className="mt-3"
+                >
+                  <h3 className="m-0 flex items-center gap-1.5 px-2 pb-1 text-control font-semibold text-muted">
+                    {group}
+                    {group === 'Workspace' && workspaceName !== '' ? (
+                      <span className="min-w-0 truncate rounded-sm bg-hover px-1.5 font-medium text-strong">
+                        {workspaceName}
+                      </span>
+                    ) : null}
+                  </h3>
+                  <ul className="m-0 list-none p-0">
+                    {pages
+                      .filter((page) => page.group === group)
+                      .map((page) => {
+                        const current =
+                          !listLevel && activePage?.path === page.path;
+                        const desktopCurrent = activePage?.path === page.path;
+                        return (
+                          <li key={page.path}>
+                            <button
+                              type="button"
+                              data-settings-page={page.path}
+                              className={rowClassName({
+                                current: desktopCurrent,
+                                className: 'w-full text-left',
+                              })}
+                              aria-current={current ? 'page' : undefined}
+                              onClick={() => {
+                                onChoose(page.path);
+                              }}
+                            >
+                              <span
+                                className="inline-flex shrink-0 items-center"
+                                aria-hidden="true"
+                              >
+                                {pageIcons[page.path]}
+                              </span>
+                              <span className="min-w-0 flex-1 truncate">
+                                {page.title}
+                              </span>
+                              <span
+                                className="inline-flex shrink-0 items-center text-muted lg:hidden"
+                                aria-hidden="true"
+                              >
+                                <ChevronRightIcon />
+                              </span>
+                            </button>
+                          </li>
+                        );
+                      })}
+                  </ul>
+                </section>
+              ))}
+            </nav>
+          </div>
+          {account.installationRole === 'administrator' ? (
+            <div className="border-t border-edge-subtle p-3">
+              <Link
+                className={rowClassName({ className: 'w-full' })}
+                to={`/w/${workspaceId}/accounts`}
+              >
+                <span className="inline-flex items-center" aria-hidden="true">
+                  <UsersIcon />
+                </span>
+                <span className="min-w-0 flex-1">Manage accounts</span>
+                <span
+                  className="inline-flex items-center text-muted"
+                  aria-hidden="true"
+                >
+                  <ExternalLinkIcon />
+                </span>
+              </Link>
+            </div>
+          ) : null}
         </div>
+        <section
+          aria-labelledby={pageTitleId}
+          className={`${listLevel ? 'hidden' : 'flex'} min-h-0 min-w-0 flex-1 flex-col lg:flex`}
+        >
+          <div className="flex items-start gap-cluster px-3 pt-3 lg:px-5 lg:pt-4">
+            <Button
+              className="lg:hidden"
+              variant="ghost"
+              icon={<ChevronLeftIcon />}
+              label="Back to Settings"
+              onClick={() => {
+                onChoose('');
+              }}
+            />
+            <div className="min-w-0 flex-1 pt-2 lg:pt-1">
+              <h2
+                id={pageTitleId}
+                className="m-0 text-xl font-semibold tracking-heading text-strong max-lg:text-center max-lg:text-base"
+              >
+                {activePage?.title ?? settingsTitle}
+              </h2>
+              {scope === undefined ? null : (
+                <p className="mb-0 mt-1 text-control text-muted max-lg:hidden">
+                  {scope}
+                </p>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              icon={<CloseIcon />}
+              label="Close Settings"
+              onClick={onClose}
+            />
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-gutter pb-5 pt-3 lg:px-5">
+            {scope === undefined ? null : (
+              <p className="mb-3 mt-0 text-control text-muted lg:hidden">
+                {scope}
+              </p>
+            )}
+            <SettingsTopicContext.Provider
+              value={{ hiddenTitles, helpSection: null }}
+            >
+              {activePage?.sections.map((key) => (
+                <div key={key}>{sectionBodies[key]}</div>
+              ))}
+            </SettingsTopicContext.Provider>
+          </div>
+        </section>
       </div>
       {removing ? (
         <RemoveOwnAccountDialog
@@ -873,6 +955,6 @@ export function AccountSettingsPage(): ReactNode {
           }}
         />
       ) : null}
-    </div>
+    </Dialog>
   );
 }

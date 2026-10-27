@@ -28,7 +28,6 @@ export const settingsSections = [
     title: 'Connected apps',
   },
   { key: 'sessions', id: 'sessions-heading', title: 'Devices' },
-  { key: 'sign-out', id: 'signout-heading', title: 'Sign out' },
   {
     key: 'remove-account',
     id: 'remove-account-heading',
@@ -56,7 +55,6 @@ export const settingsGroups: readonly {
       'api-keys',
       'connected-apps',
       'sessions',
-      'sign-out',
     ],
   },
   { title: 'Danger zone', keys: ['remove-account'] },

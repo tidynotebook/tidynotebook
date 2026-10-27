@@ -59,6 +59,19 @@ await test('a hidden title is for assistive technology only', () => {
   assert.equal(dialogTitleClassName(true), 'sr-only');
 });
 
+await test('the Settings modal is a phone sheet and a fixed panel from the large width', () => {
+  const panel = dialogPanelClassName('settings').split(' ');
+  for (const part of ['h-full', 'w-full', 'overflow-hidden', 'lg:h-settings'])
+    assert.ok(panel.includes(part), part);
+  assert.ok(panel.includes('lg:max-w-settings'));
+  assert.ok(!panel.includes('rounded-xl'));
+  assert.ok(panel.includes('lg:rounded-xl'));
+  const root = dialogRootClassName('settings', 'center').split(' ');
+  assert.ok(root.includes('items-stretch'));
+  assert.ok(root.includes('lg:items-center'));
+  assert.ok(!root.some((part) => part.startsWith('overflow')));
+});
+
 await test('a picture on the scrim keeps the whole screen', () => {
   assert.equal(dialogRootClassName('screen', 'top'), 'bg-scrim/80');
   assert.ok(dialogPanelClassName('screen').includes('h-full w-full'));

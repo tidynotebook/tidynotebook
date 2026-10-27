@@ -49,9 +49,11 @@ const NoteView = lazy(async () => ({
 const NotesHomeView = lazy(async () => ({
   default: (await loadNotesHome()).NotesHomeView,
 }));
-const AccountSettingsPage = lazy(async () => ({
-  default: (await import('./features/accounts/account-settings.tsx'))
-    .AccountSettingsPage,
+/** An old Settings address opens the Settings modal (issue 517). */
+// The frame loads it, so it shares the address helpers of the frame chunk.
+const LegacySettingsRedirect = lazy(async () => ({
+  default: (await (await loadShell()).loadLegacySettings())
+    .LegacySettingsRedirect,
 }));
 const loadWorkspaceHome = () => import('./shell/workspaces.tsx');
 const WorkspaceHome = lazy(async () => ({
@@ -218,8 +220,10 @@ const routes: RouteObject[] = [
                   handle: page('attention'),
                 },
                 {
+                  // Settings is a modal over any page. The old addresses
+                  // open it over the last page of the workspace.
                   path: 'settings/:settingsPage?',
-                  element: deferred(<AccountSettingsPage />),
+                  element: deferred(<LegacySettingsRedirect />),
                   handle: page('settings'),
                 },
                 {

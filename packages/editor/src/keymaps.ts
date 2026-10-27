@@ -1544,6 +1544,7 @@ export const shortcuts: readonly EditorShortcut[] = [
   },
   { keys: 'Cmd or Ctrl + P', description: 'Open the command palette' },
   { keys: 'Cmd or Ctrl + \\', description: 'Show or hide the sidebar' },
+  { keys: 'Cmd or Ctrl + ,', description: 'Open Settings' },
   { keys: 'Cmd or Ctrl + O', description: 'Open a note by name' },
   { keys: 'Cmd or Ctrl + F', description: 'Find in this note' },
   { keys: 'Cmd or Ctrl + H', description: 'Find and replace in this note' },

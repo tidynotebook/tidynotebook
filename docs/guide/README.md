@@ -45,7 +45,7 @@ For the person who writes the notes.
 - [API keys and programs](api.md) - connect a program to your account.
 - [Connect an AI assistant](mcp.md) - choose its access to your notes, and end
   that access.
-- [Settings](settings.md) - each section of the Settings page, and where each
+- [Settings](settings.md) - each section of Settings, and where each
   choice is kept.
 
 ## Hosting a server

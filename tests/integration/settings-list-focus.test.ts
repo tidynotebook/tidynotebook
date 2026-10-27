@@ -38,11 +38,15 @@ await test('Settings Back focuses the visible row after render and preserves wor
       createElement(
         'nav',
         { ref, className: path === undefined ? '' : 'hidden' },
-        createElement('a', { href: `${scope}/profile` }, 'Profile and email'),
+        createElement(
+          'button',
+          { type: 'button', 'data-settings-page': 'account' },
+          'Account',
+        ),
       ),
       createElement(
         'button',
-        { className: path === undefined ? 'hidden' : '' },
+        { className: path === undefined ? 'hidden' : '', id: 'back' },
         'Back to Settings',
       ),
     );
@@ -54,16 +58,16 @@ await test('Settings Back focuses the visible row after render and preserves wor
     });
   }
   try {
-    await render('/w/one/settings', 'profile');
-    container.querySelector('button')?.focus();
-    await render('/w/one/settings', undefined);
-    const row = container.querySelector('a');
+    await render('one', 'account');
+    container.querySelector<HTMLElement>('#back')?.focus();
+    await render('one', undefined);
+    const row = container.querySelector('[data-settings-page]');
     assert.equal(document.activeElement, row);
     assert.equal(row?.parentElement?.className, '');
-    await render('/w/one/settings', 'profile');
-    const back = container.querySelector('button');
+    await render('one', 'account');
+    const back = container.querySelector<HTMLElement>('#back');
     back?.focus();
-    await render('/w/two/settings', undefined);
+    await render('two', undefined);
     assert.equal(document.activeElement, back);
   } finally {
     await act(async () => root.unmount());

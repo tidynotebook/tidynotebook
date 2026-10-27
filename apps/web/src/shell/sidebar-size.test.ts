@@ -5,7 +5,6 @@ import {
   formatSidebarSize,
   parseSidebarSize,
   sidebarInsetClass,
-  displayedSidebarSize,
   sidebarSteps,
   sidebarWidthClass,
   sidebarWidthPx,
@@ -63,15 +62,4 @@ await test('a stored size comes back, and a broken one falls back', () => {
       step: defaultSidebarSize.step,
       collapsed: false,
     });
-});
-
-await test('Settings navigation visibility controls its inset and expanded state', () => {
-  const preferred = { step: 'wide', collapsed: false } as const;
-  const hidden = displayedSidebarSize(preferred, true, false);
-  assert.equal(hidden.collapsed, true);
-  assert.equal(sidebarInsetClass(hidden), 'md:pl-0');
-  const shown = displayedSidebarSize(preferred, true, true);
-  assert.equal(shown.collapsed, false);
-  assert.equal(sidebarInsetClass(shown), sidebarInsetClass(preferred));
-  assert.deepEqual(displayedSidebarSize(preferred, false, false), preferred);
 });

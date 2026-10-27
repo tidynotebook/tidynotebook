@@ -15,7 +15,13 @@
 import { createContext, useContext, type ReactNode } from 'react';
 import type { PageSection } from '@notesapp/ui';
 
-/** Topic pages show the title and help once, above their controls. */
+/**
+ * The sections inside the Settings modal (issue 517, item 8).
+ *
+ * The page names its topic and one short scope line, so a section in it
+ * shows no long paragraph: only a small group label, when the page has more
+ * than one section, above compact rows.
+ */
 export const SettingsTopicContext = createContext<{
   readonly hiddenTitles: readonly string[];
   readonly helpSection: string | null;
@@ -24,11 +30,17 @@ export const SettingsTopicContext = createContext<{
 /** One section: its name and sentence, then its controls. */
 export function SettingsSection({
   section,
+  heading,
+  danger = false,
   description,
   warning,
   children,
 }: {
   readonly section: PageSection;
+  /** The group label in the modal, when it is not the section title. */
+  readonly heading?: string | undefined;
+  /** Draws the group label in the danger colour, for the Danger zone. */
+  readonly danger?: boolean | undefined;
   readonly description?: string | undefined;
   readonly warning?: string | undefined;
   readonly children: ReactNode;
@@ -36,14 +48,14 @@ export function SettingsSection({
   const topic = useContext(SettingsTopicContext);
   if (topic !== null)
     return (
-      <section className="py-3" aria-label={section.title}>
+      <section className="pb-2 pt-4 first:pt-0" aria-label={section.title}>
         {topic.hiddenTitles.includes(section.id) ? null : (
-          <h2
-            className="mb-3 mt-0 text-ui font-semibold text-strong"
+          <h3
+            className={`m-0 border-b border-edge-subtle pb-1.5 text-control font-semibold ${danger ? 'text-danger' : 'text-muted'}`}
             id={section.id}
           >
-            {section.title}
-          </h2>
+            {heading ?? section.title}
+          </h3>
         )}
         {topic.helpSection === section.id && description !== undefined ? (
           <p className="mb-3 mt-0 text-control text-muted">{description}</p>
@@ -82,5 +94,35 @@ export function SettingsSection({
         </div>
       </div>
     </section>
+  );
+}
+
+/**
+ * One compact row of the Settings modal (issue 517, item 8): the label and
+ * one line of help on the left, the control on the right, 52 px high.
+ */
+export function SettingRow({
+  label,
+  help,
+  children,
+}: {
+  readonly label: ReactNode;
+  readonly help?: string | undefined;
+  readonly children?: ReactNode;
+}): ReactNode {
+  return (
+    <div className="flex min-h-13 flex-wrap items-center gap-x-group gap-y-2 border-b border-edge-subtle py-2 last:border-b-0">
+      <div className="min-w-0 flex-1">
+        <p className="m-0 text-ui text-strong">{label}</p>
+        {help === undefined ? null : (
+          <p className="m-0 text-control text-muted">{help}</p>
+        )}
+      </div>
+      {children === undefined ? null : (
+        <div className="flex shrink-0 flex-wrap items-center gap-cluster">
+          {children}
+        </div>
+      )}
+    </div>
   );
 }

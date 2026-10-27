@@ -53,7 +53,7 @@ const nameLimit = 200;
  *
  * The root address goes to the notes of the workspace this device last
  * opened, and any other path goes to the same path under it (record 0091), so
- * `/settings` opens Settings inside the frame. This screen has no sidebar and
+ * `/settings` opens the Settings modal inside the frame. This screen has no sidebar and
  * no rail: it is only the step before the frame, while no workspace is known.
  */
 export function WorkspaceHome(): ReactNode {

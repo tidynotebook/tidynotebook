@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { queryAddress, queryValue, queryValues } from './address-query.ts';
+import {
+  queryWith,
+  queryAddress,
+  queryValue,
+  queryValues,
+} from './address-query.ts';
 
 await test('a member of the query reads decoded', () => {
   assert.equal(queryValue('?path=%2Fmembers%2Fjoin', 'path'), '/members/join');
@@ -37,4 +42,12 @@ await test('all values keep duplicates, decoded names, and form spaces', () => {
   assert.deepEqual(queryValues('?other=1', 'scope'), []);
   assert.equal(queryValues('?scope=%E0%A4%A', 'scope'), null);
   assert.equal(queryValues('?%E0%A4%A=1&scope=read', 'scope'), null);
+});
+
+await test('one member is replaced or removed, and the others keep their text', () => {
+  assert.equal(queryWith('', 'settings', 'account'), '?settings=account');
+  assert.equal(queryWith('?a=1&settings=x', 'settings', ''), '?a=1&settings=');
+  assert.equal(queryWith('?settings=x&a=b%20c', 'settings', null), '?a=b%20c');
+  assert.equal(queryWith('settings=x', 'settings', null), '');
+  assert.equal(queryWith('?a', 'settings', 'a b'), '?a&settings=a%20b');
 });

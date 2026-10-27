@@ -168,7 +168,6 @@ import {
   formatSidebarSize,
   parseSidebarSize,
   sidebarInsetClass,
-  displayedSidebarSize,
   sidebarSizeStorageKey,
   sidebarWidthPx,
   stepAfterKey,
@@ -210,6 +209,8 @@ import {
   useHeaderSlot,
 } from './header-slot.tsx';
 import { KeyHint } from './key-hint.tsx';
+import { SettingsModalHost, useOpenSettings } from './settings-modal.tsx';
+import { useSignOut } from './sign-out.tsx';
 import {
   syncDotClassName,
   syncFooter,
@@ -944,6 +945,9 @@ function SidebarResizer({
   );
 }
 
+/** The old Settings routes load through the frame chunk (issue 517). */
+export { loadLegacySettings } from './settings-modal.tsx';
+
 /** The application frame. */
 export function Shell(): ReactNode {
   const params = useParams();
@@ -985,6 +989,8 @@ function ShellFrame({
   const params = useParams();
   const matches = useMatches();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const openSettings = useOpenSettings();
+  const signOut = useSignOut(workspaceId);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [paletteView, setPaletteView] = useState<{
     readonly view: typeof CommandPalette;
@@ -1066,11 +1072,7 @@ function ShellFrame({
     folderForRoute(workspaceId, location.pathname, params['*']) ?? chosenFolder;
   const framePage = framePageOf(matches.map((match) => match.handle));
   const sidebar = useSidebarSize();
-  const displayedSidebar = displayedSidebarSize(
-    sidebar.size,
-    framePage === 'settings',
-    drawerOpen,
-  );
+  const displayedSidebar = sidebar.size;
   const {
     phoneButton: menuButtonRef,
     desktopButton: desktopMenuButtonRef,
@@ -1078,16 +1080,8 @@ function ShellFrame({
     rememberOpener,
     modal: navigationModal,
   } = useNavigationDrawer(drawerOpen, setDrawerOpen);
-  /** Settings opens or closes its navigation drawer and remembers the opener. Other pages collapse the sidebar. */
-  const toggleSidebar = useCallback(
-    (opener?: HTMLElement | null): void => {
-      if (framePage === 'settings') {
-        if (!drawerOpen) rememberOpener(opener);
-        setDrawerOpen((open) => !open);
-      } else sidebar.toggleCollapsed();
-    },
-    [framePage, sidebar.toggleCollapsed, drawerOpen, rememberOpener],
-  );
+  /** Collapses or shows the sidebar. Settings is a modal, so no page hides it. */
+  const toggleSidebar = sidebar.toggleCollapsed;
   const [sidebarView, setSidebarView] = useSidebarView();
   // The frame is the visible part of the screen, so iOS cannot scroll it
   // away under an open keyboard.
@@ -1174,11 +1168,16 @@ function ShellFrame({
       if (key === '\\') {
         event.preventDefault();
         toggleSidebar();
+        return;
+      }
+      if (key === ',') {
+        event.preventDefault();
+        openSettings();
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [toggleSidebar, openPalette]);
+  }, [toggleSidebar, openPalette, openSettings]);
 
   const cycleTheme = useCallback((): void => {
     const order = ['system', 'light', 'dark'] as const;
@@ -1215,7 +1214,7 @@ function ShellFrame({
       label: 'Settings',
       icon: actionIcon('settings'),
       onSelect: () => {
-        void navigate(`/w/${workspaceId}/settings`);
+        openSettings();
       },
     },
     {
@@ -1233,7 +1232,7 @@ function ShellFrame({
       id: 'sign-out',
       label: 'Sign out',
       icon: actionIcon('sign-out'),
-      onSelect: () => session.signOut(),
+      onSelect: signOut.start,
     },
   ];
 
@@ -1505,11 +1504,11 @@ function ShellFrame({
       })),
       {
         id: 'settings',
-        label: 'Go to Settings',
-        keywords: 'account theme sign out',
+        label: 'Open Settings',
+        keywords: 'account theme appearance preferences',
         icon: 'settings' as const,
         run: () => {
-          void navigate(`/w/${workspaceId}/settings`);
+          openSettings();
         },
       },
     ],
@@ -1522,6 +1521,7 @@ function ShellFrame({
       navigate,
       newNote.create,
       noteActions,
+      openSettings,
       otherWorkspaces,
       selectedFolder,
       toggleSidebar,
@@ -1602,9 +1602,7 @@ function ShellFrame({
               icon={<PanelLeftIcon />}
               ariaControls="notes-sidebar"
               ariaExpanded={!displayedSidebar.collapsed}
-              onClick={() => {
-                toggleSidebar(desktopMenuButtonRef.current);
-              }}
+              onClick={toggleSidebar}
             />
 
             <Breadcrumb
@@ -1819,6 +1817,8 @@ function ShellFrame({
               actions={paletteActions}
             />
           )}
+          <SettingsModalHost workspaceId={workspaceId} />
+          {signOut.dialog}
           {shortcutsOpen && ShortcutsView !== null ? (
             <ShortcutsView open onClose={() => setShortcutsOpen(false)} />
           ) : null}

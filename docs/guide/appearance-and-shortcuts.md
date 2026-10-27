@@ -20,14 +20,14 @@ and **Sign out**.
 To choose one setting directly:
 
 1. Open the account menu and select **Settings**.
-2. In the **Appearance** section, select **System**, **Light** or **Dark**.
-   **System** follows your device.
+2. In **Appearance and editor**, under **Mode**, select the **System**,
+   **Light** or **Dark** card. **System** follows your device.
 
 ## Change the theme
 
 1. Open the account menu and select **Settings**.
-2. In the **Appearance** section, select a theme under **Theme**. Each theme
-   has a swatch that shows how it looks in your current light or dark choice.
+2. In **Appearance and editor**, select a theme card under **Theme**. Each
+   card shows how the theme looks in your current light or dark choice.
 
 A theme can have a light version and a dark version. Your light or dark choice
 keeps the same theme.

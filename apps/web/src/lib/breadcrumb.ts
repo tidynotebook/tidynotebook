@@ -115,6 +115,14 @@ export const pageParents: Readonly<Record<FramePage, FramePage | null>> = {
   'not-found': 'notes',
 };
 
+/**
+ * Settings is a modal and not a page (issue 517), so the way up to it opens
+ * the modal at Account over the note list.
+ */
+function settingsAddress(home: string): string {
+  return `${home}?settings=account`;
+}
+
 /** The one back control of a page: where it goes and what it is called. */
 export type BackTarget = { readonly to: string; readonly label: string };
 
@@ -139,7 +147,7 @@ export function backTarget(
         ? { to: home, label: 'Back to your notes' }
         : { to: `${home}/notes/${fileId}`, label: 'Back to the note' };
     case 'settings':
-      return { to: `${home}/settings`, label: 'Back to Settings' };
+      return { to: settingsAddress(home), label: 'Back to Settings' };
     default:
       return { to: home, label: 'Back to your notes' };
   }
@@ -182,6 +190,8 @@ export function parentPartOf(
           };
     case 'not-found':
       return null;
+    case 'settings':
+      return { label: context.titles.settings, to: settingsAddress(home) };
     default:
       return { label: context.titles[parent], to: `${home}/${parent}` };
   }

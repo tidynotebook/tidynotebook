@@ -3,7 +3,7 @@ import test, { after } from 'node:test';
 import { registerHooks } from 'node:module';
 import { Window } from 'happy-dom';
 import { act, createElement, useState } from 'react';
-import { MemoryRouter } from 'react-router';
+import { MemoryRouter, useLocation } from 'react-router';
 import {
   reads,
   creations,
@@ -86,6 +86,14 @@ globalThis.fetch = () => {
   return Promise.reject(new TypeError('The connection is unavailable.'));
 };
 
+/** The address that the router shows now. */
+let address = '';
+function LocationProbe() {
+  const location = useLocation();
+  address = `${location.pathname}${location.search}`;
+  return null;
+}
+
 function Dialog({
   workspaceId,
   frameNotices = false,
@@ -120,7 +128,8 @@ async function show(workspaceId: string, frameNotices = false): Promise<void> {
     root.render(
       createElement(
         MemoryRouter,
-        null,
+        { initialEntries: ['/w/one/notes/n1'] },
+        createElement(LocationProbe),
         createElement(Dialog, { key: workspaceId, workspaceId, frameNotices }),
       ),
     );
@@ -428,13 +437,19 @@ await test('Back restores list focus and Manage templates sits in the header', a
   await click('Back');
   assert.equal(document.activeElement, row);
   assert.equal(focusedWhileHidden, false);
-  const manage = container.querySelector('a[aria-label="Manage templates"]');
-  assert.match(
-    manage?.getAttribute('href') ?? '',
-    /settings#templates-heading$/,
+  const manage = container.querySelector<HTMLButtonElement>(
+    'button[aria-label="Manage templates"]',
   );
-  // The link is in the title row, before the list.
-  assert.ok(manage?.parentElement?.querySelector('h2'));
+  assert.ok(manage);
+  // The control is in the title row, before the list, and it is no link to
+  // a Settings route.
+  assert.ok(manage.parentElement?.querySelector('h2'));
+  assert.equal(container.querySelector('a[href*="settings"]'), null);
+  // It closes the dialog and opens Settings at Templates over the same page.
+  await act(async () => manage.click());
+  await settle();
+  assert.equal(container.querySelector('[role="dialog"]'), null);
+  assert.equal(address, '/w/one/notes/n1?settings=templates');
 });
 
 await test('an incomplete list with no available templates does not claim a search miss', async () => {

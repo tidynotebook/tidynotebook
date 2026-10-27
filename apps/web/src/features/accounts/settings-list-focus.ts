@@ -1,4 +1,4 @@
-/** Return focus to the visible settings row after leaving its phone page. */
+/** Return focus to the visible Settings row after Back on a phone. */
 import { useEffect, useRef, type RefObject } from 'react';
 
 /** Focus the originating visible row after Back, without crossing workspace scope. */
@@ -17,9 +17,10 @@ export function useSettingsListFocus(
       path !== undefined
     )
       return;
-    const row = [...(list.current?.querySelectorAll('a') ?? [])].find(
-      (link) => link.getAttribute('href') === `${scope}/${before.path}`,
-    );
+    const row = [
+      ...(list.current?.querySelectorAll<HTMLElement>('[data-settings-page]') ??
+        []),
+    ].find((item) => item.dataset['settingsPage'] === before.path);
     row?.focus();
   }, [scope, path]);
   return list;

@@ -41,6 +41,12 @@ export type { DialogWidth } from './dialog-classes.ts';
 const focusableSelector =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+/** Whether an element is on the screen, where the browser can tell. */
+function shown(element: HTMLElement): boolean {
+  const check: unknown = Reflect.get(element, 'checkVisibility');
+  return typeof check !== 'function' || element.checkVisibility();
+}
+
 /** Marks the page behind the dialog inert where the browser supports it. */
 function setPageInert(panel: HTMLElement | null, inert: boolean): () => void {
   const body = document.body;
@@ -123,16 +129,31 @@ export function Dialog({
     const releaseInert = setPageInert(panel, true);
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    // A control that a responsive class hides takes no focus, so the trap
+    // and the first focus skip it. A browser with no visibility check keeps
+    // every control.
     const focusables = (): HTMLElement[] =>
       panel === null
         ? []
-        : Array.from(panel.querySelectorAll<HTMLElement>(focusableSelector));
+        : Array.from(
+            panel.querySelectorAll<HTMLElement>(focusableSelector),
+          ).filter((element) => shown(element));
+    const root = panel?.closest('[data-notes-dialog-root]') ?? null;
     window.requestAnimationFrame(() => {
       const targets = focusables();
       if (panel !== null && !panel.contains(document.activeElement))
         (targets[0] ?? panel).focus();
     });
     const onKeyDown = (event: KeyboardEvent): void => {
+      // A dialog that this one opened, such as a confirmation inside
+      // Settings, owns the keys while it is open.
+      if (
+        event.target instanceof Element &&
+        root !== null &&
+        event.target.closest('[data-notes-dialog-root]') !== root &&
+        root.contains(event.target)
+      )
+        return;
       if (event.key === 'Escape') {
         // A popup inside the dialog, such as a folder tree under a field,
         // closes itself first, and the dialog stays open.
