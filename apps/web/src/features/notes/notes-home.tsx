@@ -244,13 +244,6 @@ export function NotesHomeView(): ReactNode {
         workspaceId={workspaceId}
         folder={folder}
       />
-      {folder === '' ? null : (
-        <FolderPageActions
-          key={`${workspaceId}:${folder}`}
-          workspaceId={workspaceId}
-          folder={folder}
-        />
-      )}
     </div>
   );
   const keepOffset = useKeptOffset(`${workspaceId}:${folder}`, !files.loading);
@@ -270,9 +263,18 @@ export function NotesHomeView(): ReactNode {
               : `${subfolders.length === 0 ? '' : `${String(subfolders.length)} ${subfolders.length === 1 ? 'folder' : 'folders'}, `}${String(total)} ${total === 1 ? 'note' : 'notes'}`
           }
           actions={
-            showNewNoteInHeader(files.loading, total + subfolders.length)
-              ? actions
-              : undefined
+            <div className="flex flex-wrap items-center gap-2">
+              {showNewNoteInHeader(files.loading, total + subfolders.length)
+                ? actions
+                : null}
+              {folder === '' ? null : (
+                <FolderPageActions
+                  key={`${workspaceId}:${folder}`}
+                  workspaceId={workspaceId}
+                  folder={folder}
+                />
+              )}
+            </div>
           }
         />
         {files.loading || total === 0 || folder !== '' ? null : (

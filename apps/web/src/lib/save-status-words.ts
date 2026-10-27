@@ -30,6 +30,20 @@ export function saveStatusWords(input: {
       detail: 'Saving on this device.',
     };
   const kind = input.state.kind;
+  if (kind === 'starting')
+    return {
+      pill: 'Saving',
+      line: 'Connecting to the server.',
+      title: 'Connecting',
+      detail: syncStateMessage(input.state, input.noteName ?? null),
+    };
+  if (kind === 'in-step' && input.pending)
+    return {
+      pill: 'Saving',
+      line: 'Waiting to upload',
+      title: 'Saved on this device',
+      detail: 'Saved on this device. Waiting to upload.',
+    };
   if (kind === 'signed-out' || kind === 'other-account')
     return {
       pill: 'Paused',

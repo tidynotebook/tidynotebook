@@ -28,6 +28,7 @@ import { problemMessage, useSession } from '../../app.tsx';
 import {
   verificationTokenOf,
   verificationRecoveryOf,
+  verificationTitleOf,
 } from '../../lib/accounts.ts';
 import { problemCode } from '../../lib/problem-text.ts';
 import { passwordProblem, passwordRule } from '../../lib/password-policy.ts';
@@ -233,7 +234,11 @@ export function VerifyPage(): ReactNode {
   const { refresh } = useSession();
   const [state, setState] = useState<VerifyState>({ kind: 'loading' });
   const [attempt, setAttempt] = useState(0);
-  useDocumentTitle('Finish your account');
+  const title = verificationTitleOf(
+    state.kind,
+    state.kind === 'invalid' ? state.reason : undefined,
+  );
+  useDocumentTitle(title);
 
   useEffect(() => {
     const token = verificationTokenOf(location.hash);
@@ -281,17 +286,7 @@ export function VerifyPage(): ReactNode {
       : { path: '/login', label: 'Continue to sign in' };
 
   return (
-    <AuthFrame
-      title={
-        state.kind === 'verified'
-          ? 'Email verified'
-          : state.kind === 'invalid'
-            ? state.reason === 'registration_closed'
-              ? 'New accounts are closed'
-              : 'This link no longer works'
-            : 'Check your email'
-      }
-    >
+    <AuthFrame title={title}>
       {state.kind === 'loading' ? (
         <LoadingState label="The link is loading." />
       ) : state.kind === 'unreachable' ? (

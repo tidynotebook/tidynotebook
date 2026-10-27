@@ -30,9 +30,8 @@ export function WritingStart({
       </Button>
       <Button
         variant="ghost"
-        size="sm"
+        size="touch"
         label="Close tips"
-        className="size-11 md:size-11"
         icon={<CloseIcon />}
         onClick={() => {
           setDismissed(true);

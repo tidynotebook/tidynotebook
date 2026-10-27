@@ -46,7 +46,7 @@ export const focusOutlineInset =
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
 /** How large a button is. */
-export type ButtonSize = 'sm' | 'md';
+export type ButtonSize = 'sm' | 'md' | 'touch';
 
 /**
  * The tone of a quiet button.
@@ -187,17 +187,22 @@ export function buttonClassName(
   // Touch pointers get the 44 px minimum. A mouse pointer keeps the compact
   // control scale, so the chrome stays quiet on a desktop screen: 32 px for a
   // button and 28 px for a small one.
-  const sizeClass = options.iconOnly
-    ? size === 'sm'
-      ? 'size-11 px-0 md:size-7'
-      : 'size-11 px-0 md:size-8'
-    : compact
-      ? size === 'sm'
-        ? 'min-h-11 px-0 md:min-h-7'
-        : 'min-h-11 px-0 md:min-h-8'
-      : size === 'sm'
-        ? 'min-h-11 px-2.5 md:min-h-7'
-        : 'min-h-11 px-3 md:min-h-8';
+  const sizeClass =
+    size === 'touch'
+      ? options.iconOnly
+        ? 'size-11 px-0'
+        : 'min-h-11 px-3'
+      : options.iconOnly
+        ? size === 'sm'
+          ? 'size-11 px-0 md:size-7'
+          : 'size-11 px-0 md:size-8'
+        : compact
+          ? size === 'sm'
+            ? 'min-h-11 px-0 md:min-h-7'
+            : 'min-h-11 px-0 md:min-h-8'
+          : size === 'sm'
+            ? 'min-h-11 px-2.5 md:min-h-7'
+            : 'min-h-11 px-3 md:min-h-8';
   return [
     `inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-control font-medium no-underline ${transitionSurface} ${compact ? 'focus-visible:outline-none' : focusOutline} disabled:cursor-not-allowed`,
     variantClass,

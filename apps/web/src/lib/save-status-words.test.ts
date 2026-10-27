@@ -29,6 +29,7 @@ await test('status words use the approved pill and short menu line', () => {
 await test('a failed device write always blocks a saved claim', () => {
   for (const state of [
     { kind: 'in-step' },
+    { kind: 'starting' },
     { kind: 'sending' },
     { kind: 'other-account' },
     { kind: 'attention', parked: 1 },
@@ -76,4 +77,21 @@ await test('existing device-write proof permits offline and uploading details', 
     saveStatusWords({ ...durable, state: { kind: 'signed-out' } }).pill,
     'Paused',
   );
+});
+
+await test('durable work distinguishes connecting, waiting and actual uploading', () => {
+  const durable = { ...base, pending: true, localWritePending: false };
+  const connecting = saveStatusWords({
+    ...durable,
+    state: { kind: 'starting' },
+  });
+  assert.equal(connecting.line, 'Connecting to the server.');
+  assert.equal(connecting.detail, 'Connecting to the server.');
+  const waiting = saveStatusWords(durable);
+  assert.equal(waiting.line, 'Waiting to upload');
+  assert.equal(waiting.detail, 'Saved on this device. Waiting to upload.');
+  const uploading = saveStatusWords({ ...durable, state: { kind: 'sending' } });
+  assert.equal(uploading.line, 'Uploading...');
+  assert.equal(uploading.detail, 'Saved on this device. Uploading now.');
+  assert.equal(saveStatusWords({ ...durable, failed: true }).pill, 'Not saved');
 });

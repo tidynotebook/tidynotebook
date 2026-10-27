@@ -370,3 +370,17 @@ export function registrationPolicyText(
 export function registrationPolicyLocked(source: SettingSource): boolean {
   return source === 'environment';
 }
+
+/** The browser title and page heading state the same verification outcome. */
+export function verificationTitleOf(
+  state: 'loading' | 'unreachable' | 'verified' | 'invalid',
+  reason?: 'registration_closed' | 'verification_invalid',
+): string {
+  return state === 'verified'
+    ? 'Email verified'
+    : state === 'invalid'
+      ? reason === 'registration_closed'
+        ? 'New accounts are closed'
+        : 'This link no longer works'
+      : 'Check your email';
+}

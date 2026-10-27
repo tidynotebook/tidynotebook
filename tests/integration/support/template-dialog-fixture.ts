@@ -8,6 +8,10 @@ export const reads: {
 }[] = [];
 export const creations: { folder: string; text: string | undefined }[] = [];
 let creationError: string | null = null;
+let duplicates = false;
+export function setDuplicateTemplates(value: boolean): void {
+  duplicates = value;
+}
 let availability = { empty: false, partial: false };
 export function setTemplateAvailability(value: typeof availability): void {
   availability = value;
@@ -32,7 +36,12 @@ export function useFiles() {
   return {
     notes: availability.empty
       ? []
-      : [{ fileId: templateId, path: 'Templates/Meeting.md' }],
+      : duplicates
+        ? [
+            { fileId: templateId, path: 'Templates/First/Meeting.md' },
+            { fileId: 'second-template', path: 'Templates/Second/Meeting.md' },
+          ]
+        : [{ fileId: templateId, path: 'Templates/Meeting.md' }],
     emptyFolders: [],
     loading: false,
     limitNotice: availability.partial ? 'The list is incomplete.' : null,

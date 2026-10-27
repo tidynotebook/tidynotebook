@@ -760,6 +760,37 @@ await test('the open note stays pending from first edit through draft and checkp
       );
       await act(settle);
       assert.equal(container.querySelector('.cm-editor'), null);
+      assert.equal(
+        container
+          .querySelector('output')
+          ?.getAttribute('data-local-write-pending'),
+        'false',
+      );
+      // Happy DOM initializes media listeners at false. Establish the wide
+      // match before checking both real viewport transitions.
+      await act(async () =>
+        browser.happyDOM.setWindowSize({ width: 1441, height: 900 }),
+      );
+      await act(async () =>
+        browser.happyDOM.setWindowSize({ width: 390, height: 844 }),
+      );
+      const tabs = [...container.querySelectorAll('[role="tab"]')];
+      assert.equal(tabs.length, 2);
+      for (const tab of tabs) {
+        const panel = container.querySelector(
+          `[id="${tab.getAttribute('aria-controls')}"]`,
+        );
+        assert.equal(panel?.getAttribute('role'), 'tabpanel');
+        assert.equal(panel?.getAttribute('aria-labelledby'), tab.id);
+      }
+      await act(async () =>
+        browser.happyDOM.setWindowSize({ width: 1440, height: 900 }),
+      );
+      for (const id of ['recovery-device', 'recovery-saved']) {
+        const panel = container.querySelector(`[id="${id}"]`);
+        assert.equal(panel?.getAttribute('role'), 'region');
+        assert.equal(panel?.getAttribute('aria-labelledby'), `${id}-heading`);
+      }
       assert.equal((await store.pending(accountId, workspaceId)).length, 0);
       assert.equal(
         (await store.readDraft(accountId, workspaceId, copy))?.text,

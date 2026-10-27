@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { isLocalStorageError, type LocalStore } from '@notesapp/sync';
 import { generateUUID } from '@notesapp/core';
 import {
@@ -41,11 +41,21 @@ export function StaleDraftRecovery({
     {},
   );
   const [recoveryId] = useState(generateUUID);
+  const [viewport] = useState(() => window.matchMedia('(min-width: 1024px)'));
+  const wide = useSyncExternalStore(
+    (changed) => {
+      viewport.addEventListener('change', changed);
+      return () => viewport.removeEventListener('change', changed);
+    },
+    () => viewport.matches,
+    () => false,
+  );
   const publish = useNoteSavePublisher();
   useEffect(() => {
     publish(
       noteSaveReport({
         pendingSave: true,
+        localWritePending: false,
         storageError: null,
         lastSavedAt: null,
       }),
@@ -153,10 +163,14 @@ export function StaleDraftRecovery({
           <section
             key={entry}
             id={`recovery-${entry}`}
-            aria-label={entry === 'device' ? 'This device' : 'Saved version'}
+            role={wide ? 'region' : 'tabpanel'}
+            aria-labelledby={`recovery-${entry}-${wide ? 'heading' : 'tab'}`}
             className={tab === entry ? 'min-w-0' : 'hidden min-w-0 lg:block'}
           >
-            <h2 className="mb-2 mt-0 hidden text-control font-semibold lg:block">
+            <h2
+              id={`recovery-${entry}-heading`}
+              className="mb-2 mt-0 hidden text-control font-semibold lg:block"
+            >
               {entry === 'device' ? 'This device' : 'Saved version'}
             </h2>
             <pre
