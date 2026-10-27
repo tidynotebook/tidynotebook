@@ -88,6 +88,7 @@ CHECKLIST = [
 
 
 def foundations():
+    """Return the foundations section with colors, controls and icons."""
     type_rows = [
         ("Page title, phone", "30 / 36, bold", '<span style="font-size:30px;font-weight:700;letter-spacing:-.02em">All notes</span>'),
         ("Sheet and bar title", "17 to 18 / 24, bold", '<span style="font-size:18px;font-weight:700">Use a template</span>'),
@@ -105,10 +106,12 @@ def foundations():
             ("Link", "#6fa8f5"), ("Success", "#59b871"), ("Danger", "#f5817d"), ("Border", "#807e79")]
 
     def sw(lst):
+        """Return color swatches for one token list."""
         return '<div class="swatches">' + "".join(f'<div class="sw"><i style="background:{v}"></i><span><b>{n}</b>{v}</span></div>' for n, v in lst) + "</div>"
     spacing = '<div class="spacing">' + "".join(f'<div><i style="width:{s}px;height:{s}px"></i>{s}</div>' for s in (4, 8, 12, 16, 24, 32)) + "</div>"
 
     def bstates(dark_):
+        """Return the button states in light or dark theme."""
         cls = " t-dark" if dark_ else ""
         cells = [
             ("Primary", btn("New note", "p md", "plus")), ("Secondary", btn("Use template", "s md", "template")),
@@ -123,6 +126,7 @@ def foundations():
     icons = '<div class="iconset">' + "".join(f'<div>{ic(n)}{n}</div>' for n in ICONS if n not in ("arrow", "signal", "wifi", "quote", "sparkle", "users", "eye", "share")) + "</div>"
 
     def comps(dark_):
+        """Return the shared components in light or dark theme."""
         spelling_switch = '<span class="switch on" role="switch" aria-checked="true" aria-label="Check spelling"></span>'
         cls = " t-dark" if dark_ else ""
         return (f'<div class="screen{cls}" style="height:auto;border-radius:12px;padding:18px;border:1px solid var(--subtle);gap:12px">'
@@ -172,6 +176,7 @@ def foundations():
 
 
 def build():
+    """Build the index page."""
     toc = '<div class="toc">' + "".join(f'<a href="{h}"><b>{t}</b><span>{d}</span></a>' for h, t, d in PAGES) + "</div>"
     ba = ('<div class="beforeafter"><div>Shipped in v0.22.0</div><div>Proposed</div>' +
           "".join(f"<div>{a}</div><div>{b}</div>" for a, b in BEFORE_AFTER) + "</div>")

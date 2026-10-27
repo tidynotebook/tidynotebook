@@ -133,6 +133,7 @@ export function NewFolderDialog({
     setError(null);
   }, [open, parent]);
 
+  /** Check the typed name and create the folder under the current parent. */
   const create = (): void => {
     const child = cleanNoteBaseName(nameRef.current);
     if (child.includes('/')) {

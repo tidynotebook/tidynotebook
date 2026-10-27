@@ -3,6 +3,7 @@ from p_notes import all_notes, account_menu
 
 
 def settings_list(theme="", hots="", appearance="System", billing=True):
+    """Return the phone Settings list."""
     rows_general = srow("palette", "Appearance", appearance) + srow("spell", "Check spelling", chev=False, right='<span class="switch on" role="switch" aria-checked="true" aria-label="Check spelling"></span>')
     rows_notes = (srow("today", "Daily notes") + srow("template", "Templates") + srow("offline", "Offline") +
                   srow("archive", "Export and import"))
@@ -18,6 +19,7 @@ def settings_list(theme="", hots="", appearance="System", billing=True):
 
 
 def detail(title, inner, theme="", overlay="", hots="", foot=""):
+    """Return a Settings detail screen with a title and content."""
     f = (f'<div style="padding:12px 16px 34px;border-top:1px solid var(--subtle);background:var(--surface)">{foot}</div>' if foot else "")
     body = (appbar("back", title, "", line=False) +
             f'<div class="scroll sbg" style="padding:4px 16px 24px">{inner}</div>{f}')
@@ -25,6 +27,7 @@ def detail(title, inner, theme="", overlay="", hots="", foot=""):
 
 
 def swatch(name, a, b, on=False):
+    """Return one theme swatch."""
     border = "2px solid var(--strong)" if on else "1px solid var(--subtle)"
     chk = f'<span style="position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;background:var(--fill);color:var(--onfill);display:flex;align-items:center;justify-content:center">{ic("check", "xs")}</span>' if on else ""
     return (f'<div style="border:{border};border-radius:14px;padding:8px;background:var(--card);position:relative">'
@@ -33,6 +36,7 @@ def swatch(name, a, b, on=False):
 
 
 def appearance(mode="System", theme="", hots=""):
+    """Return the Appearance settings screen."""
     seg = "".join(f'<span class="{"on" if mode == m else ""}">{ic(i)}{m}</span>' for m, i in
                   [("System", "monitor"), ("Light", "sun"), ("Dark", "moon")])
     grid_ = (f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
@@ -47,6 +51,7 @@ def appearance(mode="System", theme="", hots=""):
 
 
 def spelling():
+    """Return the Spelling settings screen."""
     spelling_switch = '<span class="switch on" role="switch" aria-checked="true" aria-label="Check spelling"></span>'
     inner = (f'<div style="height:8px"></div><ul class="slist">{srow("", "Check spelling", chev=False, sub="Uses your browser languages", right=spelling_switch)}</ul>'
              f'<p class="sfoot">Code and web addresses are not checked.</p>')
@@ -54,6 +59,7 @@ def spelling():
 
 
 def daily_notes():
+    """Return the Daily notes settings screen."""
     inner = (f'<div style="height:8px"></div>{destrow("Folder", "Daily")}'
              f'<div class="slabel">Note name</div><ul class="slist">'
              f'<li class="srow"><span class="radio on"></span><span class="main"><span class="nm">2026-10-27</span></span></li>'
@@ -65,7 +71,9 @@ def daily_notes():
 
 
 def templates_settings():
+    """Return the Templates settings screen."""
     def t(n):
+        """Return one template row."""
         return f'<li class="row"><span class="ic">{ic("template")}</span><span class="main"><span class="nm">{n}</span></span><span class="chev">{ic("chev")}</span></li>'
     inner = (f'<div style="height:8px"></div>{destrow("Folder", "Templates")}'
              f'<p class="sfoot">Notes in this folder show in Use template.</p>'
@@ -76,6 +84,7 @@ def templates_settings():
 
 
 def offline(state="ready", theme=""):
+    """Return the Offline settings screen in one state."""
     sw = '<span class="switch on" role="switch" aria-checked="true" aria-label="Images"></span>'
     swo = '<span class="switch" role="switch" aria-checked="false" aria-label="Older versions"></span>'
     if state == "loading":
@@ -94,6 +103,7 @@ def offline(state="ready", theme=""):
 
 
 def export_import(state="ready"):
+    """Return the Export and import screen in one state."""
     if state == "busy":
         exp = (f'<div class="slist" style="padding:14px"><div class="strong">Preparing your download</div>'
                f'<div class="meter" style="margin:10px 0 6px"><i style="width:62%"></i></div><p class="sfoot" style="padding:0">31 of 50 notes</p></div>')
@@ -110,6 +120,7 @@ def export_import(state="ready"):
 
 
 def profile(overlay=""):
+    """Return the Profile and email screen."""
     save_name = btn("Save name", "s md dis", extra='aria-disabled="true"')
     inner = (f'<div style="height:8px"></div><label class="flabel">Name</label><div class="field">Mira Patel</div>'
              f'<div style="margin-top:10px">{save_name}</div>'
@@ -120,6 +131,7 @@ def profile(overlay=""):
 
 
 def delete_alert():
+    """Return the Delete account confirmation."""
     return ('<div class="scrim"></div><div class="alert"><h2>Delete your account?</h2>'
             '<p>All notes in all workspaces are deleted for good.</p>'
             '<label class="flabel">Password</label><div class="field focus">&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</div>'
@@ -127,6 +139,7 @@ def delete_alert():
 
 
 def billing():
+    """Return the Billing screen."""
     inner = (f'<div style="height:8px"></div><div class="slist" style="padding:16px">'
              f'<div style="display:flex;align-items:center;gap:8px"><span class="strong" style="font-size:17px">Free trial</span>'
              f'<span class="pill" style="height:26px;font-size:13px">12 days left</span></div>'
@@ -138,7 +151,9 @@ def billing():
 
 
 def devices():
+    """Return the Devices screen."""
     def d(icon, name, sub, act=True):
+        """Return one device row with an optional Sign out action."""
         b = btn("Sign out", "s sm") if act else ""
         return srow(icon, name, chev=False, sub=sub, right=b)
     inner = (f'<p class="sfoot" style="padding-top:8px">Signed in to your account.</p><div style="height:8px"></div><ul class="slist">'
@@ -149,7 +164,9 @@ def devices():
 
 
 def keys(overlay=""):
+    """Return the API keys screen."""
     def k(name, sub):
+        """Return one API key row."""
         return srow("key", name, chev=False, sub=sub, right=btn("Revoke", "s sm"))
     inner = (f'<div class="slabel">API keys</div><p class="sfoot" style="padding:0 4px 8px">A key can read and change all your notes. Keep it secret.</p>'
              f'<ul class="slist">{k("Backup script", "Expires in 80 days")}{k("Laptop CLI", "Never used")}</ul>'
@@ -159,6 +176,7 @@ def keys(overlay=""):
 
 
 def create_key_sheet(step="form"):
+    """Return the Create API key sheet for one step."""
     if step == "form":
         body = (f'<label class="flabel">Program name</label><div class="field focus">Backup script<span class="caret" style="height:20px"></span></div>'
                 f'<div style="height:14px"></div><label class="flabel">Expires after</label>'
@@ -170,6 +188,7 @@ def create_key_sheet(step="form"):
 
 
 def signout_sheet(unsent=True):
+    """Return the Sign out sheet, with an optional unsent changes warning."""
     if unsent:
         body = notice("warn", "2 changes are not uploaded yet.") + '<p class="help" style="margin-top:10px">Keep them on this device for your next sign-in, or remove them.</p>'
         foot = btn("Sign out and keep them", "p full") + btn("Sign out and remove them", "dl full") + btn("Cancel", "t full")
@@ -180,6 +199,7 @@ def signout_sheet(unsent=True):
 
 
 def build():
+    """Build the Settings prototype page."""
     j = journey("Journey 6: switch to dark mode", "From any screen: avatar, Settings, Appearance, Dark.", [
         fig("C1", "Account menu", all_notes(extra_overlay=account_menu(), hots=tap(120, 579)), ["Tap Settings."]),
         arrow("Tap Settings"),

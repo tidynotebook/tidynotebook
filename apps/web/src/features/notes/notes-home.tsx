@@ -92,6 +92,7 @@ function useKeptOffset(
     if (scroller === null) return;
     const kept = keptOffsets.get(scopeKey);
     scroller.scrollTop = kept ?? 0;
+    /** Keep the list scroll offset for this scope so a return restores it. */
     const remember = (): void => {
       keptOffsets.set(scopeKey, scroller.scrollTop);
     };

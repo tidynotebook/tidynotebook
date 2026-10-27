@@ -82,6 +82,7 @@ ICONS = {
 
 
 def sprite():
+    """Return the hidden SVG sprite with every icon symbol."""
     out = ['<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>']
     for name, body in ICONS.items():
         vb = "0 0 52 20" if name == "arrow" else "0 0 24 24"
@@ -91,6 +92,7 @@ def sprite():
 
 
 def ic(name, cls="", label=None):
+    """Return one icon from the sprite, decorative unless a label is given."""
     aria = f'role="img" aria-label="{label}"' if label else 'aria-hidden="true"'
     return f'<svg class="i {cls}" {aria}><use href="#i-{name}"/></svg>'
 
@@ -98,25 +100,30 @@ def ic(name, cls="", label=None):
 # ---------------- primitives ----------------
 
 def ibtn(name, label, cls="", extra=""):
+    """Return an icon-only button with an accessible label."""
     return f'<span class="ibtn {cls}" role="button" aria-label="{label}" title="{label}" {extra}>{ic(name)}</span>'
 
 
 def btn(label, kind="s", icon=None, cls="", extra=""):
+    """Return a text button of the given kind with an optional leading icon."""
     i = ic(icon) if icon else ""
     return f'<span class="btn {kind} {cls}" role="button" {extra}>{i}{label}</span>'
 
 
 def avatar(letter="M"):
+    """Return a round account avatar with one letter."""
     return f'<span class="ibtn" role="button" aria-label="Account menu"><span class="avatar">{letter}</span></span>'
 
 
 def statusbar(time="9:41", signal=True):
+    """Return the phone status bar with time and signal icons."""
     sig = ic("signal") if signal else '<span style="opacity:.3;display:inline-flex">' + ic("signal") + "</span>"
     return (f'<div class="statusbar"><span>{time}</span><span class="island"></span>'
             f'<span class="sys">{sig}{ic("wifi") if signal else ""}<span class="batt"></span></span></div>')
 
 
 def appbar(left="menu", title="", right="", line=False, center=False):
+    """Return a phone app bar with left action, title and right actions."""
     lefts = {
         "menu": ibtn("menu", "Open menu"),
         "back": ibtn("back", "Back"),
@@ -129,10 +136,12 @@ def appbar(left="menu", title="", right="", line=False, center=False):
 
 
 def topbar_home():
+    """Return the All notes top bar for the phone home screen."""
     return appbar("menu", "", ibtn("search", "Search") + avatar())
 
 
 def phone(body, theme="", time="9:41", signal=True, overlay="", hots="", bg=""):
+    """Wrap a screen body in a phone frame with status bar and overlays."""
     th = (" t-dark" if theme == "dark" else "") + (" sbgs" if bg else "")
     style = f' style="background:{bg}"' if bg else ""
     return (f'<div class="phone"><div class="screen{th}"{style}>{statusbar(time, signal)}{body}{overlay}'
@@ -140,6 +149,7 @@ def phone(body, theme="", time="9:41", signal=True, overlay="", hots="", bg=""):
 
 
 def desktop(body, url="notes.example.com", theme="", overlay="", hots="", size=""):
+    """Wrap a screen body in a desktop browser frame."""
     th = " t-dark" if theme == "dark" else ""
     return (f'<div class="desktop {size}"><div class="chrome"><span class="lights"><i></i><i></i><i></i></span>'
             f'<span class="url">{ic("lock", "xs")}&nbsp;{url}</span><span style="width:52px"></span></div>'
@@ -147,6 +157,7 @@ def desktop(body, url="notes.example.com", theme="", overlay="", hots="", size="
 
 
 def fig(sid, title, frame, notes=(), wide=False, tags=()):
+    """Return a figure card with a frame, numbered notes and tags."""
     ol = "".join(f"<li>{n}</li>" for n in notes)
     tg = "".join(f"<span>{t}</span>" for t in tags)
     chips = f'<div class="chiplist">{tg}</div>' if tags else ""
@@ -156,48 +167,58 @@ def fig(sid, title, frame, notes=(), wide=False, tags=()):
 
 
 def hot(n, x, y):
+    """Return a numbered hotspot marker at a position in a frame."""
     return f'<span class="hot" style="left:{x}px;top:{y}px">{n}</span>'
 
 
 def tap(x, y):
+    """Return a tap indicator at a position in a frame."""
     return f'<span class="tap" style="left:{x}px;top:{y}px"></span>'
 
 
 def arrow(label):
+    """Return a labeled arrow between the steps of a journey."""
     return f'<div class="step-arrow"><svg viewBox="0 0 52 20"><use href="#i-arrow"/></svg>{label}</div>'
 
 
 def journey(title, desc, items):
+    """Return a journey strip with a title, description and steps."""
     inner = "".join(items)
     return f'<div class="jhead"><h3>{title}</h3><p>{desc}</p></div><div class="journey">{inner}</div>'
 
 
 def section(sid, title, lead, inner):
+    """Return a page section with an anchor, title and lead text."""
     return f'<section class="sec" id="{sid}"><h2>{title}</h2><p class="lead">{lead}</p>{inner}</section>'
 
 
 def grid(*figs):
+    """Return a responsive grid of figures."""
     return f'<div class="grid">{"".join(figs)}</div>'
 
 
 # ---------------- composite pieces ----------------
 
 def note_row(name, when, folder=None, cls="", icon="file"):
+    """Return one note row with name, time and optional folder."""
     f = f' <span class="fold">· {folder}</span>' if folder else ""
     return (f'<li class="row {cls}"><span class="ic">{ic(icon)}</span><span class="main"><span class="nm">{name}{f}</span></span>'
             f'<span class="meta">{when}</span></li>')
 
 
 def folder_row(name, count, cls=""):
+    """Return one folder row with its note count."""
     return (f'<li class="row {cls}"><span class="ic">{ic("folder")}</span><span class="main"><span class="nm">{name}</span></span>'
             f'<span class="count">{count}</span></li>')
 
 
 def nav_row(icon, name, right="", cls=""):
+    """Return one navigation row for the drawer or sidebar."""
     return f'<li class="row {cls}"><span class="ic">{ic(icon)}</span><span class="main"><span class="nm">{name}</span></span>{right}</li>'
 
 
 def srow(icon, name, val="", chev=True, cls="", sub="", right=""):
+    """Return one settings row with value, subtitle and trailing control."""
     ico = f'<span class="ico">{ic(icon)}</span>' if icon else ""
     s = f'<span class="sub">{sub}</span>' if sub else ""
     v = f'<span class="val">{val}</span>' if val else ""
@@ -206,22 +227,26 @@ def srow(icon, name, val="", chev=True, cls="", sub="", right=""):
 
 
 def tipline(text, extra=""):
+    """Return a one-line writing tip."""
     return (f'<div class="tipline" role="note" {extra}>{ic("bulb")}<span class="txt">{text}</span>'
             f'{ibtn("x", "Hide tips")}</div>')
 
 
 def notice(kind, text, icon=None, act=""):
+    """Return an inline notice of the given kind with an optional action."""
     icons = {"bad": "alert", "info": "info", "warn": "warn", "ok": "checkcircle"}
     a = f'<div class="act">{act}</div>' if act else ""
     return f'<div class="notice {kind}">{ic(icon or icons[kind])}<div class="txt">{text}{a}</div></div>'
 
 
 def destrow(key, val, icon="folder", action="Change"):
+    """Return a destination row, such as a folder, with a Change action."""
     return (f'<div class="destrow"><span class="ic">{ic(icon, "s")}</span><span class="main"><span class="k">{key}</span>'
             f'<span class="v" style="display:block">{val}</span></span>{btn(action, "s sm")}</div>')
 
 
 def sheet(title, body, foot="", top=None, back=False, close=True, height=None, np=False):
+    """Return a bottom sheet with title bar, body and optional footer."""
     pos = f"top:{top}px" if top is not None else (f"height:{height}px" if height else "")
     lb = ibtn("back", "Back") if back else ""
     cb = ibtn("x", "Close") if close else ""
@@ -232,6 +257,7 @@ def sheet(title, body, foot="", top=None, back=False, close=True, height=None, n
 
 
 def skel_rows(n=6, widths=(62, 45, 70, 38, 55, 66, 48, 58)):
+    """Return placeholder rows for a loading list."""
     out = []
     for k in range(n):
         w = widths[k % len(widths)]
@@ -241,6 +267,7 @@ def skel_rows(n=6, widths=(62, 45, 70, 38, 55, 66, 48, 58)):
 
 
 def keyboard():
+    """Return the phone on-screen keyboard."""
     r1 = "<i></i>" * 10
     r2 = "<i></i>" * 9
     r3 = '<i class="m"></i>' + "<i></i>" * 7 + '<i class="m"></i>'
@@ -249,6 +276,7 @@ def keyboard():
 
 
 def format_bar(bottom=291, undo=True, redo=False, ring=None):
+    """Return the editor format bar above the keyboard."""
     u = "" if undo else " dis"
     r = "" if redo else " dis"
     ua = "" if undo else ' aria-disabled="true"'
@@ -262,6 +290,7 @@ def format_bar(bottom=291, undo=True, redo=False, ring=None):
 
 
 def page(filename, title, active, body):
+    """Write one prototype HTML page and return its size in bytes."""
     nav_items = [
         ("index.html", "Overview and system"),
         ("01-notes.html", "Notes and navigation"),

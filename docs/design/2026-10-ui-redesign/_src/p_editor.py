@@ -10,10 +10,12 @@ PILLS = {
 
 
 def ebar(pill="saved", extra=""):
+    """Return the editor app bar with the save pill."""
     return appbar("back", "", PILLS[pill] + extra + ibtn("more", "Note actions"), line=True)
 
 
 def meeting_doc(typed=True, caret=True, img=False, extra=""):
+    """Return the sample meeting note document."""
     c = '<span class="caret"></span>' if caret else ""
     last = f'We agreed on the new plan for the launch.{c}' if typed else f'We agreed on the new plan for the{c}'
     image = '<div class="img" role="img" aria-label="Whiteboard photo"></div>' if img else ""
@@ -26,13 +28,16 @@ def meeting_doc(typed=True, caret=True, img=False, extra=""):
 
 
 def editor(pill="saved", kb=True, undo=True, redo=False, typed=True, theme="", hots="", overlay="", img=False, ring=None, caret=True):
+    """Return a phone editor screen with keyboard, format bar and overlays."""
     tools = (format_bar(undo=undo, redo=redo, ring=ring) + keyboard()) if kb else ""
     body = ebar(pill) + f'<div class="scroll">{meeting_doc(typed, caret and kb, img)}</div>' + tools
     return phone(body, theme, overlay=overlay, hots=hots, signal=pill != "offline")
 
 
 def undo_spec():
+    """Return the Undo and Redo state specification."""
     def cell(label, u="", r="", tip=False, dark=False):
+        """Return one Undo and Redo state cell."""
         uu = ibtn("undo", "Undo", u, ' aria-disabled="true"' if "dis" in u else "")
         rr = ibtn("redo", "Redo", r, ' aria-disabled="true"' if "dis" in r else "")
         t = ('<span class="tooltip" style="left:4px;top:56px">Undo <kbd>Ctrl Z</kbd></span>' if tip else "")
@@ -41,6 +46,7 @@ def undo_spec():
                 f'<span style="{"margin-top:30px" if tip else ""}">{label}</span></div>')
 
     def row(dark):
+        """Return one row of state cells in light or dark theme."""
         return ('<div class="statecells">' +
                 cell("Both active", dark=dark) + cell("Nothing to redo", r="dis", dark=dark) +
                 cell("Nothing to undo or redo", u="dis", r="dis", dark=dark) + cell("Keyboard focus", u="ring", dark=dark) +
@@ -61,6 +67,7 @@ def undo_spec():
 
 
 def status_card():
+    """Return the save status details card."""
     pills = "".join(f'<div>{PILLS[k]}<span>{lab}</span></div>' for k, lab in
                     [("saved", "On the server"), ("saving", "Saving now"), ("offline", "No connection"),
                      ("paused", "Upload paused"), ("bad", "Not saved")])
@@ -83,6 +90,7 @@ def status_card():
 
 
 def status_sheet(kind="offline"):
+    """Return the save status sheet for one connection state."""
     if kind == "offline":
         body = ('<p class="body" style="margin-bottom:14px">No connection. Your changes are safe here. They upload when you are online.</p>'
                 f'<ul class="slist">{srow("", "Last upload", "9:38", False)}{srow("", "Waiting to upload", "2 changes", False)}</ul>')
@@ -94,6 +102,7 @@ def status_sheet(kind="offline"):
 
 
 def note_actions():
+    """Return the note actions sheet."""
     rows_ = (nav_row("history", "Version history") + nav_row("pen", "Rename") + nav_row("move", "Move") +
              nav_row("globe", "Publish") + nav_row("copy", "Make a copy") + nav_row("trash", "Move to Trash", cls="danger"))
     return (f'<div class="scrim"></div><div class="sheet actionsheet"><span class="grab"></span>'
@@ -101,7 +110,9 @@ def note_actions():
 
 
 def history_list(theme="", hots=""):
+    """Return the phone history list."""
     def v(when, sub, cls=""):
+        """Return one version row."""
         return (f'<li class="row {cls}"><span class="ic">{ic("history")}</span><span class="main"><span class="nm">{when}</span>'
                 f'<span class="sub" style="display:block">{sub}</span></span><span class="chev">{ic("chev")}</span></li>')
     body = (appbar("back", "Version history", "", line=False) +
@@ -116,6 +127,7 @@ def history_list(theme="", hots=""):
 
 
 def version_detail(tab="changes", theme=""):
+    """Return the version detail screen with Changes or Text tab."""
     if tab == "changes":
         content = ('<div class="cmp"><div class="cm">Compared with current</div>'
                    '<b>People</b><br>Sam, Priya, <ins>Mira Patel</ins><br><br>'
@@ -136,6 +148,7 @@ def version_detail(tab="changes", theme=""):
 
 
 def recovery(tab="device", state="", theme="", hots=""):
+    """Return the recovery screen for one tab and state."""
     if tab == "device":
         txt = ('<div class="cmp"><div class="cm">' + ic("phone", "xs") + 'Edited on this device, 9:31</div>'
                '<b>People</b><br>Sam, Priya<br><br><b>Notes</b><br>We agreed on the <ins>new plan for the launch</ins>.<br><ins>Sam owns the budget.</ins></div>')
@@ -160,6 +173,7 @@ def recovery(tab="device", state="", theme="", hots=""):
 
 
 def viewer(state="", hots=""):
+    """Return the image viewer in one state."""
     msg = ""
     if state == "changed":
         msg = ('<div style="position:absolute;left:16px;right:16px;top:120px;z-index:30">' +
@@ -176,6 +190,7 @@ def viewer(state="", hots=""):
 
 
 def build():
+    """Build the editor prototype page."""
     j_undo = journey("Journey 3: undo and redo", "Icon buttons, first in the format bar. Dimmed when there is nothing to do.", [
         fig("D1", "Typing", editor(hots=tap(26, 455)),
             ["Undo is active after typing. Redo is dimmed.", "44 px targets. No text labels.", "Status pill says Saved. Tap it for details."]),
