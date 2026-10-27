@@ -43,7 +43,7 @@ To use colours of your own, import a theme file. See
 The **Available offline** section of **Settings** decides what the application
 keeps on this device besides the note text, which it always keeps. Two check
 boxes control images and older versions. Both use more space, so turn them off
-on a device with little room. See [Settings](settings.md#available-offline).
+on a device with little room. See [Settings](settings.md#offline).
 
 ## Use keyboard shortcuts
 
