@@ -7,7 +7,7 @@ from pathlib import Path
 
 SRC = Path(__file__).resolve().parent
 OUT = SRC.parent
-CSS = (SRC / "base.css").read_text()
+CSS = (SRC / "base.css").read_text(encoding="utf-8")
 
 # 24 px grid, 1.75 stroke, round caps and joins: one icon family.
 _P = 'fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"'
@@ -295,5 +295,5 @@ def page(filename, title, active, body):
 </body>
 </html>
 """
-    (OUT / filename).write_text(html)
+    (OUT / filename).write_text(html, encoding="utf-8")
     return len(html)

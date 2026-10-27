@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test, { after } from 'node:test';
 import { registerHooks } from 'node:module';
-import { setImmediate, setTimeout as delay } from 'node:timers/promises';
+import { setImmediate } from 'node:timers/promises';
 import { Window } from 'happy-dom';
 import { IDBFactory, IDBKeyRange } from 'fake-indexeddb';
 import { createElement, act, useState, type ReactNode } from 'react';
@@ -865,7 +865,6 @@ await test('visible toolbar controls undo and redo the open editor text', async 
     undoButton.dispatchEvent(
       new PointerEvent('pointerover', { bubbles: true, pointerType: 'mouse' }),
     );
-    await delay(180);
   });
   assert.ok(document.querySelector('[role="tooltip"]'));
   assert.equal(current.hasFocus, true);
