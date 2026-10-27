@@ -40,10 +40,9 @@ To use colours of your own, import a theme file. See
 
 ## Choose what to keep on the device
 
-The **Available offline** section of **Settings** decides what the application
-keeps on this device besides the note text, which it always keeps. Two check
-boxes control images and older versions. Both use more space, so turn them off
-on a device with little room. See [Settings](settings.md#available-offline).
+The **Offline** page of **Settings** decides what the application
+keeps on this device besides the note text, which it always keeps. The **Images** and **Older versions** switches control these choices. Both use more space, so turn them off
+on a device with little room. See [Settings](settings.md#offline).
 
 ## Use keyboard shortcuts
 

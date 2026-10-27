@@ -217,7 +217,7 @@ const routes: RouteObject[] = [
                   handle: page('attention'),
                 },
                 {
-                  path: 'settings',
+                  path: 'settings/:settingsPage?',
                   element: deferred(<AccountSettingsPage />),
                   handle: page('settings'),
                 },

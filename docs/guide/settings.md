@@ -10,10 +10,10 @@ choice.
 2. Select **Settings**.
 
 You can also press **Ctrl + P**, or **Cmd + P** on a Mac, to open the command
-palette. Then select **Go to Settings**. The list under **On this page** jumps
-to each section. The index at the top groups controls under Appearance,
-Writing, Data, Account and Danger zone. Select a section to move to it without
-losing a pending edit.
+palette. Then select **Go to Settings**. Select a row to open its page.
+On a phone, **Back** returns to the list. On a desktop, the list stays beside
+the open page. Each page has its own address. Old Settings links still open
+the matching page.
 
 Some sections act on the workspace that you have open. A choice of this kind
 follows you to every device. A choice of a device stays on this browser only.
@@ -21,7 +21,10 @@ Each section below says which kind it is.
 
 ## Profile
 
-Your name appears with your account. Type it in **Name** and select **Save**.
+Open **Profile and email** for your name, email, account limits and account
+deletion.
+
+Your name appears with your account. Type it in **Name** and select **Save name**.
 
 The page shows your email address under the name. You sign in with that
 address. You cannot change it here.
@@ -80,22 +83,24 @@ line under the field states how many templates the folder holds.
 This setting applies to the workspace that you have open, and it follows you to
 every device. See [Templates](templates.md).
 
-## Available offline
+## Offline
 
 Your notes are always kept on this device. Images and older versions take more
-space, so this section asks whether to keep them too.
+space. The Offline page has two switches:
 
-- **Keep images on this device** is for the images of the workspace.
-- **Keep older versions on this device** is for the older versions of each
+- **Images** is for the images of the workspace.
+- **Older versions** is for the older versions of each
   note.
 
 This browser keeps each choice for your account and the workspace that you
-have open. A box shows as on only while the application keeps everything of its
+have open. A switch shows as on only while the application keeps everything of its
 kind. An empty group has no available control. Add an image or save a version
 to make its control available. A failed change shows a message and reads the
-stored state again. A new image can turn the box off again. See [Working offline](offline.md).
+stored state again. If settings cannot be read, select **Try again**. A new image can turn the switch off again. See [Working offline](offline.md).
 
 ## Export
+
+Export and import share one page.
 
 **Export this workspace** downloads every note and image of the workspace as one zip
 file. The files keep their folders, and any Markdown editor reads them. See
@@ -130,6 +135,8 @@ signs in to.
 
 ## API keys
 
+API keys and connected apps share one page.
+
 Create a separate key for each program that needs your account. Each key has
 all your current access and stops at its expiry. A new key appears once, so
 copy it when it shows. Select **Revoke** to stop a program at once. See
@@ -146,7 +153,7 @@ Select **Revoke** to stop an app at once. You can connect it again from the
 app later. Your account can hold 25 connected apps. Remove one before you
 connect another when the list is full.
 
-## Sessions
+## Devices
 
 Each device that is signed in to your account has one row. The row shows its
 browser, its system, and when it was last active. The device that you use now
@@ -167,7 +174,7 @@ have not reached the server yet, the section says so, and you choose:
 
 ## Delete account
 
-**Delete my account** deletes your account and every note in your workspaces
+**Delete account** deletes your account and every note in your workspaces
 for good. It also signs you out on every device. Enter your password to
 confirm. Export your notes first if you want to keep them.
 
