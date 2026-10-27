@@ -294,6 +294,155 @@ for (const outcome of ['deleted', 'unknown', 'failed', 'left'] as const) {
   });
 }
 
+for (const responseStatus of [200, 503]) {
+  await test(`review: restored device text wins while cold Trash lookup returns ${responseStatus}`, async () => {
+    const id = crypto.randomUUID();
+    await store.checkpoint(
+      {
+        accountId,
+        workspaceId,
+        fileId: id,
+        workingCopyId: crypto.randomUUID(),
+        baseRevisionId: null,
+        path: 'Restored.md',
+        text: 'Restored device text',
+        sequence: 1,
+        deleted: false,
+      },
+      null,
+      'text',
+    );
+    const saved = await store.readCachedNote(accountId, workspaceId, id);
+    assert.ok(saved);
+    let restored = false;
+    const listeners = new Set<(change: LocalChange) => void>();
+    const local: LocalStore = {
+      ...store,
+      readCachedNote: () => Promise.resolve(restored ? saved : null),
+      subscribe(listener) {
+        listeners.add(listener);
+        return () => {
+          listeners.delete(listener);
+        };
+      },
+    };
+    const lookup = Promise.withResolvers<Response>();
+    const originalFetch = globalThis.fetch;
+    let requests = 0;
+    globalThis.fetch = () =>
+      Promise.resolve(
+        ++requests === 1 ? Response.json({}, { status: 404 }) : lookup.promise,
+      );
+    try {
+      await render(
+        createElement(NoteEditorLoader, {
+          store: local,
+          accountId,
+          workspaceId,
+          fileId: id,
+        }),
+      );
+      assert.equal(requests, 2);
+      await act(async () => {
+        restored = true;
+        for (const listener of [...listeners])
+          listener({ kind: 'file', accountId, workspaceId, fileId: id });
+      });
+      await act(async () => {
+        lookup.resolve(
+          responseStatus === 503
+            ? Response.json({}, { status: 503 })
+            : Response.json({
+                files: [{ fileId: id, path: 'Stale deleted.md', kind: 'note' }],
+              }),
+        );
+        await setImmediate();
+      });
+      await act(finishStoreWork);
+      await waitForEditor(container);
+      assert.ok(
+        container.querySelector('.cm-editor'),
+        `Expected restored editor; received: ${container.textContent}`,
+      );
+      assert.equal(view().state.doc.toString(), 'Restored device text');
+    } finally {
+      await render(null);
+      await act(finishStoreWork);
+      globalThis.fetch = originalFetch;
+    }
+  });
+}
+
+for (const outcome of ['purged', 'retry'] as const) {
+  await test(`review: cold lookup ${outcome} guard`, async () => {
+    const id = crypto.randomUUID();
+    const listeners = new Set<(change: LocalChange) => void>();
+    const local: LocalStore = {
+      ...store,
+      readCachedNote: () => Promise.resolve(null),
+      subscribe(listener) {
+        listeners.add(listener);
+        return () => {
+          listeners.delete(listener);
+        };
+      },
+    };
+    const originalFetch = globalThis.fetch;
+    const lookup = Promise.withResolvers<Response>();
+    let requests = 0;
+    globalThis.fetch = () => {
+      requests++;
+      return Promise.resolve(
+        requests === 1 || requests === 3
+          ? Response.json({}, { status: 404 })
+          : requests === 2
+            ? lookup.promise
+            : Response.json({ files: [] }),
+      );
+    };
+    try {
+      await render(
+        createElement(NoteEditorLoader, {
+          store: local,
+          accountId,
+          workspaceId,
+          fileId: id,
+        }),
+      );
+      assert.equal(requests, 2);
+      if (outcome === 'purged')
+        await act(async () => {
+          for (const listener of [...listeners])
+            listener({ kind: 'purge', accountId, workspaceId, fileId: id });
+        });
+      await act(async () => {
+        lookup.resolve(
+          outcome === 'retry'
+            ? Response.json({}, { status: 503 })
+            : Response.json({
+                files: [{ fileId: id, kind: 'note', path: 'Stale.md' }],
+              }),
+        );
+      });
+      if (outcome === 'purged') {
+        assert.match(container.textContent ?? '', /This note was deleted/);
+        assert.equal(container.querySelector('.cm-editor'), null);
+      } else {
+        const retry = [...container.querySelectorAll('button')].find(
+          (b) => b.textContent === 'Try again',
+        );
+        assert.ok(retry);
+        await act(async () => retry.click());
+        assert.equal(requests, 4);
+        assert.match(container.textContent ?? '', /Note not found/);
+      }
+    } finally {
+      await render(null);
+      globalThis.fetch = originalFetch;
+    }
+  });
+}
+
 await test('Restore gives offline guidance and retains retry after reconnect', async () => {
   const connection = Object.getOwnPropertyDescriptor(navigator, 'onLine');
   const originalFetch = globalThis.fetch;

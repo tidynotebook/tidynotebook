@@ -230,6 +230,15 @@ export function NoteEditorLoader({
           // to the open screen; it must not manufacture a cached document.
           const trash = await listDeletedFiles({ path: { workspaceId } });
           if (cancelled) return;
+          // A restore can reach the device while the Trash request runs.
+          const current =
+            store === null ? null : await readDeviceNote(store, opening);
+          if (cancelled) return;
+          if (current !== null) {
+            serverDeletedIdentity.current = null;
+            setStatus(current);
+            return;
+          }
           if (trash.error !== undefined || trash.data === undefined) {
             setStatus({
               kind: 'unavailable',
@@ -237,20 +246,15 @@ export function NoteEditorLoader({
             });
             return;
           }
-          // A restore can reach the device while the Trash request runs.
-          const current =
-            store === null ? null : await readDeviceNote(store, opening);
-          if (cancelled) return;
           const deleted = trash.data.files.find(
             (file) => file.fileId === fileId && file.kind === 'note',
           );
           serverDeletedIdentity.current =
-            current === null && deleted !== undefined ? opening : null;
+            deleted !== undefined ? opening : null;
           setStatus(
-            current ??
-              (deleted === undefined
-                ? { kind: 'unknown' }
-                : { kind: 'deleted', path: deleted.path }),
+            deleted === undefined
+              ? { kind: 'unknown' }
+              : { kind: 'deleted', path: deleted.path },
           );
         } else if (code === 410) setStatus({ kind: 'purged' });
         else
