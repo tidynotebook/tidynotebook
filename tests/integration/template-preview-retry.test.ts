@@ -107,6 +107,7 @@ function Dialog({
     }),
   );
 }
+/** Mount the template dialog for a workspace and finish its row summary read. */
 async function show(
   workspaceId: string,
   frameNotices = false,
@@ -124,12 +125,14 @@ async function show(
   });
   if (hasTemplates) await finishRowSummary();
 }
+/** Complete the pending first-line read for the template row. */
 async function finishRowSummary(): Promise<void> {
   const summary = reads.shift();
   assert.ok(summary, 'The row reads only device text for its first line.');
   assert.equal(summary.fileId, templateId);
   await act(async () => summary.finish(null));
 }
+/** Find a button by its text or accessible label. */
 function button(label: string): HTMLButtonElement {
   const found = [...container.querySelectorAll('button')].find(
     (candidate) =>
@@ -140,6 +143,7 @@ function button(label: string): HTMLButtonElement {
   assert.ok(found, `Missing button: ${label}`);
   return found;
 }
+/** Click a button, then finish the row read that opening the dialog starts. */
 async function click(label: string): Promise<void> {
   await act(async () => button(label).click());
   if (label === 'Open template dialog') await finishRowSummary();

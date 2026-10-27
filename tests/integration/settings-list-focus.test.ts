@@ -23,6 +23,7 @@ await test('Settings Back focuses the visible row after render and preserves wor
   const container = document.createElement('div');
   document.body.append(container);
   const root = createRoot(container);
+  /** Render a Settings list and Back button that follow the current page. */
   function Page({
     scope,
     path,
@@ -46,6 +47,7 @@ await test('Settings Back focuses the visible row after render and preserves wor
       ),
     );
   }
+  /** Render the page for a Settings scope and an optional open page. */
   async function render(scope: string, path: string | undefined) {
     await act(async () => {
       root.render(createElement(Page, { scope, path }));

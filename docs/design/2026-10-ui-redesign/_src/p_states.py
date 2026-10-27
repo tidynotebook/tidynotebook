@@ -3,6 +3,7 @@ from p_notes import all_notes, home_header, rows, NOTES_TODAY, NOTES_YDAY
 
 
 def note_state(icon, title, text, actions, theme="", signal=True, extra=""):
+    """Return a note state screen with an icon, message and actions."""
     body = (appbar("back", "", "", line=False) +
             f'<div class="scroll" style="display:flex;flex-direction:column;justify-content:center;padding-bottom:90px">'
             f'<div class="empty"><span class="eic">{ic(icon)}</span><h2>{title}</h2><p>{text}</p>'
@@ -11,6 +12,7 @@ def note_state(icon, title, text, actions, theme="", signal=True, extra=""):
 
 
 def note_loading():
+    """Return the loading note screen."""
     body = (appbar("back", "", "", line=True) +
             '<div class="scroll" style="padding:20px">'
             '<span class="skel" style="display:block;width:30%;height:10px"></span>'
@@ -21,7 +23,9 @@ def note_loading():
 
 
 def attention():
+    """Return the Needs attention list."""
     def r(name, sub):
+        """Return one Needs attention row."""
         return (f'<li class="row"><span class="ic">{ic("file")}</span><span class="main"><span class="nm">{name}</span>'
                 f'<span class="sub" style="display:block">{sub}</span></span><span class="chev">{ic("chev")}</span></li>')
     body = (appbar("menu", "", ibtn("search", "Search") + avatar()) +
@@ -33,6 +37,7 @@ def attention():
 
 
 def attention_item():
+    """Return one Needs attention item."""
     body = (appbar("back", "Launch sync", "", line=True) +
             '<div class="scroll" style="padding:16px">'
             '<p class="help" style="margin:0 0 12px">Text from this device, 9:31. Not in the note.</p>'
@@ -43,12 +48,14 @@ def attention_item():
 
 
 def search_screen(state="results", signal=True):
+    """Return the search screen in one state."""
     q = "launch" if state != "empty-q" else ""
     head = (f'<div class="appbar" style="gap:8px;padding:0 8px 0 16px"><div class="search v" style="flex:1">{ic("search")}'
             f'{q or "Search notes"}<span class="caret" style="height:20px"></span></div>{btn("Cancel", "t")}</div>')
     scope = "In Personal" + (" &middot; Offline, results from this device" if not signal else "")
     if state == "results" or state == "offline":
         def h(name, snippet, folder=""):
+            """Return one search result with a snippet."""
             f = f'{folder} &middot; ' if folder else ""
             return (f'<li class="row"><span class="ic">{ic("file")}</span><span class="main"><span class="nm">{name}</span>'
                     f'<span class="sub" style="display:block">{f}{snippet}</span></span></li>')
@@ -67,6 +74,7 @@ def search_screen(state="results", signal=True):
 
 
 def trial_home(kind="active"):
+    """Return the trial home screen for one trial state."""
     if kind == "active":
         strip = (f'<div style="display:flex;align-items:center;gap:8px;padding:6px 8px 6px 16px;background:var(--surface);border-bottom:1px solid var(--subtle);font-size:14px">'
                  f'<span style="flex:1">Trial: 12 days left</span>{btn("Upgrade", "s sm")}</div>')
@@ -85,10 +93,12 @@ def trial_home(kind="active"):
 
 
 def create_error():
+    """Return the note creation error state."""
     return all_notes(extra_overlay=f'<div class="toast">{ic("alert", "lead")}<span class="txt">Device full. Note not made.</span>{btn("Try again", "t")}</div>')
 
 
 def auth(kind):
+    """Return one sign-in or account screen."""
     logo = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:28px"><span class="wsicon">t</span><span class="strong">tidy notebook</span></div>'
     if kind == "signup":
         inner = (f'{logo}<h1 class="pt" style="font-size:26px">Create your account</h1><p class="help" style="margin:6px 0 22px">Start with a free trial. No card needed.</p>'
@@ -119,7 +129,9 @@ def auth(kind):
 
 
 def admin_limits():
+    """Return the administrator limits screen."""
     def f(label, val):
+        """Return one limit field."""
         return (f'<label class="flabel">{label}</label><div class="field" style="justify-content:space-between">{val}'
                 f'<span class="muted" style="font-size:14px">GiB</span></div><div style="height:12px"></div>')
     body = (f'{f("Storage", "5")}{f("Text and history", "1")}{f("Published pages each month", "2")}{f("Downloads each month", "10")}'
@@ -129,6 +141,7 @@ def admin_limits():
 
 
 def build():
+    """Build the states prototype page."""
     note = grid(
         fig("E2", "Note loading", note_loading(), ["Text shape while the note opens."]),
         fig("E3", "Note in Trash", note_state("trash", "Weight is in Trash", "Restore it to edit.",

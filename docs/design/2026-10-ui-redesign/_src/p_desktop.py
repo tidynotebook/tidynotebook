@@ -6,7 +6,9 @@ DIS = 'aria-disabled="true"'
 
 
 def sidebar(sel="all", save=("dot", "All changes saved")):
+    """Return the desktop sidebar with the selected row and save state."""
     def r(key, icon, name, right=""):
+        """Return one sidebar row."""
         return nav_row(icon, name, right, "sel" if sel == key else "")
     folders = "".join(nav_row("folder", n, f'<span class="count">{c}</span>', "sel" if sel == n else "") for n, c in
                       [("Projects", 6), ("Templates", 4), ("Travel", 4)])
@@ -25,12 +27,14 @@ def sidebar(sel="all", save=("dot", "All changes saved")):
 
 
 def drow(name, when, folder=None, cls=""):
+    """Return one desktop note row."""
     f = f' <span class="fold">&middot; {folder}</span>' if folder else ""
     return (f'<li class="row {cls}"><span class="ic">{ic("file")}</span><span class="main"><span class="nm">{name}{f}</span></span>'
             f'<span class="meta">{when}</span></li>')
 
 
 def all_notes_desk(theme="", tip=True, hover=None):
+    """Return the desktop All notes screen."""
     t = (f'<div style="margin-top:20px">{tipline("Press <kbd>Ctrl K</kbd> to search or run a command.")}</div>' if tip else "")
     lst = (f'<div class="dlist"><div class="grouplabel">Today</div><ul class="rows" style="padding:0">'
            f'{drow("2026-10-27", "22 minutes ago")}{drow("Shared artefacts", "4 hours ago", cls="hov" if hover == 1 else "")}{drow("Weight", "14 hours ago")}</ul>'
@@ -44,6 +48,7 @@ def all_notes_desk(theme="", tip=True, hover=None):
 
 
 def template_dialog(theme=""):
+    """Return the desktop Use template dialog."""
     rows_ = "".join(f'<li class="row {"sel" if k == 0 else ""}" style="min-height:52px"><span class="ic">{ic("template")}</span><span class="main">'
                     f'<span class="nm" style="font-size:15px">{n}</span><span class="sub" style="display:block">{d}</span></span></li>'
                     for k, (n, d) in enumerate(TEMPLATES))
@@ -61,6 +66,7 @@ def template_dialog(theme=""):
 
 
 def editor_desk(theme="", tooltip=True):
+    """Return the desktop editor with an optional history tooltip."""
     tip = ('<span class="tooltip" style="left:6px;top:46px">Undo <kbd>Ctrl Z</kbd></span>' if tooltip else "")
     toolbar = (f'<div class="dtoolbar" role="toolbar" aria-label="Format"><span style="position:relative;display:inline-flex">'
                f'{ibtn("undo", "Undo (Ctrl Z)", "hov")}{tip}</span>{ibtn("redo", "Redo (Ctrl Shift Z)", "dis", DIS)}'
@@ -79,7 +85,9 @@ def editor_desk(theme="", tooltip=True):
 
 
 def settings_desk(page="appearance", theme=""):
+    """Return the desktop Settings screen for one page."""
     def r(name, key, val=""):
+        """Return one Settings navigation row."""
         v = f'<span class="meta">{val}</span>' if val else ""
         return f'<li class="row {"sel" if key == page else ""}"><span class="main"><span class="nm">{name}</span></span>{v}</li>'
     nav = (f'<aside class="dside"><div class="dws">{ibtn("back", "Back to notes")}<span class="nm">Settings</span></div>'
@@ -91,6 +99,7 @@ def settings_desk(page="appearance", theme=""):
            f'<div style="margin-top:auto;padding:8px 0 12px"><ul class="rows">{nav_row("out", "Sign out")}</ul></div></aside>')
     if page == "appearance":
         def sw(name, a, b, on=False):
+            """Return one switch row with a label and description."""
             border = "2px solid var(--strong)" if on else "1px solid var(--subtle)"
             return (f'<div style="border:{border};border-radius:12px;padding:8px;background:var(--card)">'
                     f'<div style="height:56px;border-radius:8px;background:linear-gradient(90deg,{a} 50%,{b} 50%);border:1px solid var(--subtle)"></div>'
@@ -107,6 +116,7 @@ def settings_desk(page="appearance", theme=""):
                    f'<div style="display:flex;gap:8px;margin-top:14px">{btn("Show all 12 themes", "t md", "down")}{btn("Import theme file", "s md", "upload")}</div>')
     else:
         def d(icon, name, sub, act=True):
+            """Return one device row with an optional Sign out action."""
             b = btn("Sign out", "s sm") if act else '<span class="pill" style="height:26px;font-size:12px">This device</span>'
             return srow(icon, name, chev=False, sub=sub, right=b)
         content = (f'<h1 style="margin:0 0 6px;font-size:28px;color:var(--strong)">Devices</h1><p class="help" style="margin:0 0 20px">Signed in to your account.</p>'
@@ -117,6 +127,7 @@ def settings_desk(page="appearance", theme=""):
 
 
 def recovery_desk(theme=""):
+    """Return the desktop recovery screen for a draft that needs attention."""
     col = ('<div class="cmp" style="flex:1"><div class="cm">{icon}{meta}</div><b>People</b><br>Sam, Priya<br><br><b>Notes</b><br>{txt}</div>')
     a = col.format(icon=ic("laptop", "xs"), meta="This device, 9:31",
                    txt='We agreed on the <ins>new plan for the launch</ins>.<br><ins>Sam owns the budget.</ins>')
@@ -134,7 +145,9 @@ def recovery_desk(theme=""):
 
 
 def palette_desk(theme=""):
+    """Return the desktop command palette with search results."""
     def h(name, snip, sel=False):
+        """Return one palette result with a snippet."""
         return (f'<li class="row {"sel" if sel else ""}" style="min-height:52px"><span class="ic">{ic("file")}</span><span class="main">'
                 f'<span class="nm" style="font-size:15px">{name}</span><span class="sub" style="display:block">{snip}</span></span>'
                 f'{"<kbd>Enter</kbd>" if sel else ""}</li>')
@@ -152,7 +165,9 @@ def palette_desk(theme=""):
 
 
 def history_desk(theme=""):
+    """Return the desktop history screen with versions."""
     def v(when, sub, sel=False):
+        """Return one version row."""
         return (f'<li class="row {"sel" if sel else ""}" style="min-height:52px"><span class="main"><span class="nm" style="font-size:15px">{when}</span>'
                 f'<span class="sub" style="display:block">{sub}</span></span></li>')
     left = (f'<div style="width:300px;border-right:1px solid var(--subtle);padding:16px 8px;overflow:hidden">'
@@ -171,6 +186,7 @@ def history_desk(theme=""):
 
 
 def folder_desk(theme="", menu=False, empty=False):
+    """Return the desktop folder page, with an optional menu or empty state."""
     if empty:
         content = (f'<div class="dpage-h"><div class="tt"><p class="eyebrow" style="font-size:13px">{ic("folder", "xs")}Folder</p><h1>Ideas</h1>'
                    f'<p class="pmeta">Empty</p></div>{btn("Use template", "s md", "template")}{btn("New note", "p md", "plus")}</div>'
@@ -195,6 +211,7 @@ def folder_desk(theme="", menu=False, empty=False):
 
 
 def editor_menu_desk(theme=""):
+    """Return the desktop editor with its note menu open."""
     top = (f'<div class="dtop"><span class="crumb">{ic("folder", "xs")}Projects <span style="opacity:.5">/</span> <b>Launch sync</b></span>'
            f'<span style="flex:1"></span><span class="pill" style="border-color:var(--focus)"><span class="dot off"></span>Offline</span>{ibtn("more", "Note actions", "on")}</div>')
     pop = (f'<div class="menu" style="right:60px;top:52px;width:300px;padding:14px 16px" role="dialog" aria-label="Save details">'
@@ -215,6 +232,7 @@ def editor_menu_desk(theme=""):
 
 
 def calendar_desk(theme=""):
+    """Return the desktop daily note calendar."""
     days = "".join(f'<span style="text-align:center;font-size:11px;font-weight:600;color:var(--muted)">{d}</span>' for d in "MTWTFSS")
     cells = "<span></span>" * 3
     has = {3, 5, 9, 12, 14, 19, 20, 22, 23, 25, 26}
@@ -235,6 +253,7 @@ def calendar_desk(theme=""):
 
 
 def empty_desk(theme=""):
+    """Return the desktop empty workspace screen."""
     main = (f'<div class="dmain"><div class="dcontent"><div class="measure"><div class="dpage-h"><div class="tt"><h1>All notes</h1></div></div>'
             f'<div class="empty" style="padding-top:90px"><span class="eic">{ic("file")}</span><h2>No notes yet</h2><p>Write your first note.</p>'
             f'<div class="btnrow" style="max-width:340px">{btn("New note", "p md", "plus")}{btn("Use template", "s md", "template")}</div></div>'
@@ -243,14 +262,17 @@ def empty_desk(theme=""):
 
 
 def medium_notes(theme=""):
+    """Return the medium-width All notes screen."""
     return all_notes_desk(theme).replace('<div class="desktop ">', '<div class="desktop m">', 1)
 
 
 def medium_settings(theme=""):
+    """Return the medium-width Settings screen."""
     return settings_desk("devices", theme).replace('<div class="desktop h-s">', '<div class="desktop m h-s">', 1)
 
 
 def build():
+    """Build the desktop prototype page."""
     figs = [
         fig("G1", "All notes", all_notes_desk(),
             ["The menu is always open on the left. Search shows its shortcut.",

@@ -138,11 +138,13 @@ await test('root and folder routes restore separate offsets and reset new destin
     ],
     { initialEntries: ['/w/scroll/folders/Projects'] },
   );
+  /** Navigate the mounted router to a path. */
   const open = async (path: string): Promise<void> => {
     await act(async () => {
       await router.navigate(path);
     });
   };
+  /** Scroll the notes list to an offset and notify its listener. */
   const scroll = async (offset: number): Promise<void> => {
     await act(async () => {
       box.scrollTop = offset;

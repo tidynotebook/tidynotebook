@@ -115,6 +115,7 @@ function controlledStore() {
   };
 }
 
+/** Mount the Offline settings section and return render helpers. */
 function screen(store: OfflineSettingsStore) {
   const container = document.createElement('div');
   document.body.append(container);

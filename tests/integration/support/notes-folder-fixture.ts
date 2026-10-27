@@ -1,6 +1,7 @@
 import { createElement } from 'react';
 
 let directNote = false;
+/** Add or remove a note directly inside Projects for the next render. */
 export function setDirectNote(value: boolean): void {
   directNote = value;
 }
@@ -29,25 +30,33 @@ export function useFiles() {
     limitNotice: null,
   };
 }
+/** Return a signed-in test account. */
 export function useSession() {
   return { account: { accountId: 'folder-test-account' } };
 }
+/** Return an empty device store. */
 export function useLocalStore() {
   return { store: {} };
 }
+/** Return a note creator that does nothing. */
 export function useCreateNote() {
   return { create: () => {}, error: null };
 }
+/** Return a fixed time. */
 export function useNow() {
   return 0;
 }
+/** Ignore document title changes. */
 export function useDocumentTitle() {}
+/** Render no writing start panel. */
 export function WritingStart() {
   return null;
 }
+/** Render a placeholder Use template button. */
 export function NewFromTemplate() {
   return createElement('button', null, 'Use template');
 }
+/** Render a placeholder folder actions button. */
 export function FolderPageActions() {
   return createElement('button', null, 'Folder actions');
 }

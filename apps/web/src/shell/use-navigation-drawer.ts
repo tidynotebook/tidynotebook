@@ -74,6 +74,7 @@ export function useNavigationDrawer(
       : null;
     const previousOverflow = document.body.style.overflow;
     if (modal) document.body.style.overflow = 'hidden';
+    /** Close on Escape. Only the phone overlay keeps Tab inside the drawer. */
     const onKey = (event: KeyboardEvent): void => {
       if (event.key === 'Escape') {
         event.preventDefault();
