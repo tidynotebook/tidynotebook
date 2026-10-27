@@ -249,9 +249,13 @@
   --text-note: 1rem;
   --text-note--line-height: 1.65;
   --container-note: 40rem;
-  /* The Settings modal from the large width: 940 by 620 px (issue 517). */
+  /*
+   * The Settings modal from the large width: 940 by 620 px (issue 517).
+   * The height is not a spacing token: max-w reads the spacing scale before
+   * the container scale, so a spacing token of this name sets the width too.
+   */
   --container-settings: 58.75rem;
-  --spacing-settings: 38.75rem;
+  --height-settings: 38.75rem;
   --spacing-note-block: calc(var(--spacing) * 2);
   --text-note-mono: 0.9em;
   /*
