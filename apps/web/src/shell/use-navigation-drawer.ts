@@ -3,19 +3,41 @@ import {
   useCallback,
   useEffect,
   useRef,
+  useState,
+  useSyncExternalStore,
   type Dispatch,
   type SetStateAction,
 } from 'react';
 
+/**
+ * Match Tailwind's md breakpoint so only the phone overlay is modal.
+ * Media-query changes release the trap and scroll lock without closing the drawer.
+ */
 export function useNavigationDrawer(
   drawerOpen: boolean,
   setOpen: Dispatch<SetStateAction<boolean>>,
 ) {
+  const [viewport] = useState(() => window.matchMedia('(width < 48rem)'));
+  /** Keep one media subscription while open state and focus change. */
+  const subscribe = useCallback(
+    (changed: () => void) => {
+      viewport.addEventListener('change', changed);
+      return () => viewport.removeEventListener('change', changed);
+    },
+    [viewport],
+  );
+  const phone = useSyncExternalStore(
+    subscribe,
+    () => viewport.matches,
+    () => false,
+  );
+  const modal = drawerOpen && phone;
   const phoneButton = useRef<HTMLButtonElement | null>(null);
   const desktopButton = useRef<HTMLButtonElement | null>(null);
   const panel = useRef<HTMLElement | null>(null);
   const drawerWasOpenRef = useRef(false);
   const opener = useRef<HTMLElement | null>(null);
+  /** Capture the control before a palette row leaves the document. */
   const rememberOpener = useCallback((target?: HTMLElement | null) => {
     opener.current =
       target ??
@@ -38,6 +60,7 @@ export function useNavigationDrawer(
     }
     drawerWasOpenRef.current = true;
     const sidebar = panel.current;
+    /** Preserve native keyboard order inside the phone overlay. */
     const focusable = (): HTMLElement[] =>
       sidebar === null
         ? []
@@ -46,16 +69,18 @@ export function useNavigationDrawer(
               'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
             ),
           );
-    const frame = window.requestAnimationFrame(() => focusable()[0]?.focus());
+    const frame = modal
+      ? window.requestAnimationFrame(() => focusable()[0]?.focus())
+      : null;
     const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    if (modal) document.body.style.overflow = 'hidden';
     const onKey = (event: KeyboardEvent): void => {
       if (event.key === 'Escape') {
         event.preventDefault();
         setOpen(false);
         return;
       }
-      if (event.key !== 'Tab') return;
+      if (!modal || event.key !== 'Tab') return;
       const targets = focusable();
       const first = targets[0];
       const last = targets.at(-1);
@@ -70,11 +95,11 @@ export function useNavigationDrawer(
     };
     window.addEventListener('keydown', onKey);
     return () => {
-      window.cancelAnimationFrame(frame);
+      if (frame !== null) window.cancelAnimationFrame(frame);
       window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = previousOverflow;
+      if (modal) document.body.style.overflow = previousOverflow;
     };
-  }, [drawerOpen, setOpen]);
+  }, [drawerOpen, modal, setOpen]);
 
-  return { phoneButton, desktopButton, panel, rememberOpener };
+  return { phoneButton, desktopButton, panel, rememberOpener, modal };
 }

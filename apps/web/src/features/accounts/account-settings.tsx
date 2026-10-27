@@ -35,6 +35,7 @@ import {
   Meter,
   Notice,
   PageHeader,
+  pageGutter,
   pageListClassName,
   SignOutIcon,
   TextField,
@@ -121,11 +122,13 @@ function SpellCheckSettings(): ReactNode {
   const [problem, setProblem] = useState('');
   const lastChange = useRef(0);
 
+  /** Show the chosen spelling value while its latest account write completes. */
   function change(next: boolean): void {
     lastChange.current += 1;
     const current = lastChange.current;
     setPending(next);
     setProblem('');
+    /** Ignore stale replies so a slow write cannot undo a later selection. */
     async function write(): Promise<void> {
       try {
         const result = await updatePreferences({ body: { spellCheck: next } });
@@ -341,6 +344,7 @@ function ProfileSettings({
     setDraft(name ?? '');
   }, [name]);
 
+  /** Save the profile name, then update the current account and avatar together. */
   async function save(): Promise<void> {
     setAttempted(true);
     setSaved(false);
@@ -492,6 +496,7 @@ export function AccountSettingsPage(): ReactNode {
    * sign-out records a marker, so the session is revoked on reconnect before
    * any content comes back.
    */
+  /** Keep the approved wait or discard choice bound to the current account. */
   function endSignOut(discard: boolean): void {
     setSignOutError('');
     const activeStore = store.store;
@@ -760,7 +765,7 @@ export function AccountSettingsPage(): ReactNode {
         ? ['profile-heading', 'account-heading']
         : [];
   return (
-    <div className="mx-auto w-full max-w-5xl p-gutter">
+    <div className={`mx-auto w-full max-w-5xl py-gutter ${pageGutter}`}>
       <div className="grid min-w-0 gap-6 lg:grid-cols-3">
         <nav
           ref={settingsList}
