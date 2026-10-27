@@ -13,8 +13,11 @@ const dist = resolve(root, 'apps/web/dist/web');
 const ceilingBytes = Math.floor(0.62 * 1024 * 1024);
 // The first screen as record 0177 left it, with a margin of about one
 // twentieth, so a change that grows the first screen states its reason in a
-// change of this line (record 0177).
-const budgetBytes = Math.min(ceilingBytes, 300 * 1024);
+// change of this line (record 0177). The 256 bytes over 300 KiB are for
+// issue 517: the first screen came within 2 bytes of the budget, and a
+// change of the stylesheet alone moved it 12 to 29 bytes through the
+// content hashes in the chunk names.
+const budgetBytes = Math.min(ceilingBytes, 300 * 1024 + 256);
 const files = [];
 let gzipBytes = 0;
 for (const script of await firstScreenScripts(dist)) {
