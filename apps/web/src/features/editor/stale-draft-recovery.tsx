@@ -183,12 +183,12 @@ export function StaleDraftRecovery({
           </section>
         ))}
       </div>
-      <p className="text-control text-muted">
+      <p className="text-help text-muted">
         If you use the saved version, this device's text stays in Needs
         attention.
       </p>
       {problem === '' ? null : (
-        <p role="alert" className="text-control text-danger">
+        <p role="alert" className="text-help text-danger">
           {problem}
         </p>
       )}

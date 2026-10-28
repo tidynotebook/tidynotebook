@@ -300,7 +300,7 @@ export function PageHeader({
           </h1>
         </div>
         {description === undefined || description === '' ? null : (
-          <p className="mb-0 mt-1 text-control text-muted">{description}</p>
+          <p className="mb-0 mt-1 text-help text-muted">{description}</p>
         )}
       </div>
       {actions === undefined ? null : (
@@ -381,9 +381,11 @@ export function EmptyState({
           {icon}
         </p>
       )}
-      <h2 className="mb-0 mt-3 text-ui font-semibold text-strong">{title}</h2>
+      <h2 className="mb-0 mt-3 text-title font-semibold text-strong">
+        {title}
+      </h2>
       {description === undefined || description === '' ? null : (
-        <p className="mx-auto mb-0 mt-1 max-w-sm text-control text-muted">
+        <p className="mx-auto mb-0 mt-1 max-w-sm text-help text-muted">
           {description}
         </p>
       )}

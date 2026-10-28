@@ -280,13 +280,13 @@ export function TextField({
         }}
       />
       {hasHint ? (
-        <p className="mb-0 mt-1 text-control text-muted" id={hintId}>
+        <p className="mb-0 mt-1 text-help text-muted" id={hintId}>
           {hint}
         </p>
       ) : null}
       {hasError || reserveErrorSpace ? (
         <p
-          className={`mt-1 text-control text-danger ${reserveErrorSpace ? 'mb-0 min-h-5' : ''}`}
+          className={`mt-1 text-help text-danger ${reserveErrorSpace ? 'mb-0 min-h-5' : ''}`}
           id={errorId}
           role={hasError ? 'alert' : undefined}
           aria-hidden={hasError ? undefined : true}
@@ -349,12 +349,12 @@ export function TextAreaField({
         }}
       />
       {hasHint ? (
-        <p className="mb-0 mt-1 text-control text-muted" id={hintId}>
+        <p className="mb-0 mt-1 text-help text-muted" id={hintId}>
           {hint}
         </p>
       ) : null}
       {hasError ? (
-        <p className="mt-1 text-control text-danger" id={errorId} role="alert">
+        <p className="mt-1 text-help text-danger" id={errorId} role="alert">
           {error}
         </p>
       ) : null}
@@ -476,7 +476,7 @@ export function SelectField({
         <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted" />
       </div>
       {hint === undefined ? null : (
-        <p className="mb-0 mt-1 text-control text-muted" id={hintId}>
+        <p className="mb-0 mt-1 text-help text-muted" id={hintId}>
           {hint}
         </p>
       )}
@@ -602,11 +602,7 @@ export function StatusRegion({
   readonly message: string;
 }): ReactNode {
   return (
-    <p
-      className="my-1 text-control text-muted"
-      role="status"
-      aria-live="polite"
-    >
+    <p className="my-1 text-help text-muted" role="status" aria-live="polite">
       {message}
     </p>
   );
@@ -648,7 +644,7 @@ export function Switch({
       <span className={hideLabel ? 'sr-only' : 'min-w-0 flex-1'}>
         <span className="block">{label}</span>
         {hint === undefined ? null : (
-          <span id={hintId} className="block text-control text-muted">
+          <span id={hintId} className="block text-help text-muted">
             {hint}
           </span>
         )}

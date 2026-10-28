@@ -68,7 +68,7 @@ export function SaveProblemControl({
         anchor={trigger.current}
       >
         <DialogBody>
-          <p className="m-0 text-control text-muted">{problem.detail}</p>
+          <p className="m-0 text-help text-muted">{problem.detail}</p>
           {retryProblem === '' ? null : (
             <Notice tone="problem" message={retryProblem} />
           )}

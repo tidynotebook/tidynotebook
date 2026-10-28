@@ -172,6 +172,13 @@
   --text-control--line-height: 1.25rem;
   --text-ui: 0.875rem;
   --text-ui--line-height: 1.375rem;
+  --text-help: 0.8125rem;
+  --text-help--line-height: 1.25rem;
+  /* Titles and note annotations keep their size under either pointer. */
+  --text-title: 0.875rem;
+  --text-title--line-height: 1.375rem;
+  --text-preview: 0.8125rem;
+  --text-preview--line-height: 1.25rem;
   /*
    * `text-base` is the title of a card, and the text of every field under
    * touch: Safari on iOS zooms the page into a focused field under 16 px
@@ -267,6 +274,8 @@
   --text-note-script: 0.75em;
   --text-note-script--line-height: 0;
   --text-note-small: 0.8em;
+  --text-note-reference: 0.8125rem;
+  --text-note-definition: 0.875rem;
   --text-note-h1: 1.75em;
   --text-note-h1--line-height: 1.2;
   --text-note-h2: 1.375em;
@@ -282,6 +291,18 @@
   --font-weight-note-heading: 600;
   /* The weight of a chosen row, which the completion list of the editor reads. */
   --font-weight-medium: 500;
+}
+
+/* One touch scale matches the 16 px fields that prevent Safari focus zoom. */
+@media (pointer: coarse) {
+  :root {
+    --text-control: 1rem;
+    --text-control--line-height: 1.5rem;
+    --text-ui: 1rem;
+    --text-ui--line-height: 1.5rem;
+    --text-help: 0.875rem;
+    --text-help--line-height: 1.25rem;
+  }
 }
 
 /*

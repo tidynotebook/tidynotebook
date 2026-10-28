@@ -74,7 +74,7 @@ export function ConnectedAppSettings(): ReactNode {
             </Button>
           )
         ) : apps.length === 0 ? (
-          <p className="m-0 text-control text-muted">
+          <p className="m-0 text-help text-muted">
             No connected apps. Connect an app from its settings.
           </p>
         ) : (
@@ -88,10 +88,10 @@ export function ConnectedAppSettings(): ReactNode {
                   <p className="m-0 break-words text-ui text-strong">
                     Name claimed by app: {connectedAppName(app)}
                   </p>
-                  <p className="mb-0 mt-1 break-words text-control text-muted">
+                  <p className="mb-0 mt-1 break-words text-help text-muted">
                     {connectedAppIdentity(app)}
                   </p>
-                  <p className="mb-0 mt-1 text-control text-muted">
+                  <p className="mb-0 mt-1 text-help text-muted">
                     {connectedAppFacts(app, now)}
                   </p>
                 </div>

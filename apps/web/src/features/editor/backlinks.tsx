@@ -114,7 +114,7 @@ export function Backlinks({
   if (state.kind === 'failed')
     return (
       <div className="space-y-2">
-        <p className="m-0 text-control text-muted">
+        <p className="m-0 text-help text-muted">
           The links to this note did not load.
         </p>
         <Button
@@ -130,14 +130,14 @@ export function Backlinks({
     );
   if (state.rows.length === 0)
     return (
-      <p className="m-0 text-control text-muted">
+      <p className="m-0 text-help text-muted">
         {backlinksEmptyMessage(state.partial, online)}
       </p>
     );
   return (
     <div className="space-y-2">
       {state.partial ? (
-        <p className="m-0 text-control text-muted">
+        <p className="m-0 text-help text-muted">
           These links come from this device.
         </p>
       ) : null}

@@ -92,7 +92,7 @@ export function ApiKeySettings(): ReactNode {
       ) : (
         <>
           {keys.length === 0 ? (
-            <p className="mb-3 mt-0 text-control text-muted">
+            <p className="mb-3 mt-0 text-help text-muted">
               No API keys. Create a key for your program.
             </p>
           ) : (
@@ -106,7 +106,7 @@ export function ApiKeySettings(): ReactNode {
                     <p className="m-0 break-words text-ui text-strong">
                       {key.name}
                     </p>
-                    <p className="mb-0 mt-1 text-control text-muted">
+                    <p className="mb-0 mt-1 text-help text-muted">
                       {apiKeyFacts(key, now)}
                     </p>
                   </div>
@@ -124,7 +124,7 @@ export function ApiKeySettings(): ReactNode {
             </ul>
           )}
           {keys.length >= maxApiKeys ? (
-            <p className="mb-3 mt-0 text-control text-muted">
+            <p className="mb-3 mt-0 text-help text-muted">
               Your account has 25 API keys. Revoke a key before you create
               another.
             </p>
@@ -291,7 +291,7 @@ function CreatedKey({
       aria-label="Copy your API key"
       className="mb-4 rounded-lg border border-edge-subtle p-3"
     >
-      <h3 className="mb-2 mt-0 text-ui font-semibold text-strong">
+      <h3 className="mb-2 mt-0 text-title font-semibold text-strong">
         Copy your API key
       </h3>
       <p

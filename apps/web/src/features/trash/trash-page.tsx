@@ -481,7 +481,7 @@ function TrashList({
                       <p className="m-0 truncate text-ui text-strong">
                         {folder === null ? name : name.slice(folder.length + 1)}
                       </p>
-                      <p className="m-0 truncate text-control text-muted">
+                      <p className="m-0 truncate text-help text-muted">
                         {parts.join(' \u00b7 ')}
                       </p>
                     </div>

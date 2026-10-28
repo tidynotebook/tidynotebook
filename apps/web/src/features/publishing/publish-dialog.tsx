@@ -176,7 +176,7 @@ export function PublishDialog({
           <DialogBody>
             <div className="flex flex-col gap-3" id={scopeId}>
               {sentences.map((sentence) => (
-                <p className="m-0 text-control text-muted" key={sentence}>
+                <p className="m-0 text-help text-muted" key={sentence}>
                   {sentence}
                 </p>
               ))}
@@ -236,14 +236,11 @@ export function PublishDialog({
                 describedBy={`${fieldId}-warning`}
               />
             </div>
-            <p
-              className="mb-0 text-control text-muted"
-              id={`${fieldId}-warning`}
-            >
+            <p className="mb-0 text-help text-muted" id={`${fieldId}-warning`}>
               {loseItBack}
             </p>
             {clipboardMissing ? (
-              <p className="mb-0 mt-2 text-control text-muted" role="status">
+              <p className="mb-0 mt-2 text-help text-muted" role="status">
                 {noClipboard}
               </p>
             ) : null}

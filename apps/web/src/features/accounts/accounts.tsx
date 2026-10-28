@@ -133,10 +133,7 @@ function SignedInFooter({
   const sentence = signedInSentence(email);
   return (
     <div className="flex items-center justify-between gap-cluster">
-      <p
-        className="m-0 min-w-0 truncate text-control text-muted"
-        title={sentence}
-      >
+      <p className="m-0 min-w-0 truncate text-help text-muted" title={sentence}>
         {sentence}
       </p>
       <Button
@@ -218,7 +215,7 @@ function LockedPage(): ReactNode {
       }
     >
       {lockedSentences(account, now).map((sentence) => (
-        <p key={sentence} className="mb-3 mt-0 text-control text-muted">
+        <p key={sentence} className="mb-3 mt-0 text-help text-muted">
           {sentence}
         </p>
       ))}
@@ -239,7 +236,7 @@ function LockedPage(): ReactNode {
             : 'Open billing'}
         </Button>
       ) : null}
-      <p className="mb-2 mt-5 text-control text-muted">
+      <p className="mb-2 mt-5 text-help text-muted">
         You can export your notes or delete your account.
       </p>
       <div className="flex flex-wrap gap-cluster">
@@ -377,7 +374,7 @@ function ConsentPage(): ReactNode {
         </div>
       ) : (
         <>
-          <p className="mb-3 mt-0 text-control text-muted">
+          <p className="mb-3 mt-0 text-help text-muted">
             Read the terms and the privacy notice of this service, then accept
             them to open your notes. A new version asks you again.
           </p>
@@ -396,7 +393,7 @@ function ConsentPage(): ReactNode {
           >
             {busy ? 'Saving your answer' : 'Accept and continue'}
           </Button>
-          <p className="mb-2 mt-5 text-control text-muted">
+          <p className="mb-2 mt-5 text-help text-muted">
             If you do not accept them, you can export your notes and delete your
             account.
           </p>
@@ -604,7 +601,7 @@ export function LoginPage({
         </div>
       ) : (
         <>
-          <p className="mb-5 mt-0 text-control text-muted">
+          <p className="mb-5 mt-0 text-help text-muted">
             {setup
               ? 'This installation has no account yet. What you enter here becomes the first account. It administers the installation and invites other people.'
               : oauthQuery === undefined
@@ -679,7 +676,7 @@ export function LoginPage({
                 Forgot password
               </Link>
               {oauthQuery === undefined ? null : (
-                <p className="mt-2 text-control text-muted">
+                <p className="mt-2 text-help text-muted">
                   {oauthResetSentence}
                 </p>
               )}

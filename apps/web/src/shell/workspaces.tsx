@@ -72,7 +72,7 @@ export function WorkspaceHome(): ReactNode {
     return (
       <Page>
         <PageHeader title="Your notes did not open" />
-        <p className="text-control text-danger" role="alert">
+        <p className="text-help text-danger" role="alert">
           {state.message}
         </p>
         <Button variant="secondary" onClick={() => reload()}>

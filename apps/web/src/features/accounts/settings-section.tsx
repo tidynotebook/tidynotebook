@@ -56,18 +56,18 @@ export function SettingsSection({
       >
         {topic.hiddenTitles.includes(section.id) ? null : (
           <h3
-            className={`m-0 border-b border-edge-subtle pb-1.5 text-control font-semibold ${danger ? 'text-danger' : 'text-muted'}`}
+            className={`m-0 border-b border-edge-subtle pb-1.5 text-help font-semibold ${danger ? 'text-danger' : 'text-muted'}`}
             id={section.id}
           >
             {heading ?? section.title}
           </h3>
         )}
         {topic.helpSection === section.id && description !== undefined ? (
-          <p className="mb-3 mt-0 text-control text-muted">{description}</p>
+          <p className="mb-3 mt-0 text-help text-muted">{description}</p>
         ) : null}
         <div className="min-w-0">
           {warning === undefined ? null : (
-            <p className="mb-3 mt-0 text-control text-muted">{warning}</p>
+            <p className="mb-3 mt-0 text-help text-muted">{warning}</p>
           )}
           {children}
         </div>
@@ -81,19 +81,19 @@ export function SettingsSection({
       <div className="md:grid md:grid-cols-3 md:gap-group">
         <div className="md:col-span-1">
           <h2
-            className="m-0 text-ui font-semibold text-strong"
+            className="m-0 text-title font-semibold text-strong"
             id={section.id}
             tabIndex={-1}
           >
             {section.title}
           </h2>
           {description === undefined ? null : (
-            <p className="mb-0 mt-1 text-control text-muted">{description}</p>
+            <p className="mb-0 mt-1 text-help text-muted">{description}</p>
           )}
         </div>
         <div className="mt-3 min-w-0 md:col-span-2 md:mt-0">
           {warning === undefined ? null : (
-            <p className="mb-3 mt-0 text-control text-muted">{warning}</p>
+            <p className="mb-3 mt-0 text-help text-muted">{warning}</p>
           )}
           {children}
         </div>
@@ -121,7 +121,7 @@ export function SettingRow({
         <p className="m-0 truncate text-ui text-strong">{label}</p>
         {help === undefined ? null : (
           <p
-            className="m-0 line-clamp-2 break-words text-control text-muted lg:line-clamp-1"
+            className="m-0 line-clamp-2 break-words text-help text-muted lg:line-clamp-1"
             title={help}
           >
             {help}
@@ -163,7 +163,7 @@ export function SettingChoiceRow({
     >
       <span className="min-w-0 flex-1">
         <span className="block truncate text-ui text-strong">{label}</span>
-        <span className="line-clamp-2 break-words text-control text-muted lg:line-clamp-1">
+        <span className="line-clamp-2 break-words text-help text-muted lg:line-clamp-1">
           {help}
         </span>
       </span>

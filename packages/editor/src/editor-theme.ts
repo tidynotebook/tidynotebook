@@ -46,6 +46,8 @@ export const editorThemeVariables: readonly string[] = [
   '--text-ui',
   '--text-ui--line-height',
   '--text-control',
+  '--text-note-reference',
+  '--text-note-definition',
   '--text-base',
   '--text-note',
   '--text-note--line-height',
@@ -815,12 +817,12 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
     // step of the chrome and the quiet text colour (record 0156).
     '.cm-np-footnote': {
       color: 'var(--notes-text-muted)',
-      fontSize: 'var(--text-control)',
+      fontSize: 'var(--text-note-reference)',
       verticalAlign: 'super',
     },
     '.cm-np-footnote-definition': {
       color: 'var(--notes-text-muted)',
-      fontSize: 'var(--text-ui)',
+      fontSize: 'var(--text-note-definition)',
     },
     '.cm-np-link-definition': {
       color: 'var(--notes-text-muted)',

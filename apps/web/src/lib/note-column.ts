@@ -86,7 +86,7 @@ export function noteOutlineScrollClassName(): string {
  */
 export function noteFooterClassName(typing: boolean): string {
   const base =
-    'shrink-0 border-t border-edge-line px-2 py-2 text-control text-muted';
+    'shrink-0 border-t border-edge-line px-2 py-2 text-help text-muted';
   return typing ? `${base} ${phoneTypingHiddenClassName}` : base;
 }
 

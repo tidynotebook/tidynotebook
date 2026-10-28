@@ -45,7 +45,7 @@ export function InlineDiff({
 }): ReactNode {
   const blocks = useMemo(() => diffBlocks(hunks), [hunks]);
   if (blocks.length === 0)
-    return <p className="m-0 text-control text-muted">{sameText}</p>;
+    return <p className="m-0 text-help text-muted">{sameText}</p>;
   return (
     <ol className="m-0 list-none space-y-4 p-0" aria-label="Line differences">
       {blocks.map((block, index) => (

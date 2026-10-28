@@ -385,7 +385,7 @@ function ImageViewerBody({
             zoomTo(zoomOut(scale, lowest));
           }}
         />
-        <span className="w-12 text-center text-control tabular-nums text-muted">
+        <span className="w-12 text-center text-help tabular-nums text-muted">
           {idle ? '' : zoomPercent(scale)}
         </span>
         <Button

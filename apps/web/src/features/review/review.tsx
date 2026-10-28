@@ -202,7 +202,7 @@ function ReviewDetail({
           </div>
         ) : null}
         {page.missing !== null ? (
-          <p className="m-0 text-control text-muted">{page.missing}</p>
+          <p className="m-0 text-help text-muted">{page.missing}</p>
         ) : comparison.status === 'loading' ? (
           <LoadingState
             shape="list"
@@ -218,7 +218,7 @@ function ReviewDetail({
             sameText={page.sameText}
           />
         ) : comparison.status === 'limit' ? (
-          <p className="m-0 text-control text-muted">{reviewTooFarApart}</p>
+          <p className="m-0 text-help text-muted">{reviewTooFarApart}</p>
         ) : (
           <Notice tone="problem" message="The comparison did not finish." />
         )}

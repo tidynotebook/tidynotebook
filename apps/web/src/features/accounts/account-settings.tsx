@@ -300,7 +300,7 @@ function SessionsSettings(): ReactNode {
                   <p className="m-0 truncate text-ui text-strong">
                     {deviceName(current.userAgent)}
                   </p>
-                  <p className="m-0 text-control text-muted">
+                  <p className="m-0 text-help text-muted">
                     To sign out of this device, use the account menu.
                   </p>
                 </div>
@@ -308,7 +308,7 @@ function SessionsSettings(): ReactNode {
             </ul>
           )}
           <div className="mt-4 flex items-center gap-2 border-b border-edge-subtle pb-1.5">
-            <h3 className="m-0 min-w-0 flex-1 text-control font-semibold text-muted">
+            <h3 className="m-0 min-w-0 flex-1 text-help font-semibold text-muted">
               Other devices
             </h3>
             {others.length === 0 ? null : (
@@ -332,7 +332,7 @@ function SessionsSettings(): ReactNode {
             )}
           </div>
           {others.length === 0 ? (
-            <p className="mt-3 text-control text-muted">No other devices.</p>
+            <p className="mt-3 text-help text-muted">No other devices.</p>
           ) : null}
           <ul className={pageListClassName()}>
             {others.map((session) => {
@@ -347,7 +347,7 @@ function SessionsSettings(): ReactNode {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="m-0 truncate text-ui text-strong">{name}</p>
-                    <p className="m-0 flex flex-wrap gap-cluster text-control text-muted">
+                    <p className="m-0 flex flex-wrap gap-cluster text-help text-muted">
                       {sessionFacts(session, now).map((fact) => (
                         <span key={fact}>{fact}</span>
                       ))}
@@ -871,7 +871,7 @@ export function SettingsModal({
                   </span>
                   {account.email === null ||
                   account.email === undefined ? null : (
-                    <span className="block truncate text-control text-muted">
+                    <span className="block truncate text-help text-muted">
                       {account.email}
                     </span>
                   )}
@@ -888,7 +888,7 @@ export function SettingsModal({
                     }
                     className="mt-3"
                   >
-                    <h3 className="m-0 flex items-center gap-1.5 px-2 pb-1 text-control font-semibold text-muted">
+                    <h3 className="m-0 flex items-center gap-1.5 px-2 pb-1 text-help font-semibold text-muted">
                       {group}
                       {group === 'Workspace' && workspaceName !== '' ? (
                         <span className="min-w-0 truncate rounded-sm bg-hover px-1.5 font-medium text-strong">
@@ -996,7 +996,7 @@ export function SettingsModal({
                   {activeAction?.title ?? activePage?.title ?? settingsTitle}
                 </h2>
                 {scope === undefined ? null : (
-                  <p className="mb-0 mt-1 text-control text-muted max-lg:hidden">
+                  <p className="mb-0 mt-1 text-help text-muted max-lg:hidden">
                     {activeAction === null ? scope : activePage?.title}
                   </p>
                 )}
@@ -1016,7 +1016,7 @@ export function SettingsModal({
               className={`min-h-0 flex-1 px-gutter pt-3 lg:px-5 ${activeAction === null ? 'overflow-y-auto overscroll-contain pb-5' : 'flex flex-col'}`}
             >
               {scope === undefined ? null : (
-                <p className="mb-3 mt-0 min-h-5 text-control text-muted lg:hidden">
+                <p className="mb-3 mt-0 min-h-5 text-help text-muted lg:hidden">
                   {activeAction === null ? scope : activePage?.title}
                 </p>
               )}

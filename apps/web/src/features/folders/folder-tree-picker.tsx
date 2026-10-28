@@ -106,7 +106,7 @@ export function FolderField({
         </span>
       </button>
       {error === undefined ? null : (
-        <p className="mb-0 mt-1 text-control text-danger" role="alert">
+        <p className="mb-0 mt-1 text-help text-danger" role="alert">
           {error}
         </p>
       )}

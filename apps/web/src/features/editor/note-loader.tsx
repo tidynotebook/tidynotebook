@@ -455,7 +455,7 @@ export function NoteEditorLoader({
     return (
       <PageRegion>
         <PageHeader title={displayNoteName(status.path)} />
-        <p className="text-control text-danger" role="alert">
+        <p className="text-help text-danger" role="alert">
           Editing is unavailable on this device. You can read the saved text.
         </p>
         <pre className="overflow-x-auto rounded-lg border border-edge-subtle bg-card p-3 text-control">

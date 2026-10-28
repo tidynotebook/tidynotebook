@@ -127,7 +127,7 @@ function EnvironmentMail({ mail }: { readonly mail: MailSettings }): ReactNode {
   return (
     <>
       {facts.length === 0 ? null : (
-        <p className="mb-3 mt-0 flex flex-wrap gap-cluster text-control text-muted">
+        <p className="mb-3 mt-0 flex flex-wrap gap-cluster text-help text-muted">
           {facts.map((fact) => (
             <span key={fact}>{fact}</span>
           ))}
@@ -327,7 +327,7 @@ function MailSettingsForm({
         <legend className="mb-1 p-0 text-control font-medium text-strong">
           Sign-in
         </legend>
-        <p className="mb-3 mt-0 text-control text-muted">
+        <p className="mb-3 mt-0 text-help text-muted">
           {keepsPassword
             ? 'Leave the password empty to keep the saved one. Leave both fields empty for a server that takes mail with no sign-in.'
             : 'Leave both fields empty for a server that takes mail with no sign-in.'}
@@ -530,7 +530,7 @@ export function LegalDocumentsBody({
               </span>
               <div className="min-w-0 flex-1">
                 <p className="m-0 truncate text-ui text-strong">{row.title}</p>
-                <p className="m-0 text-control text-muted">
+                <p className="m-0 text-help text-muted">
                   {legalDocumentFact(document)}
                 </p>
               </div>
@@ -724,7 +724,7 @@ function LegalDocumentEditor({
       }}
     >
       <h3
-        className="mb-3 mt-0 text-ui font-semibold text-strong"
+        className="mb-3 mt-0 text-title font-semibold text-strong"
         id="legal-editor-title"
       >
         {title}
@@ -760,7 +760,7 @@ function LegalDocumentEditor({
               <legend className="mb-1 p-0 text-control font-medium text-strong">
                 Facts of your service
               </legend>
-              <p className="mb-3 mt-0 text-control text-muted">
+              <p className="mb-3 mt-0 text-help text-muted">
                 Each fact fills its place in the text below.
               </p>
               <div className="md:grid md:grid-cols-2 md:gap-x-group">

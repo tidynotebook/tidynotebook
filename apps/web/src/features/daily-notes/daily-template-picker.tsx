@@ -206,9 +206,7 @@ function TemplateSelection({
                   {displayNoteName(
                     outside.path.split('/').at(-1) ?? outside.path,
                   )}{' '}
-                  <span className="text-control text-muted">
-                    Current template
-                  </span>
+                  <span className="text-help text-muted">Current template</span>
                 </button>
               )}
               {folder === null ? (
@@ -219,7 +217,7 @@ function TemplateSelection({
               ) : files.loading ? (
                 <LoadingState label="Reading templates" />
               ) : matching.length === 0 ? (
-                <p className="text-control text-muted">
+                <p className="text-help text-muted">
                   {choices.length === 0
                     ? `No templates in ${folder}. Add a note to this folder to use it as a template.`
                     : 'No matching templates.'}
@@ -244,7 +242,7 @@ function TemplateSelection({
                       (other) =>
                         other.id !== choice.id && other.label === choice.label,
                     ) ? (
-                      <span className="text-control text-muted">
+                      <span className="text-help text-muted">
                         {choice.detail}
                       </span>
                     ) : null}
@@ -264,7 +262,7 @@ function TemplateSelection({
               Preview
             </h3>
             {selected === null ? (
-              <p className="mt-0 text-control text-muted">
+              <p className="mt-0 text-help text-muted">
                 Daily notes will start empty.
               </p>
             ) : store === null || accountId === null || chosen === undefined ? (

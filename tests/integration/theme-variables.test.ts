@@ -19,6 +19,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runInNewContext } from 'node:vm';
+import { Window } from 'happy-dom';
 import { editorThemeVariables, touchFieldQuery } from '@notesapp/editor';
 import {
   avatarClassName,
@@ -201,6 +202,85 @@ await test('a field under touch sets its text at 16 px', async () => {
     'the served rule',
   );
   assert.match(served, /--text-base:1rem/);
+});
+
+await test('touch form labels and fields share the computed 16 px size', async () => {
+  const built = await buildCss([
+    'text-control',
+    'text-help',
+    'text-title',
+    'text-kbd',
+    ...fieldClassName().split(' '),
+  ]);
+  for (const touch of [false, true]) {
+    const browser = new Window({
+      width: 390,
+      settings: { navigator: { maxTouchPoints: touch ? 1 : 0 } },
+    });
+    try {
+      assert.equal(browser.matchMedia('(pointer: coarse)').matches, touch);
+      const document = browser.document;
+      const style = document.createElement('style');
+      // This style engine does not support Tailwind's layers and preflight.
+      // Give the font fixture the compiled token and font rules unchanged.
+      const variables = /:root, :host\s*\{([^}]+)\}/.exec(built);
+      const scale =
+        /@media \(pointer: coarse\)\s*\{\s*:root\s*\{([^}]+)\}/.exec(built);
+      assert.ok(variables?.[1]);
+      assert.ok(scale?.[1]);
+      const fontRules = ['text-control', 'text-ui', 'text-help'].map((name) => {
+        const rule = new RegExp(`\\.${name}\\s*\\{([^}]+)\\}`).exec(built);
+        assert.ok(rule?.[0]);
+        return rule[0];
+      });
+      const fieldRule = /\.pointer-coarse\\:text-base\s*\{([^}]+)\}/.exec(
+        built,
+      );
+      assert.ok(fieldRule?.[0]);
+      const fontVariables = variables[1].match(
+        /--text-(?:control|ui|help|base)(?:--line-height)?:[^;]+;/g,
+      );
+      assert.ok(fontVariables);
+      style.textContent = `:root { ${fontVariables.join(' ')} } ${fontRules.join(' ')}
+        @media (pointer: coarse) { :root { ${scale[1]} } ${fieldRule[0]} }`;
+      document.head.append(style);
+      const form = document.createElement('form');
+      const label = document.createElement('label');
+      label.className = 'text-control';
+      label.textContent = 'Server';
+      const field = document.createElement('input');
+      field.className = fieldClassName();
+      field.value = 'smtp.example.com';
+      label.append(field);
+      const help = document.createElement('p');
+      help.className = 'text-help';
+      help.textContent = 'TLS protects the connection.';
+      form.append(label, help);
+      document.body.append(form);
+      const labelStyle = browser.getComputedStyle(label);
+      const fieldStyle = browser.getComputedStyle(field);
+      assert.equal(labelStyle.fontSize, touch ? '16px' : '13px');
+      assert.equal(fieldStyle.fontSize, touch ? '16px' : '14px');
+      if (touch) {
+        assert.equal(labelStyle.fontSize, fieldStyle.fontSize);
+        assert.equal(labelStyle.lineHeight, '24px');
+        assert.equal(
+          fieldStyle.lineHeight.endsWith('px')
+            ? Number.parseFloat(fieldStyle.lineHeight)
+            : Number.parseFloat(fieldStyle.lineHeight) *
+                Number.parseFloat(fieldStyle.fontSize),
+          24,
+        );
+      }
+      assert.equal(
+        browser.getComputedStyle(help).fontSize,
+        touch ? '14px' : '13px',
+      );
+      assert.equal(browser.getComputedStyle(help).lineHeight, '20px');
+    } finally {
+      await browser.happyDOM.close();
+    }
+  }
 });
 
 await test('the footer of a note gives its row to the text on a phone', async () => {

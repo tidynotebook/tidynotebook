@@ -710,7 +710,7 @@ export function meterClassNames(
   readonly fill: string;
 } {
   return {
-    text: 'mb-1 mt-0 text-control text-muted',
+    text: 'mb-1 mt-0 text-help text-muted',
     track: 'h-1.5 w-full overflow-hidden rounded-sm bg-hover',
     fill: `block h-1.5 w-full rounded-sm ${meterAlmostFull(value, max) ? 'fill-danger-fill' : 'fill-accent-fill'}`,
   };

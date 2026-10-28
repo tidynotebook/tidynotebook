@@ -352,7 +352,7 @@ function AccountsPage(): ReactNode {
                 body: (
                   <>
                     {state.reports.length === 0 ? (
-                      <p className="m-0 text-control text-muted">
+                      <p className="m-0 text-help text-muted">
                         No report waits.
                       </p>
                     ) : (
@@ -374,14 +374,14 @@ function AccountsPage(): ReactNode {
                                 <p className="m-0 truncate text-ui text-strong">
                                   {reason}
                                 </p>
-                                <p className="m-0 flex flex-wrap gap-cluster text-control text-muted">
+                                <p className="m-0 flex flex-wrap gap-cluster text-help text-muted">
                                   {reportFacts(report, now).map((fact) => (
                                     <span key={fact}>{fact}</span>
                                   ))}
                                 </p>
                                 {report.note === null ? null : (
                                   <p
-                                    className="m-0 truncate text-control text-muted"
+                                    className="m-0 truncate text-help text-muted"
                                     title={report.note}
                                   >
                                     {report.note}
@@ -454,7 +454,7 @@ function AccountsPage(): ReactNode {
                 body: (
                   <>
                     {state.invitations.length === 0 ? (
-                      <p className="m-0 text-control text-muted">
+                      <p className="m-0 text-help text-muted">
                         No invitation waits.
                       </p>
                     ) : (
@@ -470,7 +470,7 @@ function AccountsPage(): ReactNode {
                                 <p className="m-0 truncate text-ui text-strong">
                                   {invitation.email}
                                 </p>
-                                <p className="m-0 flex flex-wrap gap-cluster text-control text-muted">
+                                <p className="m-0 flex flex-wrap gap-cluster text-help text-muted">
                                   {facts.map((fact) => (
                                     <span key={fact}>{fact}</span>
                                   ))}
@@ -548,7 +548,7 @@ function AccountsPage(): ReactNode {
                                 {name}
                               </p>
                               <p
-                                className="m-0 flex flex-wrap gap-cluster text-control text-muted"
+                                className="m-0 flex flex-wrap gap-cluster text-help text-muted"
                                 title={facts.join(', ')}
                               >
                                 {facts.slice(0, 3).map((fact) => (
@@ -722,7 +722,7 @@ function InviteDialog({
           }}
         >
           <DialogBody>
-            <p className="mb-4 mt-0 text-control text-muted">
+            <p className="mb-4 mt-0 text-help text-muted">
               {mailConfigured
                 ? `The link goes to this address by mail. It works for ${lifetime}.`
                 : `This installation sends no mail, so you get the link here and send it yourself. It works for ${lifetime}.`}
@@ -852,7 +852,7 @@ function ControlsDialog({
         }}
       >
         <DialogBody>
-          <p className="mb-4 mt-0 text-control text-muted">
+          <p className="mb-4 mt-0 text-help text-muted">
             The limits count every workspace that {accountName(account)} owns.
             An empty limit is no limit.
           </p>

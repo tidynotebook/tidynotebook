@@ -642,7 +642,7 @@ function HistoryDetail({
                               <span className="truncate text-ui text-strong">
                                 {label}
                               </span>
-                              <span className="truncate text-control text-muted">
+                              <span className="truncate text-help text-muted">
                                 Changes at this save:{' '}
                                 {rowReading(change, item.merged)}
                               </span>
@@ -831,7 +831,7 @@ function RevisionPanel({
           ))}
         </div>
       ) : (
-        <h3 className="m-0 text-control font-medium text-muted">
+        <h3 className="m-0 text-help font-medium text-muted">
           {currentVersionText}
         </h3>
       )}
@@ -844,7 +844,7 @@ function RevisionPanel({
       >
         {view === 'changes' ? (
           <>
-            <p className="mb-2 mt-0 text-control text-muted">
+            <p className="mb-2 mt-0 text-help text-muted">
               Compared with current
             </p>
             <RevisionChanges diff={diff} revisionId={detail.item.revisionId} />
@@ -884,7 +884,7 @@ function RevisionChanges({
 }): ReactNode {
   if (diff.status === 'idle')
     return (
-      <p className="m-0 text-control text-muted">
+      <p className="m-0 text-help text-muted">
         No comparison is available for this version. Open Preview to read it.
       </p>
     );
@@ -908,7 +908,7 @@ function RevisionChanges({
     );
   if (diff.status === 'limit')
     return (
-      <p className="m-0 text-control text-muted">
+      <p className="m-0 text-help text-muted">
         The two versions are too far apart to compare line by line. Open Preview
         to read this version, or restore it.
       </p>

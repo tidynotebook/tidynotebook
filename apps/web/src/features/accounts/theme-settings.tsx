@@ -250,7 +250,7 @@ export function ThemeSettings(): ReactNode {
       description="System follows the device. The choice applies at once on this device and goes to your account in the background. Import a theme file to use your own colours."
     >
       <fieldset className="m-0 border-0 p-0">
-        <legend className="m-0 w-full border-b border-edge-subtle p-0 pb-1.5 text-control font-semibold text-muted">
+        <legend className="m-0 w-full border-b border-edge-subtle p-0 pb-1.5 text-help font-semibold text-muted">
           Mode
         </legend>
         <div className="mt-3 grid grid-cols-3 gap-cluster">
@@ -303,7 +303,7 @@ export function ThemeSettings(): ReactNode {
         <legend className="sr-only">Theme</legend>
         <div className="flex items-center gap-cluster border-b border-edge-subtle pb-1">
           <span
-            className="min-w-0 flex-1 text-control font-semibold text-muted"
+            className="min-w-0 flex-1 text-help font-semibold text-muted"
             aria-hidden="true"
           >
             Theme
@@ -363,7 +363,7 @@ export function ThemeSettings(): ReactNode {
                       {option.name}
                     </span>
                     {only === null ? null : (
-                      <span className="shrink-0 text-control text-muted">
+                      <span className="shrink-0 text-help text-muted">
                         {only === 'dark' ? 'dark only' : 'light only'}
                       </span>
                     )}

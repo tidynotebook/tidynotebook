@@ -70,11 +70,11 @@ function ParkedSaveRow({
     <ListRow className="flex-col items-stretch py-3">
       <div className="min-w-0">
         <p className="m-0 truncate text-ui text-strong">{save.name}</p>
-        <p className="m-0 text-control text-muted">{lines.cause}</p>
-        <p className="m-0 text-control text-muted">{lines.kept}</p>
+        <p className="m-0 text-help text-muted">{lines.cause}</p>
+        <p className="m-0 text-help text-muted">{lines.kept}</p>
       </div>
       <details>
-        <summary className="cursor-pointer text-control text-muted">
+        <summary className="cursor-pointer text-help text-muted">
           Kept text
         </summary>
         <pre

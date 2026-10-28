@@ -595,7 +595,7 @@ function Sidebar({
                 />
               </div>
               {newNoteProblem === null ? null : (
-                <p className="my-1 px-2 text-control text-danger" role="alert">
+                <p className="my-1 px-2 text-help text-danger" role="alert">
                   {newNoteProblem}
                 </p>
               )}
@@ -666,7 +666,7 @@ function Sidebar({
                     />
                   </div>
                 ) : tree.length === 0 ? (
-                  <p className="my-1 px-2 text-control text-muted">
+                  <p className="my-1 px-2 text-help text-muted">
                     No notes yet.
                   </p>
                 ) : (
@@ -690,7 +690,7 @@ function Sidebar({
                 )}
                 {files.limitNotice === null ? null : (
                   <p
-                    className="my-1 px-2 text-control text-muted"
+                    className="my-1 px-2 text-help text-muted"
                     role="status"
                     aria-live="polite"
                   >
@@ -720,7 +720,7 @@ function Sidebar({
               onOpen={daily.open}
             />
             {daily.openProblem === null ? null : (
-              <p className="my-1 px-2 text-control text-danger" role="alert">
+              <p className="my-1 px-2 text-help text-danger" role="alert">
                 {daily.openProblem}
               </p>
             )}
@@ -791,7 +791,7 @@ function Sidebar({
             })}
           />
           {store.error !== null ? (
-            <p className="my-1 px-2 text-control text-danger" role="alert">
+            <p className="my-1 px-2 text-help text-danger" role="alert">
               {store.error}
             </p>
           ) : null}
@@ -1691,7 +1691,7 @@ function ShellFrame({
                   <p className="m-0 truncate text-control font-semibold text-strong">
                     {session.account?.name ?? ''}
                   </p>
-                  <p className="m-0 truncate text-control text-muted">
+                  <p className="m-0 truncate text-help text-muted">
                     {session.account?.email ?? ''}
                   </p>
                 </>

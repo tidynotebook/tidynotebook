@@ -280,7 +280,7 @@ export default function FolderTreeView({
         }}
       >
         {rows.length === 0 ? (
-          <p className="m-0 px-2 py-2 text-control text-muted">
+          <p className="m-0 px-2 py-2 text-help text-muted">
             No folder matches "{filter}".
           </p>
         ) : null}
@@ -342,7 +342,7 @@ export default function FolderTreeView({
                     </span>
                     <span className="min-w-0 flex-1 truncate">{row.name}</span>
                     {row.path === currentFolder || row.disabled ? (
-                      <span className="shrink-0 text-control text-muted">
+                      <span className="shrink-0 text-help text-muted">
                         {row.path === currentFolder
                           ? 'Current folder'
                           : disabledNote?.(row.path)}

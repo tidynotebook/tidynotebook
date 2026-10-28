@@ -103,7 +103,7 @@ type Row =
 
 /** The class of the quiet label above a group of rows. */
 const groupLabelClassName =
-  'px-2 pb-1 pt-2 text-control font-medium text-muted first:pt-1';
+  'px-2 pb-1 pt-2 text-help font-medium text-muted first:pt-1';
 
 /** Reads the content matches of one query from this device and the server. */
 function useContentHits(
@@ -416,12 +416,12 @@ function PaletteDialog({
         {announcement}
       </p>
       {stepChoices?.status === 'ready' && stepChoices.notice !== null ? (
-        <p className="m-0 border-b border-edge-line px-gutter py-2 text-control text-muted">
+        <p className="m-0 border-b border-edge-line px-gutter py-2 text-help text-muted">
           {stepChoices.notice}
         </p>
       ) : null}
       {step === null ? (
-        <p className="mx-4 my-2 text-control text-muted">
+        <p className="mx-4 my-2 text-help text-muted">
           In {workspaceName}
           {content.offline ? ' · Offline, results from this device' : ''}
         </p>
@@ -532,11 +532,11 @@ function PaletteDialog({
       </ul>
       {step === null || stepChoices === null ? (
         content.pending ? (
-          <p className="m-4 text-control text-muted" role="status">
+          <p className="m-4 text-help text-muted" role="status">
             Searching...
           </p>
         ) : rows.length === 0 ? (
-          <p className="m-4 text-control text-muted" role="status">
+          <p className="m-4 text-help text-muted" role="status">
             No note and no action matches that.
           </p>
         ) : null
@@ -575,7 +575,7 @@ function PaletteDialog({
           />
         )
       ) : rows.length === 0 ? (
-        <p className="m-4 text-control text-muted">{step.noMatch}</p>
+        <p className="m-4 text-help text-muted">{step.noMatch}</p>
       ) : null}
     </Dialog>
   );
