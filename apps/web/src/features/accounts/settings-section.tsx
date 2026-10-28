@@ -116,7 +116,7 @@ export function SettingRow({
   readonly children?: ReactNode;
 }): ReactNode {
   return (
-    <div className="flex min-h-14 items-center gap-x-group border-b border-edge-subtle py-1 lg:min-h-13">
+    <div className="flex min-h-14 items-center gap-x-group border-b border-edge-subtle py-0.5 lg:min-h-13">
       <div className="min-w-0 flex-1">
         <p className="m-0 truncate text-ui text-strong">{label}</p>
         {help === undefined ? null : (
