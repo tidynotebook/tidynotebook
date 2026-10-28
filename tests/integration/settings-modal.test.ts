@@ -27,6 +27,8 @@ import {
 import {
   calls,
   setWaiting,
+  setSessions,
+  sessionWrites,
   resetApiKeys,
   refuseApiKeyCreation,
 } from './support/settings-modal-fixture.ts';
@@ -73,7 +75,8 @@ const hooks = registerHooks({
     const parent = context.parentURL ?? '';
     if (parent.includes('/apps/web/dist/')) {
       if (
-        parent.endsWith('/api-keys.js') &&
+        (parent.endsWith('/api-keys.js') ||
+          parent.endsWith('/account-settings.js')) &&
         specifier === '@notesapp/api-client'
       )
         return { url: fixture, shortCircuit: true };
@@ -533,6 +536,60 @@ await test('Sign out in the account menu keeps the waiting saves check', async (
   assert.equal(calls.signOut, 2);
 });
 
+await test('Devices puts the current session first and the group action before a long list', async () => {
+  const others = Array.from({ length: 12 }, (_, index) => ({
+    sessionId: `session-${String(index)}`,
+    current: false,
+    userAgent: 'Chrome/100 Linux',
+    createdAt: '2026-10-28T00:00:00.000Z',
+    lastActiveAt: '2026-10-28T00:00:00.000Z',
+    expiresAt: '2027-01-01T00:00:00.000Z',
+  }));
+  setSessions([
+    ...others,
+    {
+      ...others[0],
+      sessionId: 'current',
+      current: true,
+      userAgent: 'Firefox/100 Linux',
+      createdAt: '2026-10-28T00:00:00.000Z',
+      lastActiveAt: '2026-10-28T00:00:00.000Z',
+      expiresAt: '2027-01-01T00:00:00.000Z',
+    },
+  ]);
+  await show('/w/one/notes/n1?settings=devices');
+  const modal = dialog();
+  assert.ok(modal);
+  const current = modal.querySelector('[aria-label="This device"]');
+  assert.ok(current);
+  assert.match(current.textContent ?? '', /Firefox on Linux/);
+  assert.match(
+    current.textContent ?? '',
+    /To sign out of this device, use the account menu./,
+  );
+  assert.equal(current.querySelector('button'), null);
+  const bulk = button('Sign out every other device');
+  assert.equal(
+    bulk.parentElement?.querySelector('h3')?.textContent,
+    'Other devices',
+  );
+  const rows = [...modal.querySelectorAll('li')].filter((row) =>
+    row.querySelector('button[aria-label="Sign out Chrome on Linux"]'),
+  );
+  assert.equal(rows.length, 12);
+  const first = rows[0];
+  assert.ok(first);
+  assert.ok(
+    (bulk.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING) !==
+      0,
+  );
+  await click(bulk);
+  assert.deepEqual(sessionWrites, ['others']);
+  assert.match(modal.textContent ?? '', /No other devices./);
+  assert.ok(modal.querySelector('[aria-label="This device"]'));
+  setSessions();
+});
+
 await test('API key create, validation, secret and revoke use one Settings frame', async () => {
   resetApiKeys();
   await show('/w/one/notes/n1?settings=api-keys-apps');
@@ -554,12 +611,12 @@ await test('API key create, validation, secret and revoke use one Settings frame
     name.dispatchEvent(new window.Event('input', { bubbles: true }));
   });
   refuseApiKeyCreation(true);
-  await click(button('Done'));
+  await click(button('Create key'));
   assert.equal(name.value, 'Review client');
   assert.equal(dialog(), modal);
   assert.ok(container.querySelector('#api-key-name[aria-invalid="true"]'));
   refuseApiKeyCreation(false);
-  await click(button('Done'));
+  await click(button('Create key'));
   const secret = container.querySelector<HTMLInputElement>('#api-key-secret');
   assert.ok(secret);
   assert.equal(
@@ -590,7 +647,7 @@ await test('API key create, validation, secret and revoke use one Settings frame
   assert.equal(document.activeElement, create);
   await click(button('Revoke Review client'));
   assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
-  await click(button('Done'));
+  await click(button('Revoke key'));
   assert.equal(container.querySelector('#api-key-secret'), null);
   assert.equal(
     container.querySelector('[aria-label="Revoke Review client"]'),

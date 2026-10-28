@@ -257,7 +257,7 @@ function CreateKeyDialog({
             Cancel
           </Button>
           <Button type="submit" disabled={busy}>
-            {busy ? 'Creating key' : 'Done'}
+            {busy ? 'Creating key' : 'Create key'}
           </Button>
         </DialogFooter>
       </form>
@@ -265,7 +265,7 @@ function CreateKeyDialog({
   );
 }
 
-/** Show the one-time secret in the section after Done saves the form. */
+/** Show the one-time secret in the section after key creation. */
 function CreatedKey({
   created,
   onClose,
@@ -385,7 +385,7 @@ function RevokeKeyDialog({
             void submit();
           }}
         >
-          {busy ? 'Revoking key' : 'Done'}
+          {busy ? 'Revoking key' : 'Revoke key'}
         </Button>
       </DialogFooter>
     </SettingsDialog>

@@ -22,6 +22,7 @@ import {
   ChevronRightIcon,
   FolderIcon,
   DialogHeaderAction,
+  isTouchInput,
   FolderPlusIcon,
   SearchIcon,
   TextField,
@@ -223,9 +224,10 @@ export default function FolderTreeView({
         ariaControls={searching ? `${id}-filter` : undefined}
         onClick={() => {
           setSearching(true);
-          window.requestAnimationFrame(() =>
-            document.getElementById(`${id}-filter`)?.focus(),
-          );
+          if (!isTouchInput())
+            window.requestAnimationFrame(() =>
+              document.getElementById(`${id}-filter`)?.focus(),
+            );
         }}
       />
     </span>
@@ -250,6 +252,7 @@ export default function FolderTreeView({
         >
           <TextField
             id={`${id}-filter`}
+            listSearch
             label="Search folders"
             hideLabel
             placeholder="Filter folders"

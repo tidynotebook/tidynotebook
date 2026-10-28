@@ -7,6 +7,7 @@
  * control (decision 0065). No control here writes a class of its own except
  * the distances inside itself.
  */
+import { isTouchInput } from './input-focus.ts';
 import { useEffect, useRef, useId, type ReactNode, type Ref } from 'react';
 import {
   badgeClassName,
@@ -208,6 +209,7 @@ export function Badge({
  * reports it here.
  */
 export function TextField({
+  listSearch = false,
   inputRef,
   onKeyDown,
   id,
@@ -226,6 +228,7 @@ export function TextField({
 }: {
   readonly inputRef?: React.Ref<HTMLInputElement> | undefined;
   readonly onKeyDown?: React.KeyboardEventHandler<HTMLInputElement> | undefined;
+  readonly listSearch?: boolean | undefined;
   readonly id: string;
   readonly label: string;
   readonly value: string;
@@ -268,7 +271,8 @@ export function TextField({
         autoComplete={autoComplete}
         placeholder={placeholder}
         required={required ?? false}
-        autoFocus={autoFocus ?? false}
+        data-list-search={listSearch ? '' : undefined}
+        autoFocus={(autoFocus ?? false) && (!listSearch || !isTouchInput())}
         aria-invalid={hasError}
         aria-describedby={described === '' ? undefined : described}
         onChange={(event): void => {
@@ -610,12 +614,14 @@ export function StatusRegion({
 
 /** A full row switch states its value and any unavailable reason. */
 export function Switch({
+  hideLabel = false,
   label,
   hint,
   checked,
   disabled = false,
   onChange,
 }: {
+  readonly hideLabel?: boolean;
   readonly label: string;
   readonly hint?: string;
   readonly checked: boolean;
@@ -632,10 +638,14 @@ export function Switch({
       aria-label={label}
       aria-describedby={hint === undefined ? undefined : hintId}
       disabled={disabled}
-      className={classes.row}
+      className={
+        hideLabel
+          ? buttonClassName({ variant: 'ghost', size: 'touch', iconOnly: true })
+          : classes.row
+      }
       onClick={() => onChange(!checked)}
     >
-      <span className="min-w-0 flex-1">
+      <span className={hideLabel ? 'sr-only' : 'min-w-0 flex-1'}>
         <span className="block">{label}</span>
         {hint === undefined ? null : (
           <span id={hintId} className="block text-control text-muted">

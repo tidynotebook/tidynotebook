@@ -147,13 +147,14 @@ function TemplateSelection({
           <div className="min-w-0">
             <TextField
               id="daily-template-search"
+              listSearch
               label="Search templates"
               value={search}
               onChange={setSearch}
               autoFocus
             />
             <div
-              className="h-48 overflow-y-auto lg:h-80"
+              className="lg:h-80 lg:overflow-y-auto"
               role="group"
               aria-label="Templates"
               onKeyDown={(event) => {
@@ -257,8 +258,11 @@ function TemplateSelection({
           </div>
           <section
             aria-label="Template preview"
-            className="h-48 min-w-0 overflow-y-auto lg:h-96"
+            className="min-w-0 lg:h-96 lg:overflow-y-auto"
           >
+            <h3 className="mb-2 mt-0 text-control font-medium text-strong lg:sr-only">
+              Preview
+            </h3>
             {selected === null ? (
               <p className="mt-0 text-control text-muted">
                 Daily notes will start empty.
@@ -295,6 +299,7 @@ function TemplateSelection({
                   path={chosen.path}
                   text={templatePreviewText(ready.text, name, instant)}
                   label="Daily note preview"
+                  expandOnPhone
                   highlights={templatePreviewHighlights(
                     ready.text,
                     name,

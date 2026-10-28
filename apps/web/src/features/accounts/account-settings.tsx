@@ -260,10 +260,14 @@ function SessionsSettings(): ReactNode {
       });
   }
 
+  const current =
+    state.kind === 'ready'
+      ? state.sessions.find((session) => session.current)
+      : undefined;
   const others =
     state.kind === 'ready'
-      ? state.sessions.filter((session) => !session.current).length
-      : 0;
+      ? state.sessions.filter((session) => !session.current)
+      : [];
 
   return (
     <SettingsSection
@@ -283,8 +287,55 @@ function SessionsSettings(): ReactNode {
         />
       ) : (
         <>
+          {current === undefined ? null : (
+            <ul className={pageListClassName()} aria-label="This device">
+              <ListRow>
+                <span
+                  className="inline-flex shrink-0 items-center text-muted"
+                  aria-hidden="true"
+                >
+                  <ComputerIcon />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="m-0 truncate text-ui text-strong">
+                    {deviceName(current.userAgent)}
+                  </p>
+                  <p className="m-0 text-control text-muted">
+                    To sign out of this device, use the account menu.
+                  </p>
+                </div>
+              </ListRow>
+            </ul>
+          )}
+          <div className="mt-4 flex items-center gap-2 border-b border-edge-subtle pb-1.5">
+            <h3 className="m-0 min-w-0 flex-1 text-control font-semibold text-muted">
+              Other devices
+            </h3>
+            {others.length === 0 ? null : (
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={<SignOutIcon />}
+                disabled={busy}
+                onClick={() => {
+                  change(async () => {
+                    const ended = await revokeOtherSessions();
+                    return {
+                      error: ended.error,
+                      done: otherSessionsEndedText(ended.data?.revoked ?? 0),
+                    };
+                  });
+                }}
+              >
+                Sign out every other device
+              </Button>
+            )}
+          </div>
+          {others.length === 0 ? (
+            <p className="mt-3 text-control text-muted">No other devices.</p>
+          ) : null}
           <ul className={pageListClassName()}>
-            {state.sessions.map((session) => {
+            {others.map((session) => {
               const name = deviceName(session.userAgent);
               return (
                 <ListRow key={session.sessionId} className="flex-wrap">
@@ -326,30 +377,8 @@ function SessionsSettings(): ReactNode {
               );
             })}
           </ul>
-          {others === 0 ? null : (
-            <Button
-              className="mt-3"
-              variant="secondary"
-              icon={<SignOutIcon />}
-              disabled={busy}
-              onClick={() => {
-                change(async () => {
-                  const ended = await revokeOtherSessions();
-                  return {
-                    error: ended.error,
-                    done: otherSessionsEndedText(ended.data?.revoked ?? 0),
-                  };
-                });
-              }}
-            >
-              Sign out every other device
-            </Button>
-          )}
         </>
       )}
-      <p className="mb-0 mt-3 text-control text-muted">
-        To sign out of this device, use the account menu.
-      </p>
     </SettingsSection>
   );
 }
@@ -608,6 +637,7 @@ export function SettingsModal({
     export: (
       <SettingsSection
         section={settingsSection('export')}
+        rows
         description="A zip of every note and image, with their folders."
       >
         <SettingRow
@@ -642,6 +672,7 @@ export function SettingsModal({
     import: (
       <SettingsSection
         section={settingsSection('import')}
+        rows
         description="A zip of Markdown files and images. Paths and links are kept."
       >
         <input

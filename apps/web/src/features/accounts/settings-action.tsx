@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
-import { FixedDialogLayout, type Dialog } from '@notesapp/ui';
+import { FixedDialogLayout, isTouchInput, type Dialog } from '@notesapp/ui';
 import type { SettingsActionHost } from './settings-action-context.ts';
 /** An action replaces the section content without changing the modal frame. */
 export default function SettingsAction({
@@ -56,10 +56,15 @@ export default function SettingsAction({
       const held = panel.current;
       if (held !== null && !held.contains(document.activeElement))
         (
-          held.querySelector<HTMLElement>('input, select, textarea') ??
+          held.querySelector<HTMLElement>(
+            isTouchInput()
+              ? 'input:not([data-list-search]), select, textarea'
+              : 'input, select, textarea',
+          ) ??
           held.querySelector<HTMLElement>(
             '[role="treeitem"][aria-selected="true"]',
           ) ??
+          held.querySelector<HTMLElement>('[aria-pressed="true"]') ??
           held.querySelector<HTMLElement>('button') ??
           held
         ).focus();

@@ -841,7 +841,7 @@ await test('the served Settings bundle includes the connected app controls', asy
   for (const text of [
     'Name claimed by app:',
     'Revoke connected app?',
-    'Revoking app',
+    'Revoke access',
     'No connected apps.',
   ])
     assert.ok(answer.body.includes(text), text);

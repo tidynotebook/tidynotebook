@@ -40,6 +40,7 @@ import {
   type DialogWidth,
 } from './dialog-classes.ts';
 import { createPortal } from 'react-dom';
+import { isTouchInput } from './input-focus.ts';
 import { placeOverlay } from './overlay-position.ts';
 import { followVisibleArea, readVisibleArea } from './visible-area.ts';
 import { giveFocusBack } from './dialog-focus.ts';
@@ -155,7 +156,13 @@ export function Dialog({
     window.requestAnimationFrame(() => {
       const targets = focusables();
       if (panel !== null && !panel.contains(document.activeElement))
-        (targets[0] ?? panel).focus();
+        (
+          (isTouchInput()
+            ? targets.find(
+                (target) => !target.matches('input[data-list-search]'),
+              )
+            : targets[0]) ?? panel
+        ).focus();
     });
     const onKeyDown = (event: KeyboardEvent): void => {
       // A dialog that this one opened, such as a confirmation inside

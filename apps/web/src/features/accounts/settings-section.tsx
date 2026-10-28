@@ -13,7 +13,7 @@
  * Accounts is a part of Settings (record 0138).
  */
 import { createContext, useContext, type ReactNode } from 'react';
-import { ChevronRightIcon, type PageSection } from '@notesapp/ui';
+import { ChevronRightIcon, Switch, type PageSection } from '@notesapp/ui';
 
 /**
  * The sections inside the Settings modal (issue 517, item 8).
@@ -34,6 +34,7 @@ export function SettingsSection({
   danger = false,
   description,
   warning,
+  rows = false,
   children,
 }: {
   readonly section: PageSection;
@@ -43,12 +44,16 @@ export function SettingsSection({
   readonly danger?: boolean | undefined;
   readonly description?: string | undefined;
   readonly warning?: string | undefined;
+  readonly rows?: boolean;
   readonly children: ReactNode;
 }): ReactNode {
   const topic = useContext(SettingsTopicContext);
   if (topic !== null)
     return (
-      <section className="pb-2 pt-4 first:pt-0" aria-label={section.title}>
+      <section
+        className={rows ? undefined : 'pb-2 pt-4 first:pt-0'}
+        aria-label={section.title}
+      >
         {topic.hiddenTitles.includes(section.id) ? null : (
           <h3
             className={`m-0 border-b border-edge-subtle pb-1.5 text-control font-semibold ${danger ? 'text-danger' : 'text-muted'}`}
@@ -111,11 +116,13 @@ export function SettingRow({
   readonly children?: ReactNode;
 }): ReactNode {
   return (
-    <div className="flex min-h-13 flex-wrap items-center gap-x-group gap-y-2 border-b border-edge-subtle py-2 last:border-b-0">
+    <div className="flex min-h-14 items-center gap-x-group border-b border-edge-subtle py-1 lg:min-h-13">
       <div className="min-w-0 flex-1">
-        <p className="m-0 text-ui text-strong">{label}</p>
+        <p className="m-0 truncate text-ui text-strong">{label}</p>
         {help === undefined ? null : (
-          <p className="m-0 text-control text-muted">{help}</p>
+          <p className="m-0 truncate text-control text-muted" title={help}>
+            {help}
+          </p>
         )}
       </div>
       {children === undefined ? null : (
@@ -170,5 +177,33 @@ export function SettingChoiceRow({
         <ChevronRightIcon />
       </span>
     </button>
+  );
+}
+
+/** A Settings switch shares the same row, help line, and divider as actions. */
+export function SettingSwitchRow({
+  label,
+  help,
+  checked,
+  disabled,
+  onChange,
+}: {
+  readonly label: string;
+  readonly help: string;
+  readonly checked: boolean;
+  readonly disabled: boolean;
+  readonly onChange: (checked: boolean) => void;
+}): ReactNode {
+  return (
+    <SettingRow label={label} help={help}>
+      <Switch
+        hideLabel
+        label={label}
+        hint={help}
+        checked={checked}
+        disabled={disabled}
+        onChange={onChange}
+      />
+    </SettingRow>
   );
 }

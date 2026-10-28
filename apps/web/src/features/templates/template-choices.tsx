@@ -24,6 +24,7 @@ import {
   CloseIcon,
   SettingsIcon,
   buttonClassName,
+  isTouchInput,
   LoadingState,
   Notice,
   TemplateIcon,
@@ -73,6 +74,13 @@ export default function TemplateChoices({
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<string | null>(null);
   const [details, setDetails] = useState(false);
+  const [layout] = useState(() => window.matchMedia('(min-width: 1024px)'));
+  const [desktop, setDesktop] = useState(layout.matches);
+  useEffect(() => {
+    const change = (): void => setDesktop(layout.matches);
+    layout.addEventListener('change', change);
+    return () => layout.removeEventListener('change', change);
+  }, [layout]);
   const initialized = useRef(false);
   const searchRef = useRef<HTMLInputElement | null>(null);
   const openSettings = useOpenSettings();
@@ -151,23 +159,19 @@ export default function TemplateChoices({
     }
     setSelected(firstTemplate(choices, last));
     initialized.current = true;
-    if (
-      navigator.maxTouchPoints > 0 ||
-      window.matchMedia('(pointer: coarse)').matches
-    )
-      detailTitle.current?.focus();
+    if (isTouchInput()) detailTitle.current?.focus();
     else searchRef.current?.focus();
   }, [choices, settings.status, files.loading, accountId, workspaceId]);
   useEffect(() => {
     if (details) detailTitle.current?.focus();
     else if (returning.current) {
       returning.current = false;
-      const row = listRef.current?.querySelector<HTMLButtonElement>(
-        '[aria-pressed="true"]',
-      );
-      const touch =
-        navigator.maxTouchPoints > 0 ||
-        window.matchMedia('(pointer: coarse)').matches;
+      const row = [
+        ...(listRef.current?.querySelectorAll<HTMLButtonElement>(
+          '[data-template-id]',
+        ) ?? []),
+      ].find((row) => row.dataset['templateId'] === selected);
+      const touch = isTouchInput();
       (touch ? row : (searchRef.current ?? row))?.focus();
     }
   }, [details]);
@@ -321,6 +325,7 @@ export default function TemplateChoices({
                 {choices.length > 0 ? (
                   <TextField
                     id="search-templates"
+                    listSearch
                     label="Search templates"
                     value={search}
                     onChange={setSearch}
@@ -415,10 +420,13 @@ export default function TemplateChoices({
                         key={choice.id}
                         type="button"
                         className={rowClassName({
-                          selected: selected === choice.id,
+                          selected: desktop && selected === choice.id,
                           className: 'w-full text-left',
                         })}
-                        aria-pressed={selected === choice.id}
+                        data-template-id={choice.id}
+                        aria-pressed={
+                          desktop ? selected === choice.id : undefined
+                        }
                         onClick={() => choose(choice.id, true)}
                       >
                         <TemplateIcon />

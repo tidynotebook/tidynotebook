@@ -436,6 +436,36 @@ await test('Move places folder search beside its title and Escape keeps the move
   assert.equal(container.querySelector('input'), null);
 });
 
+await test('touch folder filtering waits for a direct field tap', async () => {
+  const points = Object.getOwnPropertyDescriptor(navigator, 'maxTouchPoints');
+  Object.defineProperty(navigator, 'maxTouchPoints', {
+    configurable: true,
+    value: 1,
+  });
+  try {
+    await render(
+      createElement(FolderTreePicker, {
+        folders: Array.from({ length: 10 }, (_, i) => `Folder ${String(i)}`),
+        selected: '',
+        label: 'Folders',
+        onSelect: () => {},
+      }),
+    );
+    const search = button('Search folders');
+    search.focus();
+    await act(async () => search.click());
+    const field = fieldOf('Search folders');
+    assert.notEqual(document.activeElement, field);
+    assert.equal(document.activeElement, search);
+    await act(async () => field.focus());
+    assert.equal(document.activeElement, field);
+  } finally {
+    if (points === undefined)
+      Reflect.deleteProperty(navigator, 'maxTouchPoints');
+    else Object.defineProperty(navigator, 'maxTouchPoints', points);
+  }
+});
+
 await test('eight folders have no search control', async () => {
   await render(
     createElement(FolderTreePicker, {
@@ -519,6 +549,28 @@ await test('daily template selection searches only templates and supports No tem
   await act(async () => button('No template').click());
   await act(async () => button('Done').click());
   assert.equal(dailySaves.length, before + 1);
+});
+
+await test('touch Daily notes template search waits for a direct field tap', async () => {
+  const points = Object.getOwnPropertyDescriptor(navigator, 'maxTouchPoints');
+  Object.defineProperty(navigator, 'maxTouchPoints', {
+    configurable: true,
+    value: 1,
+  });
+  try {
+    await render(createElement(DailyNoteSettingsFields));
+    await act(async () => button('Template').click());
+    const search = fieldOf('Search templates');
+    assert.equal(search.getAttribute('data-list-search'), '');
+    assert.notEqual(document.activeElement, search);
+    await act(async () => search.focus());
+    assert.equal(document.activeElement, search);
+    await act(async () => button('Cancel').click());
+  } finally {
+    if (points === undefined)
+      Reflect.deleteProperty(navigator, 'maxTouchPoints');
+    else Object.defineProperty(navigator, 'maxTouchPoints', points);
+  }
 });
 
 await test('the desktop field popup stays in the dialog focus scope and Escape closes only the popup', async () => {

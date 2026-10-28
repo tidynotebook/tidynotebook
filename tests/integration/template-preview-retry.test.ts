@@ -505,6 +505,21 @@ await test('touch template navigation leaves the keyboard closed until search is
   }
 });
 
+await test('the phone template list has no preselected row', async () => {
+  const width = window.innerWidth;
+  window.innerWidth = 390;
+  try {
+    await show('workspace-phone-list');
+    assert.equal(button('Meeting').getAttribute('aria-pressed'), null);
+    assert.equal(button('Meeting').classList.contains('bg-active'), false);
+    await chooseMeeting('Phone choice');
+    await click('Back to templates');
+    assert.equal(button('Meeting').getAttribute('aria-pressed'), null);
+  } finally {
+    window.innerWidth = width;
+  }
+});
+
 await test('an incomplete list with no available templates does not claim a search miss', async () => {
   setTemplateAvailability({ empty: true, partial: true });
   try {

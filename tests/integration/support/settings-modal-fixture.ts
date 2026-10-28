@@ -157,3 +157,39 @@ export async function revokeApiKey({
   apiKeys = apiKeys.filter((key) => key.keyId !== path.keyId);
   return { data: { removed: true } };
 }
+
+export { updatePreferences, updateProfile } from '@notesapp/api-client';
+const currentSession: import('@notesapp/api-client').AccountSession = {
+  sessionId: 'current-session',
+  current: true,
+  userAgent: 'Firefox/100 Linux',
+  createdAt: '2026-10-28T00:00:00.000Z',
+  lastActiveAt: '2026-10-28T00:00:00.000Z',
+  expiresAt: '2027-01-01T00:00:00.000Z',
+};
+let sessions: import('@notesapp/api-client').AccountSession[] = [
+  currentSession,
+];
+export const sessionWrites: string[] = [];
+export function setSessions(next: typeof sessions = [currentSession]): void {
+  sessions = next;
+  sessionWrites.length = 0;
+}
+export async function listSessions() {
+  return { data: { sessions } };
+}
+export async function revokeOtherSessions() {
+  sessionWrites.push('others');
+  const revoked = sessions.filter((session) => !session.current).length;
+  sessions = sessions.filter((session) => session.current);
+  return { data: { revoked } };
+}
+export async function revokeSession({
+  path,
+}: {
+  readonly path: { readonly sessionId: string };
+}) {
+  sessionWrites.push(path.sessionId);
+  sessions = sessions.filter((session) => session.sessionId !== path.sessionId);
+  return { data: { removed: true } };
+}

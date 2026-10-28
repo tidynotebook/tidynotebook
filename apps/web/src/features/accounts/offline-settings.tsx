@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 import type { LocalStore } from '@notesapp/sync';
-import { Switch, Button, LoadingState, Notice } from '@notesapp/ui';
+import { Button, LoadingState, Notice } from '@notesapp/ui';
 import {
   offlineTargets,
   allOfflineTargetsPinned,
@@ -16,7 +16,7 @@ import {
   type OfflineProblem,
 } from '../../lib/offline-files.ts';
 import { sectionOf, settingsSections } from '../../lib/page-sections.ts';
-import { SettingsSection } from './settings-section.tsx';
+import { SettingsSection, SettingSwitchRow } from './settings-section.tsx';
 
 /** The storage operations used by this section. */
 export type OfflineSettingsStore = Pick<
@@ -210,6 +210,7 @@ export function OfflineSettingsSection({
   return (
     <SettingsSection
       section={sectionOf(settingsSections, 'offline')}
+      rows
       description="Your notes are always kept on this device. Images and older versions take more space, so you choose whether to keep them too."
     >
       {offline.status === 'failed' ? (
@@ -233,9 +234,9 @@ export function OfflineSettingsSection({
         />
       ) : (
         <div className="flex flex-col">
-          <Switch
+          <SettingSwitchRow
             label="Images"
-            hint={
+            help={
               offline.available.images ? 'Uses more space' : 'No images yet'
             }
             checked={offline.choices.images}
@@ -244,9 +245,9 @@ export function OfflineSettingsSection({
               offline.setChoice('images', keep);
             }}
           />
-          <Switch
+          <SettingSwitchRow
             label="Older versions"
-            hint={
+            help={
               offline.available.history
                 ? 'Uses more space'
                 : 'No older versions yet'
