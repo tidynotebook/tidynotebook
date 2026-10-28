@@ -54,7 +54,7 @@ const store = await openLocalStore('http://localhost', {
 
 test.after(async () => {
   await act(async () => root.unmount());
-  store.close();
+  await store.close();
   hooks.deregister();
   await browser.happyDOM.close();
   for (const [name, descriptor] of originals) {
