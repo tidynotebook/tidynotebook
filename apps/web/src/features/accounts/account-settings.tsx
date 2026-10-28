@@ -51,6 +51,7 @@ import {
   CloseIcon,
   ComputerIcon,
   Dialog,
+  DialogHeaderActionsContext,
   DownloadIcon,
   ExternalLinkIcon,
   FileTextIcon,
@@ -522,6 +523,8 @@ export function SettingsModal({
   // A refused import is a problem, not news, so it has its own notice.
   const [importError, setImportError] = useState('');
   const [removing, setRemoving] = useState(false);
+  const [actionHeaderTarget, setActionHeaderTarget] =
+    useState<HTMLDivElement | null>(null);
   const [actionTarget, setActionTarget] = useState<HTMLDivElement | null>(null);
   const [activeAction, setActiveAction] =
     useState<SettingsActionRegistration | null>(null);
@@ -967,6 +970,10 @@ export function SettingsModal({
                   </p>
                 )}
               </div>
+              <div
+                ref={setActionHeaderTarget}
+                className="flex shrink-0 items-center empty:hidden"
+              />
               <Button
                 variant="ghost"
                 icon={<CloseIcon />}
@@ -982,24 +989,29 @@ export function SettingsModal({
                   {activeAction === null ? scope : activePage?.title}
                 </p>
               )}
-              <div
-                ref={setActionTarget}
-                hidden={activeAction === null}
-                className={
-                  activeAction === null
-                    ? undefined
-                    : 'flex min-h-0 flex-1 flex-col'
-                }
-              />
-              <div hidden={activeAction !== null} inert={activeAction !== null}>
-                <SettingsTopicContext.Provider
-                  value={{ hiddenTitles, helpSection: null }}
+              <DialogHeaderActionsContext.Provider value={actionHeaderTarget}>
+                <div
+                  ref={setActionTarget}
+                  hidden={activeAction === null}
+                  className={
+                    activeAction === null
+                      ? undefined
+                      : 'flex min-h-0 flex-1 flex-col'
+                  }
+                />
+                <div
+                  hidden={activeAction !== null}
+                  inert={activeAction !== null}
                 >
-                  {activePage?.sections.map((key) => (
-                    <div key={key}>{sectionBodies[key]}</div>
-                  ))}
-                </SettingsTopicContext.Provider>
-              </div>
+                  <SettingsTopicContext.Provider
+                    value={{ hiddenTitles, helpSection: null }}
+                  >
+                    {activePage?.sections.map((key) => (
+                      <div key={key}>{sectionBodies[key]}</div>
+                    ))}
+                  </SettingsTopicContext.Provider>
+                </div>
+              </DialogHeaderActionsContext.Provider>
             </div>
           </section>
         </div>

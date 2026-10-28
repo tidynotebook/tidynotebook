@@ -348,6 +348,8 @@ export function controlStripClassName(): string {
 export function rowClassName(
   options: {
     readonly selected?: boolean | undefined;
+    /** Aligns a Settings control with the content column. */
+    readonly flush?: boolean | undefined;
     readonly current?: boolean | undefined;
     readonly inset?: boolean | undefined;
     readonly interactive?: boolean | undefined;
@@ -382,7 +384,7 @@ export function rowClassName(
       : 'disabled:cursor-not-allowed disabled:text-muted disabled:hover:bg-transparent disabled:hover:text-muted'
     : '';
   return [
-    `flex min-h-11 items-center gap-2 rounded-md px-2 text-control ${colour} no-underline ${transitionSurface} md:min-h-7`,
+    `flex min-h-11 items-center gap-2 rounded-md ${options.flush === true ? 'px-0' : 'px-2'} text-control ${colour} no-underline ${transitionSurface} md:min-h-7`,
     interactive ? 'cursor-pointer' : '',
     disabled,
     interactive
@@ -854,7 +856,10 @@ export function switchClassNames(checked: boolean): {
   readonly thumb: string;
 } {
   return {
-    row: rowClassName({ className: 'min-h-12 w-full text-left lg:min-h-12' }),
+    row: rowClassName({
+      flush: true,
+      className: 'min-h-12 w-full text-left lg:min-h-12',
+    }),
     track: `inline-flex h-6 w-10 shrink-0 items-center rounded-full border border-edge-line p-1 ${checked ? 'justify-end bg-accent-fill' : 'justify-start bg-hover'}`,
     thumb: `size-4 rounded-full ${checked ? 'bg-on-accent' : 'bg-muted'}`,
   };

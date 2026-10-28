@@ -21,6 +21,7 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
   FolderIcon,
+  DialogHeaderAction,
   FolderPlusIcon,
   SearchIcon,
   TextField,
@@ -70,6 +71,7 @@ export type FolderTreePickerProps = {
   readonly autoFocus?: boolean | undefined;
   /** A place shown with a quiet label even when another folder is selected. */
   readonly currentFolder?: string | undefined;
+  readonly searchPlacement?: 'header' | 'row' | undefined;
 };
 
 /** The folder tree with its filter field and New folder here. */
@@ -84,6 +86,7 @@ export default function FolderTreeView({
   disabledNote,
   autoFocus = false,
   currentFolder,
+  searchPlacement = 'row',
 }: FolderTreePickerProps): ReactNode {
   const id = useId();
   const searchButton = useRef<HTMLButtonElement | null>(null);
@@ -189,46 +192,71 @@ export default function FolderTreeView({
   const parentName =
     selected === '' ? null : (selected.split('/').at(-1) ?? selected);
 
+  const canSearch = all.filter((folder) => folder !== '').length > filterFrom;
+  const searchControl = canSearch ? (
+    <span
+      className="inline-flex shrink-0"
+      data-dialog-escape={searching ? 'local' : undefined}
+      onClick={(event) => event.stopPropagation()}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && searching) {
+          event.preventDefault();
+          event.stopPropagation();
+          setFilter('');
+          setSearching(false);
+          window.requestAnimationFrame(() => searchButton.current?.focus());
+        } else if (
+          ['ArrowDown', 'ArrowUp', 'Home', 'End', 'Enter', ' '].includes(
+            event.key,
+          )
+        )
+          event.stopPropagation();
+      }}
+    >
+      <Button
+        variant="ghost"
+        size={searchPlacement === 'header' ? 'md' : 'sm'}
+        icon={<SearchIcon />}
+        label="Search folders"
+        buttonRef={searchButton}
+        ariaExpanded={searching}
+        ariaControls={searching ? `${id}-filter` : undefined}
+        onClick={() => {
+          setSearching(true);
+          window.requestAnimationFrame(() =>
+            document.getElementById(`${id}-filter`)?.focus(),
+          );
+        }}
+      />
+    </span>
+  ) : null;
   return (
     <div>
-      {all.filter((folder) => folder !== '').length > filterFrom ? (
-        <div className="mb-1 flex min-h-8 items-center justify-end gap-2">
-          {searching ? (
-            <div
-              className="min-w-0 flex-1"
-              data-dialog-escape="local"
-              onKeyDown={(event) => {
-                if (event.key === 'Escape') {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  setFilter('');
-                  setSearching(false);
-                  window.requestAnimationFrame(() =>
-                    searchButton.current?.focus(),
-                  );
-                }
-              }}
-            >
-              <TextField
-                id={`${id}-filter`}
-                label="Search folders"
-                hideLabel
-                placeholder="Filter folders"
-                autoFocus
-                value={filter}
-                onChange={setFilter}
-              />
-            </div>
-          ) : (
-            <Button
-              variant="ghost"
-              size="sm"
-              icon={<SearchIcon />}
-              label="Search folders"
-              buttonRef={searchButton}
-              onClick={() => setSearching(true)}
-            />
-          )}
+      {searchPlacement === 'header' ? (
+        <DialogHeaderAction>{searchControl}</DialogHeaderAction>
+      ) : null}
+      {canSearch && searching ? (
+        <div
+          data-dialog-escape="local"
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              event.preventDefault();
+              event.stopPropagation();
+              setFilter('');
+              setSearching(false);
+              window.requestAnimationFrame(() => searchButton.current?.focus());
+            }
+          }}
+        >
+          <TextField
+            id={`${id}-filter`}
+            label="Search folders"
+            hideLabel
+            placeholder="Filter folders"
+            autoFocus
+            value={filter}
+            onChange={setFilter}
+          />
         </div>
       ) : null}
       <div
@@ -319,6 +347,9 @@ export default function FolderTreeView({
                     ) : null}
                   </div>
                 </div>
+                {searchPlacement === 'row' && row === rows[0]
+                  ? searchControl
+                  : null}
                 {chosen ? (
                   <span
                     className="inline-flex shrink-0 items-center pr-1"
@@ -326,6 +357,10 @@ export default function FolderTreeView({
                   >
                     <CheckIcon />
                   </span>
+                ) : searchPlacement === 'row' &&
+                  row === rows[0] &&
+                  canSearch ? (
+                  <span className="w-5 shrink-0" aria-hidden="true" />
                 ) : null}
               </div>
             </div>

@@ -151,18 +151,24 @@ export default function TemplateChoices({
     }
     setSelected(firstTemplate(choices, last));
     initialized.current = true;
-    searchRef.current?.focus();
+    if (
+      navigator.maxTouchPoints > 0 ||
+      window.matchMedia('(pointer: coarse)').matches
+    )
+      detailTitle.current?.focus();
+    else searchRef.current?.focus();
   }, [choices, settings.status, files.loading, accountId, workspaceId]);
   useEffect(() => {
     if (details) detailTitle.current?.focus();
     else if (returning.current) {
       returning.current = false;
-      (
-        searchRef.current ??
-        listRef.current?.querySelector<HTMLButtonElement>(
-          '[aria-pressed="true"]',
-        )
-      )?.focus();
+      const row = listRef.current?.querySelector<HTMLButtonElement>(
+        '[aria-pressed="true"]',
+      );
+      const touch =
+        navigator.maxTouchPoints > 0 ||
+        window.matchMedia('(pointer: coarse)').matches;
+      (touch ? row : (searchRef.current ?? row))?.focus();
     }
   }, [details]);
   useEffect(() => {
@@ -442,15 +448,15 @@ export default function TemplateChoices({
           <div
             className={
               details
-                ? 'min-h-0 min-w-0 overflow-y-auto lg:col-span-2'
-                : 'hidden min-h-0 min-w-0 overflow-y-auto lg:col-span-2 lg:block'
+                ? 'flex min-h-0 min-w-0 flex-col overflow-y-auto lg:col-span-2'
+                : 'hidden min-h-0 min-w-0 flex-col overflow-y-auto lg:col-span-2 lg:flex'
             }
           >
             {selected === null ? (
               <p className="text-control text-muted">Choose a template</p>
             ) : (
               <>
-                <div className="grid min-w-0 gap-x-3 sm:grid-cols-2">
+                <div className="grid min-w-0 shrink-0 gap-x-3 sm:grid-cols-2">
                   <TextField
                     id="template-note-name"
                     label="Name"
@@ -493,7 +499,10 @@ export default function TemplateChoices({
                     </Button>
                   </>
                 ) : (
-                  <section aria-label={`Preview of ${selectedLabel ?? ''}`}>
+                  <section
+                    className="flex min-h-24 flex-1 flex-col"
+                    aria-label={`Preview of ${selectedLabel ?? ''}`}
+                  >
                     <p className="mb-1.5 mt-0 text-control font-medium text-strong">
                       Preview
                     </p>
@@ -514,6 +523,7 @@ export default function TemplateChoices({
                           text={filled ?? ''}
                           highlights={highlights}
                           label="The new note"
+                          fill
                         />
                       </Suspense>
                     )}

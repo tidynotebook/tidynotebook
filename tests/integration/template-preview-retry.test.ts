@@ -481,6 +481,30 @@ await test('Back restores list focus and Manage templates sits in the header', a
   assert.equal(address, '/w/one/notes/n1?settings=templates');
 });
 
+await test('touch template navigation leaves the keyboard closed until search is selected', async () => {
+  const points = Object.getOwnPropertyDescriptor(navigator, 'maxTouchPoints');
+  Object.defineProperty(navigator, 'maxTouchPoints', {
+    configurable: true,
+    value: 1,
+  });
+  try {
+    await show('workspace-touch');
+    const search = field('search-templates');
+    assert.notEqual(document.activeElement, search);
+    assert.equal(document.activeElement, container.querySelector('header h3'));
+    await chooseMeeting('Touch preview');
+    await click('Back to templates');
+    assert.equal(document.activeElement, button('Meeting'));
+    assert.notEqual(document.activeElement, search);
+    await act(async () => search.focus());
+    assert.equal(document.activeElement, search);
+  } finally {
+    if (points === undefined)
+      Reflect.deleteProperty(navigator, 'maxTouchPoints');
+    else Object.defineProperty(navigator, 'maxTouchPoints', points);
+  }
+});
+
 await test('an incomplete list with no available templates does not claim a search miss', async () => {
   setTemplateAvailability({ empty: true, partial: true });
   try {

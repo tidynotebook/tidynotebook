@@ -288,6 +288,7 @@ export function MoveItemsDialog({
       onClose={onClose}
       title={`Move ${moveSubject(items)} to`}
       titleId="move-items-title"
+      headerActions
       width="small"
       returnFocus={returnFocus}
     >
@@ -300,6 +301,7 @@ export function MoveItemsDialog({
         <DialogBody>
           <FolderTreePicker
             folders={folders}
+            searchPlacement="header"
             selected={target}
             currentFolder={
               items.every(

@@ -20,6 +20,7 @@ import {
   Switch,
   Button,
   DialogBody,
+  FolderIcon,
   DialogFooter,
   LoadingState,
   Notice,
@@ -70,6 +71,7 @@ function LayoutFields({
     <>
       <SettingChoiceRow
         label="Folder"
+        valueIcon={<FolderIcon />}
         help="New daily notes go here."
         value={settings.folder === '' ? 'All notes' : settings.folder}
         onClick={() => setEditing('folder')}
@@ -85,6 +87,7 @@ function LayoutFields({
         onClose={close}
         title={editing === 'folder' ? 'Save in' : 'Name format'}
         titleId="daily-layout-title"
+        headerActions
         width="small"
         align="sheet"
       >
@@ -93,6 +96,7 @@ function LayoutFields({
             <>
               <FolderTreePicker
                 label="Folders"
+                searchPlacement="header"
                 folders={knownFolderPaths(
                   files.notes.map((note) => note.path),
                   files.emptyFolders,
@@ -108,8 +112,11 @@ function LayoutFields({
               label="Name format"
               value={format}
               onChange={setFormat}
-              hint="Use YYYY, MM and DD for the date."
-              reserveErrorSpace
+              hint={
+                problem === null
+                  ? `Use YYYY, MM and DD for the date. Today: ${dailyNotePreview(today(), { folder: '', format })}`
+                  : undefined
+              }
               error={
                 problem !== null && problem !== 'folder' ? sentence : undefined
               }

@@ -388,6 +388,10 @@ await test('folder search opens on request and narrows a large tree', async () =
     }),
   );
   assert.equal(container.querySelector('input'), null);
+  assert.equal(
+    button('Search folders').closest('[role="treeitem"]'),
+    row('All notes'),
+  );
   await act(async () => button('Search folders').click());
   const search = fieldOf('Search folders');
   await type(search.id, 'Folder 4');
@@ -402,6 +406,34 @@ await test('folder search opens on request and narrows a large tree', async () =
   assert.equal(container.querySelector('input'), null);
   assert.equal(document.activeElement, button('Search folders'));
   assert.equal(names().length, 11);
+});
+
+await test('Move places folder search beside its title and Escape keeps the move open', async () => {
+  await render(
+    createElement(MoveItemsDialog, {
+      open: true,
+      onClose: () => {},
+      store,
+      accountId: 'account',
+      workspaceId: 'workspace',
+      area: { notes: folderNotes, namesInUse: [] },
+      folders: Array.from({ length: 10 }, (_, i) => `Folder ${String(i)}`),
+      emptyFolders: [],
+      items: [{ kind: 'note', fileId: 'e', path: 'Reading list.md' }],
+      onFolderMoved: () => {},
+    }),
+  );
+  const search = button('Search folders');
+  const heading = container.querySelector('[role="dialog"] h2');
+  assert.ok(heading?.parentElement?.contains(search));
+  assert.equal(search.closest('[role="treeitem"]'), null);
+  await act(async () => search.click());
+  const field = fieldOf('Search folders');
+  await type(field.id, 'Folder 4');
+  field.focus();
+  await press('Escape');
+  assert.ok(container.querySelector('[role="dialog"]'));
+  assert.equal(container.querySelector('input'), null);
 });
 
 await test('eight folders have no search control', async () => {
@@ -441,6 +473,33 @@ await test('the Daily notes folder setting chooses its folder in the tree', asyn
   assert.equal(row('Research').getAttribute('aria-selected'), 'true');
   await act(async () => button('Done').click());
   assert.equal(dailySaves.at(-1)?.folder, 'Projects/Research');
+});
+
+await test('Name format shows the live date or its validation error in one help area', async () => {
+  await render(createElement(DailyNoteSettingsFields));
+  const saves = dailySaves.length;
+  await act(async () => button('Name format').click());
+  const field = fieldOf('Name format');
+  assert.match(
+    container.querySelector('#daily-format-hint')?.textContent ?? '',
+    /Use YYYY, MM and DD for the date. Today: \d{4}-\d{2}-\d{2}/,
+  );
+  await type(field.id, 'DD-MM-YYYY');
+  const expected = '27-10-2026';
+  assert.ok(
+    container
+      .querySelector('#daily-format-hint')
+      ?.textContent?.endsWith(expected),
+  );
+  await type(field.id, 'YYYY');
+  assert.equal(container.querySelector('#daily-format-hint'), null);
+  assert.match(
+    container.querySelector('#daily-format-error')?.textContent ?? '',
+    /Add a month/,
+  );
+  assert.equal(field.getAttribute('aria-invalid'), 'true');
+  await act(async () => button('Cancel').click());
+  assert.equal(dailySaves.length, saves);
 });
 
 await test('daily template selection searches only templates and supports No template', async () => {

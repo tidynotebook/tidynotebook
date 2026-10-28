@@ -14,6 +14,7 @@ import {
 import {
   Button,
   DialogBody,
+  FolderIcon,
   DialogFooter,
   LoadingState,
   Notice,
@@ -56,6 +57,7 @@ function FolderField({
     <div>
       <SettingChoiceRow
         label="Templates folder"
+        valueIcon={<FolderIcon />}
         value={settings.folder}
         help={
           files.loading
@@ -72,6 +74,7 @@ function FolderField({
         }}
         title="Save in"
         titleId="template-folder-title"
+        headerActions
         width="small"
         align="sheet"
       >
@@ -79,6 +82,7 @@ function FolderField({
           <FolderTreePicker
             includeRoot={false}
             label="Folders"
+            searchPlacement="header"
             folders={Array.from(
               new Set([
                 settings.folder,

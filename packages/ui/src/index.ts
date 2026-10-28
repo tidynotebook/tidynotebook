@@ -172,6 +172,8 @@ export {
   DialogBody,
   DialogFooter,
   FixedDialogLayout,
+  DialogHeaderActionsContext,
+  DialogHeaderAction,
 } from './dialog.tsx';
 export type { MenuAlign, MenuAnchor, MenuItem } from './menu.tsx';
 export type { ScreenArea, VisualViewportBox } from './visible-area.ts';

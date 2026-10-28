@@ -26,6 +26,7 @@ import {
   useEffect,
   useLayoutEffect,
   useRef,
+  useState,
   type ReactNode,
 } from 'react';
 import {
@@ -38,6 +39,7 @@ import {
   type DialogAlign,
   type DialogWidth,
 } from './dialog-classes.ts';
+import { createPortal } from 'react-dom';
 import { placeOverlay } from './overlay-position.ts';
 import { followVisibleArea, readVisibleArea } from './visible-area.ts';
 import { giveFocusBack } from './dialog-focus.ts';
@@ -95,10 +97,13 @@ export function Dialog({
   returnFocus,
   anchor,
   actions,
+  headerActions = false,
 }: {
   readonly anchor?: HTMLElement | null;
   /** Controls at the end of the title row, such as a link to settings. */
   readonly actions?: ReactNode;
+  /** Allows a child picker to place a control beside the title. */
+  readonly headerActions?: boolean | undefined;
   readonly open: boolean;
   readonly onClose: () => void;
   readonly title: string;
@@ -113,6 +118,7 @@ export function Dialog({
   readonly returnFocus?: (() => void) | undefined;
 }): ReactNode {
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const [headerTarget, setHeaderTarget] = useState<HTMLDivElement | null>(null);
   const openerRef = useRef<HTMLElement | null>(null);
   // The latest close handler, which the effect below reads when a key or a
   // pointer asks for it. A screen passes a new function on every render, and
@@ -261,7 +267,7 @@ export function Dialog({
         aria-describedby={describedBy}
         tabIndex={-1}
       >
-        {actions === undefined || hideTitle || screen ? (
+        {(actions === undefined && !headerActions) || hideTitle || screen ? (
           <h2
             className={dialogTitleClassName(hideTitle || screen)}
             id={titleId}
@@ -274,12 +280,34 @@ export function Dialog({
               {title}
             </h2>
             {actions}
+            {headerActions ? (
+              <div
+                ref={setHeaderTarget}
+                className="flex shrink-0 items-center empty:hidden"
+              />
+            ) : null}
           </div>
         )}
-        {children}
+        <DialogHeaderActionsContext.Provider value={headerTarget}>
+          {children}
+        </DialogHeaderActionsContext.Provider>
       </div>
     </div>
   );
+}
+
+/** A body control can share its dialog's title row without another header. */
+export const DialogHeaderActionsContext = createContext<HTMLElement | null>(
+  null,
+);
+
+export function DialogHeaderAction({
+  children,
+}: {
+  readonly children: ReactNode;
+}): ReactNode {
+  const target = useContext(DialogHeaderActionsContext);
+  return target === null ? null : createPortal(children, target);
 }
 
 const FixedDialogContext = createContext(false);

@@ -35,6 +35,7 @@ import {
   meterClassNames,
   meterFillPercent,
   rowClassName,
+  switchClassNames,
   selectClassName,
   inlineFieldClassName,
   sidebarViewClassName,
@@ -965,4 +966,17 @@ await test('the touch button recipe keeps the approved 44 px target on every wid
   assert.ok(classes.split(' ').includes('size-11'));
   assert.ok(!/md:size-[78]/.test(classes));
   assert.ok(!/md:min-h-[78]/.test(buttonClassName({ size: 'touch' })));
+});
+
+await test('Settings switches share the content edge in both states', () => {
+  for (const checked of [false, true]) {
+    const row = switchClassNames(checked).row.split(' ');
+    assert.ok(row.includes('px-0'));
+    assert.ok(!row.includes('px-2'));
+    assert.ok(row.includes('w-full'));
+  }
+  assert.ok(
+    rowClassName().split(' ').includes('px-2'),
+    'other rows keep their inset',
+  );
 });

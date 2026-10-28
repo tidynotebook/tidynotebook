@@ -132,12 +132,14 @@ export function SettingChoiceRow({
   label,
   help,
   value,
+  valueIcon,
   onClick,
   disabled = false,
 }: {
   readonly label: string;
   readonly help: string;
   readonly value: string;
+  readonly valueIcon?: ReactNode;
   readonly onClick: () => void;
   readonly disabled?: boolean;
 }): ReactNode {
@@ -154,10 +156,15 @@ export function SettingChoiceRow({
         <span className="block truncate text-control text-muted">{help}</span>
       </span>
       <span
-        className="max-w-1/2 truncate text-control text-strong"
+        className="inline-flex min-w-0 max-w-1/2 items-center gap-2 text-control text-strong"
         title={value}
       >
-        {value}
+        {valueIcon === undefined ? null : (
+          <span className="inline-flex shrink-0" aria-hidden="true">
+            {valueIcon}
+          </span>
+        )}
+        <span className="truncate">{value}</span>
       </span>
       <span className="inline-flex shrink-0 text-muted" aria-hidden="true">
         <ChevronRightIcon />
