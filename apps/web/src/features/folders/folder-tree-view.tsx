@@ -335,14 +335,18 @@ export default function FolderTreeView({
                     <span className={rowSpacerClassName} aria-hidden="true" />
                   )}
                   <div
-                    className={`${treeRowNameClassName} ${row.disabled ? 'cursor-default text-muted' : ''}`}
+                    className={`${treeRowNameClassName} ${row.path === currentFolder || row.disabled ? 'pointer-coarse:flex-wrap pointer-coarse:gap-y-0' : ''} ${row.disabled ? 'cursor-default text-muted' : ''}`}
                   >
                     <span className="inline-flex shrink-0" aria-hidden="true">
                       <FolderIcon />
                     </span>
-                    <span className="min-w-0 flex-1 truncate">{row.name}</span>
+                    <span
+                      className={`min-w-0 flex-1 truncate ${row.path === currentFolder || row.disabled ? 'pointer-coarse:line-clamp-2 pointer-coarse:whitespace-normal pointer-coarse:break-words' : ''}`}
+                    >
+                      {row.name}
+                    </span>
                     {row.path === currentFolder || row.disabled ? (
-                      <span className="shrink-0 text-help text-muted">
+                      <span className="shrink-0 text-help text-muted pointer-coarse:basis-full pointer-coarse:pl-6">
                         {row.path === currentFolder
                           ? 'Current folder'
                           : disabledNote?.(row.path)}
