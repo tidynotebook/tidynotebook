@@ -273,3 +273,5 @@ export {
 } from './control-classes.ts';
 export { UndoIcon, RedoIcon } from './icons.tsx';
 export { Switch } from './controls.tsx';
+
+export { FieldPopover } from './field-popover.tsx';

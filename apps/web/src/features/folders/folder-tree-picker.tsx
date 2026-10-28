@@ -9,6 +9,7 @@ import { lazy, Suspense, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import {
   ChevronDownIcon,
+  FieldPopover,
   FolderIcon,
   fieldClassName,
   LoadingState,
@@ -31,9 +32,9 @@ export function FolderTreePicker(props: FolderTreePickerProps): ReactNode {
 }
 
 /**
- * A field that shows the chosen folder and opens the tree under it.
+ * A field that shows the chosen folder and opens its tree choice.
  *
- * The tree opens in place, inside the same dialog or sheet, so a folder
+ * The tree opens as a desktop popup or inline in the phone sheet. A folder
  * choice is never a second step. Choosing a row or Escape closes the tree
  * and gives the focus back to the field. Escape does not close the dialog.
  */
@@ -109,10 +110,7 @@ export function FolderField({
         </p>
       )}
       {open ? (
-        <div
-          id={`${id}-tree`}
-          className="mt-1 rounded-lg border border-solid border-edge-subtle bg-surface p-1"
-        >
+        <FieldPopover id={`${id}-tree`} anchor={buttonRef} onClose={close}>
           <FolderTreePicker
             folders={folders}
             selected={value}
@@ -125,7 +123,7 @@ export function FolderField({
               close();
             }}
           />
-        </div>
+        </FieldPopover>
       ) : null}
     </div>
   );

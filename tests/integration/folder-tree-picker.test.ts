@@ -395,6 +395,44 @@ await test('the Daily notes folder setting chooses its folder in the tree', asyn
   assert.equal(dailySaves.at(-1)?.folder, 'Projects/Research');
 });
 
+await test('the desktop field popup stays in the dialog focus scope and Escape closes only the popup', async () => {
+  const width = window.innerWidth;
+  window.innerWidth = 1280;
+  try {
+    await render(
+      createElement(NewFolderDialog, {
+        open: true,
+        onClose: () => {},
+        folders,
+        parent: 'Projects',
+        onCreated: () => {},
+      }),
+    );
+    const field =
+      container.querySelector<HTMLButtonElement>('#new-folder-inside');
+    assert.ok(field);
+    await act(async () => field.click());
+    const popup = container.querySelector('#new-folder-inside-tree');
+    const dialog = container.querySelector('[role="dialog"]');
+    const form = container.querySelector('form');
+    assert.ok(popup && dialog && form);
+    assert.ok(popup.classList.contains('fixed'));
+    assert.equal(dialog.contains(popup), true);
+    assert.equal(form.contains(popup), false);
+    await act(async () =>
+      popup.dispatchEvent(
+        new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      ),
+    );
+    assert.equal(container.querySelector('#new-folder-inside-tree'), null);
+    assert.ok(container.querySelector('[role="dialog"]'));
+    assert.equal(document.activeElement, field);
+    await render(createElement('div'));
+  } finally {
+    window.innerWidth = width;
+  }
+});
+
 after(async () => {
   await act(async () => root.unmount());
   hooks.deregister();
