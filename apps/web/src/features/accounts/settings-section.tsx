@@ -104,7 +104,7 @@ export function SettingsSection({
 
 /**
  * One compact row of the Settings modal (issue 517, item 8): the label and
- * one line of help on the left, the control on the right, 52 px high.
+ * help on the left and the control on the right. Phone help can use two lines.
  */
 export function SettingRow({
   label,
@@ -116,11 +116,14 @@ export function SettingRow({
   readonly children?: ReactNode;
 }): ReactNode {
   return (
-    <div className="flex min-h-14 items-center gap-x-group border-b border-edge-subtle py-0.5 lg:min-h-13">
+    <div className="flex min-h-14 items-start gap-x-group border-b border-edge-subtle py-2 lg:min-h-13 lg:items-center lg:py-0.5">
       <div className="min-w-0 flex-1">
         <p className="m-0 truncate text-ui text-strong">{label}</p>
         {help === undefined ? null : (
-          <p className="m-0 truncate text-control text-muted" title={help}>
+          <p
+            className="m-0 line-clamp-2 break-words text-control text-muted lg:line-clamp-1"
+            title={help}
+          >
             {help}
           </p>
         )}
@@ -156,11 +159,13 @@ export function SettingChoiceRow({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="flex h-14 w-full items-center gap-3 border-b border-edge-subtle bg-transparent text-left hover:bg-hover focus-visible:relative focus-visible:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-focus disabled:cursor-default disabled:text-muted lg:h-13"
+      className="flex min-h-14 w-full items-start gap-3 border-b border-edge-subtle bg-transparent py-2 text-left hover:bg-hover focus-visible:relative focus-visible:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-focus disabled:cursor-default disabled:text-muted lg:h-13 lg:items-center lg:py-0"
     >
       <span className="min-w-0 flex-1">
         <span className="block truncate text-ui text-strong">{label}</span>
-        <span className="block truncate text-control text-muted">{help}</span>
+        <span className="line-clamp-2 break-words text-control text-muted lg:line-clamp-1">
+          {help}
+        </span>
       </span>
       <span
         className="inline-flex min-w-0 max-w-1/2 items-center gap-2 text-control text-strong"
