@@ -52,18 +52,6 @@ const store = await openLocalStore('http://localhost', {
   databaseName: `preview-${crypto.randomUUID()}`,
 });
 
-test.after(async () => {
-  await act(async () => root.unmount());
-  await store.close();
-  hooks.deregister();
-  await browser.happyDOM.close();
-  for (const [name, descriptor] of originals) {
-    if (descriptor === undefined) Reflect.deleteProperty(globalThis, name);
-    else Object.defineProperty(globalThis, name, descriptor);
-  }
-  Reflect.deleteProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT');
-});
-
 await test('the preview renders headings and tables, marks values, and refuses executable content', async () => {
   await act(async () => {
     root.render(
@@ -145,4 +133,16 @@ await test('a template with a visual separator is not reported as empty', async 
   await show('---');
   assert.ok(container.querySelector('hr'));
   assert.doesNotMatch(container.textContent ?? '', /This template is empty/);
+});
+
+test.after(async () => {
+  await act(async () => root.unmount());
+  await store.close();
+  hooks.deregister();
+  await browser.happyDOM.close();
+  for (const [name, descriptor] of originals) {
+    if (descriptor === undefined) Reflect.deleteProperty(globalThis, name);
+    else Object.defineProperty(globalThis, name, descriptor);
+  }
+  Reflect.deleteProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT');
 });
