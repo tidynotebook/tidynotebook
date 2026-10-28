@@ -161,16 +161,18 @@ export function SettingChoiceRow({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="flex min-h-14 w-full items-start gap-3 border-b border-edge-subtle bg-transparent py-2 text-left hover:bg-hover focus-visible:relative focus-visible:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-focus disabled:cursor-default disabled:text-muted lg:h-13 lg:items-center lg:py-0"
+      className="flex min-h-14 w-full items-start gap-3 border-b border-edge-subtle bg-transparent py-2 text-left hover:bg-hover focus-visible:relative focus-visible:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-focus disabled:cursor-default disabled:text-muted lg:h-13 lg:items-center lg:py-0 pointer-coarse:flex-wrap pointer-coarse:gap-y-0"
     >
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-ui text-strong">{label}</span>
-        <span className="line-clamp-2 break-words text-help text-muted lg:line-clamp-1">
+      <span className="min-w-0 flex-1 pointer-coarse:contents">
+        <span className="block truncate text-ui text-strong pointer-coarse:order-1 pointer-coarse:min-w-0 pointer-coarse:flex-1">
+          {label}
+        </span>
+        <span className="line-clamp-2 break-words text-help text-muted lg:line-clamp-1 pointer-coarse:order-4 pointer-coarse:w-full pointer-coarse:basis-full">
           {help}
         </span>
       </span>
       <span
-        className="inline-flex min-w-0 max-w-1/2 items-center gap-2 text-control text-strong"
+        className="inline-flex min-w-0 max-w-1/2 items-center gap-2 text-control text-strong pointer-coarse:order-2"
         title={value}
       >
         {valueIcon === undefined ? null : (
@@ -180,7 +182,10 @@ export function SettingChoiceRow({
         )}
         <span className="truncate">{value}</span>
       </span>
-      <span className="inline-flex shrink-0 text-muted" aria-hidden="true">
+      <span
+        className="inline-flex shrink-0 text-muted pointer-coarse:order-3"
+        aria-hidden="true"
+      >
         <ChevronRightIcon />
       </span>
     </button>
