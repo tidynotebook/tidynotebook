@@ -1,4 +1,4 @@
-import { SettingsActionContext } from './settings-dialog.tsx';
+import { SettingsActionContext } from './settings-action-context.ts';
 import { ConnectedAppSettings } from './connected-apps.tsx';
 /**
  * The Settings modal (issue 517, items 5, 7, 8 and 10).

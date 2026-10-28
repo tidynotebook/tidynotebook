@@ -9,7 +9,6 @@ import { lazy, Suspense, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import {
   ChevronDownIcon,
-  FieldPopover,
   FolderIcon,
   fieldClassName,
   LoadingState,
@@ -17,6 +16,8 @@ import {
 
 export type { FolderTreePickerProps } from './folder-tree-view.tsx';
 import type { FolderTreePickerProps } from './folder-tree-view.tsx';
+
+const FieldPopover = lazy(() => import('./folder-field-popover.ts'));
 
 const FolderTreeView = lazy(() => import('./folder-tree-view.tsx'));
 
@@ -110,20 +111,22 @@ export function FolderField({
         </p>
       )}
       {open ? (
-        <FieldPopover id={`${id}-tree`} anchor={buttonRef} onClose={close}>
-          <FolderTreePicker
-            folders={folders}
-            selected={value}
-            label={label}
-            rootName={rootName}
-            includeRoot={includeRoot}
-            autoFocus
-            onSelect={(folder) => {
-              onChange(folder);
-              close();
-            }}
-          />
-        </FieldPopover>
+        <Suspense fallback={null}>
+          <FieldPopover id={`${id}-tree`} anchor={buttonRef} onClose={close}>
+            <FolderTreePicker
+              folders={folders}
+              selected={value}
+              label={label}
+              rootName={rootName}
+              includeRoot={includeRoot}
+              autoFocus
+              onSelect={(folder) => {
+                onChange(folder);
+                close();
+              }}
+            />
+          </FieldPopover>
+        </Suspense>
       ) : null}
     </div>
   );

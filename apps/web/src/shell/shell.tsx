@@ -44,6 +44,8 @@ import { TrialNotice } from '../features/accounts/trial-notice.tsx';
  * there.
  */
 import {
+  lazy,
+  Suspense,
   useCallback,
   useEffect,
   useMemo,
@@ -149,7 +151,10 @@ import {
 } from '../lib/templates.ts';
 import { SidebarCalendar } from '../features/daily-notes/calendar.tsx';
 import { dailyNoteDate, type PublicationScope } from '@notesapp/core';
-import { PublishDialog } from '../features/publishing/publish-dialog.tsx';
+const PublishDialog = lazy(async () => ({
+  default: (await import('../features/publishing/publish-dialog.tsx'))
+    .PublishDialog,
+}));
 import { publishedLinksTitle } from '../features/publishing/publishing.ts';
 import { accountsTitle } from '../lib/accounts.ts';
 import {
@@ -1883,13 +1888,15 @@ function ShellFrame({
             }}
           />
           {publishScope === null ? null : (
-            <PublishDialog
-              open
-              onClose={() => setPublishScope(null)}
-              workspaceId={workspaceId}
-              scope={publishScope}
-              notes={files.notes}
-            />
+            <Suspense fallback={null}>
+              <PublishDialog
+                open
+                onClose={() => setPublishScope(null)}
+                workspaceId={workspaceId}
+                scope={publishScope}
+                notes={files.notes}
+              />
+            </Suspense>
           )}
           {session.account === null || moveItems === null ? null : (
             <MoveItemsDialog
