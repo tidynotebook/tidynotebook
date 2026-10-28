@@ -275,6 +275,17 @@ function CreatedKey({
 }): ReactNode {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
+  async function copy(): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(created.token);
+      setCopied(true);
+      setError('');
+    } catch {
+      setError('The key could not be copied. Select it and copy it.');
+      document.getElementById('api-key-secret')?.focus();
+    }
+  }
+
   return (
     <section
       aria-label="Copy your API key"
@@ -301,15 +312,7 @@ function CreatedKey({
         <Button
           variant="secondary"
           onClick={() => {
-            void navigator.clipboard
-              .writeText(created.token)
-              .then(() => {
-                setCopied(true);
-                setError('');
-              })
-              .catch(() =>
-                setError('The key could not be copied. Select it and copy it.'),
-              );
+            void copy();
           }}
         >
           {copied ? 'Copied' : 'Copy key'}

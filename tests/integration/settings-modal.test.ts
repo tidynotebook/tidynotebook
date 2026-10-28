@@ -560,7 +560,30 @@ await test('API key create, validation, secret and revoke use one Settings frame
   assert.ok(container.querySelector('#api-key-name[aria-invalid="true"]'));
   refuseApiKeyCreation(false);
   await click(button('Done'));
-  assert.ok(container.querySelector('#api-key-secret'));
+  const secret = container.querySelector<HTMLInputElement>('#api-key-secret');
+  assert.ok(secret);
+  assert.equal(
+    modal.querySelector('h2[tabindex="-1"]')?.textContent,
+    'API keys',
+  );
+  const clipboard = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: undefined,
+  });
+  try {
+    await click(button('Copy key'));
+    assert.match(
+      container.textContent ?? '',
+      /The key could not be copied. Select it and copy it./,
+    );
+    assert.equal(document.activeElement, secret);
+    assert.equal(secret.selectionStart, 0);
+    assert.equal(secret.selectionEnd, secret.value.length);
+  } finally {
+    if (clipboard === undefined) Reflect.deleteProperty(navigator, 'clipboard');
+    else Object.defineProperty(navigator, 'clipboard', clipboard);
+  }
   assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
   await click(button('Done'));
   assert.equal(container.querySelector('#api-key-secret'), null);
