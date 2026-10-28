@@ -3,11 +3,7 @@ import { SettingsDialog } from '../accounts/settings-dialog.tsx';
  * The template folder of the member, as a field of the Settings page (record
  * 0149).
  *
- * The folder is text, so it applies when the person leaves the field,
- * presses Enter, or leaves the page, as the daily note folder does: a half
- * typed folder would change the list of the palette at every keystroke. The
- * line under the field counts the templates of the typed folder, and
- * `templateFolderToStore` decides what is stored.
+ * The tree selects a folder. Done applies it; Back cancels the draft.
  */
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
@@ -21,21 +17,18 @@ import {
   DialogFooter,
   LoadingState,
   Notice,
-  TextField,
 } from '@notesapp/ui';
 import { FolderTreePicker } from '../folders/folder-tree-picker.tsx';
 import { knownFolderPaths } from '../../lib/folder-selection.ts';
 import { useFiles } from '../../shell/files.tsx';
-import { useStoreOnLeave } from '../../shell/store-on-leave.ts';
 import {
   templateChoices,
   templateCountLine,
-  templateFolderSentences,
   templateFolderToStore,
 } from '../../lib/templates.ts';
 import { useTemplates } from './templates.tsx';
 
-/** The folder field, stored when the person leaves it. */
+/** The folder choice, applied with Done. */
 function FolderField({
   settings,
   onSave,
@@ -58,29 +51,24 @@ function FolderField({
     () => templateChoices(files.notes, cleaned, null).length,
     [files.notes, cleaned],
   );
-  const leave = useStoreOnLeave((): void => {
-    const next = templateFolderToStore(folder, settings);
-    if (next !== null) onSave({ folder: next });
-  });
-
   return (
-    <div
-      onBlur={leave.onBlur}
-      onKeyDown={(event) => {
-        if (event.target instanceof HTMLInputElement) leave.onKeyDown(event);
-      }}
-    >
+    <div>
       <div className="mb-3 flex items-center gap-2 text-control">
-        <span className="min-w-0 flex-1 break-words">Folder: {folder}</span>
-        <Button variant="secondary" onClick={() => setChanging(true)}>
+        <span className="min-w-0 flex-1 break-words">
+          Folder: {settings.folder}
+        </span>
+        <Button
+          variant="secondary"
+          label="Change folder"
+          onClick={() => setChanging(true)}
+        >
           Change
         </Button>
       </div>
       <SettingsDialog
         open={changing}
         onClose={() => {
-          leave.onBlur();
-          if (problem !== null) setFolder(settings.folder);
+          setFolder(settings.folder);
           setChanging(false);
         }}
         title="Save in"
@@ -89,15 +77,6 @@ function FolderField({
         align="sheet"
       >
         <DialogBody>
-          <TextField
-            id="template-folder"
-            label="Folder name"
-            value={folder}
-            onChange={setFolder}
-            error={
-              problem === null ? undefined : templateFolderSentences[problem]
-            }
-          />
           <FolderTreePicker
             includeRoot={false}
             label="Folders"
@@ -112,13 +91,15 @@ function FolderField({
             )}
             selected={folder}
             onSelect={setFolder}
+            autoFocus
           />
         </DialogBody>
         <DialogFooter>
           <Button
             onClick={() => {
               if (problem === null) {
-                leave.onBlur();
+                const next = templateFolderToStore(folder, settings);
+                if (next !== null) onSave({ folder: next });
                 setChanging(false);
               }
             }}

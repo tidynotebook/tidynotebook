@@ -7,14 +7,10 @@ import { SettingsDialog } from '../accounts/settings-dialog.tsx';
  * member in the open workspace, and the provider of `daily-notes.tsx` reads
  * and stores them, so the sidebar and this section read one value.
  *
- * The template and the start choice apply when a person picks them. The
- * folder and the name format are text, so they apply when the person leaves
- * the fields, presses Enter, or leaves the page: a half typed format would
- * move the daily notes of the calendar at every keystroke. The preview under
- * them names the note of today as the typed layout writes it, and
- * `layoutToStore` decides what is stored.
+ * Template choices and layouts apply with Done. Back cancels a draft.
+ * The start choice applies when the person selects it.
  */
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import {
   cleanFolderPath,
   dailyNoteLayoutProblem,
@@ -27,25 +23,20 @@ import {
   DialogFooter,
   LoadingState,
   Notice,
-  SelectField,
   TextField,
 } from '@notesapp/ui';
 import { FolderTreePicker } from '../folders/folder-tree-picker.tsx';
 import { knownFolderPaths } from '../../lib/folder-selection.ts';
 import { useFiles } from '../../shell/files.tsx';
-import { useStoreOnLeave } from '../../shell/store-on-leave.ts';
+import { DailyTemplatePicker } from './daily-template-picker.tsx';
 import {
   dailyNotePreview,
-  effectiveTemplateId,
   layoutProblemSentences,
   layoutToStore,
-  noTemplateValue,
-  templateChoices,
-  templateOfChoice,
 } from '../../lib/daily-note.ts';
 import { today, useDailyNotes } from './daily-notes.tsx';
 
-/** The folder and the name format, stored when the person leaves them. */
+/** The folder and the name format, applied with Done. */
 function LayoutFields({
   settings,
   onSave,
@@ -69,42 +60,40 @@ function LayoutFields({
   const sentence =
     problem === null ? undefined : layoutProblemSentences[problem];
 
-  // The typed layout is stored when it is whole and new.
-  const leave = useStoreOnLeave((): void => {
-    const next = layoutToStore({ folder, format }, settings);
-    if (next !== null) onSave({ ...settings, ...next });
-  });
-
+  const close = (): void => {
+    setFolder(settings.folder);
+    setFormat(settings.format);
+    setEditing(null);
+  };
   return (
-    <div
-      className="mt-4"
-      onBlur={leave.onBlur}
-      onKeyDown={(event) => {
-        if (event.target instanceof HTMLInputElement) leave.onKeyDown(event);
-      }}
-    >
+    <div className="mt-4">
       <div className="mb-3 flex items-center gap-2 text-control">
         <span className="min-w-0 flex-1 break-words">
-          Folder: {folder === '' ? 'No folder' : folder}
+          Folder: {settings.folder === '' ? 'No folder' : settings.folder}
         </span>
-        <Button variant="secondary" onClick={() => setEditing('folder')}>
+        <Button
+          variant="secondary"
+          label="Change folder"
+          onClick={() => setEditing('folder')}
+        >
           Change
         </Button>
       </div>
       <div className="mb-3 flex items-center gap-2 text-control">
         <span className="min-w-0 flex-1 break-words">
-          Name format: {format}
+          Name format: {settings.format}
         </span>
-        <Button variant="secondary" onClick={() => setEditing('format')}>
+        <Button
+          variant="secondary"
+          label="Change name format"
+          onClick={() => setEditing('format')}
+        >
           Change
         </Button>
       </div>
       <SettingsDialog
         open={editing !== null}
-        onClose={() => {
-          leave.onBlur();
-          setEditing(null);
-        }}
+        onClose={close}
         title={editing === 'folder' ? 'Save in' : 'Name format'}
         titleId="daily-layout-title"
         width="small"
@@ -113,13 +102,6 @@ function LayoutFields({
         <DialogBody>
           {editing === 'folder' ? (
             <>
-              <TextField
-                id="daily-folder"
-                label="Folder name"
-                value={folder}
-                onChange={setFolder}
-                error={problem === 'folder' ? sentence : undefined}
-              />
               <FolderTreePicker
                 label="Folders"
                 folders={knownFolderPaths(
@@ -128,6 +110,7 @@ function LayoutFields({
                 )}
                 selected={folder}
                 onSelect={setFolder}
+                autoFocus
               />
             </>
           ) : (
@@ -137,6 +120,7 @@ function LayoutFields({
               value={format}
               onChange={setFormat}
               hint="Use YYYY, MM and DD for the date."
+              reserveErrorSpace
               error={
                 problem !== null && problem !== 'folder' ? sentence : undefined
               }
@@ -148,7 +132,8 @@ function LayoutFields({
             <Button
               disabled={problem !== null}
               onClick={() => {
-                leave.onBlur();
+                const next = layoutToStore({ folder, format }, settings);
+                if (next !== null) onSave({ ...settings, ...next });
                 setEditing(null);
               }}
             >
@@ -159,7 +144,7 @@ function LayoutFields({
       </SettingsDialog>
       <p className="mb-3 mt-0 text-control text-muted" aria-live="polite">
         {problem === null
-          ? `Today's note: ${dailyNotePreview(today(), layout)}`
+          ? `Today's note: ${dailyNotePreview(today(), settings)}`
           : ''}
       </p>
     </div>
@@ -168,9 +153,7 @@ function LayoutFields({
 
 /** The template field, the start choice, the folder and the name format. */
 export function DailyNoteSettingsFields(): ReactNode {
-  const files = useFiles();
   const daily = useDailyNotes();
-  const choices = useMemo(() => templateChoices(files.notes), [files.notes]);
   const state = daily.settings;
 
   if (state.status === 'loading')
@@ -191,15 +174,7 @@ export function DailyNoteSettingsFields(): ReactNode {
   const settings = state.settings;
   return (
     <>
-      <SelectField
-        id="daily-template"
-        label="Template"
-        value={effectiveTemplateId(settings, files.notes) ?? noTemplateValue}
-        options={choices}
-        onChange={(value) => {
-          daily.save({ ...settings, templateFileId: templateOfChoice(value) });
-        }}
-      />
+      <DailyTemplatePicker settings={settings} onSave={daily.save} />
       <Checkbox
         id="daily-open-on-start"
         label="Open today's note when the app opens"

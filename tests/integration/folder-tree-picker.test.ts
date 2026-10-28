@@ -46,6 +46,10 @@ const fixtureUrl = new URL(
   import.meta.url,
 ).href;
 const boundaries = new Map([
+  [
+    '/features/daily-notes/daily-template-picker.js',
+    new Set(['../../shell/files.js', '../templates/templates.js']),
+  ],
   ['/features/folders/folders.js', new Set(['./apply-moves.js'])],
   [
     '/features/templates/template-settings.js',
@@ -368,24 +372,40 @@ await test('Move into a folder that New folder here names', async () => {
   ]);
 });
 
+await test('folder search opens on request and narrows a large tree', async () => {
+  await render(
+    createElement(FolderTreePicker, {
+      folders: Array.from({ length: 10 }, (_, i) => `Folder ${String(i)}`),
+      selected: 'Folder 4',
+      label: 'Folders',
+      onSelect: () => {},
+    }),
+  );
+  assert.equal(container.querySelector('input'), null);
+  await act(async () => button('Search folders').click());
+  const search = fieldOf('Search folders');
+  await type(search.id, 'Folder 4');
+  assert.deepEqual(names(), ['All notes', 'Folder 4']);
+  assert.equal(row('Folder 4').getAttribute('aria-selected'), 'true');
+});
+
 await test('the Templates folder setting chooses its folder in the tree, with no root row', async () => {
   await render(createElement(TemplateSettingsFields));
   await act(async () => button('Change').click());
   assert.ok(container.querySelector('[role="tree"]'));
   assert.ok(!names().includes('All notes'));
   assert.equal(row('Templates').getAttribute('aria-selected'), 'true');
+  const before = templateSaves.length;
   await act(async () => row('Projects').click());
+  assert.equal(templateSaves.length, before);
   await act(async () => button('Done').click());
   assert.deepEqual(templateSaves.at(-1), { folder: 'Projects' });
 });
 
 await test('the Daily notes folder setting chooses its folder in the tree', async () => {
   await render(createElement(DailyNoteSettingsFields));
-  const change = [...container.querySelectorAll('button')].filter(
-    (candidate) => candidate.textContent === 'Change',
-  )[0];
-  assert.ok(change);
-  await act(async () => change.click());
+  await act(async () => button('Change folder').click());
+  assert.equal(container.querySelector('#daily-folder'), null);
   assert.ok(names().includes('All notes'));
   assert.equal(row('Daily').getAttribute('aria-selected'), 'true');
   await act(async () => button('Open Projects').click());
@@ -393,6 +413,25 @@ await test('the Daily notes folder setting chooses its folder in the tree', asyn
   assert.equal(row('Research').getAttribute('aria-selected'), 'true');
   await act(async () => button('Done').click());
   assert.equal(dailySaves.at(-1)?.folder, 'Projects/Research');
+});
+
+await test('daily template selection searches only templates and supports No template', async () => {
+  await render(createElement(DailyNoteSettingsFields));
+  const before = dailySaves.length;
+  await act(async () => button('Change template').click());
+  assert.ok(button('Meeting'));
+  assert.throws(() => button('Reading list'));
+  const search = fieldOf('Search templates');
+  await type(search.id, 'missing');
+  assert.match(container.textContent ?? '', /No matching templates/);
+  assert.ok(button('No template'));
+  assert.equal(dailySaves.length, before);
+  await act(async () => button('Cancel').click());
+  assert.equal(dailySaves.length, before);
+  await act(async () => button('Change template').click());
+  await act(async () => button('No template').click());
+  await act(async () => button('Done').click());
+  assert.equal(dailySaves.length, before + 1);
 });
 
 await test('the desktop field popup stays in the dialog focus scope and Escape closes only the popup', async () => {

@@ -83,6 +83,7 @@ export default function FolderTreeView({
 }: FolderTreePickerProps): ReactNode {
   const id = useId();
   const [expanded, setExpanded] = useState(() => initiallyExpanded(selected));
+  const [searching, setSearching] = useState(false);
   const [filter, setFilter] = useState('');
   const [named, setNamed] = useState<readonly string[]>([]);
   const [focusPath, setFocusPath] = useState<string | null>(null);
@@ -185,10 +186,16 @@ export default function FolderTreeView({
 
   return (
     <div>
-      {all.length > filterFrom ? (
+      {all.length > filterFrom && !searching ? (
+        <Button variant="ghost" onClick={() => setSearching(true)}>
+          Search folders
+        </Button>
+      ) : null}
+      {searching ? (
         <TextField
           id={`${id}-filter`}
-          label="Filter folders"
+          label="Search folders"
+          autoFocus
           value={filter}
           onChange={setFilter}
         />
@@ -314,6 +321,7 @@ export default function FolderTreeView({
             }
             value={name}
             error={problem ?? undefined}
+            reserveErrorSpace
             autoFocus
             onChange={(value) => {
               setName(value);

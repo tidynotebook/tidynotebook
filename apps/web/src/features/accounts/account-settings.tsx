@@ -1,4 +1,7 @@
-import { SettingsActionContext } from './settings-action-context.ts';
+import {
+  SettingsActionContext,
+  type SettingsActionRegistration,
+} from './settings-action-context.ts';
 import { ConnectedAppSettings } from './connected-apps.tsx';
 /**
  * The Settings modal (issue 517, items 5, 7, 8 and 10).
@@ -518,7 +521,8 @@ export function SettingsModal({
   const [importError, setImportError] = useState('');
   const [removing, setRemoving] = useState(false);
   const [actionTarget, setActionTarget] = useState<HTMLDivElement | null>(null);
-  const [activeAction, setActiveAction] = useState<string | null>(null);
+  const [activeAction, setActiveAction] =
+    useState<SettingsActionRegistration | null>(null);
   const actionHost = useMemo(
     () => ({ target: actionTarget, setActive: setActiveAction }),
     [actionTarget],
@@ -910,16 +914,27 @@ export function SettingsModal({
           </div>
           <section
             aria-labelledby={pageTitleId}
+            data-dialog-escape={activeAction === null ? undefined : 'local'}
+            onKeyDown={(event) => {
+              if (activeAction !== null && event.key === 'Escape') {
+                event.preventDefault();
+                event.stopPropagation();
+                activeAction.close();
+              }
+            }}
             className={`${listLevel ? 'hidden' : 'flex'} min-h-0 min-w-0 flex-1 flex-col lg:flex`}
           >
             <div className="flex items-start gap-cluster px-3 pt-3 lg:px-5 lg:pt-4">
               <Button
-                className="lg:hidden"
+                className={activeAction === null ? 'lg:hidden' : undefined}
                 variant="ghost"
                 icon={<ChevronLeftIcon />}
-                label="Back to Settings"
+                label={
+                  activeAction === null ? 'Back to Settings' : 'Back to section'
+                }
                 onClick={() => {
-                  onChoose('');
+                  if (activeAction === null) onChoose('');
+                  else activeAction.close();
                 }}
               />
               <div className="min-w-0 flex-1 pt-2 lg:pt-1">
@@ -927,11 +942,11 @@ export function SettingsModal({
                   id={pageTitleId}
                   className="m-0 text-xl font-semibold tracking-heading text-strong max-lg:text-center max-lg:text-base"
                 >
-                  {activePage?.title ?? settingsTitle}
+                  {activeAction?.title ?? activePage?.title ?? settingsTitle}
                 </h2>
                 {scope === undefined ? null : (
                   <p className="mb-0 mt-1 text-control text-muted max-lg:hidden">
-                    {scope}
+                    {activeAction === null ? scope : activePage?.title}
                   </p>
                 )}
               </div>
@@ -944,8 +959,8 @@ export function SettingsModal({
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-gutter pb-5 pt-3 lg:px-5">
               {scope === undefined ? null : (
-                <p className="mb-3 mt-0 text-control text-muted lg:hidden">
-                  {scope}
+                <p className="mb-3 mt-0 min-h-10 text-control text-muted lg:hidden">
+                  {activeAction === null ? scope : activePage?.title}
                 </p>
               )}
               <div ref={setActionTarget} hidden={activeAction === null} />

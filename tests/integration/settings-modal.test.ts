@@ -576,15 +576,24 @@ await test('Settings folder choices and name format do not open another modal', 
   assert.equal(dialog(), modal);
   assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
   assert.ok(container.querySelector('[role="tree"]'));
-  await click(button('Back to section'));
+  assert.equal(container.querySelector('#template-folder'), null);
+  assert.equal(
+    modal?.querySelector('section[aria-labelledby] h2')?.textContent,
+    'Save in',
+  );
+  assert.ok(button('Back to section').parentElement?.querySelector('h2'));
+  const back = button('Back to section');
+  back.focus();
+  await escape();
   assert.equal(container.querySelector('[role="tree"]'), null);
+  assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
+  assert.equal(
+    modal?.querySelector('section[aria-labelledby] h2')?.textContent,
+    'Templates',
+  );
   await act(async () => go('/w/one/notes/n1?settings=daily-notes'));
   await settle();
-  const changes = [...container.querySelectorAll<HTMLElement>('button')].filter(
-    (item) => item.textContent === 'Change',
-  );
-  assert.equal(changes.length, 2);
-  const format = changes[1];
+  const format = button('Change name format');
   assert.ok(format);
   await click(format);
   assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);

@@ -81,8 +81,9 @@ These settings apply to the workspace that you have open, and they follow you
 to every device. See [Daily notes](daily-notes.md) for the date tokens and the
 placeholders.
 
-- **Template** is the note whose text starts each new daily note. **No
-  template** starts an empty note.
+- **Template** opens a searchable list from the Templates folder, with a preview.
+  **No template** starts an empty note. A current template outside this folder
+  stays available until you change it.
 - **Open today's note when the app opens** opens the note of today when the
   application starts on the list of notes.
 - **Folder** is the folder of the daily notes. Leave it empty to keep them at
@@ -90,8 +91,10 @@ placeholders.
 - **Name format** makes the name of each note from date tokens. A slash makes
   a folder. The line under the fields shows the name of the note of today.
 
-A folder and a format save when you leave the field or press **Enter**. When a
-format cannot make a name, the page says what to change.
+Select a folder from the tree. Use **Search folders** to find one in a large
+workspace, or **New folder here** to make one. Select **Done** to apply a
+template, folder, or format. **Back** and **Cancel** discard the draft. When a
+format cannot make a name, the form says what to change.
 
 ## Templates
 

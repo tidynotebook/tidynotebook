@@ -7,14 +7,13 @@ import {
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
-import { Button, ChevronLeftIcon, type Dialog } from '@notesapp/ui';
+import type { Dialog } from '@notesapp/ui';
 import type { SettingsActionHost } from './settings-action-context.ts';
 /** An action replaces the section content without changing the modal frame. */
 export default function SettingsAction({
   open,
   onClose,
   title,
-  titleId,
   children,
   returnFocus,
   context,
@@ -34,9 +33,9 @@ export default function SettingsAction({
     if (!open || target === null) return;
     const active = document.activeElement;
     opener.current = active instanceof HTMLElement ? active : null;
-    setActive(id);
+    setActive({ id, title, close: () => closeRef.current() });
     return () => {
-      setActive((held) => (held === id ? null : held));
+      setActive((held) => (held?.id === id ? null : held));
       // The section is visible again before focus returns to its control.
       window.requestAnimationFrame(() => {
         if (returnRef.current !== undefined) returnRef.current();
@@ -44,6 +43,11 @@ export default function SettingsAction({
       });
     };
   }, [open, target, id, setActive]);
+  useLayoutEffect(() => {
+    setActive((held) =>
+      held?.id === id && held.title !== title ? { ...held, title } : held,
+    );
+  }, [id, title, setActive]);
   useLayoutEffect(() => {
     if (!open || target === null) return;
     // Wait until the host is visible. An input can also take focus through
@@ -53,6 +57,9 @@ export default function SettingsAction({
       if (held !== null && !held.contains(document.activeElement))
         (
           held.querySelector<HTMLElement>('input, select, textarea') ??
+          held.querySelector<HTMLElement>(
+            '[role="treeitem"][aria-selected="true"]',
+          ) ??
           held.querySelector<HTMLElement>('button') ??
           held
         ).focus();
@@ -63,7 +70,8 @@ export default function SettingsAction({
   return createPortal(
     <section
       ref={panel}
-      aria-labelledby={titleId}
+      className="-mx-5"
+      aria-label={title}
       data-dialog-escape="local"
       tabIndex={-1}
       onKeyDown={(event) => {
@@ -74,17 +82,6 @@ export default function SettingsAction({
         }
       }}
     >
-      <div className="mb-3 flex items-center gap-cluster px-5">
-        <Button
-          variant="ghost"
-          icon={<ChevronLeftIcon />}
-          label="Back to section"
-          onClick={onClose}
-        />
-        <h3 id={titleId} className="m-0 text-ui font-semibold text-strong">
-          {title}
-        </h3>
-      </div>
       {children}
     </section>,
     target,
