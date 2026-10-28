@@ -375,11 +375,7 @@ export default function TemplateChoices({
                     <p className="mb-1.5 mt-0 text-control font-medium text-strong">
                       Preview
                     </p>
-                    {filled === '' ? (
-                      <p className="text-control text-muted">
-                        This template is empty.
-                      </p>
-                    ) : store === null || accountId === null ? null : (
+                    {store === null || accountId === null ? null : (
                       <Suspense
                         fallback={
                           <LoadingState shape="note" label="Loading preview" />
