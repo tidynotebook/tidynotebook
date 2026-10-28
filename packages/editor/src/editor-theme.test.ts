@@ -235,12 +235,15 @@ await test('a footnote label is raised and quiet, and a definition reads as a fo
   // accent of a link (record 0062).
   assert.equal(rule('.cm-np-footnote').color, 'var(--notes-text-muted)');
   assert.equal(rule('.cm-np-footnote').verticalAlign, 'super');
-  assert.equal(rule('.cm-np-footnote').fontSize, 'var(--text-control)');
+  assert.equal(rule('.cm-np-footnote').fontSize, 'var(--text-note-reference)');
   assert.equal(
     rule('.cm-np-footnote-definition').color,
     'var(--notes-text-muted)',
   );
-  assert.equal(rule('.cm-np-footnote-definition').fontSize, 'var(--text-ui)');
+  assert.equal(
+    rule('.cm-np-footnote-definition').fontSize,
+    'var(--text-note-definition)',
+  );
 });
 
 await test('a list marker is quiet and never the accent', () => {
@@ -585,7 +588,7 @@ await test('a code card keeps even room and no empty band', () => {
 
 await test('a fence line is quiet and its language is a small label', () => {
   const fence = rule('.cm-np-code-fence');
-  assert.equal(fence.fontSize, 'var(--text-control)');
+  assert.equal(fence.fontSize, 'var(--text-note-reference)');
   assert.equal(fence.color, 'var(--notes-text-muted)');
   const info = rule('.cm-np-code-info');
   assert.equal(info.backgroundColor, 'var(--notes-surface-hover)');

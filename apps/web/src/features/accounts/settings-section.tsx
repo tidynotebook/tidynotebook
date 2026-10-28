@@ -116,12 +116,14 @@ export function SettingRow({
   readonly children?: ReactNode;
 }): ReactNode {
   return (
-    <div className="flex min-h-14 items-start gap-x-group border-b border-edge-subtle py-2 lg:min-h-13 lg:items-center lg:py-0.5">
-      <div className="min-w-0 flex-1">
-        <p className="m-0 truncate text-ui text-strong">{label}</p>
+    <div className="flex min-h-14 flex-wrap items-start gap-x-group border-b border-edge-subtle py-2 lg:min-h-13 lg:flex-nowrap lg:items-center lg:py-0.5">
+      <div className="contents lg:block lg:min-w-0 lg:flex-1">
+        <p className="order-1 m-0 min-w-0 flex-1 break-words text-ui text-strong lg:truncate">
+          {label}
+        </p>
         {help === undefined ? null : (
           <p
-            className="m-0 line-clamp-2 break-words text-help text-muted lg:line-clamp-1"
+            className="order-3 m-0 line-clamp-2 w-full break-words text-help text-muted lg:line-clamp-1"
             title={help}
           >
             {help}
@@ -129,7 +131,7 @@ export function SettingRow({
         )}
       </div>
       {children === undefined ? null : (
-        <div className="flex shrink-0 flex-wrap items-center gap-cluster">
+        <div className="order-2 flex shrink-0 flex-wrap items-center gap-cluster">
           {children}
         </div>
       )}

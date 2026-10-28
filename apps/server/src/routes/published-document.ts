@@ -212,7 +212,7 @@ const gateHeadingClasses =
   'mb-2 mt-0 text-xl font-semibold tracking-heading text-strong';
 
 /** The one sentence under the heading of a page that shows no content. */
-const gateHintClasses = 'm-0 text-control text-muted';
+const gateHintClasses = 'm-0 text-help text-muted';
 
 /**
  * The classes of the box of a published task: `taskBoxClassName` of
@@ -228,7 +228,7 @@ export const publishedTaskBoxClasses =
  * `tests/integration/published-styles.test.ts` holds this copy to it.
  */
 export const publishedCodeFigureClasses =
-  '[&_figure.notes-code]:relative [&_figure.notes-code]:mx-0 [&_figure.notes-code]:my-4 [&_figure.notes-code_pre]:my-0 [&_figure.notes-code_pre]:pt-11 md:[&_figure.notes-code_pre]:pt-10 [&_.notes-code-label]:absolute [&_.notes-code-label]:left-4 [&_.notes-code-label]:top-3 [&_.notes-code-label]:z-10 [&_.notes-code-label]:font-mono [&_.notes-code-label]:text-control [&_.notes-code-label]:text-muted';
+  '[&_figure.notes-code]:relative [&_figure.notes-code]:mx-0 [&_figure.notes-code]:my-4 [&_figure.notes-code_pre]:my-0 [&_figure.notes-code_pre]:pt-11 md:[&_figure.notes-code_pre]:pt-10 [&_.notes-code-label]:absolute [&_.notes-code-label]:left-4 [&_.notes-code-label]:top-3 [&_.notes-code-label]:z-10 [&_.notes-code-label]:font-mono [&_.notes-code-label]:text-help [&_.notes-code-label]:text-muted';
 
 /**
  * The typography of the note body.
@@ -370,7 +370,7 @@ const reasonGroupClasses = 'm-0 flex flex-col gap-2 border-0 p-0';
 const reasonClasses = 'flex items-center gap-2 text-ui text-ink';
 
 /** The classes of the foot of a page, which holds the report link. */
-export const footClasses = 'mt-12 text-control text-muted';
+export const footClasses = 'mt-12 text-help text-muted';
 
 /**
  * The classes of the one button of this page, and of its one field.

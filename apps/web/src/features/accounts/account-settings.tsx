@@ -307,7 +307,7 @@ function SessionsSettings(): ReactNode {
               </ListRow>
             </ul>
           )}
-          <div className="mt-4 flex items-center gap-2 border-b border-edge-subtle pb-1.5">
+          <div className="mt-4 flex flex-wrap items-center gap-2 border-b border-edge-subtle pb-1.5">
             <h3 className="m-0 min-w-0 flex-1 text-help font-semibold text-muted">
               Other devices
             </h3>
@@ -315,6 +315,7 @@ function SessionsSettings(): ReactNode {
               <Button
                 size="sm"
                 variant="secondary"
+                className="max-lg:w-full"
                 icon={<SignOutIcon />}
                 disabled={busy}
                 onClick={() => {
@@ -854,7 +855,7 @@ export function SettingsModal({
               <p
                 ref={listTitle}
                 tabIndex={-1}
-                className="m-0 min-w-0 flex-1 text-center text-ui font-semibold text-strong outline-none"
+                className="m-0 min-w-0 flex-1 text-center text-title font-semibold text-strong outline-none"
               >
                 {settingsTitle}
               </p>

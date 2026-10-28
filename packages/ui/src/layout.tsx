@@ -5,7 +5,7 @@
  * so spacing, measure, and the heading ramp are decided once. The heading ramp
  * of the chrome is: a page title is `text-xl`, a card or section title is
  * `text-base`, a list row title is `text-ui`, and a quiet group label is
- * `text-control`. There is no smaller size than `text-kbd`, which is a
+ * `text-help`. There is no smaller size than `text-kbd`, which is a
  * keyboard hint and nothing else.
  *
  * Distance is decided once as well. `pageGutter` below is the one distance

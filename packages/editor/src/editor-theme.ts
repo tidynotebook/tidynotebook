@@ -46,6 +46,7 @@ export const editorThemeVariables: readonly string[] = [
   '--text-ui',
   '--text-ui--line-height',
   '--text-control',
+  '--text-help',
   '--text-note-reference',
   '--text-note-definition',
   '--text-base',
@@ -383,6 +384,7 @@ export function panelRules(): Record<
     },
     '.cm-completionDetail': {
       color: 'var(--notes-text-muted)',
+      fontSize: 'var(--text-help)',
       fontStyle: 'normal',
       fontWeight: 'normal',
       marginInlineStart: 'auto',
@@ -577,7 +579,7 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
     // A fence line stays on the screen, so editing and a copy read the source,
     // but it is quiet: smaller and dim while the caret is not on it.
     '.cm-np-code-fence': {
-      fontSize: 'var(--text-control)',
+      fontSize: 'var(--text-note-reference)',
       color: 'var(--notes-text-muted)',
     },
     // While the text has the focus and the selection is in a block, the edges
@@ -614,7 +616,7 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
     '.cm-np-code-bar button': { pointerEvents: 'auto' },
     '.cm-np-code-label': {
       fontFamily: 'var(--font-mono)',
-      fontSize: 'var(--text-control)',
+      fontSize: 'var(--text-help)',
       color: 'var(--notes-text-muted)',
     },
     '.cm-np-code-block-close': {
@@ -628,7 +630,7 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
     // label on the fence line: the tint and the radius of a code span.
     '.cm-np-code-info': {
       fontFamily: 'var(--font-mono)',
-      fontSize: 'var(--text-control)',
+      fontSize: 'var(--text-note-reference)',
       color: 'var(--notes-text-muted)',
       backgroundColor: 'var(--notes-surface-hover)',
       borderRadius: 'var(--radius-sm)',
@@ -1214,7 +1216,7 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
       display: 'block',
       margin: '0',
       color: 'var(--notes-text-muted)',
-      fontSize: 'var(--text-ui)',
+      fontSize: 'var(--text-note-definition)',
     },
     '.cm-np-widget-error': { color: 'var(--notes-danger-text)' },
     '.cm-np-widget-source': {

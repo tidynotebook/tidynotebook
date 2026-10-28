@@ -22,13 +22,19 @@ that stylesheet and its faces inside it. Record 0061.
 The named steps live in `apps/web/src/tailwind.css`. Use no other size.
 
 - `text-kbd` is a keyboard hint and nothing else.
-- `text-control` is a control, a row, a label, a hint, a caption and a menu.
-- `text-ui` is body text outside a note, a list row title and a dialog title.
+- `text-control` is a control, a row, a label and a menu.
+- `text-ui` is primary text outside a note and a list row title.
+- `text-help` is help, metadata, field errors and quiet group headings.
+- `text-title` keeps compact titles at their current size.
 - `text-base` is the title of a card or a section.
 - `text-xl` is the title of a page.
 - `text-3xl` is the largest step: a note name on the published page and the
   landing home headline (record 0217).
 - The `text-note` steps are the note text and its heading ramp.
+
+Under a coarse pointer, primary text uses the same step as fields. Secondary
+text stays smaller. The tokens change together, so a screen does not select
+its own touch sizes. Titles, note text and keyboard hints keep their sizes.
 
 Two weights in the chrome: `font-medium` for a control label and a selected
 row, `font-semibold` for a title. No capitals, no wide tracking, no bold.

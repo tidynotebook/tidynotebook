@@ -154,7 +154,7 @@ export const toolbarClasses =
   'mb-2 flex min-h-8 flex-wrap items-center justify-between gap-cluster';
 
 /** The group of the page above its title. */
-export const groupClasses = 'm-0 text-control font-medium text-muted';
+export const groupClasses = 'm-0 text-help font-medium text-muted';
 
 /**
  * The typography of the text of a page.
