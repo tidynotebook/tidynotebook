@@ -537,6 +537,7 @@ await test('API key create, validation, secret and revoke use one Settings frame
   assert.equal(create.closest('[hidden]') !== null, true);
   const name = container.querySelector<HTMLInputElement>('#api-key-name');
   assert.ok(name);
+  assert.equal(document.activeElement, name);
   await act(async () => {
     Object.getOwnPropertyDescriptor(
       window.HTMLInputElement.prototype,

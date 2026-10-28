@@ -52,7 +52,8 @@ export default function SettingsAction({
       const held = panel.current;
       if (held !== null && !held.contains(document.activeElement))
         (
-          held.querySelector<HTMLElement>('input, select, textarea, button') ??
+          held.querySelector<HTMLElement>('input, select, textarea') ??
+          held.querySelector<HTMLElement>('button') ??
           held
         ).focus();
     });
