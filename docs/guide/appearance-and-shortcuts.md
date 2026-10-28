@@ -48,10 +48,14 @@ on a device with little room. See [Settings](settings.md#offline).
 
 To see every shortcut:
 
-1. Open the account menu and select **Keyboard shortcuts**. You can also open
-   the command palette and select **Show keyboard shortcuts**.
+1. Press **Cmd + /** on Mac, or **Ctrl + /** on Windows and Linux. You can also
+   select **Keyboard shortcuts** in the account menu, or **Show keyboard
+   shortcuts** in the command palette.
 2. Read the list. It shows every key combination and what it does, for Windows
    and for Mac keyboards.
+
+Press **Escape** to close the list and return to your work. The shortcut
+does not open another modal while a modal is open.
 
 The list comes from the same table that the application uses for its keys, so
 it is always current.

@@ -294,6 +294,9 @@ const sidebarKeys = 'Cmd or Ctrl + \\';
 /** The key line that opens the command palette. */
 const paletteKeys = 'Cmd or Ctrl + P';
 
+/** The key line that opens the shortcut list. */
+const shortcutsKeys = 'Cmd or Ctrl + /';
+
 /**
  * Where the person is, as one line of the header.
  *
@@ -1175,8 +1178,27 @@ function ShellFrame({
       }
     };
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [toggleSidebar, openPalette, openSettings]);
+    // Capture this key before the editor can use it to change a code block.
+    const onShortcutsKeyDown = (event: KeyboardEvent): void => {
+      if (
+        event.key !== '/' ||
+        (!event.metaKey && !event.ctrlKey) ||
+        event.altKey ||
+        event.isComposing ||
+        event.repeat ||
+        document.querySelector('[role="dialog"], dialog[open]') !== null
+      )
+        return;
+      event.preventDefault();
+      event.stopPropagation();
+      openShortcuts();
+    };
+    window.addEventListener('keydown', onShortcutsKeyDown, true);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keydown', onShortcutsKeyDown, true);
+    };
+  }, [toggleSidebar, openPalette, openSettings, openShortcuts]);
 
   const cycleTheme = useCallback((): void => {
     const order = ['system', 'light', 'dark'] as const;
@@ -1328,6 +1350,7 @@ function ShellFrame({
         id: 'shortcuts',
         label: 'Show keyboard shortcuts',
         keywords: 'keys help',
+        keys: shortcutsKeys,
         icon: 'keyboard' as const,
         run: openShortcuts,
       },
