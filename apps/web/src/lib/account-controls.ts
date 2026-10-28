@@ -79,9 +79,7 @@ function limitOf(text: string): number | null | undefined {
  * made from an old state is refused and changes nothing. The removal time is
  * sent only when its field changed, so a save that keeps it does not move it.
  * A limit field that a person did not change sends the stored bytes, because
- * two decimals of a gigabyte cannot show every limit exactly: a save of one
- * control must not round another, and a limit that shows as 0 must not block
- * the save.
+ * a save of one control must not round another limit.
  */
 export function controlsChangeOf(
   form: ControlsForm,
@@ -100,7 +98,7 @@ export function controlsChangeOf(
       ok: false,
       problem: {
         field: 'storageGigabytes',
-        message: 'Enter a number of GiB above zero.',
+        message: 'Enter a number of GB above zero.',
       },
     };
   const text =
@@ -126,7 +124,7 @@ export function controlsChangeOf(
         ok: false,
         problem: {
           field,
-          message: 'Enter a number of GiB above zero, or leave it empty.',
+          message: 'Enter a number of GB above zero, or leave it empty.',
         },
       };
   let removalAt: string | null | undefined;

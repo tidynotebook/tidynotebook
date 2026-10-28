@@ -4,7 +4,7 @@ import type { AccountControls } from '@notesapp/api-client';
 import { controlsChangeOf, controlsFormOf } from './account-controls.ts';
 
 const now = Date.parse('2026-10-04T12:00:00.000Z');
-const gigabyte = 1024 ** 3;
+const gigabyte = 1000 ** 3;
 
 const active: AccountControls = {
   revision: 3,
@@ -97,7 +97,7 @@ await test('a form that a person must correct names its field', () => {
       ok: false,
       problem: {
         field: 'storageGigabytes',
-        message: 'Enter a number of GiB above zero.',
+        message: 'Enter a number of GB above zero.',
       },
     },
   );
@@ -116,13 +116,11 @@ await test('a form that a person must correct names its field', () => {
 });
 
 await test('a save keeps each limit that a person did not change exactly', () => {
-  // Two decimals of a gigabyte cannot show these limits exactly. A save of
-  // another control must send them back as they are, and a 1 byte limit
-  // that shows as 0 must not block the save.
+  // Small limits and existing binary limits keep their exact byte values.
   const odd: AccountControls = {
     ...active,
     limitBytes: 1,
-    textLimitBytes: 5 * gigabyte + 12_345,
+    textLimitBytes: 5 * 1024 ** 3 + 12_345,
     publishedTransferLimitBytes: gigabyte + 7,
     downloadLimitBytes: 3,
   };
@@ -137,12 +135,13 @@ await test('a save keeps each limit that a person did not change exactly', () =>
       revision: 3,
       standing: 'active',
       limitBytes: 1,
-      textLimitBytes: 5 * gigabyte + 12_345,
+      textLimitBytes: 5 * 1024 ** 3 + 12_345,
       publishedTransferLimitBytes: gigabyte + 7,
       downloadLimitBytes: 3,
       features: { teams: false, collaboration: true },
     },
   });
+  assert.equal(controlsFormOf(odd, now).textGigabytes, '5.368721465');
   // A field that a person edits is read from its text.
   const edited = controlsChangeOf(
     { ...controlsFormOf(odd, now), storageGigabytes: '6', textGigabytes: '' },
