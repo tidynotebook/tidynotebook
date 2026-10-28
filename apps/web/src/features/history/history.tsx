@@ -851,7 +851,7 @@ function RevisionPanel({
           </>
         ) : note === null ? (
           <pre
-            className="m-0 max-h-96 overflow-auto whitespace-pre-wrap rounded-lg border border-edge-subtle bg-app p-3 font-mono text-control text-strong"
+            className="m-0 max-h-96 overflow-auto whitespace-pre-wrap rounded-lg border border-edge-subtle bg-app p-3 font-mono text-preview text-strong"
             aria-label={`${name} in this version`}
           >
             {detail.text}

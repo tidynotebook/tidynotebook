@@ -176,7 +176,7 @@ export function StaleDraftRecovery({
             </h2>
             <pre
               tabIndex={0}
-              className={`m-0 max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-edge-subtle bg-card p-3 text-control ${focusOutline}`}
+              className={`m-0 max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-edge-subtle bg-card p-3 text-preview ${focusOutline}`}
             >
               {entry === 'device' ? localText : acceptedText}
             </pre>

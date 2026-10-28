@@ -56,7 +56,7 @@ export function InlineDiff({
           <h4 className="m-0 bg-surface px-3 py-2 text-control font-medium text-strong">
             {diffBlockHeading(block, oldLabel, newLabel)}
           </h4>
-          <ol className="m-0 list-none p-0 font-mono text-control">
+          <ol className="m-0 list-none p-0 font-mono text-preview">
             {block.rows.map((row, rowIndex) => (
               <li
                 // The tone of a changed line is a fill from the palette and

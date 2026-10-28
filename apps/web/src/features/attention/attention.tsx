@@ -78,7 +78,7 @@ function ParkedSaveRow({
           Kept text
         </summary>
         <pre
-          className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap rounded-lg border border-edge-subtle bg-surface p-3 font-mono text-control text-strong"
+          className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap rounded-lg border border-edge-subtle bg-surface p-3 font-mono text-preview text-strong"
           aria-label={`Kept text of ${save.name}`}
         >
           {save.text}
