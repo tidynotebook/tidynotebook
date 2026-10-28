@@ -400,22 +400,18 @@ await test('the language of a fence is a value and not a label', () => {
   assert.equal(info.fontFamily, 'var(--font-mono)');
 });
 
-await test('the code line of the caret has a focus outline only while the text has the focus', () => {
-  // The outline marks the caret. While the find panel held the focus, it
-  // drew a box around the line of the current match, which the tint of the
-  // match already states (issue 247, record 0062).
-  const activeCodeLine = rule(
-    '&.cm-focused .cm-activeLine.cm-np-code-block-line',
-  );
-  assert.equal(activeCodeLine.outline, '1px solid var(--notes-focus)');
-  assert.equal(activeCodeLine.outlineOffset, '-1px');
+await test('the focus ring goes round the whole code card and never one line', () => {
+  // An outline around the line of the caret drew a second box inside the
+  // card, which read as a block of its own (issue 517). The ring is the edge
+  // colour of every line of the card while the text has the focus.
   const style = noteSurfaceStyle();
   for (const [selector, declarations] of Object.entries(style))
-    if (
-      selector.includes('cm-activeLine') &&
-      JSON.stringify(declarations).includes('outline')
-    )
-      assert.ok(selector.startsWith('&.cm-focused'), selector);
+    if (selector.includes('cm-activeLine') || selector.includes('code-block'))
+      assert.ok(!JSON.stringify(declarations).includes('outline'), selector);
+  assert.equal(
+    rule('&.cm-focused .cm-np-code-block-active').borderColor,
+    'var(--notes-focus)',
+  );
   // A match reads by its tint and draws no edge of its own.
   for (const selector of [
     '.cm-searchMatch',
@@ -573,11 +569,25 @@ await test('a match of the find panel takes the tint of a selection', () => {
   }
 });
 
-await test('a code card keeps the room of the bar of its language', () => {
-  // Record 0174. The bar of the language and the copy action stands over the
-  // first line of the card, so that line keeps the height of the bar.
+await test('a code card keeps even room and no empty band', () => {
+  // Record 0174. The bar of a fence stands on the opening fence line, so the
+  // card keeps the same room above its first line and below its last. Only
+  // an indented block, which has no fence, keeps the room of the bar.
   assert.equal(
     rule('.cm-np-code-block-open').paddingBlockStart,
+    rule('.cm-np-code-block-close').paddingBlockEnd,
+  );
+  assert.equal(
+    rule('.cm-np-code-block-bar').paddingBlockStart,
     rule('.cm-np-code-bar').height,
   );
+});
+
+await test('a fence line is quiet and its language is a small label', () => {
+  const fence = rule('.cm-np-code-fence');
+  assert.equal(fence.fontSize, 'var(--text-control)');
+  assert.equal(fence.color, 'var(--notes-text-muted)');
+  const info = rule('.cm-np-code-info');
+  assert.equal(info.backgroundColor, 'var(--notes-surface-hover)');
+  assert.equal(info.borderRadius, 'var(--radius-sm)');
 });

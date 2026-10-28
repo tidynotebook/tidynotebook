@@ -31,8 +31,9 @@
  *
  * A decoration that replaces a line break, and every block decoration, has
  * to come from a state field rather than from a view plugin, which is why
- * the setext heading underline and the code fence lines are hidden here as
- * well.
+ * the setext heading underline is hidden here as well. A code fence line
+ * is never hidden: `./live-preview.ts` draws it quiet, so the source stays
+ * on the screen for editing and for a copy.
  */
 import { prepareImageRemoval } from './image-removal.ts';
 import { syntaxTree } from '@codemirror/language';
@@ -319,8 +320,8 @@ type SourceRange = { readonly from: number; readonly to: number };
 
 /**
  * One range that the widget field decorates: a widget, or source that hides
- * with no widget in its place, such as a hard break marker, a setext heading
- * underline or a code fence line.
+ * with no widget in its place, such as a hard break marker or a setext
+ * heading underline.
  */
 type Region = {
   readonly from: number;
@@ -403,8 +404,8 @@ function scanRegions(
           });
           return false;
         }
-        for (const line of fenceLines(state, node.node))
-          hide(line.from, line.to, { from: node.from, to: node.to });
+        // A code fence keeps its fence lines on the screen, so editing and a
+        // copy read the source as it is. `./live-preview.ts` draws them quiet.
         return false;
       }
       if (name === 'MathBlock') {
@@ -543,45 +544,6 @@ function imageRegion(
     destination,
     block: alone,
   };
-}
-
-/**
- * The fence lines that a fenced code block hides.
- *
- * A fenced code block hides its opening and its closing fence line, so the
- * reader sees the highlighted code alone and not the ` ``` ` lines (decision
- * 0002). Each hidden range covers one fence line and the one line break that
- * joins it to the code, so the line collapses. A single line fence keeps its
- * open and close on one line, so it is left as source rather than hiding the
- * code with the fences.
- */
-function fenceLines(
-  state: EditorState,
-  fence: SyntaxNode,
-): readonly SourceRange[] {
-  const doc = state.doc;
-  const marks = fence.getChildren('CodeMark');
-  const open = marks[0] ?? null;
-  if (open === null) return [];
-  const openLine = doc.lineAt(open.from);
-  const close = marks.length > 1 ? (marks[marks.length - 1] ?? null) : null;
-  const closeLine = close === null ? null : doc.lineAt(close.from);
-  if (closeLine === null || closeLine.number > openLine.number + 1) {
-    // The opening line and the line break after it, so the first code line
-    // moves up into its place, and the closing line and the line break
-    // before it.
-    const hides: SourceRange[] = [
-      { from: openLine.from, to: Math.min(doc.length, openLine.to + 1) },
-    ];
-    if (closeLine !== null)
-      hides.push({ from: closeLine.from - 1, to: closeLine.to });
-    return hides;
-  }
-  // An empty block holds no code between its fences, so one range hides both
-  // lines and cannot overlap.
-  if (closeLine.number === openLine.number + 1)
-    return [{ from: openLine.from, to: closeLine.to }];
-  return [];
 }
 
 /**

@@ -559,14 +559,31 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
       borderInline: '1px solid var(--notes-border-subtle)',
       paddingInline: 'calc(var(--spacing) * 4)',
     },
-    // The first line of the card keeps the room of the bar that carries the
-    // language and the copy action of the block (record 0174), one control
-    // high, so the bar never covers a letter of the code.
+    // The card keeps the same room above its first line and below its last.
     '.cm-np-code-block-open': {
       borderTop: '1px solid var(--notes-border-subtle)',
       borderStartStartRadius: 'var(--radius-lg)',
       borderStartEndRadius: 'var(--radius-lg)',
+      paddingBlockStart: 'calc(var(--spacing) * 2)',
+    },
+    // An indented block has no fence line to carry its bar (record 0174), so
+    // its first line keeps the room of the bar, one control high, and the bar
+    // never covers a letter of the code.
+    '.cm-np-code-block-bar': {
       paddingBlockStart: codeBarHeight,
+    },
+    // A fence line stays on the screen, so editing and a copy read the source,
+    // but it is quiet: smaller and dim while the caret is not on it.
+    '.cm-np-code-fence': {
+      fontSize: 'var(--text-control)',
+      color: 'var(--notes-text-muted)',
+    },
+    // While the text has the focus and the selection is in a block, the edges
+    // of the whole card take the focus colour, which record 0062 lets mark
+    // the place of the caret. One ring goes round the card, never round one
+    // line of it.
+    '&.cm-focused .cm-np-code-block-active': {
+      borderColor: 'var(--notes-focus)',
     },
     // The bar of a code block (record 0174) stands in one layer over the text,
     // as the controls of a table do, at the top of the card of its block: the
@@ -602,22 +619,19 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
       borderBottom: '1px solid var(--notes-border-subtle)',
       borderEndStartRadius: 'var(--radius-lg)',
       borderEndEndRadius: 'var(--radius-lg)',
-      paddingBlockEnd: 'calc(var(--spacing) * 3)',
+      paddingBlockEnd: 'calc(var(--spacing) * 2)',
     },
-    // The outline marks the line of the caret, which record 0062 lets the
-    // focus colour mark, so it shows only while the text has the focus and
-    // the caret shows. While the find panel holds the focus, the current
-    // match reads by its tint alone and no box crosses the card.
-    '&.cm-focused .cm-activeLine.cm-np-code-block-line': {
-      outline: '1px solid var(--notes-focus)',
-      outlineOffset: '-1px',
-    },
-    // The language of a fence is a value and not a label, so it keeps the
-    // code face and the quiet color and takes no capitals and no tracking.
+    // The language of a fence is a value, so it keeps the code face and the
+    // quiet color and takes no capitals and no tracking. It reads as a small
+    // label on the fence line: the tint and the radius of a code span.
     '.cm-np-code-info': {
       fontFamily: 'var(--font-mono)',
       fontSize: 'var(--text-control)',
       color: 'var(--notes-text-muted)',
+      backgroundColor: 'var(--notes-surface-hover)',
+      borderRadius: 'var(--radius-sm)',
+      paddingInline: 'calc(var(--spacing) * 1.5)',
+      marginInlineStart: 'calc(var(--spacing) * 1)',
     },
     '.cm-np-front-matter': {
       fontFamily: 'var(--font-mono)',
@@ -1059,7 +1073,7 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
       // A finger takes the 44 px target of a control, so the bar and the room
       // that the card keeps for it grow to that.
       '.cm-np-code-bar': { height: 'calc(var(--spacing) * 12)' },
-      '.cm-np-code-block-open': {
+      '.cm-np-code-block-bar': {
         paddingBlockStart: 'calc(var(--spacing) * 12)',
       },
       '.cm-np-table-handle-row': {

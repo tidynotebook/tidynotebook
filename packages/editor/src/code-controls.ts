@@ -1,12 +1,13 @@
 /**
  * The bar of a code block: its language and a copy action (record 0174).
  *
- * A fence hides its fence lines while the caret is away from it, so the
- * language of the block is not on the screen. A bar stands at the top of the
- * card of each code block on the screen: the label of the language at the
- * start, as `codeBlockLabel` of `@notesapp/markdown` names it, and a copy
- * control at the end. The first line of the card keeps the room of the bar
- * (`editor-theme.ts`).
+ * A bar stands at the top of the card of each code block on the screen, with
+ * a copy control at the end. The opening fence line of a fenced block stays
+ * on the screen and names the language with a small label, so the bar of a
+ * fence stands on that line and shows the copy control alone. An indented
+ * block has no fence, so its bar shows the label of the language at the
+ * start, as `codeBlockLabel` of `@notesapp/markdown` names it, and its first
+ * line keeps the room of the bar (`editor-theme.ts`).
  *
  * The bar stands in one layer over the text, inside the scroller of the
  * editor, as the controls of a table do (`table-controls.ts`), so it replaces
@@ -46,6 +47,7 @@ import {
   glyph,
   type CopyState,
 } from '@notesapp/ui';
+import { codeBlockDrawn, lineSelected } from './code-block-shape.ts';
 import { markdownGrammarOn } from './grammar-gate.ts';
 
 /** One code block that carries a bar. */
@@ -56,13 +58,22 @@ export type CodeBlockBar = {
   readonly to: number;
   /** The label of the block, or `null` for a block with no info string. */
   readonly label: string | null;
+  /**
+   * Whether the block is fenced. Its bar then stands on the opening fence
+   * line, which names the language itself, so the bar shows the copy action
+   * alone and keeps no room of its own.
+   */
+  readonly fenced: boolean;
 };
 
 /**
  * The code blocks of a state between two offsets, in document order.
  *
  * A fenced block and an indented block each carry a bar. A Mermaid fence is a
- * diagram, which draws as a widget and carries none.
+ * diagram, which draws as a widget and carries none. The bar of a fenced
+ * block steps aside while the selection is on its opening fence line, so it
+ * never covers the text that the person edits there, and a fence that is
+ * still being typed is not a block (`./code-block-shape.ts`).
  */
 export function codeBlockBars(
   state: EditorState,
@@ -70,23 +81,34 @@ export function codeBlockBars(
   to = state.doc.length,
 ): readonly CodeBlockBar[] {
   const found: CodeBlockBar[] = [];
+  const selection = state.selection.main;
   syntaxTree(state).iterate({
     from,
     to,
     enter: (node) => {
       if (node.name === 'CodeBlock') {
-        found.push({ from: node.from, to: node.to, label: null });
+        found.push({
+          from: node.from,
+          to: node.to,
+          label: null,
+          fenced: false,
+        });
         return false;
       }
       if (node.name !== 'FencedCode') return true;
       const info = node.node.getChild('CodeInfo');
       const text =
         info === null ? '' : state.doc.sliceString(info.from, info.to);
-      if (!diagramFence(text))
+      if (
+        !diagramFence(text) &&
+        codeBlockDrawn(state.doc, node.node, selection) &&
+        !lineSelected(state.doc, node.from, selection)
+      )
         found.push({
           from: node.from,
           to: node.to,
           label: codeBlockLabel(text),
+          fenced: true,
         });
       return false;
     },
@@ -203,6 +225,8 @@ type Place = {
   readonly top: number;
   readonly left: number;
   readonly width: number;
+  /** The height of the line of a fence, or `null` for the room of a bar. */
+  readonly height: number | null;
 };
 
 /** Builds the layer of the bars and keeps each bar on its block. */
@@ -220,7 +244,13 @@ class CodeControls {
   }
 
   update(update: ViewUpdate): void {
-    if (update.docChanged || update.geometryChanged || update.viewportChanged)
+    // The bar steps aside while the selection is on the opening fence line.
+    if (
+      update.docChanged ||
+      update.selectionSet ||
+      update.geometryChanged ||
+      update.viewportChanged
+    )
       this.schedule();
   }
 
@@ -365,6 +395,9 @@ class CodeControls {
               top: line.top - scroller.top + view.scrollDOM.scrollTop,
               left: line.left - scroller.left + view.scrollDOM.scrollLeft,
               width: line.width,
+              // The bar of a fence stands on the opening fence line and takes
+              // its height. An indented block keeps the room of the bar.
+              height: block.fenced ? line.height : null,
             },
           });
         }
@@ -374,9 +407,14 @@ class CodeControls {
         placed.forEach(({ block, place }, index) => {
           const bar = this.bar(index);
           const same =
-            bar.block?.from === block.from && bar.block.label === block.label;
+            bar.block?.from === block.from &&
+            bar.block.label === block.label &&
+            bar.block.fenced === block.fenced;
           bar.block = block;
-          bar.label.textContent = block.label ?? '';
+          // The opening fence of a fenced block names its language, so its
+          // bar shows the copy action alone. The name of the control still
+          // says the language.
+          bar.label.textContent = block.fenced ? '' : (block.label ?? '');
           // A bar that now stands on another block names that block.
           if (!same) {
             window.clearTimeout(bar.timer);
@@ -388,6 +426,8 @@ class CodeControls {
           bar.element.style.top = `${String(place.top)}px`;
           bar.element.style.left = `${String(place.left)}px`;
           bar.element.style.width = `${String(place.width)}px`;
+          bar.element.style.height =
+            place.height === null ? '' : `${String(place.height)}px`;
         });
         for (const bar of this.bars.slice(placed.length)) {
           bar.block = null;

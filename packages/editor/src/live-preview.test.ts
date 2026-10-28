@@ -30,6 +30,7 @@ import {
   type PreviewBuild,
   type PreviewNode,
 } from './live-preview.ts';
+import { closeFenceSpec } from './fence-close.ts';
 import { richWidgets } from './widgets.ts';
 
 /**
@@ -1130,33 +1131,154 @@ await test('the tags of an HTML block are quiet marks and its words are text', (
   assert.equal(visibleText(doc), doc);
 });
 
-await test('a code block names its first and its last visible line', () => {
+await test('a code block names its first and its last line', () => {
   // The editor drew a code block with no top, no bottom and no radius: the
-  // edge classes missed the theme, and the bottom edge sat on the closing
-  // fence line, which the preview hides while the caret is away.
+  // edge classes missed the theme. The fence lines stay on the screen, so
+  // the opening fence starts the card and the closing fence ends it.
   const doc = 'Text\n\n```ts\nconst a = 1;\nconst b = 2;\n```\n\nAfter\n';
   const fenceOpen = doc.indexOf('```ts');
   const lastCode = doc.indexOf('const b');
   const fenceClose = doc.lastIndexOf('```');
+  for (const found of [
+    describe(doc),
+    describe(doc, { from: lastCode, to: lastCode }),
+  ]) {
+    assert.ok(
+      has(found, 'line', 'cm-np-code-block-open', fenceOpen, fenceOpen),
+    );
+    assert.ok(
+      has(found, 'line', 'cm-np-code-block-close', fenceClose, fenceClose),
+    );
+    assert.ok(
+      !has(found, 'line', 'cm-np-code-block-close', lastCode, lastCode),
+    );
+    assert.ok(!has(found, 'line', 'cm-np-code-block-bar'));
+  }
+});
+
+await test('the fence lines of a block are quiet until the caret is on them', () => {
+  const doc = 'Text\n\n```ts\nconst a = 1;\n```\n\nAfter\n';
+  const open = doc.indexOf('```ts');
+  const code = doc.indexOf('const a');
+  const close = doc.lastIndexOf('```');
   const away = describe(doc);
-  assert.ok(has(away, 'line', 'cm-np-code-block-open', fenceOpen, fenceOpen));
-  assert.ok(has(away, 'line', 'cm-np-code-block-close', lastCode, lastCode));
+  assert.ok(has(away, 'line', 'cm-np-code-fence', open, open));
+  assert.ok(has(away, 'line', 'cm-np-code-fence', close, close));
+  assert.ok(!has(away, 'line', 'cm-np-code-fence', code, code));
+  // The language stays a small label on the opening fence.
+  assert.ok(has(away, 'mark', 'cm-np-code-info', open + 3, open + 5));
+  // The caret in the code keeps both fences quiet.
+  const inCode = describe(doc, { from: code, to: code });
+  assert.ok(has(inCode, 'line', 'cm-np-code-fence', open, open));
+  assert.ok(has(inCode, 'line', 'cm-np-code-fence', close, close));
+  // The caret on a fence line shows that line fully.
+  const onOpen = describe(doc, { from: open + 5, to: open + 5 });
+  assert.ok(!has(onOpen, 'line', 'cm-np-code-fence', open, open));
+  assert.ok(has(onOpen, 'line', 'cm-np-code-fence', close, close));
+  // No range of the block is hidden, so editing and a copy read the source.
+  assert.equal(visibleText(doc), doc);
+  assert.equal(visibleText(doc, { from: code, to: code }), doc);
+});
+
+await test('the focus ring of a code block goes round the whole card', () => {
+  // The caret line drew a box of its own that cut across the card.
+  const doc = 'Text\n\n```ts\nconst a = 1;\nconst b = 2;\n```\n\nAfter\n';
+  const code = doc.indexOf('const b');
+  assert.ok(!has(describe(doc), 'line', 'cm-np-code-block-active'));
+  const inside = describe(doc, { from: code, to: code });
+  for (const at of [
+    doc.indexOf('```ts'),
+    doc.indexOf('const a'),
+    code,
+    doc.lastIndexOf('```'),
+  ])
+    assert.ok(
+      has(inside, 'line', 'cm-np-code-block-active', at, at),
+      String(at),
+    );
   assert.ok(
-    !has(away, 'line', 'cm-np-code-block-close', fenceClose, fenceClose),
+    !has(
+      inside,
+      'line',
+      'cm-np-code-block-active',
+      doc.indexOf('After'),
+      doc.indexOf('After'),
+    ),
   );
-  // With the caret in the block the fences show, so the closing fence line is
-  // the last line of the card.
-  const inside = describe(doc, { from: lastCode, to: lastCode });
+});
+
+await test('an indented block keeps the room of its bar', () => {
+  const doc = 'text\n\n    indented\n';
+  const start = doc.indexOf('    indented');
+  assert.ok(has(describe(doc), 'line', 'cm-np-code-block-bar', start, start));
+});
+
+await test('a fence that is still being typed is not a card', () => {
+  // Three backticks drew an empty card with a band and a box around the
+  // caret, and the card covered every line below the opener.
+  const typed = 'Text\n\n```';
+  const caret = { from: typed.length, to: typed.length };
+  assert.ok(!has(describe(typed, caret), 'line', 'cm-np-code-block-line'));
+  assert.equal(visibleText(typed, caret), typed);
+  // The opener above older text, with the caret on the opener, leaves that
+  // text out of a card until Enter writes the closer.
+  const above = 'Text\n\n```ts\nOlder line\n\nMore\n';
+  const onOpener = above.indexOf('```ts') + 5;
   assert.ok(
-    has(inside, 'line', 'cm-np-code-block-close', fenceClose, fenceClose),
+    !has(
+      describe(above, { from: onOpener, to: onOpener }),
+      'line',
+      'cm-np-code-block-line',
+    ),
   );
-  // A block of one line of code is one visual line, which the hidden opening
-  // fence starts, so that line carries both edges.
-  const one = 'Text\n\n```json\n{"a": 1}\n```\n\nAfter\n';
-  const oneOpen = one.indexOf('```json');
-  const single = describe(one);
-  assert.ok(has(single, 'line', 'cm-np-code-block-open', oneOpen, oneOpen));
-  assert.ok(has(single, 'line', 'cm-np-code-block-close', oneOpen, oneOpen));
+  // An opener with text after the backticks and no line after it stays
+  // text, so the caret away never hides that text.
+  const lone = 'Text\n\n``` lone words';
+  assert.ok(
+    !has(describe(lone, { from: 0, to: 0 }), 'line', 'cm-np-code-block-line'),
+  );
+  assert.equal(visibleText(lone, { from: 0, to: 0 }), lone);
+  // A closed fence is a card wherever the caret stands.
+  const closed = 'Text\n\n```ts\nconst a = 1;\n```\n';
+  const end = closed.indexOf('```ts') + 5;
+  assert.ok(
+    has(
+      describe(closed, { from: end, to: end }),
+      'line',
+      'cm-np-code-block-line',
+    ),
+  );
+});
+
+await test('typing a fence and Enter opens a card with the caret inside', () => {
+  // The flow of issue 517: the backticks alone stay text, Enter on the
+  // opener writes the closer, and the card then holds the caret.
+  const steps = ['Text\n\n```', 'Text\n\n```t', 'Text\n\n```ts'];
+  for (const doc of steps) {
+    const caret = { from: doc.length, to: doc.length };
+    assert.ok(!has(describe(doc, caret), 'line', 'cm-np-code-block-line'), doc);
+    assert.equal(visibleText(doc, caret), doc);
+  }
+  const typed = steps[steps.length - 1] ?? '';
+  const state = stateOf(typed).update({
+    selection: { anchor: typed.length },
+  }).state;
+  const spec = closeFenceSpec(state);
+  assert.ok(spec !== null);
+  const next = state.update(spec).state;
+  const doc = next.doc.toString();
+  assert.equal(doc, 'Text\n\n```ts\n\n```');
+  const head = next.selection.main.head;
+  assert.equal(head, doc.indexOf('```ts') + 6);
+  const found = describe(doc, { from: head, to: head });
+  for (const at of [doc.indexOf('```ts'), head, doc.lastIndexOf('```')])
+    assert.ok(
+      has(found, 'line', 'cm-np-code-block-active', at, at),
+      String(at),
+    );
+  assert.ok(has(found, 'line', 'cm-np-code-fence', doc.indexOf('```ts')));
+  // The saved text is the Markdown the person typed and nothing more.
+  assert.equal(visibleText(doc, { from: head, to: head }), doc);
 });
 
 await test('a nested pair of one element draws the outer pair', () => {
