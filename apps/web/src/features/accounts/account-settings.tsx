@@ -876,7 +876,7 @@ export function SettingsModal({
                                 data-settings-page={page.path}
                                 className={rowClassName({
                                   current: desktopCurrent && !listLevel,
-                                  className: 'w-full text-left',
+                                  className: `w-full text-left ${desktopCurrent && listLevel ? 'lg:bg-active' : ''}`,
                                 })}
                                 aria-current={current ? 'page' : undefined}
                                 onClick={() => {
