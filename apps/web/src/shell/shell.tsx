@@ -1185,13 +1185,12 @@ function ShellFrame({
         (!event.metaKey && !event.ctrlKey) ||
         event.altKey ||
         event.isComposing ||
-        event.repeat ||
         document.querySelector('[role="dialog"], dialog[open]') !== null
       )
         return;
       event.preventDefault();
       event.stopPropagation();
-      openShortcuts();
+      if (!event.repeat) openShortcuts();
     };
     window.addEventListener('keydown', onShortcutsKeyDown, true);
     return () => {
