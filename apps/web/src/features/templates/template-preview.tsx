@@ -59,6 +59,16 @@ export default function TemplatePreview({
         // Only the shared sanitizer output enters this inert document. Import
         // its nodes instead of writing HTML into the application document.
         const parsed = new DOMParser().parseFromString(html, 'text/html');
+        if (
+          (parsed.body.textContent ?? '').trim() === '' &&
+          parsed.body.querySelector('img, hr, pre, table, input') === null
+        ) {
+          const empty = parsed.createElement('p');
+          empty.className = 'text-muted';
+          empty.textContent =
+            'This template is empty. New notes will start blank.';
+          parsed.body.replaceChildren(empty);
+        }
         const values = [...new Set(highlights)]
           .filter((value) => value !== '')
           .sort((a, b) => b.length - a.length);
@@ -123,7 +133,7 @@ export default function TemplatePreview({
         role="region"
         aria-label={label}
         aria-busy={state === 'loading'}
-        className="max-h-72 overflow-auto rounded-lg border border-edge-subtle bg-app px-4 py-2 text-control text-strong [&_h1]:my-2 [&_h1]:text-base [&_h1]:font-semibold [&_h2]:my-2 [&_h2]:text-ui [&_h2]:font-semibold [&_h3]:my-1.5 [&_h3]:text-control [&_h3]:font-semibold [&_p]:my-2 [&_ul]:list-disc [&_ul]:pl-6 [&_li.task-list-item]:list-none [&_.task-list-item_input]:size-4 [&_.task-list-item_input]:mr-1.5 [&_.task-list-item_input]:align-middle [&_.notes-task-mark]:hidden [&_ol]:list-decimal [&_ol]:pl-6 [&_pre]:overflow-auto [&_pre]:bg-surface [&_pre]:p-3 [&_a]:text-accent [&_table]:w-full [&_td]:p-2 [&_th]:p-2 [&_img]:max-w-full"
+        className="min-h-24 max-h-72 overflow-auto rounded-lg border border-edge-subtle bg-app px-4 py-2 text-control text-strong [&_h1]:my-2 [&_h1]:text-base [&_h1]:font-semibold [&_h2]:my-2 [&_h2]:text-ui [&_h2]:font-semibold [&_h3]:my-1.5 [&_h3]:text-control [&_h3]:font-semibold [&_p]:my-2 [&_ul]:list-disc [&_ul]:pl-6 [&_li.task-list-item]:list-none [&_.task-list-item_input]:size-4 [&_.task-list-item_input]:mr-1.5 [&_.task-list-item_input]:align-middle [&_.notes-task-mark]:hidden [&_ol]:list-decimal [&_ol]:pl-6 [&_pre]:overflow-auto [&_pre]:bg-surface [&_pre]:p-3 [&_a]:text-accent [&_table]:w-full [&_td]:p-2 [&_th]:p-2 [&_img]:max-w-full"
       />
     </div>
   );

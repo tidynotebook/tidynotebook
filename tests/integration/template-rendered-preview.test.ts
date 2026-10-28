@@ -99,3 +99,50 @@ await test('the preview renders headings and tables, marks values, and refuses e
   assert.ok(container.textContent?.includes('<script>'));
   assert.equal(container.querySelector('[onclick], [onerror]'), null);
 });
+
+/** Render another template in the same mounted preview. */
+async function show(text: string): Promise<void> {
+  await act(async () =>
+    root.render(
+      createElement(TemplatePreview, {
+        store,
+        accountId: 'preview-account',
+        workspaceId: 'preview-workspace',
+        path: 'Templates/Example.md',
+        label: 'Template preview',
+        text,
+        highlights: [],
+      }),
+    ),
+  );
+  for (
+    let turn = 0;
+    turn < 100 && container.querySelector('[aria-busy="false"]') === null;
+    turn += 1
+  )
+    await act(async () => {
+      await setImmediate();
+    });
+  assert.ok(container.querySelector('[aria-busy="false"]'));
+}
+
+await test('empty and invisible templates explain the empty preview, then clear it on selection', async () => {
+  for (const text of ['', '  \n\t ', '<!-- No content -->']) {
+    await show(text);
+    assert.match(container.textContent ?? '', /This template is empty/);
+    assert.match(container.textContent ?? '', /New notes will start blank/);
+    assert.equal(container.querySelectorAll('p').length, 1);
+  }
+  await show('# A real template');
+  assert.equal(container.querySelector('h1')?.textContent, 'A real template');
+  assert.doesNotMatch(container.textContent ?? '', /This template is empty/);
+  await show('');
+  assert.equal(container.querySelector('h1'), null);
+  assert.match(container.textContent ?? '', /This template is empty/);
+});
+
+await test('a template with a visual separator is not reported as empty', async () => {
+  await show('---');
+  assert.ok(container.querySelector('hr'));
+  assert.doesNotMatch(container.textContent ?? '', /This template is empty/);
+});
