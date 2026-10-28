@@ -4,6 +4,7 @@ import { Tooltip } from './tooltip.tsx';
 import {
   historyButtonClassName,
   historyButtonName,
+  historyButtonVisualClassName,
 } from './control-classes.ts';
 import { UndoIcon, RedoIcon } from './icons.tsx';
 
@@ -41,7 +42,14 @@ export function HistoryButton({
           if (available) onClick();
         }}
       >
-        {action === 'undo' ? <UndoIcon /> : <RedoIcon />}
+        <span className={historyButtonVisualClassName(!available)}>
+          <span
+            className="inline-flex items-center justify-center"
+            aria-hidden="true"
+          >
+            {action === 'undo' ? <UndoIcon /> : <RedoIcon />}
+          </span>
+        </span>
       </button>
       {tip.visible && buttonRef.current !== null ? (
         <Tooltip

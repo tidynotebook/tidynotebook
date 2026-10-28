@@ -828,13 +828,29 @@ export function buttonName(options: {
   };
 }
 
-/** The approved history controls keep a 44 px target and stay focusable. */
+/**
+ * The approved history controls keep a 44 px target and stay focusable.
+ *
+ * The button is the target and draws nothing. The surface inside it is the
+ * one of a small compact tool, so Undo and Redo show the same 16 px glyph, the
+ * same fill and the same colours as every other tool of the row. A history
+ * control is unavailable through `aria-disabled` and not `disabled`, so it
+ * keeps the focus, and its muted colour is written here and not read from a
+ * `group-disabled` state that never applies to it.
+ */
 export function historyButtonClassName(disabled: boolean): string {
+  return `group inline-flex size-11 shrink-0 items-center justify-center rounded-md bg-transparent focus-visible:outline-none ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`;
+}
+
+/** The visible surface of a history control, as a small compact tool. */
+export function historyButtonVisualClassName(disabled: boolean): string {
   return [
-    `inline-flex size-11 shrink-0 items-center justify-center rounded-md bg-transparent ${focusOutline}`,
+    `inline-flex items-center justify-center rounded-md ${transitionSurface}`,
+    'group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-focus',
     disabled
-      ? 'cursor-not-allowed text-muted opacity-40'
-      : 'cursor-pointer text-strong hover:bg-hover',
+      ? 'bg-transparent text-muted'
+      : 'bg-transparent text-strong group-hover:bg-hover',
+    'size-8 md:size-7',
   ].join(' ');
 }
 

@@ -904,15 +904,63 @@ await test('the style of a menu that no class reaches is the style of its classe
   ]);
 });
 
+await test('history controls draw the surface of every other format tool', async () => {
+  const {
+    compactButtonVisualClassName,
+    historyButtonClassName,
+    historyButtonVisualClassName,
+  } = await import('./control-classes.ts');
+  const tool = compactButtonVisualClassName({
+    variant: 'ghost',
+    size: 'sm',
+    iconOnly: true,
+  }).split(' ');
+  const on = historyButtonVisualClassName(false).split(' ');
+  // The same surface size, focus ring and colours as a small ghost tool, so
+  // the 16 px glyph sits at the same size, colour and height in the row.
+  for (const token of [
+    'size-8',
+    'md:size-7',
+    'items-center',
+    'justify-center',
+    'rounded-md',
+    'bg-transparent',
+    'text-strong',
+    'group-hover:bg-hover',
+    'group-focus-visible:outline-2',
+    'group-focus-visible:outline-offset-2',
+    'group-focus-visible:outline-focus',
+  ]) {
+    assert.ok(tool.includes(token), `${token} left the format tool`);
+    assert.ok(on.includes(token), `${token} is missing on a history tool`);
+  }
+  // The disabled colour of a format tool, without an opacity on top.
+  assert.ok(tool.includes('group-disabled:text-muted'));
+  assert.ok(
+    historyButtonVisualClassName(true).split(' ').includes('text-muted'),
+  );
+  // The surface carries the look, and the target only carries the group.
+  assert.ok(historyButtonClassName(false).split(' ').includes('group'));
+  assert.ok(!historyButtonClassName(false).includes('text-'));
+});
+
 await test('history controls retain their size and focus when unavailable', async () => {
-  const { historyButtonClassName, historyButtonName } =
-    await import('./control-classes.ts');
+  const {
+    historyButtonClassName,
+    historyButtonName,
+    historyButtonVisualClassName,
+  } = await import('./control-classes.ts');
   const off = historyButtonClassName(true);
   assert.ok(off.includes('size-11'));
-  assert.ok(off.includes('opacity-40'));
-  assert.ok(off.includes('focus-visible:outline-2'));
+  assert.ok(off.includes('cursor-not-allowed'));
+  assert.ok(!off.includes('opacity'));
   assert.ok(!off.includes('hover:'));
-  assert.ok(historyButtonClassName(false).includes('hover:bg-hover'));
+  const offSurface = historyButtonVisualClassName(true);
+  assert.ok(offSurface.includes('text-muted'));
+  assert.ok(offSurface.includes('group-focus-visible:outline-2'));
+  assert.ok(!offSurface.includes('opacity'));
+  assert.ok(!offSurface.includes('hover:'));
+  assert.ok(historyButtonClassName(false).includes('cursor-pointer'));
   assert.deepEqual(historyButtonName('undo', false), {
     label: 'Undo',
     tooltip: 'Undo (Ctrl+Z)',

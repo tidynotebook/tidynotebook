@@ -3,7 +3,7 @@
  *
  * Every icon is drawn on the 24 by 24 grid of `./icon-grid.ts` at a stroke of
  * 1.5, and renders at 16 px in a control, a row or a label, and at 20 px in an
- * empty state. The approved Undo and Redo controls use 22 px. One frame component spreads the shared
+ * empty state. One frame component spreads the shared
  * attributes, so no icon states a stroke, a viewport or a line join of its
  * own, and `icons.test.ts` proves that none of them does.
  *
@@ -850,9 +850,9 @@ export function WorkspaceIcon(props: IconProps): ReactNode {
 /** A curved arrow for the local history of the open note. */
 export function UndoIcon(props: IconProps): ReactNode {
   return (
-    <IconFrame size={22} {...props}>
-      <path d="M3 9h11a7 7 0 0 1 0 14" />
-      <path d="m8 4-5 5 5 5" />
+    <IconFrame {...props}>
+      <path d="M9 14 4 9l5-5" />
+      <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
     </IconFrame>
   );
 }
@@ -860,9 +860,9 @@ export function UndoIcon(props: IconProps): ReactNode {
 /** The forward action of the same local history. */
 export function RedoIcon(props: IconProps): ReactNode {
   return (
-    <IconFrame size={22} {...props}>
-      <path d="M21 9H10a7 7 0 0 0 0 14" />
-      <path d="m16 4 5 5-5 5" />
+    <IconFrame {...props}>
+      <path d="m15 14 5-5-5-5" />
+      <path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13" />
     </IconFrame>
   );
 }

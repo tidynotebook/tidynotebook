@@ -269,6 +269,7 @@ export { HistoryButton } from './history-button.tsx';
 export {
   historyButtonClassName,
   historyButtonName,
+  historyButtonVisualClassName,
 } from './control-classes.ts';
 export { UndoIcon, RedoIcon } from './icons.tsx';
 export { Switch } from './controls.tsx';
