@@ -136,7 +136,7 @@ import {
   today,
   useDailyNotes,
 } from '../features/daily-notes/daily-notes.tsx';
-import { syncProblemLine } from '../lib/save-status-words.ts';
+import { useCalmSyncView } from './use-calm-sync.ts';
 import { daysWithNotes } from '../lib/daily-note.ts';
 import {
   TemplatesProvider,
@@ -213,7 +213,6 @@ import { SettingsModalHost, useOpenSettings } from './settings-modal.tsx';
 import { useSignOut } from './sign-out.tsx';
 import {
   syncDotClassName,
-  syncFooter,
   syncStateIsQuiet,
   syncStatusClassNames,
 } from '../lib/sync-state.ts';
@@ -482,17 +481,16 @@ function Sidebar({
   const openNotePending = useNoteSaveFact(
     (report) => report?.pendingSave ?? false,
   );
-  const footer = syncFooter({
+  const openNoteLocalWritePending = useNoteSaveFact(
+    (report) => report?.localWritePending ?? false,
+  );
+  // A short wait while a person types keeps the line, so it does not flip on
+  // every keystroke. A problem or a lost connection shows at once.
+  const footer = useCalmSyncView({
     state: sync.state,
     online,
-    noteName: sync.noteName,
-    openNoteWriteFailed,
-    openNotePending,
-  });
-  // Saving is quiet: the footer states only a problem or a pause.
-  const syncLine = syncProblemLine({
-    state: sync.state,
     failed: openNoteWriteFailed,
+    pending: openNotePending || openNoteLocalWritePending,
   });
 
   return (
@@ -725,19 +723,21 @@ function Sidebar({
         )}
 
         <div className="border-t border-edge-subtle p-2">
-          {syncLine === null ? null : (
-            <div className={rowClassName({ interactive: false })}>
-              <span className={syncStatusClassNames.status}>
-                <span className={syncStatusClassNames.dotFrame}>
-                  <span
-                    className={syncDotClassName(footer.dot)}
-                    aria-hidden="true"
-                  />
-                </span>
-                <span className={syncStatusClassNames.line}>{syncLine}</span>
+          <div className={rowClassName({ interactive: false })}>
+            <span
+              className={syncStatusClassNames.status}
+              role="status"
+              aria-live="polite"
+            >
+              <span className={syncStatusClassNames.dotFrame}>
+                <span
+                  className={syncDotClassName(footer.dot)}
+                  aria-hidden="true"
+                />
               </span>
-            </div>
-          )}
+              <span className={syncStatusClassNames.line}>{footer.line}</span>
+            </span>
+          </div>
           <Link
             className={rowClassName({
               current: location.pathname === trashPath,
