@@ -320,10 +320,16 @@ await test('Move dims the moved folder and its children and moves into a chosen 
   assert.equal(launch.getAttribute('aria-disabled'), 'true');
   assert.match(launch.textContent ?? '', /this folder/);
   assert.equal(row('Projects').getAttribute('aria-selected'), 'true');
+  assert.match(row('Projects').textContent ?? '', /Current folder/);
+  assert.equal(button('Move').disabled, true);
+  const countBefore = moves.length;
+  await act(async () => button('Move').click());
+  assert.equal(moves.length, countBefore);
   await act(async () => launch.click());
   assert.equal(row('Projects').getAttribute('aria-selected'), 'true');
   assert.ok(!names().some((name) => name === 'A new folder'));
   await act(async () => row('Research').click());
+  assert.equal(button('Move').disabled, false);
   await act(async () => button('Move').click());
   await act(async () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
@@ -387,11 +393,33 @@ await test('folder search opens on request and narrows a large tree', async () =
   await type(search.id, 'Folder 4');
   assert.deepEqual(names(), ['All notes', 'Folder 4']);
   assert.equal(row('Folder 4').getAttribute('aria-selected'), 'true');
+  assert.equal(search.placeholder, 'Filter folders');
+  search.focus();
+  await press('Escape');
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  });
+  assert.equal(container.querySelector('input'), null);
+  assert.equal(document.activeElement, button('Search folders'));
+  assert.equal(names().length, 11);
+});
+
+await test('eight folders have no search control', async () => {
+  await render(
+    createElement(FolderTreePicker, {
+      folders: Array.from({ length: 8 }, (_, i) => `Folder ${String(i)}`),
+      selected: '',
+      label: 'Folders',
+      onSelect: () => {},
+    }),
+  );
+  assert.throws(() => button('Search folders'));
+  assert.equal(container.querySelector('input'), null);
 });
 
 await test('the Templates folder setting chooses its folder in the tree, with no root row', async () => {
   await render(createElement(TemplateSettingsFields));
-  await act(async () => button('Change').click());
+  await act(async () => button('Templates folder').click());
   assert.ok(container.querySelector('[role="tree"]'));
   assert.ok(!names().includes('All notes'));
   assert.equal(row('Templates').getAttribute('aria-selected'), 'true');
@@ -404,7 +432,7 @@ await test('the Templates folder setting chooses its folder in the tree, with no
 
 await test('the Daily notes folder setting chooses its folder in the tree', async () => {
   await render(createElement(DailyNoteSettingsFields));
-  await act(async () => button('Change folder').click());
+  await act(async () => button('Folder').click());
   assert.equal(container.querySelector('#daily-folder'), null);
   assert.ok(names().includes('All notes'));
   assert.equal(row('Daily').getAttribute('aria-selected'), 'true');
@@ -418,7 +446,7 @@ await test('the Daily notes folder setting chooses its folder in the tree', asyn
 await test('daily template selection searches only templates and supports No template', async () => {
   await render(createElement(DailyNoteSettingsFields));
   const before = dailySaves.length;
-  await act(async () => button('Change template').click());
+  await act(async () => button('Template').click());
   assert.ok(button('Meeting'));
   assert.throws(() => button('Reading list'));
   const search = fieldOf('Search templates');
@@ -428,7 +456,7 @@ await test('daily template selection searches only templates and supports No tem
   assert.equal(dailySaves.length, before);
   await act(async () => button('Cancel').click());
   assert.equal(dailySaves.length, before);
-  await act(async () => button('Change template').click());
+  await act(async () => button('Template').click());
   await act(async () => button('No template').click());
   await act(async () => button('Done').click());
   assert.equal(dailySaves.length, before + 1);

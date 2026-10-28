@@ -22,6 +22,7 @@ import {
   ChevronRightIcon,
   FolderIcon,
   FolderPlusIcon,
+  SearchIcon,
   TextField,
 } from '@notesapp/ui';
 import {
@@ -67,6 +68,8 @@ export type FolderTreePickerProps = {
   readonly disabledNote?: ((folder: string) => string | null) | undefined;
   /** Puts the focus on the chosen row when the tree appears. */
   readonly autoFocus?: boolean | undefined;
+  /** A place shown with a quiet label even when another folder is selected. */
+  readonly currentFolder?: string | undefined;
 };
 
 /** The folder tree with its filter field and New folder here. */
@@ -80,8 +83,10 @@ export default function FolderTreeView({
   isDisabled,
   disabledNote,
   autoFocus = false,
+  currentFolder,
 }: FolderTreePickerProps): ReactNode {
   const id = useId();
+  const searchButton = useRef<HTMLButtonElement | null>(null);
   const [expanded, setExpanded] = useState(() => initiallyExpanded(selected));
   const [searching, setSearching] = useState(false);
   const [filter, setFilter] = useState('');
@@ -186,19 +191,45 @@ export default function FolderTreeView({
 
   return (
     <div>
-      {all.length > filterFrom && !searching ? (
-        <Button variant="ghost" onClick={() => setSearching(true)}>
-          Search folders
-        </Button>
-      ) : null}
-      {searching ? (
-        <TextField
-          id={`${id}-filter`}
-          label="Search folders"
-          autoFocus
-          value={filter}
-          onChange={setFilter}
-        />
+      {all.filter((folder) => folder !== '').length > filterFrom ? (
+        <div className="mb-1 flex min-h-8 items-center justify-end gap-2">
+          {searching ? (
+            <div
+              className="min-w-0 flex-1"
+              data-dialog-escape="local"
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setFilter('');
+                  setSearching(false);
+                  window.requestAnimationFrame(() =>
+                    searchButton.current?.focus(),
+                  );
+                }
+              }}
+            >
+              <TextField
+                id={`${id}-filter`}
+                label="Search folders"
+                hideLabel
+                placeholder="Filter folders"
+                autoFocus
+                value={filter}
+                onChange={setFilter}
+              />
+            </div>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={<SearchIcon />}
+              label="Search folders"
+              buttonRef={searchButton}
+              onClick={() => setSearching(true)}
+            />
+          )}
+        </div>
       ) : null}
       <div
         role="tree"
@@ -279,9 +310,11 @@ export default function FolderTreeView({
                       <FolderIcon />
                     </span>
                     <span className="min-w-0 flex-1 truncate">{row.name}</span>
-                    {row.disabled ? (
+                    {row.path === currentFolder || row.disabled ? (
                       <span className="shrink-0 text-control text-muted">
-                        {disabledNote?.(row.path)}
+                        {row.path === currentFolder
+                          ? 'Current folder'
+                          : disabledNote?.(row.path)}
                       </span>
                     ) : null}
                   </div>

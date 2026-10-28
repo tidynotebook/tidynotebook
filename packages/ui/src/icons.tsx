@@ -866,3 +866,36 @@ export function RedoIcon(props: IconProps): ReactNode {
     </IconFrame>
   );
 }
+
+/** A paint palette for appearance. */
+export function PaletteIcon(props: IconProps): ReactNode {
+  return (
+    <IconFrame {...props}>
+      <path d="M12 3a9 9 0 1 0 0 18h1a2 2 0 0 0 1.5-3.3 1.5 1.5 0 0 1 1.2-2.5H18A3 3 0 0 0 21 12a9 9 0 0 0-9-9Z" />
+      <circle cx="7.5" cy="10" r=".5" />
+      <circle cx="10" cy="6.5" r=".5" />
+      <circle cx="14.5" cy="7" r=".5" />
+      <circle cx="17.5" cy="10.5" r=".5" />
+    </IconFrame>
+  );
+}
+
+/** One person for an account. */
+export function PersonIcon(props: IconProps): ReactNode {
+  return (
+    <IconFrame {...props}>
+      <circle cx="12" cy="7" r="4" />
+      <path d="M4 21v-2a8 8 0 0 1 16 0v2" />
+    </IconFrame>
+  );
+}
+
+/** A key for program access. */
+export function KeyIcon(props: IconProps): ReactNode {
+  return (
+    <IconFrame {...props}>
+      <circle cx="16" cy="8" r="5" />
+      <path d="m12.5 11.5-9.5 9.5v-5l3-3h3v-3" />
+    </IconFrame>
+  );
+}

@@ -206,7 +206,7 @@ function RevokeAppDialog({
             void submit();
           }}
         >
-          {busy ? 'Revoking app' : 'Revoke app'}
+          {busy ? 'Revoking app' : 'Done'}
         </Button>
       </DialogFooter>
     </SettingsDialog>

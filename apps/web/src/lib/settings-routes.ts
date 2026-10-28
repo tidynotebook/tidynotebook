@@ -43,8 +43,7 @@ export const settingsPages = [
     title: 'Daily notes',
     group: 'Workspace',
     sections: ['daily-notes'],
-    scope:
-      'workspace, on every device. The calendar in the sidebar opens a day.',
+    scope: 'workspace, on every device.',
   },
   {
     path: 'templates',

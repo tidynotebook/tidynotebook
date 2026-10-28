@@ -17,7 +17,7 @@ import {
   type DailyNoteSettings,
 } from '@notesapp/core';
 import {
-  Checkbox,
+  Switch,
   Button,
   DialogBody,
   DialogFooter,
@@ -34,6 +34,7 @@ import {
   layoutProblemSentences,
   layoutToStore,
 } from '../../lib/daily-note.ts';
+import { SettingChoiceRow } from '../accounts/settings-section.tsx';
 import { today, useDailyNotes } from './daily-notes.tsx';
 
 /** The folder and the name format, applied with Done. */
@@ -66,31 +67,19 @@ function LayoutFields({
     setEditing(null);
   };
   return (
-    <div className="mt-4">
-      <div className="mb-3 flex items-center gap-2 text-control">
-        <span className="min-w-0 flex-1 break-words">
-          Folder: {settings.folder === '' ? 'No folder' : settings.folder}
-        </span>
-        <Button
-          variant="secondary"
-          label="Change folder"
-          onClick={() => setEditing('folder')}
-        >
-          Change
-        </Button>
-      </div>
-      <div className="mb-3 flex items-center gap-2 text-control">
-        <span className="min-w-0 flex-1 break-words">
-          Name format: {settings.format}
-        </span>
-        <Button
-          variant="secondary"
-          label="Change name format"
-          onClick={() => setEditing('format')}
-        >
-          Change
-        </Button>
-      </div>
+    <>
+      <SettingChoiceRow
+        label="Folder"
+        help="New daily notes go here."
+        value={settings.folder === '' ? 'All notes' : settings.folder}
+        onClick={() => setEditing('folder')}
+      />
+      <SettingChoiceRow
+        label="Name format"
+        help={`Today's note: ${dailyNotePreview(today(), settings)}`}
+        value={settings.format}
+        onClick={() => setEditing('format')}
+      />
       <SettingsDialog
         open={editing !== null}
         onClose={close}
@@ -129,6 +118,9 @@ function LayoutFields({
         </DialogBody>
         {editing !== null ? (
           <DialogFooter>
+            <Button variant="ghost" onClick={close}>
+              Cancel
+            </Button>
             <Button
               disabled={problem !== null}
               onClick={() => {
@@ -142,12 +134,7 @@ function LayoutFields({
           </DialogFooter>
         ) : null}
       </SettingsDialog>
-      <p className="mb-3 mt-0 text-control text-muted" aria-live="polite">
-        {problem === null
-          ? `Today's note: ${dailyNotePreview(today(), settings)}`
-          : ''}
-      </p>
-    </div>
+    </>
   );
 }
 
@@ -174,16 +161,17 @@ export function DailyNoteSettingsFields(): ReactNode {
   const settings = state.settings;
   return (
     <>
-      <DailyTemplatePicker settings={settings} onSave={daily.save} />
-      <Checkbox
-        id="daily-open-on-start"
-        label="Open today's note when the app opens"
-        checked={settings.openOnStart}
-        onChange={(checked) => {
-          daily.save({ ...settings, openOnStart: checked });
-        }}
-      />
       <LayoutFields settings={settings} onSave={daily.save} />
+      <DailyTemplatePicker settings={settings} onSave={daily.save} />
+      <div className="flex h-14 items-center border-b border-edge-subtle lg:h-13">
+        <Switch
+          label="Open today's note when the app opens"
+          checked={settings.openOnStart}
+          onChange={(checked) => {
+            daily.save({ ...settings, openOnStart: checked });
+          }}
+        />
+      </div>
       {daily.saveProblem === null ? null : (
         <Notice className="mt-3" tone="problem" message={daily.saveProblem} />
       )}

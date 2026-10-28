@@ -29,7 +29,8 @@
  * phone, and from the large width a panel of 940 by 620 px whose columns
  * scroll on their own, so the panel itself does not scroll.
  */
-export type DialogWidth = 'small' | 'medium' | 'large' | 'settings' | 'screen';
+export type DialogWidth =
+  'small' | 'medium' | 'large' | 'template' | 'settings' | 'screen';
 
 /** Where a dialog panel sits on the screen. */
 export type DialogAlign = 'top' | 'center' | 'sheet';
@@ -53,6 +54,8 @@ export function dialogPanelClassName(width: DialogWidth): string {
   if (width === 'screen') return 'relative h-full w-full text-ink outline-none';
   if (width === 'settings')
     return 'flex h-full max-h-full w-full flex-col overflow-hidden bg-card text-ink outline-none lg:h-settings lg:max-w-settings lg:rounded-xl lg:border lg:border-edge-subtle lg:shadow-modal';
+  if (width === 'template')
+    return 'flex h-full max-h-full w-full flex-col overflow-hidden rounded-t-xl border border-edge-subtle bg-card text-ink shadow-modal outline-none lg:h-template lg:max-w-3xl lg:rounded-xl';
   const measure =
     width === 'small'
       ? 'max-w-md'

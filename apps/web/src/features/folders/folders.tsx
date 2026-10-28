@@ -254,21 +254,15 @@ export function MoveItemsDialog({
     setBusy(false);
   }, [open]);
 
+  const outcome = planMove(items, target, area, emptyFolders);
+  const message = error ?? outcome.problem;
   const move = (): void => {
+    if (busy || outcome.plan === null || outcome.problem !== null) return;
     if (store === null) {
       setError('Local storage is unavailable, so nothing can move.');
       return;
     }
-    const outcome = planMove(items, target, area, emptyFolders);
-    if (outcome.problem !== null) {
-      setError(outcome.problem);
-      return;
-    }
     const plan = outcome.plan;
-    if (plan === null) {
-      onClose();
-      return;
-    }
     setBusy(true);
     void (async (): Promise<void> => {
       const failure = await applyMoves(
@@ -307,6 +301,15 @@ export function MoveItemsDialog({
           <FolderTreePicker
             folders={folders}
             selected={target}
+            currentFolder={
+              items.every(
+                (item) =>
+                  folderOf(item.kind === 'note' ? item.path : item.folder) ===
+                  startFolder(items),
+              )
+                ? startFolder(items)
+                : undefined
+            }
             label={`Move ${moveSubject(items)} to`}
             rootName="All notes, at the top"
             isDisabled={isDisabled}
@@ -319,15 +322,19 @@ export function MoveItemsDialog({
               setError(null);
             }}
           />
-          {error === null ? null : (
-            <Notice className="mt-3" tone="problem" message={error} />
+          {message === null ? null : (
+            <Notice className="mt-3" tone="problem" message={message} />
           )}
         </DialogBody>
         <DialogFooter>
           <Button variant="ghost" type="button" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" type="submit" disabled={busy}>
+          <Button
+            variant="primary"
+            type="submit"
+            disabled={busy || outcome.plan === null || outcome.problem !== null}
+          >
             Move
           </Button>
         </DialogFooter>

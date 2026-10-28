@@ -256,6 +256,7 @@
    */
   --container-settings: 58.75rem;
   --height-settings: 38.75rem;
+  --height-template: 35rem;
   --spacing-note-block: calc(var(--spacing) * 2);
   --text-note-mono: 0.9em;
   /*

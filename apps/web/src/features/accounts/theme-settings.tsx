@@ -321,7 +321,7 @@ export function ThemeSettings(): ReactNode {
             variant="ghost"
             size="sm"
             icon={<DownloadIcon />}
-            label={`Download ${current.name}`}
+            label={`Export the ${current.name} theme file`}
             onClick={() => {
               save(
                 new Blob([themeFileText(current)], {
@@ -331,7 +331,7 @@ export function ThemeSettings(): ReactNode {
               );
             }}
           >
-            Download
+            Export theme file
           </Button>
         </div>
         <ul className="m-0 mt-3 flex list-none gap-cluster overflow-x-auto p-0 pb-1 md:grid md:grid-cols-4 md:overflow-visible lg:grid-cols-4">

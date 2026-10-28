@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
-import type { Dialog } from '@notesapp/ui';
+import { FixedDialogLayout, type Dialog } from '@notesapp/ui';
 import type { SettingsActionHost } from './settings-action-context.ts';
 /** An action replaces the section content without changing the modal frame. */
 export default function SettingsAction({
@@ -70,7 +70,7 @@ export default function SettingsAction({
   return createPortal(
     <section
       ref={panel}
-      className="-mx-5"
+      className="-mx-5 flex min-h-0 flex-1 flex-col"
       aria-label={title}
       data-dialog-escape="local"
       tabIndex={-1}
@@ -82,7 +82,7 @@ export default function SettingsAction({
         }
       }}
     >
-      {children}
+      <FixedDialogLayout>{children}</FixedDialogLayout>
     </section>,
     target,
   );

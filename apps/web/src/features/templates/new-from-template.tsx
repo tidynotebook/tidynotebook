@@ -20,14 +20,11 @@ import {
 } from 'react';
 import {
   Button,
-  buttonClassName,
   Dialog,
   LoadingState,
   Notice,
-  SettingsIcon,
   TemplateIcon,
 } from '@notesapp/ui';
-import { useOpenSettings } from '../../shell/settings-modal.tsx';
 import { useLocalStore, useSession } from '../../app.tsx';
 import { useCreateNote } from '../notes/new-note.tsx';
 
@@ -104,7 +101,6 @@ export function NewFromTemplateDialog({
     create(chosen.folder, chosen.text, chosen.name);
   }, [open, chosen, create]);
   const id = useId();
-  const openSettings = useOpenSettings();
   return (
     <>
       {onError !== undefined ||
@@ -117,30 +113,9 @@ export function NewFromTemplateDialog({
         onClose={onClose}
         title="New note from template"
         titleId={id}
-        width="large"
+        width="template"
         align="sheet"
-        actions={
-          <button
-            type="button"
-            className={buttonClassName({ variant: 'ghost', size: 'sm' })}
-            aria-label="Manage templates"
-            title="Manage templates"
-            onClick={() => {
-              // Settings opens over the current page at Templates. This
-              // dialog closes in the same commit and gives the focus back to
-              // what opened it, which Settings then returns to (issue 517).
-              onClose();
-              openSettings('templates');
-            }}
-          >
-            <span className="inline-flex" aria-hidden="true">
-              <SettingsIcon />
-            </span>
-            <span className="hidden lg:inline" aria-hidden="true">
-              Manage templates
-            </span>
-          </button>
-        }
+        hideTitle
       >
         {open ? (
           <Suspense

@@ -20,7 +20,14 @@
  * and
  * [decision 0065](../../../docs/decisions/0065-one-recipe-for-a-control-and-one-grid-for-an-icon.md).
  */
-import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  type ReactNode,
+} from 'react';
 import {
   dialogFooterClassName,
   dialogPanelClassName,
@@ -275,13 +282,37 @@ export function Dialog({
   );
 }
 
+const FixedDialogContext = createContext(false);
+
+/** Keeps the body scrollable and the footer fixed inside a fixed-height view. */
+export function FixedDialogLayout({
+  children,
+}: {
+  readonly children: ReactNode;
+}): ReactNode {
+  return (
+    <FixedDialogContext.Provider value>{children}</FixedDialogContext.Provider>
+  );
+}
+
 /** The standard padded body of a dialog. */
 export function DialogBody({
   children,
 }: {
   readonly children: ReactNode;
 }): ReactNode {
-  return <div className="px-5 py-3">{children}</div>;
+  const fixed = useContext(FixedDialogContext);
+  return (
+    <div
+      className={
+        fixed
+          ? 'min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-3'
+          : 'px-5 py-3'
+      }
+    >
+      {children}
+    </div>
+  );
 }
 
 /**
@@ -296,5 +327,10 @@ export function DialogFooter({
 }: {
   readonly children: ReactNode;
 }): ReactNode {
-  return <div className={dialogFooterClassName()}>{children}</div>;
+  const fixed = useContext(FixedDialogContext);
+  return (
+    <div className={`${dialogFooterClassName()} ${fixed ? 'shrink-0' : ''}`}>
+      {children}
+    </div>
+  );
 }

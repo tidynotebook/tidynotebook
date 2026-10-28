@@ -55,7 +55,7 @@ export type MenuItem = {
   readonly id: string;
   readonly label: string;
   /** A short value shown on the right, such as the current theme. */
-  readonly hint?: string | undefined;
+  readonly hint?: ReactNode | undefined;
   readonly icon?: ReactNode | undefined;
   readonly disabled?: boolean | undefined;
   /** Draws the row with the danger token. */
@@ -143,6 +143,7 @@ function MenuList({
   id,
   label,
   items,
+  header,
   pinned,
   anchor,
   align,
@@ -153,6 +154,7 @@ function MenuList({
 }: {
   readonly id: string;
   readonly label: string;
+  readonly header?: ReactNode;
   readonly items: readonly MenuItem[];
   readonly pinned: readonly MenuItem[];
   /** Reads the place the list opens beside, at the time it is placed. */
@@ -305,6 +307,14 @@ function MenuList({
         }
       }}
     >
+      {header === undefined ? null : (
+        <div
+          role="presentation"
+          className="mb-1 border-b border-edge-subtle px-2 py-2"
+        >
+          {header}
+        </div>
+      )}
       <div className="min-h-0 flex-1 overflow-y-auto">
         {items.map((item, index) => (
           <Fragment key={item.id}>
@@ -345,6 +355,7 @@ export function Menu({
   label,
   icon,
   items,
+  header,
   pinned = [],
   matchTrigger = false,
   align = 'end',
@@ -355,6 +366,7 @@ export function Menu({
   /** The accessible name of the trigger. */
   readonly label: string;
   readonly icon?: ReactNode | undefined;
+  readonly header?: ReactNode;
   readonly items: readonly MenuItem[];
   /**
    * Rows that stay in view while `items` scrolls.
@@ -493,6 +505,7 @@ export function Menu({
         <MenuList
           id={menuId}
           label={label}
+          header={header}
           items={items}
           pinned={pinned}
           anchor={anchor}
@@ -521,12 +534,14 @@ export function Menu({
 export function AnchoredMenu({
   label,
   items,
+  header,
   pinned = [],
   anchor,
   align = 'start',
   onClose,
 }: {
   readonly label: string;
+  readonly header?: ReactNode;
   readonly items: readonly MenuItem[];
   /**
    * Rows under the separator, as `Menu` takes them. The context menu of a
@@ -542,6 +557,7 @@ export function AnchoredMenu({
     <MenuList
       id={menuIdOf(label)}
       label={label}
+      header={header}
       items={items}
       pinned={pinned}
       anchor={place}

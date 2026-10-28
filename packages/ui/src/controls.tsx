@@ -208,6 +208,8 @@ export function Badge({
  * reports it here.
  */
 export function TextField({
+  inputRef,
+  onKeyDown,
   id,
   label,
   value,
@@ -220,7 +222,10 @@ export function TextField({
   required,
   autoFocus,
   reserveErrorSpace = false,
+  hideLabel = false,
 }: {
+  readonly inputRef?: React.Ref<HTMLInputElement> | undefined;
+  readonly onKeyDown?: React.KeyboardEventHandler<HTMLInputElement> | undefined;
   readonly id: string;
   readonly label: string;
   readonly value: string;
@@ -235,6 +240,8 @@ export function TextField({
   readonly autoFocus?: boolean | undefined;
   /** Keeps a blank error line so validation does not move the next control. */
   readonly reserveErrorSpace?: boolean | undefined;
+  /** Keeps a visible placeholder with an accessible label. */
+  readonly hideLabel?: boolean | undefined;
 }): ReactNode {
   const errorId = `${id}-error`;
   const hintId = `${id}-hint`;
@@ -245,10 +252,15 @@ export function TextField({
     .join(' ');
   return (
     <div className="mb-3.5">
-      <label className={fieldLabelClassName} htmlFor={id}>
+      <label
+        className={hideLabel ? 'sr-only' : fieldLabelClassName}
+        htmlFor={id}
+      >
         {label}
       </label>
       <input
+        ref={inputRef}
+        onKeyDown={onKeyDown}
         id={id}
         className={fieldClassName({ invalid: hasError })}
         type={inputType ?? 'text'}

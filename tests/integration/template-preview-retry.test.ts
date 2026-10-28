@@ -214,13 +214,14 @@ async function chooseMeeting(text: string): Promise<void> {
 
 await test('a failed preview retries the same selection and guards creation until success', async () => {
   await show('workspace-a');
-  assert.equal(reads.length, 0, 'The list reads no template text.');
-  assert.equal(button('Meeting').getAttribute('aria-pressed'), 'false');
-  assert.ok(
-    ![...container.querySelectorAll('button')].some(
-      (control) => control.textContent === 'Create note',
-    ),
+  assert.equal(
+    reads.length,
+    1,
+    'The first template reads its preview on open.',
   );
+  assert.equal(document.activeElement, field('search-templates'));
+  assert.equal(button('Meeting').getAttribute('aria-pressed'), 'true');
+  assert.equal(button('Create note').disabled, true);
   await click('Meeting');
   assert.equal(button('Meeting').getAttribute('aria-pressed'), 'true');
   const first = reads.shift();
@@ -271,11 +272,7 @@ await test('a retry completion from the previous workspace cannot replace the ne
   assert.ok(oldRetry);
 
   await show('workspace-new');
-  assert.ok(
-    ![...container.querySelectorAll('button')].some(
-      (control) => control.textContent === 'Create note',
-    ),
-  );
+  assert.equal(button('Create note').disabled, true);
   await click('Meeting');
   const current = reads.shift();
   assert.ok(current);
@@ -356,6 +353,38 @@ await test('the preview shows the rendered note with the date, the time and the 
   });
 });
 
+await test('the last used template is remembered for this workspace and falls back after removal', async () => {
+  setDuplicateTemplates(true);
+  try {
+    await show('workspace-last');
+    const first = reads.shift();
+    assert.equal(first?.fileId, templateId);
+    const second = container.querySelector<HTMLButtonElement>(
+      'button[aria-pressed="false"]',
+    );
+    assert.ok(second);
+    await act(async () => second.click());
+    const chosen = reads.shift();
+    assert.equal(chosen?.fileId, 'second-template');
+    assert.ok(chosen);
+    await act(async () => chosen.finish(templateNote('Last used')));
+    await settle();
+    await click('Create note');
+    await click('Open template dialog');
+    await settle();
+    assert.equal(reads.shift()?.fileId, 'second-template');
+    assert.equal(document.activeElement, field('search-templates'));
+    await show('workspace-other');
+    assert.equal(reads.shift()?.fileId, templateId);
+  } finally {
+    setDuplicateTemplates(false);
+  }
+  await show('workspace-reset');
+  reads.shift();
+  await show('workspace-last');
+  assert.equal(reads.shift()?.fileId, templateId);
+});
+
 await test('the name is checked for empty, invalid characters and a clash in the folder', async () => {
   await show('workspace-names');
   await chooseMeeting('Body');
@@ -428,14 +457,14 @@ await test('Save in opens the folder tree in the same dialog and creates the not
 
 await test('Back restores list focus and Manage templates sits in the header', async () => {
   await show('workspace-back');
-  const row = button('Meeting');
+  const search = field('search-templates');
   await chooseMeeting('Back preview');
   let focusedWhileHidden = true;
-  row.addEventListener('focus', () => {
-    focusedWhileHidden = row.closest('.hidden') !== null;
+  search.addEventListener('focus', () => {
+    focusedWhileHidden = search.closest('.hidden') !== null;
   });
-  await click('Back');
-  assert.equal(document.activeElement, row);
+  await click('Back to templates');
+  assert.equal(document.activeElement, field('search-templates'));
   assert.equal(focusedWhileHidden, false);
   const manage = container.querySelector<HTMLButtonElement>(
     'button[aria-label="Manage templates"]',
@@ -443,7 +472,7 @@ await test('Back restores list focus and Manage templates sits in the header', a
   assert.ok(manage);
   // The control is in the title row, before the list, and it is no link to
   // a Settings route.
-  assert.ok(manage.parentElement?.querySelector('h2'));
+  assert.ok(manage.parentElement?.querySelector('h3'));
   assert.equal(container.querySelector('a[href*="settings"]'), null);
   // It closes the dialog and opens Settings at Templates over the same page.
   await act(async () => manage.click());
@@ -470,7 +499,8 @@ await test('rows show only the name, and the subfolder only for a repeated name'
   setDuplicateTemplates(true);
   try {
     await show('workspace-duplicates');
-    assert.equal(reads.length, 0);
+    const initialRead = reads.shift();
+    assert.equal(initialRead?.fileId, templateId);
     const choices = [...container.querySelectorAll('button[aria-pressed]')];
     assert.equal(choices.length, 2);
     assert.equal(choices[0]?.textContent, 'MeetingFirst');

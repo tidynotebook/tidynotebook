@@ -15,16 +15,21 @@ import {
 } from 'react';
 import {
   Button,
-  DialogBody,
   DialogFooter,
   EmptyState,
   rowClassName,
   TextField,
   ChevronLeftIcon,
+  ChevronRightIcon,
+  CloseIcon,
+  SettingsIcon,
+  buttonClassName,
   LoadingState,
   Notice,
   TemplateIcon,
 } from '@notesapp/ui';
+import { useOpenSettings } from '../../shell/settings-modal.tsx';
+import { firstTemplate, lastTemplateKey } from '../../lib/last-template.ts';
 import { FolderField } from '../folders/folder-tree-picker.tsx';
 import { knownFolderPaths } from '../../lib/folder-selection.ts';
 import { useLocalStore, useSession } from '../../app.tsx';
@@ -67,6 +72,10 @@ export default function TemplateChoices({
   const [destination, setDestination] = useState(folder);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<string | null>(null);
+  const [details, setDetails] = useState(false);
+  const initialized = useRef(false);
+  const searchRef = useRef<HTMLInputElement | null>(null);
+  const openSettings = useOpenSettings();
   const [name, setName] = useState('');
   const [nameTouched, setNameTouched] = useState(false);
   const [showProblem, setShowProblem] = useState(false);
@@ -78,8 +87,8 @@ export default function TemplateChoices({
   // The values of the preview are those of the moment the details opened.
   const [instant, setInstant] = useState(() => new Date());
   const listRef = useRef<HTMLDivElement | null>(null);
-  const backRef = useRef<HTMLButtonElement | null>(null);
-  const returnToList = useRef(false);
+  const detailTitle = useRef<HTMLHeadingElement | null>(null);
+  const returning = useRef(false);
   const settings = templates.settings;
   const templateFolder =
     settings.status === 'ready' ? settings.settings.folder : '';
@@ -125,12 +134,37 @@ export default function TemplateChoices({
     setName(templateNoteName(takenPaths, destination, selectedLabel, instant));
   }, [nameTouched, selectedLabel, takenPaths, destination, instant]);
   useEffect(() => {
-    if (selected !== null) backRef.current?.focus();
-    else if (returnToList.current) {
-      returnToList.current = false;
-      listRef.current?.querySelector('button')?.focus();
+    if (
+      initialized.current ||
+      settings.status !== 'ready' ||
+      files.loading ||
+      accountId === null
+    )
+      return;
+    let last: string | null = null;
+    try {
+      last = window.localStorage.getItem(
+        lastTemplateKey(accountId, workspaceId),
+      );
+    } catch {
+      /* Storage can be unavailable. */
     }
-  }, [selected]);
+    setSelected(firstTemplate(choices, last));
+    initialized.current = true;
+    searchRef.current?.focus();
+  }, [choices, settings.status, files.loading, accountId, workspaceId]);
+  useEffect(() => {
+    if (details) detailTitle.current?.focus();
+    else if (returning.current) {
+      returning.current = false;
+      (
+        searchRef.current ??
+        listRef.current?.querySelector<HTMLButtonElement>(
+          '[aria-pressed="true"]',
+        )
+      )?.focus();
+    }
+  }, [details]);
   useEffect(() => {
     if (selected === null || store === null || accountId === null) return;
     let cancelled = false;
@@ -170,21 +204,89 @@ export default function TemplateChoices({
       document.getElementById('template-note-name')?.focus();
       return;
     }
+    if (accountId !== null) {
+      try {
+        window.localStorage.setItem(
+          lastTemplateKey(accountId, workspaceId),
+          selected,
+        );
+      } catch {
+        /* A blocked preference does not stop note creation. */
+      }
+    }
     onChoose({ folder: destination, text: readyPreview.text, name });
   };
 
+  const choose = (id: string, showDetails: boolean): void => {
+    if (selected !== id) {
+      setPreview(null);
+      setInstant(new Date());
+      setShowProblem(false);
+      setNameTouched(false);
+      setSelected(id);
+    }
+    if (showDetails) setDetails(true);
+  };
+  const back = (): void => {
+    returning.current = true;
+    setDetails(false);
+  };
+  const manage = (): void => {
+    onClose();
+    openSettings('templates');
+  };
   return (
     <form
+      className="flex min-h-0 flex-1 flex-col"
+
       onSubmit={(event) => {
         event.preventDefault();
         submit();
       }}
     >
-      <DialogBody>
-        <div className="grid min-w-0 gap-5 lg:grid-cols-3">
+      <header className="flex h-14 shrink-0 items-center gap-2 px-3 lg:h-13 lg:pl-5">
+        <Button
+          className="lg:hidden"
+          variant="ghost"
+          icon={details ? <ChevronLeftIcon /> : <CloseIcon />}
+          label={details ? 'Back to templates' : 'Close template dialog'}
+          onClick={details ? back : onClose}
+        />
+        <h3
+          ref={detailTitle}
+          tabIndex={-1}
+          className="m-0 min-w-0 flex-1 truncate text-ui font-semibold text-strong outline-none"
+        >
+          <span className="hidden lg:inline">New note from template</span>
+          <span className="lg:hidden">
+            {details ? selectedLabel : 'New note from template'}
+          </span>
+        </h3>
+        <button
+          type="button"
+          aria-label="Manage templates"
+          title="Manage templates"
+          onClick={manage}
+          className={`${buttonClassName({ variant: 'ghost', size: 'sm' })} ${details ? 'hidden lg:inline-flex' : ''}`}
+        >
+          <SettingsIcon />
+          <span className="hidden lg:inline">Manage templates</span>
+        </button>
+        <Button
+          className={details ? undefined : 'hidden lg:inline-flex'}
+          variant="ghost"
+          icon={<CloseIcon />}
+          label="Close template dialog"
+          onClick={onClose}
+        />
+      </header>
+      <div className="min-h-0 flex-1 overflow-hidden px-5 py-3">
+        <div className="grid h-full min-h-0 min-w-0 gap-5 lg:grid-cols-3">
           <div
             className={
-              selected === null ? 'min-w-0' : 'hidden min-w-0 lg:block'
+              details
+                ? 'hidden min-h-0 min-w-0 flex-col lg:flex'
+                : 'flex min-h-0 min-w-0 flex-col'
             }
           >
             {settings.status === 'loading' || files.loading ? (
@@ -207,12 +309,43 @@ export default function TemplateChoices({
                     message="Some templates may be missing."
                   />
                 )}
-                {choices.length > 5 ? (
+                {choices.length > 0 ? (
                   <TextField
                     id="search-templates"
                     label="Search templates"
                     value={search}
                     onChange={setSearch}
+                    inputRef={searchRef}
+                    onKeyDown={(event) => {
+                      if (
+                        event.key === 'Enter' &&
+                        !window.matchMedia('(min-width: 1024px)').matches &&
+                        selected !== null
+                      ) {
+                        event.preventDefault();
+                        setDetails(true);
+                        return;
+                      }
+                      if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp')
+                        return;
+                      event.preventDefault();
+                      if (matching.length === 0) return;
+                      const index = matching.findIndex(
+                        (choice) => choice.id === selected,
+                      );
+                      const next =
+                        matching[
+                          ((index < 0
+                            ? event.key === 'ArrowDown'
+                              ? -1
+                              : 0
+                            : index) +
+                            (event.key === 'ArrowDown' ? 1 : -1) +
+                            matching.length) %
+                            matching.length
+                        ];
+                      if (next !== undefined) choose(next.id, false);
+                    }}
                   />
                 ) : null}
                 {choices.length === 0 ? (
@@ -236,7 +369,7 @@ export default function TemplateChoices({
                 ) : (
                   <div
                     ref={listRef}
-                    className="flex max-h-96 flex-col overflow-auto"
+                    className="flex min-h-0 flex-1 flex-col overflow-auto"
                     role="group"
                     aria-label="Templates"
                     onKeyDown={(event) => {
@@ -263,6 +396,8 @@ export default function TemplateChoices({
                                 (event.key === 'ArrowDown' ? 1 : -1) +
                                 rows.length) %
                               rows.length;
+                      const choice = matching[next];
+                      if (choice !== undefined) choose(choice.id, false);
                       rows[next]?.focus();
                     }}
                   >
@@ -275,14 +410,7 @@ export default function TemplateChoices({
                           className: 'w-full text-left',
                         })}
                         aria-pressed={selected === choice.id}
-                        onClick={() => {
-                          if (selected === choice.id) return;
-                          setPreview(null);
-                          setInstant(new Date());
-                          setShowProblem(false);
-                          setNameTouched(false);
-                          setSelected(choice.id);
-                        }}
+                        onClick={() => choose(choice.id, true)}
                       >
                         <TemplateIcon />
                         <span className="min-w-0 flex-1 truncate">
@@ -295,6 +423,12 @@ export default function TemplateChoices({
                             {choice.detail}
                           </span>
                         ) : null}
+                        <span
+                          className="inline-flex text-muted lg:hidden"
+                          aria-hidden="true"
+                        >
+                          <ChevronRightIcon />
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -304,36 +438,21 @@ export default function TemplateChoices({
           </div>
           <div
             className={
-              selected === null
-                ? 'hidden min-w-0 lg:col-span-2 lg:block'
-                : 'min-w-0 lg:col-span-2'
+              details
+                ? 'min-h-0 min-w-0 overflow-y-auto lg:col-span-2'
+                : 'hidden min-h-0 min-w-0 overflow-y-auto lg:col-span-2 lg:block'
             }
           >
             {selected === null ? (
               <p className="text-control text-muted">Choose a template</p>
             ) : (
               <>
-                <div className="mb-2 flex items-center gap-2 lg:hidden">
-                  <Button
-                    variant="ghost"
-                    buttonRef={backRef}
-                    icon={<ChevronLeftIcon />}
-                    onClick={() => {
-                      returnToList.current = true;
-                      setSelected(null);
-                    }}
-                  >
-                    Back
-                  </Button>
-                  <span className="min-w-0 flex-1 truncate text-ui font-semibold text-strong">
-                    {selectedLabel}
-                  </span>
-                </div>
                 <div className="grid min-w-0 gap-x-3 sm:grid-cols-2">
                   <TextField
                     id="template-note-name"
                     label="Name"
                     value={name}
+                    reserveErrorSpace
                     error={
                       showProblem || (nameTouched && problem !== null)
                         ? (problem ?? undefined)
@@ -401,22 +520,32 @@ export default function TemplateChoices({
             )}
           </div>
         </div>
-      </DialogBody>
-      <DialogFooter>
-        {selected === null ? null : (
-          <p className="m-0 mr-auto hidden self-center text-control text-muted lg:block">
-            Date and time are set when you create the note.
-          </p>
-        )}
-        <Button variant="ghost" onClick={onClose}>
-          Cancel
-        </Button>
-        {selected === null ? null : (
-          <Button type="submit" disabled={!canCreate}>
-            Create note
+      </div>
+      <div className={details ? 'shrink-0' : 'hidden shrink-0 lg:block'}>
+        <DialogFooter>
+          {selected === null ? null : (
+            <p className="m-0 mr-auto hidden self-center text-control text-muted lg:block">
+              Date and time are set when you create the note.
+            </p>
+          )}
+          <Button
+            className="hidden lg:inline-flex"
+            variant="ghost"
+            onClick={onClose}
+          >
+            Cancel
           </Button>
-        )}
-      </DialogFooter>
+          {selected === null ? null : (
+            <Button
+              className="max-lg:w-full"
+              type="submit"
+              disabled={!canCreate}
+            >
+              Create note
+            </Button>
+          )}
+        </DialogFooter>
+      </div>
     </form>
   );
 }

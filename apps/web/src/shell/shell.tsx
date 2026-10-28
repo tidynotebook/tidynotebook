@@ -1232,6 +1232,7 @@ function ShellFrame({
     {
       id: 'settings',
       label: 'Settings',
+      hint: <KeyHint keys="Cmd or Ctrl + ," />,
       icon: actionIcon('settings'),
       onSelect: () => {
         openSettings();
@@ -1240,6 +1241,7 @@ function ShellFrame({
     {
       id: 'shortcuts',
       label: 'Keyboard shortcuts',
+      hint: <KeyHint keys={shortcutsKeys} />,
       icon: actionIcon('keyboard'),
       onSelect: openShortcuts,
     },
@@ -1684,6 +1686,16 @@ function ShellFrame({
             <Menu
               label={accountLabel}
               icon={<span className={avatarClassName()}>{accountInitial}</span>}
+              header={
+                <>
+                  <p className="m-0 truncate text-control font-semibold text-strong">
+                    {session.account?.name ?? ''}
+                  </p>
+                  <p className="m-0 truncate text-control text-muted">
+                    {session.account?.email ?? ''}
+                  </p>
+                </>
+              }
               items={accountItems}
               pinned={signOutItem}
               compact

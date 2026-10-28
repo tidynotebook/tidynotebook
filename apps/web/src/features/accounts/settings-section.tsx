@@ -13,7 +13,7 @@
  * Accounts is a part of Settings (record 0138).
  */
 import { createContext, useContext, type ReactNode } from 'react';
-import type { PageSection } from '@notesapp/ui';
+import { ChevronRightIcon, type PageSection } from '@notesapp/ui';
 
 /**
  * The sections inside the Settings modal (issue 517, item 8).
@@ -124,5 +124,44 @@ export function SettingRow({
         </div>
       )}
     </div>
+  );
+}
+
+/** A whole Settings row opens one draft view. */
+export function SettingChoiceRow({
+  label,
+  help,
+  value,
+  onClick,
+  disabled = false,
+}: {
+  readonly label: string;
+  readonly help: string;
+  readonly value: string;
+  readonly onClick: () => void;
+  readonly disabled?: boolean;
+}): ReactNode {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      disabled={disabled}
+      onClick={onClick}
+      className="flex h-14 w-full items-center gap-3 border-b border-edge-subtle bg-transparent text-left hover:bg-hover focus-visible:relative focus-visible:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-focus disabled:cursor-default disabled:text-muted lg:h-13"
+    >
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-ui text-strong">{label}</span>
+        <span className="block truncate text-control text-muted">{help}</span>
+      </span>
+      <span
+        className="max-w-1/2 truncate text-control text-strong"
+        title={value}
+      >
+        {value}
+      </span>
+      <span className="inline-flex shrink-0 text-muted" aria-hidden="true">
+        <ChevronRightIcon />
+      </span>
+    </button>
   );
 }

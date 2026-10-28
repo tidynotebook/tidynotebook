@@ -26,6 +26,7 @@ import {
   templateCountLine,
   templateFolderToStore,
 } from '../../lib/templates.ts';
+import { SettingChoiceRow } from '../accounts/settings-section.tsx';
 import { useTemplates } from './templates.tsx';
 
 /** The folder choice, applied with Done. */
@@ -48,23 +49,21 @@ function FolderField({
   const cleaned = cleanFolderPath(folder);
   const problem = templateFolderProblem(cleaned);
   const count = useMemo(
-    () => templateChoices(files.notes, cleaned, null).length,
-    [files.notes, cleaned],
+    () => templateChoices(files.notes, settings.folder, null).length,
+    [files.notes, settings.folder],
   );
   return (
     <div>
-      <div className="mb-3 flex items-center gap-2 text-control">
-        <span className="min-w-0 flex-1 break-words">
-          Folder: {settings.folder}
-        </span>
-        <Button
-          variant="secondary"
-          label="Change folder"
-          onClick={() => setChanging(true)}
-        >
-          Change
-        </Button>
-      </div>
+      <SettingChoiceRow
+        label="Templates folder"
+        value={settings.folder}
+        help={
+          files.loading
+            ? 'Loading templates'
+            : templateCountLine(count, files.limitNotice === null)
+        }
+        onClick={() => setChanging(true)}
+      />
       <SettingsDialog
         open={changing}
         onClose={() => {
@@ -96,6 +95,15 @@ function FolderField({
         </DialogBody>
         <DialogFooter>
           <Button
+            variant="ghost"
+            onClick={() => {
+              setFolder(settings.folder);
+              setChanging(false);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
             onClick={() => {
               if (problem === null) {
                 const next = templateFolderToStore(folder, settings);
@@ -108,11 +116,6 @@ function FolderField({
           </Button>
         </DialogFooter>
       </SettingsDialog>
-      <p className="mb-3 mt-0 text-control text-muted" aria-live="polite">
-        {problem !== null || files.loading
-          ? ''
-          : templateCountLine(count, files.limitNotice === null)}
-      </p>
     </div>
   );
 }

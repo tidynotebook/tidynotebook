@@ -37,6 +37,7 @@ export function ApiKeySettings(): ReactNode {
   const [error, setError] = useState('');
   const [load, setLoad] = useState(0);
   const [creating, setCreating] = useState(false);
+  const [newKey, setNewKey] = useState<ApiKeyCreated | null>(null);
   const [revoking, setRevoking] = useState<ApiKey | null>(null);
   const createButton = useRef<HTMLButtonElement | null>(null);
   const firstRevokeButton = useRef<HTMLButtonElement | null>(null);
@@ -69,6 +70,16 @@ export function ApiKeySettings(): ReactNode {
       section={sectionOf(settingsSections, 'api-keys')}
       description="Let a program read and change your account and notes. Each key has all your current access. Keep it as safe as your password."
     >
+      {newKey === null ? null : (
+        <CreatedKey
+          key={newKey.key.keyId}
+          created={newKey}
+          onClose={() => {
+            setNewKey(null);
+            returnFocus();
+          }}
+        />
+      )}
       {error === '' ? null : <Notice tone="problem" message={error} />}
       {keys === null ? (
         error === '' ? (
@@ -132,7 +143,11 @@ export function ApiKeySettings(): ReactNode {
         <CreateKeyDialog
           onClose={() => setCreating(false)}
           returnFocus={returnFocus}
-          onCreated={(key) => setKeys((held) => [key, ...(held ?? [])])}
+          onCreated={(created) => {
+            setKeys((held) => [created.key, ...(held ?? [])]);
+            setNewKey(created);
+            setCreating(false);
+          }}
         />
       ) : null}
       {revoking === null ? null : (
@@ -158,15 +173,13 @@ function CreateKeyDialog({
   returnFocus,
 }: {
   readonly onClose: () => void;
-  readonly onCreated: (key: ApiKey) => void;
+  readonly onCreated: (created: ApiKeyCreated) => void;
   readonly returnFocus: () => void;
 }): ReactNode {
   const [name, setName] = useState('');
   const [days, setDays] = useState('90');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [created, setCreated] = useState<ApiKeyCreated | null>(null);
-  const [copied, setCopied] = useState(false);
   const pending = useRef(false);
   const close = (): void => {
     if (!pending.current) onClose();
@@ -187,8 +200,7 @@ function CreateKeyDialog({
       });
       if (result.data === undefined) setError(problemMessage(result.error));
       else {
-        setCreated(result.data);
-        onCreated(result.data.key);
+        onCreated(result.data);
       }
     } catch {
       setError('The key could not be created. Try again.');
@@ -200,98 +212,111 @@ function CreateKeyDialog({
   return (
     <SettingsDialog
       open
-      title={created === null ? 'Create API key' : 'Copy your API key'}
+      title="Create API key"
       titleId="create-api-key-title"
       width="small"
       onClose={close}
       returnFocus={returnFocus}
     >
-      {created === null ? (
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            void submit();
+      <form
+        className="flex min-h-0 flex-1 flex-col"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void submit();
+        }}
+      >
+        <DialogBody>
+          <p className="mb-4 mt-0 text-ui text-strong">
+            This key can read, change, and delete your notes. Use a separate key
+            for each program.
+          </p>
+          <TextField
+            id="api-key-name"
+            label="Program name"
+            value={name}
+            onChange={(value) => {
+              setName(value);
+              setError('');
+            }}
+            required
+            autoFocus
+            error={error}
+            reserveErrorSpace
+          />
+          <SelectField
+            id="api-key-expiry"
+            label="Expires after"
+            value={days}
+            options={apiKeyExpiryChoices}
+            onChange={setDays}
+            hint="The program loses access when the key expires."
+          />
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="ghost" onClick={close} disabled={busy}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={busy}>
+            {busy ? 'Creating key' : 'Done'}
+          </Button>
+        </DialogFooter>
+      </form>
+    </SettingsDialog>
+  );
+}
+
+/** Show the one-time secret in the section after Done saves the form. */
+function CreatedKey({
+  created,
+  onClose,
+}: {
+  readonly created: ApiKeyCreated;
+  readonly onClose: () => void;
+}): ReactNode {
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState('');
+  return (
+    <section
+      aria-label="Copy your API key"
+      className="mb-4 rounded-lg border border-edge-subtle p-3"
+    >
+      <h3 className="mb-2 mt-0 text-ui font-semibold text-strong">
+        Copy your API key
+      </h3>
+      <p
+        id="api-key-secret-help"
+        className="mb-3 mt-0 text-control text-strong"
+      >
+        Copy this key now. You cannot read it again after you leave this
+        section. Store it in a safe place. Do not put it in a web address.
+      </p>
+      <ReadOnlyField
+        id="api-key-secret"
+        label="API key"
+        value={created.token}
+        describedBy="api-key-secret-help"
+      />
+      {error === '' ? null : <Notice tone="problem" message={error} />}
+      <div className="flex justify-end gap-cluster">
+        <Button
+          variant="secondary"
+          onClick={() => {
+            void navigator.clipboard
+              .writeText(created.token)
+              .then(() => {
+                setCopied(true);
+                setError('');
+              })
+              .catch(() =>
+                setError('The key could not be copied. Select it and copy it.'),
+              );
           }}
         >
-          <DialogBody>
-            <p className="mb-4 mt-0 text-ui text-strong">
-              This key can read, change, and delete your notes. Use a separate
-              key for each program.
-            </p>
-            <TextField
-              id="api-key-name"
-              label="Program name"
-              value={name}
-              onChange={(value) => {
-                setName(value);
-                setError('');
-              }}
-              required
-              autoFocus
-              error={error}
-              reserveErrorSpace
-            />
-            <SelectField
-              id="api-key-expiry"
-              label="Expires after"
-              value={days}
-              options={apiKeyExpiryChoices}
-              onChange={setDays}
-              hint="The program loses access when the key expires."
-            />
-          </DialogBody>
-          <DialogFooter>
-            <Button variant="ghost" onClick={close} disabled={busy}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={busy}>
-              {busy ? 'Creating key' : 'Create key'}
-            </Button>
-          </DialogFooter>
-        </form>
-      ) : (
-        <>
-          <DialogBody>
-            <p
-              id="api-key-secret-help"
-              className="mb-4 mt-0 text-ui text-strong"
-            >
-              Copy this key now. You cannot read it again after you leave this
-              form. Store it in a safe place. Do not put it in a web address.
-            </p>
-            <ReadOnlyField
-              id="api-key-secret"
-              label="API key"
-              value={created.token}
-              takeFocus
-              describedBy="api-key-secret-help"
-            />
-            {error === '' ? null : <Notice tone="problem" message={error} />}
-          </DialogBody>
-          <DialogFooter>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                void navigator.clipboard
-                  .writeText(created.token)
-                  .then(() => {
-                    setCopied(true);
-                    setError('');
-                  })
-                  .catch(() =>
-                    setError(
-                      'The key could not be copied. Select it and copy it.',
-                    ),
-                  );
-              }}
-            >
-              {copied ? 'Copied' : 'Copy key'}
-            </Button>
-            <Button onClick={close}>Done</Button>
-          </DialogFooter>
-        </>
-      )}
-    </SettingsDialog>
+          {copied ? 'Copied' : 'Copy key'}
+        </Button>
+        <Button onClick={onClose}>Done</Button>
+      </div>
+    </section>
   );
 }
 
@@ -357,7 +382,7 @@ function RevokeKeyDialog({
             void submit();
           }}
         >
-          {busy ? 'Revoking key' : 'Revoke key'}
+          {busy ? 'Revoking key' : 'Done'}
         </Button>
       </DialogFooter>
     </SettingsDialog>

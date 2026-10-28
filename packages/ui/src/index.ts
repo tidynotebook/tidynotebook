@@ -167,7 +167,12 @@ export {
   transitionSurface,
 } from './motion.ts';
 export type { DialogWidth } from './dialog.tsx';
-export { Dialog, DialogBody, DialogFooter } from './dialog.tsx';
+export {
+  Dialog,
+  DialogBody,
+  DialogFooter,
+  FixedDialogLayout,
+} from './dialog.tsx';
 export type { MenuAlign, MenuAnchor, MenuItem } from './menu.tsx';
 export type { ScreenArea, VisualViewportBox } from './visible-area.ts';
 export {
@@ -246,6 +251,9 @@ export {
   TrashIcon,
   UploadIcon,
   UsersIcon,
+  PaletteIcon,
+  PersonIcon,
+  KeyIcon,
   WorkspaceIcon,
   ZoomInIcon,
   ZoomOutIcon,

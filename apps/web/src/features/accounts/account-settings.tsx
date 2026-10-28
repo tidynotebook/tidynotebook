@@ -26,6 +26,7 @@ import { ConnectedAppSettings } from './connected-apps.tsx';
  */
 import {
   useEffect,
+  useLayoutEffect,
   useId,
   useMemo,
   useRef,
@@ -53,14 +54,15 @@ import {
   DownloadIcon,
   ExternalLinkIcon,
   FileTextIcon,
-  LinkIcon,
+  KeyIcon,
+  PaletteIcon,
+  PersonIcon,
   ListRow,
   LoadingState,
   Meter,
   Notice,
   pageListClassName,
   rowClassName,
-  SettingsIcon,
   SignOutIcon,
   Switch,
   TemplateIcon,
@@ -128,15 +130,15 @@ function settingsSection(key: SettingsSectionKey): PageSection {
 
 /** The icon of each page in the modal sidebar. */
 const pageIcons: Readonly<Record<SettingsPagePath, ReactNode>> = {
-  appearance: actionIcon('theme-system'),
+  appearance: <PaletteIcon />,
   offline: <DownloadIcon />,
   'daily-notes': <CalendarIcon />,
   templates: <TemplateIcon />,
   'export-import': <UploadIcon />,
-  account: <SettingsIcon />,
+  account: <PersonIcon />,
   billing: <FileTextIcon />,
   devices: <ComputerIcon />,
-  'api-keys-apps': <LinkIcon />,
+  'api-keys-apps': <KeyIcon />,
 };
 
 /**
@@ -531,6 +533,8 @@ export function SettingsModal({
   const requestSync = useRequestSync();
   const titleId = useId();
   const pageTitleId = useId();
+  const sectionTitle = useRef<HTMLHeadingElement | null>(null);
+  const listTitle = useRef<HTMLParagraphElement | null>(null);
   const account = session.account;
   const accountId = account?.accountId ?? null;
   const documents = useLegalDocuments();
@@ -552,6 +556,13 @@ export function SettingsModal({
   const pages = visibleSettingsPages(account ?? { accountPortal: false });
   const activePage = chosenPage(pages, value);
   const listLevel = value === '';
+  useLayoutEffect(() => {
+    const title =
+      listLevel && !window.matchMedia('(min-width: 1024px)').matches
+        ? listTitle.current
+        : sectionTitle.current;
+    title?.focus({ preventScroll: true });
+  }, [listLevel, activePage?.path]);
   const settingsList = useSettingsListFocus(
     workspaceId,
     listLevel ? undefined : activePage?.path,
@@ -806,7 +817,11 @@ export function SettingsModal({
                 label="Close Settings"
                 onClick={onClose}
               />
-              <p className="m-0 min-w-0 flex-1 text-center text-ui font-semibold text-strong">
+              <p
+                ref={listTitle}
+                tabIndex={-1}
+                className="m-0 min-w-0 flex-1 text-center text-ui font-semibold text-strong outline-none"
+              >
                 {settingsTitle}
               </p>
               <span className="w-11 shrink-0" aria-hidden="true" />
@@ -860,7 +875,7 @@ export function SettingsModal({
                                 type="button"
                                 data-settings-page={page.path}
                                 className={rowClassName({
-                                  current: desktopCurrent,
+                                  current: desktopCurrent && !listLevel,
                                   className: 'w-full text-left',
                                 })}
                                 aria-current={current ? 'page' : undefined}
@@ -940,7 +955,9 @@ export function SettingsModal({
               <div className="min-w-0 flex-1 pt-2 lg:pt-1">
                 <h2
                   id={pageTitleId}
-                  className="m-0 text-xl font-semibold tracking-heading text-strong max-lg:text-center max-lg:text-base"
+                  ref={sectionTitle}
+                  tabIndex={-1}
+                  className="m-0 text-xl font-semibold tracking-heading text-strong outline-none max-lg:text-center max-lg:text-base"
                 >
                   {activeAction?.title ?? activePage?.title ?? settingsTitle}
                 </h2>
@@ -957,13 +974,23 @@ export function SettingsModal({
                 onClick={onClose}
               />
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-gutter pb-5 pt-3 lg:px-5">
+            <div
+              className={`min-h-0 flex-1 px-gutter pt-3 lg:px-5 ${activeAction === null ? 'overflow-y-auto overscroll-contain pb-5' : 'flex flex-col'}`}
+            >
               {scope === undefined ? null : (
-                <p className="mb-3 mt-0 min-h-10 text-control text-muted lg:hidden">
+                <p className="mb-3 mt-0 min-h-5 text-control text-muted lg:hidden">
                   {activeAction === null ? scope : activePage?.title}
                 </p>
               )}
-              <div ref={setActionTarget} hidden={activeAction === null} />
+              <div
+                ref={setActionTarget}
+                hidden={activeAction === null}
+                className={
+                  activeAction === null
+                    ? undefined
+                    : 'flex min-h-0 flex-1 flex-col'
+                }
+              />
               <div hidden={activeAction !== null} inert={activeAction !== null}>
                 <SettingsTopicContext.Provider
                   value={{ hiddenTitles, helpSection: null }}

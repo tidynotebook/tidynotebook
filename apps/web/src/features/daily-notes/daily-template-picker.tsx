@@ -29,6 +29,7 @@ import {
 } from '../../lib/template-note.ts';
 import { dailyNotePreview, effectiveTemplateId } from '../../lib/daily-note.ts';
 import { displayNoteName } from '../../lib/note-name.ts';
+import { SettingChoiceRow } from '../accounts/settings-section.tsx';
 import { SettingsDialog } from '../accounts/settings-dialog.tsx';
 import { useTemplates } from '../templates/templates.tsx';
 import { today } from './daily-notes.tsx';
@@ -47,22 +48,17 @@ export function DailyTemplatePicker({
   const [open, setOpen] = useState(false);
   return (
     <>
-      <div className="mb-3 flex items-center gap-2 text-control">
-        <span className="min-w-0 flex-1 break-words">
-          Template:{' '}
-          {note === undefined
+      <SettingChoiceRow
+        label="Template"
+        help="Fills each new daily note."
+        value={
+          note === undefined
             ? 'No template'
-            : displayNoteName(note.path.split('/').at(-1) ?? note.path)}
-        </span>
-        <Button
-          variant="secondary"
-          label="Change template"
-          disabled={files.loading}
-          onClick={() => setOpen(true)}
-        >
-          Change
-        </Button>
-      </div>
+            : displayNoteName(note.path.split('/').at(-1) ?? note.path)
+        }
+        disabled={files.loading}
+        onClick={() => setOpen(true)}
+      />
       {open ? (
         <TemplateSelection
           settings={settings}

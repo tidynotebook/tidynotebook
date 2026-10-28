@@ -282,6 +282,14 @@ await test('Settings opens over the note, and Escape closes it with the note and
   assert.equal(document.activeElement, opener);
 });
 
+await test('a Settings deep link focuses its section title, not the first navigation row', async () => {
+  await show('/w/one/notes/n1?settings=daily-notes');
+  const title = dialog()?.querySelector('h2[tabindex="-1"]');
+  assert.ok(title);
+  assert.equal(title.textContent, 'Daily notes');
+  assert.equal(document.activeElement, title);
+});
+
 await test('Close and the scrim remove the parameter of a deep link', async () => {
   await show('/w/one/notes/n1?settings=account');
   assert.ok(dialog(), address);
@@ -546,12 +554,12 @@ await test('API key create, validation, secret and revoke use one Settings frame
     name.dispatchEvent(new window.Event('input', { bubbles: true }));
   });
   refuseApiKeyCreation(true);
-  await click(button('Create key'));
+  await click(button('Done'));
   assert.equal(name.value, 'Review client');
   assert.equal(dialog(), modal);
   assert.ok(container.querySelector('#api-key-name[aria-invalid="true"]'));
   refuseApiKeyCreation(false);
-  await click(button('Create key'));
+  await click(button('Done'));
   assert.ok(container.querySelector('#api-key-secret'));
   assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
   await click(button('Done'));
@@ -559,7 +567,7 @@ await test('API key create, validation, secret and revoke use one Settings frame
   assert.equal(document.activeElement, create);
   await click(button('Revoke Review client'));
   assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
-  await click(button('Revoke key'));
+  await click(button('Done'));
   assert.equal(container.querySelector('#api-key-secret'), null);
   assert.equal(
     container.querySelector('[aria-label="Revoke Review client"]'),
@@ -572,7 +580,7 @@ await test('API key create, validation, secret and revoke use one Settings frame
 await test('Settings folder choices and name format do not open another modal', async () => {
   await show('/w/one/notes/n1?settings=templates');
   const modal = dialog();
-  await click(button('Change'));
+  await click(button('Templates folder'));
   assert.equal(dialog(), modal);
   assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
   assert.ok(container.querySelector('[role="tree"]'));
@@ -593,7 +601,7 @@ await test('Settings folder choices and name format do not open another modal', 
   );
   await act(async () => go('/w/one/notes/n1?settings=daily-notes'));
   await settle();
-  const format = button('Change name format');
+  const format = button('Name format');
   assert.ok(format);
   await click(format);
   assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
