@@ -1,0 +1,97 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "tidy-notebook",
+  "version": "0.1.1",
+  "description": "Find, read, and update your tidy notebook notes through a connected account.",
+  "homepage": "https://tidynotebook.com",
+  "repository": "https://github.com/tidynotebook/tidynotebook",
+  "license": "AGPL-3.0-only",
+  "keywords": ["notes", "markdown", "search", "tidy-notebook"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Tidy Notebook",
+        "shortDescription": "Find and update your notes",
+        "longDescription": "Connect your tidy notebook account to find notes, read and summarize their contents, and save changes from your conversation. Search across your workspaces, check backlinks and earlier versions, create notes, add text, make precise edits, rename or move notes, and move notes to Trash. Sign in with tidy notebook and choose read-only or read-and-write access. Access covers your account's workspaces and follows your current account permissions. You can revoke the connection in tidy notebook Settings under Connected apps. This plugin cannot permanently delete notes, publish links, manage accounts or workspace members, or process payments. A tidy notebook cloud account is required. New accounts have a free trial; a paid subscription is required after the trial. Subscription purchases take place on the tidy notebook website through Paddle. This plugin connects to the hosted cloud service; it does not configure self-hosted installations.",
+        "category": "Productivity",
+        "capabilities": ["Search notes", "Read notes", "Update notes"],
+        "defaultPrompt": [
+          "Find my notes about a project and summarize the decisions.",
+          "Save these meeting notes in tidy notebook.",
+          "Add an action item to one of my notes."
+        ],
+        "websiteURL": "https://tidynotebook.com",
+        "supportURL": "https://tidynotebook.com",
+        "privacyPolicyURL": "https://tidynotebook.com/privacy",
+        "termsOfServiceURL": "https://tidynotebook.com/terms",
+        "logo": "./assets/notebook-light.png",
+        "composerIcon": "./assets/notebook-light.png",
+        "logoDark": "./assets/notebook-dark.png",
+        "composerIconDark": "./assets/notebook-dark.png",
+        "brandColor": "#1A1917",
+        "brandColorDark": "#ECECEA"
+      },
+      "review": {
+        "prompts": [
+          "What decisions did I record about Project Atlas?",
+          "Save a note with the action items from this conversation.",
+          "Add an action item to my Project Atlas note."
+        ],
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Search and summarize. In a dedicated test account, create Plugin demo/Project Atlas.md with: '# Project Atlas\nDecision: Use PostgreSQL.\nOwner: Mira.\n## Actions\n- Draft the migration plan.\n'. Connect with read access. No other note mentions Project Atlas.",
+              "prompt": "Find my Project Atlas notes and summarize the decision and its owner.",
+              "tools_triggered": "search_notes, read_note",
+              "expected_behavior": "Search for Project Atlas, read the matching note using its returned workspaceId and fileId, and report PostgreSQL and Mira. Identify the source by its workspace and path. Do not write notes or invent additional decisions."
+            },
+            {
+              "description": "Read earlier versions. In the test account, save Plugin demo/History sample.md with '# History sample\nStatus: Draft.\n', then save '# History sample\nStatus: Ready.\n'. Connect with read access and keep both versions in History.",
+              "prompt": "Compare the current version of Plugin demo/History sample.md with its previous saved version. What changed?",
+              "tools_triggered": "list_workspaces, list_notes, list_note_history, read_note",
+              "expected_behavior": "Resolve the note, list its saved versions, and read the current and previous text using the returned version identifiers. Report the status change from Draft to Ready, with no write tool calls."
+            },
+            {
+              "description": "Create a note. Use the test workspace with read-and-write access. The path Plugin demo/Meeting summary.md must be free. Use the workspace returned by list_workspaces, or ask which workspace if there is more than one.",
+              "prompt": "Create Plugin demo/Meeting summary.md in my test workspace with the heading Meeting summary and one action item: Send the project brief.",
+              "tools_triggered": "list_workspaces, create_note",
+              "expected_behavior": "Call create_note with the selected workspaceId, path Plugin demo/Meeting summary.md, and Markdown containing '# Meeting summary' and '- Send the project brief.'. Report success only after the tool accepts the change. Do not overwrite another note."
+            },
+            {
+              "description": "Append to a section. Use the Project Atlas fixture from the search case, with the exact heading '## Actions' present once. Connect with read-and-write access. Reset the fixture before repeating this case.",
+              "prompt": "In Plugin demo/Project Atlas.md, add Review the rollout checklist as a new action item under Actions. Keep the rest of the note.",
+              "tools_triggered": "search_notes, read_note, append_to_note",
+              "expected_behavior": "Read the note and call append_to_note with its workspaceId, fileId, observed version, heading '## Actions', and text '- Review the rollout checklist.'. Read the result back to confirm the item appears once and the decision and existing action remain."
+            },
+            {
+              "description": "Rename a note with a version check. Create Plugin demo/Rename sample.md with '# Rename sample\nKeep this text.\n'. The destination Plugin demo/Renamed sample.md must be free. Connect with read-and-write access.",
+              "prompt": "Rename Plugin demo/Rename sample.md to Plugin demo/Renamed sample.md without changing its contents.",
+              "tools_triggered": "list_workspaces, list_notes, read_note, move_note",
+              "expected_behavior": "Resolve and read the source, then call move_note with its workspaceId, fileId, observed version, and the requested destination path. Verify the returned path and read back the unchanged text. If the note changed concurrently, read again before reconsidering the move."
+            }
+          ],
+          "negative": [
+            {
+              "description": "Permanent deletion is unsupported. Expect an explanation that the plugin can only move a note to recoverable Trash. Do not call move_note_to_trash as a substitute without a separate user request. Do not invoke any write tool for this prompt.",
+              "prompt": "Permanently delete Plugin demo/Project Atlas.md and every copy in its history. Do not put it in Trash."
+            },
+            {
+              "description": "Publishing links is unsupported. Explain that the user must publish from the tidy notebook application. Do not call a write tool, fabricate a public URL, or claim that a link was published.",
+              "prompt": "Publish Plugin demo/Project Atlas.md as a public link that anyone can read."
+            },
+            {
+              "description": "Account and billing changes are unsupported. Explain that the plugin cannot cancel subscriptions and point to the billing controls in tidy notebook. Do not call note tools, create a note instead, or claim to have cancelled anything.",
+              "prompt": "Cancel my tidy notebook subscription and stop the next charge."
+            }
+          ]
+        },
+        "commerce": true,
+        "commerce_description": "tidy notebook cloud offers a free trial and requires a paid subscription after the trial. Users purchase the subscription on the tidy notebook website through Paddle. The plugin connects an existing account and does not offer checkout or payment tools."
+      },
+      "publication": {
+        "countries": [],
+        "release_notes": "Initial release with OAuth sign-in, note search and reading, saved version access, note creation, precise edits, appends, moves, and recoverable Trash."
+      }
+    }
+  }
+}
