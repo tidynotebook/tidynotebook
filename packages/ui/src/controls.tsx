@@ -16,6 +16,7 @@ import {
   compactButtonVisualClassName,
   fieldClassName,
   meterAlmostFull,
+  meterFillPercent,
   meterClassNames,
   selectClassName,
   switchClassNames,
@@ -42,6 +43,7 @@ export function Meter({
   readonly text: string;
 }): ReactNode {
   const classes = meterClassNames(value, max);
+  const percent = meterFillPercent(value, max);
   const words = meterAlmostFull(value, max) ? `${text}. Almost full` : text;
   return (
     <div>
@@ -55,7 +57,15 @@ export function Meter({
         aria-valuenow={Math.min(value, max)}
         aria-valuetext={words}
       >
-        <div className={classes.fill} />
+        <svg
+          className={classes.fill}
+          aria-hidden="true"
+          width="100%"
+          height="100%"
+        >
+          <rect width={`${String(percent)}%`} height="100%" />
+          {value > 0 ? <rect width="2" height="100%" /> : null}
+        </svg>
       </div>
     </div>
   );

@@ -11,7 +11,7 @@ import {
   setOperatorAccountControls,
 } from '@notesapp/api-client';
 import { createApp, loadServerConfig } from '@notesapp/server';
-import { meterClassNames, meterWidthClassName } from '@notesapp/ui';
+import { meterClassNames, meterFillPercent } from '@notesapp/ui';
 import { directoryFiles } from '../../apps/web/src/pwa/precache.ts';
 import { formatBytes, storageLine } from '../../apps/web/src/lib/accounts.ts';
 import { transferUsage } from '../../apps/web/src/lib/monthly-limits.ts';
@@ -99,20 +99,14 @@ await test('Settings meters follow served account limits, and absent transfer li
       [storedBytes, 0, downloadedBytes],
     );
     assert.equal(
-      meterWidthClassName(
-        account.storage.usedBytes,
-        account.storage.limitBytes,
-      ),
-      'w-full',
+      meterFillPercent(account.storage.usedBytes, account.storage.limitBytes),
+      100,
     );
     assert.equal(
-      meterWidthClassName(account.month.publishedTransferBytes, 2048),
-      'w-0',
+      meterFillPercent(account.month.publishedTransferBytes, 2048),
+      0,
     );
-    assert.notEqual(
-      meterWidthClassName(account.month.downloadBytes, 4096),
-      'w-0',
-    );
+    assert.notEqual(meterFillPercent(account.month.downloadBytes, 4096), 0);
     assert.deepEqual(
       uses.map((use) => use.text),
       [

@@ -56,7 +56,7 @@ const boundaries = new Set([
   '../../shell/files.js',
   './templates.js',
   '../notes/new-note.js',
-  '../history/version-preview.js',
+  './template-preview.js',
 ]);
 const hooks = registerHooks({
   resolve(specifier, context, next) {

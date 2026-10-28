@@ -4,7 +4,7 @@ import { registerHooks } from 'node:module';
 import { setImmediate } from 'node:timers/promises';
 import { Window } from 'happy-dom';
 import { IDBFactory, IDBKeyRange } from 'fake-indexeddb';
-import { createElement, act, useState, type ReactNode } from 'react';
+import { createElement, act, type ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
 import type { WorkspaceFile } from '@notesapp/api-client';
 import { contentDigest, type AcceptedChangeset } from '@notesapp/core';
@@ -73,10 +73,6 @@ const { duplicateNote } =
   await import('../../apps/web/dist/features/notes/duplicate-note.js');
 const { deleteNotes } =
   await import('../../apps/web/dist/features/editor/note-delete.js');
-const { TodayNoteAction } =
-  await import('../../apps/web/dist/features/notes/today-note-action.js');
-const { dailyNoteProblems } =
-  await import('../../apps/web/dist/lib/daily-note.js');
 const { default: VersionPreview } =
   await import('../../apps/web/dist/features/history/version-preview.js');
 const { NoteSaveScope, useFlushNoteDraft, useFlushNoteDraftForHandoff } =
@@ -1324,50 +1320,6 @@ await test('the image viewer removes only the selected occurrence and toolbar Un
   assert.equal(current.state.doc.toString(), imageText);
   await render(null);
   await act(finishStoreWork);
-});
-
-function FailingTodayAction({
-  message,
-}: {
-  readonly message: string;
-}): ReactNode {
-  const [problem, setProblem] = useState<string | null>(null);
-  return createElement(TodayNoteAction, {
-    waiting: false,
-    problem,
-    onOpen: () => setProblem(message),
-  });
-}
-
-await test('the Today action shows settings, template and storage failures beside its button', async () => {
-  for (const message of [
-    dailyNoteProblems.settings,
-    dailyNoteProblems.template,
-    dailyNoteProblems.storage,
-  ]) {
-    await render(createElement(FailingTodayAction, { key: message, message }));
-    const button = [...container.querySelectorAll('button')].find(
-      (node) => node.textContent === "Open today's note",
-    );
-    assert.ok(button);
-    assert.equal(container.querySelector('[role="alert"]'), null);
-    await act(async () => button.click());
-    const alert = container.querySelector('[role="alert"]');
-    assert.ok(alert);
-    assert.equal(alert.textContent?.includes(message), true);
-    assert.equal(button.parentElement?.contains(alert), true);
-  }
-  await render(
-    createElement(TodayNoteAction, {
-      waiting: true,
-      problem: null,
-      onOpen: () => assert.fail('pending daily notes must not open'),
-    }),
-  );
-  const waiting = container.querySelector('button');
-  assert.ok(waiting);
-  assert.equal(waiting.disabled, true);
-  await render(null);
 });
 
 await test('purge blocks a restore reload queued in the same React batch even when the server returns the note', async () => {

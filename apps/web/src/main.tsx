@@ -13,7 +13,9 @@ import { AppProviders } from './app.tsx';
 import { AppRouter } from './router.tsx';
 import { registerServiceWorker } from './pwa/lifecycle.ts';
 import './tailwind.css';
+import { removeRetiredWritingTips } from './lib/retired-writing-tips.ts';
 
+removeRetiredWritingTips();
 configureClient(window.location.origin, undefined);
 registerServiceWorker();
 

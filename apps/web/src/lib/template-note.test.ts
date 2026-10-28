@@ -5,6 +5,7 @@ import {
   newNoteNameProblem,
   templateNoteName,
   templatePreviewText,
+  templatePreviewHighlights,
 } from './template-note.ts';
 
 await test('a template note name is the template name and the date, made free', () => {
@@ -72,5 +73,16 @@ await test('the preview fills the template with the typed name, date and time', 
       instant,
     ),
     text,
+  );
+});
+
+await test('preview marks cover known values and custom formats, without changing unknown placeholders', () => {
+  assert.deepEqual(
+    templatePreviewHighlights(
+      '{{title}} {{date:YYYY}} {{time}} {{unknown}}',
+      'Plan',
+      new Date(2026, 9, 28, 9, 41),
+    ),
+    ['Plan', '2026', '09:41'],
   );
 });

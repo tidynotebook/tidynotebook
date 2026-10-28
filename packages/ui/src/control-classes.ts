@@ -684,42 +684,13 @@ export function badgeClassName(): string {
   return 'inline-flex items-center rounded-sm bg-hover px-1.5 text-kbd font-medium text-muted';
 }
 
-/** Whole classes that Tailwind can read, from empty to full. */
-const meterWidths = [
-  'w-0',
-  'w-1/12',
-  'w-2/12',
-  'w-3/12',
-  'w-4/12',
-  'w-5/12',
-  'w-6/12',
-  'w-7/12',
-  'w-8/12',
-  'w-9/12',
-  'w-10/12',
-  'w-11/12',
-  'w-full',
-] as const;
-
-/** The fill of a positive value too small for one step: 2 px. */
-const meterHairline = 'w-0.5';
-
-/**
- * The nearest twelfth of a meter, so the fill is in proportion to the value.
- * A positive value below half a step shows only a 2 px hairline, not a whole
- * step (12 MB of 5 GB is not a twelfth). Only a value at or above the maximum
- * shows the full track.
- */
-export function meterWidthClassName(value: number, max: number): string {
+/** The real fill percentage, clamped to the track. */
+export function meterFillPercent(value: number, max: number): number {
   if (!Number.isFinite(value) || value < 0 || !Number.isFinite(max) || max <= 0)
     throw new RangeError(
       'A meter needs a nonnegative value and a positive maximum.',
     );
-  if (value === 0) return meterWidths[0];
-  if (value >= max) return meterWidths[12];
-  const step = Math.min(11, Math.round((value / max) * 12));
-  if (step === 0) return meterHairline;
-  return meterWidths[step] ?? meterWidths[0];
+  return Math.min(value / max, 1) * 100;
 }
 
 /** Whether the meter needs its warning in words and in its fill. */
@@ -738,8 +709,8 @@ export function meterClassNames(
 } {
   return {
     text: 'mb-1 mt-0 text-control text-muted',
-    track: 'h-1.5 w-full rounded-sm bg-hover',
-    fill: `h-1.5 rounded-sm ${meterWidthClassName(value, max)} ${meterAlmostFull(value, max) ? 'bg-danger-fill' : 'bg-accent-fill'}`,
+    track: 'h-1.5 w-full overflow-hidden rounded-sm bg-hover',
+    fill: `block h-1.5 w-full rounded-sm ${meterAlmostFull(value, max) ? 'fill-danger-fill' : 'fill-accent-fill'}`,
   };
 }
 

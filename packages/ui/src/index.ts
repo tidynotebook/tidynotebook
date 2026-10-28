@@ -107,7 +107,7 @@ export {
   menuSurfaceValues,
   meterAlmostFull,
   meterClassNames,
-  meterWidthClassName,
+  meterFillPercent,
   rowClassName,
   touchFieldText,
 } from './control-classes.ts';

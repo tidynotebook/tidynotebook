@@ -152,22 +152,20 @@ export function verificationRecoveryOf(
 /**
  * A byte count in words, such as `512 bytes` or `1.5 GB`.
  *
- * Each unit is 1024 times the one before, so a limit of 5 GiB reads `5 GB`,
- * as the administrator typed it, and not `5.4 GB`. One decimal under ten of
- * a unit and none above, so a number reads at a glance and does not change
- * its width with every byte.
+ * Each unit is 1000 times the one before, as the plan limits define.
+ * One decimal under ten of a unit and none above keeps the text short.
  */
 export function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes < 0) return '';
   let value = bytes;
   let unit = 0;
-  while (value >= 1024 && unit < byteUnits.length - 1) {
-    value /= 1024;
+  while (value >= 1000 && unit < byteUnits.length - 1) {
+    value /= 1000;
     unit += 1;
   }
   const shown =
     unit === 0 || value >= 10 ? Math.round(value) : Math.round(value * 10) / 10;
-  if (shown >= 1024 && unit < byteUnits.length - 1)
+  if (shown >= 1000 && unit < byteUnits.length - 1)
     return `1 ${byteUnits[unit + 1] ?? 'bytes'}`;
   if (unit === 0) return shown === 1 ? '1 byte' : `${String(shown)} bytes`;
   return `${String(shown)} ${byteUnits[unit] ?? 'bytes'}`;
@@ -187,22 +185,22 @@ export function storageLine(storage: {
   return `${formatBytes(storage.usedBytes)} of ${formatBytes(storage.limitBytes)} used`;
 }
 
-/** The bytes of one gibibyte. Keep existing administrator input semantics. */
-const gibibyte = 1024 * 1024 * 1024;
+/** The bytes of one gigabyte. Matches plan limits and displayed usage. */
+const gigabyte = 1000 * 1000 * 1000;
 
-/** A limit in GiB, as the administrator limit field shows it. */
+/** A limit in GB, as the administrator limit field shows it. */
 export function gigabytesOf(bytes: number): string {
-  return String(Math.round((bytes / gibibyte) * 100) / 100);
+  return (bytes / gigabyte).toFixed(9).replace(/\.?0+$/, '');
 }
 
 /**
- * The bytes of a limit that a person typed in GiB, or `null` for a text
+ * The bytes of a limit that a person typed in GB, or `null` for a text
  * that is not a positive number.
  */
 export function bytesOfGigabytes(text: string): number | null {
   const trimmed = text.trim().replace(',', '.');
   if (!/^\d+(\.\d+)?$/.test(trimmed)) return null;
-  const bytes = Math.round(Number(trimmed) * gibibyte);
+  const bytes = Math.round(Number(trimmed) * gigabyte);
   if (!Number.isSafeInteger(bytes) || bytes < 1) return null;
   return bytes;
 }

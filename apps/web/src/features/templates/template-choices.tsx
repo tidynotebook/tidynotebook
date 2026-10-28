@@ -35,6 +35,7 @@ import {
   newNoteNameProblem,
   templateNoteName,
   templatePreviewText,
+  templatePreviewHighlights,
 } from '../../lib/template-note.ts';
 import {
   folderOf,
@@ -45,7 +46,7 @@ import { useTemplates } from './templates.tsx';
 import type { Chosen } from './new-from-template.tsx';
 
 // The note surface loads only when a preview shows, as it does in History.
-const NotePreview = lazy(() => import('../history/version-preview.tsx'));
+const NotePreview = lazy(() => import('./template-preview.tsx'));
 
 /** The list and the details: two columns on desktop, two levels on a phone. */
 export default function TemplateChoices({
@@ -149,6 +150,11 @@ export default function TemplateChoices({
     readyPreview === null || readyPreview.text === null
       ? null
       : templatePreviewText(readyPreview.text, previewName, instant);
+  const highlights = useMemo(
+    () =>
+      templatePreviewHighlights(readyPreview?.text ?? '', previewName, instant),
+    [readyPreview?.text, previewName, instant],
+  );
   const canCreate = filled !== null && store !== null;
 
   const submit = (): void => {
@@ -388,6 +394,7 @@ export default function TemplateChoices({
                             storageNotePath(name),
                           )}
                           text={filled ?? ''}
+                          highlights={highlights}
                           label="The new note"
                         />
                       </Suspense>

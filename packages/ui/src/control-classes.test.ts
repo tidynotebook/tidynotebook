@@ -33,7 +33,7 @@ import {
   menuSurfaceValues,
   meterAlmostFull,
   meterClassNames,
-  meterWidthClassName,
+  meterFillPercent,
   rowClassName,
   selectClassName,
   inlineFieldClassName,
@@ -59,48 +59,18 @@ const variants: readonly ButtonVariant[] = [
   'danger',
 ];
 
-for (const [value, width, almostFull] of [
-  [0, 'w-0', false],
-  [1, 'w-0.5', false],
-  [4, 'w-0.5', false],
-  [5, 'w-1/12', false],
-  [89, 'w-11/12', false],
-  [90, 'w-11/12', true],
-  [100, 'w-full', true],
-  [125, 'w-full', true],
-] as const)
-  await test(`a meter at ${String(value)} of 100 has the correct width and warning`, () => {
-    assert.equal(meterWidthClassName(value, 100), width);
-    assert.equal(meterAlmostFull(value, 100), almostFull);
+for (const value of [0, 0.24, 1, 4, 5, 50, 89, 90, 99, 100, 125])
+  await test(`a meter at ${String(value)} of 100 has its real percentage`, () => {
+    assert.equal(meterFillPercent(value, 100), Math.min(value, 100));
+    assert.equal(meterAlmostFull(value, 100), value >= 90);
     const classes = meterClassNames(value, 100);
-    assert.ok(classes.fill.split(' ').includes(width));
     assert.ok(
-      classes.fill.includes(almostFull ? 'bg-danger-fill' : 'bg-accent-fill'),
+      classes.fill.includes(
+        value >= 90 ? 'fill-danger-fill' : 'fill-accent-fill',
+      ),
     );
-    assert.ok(
-      !classes.fill.includes(almostFull ? 'bg-accent-fill' : 'bg-danger-fill'),
-    );
-    for (const part of [classes.track, classes.fill]) {
-      assert.ok(part.includes('h-1.5'));
-      assert.ok(part.includes('rounded-sm'));
-      assert.ok(!part.includes('rounded-full'));
-    }
-    assert.ok(classes.track.includes('bg-hover'));
+    assert.ok(classes.track.includes('overflow-hidden'));
   });
-
-await test('a small positive use shows a hairline, not a forced step', () => {
-  const gib = 1024 ** 3;
-  assert.equal(meterWidthClassName(12 * 1024 ** 2, 5 * gib), 'w-0.5');
-  assert.equal(meterWidthClassName(1, 5 * gib), 'w-0.5');
-  assert.equal(meterWidthClassName(0, 5 * gib), 'w-0');
-  assert.equal(meterWidthClassName(2.5 * gib, 5 * gib), 'w-6/12');
-});
-
-await test('a meter keeps the last incomplete step below its maximum', () => {
-  assert.equal(meterWidthClassName(99, 100), 'w-11/12');
-  for (let step = 1; step < 12; step += 1)
-    assert.equal(meterWidthClassName(step, 12), `w-${String(step)}/12`);
-});
 
 await test('a meter refuses numbers that cannot state a value against a maximum', () => {
   for (const [value, max] of [
@@ -112,7 +82,7 @@ await test('a meter refuses numbers that cannot state a value against a maximum'
     [0, NaN],
     [0, Infinity],
   ])
-    assert.throws(() => meterWidthClassName(value ?? 0, max ?? 0), RangeError);
+    assert.throws(() => meterFillPercent(value ?? 0, max ?? 0), RangeError);
 });
 
 /** Every button size. */

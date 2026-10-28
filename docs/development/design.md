@@ -86,10 +86,10 @@ Every control reads `packages/ui/src/control-classes.ts` (record 0065).
   of `apps/web/src/shell/modifier-key.ts` and the full name for a reader.
 - `meterClassNames`: `Meter` in `packages/ui/src/controls.tsx` shows a value
   against a maximum with no state or callback. The track is `bg-hover`, the
-  fill is `bg-accent-fill`, and both use `h-1.5 rounded-sm`.
-  `meterWidthClassName` gives the nearest twelfth and keeps positive use
-  visible. Only use at or above the maximum fills the track. At `90%`,
-  `meterAlmostFull` gives the fill `bg-danger-fill` and adds Almost full to the
+  SVG fill is `fill-accent-fill`, and both use `h-1.5 rounded-sm`.
+  `meterFillPercent` gives the real fraction. A second SVG rectangle keeps
+  positive use visible with a 2 px minimum. Only use at or above the maximum fills the track. At `90%`,
+  `meterAlmostFull` gives the fill `fill-danger-fill` and adds Almost full to the
   text. The named meter states its minimum, maximum and current value.
 
 Focus uses `focus-visible:` with one outline, outward on a control and inward on

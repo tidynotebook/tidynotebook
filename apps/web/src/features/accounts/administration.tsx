@@ -890,8 +890,8 @@ function ControlsDialog({
           ) : null}
           <TextField
             id="controls-storage"
-            label="Storage limit in GiB"
-            hint="Usage uses the same unit, so 5 GiB shows as 5 GB."
+            label="Storage limit in GB"
+            hint="One GB is 1,000,000,000 bytes. Existing byte limits stay unchanged."
             value={form.storageGigabytes}
             required
             error={errorOf('storageGigabytes')}
@@ -901,7 +901,7 @@ function ControlsDialog({
           />
           <TextField
             id="controls-text"
-            label="Text and history limit in GiB"
+            label="Text and history limit in GB"
             value={form.textGigabytes}
             error={errorOf('textGigabytes')}
             onChange={(value) => {
@@ -910,7 +910,7 @@ function ControlsDialog({
           />
           <TextField
             id="controls-transfer"
-            label="Published pages each month, in GiB"
+            label="Published pages each month, in GB"
             value={form.transferGigabytes}
             error={errorOf('transferGigabytes')}
             onChange={(value) => {
@@ -919,7 +919,7 @@ function ControlsDialog({
           />
           <TextField
             id="controls-download"
-            label="Downloads each month, in GiB"
+            label="Downloads each month, in GB"
             value={form.downloadGigabytes}
             error={errorOf('downloadGigabytes')}
             onChange={(value) => {

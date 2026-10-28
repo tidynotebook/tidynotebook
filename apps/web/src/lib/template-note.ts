@@ -75,3 +75,15 @@ export function templatePreviewText(
     templateContextAt(instant, cleanNoteBaseName(name)),
   );
 }
+
+/** Values of known placeholders, including custom date formats, for preview marks. */
+export function templatePreviewHighlights(
+  template: string,
+  name: string,
+  instant: Date,
+): readonly string[] {
+  return Array.from(template.matchAll(/\{\{[^{}]*\}\}/g), ([placeholder]) => {
+    const value = templatePreviewText(placeholder, name, instant);
+    return value === placeholder ? '' : value;
+  }).filter((value) => value !== '');
+}

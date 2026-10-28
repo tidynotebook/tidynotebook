@@ -44,14 +44,14 @@ function account(extra: Partial<AccountSummary> = {}): AccountSummary {
     state: 'enabled',
     createdAt: '2026-09-01T12:00:00.000Z',
     lastActiveAt: '2026-09-26T10:00:00.000Z',
-    storage: { usedBytes: 1536, limitBytes: 5 * 1024 * 1024 * 1024 },
+    storage: { usedBytes: 1500, limitBytes: 5 * 1000 ** 3 },
     controls: {
       revision: 1,
       standing: 'active',
       removalAt: null,
       trialEndsAt: null,
       trialState: 'none',
-      limitBytes: 5 * 1024 * 1024 * 1024,
+      limitBytes: 5 * 1000 ** 3,
       textLimitBytes: null,
       publishedTransferLimitBytes: null,
       downloadLimitBytes: null,
@@ -68,30 +68,32 @@ await test('a byte count reads in one unit with at most one decimal', () => {
   // reads on the account page (record 0193).
   assert.equal(formatBytes(1), '1 byte');
   assert.equal(formatBytes(512), '512 bytes');
-  assert.equal(formatBytes(1536), '1.5 KB');
-  assert.equal(formatBytes(12 * 1024 * 1024), '12 MB');
-  assert.equal(formatBytes(15 * 1000 * 1000), '14 MB');
-  assert.equal(formatBytes(10 * 1024 ** 3), '10 GB');
+  assert.equal(formatBytes(1500), '1.5 KB');
+  assert.equal(formatBytes(12_000_000), '12 MB');
+  assert.equal(formatBytes(15 * 1000 * 1000), '15 MB');
+  assert.equal(formatBytes(10_000_000_000), '10 GB');
   assert.equal(formatBytes(-1), '');
 });
 
 await test('the storage line is empty when the limit is unknown', () => {
   assert.equal(
-    storageLine({ usedBytes: 1536, limitBytes: 5 * 1000 ** 3 }),
-    '1.5 KB of 4.7 GB used',
+    storageLine({ usedBytes: 1500, limitBytes: 5 * 1000 ** 3 }),
+    '1.5 KB of 5 GB used',
   );
-  // The default limit is 5 GiB, and it reads as the 5 GB a person expects.
+  // Existing stored limits keep their bytes and use the same decimal display.
   assert.equal(
-    storageLine({ usedBytes: 12 * 1024 * 1024, limitBytes: 5 * 1024 ** 3 }),
-    '12 MB of 5 GB used',
+    storageLine({ usedBytes: 12 * 1024 * 1024, limitBytes: 5 * 1000 ** 3 }),
+    '13 MB of 5 GB used',
   );
   assert.equal(storageLine({ usedBytes: 0, limitBytes: 0 }), '');
 });
 
 await test('a limit in gigabytes goes both ways and refuses a non-number', () => {
-  assert.equal(bytesOfGigabytes('5'), 5 * 1024 ** 3);
-  assert.equal(bytesOfGigabytes(' 0,5 '), 0.5 * 1024 ** 3);
-  assert.equal(gigabytesOf(5 * 1024 ** 3), '5');
+  assert.equal(bytesOfGigabytes('5'), 5 * 1000 ** 3);
+  assert.equal(bytesOfGigabytes(' 0,5 '), 0.5 * 1000 ** 3);
+  assert.equal(gigabytesOf(5 * 1000 ** 3), '5');
+  for (const bytes of [1, 5_368_709_120, 10_000_000_000])
+    assert.equal(bytesOfGigabytes(gigabytesOf(bytes)), bytes);
   for (const bad of ['', '0', '-1', 'ten', '1e3', '99999999999'])
     assert.equal(bytesOfGigabytes(bad), null, bad);
 });
@@ -272,13 +274,13 @@ await test('a reset link carries its token in the fragment', () => {
   assert.equal(resetTokenOf(`#${'a'.repeat(513)}`), null);
 });
 
-await test('values that round to the next unit use that unit', () => {
-  assert.equal(formatBytes(1023 * 1024), '1023 KB');
-  assert.equal(formatBytes(1023.5 * 1024), '1 MB');
-  assert.equal(formatBytes(1024 ** 2 - 1), '1 MB');
-  assert.equal(formatBytes(1024 ** 2), '1 MB');
-  assert.equal(formatBytes(1_000_000), '977 KB');
-  assert.equal(formatBytes(1024 ** 3 - 1), '1 GB');
+await test('decimal values that round to the next unit use that unit', () => {
+  assert.equal(formatBytes(999_499), '999 KB');
+  assert.equal(formatBytes(999_500), '1 MB');
+  assert.equal(formatBytes(1_000_000), '1 MB');
+  assert.equal(formatBytes(10_000_000_000), '10 GB');
+  assert.equal(formatBytes(50_000_000_000), '50 GB');
+  assert.equal(formatBytes(5 * 1024 ** 3), '5.4 GB');
 });
 
 await test('verification recovery does not offer signup when registration is closed', () => {
