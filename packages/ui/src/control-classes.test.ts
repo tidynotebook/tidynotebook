@@ -940,8 +940,28 @@ await test('history controls draw the surface of every other format tool', async
     historyButtonVisualClassName(true).split(' ').includes('text-muted'),
   );
   // The surface carries the look, and the target only carries the group.
-  assert.ok(historyButtonClassName(false).split(' ').includes('group'));
-  assert.ok(!historyButtonClassName(false).includes('text-'));
+  assert.ok(historyButtonClassName().split(' ').includes('group'));
+  for (const colour of ['text-strong', 'text-muted'])
+    assert.ok(!historyButtonClassName().includes(colour));
+});
+
+await test('history controls take the tool size of every format tool', async () => {
+  const { buttonClassName, historyButtonClassName } =
+    await import('./control-classes.ts');
+  // The format row draws each tool as a small, compact, icon-only ghost
+  // button: 44 px under touch and 28 px on a desktop. Undo and Redo take the
+  // same target, so the row keeps one width and one gap.
+  const tool = buttonClassName({
+    variant: 'ghost',
+    size: 'sm',
+    iconOnly: true,
+    compact: true,
+  }).split(' ');
+  const history = historyButtonClassName().split(' ');
+  for (const token of ['size-11', 'md:size-7', 'px-0', 'group'])
+    assert.ok(tool.includes(token), `${token} left the format tool`);
+  for (const token of tool)
+    assert.ok(history.includes(token), `${token} is missing on a history tool`);
 });
 
 await test('history controls retain their size and focus when unavailable', async () => {
@@ -950,9 +970,9 @@ await test('history controls retain their size and focus when unavailable', asyn
     historyButtonName,
     historyButtonVisualClassName,
   } = await import('./control-classes.ts');
-  const off = historyButtonClassName(true);
-  assert.ok(off.includes('size-11'));
-  assert.ok(off.includes('cursor-not-allowed'));
+  const off = historyButtonClassName();
+  assert.ok(off.split(' ').includes('size-11'));
+  assert.ok(off.split(' ').includes('aria-disabled:cursor-not-allowed'));
   assert.ok(!off.includes('opacity'));
   assert.ok(!off.includes('hover:'));
   const offSurface = historyButtonVisualClassName(true);
@@ -960,7 +980,6 @@ await test('history controls retain their size and focus when unavailable', asyn
   assert.ok(offSurface.includes('group-focus-visible:outline-2'));
   assert.ok(!offSurface.includes('opacity'));
   assert.ok(!offSurface.includes('hover:'));
-  assert.ok(historyButtonClassName(false).includes('cursor-pointer'));
   assert.deepEqual(historyButtonName('undo', false), {
     label: 'Undo',
     tooltip: 'Undo (Ctrl+Z)',

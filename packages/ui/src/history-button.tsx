@@ -34,7 +34,7 @@ export function HistoryButton({
         onFocus={() => tip.enter('focus')}
         onBlur={() => tip.leave('focus')}
         type="button"
-        className={historyButtonClassName(!available)}
+        className={historyButtonClassName()}
         aria-label={name.label}
         aria-disabled={!available}
         tabIndex={tabIndex}

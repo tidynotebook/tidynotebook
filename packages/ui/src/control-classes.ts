@@ -829,17 +829,24 @@ export function buttonName(options: {
 }
 
 /**
- * The approved history controls keep a 44 px target and stay focusable.
+ * The approved history controls are tools of the format row.
  *
- * The button is the target and draws nothing. The surface inside it is the
- * one of a small compact tool, so Undo and Redo show the same 16 px glyph, the
- * same fill and the same colours as every other tool of the row. A history
+ * The button is the target of a small compact tool: 44 px under touch and the
+ * 28 px of every other tool on a desktop, so the row keeps one width and one
+ * gap. The surface inside it carries the look, so Undo and Redo show the same
+ * 16 px glyph, fill and colours as every other tool of the row. A history
  * control is unavailable through `aria-disabled` and not `disabled`, so it
  * keeps the focus, and its muted colour is written here and not read from a
  * `group-disabled` state that never applies to it.
  */
-export function historyButtonClassName(disabled: boolean): string {
-  return `group inline-flex size-11 shrink-0 items-center justify-center rounded-md bg-transparent focus-visible:outline-none ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`;
+export function historyButtonClassName(): string {
+  return buttonClassName({
+    variant: 'ghost',
+    size: 'sm',
+    iconOnly: true,
+    compact: true,
+    className: 'shrink-0 aria-disabled:cursor-not-allowed',
+  });
 }
 
 /** The visible surface of a history control, as a small compact tool. */
