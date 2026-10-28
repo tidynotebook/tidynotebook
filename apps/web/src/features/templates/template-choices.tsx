@@ -238,47 +238,50 @@ export default function TemplateChoices({
   return (
     <form
       className="flex min-h-0 flex-1 flex-col"
-
       onSubmit={(event) => {
         event.preventDefault();
         submit();
       }}
     >
       <header className="flex h-14 shrink-0 items-center gap-2 px-3 lg:h-13 lg:pl-5">
-        <Button
-          className="lg:hidden"
-          variant="ghost"
-          icon={details ? <ChevronLeftIcon /> : <CloseIcon />}
-          label={details ? 'Back to templates' : 'Close template dialog'}
-          onClick={details ? back : onClose}
-        />
+        <span className="lg:hidden">
+          <Button
+            variant="ghost"
+            icon={details ? <ChevronLeftIcon /> : <CloseIcon />}
+            label={details ? 'Back to templates' : 'Close template dialog'}
+            onClick={details ? back : onClose}
+          />
+        </span>
         <h3
           ref={detailTitle}
           tabIndex={-1}
-          className="m-0 min-w-0 flex-1 truncate text-ui font-semibold text-strong outline-none"
+          className="m-0 min-w-0 flex-1 truncate text-ui font-semibold text-strong outline-none max-lg:text-center"
         >
           <span className="hidden lg:inline">New note from template</span>
           <span className="lg:hidden">
             {details ? selectedLabel : 'New note from template'}
           </span>
         </h3>
-        <button
-          type="button"
-          aria-label="Manage templates"
-          title="Manage templates"
-          onClick={manage}
-          className={`${buttonClassName({ variant: 'ghost', size: 'sm' })} ${details ? 'hidden lg:inline-flex' : ''}`}
-        >
-          <SettingsIcon />
-          <span className="hidden lg:inline">Manage templates</span>
-        </button>
-        <Button
-          className={details ? undefined : 'hidden lg:inline-flex'}
-          variant="ghost"
-          icon={<CloseIcon />}
-          label="Close template dialog"
-          onClick={onClose}
-        />
+        <span className={details ? 'hidden lg:inline-flex' : 'inline-flex'}>
+          <button
+            type="button"
+            aria-label="Manage templates"
+            title="Manage templates"
+            onClick={manage}
+            className={buttonClassName({ variant: 'ghost', size: 'sm' })}
+          >
+            <SettingsIcon />
+            <span className="hidden lg:inline">Manage templates</span>
+          </button>
+        </span>
+        <span className={details ? 'inline-flex' : 'hidden lg:inline-flex'}>
+          <Button
+            variant="ghost"
+            icon={<CloseIcon />}
+            label="Close template dialog"
+            onClick={onClose}
+          />
+        </span>
       </header>
       <div className="min-h-0 flex-1 overflow-hidden px-5 py-3">
         <div className="grid h-full min-h-0 min-w-0 gap-5 lg:grid-cols-3">
@@ -528,13 +531,11 @@ export default function TemplateChoices({
               Date and time are set when you create the note.
             </p>
           )}
-          <Button
-            className="hidden lg:inline-flex"
-            variant="ghost"
-            onClick={onClose}
-          >
-            Cancel
-          </Button>
+          <span className="hidden lg:inline-flex">
+            <Button variant="ghost" onClick={onClose}>
+              Cancel
+            </Button>
+          </span>
           {selected === null ? null : (
             <Button
               className="max-lg:w-full"
