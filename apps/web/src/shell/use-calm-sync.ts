@@ -18,10 +18,10 @@ export function useCalmSyncView(facts: CalmSyncFacts): CalmSyncView {
     tracker.current ??= calmSyncTracker(facts, (next) => setView(next));
     return tracker.current.view();
   });
-  const { state, online, failed, pending } = facts;
+  const { state, online, failed, pending, editing } = facts;
   useEffect(() => {
-    tracker.current?.update({ state, online, failed, pending });
-  }, [state, online, failed, pending]);
+    tracker.current?.update({ state, online, failed, pending, editing });
+  }, [state, online, failed, pending, editing]);
   useEffect(() => () => tracker.current?.dispose(), []);
   return view;
 }

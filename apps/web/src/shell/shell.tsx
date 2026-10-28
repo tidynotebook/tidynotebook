@@ -490,7 +490,8 @@ function Sidebar({
     state: sync.state,
     online,
     failed: openNoteWriteFailed,
-    pending: openNotePending || openNoteLocalWritePending,
+    pending: openNotePending,
+    editing: openNoteLocalWritePending,
   });
 
   return (
