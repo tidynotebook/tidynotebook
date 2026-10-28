@@ -136,7 +136,7 @@ import {
   today,
   useDailyNotes,
 } from '../features/daily-notes/daily-notes.tsx';
-import { saveStatusWords } from '../lib/save-status-words.ts';
+import { syncProblemLine } from '../lib/save-status-words.ts';
 import { daysWithNotes } from '../lib/daily-note.ts';
 import {
   TemplatesProvider,
@@ -482,9 +482,6 @@ function Sidebar({
   const openNotePending = useNoteSaveFact(
     (report) => report?.pendingSave ?? false,
   );
-  const localWritePending = useNoteSaveFact(
-    (report) => report?.localWritePending ?? false,
-  );
   const footer = syncFooter({
     state: sync.state,
     online,
@@ -492,14 +489,11 @@ function Sidebar({
     openNoteWriteFailed,
     openNotePending,
   });
-  const syncLine = saveStatusWords({
+  // Saving is quiet: the footer states only a problem or a pause.
+  const syncLine = syncProblemLine({
     state: sync.state,
-    online,
-    pending: openNotePending,
-    localWritePending,
     failed: openNoteWriteFailed,
-    noteName: sync.noteName,
-  }).line;
+  });
 
   return (
     <>
@@ -731,17 +725,19 @@ function Sidebar({
         )}
 
         <div className="border-t border-edge-subtle p-2">
-          <div className={rowClassName({ interactive: false })}>
-            <span className={syncStatusClassNames.status}>
-              <span className={syncStatusClassNames.dotFrame}>
-                <span
-                  className={syncDotClassName(footer.dot)}
-                  aria-hidden="true"
-                />
+          {syncLine === null ? null : (
+            <div className={rowClassName({ interactive: false })}>
+              <span className={syncStatusClassNames.status}>
+                <span className={syncStatusClassNames.dotFrame}>
+                  <span
+                    className={syncDotClassName(footer.dot)}
+                    aria-hidden="true"
+                  />
+                </span>
+                <span className={syncStatusClassNames.line}>{syncLine}</span>
               </span>
-              <span className={syncStatusClassNames.line}>{syncLine}</span>
-            </span>
-          </div>
+            </div>
+          )}
           <Link
             className={rowClassName({
               current: location.pathname === trashPath,

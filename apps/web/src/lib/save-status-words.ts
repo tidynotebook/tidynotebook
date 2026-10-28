@@ -1,112 +1,88 @@
 import { syncStateMessage, type SyncState } from './sync-state.ts';
 
-/** Status copy uses existing save facts and adds no telemetry. */
-export function saveStatusWords(input: {
+/**
+ * The save facts of the open note, as the status words read them.
+ *
+ * Saving is quiet: a saved, saving, offline or uploaded note shows no status
+ * at all. Words appear only when work can wait or be lost without a step from
+ * the person. They read existing save facts and add no telemetry.
+ */
+export type SaveFacts = {
   readonly state: SyncState;
-  readonly online: boolean;
-  readonly pending: boolean;
-  readonly localWritePending?: boolean;
   readonly failed: boolean;
   readonly noteName?: string | null;
-}): {
-  readonly pill: string;
-  readonly line: string;
+};
+
+/** The one step that helps with a save problem of the open note. */
+export type SaveProblemKind = 'not-saved' | 'sign-in' | 'attention';
+
+/** A save problem of the open note, for the control in the note header. */
+export type SaveProblem = {
+  readonly kind: SaveProblemKind;
+  readonly label: string;
   readonly title: string;
   readonly detail: string;
-} {
+};
+
+/**
+ * The save problem of the open note, or `null` when there is none.
+ *
+ * A failed write to this device wins, because the typed text is then only in
+ * this tab. A signed out or other account holds the changes on this device
+ * until a person signs in, and parked saves wait in Needs attention.
+ */
+export function saveProblem(input: SaveFacts): SaveProblem | null {
   if (input.failed)
     return {
-      pill: 'Not saved',
-      line: 'Not saved',
+      kind: 'not-saved',
+      label: 'Not saved',
       title: 'Not saved',
       detail: 'Could not save on this device. Copy your text, then free space.',
     };
-  // Pending server work alone cannot prove that the current buffer is durable.
-  if (input.localWritePending ?? input.pending)
-    return {
-      pill: 'Saving',
-      line: 'Saving...',
-      title: 'Saving',
-      detail: 'Saving on this device.',
-    };
   const kind = input.state.kind;
-  if (kind === 'starting')
-    return {
-      pill: 'Saving',
-      line: 'Connecting to the server.',
-      title: 'Connecting',
-      detail: syncStateMessage(input.state, input.noteName ?? null),
-    };
-  if (kind === 'in-step' && input.pending)
-    return {
-      pill: 'Saving',
-      line: 'Waiting to upload',
-      title: 'Saved on this device',
-      detail: 'Saved on this device. Waiting to upload.',
-    };
   if (kind === 'signed-out' || kind === 'other-account')
     return {
-      pill: 'Paused',
-      line: 'Sign in to upload',
+      kind: 'sign-in',
+      label: 'Upload paused',
       title: 'Upload paused',
       detail:
         kind === 'signed-out'
           ? 'You are signed out. Changes stay on this device.'
           : 'Another account is signed in. Your changes wait on this device.',
     };
-  if (kind === 'server-behind' || kind === 'update-required')
+  if (kind === 'attention')
     return {
-      pill: 'Paused',
-      line: 'Waiting for server update',
-      title: 'Upload paused',
-      detail:
-        kind === 'server-behind'
-          ? 'The server must update first. Changes stay on this device.'
-          : 'Update the app to upload. Changes stay on this device.',
-    };
-  if (
-    kind === 'attention' ||
-    kind === 'delete-refused' ||
-    kind === 'stopped' ||
-    kind === 'download-limit'
-  )
-    return {
-      pill: 'Paused',
-      line:
-        kind === 'attention'
-          ? 'Needs attention'
-          : kind === 'download-limit'
-            ? 'Download paused'
-            : 'Upload paused',
-      title: 'Upload paused',
+      kind: 'attention',
+      label: 'Needs attention',
+      title: 'Needs attention',
       detail: syncStateMessage(input.state, input.noteName ?? null),
     };
-  if (!input.online || kind === 'waiting')
-    return {
-      pill: 'Offline',
-      line: 'Offline. Saved on this device.',
-      title: 'Saved on this device',
-      detail:
-        'No connection. Your changes are safe here and upload when you are online.',
-    };
-  if (kind === 'in-step' && !input.pending)
-    return {
-      pill: 'Saved',
-      line: 'All changes saved',
-      title: 'Saved',
-      detail: 'Saved to your account.',
-    };
-  if (kind === 'sending')
-    return {
-      pill: 'Saving',
-      line: 'Uploading...',
-      title: 'Saved on this device',
-      detail: 'Saved on this device. Uploading now.',
-    };
-  return {
-    pill: 'Saving',
-    line: 'Saving...',
-    title: 'Saving',
-    detail: 'Saving on this device.',
-  };
+  return null;
+}
+
+/**
+ * The line of the sidebar footer, or `null` when sync needs nothing.
+ *
+ * The footer states a problem or a pause that a person can act on or must
+ * know about. A saved, saving, offline or uploading workspace shows no line.
+ */
+export function syncProblemLine(input: SaveFacts): string | null {
+  if (input.failed) return 'Not saved';
+  switch (input.state.kind) {
+    case 'signed-out':
+    case 'other-account':
+      return 'Sign in to upload';
+    case 'server-behind':
+    case 'update-required':
+      return 'Waiting for server update';
+    case 'attention':
+      return 'Needs attention';
+    case 'download-limit':
+      return 'Download paused';
+    case 'delete-refused':
+    case 'stopped':
+      return 'Upload paused';
+    default:
+      return null;
+  }
 }
