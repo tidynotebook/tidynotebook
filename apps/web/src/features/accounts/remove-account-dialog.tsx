@@ -1,3 +1,4 @@
+import { SettingsDialog } from './settings-dialog.tsx';
 /**
  * The dialog that removes the account of the person, which Settings and the
  * consent page both open (record 0111). It is a module of its own, so the
@@ -7,13 +8,7 @@ import { useState, type ReactNode } from 'react';
 
 import { removeOwnAccount } from '@notesapp/api-client';
 import type { LocalStore } from '@notesapp/sync';
-import {
-  Button,
-  Dialog,
-  DialogBody,
-  DialogFooter,
-  TextField,
-} from '@notesapp/ui';
+import { Button, DialogBody, DialogFooter, TextField } from '@notesapp/ui';
 
 import { problemMessage } from '../../app.tsx';
 import { problemCode } from '../../lib/problem-text.ts';
@@ -65,7 +60,7 @@ export function RemoveOwnAccountDialog({
   };
 
   return (
-    <Dialog
+    <SettingsDialog
       open
       title="Delete your account?"
       titleId="remove-own-account-title"
@@ -108,6 +103,6 @@ export function RemoveOwnAccountDialog({
           </Button>
         </DialogFooter>
       </form>
-    </Dialog>
+    </SettingsDialog>
   );
 }

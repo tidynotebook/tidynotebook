@@ -1,3 +1,4 @@
+import { SettingsDialog } from './settings-dialog.tsx';
 /** Personal API keys are account controls, shared by every API client (0208). */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
@@ -10,7 +11,6 @@ import {
 import { apiKeyNameProblem, maxApiKeys } from '@notesapp/core';
 import {
   Button,
-  Dialog,
   DialogBody,
   DialogFooter,
   ListRow,
@@ -198,7 +198,7 @@ function CreateKeyDialog({
     }
   }
   return (
-    <Dialog
+    <SettingsDialog
       open
       title={created === null ? 'Create API key' : 'Copy your API key'}
       titleId="create-api-key-title"
@@ -252,8 +252,8 @@ function CreateKeyDialog({
               id="api-key-secret-help"
               className="mb-4 mt-0 text-ui text-strong"
             >
-              Copy this key now. You cannot read it again after you close this
-              dialog. Store it in a safe place. Do not put it in a web address.
+              Copy this key now. You cannot read it again after you leave this
+              form. Store it in a safe place. Do not put it in a web address.
             </p>
             <ReadOnlyField
               id="api-key-secret"
@@ -287,7 +287,7 @@ function CreateKeyDialog({
           </DialogFooter>
         </>
       )}
-    </Dialog>
+    </SettingsDialog>
   );
 }
 
@@ -326,7 +326,7 @@ function RevokeKeyDialog({
     }
   }
   return (
-    <Dialog
+    <SettingsDialog
       open
       title="Revoke API key?"
       titleId="revoke-api-key-title"
@@ -356,6 +356,6 @@ function RevokeKeyDialog({
           {busy ? 'Revoking key' : 'Revoke key'}
         </Button>
       </DialogFooter>
-    </Dialog>
+    </SettingsDialog>
   );
 }

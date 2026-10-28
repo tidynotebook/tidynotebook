@@ -1,3 +1,4 @@
+import { SettingsDialog } from './settings-dialog.tsx';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   listConnectedApps,
@@ -6,7 +7,6 @@ import {
 } from '@notesapp/api-client';
 import {
   Button,
-  Dialog,
   DialogBody,
   DialogFooter,
   ListRow,
@@ -179,7 +179,7 @@ function RevokeAppDialog({
     }
   }
   return (
-    <Dialog
+    <SettingsDialog
       open
       title="Revoke connected app?"
       titleId="revoke-connected-app-title"
@@ -209,6 +209,6 @@ function RevokeAppDialog({
           {busy ? 'Revoking app' : 'Revoke app'}
         </Button>
       </DialogFooter>
-    </Dialog>
+    </SettingsDialog>
   );
 }

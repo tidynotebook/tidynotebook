@@ -112,3 +112,48 @@ export function useTheme() {
 export function problemMessage(): string {
   return 'Something went wrong.';
 }
+
+let apiKeys: {
+  keyId: string;
+  name: string;
+  createdAt: string;
+  expiresAt: string;
+  lastUsedAt: null;
+}[] = [];
+let refuseCreation = false;
+/** Isolate the keys used by the Settings action tests. */
+export function resetApiKeys(): void {
+  apiKeys = [];
+  refuseCreation = false;
+}
+/** Exercise a server refusal without losing the typed form. */
+export function refuseApiKeyCreation(value: boolean): void {
+  refuseCreation = value;
+}
+export async function listApiKeys() {
+  return { data: { keys: apiKeys } };
+}
+export async function createApiKey({
+  body,
+}: {
+  readonly body: { readonly name: string };
+}) {
+  if (refuseCreation) return { error: { code: 'unavailable' } };
+  const key = {
+    keyId: crypto.randomUUID(),
+    name: body.name,
+    createdAt: '2026-10-28T08:00:00.000Z',
+    expiresAt: '2027-01-26T08:00:00.000Z',
+    lastUsedAt: null,
+  };
+  apiKeys = [key, ...apiKeys];
+  return { data: { key, token: `tnk_${'a'.repeat(43)}` } };
+}
+export async function revokeApiKey({
+  path,
+}: {
+  readonly path: { readonly keyId: string };
+}) {
+  apiKeys = apiKeys.filter((key) => key.keyId !== path.keyId);
+  return { data: { removed: true } };
+}

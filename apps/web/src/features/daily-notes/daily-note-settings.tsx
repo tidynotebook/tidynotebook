@@ -1,3 +1,4 @@
+import { SettingsDialog } from '../accounts/settings-dialog.tsx';
 /**
  * The daily note settings of the member, as fields of the Settings page
  * (records 0099, 0100 and 0101).
@@ -22,7 +23,6 @@ import {
 import {
   Checkbox,
   Button,
-  Dialog,
   DialogBody,
   DialogFooter,
   LoadingState,
@@ -99,7 +99,7 @@ function LayoutFields({
           Change
         </Button>
       </div>
-      <Dialog
+      <SettingsDialog
         open={editing !== null}
         onClose={() => {
           leave.onBlur();
@@ -156,7 +156,7 @@ function LayoutFields({
             </Button>
           </DialogFooter>
         ) : null}
-      </Dialog>
+      </SettingsDialog>
       <p className="mb-3 mt-0 text-control text-muted" aria-live="polite">
         {problem === null
           ? `Today's note: ${dailyNotePreview(today(), layout)}`

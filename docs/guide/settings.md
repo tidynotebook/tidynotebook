@@ -22,6 +22,10 @@ workspace (**Daily notes**, **Templates**, **Export and import**) and
 apps**). On a phone, Settings fills the screen. Select a section to open it,
 and select **Back** to go back to the list.
 
+Forms and confirmations open inside Settings. They do not add another modal.
+Use **Back**, **Cancel**, or **Done** to return to the section. Escape returns
+to the section while a form is open.
+
 Press **Escape**, select the close button or select outside Settings to close
 it. The browser Back button also closes it. The address of the page shows the
 open section, for example `?settings=account`, so a link can open Settings at

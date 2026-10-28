@@ -1,3 +1,4 @@
+import { SettingsDialog } from '../accounts/settings-dialog.tsx';
 /**
  * The template folder of the member, as a field of the Settings page (record
  * 0149).
@@ -16,7 +17,6 @@ import {
 } from '@notesapp/core';
 import {
   Button,
-  Dialog,
   DialogBody,
   DialogFooter,
   LoadingState,
@@ -76,7 +76,7 @@ function FolderField({
           Change
         </Button>
       </div>
-      <Dialog
+      <SettingsDialog
         open={changing}
         onClose={() => {
           leave.onBlur();
@@ -126,7 +126,7 @@ function FolderField({
             Done
           </Button>
         </DialogFooter>
-      </Dialog>
+      </SettingsDialog>
       <p className="mb-3 mt-0 text-control text-muted" aria-live="polite">
         {problem !== null || files.loading
           ? ''

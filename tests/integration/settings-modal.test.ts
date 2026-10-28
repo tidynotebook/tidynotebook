@@ -24,7 +24,12 @@ import {
   useLocation,
   useNavigate,
 } from 'react-router';
-import { calls, setWaiting } from './support/settings-modal-fixture.ts';
+import {
+  calls,
+  setWaiting,
+  resetApiKeys,
+  refuseApiKeyCreation,
+} from './support/settings-modal-fixture.ts';
 
 const browser = new Window({ url: 'http://localhost/' });
 const globals = [
@@ -67,6 +72,11 @@ const hooks = registerHooks({
   resolve(specifier, context, next) {
     const parent = context.parentURL ?? '';
     if (parent.includes('/apps/web/dist/')) {
+      if (
+        parent.endsWith('/api-keys.js') &&
+        specifier === '@notesapp/api-client'
+      )
+        return { url: fixture, shortCircuit: true };
       if (/^(\.\.\/)+app\.js$/.test(specifier))
         return { url: fixture, shortCircuit: true };
       if (
@@ -328,7 +338,7 @@ await test('the sidebar has the three groups, the workspace name and no Sign out
   assert.equal(sectionButton('account').getAttribute('aria-current'), 'page');
 });
 
-await test('Escape in Delete account closes only that dialog', async () => {
+await test('Delete account stays in Settings and Escape returns to Account', async () => {
   await show('/w/one/notes/n1?settings=account');
   const modal = dialog();
   assert.ok(modal);
@@ -337,8 +347,10 @@ await test('Escape in Delete account closes only that dialog', async () => {
     ?.closest('section');
   assert.ok(danger);
   await click(button('Delete account', danger));
-  assert.equal(container.querySelectorAll('[role="dialog"]').length, 2);
+  assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
+  assert.ok(container.querySelector('#remove-own-password'));
   await escape();
+  assert.equal(container.querySelector('#remove-own-password'), null);
   assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
   assert.equal(address, '/w/one/notes/n1?settings=account');
 });
@@ -511,6 +523,75 @@ await test('Sign out in the account menu keeps the waiting saves check', async (
   await click(button('Cancel', unknown));
   assert.equal(dialog(), null);
   assert.equal(calls.signOut, 2);
+});
+
+await test('API key create, validation, secret and revoke use one Settings frame', async () => {
+  resetApiKeys();
+  await show('/w/one/notes/n1?settings=api-keys-apps');
+  const modal = dialog();
+  assert.ok(modal);
+  const create = button('Create API key');
+  await click(create);
+  assert.equal(dialog(), modal);
+  assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
+  assert.equal(create.closest('[hidden]') !== null, true);
+  const name = container.querySelector<HTMLInputElement>('#api-key-name');
+  assert.ok(name);
+  await act(async () => {
+    const setter = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      'value',
+    )?.set;
+    setter?.call(name, 'Review client');
+    name.dispatchEvent(new window.Event('input', { bubbles: true }));
+  });
+  refuseApiKeyCreation(true);
+  await click(button('Create key'));
+  assert.equal(name.value, 'Review client');
+  assert.equal(dialog(), modal);
+  assert.ok(container.querySelector('#api-key-name[aria-invalid="true"]'));
+  refuseApiKeyCreation(false);
+  await click(button('Create key'));
+  assert.ok(container.querySelector('#api-key-secret'));
+  assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
+  await click(button('Done'));
+  assert.equal(container.querySelector('#api-key-secret'), null);
+  assert.equal(document.activeElement, create);
+  await click(button('Revoke Review client'));
+  assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
+  await click(button('Revoke key'));
+  assert.equal(container.querySelector('#api-key-secret'), null);
+  assert.equal(
+    container.querySelector('[aria-label="Revoke Review client"]'),
+    null,
+  );
+  assert.equal(dialog(), modal);
+  assert.equal(document.activeElement, create);
+});
+
+await test('Settings folder choices and name format do not open another modal', async () => {
+  await show('/w/one/notes/n1?settings=templates');
+  const modal = dialog();
+  await click(button('Change'));
+  assert.equal(dialog(), modal);
+  assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
+  assert.ok(container.querySelector('[role="tree"]'));
+  await click(button('Back to section'));
+  assert.equal(container.querySelector('[role="tree"]'), null);
+  await act(async () => go('/w/one/notes/n1?settings=daily-notes'));
+  await settle();
+  const changes = [...container.querySelectorAll<HTMLElement>('button')].filter(
+    (item) => item.textContent === 'Change',
+  );
+  assert.equal(changes.length, 2);
+  const format = changes[1];
+  assert.ok(format);
+  await click(format);
+  assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
+  assert.ok(container.querySelector('#daily-format'));
+  await escape();
+  assert.equal(container.querySelector('#daily-format'), null);
+  assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
 });
 
 await release();

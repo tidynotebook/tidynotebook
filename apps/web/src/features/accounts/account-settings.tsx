@@ -1,3 +1,4 @@
+import { SettingsActionContext } from './settings-dialog.tsx';
 import { ConnectedAppSettings } from './connected-apps.tsx';
 /**
  * The Settings modal (issue 517, items 5, 7, 8 and 10).
@@ -20,7 +21,14 @@ import { ConnectedAppSettings } from './connected-apps.tsx';
  * The body loads when the modal first opens, so the first screen of the
  * frame reads none of it (record 0177).
  */
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { Link } from 'react-router';
 import {
   listSessions,
@@ -509,6 +517,12 @@ export function SettingsModal({
   // A refused import is a problem, not news, so it has its own notice.
   const [importError, setImportError] = useState('');
   const [removing, setRemoving] = useState(false);
+  const [actionTarget, setActionTarget] = useState<HTMLDivElement | null>(null);
+  const [activeAction, setActiveAction] = useState<string | null>(null);
+  const actionHost = useMemo(
+    () => ({ target: actionTarget, setActive: setActiveAction }),
+    [actionTarget],
+  );
   const importInput = useRef<HTMLInputElement | null>(null);
   const requestSync = useRequestSync();
   const titleId = useId();
@@ -776,185 +790,190 @@ export function SettingsModal({
       align="center"
       returnFocus={returnFocus}
     >
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <div
-          className={`${listLevel ? 'flex' : 'hidden'} min-h-0 flex-1 flex-col bg-surface lg:flex lg:w-72 lg:flex-none lg:border-r lg:border-edge-subtle`}
-        >
-          <div className="flex items-center gap-cluster px-3 pt-3 lg:hidden">
-            <Button
-              variant="ghost"
-              icon={<CloseIcon />}
-              label="Close Settings"
-              onClick={onClose}
-            />
-            <p className="m-0 min-w-0 flex-1 text-center text-ui font-semibold text-strong">
-              {settingsTitle}
-            </p>
-            <span className="w-11 shrink-0" aria-hidden="true" />
-          </div>
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
-            <div className="flex items-center gap-2.5 border-b border-edge-subtle px-2 pb-3">
-              <span className={avatarClassName()} aria-hidden="true">
-                {initial}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-ui font-semibold text-strong">
-                  {account.name ?? account.email ?? ''}
+      <SettingsActionContext.Provider value={actionHost}>
+        <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+          <div
+            className={`${listLevel ? 'flex' : 'hidden'} min-h-0 flex-1 flex-col bg-surface lg:flex lg:w-60 lg:flex-none lg:border-r lg:border-edge-subtle`}
+          >
+            <div className="flex items-center gap-cluster px-3 pt-3 lg:hidden">
+              <Button
+                variant="ghost"
+                icon={<CloseIcon />}
+                label="Close Settings"
+                onClick={onClose}
+              />
+              <p className="m-0 min-w-0 flex-1 text-center text-ui font-semibold text-strong">
+                {settingsTitle}
+              </p>
+              <span className="w-11 shrink-0" aria-hidden="true" />
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
+              <div className="flex items-center gap-2.5 border-b border-edge-subtle px-2 pb-3">
+                <span className={avatarClassName()} aria-hidden="true">
+                  {initial}
                 </span>
-                {account.email === null ||
-                account.email === undefined ? null : (
-                  <span className="block truncate text-control text-muted">
-                    {account.email}
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-ui font-semibold text-strong">
+                    {account.name ?? account.email ?? ''}
                   </span>
-                )}
-              </span>
+                  {account.email === null ||
+                  account.email === undefined ? null : (
+                    <span className="block truncate text-control text-muted">
+                      {account.email}
+                    </span>
+                  )}
+                </span>
+              </div>
+              <nav ref={settingsList} aria-label="Settings sections">
+                {settingsPageGroups.map((group) => (
+                  <section
+                    key={group}
+                    aria-label={
+                      group === 'Workspace' && workspaceName !== ''
+                        ? `Workspace ${workspaceName}`
+                        : group
+                    }
+                    className="mt-3"
+                  >
+                    <h3 className="m-0 flex items-center gap-1.5 px-2 pb-1 text-control font-semibold text-muted">
+                      {group}
+                      {group === 'Workspace' && workspaceName !== '' ? (
+                        <span className="min-w-0 truncate rounded-sm bg-hover px-1.5 font-medium text-strong">
+                          {workspaceName}
+                        </span>
+                      ) : null}
+                    </h3>
+                    <ul className="m-0 list-none p-0">
+                      {pages
+                        .filter((page) => page.group === group)
+                        .map((page) => {
+                          const current =
+                            !listLevel && activePage?.path === page.path;
+                          const desktopCurrent = activePage?.path === page.path;
+                          return (
+                            <li key={page.path}>
+                              <button
+                                type="button"
+                                data-settings-page={page.path}
+                                className={rowClassName({
+                                  current: desktopCurrent,
+                                  className: 'w-full text-left',
+                                })}
+                                aria-current={current ? 'page' : undefined}
+                                onClick={() => {
+                                  onChoose(page.path);
+                                }}
+                              >
+                                <span
+                                  className="inline-flex shrink-0 items-center"
+                                  aria-hidden="true"
+                                >
+                                  {pageIcons[page.path]}
+                                </span>
+                                <span className="min-w-0 flex-1 truncate">
+                                  {page.title}
+                                </span>
+                                <span
+                                  className="inline-flex shrink-0 items-center text-muted lg:hidden"
+                                  aria-hidden="true"
+                                >
+                                  <ChevronRightIcon />
+                                </span>
+                              </button>
+                            </li>
+                          );
+                        })}
+                    </ul>
+                  </section>
+                ))}
+              </nav>
             </div>
-            <nav ref={settingsList} aria-label="Settings sections">
-              {settingsPageGroups.map((group) => (
-                <section
-                  key={group}
-                  aria-label={
-                    group === 'Workspace' && workspaceName !== ''
-                      ? `Workspace ${workspaceName}`
-                      : group
-                  }
-                  className="mt-3"
+            {account.installationRole === 'administrator' ? (
+              <div className="border-t border-edge-subtle p-3">
+                <Link
+                  className={rowClassName({ className: 'w-full' })}
+                  to={`/w/${workspaceId}/accounts`}
                 >
-                  <h3 className="m-0 flex items-center gap-1.5 px-2 pb-1 text-control font-semibold text-muted">
-                    {group}
-                    {group === 'Workspace' && workspaceName !== '' ? (
-                      <span className="min-w-0 truncate rounded-sm bg-hover px-1.5 font-medium text-strong">
-                        {workspaceName}
-                      </span>
-                    ) : null}
-                  </h3>
-                  <ul className="m-0 list-none p-0">
-                    {pages
-                      .filter((page) => page.group === group)
-                      .map((page) => {
-                        const current =
-                          !listLevel && activePage?.path === page.path;
-                        const desktopCurrent = activePage?.path === page.path;
-                        return (
-                          <li key={page.path}>
-                            <button
-                              type="button"
-                              data-settings-page={page.path}
-                              className={rowClassName({
-                                current: desktopCurrent,
-                                className: 'w-full text-left',
-                              })}
-                              aria-current={current ? 'page' : undefined}
-                              onClick={() => {
-                                onChoose(page.path);
-                              }}
-                            >
-                              <span
-                                className="inline-flex shrink-0 items-center"
-                                aria-hidden="true"
-                              >
-                                {pageIcons[page.path]}
-                              </span>
-                              <span className="min-w-0 flex-1 truncate">
-                                {page.title}
-                              </span>
-                              <span
-                                className="inline-flex shrink-0 items-center text-muted lg:hidden"
-                                aria-hidden="true"
-                              >
-                                <ChevronRightIcon />
-                              </span>
-                            </button>
-                          </li>
-                        );
-                      })}
-                  </ul>
-                </section>
-              ))}
-            </nav>
+                  <span className="inline-flex items-center" aria-hidden="true">
+                    <UsersIcon />
+                  </span>
+                  <span className="min-w-0 flex-1">Manage accounts</span>
+                  <span
+                    className="inline-flex items-center text-muted"
+                    aria-hidden="true"
+                  >
+                    <ExternalLinkIcon />
+                  </span>
+                </Link>
+              </div>
+            ) : null}
           </div>
-          {account.installationRole === 'administrator' ? (
-            <div className="border-t border-edge-subtle p-3">
-              <Link
-                className={rowClassName({ className: 'w-full' })}
-                to={`/w/${workspaceId}/accounts`}
-              >
-                <span className="inline-flex items-center" aria-hidden="true">
-                  <UsersIcon />
-                </span>
-                <span className="min-w-0 flex-1">Manage accounts</span>
-                <span
-                  className="inline-flex items-center text-muted"
-                  aria-hidden="true"
+          <section
+            aria-labelledby={pageTitleId}
+            className={`${listLevel ? 'hidden' : 'flex'} min-h-0 min-w-0 flex-1 flex-col lg:flex`}
+          >
+            <div className="flex items-start gap-cluster px-3 pt-3 lg:px-5 lg:pt-4">
+              <Button
+                className="lg:hidden"
+                variant="ghost"
+                icon={<ChevronLeftIcon />}
+                label="Back to Settings"
+                onClick={() => {
+                  onChoose('');
+                }}
+              />
+              <div className="min-w-0 flex-1 pt-2 lg:pt-1">
+                <h2
+                  id={pageTitleId}
+                  className="m-0 text-xl font-semibold tracking-heading text-strong max-lg:text-center max-lg:text-base"
                 >
-                  <ExternalLinkIcon />
-                </span>
-              </Link>
+                  {activePage?.title ?? settingsTitle}
+                </h2>
+                {scope === undefined ? null : (
+                  <p className="mb-0 mt-1 text-control text-muted max-lg:hidden">
+                    {scope}
+                  </p>
+                )}
+              </div>
+              <Button
+                variant="ghost"
+                icon={<CloseIcon />}
+                label="Close Settings"
+                onClick={onClose}
+              />
             </div>
-          ) : null}
-        </div>
-        <section
-          aria-labelledby={pageTitleId}
-          className={`${listLevel ? 'hidden' : 'flex'} min-h-0 min-w-0 flex-1 flex-col lg:flex`}
-        >
-          <div className="flex items-start gap-cluster px-3 pt-3 lg:px-5 lg:pt-4">
-            <Button
-              className="lg:hidden"
-              variant="ghost"
-              icon={<ChevronLeftIcon />}
-              label="Back to Settings"
-              onClick={() => {
-                onChoose('');
-              }}
-            />
-            <div className="min-w-0 flex-1 pt-2 lg:pt-1">
-              <h2
-                id={pageTitleId}
-                className="m-0 text-xl font-semibold tracking-heading text-strong max-lg:text-center max-lg:text-base"
-              >
-                {activePage?.title ?? settingsTitle}
-              </h2>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-gutter pb-5 pt-3 lg:px-5">
               {scope === undefined ? null : (
-                <p className="mb-0 mt-1 text-control text-muted max-lg:hidden">
+                <p className="mb-3 mt-0 text-control text-muted lg:hidden">
                   {scope}
                 </p>
               )}
+              <div ref={setActionTarget} hidden={activeAction === null} />
+              <div hidden={activeAction !== null} inert={activeAction !== null}>
+                <SettingsTopicContext.Provider
+                  value={{ hiddenTitles, helpSection: null }}
+                >
+                  {activePage?.sections.map((key) => (
+                    <div key={key}>{sectionBodies[key]}</div>
+                  ))}
+                </SettingsTopicContext.Provider>
+              </div>
             </div>
-            <Button
-              variant="ghost"
-              icon={<CloseIcon />}
-              label="Close Settings"
-              onClick={onClose}
-            />
-          </div>
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-gutter pb-5 pt-3 lg:px-5">
-            {scope === undefined ? null : (
-              <p className="mb-3 mt-0 text-control text-muted lg:hidden">
-                {scope}
-              </p>
-            )}
-            <SettingsTopicContext.Provider
-              value={{ hiddenTitles, helpSection: null }}
-            >
-              {activePage?.sections.map((key) => (
-                <div key={key}>{sectionBodies[key]}</div>
-              ))}
-            </SettingsTopicContext.Provider>
-          </div>
-        </section>
-      </div>
-      {removing ? (
-        <RemoveOwnAccountDialog
-          store={store.store}
-          accountId={account.accountId}
-          onClose={() => {
-            setRemoving(false);
-          }}
-          onRemoved={() => {
-            session.refresh();
-          }}
-        />
-      ) : null}
+          </section>
+        </div>
+        {removing ? (
+          <RemoveOwnAccountDialog
+            store={store.store}
+            accountId={account.accountId}
+            onClose={() => {
+              setRemoving(false);
+            }}
+            onRemoved={() => {
+              session.refresh();
+            }}
+          />
+        ) : null}
+      </SettingsActionContext.Provider>
     </Dialog>
   );
 }
