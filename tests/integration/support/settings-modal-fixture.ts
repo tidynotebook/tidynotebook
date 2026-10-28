@@ -27,7 +27,7 @@ const account = {
   accountPortal: false,
   mcpAuthorization: false,
   installationRole: 'member',
-  storage: { usedBytes: 12 * 1024 ** 2, limitBytes: 5 * 1024 ** 3 },
+  storage: { usedBytes: 12_000_000, limitBytes: 5_000_000_000 },
   month: {
     endsAt: '2026-11-01T00:00:00.000Z',
     downloadsPaused: false,
