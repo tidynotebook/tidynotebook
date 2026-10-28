@@ -219,6 +219,7 @@ export function TextField({
   placeholder,
   required,
   autoFocus,
+  reserveErrorSpace = false,
 }: {
   readonly id: string;
   readonly label: string;
@@ -232,6 +233,8 @@ export function TextField({
   readonly placeholder?: string | undefined;
   readonly required?: boolean | undefined;
   readonly autoFocus?: boolean | undefined;
+  /** Keeps a blank error line so validation does not move the next control. */
+  readonly reserveErrorSpace?: boolean | undefined;
 }): ReactNode {
   const errorId = `${id}-error`;
   const hintId = `${id}-hint`;
@@ -265,9 +268,14 @@ export function TextField({
           {hint}
         </p>
       ) : null}
-      {hasError ? (
-        <p className="mt-1 text-control text-danger" id={errorId} role="alert">
-          {error}
+      {hasError || reserveErrorSpace ? (
+        <p
+          className={`mt-1 text-control text-danger ${reserveErrorSpace ? 'mb-0 min-h-5' : ''}`}
+          id={errorId}
+          role={hasError ? 'alert' : undefined}
+          aria-hidden={hasError ? undefined : true}
+        >
+          {hasError ? error : null}
         </p>
       ) : null}
     </div>

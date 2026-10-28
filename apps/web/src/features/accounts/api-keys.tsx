@@ -222,10 +222,14 @@ function CreateKeyDialog({
               id="api-key-name"
               label="Program name"
               value={name}
-              onChange={setName}
+              onChange={(value) => {
+                setName(value);
+                setError('');
+              }}
               required
               autoFocus
               error={error}
+              reserveErrorSpace
             />
             <SelectField
               id="api-key-expiry"

@@ -87,7 +87,11 @@ export function RemoveOwnAccountDialog({
             required
             autoFocus
             error={error}
-            onChange={setPassword}
+            reserveErrorSpace
+            onChange={(value) => {
+              setPassword(value);
+              setError('');
+            }}
           />
         </DialogBody>
         <DialogFooter>
