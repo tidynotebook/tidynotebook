@@ -538,11 +538,10 @@ await test('API key create, validation, secret and revoke use one Settings frame
   const name = container.querySelector<HTMLInputElement>('#api-key-name');
   assert.ok(name);
   await act(async () => {
-    const setter = Object.getOwnPropertyDescriptor(
+    Object.getOwnPropertyDescriptor(
       window.HTMLInputElement.prototype,
       'value',
-    )?.set;
-    setter?.call(name, 'Review client');
+    )?.set?.call(name, 'Review client');
     name.dispatchEvent(new window.Event('input', { bubbles: true }));
   });
   refuseApiKeyCreation(true);
