@@ -195,7 +195,6 @@ import { initialOf } from '../lib/initial.ts';
 import { workspaceAfterRemoval } from '../lib/workspace-choice.ts';
 import {
   knownFolderPaths,
-  folderForRoute,
   selectedFolderOrRoot,
   selectionForOpenNote,
 } from '../lib/folder-selection.ts';
@@ -677,10 +676,7 @@ function Sidebar({
                       selectedFolder={selectedFolder}
                       folders={folders}
                       drag={drag}
-                      onSelectFolder={(folder) => {
-                        openFolder(folder);
-                        onSelectFolder(folder);
-                      }}
+                      onSelectFolder={onSelectFolder}
                       onNavigate={onNavigate}
                       onNewNoteIn={onNewNoteIn}
                       onNewFolderIn={onNewFolderIn}
@@ -1069,9 +1065,10 @@ function ShellFrame({
   useEffect(() => {
     setTemplateDestination(null);
   }, [workspaceId]);
-  const [chosenFolder, setSelectedFolder] = useState('');
-  const selectedFolder =
-    folderForRoute(workspaceId, location.pathname, params['*']) ?? chosenFolder;
+  const [selectedFolder, setSelectedFolder] = useState('');
+  useEffect(() => {
+    setSelectedFolder('');
+  }, [workspaceId]);
   const framePage = framePageOf(matches.map((match) => match.handle));
   const sidebar = useSidebarSize();
   const displayedSidebar = sidebar.size;
@@ -1703,15 +1700,7 @@ function ShellFrame({
                 folders={folders}
                 knownFolders={allFolders}
                 newNoteProblem={newNote.error}
-                onSelectFolder={(folder) => {
-                  setSelectedFolder(folder);
-                  if (folder !== '') {
-                    void navigate(
-                      `/w/${workspaceId}/folders/${folder.split('/').map(encodeURIComponent).join('/')}`,
-                    );
-                    setDrawerOpen(false);
-                  }
-                }}
+                onSelectFolder={setSelectedFolder}
                 onNavigate={() => setDrawerOpen(false)}
                 onNewFolderIn={(folder) => setNewFolderParent(folder)}
                 onPublish={setPublishScope}
@@ -1882,9 +1871,7 @@ function ShellFrame({
               for (const above of ancestorFolders(folder))
                 folders.openFolder(above);
               setSelectedFolder(folder);
-              void navigate(
-                `/w/${workspaceId}/folders/${folder.split('/').map(encodeURIComponent).join('/')}`,
-              );
+              folders.openFolder(folder);
             }}
           />
           {publishScope === null ? null : (

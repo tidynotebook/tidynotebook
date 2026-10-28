@@ -6,7 +6,7 @@ export function setDirectNote(value: boolean): void {
   directNote = value;
 }
 
-/** Context boundaries for the real folder page layout. */
+/** Context boundaries for the complete note list. */
 export function useFiles() {
   return {
     notes: [
@@ -51,8 +51,4 @@ export function useDocumentTitle() {}
 /** Render a placeholder Use template button. */
 export function NewFromTemplate() {
   return createElement('button', null, 'Use template');
-}
-/** Render a placeholder folder actions button. */
-export function FolderPageActions() {
-  return createElement('button', null, 'Folder actions');
 }

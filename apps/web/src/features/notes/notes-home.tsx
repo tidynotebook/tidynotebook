@@ -37,7 +37,6 @@ import {
   Button,
   EmptyState,
   FileTextIcon,
-  FolderIcon,
   LoadingState,
   Notice,
   Page,
@@ -51,7 +50,6 @@ import { useLocalStore, useSession } from '../../app.tsx';
 import { useDocumentTitle } from '../../shell/document-title.ts';
 import { useNow } from '../../shell/now.ts';
 import { useFiles } from '../../shell/files.tsx';
-import { FolderPageActions } from '../folders/folder-page-actions.tsx';
 import { NewFromTemplate } from '../templates/new-from-template.tsx';
 import { useCreateNote } from './new-note.tsx';
 import { groupNotesByRecency } from '../../lib/note-groups.ts';
@@ -62,8 +60,6 @@ import {
 import { noteRowMeta } from '../../lib/note-row.ts';
 import { showNewNoteInHeader } from '../../lib/notes-home-action.ts';
 import type { NoteSummary } from '../../lib/note-list.ts';
-import { folderOf } from '../../lib/note-name.ts';
-import { knownFolderPaths } from '../../lib/folder-selection.ts';
 import { pinnedIndex } from '../../lib/row-window.ts';
 import { scrollerOf, useRowWindow } from '../../shell/row-window.ts';
 
@@ -204,49 +200,26 @@ export function NotesHomeView(): ReactNode {
   const store = useLocalStore();
   const accountId = session.account?.accountId ?? null;
   const newNote = useCreateNote(store.store, accountId, workspaceId);
-  const folder = params['*'] ?? '';
-  useDocumentTitle(folder === '' ? 'All notes' : folder);
-  const listedNotes = useMemo(
-    () =>
-      folder === ''
-        ? files.notes
-        : files.notes.filter((note) => folderOf(note.path) === folder),
-    [files.notes, folder],
-  );
-  const subfolders = useMemo(
-    () =>
-      folder === ''
-        ? []
-        : knownFolderPaths(
-            files.notes.map((note) => note.path),
-            files.emptyFolders,
-          ).filter((path) => folderOf(path) === folder),
-    [files.notes, files.emptyFolders, folder],
-  );
-
+  useDocumentTitle('All notes');
   const now = useNow();
   const groups = useMemo(
-    () => groupNotesByRecency(listedNotes, now),
-    [listedNotes, now],
+    () => groupNotesByRecency(files.notes, now),
+    [files.notes, now],
   );
-  const total = listedNotes.length;
+  const total = files.notes.length;
   const actions = (
     <div className="flex flex-wrap items-center justify-center gap-2 lg:flex-row-reverse">
       <Button
         icon={<PlusIcon />}
         disabled={store.store === null}
-        onClick={() => newNote.create(folder)}
+        onClick={() => newNote.create('')}
       >
         New note
       </Button>
-      <NewFromTemplate
-        key={workspaceId}
-        workspaceId={workspaceId}
-        folder={folder}
-      />
+      <NewFromTemplate key={workspaceId} workspaceId={workspaceId} folder="" />
     </div>
   );
-  const keepOffset = useKeptOffset(`${workspaceId}:${folder}`, !files.loading);
+  const keepOffset = useKeptOffset(workspaceId, !files.loading);
 
   return (
     <Page
@@ -256,65 +229,26 @@ export function NotesHomeView(): ReactNode {
     >
       <div ref={keepOffset}>
         <PageHeader
-          title={folder === '' ? 'All notes' : folder}
+          title="All notes"
           description={
             files.loading || total === 0
               ? undefined
-              : `${subfolders.length === 0 ? '' : `${String(subfolders.length)} ${subfolders.length === 1 ? 'folder' : 'folders'}, `}${String(total)} ${total === 1 ? 'note' : 'notes'}`
+              : `${String(total)} ${total === 1 ? 'note' : 'notes'}`
           }
-          actions={
-            <div className="flex flex-wrap items-center gap-2">
-              {showNewNoteInHeader(files.loading, total + subfolders.length)
-                ? actions
-                : null}
-              {folder === '' || files.loading ? null : (
-                <FolderPageActions
-                  key={`${workspaceId}:${folder}`}
-                  workspaceId={workspaceId}
-                  folder={folder}
-                />
-              )}
-            </div>
-          }
+          actions={showNewNoteInHeader(files.loading, total) ? actions : null}
         />
         {newNote.error === null ? null : (
           <Notice className="mb-4" tone="problem" message={newNote.error} />
         )}
-        {subfolders.length === 0 ? null : (
-          <section aria-label="Folders">
-            <h2 className={groupLabelClassName}>Folders</h2>
-            <ul className={pageListClassName()}>
-              {subfolders.map((path) => (
-                <li key={path}>
-                  <Link
-                    to={`/w/${workspaceId}/folders/${path.split('/').map(encodeURIComponent).join('/')}`}
-                    className={rowClassName()}
-                  >
-                    <FolderIcon />
-                    <span className="truncate">
-                      {path.slice(folder.length + 1)}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
         {files.loading ? (
           <LoadingState shape="list" rows={6} label="Your notes are loading." />
         ) : total === 0 ? (
-          subfolders.length > 0 ? null : (
-            <EmptyState
-              icon={<FileTextIcon size={20} />}
-              title={folder === '' ? 'No notes yet' : 'This folder is empty'}
-              description={
-                folder === ''
-                  ? 'Write your first note.'
-                  : `New notes here go in ${folder}.`
-              }
-              action={actions}
-            />
-          )
+          <EmptyState
+            icon={<FileTextIcon size={20} />}
+            title="No notes yet"
+            description="Write your first note."
+            action={actions}
+          />
         ) : (
           <div>
             {groups.map((group) => (

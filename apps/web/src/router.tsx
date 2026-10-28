@@ -49,6 +49,9 @@ const NoteView = lazy(async () => ({
 const NotesHomeView = lazy(async () => ({
   default: (await loadNotesHome()).NotesHomeView,
 }));
+const LegacyFolderRedirect = lazy(
+  () => import('./features/folders/legacy-folder-redirect.tsx'),
+);
 /** An old Settings address opens the Settings modal (issue 517). */
 // The frame loads it, so it shares the address helpers of the frame chunk.
 const LegacySettingsRedirect = lazy(async () => ({
@@ -196,7 +199,7 @@ const routes: RouteObject[] = [
                 },
                 {
                   path: 'folders/*',
-                  element: deferred(<NotesHomeView />),
+                  element: deferred(<LegacyFolderRedirect />),
                   handle: page('notes'),
                 },
                 {

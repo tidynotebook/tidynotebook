@@ -22,7 +22,6 @@ const boundaries = new Set([
   '../../shell/document-title.js',
   '../templates/new-from-template.js',
   './new-note.js',
-  '../folders/folder-page-actions.js',
 ]);
 const hooks = registerHooks({
   resolve(specifier, context, next) {
@@ -39,55 +38,37 @@ const { NotesHomeView } =
 
 after(() => hooks.deregister());
 
-await test('a folder with only subfolders keeps its creation actions', () => {
-  const html = renderToStaticMarkup(
-    createElement(
-      MemoryRouter,
-      {
-        initialEntries: ['/w/work/folders/Projects'],
-      },
-      createElement(
-        Routes,
-        null,
-        createElement(Route, {
-          path: '/w/:workspaceId/folders/*',
-          element: createElement(NotesHomeView),
-        }),
-      ),
-    ),
-  );
-  assert.match(html, /Archive/);
-  assert.match(html, /New note/);
-  assert.match(html, /Use template/);
-  assert.match(html, /Folder actions/);
-});
-
-await test('folder counts use the singular label', () => {
+await test('All notes lists notes from every folder without a folder section', () => {
   setDirectNote(true);
   try {
     const html = renderToStaticMarkup(
       createElement(
         MemoryRouter,
-        {
-          initialEntries: ['/w/work/folders/Projects'],
-        },
+        { initialEntries: ['/w/work'] },
         createElement(
           Routes,
           null,
           createElement(Route, {
-            path: '/w/:workspaceId/folders/*',
+            path: '/w/:workspaceId',
             element: createElement(NotesHomeView),
           }),
         ),
       ),
     );
-    assert.match(html, /1 folder, 1 note/);
+    assert.match(html, /All notes/);
+    assert.match(html, /2 notes/);
+    assert.match(html, /nested-note/);
+    assert.match(html, /direct-note/);
+    assert.match(html, /New note/);
+    assert.match(html, /Use template/);
+    assert.doesNotMatch(html, /aria-label="Folders"/);
+    assert.doesNotMatch(html, /Folder actions/);
   } finally {
     setDirectNote(false);
   }
 });
 
-await test('root and folder routes restore separate offsets and reset new destinations', async () => {
+await test('workspace lists restore their own offsets and old folder links replace the address', async () => {
   const browser = new Window({ url: 'http://localhost/' });
   const names = [
     'window',
@@ -127,15 +108,17 @@ await test('root and folder routes restore separate offsets and reset new destin
   box.style.overflowY = 'auto';
   document.body.append(box);
   const root = createRoot(box);
+  const { default: LegacyFolderRedirect } =
+    await import('../../apps/web/dist/features/folders/legacy-folder-redirect.js');
   const router = createMemoryRouter(
     [
       { path: '/w/:workspaceId', element: createElement(NotesHomeView) },
       {
         path: '/w/:workspaceId/folders/*',
-        element: createElement(NotesHomeView),
+        element: createElement(LegacyFolderRedirect),
       },
     ],
-    { initialEntries: ['/w/scroll/folders/Projects'] },
+    { initialEntries: ['/w/scroll'] },
   );
   /** Navigate the mounted router to a path. */
   const open = async (path: string): Promise<void> => {
@@ -155,18 +138,22 @@ await test('root and folder routes restore separate offsets and reset new destin
       root.render(createElement(RouterProvider, { router })),
     );
     await scroll(64);
-    await open('/w/scroll/folders/Projects/Archive');
+    await open('/w/another');
     assert.equal(box.scrollTop, 0);
     await scroll(24);
-    await open('/w/scroll/folders/Projects');
-    assert.equal(box.scrollTop, 64);
     await open('/w/scroll');
-    assert.equal(box.scrollTop, 0);
-    await scroll(120);
-    await open('/w/scroll/folders/Projects/Archive');
+    assert.equal(box.scrollTop, 64);
+    await open('/w/another');
     assert.equal(box.scrollTop, 24);
-    await open('/w/another/folders/Projects');
-    assert.equal(box.scrollTop, 0);
+    await open('/w/scroll/folders/Projects/Archive?settings=templates#kept');
+    assert.equal(router.state.location.pathname, '/w/scroll');
+    assert.equal(router.state.location.search, '?settings=templates');
+    assert.equal(router.state.location.hash, '#kept');
+    assert.equal(router.state.historyAction, 'REPLACE');
+    assert.equal(box.scrollTop, 64);
+    await act(async () => router.navigate(-1));
+    assert.equal(router.state.location.pathname, '/w/another');
+    assert.equal(box.scrollTop, 24);
   } finally {
     await act(async () => root.unmount());
     router.dispose();

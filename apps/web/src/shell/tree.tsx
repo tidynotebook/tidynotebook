@@ -135,7 +135,7 @@ export type NoteTreeProps = {
   readonly selectedFolder: string;
   readonly folders: OpenFoldersControl;
   readonly drag: TreeDrag;
-  /** Makes a folder the create parent and opens it. */
+  /** Makes a folder the create parent without changing the open page. */
   readonly onSelectFolder: (folder: string) => void;
   /** Runs after a row opens a screen, which closes the drawer on a phone. */
   readonly onNavigate: () => void;
@@ -779,6 +779,7 @@ export function NoteTree({
       case 'select-folder':
         setSelection(emptySelection);
         onSelectFolder(action.path);
+        toggleFolder(action.path);
         return;
       case 'toggle-select':
         setSelection((now) => toggleRow(now, action.key));
@@ -878,6 +879,7 @@ export function NoteTree({
                 setFocusKey(row.key);
                 if (row.kind === 'folder') {
                   onSelectFolder(row.path);
+                  toggleFolder(row.path);
                   return;
                 }
                 onNavigate();
