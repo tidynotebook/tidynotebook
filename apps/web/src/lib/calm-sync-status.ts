@@ -39,9 +39,9 @@ export type CalmSyncFacts = {
 /**
  * What the footer shows: one line and its dot.
  *
- * A quiet line always takes the muted `pending` dot, so a change between
- * saved and waiting is a change of words alone and never a flash of colour.
- * A problem keeps the dot of its state.
+ * All changes saved keeps the green `saved` dot during the grace period.
+ * Waiting and offline lines use the muted `pending` dot. A problem keeps
+ * the dot of its state.
  */
 export type CalmSyncView = {
   readonly line: string;
@@ -78,7 +78,7 @@ export function calmSyncView(
     return { line: offlineLine, dot: 'pending' };
   if (syncWorkPending(facts) && waitedLong)
     return { line: waitingLine, dot: 'pending' };
-  return { line: syncedLine, dot: 'pending' };
+  return { line: syncedLine, dot: 'saved' };
 }
 
 /**

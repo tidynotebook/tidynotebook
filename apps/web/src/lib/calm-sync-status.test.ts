@@ -65,7 +65,7 @@ await test('rapid typing changes nothing within the grace period', (t) => {
   tick(500);
   tracker.update(synced);
   assert.deepEqual(seen, []);
-  assert.deepEqual(tracker.view(), { line: syncedLine, dot: 'pending' });
+  assert.deepEqual(tracker.view(), { line: syncedLine, dot: 'saved' });
   tracker.dispose();
 });
 
@@ -86,7 +86,7 @@ await test('a long wait for the server shows Waiting to upload', (t) => {
   tracker.update(synced);
   assert.deepEqual(seen, [
     { line: waitingLine, dot: 'pending' },
-    { line: syncedLine, dot: 'pending' },
+    { line: syncedLine, dot: 'saved' },
   ]);
   tracker.dispose();
 });
@@ -129,15 +129,26 @@ await test('a failure shows its problem line at once', (t) => {
   tracker.dispose();
 });
 
-await test('a quiet line never changes the colour of its dot', () => {
-  for (const facts of [
-    synced,
-    keystroke,
-    onDevice,
-    { ...onDevice, online: false },
-  ] satisfies CalmSyncFacts[])
-    for (const waitedLong of [false, true])
-      assert.equal(calmSyncView(facts, waitedLong).dot, 'pending');
+await test('the saved line stays green while waiting and offline lines stay muted', () => {
+  for (const facts of [synced, keystroke, onDevice])
+    assert.deepEqual(calmSyncView(facts, false), {
+      line: syncedLine,
+      dot: 'saved',
+    });
+  assert.deepEqual(calmSyncView(synced, true), {
+    line: syncedLine,
+    dot: 'saved',
+  });
+  for (const facts of [keystroke, onDevice])
+    assert.deepEqual(calmSyncView(facts, true), {
+      line: waitingLine,
+      dot: 'pending',
+    });
+  for (const waitedLong of [false, true])
+    assert.deepEqual(calmSyncView({ ...onDevice, online: false }, waitedLong), {
+      line: offlineLine,
+      dot: 'pending',
+    });
 });
 
 await test('a paused sync keeps the dot of its state', () => {
