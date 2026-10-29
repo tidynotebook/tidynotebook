@@ -275,7 +275,8 @@ try {
               e.matches('button,[role="menuitem"]') &&
               !e.classList.contains('ui-sidebar-status') &&
               b.height <
-                (e.closest('.ui-sidebar-row')
+                (e.closest('.ui-sidebar-row') ||
+                e.classList.contains('ui-sidebar-switcher')
                   ? 35.5
                   : e.classList.contains('ui-sidebar-action')
                     ? 39.5
