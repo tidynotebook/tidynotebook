@@ -41,7 +41,7 @@ export function followPhoneSheetDrag(
   const scrolling = () => {
     if (stopped) return;
     const action =
-      !focused() && atTop() ? 'pan-x pan-up pinch-zoom' : 'pan-y pinch-zoom';
+      !focused() && atTop() ? 'pan-x pan-down pinch-zoom' : 'pan-y pinch-zoom';
     for (const e of scrollers()) {
       if (!prior.has(e)) prior.set(e, e.style.touchAction);
       e.style.touchAction = action;

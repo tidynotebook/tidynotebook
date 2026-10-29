@@ -150,7 +150,7 @@ try {
             await pause(60);
           }
           assert.ok(
-            (await measure()).y > 0,
+            (await measure()).y >= 45,
             'A downward body drag at the top must move the sheet',
           );
           await pause(130);

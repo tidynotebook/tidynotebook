@@ -148,9 +148,7 @@ export function Dialog({
   const opener = useMemo(() => {
     const active =
       typeof document === 'undefined' ? null : document.activeElement;
-    return open && active !== null && active instanceof HTMLElement
-      ? active
-      : null;
+    return open && active && active instanceof HTMLElement ? active : null;
   }, [open]);
   // The latest close handler, which the effect below reads when a key or a
   // pointer asks for it. A screen passes a new function on every render, and
