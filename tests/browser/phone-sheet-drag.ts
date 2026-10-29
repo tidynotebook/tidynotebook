@@ -198,6 +198,23 @@ try {
             .evaluate((e) => e.scrollTop);
           assert.ok(after < before);
           results.push(`${kind} ${reduced}: scrolled body owns scrolling`);
+          const header = await p.locator('.ui-settings-heading').boundingBox();
+          assert.ok(header);
+          await touch('touchStart', 195, header.y + 26);
+          await pause(20);
+          for (let i = 1; i <= 4; i++) {
+            await touch('touchMove', 195, header.y + 26 + i * 12);
+            await pause(60);
+          }
+          assert.ok(
+            (await measure()).y > 0,
+            'The header must drag even when the body is scrolled',
+          );
+          await pause(130);
+          await touch('touchEnd', 195, header.y + 74);
+          await pause(280);
+          assert.equal((await measure()).y, 0);
+          results.push(`${kind} ${reduced}: header drags above scrolled body`);
         }
         await c.close();
       }
