@@ -551,7 +551,7 @@
       margin-top: 16px;
     }
     .phone-sheet .ui-settings-content .ui-group-heading,
-    .phone-sheet .ui-settings-list .ui-group-heading {
+    .phone-sheet .ui-settings-navigation .ui-settings-list .ui-group-heading {
       padding: 0 16px;
       margin-bottom: var(--ui-settings-heading-gap);
       border: 0;
@@ -567,7 +567,7 @@
       border-radius: var(--ui-settings-card-radius);
       background: var(--color-card-raised);
     }
-    .phone-sheet .ui-settings-list {
+    .phone-sheet .ui-settings-navigation .ui-settings-list {
       padding-inline: 16px;
     }
     .phone-sheet .ui-settings-list .ui-account-card {

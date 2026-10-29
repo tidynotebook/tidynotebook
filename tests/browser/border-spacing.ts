@@ -146,6 +146,28 @@ export async function auditBorderSpacing(page: Page) {
           report(e, e.getBoundingClientRect(), true);
       }
     if (matchMedia('(pointer: coarse) and (max-width: 1023px)').matches) {
+      for (const card of document.querySelectorAll(
+        '.ui-settings-list .ui-settings-card,.ui-settings-content .ui-settings-card',
+      )) {
+        if (
+          !visible(card) ||
+          ['transparent', 'rgba(0, 0, 0, 0)'].includes(
+            getComputedStyle(card).backgroundColor,
+          )
+        )
+          continue;
+        const r = card.getBoundingClientRect();
+        if (
+          Math.abs(r.left - 16) > 0.6 ||
+          Math.abs(innerWidth - r.right - 16) > 0.6
+        )
+          issues.push({
+            kind: 'phone-settings-card-inset',
+            text: card.textContent?.trim().slice(0, 60) ?? '',
+            actual: r.left,
+            expected: 16,
+          });
+      }
       for (const button of document.querySelectorAll(
         '.ui-settings-card .ui-settings-phone-row button,.ui-settings-card .ui-list-row button,.ui-settings-card button.ui-settings-phone-row,.ui-settings-list .ui-settings-card button',
       )) {
