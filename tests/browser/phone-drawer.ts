@@ -73,8 +73,82 @@ try {
         assert.equal(size.width, Math.min(width - 56, 320));
         assert.ok(width - size.width >= 56);
         results.push(`${width} ${scheme}: width and page strip`);
+        const actionRow = panel.locator('.ui-drawer-actions-row');
+        const controls = async () =>
+          actionRow.evaluate((row) =>
+            [...row.querySelectorAll('button')]
+              .filter((e) => e.checkVisibility())
+              .map((e) => ({
+                name: e.getAttribute('aria-label'),
+                x: e.getBoundingClientRect().x,
+                y: e.getBoundingClientRect().y,
+                width: e.getBoundingClientRect().width,
+                height: e.getBoundingClientRect().height,
+              })),
+          );
+        const actions = await controls();
+        assert.equal(actions.length, width === 320 ? 4 : 5);
+        for (const a of actions) {
+          assert.ok(a.width >= 44 && a.height >= 44);
+          assert.ok(
+            Math.abs(a.y - (actions[0]?.y ?? NaN)) < 0.5,
+            'Actions stay on one line',
+          );
+        }
+        results.push(`${width} ${scheme}: one action line with 44 px targets`);
+        if (width === 320) {
+          const more = panel.getByRole('button', {
+            name: 'More drawer actions',
+            exact: true,
+          });
+          await more.click();
+          assert.equal(
+            await p
+              .getByRole('menuitem')
+              .getByText(/^(Expand|Collapse) all folders$/)
+              .count(),
+            1,
+          );
+          await p.screenshot({
+            path: `.local-app/screenshots/l-drawer-more-${width}-${scheme}.png`,
+          });
+          await p
+            .getByRole('menuitem', { name: 'Sort notes', exact: true })
+            .click();
+          const sort = p.getByRole('menu', { name: 'Sort notes', exact: true });
+          await sort.waitFor();
+          assert.equal(await sort.getByRole('menuitemradio').count(), 6);
+          await p.keyboard.press('Escape');
+          assert.equal(
+            await p.evaluate(() =>
+              document.activeElement?.getAttribute('aria-label'),
+            ),
+            'More drawer actions',
+          );
+          results.push(`${width} ${scheme}: overflow menu and sort choices`);
+        }
+        if (width === 390) {
+          const container = panel.locator('.ui-drawer-actions');
+          await container.evaluate((e) => {
+            e.style.width = '216px';
+          });
+          await pause(50);
+          assert.equal((await controls()).length, 4);
+          await panel
+            .getByRole('button', { name: 'More drawer actions', exact: true })
+            .waitFor();
+          await container.evaluate((e) => {
+            e.style.width = '';
+          });
+          await pause(50);
+          assert.equal((await controls()).length, 5);
+          results.push(
+            `${width} ${scheme}: container width changes the actions`,
+          );
+        }
+
         await p.screenshot({
-          path: `.local-app/screenshots/k-drawer-${width}-${scheme}.png`,
+          path: `.local-app/screenshots/l-drawer-${width}-${scheme}.png`,
         });
         await cdp.send('Input.dispatchTouchEvent', {
           type: 'touchStart',

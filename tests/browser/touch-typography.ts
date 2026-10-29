@@ -299,6 +299,15 @@ try {
         await p
           .getByRole('button', { name: 'Close navigation', exact: true })
           .waitFor();
+      async function runFolderExpansion(name: string) {
+        const more = p
+          .getByRole('button', { name: 'More drawer actions', exact: true })
+          .filter({ visible: true });
+        if (await more.count()) {
+          await more.click();
+          await p.getByRole('menuitem', { name, exact: true }).click();
+        } else await p.getByRole('button', { name, exact: true }).click();
+      }
       await shot('drawer');
       if (spacing) {
         await p
@@ -312,9 +321,7 @@ try {
           .filter({ visible: true })
           .click();
       }
-      await p
-        .getByRole('button', { name: 'Expand all folders', exact: true })
-        .click();
+      await runFolderExpansion('Expand all folders');
       await p
         .getByRole('button', {
           name: 'Actions for the note Home page',
@@ -387,9 +394,7 @@ try {
         await shot('drawer-rename');
         await p.keyboard.press('Escape');
       }
-      await p
-        .getByRole('button', { name: 'Collapse all folders', exact: true })
-        .click();
+      await runFolderExpansion('Collapse all folders');
       await p.getByRole('button', { name: 'New folder', exact: true }).click();
       await p
         .getByRole('dialog', { name: 'New folder', exact: true })

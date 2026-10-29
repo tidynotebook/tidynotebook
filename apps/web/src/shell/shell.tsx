@@ -62,6 +62,7 @@ import {
   useParams,
 } from 'react-router';
 import {
+  AnchoredMenu,
   avatarClassName,
   Button,
   buttonClassName,
@@ -72,7 +73,9 @@ import {
   LoadingState,
   Menu,
   MenuIcon,
+  MoreIcon,
   type MenuItem,
+  type MenuAnchor,
   focusOutline,
   focusOutlineInset,
   Notice,
@@ -462,6 +465,15 @@ function Sidebar({
     for (const folder of ancestorFolders(openNotePath)) openFolder(folder);
   }, [openNotePath, openFolder]);
   const notesPath = `/w/${workspaceId}`;
+  const overflowActions = useRef<HTMLDivElement | null>(null);
+  const [sortAnchor, setSortAnchor] = useState<MenuAnchor | null>(null);
+  const sortItems = noteOrders.map((order) => ({
+    id: order,
+    ...noteOrderLabel(order),
+    selected: order === noteOrder.order,
+    onSelect: () => noteOrder.setOrder(order),
+  }));
+  const expand = () => setOpenFolders(expandedFolders(expansion, knownFolders));
 
   return (
     <>
@@ -496,8 +508,8 @@ function Sidebar({
         is a compact ghost control with a name and a title, so the row stays
         quiet and every action stays in the tab order.
       */}
-            <div className="px-2 pt-1">
-              <div className="flex flex-wrap items-center gap-1">
+            <div className="ui-drawer-actions px-2 pt-1">
+              <div className="ui-drawer-actions-row flex items-center gap-1">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -529,32 +541,72 @@ function Sidebar({
                   icon={actionIcon('template')}
                   onClick={() => onFromTemplate(selectedFolder)}
                 />
-                <Menu
-                  label="Sort notes"
-                  icon={actionIcon('sort')}
-                  compact
-                  align="start"
-                  items={noteOrders.map((order) => ({
-                    id: order,
-                    ...noteOrderLabel(order),
-                    selected: order === noteOrder.order,
-                    onSelect: () => noteOrder.setOrder(order),
-                  }))}
-                />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  compact
-                  label={folderExpansionLabels[expansion]}
-                  title={folderExpansionLabels[expansion]}
-                  icon={actionIcon(
-                    expansion === 'expand' ? 'expand-all' : 'collapse-all',
-                  )}
-                  disabled={knownFolders.length === 0}
-                  onClick={() =>
-                    setOpenFolders(expandedFolders(expansion, knownFolders))
-                  }
-                />
+                <div className="ui-drawer-actions-wide">
+                  <Menu
+                    label="Sort notes"
+                    icon={actionIcon('sort')}
+                    compact
+                    align="start"
+                    items={sortItems}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    compact
+                    label={folderExpansionLabels[expansion]}
+                    title={folderExpansionLabels[expansion]}
+                    icon={actionIcon(
+                      expansion === 'expand' ? 'expand-all' : 'collapse-all',
+                    )}
+                    disabled={knownFolders.length === 0}
+                    onClick={expand}
+                  />
+                </div>
+                <div ref={overflowActions} className="ui-drawer-actions-more">
+                  <Menu
+                    label="More drawer actions"
+                    icon={<MoreIcon />}
+                    compact
+                    items={[
+                      {
+                        id: 'sort',
+                        label: 'Sort notes',
+                        icon: actionIcon('sort'),
+                        onSelect: () => {
+                          const trigger =
+                            overflowActions.current?.querySelector('button');
+                          if (trigger)
+                            setSortAnchor(trigger.getBoundingClientRect());
+                        },
+                      },
+                      {
+                        id: 'expansion',
+                        label: folderExpansionLabels[expansion],
+                        icon: actionIcon(
+                          expansion === 'expand'
+                            ? 'expand-all'
+                            : 'collapse-all',
+                        ),
+                        disabled: knownFolders.length === 0,
+                        onSelect: expand,
+                      },
+                    ]}
+                  />
+                </div>
+                {sortAnchor === null ? null : (
+                  <AnchoredMenu
+                    label="Sort notes"
+                    items={sortItems}
+                    anchor={sortAnchor}
+                    onClose={(restore) => {
+                      setSortAnchor(null);
+                      if (restore)
+                        overflowActions.current
+                          ?.querySelector('button')
+                          ?.focus();
+                    }}
+                  />
+                )}
               </div>
               {newNoteProblem === null ? null : (
                 <p

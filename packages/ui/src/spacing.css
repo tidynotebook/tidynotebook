@@ -468,3 +468,25 @@
     margin-top: calc(var(--ui-section-gap) - var(--ui-form-gap));
   }
 }
+
+/* Five compact actions need five targets and four gaps in their own container. */
+@utility ui-drawer-actions {
+  container-type: inline-size;
+  container-name: drawer-actions;
+  & .ui-drawer-actions-wide {
+    display: contents;
+  }
+  & .ui-drawer-actions-more {
+    display: none;
+  }
+  @media (pointer: coarse) {
+    @container drawer-actions (width < 236px) {
+      & .ui-drawer-actions-wide {
+        display: none;
+      }
+      & .ui-drawer-actions-more {
+        display: contents;
+      }
+    }
+  }
+}
