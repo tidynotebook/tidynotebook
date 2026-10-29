@@ -58,7 +58,7 @@ try {
       const variant = `${width}-${scheme}`,
         c = await browser.newContext({
           storageState: statePath,
-          viewport: { width, height: 844 },
+          viewport: { width, height: phone ? 844 : 900 },
           hasTouch: phone,
           isMobile: phone,
           colorScheme: scheme,
@@ -658,7 +658,7 @@ try {
       }
       await c.close();
       const guest = await browser.newContext({
-        viewport: { width, height: 844 },
+        viewport: { width, height: phone ? 844 : 900 },
         hasTouch: phone,
         isMobile: phone,
         colorScheme: scheme,
