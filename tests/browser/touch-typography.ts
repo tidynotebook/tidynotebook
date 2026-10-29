@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { auditSpacing } from './spacing-audit.ts';
-import { touchTextRoles } from '../../packages/ui/src/typography.ts';
+import {
+  touchTextRoles,
+  fineTextRoles,
+} from '../../packages/ui/src/typography.ts';
 import { hasChromium, isRecord, type Page } from './browser.ts';
 const loaded: unknown = await import(
   pathToFileURL(
@@ -164,9 +167,10 @@ try {
         );
       async function shot(name: string) {
         await settle();
-        const typography = phone
-          ? await auditText(p, touchTextRoles)
-          : { problems: [], combinations: {} };
+        const typography = await auditText(
+          p,
+          phone ? touchTextRoles : fineTextRoles,
+        );
         const measured = spacing ? await auditSpacing(p) : null;
         const issues = await p.evaluate((phone) => {
           const visible = (e: Element) =>
@@ -666,9 +670,9 @@ try {
         });
       if (phone)
         assert.deepEqual(sizes, {
-          field: '16px',
-          label: '16px',
-          line: '24px',
+          field: '15px',
+          label: '15px',
+          line: '22px',
           coarse: true,
         });
       await shot('manage-mail');
@@ -777,9 +781,10 @@ try {
           ),
           false,
         );
-        const typography = phone
-          ? await auditText(auth, touchTextRoles)
-          : { problems: [], combinations: {} };
+        const typography = await auditText(
+          auth,
+          phone ? touchTextRoles : fineTextRoles,
+        );
         const measured = spacing ? await auditSpacing(auth) : null;
         results.push({
           variant,
@@ -807,9 +812,10 @@ try {
         path: `.local-app/screenshots/${screenshotPrefix}-signup-error-${variant}.png`,
         animations: 'disabled',
       });
-      const typography = phone
-        ? await auditText(auth, touchTextRoles)
-        : { problems: [], combinations: {} };
+      const typography = await auditText(
+        auth,
+        phone ? touchTextRoles : fineTextRoles,
+      );
       const measured = spacing ? await auditSpacing(auth) : null;
       results.push({
         variant,
@@ -847,7 +853,10 @@ try {
 }
 
 /** Inspect real visible text, including fields, without counting clipped accessibility text. */
-async function auditText(page: Page, roles: typeof touchTextRoles) {
+async function auditText(
+  page: Page,
+  roles: Record<string, { size: number; line: number; weight: number }>,
+) {
   return page.evaluate((roles) => {
     const allowed = new Set(
       Object.values(roles).map((r) => `${r.size}/${r.line}/${r.weight}`),

@@ -78,7 +78,6 @@ export {
   editorTheme,
   editorThemeVariables,
   noteSurfaceStyle,
-  touchFieldQuery,
 } from './editor-theme.ts';
 export {
   codeLanguages,

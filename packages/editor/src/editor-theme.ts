@@ -50,7 +50,6 @@ export const editorThemeVariables: readonly string[] = [
   '--text-help',
   '--text-note-reference',
   '--text-note-definition',
-  '--text-base',
   '--text-note',
   '--text-note--line-height',
   '--container-note',
@@ -89,19 +88,6 @@ export const editorThemeVariables: readonly string[] = [
  * every note on a phone.
  */
 export const gripPointerQuery = '(hover: hover) and (pointer: fine)';
-
-/**
- * Where a field takes the touch step: a coarse pointer, which is a finger.
- *
- * Safari on iOS zooms the page into a field under 16 px on focus, so every
- * field of the product sets its text at 16 px under touch (`touchFieldText`
- * of `@notesapp/ui`). The find panel takes that class with the field recipe,
- * and the rules of the adapter that follow a finger, such as the row of the
- * completion list, read this query, which
- * `tests/integration/theme-variables.test.ts` holds to the query that
- * Tailwind writes for the class of a field.
- */
-export const touchFieldQuery = '(pointer: coarse)';
 
 /**
  * The height of the bar of a code block: one small control on a desktop, and

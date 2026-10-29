@@ -109,7 +109,6 @@ export {
   meterClassNames,
   meterFillPercent,
   rowClassName,
-  touchFieldText,
 } from './control-classes.ts';
 export { defaultIconSize, iconAttributes, iconGrid } from './icon-grid.ts';
 export type { GlyphPart } from './glyph-parts.ts';

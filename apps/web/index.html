@@ -6,6 +6,20 @@
       name="viewport"
       content="width=device-width, initial-scale=1, interactive-widget=resizes-content"
     />
+    <script>
+      // iOS Safari stops automatic field focus zoom but still allows pinch zoom.
+      // Other devices keep their viewport limits. Run before the first paint.
+      function isAppleTouchDevice(userAgent, maxTouchPoints) {
+        return (
+          /iPhone|iPad/.test(userAgent) ||
+          (/Mac/.test(userAgent) && maxTouchPoints > 1)
+        );
+      }
+      if (isAppleTouchDevice(navigator.userAgent, navigator.maxTouchPoints)) {
+        var viewport = document.querySelector('meta[name="viewport"]');
+        viewport.content += ', maximum-scale=1';
+      }
+    </script>
     <!-- The server writes the one link preview of the installation here at
          start, from its configured origin. See design 028. -->
     <!-- __NOTESAPP_LINK_PREVIEW__ -->

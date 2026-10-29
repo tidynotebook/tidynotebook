@@ -26,13 +26,13 @@
  *
  * The rules live here, outside JSX, so a unit test can read them.
  */
-import { focusOutline, touchFieldText, transitionSurface } from '@notesapp/ui';
+import { focusOutline, transitionSurface } from '@notesapp/ui';
 
 /** The text shown when the note has no name. */
 export const noteNameFieldPlaceholder = 'Note name';
 
 /** Both the input and its width span must use the same text metrics. */
-export const noteNameFieldText = `px-1 py-1 text-body ${touchFieldText}`;
+export const noteNameFieldText = `px-1 py-1 text-body`;
 
 /** The span sets the width without a character minimum or script measurement. */
 export const noteNameFieldContainer = 'relative inline-grid min-w-0 max-w-full';

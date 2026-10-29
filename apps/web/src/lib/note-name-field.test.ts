@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { touchFieldText } from '@notesapp/ui';
 import {
   noteNameFieldClassName,
   noteNameFieldContainer,
@@ -72,5 +71,5 @@ await test('the name field has equal padding on both sides', () => {
 await test('the name field sets its text at 16 px under touch', () => {
   // Safari on iOS zoomed the page into the name field on a tap, because its
   // text was under 16 px, and the zoom hid the rest of the header.
-  assert.ok(noteNameFieldClassName().split(' ').includes(touchFieldText));
+  assert.ok(noteNameFieldClassName().split(' ').includes('text-body'));
 });

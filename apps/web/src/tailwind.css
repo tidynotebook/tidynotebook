@@ -172,25 +172,15 @@
   --text-kbd--line-height: 1rem;
   --text-control: 0.8125rem;
   --text-control--line-height: 1.25rem;
-  --text-ui: 0.875rem;
-  --text-ui--line-height: 1.375rem;
-  --text-help: 0.8125rem;
-  --text-help--line-height: 1.25rem;
+  --text-ui: 0.8125rem;
+  --text-ui--line-height: 1.25rem;
+  --text-help: 0.75rem;
+  --text-help--line-height: 1rem;
   /* Titles and note annotations keep their size under either pointer. */
   --text-title: 0.875rem;
   --text-title--line-height: 1.375rem;
   --text-preview: 0.8125rem;
   --text-preview--line-height: 1.25rem;
-  /*
-   * `text-base` is the title of a card, and the text of every field under
-   * touch: Safari on iOS zooms the page into a focused field under 16 px
-   * (`touchFieldText` in `packages/ui/src/control-classes.ts`). It is the
-   * Tailwind default, stated here because the editor adapter reads it for
-   * the search field that CodeMirror builds.
-   */
-  --text-base: 1rem;
-  --text-base--line-height: 1.5;
-
   --radius-sm: 0.25rem;
   --radius-md: 0.375rem;
   --radius-lg: 0.5rem;
@@ -296,27 +286,35 @@
   --font-weight-medium: 500;
 }
 
-/* One touch scale matches the 16 px fields that prevent Safari focus zoom. */
+/* Fields share the body role. The iOS viewport rule prevents focus zoom. */
 @media (pointer: coarse) {
   :root {
-    --text-control: 1rem;
-    --text-control--line-height: 1.5rem;
-    --text-ui: 1rem;
-    --text-ui--line-height: 1.5rem;
-    --text-help: 0.875rem;
-    --text-help--line-height: 1.25rem;
+    --text-control: 0.9375rem;
+    --text-control--line-height: 1.375rem;
+    --text-ui: 0.9375rem;
+    --text-ui--line-height: 1.375rem;
+    --text-help: 0.8125rem;
+    --text-help--line-height: 1.125rem;
   }
 }
 
 /* Shared UI text roles. packages/ui/src/typography.ts names the contract. */
 @utility text-title-page {
-  font-size: 1.25rem;
-  line-height: 1.75rem;
+  font-size: 1.125rem;
+  line-height: 1.625rem;
+  @media (pointer: coarse) {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
   font-weight: 600;
 }
 @utility text-title-header {
-  font-size: 1rem;
-  line-height: 1.5rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  @media (pointer: coarse) {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
   font-weight: 600;
 }
 @utility text-body {
@@ -363,9 +361,22 @@
     line-height: var(--text-help--line-height);
   }
 }
-@utility text-preview-heading {
-  font-size: var(--text-title);
+@utility text-preview-first {
+  font-size: 0.875rem;
   line-height: 1.25rem;
+  font-weight: 600;
+  @media (pointer: coarse) {
+    font-size: 0.9375rem;
+    line-height: 1.375rem;
+  }
+}
+@utility text-preview-heading {
+  font-size: var(--text-preview);
+  line-height: var(--text-preview--line-height);
+  @media (pointer: coarse) {
+    font-size: var(--text-help);
+    line-height: var(--text-help--line-height);
+  }
   font-weight: 600;
 }
 

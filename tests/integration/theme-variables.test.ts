@@ -20,11 +20,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runInNewContext } from 'node:vm';
 import { Window } from 'happy-dom';
-import {
-  editorThemeVariables,
-  touchFieldQuery,
-  searchPanelClasses,
-} from '@notesapp/editor';
+import { editorThemeVariables, searchPanelClasses } from '@notesapp/editor';
 import {
   avatarClassName,
   badgeClassName,
@@ -49,7 +45,6 @@ import {
   themeFamilies,
   themeFileText,
   themeProperties,
-  touchFieldText,
   textRoleClasses,
   touchTextRoles,
 } from '@notesapp/ui';
@@ -180,37 +175,7 @@ await test('the named steps of the interface reach the stylesheet', () => {
   assert.match(css, /--spacing-header:\s*2\.75rem/);
 });
 
-await test('a field under touch sets its text at 16 px', async () => {
-  // The defect this covers: Safari on iOS zoomed the page into every field
-  // on a tap, because the text of each field was under 16 px. The class of a
-  // field and the panel theme of the editor state the rule under one query.
-  assert.match(css, /--text-base:\s*1rem/);
-  const touch = await buildCss([touchFieldText]);
-  const query = touchFieldQuery.replace(/[()]/g, '\\$&');
-  assert.match(
-    touch,
-    new RegExp(
-      `@media ${query}\\s*\\{\\s*\\.pointer-coarse\\\\:text-base\\s*\\{\\s*font-size:\\s*var\\(--text-base\\)`,
-    ),
-    'the editor query is the query of the class',
-  );
-  // The served stylesheet holds the rule, because the recipe is a source.
-  const assets = resolve(root, 'apps/web/dist/web/assets');
-  const served = (
-    await Promise.all(
-      (await readdir(assets))
-        .filter((name) => name.endsWith('.css'))
-        .map((name) => readFile(resolve(assets, name), 'utf8')),
-    )
-  ).join('\n');
-  assert.ok(
-    served.includes('.pointer-coarse\\:text-base{font-size:var(--text-base)'),
-    'the served rule',
-  );
-  assert.match(served, /--text-base:1rem/);
-});
-
-await test('touch form labels and fields share the computed 16 px size', async () => {
+await test('touch form labels and fields share the computed body size', async () => {
   const built = await buildCss([
     'text-label',
     'text-secondary',
@@ -241,16 +206,12 @@ await test('touch form labels and fields share the computed 16 px size', async (
           return rule[0];
         },
       );
-      const fieldRule = /\.pointer-coarse\\:text-base\s*\{([^}]+)\}/.exec(
-        built,
-      );
-      assert.ok(fieldRule?.[0]);
       const fontVariables = variables[1].match(
         /--text-(?:control|ui|help|base)(?:--line-height)?:[^;]+;/g,
       );
       assert.ok(fontVariables);
       style.textContent = `:root { ${fontVariables.join(' ')} } ${fontRules.join(' ')}
-        @media (pointer: coarse) { :root { ${scale[1]} } ${fieldRule[0]} }`;
+        @media (pointer: coarse) { :root { ${scale[1]} } }`;
       document.head.append(style);
       const form = document.createElement('form');
       const label = document.createElement('label');
@@ -267,11 +228,11 @@ await test('touch form labels and fields share the computed 16 px size', async (
       document.body.append(form);
       const labelStyle = browser.getComputedStyle(label);
       const fieldStyle = browser.getComputedStyle(field);
-      assert.equal(labelStyle.fontSize, touch ? '16px' : '13px');
-      assert.equal(fieldStyle.fontSize, touch ? '16px' : '14px');
+      assert.equal(labelStyle.fontSize, touch ? '15px' : '13px');
+      assert.equal(fieldStyle.fontSize, touch ? '15px' : '13px');
       if (touch) {
         assert.equal(labelStyle.fontSize, fieldStyle.fontSize);
-        assert.equal(labelStyle.lineHeight, '24px');
+        assert.equal(labelStyle.lineHeight, '22px');
         assert.equal(
           fieldStyle.lineHeight.endsWith('px')
             ? Number.parseFloat(fieldStyle.lineHeight)
@@ -282,7 +243,7 @@ await test('touch form labels and fields share the computed 16 px size', async (
       }
       assert.equal(
         browser.getComputedStyle(help).fontSize,
-        touch ? '14px' : '13px',
+        touch ? '13px' : '12px',
       );
       assert.equal(browser.getComputedStyle(help).lineHeight, '20px');
     } finally {

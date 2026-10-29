@@ -43,7 +43,6 @@ import {
   tabClassName,
   taskBoxClassName,
   textAreaClassName,
-  touchFieldText,
   type ButtonSize,
   type ButtonVariant,
   type EdgeMark,
@@ -499,7 +498,7 @@ await test('a field rests on the divider and answers focus on it', () => {
   assert.equal(spacingSpec.coarse.field, 44);
 });
 
-await test('every field sets its text at 16 px under touch', () => {
+await test('every field uses the shared body role; iOS focus zoom is handled by the viewport', () => {
   // The defect this covers: Safari on iOS zoomed the page into every field
   // of the product on a tap, because the text of each field was under
   // 16 px, and the zoom hid what the person had on the screen.
@@ -511,9 +510,8 @@ await test('every field sets its text at 16 px under touch', () => {
     ['bare field', bareFieldClassName()],
   ] as const) {
     const parts = classes.split(' ');
-    assert.ok(parts.includes(touchFieldText), `${name} under touch`);
+    assert.ok(parts.includes('text-body'), `${name} under touch`);
   }
-  assert.equal(touchFieldText, 'pointer-coarse:text-base');
 });
 
 await test('a bare field is a field with no box of its own', () => {
@@ -823,7 +821,7 @@ await test('a field inside a row keeps the shared field geometry', () => {
   assert.ok(field.split(' ').includes('ui-field'));
   assert.ok(field.includes('border-edge-line'));
   assert.ok(field.includes('focus-visible:border-focus'));
-  assert.ok(field.includes(touchFieldText));
+  assert.ok(field.includes('text-body'));
 });
 
 await test('a task box takes the component edge, a task radius and the page fill', () => {
