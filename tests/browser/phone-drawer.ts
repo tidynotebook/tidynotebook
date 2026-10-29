@@ -22,6 +22,7 @@ const browser = await loaded.chromium.launch(),
 try {
   for (const width of [320, 390, 430, 1440])
     for (const scheme of ['light', 'dark'] as const) {
+      process.stdout.write(`CASE ${width} ${scheme}\n`);
       const phone = width < 1024;
       const c = await browser.newContext({
         storageState: '.local-app/review-session.json',
@@ -164,18 +165,30 @@ try {
           null,
         );
         results.push(`${width} ${scheme}: strip closes`);
-        const touch = (type: string, x: number, y: number) =>
+        const touch = (
+          type: string,
+          x: number,
+          y: number,
+          timestamp?: number,
+        ) =>
           cdp.send('Input.dispatchTouchEvent', {
             type,
             touchPoints: type === 'touchEnd' ? [] : [{ x, y }],
             modifiers: 0,
+            ...(timestamp === undefined ? {} : { timestamp }),
           });
         const pull = async (distance: number, fast = false) => {
           const x = size.width - 24,
             y = 100;
-          await touch('touchStart', x, y);
+          const time = fast ? Date.now() / 1000 : undefined;
+          await touch('touchStart', x, y, time);
           for (let i = 1; i <= 4; i++) {
-            await touch('touchMove', x - (distance * i) / 4, y);
+            await touch(
+              'touchMove',
+              x - (distance * i) / 4,
+              y,
+              time === undefined ? undefined : time + i * 0.008,
+            );
             await pause(fast ? 8 : 60);
           }
           await pause(30);
@@ -187,7 +200,12 @@ try {
               path: `.local-app/screenshots/k-drawer-drag-390-${scheme}.png`,
             });
           if (!fast) await pause(130);
-          await touch('touchEnd', 0, 0);
+          await touch(
+            'touchEnd',
+            0,
+            0,
+            time === undefined ? undefined : time + 0.06,
+          );
           await pause(260);
         };
         await open();
