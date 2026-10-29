@@ -242,7 +242,7 @@ class SearchPanel implements Panel {
     }
     this.count = document.createElement('span');
     this.count.className =
-      'pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-secondary text-muted';
+      'pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 whitespace-nowrap text-secondary text-muted';
     this.count.setAttribute('aria-live', 'polite');
     this.searchField.classList.add('pr-16');
     const search = document.createElement('div');
@@ -260,7 +260,7 @@ class SearchPanel implements Panel {
       toggle.className = buttonClassName({
         variant: 'ghost',
         size: 'sm',
-        className: 'hidden lg:inline-flex aria-pressed:bg-active',
+        className: 'aria-pressed:bg-active',
       });
       toggle.title = option.label;
       toggle.setAttribute('aria-label', option.label);
@@ -269,7 +269,7 @@ class SearchPanel implements Panel {
     const replacementToggle = iconButton('Show replace', replaceParts, () =>
       this.showReplace(!this.replaceVisible),
     );
-    replacementToggle.classList.add('hidden', 'lg:inline-flex');
+
     replacementToggle.setAttribute('aria-pressed', 'false');
     const more = button('More', () => {
       more.disabled = true;
@@ -301,7 +301,6 @@ class SearchPanel implements Panel {
       variant: 'ghost',
       size: 'sm',
       iconOnly: true,
-      className: 'lg:hidden',
     });
     more.setAttribute('aria-label', 'More find options');
     more.title = 'More find options';
@@ -318,6 +317,15 @@ class SearchPanel implements Panel {
       },
     );
     previous.querySelector('svg')?.classList.add('rotate-180');
+    const desktop = document.createElement('span');
+    desktop.className = 'hidden lg:contents';
+    desktop.append(
+      ...this.toggles,
+      ...(view.state.readOnly ? [] : [replacementToggle]),
+    );
+    const phone = document.createElement('span');
+    phone.className = 'lg:hidden';
+    phone.append(more);
     const rows = [
       band(
         search,
@@ -325,9 +333,8 @@ class SearchPanel implements Panel {
         iconButton(searchPanelWords.next, chevronDownParts, () => {
           findNext(view);
         }),
-        ...this.toggles,
-        ...(view.state.readOnly ? [] : [replacementToggle]),
-        more,
+        desktop,
+        phone,
         close,
       ),
     ];

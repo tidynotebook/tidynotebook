@@ -29,6 +29,7 @@ import {
   DialogBody,
   DialogFooter,
   Menu,
+  MoreIcon,
   EmptyState,
   ListRow,
   LoadingState,
@@ -329,6 +330,7 @@ function TrashList({
           items.length === 0 ? undefined : (
             <Menu
               label="Trash actions"
+              icon={<MoreIcon />}
               items={[
                 {
                   id: 'empty',
@@ -440,6 +442,7 @@ function TrashList({
                       </Button>
                       <Menu
                         label={`Actions for ${name}`}
+                        icon={<MoreIcon />}
                         items={[
                           {
                             id: 'restore',

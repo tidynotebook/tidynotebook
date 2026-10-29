@@ -86,11 +86,8 @@ await test('a note link counts the one note it names', () => {
   assert.equal(notesInScope({ kind: 'note', fileId: 'gone' }, notes), 0);
 });
 
-await test('the password rule states that an empty field makes an open link', () => {
-  assert.equal(
-    linkPasswordRule,
-    'Leave this empty for a link that opens without a password. A password needs at least 15 characters.',
-  );
+await test('the password rule states that it is optional and gives the minimum length', () => {
+  assert.equal(linkPasswordRule, 'Optional. At least 15 characters.');
 });
 
 await test('a note link takes the name of its note and hides the suffix', () => {

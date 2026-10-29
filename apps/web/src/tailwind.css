@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @source "../../../packages/ui/src";
+@source "../../../packages/editor/src";
 /*
  * The published page of decision 0031 is a document that the server writes, and
  * it loads this one built stylesheet so that it cannot drift from the theme.

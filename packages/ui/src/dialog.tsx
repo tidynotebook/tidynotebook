@@ -277,7 +277,7 @@ export function Dialog({
   const root = `${phone && width !== 'screen' ? 'h-viewport items-end bg-scrim/40' : dialogRootClassName(width, align)} ${anchor == null ? '' : 'lg:bg-transparent'}`;
   const panel =
     phone && width !== 'screen'
-      ? `phone-sheet flex max-h-sheet w-full flex-col overflow-hidden rounded-t-xl border border-edge-subtle bg-card text-strong shadow-modal outline-none ${width === 'settings' || width === 'template' ? 'h-full max-h-full' : fillSheet ? 'h-sheet phone-sheet-fill' : ''}`
+      ? `phone-sheet flex max-h-sheet w-full flex-col overflow-hidden rounded-t-xl border border-edge-subtle bg-card text-strong shadow-modal outline-none ${width === 'settings' || width === 'template' ? 'h-full max-h-full' : fillSheet ? 'phone-sheet-fill' : ''}`
       : dialogPanelClassName(width);
 
   return (

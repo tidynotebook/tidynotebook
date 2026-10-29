@@ -304,7 +304,9 @@ try {
         .waitFor();
       await shot('new-folder-tree');
       await p.keyboard.press('Escape');
-      await p.getByRole('button', { name: 'Cancel', exact: true }).click();
+      await p
+        .getByRole('button', { name: 'Close dialog', exact: true })
+        .click();
       await p
         .getByRole('button', {
           name: 'Actions for the folder Personal',
@@ -343,7 +345,9 @@ try {
         await shot('move-filter');
         await p.keyboard.press('Escape');
       }
-      await p.getByRole('button', { name: 'Cancel', exact: true }).click();
+      await p
+        .getByRole('button', { name: 'Close dialog', exact: true })
+        .click();
       await p
         .getByRole('button', { name: 'Close navigation', exact: true })
         .click();

@@ -146,7 +146,7 @@ export const noteScopeSentence =
  * field adds the one fact that the setup field does not have: an empty value
  * is an answer here, and it makes a link that opens without a password.
  */
-export const linkPasswordRule = `Leave this empty for a link that opens without a password. A password needs at least ${String(minPasswordLength)} characters.`;
+export const linkPasswordRule = `Optional. At least ${String(minPasswordLength)} characters.`;
 
 /** One link of the owner list, in the shape that the screen reads. */
 export type OwnedLink = {
