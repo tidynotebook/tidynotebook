@@ -368,6 +368,7 @@ try {
         .waitFor();
       await shot('template-details');
       await td.locator('#template-note-folder').click();
+      await td.getByRole('treeitem').first().waitFor();
       await shot('template-folder');
       await p.keyboard.press('Escape');
       await td
@@ -419,6 +420,24 @@ try {
         if (section === 'daily-notes')
           for (const field of ['Folder', 'Name format', 'Template']) {
             await d.getByRole('button', { name: field, exact: true }).click();
+            await d
+              .getByRole('heading', {
+                name:
+                  field === 'Folder'
+                    ? 'Save in'
+                    : field === 'Template'
+                      ? 'Choose template'
+                      : 'Name format',
+                exact: true,
+              })
+              .waitFor();
+            if (field === 'Folder')
+              await d.getByRole('treeitem').first().waitFor();
+            if (field === 'Template')
+              await d
+                .getByRole('group', { name: 'Templates', exact: true })
+                .getByRole('button', { name: 'Meeting', exact: true })
+                .waitFor();
             await shot(`daily-${field.toLowerCase().replaceAll(' ', '-')}`);
             if (field === 'Name format') {
               await d
@@ -465,6 +484,10 @@ try {
           await d
             .getByRole('button', { name: 'Templates folder', exact: true })
             .click();
+          await d
+            .getByRole('heading', { name: 'Save in', exact: true })
+            .waitFor();
+          await d.getByRole('treeitem').first().waitFor();
           await shot('templates-folder');
           await d.getByRole('button', { name: 'Cancel', exact: true }).click();
         }
@@ -472,11 +495,15 @@ try {
           await d
             .getByRole('button', { name: 'Edit name', exact: true })
             .click();
+          await d.getByRole('textbox', { name: 'Name', exact: true }).waitFor();
           await shot('account-name');
           await d.getByRole('button', { name: 'Cancel', exact: true }).click();
           await d
             .getByRole('button', { name: 'Delete account', exact: true })
             .click();
+          await d
+            .getByRole('heading', { name: 'Delete your account?', exact: true })
+            .waitFor();
           await shot('delete-account');
           await d.getByRole('button', { name: 'Cancel', exact: true }).click();
         }
@@ -487,6 +514,17 @@ try {
             ['Revoke Design app', 'revoke-app'],
           ] as const) {
             await d.getByRole('button', { name: trigger, exact: true }).click();
+            await d
+              .getByRole('heading', {
+                name:
+                  name === 'create-key'
+                    ? 'Create API key'
+                    : name === 'revoke-key'
+                      ? 'Revoke API key?'
+                      : 'Revoke connected app?',
+                exact: true,
+              })
+              .waitFor();
             await shot(name);
             await d
               .getByRole('button', { name: 'Cancel', exact: true })
@@ -496,7 +534,7 @@ try {
       }
       await go('/accounts');
       await p.getByRole('heading', { name: 'Mail', exact: true }).waitFor();
-      await shot('manage-accounts');
+      await shot('manage-overview');
       await p.getByLabel('Server', { exact: true }).fill('smtp.example.com');
       await p.getByLabel('Server', { exact: true }).scrollIntoViewIfNeeded();
       const sizes = await p
@@ -693,6 +731,7 @@ async function auditText(page: Page, roles: typeof touchTextRoles) {
           (rect.right <= r.left || rect.left >= r.right)
         )
           return false;
+        if (s.position === 'fixed') break;
       }
       return true;
     };

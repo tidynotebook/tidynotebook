@@ -37,10 +37,10 @@ await test('a long name stops at the width the header can hold', () => {
 await test('the name field reads as the last part of the breadcrumb', () => {
   const classes = noteNameFieldClassName().split(' ');
   // Decision 0069. The breadcrumb draws the part a route names in the body
-  // step of the chrome, the medium weight and the strong ink, so the field
+  // step of the chrome and the strong ink. The editable field uses body weight, so it
   // that replaces that part takes the same three.
-  assert.ok(classes.includes('text-ui'));
   assert.ok(classes.includes('text-body'));
+  assert.ok(!classes.includes('font-medium'));
   assert.ok(classes.includes('text-strong'));
   // It is no longer the largest text of the note screen, so it takes no
   // title step and no display tracking.
