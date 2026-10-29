@@ -74,10 +74,13 @@ export function useContentRowWindow(
     for (const [position, element] of [...list.children].entries()) {
       const index = rendered.current[position];
       const key = index === undefined ? undefined : keysRef.current[index];
-      if (key !== undefined)
-        sizes.current.set(key, element.getBoundingClientRect().height);
-      if (position > 0)
-        gap.current = parseFloat(getComputedStyle(element).marginTop) || 0;
+      const height = element.getBoundingClientRect().height;
+      // Hidden or not-yet-laid-out rows do not replace a useful estimate.
+      if (height > 0) {
+        if (key !== undefined) sizes.current.set(key, height);
+        if (position > 0)
+          gap.current = parseFloat(getComputedStyle(element).marginTop) || 0;
+      }
     }
     const measured = offsets();
     // Measurements above the visible row must not move that row on screen.
