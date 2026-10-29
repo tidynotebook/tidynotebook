@@ -526,6 +526,12 @@ try {
             .getByRole('button', { name: 'Revoke Design app', exact: true })
             .waitFor();
         await shot(`settings-${section}`);
+        if (spacing && section === 'appearance') {
+          await d
+            .getByRole('switch', { name: 'Check spelling', exact: true })
+            .scrollIntoViewIfNeeded();
+          await shot('settings-editor');
+        }
         if (section === 'daily-notes')
           for (const field of ['Folder', 'Name format', 'Template']) {
             await d.getByRole('button', { name: field, exact: true }).click();
