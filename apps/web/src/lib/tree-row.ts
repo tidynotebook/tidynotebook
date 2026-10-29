@@ -35,6 +35,8 @@ import { buttonClassName, rowClassName } from '@notesapp/ui';
 
 /** What one row of the tree is right now. */
 export type TreeRowState = {
+  /** A phone drawer gives every row equal room for a two-line name. */
+  readonly wrapOnPhone?: boolean | undefined;
   /** The row is the note that the screen next to the tree shows. */
   readonly open?: boolean | undefined;
   /** The row is the folder that a create action uses as its parent. */
@@ -70,7 +72,14 @@ export function treeRowClassName(state: TreeRowState = {}): string {
   const drop = state.dropTarget === true ? 'ring-2 ring-inset ring-focus' : '';
   return rowClassName({
     selected: filled,
-    className: ['group pl-0 pr-1', treeItemFocus, openUnfilled, chosen, drop]
+    className: [
+      'group pl-0 pr-1',
+      state.wrapOnPhone === true ? 'max-md:pointer-coarse:h-14' : '',
+      treeItemFocus,
+      openUnfilled,
+      chosen,
+      drop,
+    ]
       .filter((part) => part !== '')
       .join(' '),
   });

@@ -1006,7 +1006,10 @@ function TreeRow({
   );
   const name =
     renaming === null ? (
-      <span className="min-w-0 flex-1 truncate" title={row.name}>
+      <span
+        className="min-w-0 flex-1 truncate max-md:pointer-coarse:line-clamp-2 max-md:pointer-coarse:whitespace-normal max-md:pointer-coarse:break-words"
+        title={row.name}
+      >
         {row.name}
       </span>
     ) : (
@@ -1125,6 +1128,7 @@ function TreeRow({
     >
       <div
         className={treeRowClassName({
+          wrapOnPhone: true,
           open,
           selected: parent,
           picked,

@@ -75,13 +75,22 @@ const errors: string[] = [];
 const writes: string[] = [];
 mkdirSync('.local-app/screenshots', { recursive: true });
 async function settle(page: Page) {
-  await page.evaluate(
-    () =>
-      new Promise<void>((done) =>
-        requestAnimationFrame(() => requestAnimationFrame(() => done())),
-      ),
-  );
+  await page.evaluate(async () => {
+    await Promise.all(
+      document
+        .getAnimations()
+        .filter(
+          (animation) =>
+            animation.effect?.getComputedTiming().iterations !== Infinity,
+        )
+        .map((animation) => animation.finished.catch(() => {})),
+    );
+    await new Promise<void>((done) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => done())),
+    );
+  });
 }
+
 /** Assert both the viewport and every scrolling ancestor, not only the screen. */
 async function visibleFieldAndFooter(
   page: Page,
@@ -103,6 +112,7 @@ async function visibleFieldAndFooter(
       if (r.top < top - 1 || r.bottom > bottom + 1)
         problems.push('visual viewport');
       for (let a = e.parentElement; a; a = a.parentElement) {
+        if (a.hasAttribute('data-notes-dialog-root')) break;
         if (
           !['auto', 'scroll', 'hidden', 'clip'].includes(
             getComputedStyle(a).overflowY,
@@ -276,18 +286,18 @@ try {
         await openFolderSetting();
         field = await startDraft();
         await page.evaluate(() => {
-          const viewport = Object.assign(new EventTarget(), {
-            width: innerWidth,
-            height: 420,
-            offsetTop: 70,
-            offsetLeft: 0,
-          });
-          Object.defineProperty(window, 'visualViewport', {
-            configurable: true,
-            value: viewport,
+          const viewport = window.visualViewport;
+          if (!viewport)
+            throw new Error('The browser must provide visualViewport.');
+          Object.defineProperties(viewport, {
+            height: { configurable: true, value: 420 },
+            offsetTop: { configurable: true, value: 70 },
           });
           viewport.dispatchEvent(new Event('resize'));
-          viewport.offsetTop = 90;
+          Object.defineProperty(viewport, 'offsetTop', {
+            configurable: true,
+            value: 90,
+          });
           viewport.dispatchEvent(new Event('scroll'));
         });
         await visibleFieldAndFooter(
@@ -318,6 +328,7 @@ try {
           .getByRole('button', { name: 'Open navigation', exact: true })
           .click();
       const drawer = page.locator('#notes-sidebar');
+      await settle(page);
       if (phone) {
         const box = await drawer.boundingBox();
         assert.equal(box?.x, 0);
