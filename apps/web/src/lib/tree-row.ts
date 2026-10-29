@@ -180,8 +180,8 @@ export function treeMessageClassName(tone: 'status' | 'problem'): string {
 export const rowActionClassName = buttonClassName({
   variant: 'ghost',
   size: 'sm',
-  className: 'size-11 shrink-0 px-0 md:size-7',
+  className: 'size-11 shrink-0 px-0 pointer-fine:size-7',
 });
 
 /** The column that a row with no chevron keeps for one, so names line up. */
-export const rowSpacerClassName = 'size-11 shrink-0 md:size-7';
+export const rowSpacerClassName = 'size-11 shrink-0 pointer-fine:size-7';

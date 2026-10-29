@@ -272,11 +272,11 @@ export function edgeControlClassName(options: {
 }): string {
   return options.edge === 'start'
     ? options.mark === 'avatar'
-      ? '-ms-2.5 md:-ms-0.5'
-      : '-ms-3.5 md:-ms-1.5'
+      ? '-ms-2.5 pointer-fine:-ms-0.5'
+      : '-ms-3.5 pointer-fine:-ms-1.5'
     : options.mark === 'avatar'
-      ? '-me-2.5 md:-me-0.5'
-      : '-me-3.5 md:-me-1.5';
+      ? '-me-2.5 pointer-fine:-me-0.5'
+      : '-me-3.5 pointer-fine:-me-1.5';
 }
 
 /**
@@ -298,7 +298,7 @@ export function edgeControlClassName(options: {
  * `control-classes.test.ts` holds the strings to that arithmetic.
  */
 export function controlStripClassName(): string {
-  return 'flex items-center overflow-x-auto py-1 -mx-3.5 md:-mx-2.5 md:px-1';
+  return 'flex items-center overflow-x-auto py-1 -mx-3.5 pointer-fine:-mx-2.5 pointer-fine:px-1';
 }
 
 /**

@@ -649,7 +649,7 @@ const marks: readonly EdgeMark[] = ['icon', 'avatar'];
 function pullUtility(edge: FrameEdge, pixels: number, wide: boolean): string {
   const side = edge === 'start' ? 'ms' : 'me';
   const steps = pixels / spacingStep;
-  return `${wide ? 'md:' : ''}-${side}-${String(steps)}`;
+  return `${wide ? 'pointer-fine:' : ''}-${side}-${String(steps)}`;
 }
 
 for (const edge of edges)
@@ -707,14 +707,16 @@ await test('a strip of controls that scrolls takes the pull of its edges', () =>
   const widePull = (smallControlBox.wide - markWidth.icon) / 2 + outline;
   const strip = controlStripClassName().split(' ');
   assert.ok(strip.includes(`-mx-${String(touchPull / spacingStep)}`));
-  assert.ok(strip.includes(`md:-mx-${String(widePull / spacingStep)}`));
-  assert.ok(strip.includes(`md:px-${String(outline / spacingStep)}`));
+  assert.ok(
+    strip.includes(`pointer-fine:-mx-${String(widePull / spacingStep)}`),
+  );
+  assert.ok(strip.includes(`pointer-fine:px-${String(outline / spacingStep)}`));
   assert.ok(strip.includes(`py-${String(outline / spacingStep)}`));
   assert.ok(strip.includes('overflow-x-auto'));
   // The two pulls are the ones of a control at the edge of a frame.
   assert.equal(
     edgeControlClassName({ edge: 'start', mark: 'icon' }),
-    `-ms-${String(touchPull / spacingStep)} md:-ms-${String((widePull - outline) / spacingStep)}`,
+    `-ms-${String(touchPull / spacingStep)} pointer-fine:-ms-${String((widePull - outline) / spacingStep)}`,
   );
 });
 
