@@ -336,7 +336,7 @@ function Breadcrumb({
                 </span>
               )}
               {leafFilled ? null : (
-                <span className="truncate font-medium text-strong">
+                <span className="truncate text-label text-strong">
                   {part.label}
                 </span>
               )}

@@ -125,7 +125,7 @@ await test('while a selection exists the open note keeps its text and gives up i
   const open = classes({ open: true, selecting: true });
   assert.ok(!open.includes('bg-active'));
   assert.ok(open.includes('text-strong'));
-  assert.ok(open.includes('font-medium'));
+  assert.ok(open.includes('text-label'));
   const openPicked = classes({ open: true, picked: true, selecting: true });
   assert.ok(openPicked.includes('bg-active'));
 });

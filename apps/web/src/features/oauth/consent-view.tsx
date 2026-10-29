@@ -27,13 +27,13 @@ export function OAuthConsentView({
     <AuthFrame title="Allow access to your notes">
       <dl className="mb-6 mt-0 space-y-4 text-body">
         <div>
-          <dt className="font-medium text-muted">The client calls itself</dt>
+          <dt className="text-body text-strong">The client calls itself</dt>
           <dd className="m-0 break-words text-strong">
             <bdi>{facts.claimedName}</bdi>
           </dd>
         </div>
         <div>
-          <dt className="font-medium text-muted">Client identity</dt>
+          <dt className="text-body text-strong">Client identity</dt>
           <dd className="m-0 break-words text-strong">
             {facts.clientHost === null ? (
               'Not verified. This client registers itself.'
@@ -43,7 +43,7 @@ export function OAuthConsentView({
           </dd>
         </div>
         <div>
-          <dt className="font-medium text-muted">Your answer goes to</dt>
+          <dt className="text-body text-strong">Your answer goes to</dt>
           <dd className="m-0 break-words text-strong">
             {facts.redirectHost === null ? (
               'An app on this computer'

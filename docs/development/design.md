@@ -19,13 +19,12 @@ that stylesheet and its faces inside it. Record 0061.
 
 ## The type steps
 
-The shared roles are in `packages/ui/src/typography.ts`. The application
-stylesheet supplies their utilities. Each role sets size, line height and weight.
+Use the text roles in `packages/ui/src/typography.ts` and the application stylesheet.
 
 | Role                    | Class                       | Touch size / line / weight |
 | ----------------------- | --------------------------- | -------------------------- |
 | Page title              | `text-title-page`           | 20 / 28 / 600              |
-| Sheet or section title  | `text-title-header`         | 16 / 24 / 600              |
+| Header or section title | `text-title-header`         | 16 / 24 / 600              |
 | Body                    | `text-body`                 | 16 / 24 / 400              |
 | Field label or button   | `text-label`                | 16 / 24 / 500              |
 | Setting value, muted    | `text-value`                | 16 / 24 / 400              |
@@ -33,12 +32,10 @@ stylesheet supplies their utilities. Each role sets size, line height and weight
 | Group heading, muted    | `text-group`                | 14 / 20 / 600              |
 | Key hint or avatar      | `text-small`, `text-avatar` | 11 / 16 / 400 or 600       |
 
-Template previews use `text-preview-body` (14 / 20 / 400 under touch),
-`text-title-header` for the first heading and `text-preview-heading` for the
-other headings (14 / 20 / 600). Note text keeps its separate `text-note` scale.
-Fine pointers keep compact body, label and secondary steps. Do not add a weight
-or line height to a role. Use danger colour for errors and danger groups.
-Large page titles use `tracking-heading`.
+Touch previews use `text-preview-body` (14/20/400), `text-title-header` for the
+first heading, and `text-preview-heading` (14/20/600) for other headings. Fine
+pointers keep compact steps. Note text keeps `text-note`. Do not override role
+weights or line heights. Errors and danger groups use danger colour.
 
 ## The planes and the edges
 

@@ -32,7 +32,7 @@ import { focusOutline, touchFieldText, transitionSurface } from '@notesapp/ui';
 export const noteNameFieldPlaceholder = 'Note name';
 
 /** Both the input and its width span must use the same text metrics. */
-export const noteNameFieldText = `px-1 py-1 text-body ${touchFieldText} font-medium`;
+export const noteNameFieldText = `px-1 py-1 text-body ${touchFieldText}`;
 
 /** The span sets the width without a character minimum or script measurement. */
 export const noteNameFieldContainer = 'relative inline-grid min-w-0 max-w-full';

@@ -62,7 +62,7 @@ export function treeRowClassName(state: TreeRowState = {}): string {
   const filled =
     state.picked === true || (state.open === true && state.selecting !== true);
   const openUnfilled =
-    !filled && state.open === true ? 'text-strong font-medium' : '';
+    !filled && state.open === true ? 'text-strong text-label' : '';
   const chosen =
     !filled && state.open !== true && state.selected === true
       ? 'bg-hover text-strong'

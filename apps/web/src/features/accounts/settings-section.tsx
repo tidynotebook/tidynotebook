@@ -118,7 +118,7 @@ export function SettingRow({
   return (
     <div className="flex min-h-14 flex-wrap items-start gap-x-group border-b border-edge-subtle py-2 lg:min-h-13 lg:flex-nowrap lg:items-center lg:py-0.5">
       <div className="contents lg:block lg:min-w-0 lg:flex-1">
-        <p className="order-1 m-0 min-w-0 flex-1 break-words text-body text-strong lg:truncate">
+        <p className="order-1 m-0 min-w-0 flex-1 break-words text-body text-strong lg:truncate pointer-coarse:flex pointer-coarse:min-h-11 pointer-coarse:items-center">
           {label}
         </p>
         {help === undefined ? null : (
@@ -131,7 +131,7 @@ export function SettingRow({
         )}
       </div>
       {children === undefined ? null : (
-        <div className="order-2 flex shrink-0 flex-wrap items-center gap-cluster">
+        <div className="order-2 flex shrink-0 flex-wrap items-center gap-cluster pointer-coarse:min-h-11">
           {children}
         </div>
       )}

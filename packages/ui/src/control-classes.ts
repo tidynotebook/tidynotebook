@@ -749,7 +749,7 @@ export function calendarDayClassName(options: {
         : 'text-muted';
   return [
     `relative inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border text-body tabular-nums ${transitionSurface} ${focusOutlineInset} md:h-7`,
-    options.today ? 'border-edge-line font-semibold' : 'border-transparent',
+    options.today ? 'border-edge-line text-label' : 'border-transparent',
     options.selected
       ? 'bg-active text-label'
       : 'hover:bg-hover hover:text-strong',

@@ -46,6 +46,8 @@ import {
   themeFileText,
   themeProperties,
   touchFieldText,
+  textRoleClasses,
+  touchTextRoles,
 } from '@notesapp/ui';
 import {
   importedPaletteStorageKey,
@@ -280,6 +282,53 @@ await test('touch form labels and fields share the computed 16 px size', async (
     } finally {
       await browser.happyDOM.close();
     }
+  }
+});
+
+await test('shared touch roles set the full size, line height, and weight', async () => {
+  const built = await buildCss(
+    Object.values(textRoleClasses).flatMap((value) => value.split(' ')),
+  );
+  const variables = /:root, :host\s*\{([^}]+)\}/.exec(built);
+  const scale = /@media \(pointer: coarse\)\s*\{\s*:root\s*\{([^}]+)\}/.exec(
+    built,
+  );
+  assert.ok(variables?.[1]);
+  assert.ok(scale?.[1]);
+  const browser = new Window({
+    width: 390,
+    settings: { navigator: { maxTouchPoints: 1 } },
+  });
+  try {
+    const style = browser.document.createElement('style');
+    const rules = Object.entries(textRoleClasses)
+      .filter(([name]) => name !== 'previewBody')
+      .map(([, classes]) => {
+        const name = classes.split(' ')[0];
+        const rule = new RegExp(`\\.${name}\\s*\\{([^}]+)\\}`).exec(built);
+        assert.ok(rule?.[0], `${name} reaches the compiled stylesheet`);
+        return rule[0];
+      });
+    const fontVariables = variables[1].match(/--text-[a-z-]+:[^;]+;/g);
+    assert.ok(fontVariables);
+    style.textContent = `:root { ${fontVariables.join(' ')} } ${rules.join(' ')} @media (pointer: coarse) { :root { ${scale[1]} } }`;
+    browser.document.head.append(style);
+    for (const [role, classes] of Object.entries(textRoleClasses)) {
+      if (role === 'previewBody') continue; // The browser audit checks its nested media rule.
+      const element = browser.document.createElement('span');
+      element.className = classes;
+      browser.document.body.append(element);
+      const expected = Object.entries(touchTextRoles).find(
+        ([name]) => name === role,
+      )?.[1];
+      assert.ok(expected);
+      const computed = browser.getComputedStyle(element);
+      assert.equal(Number.parseFloat(computed.fontSize), expected.size, role);
+      assert.equal(Number.parseFloat(computed.lineHeight), expected.line, role);
+      assert.equal(Number(computed.fontWeight), expected.weight, role);
+    }
+  } finally {
+    await browser.happyDOM.close();
   }
 });
 

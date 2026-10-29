@@ -497,7 +497,7 @@ function PaletteDialog({
                           part.marked ? (
                             <mark
                               key={at}
-                              className="bg-transparent font-medium text-accent"
+                              className="bg-transparent text-label text-accent"
                             >
                               {part.text}
                             </mark>

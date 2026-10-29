@@ -99,7 +99,7 @@ export function SidebarCalendar({
         <h2
           className={rowClassName({
             interactive: false,
-            className: 'm-0 min-w-0 flex-1 basis-24 font-medium',
+            className: 'm-0 min-w-0 flex-1 basis-24 text-label',
           })}
         >
           <span className="truncate" aria-live="polite">
@@ -147,7 +147,7 @@ export function SidebarCalendar({
                   key={weekday}
                   scope="col"
                   abbr={names.long}
-                  className="pb-0.5 text-center text-small text-muted"
+                  className="pb-0.5 text-center text-group text-muted"
                 >
                   {names.narrow}
                 </th>

@@ -40,7 +40,7 @@ await test('the name field reads as the last part of the breadcrumb', () => {
   // step of the chrome, the medium weight and the strong ink, so the field
   // that replaces that part takes the same three.
   assert.ok(classes.includes('text-ui'));
-  assert.ok(classes.includes('font-medium'));
+  assert.ok(classes.includes('text-body'));
   assert.ok(classes.includes('text-strong'));
   // It is no longer the largest text of the note screen, so it takes no
   // title step and no display tracking.
