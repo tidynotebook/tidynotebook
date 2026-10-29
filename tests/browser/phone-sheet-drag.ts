@@ -40,9 +40,7 @@ try {
           await p
             .getByRole('button', { name: 'Account: UI review', exact: true })
             .click();
-          await p
-            .getByRole('menuitem', { name: 'Settings', exact: true })
-            .click();
+          await p.getByRole('menuitem', { name: 'Settings' }).click();
           await p.getByRole('button', { name: 'Devices', exact: true }).click();
         } else {
           await p

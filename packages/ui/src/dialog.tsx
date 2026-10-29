@@ -342,7 +342,7 @@ export function Dialog({
         {phone && !screen ? (
           <div
             data-sheet-drag=""
-            className="flex h-11 shrink-0 touch-pan-x items-center justify-center"
+            className="flex h-11 shrink-0 touch-pan-x touch-pinch-zoom items-center justify-center"
             aria-hidden="true"
           >
             <span className="h-1 w-9 rounded-full bg-edge-line" />
