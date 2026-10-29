@@ -206,7 +206,7 @@ export async function auditSpacing(page: Page) {
           e,
           'group-heading-gap',
           parseFloat(getComputedStyle(e).marginBottom),
-          spec.groupGap,
+          role.groupGap,
         );
     }
     for (const e of document.querySelectorAll('.ui-setting-row')) {
@@ -256,7 +256,7 @@ export async function auditSpacing(page: Page) {
           'field-help-gap',
           help.getBoundingClientRect().top -
             field.getBoundingClientRect().bottom,
-          spec.labelGap,
+          role.helpGap,
         );
       const current = group.getBoundingClientRect();
       const next = groups.find((other) => {
@@ -275,7 +275,7 @@ export async function auditSpacing(page: Page) {
         const gap = nextLabel
           ? nextLabel.getBoundingClientRect().top - current.bottom
           : Infinity;
-        if (gap < 48) check(next, 'field-next-label-gap', gap, spec.formGap);
+        if (gap < 48) check(next, 'field-next-label-gap', gap, role.formGap);
       }
     }
     for (const e of document.querySelectorAll('.ui-page-column')) {
@@ -294,7 +294,7 @@ export async function auditSpacing(page: Page) {
           title,
           'page-title-top',
           title.getBoundingClientRect().top - m.top,
-          spec.pageTop,
+          role.pageTop,
         );
       const header = e.querySelector('.ui-page-header');
       if (header)
@@ -302,7 +302,7 @@ export async function auditSpacing(page: Page) {
           header,
           'page-header-content-gap',
           parseFloat(getComputedStyle(header).marginBottom),
-          spec.pageGap,
+          role.pageGap,
         );
     }
     for (const e of document.querySelectorAll(
@@ -313,21 +313,33 @@ export async function auditSpacing(page: Page) {
         settings = e.closest('.ui-settings-action') !== null;
       const pad =
         coarse && innerWidth < 1024
-          ? spec.sheetPad
+          ? e.classList.contains('ui-dialog-footer')
+            ? role.footerPad
+            : spec.sheetPad
           : settings
             ? spec.settingsPad
             : spec.dialogPad;
       check(e, 'dialog-left-inset', parseFloat(style.paddingLeft), pad);
       check(e, 'dialog-right-inset', parseFloat(style.paddingRight), pad);
       if (e.classList.contains('ui-dialog-footer'))
-        check(e, 'footer-top-pad', parseFloat(style.paddingTop), 16);
+        check(
+          e,
+          'footer-top-pad',
+          parseFloat(style.paddingTop),
+          role.footerPad,
+        );
     }
     for (const e of document.querySelectorAll(
       '.ui-settings-heading,.ui-settings-content',
     )) {
       if (!visible(e)) continue;
       const style = getComputedStyle(e),
-        pad = coarse && innerWidth < 1024 ? spec.sheetPad : spec.settingsPad;
+        pad =
+          coarse && innerWidth < 1024
+            ? e.classList.contains('ui-settings-heading')
+              ? 2
+              : spec.sheetPad
+            : spec.settingsPad;
       check(e, 'settings-left-inset', parseFloat(style.paddingLeft), pad);
       check(e, 'settings-right-inset', parseFloat(style.paddingRight), pad);
       if (e.classList.contains('ui-settings-content'))
@@ -343,7 +355,7 @@ export async function auditSpacing(page: Page) {
             e,
             'settings-header-height',
             e.getBoundingClientRect().height,
-            spec.sheetHeader,
+            role.sheetHeader,
           );
         else check(e, 'settings-title-top', parseFloat(style.paddingTop), 24);
       }
@@ -354,8 +366,100 @@ export async function auditSpacing(page: Page) {
           e,
           'sheet-header-height',
           e.getBoundingClientRect().height,
-          spec.sheetHeader,
+          role.sheetHeader,
         );
+    if (coarse && innerWidth < 1024) {
+      for (const header of document.querySelectorAll(
+        '.ui-sheet-header,.ui-settings-heading',
+      )) {
+        if (!visible(header)) continue;
+        const title = header.querySelector('h2,p.text-title-header');
+        const panel = header.closest('.phone-sheet');
+        if (title && panel)
+          check(
+            title,
+            'sheet-title-top',
+            title.getBoundingClientRect().top -
+              panel.getBoundingClientRect().top,
+            44 + 12 + 1,
+          );
+        const icon = header.querySelector('button svg');
+        if (icon)
+          check(
+            icon,
+            'sheet-header-icon-inset',
+            icon.getBoundingClientRect().left,
+            16,
+          );
+      }
+      for (const nav of document.querySelectorAll('.ui-settings-list nav')) {
+        const card = nav.previousElementSibling;
+        const groups = [...nav.querySelectorAll(':scope > .ui-section')];
+        let previous = card;
+        for (const group of groups) {
+          const heading = group.querySelector('.ui-group-heading');
+          const row = group.querySelector('li button');
+          if (heading && previous && visible(heading)) {
+            check(
+              heading,
+              'group-space-above',
+              heading.getBoundingClientRect().top -
+                previous.getBoundingClientRect().bottom,
+              16,
+            );
+            check(
+              heading,
+              'group-edge-inset',
+              heading.getBoundingClientRect().left +
+                parseFloat(getComputedStyle(heading).paddingLeft),
+              16,
+            );
+            if (row)
+              check(
+                heading,
+                'group-space-below',
+                row.getBoundingClientRect().top -
+                  heading.getBoundingClientRect().bottom,
+                4,
+              );
+          }
+          previous = group;
+        }
+        for (const icon of nav.querySelectorAll('li button svg:first-child'))
+          if (
+            visible(icon) &&
+            icon.parentElement?.previousElementSibling === null
+          )
+            check(
+              icon,
+              'settings-row-icon-inset',
+              icon.getBoundingClientRect().left,
+              16,
+            );
+        if (card && visible(card)) {
+          check(
+            card,
+            'account-divider-inset',
+            card.getBoundingClientRect().left,
+            16,
+          );
+          const avatar = card.firstElementChild;
+          if (avatar)
+            check(
+              avatar,
+              'account-avatar-inset',
+              avatar.getBoundingClientRect().left,
+              16,
+            );
+        }
+      }
+      for (const row of document.querySelectorAll(
+        '.ui-settings-content .ui-setting-row',
+      )) {
+        if (!visible(row)) continue;
+        check(row, 'setting-row-edge', row.getBoundingClientRect().left, 16);
+      }
+    }
     return { issues, measurements };
   }, spacingSpec);
 }

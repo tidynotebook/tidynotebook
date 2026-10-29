@@ -58,7 +58,7 @@ export function dialogPanelClassName(
   fillSheet = false,
 ): string {
   if (phone && width !== 'screen')
-    return `phone-sheet relative flex max-h-sheet w-full flex-col overflow-hidden rounded-t-xl border border-edge-subtle bg-card text-strong shadow-modal outline-none ${width === 'settings' || width === 'template' ? 'h-full max-h-full' : fillSheet ? 'phone-sheet-fill' : ''}`;
+    return `phone-sheet relative flex max-h-sheet w-full flex-col overflow-hidden rounded-t-xl border-y border-edge-subtle bg-card text-strong shadow-modal outline-none ${width === 'settings' || width === 'template' ? 'h-full max-h-full' : fillSheet ? 'phone-sheet-fill' : ''}`;
   if (width === 'screen')
     return 'relative h-full w-full text-strong outline-none';
   if (width === 'settings')

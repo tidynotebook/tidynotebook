@@ -874,8 +874,8 @@ export function SettingsModal({
               </p>
               <span className="w-11 shrink-0" aria-hidden="true" />
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
-              <div className="flex items-center gap-3 border-b border-edge-subtle px-2 pb-3">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 ui-settings-list">
+              <div className="ui-account-card flex items-center gap-3 border-b border-edge-subtle px-2 pb-3">
                 <span className={avatarClassName()} aria-hidden="true">
                   {initial}
                 </span>
@@ -956,7 +956,7 @@ export function SettingsModal({
               </nav>
             </div>
             {account.installationRole === 'administrator' ? (
-              <div className="border-t border-edge-subtle p-3">
+              <div className="ui-settings-navigation-footer border-t border-edge-subtle p-3">
                 <Link
                   className={rowClassName({ className: 'w-full' })}
                   to={`/w/${workspaceId}/accounts`}
@@ -1033,7 +1033,7 @@ export function SettingsModal({
               className={`ui-settings-content min-h-0 flex-1 ${activeAction === null ? 'overflow-y-auto overscroll-contain' : 'flex flex-col'}`}
             >
               {scope === undefined ? null : (
-                <p className="mb-3 mt-0 min-h-5 text-secondary text-muted lg:hidden">
+                <p className="ui-scope-line text-secondary text-muted lg:hidden">
                   {activeAction === null ? scope : activePage?.title}
                 </p>
               )}
