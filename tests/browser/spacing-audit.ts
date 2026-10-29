@@ -485,6 +485,17 @@ export async function auditSpacing(page: Page) {
         check(row, 'setting-row-edge', row.getBoundingClientRect().left, 16);
       }
     }
+    if (coarse && innerWidth < 768) {
+      for (const header of document.querySelectorAll('.ui-panel-heading')) {
+        if (visible(header))
+          check(
+            header,
+            'panel-header-height',
+            header.getBoundingClientRect().height,
+            role.sheetHeader,
+          );
+      }
+    }
     for (const status of document.querySelectorAll('.ui-sidebar-status')) {
       if (visible(status))
         check(

@@ -465,7 +465,7 @@ function Sidebar({
 
   return (
     <>
-      <div className="flex h-header shrink-0 items-center justify-between gap-cluster border-b border-edge-subtle px-2 md:hidden">
+      <div className="ui-panel-heading flex h-header shrink-0 items-center justify-between gap-cluster border-b border-edge-subtle px-2 md:hidden">
         <span className="text-title-header text-strong">
           {sidebarViewLabels[view]}
         </span>

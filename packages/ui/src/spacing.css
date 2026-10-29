@@ -450,3 +450,14 @@
     }
   }
 }
+
+@utility ui-panel-heading {
+  @media (width < 48rem) and (pointer: coarse) {
+    &.ui-panel-heading {
+      height: var(--ui-header-height);
+      min-height: var(--ui-header-height);
+      padding-left: var(--ui-sheet-pad);
+      padding-right: 2px;
+    }
+  }
+}
