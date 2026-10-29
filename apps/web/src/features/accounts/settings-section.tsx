@@ -109,9 +109,12 @@ export function SettingRow({
   readonly children?: ReactNode;
 }): ReactNode {
   return (
-    <div className="ui-setting-row flex flex-wrap items-start border-b border-edge-subtle lg:flex-nowrap lg:items-center">
+    <div className="ui-setting-row flex flex-wrap items-start border-b border-edge-subtle lg:flex-nowrap">
       <div className="contents lg:block lg:min-w-0 lg:flex-1">
-        <p className="order-1 m-0 min-w-0 flex-1 break-words text-body text-strong lg:truncate pointer-coarse:flex pointer-coarse:items-center">
+        <p
+          data-setting-label
+          className="order-1 m-0 min-w-0 flex-1 break-words text-body text-strong lg:truncate pointer-coarse:flex pointer-coarse:items-center"
+        >
           {label}
         </p>
         {help === undefined ? null : (
@@ -124,7 +127,10 @@ export function SettingRow({
         )}
       </div>
       {children === undefined ? null : (
-        <div className="order-2 flex shrink-0 flex-wrap items-center gap-cluster pointer-coarse:min-h-11">
+        <div
+          data-setting-control
+          className="order-2 flex shrink-0 flex-wrap items-start gap-cluster"
+        >
           {children}
         </div>
       )}
@@ -154,10 +160,13 @@ export function SettingChoiceRow({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="ui-setting-row flex w-full items-start border-b border-edge-subtle bg-transparent text-left hover:bg-hover focus-visible:relative focus-visible:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-focus disabled:cursor-default disabled:text-muted lg:items-center pointer-coarse:flex-wrap pointer-coarse:gap-y-0"
+      className="ui-setting-row flex w-full items-start border-b border-edge-subtle bg-transparent text-left hover:bg-hover focus-visible:relative focus-visible:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-focus disabled:cursor-default disabled:text-muted pointer-coarse:flex-wrap pointer-coarse:gap-y-0"
     >
       <span className="min-w-0 flex-1 pointer-coarse:contents">
-        <span className="block truncate text-body text-strong pointer-coarse:order-1 pointer-coarse:min-w-0 pointer-coarse:flex-1">
+        <span
+          data-setting-label
+          className="block truncate text-body text-strong pointer-coarse:order-1 pointer-coarse:min-w-0 pointer-coarse:flex-1"
+        >
           {label}
         </span>
         <span className="line-clamp-2 break-words text-secondary text-muted lg:line-clamp-1 pointer-coarse:order-4 pointer-coarse:w-full pointer-coarse:basis-full">
@@ -165,6 +174,7 @@ export function SettingChoiceRow({
         </span>
       </span>
       <span
+        data-setting-control
         className="inline-flex min-w-0 max-w-1/2 items-center gap-2 text-value text-muted pointer-coarse:order-2"
         title={value}
       >

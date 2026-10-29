@@ -59,7 +59,7 @@ import {
 import { duplicateNote } from '../features/notes/duplicate-note.ts';
 import { actionIcon } from './action-icons.tsx';
 import { useFiles, type OpenFoldersControl } from './files.tsx';
-import { useRowWindow } from './row-window.ts';
+import { useContentRowWindow } from './content-row-window.ts';
 import type { TreeDrag } from './tree-drag.ts';
 import type { DragItem } from '../lib/folder-moves.ts';
 import type { TreeNode } from '../lib/note-list.ts';
@@ -271,7 +271,8 @@ export function NoteTree({
   const revealedFor = useRef<string | null>(null);
   const focusIndex =
     focusKey === null ? null : (indexByKey.get(focusKey) ?? null);
-  const rowsInView = useRowWindow(rows.length, 'tree', focusIndex);
+  const rowKeys = useMemo(() => rows.map((row) => row.key), [rows]);
+  const rowsInView = useContentRowWindow(rowKeys, focusIndex);
   const selecting = selection.keys.size > 0;
 
   // A row that left the screen leaves the selection.
@@ -1007,7 +1008,8 @@ function TreeRow({
   const name =
     renaming === null ? (
       <span
-        className="min-w-0 flex-1 truncate max-md:pointer-coarse:line-clamp-2 max-md:pointer-coarse:whitespace-normal max-md:pointer-coarse:break-words"
+        data-tree-name
+        className="min-w-0 flex-1 truncate max-lg:pointer-coarse:line-clamp-2 max-lg:pointer-coarse:whitespace-normal max-lg:pointer-coarse:break-words"
         title={row.name}
       >
         {row.name}

@@ -339,7 +339,10 @@ function SessionsSettings(): ReactNode {
             {others.map((session) => {
               const name = deviceName(session.userAgent);
               return (
-                <ListRow key={session.sessionId} className="flex-wrap">
+                <ListRow
+                  key={session.sessionId}
+                  className="ui-setting-align flex-wrap"
+                >
                   <span
                     className="inline-flex shrink-0 items-center text-muted"
                     aria-hidden="true"
@@ -347,7 +350,12 @@ function SessionsSettings(): ReactNode {
                     <ComputerIcon />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="m-0 truncate text-body text-strong">{name}</p>
+                    <p
+                      data-setting-label
+                      className="m-0 truncate text-body text-strong"
+                    >
+                      {name}
+                    </p>
                     <p className="m-0 flex flex-wrap gap-cluster text-secondary text-muted">
                       {sessionFacts(session, now).map((fact) => (
                         <span key={fact}>{fact}</span>
@@ -355,24 +363,26 @@ function SessionsSettings(): ReactNode {
                     </p>
                   </div>
                   {session.current ? null : (
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      disabled={busy}
-                      label={`Sign out ${name}`}
-                      onClick={() => {
-                        change(async () => ({
-                          error: (
-                            await revokeSession({
-                              path: { sessionId: session.sessionId },
-                            })
-                          ).error,
-                          done: `${name} is signed out.`,
-                        }));
-                      }}
-                    >
-                      Sign out
-                    </Button>
+                    <span data-setting-control>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        disabled={busy}
+                        label={`Sign out ${name}`}
+                        onClick={() => {
+                          change(async () => ({
+                            error: (
+                              await revokeSession({
+                                path: { sessionId: session.sessionId },
+                              })
+                            ).error,
+                            done: `${name} is signed out.`,
+                          }));
+                        }}
+                      >
+                        Sign out
+                      </Button>
+                    </span>
                   )}
                 </ListRow>
               );

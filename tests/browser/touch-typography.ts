@@ -48,7 +48,7 @@ const original = await originalState(),
   writes: { method: string; url: string }[] = [];
 try {
   for (const width of process.env.TOUCH_WIDTHS?.split(',').map(Number) ??
-    (spacing ? [390, 1440] : [320, 390]))
+    (spacing ? [320, 390, 1440] : [320, 390]))
     for (const scheme of process.env.TOUCH_SCHEMES?.split(',') ?? [
       'light',
       'dark',
@@ -313,6 +313,43 @@ try {
         })
         .waitFor();
       await shot('drawer-expanded');
+      if (spacing) {
+        const drift = await p.evaluate(async () => {
+          const tree = document.querySelector(
+            '[role="tree"][aria-multiselectable="true"]',
+          );
+          if (!(tree instanceof HTMLElement))
+            throw new Error('The drawer tree must be open.');
+          let scroller = tree.parentElement;
+          while (
+            scroller &&
+            !['auto', 'scroll'].includes(getComputedStyle(scroller).overflowY)
+          )
+            scroller = scroller.parentElement;
+          if (!scroller)
+            throw new Error('The drawer tree must have a scroller.');
+          const settle = () =>
+            new Promise<void>((resolve) =>
+              requestAnimationFrame(() =>
+                requestAnimationFrame(() =>
+                  requestAnimationFrame(() => resolve()),
+                ),
+              ),
+            );
+          const original = scroller.scrollTop;
+          const before = tree.getBoundingClientRect().top;
+          scroller.scrollTop = scroller.scrollHeight;
+          await settle();
+          scroller.scrollTop = original;
+          await settle();
+          return Math.abs(tree.getBoundingClientRect().top - before);
+        });
+        assert.ok(
+          drift <= 1,
+          `Drawer scroll changed the starting position by ${drift} px.`,
+        );
+      }
+
       if (spacing) {
         await p
           .getByRole('button', {

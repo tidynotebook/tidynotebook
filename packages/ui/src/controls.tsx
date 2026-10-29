@@ -652,7 +652,9 @@ export function Switch({
     >
       {hideLabel ? null : (
         <span className="min-w-0 flex-1 text-body">
-          <span className="block">{label}</span>
+          <span data-setting-label className="block">
+            {label}
+          </span>
           {hint === undefined ? null : (
             <span id={hintId} className="block text-secondary text-muted">
               {hint}
@@ -660,7 +662,11 @@ export function Switch({
           )}
         </span>
       )}
-      <span className={classes.track} aria-hidden="true">
+      <span
+        data-setting-control={hideLabel ? undefined : true}
+        className={classes.track}
+        aria-hidden="true"
+      >
         <span className={classes.thumb} />
       </span>
     </button>

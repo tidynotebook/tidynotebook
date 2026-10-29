@@ -608,6 +608,7 @@ function Sidebar({
               <section className="pt-1" aria-label="Folders">
                 <div
                   className={treeRowClassName({
+                    wrapOnPhone: true,
                     open: location.pathname === notesPath,
                     selected: selectedFolder === '',
                     dropTarget: drag.over === '',
@@ -654,7 +655,7 @@ function Sidebar({
                       >
                         <FolderIcon />
                       </span>
-                      <span className="min-w-0 flex-1 truncate">
+                      <span data-tree-name className="min-w-0 flex-1 truncate">
                         {allNotesTitle}
                       </span>
                     </Link>

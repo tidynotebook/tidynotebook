@@ -89,6 +89,7 @@
     height: auto;
     padding-block: 8px;
     gap: 0 16px;
+    align-items: start;
   }
 }
 @utility ui-list-row {
@@ -209,4 +210,24 @@
   height: var(--ui-compact-height);
   min-height: var(--ui-compact-height);
   padding: 0;
+}
+
+/* Drawer names set their own row height. Controls retain their 44 px targets. */
+@utility ui-drawer-row {
+  @media (max-width: 1023px) and (pointer: coarse) {
+    &.ui-drawer-row {
+      min-height: 44px;
+      height: auto;
+      padding-block: 8px;
+    }
+    & .ui-icon-button,
+    & .ui-tree-spacer {
+      margin-block: -8px;
+    }
+  }
+}
+@utility ui-setting-align {
+  &.ui-setting-align {
+    align-items: start;
+  }
 }

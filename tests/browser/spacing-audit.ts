@@ -29,9 +29,10 @@ export async function auditSpacing(page: Page) {
       kind: string,
       actual: number,
       expected: number,
+      tolerance = 0.6,
     ) => {
       (measurements[kind] ??= []).push(actual);
-      if (Math.abs(actual - expected) > 0.6)
+      if (Math.abs(actual - expected) > tolerance)
         issues.push({
           kind,
           text: (e.getAttribute('aria-label') ?? e.textContent ?? '')
@@ -88,6 +89,39 @@ export async function auditSpacing(page: Page) {
       check(e, 'setting-top-pad', parseFloat(style.paddingTop), 8);
       check(e, 'setting-bottom-pad', parseFloat(style.paddingBottom), 8);
       check(e, 'setting-control-gap', parseFloat(style.columnGap), spec.rowGap);
+    }
+    for (const row of document.querySelectorAll(
+      '.ui-setting-row,.ui-setting-align',
+    )) {
+      if (!visible(row)) continue;
+      const label = row.querySelector('[data-setting-label]');
+      const control = row.querySelector('[data-setting-control]');
+      if (!label || !control)
+        throw new Error('A setting row must mark its label and control.');
+      check(
+        row,
+        'setting-control-label-top',
+        control.getBoundingClientRect().top - label.getBoundingClientRect().top,
+        0,
+        2,
+      );
+    }
+    if (coarse && innerWidth < 1024) {
+      for (const row of document.querySelectorAll('.ui-drawer-row')) {
+        if (!visible(row)) continue;
+        const style = getComputedStyle(row);
+        check(row, 'drawer-min-height', parseFloat(style.minHeight), 44);
+        check(row, 'drawer-top-pad', parseFloat(style.paddingTop), 8);
+        check(row, 'drawer-bottom-pad', parseFloat(style.paddingBottom), 8);
+        const name = row.querySelector('[data-tree-name],input');
+        if (name)
+          check(
+            row,
+            'drawer-content-height',
+            row.getBoundingClientRect().height,
+            Math.max(44, name.getBoundingClientRect().height + 16),
+          );
+      }
     }
     for (const e of document.querySelectorAll('.ui-list-row')) {
       if (visible(e))

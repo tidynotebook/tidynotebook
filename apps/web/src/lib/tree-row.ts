@@ -35,7 +35,7 @@ import { buttonClassName, rowClassName } from '@notesapp/ui';
 
 /** What one row of the tree is right now. */
 export type TreeRowState = {
-  /** A phone drawer gives every row equal room for a two-line name. */
+  /** A phone drawer lets each name determine the row height. */
   readonly wrapOnPhone?: boolean | undefined;
   /** The row is the note that the screen next to the tree shows. */
   readonly open?: boolean | undefined;
@@ -74,7 +74,7 @@ export function treeRowClassName(state: TreeRowState = {}): string {
     selected: filled,
     className: [
       'group pl-0 pr-1',
-      state.wrapOnPhone === true ? 'max-md:pointer-coarse:h-14' : '',
+      state.wrapOnPhone === true ? 'ui-drawer-row' : '',
       treeItemFocus,
       openUnfilled,
       chosen,
@@ -184,4 +184,5 @@ export const rowActionClassName = buttonClassName({
 });
 
 /** The column that a row with no chevron keeps for one, so names line up. */
-export const rowSpacerClassName = 'size-11 shrink-0 pointer-fine:size-7';
+export const rowSpacerClassName =
+  'ui-tree-spacer size-11 shrink-0 pointer-fine:size-7';
