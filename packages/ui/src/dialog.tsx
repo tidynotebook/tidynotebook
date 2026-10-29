@@ -22,6 +22,7 @@
  */
 import {
   Children,
+  cloneElement,
   isValidElement,
   createContext,
   useContext,
@@ -30,6 +31,7 @@ import {
   useRef,
   useState,
   type ReactNode,
+  type ComponentProps,
 } from 'react';
 import {
   dialogFooterClassName,
@@ -275,7 +277,7 @@ export function Dialog({
   const root = `${phone && width !== 'screen' ? 'h-viewport items-end bg-scrim/40' : dialogRootClassName(width, align)} ${anchor == null ? '' : 'lg:bg-transparent'}`;
   const panel =
     phone && width !== 'screen'
-      ? `phone-sheet flex max-h-sheet w-full flex-col overflow-hidden rounded-t-xl border border-edge-subtle bg-card text-strong shadow-modal outline-none ${width === 'settings' || width === 'template' ? 'h-full max-h-full' : fillSheet ? 'h-sheet' : ''}`
+      ? `phone-sheet flex max-h-sheet w-full flex-col overflow-hidden rounded-t-xl border border-edge-subtle bg-card text-strong shadow-modal outline-none ${width === 'settings' || width === 'template' ? 'h-full max-h-full' : fillSheet ? 'h-sheet phone-sheet-fill' : ''}`
       : dialogPanelClassName(width);
 
   return (
@@ -454,12 +456,17 @@ export function DialogFooter({
             node.props.variant === 'primary' ||
             node.props.variant === 'danger'),
       ) ?? buttons.at(-1);
+    const action = isValidElement<ComponentProps<typeof Button>>(primary)
+      ? cloneElement(primary, {
+          variant: primary.props.variant === 'danger' ? 'danger' : 'primary',
+        })
+      : primary;
     const extra = nodes.filter(
       (node) =>
         node !== primary &&
-        (!isValidElement<{ children?: ReactNode }>(node) ||
+        (!isValidElement<{ children?: ReactNode; variant?: string }>(node) ||
           node.type !== Button ||
-          node.props.children !== 'Cancel'),
+          (node.props.children !== 'Cancel' && node.props.variant !== 'ghost')),
     );
     return (
       <>
@@ -467,7 +474,7 @@ export function DialogFooter({
           <div className="shrink-0 px-5 pb-2">{extra}</div>
         )}
         <div className="shrink-0 border-t border-edge-subtle bg-card px-4 pb-5 pt-3 [&_button]:min-h-11 [&_button]:w-full">
-          {primary}
+          {action}
         </div>
       </>
     );

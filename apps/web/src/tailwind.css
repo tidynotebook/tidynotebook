@@ -511,3 +511,9 @@
     overflow: hidden;
   }
 }
+
+@utility phone-sheet-fill {
+  & [role='tree'] {
+    max-height: none;
+  }
+}
