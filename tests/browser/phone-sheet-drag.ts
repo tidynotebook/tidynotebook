@@ -47,9 +47,14 @@ try {
               .getByRole('button', { name: 'Account: UI review', exact: true })
               .click();
             await p.getByRole('menuitem', { name: 'Settings' }).click();
+            await p.locator('[role=dialog][data-sheet-ready]').waitFor();
+            await pause(260);
             await p
               .getByRole('button', { name: 'Devices', exact: true })
               .click();
+            await p
+              .getByRole('heading', { name: 'Devices', exact: true, level: 2 })
+              .waitFor();
           } else {
             await p
               .getByRole('button', { name: 'Open navigation', exact: true })

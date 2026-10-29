@@ -28,6 +28,7 @@ import {
   useContext,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -143,16 +144,14 @@ export function Dialog({
   const panelRef = useRef<HTMLDivElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [headerTarget, setHeaderTarget] = useState<HTMLDivElement | null>(null);
-  const openerRef = useRef<HTMLElement | null>(null);
-  const wasOpen = useRef(false);
   // Capture before a child's autoFocus runs during the commit.
-  if (open && !wasOpen.current) {
+  const opener = useMemo(() => {
     const active =
       typeof document === 'undefined' ? null : document.activeElement;
-    openerRef.current =
-      active !== null && active instanceof HTMLElement ? active : null;
-  }
-  wasOpen.current = open;
+    return open && active !== null && active instanceof HTMLElement
+      ? active
+      : null;
+  }, [open]);
   // The latest close handler, which the effect below reads when a key or a
   // pointer asks for it. A screen passes a new function on every render, and
   // the effect must not run again for that: it moves focus when it starts and
@@ -241,9 +240,9 @@ export function Dialog({
       window.removeEventListener('keydown', onKeyDown, true);
       releaseInert();
       document.body.style.overflow = previousOverflow;
-      giveFocusBack(openerRef.current, returnRef.current);
+      giveFocusBack(opener, returnRef.current);
     };
-  }, [open]);
+  }, [open, opener]);
 
   useLayoutEffect(() => {
     if (!open || phone || anchor === undefined || anchor === null) return;
