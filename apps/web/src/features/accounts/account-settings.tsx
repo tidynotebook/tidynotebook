@@ -889,7 +889,7 @@ export function SettingsModal({
                     }
                     className="ui-section"
                   >
-                    <h3 className="m-0 flex items-center gap-2 px-2 pb-2 text-group text-muted">
+                    <h3 className="ui-group-heading flex items-center gap-2 px-2 text-group text-muted">
                       {group}
                       {group === 'Workspace' && workspaceName !== '' ? (
                         <span className="min-w-0 truncate rounded-sm bg-hover px-2 text-secondary text-muted">

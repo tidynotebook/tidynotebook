@@ -52,7 +52,7 @@ export function SettingsSection({
       <section className={'ui-section'} aria-label={section.title}>
         {topic.hiddenTitles.includes(section.id) ? null : (
           <h3
-            className={`ui-group-heading border-b border-edge-subtle pb-2 text-group ${danger ? 'text-danger' : 'text-muted'}`}
+            className={`ui-group-heading border-b border-edge-subtle text-group ${danger ? 'text-danger' : 'text-muted'}`}
             id={section.id}
           >
             {heading ?? section.title}

@@ -250,10 +250,10 @@ export function ThemeSettings(): ReactNode {
       description="System follows the device. The choice applies at once on this device and goes to your account in the background. Import a theme file to use your own colours."
     >
       <fieldset className="m-0 border-0 p-0">
-        <legend className="m-0 w-full border-b border-edge-subtle p-0 pb-2 text-group text-muted">
+        <legend className="ui-group-heading w-full border-b border-edge-subtle p-0 text-group text-muted">
           Mode
         </legend>
-        <div className="mt-2 grid grid-cols-3 gap-cluster">
+        <div className="grid grid-cols-3 gap-cluster">
           {appearanceChoices.map((choice) => {
             const chosen = theme.choice === choice.value;
             return (
@@ -301,7 +301,7 @@ export function ThemeSettings(): ReactNode {
       </fieldset>
       <fieldset className="m-0 mt-6 border-0 p-0">
         <legend className="sr-only">Theme</legend>
-        <div className="flex items-center gap-cluster border-b border-edge-subtle pb-1">
+        <div className="ui-group-heading flex items-center gap-cluster border-b border-edge-subtle">
           <span
             className="min-w-0 flex-1 text-group text-muted"
             aria-hidden="true"
@@ -334,7 +334,7 @@ export function ThemeSettings(): ReactNode {
             Export theme file
           </Button>
         </div>
-        <ul className="m-0 mt-2 flex list-none gap-cluster overflow-x-auto p-0 pb-1 md:grid md:grid-cols-4 md:overflow-visible lg:grid-cols-4">
+        <ul className="m-0 flex list-none gap-cluster overflow-x-auto p-0 pb-1 md:grid md:grid-cols-4 md:overflow-visible lg:grid-cols-4">
           {theme.families.map((option) => {
             const chosen = theme.familyId === option.id;
             const only = onlyModeOf(option);
