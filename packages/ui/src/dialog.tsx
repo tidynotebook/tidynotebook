@@ -144,6 +144,14 @@ export function Dialog({
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [headerTarget, setHeaderTarget] = useState<HTMLDivElement | null>(null);
   const openerRef = useRef<HTMLElement | null>(null);
+  const wasOpen = useRef(false);
+  // Capture before a child's autoFocus runs during the commit.
+  if (open && !wasOpen.current) {
+    const active =
+      typeof document === 'undefined' ? null : document.activeElement;
+    openerRef.current = active instanceof HTMLElement ? active : null;
+  }
+  wasOpen.current = open;
   // The latest close handler, which the effect below reads when a key or a
   // pointer asks for it. A screen passes a new function on every render, and
   // the effect must not run again for that: it moves focus when it starts and
@@ -160,8 +168,6 @@ export function Dialog({
 
   useEffect(() => {
     if (!open) return;
-    const active = document.activeElement;
-    openerRef.current = active instanceof HTMLElement ? active : null;
     const panel = panelRef.current;
     const releaseInert = setPageInert(panel, true);
     const previousOverflow = document.body.style.overflow;
