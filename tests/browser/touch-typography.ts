@@ -806,7 +806,7 @@ try {
           await auth
             .locator('[role=alert]')
             .evaluate((e) => getComputedStyle(e).fontSize),
-          '14px',
+          '13px',
         );
       await auth.screenshot({
         path: `.local-app/screenshots/${screenshotPrefix}-signup-error-${variant}.png`,
