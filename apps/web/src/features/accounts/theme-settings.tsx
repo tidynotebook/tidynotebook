@@ -260,7 +260,7 @@ export function ThemeSettings(): ReactNode {
       description="System follows the device. The choice applies at once on this device and goes to your account in the background. Import a theme file to use your own colours."
     >
       <fieldset className="m-0 border-0 p-0">
-        <legend className="ui-group-heading w-full border-b border-edge-subtle p-0 text-group text-muted">
+        <legend className="ui-group-tiles-heading ui-group-heading w-full border-b border-edge-subtle p-0 text-group text-muted">
           Mode
         </legend>
         <div className="ui-theme-tiles grid grid-cols-3 gap-cluster">
@@ -311,7 +311,7 @@ export function ThemeSettings(): ReactNode {
       </fieldset>
       <fieldset className="ui-group-after m-0 border-0 p-0">
         <legend className="sr-only">Theme</legend>
-        <div className="ui-group-toolbar ui-group-heading border-b border-edge-subtle">
+        <div className="ui-group-tiles-heading ui-group-toolbar ui-group-heading border-b border-edge-subtle">
           <span
             className="min-w-0 flex-1 text-group text-muted"
             aria-hidden="true"

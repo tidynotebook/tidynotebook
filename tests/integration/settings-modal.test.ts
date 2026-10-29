@@ -26,6 +26,7 @@ import {
 } from 'react-router';
 import {
   calls,
+  setAdministrator,
   setWaiting,
   setSessions,
   sessionWrites,
@@ -66,6 +67,10 @@ Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', {
 });
 const fixture = new URL('./support/settings-modal-fixture.ts', import.meta.url)
   .href;
+const adminFixture = new URL(
+  './support/administration-settings-fixture.ts',
+  import.meta.url,
+).href;
 const folderFixture = new URL(
   './support/folder-picker-fixture.ts',
   import.meta.url,
@@ -74,6 +79,12 @@ const hooks = registerHooks({
   resolve(specifier, context, next) {
     const parent = context.parentURL ?? '';
     if (parent.includes('/apps/web/dist/')) {
+      if (
+        (parent.endsWith('/administration.js') ||
+          parent.endsWith('/installation-settings.js')) &&
+        specifier === '@notesapp/api-client'
+      )
+        return { url: adminFixture, shortCircuit: true };
       if (
         (parent.endsWith('/api-keys.js') ||
           parent.endsWith('/account-settings.js')) &&
@@ -99,6 +110,8 @@ const { SettingsModalHost, useOpenSettings } =
   await import('../../apps/web/dist/shell/settings-modal.js');
 const { LegacySettingsRedirect } =
   await import('../../apps/web/dist/shell/legacy-settings.js');
+const { AdministrationRedirect } =
+  await import('../../apps/web/dist/features/accounts/administration-redirect.js');
 const { useSignOut } = await import('../../apps/web/dist/shell/sign-out.js');
 
 const container = document.createElement('div');
@@ -178,6 +191,10 @@ function Frame(): ReactNode {
   return createElement(
     Routes,
     null,
+    createElement(Route, {
+      path: '/w/:workspaceId/accounts',
+      element: createElement(AdministrationRedirect),
+    }),
     createElement(Route, {
       path: '/w/:workspaceId/settings/:settingsPage?',
       element: createElement(LegacySettingsRedirect),
@@ -714,7 +731,9 @@ await test('phone Settings uses navigation and action rows with one edit level',
     const name = button('Name');
     await click(name);
     assert.ok(container.querySelector('#profile-name'));
-    assert.ok(button('Save'));
+    assert.equal(button('Save').hasAttribute('disabled'), true);
+    const editScope = container.querySelector('.ui-settings-scope');
+    assert.ok(editScope === null || editScope.textContent !== 'Account');
     assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
     await escape();
     assert.equal(container.querySelector('#profile-name'), null);
@@ -731,6 +750,104 @@ await test('phone Settings uses navigation and action rows with one edit level',
   } finally {
     window.matchMedia = original;
     await show('/w/one/notes/n1?settings=account');
+  }
+});
+
+await test('administration deep links and the old route respect the signed-in role', async () => {
+  await show('/w/one/accounts');
+  assert.equal(address, '/w/one?settings=');
+  assert.equal(
+    container.querySelector('[data-settings-page="accounts"]'),
+    null,
+  );
+  setAdministrator(true);
+  try {
+    await show('/w/one/accounts');
+    assert.equal(address, '/w/one?settings=accounts');
+    assert.deepEqual(
+      [...container.querySelectorAll('nav [data-settings-page]')]
+        .slice(-4)
+        .map((e) => e.getAttribute('data-settings-page')),
+      ['accounts', 'mail', 'legal', 'reports'],
+    );
+    assert.doesNotMatch(container.textContent ?? '', /Manage accounts/);
+    assert.ok(button('Invite a person'));
+    assert.match(container.textContent ?? '', /Let anybody sign up/);
+  } finally {
+    setAdministrator(false);
+  }
+});
+
+await test('phone admin draft forms keep one frame and return focus without a save', async () => {
+  const original = window.matchMedia.bind(window);
+  window.matchMedia = (query) => {
+    const result = original(query);
+    Object.defineProperty(result, 'matches', {
+      value:
+        query.includes('pointer: coarse') ||
+        query.includes('max-width: 1023px'),
+    });
+    return result;
+  };
+  setAdministrator(true);
+  try {
+    for (const [page, opener, field] of [
+      ['mail', 'Mail server', '#mail-host'],
+      ['legal', 'Terms', '#legal-kind'],
+      ['accounts', '+ Invite a person', '#invite-email'],
+    ] as const) {
+      await show(`/w/one?settings=${page}`);
+      const start = button(opener);
+      start.focus();
+      await click(start);
+      assert.ok(container.querySelector(field), field);
+      assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
+      assert.ok(
+        container
+          .querySelector('.ui-settings-action')
+          ?.contains(document.activeElement),
+      );
+      await escape();
+      assert.equal(container.querySelector(field), null);
+      assert.equal(
+        document.activeElement === start,
+        true,
+        'Focus returns to the opener',
+      );
+    }
+    await show('/w/one?settings=accounts');
+    const row = button('Account: Sam Lee');
+    row.focus();
+    await click(row);
+    assert.match(
+      container.querySelector('.ui-settings-action')?.textContent ?? '',
+      /sam@example.com/,
+    );
+    for (const [opener, field] of [
+      ['Role', '#account-role'],
+      ['Limits and access', '#controls-standing'],
+    ] as const) {
+      await click(button(opener));
+      assert.ok(container.querySelector(field));
+      assert.ok(
+        container
+          .querySelector('.ui-settings-action')
+          ?.contains(document.activeElement),
+      );
+      await escape();
+      assert.equal(container.querySelector(field), null);
+      assert.ok(button(opener));
+    }
+    await escape();
+    assert.equal(container.querySelector('.ui-settings-action'), null);
+    assert.equal(
+      document.activeElement === row,
+      true,
+      'Focus returns to the account row',
+    );
+  } finally {
+    setAdministrator(false);
+    window.matchMedia = original;
   }
 });
 

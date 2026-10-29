@@ -214,6 +214,8 @@ export {
   DownloadIcon,
   ExpandAllIcon,
   ExternalLinkIcon,
+  MailIcon,
+  FlagIcon,
   FileTextIcon,
   FolderIcon,
   FolderOpenIcon,
@@ -296,3 +298,5 @@ export { chevronDownParts, moreParts, replaceParts } from './glyph-parts.ts';
 export { ReplaceIcon } from './icons.tsx';
 
 export { phoneSheetMotion } from './motion.ts';
+
+export { WrapText, MetaFacts } from './inline-text.tsx';

@@ -18,6 +18,7 @@ import {
 } from 'react';
 import {
   Button,
+  WrapText,
   ChevronRightIcon,
   Switch,
   type PageSection,
@@ -51,7 +52,7 @@ export function SettingActionRow({
 }: {
   readonly label: string;
   readonly desktopLabel?: string;
-  readonly help?: string;
+  readonly help?: string | undefined;
   readonly actionLabel: string;
   readonly onClick: () => void;
   readonly disabled?: boolean;
@@ -87,7 +88,7 @@ export function SettingActionRow({
       </span>
       {help === undefined ? null : (
         <span data-setting-help className="block text-secondary text-muted">
-          {help}
+          <WrapText>{help}</WrapText>
         </span>
       )}
     </button>
@@ -204,7 +205,7 @@ export function SettingRow({
             className="order-3 m-0 line-clamp-2 w-full break-words text-secondary text-muted lg:line-clamp-1"
             title={help}
           >
-            {help}
+            <WrapText>{help}</WrapText>
           </p>
         )}
       </div>
@@ -261,7 +262,7 @@ export function SettingChoiceRow({
           data-setting-help
           className="line-clamp-2 break-words text-secondary text-muted lg:line-clamp-1 pointer-coarse:order-4 pointer-coarse:w-full pointer-coarse:basis-full"
         >
-          {help}
+          <WrapText>{help}</WrapText>
         </span>
       </span>
       <span

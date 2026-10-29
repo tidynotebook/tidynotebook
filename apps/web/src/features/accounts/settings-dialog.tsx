@@ -11,15 +11,22 @@ import { SettingsActionContext } from './settings-action-context.ts';
 const SettingsAction = lazy(() => import('./settings-action.tsx'));
 
 /** Loads the in-panel action only when Settings needs it. */
-export function SettingsDialog(
-  props: ComponentProps<typeof Dialog>,
-): ReactNode {
+export function SettingsDialog({
+  hideScope,
+  ...props
+}: ComponentProps<typeof Dialog> & {
+  readonly hideScope?: boolean;
+}): ReactNode {
   const context = useContext(SettingsActionContext);
   if (context === null) return <Dialog {...props} />;
   if (!props.open) return null;
   return (
     <Suspense fallback={null}>
-      <SettingsAction {...props} context={context} />
+      <SettingsAction
+        {...props}
+        hideScope={hideScope === true}
+        context={context}
+      />
     </Suspense>
   );
 }

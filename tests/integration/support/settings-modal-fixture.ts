@@ -38,6 +38,10 @@ const account = {
   controls: { publishedTransferLimitBytes: null, downloadLimitBytes: null },
 };
 
+/** Change the role only in this isolated DOM fixture. */
+export function setAdministrator(enabled: boolean): void {
+  account.installationRole = enabled ? 'administrator' : 'member';
+}
 const session = {
   status: 'signed-in',
   account,

@@ -23,7 +23,7 @@ export function TrialNotice(): ReactNode {
       size="sm"
       disabled={portal.busy}
       onClick={() => {
-        void portal.open(portalHome);
+        void portal.open(portalHome, true);
       }}
     >
       Upgrade

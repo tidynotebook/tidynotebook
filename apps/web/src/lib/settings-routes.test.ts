@@ -51,7 +51,12 @@ await test('billing and connected apps keep their server capability rules', () =
 });
 
 await test('the modal groups its sections as the wireframe does, with no Sign out', () => {
-  assert.deepEqual(settingsPageGroups, ['General', 'Workspace', 'Account']);
+  assert.deepEqual(settingsPageGroups, [
+    'General',
+    'Workspace',
+    'Account',
+    'Administration',
+  ]);
   assert.deepEqual(
     settingsPages.map((page) => [page.group, page.title]),
     [
@@ -64,6 +69,10 @@ await test('the modal groups its sections as the wireframe does, with no Sign ou
       ['Account', 'Plan and billing'],
       ['Account', 'Devices'],
       ['Account', 'API keys and apps'],
+      ['Administration', 'Accounts'],
+      ['Administration', 'Mail'],
+      ['Administration', 'Legal documents'],
+      ['Administration', 'Reports'],
     ],
   );
   assert.ok(!settingsPages.some((page) => /sign out/i.test(page.title)));
@@ -145,5 +154,24 @@ await test('an old Settings address opens the modal over the last page or All no
   assert.equal(
     target('/w/onetwo/notes/n1', 'offline'),
     '/w/one?settings=offline',
+  );
+});
+
+await test('only administrators see the four administration deep links', () => {
+  assert.deepEqual(
+    visibleSettingsPages({
+      accountPortal: false,
+      installationRole: 'member',
+    }).filter((page) => page.group === 'Administration'),
+    [],
+  );
+  assert.deepEqual(
+    visibleSettingsPages({
+      accountPortal: false,
+      installationRole: 'administrator',
+    })
+      .filter((page) => page.group === 'Administration')
+      .map((page) => page.path),
+    ['accounts', 'mail', 'legal', 'reports'],
   );
 });

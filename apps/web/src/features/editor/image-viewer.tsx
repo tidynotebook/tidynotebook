@@ -32,7 +32,7 @@ import {
   CopyIcon,
   Dialog,
   DownloadIcon,
-  ExternalLinkIcon,
+  ArrowRightIcon,
   ZoomInIcon,
   ZoomOutIcon,
 } from '@notesapp/ui';
@@ -148,7 +148,7 @@ function saveAs(url: string, name: string): void {
 /** The icon of one action. */
 function actionIcon(action: ImageAction): ReactNode {
   if (action === 'download') return <DownloadIcon />;
-  if (action === 'open') return <ExternalLinkIcon />;
+  if (action === 'open') return <ArrowRightIcon />;
   return <CopyIcon />;
 }
 

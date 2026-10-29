@@ -11,7 +11,7 @@ import { problemMessage } from '../../app.tsx';
 /** The handoff to the portal, and what a person reads while it runs. */
 export type OpenPortal = {
   /** Asks for the handoff and leaves for the portal when it answers. */
-  readonly open: (path: string) => Promise<void>;
+  readonly open: (path: string, newTab?: boolean) => Promise<void>;
   /** True from the request until the browser leaves or the request fails. */
   readonly busy: boolean;
   /** The message of a request that failed, or an empty text. */
@@ -30,17 +30,32 @@ export type OpenPortal = {
 export function useOpenPortal(): OpenPortal {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const open = useCallback(async (path: string): Promise<void> => {
-    setBusy(true);
-    setError('');
-    const result = await openAccountPortal({ body: { path } });
-    if (result.data === undefined) {
-      setBusy(false);
-      setError(problemMessage(result.error));
-      return;
-    }
-    window.location.assign(result.data.url);
-  }, []);
+  const open = useCallback(
+    async (path: string, newTab = false): Promise<void> => {
+      setBusy(true);
+      setError('');
+      const tab = newTab ? window.open('about:blank', '_blank') : null;
+      if (newTab && tab === null) {
+        setBusy(false);
+        setError('Allow a new tab to open billing.');
+        return;
+      }
+      if (tab !== null) tab.opener = null;
+      const result = await openAccountPortal({ body: { path } });
+      if (result.data === undefined) {
+        tab?.close();
+        setBusy(false);
+        setError(problemMessage(result.error));
+        return;
+      }
+      if (tab === null) window.location.assign(result.data.url);
+      else {
+        tab.location.replace(result.data.url);
+        setBusy(false);
+      }
+    },
+    [],
+  );
   const reset = useCallback((): void => {
     setError('');
   }, []);

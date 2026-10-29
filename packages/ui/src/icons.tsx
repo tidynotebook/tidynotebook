@@ -909,3 +909,21 @@ export function ReplaceIcon(props: IconProps): ReactNode {
     </IconFrame>
   );
 }
+
+/** Mail delivery settings. */
+export function MailIcon(props: IconProps): ReactNode {
+  return (
+    <IconFrame {...props}>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="m3 6 9 7 9-7" />
+    </IconFrame>
+  );
+}
+/** A report that needs attention. */
+export function FlagIcon(props: IconProps): ReactNode {
+  return (
+    <IconFrame {...props}>
+      <path d="M5 22V3m0 1c5-4 9 4 15 0v11c-6 4-10-4-15 0" />
+    </IconFrame>
+  );
+}

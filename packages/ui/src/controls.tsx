@@ -1,3 +1,4 @@
+import { WrapText } from './inline-text.tsx';
 /**
  * Accessible application controls.
  *
@@ -210,6 +211,7 @@ export function Badge({
  */
 export function TextField({
   listSearch = false,
+  describedBy,
   inputRef,
   onKeyDown,
   id,
@@ -226,6 +228,7 @@ export function TextField({
   reserveErrorSpace = false,
   hideLabel = false,
 }: {
+  readonly describedBy?: string | undefined;
   readonly inputRef?: React.Ref<HTMLInputElement> | undefined;
   readonly onKeyDown?: React.KeyboardEventHandler<HTMLInputElement> | undefined;
   readonly listSearch?: boolean | undefined;
@@ -250,7 +253,11 @@ export function TextField({
   const hintId = `${id}-hint`;
   const hasError = error !== undefined && error !== '';
   const hasHint = hint !== undefined && hint !== '';
-  const described = [hasHint ? hintId : '', hasError ? errorId : '']
+  const described = [
+    describedBy ?? '',
+    hasHint ? hintId : '',
+    hasError ? errorId : '',
+  ]
     .filter(Boolean)
     .join(' ');
   return (
@@ -281,7 +288,7 @@ export function TextField({
       />
       {hasHint ? (
         <p className="mb-0 mt-1 text-secondary text-muted" id={hintId}>
-          {hint}
+          <WrapText>{hint}</WrapText>
         </p>
       ) : null}
       {hasError || reserveErrorSpace ? (
@@ -350,7 +357,7 @@ export function TextAreaField({
       />
       {hasHint ? (
         <p className="mb-0 mt-1 text-secondary text-muted" id={hintId}>
-          {hint}
+          <WrapText>{hint}</WrapText>
         </p>
       ) : null}
       {hasError ? (
@@ -481,7 +488,7 @@ export function SelectField({
       </div>
       {hint === undefined ? null : (
         <p className="mb-0 mt-1 text-secondary text-muted" id={hintId}>
-          {hint}
+          <WrapText>{hint}</WrapText>
         </p>
       )}
     </div>
@@ -661,7 +668,7 @@ export function Switch({
               id={hintId}
               className="block text-secondary text-muted"
             >
-              {hint}
+              <WrapText>{hint}</WrapText>
             </span>
           )}
         </span>

@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { FixedDialogLayout, isTouchInput, type Dialog } from '@notesapp/ui';
+import { usePhoneSettings } from './settings-section.tsx';
 import type { SettingsActionHost } from './settings-action-context.ts';
 /** An action replaces the section content without changing the modal frame. */
 export default function SettingsAction({
@@ -17,9 +18,12 @@ export default function SettingsAction({
   children,
   returnFocus,
   context,
+  hideScope,
 }: ComponentProps<typeof Dialog> & {
   readonly context: SettingsActionHost;
+  readonly hideScope?: boolean;
 }): ReactNode {
+  const phone = usePhoneSettings();
   const id = useId();
   const panel = useRef<HTMLElement | null>(null);
   const opener = useRef<HTMLElement | null>(null);
@@ -33,7 +37,12 @@ export default function SettingsAction({
     if (!open || target === null) return;
     const active = document.activeElement;
     opener.current = active instanceof HTMLElement ? active : null;
-    setActive({ id, title, close: () => closeRef.current() });
+    setActive({
+      id,
+      title,
+      hideScope: hideScope === true,
+      close: () => closeRef.current(),
+    });
     return () => {
       setActive((held) => (held?.id === id ? null : held));
       // The section is visible again before focus returns to its control.
@@ -87,7 +96,7 @@ export default function SettingsAction({
         }
       }}
     >
-      <FixedDialogLayout>{children}</FixedDialogLayout>
+      <FixedDialogLayout phone={phone}>{children}</FixedDialogLayout>
     </section>,
     target,
   );

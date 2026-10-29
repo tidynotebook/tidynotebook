@@ -793,3 +793,50 @@
     }
   }
 }
+@utility ui-wrap-unit {
+  display: inline-block;
+  vertical-align: top;
+  width: max-content;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+@utility ui-meta-facts {
+  column-gap: 4px;
+  row-gap: 0;
+}
+@layer utilities {
+  @media (pointer: coarse) and (width < 64rem) {
+    .phone-sheet .ui-settings-content .ui-group-heading.ui-group-tiles-heading {
+      padding-inline: 0;
+    }
+  }
+}
+@utility ui-dialog-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+@utility ui-settings-groups {
+  & > section + section {
+    margin-top: var(--ui-settings-group-gap, var(--ui-section-gap));
+  }
+}
+@layer utilities {
+  @media (pointer: coarse) and (width < 64rem) {
+    .phone-sheet
+      .ui-settings-content
+      .ui-settings-card
+      li
+      + li
+      > .ui-settings-phone-row::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 16px;
+      right: 0;
+      height: 1px;
+      background: var(--color-edge-subtle);
+    }
+  }
+}

@@ -423,11 +423,17 @@ const FixedDialogContext = createContext(false);
 /** Keeps the body scrollable and the footer fixed inside a fixed-height view. */
 export function FixedDialogLayout({
   children,
+  phone = false,
 }: {
   readonly children: ReactNode;
+  readonly phone?: boolean;
 }): ReactNode {
   return (
-    <FixedDialogContext.Provider value>{children}</FixedDialogContext.Provider>
+    <FixedDialogContext.Provider value>
+      <PhoneSheetContext.Provider value={phone}>
+        {children}
+      </PhoneSheetContext.Provider>
+    </FixedDialogContext.Provider>
   );
 }
 

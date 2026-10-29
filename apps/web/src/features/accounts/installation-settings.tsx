@@ -1,19 +1,11 @@
-/**
- * The mail server and the legal documents of the installation, as two
- * sections of the accounts page (record 0148).
- *
- * Both are settings of the page itself, as the profile is a setting of
- * Settings: the fields stand in the section and Save stores them, with no
- * dialog. A group that the server environment sets is locked, so its section
- * states what applies and offers no change. The mail section sends a test
- * message to the address of the administrator. A legal document opens its
- * editor in place of the list: each blank of the template is a field, and
- * what a person types there fills the text below at once.
- *
- * The one filled action of the page stays Invite a person, so every action
- * here is a secondary button. Every word and every rule lives in
- * `lib/installation-settings.ts` with its unit test, and every server call is
- * a generated operation.
+import { SettingsDialog } from './settings-dialog.tsx';
+import {
+  SettingChoiceRow,
+  SettingRow,
+  SettingActionRow,
+} from './settings-section.tsx';
+/** Administration settings use rows and draft forms in the Settings frame.
+ * A save uses the generated API. Cancel leaves the stored settings unchanged.
  */
 import { useEffect, useState, type ReactNode } from 'react';
 import {
@@ -23,23 +15,17 @@ import {
   sendTestMessage,
   updateLegalDocument,
   updateMailSettings,
-  type LegalDocumentSummary,
   type LegalSettings,
   type MailSecurity,
   type MailSettings,
 } from '@notesapp/api-client';
 import {
   Button,
-  buttonClassName,
   Dialog,
   DialogBody,
   DialogFooter,
-  ExternalLinkIcon,
-  FileTextIcon,
-  ListRow,
   LoadingState,
   Notice,
-  pageListClassName,
   SelectField,
   TextAreaField,
   TextField,
@@ -50,11 +36,8 @@ import {
   blankFields,
   blanksOf,
   defaultMailPort,
-  legalDocumentFact,
   legalDocumentRows,
   legalRemovedText,
-  legalSavedText,
-  mailFacts,
   mailFailureReasonOf,
   mailFailureText,
   mailFormChanged,
@@ -115,28 +98,56 @@ export function MailSettingsBody({
   /** Reads the page again after a change. */
   readonly onSaved: () => void;
 }): ReactNode {
-  if (mail.source === 'environment') return <EnvironmentMail mail={mail} />;
-  return <MailSettingsForm mail={mail} onSaved={onSaved} />;
+  const [editing, setEditing] = useState(false);
+  return (
+    <div className="ui-settings-card">
+      <SettingChoiceRow
+        label="Mail server"
+        help={
+          mail.source === 'environment'
+            ? 'Set by the server configuration.'
+            : 'Without a mail server, an invitation shows its link once and nobody can reset a password.'
+        }
+        value={mail.host ?? 'Not set up'}
+        disabled={mail.source === 'environment'}
+        onClick={() => setEditing(true)}
+      />
+      <SettingRow label="Sender">
+        <span className="text-value text-muted">
+          {mail.sender ?? 'Not set up'}
+        </span>
+      </SettingRow>
+      {mail.source === 'environment' ? <EnvironmentMail /> : null}
+      <SettingsDialog
+        open={editing}
+        title="Mail server"
+        titleId="mail-settings-title"
+        hideScope
+        onClose={() => setEditing(false)}
+      >
+        <MailSettingsForm
+          mail={mail}
+          onClose={() => setEditing(false)}
+          onSaved={() => {
+            setEditing(false);
+            onSaved();
+          }}
+        />
+      </SettingsDialog>
+    </div>
+  );
 }
 
 /** The mail server that the server environment sets, with its test. */
-function EnvironmentMail({ mail }: { readonly mail: MailSettings }): ReactNode {
+function EnvironmentMail(): ReactNode {
   const [outcome, setOutcome] = useState<Outcome>(noOutcome);
   const [busy, setBusy] = useState(false);
-  const facts = mailFacts(mail);
   return (
     <>
-      {facts.length === 0 ? null : (
-        <p className="mb-3 mt-0 flex flex-wrap gap-cluster text-secondary text-muted">
-          {facts.map((fact) => (
-            <span key={fact}>{fact}</span>
-          ))}
-        </p>
-      )}
       <OutcomeNotice outcome={outcome} />
-      <Button
-        variant="secondary"
-        size="sm"
+      <SettingActionRow
+        label="Send a test message"
+        actionLabel="Send a test message"
         disabled={busy}
         onClick={() => {
           setBusy(true);
@@ -146,9 +157,7 @@ function EnvironmentMail({ mail }: { readonly mail: MailSettings }): ReactNode {
             setOutcome(next);
           });
         }}
-      >
-        {busy ? 'Sending' : 'Send a test message'}
-      </Button>
+      />
     </>
   );
 }
@@ -170,9 +179,11 @@ function formOf(mail: MailSettings): MailForm {
 function MailSettingsForm({
   mail,
   onSaved,
+  onClose,
 }: {
   readonly mail: MailSettings;
   readonly onSaved: () => void;
+  readonly onClose: () => void;
 }): ReactNode {
   const saved = formOf(mail);
   const [form, setForm] = useState<MailForm>(saved);
@@ -271,106 +282,131 @@ function MailSettingsForm({
 
   return (
     <form
+      className="ui-dialog-form"
       onSubmit={(event): void => {
         event.preventDefault();
         save();
       }}
     >
-      {lostPassword ? (
-        <Notice
-          className="mb-3"
-          tone="problem"
-          message="The server can no longer read the saved password. Enter it again and save."
-        />
-      ) : null}
-      <div className="md:grid md:grid-cols-3 md:gap-x-group">
-        <div className="md:col-span-2">
+      <DialogBody>
+        {lostPassword ? (
+          <Notice
+            className="mb-3"
+            tone="problem"
+            message="The server can no longer read the saved password. Enter it again and save."
+          />
+        ) : null}
+        <div className="md:grid md:grid-cols-3 md:gap-x-group">
+          <div className="md:col-span-2">
+            <TextField
+              id="mail-host"
+              label="Server"
+              value={form.host}
+              placeholder="smtp.example.com"
+              autoComplete="off"
+              required
+              onChange={(host) => {
+                update({ host });
+              }}
+            />
+          </div>
           <TextField
-            id="mail-host"
-            label="Server"
-            value={form.host}
-            placeholder="smtp.example.com"
-            autoComplete="off"
+            id="mail-port"
+            label="Port"
+            value={form.port}
             required
-            onChange={(host) => {
-              update({ host });
+            error={fieldErrors.port}
+            onChange={(port) => {
+              update({ port });
             }}
           />
         </div>
-        <TextField
-          id="mail-port"
-          label="Port"
-          value={form.port}
-          required
-          error={fieldErrors.port}
-          onChange={(port) => {
-            update({ port });
+        <SelectField
+          id="mail-security"
+          label="Security"
+          value={form.security}
+          options={mailSecurityOptions}
+          hint="TLS and STARTTLS protect the connection."
+          onChange={(value) => {
+            const next = mailSecurityOf(value);
+            if (next === null) return;
+            update({
+              security: next,
+              port: portAfterSecurity(form.port, form.security, next),
+            });
           }}
         />
-      </div>
-      <SelectField
-        id="mail-security"
-        label="Security"
-        value={form.security}
-        options={mailSecurityOptions}
-        hint="TLS and STARTTLS protect the connection."
-        onChange={(value) => {
-          const next = mailSecurityOf(value);
-          if (next === null) return;
-          update({
-            security: next,
-            port: portAfterSecurity(form.port, form.security, next),
-          });
-        }}
-      />
-      <fieldset className="m-0 min-w-0 border-0 p-0">
-        <legend className="mb-1 p-0 text-label text-strong">Sign-in</legend>
-        <p className="mb-3 mt-0 text-secondary text-muted">
-          {keepsPassword
-            ? 'Leave the password empty to keep the saved one. Leave both fields empty for a server that takes mail with no sign-in.'
-            : 'Leave both fields empty for a server that takes mail with no sign-in.'}
-        </p>
-        <div className="md:grid md:grid-cols-2 md:gap-x-group">
-          <TextField
-            id="mail-username"
-            label="User name"
-            value={form.username}
-            autoComplete="off"
-            onChange={(username) => {
-              update({ username });
-            }}
-          />
-          <TextField
-            id="mail-password"
-            label="Password"
-            value={form.password}
-            inputType="password"
-            autoComplete="new-password"
-            error={fieldErrors.password}
-            onChange={(password) => {
-              update({ password });
-            }}
-          />
-        </div>
-      </fieldset>
-      <TextField
-        id="mail-sender"
-        label="Sender"
-        value={form.sender}
-        placeholder={`${productName} <no-reply@notes.example.com>`}
-        autoComplete="off"
-        required
-        hint="An address that the mail server lets you send from."
-        onChange={(sender) => {
-          update({ sender });
-        }}
-      />
-      <OutcomeNotice outcome={outcome} />
-      <div className="flex flex-wrap gap-cluster">
+        <fieldset className="m-0 min-w-0 border-0 p-0">
+          <div className="md:grid md:grid-cols-2 md:gap-x-group">
+            <TextField
+              id="mail-username"
+              label="User name"
+              describedBy="mail-signin-hint"
+              value={form.username}
+              autoComplete="off"
+              onChange={(username) => {
+                update({ username });
+              }}
+            />
+            <TextField
+              id="mail-password"
+              label="Password"
+              describedBy="mail-signin-hint"
+              value={form.password}
+              inputType="password"
+              autoComplete="new-password"
+              error={fieldErrors.password}
+              onChange={(password) => {
+                update({ password });
+              }}
+            />
+          </div>
+          <p
+            id="mail-signin-hint"
+            className="ui-field-help text-secondary text-muted"
+          >
+            {keepsPassword
+              ? 'Leave the password empty to keep the saved one. Leave both fields empty for a server that takes mail with no sign-in.'
+              : 'Leave both fields empty for a server that takes mail with no sign-in.'}
+          </p>
+        </fieldset>
+        <TextField
+          id="mail-sender"
+          label="Sender"
+          value={form.sender}
+          placeholder={`${productName} <no-reply@notes.example.com>`}
+          autoComplete="off"
+          required
+          hint="An address that the mail server lets you send from."
+          onChange={(sender) => {
+            update({ sender });
+          }}
+        />
+        {stored ? (
+          <div className="ui-settings-card">
+            <SettingActionRow
+              label="Send a test message"
+              actionLabel="Send a test message"
+              disabled={busy || changed}
+              onClick={() => run('test', testOutcome)}
+            />
+            <SettingActionRow
+              label="Remove mail server…"
+              actionLabel="Remove mail server"
+              danger
+              disabled={busy}
+              onClick={() => setConfirming(true)}
+            />
+          </div>
+        ) : null}
+        <OutcomeNotice outcome={outcome} />
+      </DialogBody>
+      <DialogFooter>
+        <Button variant="ghost" onClick={onClose}>
+          Cancel
+        </Button>
         <Button
           type="submit"
-          variant="secondary"
-          size="sm"
           disabled={
             busy ||
             !changed ||
@@ -378,35 +414,9 @@ function MailSettingsForm({
             form.sender.trim() === ''
           }
         >
-          {working === 'save' ? 'Saving' : 'Save'}
+          {working === 'save' ? 'Saving' : 'Done'}
         </Button>
-        {stored ? (
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={busy || changed}
-            title={changed ? 'Save the changes first.' : undefined}
-            onClick={() => {
-              run('test', testOutcome);
-            }}
-          >
-            {working === 'test' ? 'Sending' : 'Send a test message'}
-          </Button>
-        ) : null}
-        {stored ? (
-          <Button
-            variant="secondary"
-            tone="danger"
-            size="sm"
-            disabled={busy}
-            onClick={() => {
-              setConfirming(true);
-            }}
-          >
-            {working === 'remove' ? 'Removing' : 'Remove'}
-          </Button>
-        ) : null}
-      </div>
+      </DialogFooter>
       {confirming ? (
         <ConfirmRemoval
           title="Remove the mail server?"
@@ -465,143 +475,44 @@ export function LegalDocumentsBody({
   onSaved,
 }: {
   readonly legal: LegalSettings;
-  /** Reads the page again after a change. */
   readonly onSaved: () => void;
 }): ReactNode {
   const [editing, setEditing] = useState<LegalDocumentRowName | null>(null);
-  const [outcome, setOutcome] = useState<Outcome>(noOutcome);
-  const [busy, setBusy] = useState(false);
-  const [confirming, setConfirming] = useState<{
-    readonly name: LegalDocumentRowName;
-    readonly title: string;
-  } | null>(null);
   const locked = legal.source === 'environment';
-
-  if (editing !== null)
-    return (
-      <LegalDocumentEditor
-        name={editing}
-        onClose={() => {
-          setEditing(null);
-        }}
-        onSaved={(title) => {
-          setEditing(null);
-          setOutcome({ kind: 'done', message: legalSavedText(title) });
-          onSaved();
-        }}
-      />
-    );
-
-  const remove = (name: LegalDocumentRowName, title: string): void => {
-    setConfirming(null);
-    if (busy) return;
-    setBusy(true);
-    setOutcome(noOutcome);
-    void removeLegalDocument({ path: { document: name } }).then((result) => {
-      setBusy(false);
-      if (result.error !== undefined) {
-        setOutcome({ kind: 'failed', message: problemMessage(result.error) });
-        return;
-      }
-      setOutcome({
-        kind: 'done',
-        message: legalRemovedText(title),
-      });
-      onSaved();
-    });
-  };
-
   return (
-    <>
-      <OutcomeNotice outcome={outcome} />
-      <ul className={pageListClassName()}>
-        {legalDocumentRows.map((row) => {
-          const document: LegalDocumentSummary | null = legal[row.name];
-          const name = row.title.toLowerCase();
-          return (
-            <ListRow key={row.name}>
-              <span
-                className="inline-flex shrink-0 items-center text-muted"
-                aria-hidden="true"
-              >
-                <FileTextIcon />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="m-0 truncate text-body text-strong">
-                  {row.title}
-                </p>
-                <p className="m-0 text-secondary text-muted">
-                  {legalDocumentFact(document)}
-                </p>
-              </div>
-              <div className="flex shrink-0 items-center gap-cluster">
-                {document === null ? null : (
-                  <a
-                    className={buttonClassName({
-                      variant: 'secondary',
-                      size: 'sm',
-                      iconOnly: true,
-                    })}
-                    href={document.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={`Open the ${name}`}
-                    title={`Open the ${name}`}
-                  >
-                    <ExternalLinkIcon />
-                  </a>
-                )}
-                {locked ? null : (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    disabled={busy}
-                    label={
-                      document === null
-                        ? `Add the ${name}`
-                        : `Change the ${name}`
-                    }
-                    onClick={() => {
-                      setOutcome(noOutcome);
-                      setEditing(row.name);
-                    }}
-                  >
-                    {document === null ? 'Add' : 'Change'}
-                  </Button>
-                )}
-                {locked || document === null ? null : (
-                  <Button
-                    variant="secondary"
-                    tone="danger"
-                    size="sm"
-                    disabled={busy}
-                    label={`Remove the ${name}`}
-                    onClick={() => {
-                      setConfirming({ name: row.name, title: name });
-                    }}
-                  >
-                    Remove
-                  </Button>
-                )}
-              </div>
-            </ListRow>
-          );
-        })}
-      </ul>
-      {confirming === null ? null : (
-        <ConfirmRemoval
-          title={`Remove the ${confirming.title}?`}
-          message={`This removes the text of the ${confirming.title} for good. Nobody accepts the documents until both exist again.`}
-          action={`Remove ${confirming.title}`}
-          onCancel={() => {
-            setConfirming(null);
-          }}
-          onConfirm={() => {
-            remove(confirming.name, confirming.title);
-          }}
+    <div className="ui-settings-card">
+      {legalDocumentRows.map((row) => (
+        <SettingChoiceRow
+          key={row.name}
+          label={row.title}
+          help={locked ? 'Set by the server configuration.' : ''}
+          value={legal[row.name] == null ? 'Not added' : 'Added'}
+          disabled={locked}
+          onClick={() => setEditing(row.name)}
         />
+      ))}
+      {editing === null ? null : (
+        <SettingsDialog
+          open
+          title={
+            legalDocumentRows.find((row) => row.name === editing)?.title ??
+            'Document'
+          }
+          titleId="legal-document-title"
+          hideScope
+          onClose={() => setEditing(null)}
+        >
+          <LegalDocumentEditor
+            name={editing}
+            onClose={() => setEditing(null)}
+            onSaved={() => {
+              setEditing(null);
+              onSaved();
+            }}
+          />
+        </SettingsDialog>
       )}
-    </>
+    </div>
   );
 }
 
@@ -636,6 +547,8 @@ function LegalDocumentEditor({
   const [loadFailure, setLoadFailure] = useState('');
   const [values, setValues] = useState<Readonly<Record<string, string>>>({});
   const [failure, setFailure] = useState('');
+  const [existing, setExisting] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -648,6 +561,7 @@ function LegalDocumentEditor({
           return;
         }
         const stored = result.data.document;
+        setExisting(stored !== null);
         setForm({
           template: result.data.template,
           kind: stored?.kind ?? 'text',
@@ -717,134 +631,157 @@ function LegalDocumentEditor({
 
   return (
     <form
-      aria-labelledby="legal-editor-title"
+      className="ui-dialog-form"
+      aria-label={title}
       onSubmit={(event): void => {
         event.preventDefault();
         save();
       }}
     >
-      <h3
-        className="mb-3 mt-0 text-title-header text-strong"
-        id="legal-editor-title"
-      >
-        {title}
-      </h3>
-      <SelectField
-        id="legal-kind"
-        label="Source"
-        value={form.kind}
-        options={[
-          { value: 'text', label: 'Text on this server' },
-          { value: 'address', label: 'Page on another site' },
-        ]}
-        onChange={(value) => {
-          update({ kind: value === 'address' ? 'address' : 'text' });
-        }}
-      />
-      {form.kind === 'address' ? (
-        <TextField
-          id="legal-url"
-          label="Address"
-          value={form.url}
-          placeholder="https://example.com/terms"
-          autoComplete="off"
-          required
-          onChange={(url) => {
-            update({ url });
+      <DialogBody>
+        <SelectField
+          id="legal-kind"
+          label="Source"
+          value={form.kind}
+          options={[
+            { value: 'text', label: 'Text on this server' },
+            { value: 'address', label: 'Page on another site' },
+          ]}
+          onChange={(value) => {
+            update({ kind: value === 'address' ? 'address' : 'text' });
           }}
         />
-      ) : (
-        <>
-          {fields.length === 0 ? null : (
-            <fieldset className="m-0 mb-1 min-w-0 border-0 p-0">
-              <legend className="mb-1 p-0 text-label text-strong">
-                Facts of your service
-              </legend>
-              <p className="mb-3 mt-0 text-secondary text-muted">
-                Each fact fills its place in the text below.
-              </p>
-              <div className="md:grid md:grid-cols-2 md:gap-x-group">
-                {fields.map((field, index) => (
-                  <div
-                    key={field.blank}
-                    className={field.wide ? 'md:col-span-2' : undefined}
-                  >
-                    <TextField
-                      id={`legal-blank-${String(index)}`}
-                      label={field.label}
-                      value={values[field.blank] ?? ''}
-                      autoComplete="off"
-                      onChange={(value) => {
-                        setValues((current) => ({
-                          ...current,
-                          [field.blank]: value,
-                        }));
-                        setFailure('');
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-            </fieldset>
-          )}
-          <TextAreaField
-            id="legal-text"
-            label="Text in Markdown"
-            value={text}
+        {form.kind === 'address' ? (
+          <TextField
+            id="legal-url"
+            label="Address"
+            value={form.url}
+            placeholder="https://example.com/terms"
+            autoComplete="off"
             required
-            hint={`The template states what ${productName} keeps and where it sends data. It is not legal advice. Ask a person who knows the law of your country to read the document.`}
-            onChange={(next) => {
-              // An edit of the text keeps what the fields filled, and the
-              // blanks that remain stay fields.
-              update({ text: next });
+            onChange={(url) => {
+              update({ url });
+            }}
+          />
+        ) : (
+          <>
+            {fields.length === 0 ? null : (
+              <fieldset className="m-0 mb-1 min-w-0 border-0 p-0">
+                <legend className="mb-1 p-0 text-label text-strong">
+                  Facts of your service
+                </legend>
+                <p className="mb-3 mt-0 text-secondary text-muted">
+                  Each fact fills its place in the text below.
+                </p>
+                <div className="md:grid md:grid-cols-2 md:gap-x-group">
+                  {fields.map((field, index) => (
+                    <div
+                      key={field.blank}
+                      className={field.wide ? 'md:col-span-2' : undefined}
+                    >
+                      <TextField
+                        id={`legal-blank-${String(index)}`}
+                        label={field.label}
+                        value={values[field.blank] ?? ''}
+                        autoComplete="off"
+                        onChange={(value) => {
+                          setValues((current) => ({
+                            ...current,
+                            [field.blank]: value,
+                          }));
+                          setFailure('');
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </fieldset>
+            )}
+            <TextAreaField
+              id="legal-text"
+              label="Text in Markdown"
+              value={text}
+              required
+              hint={`The template states what ${productName} keeps and where it sends data. It is not legal advice. Ask a person who knows the law of your country to read the document.`}
+              onChange={(next) => {
+                // An edit of the text keeps what the fields filled, and the
+                // blanks that remain stay fields.
+                update({ text: next });
+                setValues({});
+              }}
+            />
+          </>
+        )}
+        <TextField
+          id="legal-version"
+          label="Version"
+          value={form.version}
+          required
+          hint="The page of the document states its version. A new version asks every person to accept the document again. Keep the version for a fixed typo."
+          onChange={(next) => {
+            update({ version: next });
+          }}
+        />
+        <div className="ui-settings-card">
+          <SettingActionRow
+            label="Start again from template"
+            actionLabel="Start again from template"
+            onClick={() => {
+              update({ kind: 'text', text: form.template });
               setValues({});
             }}
           />
-        </>
-      )}
-      <TextField
-        id="legal-version"
-        label="Version"
-        value={form.version}
-        required
-        hint="The page of the document states its version. A new version asks every person to accept the document again. Keep the version for a fixed typo."
-        onChange={(next) => {
-          update({ version: next });
-        }}
-      />
-      {failure === '' ? null : (
-        <Notice className="mb-3" tone="problem" message={failure} />
-      )}
-      <div className="flex flex-wrap gap-cluster">
+          {existing ? (
+            <SettingActionRow
+              label={`Remove ${title.toLowerCase()}…`}
+              actionLabel={`Remove ${title.toLowerCase()}`}
+              danger
+              disabled={busy}
+              onClick={() => setConfirming(true)}
+            />
+          ) : null}
+        </div>
+        {failure === '' ? null : (
+          <Notice className="mb-3" tone="problem" message={failure} />
+        )}
+      </DialogBody>
+      <DialogFooter>
+        <Button variant="ghost" onClick={onClose}>
+          Cancel
+        </Button>
         <Button
           type="submit"
-          variant="secondary"
-          size="sm"
           disabled={
             busy ||
             version === '' ||
             (form.kind === 'text' ? text.trim() === '' : form.url.trim() === '')
           }
         >
-          {busy ? 'Saving' : 'Save'}
+          {busy ? 'Saving' : 'Done'}
         </Button>
-        <Button variant="ghost" size="sm" onClick={onClose}>
-          Cancel
-        </Button>
-        {form.kind === 'text' && form.text !== form.template ? (
-          <Button
-            variant="secondary"
-            size="sm"
-            className="ml-auto"
-            onClick={() => {
-              update({ text: form.template });
-              setValues({});
-            }}
-          >
-            Start again from the template
-          </Button>
-        ) : null}
-      </div>
+      </DialogFooter>
+      {confirming ? (
+        <ConfirmRemoval
+          title={`Remove ${title.toLowerCase()}?`}
+          message="This document is removed from this server."
+          action={`Remove ${title.toLowerCase()}`}
+          onCancel={() => setConfirming(false)}
+          onConfirm={() => {
+            setConfirming(false);
+            setBusy(true);
+            void removeLegalDocument({ path: { document: name } }).then(
+              (result) => {
+                setBusy(false);
+                if (result.error !== undefined) {
+                  setFailure(problemMessage(result.error));
+                  return;
+                }
+                onSaved(legalRemovedText(title.toLowerCase()));
+              },
+            );
+          }}
+        />
+      ) : null}
     </form>
   );
 }

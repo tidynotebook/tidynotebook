@@ -4,6 +4,7 @@ import { createContext, type Dispatch, type SetStateAction } from 'react';
 export type SettingsActionRegistration = {
   readonly id: string;
   readonly title: string;
+  readonly hideScope?: boolean;
   readonly close: () => void;
 };
 /** The action host and its current registration. */

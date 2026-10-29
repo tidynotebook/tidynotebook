@@ -14,6 +14,7 @@ import {
   DialogBody,
   DialogFooter,
   ListRow,
+  MetaFacts,
   LoadingState,
   Notice,
   ReadOnlyField,
@@ -22,11 +23,7 @@ import {
   pageListClassName,
 } from '@notesapp/ui';
 import { problemMessage } from '../../app.tsx';
-import {
-  apiKeyExpiryChoices,
-  apiKeyFacts,
-  apiKeyRevokeText,
-} from '../../lib/api-keys.ts';
+import { apiKeyExpiryChoices, apiKeyRevokeText } from '../../lib/api-keys.ts';
 import { problemCode } from '../../lib/problem-text.ts';
 import { sectionOf, settingsSections } from '../../lib/page-sections.ts';
 import { useNow } from '../../shell/now.ts';
@@ -108,11 +105,15 @@ export function ApiKeySettings(): ReactNode {
                     <p className="m-0 break-words text-body text-strong">
                       {key.name}
                     </p>
-                    <p className="ui-settings-meta mb-0 mt-1 text-secondary text-muted">
-                      {phone
-                        ? `Created ${relativeTime(key.createdAt, now)} · ${key.lastUsedAt === null ? 'Not used yet' : `Last used ${relativeTime(key.lastUsedAt, now)}`}`
-                        : apiKeyFacts(key, now)}
-                    </p>
+                    <MetaFacts
+                      className="ui-settings-meta"
+                      facts={[
+                        `Created ${relativeTime(key.createdAt, now)}`,
+                        key.lastUsedAt === null
+                          ? 'Not used yet'
+                          : `Last used ${relativeTime(key.lastUsedAt, now)}`,
+                      ]}
+                    />
                   </div>
                   <Button
                     variant="secondary"

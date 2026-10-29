@@ -76,8 +76,8 @@ const AttentionRoute = lazy(async () => ({
   default: (await import('./features/attention/attention.tsx')).AttentionRoute,
 }));
 const AccountsView = lazy(async () => ({
-  default: (await import('./features/accounts/administration.tsx'))
-    .AccountsView,
+  default: (await import('./features/accounts/administration-redirect.tsx'))
+    .AdministrationRedirect,
 }));
 const InvitationPage = lazy(async () => ({
   default: (await import('./features/accounts/invitation.tsx')).InvitationPage,

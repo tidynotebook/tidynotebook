@@ -26,6 +26,8 @@ import { ConnectedAppSettings } from './connected-apps.tsx';
  * frame reads none of it (record 0177).
  */
 import {
+  lazy,
+  Suspense,
   useEffect,
   useLayoutEffect,
   useId,
@@ -34,7 +36,6 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { Link } from 'react-router';
 import {
   listSessions,
   revokeOtherSessions,
@@ -59,11 +60,14 @@ import {
   ExternalLinkIcon,
   FileTextIcon,
   KeyIcon,
+  MailIcon,
+  FlagIcon,
   PaletteIcon,
   PersonIcon,
   ListRow,
   LoadingState,
   Meter,
+  MetaFacts,
   Notice,
   pageListClassName,
   rowClassName,
@@ -128,6 +132,10 @@ import { RemoveOwnAccountDialog } from './remove-account-dialog.tsx';
 import { useOpenPortal } from './open-portal.ts';
 import { portalHome } from '../../lib/portal.ts';
 
+const AdministrationSettings = lazy(async () => ({
+  default: (await import('./administration.tsx')).AdministrationSettings,
+}));
+
 /** One section of Settings, by its name in the list of the page. */
 function settingsSection(key: SettingsSectionKey): PageSection {
   return sectionOf(settingsSections, key);
@@ -144,6 +152,10 @@ const pageIcons: Readonly<Record<SettingsPagePath, ReactNode>> = {
   billing: <FileTextIcon />,
   devices: <ComputerIcon />,
   'api-keys-apps': <KeyIcon />,
+  accounts: <UsersIcon />,
+  mail: <MailIcon />,
+  legal: <FileTextIcon />,
+  reports: <FlagIcon />,
 };
 
 /**
@@ -370,19 +382,10 @@ function SessionsSettings(): ReactNode {
                     >
                       {name}
                     </p>
-                    <p
-                      className={
-                        phone
-                          ? 'm-0 ui-settings-meta text-secondary text-muted'
-                          : 'm-0 flex flex-wrap gap-cluster text-secondary text-muted'
-                      }
-                    >
-                      {phone
-                        ? sessionFacts(session, now).join(' · ')
-                        : sessionFacts(session, now).map((fact) => (
-                            <span key={fact}>{fact}</span>
-                          ))}
-                    </p>
+                    <MetaFacts
+                      facts={sessionFacts(session, now)}
+                      className="ui-settings-meta"
+                    />
                   </div>
                   {session.current ? null : (
                     <span data-setting-control>
@@ -548,7 +551,11 @@ function ProfileSettings({
           className={phone ? 'w-full' : undefined}
           type="submit"
           variant={phone ? 'primary' : 'secondary'}
-          disabled={busy}
+          disabled={
+            busy ||
+            profileNameProblem(draft) !== null ||
+            draft.trim() === (name ?? '').trim()
+          }
         >
           {busy ? 'Saving' : phone ? 'Save' : 'Save name'}
         </Button>
@@ -581,6 +588,7 @@ function ProfileSettings({
             open
             title="Name"
             titleId="profile-edit-title"
+            hideScope
             returnFocus={() => nameButton.current?.focus()}
             onClose={() => {
               setEditing(false);
@@ -609,8 +617,8 @@ function ProfileSettings({
             {name ?? ''}
           </span>
           <Button
-            variant="ghost"
-            size="inline"
+            variant="secondary"
+            size="sm"
             label="Edit name"
             onClick={() => {
               setEditing(true);
@@ -902,7 +910,7 @@ export function SettingsModal({
           icon={<ExternalLinkIcon />}
           disabled={portal.busy}
           onClick={() => {
-            void portal.open(portalHome);
+            void portal.open(portalHome, true);
           }}
         />
         {portal.error === '' ? null : (
@@ -913,6 +921,26 @@ export function SettingsModal({
     'api-keys': <ApiKeySettings />,
     'connected-apps': <ConnectedAppSettings />,
     sessions: <SessionsSettings />,
+    'admin-accounts': (
+      <Suspense fallback={<LoadingState label="Reading accounts" />}>
+        <AdministrationSettings page="accounts" />
+      </Suspense>
+    ),
+    'admin-mail': (
+      <Suspense fallback={<LoadingState label="Reading mail settings" />}>
+        <AdministrationSettings page="mail" />
+      </Suspense>
+    ),
+    'admin-legal': (
+      <Suspense fallback={<LoadingState label="Reading legal documents" />}>
+        <AdministrationSettings page="legal" />
+      </Suspense>
+    ),
+    'admin-reports': (
+      <Suspense fallback={<LoadingState label="Reading reports" />}>
+        <AdministrationSettings page="reports" />
+      </Suspense>
+    ),
   };
 
   // A page of one section, Export and import, and Account name their
@@ -985,88 +1013,72 @@ export function SettingsModal({
                 </span>
               </div>
               <nav ref={settingsList} aria-label="Settings sections">
-                {settingsPageGroups.map((group) => (
-                  <section
-                    key={group}
-                    aria-label={
-                      group === 'Workspace' && workspaceName !== ''
-                        ? `Workspace ${workspaceName}`
-                        : group
-                    }
-                    className="ui-section"
-                  >
-                    <h3 className="ui-group-heading flex items-center gap-2 px-2 text-group text-muted">
-                      {group}
-                      {group === 'Workspace' && workspaceName !== '' ? (
-                        <span className="min-w-0 truncate rounded-sm bg-hover px-2 text-secondary text-muted">
-                          {workspaceName}
-                        </span>
-                      ) : null}
-                    </h3>
-                    <ul className="ui-settings-card m-0 list-none p-0">
-                      {pages
-                        .filter((page) => page.group === group)
-                        .map((page) => {
-                          const current =
-                            !listLevel && activePage?.path === page.path;
-                          const desktopCurrent = activePage?.path === page.path;
-                          return (
-                            <li key={page.path}>
-                              <button
-                                type="button"
-                                data-settings-page={page.path}
-                                className={rowClassName({
-                                  current: desktopCurrent && !listLevel,
-                                  className: `w-full text-left ${desktopCurrent && listLevel ? 'lg:bg-active' : ''}`,
-                                })}
-                                aria-current={current ? 'page' : undefined}
-                                onClick={() => {
-                                  onChoose(page.path);
-                                }}
-                              >
-                                <span
-                                  className="inline-flex shrink-0 items-center"
-                                  aria-hidden="true"
+                {settingsPageGroups
+                  .filter((group) => pages.some((page) => page.group === group))
+                  .map((group) => (
+                    <section
+                      key={group}
+                      aria-label={
+                        group === 'Workspace' && workspaceName !== ''
+                          ? `Workspace ${workspaceName}`
+                          : group
+                      }
+                      className="ui-section"
+                    >
+                      <h3 className="ui-group-heading flex items-center gap-2 px-2 text-group text-muted">
+                        {group}
+                        {group === 'Workspace' && workspaceName !== '' ? (
+                          <span className="min-w-0 truncate rounded-sm bg-hover px-2 text-secondary text-muted">
+                            {workspaceName}
+                          </span>
+                        ) : null}
+                      </h3>
+                      <ul className="ui-settings-card m-0 list-none p-0">
+                        {pages
+                          .filter((page) => page.group === group)
+                          .map((page) => {
+                            const current =
+                              !listLevel && activePage?.path === page.path;
+                            const desktopCurrent =
+                              activePage?.path === page.path;
+                            return (
+                              <li key={page.path}>
+                                <button
+                                  type="button"
+                                  data-settings-page={page.path}
+                                  className={rowClassName({
+                                    current: desktopCurrent && !listLevel,
+                                    className: `w-full text-left ${desktopCurrent && listLevel ? 'lg:bg-active' : ''}`,
+                                  })}
+                                  aria-current={current ? 'page' : undefined}
+                                  onClick={() => {
+                                    onChoose(page.path);
+                                  }}
                                 >
-                                  {pageIcons[page.path]}
-                                </span>
-                                <span className="min-w-0 flex-1 truncate">
-                                  {page.title}
-                                </span>
-                                <span
-                                  className="inline-flex shrink-0 items-center text-muted lg:hidden"
-                                  aria-hidden="true"
-                                >
-                                  <ChevronRightIcon />
-                                </span>
-                              </button>
-                            </li>
-                          );
-                        })}
-                    </ul>
-                  </section>
-                ))}
+                                  <span
+                                    className="inline-flex shrink-0 items-center"
+                                    aria-hidden="true"
+                                  >
+                                    {pageIcons[page.path]}
+                                  </span>
+                                  <span className="min-w-0 flex-1 truncate">
+                                    {page.title}
+                                  </span>
+                                  <span
+                                    className="inline-flex shrink-0 items-center text-muted lg:hidden"
+                                    aria-hidden="true"
+                                  >
+                                    <ChevronRightIcon />
+                                  </span>
+                                </button>
+                              </li>
+                            );
+                          })}
+                      </ul>
+                    </section>
+                  ))}
               </nav>
             </div>
-            {account.installationRole === 'administrator' ? (
-              <div className="ui-settings-navigation-footer border-t border-edge-subtle p-3">
-                <Link
-                  className={rowClassName({ className: 'w-full' })}
-                  to={`/w/${workspaceId}/accounts`}
-                >
-                  <span className="inline-flex items-center" aria-hidden="true">
-                    <UsersIcon />
-                  </span>
-                  <span className="min-w-0 flex-1">Manage accounts</span>
-                  <span
-                    className="inline-flex items-center text-muted"
-                    aria-hidden="true"
-                  >
-                    <ExternalLinkIcon />
-                  </span>
-                </Link>
-              </div>
-            ) : null}
           </div>
           <section
             aria-labelledby={pageTitleId}
@@ -1105,7 +1117,8 @@ export function SettingsModal({
                 >
                   {activeAction?.title ?? activePage?.title ?? settingsTitle}
                 </h2>
-                {scope === undefined ? null : (
+                {scope === undefined ||
+                activeAction?.hideScope === true ? null : (
                   <p className="mb-0 mt-1 text-secondary text-muted max-lg:hidden">
                     {activeAction === null ? scope : activePage?.title}
                   </p>
@@ -1125,7 +1138,8 @@ export function SettingsModal({
             <div
               className={`ui-settings-content min-h-0 flex-1 ${activeAction === null ? 'overflow-y-auto overscroll-contain' : 'flex flex-col'}`}
             >
-              {scope === undefined ? null : (
+              {scope === undefined ||
+              activeAction?.hideScope === true ? null : (
                 <p className="ui-scope-line text-secondary text-muted lg:hidden">
                   {activeAction === null ? scope : activePage?.title}
                 </p>

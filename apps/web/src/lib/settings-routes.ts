@@ -14,7 +14,12 @@ import { isSettingsRoute, searchWithSettings } from './settings-address.ts';
 import { settingsSections, type SettingsSectionKey } from './page-sections.ts';
 
 /** The groups of the modal sidebar, in order. */
-export const settingsPageGroups = ['General', 'Workspace', 'Account'] as const;
+export const settingsPageGroups = [
+  'General',
+  'Workspace',
+  'Account',
+  'Administration',
+] as const;
 
 /** One group of the modal sidebar. */
 export type SettingsPageGroup = (typeof settingsPageGroups)[number];
@@ -87,6 +92,34 @@ export const settingsPages = [
     sections: ['api-keys', 'connected-apps'],
     scope: 'Each key has all your current access.',
   },
+  {
+    path: 'accounts',
+    title: 'Accounts',
+    group: 'Administration',
+    sections: ['admin-accounts'],
+    scope: 'People who can use this installation. Their notes stay private.',
+  },
+  {
+    path: 'mail',
+    title: 'Mail',
+    group: 'Administration',
+    sections: ['admin-mail'],
+    scope: 'Mail delivery for this installation.',
+  },
+  {
+    path: 'legal',
+    title: 'Legal documents',
+    group: 'Administration',
+    sections: ['admin-legal'],
+    scope: 'Terms and privacy notice for this installation.',
+  },
+  {
+    path: 'reports',
+    title: 'Reports',
+    group: 'Administration',
+    sections: ['admin-reports'],
+    scope: 'Reports of published links.',
+  },
 ] as const satisfies readonly {
   readonly path: string;
   readonly title: string;
@@ -143,9 +176,15 @@ export function settingsPageForAnchor(hash: string): SettingsPagePath | null {
 export function visibleSettingsPages(account: {
   readonly accountPortal: boolean;
   readonly mcpAuthorization?: boolean;
+  readonly installationRole?: string;
 }) {
   return settingsPages
-    .filter((page) => page.path !== 'billing' || account.accountPortal)
+    .filter(
+      (page) =>
+        (page.path !== 'billing' || account.accountPortal) &&
+        (page.group !== 'Administration' ||
+          account.installationRole === 'administrator'),
+    )
     .map((page) => ({
       ...page,
       title:

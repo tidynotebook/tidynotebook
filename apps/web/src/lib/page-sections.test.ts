@@ -38,9 +38,11 @@ await test('a section of a fixed list reads its title and its heading', () => {
 
 await test('Settings shows Billing only when the installation names a portal', () => {
   const keys = (accountPortal: boolean): string[] =>
-    visibleSettingsSections({ accountPortal, mcpAuthorization: true }).map(
-      (section) => section.key,
-    );
+    visibleSettingsSections({
+      accountPortal,
+      mcpAuthorization: true,
+      installationRole: 'administrator',
+    }).map((section) => section.key);
   // Billing opens the portal, so with no portal it would be a dead section.
   assert.ok(!keys(false).includes('billing'));
   assert.deepEqual(
@@ -123,7 +125,7 @@ await test('Settings groups cover each section once in page order and separate d
     settingsSections.map((section) => section.key),
   );
   assert.deepEqual(settingsGroups.at(-1), {
-    title: 'Danger zone',
-    keys: ['remove-account'],
+    title: 'Administration',
+    keys: ['admin-accounts', 'admin-mail', 'admin-legal', 'admin-reports'],
   });
 });

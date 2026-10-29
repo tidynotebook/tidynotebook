@@ -33,6 +33,10 @@ export const settingsSections = [
     id: 'remove-account-heading',
     title: 'Delete account',
   },
+  { key: 'admin-accounts', id: 'admin-accounts-heading', title: 'Accounts' },
+  { key: 'admin-mail', id: 'admin-mail-heading', title: 'Mail' },
+  { key: 'admin-legal', id: 'admin-legal-heading', title: 'Legal documents' },
+  { key: 'admin-reports', id: 'admin-reports-heading', title: 'Reports' },
 ] as const;
 
 /** The name of one section of Settings. */
@@ -58,6 +62,10 @@ export const settingsGroups: readonly {
     ],
   },
   { title: 'Danger zone', keys: ['remove-account'] },
+  {
+    title: 'Administration',
+    keys: ['admin-accounts', 'admin-mail', 'admin-legal', 'admin-reports'],
+  },
 ];
 
 /** One section of Settings, with its name. */
@@ -73,11 +81,14 @@ export type SettingsSection = (typeof settingsSections)[number];
 export function visibleSettingsSections(account: {
   readonly accountPortal: boolean;
   readonly mcpAuthorization?: boolean;
+  readonly installationRole?: string;
 }): readonly SettingsSection[] {
   return settingsSections.filter(
     (section) =>
       (section.key !== 'billing' || account.accountPortal) &&
-      (section.key !== 'connected-apps' || account.mcpAuthorization === true),
+      (section.key !== 'connected-apps' || account.mcpAuthorization === true) &&
+      (!section.key.startsWith('admin-') ||
+        account.installationRole === 'administrator'),
   );
 }
 

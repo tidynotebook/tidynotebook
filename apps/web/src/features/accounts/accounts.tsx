@@ -231,7 +231,7 @@ function LockedPage(): ReactNode {
           disabled={busy}
           onClick={() => {
             setExportError('');
-            void portal.open(portalHome);
+            void portal.open(portalHome, true);
           }}
         >
           {account.controls.trialState === 'expired'
