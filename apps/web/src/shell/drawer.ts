@@ -53,10 +53,11 @@ export function drawerClassName(open: boolean, size: SidebarSize): string {
  * bar with the close button stays above it.
  */
 export const drawerPanelClassName =
-  'flex min-h-0 flex-1 flex-col overflow-y-auto';
+  'ui-drawer-scroll flex min-h-0 flex-1 flex-col overflow-y-auto';
 
 /** The classes of the box that scrolls the tree inside the drawer panel. */
-export const drawerTreeClassName = 'min-h-40 flex-1 overflow-y-auto px-2 pb-2';
+export const drawerTreeClassName =
+  'ui-drawer-scroll min-h-40 flex-1 overflow-y-auto px-2 pb-2';
 
 /**
  * The classes of the calendar view inside the drawer panel.

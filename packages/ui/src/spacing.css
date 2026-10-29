@@ -421,3 +421,9 @@
     }
   }
 }
+
+@utility ui-drawer-scroll {
+  @media (width < 48rem) and (pointer: coarse) {
+    touch-action: pan-y pinch-zoom;
+  }
+}

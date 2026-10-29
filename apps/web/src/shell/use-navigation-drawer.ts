@@ -106,7 +106,7 @@ export function useNavigationDrawer(
   useEffect(() => {
     if (
       !modal ||
-      !matchMedia('(pointer: coarse)').matches ||
+      !window.matchMedia('(pointer: coarse)').matches ||
       !panel.current ||
       !scrim.current
     )
