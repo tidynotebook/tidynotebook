@@ -337,12 +337,26 @@ try {
               ),
             );
           const original = scroller.scrollTop;
-          const before = tree.getBoundingClientRect().top;
+          const names = () => [...tree.querySelectorAll('[data-tree-name]')];
+          const bounds = scroller.getBoundingClientRect();
+          const anchor = names().find(
+            (name) =>
+              name.getBoundingClientRect().top >= bounds.top &&
+              name.getBoundingClientRect().bottom <= bounds.bottom,
+          );
+          if (!anchor) throw new Error('The tree must have a visible name.');
+          const name = anchor.textContent;
+          const before = anchor.getBoundingClientRect().top;
           scroller.scrollTop = scroller.scrollHeight;
           await settle();
           scroller.scrollTop = original;
           await settle();
-          return Math.abs(tree.getBoundingClientRect().top - before);
+          const restored = names().find(
+            (element) => element.textContent === name,
+          );
+          if (!restored)
+            throw new Error('The visible row must return after scrolling.');
+          return Math.abs(restored.getBoundingClientRect().top - before);
         });
         assert.ok(
           drift <= 1,
