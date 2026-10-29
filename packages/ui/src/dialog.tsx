@@ -49,6 +49,7 @@ import { placeOverlay } from './overlay-position.ts';
 import { followVisibleArea, readVisibleArea } from './visible-area.ts';
 import { giveFocusBack } from './dialog-focus.ts';
 import { PhoneSheetHeader } from './phone-sheet.tsx';
+import { followPhoneSheetViewport } from './phone-sheet-viewport.ts';
 import { Button } from './controls.tsx';
 import { transitionRaise } from './motion.ts';
 
@@ -141,6 +142,7 @@ export function Dialog({
   }, []);
   const swipe = useRef<{ x: number; y: number } | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const [headerTarget, setHeaderTarget] = useState<HTMLDivElement | null>(null);
   const openerRef = useRef<HTMLElement | null>(null);
   // The latest close handler, which the effect below reads when a key or a
@@ -238,7 +240,7 @@ export function Dialog({
   }, [open]);
 
   useLayoutEffect(() => {
-    if (!open || anchor === undefined || anchor === null) return;
+    if (!open || phone || anchor === undefined || anchor === null) return;
     /** Place the dialog next to its anchor on wide screens. */
     const place = (): void => {
       const panel = panelRef.current;
@@ -269,7 +271,18 @@ export function Dialog({
       stop();
       window.removeEventListener('scroll', place, true);
     };
-  }, [open, anchor]);
+  }, [open, anchor, phone]);
+
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    const panel = panelRef.current;
+    if (!open || !phone || width === 'screen' || !root || !panel) return;
+    return followPhoneSheetViewport(
+      root,
+      panel,
+      width === 'settings' || width === 'template',
+    );
+  }, [open, phone, width]);
 
   if (!open) return null;
 
@@ -279,6 +292,7 @@ export function Dialog({
 
   return (
     <div
+      ref={rootRef}
       className={`fixed inset-0 z-50 flex justify-center ${root} ${transitionRaise}`}
       data-notes-dialog-root=""
       role="presentation"

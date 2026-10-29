@@ -30,7 +30,7 @@ import { sidebarWidthClass, type SidebarSize } from './sidebar-size.ts';
  * overlay ignores: a phone reaches the tree through the overlay alone.
  */
 export function drawerClassName(open: boolean, size: SidebarSize): string {
-  const base = `fixed bottom-0 left-0 top-0 z-50 flex ${sidebarWidthClass(size.step)} flex-row border-r border-edge-subtle bg-surface text-strong ${transitionPanel} md:top-header md:z-40`;
+  const base = `fixed bottom-0 left-0 top-0 z-50 flex ${sidebarWidthClass(size.step)} max-md:pointer-coarse:w-full flex-row border-r border-edge-subtle bg-surface text-strong ${transitionPanel} md:top-header md:z-40`;
   // `invisible` and not only `-translate-x-full`: a panel that stays visible
   // keeps every link inside it reachable by keyboard and by a screen reader,
   // so the person would walk into a drawer that is not on the screen.

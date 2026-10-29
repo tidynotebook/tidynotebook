@@ -13,7 +13,7 @@
  * `folder-tree-picker.tsx` loads this module when a folder choice first
  * shows, so the tree stays out of the first route.
  */
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import {
   Button,
@@ -21,6 +21,7 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
   FolderIcon,
+  fieldClassName,
   DialogHeaderAction,
   isTouchInput,
   FolderPlusIcon,
@@ -96,7 +97,9 @@ export default function FolderTreeView({
   const [filter, setFilter] = useState('');
   const [named, setNamed] = useState<readonly string[]>([]);
   const [focusPath, setFocusPath] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useState<string | null>(null);
+  const draftRow = useRef<HTMLDivElement | null>(null);
+  const createButton = useRef<HTMLButtonElement | null>(null);
   const [name, setName] = useState('');
   const [problem, setProblem] = useState<string | null>(null);
   const rowRefs = useRef(new Map<string, HTMLDivElement>());
@@ -159,7 +162,29 @@ export default function FolderTreeView({
     onSelect(path);
   };
 
+  const cancelCreate = (): void => {
+    setCreating(null);
+    setName('');
+    setProblem(null);
+  };
+  useEffect(() => {
+    if (creating === null) return;
+    const outside = (event: PointerEvent): void => {
+      if (
+        event.target instanceof Node &&
+        !draftRow.current?.contains(event.target)
+      ) {
+        setCreating(null);
+        setName('');
+        setProblem(null);
+      }
+    };
+    document.addEventListener('pointerdown', outside, true);
+    return () => document.removeEventListener('pointerdown', outside, true);
+  }, [creating]);
+
   const createFolder = (): void => {
+    if (creating === null) return;
     const child = cleanNoteBaseName(name);
     const nameProblem = noteBaseNameProblem(child);
     if (nameProblem !== null) {
@@ -170,7 +195,7 @@ export default function FolderTreeView({
       );
       return;
     }
-    const folder = childFolderPath(selected, child);
+    const folder = childFolderPath(creating, child);
     const pathProblem = noteNameProblem(folder);
     if (pathProblem !== null) {
       setProblem(pathProblem.replaceAll('note name', 'folder name'));
@@ -181,8 +206,8 @@ export default function FolderTreeView({
       return;
     }
     setNamed((now) => [...now, folder]);
-    if (selected !== '') toggle(selected, true);
-    setCreating(false);
+    if (creating !== '') toggle(creating, true);
+    setCreating(null);
     setName('');
     setProblem(null);
     setFilter('');
@@ -192,6 +217,77 @@ export default function FolderTreeView({
 
   const parentName =
     selected === '' ? null : (selected.split('/').at(-1) ?? selected);
+
+  const draftLevel =
+    creating === ''
+      ? 1
+      : (rows.find((row) => row.path === creating)?.level ?? 0) + 1;
+  const inlineRow =
+    creating === null ? null : (
+      <div
+        ref={draftRow}
+        className={treeIndentClassName(draftLevel)}
+        role="treeitem"
+        aria-level={draftLevel}
+        aria-label="New folder"
+        data-dialog-escape="local"
+        onKeyDown={(event) => {
+          event.stopPropagation();
+          if (event.nativeEvent.isComposing) return;
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            createFolder();
+          } else if (event.key === 'Escape') {
+            event.preventDefault();
+            cancelCreate();
+            window.requestAnimationFrame(() => createButton.current?.focus());
+          }
+        }}
+      >
+        <div className={treeRowClassName()}>
+          <span className={rowSpacerClassName} aria-hidden="true" />
+          <span className="inline-flex shrink-0" aria-hidden="true">
+            <FolderIcon />
+          </span>
+          <input
+            id={`${id}-new-folder`}
+            aria-label="Folder name"
+            placeholder="Folder name"
+            className={fieldClassName({
+              invalid: problem !== null,
+              className: 'min-w-0 flex-1',
+            })}
+            value={name}
+            autoComplete="off"
+            autoFocus
+            aria-invalid={problem !== null}
+            aria-describedby={
+              problem === null ? undefined : `${id}-new-folder-error`
+            }
+            onChange={(event) => {
+              setName(event.target.value);
+              setProblem(null);
+            }}
+          />
+          <Button
+            variant="ghost"
+            icon={<CheckIcon />}
+            label="Create folder"
+            className="size-11 shrink-0"
+            onClick={createFolder}
+          />
+        </div>
+        {problem === null ? null : (
+          <p
+            id={`${id}-new-folder-error`}
+            className="m-0 py-1 pl-11 text-secondary text-danger"
+            role="alert"
+          >
+            {problem}
+          </p>
+        )}
+      </div>
+    );
 
   const canSearch = all.filter((folder) => folder !== '').length > filterFrom;
   const searchControl = canSearch ? (
@@ -267,6 +363,11 @@ export default function FolderTreeView({
         aria-label={label}
         className={`${treeItemsClassName} max-h-72 overflow-y-auto`}
         onKeyDown={(event) => {
+          if (
+            event.target instanceof Element &&
+            event.target.closest('input, button')
+          )
+            return;
           if (current === null) return;
           if (event.altKey || event.ctrlKey || event.metaKey) return;
           const action = folderTreeKeyAction(event.key, rows, current);
@@ -284,155 +385,118 @@ export default function FolderTreeView({
             No folder matches "{filter}".
           </p>
         ) : null}
+        {creating === '' && !includeRoot ? inlineRow : null}
         {rows.map((row) => {
           const chosen = row.path === selected;
           return (
-            <div
-              key={row.path === '' ? '\u0000root' : row.path}
-              ref={(element) => {
-                if (element === null) rowRefs.current.delete(row.path);
-                else rowRefs.current.set(row.path, element);
-              }}
-              role="treeitem"
-              aria-level={row.level}
-              aria-selected={chosen}
-              aria-expanded={row.hasChildren ? row.expanded : undefined}
-              aria-disabled={row.disabled ? true : undefined}
-              tabIndex={row.path === current ? 0 : -1}
-              className={`${treeIndentClassName(row.level)} ${treeItemClassName}`}
-              onFocus={() => setFocusPath(row.path)}
-              onClick={() => {
-                if (!row.disabled) choose(row.path);
-              }}
-            >
-              <div className={treeRowClassName({ open: chosen })}>
-                <div className={treeRowLeadingClassName}>
-                  {row.hasChildren ? (
-                    <button
-                      type="button"
-                      tabIndex={-1}
-                      aria-label={`${row.expanded ? 'Close' : 'Open'} ${row.name}`}
-                      className={rowActionClassName}
-                      onMouseDown={(event) => event.preventDefault()}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        toggle(row.path, !row.expanded);
-                        focusRow(row.path);
-                      }}
-                    >
-                      <span
-                        className="inline-flex text-muted"
-                        aria-hidden="true"
+            <Fragment key={row.path === '' ? '\u0000root' : row.path}>
+              <div
+                ref={(element) => {
+                  if (element === null) rowRefs.current.delete(row.path);
+                  else rowRefs.current.set(row.path, element);
+                }}
+                role="treeitem"
+                aria-level={row.level}
+                aria-selected={chosen}
+                aria-expanded={row.hasChildren ? row.expanded : undefined}
+                aria-disabled={row.disabled ? true : undefined}
+                tabIndex={row.path === current ? 0 : -1}
+                className={`${treeIndentClassName(row.level)} ${treeItemClassName}`}
+                onFocus={() => setFocusPath(row.path)}
+                onClick={() => {
+                  if (!row.disabled) choose(row.path);
+                }}
+              >
+                <div className={treeRowClassName({ open: chosen })}>
+                  <div className={treeRowLeadingClassName}>
+                    {row.hasChildren ? (
+                      <button
+                        type="button"
+                        tabIndex={-1}
+                        aria-label={`${row.expanded ? 'Close' : 'Open'} ${row.name}`}
+                        className={rowActionClassName}
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          toggle(row.path, !row.expanded);
+                          focusRow(row.path);
+                        }}
                       >
-                        {row.expanded ? (
-                          <ChevronDownIcon />
-                        ) : (
-                          <ChevronRightIcon />
-                        )}
-                      </span>
-                    </button>
-                  ) : (
-                    <span className={rowSpacerClassName} aria-hidden="true" />
-                  )}
-                  <div
-                    className={`${treeRowNameClassName} ${row.path === currentFolder || row.disabled ? 'pointer-coarse:flex-wrap pointer-coarse:gap-y-0' : ''} ${row.disabled ? 'cursor-default text-muted' : ''}`}
-                  >
-                    <span className="inline-flex shrink-0" aria-hidden="true">
-                      <FolderIcon />
-                    </span>
-                    <span
-                      className={`min-w-0 flex-1 truncate ${row.path === currentFolder || row.disabled ? 'pointer-coarse:line-clamp-2 pointer-coarse:whitespace-normal pointer-coarse:break-words' : ''}`}
+                        <span
+                          className="inline-flex text-muted"
+                          aria-hidden="true"
+                        >
+                          {row.expanded ? (
+                            <ChevronDownIcon />
+                          ) : (
+                            <ChevronRightIcon />
+                          )}
+                        </span>
+                      </button>
+                    ) : (
+                      <span className={rowSpacerClassName} aria-hidden="true" />
+                    )}
+                    <div
+                      className={`${treeRowNameClassName} ${row.path === currentFolder || row.disabled ? 'pointer-coarse:flex-wrap pointer-coarse:gap-y-0' : ''} ${row.disabled ? 'cursor-default text-muted' : ''}`}
                     >
-                      {row.name}
-                    </span>
-                    {row.path === currentFolder || row.disabled ? (
-                      <span className="shrink-0 text-secondary text-muted pointer-coarse:basis-full pointer-coarse:pl-6">
-                        {row.path === currentFolder
-                          ? 'Current folder'
-                          : disabledNote?.(row.path)}
+                      <span className="inline-flex shrink-0" aria-hidden="true">
+                        <FolderIcon />
                       </span>
-                    ) : null}
+                      <span
+                        className={`min-w-0 flex-1 truncate ${row.path === currentFolder || row.disabled ? 'pointer-coarse:line-clamp-2 pointer-coarse:whitespace-normal pointer-coarse:break-words' : ''}`}
+                      >
+                        {row.name}
+                      </span>
+                      {row.path === currentFolder || row.disabled ? (
+                        <span className="shrink-0 text-secondary text-muted pointer-coarse:basis-full pointer-coarse:pl-6">
+                          {row.path === currentFolder
+                            ? 'Current folder'
+                            : disabledNote?.(row.path)}
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
+                  {searchPlacement === 'row' && row === rows[0]
+                    ? searchControl
+                    : null}
+                  {chosen ? (
+                    <span
+                      className="inline-flex shrink-0 items-center pr-1"
+                      aria-hidden="true"
+                    >
+                      <CheckIcon />
+                    </span>
+                  ) : searchPlacement === 'row' &&
+                    row === rows[0] &&
+                    canSearch ? (
+                    <span className="w-5 shrink-0" aria-hidden="true" />
+                  ) : null}
                 </div>
-                {searchPlacement === 'row' && row === rows[0]
-                  ? searchControl
-                  : null}
-                {chosen ? (
-                  <span
-                    className="inline-flex shrink-0 items-center pr-1"
-                    aria-hidden="true"
-                  >
-                    <CheckIcon />
-                  </span>
-                ) : searchPlacement === 'row' &&
-                  row === rows[0] &&
-                  canSearch ? (
-                  <span className="w-5 shrink-0" aria-hidden="true" />
-                ) : null}
               </div>
-            </div>
+              {creating === row.path ? inlineRow : null}
+            </Fragment>
           );
         })}
       </div>
-      {creating ? (
-        <div
-          className="mt-2 border-0 border-t border-solid border-edge-subtle pt-3"
-          onKeyDown={(event) => {
-            // The name field sits in the form of a dialog, so Enter names
-            // the folder and does not confirm the dialog.
-            if (event.key === 'Enter') {
-              event.preventDefault();
-              event.stopPropagation();
-              createFolder();
-            }
-          }}
-        >
-          <TextField
-            id={`${id}-new-folder`}
-            label={
-              parentName === null
-                ? 'New folder name'
-                : `New folder in ${parentName}`
-            }
-            value={name}
-            error={problem ?? undefined}
-            reserveErrorSpace
-            autoFocus
-            onChange={(value) => {
-              setName(value);
-              setProblem(null);
-            }}
-          />
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setCreating(false);
-                setName('');
-                setProblem(null);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button variant="secondary" onClick={createFolder}>
-              Add folder
-            </Button>
-          </div>
-        </div>
-      ) : (
+      {creating === null ? (
         <div className="mt-1 border-0 border-t border-solid border-edge-subtle pt-1">
           <Button
             variant="ghost"
             icon={<FolderPlusIcon />}
+            buttonRef={createButton}
             className="w-full justify-start"
-            onClick={() => setCreating(true)}
+            onClick={() => {
+              setFilter('');
+              if (selected !== '') toggle(selected, true);
+              setCreating(selected);
+            }}
           >
             {parentName === null
               ? 'New folder here'
               : `New folder in ${parentName}`}
           </Button>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

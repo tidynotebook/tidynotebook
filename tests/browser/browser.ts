@@ -2,6 +2,7 @@
 export type Locator = {
   click(): Promise<void>;
   fill(value: string): Promise<void>;
+  press(key: string): Promise<void>;
   waitFor(): Promise<void>;
   first(): Locator;
   filter(options: { visible: boolean }): Locator;
@@ -33,6 +34,7 @@ export type Page = {
   getByText(text: string | RegExp, options?: { exact?: boolean }): Locator;
   getByLabel(label: string, options?: { exact?: boolean }): Locator;
   setDefaultTimeout(timeout: number): void;
+  setViewportSize(size: { width: number; height: number }): Promise<void>;
   on(event: 'pageerror', callback: (error: Error) => void): void;
   on(event: 'request', callback: (request: Request) => void): void;
   evaluate<T>(run: () => T): Promise<Awaited<T>>;
