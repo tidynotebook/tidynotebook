@@ -846,7 +846,7 @@ export function switchClassNames(checked: boolean): {
   return {
     row: rowClassName({
       flush: true,
-      className: 'ui-setting-row w-full text-left',
+      className: 'ui-setting-row ui-setting-align w-full text-left',
     }),
     track: `inline-flex h-6 w-10 shrink-0 items-center rounded-full border border-edge-line p-1 ${checked ? 'justify-end bg-accent-fill' : 'justify-start bg-hover'}`,
     thumb: `size-4 rounded-full ${checked ? 'bg-on-accent' : 'bg-muted'}`,

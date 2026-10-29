@@ -109,11 +109,11 @@ export function SettingRow({
   readonly children?: ReactNode;
 }): ReactNode {
   return (
-    <div className="ui-setting-row flex flex-wrap items-start border-b border-edge-subtle lg:flex-nowrap">
+    <div className="ui-setting-row ui-setting-align flex flex-wrap items-start border-b border-edge-subtle lg:flex-nowrap">
       <div className="contents lg:block lg:min-w-0 lg:flex-1">
         <p
           data-setting-label
-          className="order-1 m-0 min-w-0 flex-1 break-words text-body text-strong lg:truncate pointer-coarse:flex pointer-coarse:items-center"
+          className="order-1 m-0 min-w-0 flex-1 break-words text-body text-strong lg:truncate"
         >
           {label}
         </p>
@@ -160,7 +160,7 @@ export function SettingChoiceRow({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="ui-setting-row flex w-full items-start border-b border-edge-subtle bg-transparent text-left hover:bg-hover focus-visible:relative focus-visible:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-focus disabled:cursor-default disabled:text-muted pointer-coarse:flex-wrap pointer-coarse:gap-y-0"
+      className="ui-setting-row ui-setting-align flex w-full items-start border-b border-edge-subtle bg-transparent text-left hover:bg-hover focus-visible:relative focus-visible:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-focus disabled:cursor-default disabled:text-muted pointer-coarse:flex-wrap pointer-coarse:gap-y-0"
     >
       <span className="min-w-0 flex-1 pointer-coarse:contents">
         <span

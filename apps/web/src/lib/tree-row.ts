@@ -180,6 +180,7 @@ export function treeMessageClassName(tone: 'status' | 'problem'): string {
 export const rowActionClassName = buttonClassName({
   variant: 'ghost',
   size: 'sm',
+  iconOnly: true,
   className: 'size-11 shrink-0 px-0 pointer-fine:size-7',
 });
 

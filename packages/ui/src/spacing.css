@@ -231,4 +231,22 @@
   &.ui-setting-align {
     align-items: start;
   }
+  &:has(.ui-button, .ui-switch-control) {
+    --ui-setting-control-height: var(--ui-control-height);
+    &:has(.ui-compact):not(:has(.ui-button:not(.ui-compact))) {
+      --ui-setting-control-height: var(--ui-compact-height);
+    }
+    & [data-setting-label] {
+      min-height: var(--ui-setting-control-height);
+      padding-top: calc((var(--ui-setting-control-height) - 1lh) / 2);
+    }
+    & [data-setting-control] {
+      display: flex;
+      align-items: center;
+      min-height: var(--ui-setting-control-height);
+    }
+    & > [aria-hidden='true'] {
+      margin-top: calc((var(--ui-setting-control-height) - 16px) / 2);
+    }
+  }
 }

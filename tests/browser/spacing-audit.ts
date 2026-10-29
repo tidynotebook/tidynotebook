@@ -90,6 +90,21 @@ export async function auditSpacing(page: Page) {
       check(e, 'setting-bottom-pad', parseFloat(style.paddingBottom), 8);
       check(e, 'setting-control-gap', parseFloat(style.columnGap), spec.rowGap);
     }
+    const firstTextLine = (element: Element): DOMRect | null => {
+      const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        if (
+          !node.textContent?.trim() ||
+          node.parentElement?.closest('[aria-hidden="true"],.sr-only')
+        )
+          continue;
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        const rect = range.getClientRects()[0];
+        if (rect?.height) return rect;
+      }
+      return null;
+    };
     for (const row of document.querySelectorAll(
       '.ui-setting-row,.ui-setting-align',
     )) {
@@ -98,7 +113,7 @@ export async function auditSpacing(page: Page) {
       const controls = row.querySelectorAll('[data-setting-control]');
       if (!label || controls.length === 0)
         throw new Error('A setting row must mark its label and control.');
-      for (const control of controls)
+      for (const control of controls) {
         check(
           row,
           'setting-control-label-top',
@@ -107,6 +122,27 @@ export async function auditSpacing(page: Page) {
           0,
           2,
         );
+        const line = firstTextLine(label);
+        if (line) {
+          const targets = [control, ...control.querySelectorAll('.ui-button')];
+          for (const target of targets) {
+            const text = firstTextLine(target);
+            const track =
+              target.querySelector(
+                '.ui-switch-control > [aria-hidden="true"]',
+              ) ?? (target.hasAttribute('aria-hidden') ? target : null);
+            const rect = text ?? track?.getBoundingClientRect();
+            if (rect)
+              check(
+                row,
+                'setting-first-line-centre',
+                rect.top + rect.height / 2 - line.top - line.height / 2,
+                0,
+                2,
+              );
+          }
+        }
+      }
     }
     if (coarse && innerWidth < 1024) {
       for (const row of document.querySelectorAll('.ui-drawer-row')) {
