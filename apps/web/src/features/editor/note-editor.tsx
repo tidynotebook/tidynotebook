@@ -1534,7 +1534,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
             )}
             <div
               ref={containerRef}
-              className="min-h-0 flex-1 overflow-hidden"
+              className="min-h-0 flex-1 overflow-hidden max-lg:pointer-coarse:overflow-visible"
               onPaste={(event): void => {
                 const dropped = Array.from(event.clipboardData?.files ?? []);
                 if (dropped.some((file) => file.type.startsWith('image/'))) {
