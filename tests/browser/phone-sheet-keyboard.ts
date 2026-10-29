@@ -131,7 +131,9 @@ async function visibleFieldAndFooter(
   }
 }
 try {
-  for (const width of [320, 390, 1440])
+  for (const width of process.env.CHECK_WIDTHS?.split(',').map(Number) ?? [
+    320, 390, 1440,
+  ])
     for (const scheme of ['light', 'dark'] as const) {
       const phone = width < 1024,
         height = phone ? 844 : 900;
@@ -226,7 +228,7 @@ try {
         await dialog()
           .getByRole('button', { name: 'Cancel', exact: true })
           .count(),
-        1,
+        phone ? 0 : 1,
       );
       assert.equal(
         await dialog()
@@ -280,7 +282,10 @@ try {
         .click();
       assert.equal(await field.count(), 0);
       await dialog()
-        .getByRole('button', { name: 'Cancel', exact: true })
+        .getByRole('button', {
+          name: phone ? 'Back to section' : 'Cancel',
+          exact: true,
+        })
         .click();
       await page.setViewportSize({ width, height });
       if (phone) {
@@ -376,6 +381,15 @@ try {
         await page
           .getByRole('button', { name: 'Open navigation', exact: true })
           .click();
+      if (!phone)
+        await page
+          .getByRole('button', {
+            name: 'Actions for the folder Personal',
+            exact: true,
+          })
+          .evaluate((e) =>
+            e.closest<HTMLElement>('[role="treeitem"]')?.focus(),
+          );
       await page
         .getByRole('button', {
           name: 'Actions for the folder Personal',

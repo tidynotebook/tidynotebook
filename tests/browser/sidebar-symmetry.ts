@@ -175,6 +175,33 @@ export async function auditSidebar(page: Page) {
         );
       }
     }
+    if (!coarse) {
+      const opener = document.activeElement;
+      for (const item of root.querySelectorAll<HTMLElement>(
+        '.ui-sidebar-indent[role="treeitem"]',
+      )) {
+        const row = item.querySelector('.ui-sidebar-row'),
+          button = item.querySelector<HTMLButtonElement>(
+            '.ui-sidebar-row-menu',
+          );
+        if (!row || !button) continue;
+        const before = box(row);
+        for (const target of [item, button]) {
+          target.focus({ preventScroll: true });
+          if (
+            getComputedStyle(button).opacity !== '1' ||
+            getComputedStyle(button).pointerEvents === 'none'
+          )
+            errors.push('Focused tree item or button must show its menu');
+          const after = box(row);
+          eq('focus row x', after.x, before.x);
+          eq('focus row y', after.y, before.y);
+          eq('focus row width', after.width, before.width);
+          eq('focus row height', after.height, before.height);
+        }
+      }
+      if (opener instanceof HTMLElement) opener.focus({ preventScroll: true });
+    }
     return { errors, measurements };
   });
 }
@@ -282,6 +309,21 @@ try {
       const measured = await auditSidebar(p);
       errors.push(...measured.errors.map((e) => `${width} ${scheme}: ${e}`));
       results.push({ width, scheme, ...measured });
+      const menu = p
+        .getByRole('button', { name: 'More drawer actions', exact: true })
+        .filter({ visible: true });
+      if (await menu.count()) {
+        await menu.click();
+        await p
+          .getByRole('menuitem', { name: 'Collapse all folders', exact: true })
+          .click();
+      } else
+        await p
+          .getByRole('button', { name: 'Collapse all folders', exact: true })
+          .click();
+      await p
+        .getByRole('button', { name: 'Expand folder Projects', exact: true })
+        .click();
       await p.locator('#notes-sidebar').screenshot({
         path: `.local-app/screenshots/s1-sidebar-${width}-${scheme}.png`,
         animations: 'disabled',
@@ -304,7 +346,7 @@ try {
           overlay.append(e);
         };
         for (const el of document.querySelectorAll(
-          '#notes-sidebar .ui-sidebar-panel,#notes-sidebar .ui-sidebar-row,#notes-sidebar .ui-sidebar-body,#notes-sidebar .ui-sidebar-tree-items,#notes-sidebar .ui-sidebar-rail',
+          '#notes-sidebar .ui-sidebar-panel,#notes-sidebar .ui-sidebar-row,#notes-sidebar .ui-sidebar-body,#notes-sidebar .ui-sidebar-tree-items,#notes-sidebar .ui-sidebar-actions,#notes-sidebar .ui-sidebar-rail-group,#notes-sidebar .ui-sidebar-rail',
         )) {
           const r = el.getBoundingClientRect(),
             s = getComputedStyle(el);

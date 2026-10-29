@@ -907,6 +907,7 @@
     pointer-events: none;
     .group:hover &,
     .group:focus-within &,
+    .ui-sidebar-indent:focus-within &,
     [aria-expanded='true']& {
       opacity: 1;
       pointer-events: auto;
