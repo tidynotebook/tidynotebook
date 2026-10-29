@@ -12,6 +12,7 @@ export function followPhoneSheetDrag(
   let animations: Animation[] = [];
   let stopped = false;
   let settling = false;
+  let suppressClick = false;
   let y = 0;
   let drag: {
     id: number;
@@ -114,6 +115,7 @@ export function followPhoneSheetDrag(
       .catch(() => {});
   };
   const down = (event: PointerEvent) => {
+    if (event.isPrimary) suppressClick = false;
     if (
       !event.isPrimary ||
       event.pointerType === 'mouse' ||
@@ -148,6 +150,7 @@ export function followPhoneSheetDrag(
         return;
       }
       d.active = true;
+      suppressClick = true;
       cancelAnimations();
       panel.setPointerCapture(event.pointerId);
     }
@@ -171,9 +174,10 @@ export function followPhoneSheetDrag(
     );
   };
   const click = (event: MouseEvent) => {
-    if (drag?.active || settling) {
+    if (suppressClick && event.detail !== 0) {
       event.preventDefault();
       event.stopPropagation();
+      suppressClick = false;
     }
   };
   const focusChanged = () => queueMicrotask(scrolling);

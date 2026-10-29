@@ -855,7 +855,10 @@ export function SettingsModal({
           <div
             className={`${listLevel ? 'flex' : 'hidden'} min-h-0 flex-1 flex-col bg-surface lg:flex lg:w-60 lg:flex-none lg:border-r lg:border-edge-subtle`}
           >
-            <div className="ui-sheet-header flex shrink-0 items-center gap-cluster px-4 lg:hidden">
+            <div
+              data-sheet-drag=""
+              className="ui-sheet-header flex shrink-0 touch-pan-x touch-pinch-zoom items-center gap-cluster px-4 lg:hidden"
+            >
               <Button
                 variant="ghost"
                 icon={<CloseIcon />}
@@ -984,7 +987,10 @@ export function SettingsModal({
             }}
             className={`${listLevel ? 'hidden' : 'flex'} min-h-0 min-w-0 flex-1 flex-col lg:flex`}
           >
-            <div className="ui-settings-heading flex shrink-0 items-start gap-cluster">
+            <div
+              data-sheet-drag=""
+              className="ui-settings-heading flex shrink-0 touch-pan-x touch-pinch-zoom items-start gap-cluster"
+            >
               <Button
                 className={activeAction === null ? 'lg:hidden' : undefined}
                 variant="ghost"
