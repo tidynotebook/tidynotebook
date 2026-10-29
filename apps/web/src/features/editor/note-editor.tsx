@@ -1488,7 +1488,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
           }}
         />
         {attachState.kind === 'uploading' ? (
-          <p className="m-0 mt-4 text-help text-muted" role="status">
+          <p className="m-0 mt-4 text-secondary text-muted" role="status">
             {`Uploading ${attachState.name}.`}
           </p>
         ) : null}

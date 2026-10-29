@@ -170,7 +170,7 @@ export function StaleDraftRecovery({
           >
             <h2
               id={`recovery-${entry}-heading`}
-              className="mb-2 mt-0 hidden text-control font-semibold lg:block"
+              className="mb-2 mt-0 hidden text-title-header lg:block"
             >
               {entry === 'device' ? 'This device' : 'Saved version'}
             </h2>
@@ -183,12 +183,12 @@ export function StaleDraftRecovery({
           </section>
         ))}
       </div>
-      <p className="text-help text-muted">
+      <p className="text-secondary text-muted">
         If you use the saved version, this device's text stays in Needs
         attention.
       </p>
       {problem === '' ? null : (
-        <p role="alert" className="text-help text-danger">
+        <p role="alert" className="text-secondary text-danger">
           {problem}
         </p>
       )}

@@ -92,7 +92,7 @@ export function ApiKeySettings(): ReactNode {
       ) : (
         <>
           {keys.length === 0 ? (
-            <p className="mb-3 mt-0 text-help text-muted">
+            <p className="mb-3 mt-0 text-secondary text-muted">
               No API keys. Create a key for your program.
             </p>
           ) : (
@@ -103,10 +103,10 @@ export function ApiKeySettings(): ReactNode {
                   className="flex items-center justify-between gap-4"
                 >
                   <div className="min-w-0">
-                    <p className="m-0 break-words text-ui text-strong">
+                    <p className="m-0 break-words text-body text-strong">
                       {key.name}
                     </p>
-                    <p className="mb-0 mt-1 text-help text-muted">
+                    <p className="mb-0 mt-1 text-secondary text-muted">
                       {apiKeyFacts(key, now)}
                     </p>
                   </div>
@@ -124,7 +124,7 @@ export function ApiKeySettings(): ReactNode {
             </ul>
           )}
           {keys.length >= maxApiKeys ? (
-            <p className="mb-3 mt-0 text-help text-muted">
+            <p className="mb-3 mt-0 text-secondary text-muted">
               Your account has 25 API keys. Revoke a key before you create
               another.
             </p>
@@ -226,7 +226,7 @@ function CreateKeyDialog({
         }}
       >
         <DialogBody>
-          <p className="mb-4 mt-0 text-ui text-strong">
+          <p className="mb-4 mt-0 text-body text-strong">
             This key can read, change, and delete your notes. Use a separate key
             for each program.
           </p>
@@ -291,13 +291,10 @@ function CreatedKey({
       aria-label="Copy your API key"
       className="mb-4 rounded-lg border border-edge-subtle p-3"
     >
-      <h3 className="mb-2 mt-0 text-title font-semibold text-strong">
+      <h3 className="mb-2 mt-0 text-title-header text-strong">
         Copy your API key
       </h3>
-      <p
-        id="api-key-secret-help"
-        className="mb-3 mt-0 text-control text-strong"
-      >
+      <p id="api-key-secret-help" className="mb-3 mt-0 text-body text-strong">
         Copy this key now. You cannot read it again after you leave this
         section. Store it in a safe place. Do not put it in a web address.
       </p>
@@ -367,7 +364,7 @@ function RevokeKeyDialog({
       returnFocus={returnFocus}
     >
       <DialogBody>
-        <p className="m-0 text-ui text-strong">
+        <p className="m-0 text-body text-strong">
           {apiKeyRevokeText(apiKey.name)}
         </p>
         {error === '' ? null : (

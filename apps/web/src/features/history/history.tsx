@@ -639,10 +639,10 @@ function HistoryDetail({
                               )}
                             </span>
                             <span className="flex min-w-0 flex-1 flex-col text-left">
-                              <span className="truncate text-ui text-strong">
+                              <span className="truncate text-body text-strong">
                                 {label}
                               </span>
-                              <span className="truncate text-help text-muted">
+                              <span className="truncate text-secondary text-muted">
                                 Changes at this save:{' '}
                                 {rowReading(change, item.merged)}
                               </span>
@@ -831,9 +831,7 @@ function RevisionPanel({
           ))}
         </div>
       ) : (
-        <h3 className="m-0 text-help font-medium text-muted">
-          {currentVersionText}
-        </h3>
+        <h3 className="m-0 text-secondary text-muted">{currentVersionText}</h3>
       )}
       <div
         role={views.length > 1 ? 'tabpanel' : undefined}
@@ -844,7 +842,7 @@ function RevisionPanel({
       >
         {view === 'changes' ? (
           <>
-            <p className="mb-2 mt-0 text-help text-muted">
+            <p className="mb-2 mt-0 text-secondary text-muted">
               Compared with current
             </p>
             <RevisionChanges diff={diff} revisionId={detail.item.revisionId} />
@@ -884,7 +882,7 @@ function RevisionChanges({
 }): ReactNode {
   if (diff.status === 'idle')
     return (
-      <p className="m-0 text-help text-muted">
+      <p className="m-0 text-secondary text-muted">
         No comparison is available for this version. Open Preview to read it.
       </p>
     );
@@ -908,7 +906,7 @@ function RevisionChanges({
     );
   if (diff.status === 'limit')
     return (
-      <p className="m-0 text-help text-muted">
+      <p className="m-0 text-secondary text-muted">
         The two versions are too far apart to compare line by line. Open Preview
         to read this version, or restore it.
       </p>

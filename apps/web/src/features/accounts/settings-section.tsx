@@ -56,18 +56,18 @@ export function SettingsSection({
       >
         {topic.hiddenTitles.includes(section.id) ? null : (
           <h3
-            className={`m-0 border-b border-edge-subtle pb-1.5 text-help font-semibold ${danger ? 'text-danger' : 'text-muted'}`}
+            className={`m-0 border-b border-edge-subtle pb-1.5 text-group ${danger ? 'text-danger' : 'text-muted'}`}
             id={section.id}
           >
             {heading ?? section.title}
           </h3>
         )}
         {topic.helpSection === section.id && description !== undefined ? (
-          <p className="mb-3 mt-0 text-help text-muted">{description}</p>
+          <p className="mb-3 mt-0 text-secondary text-muted">{description}</p>
         ) : null}
         <div className="min-w-0">
           {warning === undefined ? null : (
-            <p className="mb-3 mt-0 text-help text-muted">{warning}</p>
+            <p className="mb-3 mt-0 text-secondary text-muted">{warning}</p>
           )}
           {children}
         </div>
@@ -81,19 +81,19 @@ export function SettingsSection({
       <div className="md:grid md:grid-cols-3 md:gap-group">
         <div className="md:col-span-1">
           <h2
-            className="m-0 text-title font-semibold text-strong"
+            className="m-0 text-title-header text-strong"
             id={section.id}
             tabIndex={-1}
           >
             {section.title}
           </h2>
           {description === undefined ? null : (
-            <p className="mb-0 mt-1 text-help text-muted">{description}</p>
+            <p className="mb-0 mt-1 text-secondary text-muted">{description}</p>
           )}
         </div>
         <div className="mt-3 min-w-0 md:col-span-2 md:mt-0">
           {warning === undefined ? null : (
-            <p className="mb-3 mt-0 text-help text-muted">{warning}</p>
+            <p className="mb-3 mt-0 text-secondary text-muted">{warning}</p>
           )}
           {children}
         </div>
@@ -118,12 +118,12 @@ export function SettingRow({
   return (
     <div className="flex min-h-14 flex-wrap items-start gap-x-group border-b border-edge-subtle py-2 lg:min-h-13 lg:flex-nowrap lg:items-center lg:py-0.5">
       <div className="contents lg:block lg:min-w-0 lg:flex-1">
-        <p className="order-1 m-0 min-w-0 flex-1 break-words text-ui text-strong lg:truncate">
+        <p className="order-1 m-0 min-w-0 flex-1 break-words text-body text-strong lg:truncate">
           {label}
         </p>
         {help === undefined ? null : (
           <p
-            className="order-3 m-0 line-clamp-2 w-full break-words text-help text-muted lg:line-clamp-1"
+            className="order-3 m-0 line-clamp-2 w-full break-words text-secondary text-muted lg:line-clamp-1"
             title={help}
           >
             {help}
@@ -164,15 +164,15 @@ export function SettingChoiceRow({
       className="flex min-h-14 w-full items-start gap-3 border-b border-edge-subtle bg-transparent py-2 text-left hover:bg-hover focus-visible:relative focus-visible:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-focus disabled:cursor-default disabled:text-muted lg:h-13 lg:items-center lg:py-0 pointer-coarse:flex-wrap pointer-coarse:gap-y-0"
     >
       <span className="min-w-0 flex-1 pointer-coarse:contents">
-        <span className="block truncate text-ui text-strong pointer-coarse:order-1 pointer-coarse:min-w-0 pointer-coarse:flex-1">
+        <span className="block truncate text-body text-strong pointer-coarse:order-1 pointer-coarse:min-w-0 pointer-coarse:flex-1">
           {label}
         </span>
-        <span className="line-clamp-2 break-words text-help text-muted lg:line-clamp-1 pointer-coarse:order-4 pointer-coarse:w-full pointer-coarse:basis-full">
+        <span className="line-clamp-2 break-words text-secondary text-muted lg:line-clamp-1 pointer-coarse:order-4 pointer-coarse:w-full pointer-coarse:basis-full">
           {help}
         </span>
       </span>
       <span
-        className="inline-flex min-w-0 max-w-1/2 items-center gap-2 text-control text-strong pointer-coarse:order-2"
+        className="inline-flex min-w-0 max-w-1/2 items-center gap-2 text-value text-muted pointer-coarse:order-2"
         title={value}
       >
         {valueIcon === undefined ? null : (

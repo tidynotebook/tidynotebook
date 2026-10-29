@@ -47,7 +47,7 @@ export function Tooltip({
       onPointerLeave={onPointerLeave}
       className="fixed z-50 hidden py-1 pointer-fine:block"
     >
-      <span className="block whitespace-nowrap rounded-md border border-edge-line bg-card px-2 py-1 text-control text-strong shadow-overlay">
+      <span className="block whitespace-nowrap rounded-md border border-edge-line bg-card px-2 py-1 text-body text-strong shadow-overlay">
         {text}
       </span>
     </span>,

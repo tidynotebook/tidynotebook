@@ -195,7 +195,7 @@ export function syncStateMessage(
  * The longest sentence the footer may say, in characters.
  *
  * The narrowest sidebar leaves about 178 px for the sentence beside the dot,
- * which holds about 24 characters of `text-control`. Every sentence fits in
+ * which holds about 24 characters of `text-body`. Every sentence fits in
  * two lines of it, with a note name of a usual length, and the line wraps
  * and is never cut, so a longer name still reads in full.
  */
@@ -206,7 +206,7 @@ export const syncLineBudget = 48;
  *
  * The sentence wraps and is never cut: the status that matters most is the
  * one a person cannot afford to lose to an ellipsis. The dot sits in a frame
- * of one line of `text-control`, so it stays beside the first line when the
+ * of one line of `text-body`, so it stays beside the first line when the
  * sentence takes two.
  */
 export const syncStatusClassNames = {

@@ -204,7 +204,7 @@ export function buttonClassName(
             ? 'min-h-11 px-2.5 md:min-h-7'
             : 'min-h-11 px-3 md:min-h-8';
   return [
-    `inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-control font-medium no-underline ${transitionSurface} ${compact ? 'focus-visible:outline-none' : focusOutline} disabled:cursor-not-allowed`,
+    `inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-label no-underline ${transitionSurface} ${compact ? 'focus-visible:outline-none' : focusOutline} disabled:cursor-not-allowed`,
     variantClass,
     sizeClass,
     options.className ?? '',
@@ -253,7 +253,7 @@ export function compactButtonVisualClassName(options: {
  * width, so the two facts stay one fact.
  */
 export function avatarClassName(): string {
-  return 'inline-flex size-6 items-center justify-center rounded-full bg-active text-kbd font-semibold text-strong';
+  return 'inline-flex size-6 items-center justify-center rounded-full bg-active text-avatar text-strong';
 }
 
 /** The mark that a control at the edge of a frame draws inside its box. */
@@ -364,11 +364,11 @@ export function rowClassName(
   // element, because two of them are decided by the order of the stylesheet
   // and not by the order of the string.
   const toned = options.danger === true;
-  const colour = toned ? 'text-danger' : 'text-ink';
+  const colour = toned ? 'text-danger' : 'text-strong';
   const state = marked
     ? toned
-      ? 'bg-active font-medium'
-      : 'bg-active text-strong font-medium'
+      ? 'bg-active text-label'
+      : 'bg-active text-strong text-label'
     : interactive
       ? toned
         ? 'hover:bg-hover'
@@ -384,7 +384,7 @@ export function rowClassName(
       : 'disabled:cursor-not-allowed disabled:text-muted disabled:hover:bg-transparent disabled:hover:text-muted'
     : '';
   return [
-    `flex min-h-11 items-center gap-2 rounded-md ${options.flush === true ? 'px-0' : 'px-2'} text-control ${colour} no-underline ${transitionSurface} md:min-h-7`,
+    `flex min-h-11 items-center gap-2 rounded-md ${options.flush === true ? 'px-0' : 'px-2'} text-body ${colour} no-underline ${transitionSurface} md:min-h-7`,
     interactive ? 'cursor-pointer' : '',
     disabled,
     interactive
@@ -445,7 +445,7 @@ export function taskBoxClassName(): string {
  */
 export function tabClassName(options: { readonly selected: boolean }): string {
   return [
-    `inline-flex min-h-11 shrink-0 cursor-pointer items-center rounded-md px-2.5 text-control font-medium ${transitionSurface} ${focusOutline} md:min-h-7`,
+    `inline-flex min-h-11 shrink-0 cursor-pointer items-center rounded-md px-2.5 text-label ${transitionSurface} ${focusOutline} md:min-h-7`,
     options.selected
       ? 'bg-active text-strong'
       : 'text-muted hover:bg-hover hover:text-strong',
@@ -462,7 +462,7 @@ export function tabClassName(options: { readonly selected: boolean }): string {
  * field.
  */
 export function inlineFieldClassName(): string {
-  return `min-w-0 flex-1 rounded-sm border bg-app px-1 text-control ${touchFieldText} text-strong outline-none ${transitionField} border-edge-line focus-visible:border-focus`;
+  return `min-w-0 flex-1 rounded-sm border bg-app px-1 text-body ${touchFieldText} text-strong outline-none ${transitionField} border-edge-line focus-visible:border-focus`;
 }
 
 /** The classes of the parts of one checkbox and its label. */
@@ -495,7 +495,7 @@ export function checkboxClassNames(
   options: { readonly disabled?: boolean | undefined } = {},
 ): CheckboxClassNames {
   return {
-    label: `inline-flex min-h-11 items-center gap-2 text-control md:min-h-8 ${options.disabled === true ? 'cursor-not-allowed text-muted' : 'cursor-pointer text-strong'}`,
+    label: `inline-flex min-h-11 items-center gap-2 text-body md:min-h-8 ${options.disabled === true ? 'cursor-not-allowed text-muted' : 'cursor-pointer text-strong'}`,
     frame: 'relative inline-flex size-4 shrink-0 items-center justify-center',
     box: `peer size-4 cursor-pointer appearance-none rounded-sm border border-edge bg-app ${transitionSurface} checked:border-accent-fill checked:bg-accent-fill disabled:cursor-not-allowed disabled:checked:border-edge disabled:checked:bg-hover ${focusOutline}`,
     mark: 'pointer-events-none absolute inset-0 hidden text-on-accent peer-checked:block peer-disabled:text-muted',
@@ -603,7 +603,7 @@ export function fieldClassName(
   } = {},
 ): string {
   return [
-    `w-full min-h-11 ${fieldSurface} text-ui ${touchFieldText} md:min-h-8`,
+    `w-full min-h-11 ${fieldSurface} text-body ${touchFieldText} md:min-h-8`,
     fieldEdge(options.invalid === true),
     options.className ?? '',
   ]
@@ -632,7 +632,7 @@ export function textAreaClassName(
   options: { readonly invalid?: boolean | undefined } = {},
 ): string {
   return [
-    `block w-full min-h-64 resize-y py-2 font-mono text-control ${touchFieldText} leading-relaxed ${fieldSurface}`,
+    `block w-full min-h-64 resize-y py-2 font-mono text-body ${touchFieldText} ${fieldSurface}`,
     fieldEdge(options.invalid === true),
   ].join(' ');
 }
@@ -645,7 +645,7 @@ export function textAreaClassName(
  * body step of the chrome and the touch step of every field.
  */
 export function bareFieldClassName(): string {
-  return `min-w-0 flex-1 border-0 bg-transparent py-3 text-ui ${touchFieldText} text-strong outline-none placeholder:text-muted`;
+  return `min-w-0 flex-1 border-0 bg-transparent py-3 text-body ${touchFieldText} text-strong outline-none placeholder:text-muted`;
 }
 
 /**
@@ -669,7 +669,7 @@ export function selectClassName(): string {
  * each key.
  */
 export function kbdClassName(): string {
-  return 'inline-flex items-center rounded-sm border border-edge-line bg-surface px-1.5 font-mono text-kbd text-muted';
+  return 'inline-flex items-center rounded-sm border border-edge-line bg-surface px-1.5 font-mono text-small text-muted';
 }
 
 /**
@@ -683,7 +683,7 @@ export function kbdClassName(): string {
  * states its meaning in its word.
  */
 export function badgeClassName(): string {
-  return 'inline-flex items-center rounded-sm bg-hover px-1.5 text-kbd font-medium text-muted';
+  return 'inline-flex items-center rounded-sm bg-hover px-1.5 text-secondary text-muted';
 }
 
 /** The real fill percentage, clamped to the track. */
@@ -710,7 +710,7 @@ export function meterClassNames(
   readonly fill: string;
 } {
   return {
-    text: 'mb-1 mt-0 text-help text-muted',
+    text: 'mb-1 mt-0 text-secondary text-muted',
     track: 'h-1.5 w-full overflow-hidden rounded-sm bg-hover',
     fill: `block h-1.5 w-full rounded-sm ${meterAlmostFull(value, max) ? 'fill-danger-fill' : 'fill-accent-fill'}`,
   };
@@ -748,10 +748,10 @@ export function calendarDayClassName(options: {
         ? 'text-ink'
         : 'text-muted';
   return [
-    `relative inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border text-control tabular-nums ${transitionSurface} ${focusOutlineInset} md:h-7`,
+    `relative inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border text-body tabular-nums ${transitionSurface} ${focusOutlineInset} md:h-7`,
     options.today ? 'border-edge-line font-semibold' : 'border-transparent',
     options.selected
-      ? 'bg-active font-medium'
+      ? 'bg-active text-label'
       : 'hover:bg-hover hover:text-strong',
     text,
   ].join(' ');

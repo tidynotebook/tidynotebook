@@ -25,7 +25,7 @@ export function OAuthConsentView({
 }): ReactNode {
   return (
     <AuthFrame title="Allow access to your notes">
-      <dl className="mb-6 mt-0 space-y-4 text-ui">
+      <dl className="mb-6 mt-0 space-y-4 text-body">
         <div>
           <dt className="font-medium text-muted">The client calls itself</dt>
           <dd className="m-0 break-words text-strong">
@@ -56,7 +56,7 @@ export function OAuthConsentView({
       {facts.localWarning === null ? null : (
         <Notice className="mb-5" message={facts.localWarning} />
       )}
-      <p className="mb-4 mt-0 text-ui text-ink">{facts.accessSentence}</p>
+      <p className="mb-4 mt-0 text-body text-ink">{facts.accessSentence}</p>
       {facts.writeRequested ? (
         <fieldset className="m-0 min-w-0 border-0 p-0" disabled={busy}>
           <SelectField

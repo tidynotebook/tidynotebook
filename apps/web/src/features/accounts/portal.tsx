@@ -58,7 +58,7 @@ export function PortalPage(): ReactNode {
   if (step.kind === 'no-portal')
     return (
       <AuthFrame title={title}>
-        <p className="mb-3 mt-0 text-help text-muted">
+        <p className="mb-3 mt-0 text-secondary text-muted">
           This installation has no billing.
         </p>
         <BackToNotes />

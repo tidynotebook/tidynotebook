@@ -265,7 +265,7 @@ export default function TemplateChoices({
         <h3
           ref={detailTitle}
           tabIndex={-1}
-          className="m-0 min-w-0 flex-1 truncate text-title font-semibold text-strong outline-none max-lg:text-center"
+          className="m-0 min-w-0 flex-1 truncate text-title-header text-strong outline-none max-lg:text-center"
         >
           <span className="hidden lg:inline">New note from template</span>
           <span className="lg:hidden">
@@ -377,7 +377,7 @@ export default function TemplateChoices({
                     />
                   )
                 ) : matching.length === 0 ? (
-                  <p className="text-help text-muted">
+                  <p className="text-secondary text-muted">
                     No template matches "{search}".
                   </p>
                 ) : (
@@ -436,7 +436,7 @@ export default function TemplateChoices({
                         {/* Two templates with one name differ by subfolder. */}
                         {(repeated.get(choice.label) ?? 0) > 1 &&
                         choice.detail !== null ? (
-                          <span className="shrink-0 text-help text-muted">
+                          <span className="shrink-0 text-secondary text-muted">
                             {choice.detail}
                           </span>
                         ) : null}
@@ -461,7 +461,7 @@ export default function TemplateChoices({
             }
           >
             {selected === null ? (
-              <p className="text-help text-muted">Choose a template</p>
+              <p className="text-secondary text-muted">Choose a template</p>
             ) : (
               <>
                 <div className="grid min-w-0 shrink-0 gap-x-3 sm:grid-cols-2">
@@ -511,9 +511,7 @@ export default function TemplateChoices({
                     className="flex min-h-24 flex-1 flex-col"
                     aria-label={`Preview of ${selectedLabel ?? ''}`}
                   >
-                    <p className="mb-1.5 mt-0 text-control font-medium text-strong">
-                      Preview
-                    </p>
+                    <p className="mb-1.5 mt-0 text-group text-muted">Preview</p>
                     {store === null || accountId === null ? null : (
                       <Suspense
                         fallback={
@@ -545,7 +543,7 @@ export default function TemplateChoices({
       <div className={details ? 'shrink-0' : 'hidden shrink-0 lg:block'}>
         <DialogFooter>
           {selected === null ? null : (
-            <p className="m-0 mr-auto hidden self-center text-help text-muted lg:block">
+            <p className="m-0 mr-auto hidden self-center text-secondary text-muted lg:block">
               Date and time are set when you create the note.
             </p>
           )}

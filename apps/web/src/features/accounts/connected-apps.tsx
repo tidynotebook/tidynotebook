@@ -74,7 +74,7 @@ export function ConnectedAppSettings(): ReactNode {
             </Button>
           )
         ) : apps.length === 0 ? (
-          <p className="m-0 text-help text-muted">
+          <p className="m-0 text-secondary text-muted">
             No connected apps. Connect an app from its settings.
           </p>
         ) : (
@@ -85,13 +85,13 @@ export function ConnectedAppSettings(): ReactNode {
                 className="flex items-center justify-between gap-4"
               >
                 <div className="min-w-0">
-                  <p className="m-0 break-words text-ui text-strong">
+                  <p className="m-0 break-words text-body text-strong">
                     Name claimed by app: {connectedAppName(app)}
                   </p>
-                  <p className="mb-0 mt-1 break-words text-help text-muted">
+                  <p className="mb-0 mt-1 break-words text-secondary text-muted">
                     {connectedAppIdentity(app)}
                   </p>
-                  <p className="mb-0 mt-1 text-help text-muted">
+                  <p className="mb-0 mt-1 text-secondary text-muted">
                     {connectedAppFacts(app, now)}
                   </p>
                 </div>
@@ -188,7 +188,7 @@ function RevokeAppDialog({
       returnFocus={returnFocus}
     >
       <DialogBody>
-        <p className="m-0 text-ui text-strong">
+        <p className="m-0 text-body text-strong">
           {connectedAppRevokeText(connectedAppName(app))}
         </p>
         {error === '' ? null : (

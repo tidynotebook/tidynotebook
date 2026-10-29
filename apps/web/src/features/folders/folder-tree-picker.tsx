@@ -77,10 +77,7 @@ export function FolderField({
         }
       }}
     >
-      <span
-        id={`${id}-label`}
-        className="mb-1.5 block text-control font-medium text-strong"
-      >
+      <span id={`${id}-label`} className="mb-1.5 block text-label text-strong">
         {label}
       </span>
       <button
@@ -106,7 +103,7 @@ export function FolderField({
         </span>
       </button>
       {error === undefined ? null : (
-        <p className="mb-0 mt-1 text-help text-danger" role="alert">
+        <p className="mb-0 mt-1 text-secondary text-danger" role="alert">
           {error}
         </p>
       )}

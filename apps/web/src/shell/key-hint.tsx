@@ -40,7 +40,7 @@ export function KeyHint({ keys }: { readonly keys: string }): ReactNode {
       {keyHintParts(keys).map((part, index) => (
         <Fragment key={`${String(index)}:${part.kind}`}>
           {part.kind === 'or' ? (
-            <span className="text-kbd text-muted">or</span>
+            <span className="text-small text-muted">or</span>
           ) : (
             <KeyCapHint cap={part.cap} />
           )}

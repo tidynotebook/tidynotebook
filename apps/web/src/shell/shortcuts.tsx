@@ -35,7 +35,7 @@ export function ShortcutsDialog({
       width="medium"
     >
       <DialogBody>
-        <dl className="m-0 flex flex-col gap-2 text-ui">
+        <dl className="m-0 flex flex-col gap-2 text-body">
           {shortcuts.map((shortcut) => (
             <div
               className="flex items-center justify-between gap-group"

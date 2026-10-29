@@ -287,3 +287,5 @@ export { Switch } from './controls.tsx';
 export { FieldPopover } from './field-popover.tsx';
 
 export { isTouchInput } from './input-focus.ts';
+
+export { textRoleClasses, touchTextRoles } from './typography.ts';

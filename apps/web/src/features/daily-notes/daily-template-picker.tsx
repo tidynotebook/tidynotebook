@@ -206,7 +206,9 @@ function TemplateSelection({
                   {displayNoteName(
                     outside.path.split('/').at(-1) ?? outside.path,
                   )}{' '}
-                  <span className="text-help text-muted">Current template</span>
+                  <span className="text-secondary text-muted">
+                    Current template
+                  </span>
                 </button>
               )}
               {folder === null ? (
@@ -217,7 +219,7 @@ function TemplateSelection({
               ) : files.loading ? (
                 <LoadingState label="Reading templates" />
               ) : matching.length === 0 ? (
-                <p className="text-help text-muted">
+                <p className="text-secondary text-muted">
                   {choices.length === 0
                     ? `No templates in ${folder}. Add a note to this folder to use it as a template.`
                     : 'No matching templates.'}
@@ -242,7 +244,7 @@ function TemplateSelection({
                       (other) =>
                         other.id !== choice.id && other.label === choice.label,
                     ) ? (
-                      <span className="text-help text-muted">
+                      <span className="text-secondary text-muted">
                         {choice.detail}
                       </span>
                     ) : null}
@@ -258,11 +260,11 @@ function TemplateSelection({
             aria-label="Template preview"
             className="min-w-0 lg:h-96 lg:overflow-y-auto"
           >
-            <h3 className="mb-2 mt-0 text-control font-medium text-strong lg:sr-only">
+            <h3 className="mb-2 mt-0 text-group text-muted lg:sr-only">
               Preview
             </h3>
             {selected === null ? (
-              <p className="mt-0 text-help text-muted">
+              <p className="mt-0 text-secondary text-muted">
                 Daily notes will start empty.
               </p>
             ) : store === null || accountId === null || chosen === undefined ? (

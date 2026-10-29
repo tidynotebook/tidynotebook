@@ -216,9 +216,11 @@ function PublishedLinksList({
                       <LinkIcon />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="m-0 truncate text-ui text-strong">{name}</p>
+                      <p className="m-0 truncate text-body text-strong">
+                        {name}
+                      </p>
                       <p
-                        className="m-0 flex flex-wrap gap-cluster text-help text-muted"
+                        className="m-0 flex flex-wrap gap-cluster text-secondary text-muted"
                         title={facts.join(', ')}
                       >
                         {facts.slice(0, shownLinkFacts).map((fact) => (

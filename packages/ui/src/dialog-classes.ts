@@ -69,7 +69,7 @@ export function dialogPanelClassName(width: DialogWidth): string {
 export function dialogTitleClassName(hidden: boolean): string {
   return hidden
     ? 'sr-only'
-    : 'sticky top-0 z-10 m-0 bg-card px-5 pb-1 pt-4 text-title font-semibold text-strong';
+    : 'sticky top-0 z-10 m-0 bg-card px-5 pb-1 pt-4 text-title-header text-strong';
 }
 
 /** The title row of a dialog that has controls next to its title. */
@@ -79,7 +79,7 @@ export function dialogHeaderClassName(): string {
 
 /** The title inside the title row of {@link dialogHeaderClassName}. */
 export function dialogHeaderTitleClassName(): string {
-  return 'm-0 min-w-0 flex-1 truncate text-title font-semibold text-strong';
+  return 'm-0 min-w-0 flex-1 truncate text-title-header text-strong';
 }
 
 /** The action row at the bottom of a dialog, as classes. */

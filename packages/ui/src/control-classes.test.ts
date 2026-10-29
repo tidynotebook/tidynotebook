@@ -464,7 +464,7 @@ await test('a marked row states one mark for a choice and for a route', () => {
   const selected = rowClassName({ selected: true });
   const current = rowClassName({ current: true });
   assert.equal(selected, current);
-  assert.ok(selected.includes('bg-active text-strong font-medium'));
+  assert.ok(selected.includes('bg-active text-strong text-label'));
   // A marked row has nothing left to say on hover, so it states no hover.
   assert.ok(!selected.includes('hover:'), 'a marked row repeats its own mark');
   assert.ok(rowClassName().includes('hover:bg-hover hover:text-strong'));
@@ -510,7 +510,7 @@ await test('a bare field is a field with no box of its own', () => {
   const parts = bareFieldClassName().split(' ');
   for (const part of ['border-0', 'bg-transparent', 'outline-none'])
     assert.ok(parts.includes(part), part);
-  assert.ok(parts.includes('text-ui'), 'the body step of the chrome');
+  assert.ok(parts.includes('text-body'), 'the body step of the chrome');
   assert.ok(!parts.some((part) => part.startsWith('rounded')), 'no radius');
 });
 
@@ -539,7 +539,7 @@ await test('an invalid field states the error on its edge alone', () => {
 
 await test('a key cap is the quietest step in the code face', () => {
   const cap = kbdClassName();
-  assert.ok(cap.includes('text-kbd'), 'the keyboard step');
+  assert.ok(cap.includes('text-small'), 'the keyboard step');
   assert.ok(cap.includes('font-mono'), 'the code face');
   assert.ok(cap.includes('border-edge-line'), 'the resting edge');
   assert.ok(cap.includes('rounded-sm'), 'the smallest radius');
@@ -598,13 +598,13 @@ await test('a row that destroys something reads in the danger tone', () => {
   // A marked danger row keeps its fill and its weight.
   const marked = rowClassName({ danger: true, current: true }).split(' ');
   assert.ok(marked.includes('bg-active'), 'the mark of the open route');
-  assert.ok(marked.includes('font-medium'), 'the weight of a marked row');
+  assert.ok(marked.includes('text-label'), 'the weight of a marked row');
   assert.ok(marked.includes('text-danger'), 'the tone of the row');
 });
 
 await test('a row with no tone reads in the ink and marks in the strong text', () => {
   const quiet = rowClassName().split(' ');
-  assert.ok(quiet.includes('text-ink'), 'the resting colour');
+  assert.ok(quiet.includes('text-strong'), 'the resting colour');
   assert.ok(quiet.includes('hover:text-strong'), 'the hover colour');
   const marked = rowClassName({ selected: true }).split(' ');
   assert.ok(marked.includes('text-strong'), 'the colour of a marked row');
@@ -839,7 +839,7 @@ await test('a checkbox draws its box from the theme and its mark from its state'
   assert.ok(box.includes('rounded-sm'));
   assert.ok(classes.box.includes(focusOutline));
   assert.ok(classes.mark.split(' ').includes('peer-checked:block'));
-  assert.ok(classes.label.includes('text-control'));
+  assert.ok(classes.label.includes('text-body'));
   assert.ok(
     checkboxClassNames({ disabled: true }).label.includes('text-muted'),
   );

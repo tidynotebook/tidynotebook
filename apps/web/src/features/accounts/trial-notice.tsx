@@ -32,7 +32,7 @@ export function TrialNotice(): ReactNode {
   if (active)
     return (
       <div
-        className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-1 min-h-10 text-help text-muted"
+        className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-1 min-h-10 text-secondary text-muted"
         aria-label="Trial status"
       >
         <span role="status">{message}</span>

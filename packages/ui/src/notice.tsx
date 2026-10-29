@@ -57,7 +57,7 @@ export function Notice({
   const chosen = tones[tone];
   return (
     <div
-      className={`flex flex-wrap items-center gap-group rounded-lg px-3 py-2.5 text-control ${chosen.classes} ${className ?? ''}`}
+      className={`flex flex-wrap items-center gap-group rounded-lg px-3 py-2.5 text-body ${chosen.classes} ${className ?? ''}`}
       role={tone === 'problem' ? 'alert' : 'status'}
       aria-live={tone === 'problem' ? 'assertive' : 'polite'}
     >

@@ -153,6 +153,6 @@ await test('the rows of a list keep their controls apart', () => {
 await test('a group label has no inset of its own', () => {
   const label = pageGroupLabelClassName().split(' ');
   assert.ok(!label.some((name) => /^(p|px|pl|ps)-/.test(name)));
-  assert.ok(label.includes('text-help'));
+  assert.ok(label.includes('text-group'));
   assert.ok(label.includes('text-muted'));
 });

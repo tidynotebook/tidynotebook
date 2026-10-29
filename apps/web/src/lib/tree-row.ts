@@ -159,7 +159,7 @@ export const treeListClassName = 'mt-0.5';
  * the box itself, so no row shows under it either.
  */
 export function treeMessageClassName(tone: 'status' | 'problem'): string {
-  return `sticky -bottom-2 z-10 bg-surface px-2 py-2 text-help ${tone === 'problem' ? 'text-danger' : 'text-muted'}`;
+  return `sticky -bottom-2 z-10 bg-surface px-2 py-2 text-secondary ${tone === 'problem' ? 'text-danger' : 'text-muted'}`;
 }
 
 /**

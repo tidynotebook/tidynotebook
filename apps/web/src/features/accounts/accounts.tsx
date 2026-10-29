@@ -133,7 +133,10 @@ function SignedInFooter({
   const sentence = signedInSentence(email);
   return (
     <div className="flex items-center justify-between gap-cluster">
-      <p className="m-0 min-w-0 truncate text-help text-muted" title={sentence}>
+      <p
+        className="m-0 min-w-0 truncate text-secondary text-muted"
+        title={sentence}
+      >
         {sentence}
       </p>
       <Button
@@ -215,7 +218,7 @@ function LockedPage(): ReactNode {
       }
     >
       {lockedSentences(account, now).map((sentence) => (
-        <p key={sentence} className="mb-3 mt-0 text-help text-muted">
+        <p key={sentence} className="mb-3 mt-0 text-secondary text-muted">
           {sentence}
         </p>
       ))}
@@ -236,7 +239,7 @@ function LockedPage(): ReactNode {
             : 'Open billing'}
         </Button>
       ) : null}
-      <p className="mb-2 mt-5 text-help text-muted">
+      <p className="mb-2 mt-5 text-secondary text-muted">
         You can export your notes or delete your account.
       </p>
       <div className="flex flex-wrap gap-cluster">
@@ -374,7 +377,7 @@ function ConsentPage(): ReactNode {
         </div>
       ) : (
         <>
-          <p className="mb-3 mt-0 text-help text-muted">
+          <p className="mb-3 mt-0 text-secondary text-muted">
             Read the terms and the privacy notice of this service, then accept
             them to open your notes. A new version asks you again.
           </p>
@@ -393,7 +396,7 @@ function ConsentPage(): ReactNode {
           >
             {busy ? 'Saving your answer' : 'Accept and continue'}
           </Button>
-          <p className="mb-2 mt-5 text-help text-muted">
+          <p className="mb-2 mt-5 text-secondary text-muted">
             If you do not accept them, you can export your notes and delete your
             account.
           </p>
@@ -601,7 +604,7 @@ export function LoginPage({
         </div>
       ) : (
         <>
-          <p className="mb-5 mt-0 text-help text-muted">
+          <p className="mb-5 mt-0 text-secondary text-muted">
             {setup
               ? 'This installation has no account yet. What you enter here becomes the first account. It administers the installation and invites other people.'
               : oauthQuery === undefined
@@ -676,7 +679,7 @@ export function LoginPage({
                 Forgot password
               </Link>
               {oauthQuery === undefined ? null : (
-                <p className="mt-2 text-help text-muted">
+                <p className="mt-2 text-secondary text-muted">
                   {oauthResetSentence}
                 </p>
               )}
@@ -726,7 +729,7 @@ export function AuthFrame({
     <div
       className={`flex min-h-dvh flex-col items-center justify-center bg-surface ${pageGutter} py-10`}
     >
-      <div className="mb-5 flex items-center gap-2.5 text-ui font-semibold text-strong">
+      <div className="mb-5 flex items-center gap-2.5 text-title-header text-strong">
         <span
           className="inline-flex size-7 items-center justify-center rounded-md bg-active text-strong"
           aria-hidden="true"
@@ -736,7 +739,7 @@ export function AuthFrame({
         <span>{productName}</span>
       </div>
       <Card className="w-full max-w-sm sm:p-6">
-        <h1 className="mb-2 mt-0 text-xl font-semibold tracking-heading text-strong">
+        <h1 className="mb-2 mt-0 text-title-page tracking-heading text-strong">
           {title}
         </h1>
         {children}

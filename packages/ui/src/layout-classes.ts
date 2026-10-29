@@ -140,5 +140,5 @@ export function pageListClassName(): string {
  * It has no inset, because the list below it already lines up with the page.
  */
 export function pageGroupLabelClassName(): string {
-  return 'mb-1 mt-0 text-help font-medium text-muted';
+  return 'mb-1 mt-0 text-group text-muted';
 }

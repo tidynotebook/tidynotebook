@@ -42,7 +42,7 @@ export function Toast({
       aria-live="polite"
     >
       <div
-        className={`pointer-events-auto flex w-full max-w-md flex-wrap items-center gap-group rounded-lg border border-edge-subtle bg-card px-3 py-2.5 text-control text-strong shadow-overlay ${transitionRaise}`}
+        className={`pointer-events-auto flex w-full max-w-md flex-wrap items-center gap-group rounded-lg border border-edge-subtle bg-card px-3 py-2.5 text-body text-strong shadow-overlay ${transitionRaise}`}
       >
         <span className="min-w-0 flex-1">{message}</span>
         {children}

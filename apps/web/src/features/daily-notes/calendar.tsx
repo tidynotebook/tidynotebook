@@ -147,7 +147,7 @@ export function SidebarCalendar({
                   key={weekday}
                   scope="col"
                   abbr={names.long}
-                  className="pb-0.5 text-center text-kbd font-medium text-muted"
+                  className="pb-0.5 text-center text-small text-muted"
                 >
                   {names.narrow}
                 </th>

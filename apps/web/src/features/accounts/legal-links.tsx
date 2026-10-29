@@ -49,7 +49,7 @@ export function LegalLinks({
 }): ReactNode {
   return (
     <p
-      className={`mt-0 flex flex-wrap gap-cluster text-control ${className ?? 'mb-0'}`}
+      className={`mt-0 flex flex-wrap gap-cluster text-body ${className ?? 'mb-0'}`}
     >
       {legalLinks(documents).map((link) => (
         <a

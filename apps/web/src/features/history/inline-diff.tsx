@@ -45,7 +45,7 @@ export function InlineDiff({
 }): ReactNode {
   const blocks = useMemo(() => diffBlocks(hunks), [hunks]);
   if (blocks.length === 0)
-    return <p className="m-0 text-help text-muted">{sameText}</p>;
+    return <p className="m-0 text-secondary text-muted">{sameText}</p>;
   return (
     <ol className="m-0 list-none space-y-4 p-0" aria-label="Line differences">
       {blocks.map((block, index) => (
@@ -53,7 +53,7 @@ export function InlineDiff({
           className="overflow-hidden rounded-lg border border-edge-subtle"
           key={`${idPrefix}-block-${String(index)}`}
         >
-          <h4 className="m-0 bg-surface px-3 py-2 text-control font-medium text-strong">
+          <h4 className="m-0 bg-surface px-3 py-2 text-label text-strong">
             {diffBlockHeading(block, oldLabel, newLabel)}
           </h4>
           <ol className="m-0 list-none p-0 font-mono text-preview">

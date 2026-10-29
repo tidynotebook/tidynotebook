@@ -323,7 +323,7 @@ function Breadcrumb({
   const { leafFilled } = useHeaderSlot();
   return (
     <nav className="min-w-0 flex-1" aria-label="Where you are">
-      <ol className="m-0 flex min-w-0 list-none items-center gap-1 p-0 text-ui">
+      <ol className="m-0 flex min-w-0 list-none items-center gap-1 p-0 text-body">
         {parts.map((part, index) =>
           part.to === null ? (
             <li
@@ -504,7 +504,7 @@ function Sidebar({
   return (
     <>
       <div className="flex h-header shrink-0 items-center justify-between gap-cluster border-b border-edge-subtle px-2 md:hidden">
-        <span className="text-ui font-semibold text-strong">
+        <span className="text-title-header text-strong">
           {sidebarViewLabels[view]}
         </span>
         <Button
@@ -595,7 +595,10 @@ function Sidebar({
                 />
               </div>
               {newNoteProblem === null ? null : (
-                <p className="my-1 px-2 text-help text-danger" role="alert">
+                <p
+                  className="my-1 px-2 text-secondary text-danger"
+                  role="alert"
+                >
                   {newNoteProblem}
                 </p>
               )}
@@ -666,7 +669,7 @@ function Sidebar({
                     />
                   </div>
                 ) : tree.length === 0 ? (
-                  <p className="my-1 px-2 text-help text-muted">
+                  <p className="my-1 px-2 text-secondary text-muted">
                     No notes yet.
                   </p>
                 ) : (
@@ -690,7 +693,7 @@ function Sidebar({
                 )}
                 {files.limitNotice === null ? null : (
                   <p
-                    className="my-1 px-2 text-help text-muted"
+                    className="my-1 px-2 text-secondary text-muted"
                     role="status"
                     aria-live="polite"
                   >
@@ -720,7 +723,7 @@ function Sidebar({
               onOpen={daily.open}
             />
             {daily.openProblem === null ? null : (
-              <p className="my-1 px-2 text-help text-danger" role="alert">
+              <p className="my-1 px-2 text-secondary text-danger" role="alert">
                 {daily.openProblem}
               </p>
             )}
@@ -791,7 +794,7 @@ function Sidebar({
             })}
           />
           {store.error !== null ? (
-            <p className="my-1 px-2 text-help text-danger" role="alert">
+            <p className="my-1 px-2 text-secondary text-danger" role="alert">
               {store.error}
             </p>
           ) : null}
@@ -1688,10 +1691,10 @@ function ShellFrame({
               icon={<span className={avatarClassName()}>{accountInitial}</span>}
               header={
                 <>
-                  <p className="m-0 truncate text-control font-semibold text-strong">
+                  <p className="m-0 truncate text-title-header text-strong">
                     {session.account?.name ?? ''}
                   </p>
-                  <p className="m-0 truncate text-help text-muted">
+                  <p className="m-0 truncate text-secondary text-muted">
                     {session.account?.email ?? ''}
                   </p>
                 </>

@@ -352,7 +352,7 @@ function AccountsPage(): ReactNode {
                 body: (
                   <>
                     {state.reports.length === 0 ? (
-                      <p className="m-0 text-help text-muted">
+                      <p className="m-0 text-secondary text-muted">
                         No report waits.
                       </p>
                     ) : (
@@ -371,17 +371,17 @@ function AccountsPage(): ReactNode {
                                 <LinkIcon />
                               </span>
                               <div className="min-w-0 flex-1">
-                                <p className="m-0 truncate text-ui text-strong">
+                                <p className="m-0 truncate text-body text-strong">
                                   {reason}
                                 </p>
-                                <p className="m-0 flex flex-wrap gap-cluster text-help text-muted">
+                                <p className="m-0 flex flex-wrap gap-cluster text-secondary text-muted">
                                   {reportFacts(report, now).map((fact) => (
                                     <span key={fact}>{fact}</span>
                                   ))}
                                 </p>
                                 {report.note === null ? null : (
                                   <p
-                                    className="m-0 truncate text-help text-muted"
+                                    className="m-0 truncate text-secondary text-muted"
                                     title={report.note}
                                   >
                                     {report.note}
@@ -454,7 +454,7 @@ function AccountsPage(): ReactNode {
                 body: (
                   <>
                     {state.invitations.length === 0 ? (
-                      <p className="m-0 text-help text-muted">
+                      <p className="m-0 text-secondary text-muted">
                         No invitation waits.
                       </p>
                     ) : (
@@ -467,10 +467,10 @@ function AccountsPage(): ReactNode {
                               className="flex-wrap"
                             >
                               <div className="min-w-0 flex-1">
-                                <p className="m-0 truncate text-ui text-strong">
+                                <p className="m-0 truncate text-body text-strong">
                                   {invitation.email}
                                 </p>
-                                <p className="m-0 flex flex-wrap gap-cluster text-help text-muted">
+                                <p className="m-0 flex flex-wrap gap-cluster text-secondary text-muted">
                                   {facts.map((fact) => (
                                     <span key={fact}>{fact}</span>
                                   ))}
@@ -544,11 +544,11 @@ function AccountsPage(): ReactNode {
                               <UsersIcon />
                             </span>
                             <div className="min-w-0 flex-1">
-                              <p className="m-0 truncate text-ui text-strong">
+                              <p className="m-0 truncate text-body text-strong">
                                 {name}
                               </p>
                               <p
-                                className="m-0 flex flex-wrap gap-cluster text-help text-muted"
+                                className="m-0 flex flex-wrap gap-cluster text-secondary text-muted"
                                 title={facts.join(', ')}
                               >
                                 {facts.slice(0, 3).map((fact) => (
@@ -626,7 +626,7 @@ function AccountsPage(): ReactNode {
           }}
         >
           <DialogBody>
-            <p className="m-0 text-ui text-strong">
+            <p className="m-0 text-body text-strong">
               This deletes the account and every note in its workspaces for
               good. The person is signed out on every device.
             </p>
@@ -722,7 +722,7 @@ function InviteDialog({
           }}
         >
           <DialogBody>
-            <p className="mb-4 mt-0 text-help text-muted">
+            <p className="mb-4 mt-0 text-secondary text-muted">
               {mailConfigured
                 ? `The link goes to this address by mail. It works for ${lifetime}.`
                 : `This installation sends no mail, so you get the link here and send it yourself. It works for ${lifetime}.`}
@@ -752,12 +752,12 @@ function InviteDialog({
         <>
           <DialogBody>
             {made.link === null ? (
-              <p className="m-0 text-ui text-strong">
+              <p className="m-0 text-body text-strong">
                 The link went to {made.email} by mail.
               </p>
             ) : (
               <>
-                <p className="mb-4 mt-0 text-ui text-strong">
+                <p className="mb-4 mt-0 text-body text-strong">
                   Send this link to {made.email}. It appears here once.
                 </p>
                 <ReadOnlyField
@@ -852,7 +852,7 @@ function ControlsDialog({
         }}
       >
         <DialogBody>
-          <p className="mb-4 mt-0 text-help text-muted">
+          <p className="mb-4 mt-0 text-secondary text-muted">
             The limits count every workspace that {accountName(account)} owns.
             An empty limit is no limit.
           </p>

@@ -118,7 +118,7 @@ function MenuRow({
       )}
       <span className="flex-1 truncate">{item.label}</span>
       {item.hint === undefined ? null : (
-        <span className="shrink-0 text-help text-muted">{item.hint}</span>
+        <span className="shrink-0 text-secondary text-muted">{item.hint}</span>
       )}
     </button>
   );

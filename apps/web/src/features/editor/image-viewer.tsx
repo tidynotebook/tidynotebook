@@ -372,7 +372,7 @@ function ImageViewerBody({
         so it reads on a light picture and on a dark one alike.
       */}
       <div className="absolute inset-x-3 top-3 mx-auto flex w-fit max-w-full flex-wrap items-center justify-center gap-1 rounded-lg border border-edge-subtle bg-card p-1 text-strong shadow-overlay">
-        <p className="m-0 hidden max-w-xs truncate px-2 text-control font-medium md:block">
+        <p className="m-0 hidden max-w-xs truncate px-2 text-label md:block">
           {imageTitle(image.alt)}
         </p>
         <Button
@@ -385,7 +385,7 @@ function ImageViewerBody({
             zoomTo(zoomOut(scale, lowest));
           }}
         />
-        <span className="w-12 text-center text-help tabular-nums text-muted">
+        <span className="w-12 text-center text-secondary tabular-nums text-muted">
           {idle ? '' : zoomPercent(scale)}
         </span>
         <Button
@@ -467,7 +467,7 @@ function ImageViewerBody({
         role="status"
       >
         {status === '' ? null : (
-          <p className="m-0 rounded-lg border border-edge-subtle bg-card px-3 py-2 text-control text-strong shadow-overlay">
+          <p className="m-0 rounded-lg border border-edge-subtle bg-card px-3 py-2 text-body text-strong shadow-overlay">
             {status}
           </p>
         )}

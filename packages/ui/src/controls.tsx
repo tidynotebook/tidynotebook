@@ -29,7 +29,7 @@ import {
 import { CheckIcon, ChevronDownIcon, ChevronRightIcon } from './icons.tsx';
 
 /** The label above a field, and the label beside a checkbox. */
-const fieldLabelClassName = 'mb-1.5 block text-control font-medium text-strong';
+const fieldLabelClassName = 'mb-1.5 block text-label text-strong';
 
 /** A named value against a maximum, with no state or callback. */
 export function Meter({
@@ -280,13 +280,13 @@ export function TextField({
         }}
       />
       {hasHint ? (
-        <p className="mb-0 mt-1 text-help text-muted" id={hintId}>
+        <p className="mb-0 mt-1 text-secondary text-muted" id={hintId}>
           {hint}
         </p>
       ) : null}
       {hasError || reserveErrorSpace ? (
         <p
-          className={`mt-1 text-help text-danger ${reserveErrorSpace ? 'mb-0 min-h-5' : ''}`}
+          className={`mt-1 text-secondary text-danger ${reserveErrorSpace ? 'mb-0 min-h-5' : ''}`}
           id={errorId}
           role={hasError ? 'alert' : undefined}
           aria-hidden={hasError ? undefined : true}
@@ -349,12 +349,16 @@ export function TextAreaField({
         }}
       />
       {hasHint ? (
-        <p className="mb-0 mt-1 text-help text-muted" id={hintId}>
+        <p className="mb-0 mt-1 text-secondary text-muted" id={hintId}>
           {hint}
         </p>
       ) : null}
       {hasError ? (
-        <p className="mt-1 text-help text-danger" id={errorId} role="alert">
+        <p
+          className="mt-1 text-secondary text-danger"
+          id={errorId}
+          role="alert"
+        >
           {error}
         </p>
       ) : null}
@@ -476,7 +480,7 @@ export function SelectField({
         <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted" />
       </div>
       {hint === undefined ? null : (
-        <p className="mb-0 mt-1 text-help text-muted" id={hintId}>
+        <p className="mb-0 mt-1 text-secondary text-muted" id={hintId}>
           {hint}
         </p>
       )}
@@ -602,7 +606,11 @@ export function StatusRegion({
   readonly message: string;
 }): ReactNode {
   return (
-    <p className="my-1 text-help text-muted" role="status" aria-live="polite">
+    <p
+      className="my-1 text-secondary text-muted"
+      role="status"
+      aria-live="polite"
+    >
       {message}
     </p>
   );
@@ -632,7 +640,8 @@ export function Switch({
       role="switch"
       aria-checked={checked}
       aria-label={label}
-      aria-describedby={hint === undefined ? undefined : hintId}
+      aria-describedby={hint === undefined || hideLabel ? undefined : hintId}
+      aria-description={hideLabel ? hint : undefined}
       disabled={disabled}
       className={
         hideLabel
@@ -641,14 +650,16 @@ export function Switch({
       }
       onClick={() => onChange(!checked)}
     >
-      <span className={hideLabel ? 'sr-only' : 'min-w-0 flex-1'}>
-        <span className="block">{label}</span>
-        {hint === undefined ? null : (
-          <span id={hintId} className="block text-help text-muted">
-            {hint}
-          </span>
-        )}
-      </span>
+      {hideLabel ? null : (
+        <span className="min-w-0 flex-1 text-body">
+          <span className="block">{label}</span>
+          {hint === undefined ? null : (
+            <span id={hintId} className="block text-secondary text-muted">
+              {hint}
+            </span>
+          )}
+        </span>
+      )}
       <span className={classes.track} aria-hidden="true">
         <span className={classes.thumb} />
       </span>

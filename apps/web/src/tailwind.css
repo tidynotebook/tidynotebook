@@ -305,6 +305,67 @@
   }
 }
 
+/* Shared UI text roles. packages/ui/src/typography.ts names the contract. */
+@utility text-title-page {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  font-weight: 600;
+}
+@utility text-title-header {
+  font-size: 1rem;
+  line-height: 1.5rem;
+  font-weight: 600;
+}
+@utility text-body {
+  font-size: var(--text-ui);
+  line-height: var(--text-ui--line-height);
+  font-weight: 400;
+}
+@utility text-label {
+  font-size: var(--text-control);
+  line-height: var(--text-control--line-height);
+  font-weight: 500;
+}
+@utility text-value {
+  font-size: var(--text-ui);
+  line-height: var(--text-ui--line-height);
+  font-weight: 400;
+}
+@utility text-secondary {
+  font-size: var(--text-help);
+  line-height: var(--text-help--line-height);
+  font-weight: 400;
+}
+@utility text-group {
+  font-size: var(--text-help);
+  line-height: var(--text-help--line-height);
+  font-weight: 600;
+}
+@utility text-small {
+  font-size: var(--text-kbd);
+  line-height: var(--text-kbd--line-height);
+  font-weight: 400;
+}
+@utility text-avatar {
+  font-size: var(--text-kbd);
+  line-height: var(--text-kbd--line-height);
+  font-weight: 600;
+}
+@utility text-preview-body {
+  font-size: var(--text-preview);
+  line-height: var(--text-preview--line-height);
+  font-weight: 400;
+  @media (pointer: coarse) {
+    font-size: var(--text-help);
+    line-height: var(--text-help--line-height);
+  }
+}
+@utility text-preview-heading {
+  font-size: var(--text-title);
+  line-height: 1.25rem;
+  font-weight: 600;
+}
+
 /*
  * The palette. These names map the runtime variables that `applyTheme` of
  * the theme registry writes on the document element, so a theme change is

@@ -170,13 +170,18 @@ function NoteGroupList({
               >
                 <FileTextIcon />
               </span>
-              <span className="min-w-0 flex-1 truncate text-ui text-strong">
+              <span className="min-w-0 flex-1 truncate text-body text-strong">
                 {meta.name}
                 {meta.folder === null ? null : (
-                  <span className="text-help text-muted"> · {meta.folder}</span>
+                  <span className="text-secondary text-muted">
+                    {' '}
+                    · {meta.folder}
+                  </span>
                 )}
               </span>
-              <span className="shrink-0 text-help text-muted">{meta.when}</span>
+              <span className="shrink-0 text-secondary text-muted">
+                {meta.when}
+              </span>
             </Link>
           </li>
         );

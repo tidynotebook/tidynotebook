@@ -297,10 +297,10 @@ function SessionsSettings(): ReactNode {
                   <ComputerIcon />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="m-0 truncate text-ui text-strong">
+                  <p className="m-0 truncate text-body text-strong">
                     {deviceName(current.userAgent)}
                   </p>
-                  <p className="m-0 text-help text-muted">
+                  <p className="m-0 text-secondary text-muted">
                     To sign out of this device, use the account menu.
                   </p>
                 </div>
@@ -308,7 +308,7 @@ function SessionsSettings(): ReactNode {
             </ul>
           )}
           <div className="mt-4 flex flex-wrap items-center gap-2 border-b border-edge-subtle pb-1.5">
-            <h3 className="m-0 min-w-0 flex-1 text-help font-semibold text-muted">
+            <h3 className="m-0 min-w-0 flex-1 text-group text-muted">
               Other devices
             </h3>
             {others.length === 0 ? null : (
@@ -333,7 +333,7 @@ function SessionsSettings(): ReactNode {
             )}
           </div>
           {others.length === 0 ? (
-            <p className="mt-3 text-help text-muted">No other devices.</p>
+            <p className="mt-3 text-secondary text-muted">No other devices.</p>
           ) : null}
           <ul className={pageListClassName()}>
             {others.map((session) => {
@@ -347,8 +347,8 @@ function SessionsSettings(): ReactNode {
                     <ComputerIcon />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="m-0 truncate text-ui text-strong">{name}</p>
-                    <p className="m-0 flex flex-wrap gap-cluster text-help text-muted">
+                    <p className="m-0 truncate text-body text-strong">{name}</p>
+                    <p className="m-0 flex flex-wrap gap-cluster text-secondary text-muted">
                       {sessionFacts(session, now).map((fact) => (
                         <span key={fact}>{fact}</span>
                       ))}
@@ -480,7 +480,7 @@ function ProfileSettings({
         </form>
       ) : (
         <SettingRow label="Name">
-          <span className="min-w-0 truncate text-ui font-medium text-strong">
+          <span className="min-w-0 truncate text-value text-muted">
             {name ?? ''}
           </span>
           <Button
@@ -504,7 +504,7 @@ function ProfileSettings({
         />
       ) : null}
       <SettingRow label="Email" help="Use this address to sign in.">
-        <span className="min-w-0 truncate text-ui font-medium text-strong">
+        <span className="min-w-0 truncate text-value text-muted">
           {email ?? 'No address linked'}
         </span>
       </SettingRow>
@@ -855,7 +855,7 @@ export function SettingsModal({
               <p
                 ref={listTitle}
                 tabIndex={-1}
-                className="m-0 min-w-0 flex-1 text-center text-title font-semibold text-strong outline-none"
+                className="m-0 min-w-0 flex-1 text-center text-title-header text-strong outline-none"
               >
                 {settingsTitle}
               </p>
@@ -867,12 +867,12 @@ export function SettingsModal({
                   {initial}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-ui font-semibold text-strong">
+                  <span className="block truncate text-title-header text-strong">
                     {account.name ?? account.email ?? ''}
                   </span>
                   {account.email === null ||
                   account.email === undefined ? null : (
-                    <span className="block truncate text-help text-muted">
+                    <span className="block truncate text-secondary text-muted">
                       {account.email}
                     </span>
                   )}
@@ -889,10 +889,10 @@ export function SettingsModal({
                     }
                     className="mt-3"
                   >
-                    <h3 className="m-0 flex items-center gap-1.5 px-2 pb-1 text-help font-semibold text-muted">
+                    <h3 className="m-0 flex items-center gap-1.5 px-2 pb-1 text-group text-muted">
                       {group}
                       {group === 'Workspace' && workspaceName !== '' ? (
-                        <span className="min-w-0 truncate rounded-sm bg-hover px-1.5 font-medium text-strong">
+                        <span className="min-w-0 truncate rounded-sm bg-hover px-1.5 text-secondary text-muted">
                           {workspaceName}
                         </span>
                       ) : null}
@@ -992,12 +992,12 @@ export function SettingsModal({
                   id={pageTitleId}
                   ref={sectionTitle}
                   tabIndex={-1}
-                  className="m-0 text-xl font-semibold tracking-heading text-strong outline-none max-lg:text-center max-lg:text-base"
+                  className="m-0 text-title-header text-strong outline-none max-lg:text-center"
                 >
                   {activeAction?.title ?? activePage?.title ?? settingsTitle}
                 </h2>
                 {scope === undefined ? null : (
-                  <p className="mb-0 mt-1 text-help text-muted max-lg:hidden">
+                  <p className="mb-0 mt-1 text-secondary text-muted max-lg:hidden">
                     {activeAction === null ? scope : activePage?.title}
                   </p>
                 )}
@@ -1017,7 +1017,7 @@ export function SettingsModal({
               className={`min-h-0 flex-1 px-gutter pt-3 lg:px-5 ${activeAction === null ? 'overflow-y-auto overscroll-contain pb-5' : 'flex flex-col'}`}
             >
               {scope === undefined ? null : (
-                <p className="mb-3 mt-0 min-h-5 text-help text-muted lg:hidden">
+                <p className="mb-3 mt-0 min-h-5 text-secondary text-muted lg:hidden">
                   {activeAction === null ? scope : activePage?.title}
                 </p>
               )}

@@ -72,7 +72,7 @@ export function WorkspaceHome(): ReactNode {
     return (
       <Page>
         <PageHeader title="Your notes did not open" />
-        <p className="text-help text-danger" role="alert">
+        <p className="text-secondary text-danger" role="alert">
           {state.message}
         </p>
         <Button variant="secondary" onClick={() => reload()}>
@@ -405,7 +405,7 @@ export function DeleteWorkspaceDialog({
         }}
       >
         <DialogBody>
-          <p className="mb-4 mt-0 text-ui text-strong">
+          <p className="mb-4 mt-0 text-body text-strong">
             Every note, version and published link of {workspace.name} goes. You
             cannot get them back.
           </p>
@@ -541,12 +541,12 @@ export function WorkspaceSwitcher({
         })}
       >
         <span
-          className="inline-flex size-5 shrink-0 items-center justify-center rounded-sm bg-active text-kbd font-semibold text-strong"
+          className="inline-flex size-5 shrink-0 items-center justify-center rounded-sm bg-active text-avatar text-strong"
           aria-hidden="true"
         >
           {initialOf(openWorkspace.name)}
         </span>
-        <span className="min-w-0 flex-1 truncate font-semibold text-strong">
+        <span className="min-w-0 flex-1 truncate text-label text-strong">
           {openWorkspace.name}
         </span>
         <span

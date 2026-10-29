@@ -127,7 +127,7 @@ function EnvironmentMail({ mail }: { readonly mail: MailSettings }): ReactNode {
   return (
     <>
       {facts.length === 0 ? null : (
-        <p className="mb-3 mt-0 flex flex-wrap gap-cluster text-help text-muted">
+        <p className="mb-3 mt-0 flex flex-wrap gap-cluster text-secondary text-muted">
           {facts.map((fact) => (
             <span key={fact}>{fact}</span>
           ))}
@@ -324,10 +324,8 @@ function MailSettingsForm({
         }}
       />
       <fieldset className="m-0 min-w-0 border-0 p-0">
-        <legend className="mb-1 p-0 text-control font-medium text-strong">
-          Sign-in
-        </legend>
-        <p className="mb-3 mt-0 text-help text-muted">
+        <legend className="mb-1 p-0 text-label text-strong">Sign-in</legend>
+        <p className="mb-3 mt-0 text-secondary text-muted">
           {keepsPassword
             ? 'Leave the password empty to keep the saved one. Leave both fields empty for a server that takes mail with no sign-in.'
             : 'Leave both fields empty for a server that takes mail with no sign-in.'}
@@ -447,7 +445,7 @@ function ConfirmRemoval({
       onClose={onCancel}
     >
       <DialogBody>
-        <p className="m-0 text-ui text-strong">{message}</p>
+        <p className="m-0 text-body text-strong">{message}</p>
       </DialogBody>
       <DialogFooter>
         <Button variant="ghost" onClick={onCancel}>
@@ -529,8 +527,10 @@ export function LegalDocumentsBody({
                 <FileTextIcon />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="m-0 truncate text-ui text-strong">{row.title}</p>
-                <p className="m-0 text-help text-muted">
+                <p className="m-0 truncate text-body text-strong">
+                  {row.title}
+                </p>
+                <p className="m-0 text-secondary text-muted">
                   {legalDocumentFact(document)}
                 </p>
               </div>
@@ -724,7 +724,7 @@ function LegalDocumentEditor({
       }}
     >
       <h3
-        className="mb-3 mt-0 text-title font-semibold text-strong"
+        className="mb-3 mt-0 text-title-header text-strong"
         id="legal-editor-title"
       >
         {title}
@@ -757,10 +757,10 @@ function LegalDocumentEditor({
         <>
           {fields.length === 0 ? null : (
             <fieldset className="m-0 mb-1 min-w-0 border-0 p-0">
-              <legend className="mb-1 p-0 text-control font-medium text-strong">
+              <legend className="mb-1 p-0 text-label text-strong">
                 Facts of your service
               </legend>
-              <p className="mb-3 mt-0 text-help text-muted">
+              <p className="mb-3 mt-0 text-secondary text-muted">
                 Each fact fills its place in the text below.
               </p>
               <div className="md:grid md:grid-cols-2 md:gap-x-group">

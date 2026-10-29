@@ -206,10 +206,8 @@ await test('a field under touch sets its text at 16 px', async () => {
 
 await test('touch form labels and fields share the computed 16 px size', async () => {
   const built = await buildCss([
-    'text-control',
-    'text-help',
-    'text-title',
-    'text-kbd',
+    'text-label',
+    'text-secondary',
     ...fieldClassName().split(' '),
   ]);
   for (const touch of [false, true]) {
@@ -228,11 +226,13 @@ await test('touch form labels and fields share the computed 16 px size', async (
         /@media \(pointer: coarse\)\s*\{\s*:root\s*\{([^}]+)\}/.exec(built);
       assert.ok(variables?.[1]);
       assert.ok(scale?.[1]);
-      const fontRules = ['text-control', 'text-ui', 'text-help'].map((name) => {
-        const rule = new RegExp(`\\.${name}\\s*\\{([^}]+)\\}`).exec(built);
-        assert.ok(rule?.[0]);
-        return rule[0];
-      });
+      const fontRules = ['text-label', 'text-body', 'text-secondary'].map(
+        (name) => {
+          const rule = new RegExp(`\\.${name}\\s*\\{([^}]+)\\}`).exec(built);
+          assert.ok(rule?.[0]);
+          return rule[0];
+        },
+      );
       const fieldRule = /\.pointer-coarse\\:text-base\s*\{([^}]+)\}/.exec(
         built,
       );
@@ -246,14 +246,14 @@ await test('touch form labels and fields share the computed 16 px size', async (
       document.head.append(style);
       const form = document.createElement('form');
       const label = document.createElement('label');
-      label.className = 'text-control';
+      label.className = 'text-label';
       label.textContent = 'Server';
       const field = document.createElement('input');
       field.className = fieldClassName();
       field.value = 'smtp.example.com';
       label.append(field);
       const help = document.createElement('p');
-      help.className = 'text-help';
+      help.className = 'text-secondary';
       help.textContent = 'TLS protects the connection.';
       form.append(label, help);
       document.body.append(form);

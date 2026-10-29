@@ -138,7 +138,7 @@ export function onlyModeOf(family: ThemeFamily): 'light' | 'dark' | null {
 
 /** The classes of one selectable card, chosen or not. */
 function cardClassName(chosen: boolean): string {
-  return `flex min-w-0 cursor-pointer flex-col overflow-hidden rounded-md border bg-card text-control text-strong ${transitionSurface} focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus ${
+  return `flex min-w-0 cursor-pointer flex-col overflow-hidden rounded-md border bg-card text-body text-strong ${transitionSurface} focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus ${
     chosen
       ? 'border-strong ring-1 ring-strong'
       : 'border-edge-line hover:bg-hover'
@@ -250,7 +250,7 @@ export function ThemeSettings(): ReactNode {
       description="System follows the device. The choice applies at once on this device and goes to your account in the background. Import a theme file to use your own colours."
     >
       <fieldset className="m-0 border-0 p-0">
-        <legend className="m-0 w-full border-b border-edge-subtle p-0 pb-1.5 text-help font-semibold text-muted">
+        <legend className="m-0 w-full border-b border-edge-subtle p-0 pb-1.5 text-group text-muted">
           Mode
         </legend>
         <div className="mt-3 grid grid-cols-3 gap-cluster">
@@ -303,7 +303,7 @@ export function ThemeSettings(): ReactNode {
         <legend className="sr-only">Theme</legend>
         <div className="flex items-center gap-cluster border-b border-edge-subtle pb-1">
           <span
-            className="min-w-0 flex-1 text-help font-semibold text-muted"
+            className="min-w-0 flex-1 text-group text-muted"
             aria-hidden="true"
           >
             Theme
@@ -363,7 +363,7 @@ export function ThemeSettings(): ReactNode {
                       {option.name}
                     </span>
                     {only === null ? null : (
-                      <span className="shrink-0 text-help text-muted">
+                      <span className="shrink-0 text-secondary text-muted">
                         {only === 'dark' ? 'dark only' : 'light only'}
                       </span>
                     )}
@@ -417,7 +417,7 @@ export function ThemeSettings(): ReactNode {
             message={outcome.message}
           />
           {outcome.kind === 'refused' && outcome.problems.length > 0 ? (
-            <ul className="m-0 mt-2 flex flex-col gap-1 pl-5 text-control text-strong">
+            <ul className="m-0 mt-2 flex flex-col gap-1 pl-5 text-body text-strong">
               {outcome.problems.map((problem) => (
                 <li key={problem}>{problem}</li>
               ))}

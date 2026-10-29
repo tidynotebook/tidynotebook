@@ -201,7 +201,7 @@ function AcceptForm({
 
   return (
     <>
-      <p className="mb-5 mt-0 text-help text-muted">
+      <p className="mb-5 mt-0 text-secondary text-muted">
         You have an invitation to this installation. Choose a password, and your
         account and its own notes are ready.
       </p>

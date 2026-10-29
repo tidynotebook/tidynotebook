@@ -4,8 +4,8 @@
  * Every screen frames itself with `Page` and titles itself with `PageHeader`,
  * so spacing, measure, and the heading ramp are decided once. The heading ramp
  * of the chrome is: a page title is `text-xl`, a card or section title is
- * `text-base`, a list row title is `text-ui`, and a quiet group label is
- * `text-help`. There is no smaller size than `text-kbd`, which is a
+ * `text-base`, a list row title is `text-body`, and a quiet group label is
+ * `text-secondary`. There is no smaller size than `text-kbd`, which is a
  * keyboard hint and nothing else.
  *
  * Distance is decided once as well. `pageGutter` below is the one distance
@@ -293,14 +293,14 @@ export function PageHeader({
         <div className="flex min-w-0 items-center gap-1">
           {back}
           <h1
-            className="m-0 min-w-0 text-xl font-semibold tracking-heading text-strong"
+            className="m-0 min-w-0 text-title-page tracking-heading text-strong"
             id={id}
           >
             {title}
           </h1>
         </div>
         {description === undefined || description === '' ? null : (
-          <p className="mb-0 mt-1 text-help text-muted">{description}</p>
+          <p className="mb-0 mt-1 text-secondary text-muted">{description}</p>
         )}
       </div>
       {actions === undefined ? null : (
@@ -327,10 +327,7 @@ export function Card({
   const body = (
     <>
       {title === undefined ? null : (
-        <h2
-          className="mb-3 mt-0 text-base font-semibold text-strong"
-          id={titleId}
-        >
+        <h2 className="mb-3 mt-0 text-title-header text-strong" id={titleId}>
           {title}
         </h2>
       )}
@@ -381,11 +378,9 @@ export function EmptyState({
           {icon}
         </p>
       )}
-      <h2 className="mb-0 mt-3 text-title font-semibold text-strong">
-        {title}
-      </h2>
+      <h2 className="mb-0 mt-3 text-title-header text-strong">{title}</h2>
       {description === undefined || description === '' ? null : (
-        <p className="mx-auto mb-0 mt-1 max-w-sm text-help text-muted">
+        <p className="mx-auto mb-0 mt-1 max-w-sm text-secondary text-muted">
           {description}
         </p>
       )}

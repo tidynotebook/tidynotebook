@@ -75,7 +75,7 @@ export function RemoveOwnAccountDialog({
         }}
       >
         <DialogBody>
-          <p className="mb-4 mt-0 text-ui text-strong">
+          <p className="mb-4 mt-0 text-body text-strong">
             Your account and every note in your workspaces go for good. You are
             signed out on every device.
           </p>
