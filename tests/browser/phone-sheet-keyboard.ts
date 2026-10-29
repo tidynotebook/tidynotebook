@@ -231,6 +231,9 @@ try {
         );
         await shot('keyboard-inline');
       }
+      await field.fill('Invalid/name');
+      await field.press('Enter');
+      await dialog().getByRole('alert').waitFor();
       await field.fill('Reading');
       await field.press('Enter');
       await dialog().getByRole('alert').waitFor();
@@ -388,6 +391,58 @@ try {
       await field.fill('Template destination draft');
       await field.press('Enter');
       await shot('template-destination');
+      if (phone) {
+        await page.goto(`${home}?settings=daily-notes`);
+        await dialog()
+          .getByRole('button', { name: 'Name format', exact: true })
+          .click();
+        field = dialog().getByRole('textbox', {
+          name: 'Name format',
+          exact: true,
+        });
+        await field.click();
+        await page.setViewportSize({ width, height: 420 });
+        await visibleFieldAndFooter(
+          page,
+          field,
+          dialog().getByRole('button', { name: 'Done', exact: true }),
+        );
+        await shot('name-format-keyboard');
+        await page.setViewportSize({ width, height });
+        await page.goto(`${home}?settings=api-keys`);
+        await dialog()
+          .getByRole('button', { name: 'Create API key', exact: true })
+          .click();
+        field = dialog().getByRole('textbox', {
+          name: 'Program name',
+          exact: true,
+        });
+        await field.click();
+        await page.setViewportSize({ width, height: 420 });
+        await visibleFieldAndFooter(
+          page,
+          field,
+          dialog().getByRole('button', { name: 'Create key', exact: true }),
+        );
+        await shot('api-key-keyboard');
+        await page.setViewportSize({ width, height });
+        const fileId = original.files?.[0]?.fileId;
+        assert.ok(fileId);
+        await page.goto(`${home}/notes/${fileId}`);
+        await page
+          .getByRole('button', { name: 'Note actions', exact: true })
+          .click();
+        await page.getByRole('menuitem', { name: 'Publish' }).click();
+        field = dialog().getByLabel('Password', { exact: true });
+        await field.click();
+        await page.setViewportSize({ width, height: 420 });
+        await visibleFieldAndFooter(
+          page,
+          field,
+          dialog().getByRole('button', { name: 'Publish', exact: true }),
+        );
+        await shot('publish-keyboard');
+      }
       await context.close();
     }
   assert.deepEqual(errors, []);
