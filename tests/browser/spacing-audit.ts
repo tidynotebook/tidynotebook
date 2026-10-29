@@ -52,14 +52,24 @@ export async function auditSpacing(page: Page) {
         e,
         'button-height',
         e.getBoundingClientRect().height,
-        compact ? role.compact : role.button,
+        e.classList.contains('ui-rail-link')
+          ? coarse
+            ? 44
+            : 40
+          : compact
+            ? role.compact
+            : role.button,
       );
       if (e.classList.contains('ui-icon-button'))
         check(
           e,
           'icon-button-width',
           e.getBoundingClientRect().width,
-          role.compact,
+          e.classList.contains('ui-rail-link')
+            ? coarse
+              ? 44
+              : 40
+            : role.compact,
         );
       if (!e.classList.contains('ui-icon-button')) {
         const pad = compact && !coarse ? 8 : role.buttonPad;
@@ -459,6 +469,15 @@ export async function auditSpacing(page: Page) {
         if (!visible(row)) continue;
         check(row, 'setting-row-edge', row.getBoundingClientRect().left, 16);
       }
+    }
+    for (const status of document.querySelectorAll('.ui-sidebar-status')) {
+      if (visible(status))
+        check(
+          status,
+          'sidebar-footer-height',
+          status.getBoundingClientRect().height,
+          coarse ? 36 : 32,
+        );
     }
     return { issues, measurements };
   }, spacingSpec);

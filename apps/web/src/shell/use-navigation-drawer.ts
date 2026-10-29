@@ -35,6 +35,7 @@ export function useNavigationDrawer(
   const phoneButton = useRef<HTMLButtonElement | null>(null);
   const desktopButton = useRef<HTMLButtonElement | null>(null);
   const panel = useRef<HTMLElement | null>(null);
+  const scrim = useRef<HTMLDivElement | null>(null);
   const drawerWasOpenRef = useRef(false);
   const opener = useRef<HTMLElement | null>(null);
   /** Capture the control before a palette row leaves the document. */
@@ -102,5 +103,26 @@ export function useNavigationDrawer(
     };
   }, [drawerOpen, modal, setOpen]);
 
-  return { phoneButton, desktopButton, panel, rememberOpener, modal };
+  useEffect(() => {
+    if (
+      !modal ||
+      !matchMedia('(pointer: coarse)').matches ||
+      !panel.current ||
+      !scrim.current
+    )
+      return;
+    const element = panel.current,
+      backdrop = scrim.current;
+    let disposed = false;
+    let stop: (() => void) | undefined;
+    void import('./drawer-drag.ts').then(({ followDrawerDrag }) => {
+      if (!disposed)
+        stop = followDrawerDrag(element, backdrop, () => setOpen(false));
+    });
+    return () => {
+      disposed = true;
+      stop?.();
+    };
+  }, [modal, setOpen]);
+  return { phoneButton, desktopButton, panel, scrim, rememberOpener, modal };
 }

@@ -7,7 +7,15 @@
  * names and the stored choice, and `sidebarViewClassName` draws a button.
  */
 import { useCallback, useState, type ReactNode } from 'react';
-import { CalendarIcon, FolderIcon, sidebarViewClassName } from '@notesapp/ui';
+import {
+  CalendarIcon,
+  FolderIcon,
+  LinkIcon,
+  sidebarViewClassName,
+} from '@notesapp/ui';
+import { Link, useLocation } from 'react-router';
+import { actionIcon } from './action-icons.tsx';
+import { trashPageGlyph } from '../lib/delete-label.ts';
 import {
   parseSidebarView,
   sidebarViewLabels,
@@ -51,10 +59,15 @@ export function useSidebarView(): readonly [
 export function SidebarViewBar({
   view,
   onChoose,
+  workspaceId,
+  onNavigate,
 }: {
+  readonly workspaceId: string;
+  readonly onNavigate: () => void;
   readonly view: SidebarView;
   readonly onChoose: (view: SidebarView) => void;
 }): ReactNode {
+  const location = useLocation();
   return (
     <nav
       aria-label="Sidebar views"
@@ -64,7 +77,11 @@ export function SidebarViewBar({
         <button
           key={candidate}
           type="button"
-          className={sidebarViewClassName({ current: candidate === view })}
+          className={sidebarViewClassName({
+            current:
+              candidate === view &&
+              !/\/(trash|published)$/.test(location.pathname),
+          })}
           aria-label={sidebarViewLabels[candidate]}
           title={sidebarViewLabels[candidate]}
           aria-pressed={candidate === view}
@@ -75,6 +92,28 @@ export function SidebarViewBar({
           </span>
         </button>
       ))}
+      <div className="mt-auto flex flex-col items-center gap-1">
+        {[
+          { name: 'Trash', path: 'trash', icon: actionIcon(trashPageGlyph) },
+          { name: 'Published links', path: 'published', icon: <LinkIcon /> },
+        ].map((item) => {
+          const to = `/w/${workspaceId}/${item.path}`,
+            current = location.pathname === to;
+          return (
+            <Link
+              key={item.path}
+              to={to}
+              aria-label={item.name}
+              title={item.name}
+              aria-current={current ? 'page' : undefined}
+              className={`${sidebarViewClassName({ current })} ui-rail-link`}
+              onClick={onNavigate}
+            >
+              {item.icon}
+            </Link>
+          );
+        })}
+      </div>
     </nav>
   );
 }

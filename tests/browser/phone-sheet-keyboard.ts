@@ -332,7 +332,7 @@ try {
       if (phone) {
         const box = await drawer.boundingBox();
         assert.equal(box?.x, 0);
-        assert.equal(box?.width, width);
+        assert.equal(box?.width, Math.min(width - 56, 320));
         const welcome = drawer.getByText('Welcome to tidy notebook', {
           exact: true,
         });

@@ -211,6 +211,7 @@ try {
             if (
               phone &&
               e.matches('button,[role="menuitem"]') &&
+              !e.classList.contains('ui-sidebar-status') &&
               b.height < 43.5
             )
               problems.push({ kind: 'height', label, height: b.height });

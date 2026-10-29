@@ -294,3 +294,5 @@ export { openOptionsSheet } from './open-options-sheet.ts';
 
 export { chevronDownParts, moreParts, replaceParts } from './glyph-parts.ts';
 export { ReplaceIcon } from './icons.tsx';
+
+export { phoneSheetMotion } from './motion.ts';

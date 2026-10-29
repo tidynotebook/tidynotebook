@@ -286,7 +286,7 @@
 @utility ui-settings-list {
   @media (max-width: 1023px) and (pointer: coarse) {
     padding: 8px 8px 0;
-    & .ui-section {
+    & nav > .ui-section {
       margin-top: var(--ui-section-gap);
     }
     & .ui-group-heading {
@@ -323,18 +323,46 @@
   @media (pointer: coarse) {
     &:has(.ui-button, .ui-switch-control) {
       & [data-setting-label] {
-        min-height: 28px;
-        padding-top: calc((28px - 1lh) / 2);
+        min-height: 1lh;
+        padding-top: 0;
       }
       & [data-setting-control] {
-        min-height: 28px;
+        min-height: 1lh;
       }
       & [data-setting-control] .ui-button,
       & [data-setting-control].ui-button,
       & [data-setting-control] .ui-switch-control,
       & [data-setting-control].ui-switch-control {
-        margin-block: -8px;
+        margin-block: calc((1lh - var(--ui-control-height)) / 2);
       }
     }
+  }
+}
+
+@utility ui-phone-drawer {
+  @media (width < 48rem) and (pointer: coarse) {
+    width: min(calc(100% - 56px), 320px);
+    touch-action: pan-y pinch-zoom;
+  }
+}
+@utility ui-rail-link {
+  &.ui-rail-link {
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+    @media (pointer: coarse) {
+      width: 44px;
+      height: 44px;
+      min-height: 44px;
+    }
+  }
+}
+@utility ui-sidebar-status {
+  height: 32px;
+  min-height: 32px;
+  padding-inline: 8px;
+  @media (pointer: coarse) {
+    height: 36px;
+    min-height: 36px;
   }
 }

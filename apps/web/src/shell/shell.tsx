@@ -81,7 +81,6 @@ import {
   pageGutter,
   pageSideClassName,
   PanelLeftIcon,
-  rowClassName,
   SearchIcon,
   transitionSurface,
 } from '@notesapp/ui';
@@ -91,16 +90,11 @@ import {
   useLocalStore,
   useSession,
   useSyncSession,
-  useSyncState,
   useTheme,
   useWorkspace,
   useWorkspaceSync,
 } from '../app.tsx';
-import {
-  attentionTitle,
-  AttentionLink,
-  useAttentionCount,
-} from '../features/attention/attention-link.tsx';
+import { attentionTitle } from '../features/attention/attention-link.tsx';
 import { NewFromTemplateDialog } from '../features/templates/new-from-template.tsx';
 import { useWorkspaceProblem } from '../features/templates/workspace-problem.ts';
 import type { CommandPalette } from './command-palette.tsx';
@@ -138,7 +132,7 @@ import {
   today,
   useDailyNotes,
 } from '../features/daily-notes/daily-notes.tsx';
-import { useCalmSyncView } from './use-calm-sync.ts';
+
 import { daysWithNotes } from '../lib/daily-note.ts';
 import {
   TemplatesProvider,
@@ -215,11 +209,7 @@ import {
 import { KeyHint } from './key-hint.tsx';
 import { SettingsModalHost, useOpenSettings } from './settings-modal.tsx';
 import { useSignOut } from './sign-out.tsx';
-import {
-  syncDotClassName,
-  syncStateIsQuiet,
-  syncStatusClassNames,
-} from '../lib/sync-state.ts';
+import { syncStateIsQuiet } from '../lib/sync-state.ts';
 import type { CalendarMonth } from '../lib/calendar-month.ts';
 import {
   breadcrumbKey,
@@ -270,6 +260,9 @@ const shortcutsLoadFailure =
 const allNotesTitle = 'All notes';
 
 /** The name of the screen that holds the notes a person deleted. */
+const SidebarStatus = lazy(async () => ({
+  default: (await import('./sidebar-status.tsx')).SidebarStatus,
+}));
 const trashTitle = 'Trash';
 
 /**
@@ -429,9 +422,7 @@ function Sidebar({
   const fileId = typeof params.fileId === 'string' ? params.fileId : null;
   const session = useSession();
   const store = useLocalStore();
-  const sync = useSyncState();
   const files = useFiles();
-  const online = useOnline();
   const { openFolders, openFolder, setOpenFolders } = folders;
   const noteOrder = useNoteOrder();
   const expansion = folderExpansion(openFolders, knownFolders);
@@ -444,11 +435,6 @@ function Sidebar({
     moveEmptyFolders: files.moveEmptyFolders,
     openFolder,
   });
-  const attentionCount = useAttentionCount(
-    store.store,
-    session.account?.accountId ?? null,
-    workspaceId,
-  );
   const tree = useMemo(
     () => buildNoteTree(files.notes, files.emptyFolders, noteOrder.order),
     [files.notes, files.emptyFolders, noteOrder.order],
@@ -476,30 +462,6 @@ function Sidebar({
     for (const folder of ancestorFolders(openNotePath)) openFolder(folder);
   }, [openNotePath, openFolder]);
   const notesPath = `/w/${workspaceId}`;
-  const trashPath = `/w/${workspaceId}/trash`;
-  const publishedPath = `/w/${workspaceId}/published`;
-  const attentionPath = `/w/${workspaceId}/attention`;
-  // One short sentence for the state of the work, beside the dot that states
-  // the same thing without a word. A failed local write of the open note
-  // takes both, because sync never saw that text.
-  const openNoteWriteFailed = useNoteSaveFact(
-    (report) => report?.localWriteFailed ?? false,
-  );
-  const openNotePending = useNoteSaveFact(
-    (report) => report?.pendingSave ?? false,
-  );
-  const openNoteLocalWritePending = useNoteSaveFact(
-    (report) => report?.localWritePending ?? false,
-  );
-  // A short wait while a person types keeps the line, so it does not flip on
-  // every keystroke. A problem or a lost connection shows at once.
-  const footer = useCalmSyncView({
-    state: sync.state,
-    online,
-    failed: openNoteWriteFailed,
-    pending: openNotePending,
-    editing: openNoteLocalWritePending,
-  });
 
   return (
     <>
@@ -731,75 +693,9 @@ function Sidebar({
           </div>
         )}
 
-        <div className="border-t border-edge-subtle p-2">
-          <div className={rowClassName({ interactive: false })}>
-            <span
-              className={syncStatusClassNames.status}
-              role="status"
-              aria-live="polite"
-            >
-              <span className={syncStatusClassNames.dotFrame}>
-                <span
-                  className={syncDotClassName(footer.dot)}
-                  aria-hidden="true"
-                />
-              </span>
-              <span className={syncStatusClassNames.line}>{footer.line}</span>
-            </span>
-          </div>
-          <Link
-            className={rowClassName({
-              current: location.pathname === trashPath,
-              inset: false,
-            })}
-            to={trashPath}
-            onClick={onNavigate}
-            aria-current={location.pathname === trashPath ? 'page' : undefined}
-          >
-            <span
-              className="inline-flex shrink-0 items-center"
-              aria-hidden="true"
-            >
-              {actionIcon(trashPageGlyph)}
-            </span>
-            <span className="min-w-0 flex-1 truncate">{trashTitle}</span>
-          </Link>
-          <Link
-            className={rowClassName({
-              current: location.pathname === publishedPath,
-              inset: false,
-            })}
-            to={publishedPath}
-            onClick={onNavigate}
-            aria-current={
-              location.pathname === publishedPath ? 'page' : undefined
-            }
-          >
-            <span
-              className="inline-flex shrink-0 items-center"
-              aria-hidden="true"
-            >
-              {actionIcon('published-links')}
-            </span>
-            <span className="min-w-0 flex-1 truncate">
-              {publishedLinksTitle}
-            </span>
-          </Link>
-          <AttentionLink
-            workspaceId={workspaceId}
-            count={attentionCount}
-            className={rowClassName({
-              current: location.pathname === attentionPath,
-              inset: false,
-              danger: true,
-            })}
-          />
-          {store.error !== null ? (
-            <p className="my-1 px-2 text-secondary text-danger" role="alert">
-              {store.error}
-            </p>
-          ) : null}
-        </div>
+        <Suspense fallback={<div className="ui-sidebar-status shrink-0" />}>
+          <SidebarStatus workspaceId={workspaceId} />
+        </Suspense>
       </div>
     </>
   );
@@ -1083,6 +979,7 @@ function ShellFrame({
     phoneButton: menuButtonRef,
     desktopButton: desktopMenuButtonRef,
     panel: sidebarRef,
+    scrim: drawerScrimRef,
     rememberOpener,
     modal: navigationModal,
   } = useNavigationDrawer(drawerOpen, setDrawerOpen);
@@ -1714,6 +1611,8 @@ function ShellFrame({
           </header>
 
           <div
+            ref={drawerScrimRef}
+            data-drawer-scrim=""
             className={
               drawerOpen ? 'fixed inset-0 z-30 bg-scrim/70 md:hidden' : 'hidden'
             }
@@ -1729,7 +1628,12 @@ function ShellFrame({
             aria-modal={navigationModal ? true : undefined}
             role={navigationModal ? 'dialog' : undefined}
           >
-            <SidebarViewBar view={sidebarView} onChoose={setSidebarView} />
+            <SidebarViewBar
+              workspaceId={workspaceId}
+              view={sidebarView}
+              onChoose={setSidebarView}
+              onNavigate={() => setDrawerOpen(false)}
+            />
             <div className="flex min-w-0 flex-1 flex-col">
               <Sidebar
                 workspaceId={workspaceId}
