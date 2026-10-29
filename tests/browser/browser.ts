@@ -9,6 +9,7 @@ export type Locator = {
   locator(selector: string): Locator;
   and(locator: Locator): Locator;
   getByRole(role: string, options?: { name: string; exact?: boolean }): Locator;
+  getByText(text: string | RegExp, options?: { exact?: boolean }): Locator;
   getByLabel(label: string, options?: { exact?: boolean }): Locator;
   scrollIntoViewIfNeeded(): Promise<void>;
   evaluate<T>(run: (element: HTMLElement) => T): Promise<Awaited<T>>;
@@ -29,6 +30,7 @@ export type Page = {
   goto(url: string): Promise<unknown>;
   locator(selector: string): Locator;
   getByRole(role: string, options?: { name: string; exact?: boolean }): Locator;
+  getByText(text: string | RegExp, options?: { exact?: boolean }): Locator;
   getByLabel(label: string, options?: { exact?: boolean }): Locator;
   setDefaultTimeout(timeout: number): void;
   on(event: 'pageerror', callback: (error: Error) => void): void;
