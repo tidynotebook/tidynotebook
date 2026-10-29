@@ -96,6 +96,13 @@ export default function TemplateChoices({
   // The values of the preview are those of the moment the details opened.
   const [instant, setInstant] = useState(() => new Date());
   const listRef = useRef<HTMLDivElement | null>(null);
+  const phoneTitle = useRef<HTMLHeadingElement | null>(null);
+  const focusTitle = (): void => {
+    (window.matchMedia('(min-width: 1024px)').matches
+      ? detailTitle.current
+      : phoneTitle.current
+    )?.focus();
+  };
   const detailTitle = useRef<HTMLHeadingElement | null>(null);
   const returning = useRef(false);
   const settings = templates.settings;
@@ -160,11 +167,11 @@ export default function TemplateChoices({
     }
     setSelected(firstTemplate(choices, last));
     initialized.current = true;
-    if (isTouchInput()) detailTitle.current?.focus();
+    if (isTouchInput()) focusTitle();
     else searchRef.current?.focus();
   }, [choices, settings.status, files.loading, accountId, workspaceId]);
   useEffect(() => {
-    if (details) detailTitle.current?.focus();
+    if (details) focusTitle();
     else if (returning.current) {
       returning.current = false;
       const row = [
@@ -256,6 +263,7 @@ export default function TemplateChoices({
     >
       <div className="lg:hidden">
         <PhoneSheetHeader
+          titleRef={phoneTitle}
           title={details ? selectedLabel : 'New note from template'}
           onClose={onClose}
           leading={

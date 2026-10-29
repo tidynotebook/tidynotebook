@@ -472,7 +472,10 @@ await test('Back restores list focus and Manage templates sits in the header', a
   assert.ok(manage);
   // The control is in the title row, before the list, and it is no link to
   // a Settings route.
-  assert.ok(manage.closest('header')?.querySelector('h3'));
+  assert.equal(
+    manage.closest('header')?.querySelector('h2,h3')?.textContent,
+    'New note from template',
+  );
   assert.equal(container.querySelector('a[href*="settings"]'), null);
   // It closes the dialog and opens Settings at Templates over the same page.
   await act(async () => manage.click());

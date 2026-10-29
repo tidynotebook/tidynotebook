@@ -1,17 +1,19 @@
 /** The header used by every phone sheet, including template details. */
-import type { ReactNode } from 'react';
+import type { ReactNode, Ref } from 'react';
 import { Button } from './controls.tsx';
 import { CloseIcon } from './icons.tsx';
 
 export function PhoneSheetHeader({
   title,
   titleId,
+  titleRef,
   onClose,
   leading,
   trailing,
 }: {
   readonly title: ReactNode;
   readonly titleId?: string;
+  readonly titleRef?: Ref<HTMLHeadingElement>;
   readonly onClose: () => void;
   readonly leading?: ReactNode;
   readonly trailing?: ReactNode;
@@ -33,7 +35,9 @@ export function PhoneSheetHeader({
       </span>
       <h2
         id={titleId}
-        className="m-0 min-w-0 flex-1 truncate text-center text-title-header text-strong"
+        ref={titleRef}
+        tabIndex={-1}
+        className="m-0 min-w-0 flex-1 truncate text-center text-title-header text-strong outline-none"
       >
         {title}
       </h2>
