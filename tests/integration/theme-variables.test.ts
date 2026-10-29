@@ -245,7 +245,10 @@ await test('touch form labels and fields share the computed body size', async ()
         browser.getComputedStyle(help).fontSize,
         touch ? '13px' : '12px',
       );
-      assert.equal(browser.getComputedStyle(help).lineHeight, '20px');
+      assert.equal(
+        browser.getComputedStyle(help).lineHeight,
+        touch ? '18px' : '16px',
+      );
     } finally {
       await browser.happyDOM.close();
     }
@@ -467,7 +470,10 @@ function firstPaint(
   deviceDark: boolean,
 ): FirstPaint {
   const html = readFileSync(resolve(root, 'apps/web/index.html'), 'utf8');
-  const script = /<script>([\s\S]*?)<\/script>/.exec(html)?.[1] ?? '';
+  const script =
+    [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].find((match) =>
+      match[1]?.includes('__NOTESAPP_THEMES__'),
+    )?.[1] ?? '';
   assert.ok(script.includes('__NOTESAPP_THEMES__'));
   const attributes = new Map<string, string>();
   const style = new Map<string, string>();

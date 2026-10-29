@@ -168,6 +168,12 @@
   --spacing-cluster: calc(var(--spacing) * 2);
   --spacing-group: calc(var(--spacing) * 3);
 
+  --text-page: 1.125rem;
+  --text-page--line-height: 1.625rem;
+  --text-header: 0.875rem;
+  --text-header--line-height: 1.25rem;
+  --text-preview-first: 0.875rem;
+  --text-preview-first--line-height: 1.25rem;
   --text-kbd: 0.6875rem;
   --text-kbd--line-height: 1rem;
   --text-control: 0.8125rem;
@@ -289,6 +295,14 @@
 /* Fields share the body role. The iOS viewport rule prevents focus zoom. */
 @media (pointer: coarse) {
   :root {
+    --text-page: 1.25rem;
+    --text-page--line-height: 1.75rem;
+    --text-header: 1rem;
+    --text-header--line-height: 1.5rem;
+    --text-preview-first: 0.9375rem;
+    --text-preview-first--line-height: 1.375rem;
+    --text-preview: 0.8125rem;
+    --text-preview--line-height: 1.125rem;
     --text-control: 0.9375rem;
     --text-control--line-height: 1.375rem;
     --text-ui: 0.9375rem;
@@ -300,21 +314,13 @@
 
 /* Shared UI text roles. packages/ui/src/typography.ts names the contract. */
 @utility text-title-page {
-  font-size: 1.125rem;
-  line-height: 1.625rem;
-  @media (pointer: coarse) {
-    font-size: 1.25rem;
-    line-height: 1.75rem;
-  }
+  font-size: var(--text-page);
+  line-height: var(--text-page--line-height);
   font-weight: 600;
 }
 @utility text-title-header {
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  @media (pointer: coarse) {
-    font-size: 1rem;
-    line-height: 1.5rem;
-  }
+  font-size: var(--text-header);
+  line-height: var(--text-header--line-height);
   font-weight: 600;
 }
 @utility text-body {
@@ -356,27 +362,15 @@
   font-size: var(--text-preview);
   line-height: var(--text-preview--line-height);
   font-weight: 400;
-  @media (pointer: coarse) {
-    font-size: var(--text-help);
-    line-height: var(--text-help--line-height);
-  }
 }
 @utility text-preview-first {
-  font-size: 0.875rem;
-  line-height: 1.25rem;
+  font-size: var(--text-preview-first);
+  line-height: var(--text-preview-first--line-height);
   font-weight: 600;
-  @media (pointer: coarse) {
-    font-size: 0.9375rem;
-    line-height: 1.375rem;
-  }
 }
 @utility text-preview-heading {
   font-size: var(--text-preview);
   line-height: var(--text-preview--line-height);
-  @media (pointer: coarse) {
-    font-size: var(--text-help);
-    line-height: var(--text-help--line-height);
-  }
   font-weight: 600;
 }
 
