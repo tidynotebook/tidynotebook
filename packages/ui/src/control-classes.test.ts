@@ -499,9 +499,8 @@ await test('a field rests on the divider and answers focus on it', () => {
 });
 
 await test('every field uses the shared body role; iOS focus zoom is handled by the viewport', () => {
-  // The defect this covers: Safari on iOS zoomed the page into every field
-  // of the product on a tap, because the text of each field was under
-  // 16 px, and the zoom hid what the person had on the screen.
+  // Fields and labels use the body scale. The inline iOS viewport rule
+  // prevents focus zoom without a separate font size for fields.
   for (const [name, classes] of [
     ['field', fieldClassName()],
     ['invalid field', fieldClassName({ invalid: true })],

@@ -23,7 +23,7 @@ await test('UI source uses type roles instead of raw sizes', async () => {
         const name = relative(root, path);
         if (allowed.has(name)) continue;
         if (
-          /\btext-(?:xs|sm|base|lg)\b|\btext-\[[^\]]+\]|\bfontSize\s*:|font-size\s*:/.test(
+          /\btext-(?:xs|sm|base|lg|xl|[2-9]xl)\b|\btext-\[[^\]]+\]|\bfontSize\s*[:=]|font-size\s*:/.test(
             source,
           )
         )
