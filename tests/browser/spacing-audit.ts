@@ -163,6 +163,23 @@ export async function auditSpacing(page: Page) {
           );
       }
     }
+    for (const track of document.querySelectorAll(
+      '[role="switch"] > [aria-hidden="true"]',
+    )) {
+      if (!visible(track)) continue;
+      check(
+        track,
+        'switch-track-height',
+        track.getBoundingClientRect().height,
+        24,
+      );
+      check(
+        track,
+        'switch-track-width',
+        track.getBoundingClientRect().width,
+        40,
+      );
+    }
     for (const e of document.querySelectorAll('.ui-list-row')) {
       if (visible(e))
         check(

@@ -662,7 +662,11 @@ export function Switch({
           )}
         </span>
       )}
-      <span data-setting-control className={classes.track} aria-hidden="true">
+      <span
+        data-setting-control={hideLabel ? undefined : true}
+        className={classes.track}
+        aria-hidden="true"
+      >
         <span className={classes.thumb} />
       </span>
     </button>
