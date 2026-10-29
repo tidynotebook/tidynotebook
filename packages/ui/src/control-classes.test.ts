@@ -447,11 +447,11 @@ await test('a compact text button has a quiet surface inside its touch target', 
   assert.ok(visual.includes('bg-card'), 'the secondary surface fill');
 });
 
-await test('a row is 28 px on a desktop and 44 px under touch', () => {
+await test('a row is 28 px on a desktop and 40 px under touch', () => {
   const parts = rowClassName().split(' ');
   assert.ok(parts.includes('ui-tree-row'), 'the shared tree row role');
   assert.equal(spacingSpec.fine.tree, 28);
-  assert.equal(spacingSpec.coarse.tree, 44);
+  assert.equal(spacingSpec.coarse.tree, 40);
   assert.ok(parts.includes('rounded-md'), 'the row radius');
   assert.ok(parts.includes('px-2'), 'the row inset');
 });

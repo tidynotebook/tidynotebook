@@ -98,13 +98,13 @@ try {
         const actions = await controls();
         assert.equal(actions.length, width === 320 ? 4 : 5);
         for (const a of actions) {
-          assert.ok(a.width >= 44 && a.height >= 44);
+          assert.ok(a.width === 40 && a.height === 40);
           assert.ok(
             Math.abs(a.y - (actions[0]?.y ?? NaN)) < 0.5,
             'Actions stay on one line',
           );
         }
-        results.push(`${width} ${scheme}: one action line with 44 px targets`);
+        results.push(`${width} ${scheme}: one action line with 40 px targets`);
         if (width === 320) {
           const more = panel.getByRole('button', {
             name: 'More drawer actions',
@@ -139,7 +139,7 @@ try {
         if (width === 390) {
           const container = panel.locator('.ui-drawer-actions');
           await container.evaluate((e) => {
-            e.style.width = '216px';
+            e.style.width = '190px';
           });
           await pause(50);
           assert.equal((await controls()).length, 4);

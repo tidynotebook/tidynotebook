@@ -16,11 +16,8 @@
  * takes a ring except a drop target, where the edge is the whole message and
  * there is no text to carry it (decision 0063).
  *
- * A level of the tree indents by one fixed step and draws no guide line. The
- * steps stop at `deepestSteppedBranch`, so the column that holds a name has a
- * floor: every level used to add a step and nothing stopped it, so a folder
- * ten levels down in a narrow sidebar showed a chevron, a folder mark and no
- * name at all.
+ * A level of the tree indents by the shared sidebar step and draws no guide
+ * line. Names can wrap on touch, and the row grows with its name.
  *
  * A person can also build a selection of many rows (record 0164). A row of
  * it takes the fill of a chosen row, and while it exists the open note keeps
@@ -73,7 +70,7 @@ export function treeRowClassName(state: TreeRowState = {}): string {
   return rowClassName({
     selected: filled,
     className: [
-      'group pl-0 pr-1',
+      'group ui-sidebar-row',
       state.wrapOnPhone === true ? 'ui-drawer-row' : '',
       treeItemFocus,
       openUnfilled,
@@ -82,7 +79,7 @@ export function treeRowClassName(state: TreeRowState = {}): string {
     ]
       .filter((part) => part !== '')
       .join(' '),
-  });
+  }).replace('ui-tree-row', '');
 }
 
 /**
@@ -106,7 +103,7 @@ const treeItemFocus =
  * pointer target, and the two icons use the free space inside that target as
  * their separation instead of adding the row gap as well.
  */
-export const treeRowLeadingClassName = 'flex min-w-0 flex-1 items-center';
+export const treeRowLeadingClassName = 'ui-sidebar-leading';
 
 /**
  * The classes of the name control inside one tree row.
@@ -119,30 +116,21 @@ export const treeRowLeadingClassName = 'flex min-w-0 flex-1 items-center';
  * their icons.
  */
 export const treeRowNameClassName =
-  'flex min-w-0 flex-1 cursor-pointer items-center gap-2 truncate rounded-md border-0 bg-transparent pr-1 text-left text-inherit no-underline';
+  'ui-sidebar-name cursor-pointer truncate rounded-md border-0 bg-transparent text-left text-inherit no-underline';
 
-/** The deepest branch that still steps in. */
-export const deepestSteppedBranch = 4;
-
-/** The indent of each level, from the top of the tree to the deepest step. */
-const indentSteps = ['', 'pl-2', 'pl-4', 'pl-6'] as const;
-
-/**
- * The indent of one row of the tree, at `level`.
- *
- * `level` is 1 for a row at the top of the tree. The tree is one list of rows
- * (record 0164), so the level of a row is a class of the row and not the
- * nesting of the document. One step for each level is enough to read the
- * shape of the tree, because folder and note rows reserve the same disclosure
- * column, and the steps stop at {@link deepestSteppedBranch}.
- */
+/** The indent comes from the shared role for every level. */
+export function treeIndentStyle(level: number): { paddingInlineStart: string } {
+  return {
+    paddingInlineStart: `calc(${String(Math.max(level - 1, 0))} * var(--ui-sidebar-indent))`,
+  };
+}
+/** Treeitems keep the focus outline inside the row. */
 export function treeIndentClassName(level: number): string {
-  const step = Math.min(Math.max(level - 1, 0), deepestSteppedBranch - 1);
-  return indentSteps[step] ?? '';
+  return level > 0 ? 'ui-sidebar-indent' : '';
 }
 
 /** Small gaps keep sibling rows distinct without using extra list height. */
-export const treeItemsClassName = 'm-0 list-none space-y-1 p-0';
+export const treeItemsClassName = 'ui-sidebar-tree-items list-none';
 
 /**
  * The separation between the All notes row and the top of the folder tree.
@@ -153,7 +141,7 @@ export const treeItemsClassName = 'm-0 list-none space-y-1 p-0';
  * from its first row. It is space and not a divider: two rows separate by
  * space and by fill and never by a rule.
  */
-export const treeListClassName = 'mt-1';
+export const treeListClassName = 'ui-sidebar-tree-items';
 
 /**
  * The one line under the tree: a result, or the reason an action stopped,
@@ -168,7 +156,7 @@ export const treeListClassName = 'mt-1';
  * the box itself, so no row shows under it either.
  */
 export function treeMessageClassName(tone: 'status' | 'problem'): string {
-  return `sticky -bottom-2 z-10 bg-surface px-2 py-2 text-secondary ${tone === 'problem' ? 'text-danger' : 'text-muted'}`;
+  return `sticky bottom-0 z-10 bg-surface ui-sidebar-message text-secondary ${tone === 'problem' ? 'text-danger' : 'text-muted'}`;
 }
 
 /**
@@ -181,9 +169,8 @@ export const rowActionClassName = buttonClassName({
   variant: 'ghost',
   size: 'sm',
   iconOnly: true,
-  className: 'size-11 shrink-0 px-0 pointer-fine:size-7',
+  className: 'ui-sidebar-row-action',
 });
 
 /** The column that a row with no chevron keeps for one, so names line up. */
-export const rowSpacerClassName =
-  'ui-tree-spacer size-11 shrink-0 pointer-fine:size-7';
+export const rowSpacerClassName = 'ui-sidebar-slot';

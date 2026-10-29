@@ -1080,7 +1080,7 @@ function ControlsDialog({
             }}
           />
           <div className="ui-form-following-group ui-settings-groups">
-            <AdminGroup title="Access">
+            <AdminGroup title="Features">
               <SettingSwitchRow
                 label="Teams"
                 help=""

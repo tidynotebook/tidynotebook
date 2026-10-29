@@ -17,11 +17,11 @@ export const textRoleClasses = {
 /** The only size, line height, and weight combinations for touch UI text. */
 export const touchTextRoles = {
   pageTitle: { size: 20, line: 28, weight: 600 },
-  headerTitle: { size: 16, line: 24, weight: 600 },
-  body: { size: 15, line: 22, weight: 400 },
-  label: { size: 15, line: 22, weight: 500 },
-  value: { size: 15, line: 22, weight: 400 },
-  secondary: { size: 13, line: 18, weight: 400 },
+  headerTitle: { size: 17, line: 24, weight: 600 },
+  body: { size: 14, line: 20, weight: 400 },
+  label: { size: 14, line: 20, weight: 500 },
+  value: { size: 14, line: 20, weight: 400 },
+  secondary: { size: 12, line: 16, weight: 400 },
   group: { size: 13, line: 18, weight: 600 },
   small: { size: 11, line: 16, weight: 400 },
   avatar: { size: 11, line: 16, weight: 600 },

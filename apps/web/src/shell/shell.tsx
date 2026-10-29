@@ -476,20 +476,22 @@ function Sidebar({
   const expand = () => setOpenFolders(expandedFolders(expansion, knownFolders));
 
   return (
-    <>
-      <div className="ui-panel-heading flex h-header shrink-0 items-center justify-between gap-cluster border-b border-edge-subtle px-2 md:hidden">
+    <div className="ui-sidebar-panel">
+      <div className="ui-sidebar-header md:hidden">
         <span className="text-title-header text-strong">
           {sidebarViewLabels[view]}
         </span>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="size-11"
-          label="Close navigation"
-          title="Close navigation"
-          icon={<CloseIcon />}
-          onClick={onClose}
-        />
+        <span className="ui-sidebar-slot">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="ui-sidebar-header-close"
+            label="Close navigation"
+            title="Close navigation"
+            icon={<CloseIcon />}
+            onClick={onClose}
+          />
+        </span>
       </div>
 
       <div className={drawerPanelClassName}>
@@ -508,12 +510,12 @@ function Sidebar({
         is a compact ghost control with a name and a title, so the row stays
         quiet and every action stays in the tab order.
       */}
-            <div className="ui-drawer-actions px-2 pt-1">
-              <div className="ui-drawer-actions-row flex items-center gap-1">
+            <div className="ui-drawer-actions">
+              <div className="ui-drawer-actions-row ui-sidebar-actions">
                 <Button
                   variant="ghost"
                   size="sm"
-                  compact
+                  className="ui-sidebar-action"
                   label={
                     selectedFolder === ''
                       ? 'New note'
@@ -526,7 +528,7 @@ function Sidebar({
                 <Button
                   variant="ghost"
                   size="sm"
-                  compact
+                  className="ui-sidebar-action"
                   label="New folder"
                   title="New folder"
                   icon={actionIcon('new-folder')}
@@ -535,7 +537,7 @@ function Sidebar({
                 <Button
                   variant="ghost"
                   size="sm"
-                  compact
+                  className="ui-sidebar-action"
                   label="New note from template"
                   title="New note from template"
                   icon={actionIcon('template')}
@@ -545,14 +547,14 @@ function Sidebar({
                   <Menu
                     label="Sort notes"
                     icon={actionIcon('sort')}
-                    compact
+                    triggerClassName="ui-sidebar-action"
                     align="start"
                     items={sortItems}
                   />
                   <Button
                     variant="ghost"
                     size="sm"
-                    compact
+                    className="ui-sidebar-action"
                     label={folderExpansionLabels[expansion]}
                     title={folderExpansionLabels[expansion]}
                     icon={actionIcon(
@@ -566,7 +568,7 @@ function Sidebar({
                   <Menu
                     label="More drawer actions"
                     icon={<MoreIcon />}
-                    compact
+                    triggerClassName="ui-sidebar-action"
                     items={[
                       {
                         id: 'sort',
@@ -610,7 +612,7 @@ function Sidebar({
               </div>
               {newNoteProblem === null ? null : (
                 <p
-                  className="my-1 px-2 text-secondary text-danger"
+                  className="ui-sidebar-message text-secondary text-danger"
                   role="alert"
                 >
                   {newNoteProblem}
@@ -619,7 +621,7 @@ function Sidebar({
             </div>
 
             <div className={drawerTreeClassName}>
-              <section className="pt-1" aria-label="Folders">
+              <section className="ui-sidebar-tree-items" aria-label="Folders">
                 <div
                   className={treeRowClassName({
                     wrapOnPhone: true,
@@ -674,9 +676,33 @@ function Sidebar({
                       </span>
                     </Link>
                   </div>
+                  <span className="ui-sidebar-slot">
+                    <Menu
+                      label="Actions for All notes"
+                      icon={<MoreIcon />}
+                      triggerClassName="ui-sidebar-row-action ui-sidebar-row-menu"
+                      items={[
+                        {
+                          id: 'new-note',
+                          label: 'New note',
+                          onSelect: () => onNewNoteIn(''),
+                        },
+                        {
+                          id: 'new-folder',
+                          label: 'New folder',
+                          onSelect: () => onNewFolderIn(''),
+                        },
+                        {
+                          id: 'template',
+                          label: 'New note from template',
+                          onSelect: () => onFromTemplate(''),
+                        },
+                      ]}
+                    />
+                  </span>
                 </div>
                 {files.loading ? (
-                  <div className="px-2 py-2">
+                  <div className="ui-sidebar-message">
                     <LoadingState
                       shape="list"
                       rows={4}
@@ -684,7 +710,7 @@ function Sidebar({
                     />
                   </div>
                 ) : tree.length === 0 ? (
-                  <p className="my-1 px-2 text-secondary text-muted">
+                  <p className="ui-sidebar-message text-secondary text-muted">
                     No notes yet.
                   </p>
                 ) : (
@@ -708,7 +734,7 @@ function Sidebar({
                 )}
                 {files.limitNotice === null ? null : (
                   <p
-                    className="my-1 px-2 text-secondary text-muted"
+                    className="ui-sidebar-message text-secondary text-muted"
                     role="status"
                     aria-live="polite"
                   >
@@ -738,7 +764,10 @@ function Sidebar({
               onOpen={daily.open}
             />
             {daily.openProblem === null ? null : (
-              <p className="my-1 px-2 text-secondary text-danger" role="alert">
+              <p
+                className="ui-sidebar-message text-secondary text-danger"
+                role="alert"
+              >
                 {daily.openProblem}
               </p>
             )}
@@ -749,7 +778,7 @@ function Sidebar({
           <SidebarStatus workspaceId={workspaceId} />
         </Suspense>
       </div>
-    </>
+    </div>
   );
 }
 

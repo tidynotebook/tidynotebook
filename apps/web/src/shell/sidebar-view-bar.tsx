@@ -71,28 +71,31 @@ export function SidebarViewBar({
   return (
     <nav
       aria-label="Sidebar views"
-      className="flex w-12 shrink-0 flex-col items-center gap-1 border-r border-edge-subtle py-2"
+      className="ui-sidebar-rail border-r border-edge-subtle"
     >
-      {sidebarViews.map((candidate) => (
-        <button
-          key={candidate}
-          type="button"
-          className={sidebarViewClassName({
-            current:
-              candidate === view &&
-              !/\/(trash|published)$/.test(location.pathname),
-          })}
-          aria-label={sidebarViewLabels[candidate]}
-          title={sidebarViewLabels[candidate]}
-          aria-pressed={candidate === view}
-          onClick={() => onChoose(candidate)}
-        >
-          <span className="inline-flex" aria-hidden="true">
-            {viewIcons[candidate]}
-          </span>
-        </button>
-      ))}
-      <div className="mt-auto flex flex-col items-center gap-1">
+      <div className="ui-sidebar-rail-group">
+        {sidebarViews.map((candidate) => (
+          <button
+            key={candidate}
+            type="button"
+            className={`${sidebarViewClassName({
+              current:
+                candidate === view &&
+                !/\/(trash|published)$/.test(location.pathname),
+            })} ui-sidebar-rail-button`}
+            aria-label={sidebarViewLabels[candidate]}
+            title={sidebarViewLabels[candidate]}
+            aria-pressed={candidate === view}
+            onClick={() => onChoose(candidate)}
+          >
+            <span className="inline-flex" aria-hidden="true">
+              {viewIcons[candidate]}
+            </span>
+          </button>
+        ))}
+      </div>
+      <div aria-hidden="true" />
+      <div className="ui-sidebar-rail-group">
         {[
           { name: 'Published links', path: 'published', icon: <LinkIcon /> },
           { name: 'Trash', path: 'trash', icon: actionIcon(trashPageGlyph) },
@@ -106,7 +109,7 @@ export function SidebarViewBar({
               aria-label={item.name}
               title={item.name}
               aria-current={current ? 'page' : undefined}
-              className={`${sidebarViewClassName({ current })} ui-rail-link`}
+              className={`${sidebarViewClassName({ current })} ui-rail-link ui-sidebar-rail-button`}
               onClick={onNavigate}
             >
               {item.icon}

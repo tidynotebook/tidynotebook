@@ -52,12 +52,10 @@ export function drawerClassName(open: boolean, size: SidebarSize): string {
  * around it scrolls as one when the screen cannot hold them all. The title
  * bar with the close button stays above it.
  */
-export const drawerPanelClassName =
-  'ui-drawer-scroll flex min-h-0 flex-1 flex-col overflow-y-auto';
+export const drawerPanelClassName = 'ui-sidebar-body ui-drawer-scroll';
 
 /** The classes of the box that scrolls the tree inside the drawer panel. */
-export const drawerTreeClassName =
-  'ui-drawer-scroll min-h-40 flex-1 overflow-y-auto px-2 pb-2';
+export const drawerTreeClassName = 'ui-sidebar-tree ui-drawer-scroll';
 
 /**
  * The classes of the calendar view inside the drawer panel.
@@ -65,4 +63,4 @@ export const drawerTreeClassName =
  * The month has a fixed height, so it keeps it and the panel scrolls when a
  * short screen needs it (record 0105).
  */
-export const drawerCalendarClassName = 'flex-1 px-2 pb-2 pt-1';
+export const drawerCalendarClassName = 'flex-1';

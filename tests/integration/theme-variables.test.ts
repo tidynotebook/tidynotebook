@@ -228,27 +228,21 @@ await test('touch form labels and fields share the computed body size', async ()
       document.body.append(form);
       const labelStyle = browser.getComputedStyle(label);
       const fieldStyle = browser.getComputedStyle(field);
-      assert.equal(labelStyle.fontSize, touch ? '15px' : '13px');
-      assert.equal(fieldStyle.fontSize, touch ? '15px' : '13px');
+      assert.equal(labelStyle.fontSize, touch ? '14px' : '13px');
+      assert.equal(fieldStyle.fontSize, touch ? '14px' : '13px');
       if (touch) {
         assert.equal(labelStyle.fontSize, fieldStyle.fontSize);
-        assert.equal(labelStyle.lineHeight, '22px');
+        assert.equal(labelStyle.lineHeight, '20px');
         assert.equal(
           fieldStyle.lineHeight.endsWith('px')
             ? Number.parseFloat(fieldStyle.lineHeight)
             : Number.parseFloat(fieldStyle.lineHeight) *
                 Number.parseFloat(fieldStyle.fontSize),
-          22,
+          20,
         );
       }
-      assert.equal(
-        browser.getComputedStyle(help).fontSize,
-        touch ? '13px' : '12px',
-      );
-      assert.equal(
-        browser.getComputedStyle(help).lineHeight,
-        touch ? '18px' : '16px',
-      );
+      assert.equal(browser.getComputedStyle(help).fontSize, '12px');
+      assert.equal(browser.getComputedStyle(help).lineHeight, '16px');
     } finally {
       await browser.happyDOM.close();
     }

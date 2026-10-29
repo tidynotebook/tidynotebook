@@ -188,7 +188,12 @@ export async function auditSpacing(page: Page) {
       for (const row of document.querySelectorAll('.ui-drawer-row')) {
         if (!visible(row)) continue;
         const style = getComputedStyle(row);
-        check(row, 'drawer-min-height', parseFloat(style.minHeight), 44);
+        check(
+          row,
+          'drawer-min-height',
+          parseFloat(style.minHeight),
+          spec.coarse.tree,
+        );
         check(row, 'drawer-top-pad', parseFloat(style.paddingTop), 8);
         check(row, 'drawer-bottom-pad', parseFloat(style.paddingBottom), 8);
         const name = row.querySelector('[data-tree-name],input');
@@ -199,7 +204,10 @@ export async function auditSpacing(page: Page) {
             row.getBoundingClientRect().height,
             name instanceof HTMLInputElement
               ? 44
-              : Math.max(44, name.getBoundingClientRect().height + 16),
+              : Math.max(
+                  spec.coarse.tree,
+                  name.getBoundingClientRect().height + 16,
+                ),
           );
       }
     }

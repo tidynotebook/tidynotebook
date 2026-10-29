@@ -529,7 +529,7 @@ export function WorkspaceSwitcher({
   ];
 
   return (
-    <div className="px-2 pt-2">
+    <div className="shrink-0">
       <Menu
         label={`Workspace: ${openWorkspace.name}`}
         items={items}
@@ -537,8 +537,8 @@ export function WorkspaceSwitcher({
         matchTrigger
         triggerClassName={rowClassName({
           inset: false,
-          className: 'w-full text-left md:min-h-8',
-        })}
+          className: 'ui-sidebar-switcher w-full text-left',
+        }).replace('ui-tree-row', '')}
       >
         <span
           className="inline-flex size-5 shrink-0 items-center justify-center rounded-sm bg-active text-avatar text-strong"

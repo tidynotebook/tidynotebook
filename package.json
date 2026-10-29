@@ -43,6 +43,7 @@
     "test:browser:type": "node tests/browser/touch-typography.ts",
     "test:browser:drag": "node tests/browser/phone-sheet-drag.ts",
     "test:browser:drawer": "node tests/browser/phone-drawer.ts",
+    "test:browser:sidebar": "node tests/browser/sidebar-symmetry.ts",
     "test:browser:sheets": "node tests/browser/phone-sheet-keyboard.ts"
   },
   "devDependencies": {

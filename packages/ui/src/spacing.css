@@ -46,8 +46,8 @@
       --ui-footer-pad: 12px;
       --ui-page-top: 16px;
       --ui-page-gap: 12px;
-      --ui-list-height: 44px;
-      --ui-tree-height: 44px;
+      --ui-list-height: 40px;
+      --ui-tree-height: 40px;
     }
   }
 }
@@ -248,21 +248,6 @@
   padding: 0;
 }
 
-/* Drawer names set their own row height. Controls retain their 44 px targets. */
-@utility ui-drawer-row {
-  @media (max-width: 1023px) and (pointer: coarse) {
-    &.ui-drawer-row {
-      min-height: 44px;
-      height: auto;
-      padding-block: 8px;
-    }
-    & .ui-icon-button,
-    & .ui-field,
-    & .ui-tree-spacer {
-      margin-block: -8px;
-    }
-  }
-}
 @utility ui-setting-align {
   &:not(:has(.ui-button, .ui-switch-control)) > [data-setting-control] {
     margin-top: calc((1lh - 24px) / 2);
@@ -363,30 +348,6 @@
     }
   }
 }
-@utility ui-rail-link {
-  &.ui-rail-link {
-    width: 40px;
-    min-width: 40px;
-    height: 40px;
-    min-height: 40px;
-    @media (pointer: coarse) {
-      width: 44px;
-      min-width: 44px;
-      height: 44px;
-      min-height: 44px;
-    }
-  }
-}
-@utility ui-sidebar-status {
-  height: 32px;
-  min-height: 32px;
-  padding-inline: 8px;
-  @media (pointer: coarse) {
-    height: 36px;
-    min-height: 36px;
-  }
-}
-
 @utility ui-section-stack {
   display: flex;
   flex-direction: column;
@@ -428,44 +389,6 @@
   }
 }
 
-/* Disclosure and menu targets provide the horizontal gap around drawer names. */
-@utility ui-drawer-row {
-  @media (width < 48rem) and (pointer: coarse) {
-    & > :first-child > .ui-tree-spacer {
-      width: 28px;
-      min-width: 28px;
-    }
-    & > :first-child > .ui-icon-button {
-      margin-right: -16px;
-      & svg {
-        translate: -8px 0;
-      }
-    }
-  }
-}
-
-@utility ui-drawer-row {
-  @media (width < 48rem) and (pointer: coarse) {
-    &.ui-drawer-row.ui-tree-row:not(.ui-setting-row):not(.ui-list-row) {
-      column-gap: 0;
-      & > :first-child > :last-child {
-        padding-right: 0;
-      }
-    }
-  }
-}
-
-@utility ui-panel-heading {
-  @media (width < 48rem) and (pointer: coarse) {
-    &.ui-panel-heading {
-      height: var(--ui-header-height);
-      min-height: var(--ui-header-height);
-      padding-left: var(--ui-sheet-pad);
-      padding-right: 2px;
-    }
-  }
-}
-
 /* Fields already end with the form gap. Complete the interval before a group. */
 @utility ui-form-following-group {
   @media (pointer: coarse) {
@@ -484,7 +407,7 @@
     display: none;
   }
   @media (pointer: coarse) {
-    @container drawer-actions (width < 236px) {
+    @container drawer-actions (width < 208px) {
       & .ui-drawer-actions-wide {
         display: none;
       }
@@ -849,4 +772,235 @@
 }
 @utility ui-settings-empty {
   margin-inline: 8px;
+}
+
+/* Sidebar role values. Fine and coarse pointers share the same anatomy. */
+@layer base {
+  :root {
+    --ui-sidebar-panel-pad: 8px;
+    --ui-sidebar-group-gap: 8px;
+    --ui-sidebar-item-gap: 2px;
+    --ui-sidebar-row-pad: 8px;
+    --ui-sidebar-row-y: 4px;
+    --ui-sidebar-row-line: 20px;
+    --ui-sidebar-indent: 20px;
+    --ui-sidebar-glyph: 16px;
+    --ui-sidebar-disclosure-gap: 4px;
+    --ui-sidebar-label-gap: 8px;
+    --ui-sidebar-row-target: 28px;
+    --ui-sidebar-radius: 6px;
+    --ui-sidebar-switcher-y: 4px;
+    --ui-sidebar-action: 28px;
+    --ui-sidebar-rail-button: 28px;
+    --ui-sidebar-rail-width: 48px;
+    --ui-sidebar-rail-pad: 8px;
+    --ui-sidebar-header: 44px;
+    --ui-sidebar-header-target: 44px;
+    --ui-sidebar-status-height: 32px;
+  }
+  @media (pointer: coarse) {
+    :root {
+      --ui-sidebar-panel-pad: 12px;
+      --ui-sidebar-group-gap: 12px;
+      --ui-sidebar-row-pad: 12px;
+      --ui-sidebar-row-y: 8px;
+      --ui-sidebar-row-target: 40px;
+      --ui-sidebar-radius: 8px;
+      --ui-sidebar-switcher-y: 8px;
+      --ui-sidebar-action: 40px;
+      --ui-sidebar-rail-button: 44px;
+      --ui-sidebar-status-height: 36px;
+    }
+  }
+}
+@utility ui-sidebar-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  padding: var(--ui-sidebar-panel-pad);
+  gap: var(--ui-sidebar-group-gap);
+}
+@utility ui-sidebar-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: var(--ui-sidebar-group-gap);
+  overflow-y: auto;
+}
+@utility ui-sidebar-tree {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: calc(
+    (var(--ui-sidebar-row-line) + var(--ui-sidebar-row-y) * 2) * 2
+  );
+  overflow-y: auto;
+  gap: var(--ui-sidebar-item-gap);
+}
+@utility ui-sidebar-tree-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-sidebar-item-gap);
+  padding: 0;
+}
+@utility ui-sidebar-leading {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  gap: var(--ui-sidebar-disclosure-gap);
+}
+@utility ui-sidebar-name {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  gap: var(--ui-sidebar-label-gap);
+}
+@utility ui-sidebar-row {
+  &.ui-sidebar-row {
+    display: flex;
+    align-items: center;
+    height: auto;
+    min-height: 0;
+    padding: var(--ui-sidebar-row-y) var(--ui-sidebar-row-pad);
+    gap: var(--ui-sidebar-label-gap);
+    border-radius: var(--ui-sidebar-radius);
+    line-height: var(--ui-sidebar-row-line);
+  }
+}
+@utility ui-sidebar-slot {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--ui-sidebar-glyph);
+  height: var(--ui-sidebar-glyph);
+}
+@utility ui-sidebar-row-action {
+  &.ui-sidebar-row-action.ui-sidebar-row-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 0;
+    color: inherit;
+    cursor: pointer;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: var(--ui-sidebar-row-target);
+    min-width: 0;
+    height: calc(var(--ui-sidebar-row-line) + var(--ui-sidebar-row-y) * 2);
+    min-height: 0;
+    padding: 0;
+    margin: 0;
+  }
+}
+@utility ui-sidebar-row-menu {
+  @media (pointer: fine) {
+    opacity: 0;
+    pointer-events: none;
+    .group:hover &,
+    .group:focus-within &,
+    [aria-expanded='true']& {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+}
+@utility ui-sidebar-switcher {
+  &.ui-sidebar-switcher.ui-sidebar-switcher {
+    min-height: 0;
+    height: auto;
+    padding: var(--ui-sidebar-switcher-y) var(--ui-sidebar-row-pad);
+    gap: var(--ui-sidebar-label-gap);
+    line-height: var(--ui-sidebar-row-line);
+  }
+}
+@utility ui-sidebar-action {
+  &.ui-sidebar-action.ui-sidebar-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 0;
+    color: inherit;
+    cursor: pointer;
+    width: var(--ui-sidebar-action);
+    height: var(--ui-sidebar-action);
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+  }
+}
+@utility ui-sidebar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-sidebar-item-gap);
+}
+@utility ui-sidebar-rail {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  justify-items: center;
+  flex-shrink: 0;
+  width: var(--ui-sidebar-rail-width);
+  padding-block: var(--ui-sidebar-rail-pad);
+}
+@utility ui-sidebar-rail-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ui-sidebar-item-gap);
+}
+@utility ui-sidebar-rail-button {
+  &.ui-sidebar-rail-button.ui-sidebar-rail-button {
+    width: var(--ui-sidebar-rail-button);
+    height: var(--ui-sidebar-rail-button);
+    min-height: 0;
+    min-width: 0;
+    padding: 0;
+  }
+}
+@utility ui-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  height: var(--ui-sidebar-header);
+}
+@utility ui-sidebar-header-close {
+  &.ui-sidebar-header-close.ui-sidebar-header-close {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    height: var(--ui-sidebar-header-target);
+    width: var(--ui-sidebar-header-target);
+    min-height: 0;
+    min-width: 0;
+    padding: 0;
+  }
+}
+@utility ui-sidebar-status {
+  height: var(--ui-sidebar-status-height);
+  min-height: 0;
+  padding-inline: var(--ui-sidebar-panel-pad);
+  flex-shrink: 0;
+}
+
+@layer utilities {
+  .ui-sidebar-action:focus-visible,
+  .ui-sidebar-row-action:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: -2px;
+  }
+}
+
+@utility ui-sidebar-message {
+  padding: var(--ui-sidebar-row-pad);
 }

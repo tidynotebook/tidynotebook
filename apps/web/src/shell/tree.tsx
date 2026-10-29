@@ -44,7 +44,6 @@ import {
   FolderOpenIcon,
   inlineFieldClassName,
   MoreIcon,
-  rowClassName,
   type MenuAnchor,
   type MenuItem,
 } from '@notesapp/ui';
@@ -80,6 +79,7 @@ import {
 } from '../lib/tree-rename.ts';
 import {
   treeIndentClassName,
+  treeIndentStyle,
   treeItemClassName,
   treeItemsClassName,
   treeMessageClassName,
@@ -843,8 +843,9 @@ export function NoteTree({
               aria-disabled="true"
               aria-selected="false"
               className={treeIndentClassName(row.level)}
+              style={treeIndentStyle(row.level)}
             >
-              <div className={rowClassName({ interactive: false })}>
+              <div className={treeRowClassName({ wrapOnPhone: true })}>
                 <span className={rowSpacerClassName} aria-hidden="true" />
                 <span className="min-w-0 truncate text-muted">
                   This folder is empty.
@@ -1074,6 +1075,7 @@ function TreeRow({
       aria-haspopup="menu"
       tabIndex={tabbable ? 0 : -1}
       className={`${treeIndentClassName(row.level)} ${treeItemClassName}`}
+      style={treeIndentStyle(row.level)}
       draggable={renaming === null}
       onFocus={(event) => onFocus(event.currentTarget)}
       onBlur={(event) => {
@@ -1140,25 +1142,27 @@ function TreeRow({
       >
         <div className={treeRowLeadingClassName}>
           {isFolder ? (
-            // The keys open and close a folder with Right and Left on the
-            // row, so the chevron is no stop of the keys. A screen reader on
-            // a touch screen reaches it by a swipe, by its name.
-            <button
-              type="button"
-              tabIndex={-1}
-              aria-label={controls.toggle ?? undefined}
-              className={rowActionClassName}
-              onMouseDown={keepFocus}
-              onClick={(event) => {
-                event.stopPropagation();
-                onToggle();
-              }}
-              title={controls.toggle ?? undefined}
-            >
-              <span className="inline-flex text-muted" aria-hidden="true">
-                {row.expanded ? <ChevronDownIcon /> : <ChevronRightIcon />}
-              </span>
-            </button>
+            <span className="ui-sidebar-slot">
+              {/* The keys open and close a folder with Right and Left on the
+            row, so the chevron is no stop of the keys. A screen reader on
+            a touch screen reaches it by a swipe, by its name. */}
+              <button
+                type="button"
+                tabIndex={-1}
+                aria-label={controls.toggle ?? undefined}
+                className={rowActionClassName}
+                onMouseDown={keepFocus}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onToggle();
+                }}
+                title={controls.toggle ?? undefined}
+              >
+                <span className="inline-flex text-muted" aria-hidden="true">
+                  {row.expanded ? <ChevronDownIcon /> : <ChevronRightIcon />}
+                </span>
+              </button>
+            </span>
           ) : (
             <span className={rowSpacerClassName} aria-hidden="true" />
           )}
@@ -1174,23 +1178,25 @@ function TreeRow({
           reader on a touch screen, which has neither key, reaches it by a
           swipe, by its name.
         */}
-        <button
-          type="button"
-          tabIndex={-1}
-          aria-label={controls.actions}
-          aria-haspopup="menu"
-          className={rowActionClassName}
-          title={controls.actions}
-          onMouseDown={keepFocus}
-          onClick={(event) => {
-            event.stopPropagation();
-            onMenu(anchorOf(event.currentTarget));
-          }}
-        >
-          <span className="inline-flex text-muted" aria-hidden="true">
-            <MoreIcon />
-          </span>
-        </button>
+        <span className="ui-sidebar-slot">
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-label={controls.actions}
+            aria-haspopup="menu"
+            className={`${rowActionClassName} ui-sidebar-row-menu`}
+            title={controls.actions}
+            onMouseDown={keepFocus}
+            onClick={(event) => {
+              event.stopPropagation();
+              onMenu(anchorOf(event.currentTarget));
+            }}
+          >
+            <span className="inline-flex text-muted" aria-hidden="true">
+              <MoreIcon />
+            </span>
+          </button>
+        </span>
       </div>
     </div>
   );

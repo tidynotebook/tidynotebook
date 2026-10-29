@@ -274,7 +274,15 @@ try {
               phone &&
               e.matches('button,[role="menuitem"]') &&
               !e.classList.contains('ui-sidebar-status') &&
-              b.height < 43.5
+              b.height <
+                (e.closest('.ui-sidebar-row')
+                  ? 35.5
+                  : e.classList.contains('ui-sidebar-action')
+                    ? 39.5
+                    : e.closest('.ui-tree-row,.ui-list-row') ||
+                        e.matches('[role^=menuitem]')
+                      ? 39.5
+                      : 43.5)
             )
               problems.push({ kind: 'height', label, height: b.height });
             if (
@@ -339,12 +347,21 @@ try {
           await p.goto(path.startsWith('http') ? path : `${home}${path}`);
           await p
             .getByRole('button', { name: 'Account: UI review', exact: true })
+            .first()
             .waitFor();
         },
         settings = async (page: string) => {
           await go(`?settings=${page}`);
           await d.waitFor();
         };
+      async function closeSettingsAction() {
+        await d
+          .getByRole('button', {
+            name: phone ? 'Back to section' : 'Cancel',
+            exact: true,
+          })
+          .click();
+      }
       await go('');
       await p
         .getByRole('heading', { name: 'All notes', exact: true })
@@ -497,6 +514,10 @@ try {
         );
       }
 
+      if (process.env.UI_AUDIT_SURFACE === 'sidebar') {
+        await c.close();
+        continue;
+      }
       if (spacing || borders) {
         await p
           .getByRole('button', {
@@ -720,9 +741,7 @@ try {
               );
               await shot('daily-template-preview-scrolled');
             }
-            await d
-              .getByRole('button', { name: 'Cancel', exact: true })
-              .click();
+            await closeSettingsAction();
           }
         if (section === 'templates') {
           await d
@@ -733,7 +752,7 @@ try {
             .waitFor();
           await d.getByRole('treeitem').first().waitFor();
           await shot('templates-folder');
-          await d.getByRole('button', { name: 'Cancel', exact: true }).click();
+          await closeSettingsAction();
         }
         if (section === 'account') {
           await d
@@ -760,7 +779,7 @@ try {
             .getByRole('heading', { name: 'Delete your account?', exact: true })
             .waitFor();
           await shot('delete-account');
-          await d.getByRole('button', { name: 'Cancel', exact: true }).click();
+          await closeSettingsAction();
         }
         if (section === 'api-keys-apps') {
           for (const [trigger, name] of [
@@ -781,45 +800,75 @@ try {
               })
               .waitFor();
             await shot(name);
-            await d
-              .getByRole('button', { name: 'Cancel', exact: true })
-              .click();
+            await closeSettingsAction();
           }
         }
       }
       await go('/accounts');
-      await p.getByRole('heading', { name: 'Mail', exact: true }).waitFor();
-      await shot('manage-overview');
-      await p.getByLabel('Server', { exact: true }).fill('smtp.example.com');
-      await p.getByLabel('Server', { exact: true }).scrollIntoViewIfNeeded();
-      const sizes = await p
-        .getByLabel('Server', { exact: true })
-        .evaluate((e) => {
-          const label = document.querySelector(`label[for="${e.id}"]`);
-          if (!label) throw new Error('The field label is missing.');
-          return {
-            field: getComputedStyle(e).fontSize,
-            label: getComputedStyle(label).fontSize,
-            line: getComputedStyle(e).lineHeight,
-            coarse: matchMedia('(pointer: coarse)').matches,
-          };
-        });
-      if (phone)
-        assert.deepEqual(sizes, {
-          field: '15px',
-          label: '15px',
-          line: '22px',
-          coarse: true,
-        });
-      await shot('manage-mail');
-      for (const id of [
-        'legal-heading',
-        'reports-heading',
-        'invitations-heading',
-        'accounts-heading',
-      ]) {
-        await p.locator(`#${id}`).scrollIntoViewIfNeeded();
-        await shot(`manage-${id.replace('-heading', '')}`);
+      await p.waitForURL('**?settings=accounts');
+      await d
+        .getByRole('switch', { name: 'Let anybody sign up', exact: true })
+        .waitFor();
+      await shot('admin-accounts');
+      await d
+        .getByRole('button', {
+          name: phone ? '+ Invite a person' : 'Invite a person',
+          exact: true,
+        })
+        .click();
+      await p.locator('#invite-email').waitFor();
+      await shot('admin-invite');
+      await closeSettingsAction();
+      if (phone) {
+        await d
+          .getByRole('button', { name: 'Account: UI review', exact: true })
+          .click();
+        await d.getByRole('button', { name: 'Role', exact: true }).waitFor();
+        await shot('admin-account-detail');
+        for (const [name, field] of [
+          ['Role', '#account-role'],
+          ['Limits and access', '#controls-standing'],
+        ] as const) {
+          await d.getByRole('button', { name, exact: true }).click();
+          await p.locator(field).waitFor();
+          await shot(name === 'Role' ? 'admin-role' : 'admin-limits');
+          await closeSettingsAction();
+        }
+        await closeSettingsAction();
+      } else {
+        await d
+          .getByRole('button', {
+            name: 'Change the account of UI review',
+            exact: true,
+          })
+          .click();
+        await p
+          .getByRole('menuitem', {
+            name: 'Change limits and access',
+            exact: true,
+          })
+          .click();
+        await p.locator('#controls-standing').waitFor();
+        await shot('admin-limits');
+        await closeSettingsAction();
+      }
+      for (const section of ['mail', 'legal', 'reports']) {
+        await settings(section);
+        await shot(`admin-${section}`);
+        for (const name of section === 'mail'
+          ? ['Mail server']
+          : section === 'legal'
+            ? ['Terms', 'Privacy notice']
+            : []) {
+          await d.getByRole('button', { name, exact: true }).click();
+          await p
+            .locator(section === 'mail' ? '#mail-host' : '#legal-kind')
+            .waitFor();
+          await shot(
+            `admin-${section}-${name.toLowerCase().replaceAll(' ', '-')}`,
+          );
+          await closeSettingsAction();
+        }
       }
       await go('/trash');
       await p
@@ -946,7 +995,7 @@ try {
           await auth
             .locator('[role=alert]')
             .evaluate((e) => getComputedStyle(e).fontSize),
-          '13px',
+          '12px',
         );
       await auth.screenshot({
         path: `.local-app/screenshots/${screenshotPrefix}-signup-error-${variant}.png`,

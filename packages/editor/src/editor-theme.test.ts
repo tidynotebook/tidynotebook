@@ -521,8 +521,8 @@ await test('the completion list is a menu of the design and its rows are rows', 
   assert.equal(list.padding, 'var(--spacing)');
   assert.equal(list.borderRadius, 'var(--radius-lg)');
   assert.equal(list.boxShadow, 'var(--shadow-overlay)');
-  assert.equal(list.backgroundColor, 'var(--notes-surface-card)');
-  assert.equal(list.border, '1px solid var(--notes-border-subtle)');
+  assert.equal(list.backgroundColor, 'var(--notes-surface-overlay)');
+  assert.equal(list.border, '1px solid var(--notes-border-overlay)');
   const row = rule('.cm-tooltip.cm-tooltip-autocomplete > ul > li');
   assert.equal(row.borderRadius, 'var(--radius-md)');
   assert.equal(row.minHeight, 'calc(var(--spacing) * 7)');

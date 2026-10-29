@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  deepestSteppedBranch,
+  treeIndentStyle,
   treeIndentClassName,
   treeItemClassName,
   treeItemsClassName,
@@ -72,8 +72,8 @@ await test('a row is the group that its hover actions read', () => {
 await test('the disclosure and name share one tight leading group', () => {
   // The defect this covers: the row gap and the left padding of the name
   // both sat between the disclosure icon and the folder icon.
-  assert.ok(treeRowLeadingClassName.includes('flex'));
-  assert.ok(treeRowLeadingClassName.includes('flex-1'));
+  assert.equal(treeRowLeadingClassName, 'ui-sidebar-leading');
+
   assert.ok(!treeRowLeadingClassName.includes('gap-'));
   assert.ok(!treeRowNameClassName.includes('pl-'));
   assert.ok(!treeRowNameClassName.includes('px-'));
@@ -99,19 +99,16 @@ await test('a row shows the focus of its treeitem inside the row', () => {
   assert.ok(!treeRowNameClassName.includes('focus:'));
 });
 
-await test('a row near the top of the tree steps in by one step', () => {
-  assert.equal(treeIndentClassName(1), '');
-  assert.equal(treeIndentClassName(2), 'pl-2');
-  assert.equal(treeIndentClassName(deepestSteppedBranch), 'pl-6');
-});
-
-await test('a deep row stops stepping in, so the name keeps its room', () => {
-  // The defect this covers: every level added its own step and nothing
-  // stopped it, so a folder ten levels down showed a chevron, a folder mark
-  // and no name at all in a narrow sidebar.
-  assert.equal(treeIndentClassName(deepestSteppedBranch + 1), 'pl-6');
-  assert.equal(treeIndentClassName(12), 'pl-6');
-  assert.equal(treeIndentClassName(0), '');
+await test('each tree level reads the shared indent step', () => {
+  for (const level of [1, 2, 4, 12])
+    assert.equal(
+      treeIndentStyle(level).paddingInlineStart,
+      `calc(${String(level - 1)} * var(--ui-sidebar-indent))`,
+    );
+  assert.equal(
+    treeIndentStyle(0).paddingInlineStart,
+    'calc(0 * var(--ui-sidebar-indent))',
+  );
 });
 
 await test('a row of a selection takes the fill of a chosen row', () => {
@@ -139,9 +136,9 @@ await test('the create parent keeps its quiet fill outside a selection', () => {
 });
 
 await test('siblings use a small gap while each row keeps its target size', () => {
-  assert.ok(treeItemsClassName.includes('space-y-1'));
-  assert.ok(treeRowClassName().includes('ui-tree-row'));
-  assert.ok(treeRowClassName().includes('ui-tree-row'));
+  assert.ok(treeItemsClassName.includes('ui-sidebar-tree-items'));
+  assert.ok(treeRowClassName().includes('ui-sidebar-row'));
+  assert.ok(treeRowClassName().includes('ui-sidebar-row'));
 });
 
 await test('no level of the tree draws a guide line', () => {
@@ -157,7 +154,7 @@ await test('the top of the tree separates from the All notes row', () => {
   // The defect this covers: the All notes row sits outside the folder list,
   // so the spacing inside that list never reached it, and a marked All notes
   // row touched the marked folder below it as one band.
-  assert.ok(treeListClassName.includes('mt-1'));
+  assert.ok(treeListClassName.includes('ui-sidebar-tree-items'));
   assert.ok(!treeListClassName.includes('border'));
   assert.ok(!treeListClassName.includes('pl-'));
 });
@@ -168,7 +165,7 @@ await test('the line under the tree stays in view at the foot of its box', () =>
   for (const tone of ['status', 'problem'] as const) {
     const line = treeMessageClassName(tone).split(' ');
     assert.ok(line.includes('sticky'));
-    assert.ok(line.includes('-bottom-2'));
+    assert.ok(line.includes('bottom-0'));
     assert.ok(line.includes('bg-surface'));
   }
   assert.ok(treeMessageClassName('problem').split(' ').includes('text-danger'));

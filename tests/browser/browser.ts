@@ -1,5 +1,9 @@
 /** The Playwright API used by the local browser audit. No browser is bundled. */
 export type Locator = {
+  screenshot(options: {
+    path: string;
+    animations?: 'disabled';
+  }): Promise<unknown>;
   click(): Promise<void>;
   fill(value: string): Promise<void>;
   press(key: string): Promise<void>;
@@ -38,6 +42,7 @@ type Route = {
   }): Promise<void>;
 };
 export type Page = {
+  waitForURL(url: string): Promise<void>;
   goto(url: string): Promise<unknown>;
   locator(selector: string): Locator;
   getByRole(
@@ -59,6 +64,7 @@ export type Page = {
   keyboard: { press(key: string): Promise<void> };
 };
 type Context = {
+  unrouteAll(options: { behavior: 'wait' | 'ignoreErrors' }): Promise<void>;
   newCDPSession(page: Page): Promise<{
     send(method: string, params: Record<string, unknown>): Promise<unknown>;
   }>;

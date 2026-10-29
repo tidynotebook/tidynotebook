@@ -180,6 +180,8 @@
   --text-control--line-height: 1.25rem;
   --text-ui: 0.8125rem;
   --text-ui--line-height: 1.25rem;
+  --text-group: 0.75rem;
+  --text-group--line-height: 1rem;
   --text-help: 0.75rem;
   --text-help--line-height: 1rem;
   /* Titles and note annotations keep their size under either pointer. */
@@ -297,18 +299,20 @@
   :root {
     --text-page: 1.25rem;
     --text-page--line-height: 1.75rem;
-    --text-header: 1rem;
+    --text-header: 1.0625rem;
     --text-header--line-height: 1.5rem;
     --text-preview-first: 0.9375rem;
     --text-preview-first--line-height: 1.375rem;
     --text-preview: 0.8125rem;
     --text-preview--line-height: 1.125rem;
-    --text-control: 0.9375rem;
-    --text-control--line-height: 1.375rem;
-    --text-ui: 0.9375rem;
-    --text-ui--line-height: 1.375rem;
-    --text-help: 0.8125rem;
-    --text-help--line-height: 1.125rem;
+    --text-control: 0.875rem;
+    --text-control--line-height: 1.25rem;
+    --text-ui: 0.875rem;
+    --text-ui--line-height: 1.25rem;
+    --text-help: 0.75rem;
+    --text-help--line-height: 1rem;
+    --text-group: 0.8125rem;
+    --text-group--line-height: 1.125rem;
   }
 }
 
@@ -344,8 +348,8 @@
   font-weight: 400;
 }
 @utility text-group {
-  font-size: var(--text-help);
-  line-height: var(--text-help--line-height);
+  font-size: var(--text-group);
+  line-height: var(--text-group--line-height);
   font-weight: 600;
 }
 @utility text-small {
