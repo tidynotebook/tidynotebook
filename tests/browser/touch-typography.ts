@@ -222,7 +222,9 @@ try {
               });
           }
           for (const e of [
-            ...document.querySelectorAll('.line-clamp-2.text-secondary'),
+            ...document.querySelectorAll(
+              '.ui-setting-row .line-clamp-2.text-secondary',
+            ),
           ].filter(visible)) {
             const b = e.getBoundingClientRect(),
               clone = e.cloneNode(true);
