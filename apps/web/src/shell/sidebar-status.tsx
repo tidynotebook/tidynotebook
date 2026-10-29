@@ -70,20 +70,22 @@ export function SidebarStatus({
       stop();
     };
   }, [store.store, session.account?.accountId, workspaceId]);
-  const details = footer.dot !== 'saved' || store.error !== null;
+  const dot = store.error === null ? footer.dot : 'attention';
+  const message = store.error ?? footer.line;
+  const details = dot !== 'saved';
   const short =
-    footer.dot === 'saved'
+    dot === 'saved'
       ? footer.line
       : waiting > 0
         ? `${waiting} ${waiting === 1 ? 'change' : 'changes'} waiting`
-        : footer.dot === 'attention'
+        : dot === 'attention'
           ? 'Save problem'
           : !online || sync.state.kind === 'waiting'
             ? 'Offline'
             : 'Waiting to upload';
   const content = (
     <>
-      <span className={syncDotClassName(footer.dot)} aria-hidden="true" />
+      <span className={syncDotClassName(dot)} aria-hidden="true" />
       <span className="min-w-0 truncate">{short}</span>
     </>
   );
@@ -104,10 +106,7 @@ export function SidebarStatus({
             {content}
           </div>
         )}
-        <span className="sr-only">
-          {short === footer.line ? '' : footer.line}
-          {store.error === null ? '' : ` ${store.error}`}
-        </span>
+        <span className="sr-only">{short === message ? '' : message}</span>
       </div>
       <Dialog
         open={open}
@@ -118,10 +117,7 @@ export function SidebarStatus({
         align="center"
       >
         <DialogBody>
-          <p className="m-0 text-body text-strong">{footer.line}</p>
-          {store.error === null ? null : (
-            <p className="mt-2 text-secondary text-danger">{store.error}</p>
-          )}
+          <p className="m-0 text-body text-strong">{message}</p>
           <AttentionLink workspaceId={workspaceId} count={attention} />
         </DialogBody>
         <DialogFooter>

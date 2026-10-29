@@ -424,7 +424,7 @@
   }
 }
 
-/* The disclosure and folder glyph share one touch target, with desktop gutters. */
+/* Disclosure and menu targets provide the horizontal gap around drawer names. */
 @utility ui-drawer-row {
   @media (width < 48rem) and (pointer: coarse) {
     & > :first-child > .ui-tree-spacer {
@@ -435,6 +435,17 @@
       margin-right: -16px;
       & svg {
         translate: -8px 0;
+      }
+    }
+  }
+}
+
+@utility ui-drawer-row {
+  @media (width < 48rem) and (pointer: coarse) {
+    &.ui-drawer-row.ui-tree-row:not(.ui-setting-row):not(.ui-list-row) {
+      column-gap: 0;
+      & > :first-child > :last-child {
+        padding-right: 0;
       }
     }
   }
