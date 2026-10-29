@@ -278,7 +278,8 @@ try {
       );
       field = await startDraft();
       await dialog()
-        .getByRole('heading', { name: 'Save in', exact: true })
+        .locator('.ui-settings-heading')
+        .filter({ visible: true })
         .click();
       assert.equal(await field.count(), 0);
       await dialog()

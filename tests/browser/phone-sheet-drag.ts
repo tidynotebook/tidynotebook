@@ -209,7 +209,10 @@ try {
             .evaluate((e) => e.scrollTop);
           assert.ok(after < before);
           results.push(`${kind} ${reduced}: scrolled body owns scrolling`);
-          const header = await p.locator('.ui-settings-heading').boundingBox();
+          const header = await p
+            .locator('.ui-settings-heading')
+            .filter({ visible: true })
+            .boundingBox();
           assert.ok(header);
           await touch('touchStart', 195, header.y + 26);
           await pause(20);
