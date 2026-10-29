@@ -2,17 +2,17 @@ import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { mkdirSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { touchTextRoles } from '../packages/ui/src/typography.ts';
+import { touchTextRoles } from '../../packages/ui/src/typography.ts';
 const { chromium } = await import(
   pathToFileURL(
     process.env.PLAYWRIGHT_MODULE ??
       '.local-app/node_modules/playwright-core/index.mjs',
   ).href
 );
-import * as api from '../packages/api-client/dist/index.js';
-const base = process.env.UI_AUDIT_ORIGIN ?? 'http://10.20.30.98:3517',
+import * as api from '@notesapp/api-client';
+const base = process.env.UI_AUDIT_ORIGIN ?? 'http://localhost:3517',
   statePath = process.env.UI_AUDIT_STATE ?? '.local-app/review-session.json',
-  state = JSON.parse(readFileSync(statePath)),
+  state = JSON.parse(readFileSync(statePath, 'utf8')),
   fixture = JSON.parse(
     readFileSync(
       process.env.UI_AUDIT_FIXTURE ?? '.local-app/review-fixture.json',
@@ -239,7 +239,7 @@ try {
           path: `.local-app/screenshots/text-roles-${name}-${variant}.png`,
           animations: 'disabled',
         });
-        console.log(variant, name, JSON.stringify(issues));
+        process.stdout.write(`${variant} ${name} ${JSON.stringify(issues)}\n`);
       }
       const d = p.getByRole('dialog', { name: 'Settings', exact: true }),
         go = async (path) => {
@@ -618,12 +618,8 @@ try {
     '.local-app/text-roles-results.json',
     JSON.stringify({ results, errors, writes }, null, 2),
   );
-  console.log(
-    'TOTAL',
-    results.length,
-    'screens',
-    results.flatMap((r) => r.issues).length,
-    'layout issues',
+  process.stdout.write(
+    `${results.length} screens, ${results.flatMap((r) => r.issues).length} issues\n`,
   );
 } finally {
   writeFileSync(

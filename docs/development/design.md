@@ -19,23 +19,26 @@ that stylesheet and its faces inside it. Record 0061.
 
 ## The type steps
 
-The named steps live in `apps/web/src/tailwind.css`. Use no other size.
+The shared roles are in `packages/ui/src/typography.ts`. The application
+stylesheet supplies their utilities. Each role sets size, line height and weight.
 
-- `text-kbd` is a keyboard hint and nothing else.
-- `text-control` and `text-ui` are primary text, controls, rows and menus.
-- `text-help` is help, metadata, field errors and quiet group headings.
-- `text-title` keeps compact titles at their current size.
-- `text-base` is the title of a card or a section.
-- `text-xl` is the title of a page.
-- `text-3xl` is the largest step: a note name on the published page and the
-  landing home headline (record 0217).
-- The `text-note` steps are the note text and its heading ramp.
+| Role                    | Class                       | Touch size / line / weight |
+| ----------------------- | --------------------------- | -------------------------- |
+| Page title              | `text-title-page`           | 20 / 28 / 600              |
+| Sheet or section title  | `text-title-header`         | 16 / 24 / 600              |
+| Body                    | `text-body`                 | 16 / 24 / 400              |
+| Field label or button   | `text-label`                | 16 / 24 / 500              |
+| Setting value, muted    | `text-value`                | 16 / 24 / 400              |
+| Help or metadata, muted | `text-secondary`            | 14 / 20 / 400              |
+| Group heading, muted    | `text-group`                | 14 / 20 / 600              |
+| Key hint or avatar      | `text-small`, `text-avatar` | 11 / 16 / 400 or 600       |
 
-Touch tokens match primary text to fields. Titles and note text keep their sizes.
-
-Two weights in the chrome: `font-medium` for a control label and a selected
-row, `font-semibold` for a title. No capitals, no wide tracking, no bold.
-Large type takes `tracking-heading` or `tracking-display`.
+Template previews use `text-preview-body` (14 / 20 / 400 under touch),
+`text-title-header` for the first heading and `text-preview-heading` for the
+other headings (14 / 20 / 600). Note text keeps its separate `text-note` scale.
+Fine pointers keep compact body, label and secondary steps. Do not add a weight
+or line height to a role. Use danger colour for errors and danger groups.
+Large page titles use `tracking-heading`.
 
 ## The planes and the edges
 
