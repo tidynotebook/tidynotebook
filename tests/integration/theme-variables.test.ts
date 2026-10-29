@@ -20,6 +20,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runInNewContext } from 'node:vm';
 import { Window } from 'happy-dom';
+import { searchPanelClasses } from '../../packages/editor/src/search-panel.ts';
 import { editorThemeVariables, touchFieldQuery } from '@notesapp/editor';
 import {
   avatarClassName,
@@ -589,4 +590,23 @@ await test('the style of a menu that no class reaches reads the variables of its
       );
     }
   }
+});
+
+await test('the find panel layout utilities reach the served stylesheet', async () => {
+  const assets = resolve(root, 'apps/web/dist/web/assets');
+  const served = (
+    await Promise.all(
+      (await readdir(assets))
+        .filter((name) => name.endsWith('.css'))
+        .map((name) => readFile(resolve(assets, name), 'utf8')),
+    )
+  ).join('\n');
+  for (const classes of Object.values(searchPanelClasses))
+    for (const name of classes.split(' ')) {
+      const selector = `.${name.replace(/[^a-zA-Z0-9_-]/g, (character) => `\\${character}`)}`;
+      assert.ok(
+        served.includes(selector),
+        `${name} is missing from the editor layout`,
+      );
+    }
 });

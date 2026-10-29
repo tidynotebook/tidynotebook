@@ -4,9 +4,9 @@
  * `@codemirror/search` draws a panel of its own, with lowercase words, grey
  * native buttons and a raw close mark. Its documented `createPanel` option
  * takes a panel of ours instead, so this module builds the panel from the
- * recipes of `packages/ui`: two fields, the buttons, three checkboxes and a
- * close action with the close glyph of the icon set. The words are sentence
- * case and say what each control does.
+ * recipes of `packages/ui`: a compact find bar, match count, icon controls,
+ * option toggles, and a replace row shown on request. Phone options use the
+ * shared application sheet. Removing a visible action does not remove its key.
  *
  * The keys stay the keys of the search package. Enter in the find field finds
  * the next match and Shift and Enter the one before it, Enter in the replace
@@ -51,6 +51,16 @@ import {
   fieldClassName,
   glyph,
 } from '@notesapp/ui';
+
+/** Editor DOM is a source of the application stylesheet. */
+export const searchPanelClasses = {
+  field: 'relative min-w-0 flex-1 lg:max-w-80',
+  count:
+    'pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 whitespace-nowrap text-secondary text-muted',
+  desktop: 'hidden lg:contents',
+  phone: 'lg:hidden',
+  queryPadding: 'pr-16',
+} as const;
 
 /** The words of the panel, which a person reads and hears. */
 export const searchPanelWords = {
@@ -241,12 +251,11 @@ class SearchPanel implements Panel {
       input.addEventListener('change', commit);
     }
     this.count = document.createElement('span');
-    this.count.className =
-      'pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 whitespace-nowrap text-secondary text-muted';
+    this.count.className = searchPanelClasses.count;
     this.count.setAttribute('aria-live', 'polite');
-    this.searchField.classList.add('pr-16');
+    this.searchField.classList.add(searchPanelClasses.queryPadding);
     const search = document.createElement('div');
-    search.className = 'relative min-w-0 flex-1 lg:max-w-80';
+    search.className = searchPanelClasses.field;
     search.append(this.searchField, this.count);
     const options = [
       { label: searchPanelWords.matchCase, text: 'Aa', key: 'caseSensitive' },
@@ -258,7 +267,7 @@ class SearchPanel implements Panel {
         this.option(option.key, !this.query[option.key]),
       );
       toggle.className = buttonClassName({
-        variant: 'ghost',
+        variant: 'secondary',
         size: 'sm',
         className: 'aria-pressed:bg-active',
       });
@@ -271,6 +280,7 @@ class SearchPanel implements Panel {
     );
 
     replacementToggle.setAttribute('aria-pressed', 'false');
+    replacementToggle.classList.add('aria-pressed:bg-active');
     const more = button('More', () => {
       more.disabled = true;
       void openOptionsSheet('Find options', [
@@ -318,13 +328,13 @@ class SearchPanel implements Panel {
     );
     previous.querySelector('svg')?.classList.add('rotate-180');
     const desktop = document.createElement('span');
-    desktop.className = 'hidden lg:contents';
+    desktop.className = searchPanelClasses.desktop;
     desktop.append(
       ...this.toggles,
       ...(view.state.readOnly ? [] : [replacementToggle]),
     );
     const phone = document.createElement('span');
-    phone.className = 'lg:hidden';
+    phone.className = searchPanelClasses.phone;
     phone.append(more);
     const rows = [
       band(
