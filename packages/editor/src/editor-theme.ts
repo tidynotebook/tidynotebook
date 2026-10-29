@@ -40,6 +40,7 @@ export const editorThemeVariables: readonly string[] = [
   '--font-sans',
   '--font-mono',
   '--spacing',
+  '--spacing-gutter',
   '--radius-sm',
   '--radius-md',
   '--radius-lg',
@@ -1069,6 +1070,9 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
     // A finger gets a larger hit area around the same grip. It reaches a
     // little way into the cell, so a tap on the text of a short header cell
     // still reaches the text.
+    '@media (max-width: 1023px) and (pointer: coarse)': {
+      '.cm-panels': { marginInline: 'calc(var(--spacing-gutter) * -1)' },
+    },
     '@media (pointer: coarse)': {
       // A finger takes the 44 px of a row in the completion list.
       '.cm-tooltip.cm-tooltip-autocomplete > ul > li': {
