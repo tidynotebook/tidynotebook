@@ -64,7 +64,7 @@ import { pinnedIndex } from '../../lib/row-window.ts';
 import { scrollerOf, useRowWindow } from '../../shell/row-window.ts';
 
 /** The quiet heading of one time band of the list. */
-const groupLabelClassName = `${pageGroupLabelClassName()} pt-4`;
+const groupLabelClassName = pageGroupLabelClassName();
 
 /**
  * Where the list of each workspace was scrolled to, for this session.
@@ -155,7 +155,7 @@ function NoteGroupList({
             <Link
               className={rowClassName({
                 inset: false,
-                className: 'min-w-0 flex-1',
+                className: 'ui-list-row min-w-0 flex-1',
               })}
               to={`/w/${workspaceId}/notes/${note.fileId}`}
               aria-label={
@@ -253,6 +253,7 @@ export function NotesHomeView(): ReactNode {
           <div>
             {groups.map((group) => (
               <section
+                className="ui-section"
                 key={group.label}
                 aria-labelledby={noteGroupHeadingId(group.label)}
               >

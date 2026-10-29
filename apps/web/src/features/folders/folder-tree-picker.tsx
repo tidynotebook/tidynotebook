@@ -67,7 +67,7 @@ export function FolderField({
   const shown = value === '' ? rootName : (value.split('/').at(-1) ?? value);
   return (
     <div
-      className="mb-3.5"
+      className="ui-field-group"
       data-dialog-escape={open ? 'local' : undefined}
       onKeyDown={(event) => {
         if (open && event.key === 'Escape') {
@@ -77,7 +77,10 @@ export function FolderField({
         }
       }}
     >
-      <span id={`${id}-label`} className="mb-1.5 block text-label text-strong">
+      <span
+        id={`${id}-label`}
+        className="ui-field-label block text-label text-strong"
+      >
         {label}
       </span>
       <button

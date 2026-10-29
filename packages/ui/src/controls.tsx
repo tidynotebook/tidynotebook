@@ -29,7 +29,7 @@ import {
 import { CheckIcon, ChevronDownIcon, ChevronRightIcon } from './icons.tsx';
 
 /** The label above a field, and the label beside a checkbox. */
-const fieldLabelClassName = 'mb-1.5 block text-label text-strong';
+const fieldLabelClassName = 'block text-label text-strong';
 
 /** A named value against a maximum, with no state or callback. */
 export function Meter({
@@ -254,7 +254,7 @@ export function TextField({
     .filter(Boolean)
     .join(' ');
   return (
-    <div className="mb-3.5">
+    <div className="ui-field-group">
       <label
         className={hideLabel ? 'sr-only' : fieldLabelClassName}
         htmlFor={id}
@@ -332,7 +332,7 @@ export function TextAreaField({
     .filter(Boolean)
     .join(' ');
   return (
-    <div className="mb-3.5">
+    <div className="ui-field-group">
       <label className={fieldLabelClassName} htmlFor={id}>
         {label}
       </label>
@@ -404,7 +404,7 @@ export function ReadOnlyField({
     inputRef.current?.focus();
   }, [takeFocus]);
   return (
-    <div className="mb-3.5">
+    <div className="ui-field-group">
       <label className={fieldLabelClassName} htmlFor={id}>
         {label}
       </label>
@@ -457,7 +457,7 @@ export function SelectField({
 }): ReactNode {
   const hintId = `${id}-hint`;
   return (
-    <div className="mb-3.5">
+    <div className="ui-field-group">
       <label className={fieldLabelClassName} htmlFor={id}>
         {label}
       </label>
@@ -645,7 +645,7 @@ export function Switch({
       disabled={disabled}
       className={
         hideLabel
-          ? buttonClassName({ variant: 'ghost', size: 'touch', iconOnly: true })
+          ? 'ui-switch-control inline-flex items-center justify-center rounded-md bg-transparent text-strong'
           : classes.row
       }
       onClick={() => onChange(!checked)}

@@ -34,7 +34,6 @@ export function SettingsSection({
   danger = false,
   description,
   warning,
-  rows = false,
   children,
 }: {
   readonly section: PageSection;
@@ -50,13 +49,10 @@ export function SettingsSection({
   const topic = useContext(SettingsTopicContext);
   if (topic !== null)
     return (
-      <section
-        className={rows ? undefined : 'pb-2 pt-4 first:pt-0'}
-        aria-label={section.title}
-      >
+      <section className={'ui-section'} aria-label={section.title}>
         {topic.hiddenTitles.includes(section.id) ? null : (
           <h3
-            className={`m-0 border-b border-edge-subtle pb-1.5 text-group ${danger ? 'text-danger' : 'text-muted'}`}
+            className={`ui-group-heading border-b border-edge-subtle pb-2 text-group ${danger ? 'text-danger' : 'text-muted'}`}
             id={section.id}
           >
             {heading ?? section.title}
@@ -78,7 +74,7 @@ export function SettingsSection({
       className="border-t border-edge-subtle py-6"
       aria-labelledby={section.id}
     >
-      <div className="md:grid md:grid-cols-3 md:gap-group">
+      <div>
         <div className="md:col-span-1">
           <h2
             className="m-0 text-title-header text-strong"
@@ -91,7 +87,7 @@ export function SettingsSection({
             <p className="mb-0 mt-1 text-secondary text-muted">{description}</p>
           )}
         </div>
-        <div className="mt-3 min-w-0 md:col-span-2 md:mt-0">
+        <div className="mt-2 min-w-0">
           {warning === undefined ? null : (
             <p className="mb-3 mt-0 text-secondary text-muted">{warning}</p>
           )}
@@ -116,9 +112,9 @@ export function SettingRow({
   readonly children?: ReactNode;
 }): ReactNode {
   return (
-    <div className="flex min-h-14 flex-wrap items-start gap-x-group border-b border-edge-subtle py-2 lg:min-h-13 lg:flex-nowrap lg:items-center lg:py-0.5">
+    <div className="ui-setting-row flex flex-wrap items-start border-b border-edge-subtle lg:flex-nowrap lg:items-center">
       <div className="contents lg:block lg:min-w-0 lg:flex-1">
-        <p className="order-1 m-0 min-w-0 flex-1 break-words text-body text-strong lg:truncate pointer-coarse:flex pointer-coarse:min-h-11 pointer-coarse:items-center">
+        <p className="order-1 m-0 min-w-0 flex-1 break-words text-body text-strong lg:truncate pointer-coarse:flex pointer-coarse:items-center">
           {label}
         </p>
         {help === undefined ? null : (
@@ -161,7 +157,7 @@ export function SettingChoiceRow({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="flex min-h-14 w-full items-start gap-3 border-b border-edge-subtle bg-transparent py-2 text-left hover:bg-hover focus-visible:relative focus-visible:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-focus disabled:cursor-default disabled:text-muted lg:h-13 lg:items-center lg:py-0 pointer-coarse:flex-wrap pointer-coarse:gap-y-0"
+      className="ui-setting-row flex w-full items-start border-b border-edge-subtle bg-transparent text-left hover:bg-hover focus-visible:relative focus-visible:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-focus disabled:cursor-default disabled:text-muted lg:items-center pointer-coarse:flex-wrap pointer-coarse:gap-y-0"
     >
       <span className="min-w-0 flex-1 pointer-coarse:contents">
         <span className="block truncate text-body text-strong pointer-coarse:order-1 pointer-coarse:min-w-0 pointer-coarse:flex-1">

@@ -55,7 +55,7 @@ export function ForgotPasswordPage(): ReactNode {
   if (sentTo !== null)
     return (
       <AuthFrame title="Open the link in your mail">
-        <p className="mb-5 mt-0 text-secondary text-muted">
+        <p className="mb-6 mt-0 text-secondary text-muted">
           If {sentTo} has an account, a message with a link goes to it. Open the
           link within 1 hour to choose a new password. If no message comes, look
           in your spam folder, or ask again in a few minutes.
@@ -68,7 +68,7 @@ export function ForgotPasswordPage(): ReactNode {
 
   return (
     <AuthFrame title="Reset your password">
-      <p className="mb-5 mt-0 text-secondary text-muted">
+      <p className="mb-6 mt-0 text-secondary text-muted">
         Enter the address of your account. A link to choose a new password goes
         to it.
       </p>
@@ -159,7 +159,7 @@ export function ResetPasswordPage(): ReactNode {
   if (done)
     return (
       <AuthFrame title="Your password changed">
-        <p className="mb-5 mt-0 text-secondary text-muted">
+        <p className="mb-6 mt-0 text-secondary text-muted">
           Every device that was signed in is signed out. Sign in with your new
           password.
         </p>
@@ -198,7 +198,7 @@ export function ResetPasswordPage(): ReactNode {
 
   return (
     <AuthFrame title="Choose a new password">
-      <p className="mb-5 mt-0 text-secondary text-muted">
+      <p className="mb-6 mt-0 text-secondary text-muted">
         Choose a new password for your account. Every device that is signed in
         then signs out.
       </p>

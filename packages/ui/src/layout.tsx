@@ -24,25 +24,12 @@
  * and
  * [decision 0065](../../../docs/decisions/0065-one-recipe-for-a-control-and-one-grid-for-an-icon.md).
  */
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 import { rowClassName } from './control-classes.ts';
-import { CollapsibleSection } from './controls.tsx';
 import {
-  currentPageSection,
   pageColumnClassName,
   pageHeaderActionsClassName,
   pageRowClassName,
-  pageSectionsShown,
-  pageSideClassName,
-  sectionScrollTop,
-  type ChosenPageSection,
   type PageHeaderActionLayout,
   type PageSection,
 } from './layout-classes.ts';
@@ -71,15 +58,13 @@ export const pageGutter = 'px-gutter sm:px-gutter-wide';
  */
 export function Page({
   children,
-  sections = [],
 }: {
   readonly children: ReactNode;
   readonly sections?: readonly PageSection[] | undefined;
 }): ReactNode {
   return (
     <main className={`${pageRowClassName()} ${pageGutter}`}>
-      <div className={`${pageColumnClassName()} py-6`}>{children}</div>
-      <PageSide sections={sections} />
+      <div className={pageColumnClassName()}>{children}</div>
     </main>
   );
 }
@@ -98,152 +83,8 @@ export function PageRegion({
 }): ReactNode {
   return (
     <div className={`${pageRowClassName()} ${pageGutter}`}>
-      <div className={`${pageColumnClassName()} py-6`}>{children}</div>
-      <div className={pageSideClassName()} />
+      <div className={pageColumnClassName()}>{children}</div>
     </div>
-  );
-}
-
-/**
- * The side region of a page.
- *
- * It keeps its width when it lists nothing, so the column does not move. It
- * stays in view while the page scrolls, and its first row lines up with the
- * page title.
- */
-function PageSide({
-  sections,
-}: {
-  readonly sections: readonly PageSection[];
-}): ReactNode {
-  if (!pageSectionsShown(sections))
-    return <div className={pageSideClassName()} />;
-  return (
-    <aside
-      className={`${pageSideClassName()} sticky top-0 self-start pb-6 pt-4`}
-      aria-label="Sections of this page"
-    >
-      <PageSections sections={sections} />
-    </aside>
-  );
-}
-
-/** The element that a row of the list brings into view. */
-function sectionTarget(id: string): HTMLElement | null {
-  const heading = document.getElementById(id);
-  if (heading === null) return null;
-  return heading.closest('section') ?? heading;
-}
-
-/** The nearest ancestor that scrolls, where the page sits. */
-function scrollerOf(element: HTMLElement): HTMLElement | null {
-  for (
-    let parent = element.parentElement;
-    parent !== null;
-    parent = parent.parentElement
-  ) {
-    const overflow = getComputedStyle(parent).overflowY;
-    if (overflow === 'auto' || overflow === 'scroll') return parent;
-  }
-  return null;
-}
-
-/**
- * The list of the sections of a page, with the section in view marked.
- *
- * It is the outline of a page, so it takes the section and the rows of the
- * note outline. A row brings its section to the top of the scroller of the
- * page and marks it, and the next scroll of the person moves the mark again,
- * from the rule of `currentPageSection`.
- */
-function PageSections({
-  sections,
-}: {
-  readonly sections: readonly PageSection[];
-}): ReactNode {
-  const [open, setOpen] = useState(true);
-  const [current, setCurrent] = useState<string | null>(null);
-  const chosen = useRef<ChosenPageSection | null>(null);
-  // The effect reads the sections again only when the list itself changes,
-  // and not for each new array with the same rows.
-  const ids = sections.map((section) => section.id).join('\n');
-  useEffect(() => {
-    const order = ids.split('\n');
-    const first = sectionTarget(order[0] ?? '');
-    const scroller = first === null ? null : scrollerOf(first);
-    if (scroller === null) return;
-    const read = (): void => {
-      const origin = scroller.getBoundingClientRect().top;
-      const tops = order.flatMap((id) => {
-        const target = sectionTarget(id);
-        return target === null
-          ? []
-          : [{ id, top: target.getBoundingClientRect().top - origin }];
-      });
-      const atEnd =
-        scroller.scrollTop > 0 &&
-        scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1;
-      const next = currentPageSection(
-        tops,
-        atEnd,
-        chosen.current,
-        scroller.scrollTop,
-      );
-      if (next !== chosen.current?.id) chosen.current = null;
-      setCurrent(next);
-    };
-    read();
-    scroller.addEventListener('scroll', read, { passive: true });
-    return () => {
-      scroller.removeEventListener('scroll', read);
-    };
-  }, [ids]);
-  return (
-    <CollapsibleSection
-      id="page-sections"
-      title="On this page"
-      open={open}
-      onToggle={setOpen}
-    >
-      <ol className="m-0 list-none p-0">
-        {sections.map((section) => {
-          const marked = section.id === current;
-          return (
-            <li key={section.id}>
-              <button
-                type="button"
-                className={rowClassName({
-                  current: marked,
-                  className: 'w-full text-left',
-                })}
-                aria-current={marked ? 'location' : undefined}
-                onClick={(): void => {
-                  const target = sectionTarget(section.id);
-                  const scroller = target === null ? null : scrollerOf(target);
-                  if (target === null || scroller === null) return;
-                  scroller.scrollTo({
-                    top: sectionScrollTop(
-                      scroller.scrollTop,
-                      target.getBoundingClientRect().top,
-                      scroller.getBoundingClientRect().top,
-                    ),
-                  });
-                  // The scroller clamps the offset at its end, so the mark
-                  // holds at the offset it reached and not the one it asked.
-                  chosen.current = {
-                    id: section.id,
-                    scrollTop: scroller.scrollTop,
-                  };
-                  setCurrent(section.id);
-                }}
-              >
-                <span className="min-w-0 flex-1 truncate">{section.title}</span>
-              </button>
-            </li>
-          );
-        })}
-      </ol>
-    </CollapsibleSection>
   );
 }
 
@@ -287,7 +128,7 @@ export function PageHeader({
 }): ReactNode {
   const back = useContext(PageBackContext);
   return (
-    <div className="mb-6 flex flex-wrap items-start justify-between gap-group">
+    <div className="ui-page-header flex flex-wrap items-start justify-between gap-group">
       <div
         className={
           actionLayout === 'inline'
@@ -295,7 +136,7 @@ export function PageHeader({
             : 'min-w-0 grow basis-full sm:basis-0'
         }
       >
-        <div className="flex min-w-0 items-center gap-1">
+        <div className="flex min-w-0 items-start gap-1">
           {back}
           <h1
             className="m-0 min-w-0 text-title-page tracking-heading text-strong"
@@ -377,7 +218,7 @@ export function EmptyState({
   readonly action?: ReactNode | undefined;
 }): ReactNode {
   return (
-    <div className="py-10 text-center">
+    <div className="py-8 text-center">
       {icon === undefined ? null : (
         <p className="m-0 flex justify-center text-muted" aria-hidden="true">
           {icon}
@@ -435,7 +276,7 @@ export function ListRow({
     selected,
     current,
     interactive,
-    className,
+    className: `ui-list-row ${className ?? ''}`,
   });
   // The list item stays a list item, and the control inside it takes the whole
   // row. `display: contents` would have done the same with one element fewer,

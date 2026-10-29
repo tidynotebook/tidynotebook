@@ -68,7 +68,7 @@ export function RouteError({
   );
   return scope === 'application' ? (
     <AuthFrame title={screen.title}>
-      <p className="mb-5 mt-0 text-secondary text-muted">
+      <p className="mb-6 mt-0 text-secondary text-muted">
         {screen.description}
       </p>
       <div className="flex flex-wrap gap-cluster">{actions}</div>

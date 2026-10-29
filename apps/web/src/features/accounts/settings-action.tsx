@@ -75,7 +75,7 @@ export default function SettingsAction({
   return createPortal(
     <section
       ref={panel}
-      className="-mx-5 flex min-h-0 flex-1 flex-col"
+      className="ui-settings-action flex min-h-0 flex-1 flex-col"
       aria-label={title}
       data-dialog-escape="local"
       tabIndex={-1}

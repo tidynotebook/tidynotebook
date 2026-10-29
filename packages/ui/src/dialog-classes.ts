@@ -47,7 +47,7 @@ export function dialogRootClassName(
     return 'bg-scrim/40 items-stretch lg:items-center lg:p-6';
   if (align === 'sheet') return 'bg-scrim/40 items-end lg:items-center lg:p-6';
   const position =
-    align === 'center' ? 'items-center py-6' : 'items-start pb-6 pt-20';
+    align === 'center' ? 'items-center py-6' : 'items-start pb-6 pt-12';
   return `bg-scrim/40 px-gutter ${position}`;
 }
 
@@ -78,12 +78,12 @@ export function dialogPanelClassName(
 export function dialogTitleClassName(hidden: boolean): string {
   return hidden
     ? 'sr-only'
-    : 'sticky top-0 z-10 m-0 bg-card px-5 pb-1 pt-4 text-title-header text-strong';
+    : 'sticky top-0 z-10 m-0 bg-card ui-dialog-heading text-title-header text-strong';
 }
 
 /** The title row of a dialog that has controls next to its title. */
 export function dialogHeaderClassName(): string {
-  return 'sticky top-0 z-10 flex items-center gap-2 bg-card pb-1 pl-5 pr-3 pt-3';
+  return 'sticky top-0 z-10 flex items-center gap-2 bg-card ui-dialog-heading';
 }
 
 /** The title inside the title row of {@link dialogHeaderClassName}. */
@@ -93,5 +93,5 @@ export function dialogHeaderTitleClassName(): string {
 
 /** The action row at the bottom of a dialog, as classes. */
 export function dialogFooterClassName(): string {
-  return 'sticky bottom-0 z-10 flex flex-wrap justify-end gap-cluster bg-card px-5 pb-4 pt-2';
+  return 'sticky bottom-0 z-10 flex flex-wrap justify-end ui-dialog-footer bg-card';
 }

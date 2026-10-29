@@ -64,7 +64,7 @@ export function InlineDiff({
                 // The text on a tone surface is the strong text, which the
                 // contrast test holds on each of the three surfaces, and the
                 // sign in front of the line states the change as well.
-                className={`flex gap-cluster px-3 py-0.5 ${row.kind === 'removed' ? 'bg-danger-surface text-strong' : row.kind === 'added' ? 'bg-success-surface text-strong' : 'text-muted'}`}
+                className={`flex gap-cluster px-3 py-1 ${row.kind === 'removed' ? 'bg-danger-surface text-strong' : row.kind === 'added' ? 'bg-success-surface text-strong' : 'text-muted'}`}
                 key={`${idPrefix}-block-${String(index)}-row-${String(rowIndex)}`}
               >
                 <span className="w-3 shrink-0" aria-hidden="true">

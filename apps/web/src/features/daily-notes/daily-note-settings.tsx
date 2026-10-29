@@ -170,7 +170,7 @@ export function DailyNoteSettingsFields(): ReactNode {
     <>
       <LayoutFields settings={settings} onSave={daily.save} />
       <DailyTemplatePicker settings={settings} onSave={daily.save} />
-      <div className="flex h-14 items-center border-b border-edge-subtle lg:h-13">
+      <div className="ui-setting-row flex items-center border-b border-edge-subtle">
         <Switch
           label="Open today's note when the app opens"
           checked={settings.openOnStart}

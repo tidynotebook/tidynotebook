@@ -54,7 +54,7 @@ export function OAuthConsentView({
         </div>
       </dl>
       {facts.localWarning === null ? null : (
-        <Notice className="mb-5" message={facts.localWarning} />
+        <Notice className="mb-6" message={facts.localWarning} />
       )}
       <p className="mb-4 mt-0 text-body text-strong">{facts.accessSentence}</p>
       {facts.writeRequested ? (

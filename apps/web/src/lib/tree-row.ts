@@ -119,7 +119,7 @@ export const treeRowLeadingClassName = 'flex min-w-0 flex-1 items-center';
  * their icons.
  */
 export const treeRowNameClassName =
-  'flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 truncate rounded-md border-0 bg-transparent pr-1 text-left text-inherit no-underline';
+  'flex min-w-0 flex-1 cursor-pointer items-center gap-2 truncate rounded-md border-0 bg-transparent pr-1 text-left text-inherit no-underline';
 
 /** The deepest branch that still steps in. */
 export const deepestSteppedBranch = 4;
@@ -142,7 +142,7 @@ export function treeIndentClassName(level: number): string {
 }
 
 /** Small gaps keep sibling rows distinct without using extra list height. */
-export const treeItemsClassName = 'm-0 list-none space-y-0.5 p-0';
+export const treeItemsClassName = 'm-0 list-none space-y-1 p-0';
 
 /**
  * The separation between the All notes row and the top of the folder tree.
@@ -153,7 +153,7 @@ export const treeItemsClassName = 'm-0 list-none space-y-0.5 p-0';
  * from its first row. It is space and not a divider: two rows separate by
  * space and by fill and never by a rule.
  */
-export const treeListClassName = 'mt-0.5';
+export const treeListClassName = 'mt-1';
 
 /**
  * The one line under the tree: a result, or the reason an action stopped,

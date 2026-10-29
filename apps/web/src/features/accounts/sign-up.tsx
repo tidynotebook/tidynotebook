@@ -113,12 +113,12 @@ export function SignUpPage(): ReactNode {
   if (sentTo !== null)
     return (
       <AuthFrame title="Open the link in your mail">
-        <p className="mb-5 mt-0 text-secondary text-muted">
+        <p className="mb-6 mt-0 text-secondary text-muted">
           A message goes to {sentTo}. Open the link in it to finish your
           account. This browser can sign you in after verification. On another
           device, enter your password to sign in.
         </p>
-        <p className="mb-5 mt-0 text-secondary text-muted">
+        <p className="mb-6 mt-0 text-secondary text-muted">
           Check your spam folder if the message does not arrive. To send another
           link or use a different address, return to the form. Email limits can
           delay another message.
@@ -146,7 +146,7 @@ export function SignUpPage(): ReactNode {
       {trialOffer(trialSeconds) === null ? null : (
         <Notice className="mb-4" message={trialOffer(trialSeconds) ?? ''} />
       )}
-      <p className="mb-5 mt-0 text-secondary text-muted">
+      <p className="mb-6 mt-0 text-secondary text-muted">
         Enter your address and choose a password. A link goes to the address to
         prove that it is yours.
       </p>
@@ -309,7 +309,7 @@ export function VerifyPage(): ReactNode {
                 : 'Links work once and for a short time.'}
             </p>
           ) : (
-            <p className="mb-5 mt-0 text-secondary text-muted">{state.email}</p>
+            <p className="mb-6 mt-0 text-secondary text-muted">{state.email}</p>
           )}
           <Link
             className={buttonClassName({

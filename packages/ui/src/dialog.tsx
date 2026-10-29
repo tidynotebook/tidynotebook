@@ -431,8 +431,8 @@ export function DialogBody({
     <div
       className={
         fixed || phone
-          ? 'min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-3'
-          : 'px-5 py-3'
+          ? 'min-h-0 flex-1 overflow-y-auto overscroll-contain ui-dialog-body'
+          : 'ui-dialog-body'
       }
     >
       {children}
@@ -482,9 +482,9 @@ export function DialogFooter({
     return (
       <>
         {extra.length === 0 ? null : (
-          <div className="shrink-0 px-5 pb-2">{extra}</div>
+          <div className="shrink-0 px-4 pb-2">{extra}</div>
         )}
-        <div className="shrink-0 border-t border-edge-subtle bg-card px-4 pb-5 pt-3 [&_button]:min-h-11 [&_button]:w-full">
+        <div className="ui-dialog-footer shrink-0 border-t border-edge-subtle bg-card [&_button]:min-h-11 [&_button]:w-full">
           {action}
         </div>
       </>

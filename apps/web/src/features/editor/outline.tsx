@@ -22,7 +22,7 @@ import { revealInNote, useActiveNote } from './active-note.tsx';
  * folder tree does as well (record 0064).
  */
 const outlineIndent = (level: number): string =>
-  ['', 'pl-3', 'pl-6', 'pl-9', 'pl-12', 'pl-15'][level - 1] ?? '';
+  ['', 'pl-3', 'pl-6', 'pl-8', 'pl-12', 'pl-12'][level - 1] ?? '';
 
 /** The headings of one Markdown source, read from the shared grammar. */
 function outlineOfText(source: string): readonly OutlineHeading[] {

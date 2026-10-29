@@ -307,7 +307,7 @@ function SessionsSettings(): ReactNode {
               </ListRow>
             </ul>
           )}
-          <div className="mt-4 flex flex-wrap items-center gap-2 border-b border-edge-subtle pb-1.5">
+          <div className="mt-4 flex flex-wrap items-center gap-2 border-b border-edge-subtle pb-2">
             <h3 className="m-0 min-w-0 flex-1 text-group text-muted">
               Other devices
             </h3>
@@ -485,7 +485,7 @@ function ProfileSettings({
           </span>
           <Button
             variant="ghost"
-            size="sm"
+            size="inline"
             label="Edit name"
             onClick={() => {
               setEditing(true);
@@ -845,7 +845,7 @@ export function SettingsModal({
           <div
             className={`${listLevel ? 'flex' : 'hidden'} min-h-0 flex-1 flex-col bg-surface lg:flex lg:w-60 lg:flex-none lg:border-r lg:border-edge-subtle`}
           >
-            <div className="flex items-center gap-cluster px-3 pt-3 lg:hidden">
+            <div className="ui-sheet-header flex shrink-0 items-center gap-cluster px-4 lg:hidden">
               <Button
                 variant="ghost"
                 icon={<CloseIcon />}
@@ -862,7 +862,7 @@ export function SettingsModal({
               <span className="w-11 shrink-0" aria-hidden="true" />
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
-              <div className="flex items-center gap-2.5 border-b border-edge-subtle px-2 pb-3">
+              <div className="flex items-center gap-3 border-b border-edge-subtle px-2 pb-3">
                 <span className={avatarClassName()} aria-hidden="true">
                   {initial}
                 </span>
@@ -887,12 +887,12 @@ export function SettingsModal({
                         ? `Workspace ${workspaceName}`
                         : group
                     }
-                    className="mt-3"
+                    className="ui-section"
                   >
-                    <h3 className="m-0 flex items-center gap-1.5 px-2 pb-1 text-group text-muted">
+                    <h3 className="m-0 flex items-center gap-2 px-2 pb-2 text-group text-muted">
                       {group}
                       {group === 'Workspace' && workspaceName !== '' ? (
-                        <span className="min-w-0 truncate rounded-sm bg-hover px-1.5 text-secondary text-muted">
+                        <span className="min-w-0 truncate rounded-sm bg-hover px-2 text-secondary text-muted">
                           {workspaceName}
                         </span>
                       ) : null}
@@ -974,7 +974,7 @@ export function SettingsModal({
             }}
             className={`${listLevel ? 'hidden' : 'flex'} min-h-0 min-w-0 flex-1 flex-col lg:flex`}
           >
-            <div className="flex items-start gap-cluster px-3 pt-3 lg:px-5 lg:pt-4">
+            <div className="ui-settings-heading flex shrink-0 items-start gap-cluster">
               <Button
                 className={activeAction === null ? 'lg:hidden' : undefined}
                 variant="ghost"
@@ -987,7 +987,7 @@ export function SettingsModal({
                   else activeAction.close();
                 }}
               />
-              <div className="min-w-0 flex-1 pt-2 lg:pt-1">
+              <div className="min-w-0 flex-1">
                 <h2
                   id={pageTitleId}
                   ref={sectionTitle}
@@ -1014,7 +1014,7 @@ export function SettingsModal({
               />
             </div>
             <div
-              className={`min-h-0 flex-1 px-gutter pt-3 lg:px-5 ${activeAction === null ? 'overflow-y-auto overscroll-contain pb-5' : 'flex flex-col'}`}
+              className={`ui-settings-content min-h-0 flex-1 ${activeAction === null ? 'overflow-y-auto overscroll-contain' : 'flex flex-col'}`}
             >
               {scope === undefined ? null : (
                 <p className="mb-3 mt-0 min-h-5 text-secondary text-muted lg:hidden">

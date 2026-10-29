@@ -46,7 +46,7 @@ export const focusOutlineInset =
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
 /** How large a button is. */
-export type ButtonSize = 'sm' | 'md' | 'touch';
+export type ButtonSize = 'sm' | 'md' | 'touch' | 'inline';
 
 /**
  * The tone of a quiet button.
@@ -184,27 +184,13 @@ export function buttonClassName(
     ? 'group bg-transparent'
     : buttonVariantClassName(variant, options.tone, 'button');
 
-  // Touch pointers get the 44 px minimum. A mouse pointer keeps the compact
-  // control scale, so the chrome stays quiet on a desktop screen: 32 px for a
-  // button and 28 px for a small one.
-  const sizeClass =
-    size === 'touch'
-      ? options.iconOnly
-        ? 'size-11 px-0'
-        : 'min-h-11 px-3'
-      : options.iconOnly
-        ? size === 'sm'
-          ? 'size-11 px-0 md:size-7'
-          : 'size-11 px-0 md:size-8'
-        : compact
-          ? size === 'sm'
-            ? 'min-h-11 px-0 md:min-h-7'
-            : 'min-h-11 px-0 md:min-h-8'
-          : size === 'sm'
-            ? 'min-h-11 px-2.5 md:min-h-7'
-            : 'min-h-11 px-3 md:min-h-8';
+  const sizeClass = options.iconOnly
+    ? 'ui-icon-button'
+    : compact || size === 'inline'
+      ? 'ui-compact'
+      : '';
   return [
-    `inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-label no-underline ${transitionSurface} ${compact ? 'focus-visible:outline-none' : focusOutline} disabled:cursor-not-allowed`,
+    `ui-button inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-md text-label no-underline ${transitionSurface} ${compact ? 'focus-visible:outline-none' : focusOutline} disabled:cursor-not-allowed`,
     variantClass,
     sizeClass,
     options.className ?? '',
@@ -227,16 +213,9 @@ export function compactButtonVisualClassName(options: {
   readonly iconOnly: boolean;
 }): string {
   const variant = options.variant ?? 'primary';
-  const size = options.size ?? 'md';
-  const sizeClass = options.iconOnly
-    ? size === 'sm'
-      ? 'size-8 md:size-7'
-      : 'size-9 md:size-8'
-    : size === 'sm'
-      ? 'min-h-8 px-2.5 md:min-h-7'
-      : 'min-h-9 px-3 md:min-h-8';
+  const sizeClass = options.iconOnly ? 'size-full' : 'h-full px-0';
   return [
-    `inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md ${transitionSurface}`,
+    `inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md ${transitionSurface}`,
     'group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-focus',
     buttonVariantClassName(variant, options.tone, 'group'),
     sizeClass,
@@ -286,11 +265,11 @@ export function edgeControlClassName(options: {
 }): string {
   return options.edge === 'start'
     ? options.mark === 'avatar'
-      ? '-ms-2.5 md:-ms-0.5'
-      : '-ms-3.5 md:-ms-1.5'
+      ? '-ms-3 md:-ms-1'
+      : '-ms-4 md:-ms-2'
     : options.mark === 'avatar'
-      ? '-me-2.5 md:-me-0.5'
-      : '-me-3.5 md:-me-1.5';
+      ? '-me-3 md:-me-1'
+      : '-me-4 md:-me-2';
 }
 
 /**
@@ -312,7 +291,7 @@ export function edgeControlClassName(options: {
  * `control-classes.test.ts` holds the strings to that arithmetic.
  */
 export function controlStripClassName(): string {
-  return 'flex items-center overflow-x-auto py-1 -mx-3.5 md:-mx-2.5 md:px-1';
+  return 'flex items-center overflow-x-auto py-1 -mx-4 md:-mx-3 md:px-1';
 }
 
 /**
@@ -384,7 +363,7 @@ export function rowClassName(
       : 'disabled:cursor-not-allowed disabled:text-muted disabled:hover:bg-transparent disabled:hover:text-muted'
     : '';
   return [
-    `flex min-h-11 items-center gap-2 rounded-md ${options.flush === true ? 'px-0' : 'px-2'} text-body ${colour} no-underline ${transitionSurface} md:min-h-7`,
+    `ui-tree-row flex items-center gap-2 rounded-md ${options.flush === true ? 'px-0' : 'px-2'} text-body ${colour} no-underline ${transitionSurface}`,
     interactive ? 'cursor-pointer' : '',
     disabled,
     interactive
@@ -445,7 +424,7 @@ export function taskBoxClassName(): string {
  */
 export function tabClassName(options: { readonly selected: boolean }): string {
   return [
-    `inline-flex min-h-11 shrink-0 cursor-pointer items-center rounded-md px-2.5 text-label ${transitionSurface} ${focusOutline} md:min-h-7`,
+    `inline-flex min-h-11 shrink-0 cursor-pointer items-center rounded-md px-3 text-label ${transitionSurface} ${focusOutline} md:min-h-7`,
     options.selected
       ? 'bg-active text-strong'
       : 'text-muted hover:bg-hover hover:text-strong',
@@ -603,7 +582,7 @@ export function fieldClassName(
   } = {},
 ): string {
   return [
-    `w-full min-h-11 ${fieldSurface} text-body ${touchFieldText} md:min-h-8`,
+    `ui-field w-full ${fieldSurface} text-body ${touchFieldText}`,
     fieldEdge(options.invalid === true),
     options.className ?? '',
   ]
@@ -657,7 +636,9 @@ export function bareFieldClassName(): string {
  * draws the box, and `SelectField` draws the chevron in the space at the end.
  */
 export function selectClassName(): string {
-  return fieldClassName({ className: 'cursor-pointer appearance-none pr-9' });
+  return fieldClassName({
+    className: 'ui-select cursor-pointer appearance-none',
+  });
 }
 
 /**
@@ -669,7 +650,7 @@ export function selectClassName(): string {
  * each key.
  */
 export function kbdClassName(): string {
-  return 'inline-flex items-center rounded-sm border border-edge-line bg-surface px-1.5 font-mono text-small text-muted';
+  return 'inline-flex items-center rounded-sm border border-edge-line bg-surface px-2 font-mono text-small text-muted';
 }
 
 /**
@@ -683,7 +664,7 @@ export function kbdClassName(): string {
  * states its meaning in its word.
  */
 export function badgeClassName(): string {
-  return 'inline-flex items-center rounded-sm bg-hover px-1.5 text-secondary text-muted';
+  return 'inline-flex items-center rounded-sm bg-hover px-2 text-secondary text-muted';
 }
 
 /** The real fill percentage, clamped to the track. */
@@ -858,7 +839,7 @@ export function switchClassNames(checked: boolean): {
   return {
     row: rowClassName({
       flush: true,
-      className: 'min-h-12 w-full text-left lg:min-h-12',
+      className: 'ui-setting-row w-full text-left',
     }),
     track: `inline-flex h-6 w-10 shrink-0 items-center rounded-full border border-edge-line p-1 ${checked ? 'justify-end bg-accent-fill' : 'justify-start bg-hover'}`,
     thumb: `size-4 rounded-full ${checked ? 'bg-on-accent' : 'bg-muted'}`,

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
+import { auditSpacing } from './spacing-audit.ts';
 import { touchTextRoles } from '../../packages/ui/src/typography.ts';
 import { hasChromium, isRecord, type Page } from './browser.ts';
 const loaded: unknown = await import(
@@ -35,26 +36,31 @@ async function originalState() {
   return { preferences: a.data.preferences, daily: d.data, templates: t.data };
 }
 mkdirSync('.local-app/screenshots', { recursive: true });
+const spacing = process.env.SPACING_AUDIT === '1';
+const screenshotPrefix = spacing ? 'spacing' : 'text-roles';
+const resultsFile = spacing
+  ? '.local-app/spacing-results.json'
+  : '.local-app/text-roles-results.json';
 const original = await originalState(),
   browser = await chromium.launch(),
   results: Result[] = [],
   errors: { variant: string; error: string }[] = [],
   writes: { method: string; url: string }[] = [];
 try {
-  for (const width of process.env.TOUCH_WIDTHS?.split(',').map(Number) ?? [
-    320, 390,
-  ])
+  for (const width of process.env.TOUCH_WIDTHS?.split(',').map(Number) ??
+    (spacing ? [390, 1440] : [320, 390]))
     for (const scheme of process.env.TOUCH_SCHEMES?.split(',') ?? [
       'light',
       'dark',
     ]) {
       assert.ok(scheme === 'light' || scheme === 'dark');
+      const phone = width < 1024;
       const variant = `${width}-${scheme}`,
         c = await browser.newContext({
           storageState: statePath,
           viewport: { width, height: 844 },
-          hasTouch: true,
-          isMobile: true,
+          hasTouch: phone,
+          isMobile: phone,
           colorScheme: scheme,
         });
       await c.addInitScript(
@@ -158,8 +164,11 @@ try {
         );
       async function shot(name: string) {
         await settle();
-        const typography = await auditText(p, touchTextRoles);
-        const issues = await p.evaluate(() => {
+        const typography = phone
+          ? await auditText(p, touchTextRoles)
+          : { problems: [], combinations: {} };
+        const measured = spacing ? await auditSpacing(p) : null;
+        const issues = await p.evaluate((phone) => {
           const visible = (e: Element) =>
             e.checkVisibility({
               visibilityProperty: true,
@@ -193,7 +202,11 @@ try {
                 left: b.left,
                 right: b.right,
               });
-            if (e.matches('button,[role="menuitem"]') && b.height < 43.5)
+            if (
+              phone &&
+              e.matches('button,[role="menuitem"]') &&
+              b.height < 43.5
+            )
               problems.push({ kind: 'height', label, height: b.height });
             if (
               e.matches('button') &&
@@ -231,16 +244,17 @@ try {
           if (document.documentElement.scrollWidth > innerWidth + 1)
             problems.push({ kind: 'page-overflow' });
           return problems;
-        });
-        issues.push(...typography.problems);
+        }, phone);
+        issues.push(...typography.problems, ...(measured?.issues ?? []));
         results.push({
           variant,
           screen: name,
           issues,
           combinations: typography.combinations,
+          measurements: measured?.measurements,
         });
         await p.screenshot({
-          path: `.local-app/screenshots/text-roles-${name}-${variant}.png`,
+          path: `.local-app/screenshots/${screenshotPrefix}-${name}-${variant}.png`,
           animations: 'disabled',
         });
         process.stdout.write(`${variant} ${name} ${JSON.stringify(issues)}\n`);
@@ -249,7 +263,7 @@ try {
         go = async (path: string) => {
           await p.goto(path.startsWith('http') ? path : `${home}${path}`);
           await p
-            .getByRole('button', { name: 'Open navigation', exact: true })
+            .getByRole('button', { name: 'Account: UI review', exact: true })
             .waitFor();
         },
         settings = async (page: string) => {
@@ -268,12 +282,14 @@ try {
       await p.getByRole('menuitem', { name: 'Settings' }).waitFor();
       await shot('account-menu');
       await p.keyboard.press('Escape');
-      await p
-        .getByRole('button', { name: 'Open navigation', exact: true })
-        .click();
-      await p
-        .getByRole('button', { name: 'Close navigation', exact: true })
-        .waitFor();
+      if (phone)
+        await p
+          .getByRole('button', { name: 'Open navigation', exact: true })
+          .click();
+      if (phone)
+        await p
+          .getByRole('button', { name: 'Close navigation', exact: true })
+          .waitFor();
       await shot('drawer');
       await p
         .getByRole('button', { name: 'Expand all folders', exact: true })
@@ -304,9 +320,7 @@ try {
         .waitFor();
       await shot('new-folder-tree');
       await p.keyboard.press('Escape');
-      await p
-        .getByRole('button', { name: 'Close dialog', exact: true })
-        .click();
+      await p.keyboard.press('Escape');
       await p
         .getByRole('button', {
           name: 'Actions for the folder Personal',
@@ -345,12 +359,11 @@ try {
         await shot('move-filter');
         await p.keyboard.press('Escape');
       }
-      await p
-        .getByRole('button', { name: 'Close dialog', exact: true })
-        .click();
-      await p
-        .getByRole('button', { name: 'Close navigation', exact: true })
-        .click();
+      await p.keyboard.press('Escape');
+      if (phone)
+        await p
+          .getByRole('button', { name: 'Close navigation', exact: true })
+          .click();
       await p.keyboard.press('Control+/');
       await p
         .getByRole('dialog', { name: 'Keyboard shortcuts', exact: true })
@@ -554,12 +567,13 @@ try {
             coarse: matchMedia('(pointer: coarse)').matches,
           };
         });
-      assert.deepEqual(sizes, {
-        field: '16px',
-        label: '16px',
-        line: '24px',
-        coarse: true,
-      });
+      if (phone)
+        assert.deepEqual(sizes, {
+          field: '16px',
+          label: '16px',
+          line: '24px',
+          coarse: true,
+        });
       await shot('manage-mail');
       for (const id of [
         'legal-heading',
@@ -578,6 +592,19 @@ try {
         })
         .waitFor();
       await shot('trash');
+      if (spacing) {
+        await p
+          .getByRole('button', {
+            name: 'Actions for Personal/Reading/Reading list',
+            exact: true,
+          })
+          .click();
+        await p
+          .getByRole('menuitem', { name: 'Delete for good', exact: true })
+          .waitFor();
+        await shot('trash-menu');
+        await p.keyboard.press('Escape');
+      }
       await go('/published');
       await p
         .getByRole('button', {
@@ -606,11 +633,33 @@ try {
           await p.keyboard.press('Escape');
         }
       }
+      if (spacing) {
+        await p
+          .getByRole('button', { name: 'Note actions', exact: true })
+          .click();
+        await p.getByRole('menuitem', { name: 'Publish' }).click();
+        await p
+          .getByRole('dialog')
+          .getByLabel('Password', { exact: true })
+          .waitFor();
+        await shot('publish');
+        await p.keyboard.press('Escape');
+        await p
+          .getByRole('button', { name: 'Note actions', exact: true })
+          .click();
+        await p
+          .getByRole('menuitem', { name: 'Version history', exact: true })
+          .click();
+        await p
+          .getByRole('heading', { name: 'Version history', exact: true })
+          .waitFor();
+        await shot('version-history');
+      }
       await c.close();
       const guest = await browser.newContext({
         viewport: { width, height: 844 },
-        hasTouch: true,
-        isMobile: true,
+        hasTouch: phone,
+        isMobile: phone,
         colorScheme: scheme,
       });
       await guest.addInitScript(
@@ -622,7 +671,7 @@ try {
         await auth.goto(`${base}/${path}`);
         await auth.locator('input[type="email"]').waitFor();
         await auth.screenshot({
-          path: `.local-app/screenshots/text-roles-${path}-${variant}.png`,
+          path: `.local-app/screenshots/${screenshotPrefix}-${path}-${variant}.png`,
           animations: 'disabled',
         });
         assert.equal(
@@ -631,11 +680,14 @@ try {
           ),
           false,
         );
-        const typography = await auditText(auth, touchTextRoles);
+        const typography = phone
+          ? await auditText(auth, touchTextRoles)
+          : { problems: [], combinations: {} };
+        const measured = spacing ? await auditSpacing(auth) : null;
         results.push({
           variant,
           screen: path,
-          issues: typography.problems,
+          issues: [...typography.problems, ...(measured?.issues ?? [])],
           combinations: typography.combinations,
         });
       }
@@ -647,21 +699,25 @@ try {
         .getByRole('button', { name: 'Create account', exact: true })
         .click();
       await auth.locator('[aria-invalid=true]').waitFor();
-      assert.equal(
-        await auth
-          .locator('[role=alert]')
-          .evaluate((e) => getComputedStyle(e).fontSize),
-        '14px',
-      );
+      if (phone)
+        assert.equal(
+          await auth
+            .locator('[role=alert]')
+            .evaluate((e) => getComputedStyle(e).fontSize),
+          '14px',
+        );
       await auth.screenshot({
-        path: `.local-app/screenshots/text-roles-signup-error-${variant}.png`,
+        path: `.local-app/screenshots/${screenshotPrefix}-signup-error-${variant}.png`,
         animations: 'disabled',
       });
-      const typography = await auditText(auth, touchTextRoles);
+      const typography = phone
+        ? await auditText(auth, touchTextRoles)
+        : { problems: [], combinations: {} };
+      const measured = spacing ? await auditSpacing(auth) : null;
       results.push({
         variant,
         screen: 'signup-error',
-        issues: typography.problems,
+        issues: [...typography.problems, ...(measured?.issues ?? [])],
         combinations: typography.combinations,
       });
       await guest.close();
@@ -678,7 +734,7 @@ try {
     [],
   );
   writeFileSync(
-    '.local-app/text-roles-results.json',
+    resultsFile,
     JSON.stringify({ results, errors, writes }, null, 2),
   );
   process.stdout.write(
@@ -686,7 +742,7 @@ try {
   );
 } finally {
   writeFileSync(
-    '.local-app/text-roles-results.json',
+    resultsFile,
     JSON.stringify({ results, errors, writes }, null, 2),
   );
   await browser.close();
@@ -857,6 +913,7 @@ type Result = {
   screen: string;
   issues: Problem[];
   combinations: Record<string, string[]>;
+  measurements?: Record<string, number[]> | undefined;
 };
 function readState(path: string): {
   cookies: { name: string; value: string }[];

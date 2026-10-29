@@ -93,7 +93,7 @@ function ThemePreview({
       style={{ backgroundColor: tokens.background }}
     >
       <span
-        className="flex w-1/4 flex-col gap-1 p-1.5"
+        className="flex w-1/4 flex-col gap-1 p-2"
         style={{
           backgroundColor: tokens.surface,
           borderRight: `1px solid ${tokens.borderSubtle}`,
@@ -107,7 +107,7 @@ function ThemePreview({
           />
         ))}
       </span>
-      <span className="flex flex-1 flex-col gap-1 p-1.5">
+      <span className="flex flex-1 flex-col gap-1 p-2">
         <span
           className="block h-1.5 w-1/2 rounded-sm"
           style={{ backgroundColor: tokens.textStrong }}
@@ -250,7 +250,7 @@ export function ThemeSettings(): ReactNode {
       description="System follows the device. The choice applies at once on this device and goes to your account in the background. Import a theme file to use your own colours."
     >
       <fieldset className="m-0 border-0 p-0">
-        <legend className="m-0 w-full border-b border-edge-subtle p-0 pb-1.5 text-group text-muted">
+        <legend className="m-0 w-full border-b border-edge-subtle p-0 pb-2 text-group text-muted">
           Mode
         </legend>
         <div className="mt-3 grid grid-cols-3 gap-cluster">
@@ -278,7 +278,7 @@ export function ThemeSettings(): ReactNode {
                     tokens={choice.value === 'light' ? light : dark}
                   />
                 )}
-                <span className="flex min-h-9 items-center gap-1.5 px-2">
+                <span className="flex min-h-9 items-center gap-2 px-2">
                   <span className="inline-flex items-center" aria-hidden="true">
                     {choice.icon}
                   </span>
@@ -299,7 +299,7 @@ export function ThemeSettings(): ReactNode {
           })}
         </div>
       </fieldset>
-      <fieldset className="m-0 mt-5 border-0 p-0">
+      <fieldset className="m-0 mt-6 border-0 p-0">
         <legend className="sr-only">Theme</legend>
         <div className="flex items-center gap-cluster border-b border-edge-subtle pb-1">
           <span
@@ -417,7 +417,7 @@ export function ThemeSettings(): ReactNode {
             message={outcome.message}
           />
           {outcome.kind === 'refused' && outcome.problems.length > 0 ? (
-            <ul className="m-0 mt-2 flex flex-col gap-1 pl-5 text-body text-strong">
+            <ul className="m-0 mt-2 flex flex-col gap-1 pl-6 text-body text-strong">
               {outcome.problems.map((problem) => (
                 <li key={problem}>{problem}</li>
               ))}

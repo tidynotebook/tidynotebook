@@ -186,7 +186,7 @@ function TemplateSelection({
                 type="button"
                 className={rowClassName({
                   selected: selected === null,
-                  className: 'w-full text-left',
+                  className: 'ui-list-row w-full text-left',
                 })}
                 aria-pressed={selected === null}
                 onClick={() => choose(null)}
@@ -198,7 +198,7 @@ function TemplateSelection({
                   type="button"
                   className={rowClassName({
                     selected: selected === outside.fileId,
-                    className: 'w-full text-left',
+                    className: 'ui-list-row w-full text-left',
                   })}
                   aria-pressed={selected === outside.fileId}
                   onClick={() => choose(outside.fileId)}
@@ -231,7 +231,7 @@ function TemplateSelection({
                     key={choice.id}
                     className={rowClassName({
                       selected: selected === choice.id,
-                      className: 'w-full text-left',
+                      className: 'ui-list-row w-full text-left',
                     })}
                     aria-pressed={selected === choice.id}
                     onClick={() => choose(choice.id)}

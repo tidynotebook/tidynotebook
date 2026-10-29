@@ -33,7 +33,7 @@ export function pageRowClassName(): string {
  * column of a page and the column of the note share one centre (0055).
  */
 export function pageColumnClassName(): string {
-  return 'mx-auto min-w-0 max-w-note flex-1';
+  return 'ui-page-column min-w-0 flex-1';
 }
 
 /**
@@ -142,5 +142,5 @@ export function pageListClassName(): string {
  * It has no inset, because the list below it already lines up with the page.
  */
 export function pageGroupLabelClassName(): string {
-  return 'mb-1 mt-0 text-group text-muted';
+  return 'ui-group-heading text-group text-muted';
 }

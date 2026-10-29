@@ -293,7 +293,7 @@ export default function TemplateChoices({
           }
         />
       </div>
-      <header className="hidden h-14 shrink-0 items-center gap-2 px-3 lg:flex lg:h-16 lg:px-5">
+      <header className="hidden h-14 shrink-0 items-center gap-2 px-3 lg:flex lg:h-16 lg:px-6">
         <span className="lg:hidden">
           <Button
             variant="ghost"
@@ -333,8 +333,8 @@ export default function TemplateChoices({
           />
         </span>
       </header>
-      <div className="min-h-0 flex-1 overflow-hidden px-5 py-3">
-        <div className="grid h-full min-h-0 min-w-0 gap-5 lg:grid-cols-3">
+      <div className="ui-dialog-body min-h-0 flex-1 overflow-hidden">
+        <div className="grid h-full min-h-0 min-w-0 gap-4 lg:grid-cols-3">
           <div
             className={
               details
@@ -461,7 +461,7 @@ export default function TemplateChoices({
                         type="button"
                         className={rowClassName({
                           selected: desktop && selected === choice.id,
-                          className: 'w-full text-left',
+                          className: 'ui-list-row w-full text-left',
                         })}
                         data-template-id={choice.id}
                         aria-pressed={
@@ -551,7 +551,9 @@ export default function TemplateChoices({
                     className="flex min-h-24 flex-1 flex-col"
                     aria-label={`Preview of ${selectedLabel ?? ''}`}
                   >
-                    <p className="mb-1.5 mt-0 text-group text-muted">Preview</p>
+                    <p className="ui-group-heading text-group text-muted">
+                      Preview
+                    </p>
                     {store === null || accountId === null ? null : (
                       <Suspense
                         fallback={

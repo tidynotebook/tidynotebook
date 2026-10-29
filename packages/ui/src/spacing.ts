@@ -1,0 +1,38 @@
+/** The geometry contract for every shared UI spacing role, in CSS pixels. */
+export const spacingScale = [0, 4, 8, 12, 16, 24, 32, 48] as const;
+export const spacingSpec = {
+  fine: {
+    button: 32,
+    compact: 28,
+    buttonPad: 12,
+    field: 32,
+    setting: 52,
+    list: 32,
+    tree: 28,
+  },
+  coarse: {
+    button: 44,
+    compact: 44,
+    buttonPad: 16,
+    field: 44,
+    setting: 56,
+    list: 44,
+    tree: 44,
+  },
+  fieldPad: 12,
+  selectRight: 36,
+  radius: 6,
+  controlGap: 8,
+  rowGap: 16,
+  labelGap: 6,
+  formGap: 16,
+  sectionGap: 24,
+  groupGap: 8,
+  dialogPad: 20,
+  sheetPad: 16,
+  sheetHeader: 52,
+  settingsPad: 24,
+  pageMax: 720,
+  pageTop: 24,
+  pageGap: 16,
+} as const;

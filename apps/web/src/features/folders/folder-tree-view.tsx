@@ -280,7 +280,7 @@ export default function FolderTreeView({
         {problem === null ? null : (
           <p
             id={`${id}-new-folder-error`}
-            className="m-0 py-1 pl-11 text-secondary text-danger"
+            className="m-0 py-1 pl-12 text-secondary text-danger"
             role="alert"
           >
             {problem}

@@ -239,7 +239,7 @@ function LockedPage(): ReactNode {
             : 'Open billing'}
         </Button>
       ) : null}
-      <p className="mb-2 mt-5 text-secondary text-muted">
+      <p className="mb-2 mt-6 text-secondary text-muted">
         You can export your notes or delete your account.
       </p>
       <div className="flex flex-wrap gap-cluster">
@@ -382,7 +382,7 @@ function ConsentPage(): ReactNode {
             them to open your notes. A new version asks you again.
           </p>
           {documents === null ? null : (
-            <LegalLinks className="mb-5" documents={documents} />
+            <LegalLinks className="mb-6" documents={documents} />
           )}
           {error === '' ? null : (
             <Notice className="mb-4" tone="problem" message={error} />
@@ -396,7 +396,7 @@ function ConsentPage(): ReactNode {
           >
             {busy ? 'Saving your answer' : 'Accept and continue'}
           </Button>
-          <p className="mb-2 mt-5 text-secondary text-muted">
+          <p className="mb-2 mt-6 text-secondary text-muted">
             If you do not accept them, you can export your notes and delete your
             account.
           </p>
@@ -604,7 +604,7 @@ export function LoginPage({
         </div>
       ) : (
         <>
-          <p className="mb-5 mt-0 text-secondary text-muted">
+          <p className="mb-6 mt-0 text-secondary text-muted">
             {setup
               ? 'This installation has no account yet. What you enter here becomes the first account. It administers the installation and invites other people.'
               : oauthQuery === undefined
@@ -727,9 +727,9 @@ export function AuthFrame({
   );
   return (
     <div
-      className={`flex min-h-dvh flex-col items-center justify-center bg-surface ${pageGutter} py-10`}
+      className={`flex min-h-dvh flex-col items-center justify-center bg-surface ${pageGutter} py-8`}
     >
-      <div className="mb-5 flex items-center gap-2.5 text-title-header text-strong">
+      <div className="mb-6 flex items-center gap-3 text-title-header text-strong">
         <span
           className="inline-flex size-7 items-center justify-center rounded-md bg-active text-strong"
           aria-hidden="true"
@@ -745,7 +745,7 @@ export function AuthFrame({
         {children}
       </Card>
       {footer === undefined || footer === null ? null : (
-        <div className="mt-5 w-full max-w-sm">{footer}</div>
+        <div className="mt-6 w-full max-w-sm">{footer}</div>
       )}
       <div className="w-full max-w-5xl">
         <PublicFooter home="/" columns={columns} />

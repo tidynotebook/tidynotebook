@@ -1,0 +1,181 @@
+/* Shared spacing roles. Geometry changes with the pointer, not the route. */
+@theme {
+  --container-page: 45rem;
+}
+@layer base {
+  :root {
+    --ui-control-height: 32px;
+    --ui-compact-height: 28px;
+    --ui-button-pad: 12px;
+    --ui-compact-pad: 8px;
+    --ui-field-height: 32px;
+    --ui-setting-height: 52px;
+    --ui-list-height: 32px;
+    --ui-tree-height: 28px;
+    --ui-dialog-pad: 20px;
+    --ui-sheet-pad: 16px;
+    --ui-form-gap: 16px;
+    --ui-label-gap: 6px;
+    --ui-section-gap: 24px;
+  }
+  @media (pointer: coarse) {
+    :root {
+      --ui-control-height: 44px;
+      --ui-compact-height: 44px;
+      --ui-button-pad: 16px;
+      --ui-compact-pad: 16px;
+      --ui-field-height: 44px;
+      --ui-setting-height: 56px;
+      --ui-list-height: 44px;
+      --ui-tree-height: 44px;
+    }
+  }
+}
+@utility ui-button {
+  &.ui-button {
+    height: var(--ui-control-height);
+    min-height: var(--ui-control-height);
+    padding-inline: var(--ui-button-pad);
+    gap: 8px;
+    border-radius: 6px;
+  }
+  &.ui-compact {
+    height: var(--ui-compact-height);
+    min-height: var(--ui-compact-height);
+    padding-inline: var(--ui-compact-pad);
+  }
+  &.ui-icon-button {
+    width: var(--ui-compact-height);
+    height: var(--ui-compact-height);
+    min-height: var(--ui-compact-height);
+    padding: 0;
+  }
+}
+@utility ui-field {
+  &.ui-field {
+    height: var(--ui-field-height);
+    min-height: var(--ui-field-height);
+    padding-inline: 12px;
+  }
+  &.ui-select {
+    padding-right: 36px;
+  }
+}
+@utility ui-field-group {
+  margin: 0 0 var(--ui-form-gap);
+  & > label {
+    display: block;
+    margin: 0 0 var(--ui-label-gap);
+  }
+  & > [id$='-hint'],
+  & > [id$='-error'] {
+    margin: var(--ui-label-gap) 0 0;
+  }
+  & > [id$='-error'][aria-hidden='true'] {
+    display: none;
+  }
+}
+@utility ui-setting-row {
+  &.ui-setting-row {
+    min-height: var(--ui-setting-height);
+    height: auto;
+    padding-block: 8px;
+    gap: 0 16px;
+  }
+}
+@utility ui-list-row {
+  &.ui-list-row {
+    min-height: var(--ui-list-height);
+    padding-block: 4px;
+  }
+}
+@utility ui-tree-row {
+  &.ui-tree-row:not(.ui-setting-row):not(.ui-list-row) {
+    min-height: var(--ui-tree-height);
+    gap: 8px;
+  }
+}
+@utility ui-section {
+  margin-top: var(--ui-section-gap);
+  &:first-child {
+    margin-top: 0;
+  }
+}
+@utility ui-group-heading {
+  margin: 0 0 8px;
+}
+@utility ui-dialog-heading {
+  padding: 20px 20px 0;
+  margin: 0;
+}
+@utility ui-dialog-body {
+  padding: 16px var(--ui-dialog-pad) 0;
+  & > :last-child {
+    margin-bottom: 0;
+  }
+  @media (max-width: 1023px) and (pointer: coarse) {
+    padding-inline: var(--ui-sheet-pad);
+  }
+}
+@utility ui-dialog-footer {
+  &.ui-dialog-footer {
+    padding: 16px var(--ui-dialog-pad);
+    gap: 8px;
+  }
+  @media (max-width: 1023px) and (pointer: coarse) {
+    &.ui-dialog-footer {
+      padding: 16px var(--ui-sheet-pad);
+      padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    }
+  }
+}
+@utility ui-sheet-header {
+  height: 52px;
+  min-height: 52px;
+}
+@utility ui-settings-heading {
+  padding: 24px 24px 0;
+  @media (max-width: 1023px) and (pointer: coarse) {
+    height: 52px;
+    min-height: 52px;
+    padding: 0 16px;
+    align-items: center;
+  }
+}
+@utility ui-settings-content {
+  padding: 16px 24px 24px;
+  @media (max-width: 1023px) and (pointer: coarse) {
+    padding: 16px;
+  }
+}
+@utility ui-settings-action {
+  margin-inline: -24px;
+  @media (max-width: 1023px) and (pointer: coarse) {
+    margin-inline: -16px;
+  }
+  & .ui-dialog-body,
+  & .ui-dialog-footer {
+    padding-inline: 24px;
+    @media (max-width: 1023px) and (pointer: coarse) {
+      padding-inline: 16px;
+    }
+  }
+}
+@utility ui-page-column {
+  width: 100%;
+  max-width: 720px;
+  margin-inline: auto;
+  padding-block: 24px;
+}
+@utility ui-page-header {
+  margin-bottom: 16px;
+}
+@utility ui-switch-control {
+  height: var(--ui-control-height);
+  min-height: var(--ui-control-height);
+  width: 44px;
+  padding: 0;
+}
+@utility ui-field-label {
+  margin: 0 0 var(--ui-label-gap);
+}
