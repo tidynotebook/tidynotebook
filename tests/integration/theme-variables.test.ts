@@ -339,7 +339,8 @@ await test('shared touch roles set the full size, line height, and weight', asyn
 await test('the footer of a note gives its row to the text on a phone', async () => {
   // The rule of `noteFooterClassName` stacks two variants. The served
   // stylesheet holds it under both queries, so the count goes away while a
-  // person types on a phone and stays on a desktop.
+  // person types on a phone and stays on a desktop. Other phone utilities
+  // can precede this rule inside the same media block.
   const assets = resolve(root, 'apps/web/dist/web/assets');
   const served = (
     await Promise.all(
@@ -350,7 +351,7 @@ await test('the footer of a note gives its row to the text on a phone', async ()
   ).join('\n');
   assert.match(
     served,
-    /@media not all and \(width>=48rem\)\{@media \(pointer:coarse\)\{\.max-md\\:pointer-coarse\\:hidden\{display:none\}/,
+    /@media not all and \(width>=48rem\)\{@media \(pointer:coarse\)\{(?:[^{}]+\{[^{}]*\})*\.max-md\\:pointer-coarse\\:hidden\{display:none\}/,
   );
 });
 

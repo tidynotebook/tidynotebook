@@ -154,7 +154,11 @@ function fieldOf(label: string): HTMLInputElement {
   const found = [...container.querySelectorAll('label')].find(
     (candidate) => candidate.textContent === label,
   );
-  const input = found?.htmlFor ? document.getElementById(found.htmlFor) : null;
+  const input = found?.htmlFor
+    ? document.getElementById(found.htmlFor)
+    : [...container.querySelectorAll('input')].find(
+        (candidate) => candidate.getAttribute('aria-label') === label,
+      );
   assert.ok(
     input instanceof window.HTMLInputElement,
     `Missing field: ${label}`,
@@ -239,17 +243,24 @@ await test('arrow keys move, close and open, and Enter chooses a row', async () 
 await test('New folder here names a folder inside the chosen one and chooses it', async () => {
   await render(createElement(Picker, { start: 'Projects' }));
   await act(async () => button('New folder in Projects').click());
-  await type(fieldOf('New folder in Projects').id, 'launch');
-  await act(async () => button('Add folder').click());
+  const draft = fieldOf('Folder name').closest('[role="treeitem"]');
+  assert.ok(draft?.closest('[role="tree"]'));
+  assert.equal(draft.previousElementSibling, row('Projects'));
+  assert.equal(draft.getAttribute('aria-level'), '2');
+  assert.equal(container.querySelector('label'), null);
+  assert.throws(() => button('Add folder'));
+  assert.throws(() => button('Cancel'));
+  await type(fieldOf('Folder name').id, 'launch');
+  await act(async () => button('Create folder').click());
   assert.match(
     container.textContent ?? '',
     /A folder named Projects\/launch already exists/,
   );
-  await type(fieldOf('New folder in Projects').id, 'a\\b');
-  await act(async () => button('Add folder').click());
+  await type(fieldOf('Folder name').id, 'a\\b');
+  await act(async () => button('Create folder').click());
   assert.match(container.textContent ?? '', /backslash/);
-  await type(fieldOf('New folder in Projects').id, 'Archive');
-  await act(async () => button('Add folder').click());
+  await type(fieldOf('Folder name').id, 'Archive');
+  await act(async () => button('Create folder').click());
   assert.equal(
     container.querySelector('output')?.textContent,
     'Projects/Archive',
@@ -361,9 +372,9 @@ await test('Move into a folder that New folder here names', async () => {
   );
   await act(async () => row('Daily').click());
   await act(async () => button('New folder in Daily').click());
-  await type(fieldOf('New folder in Daily').id, 'Books');
+  await type(fieldOf('Folder name').id, 'Books');
   // Enter in the name field names the folder and does not move.
-  const input = fieldOf('New folder in Daily');
+  const input = fieldOf('Folder name');
   input.focus();
   const count = moves.length;
   await press('Enter');
