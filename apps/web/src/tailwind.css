@@ -510,6 +510,9 @@
 }
 
 @utility phone-sheet {
+  &:not([data-sheet-ready]) {
+    opacity: 0;
+  }
   & > form {
     display: flex;
     flex: 1;

@@ -52,6 +52,11 @@ export type Page = {
   keyboard: { press(key: string): Promise<void> };
 };
 type Context = {
+  newCDPSession(
+    page: Page,
+  ): Promise<{
+    send(method: string, params: Record<string, unknown>): Promise<unknown>;
+  }>;
   addInitScript<A>(run: (argument: A) => void, argument: A): Promise<void>;
   route(
     pattern: string,
@@ -67,6 +72,7 @@ export type Browser = {
     hasTouch: boolean;
     isMobile: boolean;
     colorScheme: 'light' | 'dark';
+    reducedMotion?: 'reduce' | 'no-preference';
   }): Promise<Context>;
   contexts(): Context[];
   close(): Promise<void>;

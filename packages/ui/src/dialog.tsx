@@ -140,7 +140,6 @@ export function Dialog({
     media.addEventListener('change', change);
     return () => media.removeEventListener('change', change);
   }, []);
-  const swipe = useRef<{ x: number; y: number } | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [headerTarget, setHeaderTarget] = useState<HTMLDivElement | null>(null);
@@ -284,6 +283,29 @@ export function Dialog({
     );
   }, [open, phone, width]);
 
+  useLayoutEffect(() => {
+    if (
+      !open ||
+      !phone ||
+      width === 'screen' ||
+      !rootRef.current ||
+      !panelRef.current
+    )
+      return;
+    const root = rootRef.current;
+    const panel = panelRef.current;
+    let disposed = false;
+    let stop: (() => void) | undefined;
+    void import('./phone-sheet-drag.ts').then(({ followPhoneSheetDrag }) => {
+      if (!disposed)
+        stop = followPhoneSheetDrag(root, panel, () => closeRef.current());
+    });
+    return () => {
+      disposed = true;
+      stop?.();
+    };
+  }, [open, phone, width]);
+
   if (!open) return null;
 
   const screen = width === 'screen';
@@ -300,6 +322,13 @@ export function Dialog({
         if (event.target === event.currentTarget) onClose();
       }}
     >
+      {phone && !screen ? (
+        <div
+          data-sheet-scrim=""
+          className="absolute inset-0 bg-scrim/40 opacity-0"
+          onMouseDown={onClose}
+        />
+      ) : null}
       <div
         ref={panelRef}
         id={`${titleId}-panel`}
@@ -309,32 +338,11 @@ export function Dialog({
         aria-labelledby={titleId}
         aria-describedby={describedBy}
         tabIndex={-1}
-        onPointerDown={(event) => {
-          if (
-            phone &&
-            event.target instanceof Element &&
-            event.target.closest('[data-sheet-drag]')
-          )
-            swipe.current = { x: event.clientX, y: event.clientY };
-        }}
-        onPointerUp={(event) => {
-          const start = swipe.current;
-          swipe.current = null;
-          if (
-            start &&
-            event.clientY - start.y > 64 &&
-            event.clientY - start.y > Math.abs(event.clientX - start.x)
-          )
-            onClose();
-        }}
-        onPointerCancel={() => {
-          swipe.current = null;
-        }}
       >
         {phone && !screen ? (
           <div
             data-sheet-drag=""
-            className="flex h-4 shrink-0 touch-none items-center justify-center"
+            className="flex h-11 shrink-0 touch-pan-x items-center justify-center"
             aria-hidden="true"
           >
             <span className="h-1 w-9 rounded-full bg-edge-line" />

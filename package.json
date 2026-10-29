@@ -41,6 +41,7 @@
     "perf:service": "pnpm build && tools/test-database/ensure-postgres.sh && docker run --rm --cpus=2 --memory=4g --network=host --mount type=bind,src=\"$PWD\",dst=/work,readonly -w /work node:26.12.1-bookworm-slim@sha256:28147155d47dc31abe0a46e0d12b59b2fb3d0a2dcc5dc65fce76a074180b16fe node tools/performance/service.ts",
     "test:browser:spacing": "SPACING_AUDIT=1 node tests/browser/touch-typography.ts",
     "test:browser:type": "node tests/browser/touch-typography.ts",
+    "test:browser:drag": "node tests/browser/phone-sheet-drag.ts",
     "test:browser:sheets": "node tests/browser/phone-sheet-keyboard.ts"
   },
   "devDependencies": {
