@@ -149,7 +149,8 @@ export function Dialog({
   if (open && !wasOpen.current) {
     const active =
       typeof document === 'undefined' ? null : document.activeElement;
-    openerRef.current = active instanceof HTMLElement ? active : null;
+    openerRef.current =
+      active !== null && active instanceof HTMLElement ? active : null;
   }
   wasOpen.current = open;
   // The latest close handler, which the effect below reads when a key or a
