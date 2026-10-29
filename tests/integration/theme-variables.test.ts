@@ -20,8 +20,11 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runInNewContext } from 'node:vm';
 import { Window } from 'happy-dom';
-import { searchPanelClasses } from '../../packages/editor/src/search-panel.ts';
-import { editorThemeVariables, touchFieldQuery } from '@notesapp/editor';
+import {
+  editorThemeVariables,
+  touchFieldQuery,
+  searchPanelClasses,
+} from '@notesapp/editor';
 import {
   avatarClassName,
   badgeClassName,

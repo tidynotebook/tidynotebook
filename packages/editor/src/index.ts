@@ -138,3 +138,5 @@ export {
   watchEditorHistory,
 } from './history-controls.ts';
 export type { EditorHistoryState, HistoryAction } from './history-controls.ts';
+
+export { searchPanelClasses } from './search-panel.ts';
