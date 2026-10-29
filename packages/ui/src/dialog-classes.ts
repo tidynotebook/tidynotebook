@@ -39,7 +39,9 @@ export type DialogAlign = 'top' | 'center' | 'sheet';
 export function dialogRootClassName(
   width: DialogWidth,
   align: DialogAlign,
+  phone = false,
 ): string {
+  if (phone && width !== 'screen') return 'h-viewport items-end bg-scrim/40';
   if (width === 'screen') return 'bg-scrim/80';
   if (width === 'settings')
     return 'bg-scrim/40 items-stretch lg:items-center lg:p-6';
@@ -50,7 +52,13 @@ export function dialogRootClassName(
 }
 
 /** The panel of a dialog, as classes. */
-export function dialogPanelClassName(width: DialogWidth): string {
+export function dialogPanelClassName(
+  width: DialogWidth,
+  phone = false,
+  fillSheet = false,
+): string {
+  if (phone && width !== 'screen')
+    return `phone-sheet flex max-h-sheet w-full flex-col overflow-hidden rounded-t-xl border border-edge-subtle bg-card text-strong shadow-modal outline-none ${width === 'settings' || width === 'template' ? 'h-full max-h-full' : fillSheet ? 'phone-sheet-fill' : ''}`;
   if (width === 'screen')
     return 'relative h-full w-full text-strong outline-none';
   if (width === 'settings')

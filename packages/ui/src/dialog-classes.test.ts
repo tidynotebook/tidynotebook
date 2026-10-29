@@ -76,3 +76,30 @@ await test('a picture on the scrim keeps the whole screen', () => {
   assert.equal(dialogRootClassName('screen', 'top'), 'bg-scrim/80');
   assert.ok(dialogPanelClassName('screen').includes('h-full w-full'));
 });
+
+await test('phone forms share a bottom sheet with a bounded scroll area', () => {
+  for (const width of [
+    'small',
+    'medium',
+    'large',
+    'template',
+    'settings',
+  ] as const) {
+    const root = dialogRootClassName(width, 'center', true).split(' ');
+    assert.ok(root.includes('items-end'));
+    assert.ok(root.includes('h-viewport'));
+    const panel = dialogPanelClassName(width, true).split(' ');
+    assert.ok(panel.includes('w-full'));
+    assert.ok(panel.includes('max-h-sheet'));
+    assert.ok(panel.includes('overflow-hidden'));
+    assert.ok(!panel.includes('max-w-md'));
+  }
+});
+await test('a phone folder tree uses its sheet bounds instead of a second height cap', () => {
+  assert.ok(
+    dialogPanelClassName('small', true, true).includes('phone-sheet-fill'),
+  );
+  assert.ok(
+    !dialogPanelClassName('small', false, true).includes('phone-sheet'),
+  );
+});

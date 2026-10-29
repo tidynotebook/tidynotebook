@@ -397,7 +397,7 @@ function TrashList({
           <EmptyState
             icon={emptyStateIcon(trashPageGlyph)}
             title="The trash is empty"
-            description="A note you delete waits here until you restore it or select Delete."
+            description="Notes stay here until you restore them or delete them for good."
           />
         ) : (
           <section aria-labelledby="trash-heading">

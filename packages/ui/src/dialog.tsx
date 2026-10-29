@@ -274,11 +274,8 @@ export function Dialog({
   if (!open) return null;
 
   const screen = width === 'screen';
-  const root = `${phone && width !== 'screen' ? 'h-viewport items-end bg-scrim/40' : dialogRootClassName(width, align)} ${anchor == null ? '' : 'lg:bg-transparent'}`;
-  const panel =
-    phone && width !== 'screen'
-      ? `phone-sheet flex max-h-sheet w-full flex-col overflow-hidden rounded-t-xl border border-edge-subtle bg-card text-strong shadow-modal outline-none ${width === 'settings' || width === 'template' ? 'h-full max-h-full' : fillSheet ? 'phone-sheet-fill' : ''}`
-      : dialogPanelClassName(width);
+  const root = `${dialogRootClassName(width, align, phone)} ${anchor == null ? '' : 'lg:bg-transparent'}`;
+  const panel = dialogPanelClassName(width, phone, fillSheet);
 
   return (
     <div
