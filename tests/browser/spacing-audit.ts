@@ -121,7 +121,9 @@ export async function auditSpacing(page: Page) {
             row,
             'drawer-content-height',
             row.getBoundingClientRect().height,
-            Math.max(44, name.getBoundingClientRect().height + 16),
+            name instanceof HTMLInputElement
+              ? 44
+              : Math.max(44, name.getBoundingClientRect().height + 16),
           );
       }
     }

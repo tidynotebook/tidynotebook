@@ -221,6 +221,7 @@
       padding-block: 8px;
     }
     & .ui-icon-button,
+    & .ui-field,
     & .ui-tree-spacer {
       margin-block: -8px;
     }
