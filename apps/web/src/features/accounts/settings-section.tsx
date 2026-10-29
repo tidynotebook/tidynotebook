@@ -1,19 +1,98 @@
 /**
  * One section of Settings and of the pages that belong to it.
  *
- * A section is not a card. From the medium width it is two columns: the name
- * of the section and its sentence on the left, the controls on the right, so
- * a person scans the names of every section in one pass. A hairline separates
- * one section from the next, which is the one place a rule is drawn here,
- * because a person counts the sections of a list they scroll (decision 0063).
+ * Desktop sections use flat rows and divider headings. Phone Settings puts
+ * each group in one card. The shared spacing roles define both layouts.
  *
  * The title and the heading come from the list of sections of the page,
  * which the side region reads as well, so the two cannot disagree
  * (decision 0137). Settings and Accounts both take this one layout, because
  * Accounts is a part of Settings (record 0138).
  */
-import { createContext, useContext, type ReactNode } from 'react';
-import { ChevronRightIcon, Switch, type PageSection } from '@notesapp/ui';
+import {
+  createContext,
+  useContext,
+  useSyncExternalStore,
+  type ReactNode,
+  type Ref,
+} from 'react';
+import {
+  Button,
+  ChevronRightIcon,
+  Switch,
+  type PageSection,
+} from '@notesapp/ui';
+
+const phoneQuery = '(pointer: coarse) and (max-width: 1023px)';
+function subscribePhone(change: () => void): () => void {
+  const query = window.matchMedia(phoneQuery);
+  query.addEventListener('change', change);
+  return () => query.removeEventListener('change', change);
+}
+/** One phone layout boundary for every Settings row. */
+export function usePhoneSettings(): boolean {
+  return useSyncExternalStore(
+    subscribePhone,
+    () => window.matchMedia(phoneQuery).matches,
+    () => false,
+  );
+}
+
+/** A whole action row on phone, with the existing flat action on desktop. */
+export function SettingActionRow({
+  label,
+  desktopLabel,
+  help,
+  actionLabel,
+  onClick,
+  disabled,
+  danger = false,
+  icon,
+}: {
+  readonly label: string;
+  readonly desktopLabel?: string;
+  readonly help?: string;
+  readonly actionLabel: string;
+  readonly onClick: () => void;
+  readonly disabled?: boolean;
+  readonly danger?: boolean;
+  readonly icon?: ReactNode;
+}): ReactNode {
+  const phone = usePhoneSettings();
+  if (!phone)
+    return (
+      <SettingRow label={desktopLabel ?? label.replace(/…$/, '')} help={help}>
+        <Button
+          variant="secondary"
+          size="sm"
+          tone={danger ? 'danger' : undefined}
+          icon={icon}
+          disabled={disabled}
+          onClick={onClick}
+        >
+          {actionLabel}
+        </Button>
+      </SettingRow>
+    );
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      disabled={disabled}
+      onClick={onClick}
+      className={`ui-settings-phone-row ui-settings-action-link text-left ${danger ? 'text-danger' : 'text-accent'}`}
+    >
+      <span data-setting-label className="block text-body">
+        {label}
+      </span>
+      {help === undefined ? null : (
+        <span data-setting-help className="block text-secondary text-muted">
+          {help}
+        </span>
+      )}
+    </button>
+  );
+}
 
 /**
  * The sections inside the Settings modal (issue 517, item 8).
@@ -47,10 +126,12 @@ export function SettingsSection({
   readonly children: ReactNode;
 }): ReactNode {
   const topic = useContext(SettingsTopicContext);
+  const phone = usePhoneSettings();
   if (topic !== null)
     return (
       <section className={'ui-section'} aria-label={section.title}>
-        {topic.hiddenTitles.includes(section.id) ? null : (
+        {topic.hiddenTitles.includes(section.id) &&
+        !(phone && section.id === 'profile-heading') ? null : (
           <h3
             className={`ui-group-heading border-b border-edge-subtle text-group ${danger ? 'text-danger' : 'text-muted'}`}
             id={section.id}
@@ -61,7 +142,7 @@ export function SettingsSection({
         {topic.helpSection === section.id && description !== undefined ? (
           <p className="mb-3 mt-0 text-secondary text-muted">{description}</p>
         ) : null}
-        <div className="min-w-0">
+        <div className="ui-settings-card ui-group-content min-w-0">
           {warning === undefined ? null : (
             <p className="mb-3 mt-0 text-secondary text-muted">{warning}</p>
           )}
@@ -109,8 +190,8 @@ export function SettingRow({
   readonly children?: ReactNode;
 }): ReactNode {
   return (
-    <div className="ui-setting-row ui-setting-align flex flex-wrap items-start border-b border-edge-subtle lg:flex-nowrap">
-      <div className="contents lg:block lg:min-w-0 lg:flex-1">
+    <div className="ui-setting-action-row ui-settings-phone-row ui-setting-row ui-setting-align flex flex-wrap items-start border-b border-edge-subtle lg:flex-nowrap">
+      <div data-setting-text className="contents lg:block lg:min-w-0 lg:flex-1">
         <p
           data-setting-label
           className="order-1 m-0 min-w-0 flex-1 break-words text-body text-strong lg:truncate"
@@ -119,6 +200,7 @@ export function SettingRow({
         </p>
         {help === undefined ? null : (
           <p
+            data-setting-help
             className="order-3 m-0 line-clamp-2 w-full break-words text-secondary text-muted lg:line-clamp-1"
             title={help}
           >
@@ -146,6 +228,7 @@ export function SettingChoiceRow({
   valueIcon,
   onClick,
   disabled = false,
+  buttonRef,
 }: {
   readonly label: string;
   readonly help: string;
@@ -153,23 +236,31 @@ export function SettingChoiceRow({
   readonly valueIcon?: ReactNode;
   readonly onClick: () => void;
   readonly disabled?: boolean;
+  readonly buttonRef?: Ref<HTMLButtonElement>;
 }): ReactNode {
   return (
     <button
+      ref={buttonRef}
       type="button"
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="ui-setting-row ui-setting-align flex w-full items-start border-b border-edge-subtle bg-transparent text-left hover:bg-hover focus-visible:relative focus-visible:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-focus disabled:cursor-default disabled:text-muted pointer-coarse:flex-wrap pointer-coarse:gap-y-0"
+      className="ui-settings-phone-row ui-setting-row ui-setting-align flex w-full items-start border-b border-edge-subtle bg-transparent text-left hover:bg-hover focus-visible:relative focus-visible:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-focus disabled:cursor-default disabled:text-muted pointer-coarse:flex-wrap pointer-coarse:gap-y-0"
     >
-      <span className="min-w-0 flex-1 pointer-coarse:contents">
+      <span
+        data-setting-text
+        className="min-w-0 flex-1 pointer-coarse:contents"
+      >
         <span
           data-setting-label
           className="block truncate text-body text-strong pointer-coarse:order-1 pointer-coarse:min-w-0 pointer-coarse:flex-1"
         >
           {label}
         </span>
-        <span className="line-clamp-2 break-words text-secondary text-muted lg:line-clamp-1 pointer-coarse:order-4 pointer-coarse:w-full pointer-coarse:basis-full">
+        <span
+          data-setting-help
+          className="line-clamp-2 break-words text-secondary text-muted lg:line-clamp-1 pointer-coarse:order-4 pointer-coarse:w-full pointer-coarse:basis-full"
+        >
           {help}
         </span>
       </span>
@@ -209,6 +300,17 @@ export function SettingSwitchRow({
   readonly disabled: boolean;
   readonly onChange: (checked: boolean) => void;
 }): ReactNode {
+  const phone = usePhoneSettings();
+  if (phone)
+    return (
+      <Switch
+        label={label}
+        hint={help}
+        checked={checked}
+        disabled={disabled}
+        onChange={onChange}
+      />
+    );
   return (
     <SettingRow label={label} help={help}>
       <Switch

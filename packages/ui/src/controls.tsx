@@ -651,12 +651,16 @@ export function Switch({
       onClick={() => onChange(!checked)}
     >
       {hideLabel ? null : (
-        <span className="min-w-0 flex-1 text-body">
+        <span data-setting-text className="min-w-0 flex-1 text-body">
           <span data-setting-label className="block">
             {label}
           </span>
           {hint === undefined ? null : (
-            <span id={hintId} className="block text-secondary text-muted">
+            <span
+              data-setting-help
+              id={hintId}
+              className="block text-secondary text-muted"
+            >
               {hint}
             </span>
           )}

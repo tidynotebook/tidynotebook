@@ -363,7 +363,7 @@ function PaletteDialog({
       hideTitle
       width="medium"
     >
-      <div className="flex items-center gap-cluster border-b border-edge-line px-gutter">
+      <div className="flex items-center gap-cluster border-b border-edge-line px-gutter py-1">
         <span className="shrink-0 text-muted" aria-hidden="true">
           <SearchIcon />
         </span>

@@ -691,4 +691,47 @@ await test('Settings folder choices and name format do not open another modal', 
   assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
 });
 
+await test('phone Settings uses navigation and action rows with one edit level', async () => {
+  const original = window.matchMedia.bind(window);
+  window.matchMedia = (query) => {
+    const result = original(query);
+    Object.defineProperty(result, 'matches', {
+      value:
+        query.includes('pointer: coarse') ||
+        query.includes('max-width: 1023px'),
+    });
+    return result;
+  };
+  try {
+    await show('/w/one/notes/n1?settings=account');
+    assert.ok(container.querySelector('#profile-heading'));
+    assert.equal(
+      [...container.querySelectorAll('button')].some(
+        (b) => b.getAttribute('aria-label') === 'Edit name',
+      ),
+      false,
+    );
+    const name = button('Name');
+    await click(name);
+    assert.ok(container.querySelector('#profile-name'));
+    assert.ok(button('Save'));
+    assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
+    await escape();
+    assert.equal(container.querySelector('#profile-name'), null);
+    await settle();
+    assert.equal(document.activeElement?.getAttribute('aria-label'), 'Name');
+    const remove = container.querySelector<HTMLButtonElement>(
+      '.ui-settings-action-link.text-danger',
+    );
+    assert.ok(remove);
+    await click(remove);
+    assert.ok(container.querySelector('#remove-own-password'));
+    await escape();
+    assert.equal(container.querySelector('#remove-own-password'), null);
+  } finally {
+    window.matchMedia = original;
+    await show('/w/one/notes/n1?settings=account');
+  }
+});
+
 await release();

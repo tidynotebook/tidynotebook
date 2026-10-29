@@ -45,6 +45,7 @@ import {
   menuSurfaceClassName,
   rowClassName,
 } from './control-classes.ts';
+import { CheckIcon } from './icons.tsx';
 import { startsGroup } from './menu-groups.ts';
 import { placeOverlay } from './overlay-position.ts';
 import { followVisibleArea, readVisibleArea } from './visible-area.ts';
@@ -104,7 +105,6 @@ function MenuRow({
       aria-checked={choosing ? item.selected === true : undefined}
       tabIndex={-1}
       className={rowClassName({
-        selected: item.selected,
         danger: item.danger,
         className: 'w-full text-left md:min-h-8',
       })}
@@ -117,6 +117,15 @@ function MenuRow({
         </span>
       )}
       <span className="flex-1 truncate">{item.label}</span>
+      {choosing ? (
+        <span
+          data-menu-check
+          className="inline-flex size-4 shrink-0"
+          aria-hidden="true"
+        >
+          {item.selected ? <CheckIcon /> : null}
+        </span>
+      ) : null}
       {item.hint === undefined ? null : (
         <span className="shrink-0 text-secondary text-muted">{item.hint}</span>
       )}

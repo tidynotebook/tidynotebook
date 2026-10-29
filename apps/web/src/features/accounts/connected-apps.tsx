@@ -26,9 +26,10 @@ import {
 import { problemCode } from '../../lib/problem-text.ts';
 import { sectionOf, settingsSections } from '../../lib/page-sections.ts';
 import { useNow } from '../../shell/now.ts';
-import { SettingsSection } from './settings-section.tsx';
+import { usePhoneSettings, SettingsSection } from './settings-section.tsx';
 
 export function ConnectedAppSettings(): ReactNode {
+  const phone = usePhoneSettings();
   const [apps, setApps] = useState<readonly ConnectedApp[] | null>(null);
   const [error, setError] = useState('');
   const [load, setLoad] = useState(0);
@@ -74,7 +75,7 @@ export function ConnectedAppSettings(): ReactNode {
             </Button>
           )
         ) : apps.length === 0 ? (
-          <p className="m-0 text-secondary text-muted">
+          <p className="ui-settings-empty m-0 text-secondary text-muted">
             No connected apps. Connect an app from its settings.
           </p>
         ) : (
@@ -88,12 +89,21 @@ export function ConnectedAppSettings(): ReactNode {
                   <p className="m-0 break-words text-body text-strong">
                     Name claimed by app: {connectedAppName(app)}
                   </p>
-                  <p className="mb-0 mt-1 break-words text-secondary text-muted">
-                    {connectedAppIdentity(app)}
-                  </p>
-                  <p className="mb-0 mt-1 text-secondary text-muted">
-                    {connectedAppFacts(app, now)}
-                  </p>
+                  {phone ? (
+                    <p className="ui-settings-meta m-0 text-secondary text-muted">
+                      {connectedAppIdentity(app)} ·{' '}
+                      {connectedAppFacts(app, now)}
+                    </p>
+                  ) : (
+                    <>
+                      <p className="mb-0 mt-1 break-words text-secondary text-muted">
+                        {connectedAppIdentity(app)}
+                      </p>
+                      <p className="mb-0 mt-1 text-secondary text-muted">
+                        {connectedAppFacts(app, now)}
+                      </p>
+                    </>
+                  )}
                 </div>
                 <Button
                   variant="secondary"

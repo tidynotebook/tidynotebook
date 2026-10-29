@@ -853,8 +853,8 @@ await test('a menu is a raised card with the menu radius and the overlay step', 
   const surface = menuSurfaceClassName().split(' ');
   for (const part of [
     'rounded-lg',
-    'border-edge-subtle',
-    'bg-card',
+    'border-overlay-edge',
+    'bg-overlay',
     'shadow-overlay',
   ])
     assert.ok(surface.includes(part), part);

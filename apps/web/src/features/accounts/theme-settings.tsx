@@ -56,7 +56,11 @@ import {
   type SettingsSectionKey,
 } from '../../lib/page-sections.ts';
 import { save } from '../export/export.ts';
-import { SettingsSection } from './settings-section.tsx';
+import {
+  SettingActionRow,
+  usePhoneSettings,
+  SettingsSection,
+} from './settings-section.tsx';
 
 /** The three appearance choices, with the icon that names each of them. */
 const appearanceChoices: readonly {
@@ -161,6 +165,7 @@ type Outcome =
     };
 
 export function ThemeSettings(): ReactNode {
+  const phone = usePhoneSettings();
   const theme = useTheme();
   const session = useSession();
   const fileInput = useRef<HTMLInputElement | null>(null);
@@ -241,6 +246,11 @@ export function ThemeSettings(): ReactNode {
   }
 
   const current = familyAmong(theme.families, theme.familyId);
+  const exportCurrent = (): void =>
+    save(
+      new Blob([themeFileText(current)], { type: 'application/json' }),
+      themeFileName(current.name),
+    );
   const light = themeOfFamily(current, 'light').tokens;
   const dark = themeOfFamily(current, 'dark').tokens;
 
@@ -253,7 +263,7 @@ export function ThemeSettings(): ReactNode {
         <legend className="ui-group-heading w-full border-b border-edge-subtle p-0 text-group text-muted">
           Mode
         </legend>
-        <div className="grid grid-cols-3 gap-cluster">
+        <div className="ui-theme-tiles grid grid-cols-3 gap-cluster">
           {appearanceChoices.map((choice) => {
             const chosen = theme.choice === choice.value;
             return (
@@ -308,33 +318,37 @@ export function ThemeSettings(): ReactNode {
           >
             Theme
           </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={<UploadIcon />}
-            disabled={busy}
-            onClick={() => fileInput.current?.click()}
-          >
-            {busy ? 'Importing the theme' : 'Import theme file'}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={<DownloadIcon />}
-            label={`Export the ${current.name} theme file`}
-            onClick={() => {
-              save(
-                new Blob([themeFileText(current)], {
-                  type: 'application/json',
-                }),
-                themeFileName(current.name),
-              );
-            }}
-          >
-            Export theme file
-          </Button>
+          {phone ? null : (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={<UploadIcon />}
+                disabled={busy}
+                onClick={() => fileInput.current?.click()}
+              >
+                {busy ? 'Importing the theme' : 'Import theme file'}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={<DownloadIcon />}
+                label={`Export the ${current.name} theme file`}
+                onClick={() => {
+                  save(
+                    new Blob([themeFileText(current)], {
+                      type: 'application/json',
+                    }),
+                    themeFileName(current.name),
+                  );
+                }}
+              >
+                Export theme file
+              </Button>
+            </>
+          )}
         </div>
-        <ul className="m-0 flex list-none gap-cluster overflow-x-auto p-0 pb-1 md:grid md:grid-cols-4 md:overflow-visible lg:grid-cols-4">
+        <ul className="ui-theme-tiles m-0 flex list-none gap-cluster overflow-x-auto p-0 pb-1 md:grid md:grid-cols-4 md:overflow-visible lg:grid-cols-4">
           {theme.families.map((option) => {
             const chosen = theme.familyId === option.id;
             const only = onlyModeOf(option);
@@ -397,6 +411,21 @@ export function ThemeSettings(): ReactNode {
             );
           })}
         </ul>
+        {phone ? (
+          <div className="ui-settings-card ui-group-after">
+            <SettingActionRow
+              label="Import theme file…"
+              actionLabel="Import theme file"
+              disabled={busy}
+              onClick={() => fileInput.current?.click()}
+            />
+            <SettingActionRow
+              label="Export theme file"
+              actionLabel="Export theme file"
+              onClick={exportCurrent}
+            />
+          </div>
+        ) : null}
       </fieldset>
       <input
         ref={fileInput}

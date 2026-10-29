@@ -2,6 +2,7 @@ import {
   SettingsActionContext,
   type SettingsActionRegistration,
 } from './settings-action-context.ts';
+import { SettingsDialog } from './settings-dialog.tsx';
 import { ConnectedAppSettings } from './connected-apps.tsx';
 /**
  * The Settings modal (issue 517, items 5, 7, 8 and 10).
@@ -51,6 +52,8 @@ import {
   CloseIcon,
   ComputerIcon,
   Dialog,
+  DialogBody,
+  DialogFooter,
   DialogHeaderActionsContext,
   DownloadIcon,
   ExternalLinkIcon,
@@ -72,8 +75,6 @@ import {
   UsersIcon,
   type PageSection,
 } from '@notesapp/ui';
-import { actionIcon } from '../../shell/action-icons.tsx';
-import { deleteGlyph } from '../../lib/delete-label.ts';
 import {
   problemMessage,
   useLocalStore,
@@ -106,6 +107,9 @@ import {
 import { useSettingsListFocus } from './settings-list-focus.ts';
 import {
   SettingRow,
+  SettingActionRow,
+  SettingChoiceRow,
+  usePhoneSettings,
   SettingsSection,
   SettingsTopicContext,
 } from './settings-section.tsx';
@@ -217,6 +221,8 @@ type SessionsState =
  */
 function SessionsSettings(): ReactNode {
   const now = useNow();
+  const phone = usePhoneSettings();
+  const [endingOthers, setEndingOthers] = useState(false);
   const [state, setState] = useState<SessionsState>({ kind: 'loading' });
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{
@@ -286,32 +292,40 @@ function SessionsSettings(): ReactNode {
           label="The signed in devices are loading."
         />
       ) : (
-        <>
+        <div className="ui-settings-group-stack">
           {current === undefined ? null : (
-            <ul className={pageListClassName()} aria-label="This device">
-              <ListRow>
-                <span
-                  className="inline-flex shrink-0 items-center text-muted"
-                  aria-hidden="true"
-                >
-                  <ComputerIcon />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="m-0 truncate text-body text-strong">
-                    {deviceName(current.userAgent)}
-                  </p>
-                  <p className="m-0 text-secondary text-muted">
-                    To sign out of this device, use the account menu.
-                  </p>
-                </div>
-              </ListRow>
-            </ul>
+            <div>
+              <h3 className="ui-group-heading border-b border-edge-subtle text-group text-muted">
+                This device
+              </h3>
+              <ul
+                className={`${pageListClassName()} ui-settings-card`}
+                aria-label="This device"
+              >
+                <ListRow>
+                  <span
+                    className="inline-flex shrink-0 items-center text-muted"
+                    aria-hidden="true"
+                  >
+                    <ComputerIcon />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="m-0 truncate text-body text-strong">
+                      {deviceName(current.userAgent)}
+                    </p>
+                    <p className="ui-settings-meta m-0 text-secondary text-muted">
+                      To sign out of this device, use the account menu.
+                    </p>
+                  </div>
+                </ListRow>
+              </ul>
+            </div>
           )}
           <div className="ui-group-toolbar ui-group-heading ui-group-after border-b border-edge-subtle">
             <h3 className="m-0 min-w-0 flex-1 text-group text-muted">
               Other devices
             </h3>
-            {others.length === 0 ? null : (
+            {others.length === 0 || phone ? null : (
               <Button
                 size="sm"
                 variant="secondary"
@@ -335,7 +349,7 @@ function SessionsSettings(): ReactNode {
           {others.length === 0 ? (
             <p className="mt-3 text-secondary text-muted">No other devices.</p>
           ) : null}
-          <ul className={pageListClassName()}>
+          <ul className={`${pageListClassName()} ui-settings-card`}>
             {others.map((session) => {
               const name = deviceName(session.userAgent);
               return (
@@ -356,10 +370,18 @@ function SessionsSettings(): ReactNode {
                     >
                       {name}
                     </p>
-                    <p className="m-0 flex flex-wrap gap-cluster text-secondary text-muted">
-                      {sessionFacts(session, now).map((fact) => (
-                        <span key={fact}>{fact}</span>
-                      ))}
+                    <p
+                      className={
+                        phone
+                          ? 'm-0 ui-settings-meta text-secondary text-muted'
+                          : 'm-0 flex flex-wrap gap-cluster text-secondary text-muted'
+                      }
+                    >
+                      {phone
+                        ? sessionFacts(session, now).join(' · ')
+                        : sessionFacts(session, now).map((fact) => (
+                            <span key={fact}>{fact}</span>
+                          ))}
                     </p>
                   </div>
                   {session.current ? null : (
@@ -387,8 +409,50 @@ function SessionsSettings(): ReactNode {
                 </ListRow>
               );
             })}
+            {phone && others.length > 0 ? (
+              <li>
+                <SettingActionRow
+                  label="Sign out every other device…"
+                  actionLabel="Sign out every other device"
+                  danger
+                  onClick={() => setEndingOthers(true)}
+                />
+              </li>
+            ) : null}
           </ul>
-        </>
+          <SettingsDialog
+            open={endingOthers}
+            title="Sign out every other device?"
+            titleId="end-devices-title"
+            onClose={() => setEndingOthers(false)}
+          >
+            <DialogBody>
+              <p className="m-0 text-body text-strong">
+                You can sign in again on those devices.
+              </p>
+            </DialogBody>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setEndingOthers(false)}>
+                Cancel
+              </Button>
+              <Button
+                tone="danger"
+                onClick={() => {
+                  setEndingOthers(false);
+                  change(async () => {
+                    const ended = await revokeOtherSessions();
+                    return {
+                      error: ended.error,
+                      done: otherSessionsEndedText(ended.data?.revoked ?? 0),
+                    };
+                  });
+                }}
+              >
+                Sign out
+              </Button>
+            </DialogFooter>
+          </SettingsDialog>
+        </div>
       )}
     </SettingsSection>
   );
@@ -406,7 +470,9 @@ function ProfileSettings({
   readonly email: string | null | undefined;
 }): ReactNode {
   const session = useSession();
+  const phone = usePhoneSettings();
   const [editing, setEditing] = useState(false);
+  const nameButton = useRef<HTMLButtonElement | null>(null);
   const [draft, setDraft] = useState(name ?? '');
   const [attempted, setAttempted] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -441,53 +507,102 @@ function ProfileSettings({
     setEditing(false);
   }
 
+  const profileForm = (
+    <form
+      className={
+        phone
+          ? 'ui-settings-profile-form flex min-h-0 flex-1 flex-col'
+          : 'border-b border-edge-subtle py-3'
+      }
+      onSubmit={(event): void => {
+        event.preventDefault();
+        void save();
+      }}
+    >
+      <div
+        className={
+          phone ? 'ui-dialog-body min-h-0 flex-1 overflow-auto' : undefined
+        }
+      >
+        <TextField
+          id="profile-name"
+          label="Name"
+          value={draft}
+          autoComplete="name"
+          hint="Use no more than 256 characters."
+          error={attempted ? (profileNameProblem(draft) ?? '') : ''}
+          onChange={(value) => {
+            setDraft(value);
+            setSaved(false);
+            setProblem('');
+          }}
+        />
+        {problem === '' ? null : (
+          <Notice className="mb-3" tone="problem" message={problem} />
+        )}
+      </div>
+      <div
+        className={phone ? 'ui-dialog-footer' : 'flex flex-wrap gap-cluster'}
+      >
+        <Button
+          className={phone ? 'w-full' : undefined}
+          type="submit"
+          variant={phone ? 'primary' : 'secondary'}
+          disabled={busy}
+        >
+          {busy ? 'Saving' : phone ? 'Save' : 'Save name'}
+        </Button>
+        {phone ? null : (
+          <Button
+            variant="ghost"
+            disabled={busy}
+            onClick={() => {
+              setEditing(false);
+              setAttempted(false);
+              setProblem('');
+              setDraft(name ?? '');
+            }}
+          >
+            Cancel
+          </Button>
+        )}
+      </div>
+    </form>
+  );
+
   return (
     <SettingsSection
       section={settingsSection('profile')}
       description="Your name appears with your account. Use your email address to sign in."
     >
       {editing ? (
-        <form
-          className="border-b border-edge-subtle py-3"
-          onSubmit={(event): void => {
-            event.preventDefault();
-            void save();
-          }}
-        >
-          <TextField
-            id="profile-name"
-            label="Name"
-            value={draft}
-            autoComplete="name"
-            hint="Use no more than 256 characters."
-            error={attempted ? (profileNameProblem(draft) ?? '') : ''}
-            onChange={(value) => {
-              setDraft(value);
-              setSaved(false);
-              setProblem('');
+        phone ? (
+          <SettingsDialog
+            open
+            title="Name"
+            titleId="profile-edit-title"
+            returnFocus={() => nameButton.current?.focus()}
+            onClose={() => {
+              setEditing(false);
+              setDraft(name ?? '');
             }}
-          />
-          {problem === '' ? null : (
-            <Notice className="mb-3" tone="problem" message={problem} />
-          )}
-          <div className="flex flex-wrap gap-cluster">
-            <Button type="submit" variant="secondary" disabled={busy}>
-              {busy ? 'Saving' : 'Save name'}
-            </Button>
-            <Button
-              variant="ghost"
-              disabled={busy}
-              onClick={() => {
-                setEditing(false);
-                setAttempted(false);
-                setProblem('');
-                setDraft(name ?? '');
-              }}
-            >
-              Cancel
-            </Button>
-          </div>
-        </form>
+          >
+            {profileForm}
+          </SettingsDialog>
+        ) : (
+          profileForm
+        )
+      ) : phone ? (
+        <SettingChoiceRow
+          buttonRef={nameButton}
+          label="Name"
+          help=""
+          value={name ?? ''}
+          onClick={() => {
+            setEditing(true);
+            setSaved(false);
+          }}
+        />
       ) : (
         <SettingRow label="Name">
           <span className="min-w-0 truncate text-value text-muted">
@@ -651,30 +766,23 @@ export function SettingsModal({
         rows
         description="A zip of every note and image, with their folders."
       >
-        <SettingRow
+        <SettingActionRow
           label="Export this workspace"
+          actionLabel="Export"
           help="A zip of every note and image, with their folders."
-        >
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={<DownloadIcon />}
-            disabled={exporting}
-            onClick={() => {
-              setExportError('');
-              setExporting(true);
-              void downloadAll(workspaceId)
-                .catch((failure: unknown) => {
-                  setExportError(transferFailureMessage(failure));
-                })
-                .finally(() => {
-                  setExporting(false);
-                });
-            }}
-          >
-            {exporting ? 'Preparing the download' : 'Export'}
-          </Button>
-        </SettingRow>
+          disabled={exporting}
+          onClick={() => {
+            setExportError('');
+            setExporting(true);
+            void downloadAll(workspaceId)
+              .catch((failure: unknown) => {
+                setExportError(transferFailureMessage(failure));
+              })
+              .finally(() => {
+                setExporting(false);
+              });
+          }}
+        />
         {exportError === '' ? null : (
           <Notice className="my-2" tone="problem" message={exportError} />
         )}
@@ -712,20 +820,13 @@ export function SettingsModal({
               });
           }}
         />
-        <SettingRow
-          label="Import workspace"
+        <SettingActionRow
+          label="Import workspace…"
+          actionLabel="Import"
           help="A zip of Markdown files and images. Paths and links are kept."
-        >
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={<UploadIcon />}
-            disabled={importing}
-            onClick={() => importInput.current?.click()}
-          >
-            {importing ? 'Importing files' : 'Import'}
-          </Button>
-        </SettingRow>
+          disabled={importing}
+          onClick={() => importInput.current?.click()}
+        />
         {importNotice === '' ? null : (
           <Notice className="my-2" tone="info" message={importNotice} />
         )}
@@ -745,7 +846,8 @@ export function SettingsModal({
           <Notice key={notice} className="mt-3" tone="info" message={notice} />
         ))}
         {storageLine(account.storage) === '' ? null : (
-          <div className="mt-3">
+          <div className="ui-settings-storage-row mt-3">
+            <span className="ui-phone-only text-body text-strong">Storage</span>
             <Meter
               label="Storage"
               value={account.storage.usedBytes}
@@ -755,7 +857,10 @@ export function SettingsModal({
           </div>
         )}
         {transferUsage(account.month, account.controls).map((usage) => (
-          <div key={usage.label} className="mt-3">
+          <div key={usage.label} className="ui-settings-storage-row mt-3">
+            <span className="ui-phone-only text-body text-strong">
+              {usage.label}
+            </span>
             <Meter {...usage} />
           </div>
         ))}
@@ -770,22 +875,15 @@ export function SettingsModal({
         heading="Danger zone"
         danger
       >
-        <SettingRow
-          label="Delete account"
+        <SettingActionRow
+          label="Delete account…"
+          actionLabel="Delete account"
           help="Deletes every workspace and note for good. Export your notes first."
-        >
-          <Button
-            variant="secondary"
-            size="sm"
-            tone="danger"
-            icon={actionIcon(deleteGlyph)}
-            onClick={() => {
-              setRemoving(true);
-            }}
-          >
-            Delete account
-          </Button>
-        </SettingRow>
+          danger
+          onClick={() => {
+            setRemoving(true);
+          }}
+        />
       </SettingsSection>
     ),
     billing: (
@@ -796,22 +894,17 @@ export function SettingsModal({
         section={settingsSection('billing')}
         description="See and change your plan, your payment method and your invoices."
       >
-        <SettingRow
-          label="Payment method, invoices, plan changes"
+        <SettingActionRow
+          label="Open billing"
+          desktopLabel="Payment method, invoices, plan changes"
+          actionLabel="Open billing"
           help="Opens the billing portal."
-        >
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={<ExternalLinkIcon />}
-            disabled={portal.busy}
-            onClick={() => {
-              void portal.open(portalHome);
-            }}
-          >
-            Open billing
-          </Button>
-        </SettingRow>
+          icon={<ExternalLinkIcon />}
+          disabled={portal.busy}
+          onClick={() => {
+            void portal.open(portalHome);
+          }}
+        />
         {portal.error === '' ? null : (
           <Notice className="my-2" tone="problem" message={portal.error} />
         )}
@@ -853,7 +946,7 @@ export function SettingsModal({
       <SettingsActionContext.Provider value={actionHost}>
         <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
           <div
-            className={`${listLevel ? 'flex' : 'hidden'} min-h-0 flex-1 flex-col bg-surface lg:flex lg:w-60 lg:flex-none lg:border-r lg:border-edge-subtle`}
+            className={`${listLevel ? 'flex' : 'hidden'} ui-settings-navigation min-h-0 flex-1 flex-col bg-surface lg:flex lg:w-60 lg:flex-none lg:border-r lg:border-edge-subtle`}
           >
             <div
               data-sheet-drag=""
@@ -910,7 +1003,7 @@ export function SettingsModal({
                         </span>
                       ) : null}
                     </h3>
-                    <ul className="m-0 list-none p-0">
+                    <ul className="ui-settings-card m-0 list-none p-0">
                       {pages
                         .filter((page) => page.group === group)
                         .map((page) => {
@@ -1048,17 +1141,33 @@ export function SettingsModal({
                   }
                 />
                 <div
+                  className="ui-settings-sections"
                   hidden={activeAction !== null}
                   inert={activeAction !== null}
                 >
                   <SettingsTopicContext.Provider
                     value={{ hiddenTitles, helpSection: null }}
                   >
-                    {activePage?.sections.map((key) => (
-                      <div key={key} className="ui-section">
-                        {sectionBodies[key]}
-                      </div>
-                    ))}
+                    {activePage?.path === 'export-import' ? (
+                      <>
+                        <h3 className="ui-phone-only ui-group-heading text-group text-muted">
+                          Workspace
+                        </h3>
+                        <div className="ui-settings-joined">
+                          {activePage.sections.map((key) => (
+                            <div key={key} className="ui-section">
+                              {sectionBodies[key]}
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      activePage?.sections.map((key) => (
+                        <div key={key} className="ui-section">
+                          {sectionBodies[key]}
+                        </div>
+                      ))
+                    )}
                   </SettingsTopicContext.Provider>
                 </div>
               </DialogHeaderActionsContext.Provider>

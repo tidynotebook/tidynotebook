@@ -1,10 +1,12 @@
 import { spacingSpec } from '../../packages/ui/src/spacing.ts';
 import type { Page } from './browser.ts';
+import { auditBorderSpacing } from './border-spacing.ts';
 
 /** Measure shared geometry in the actual served CSS and rendered layout. */
 export async function auditSpacing(page: Page) {
-  return page.evaluate((spec) => {
+  const result = await page.evaluate((spec) => {
     const coarse = matchMedia('(pointer: coarse)').matches;
+    const phoneSettings = coarse && innerWidth < 1024;
     const role = coarse ? spec.coarse : spec.fine;
     const issues: {
       kind: string;
@@ -95,9 +97,20 @@ export async function auditSpacing(page: Page) {
     for (const e of document.querySelectorAll('.ui-setting-row')) {
       if (!visible(e)) continue;
       const style = getComputedStyle(e);
-      check(e, 'setting-min-height', parseFloat(style.minHeight), role.setting);
-      check(e, 'setting-top-pad', parseFloat(style.paddingTop), 8);
-      check(e, 'setting-bottom-pad', parseFloat(style.paddingBottom), 8);
+      const card = phoneSettings && e.closest('.ui-settings-card') !== null;
+      check(
+        e,
+        'setting-min-height',
+        parseFloat(style.minHeight),
+        card ? 52 : role.setting,
+      );
+      check(e, 'setting-top-pad', parseFloat(style.paddingTop), card ? 12 : 8);
+      check(
+        e,
+        'setting-bottom-pad',
+        parseFloat(style.paddingBottom),
+        card ? 12 : 8,
+      );
       check(e, 'setting-control-gap', parseFloat(style.columnGap), spec.rowGap);
     }
     const firstTextLine = (element: Element): DOMRect | null => {
@@ -123,6 +136,23 @@ export async function auditSpacing(page: Page) {
       const controls = row.querySelectorAll('[data-setting-control]');
       if (!label || controls.length === 0)
         throw new Error('A setting row must mark its label and control.');
+      if (phoneSettings && row.closest('.ui-settings-card')) {
+        const text =
+          row.querySelector('[data-setting-text]') ?? label.parentElement;
+        if (text)
+          for (const control of controls) {
+            const a = text.getBoundingClientRect(),
+              b = control.getBoundingClientRect();
+            check(
+              row,
+              'setting-card-control-centre',
+              b.top + b.height / 2 - a.top - a.height / 2,
+              0,
+              2,
+            );
+          }
+        continue;
+      }
       for (const control of controls) {
         check(
           row,
@@ -196,7 +226,7 @@ export async function auditSpacing(page: Page) {
           e,
           'list-min-height',
           parseFloat(getComputedStyle(e).minHeight),
-          role.list,
+          phoneSettings && e.closest('.ui-settings-card') ? 52 : role.list,
         );
     }
     for (const e of document.querySelectorAll(
@@ -207,32 +237,65 @@ export async function auditSpacing(page: Page) {
           e,
           'tree-min-height',
           parseFloat(getComputedStyle(e).minHeight),
-          role.tree,
+          phoneSettings && e.closest('.ui-settings-list .ui-settings-card')
+            ? 52
+            : role.tree,
         );
         if (coarse) {
           check(
             e,
             'tree-top-pad',
             parseFloat(getComputedStyle(e).paddingTop),
-            8,
+            phoneSettings && e.closest('.ui-settings-list .ui-settings-card')
+              ? 12
+              : 8,
           );
           check(
             e,
             'tree-bottom-pad',
             parseFloat(getComputedStyle(e).paddingBottom),
-            8,
+            phoneSettings && e.closest('.ui-settings-list .ui-settings-card')
+              ? 12
+              : 8,
           );
         }
       }
     }
     for (const e of document.querySelectorAll('.ui-group-heading')) {
-      if (visible(e))
+      if (visible(e)) {
         check(
           e,
           'group-heading-gap',
           parseFloat(getComputedStyle(e).marginBottom),
-          role.groupGap,
+          phoneSettings && e.closest('.ui-settings-content,.ui-settings-list')
+            ? 8
+            : role.groupGap,
         );
+        if (e.classList.contains('border-b') && !phoneSettings)
+          check(
+            e,
+            'group-rule-padding',
+            parseFloat(getComputedStyle(e).paddingBottom),
+            8,
+          );
+      }
+    }
+    for (const nav of document.querySelectorAll('.ui-settings-list nav')) {
+      let previous = nav.previousElementSibling;
+      for (const group of nav.querySelectorAll(':scope > .ui-section')) {
+        const heading = group.querySelector('.ui-group-heading');
+        if (heading && previous && visible(heading))
+          check(
+            heading,
+            'settings-group-after-divider',
+            heading.getBoundingClientRect().top -
+              previous.getBoundingClientRect().bottom,
+            phoneSettings && group !== nav.firstElementChild
+              ? 24
+              : role.sectionGap,
+          );
+        previous = group;
+      }
     }
     for (const e of document.querySelectorAll('.ui-setting-row')) {
       if (visible(e) && e.querySelector('.ui-setting-row'))
@@ -446,14 +509,14 @@ export async function auditSpacing(page: Page) {
               'group-space-above',
               heading.getBoundingClientRect().top -
                 previous.getBoundingClientRect().bottom,
-              16,
+              previous === card ? 16 : 24,
             );
             check(
               heading,
               'group-edge-inset',
               heading.getBoundingClientRect().left +
                 parseFloat(getComputedStyle(heading).paddingLeft),
-              16,
+              32,
             );
             if (row)
               check(
@@ -461,7 +524,7 @@ export async function auditSpacing(page: Page) {
                 'group-space-below',
                 row.getBoundingClientRect().top -
                   heading.getBoundingClientRect().bottom,
-                4,
+                8,
               );
           }
           previous = group;
@@ -475,7 +538,7 @@ export async function auditSpacing(page: Page) {
               icon,
               'settings-row-icon-inset',
               icon.getBoundingClientRect().left,
-              16,
+              32,
             );
         if (card && visible(card)) {
           check(
@@ -523,4 +586,6 @@ export async function auditSpacing(page: Page) {
     }
     return { issues, measurements };
   }, spacingSpec);
+  result.issues.push(...(await auditBorderSpacing(page)));
+  return result;
 }

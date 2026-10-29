@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { resolve, extname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { auditSpacing } from './spacing-audit.ts';
+import { auditBorderSpacing } from './border-spacing.ts';
 import {
   touchTextRoles,
   fineTextRoles,
@@ -40,18 +42,46 @@ async function originalState() {
 }
 mkdirSync('.local-app/screenshots', { recursive: true });
 const spacing = process.env.SPACING_AUDIT === '1';
-const screenshotPrefix = spacing ? 'spacing' : 'text-roles';
-const resultsFile = spacing
-  ? '.local-app/spacing-results.json'
-  : '.local-app/text-roles-results.json';
+const borders = process.env.BORDER_AUDIT === '1';
+const screenshotPrefix = borders
+  ? 'borders'
+  : spacing
+    ? 'spacing'
+    : 'text-roles';
+const resultsFile = borders
+  ? '.local-app/border-results.json'
+  : spacing
+    ? '.local-app/spacing-results.json'
+    : '.local-app/text-roles-results.json';
 const original = await originalState(),
   browser = await chromium.launch(),
   results: Result[] = [],
   errors: { variant: string; error: string }[] = [],
   writes: { method: string; url: string }[] = [];
 try {
+  if (spacing || borders) {
+    const contract = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      hasTouch: true,
+      isMobile: true,
+      colorScheme: 'light',
+    });
+    const page = await contract.newPage();
+    const fixture = (pad: number) =>
+      `<style>body{margin:16px;font:16px/20px sans-serif}p{margin:0}h3{font:inherit;margin:0;padding-bottom:${pad}px;border-bottom:1px solid}button{height:32px;border:1px solid;padding:0 12px}section{margin-bottom:24px}.help{margin-top:${pad}px}.card{height:24px;border-bottom:1px solid;margin-bottom:${pad}px}.toolbar{border-bottom:1px solid;padding-bottom:${pad}px}</style><section><div class="card"></div><p>After divider</p></section><section><button>Delete account</button><p class="help">Delete help</p></section><section><h3>Usage</h3></section><section class="toolbar"><button>Sign out</button></section>`;
+    await page.goto(`data:text/html,${encodeURIComponent(fixture(0))}`);
+    const defects = await auditBorderSpacing(page);
+    for (const label of ['After divider', 'Delete help', 'Usage', 'Sign out'])
+      assert.ok(
+        defects.some((issue) => issue.text.startsWith(label)),
+        `The border audit must detect ${label}`,
+      );
+    await page.goto(`data:text/html,${encodeURIComponent(fixture(8))}`);
+    assert.deepEqual(await auditBorderSpacing(page), []);
+    await contract.close();
+  }
   for (const width of process.env.TOUCH_WIDTHS?.split(',').map(Number) ??
-    (spacing ? [320, 390, 1440] : [320, 390]))
+    (spacing || borders ? [320, 390, 1440] : [320, 390]))
     for (const scheme of process.env.TOUCH_SCHEMES?.split(',') ?? [
       'light',
       'dark',
@@ -70,6 +100,38 @@ try {
         (s) => localStorage.setItem('notesapp.theme', s),
         scheme,
       );
+      // A local asset build can be checked before the single Docker build.
+      // The final run omits this variable and reads the deployed image.
+      const assets = process.env.UI_AUDIT_ASSETS;
+      if (assets)
+        await c.route(`${base}/**`, async (route) => {
+          const request = route.request(),
+            url = new URL(request.url());
+          if (url.pathname.startsWith('/api/'))
+            return route.fulfill({ response: await route.fetch() });
+          const path = resolve(
+            assets,
+            request.isNavigationRequest() ? 'index.html' : `.${url.pathname}`,
+          );
+          if (
+            request.method() !== 'GET' ||
+            !path.startsWith(resolve(assets) + '/') ||
+            !existsSync(path)
+          )
+            return route.continue();
+          const types: Record<string, string> = {
+            '.html': 'text/html',
+            '.js': 'text/javascript',
+            '.css': 'text/css',
+            '.woff2': 'font/woff2',
+            '.png': 'image/png',
+            '.svg': 'image/svg+xml',
+          };
+          return route.fulfill({
+            body: readFileSync(path),
+            contentType: types[extname(path)] ?? 'application/octet-stream',
+          });
+        });
       const now = new Date().toISOString();
       await c.route('**/api/account', async (r) => {
         const response = await r.fetch(),
@@ -254,7 +316,11 @@ try {
             problems.push({ kind: 'page-overflow' });
           return problems;
         }, phone);
-        issues.push(...typography.problems, ...(measured?.issues ?? []));
+        issues.push(
+          ...typography.problems,
+          ...(measured?.issues ?? []),
+          ...(borders ? await auditBorderSpacing(p) : []),
+        );
         results.push({
           variant,
           screen: name,
@@ -309,7 +375,58 @@ try {
         } else await p.getByRole('button', { name, exact: true }).click();
       }
       await shot('drawer');
-      if (spacing) {
+      async function checkChoiceMenu(name: string) {
+        const state = await p.evaluate(() => {
+          const menu = document.querySelector('[role="menu"]');
+          if (!menu) throw new Error('Choice menu missing');
+          const current = menu.querySelector('[aria-checked="true"]');
+          if (!current)
+            throw new Error('Choice menu must state the current item');
+          const style = getComputedStyle(menu);
+          return {
+            checked: menu.querySelectorAll('[aria-checked="true"]').length,
+            check: current.querySelector('[data-menu-check] svg') !== null,
+            filled: current.classList.contains('bg-active'),
+            surface: style.backgroundColor,
+            border: style.borderBottomColor,
+            shadow: style.boxShadow,
+          };
+        });
+        assert.equal(state.checked, 1);
+        assert.equal(state.check, true);
+        assert.equal(state.filled, false);
+        if (scheme === 'dark') {
+          assert.equal(state.surface, 'rgb(42, 42, 42)');
+          assert.equal(state.border, 'rgb(58, 58, 57)');
+          assert.ok(
+            state.shadow.includes('0.4') && state.shadow.includes('0.55'),
+            state.shadow,
+          );
+        } else assert.equal(state.surface, 'rgb(255, 255, 255)');
+        await shot(name);
+        await p.keyboard.press('Escape');
+      }
+      await p
+        .getByRole('button', { name: 'Workspace: Personal', exact: true })
+        .click();
+      await checkChoiceMenu('workspace-menu');
+      const moreActions = p
+        .getByRole('button', { name: 'More drawer actions', exact: true })
+        .filter({ visible: true });
+      if (await moreActions.count()) {
+        await moreActions.click();
+        await p
+          .getByRole('menuitem', { name: 'Sort notes', exact: true })
+          .click();
+      } else
+        await p
+          .getByRole('button', { name: 'Sort notes', exact: true })
+          .filter({ visible: true })
+          .click();
+      await p.getByRole('menu', { name: 'Sort notes', exact: true }).waitFor();
+      await checkChoiceMenu('sort-menu');
+
+      if (spacing || borders) {
         await p
           .getByRole('button', { name: 'Calendar', exact: true })
           .filter({ visible: true })
@@ -329,7 +446,7 @@ try {
         })
         .waitFor();
       await shot('drawer-expanded');
-      if (spacing) {
+      if (spacing || borders) {
         const drift = await p.evaluate(async () => {
           const tree = document.querySelector(
             '[role="tree"][aria-multiselectable="true"]',
@@ -380,7 +497,7 @@ try {
         );
       }
 
-      if (spacing) {
+      if (spacing || borders) {
         await p
           .getByRole('button', {
             name: 'Actions for the note Home page',
@@ -461,7 +578,7 @@ try {
         .waitFor();
       await shot('shortcuts');
       await p.keyboard.press('Escape');
-      if (spacing) {
+      if (spacing || borders) {
         await p.keyboard.press('Control+p');
         await p
           .getByRole('dialog', {
@@ -538,7 +655,7 @@ try {
             .getByRole('button', { name: 'Revoke Design app', exact: true })
             .waitFor();
         await shot(`settings-${section}`);
-        if (spacing && section === 'appearance') {
+        if ((spacing || borders) && section === 'appearance') {
           await d
             .getByRole('switch', { name: 'Check spelling', exact: true })
             .scrollIntoViewIfNeeded();
@@ -620,13 +737,24 @@ try {
         }
         if (section === 'account') {
           await d
-            .getByRole('button', { name: 'Edit name', exact: true })
+            .getByRole('button', {
+              name: phone ? 'Name' : 'Edit name',
+              exact: true,
+            })
             .click();
           await d.getByRole('textbox', { name: 'Name', exact: true }).waitFor();
           await shot('account-name');
-          await d.getByRole('button', { name: 'Cancel', exact: true }).click();
           await d
-            .getByRole('button', { name: 'Delete account', exact: true })
+            .getByRole('button', {
+              name: phone ? 'Back to section' : 'Cancel',
+              exact: true,
+            })
+            .click();
+          await d
+            .getByRole('button', {
+              name: phone ? 'Delete account…' : 'Delete account',
+              exact: true,
+            })
             .click();
           await d
             .getByRole('heading', { name: 'Delete your account?', exact: true })
@@ -701,7 +829,7 @@ try {
         })
         .waitFor();
       await shot('trash');
-      if (spacing) {
+      if (spacing || borders) {
         await p
           .getByRole('button', {
             name: 'Actions for Personal/Reading/Reading list',
@@ -742,7 +870,7 @@ try {
           await p.keyboard.press('Escape');
         }
       }
-      if (spacing) {
+      if (spacing || borders) {
         await p
           .getByRole('button', { name: 'Note actions', exact: true })
           .click();
@@ -797,7 +925,11 @@ try {
         results.push({
           variant,
           screen: path,
-          issues: [...typography.problems, ...(measured?.issues ?? [])],
+          issues: [
+            ...typography.problems,
+            ...(measured?.issues ?? []),
+            ...(borders ? await auditBorderSpacing(auth) : []),
+          ],
           combinations: typography.combinations,
         });
       }
@@ -828,7 +960,11 @@ try {
       results.push({
         variant,
         screen: 'signup-error',
-        issues: [...typography.problems, ...(measured?.issues ?? [])],
+        issues: [
+          ...typography.problems,
+          ...(measured?.issues ?? []),
+          ...(borders ? await auditBorderSpacing(auth) : []),
+        ],
         combinations: typography.combinations,
       });
       await guest.close();

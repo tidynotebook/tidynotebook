@@ -27,8 +27,15 @@ export type Locator = {
 export type Request = { method(): string; url(): string };
 type Response = { json(): Promise<unknown> };
 type Route = {
+  request(): Request & { isNavigationRequest(): boolean };
+  continue(): Promise<void>;
   fetch(): Promise<Response>;
-  fulfill(options: { response?: Response; json: unknown }): Promise<void>;
+  fulfill(options: {
+    response?: Response;
+    json?: unknown;
+    body?: Uint8Array;
+    contentType?: string;
+  }): Promise<void>;
 };
 export type Page = {
   goto(url: string): Promise<unknown>;

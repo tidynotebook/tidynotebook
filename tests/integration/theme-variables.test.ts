@@ -545,6 +545,44 @@ await test('the first paint states the appearance of the variant it paints', () 
   assert.equal(github.style.get('colorScheme'), 'light');
 });
 
+await test('cached imported palettes keep their old property positions when overlay roles are added', () => {
+  const original = themeFamilies[0];
+  assert.ok(original);
+  const read = readThemeFile(themeFileText(original));
+  assert.ok(read.ok);
+  const family = importedThemeFamily('custom-cached', read.theme);
+  const variants = Object.fromEntries(
+    family.variants.map((theme) => [
+      theme.appearance,
+      {
+        id: theme.id,
+        values: themeProperties(theme)
+          .slice(0, -3)
+          .map(([, value]) => value),
+      },
+    ]),
+  );
+  const shown = family.variants[0];
+  assert.ok(shown);
+  const paint = firstPaint(
+    {
+      'notesapp.theme': shown.appearance,
+      'notesapp.theme-family': family.id,
+      [importedPaletteStorageKey]: JSON.stringify({
+        family: family.id,
+        variants,
+        file: themeFileText(family),
+      }),
+    },
+    shown.appearance === 'dark',
+  );
+  assert.equal(paint.style.get('--notes-bg'), shown.tokens.background);
+  assert.equal(paint.style.get('--notes-syntax-keyword'), shown.syntax.keyword);
+  assert.equal(paint.style.has('--notes-surface-overlay'), false);
+  for (const value of paint.style.values())
+    assert.equal(typeof value, 'string');
+});
+
 await test('the style of a menu that no class reaches reads the variables of its classes', async () => {
   // Review of issue 247: the completion list of the editor wrote the values
   // of the menu surface by hand. One table of `packages/ui` states each class

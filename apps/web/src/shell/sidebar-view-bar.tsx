@@ -94,8 +94,8 @@ export function SidebarViewBar({
       ))}
       <div className="mt-auto flex flex-col items-center gap-1">
         {[
-          { name: 'Trash', path: 'trash', icon: actionIcon(trashPageGlyph) },
           { name: 'Published links', path: 'published', icon: <LinkIcon /> },
+          { name: 'Trash', path: 'trash', icon: actionIcon(trashPageGlyph) },
         ].map((item) => {
           const to = `/w/${workspaceId}/${item.path}`,
             current = location.pathname === to;

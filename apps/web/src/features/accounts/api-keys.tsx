@@ -30,9 +30,11 @@ import {
 import { problemCode } from '../../lib/problem-text.ts';
 import { sectionOf, settingsSections } from '../../lib/page-sections.ts';
 import { useNow } from '../../shell/now.ts';
-import { SettingsSection } from './settings-section.tsx';
+import { relativeTime } from '../../lib/relative-time.ts';
+import { usePhoneSettings, SettingsSection } from './settings-section.tsx';
 
 export function ApiKeySettings(): ReactNode {
+  const phone = usePhoneSettings();
   const [keys, setKeys] = useState<readonly ApiKey[] | null>(null);
   const [error, setError] = useState('');
   const [load, setLoad] = useState(0);
@@ -92,7 +94,7 @@ export function ApiKeySettings(): ReactNode {
       ) : (
         <>
           {keys.length === 0 ? (
-            <p className="mb-3 mt-0 text-secondary text-muted">
+            <p className="ui-settings-empty mb-3 mt-0 text-secondary text-muted">
               No API keys. Create a key for your program.
             </p>
           ) : (
@@ -106,8 +108,10 @@ export function ApiKeySettings(): ReactNode {
                     <p className="m-0 break-words text-body text-strong">
                       {key.name}
                     </p>
-                    <p className="mb-0 mt-1 text-secondary text-muted">
-                      {apiKeyFacts(key, now)}
+                    <p className="ui-settings-meta mb-0 mt-1 text-secondary text-muted">
+                      {phone
+                        ? `Created ${relativeTime(key.createdAt, now)} · ${key.lastUsedAt === null ? 'Not used yet' : `Last used ${relativeTime(key.lastUsedAt, now)}`}`
+                        : apiKeyFacts(key, now)}
                     </p>
                   </div>
                   <Button
@@ -124,19 +128,32 @@ export function ApiKeySettings(): ReactNode {
             </ul>
           )}
           {keys.length >= maxApiKeys ? (
-            <p className="mb-3 mt-0 text-secondary text-muted">
+            <p className="ui-settings-empty mb-3 mt-0 text-secondary text-muted">
               Your account has 25 API keys. Revoke a key before you create
               another.
             </p>
           ) : null}
-          <Button
-            variant="secondary"
-            buttonRef={createButton}
-            disabled={keys.length >= maxApiKeys}
-            onClick={() => setCreating(true)}
-          >
-            Create API key
-          </Button>
+          {phone ? (
+            <button
+              type="button"
+              ref={createButton}
+              aria-label="Create API key"
+              className="ui-settings-phone-row ui-settings-action-link text-accent text-left text-body"
+              disabled={keys.length >= maxApiKeys}
+              onClick={() => setCreating(true)}
+            >
+              + Create API key
+            </button>
+          ) : (
+            <Button
+              variant="secondary"
+              buttonRef={createButton}
+              disabled={keys.length >= maxApiKeys}
+              onClick={() => setCreating(true)}
+            >
+              Create API key
+            </Button>
+          )}
         </>
       )}
       {creating ? (

@@ -502,14 +502,14 @@ const menuSurfaceParts = [
     value: 'var(--radius-lg)',
   },
   {
-    classes: 'border border-edge-subtle',
+    classes: 'border border-overlay-edge',
     property: 'border',
-    value: '1px solid var(--notes-border-subtle)',
+    value: '1px solid var(--notes-border-overlay)',
   },
   {
-    classes: 'bg-card',
+    classes: 'bg-overlay',
     property: 'backgroundColor',
-    value: 'var(--notes-surface-card)',
+    value: 'var(--notes-surface-overlay)',
   },
   { classes: 'p-1', property: 'padding', value: 'var(--spacing)' },
   {
@@ -641,7 +641,7 @@ export function selectClassName(): string {
  * each key.
  */
 export function kbdClassName(): string {
-  return 'inline-flex items-center rounded-sm border border-edge-line bg-surface px-2 font-mono text-small text-muted';
+  return 'inline-flex items-center rounded-sm border border-edge-line bg-surface px-2 py-1 font-mono text-small text-muted';
 }
 
 /**
@@ -830,7 +830,8 @@ export function switchClassNames(checked: boolean): {
   return {
     row: rowClassName({
       flush: true,
-      className: 'ui-setting-row ui-setting-align w-full text-left',
+      className:
+        'ui-settings-phone-row ui-setting-row ui-setting-align w-full text-left',
     }),
     track: `inline-flex h-6 w-10 shrink-0 items-center rounded-full border border-edge-line p-1 ${checked ? 'justify-end bg-accent-fill' : 'justify-start bg-hover'}`,
     thumb: `size-4 rounded-full ${checked ? 'bg-on-accent' : 'bg-muted'}`,

@@ -373,3 +373,35 @@ await test('every theme states its appearance as the colour scheme', () => {
     );
   }
 });
+
+await test('overlay surfaces retain text and icon contrast in every palette', () => {
+  for (const family of themeFamilies) {
+    for (const theme of Object.values(family.variants)) {
+      if (!theme) continue;
+      const overlay = derivedValue(theme.tokens, 'surfaceOverlay');
+      for (const colour of [theme.tokens.textStrong, theme.tokens.textMuted]) {
+        assert.ok(
+          contrastRatio(colour, derivedValue(theme.tokens, 'cardRaised')) >=
+            4.5,
+        );
+        assert.ok(
+          contrastRatio(colour, overlay) >= 4.5,
+          `${theme.id}: overlay contrast`,
+        );
+      }
+      assert.ok(parseHexColor(derivedValue(theme.tokens, 'borderOverlay')));
+    }
+  }
+  assert.equal(
+    derivedValue(defaultThemeFor('dark').tokens, 'surfaceOverlay'),
+    '#2a2a2a',
+  );
+  assert.equal(
+    derivedValue(defaultThemeFor('dark').tokens, 'borderOverlay'),
+    '#3a3a39',
+  );
+  assert.equal(
+    derivedValue(defaultThemeFor('light').tokens, 'surfaceOverlay'),
+    '#ffffff',
+  );
+});

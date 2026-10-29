@@ -408,6 +408,9 @@
   --color-app: var(--notes-bg, #191919);
   --color-surface: var(--notes-surface, #141414);
   --color-card: var(--notes-surface-card, #222222);
+  --color-card-raised: var(--notes-card-raised, #282828);
+  --color-overlay: var(--notes-surface-overlay, #2a2a2a);
+  --color-overlay-edge: var(--notes-border-overlay, #3a3a39);
   --color-hover: var(--notes-surface-hover, #2b2b2b);
   --color-active: var(--notes-surface-active, #323232);
   --color-ink: var(--notes-text, #d0cfcc);
@@ -525,5 +528,18 @@
 @utility phone-sheet-fill {
   & [role='tree'] {
     max-height: none;
+  }
+}
+
+/* Overlay depth follows appearance, including imported dark themes. */
+[data-theme='dark'] {
+  --shadow-overlay:
+    0 2px 4px color-mix(in srgb, var(--notes-scrim, #000000) 40%, transparent),
+    0 12px 32px color-mix(in srgb, var(--notes-scrim, #000000) 55%, transparent);
+}
+@layer utilities {
+  /* Tailwind expands its shadow recipe. Read the live token on dark overlays. */
+  [data-theme='dark'] .shadow-overlay {
+    box-shadow: var(--shadow-overlay);
   }
 }

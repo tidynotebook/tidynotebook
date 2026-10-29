@@ -27,6 +27,7 @@
     --ui-page-top: 24px;
     --ui-page-gap: 16px;
     --ui-section-gap: 24px;
+    --ui-heading-rule-pad: 8px;
   }
   @media (pointer: coarse) {
     :root {
@@ -133,6 +134,9 @@
 }
 @utility ui-group-heading {
   margin: 0 0 var(--ui-group-gap);
+  &.border-b {
+    padding-bottom: var(--ui-heading-rule-pad);
+  }
 }
 @utility ui-dialog-heading {
   padding: 20px 20px 0;
@@ -289,11 +293,11 @@
 /* Phone edges, headers, and groups use one layout at every sheet level. */
 @utility ui-settings-list {
   &.ui-settings-list {
+    & nav > .ui-section {
+      margin-top: var(--ui-section-gap);
+    }
     @media (max-width: 1023px) and (pointer: coarse) {
       padding: 8px 8px 0;
-      & nav > .ui-section {
-        margin-top: var(--ui-section-gap);
-      }
       & .ui-group-heading {
         padding-inline: 8px;
       }
@@ -487,6 +491,305 @@
       & .ui-drawer-actions-more {
         display: contents;
       }
+    }
+  }
+}
+
+/* Action help clears the full control when a row uses the phone layout. */
+@utility ui-setting-action-row {
+  @media (pointer: coarse) {
+    &:has([data-setting-control] .ui-button) {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      row-gap: var(--ui-help-gap);
+      & [data-setting-label] {
+        min-height: var(--ui-control-height);
+        padding-top: calc((var(--ui-control-height) - 1lh) / 2);
+      }
+      & [data-setting-control] {
+        min-height: var(--ui-control-height);
+      }
+      & [data-setting-control] .ui-button {
+        margin-block: 0;
+      }
+      & [data-setting-help] {
+        grid-column: 1 / -1;
+      }
+    }
+  }
+}
+@utility ui-group-content {
+  & > :first-child {
+    margin-top: 0;
+  }
+}
+
+/* Phone Settings uses one card and row contract. Fine pointers keep flat rows. */
+@utility ui-phone-only {
+  display: none;
+  @media (pointer: coarse) and (width < 64rem) {
+    display: block;
+  }
+}
+@layer utilities {
+  @media (pointer: coarse) and (width < 64rem) {
+    :root {
+      --ui-settings-row-height: 52px;
+      --ui-settings-row-pad: 12px;
+      --ui-settings-help-gap: 2px;
+      --ui-settings-group-gap: 24px;
+      --ui-settings-card-radius: 12px;
+      --ui-settings-heading-gap: 8px;
+    }
+    .phone-sheet .ui-settings-navigation {
+      background: var(--color-card);
+    }
+    .phone-sheet .ui-settings-sections > .ui-section {
+      margin-top: var(--ui-settings-group-gap);
+    }
+    .phone-sheet .ui-settings-sections > .ui-section:first-child {
+      margin-top: 16px;
+    }
+    .phone-sheet .ui-settings-content .ui-group-heading,
+    .phone-sheet .ui-settings-list .ui-group-heading {
+      padding: 0 16px;
+      margin-bottom: var(--ui-settings-heading-gap);
+      border: 0;
+    }
+    .phone-sheet .ui-settings-content .ui-group-toolbar {
+      row-gap: 8px;
+    }
+    .phone-sheet .ui-settings-content .ui-group-after {
+      margin-top: var(--ui-settings-group-gap);
+    }
+    .ui-settings-card {
+      overflow: hidden;
+      border-radius: var(--ui-settings-card-radius);
+      background: var(--color-card-raised);
+    }
+    .phone-sheet .ui-settings-list {
+      padding-inline: 16px;
+    }
+    .phone-sheet .ui-settings-list .ui-account-card {
+      margin-inline: 0;
+    }
+    .phone-sheet .ui-settings-list nav > .ui-section {
+      margin-top: var(--ui-settings-group-gap);
+    }
+    .phone-sheet .ui-settings-list nav > .ui-section:first-child {
+      margin-top: 16px;
+    }
+    .phone-sheet .ui-settings-content .ui-settings-card .ui-settings-phone-row,
+    .phone-sheet .ui-settings-content .ui-settings-card .ui-list-row,
+    .phone-sheet
+      .ui-settings-list
+      nav
+      .ui-settings-card
+      li
+      > button.ui-tree-row {
+      position: relative;
+      width: 100%;
+      min-height: var(--ui-settings-row-height);
+      height: auto;
+      padding: var(--ui-settings-row-pad) 16px;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: nowrap;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+    .ui-settings-card .ui-settings-phone-row + .ui-settings-phone-row::before,
+    .ui-settings-card .ui-list-row + .ui-list-row::before,
+    .ui-settings-list .ui-settings-card li + li > button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 16px;
+      right: 0;
+      height: 1px;
+      background: var(--color-edge-subtle);
+    }
+    .phone-sheet .ui-settings-content .ui-settings-card .ui-setting-row {
+      display: flex;
+    }
+    .phone-sheet .ui-settings-content .ui-settings-card [data-setting-text] {
+      display: block;
+      min-width: 0;
+      flex: 1 1 0%;
+    }
+    .phone-sheet .ui-settings-content .ui-settings-card [data-setting-label] {
+      min-height: 0;
+      padding-top: 0;
+      white-space: normal;
+      overflow: visible;
+    }
+    .phone-sheet .ui-settings-content .ui-settings-card [data-setting-help] {
+      display: block;
+      width: auto;
+      margin: var(--ui-settings-help-gap) 0 0;
+      -webkit-line-clamp: unset;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+    .phone-sheet
+      .ui-settings-content
+      .ui-settings-card
+      [data-setting-help]:empty {
+      display: none;
+      margin: 0;
+    }
+    .phone-sheet .ui-settings-content .ui-settings-card [data-setting-control] {
+      min-height: 0;
+      margin: 0;
+      align-self: center;
+      max-width: 60%;
+    }
+    .phone-sheet
+      .ui-settings-content
+      .ui-settings-card
+      [data-setting-control]
+      .truncate {
+      white-space: normal;
+      overflow: visible;
+      overflow-wrap: anywhere;
+      text-overflow: clip;
+    }
+    .phone-sheet .ui-settings-content .ui-settings-card .ui-button {
+      min-height: 44px;
+      height: 44px;
+      margin: -8px 0;
+      padding-inline: 0;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+    .phone-sheet .ui-settings-content .ui-settings-card .ui-button > svg {
+      display: none;
+    }
+    .phone-sheet
+      .ui-settings-content
+      .ui-settings-card
+      .ui-settings-action-link {
+      display: block;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .phone-sheet
+      .ui-settings-content
+      .ui-settings-card
+      .ui-settings-action-link:disabled {
+      color: var(--color-muted);
+      cursor: default;
+    }
+    .ui-settings-action-link:focus-visible {
+      outline: 2px solid var(--color-focus);
+      outline-offset: -2px;
+    }
+    .phone-sheet
+      .ui-settings-content
+      .ui-settings-card
+      .ui-setting-align
+      > [aria-hidden='true'] {
+      margin-top: 0;
+    }
+    .phone-sheet
+      .ui-settings-content
+      .ui-settings-card
+      .ui-list-row
+      > [aria-hidden='true']
+      svg {
+      width: 20px;
+      height: 20px;
+    }
+    .phone-sheet
+      .ui-settings-content
+      .ui-settings-card
+      .ui-list-row
+      > .min-w-0 {
+      flex: 1;
+    }
+    .phone-sheet .ui-settings-content .ui-settings-card .ui-settings-empty {
+      margin: 0;
+      padding: 12px 16px;
+    }
+    .phone-sheet .ui-settings-content .ui-settings-card ul {
+      margin: 0;
+    }
+    .phone-sheet .ui-settings-content .ui-settings-card:has(.ui-theme-tiles),
+    .phone-sheet
+      .ui-settings-content
+      .ui-settings-card:has(> .ui-settings-group-stack) {
+      background: transparent;
+      overflow: visible;
+    }
+    .phone-sheet
+      .ui-settings-content
+      .ui-settings-card
+      .ui-settings-switch-wrap {
+      border: 0;
+    }
+    .phone-sheet .ui-settings-content .ui-settings-card .ui-settings-meta {
+      margin: var(--ui-settings-help-gap) 0 0;
+    }
+    .ui-settings-storage-row {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      column-gap: 16px;
+      padding: 12px 16px;
+      margin-top: 0;
+    }
+    .ui-settings-storage-row > div {
+      display: contents;
+    }
+    .ui-settings-storage-row > div > p {
+      @apply text-value;
+      grid-column: 2;
+      grid-row: 1;
+      text-align: right;
+      margin: 0;
+    }
+    .ui-settings-storage-row [role='meter'] {
+      grid-column: 1 / -1;
+      margin-top: 8px;
+    }
+    .phone-sheet .ui-settings-content .ui-settings-joined {
+      overflow: hidden;
+      border-radius: var(--ui-settings-card-radius);
+      background: var(--color-card-raised);
+    }
+    .ui-settings-joined > .ui-section,
+    .ui-settings-joined > .ui-section > .ui-section,
+    .ui-settings-joined .ui-group-content {
+      display: contents;
+    }
+    .ui-settings-joined
+      > .ui-section
+      + .ui-section
+      .ui-settings-phone-row::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 16px;
+      right: 0;
+      height: 1px;
+      background: var(--color-edge-subtle);
+    }
+  }
+}
+@layer utilities {
+  @media (pointer: coarse) and (width < 64rem) {
+    .phone-sheet
+      .ui-settings-list
+      nav
+      .ui-settings-card
+      li
+      > button
+      > span:first-child
+      svg {
+      width: 20px;
+      height: 20px;
     }
   }
 }

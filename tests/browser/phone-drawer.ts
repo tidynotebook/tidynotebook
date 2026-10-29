@@ -50,6 +50,14 @@ try {
         .getByRole('button', { name: 'Account: UI review', exact: true })
         .waitFor();
       const panel = p.locator('#notes-sidebar');
+      assert.deepEqual(
+        await p.evaluate(() =>
+          [...document.querySelectorAll('[aria-label="Sidebar views"] a')].map(
+            (e) => e.getAttribute('aria-label'),
+          ),
+        ),
+        ['Published links', 'Trash'],
+      );
       const open = async () => {
         await p
           .getByRole('button', { name: 'Open navigation', exact: true })
@@ -246,8 +254,8 @@ try {
       assert.equal(box?.height, phone ? 36 : 32);
       results.push(`${width} ${scheme}: compact footer`);
       for (const [name, path] of [
-        ['Trash', 'trash'],
         ['Published links', 'published'],
+        ['Trash', 'trash'],
       ] as const) {
         await panel.getByRole('link', { name: name, exact: true }).click();
         await p

@@ -83,7 +83,11 @@
         // loop above wrote, so it follows the palette with no colour here.
         root.style.scrollbarColor = 'var(--notes-border) transparent';
         for (var index = 0; index < themes.properties.length; index += 1)
-          root.style.setProperty(themes.properties[index], theme.values[index]);
+          if (typeof theme.values[index] === 'string')
+            root.style.setProperty(
+              themes.properties[index],
+              theme.values[index],
+            );
         root.style.background = theme.values[0];
         var colour = document.querySelector('meta[name="theme-color"]');
         if (colour) colour.setAttribute('content', theme.values[0]);
