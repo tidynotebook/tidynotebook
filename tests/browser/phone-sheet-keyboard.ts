@@ -420,7 +420,7 @@ try {
         );
         await shot('name-format-keyboard');
         await page.setViewportSize({ width, height });
-        await page.goto(`${home}?settings=api-keys`);
+        await page.goto(`${home}?settings=api-keys-apps`);
         await dialog()
           .getByRole('button', { name: 'Create API key', exact: true })
           .click();
