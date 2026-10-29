@@ -64,7 +64,8 @@ export async function auditSpacing(page: Page) {
     for (const e of document.querySelectorAll('.ui-field')) {
       if (!visible(e)) continue;
       const style = getComputedStyle(e);
-      check(e, 'field-height', e.getBoundingClientRect().height, role.field);
+      if (!(e instanceof HTMLTextAreaElement))
+        check(e, 'field-height', e.getBoundingClientRect().height, role.field);
       check(e, 'field-left-pad', parseFloat(style.paddingLeft), spec.fieldPad);
       check(
         e,

@@ -60,6 +60,10 @@
     min-height: var(--ui-field-height);
     padding-inline: 12px;
   }
+  &.ui-field:where(textarea) {
+    height: auto;
+    padding-block: 8px;
+  }
   &.ui-select {
     padding-right: 36px;
   }
