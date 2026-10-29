@@ -104,6 +104,7 @@ try {
             await touch('touchMove', x - (distance * i) / 4, y);
             await pause(fast ? 8 : 60);
           }
+          await pause(30);
           const mid = await measure();
           assert.ok(mid.x < -distance + 3, `Direct drag: ${mid.x}`);
           assert.ok(mid.opacity < 0.99);
@@ -169,6 +170,28 @@ try {
         );
         results.push(`${width} ${scheme}: ${name} rail navigation`);
       }
+      await p.evaluate(() => {
+        Object.defineProperty(navigator, 'onLine', {
+          configurable: true,
+          get: () => false,
+        });
+        window.dispatchEvent(new Event('offline'));
+      });
+      await panel
+        .getByRole('button', {
+          name: 'Offline. Show save details',
+          exact: true,
+        })
+        .click();
+      const details = p.getByRole('dialog', {
+        name: 'Save status',
+        exact: true,
+      });
+      await details
+        .getByText('Offline. Saved on this device.', { exact: true })
+        .filter({ visible: true })
+        .waitFor();
+      results.push(`${width} ${scheme}: offline status details`);
       await c.close();
     }
   assert.deepEqual(writes, []);
