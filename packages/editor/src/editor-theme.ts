@@ -315,15 +315,15 @@ export function panelRules(): Record<
     },
     '.cm-np-search-row': {
       display: 'flex',
-      flexWrap: 'wrap',
+      flexWrap: 'nowrap',
       alignItems: 'center',
-      columnGap: 'calc(var(--spacing) * 2)',
+      columnGap: 'calc(var(--spacing) * 1)',
       rowGap: 'calc(var(--spacing) * 1)',
     },
     // A field takes the room that the buttons leave on its band.
+    '.cm-np-search-row[hidden]': { display: 'none' },
     '.cm-np-search-field': {
-      flex: '1 1 calc(var(--spacing) * 48)',
-      width: 'auto',
+      width: '100%',
       minWidth: '0',
     },
     // A match is a place the person looks for, so it takes the tint of a

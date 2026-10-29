@@ -264,6 +264,7 @@
   --container-settings: 58.75rem;
   --height-settings: 38.75rem;
   --height-template: 35rem;
+  --spacing-sheet: 92dvh;
   --spacing-note-block: calc(var(--spacing) * 2);
   --text-note-mono: 0.9em;
   /*
@@ -498,5 +499,15 @@
   }
   .public-footer-brand {
     grid-column: 1/-1;
+  }
+}
+
+@utility phone-sheet {
+  & > form {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+    overflow: hidden;
   }
 }

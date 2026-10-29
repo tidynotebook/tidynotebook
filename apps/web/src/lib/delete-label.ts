@@ -22,3 +22,6 @@ export const trashPageGlyph: ActionIconName = 'trash';
 
 /** A folder is removed while its notes go to Trash. */
 export const deleteFolderLabel = 'Delete folder';
+
+/** The permanent Trash action. */
+export const deleteTrashLabel = 'Delete for good';

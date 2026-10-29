@@ -899,3 +899,13 @@ export function KeyIcon(props: IconProps): ReactNode {
     </IconFrame>
   );
 }
+
+/** Two arrows show the replace controls. */
+export function ReplaceIcon(props: IconProps): ReactNode {
+  return (
+    <IconFrame {...props}>
+      <path d="M4 7h12l-3-3" />
+      <path d="M20 17H8l3 3" />
+    </IconFrame>
+  );
+}

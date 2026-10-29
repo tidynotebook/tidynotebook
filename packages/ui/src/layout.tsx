@@ -288,7 +288,13 @@ export function PageHeader({
   const back = useContext(PageBackContext);
   return (
     <div className="mb-6 flex flex-wrap items-start justify-between gap-group">
-      <div className="min-w-0 grow basis-full sm:basis-0">
+      <div
+        className={
+          actionLayout === 'inline'
+            ? 'min-w-0 grow basis-0'
+            : 'min-w-0 grow basis-full sm:basis-0'
+        }
+      >
         <div className="flex min-w-0 items-center gap-1">
           {back}
           <h1

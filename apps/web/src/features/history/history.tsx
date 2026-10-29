@@ -560,11 +560,11 @@ function HistoryDetail({
       }))}
     >
       <PageHeader
-        title={`Version history of ${name}`}
+        title="Version history"
         description={
           head.status === 'ready' && head.kind === 'attachment'
-            ? 'Open a version to preview the image. Restore makes it the newest version.'
-            : 'Restore makes a version the newest. Nothing is lost.'
+            ? `${name}. Open a version to preview the image. Restore makes it the newest version.`
+            : `${name}. Restore makes a version the newest. Nothing is lost.`
         }
       />
       <div className="space-y-4">
@@ -642,7 +642,7 @@ function HistoryDetail({
                               <span className="truncate text-body text-strong">
                                 {label}
                               </span>
-                              <span className="truncate text-secondary text-muted">
+                              <span className="line-clamp-2 text-secondary text-muted lg:line-clamp-1">
                                 Changes at this save:{' '}
                                 {rowReading(change, item.merged)}
                               </span>

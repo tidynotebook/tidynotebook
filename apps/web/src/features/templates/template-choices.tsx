@@ -16,6 +16,7 @@ import {
 import {
   Button,
   DialogFooter,
+  PhoneSheetHeader,
   EmptyState,
   rowClassName,
   TextField,
@@ -253,7 +254,38 @@ export default function TemplateChoices({
         submit();
       }}
     >
-      <header className="flex h-14 shrink-0 items-center gap-2 px-3 lg:h-16 lg:px-5">
+      <div className="lg:hidden">
+        <PhoneSheetHeader
+          title={details ? selectedLabel : 'New note from template'}
+          onClose={onClose}
+          leading={
+            details ? (
+              <Button
+                variant="ghost"
+                icon={<ChevronLeftIcon />}
+                label="Back to templates"
+                onClick={back}
+              />
+            ) : (
+              <Button
+                variant="ghost"
+                icon={<CloseIcon />}
+                label="Close template dialog"
+                onClick={onClose}
+              />
+            )
+          }
+          trailing={
+            <Button
+              variant="ghost"
+              icon={details ? <CloseIcon /> : <SettingsIcon />}
+              label={details ? 'Close template dialog' : 'Manage templates'}
+              onClick={details ? onClose : manage}
+            />
+          }
+        />
+      </div>
+      <header className="hidden h-14 shrink-0 items-center gap-2 px-3 lg:flex lg:h-16 lg:px-5">
         <span className="lg:hidden">
           <Button
             variant="ghost"

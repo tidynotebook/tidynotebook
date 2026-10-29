@@ -1,12 +1,14 @@
 /** Pure layout choices shared by the page primitives. */
 
 /** How the actions below a page title use their row. */
-export type PageHeaderActionLayout = 'cluster' | 'split';
+export type PageHeaderActionLayout = 'cluster' | 'split' | 'inline';
 
 /** The layout of the action area of a page header. */
 export function pageHeaderActionsClassName(
   layout: PageHeaderActionLayout,
 ): string {
+  if (layout === 'inline')
+    return 'ml-auto flex shrink-0 items-center gap-cluster';
   return layout === 'split'
     ? 'flex w-full items-center justify-between gap-group'
     : 'flex shrink-0 items-center gap-cluster';

@@ -86,3 +86,19 @@ export const arrowDownParts: readonly GlyphPart[] = [
   { kind: 'path', d: 'M12 5v14' },
   { kind: 'polyline', points: '5 12 12 19 19 12' },
 ];
+
+/** The glyph of `ChevronDownIcon`. */
+export const chevronDownParts: readonly GlyphPart[] = [
+  { kind: 'polyline', points: '6 9 12 15 18 9' },
+];
+/** The glyph of `MoreIcon`. */
+export const moreParts: readonly GlyphPart[] = [
+  { kind: 'circle', cx: 12, cy: 5, r: 1.5 },
+  { kind: 'circle', cx: 12, cy: 12, r: 1.5 },
+  { kind: 'circle', cx: 12, cy: 19, r: 1.5 },
+];
+/** The glyph of `ReplaceIcon`. */
+export const replaceParts: readonly GlyphPart[] = [
+  { kind: 'path', d: 'M4 7h12l-3-3' },
+  { kind: 'path', d: 'M20 17H8l3 3' },
+];

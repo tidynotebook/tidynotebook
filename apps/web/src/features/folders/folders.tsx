@@ -288,6 +288,7 @@ export function MoveItemsDialog({
       onClose={onClose}
       title={`Move ${moveSubject(items)} to`}
       titleId="move-items-title"
+      fillSheet
       headerActions
       width="small"
       returnFocus={returnFocus}

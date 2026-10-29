@@ -25,8 +25,10 @@ import type { LocalStore } from '@notesapp/sync';
 import { generateUUID } from '@notesapp/core';
 import {
   Button,
-  CheckIcon,
-  CloseIcon,
+  Dialog,
+  DialogBody,
+  DialogFooter,
+  Menu,
   EmptyState,
   ListRow,
   LoadingState,
@@ -34,14 +36,9 @@ import {
   Page,
   pageGroupLabelClassName,
   PageHeader,
-  transitionAction,
 } from '@notesapp/ui';
-import { actionIcon, emptyStateIcon } from '../../shell/action-icons.tsx';
-import {
-  deleteForGoodLabel,
-  deleteGlyph,
-  trashPageGlyph,
-} from '../../lib/delete-label.ts';
+import { emptyStateIcon } from '../../shell/action-icons.tsx';
+import { deleteTrashLabel, trashPageGlyph } from '../../lib/delete-label.ts';
 import {
   problemMessage,
   useLocalStore,
@@ -53,8 +50,6 @@ import { displayNoteName } from '../../lib/note-name.ts';
 import { folderOf, relativeTime } from '../../lib/relative-time.ts';
 import {
   mergeTrash,
-  trashActionLayerClassName,
-  trashActionSlotClassName,
   trashListClassName,
   type TrashItem,
 } from '../../lib/trash-view.ts';
@@ -127,89 +122,6 @@ export function TrashView(): ReactNode {
       accountId={accountId}
       workspaceId={workspaceId}
     />
-  );
-}
-
-/**
- * The two compact choices that replace a Delete action.
- *
- * The safe choice takes focus and sits at the right edge. A second press at
- * the place of the Delete action therefore cancels instead of confirming.
- */
-function DeleteConfirmation({
-  active,
-  confirmLabel,
-  cancelLabel,
-  disabled,
-  onConfirm,
-  onCancel,
-}: {
-  /** The confirmation shows. An inactive one only holds its size. */
-  readonly active: boolean;
-  readonly confirmLabel: string;
-  readonly cancelLabel: string;
-  readonly disabled: boolean;
-  readonly onConfirm: () => void;
-  readonly onCancel: () => void;
-}): ReactNode {
-  const cancelRef = useRef<HTMLButtonElement | null>(null);
-  useEffect(() => {
-    if (active) cancelRef.current?.focus();
-  }, [active]);
-  return (
-    <div
-      className={`flex items-center gap-cluster ${transitionAction}`}
-      role="group"
-      aria-label="Confirm delete"
-    >
-      <Button
-        variant="danger"
-        size="sm"
-        disabled={disabled}
-        icon={<CheckIcon />}
-        label={confirmLabel}
-        compact
-        onClick={onConfirm}
-      />
-      <Button
-        buttonRef={cancelRef}
-        variant="ghost"
-        size="sm"
-        disabled={disabled}
-        icon={<CloseIcon />}
-        label={cancelLabel}
-        compact
-        onClick={onCancel}
-      />
-    </div>
-  );
-}
-
-/**
- * The place of one destructive action and the confirmation that replaces it.
- *
- * Both stay in one cell, and the one not in use is unseen and out of the tab
- * order, so the slot always has the width of the wider of the two and nothing
- * beside it moves when a person starts or ends a confirmation.
- */
-function ActionSlot({
-  place,
-  confirming,
-  action,
-  confirmation,
-}: {
-  readonly place: 'row' | 'header';
-  readonly confirming: boolean;
-  readonly action: ReactNode;
-  readonly confirmation: ReactNode;
-}): ReactNode {
-  return (
-    <div className={trashActionSlotClassName(place)}>
-      <div className={trashActionLayerClassName(confirming)}>{action}</div>
-      <div className={trashActionLayerClassName(!confirming)}>
-        {confirmation}
-      </div>
-    </div>
   );
 }
 
@@ -411,38 +323,65 @@ function TrashList({
     <Page>
       <PageHeader
         title="Trash"
-        description="Restore puts a note back with your notes. Delete removes the note and its versions for good."
+        description="Restore puts a note back. Notes stay here until you delete them."
+        actionLayout="inline"
         actions={
           items.length === 0 ? undefined : (
-            <ActionSlot
-              place="header"
-              confirming={confirming?.kind === 'all'}
-              action={
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  tone="danger"
-                  compact
-                  disabled={busy || items.some((item) => item.pending)}
-                  onClick={() => setConfirming({ kind: 'all' })}
-                >
-                  Clear all
-                </Button>
-              }
-              confirmation={
-                <DeleteConfirmation
-                  active={confirming?.kind === 'all'}
-                  confirmLabel={`Delete all ${String(items.length)} notes for good`}
-                  cancelLabel="Keep all notes in Trash"
-                  disabled={busy || items.some((item) => item.pending)}
-                  onConfirm={() => deleteForever(items)}
-                  onCancel={() => setConfirming(null)}
-                />
-              }
+            <Menu
+              label="Trash actions"
+              items={[
+                {
+                  id: 'empty',
+                  label: 'Empty Trash',
+                  danger: true,
+                  disabled: busy || items.some((item) => item.pending),
+                  onSelect: () => setConfirming({ kind: 'all' }),
+                },
+              ]}
             />
           )
         }
       />
+      <Dialog
+        open={confirming !== null}
+        onClose={() => setConfirming(null)}
+        title={
+          confirming?.kind === 'all' ? 'Empty Trash?' : `${deleteTrashLabel}?`
+        }
+        titleId="trash-confirm-title"
+        width="small"
+        align="center"
+      >
+        <DialogBody>
+          <p className="m-0 text-body text-strong">
+            {confirming?.kind === 'all'
+              ? `All ${items.length} notes and their versions go for good. You cannot undo this.`
+              : `"${displayNoteName(items.find((item) => item.fileId === (confirming?.kind === 'one' ? confirming.fileId : ''))?.path ?? '')}" and its versions go for good. You cannot undo this.`}
+          </p>
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => setConfirming(null)}>
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            disabled={busy}
+            onClick={() =>
+              deleteForever(
+                confirming?.kind === 'all'
+                  ? items
+                  : items.filter(
+                      (item) =>
+                        item.fileId ===
+                        (confirming?.kind === 'one' ? confirming.fileId : ''),
+                    ),
+              )
+            }
+          >
+            {confirming?.kind === 'all' ? 'Empty Trash' : deleteTrashLabel}
+          </Button>
+        </DialogFooter>
+      </Dialog>
       <div className="space-y-4">
         {outcome === null ? null : (
           <p className="sr-only" role="status" aria-live="polite">
@@ -471,17 +410,20 @@ function TrashList({
                   item.deletedAt === null
                     ? ''
                     : relativeTime(item.deletedAt, now);
-                const where = folder === null ? 'Top level' : folder;
+                const where = folder === null ? 'All notes' : folder;
                 const parts = [where];
                 if (when !== '') parts.push(`deleted ${when}`);
                 if (item.pending) parts.push('waiting to go up');
                 return (
-                  <ListRow key={item.fileId} className="flex-wrap">
+                  <ListRow
+                    key={item.fileId}
+                    className="border-b border-edge-subtle py-2"
+                  >
                     <div className="min-w-0 flex-1">
-                      <p className="m-0 truncate text-body text-strong">
+                      <p className="m-0 line-clamp-2 break-words text-body text-strong lg:line-clamp-1">
                         {folder === null ? name : name.slice(folder.length + 1)}
                       </p>
-                      <p className="m-0 truncate text-secondary text-muted">
+                      <p className="m-0 break-words text-secondary text-muted">
                         {parts.join(' \u00b7 ')}
                       </p>
                     </div>
@@ -496,43 +438,27 @@ function TrashList({
                       >
                         Restore
                       </Button>
-                      <ActionSlot
-                        place="row"
-                        confirming={
-                          confirming?.kind === 'one' &&
-                          confirming.fileId === item.fileId
-                        }
-                        action={
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            tone="danger"
-                            disabled={busy || item.pending}
-                            icon={actionIcon(deleteGlyph)}
-                            label={`${deleteForGoodLabel} ${name}`}
-                            onClick={() =>
+                      <Menu
+                        label={`Actions for ${name}`}
+                        items={[
+                          {
+                            id: 'restore',
+                            label: 'Restore',
+                            disabled: busy,
+                            onSelect: () => restore(item),
+                          },
+                          {
+                            id: 'delete',
+                            label: deleteTrashLabel,
+                            danger: true,
+                            disabled: busy || item.pending,
+                            onSelect: () =>
                               setConfirming({
                                 kind: 'one',
                                 fileId: item.fileId,
-                              })
-                            }
-                          >
-                            {deleteForGoodLabel}
-                          </Button>
-                        }
-                        confirmation={
-                          <DeleteConfirmation
-                            active={
-                              confirming?.kind === 'one' &&
-                              confirming.fileId === item.fileId
-                            }
-                            confirmLabel={`Delete ${name} for good`}
-                            cancelLabel={`Keep ${name} in Trash`}
-                            disabled={busy}
-                            onConfirm={() => deleteForever([item])}
-                            onCancel={() => setConfirming(null)}
-                          />
-                        }
+                              }),
+                          },
+                        ]}
                       />
                     </div>
                   </ListRow>

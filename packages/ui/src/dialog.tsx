@@ -21,6 +21,8 @@
  * [decision 0065](../../../docs/decisions/0065-one-recipe-for-a-control-and-one-grid-for-an-icon.md).
  */
 import {
+  Children,
+  isValidElement,
   createContext,
   useContext,
   useEffect,
@@ -44,6 +46,8 @@ import { isTouchInput } from './input-focus.ts';
 import { placeOverlay } from './overlay-position.ts';
 import { followVisibleArea, readVisibleArea } from './visible-area.ts';
 import { giveFocusBack } from './dialog-focus.ts';
+import { PhoneSheetHeader } from './phone-sheet.tsx';
+import { Button } from './controls.tsx';
 import { transitionRaise } from './motion.ts';
 
 export type { DialogWidth } from './dialog-classes.ts';
@@ -99,7 +103,9 @@ export function Dialog({
   anchor,
   actions,
   headerActions = false,
+  fillSheet = false,
 }: {
+  readonly fillSheet?: boolean;
   readonly anchor?: HTMLElement | null;
   /** Controls at the end of the title row, such as a link to settings. */
   readonly actions?: ReactNode;
@@ -118,6 +124,20 @@ export function Dialog({
   /** Gives the focus back on close, in place of the element that opened it. */
   readonly returnFocus?: (() => void) | undefined;
 }): ReactNode {
+  const [phone, setPhone] = useState(
+    () =>
+      typeof window !== 'undefined' &&
+      window.matchMedia('(max-width: 1023px) and (pointer: coarse)').matches,
+  );
+  useEffect(() => {
+    const media = window.matchMedia(
+      '(max-width: 1023px) and (pointer: coarse)',
+    );
+    const change = (): void => setPhone(media.matches);
+    media.addEventListener('change', change);
+    return () => media.removeEventListener('change', change);
+  }, []);
+  const swipe = useRef<{ x: number; y: number } | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const [headerTarget, setHeaderTarget] = useState<HTMLDivElement | null>(null);
   const openerRef = useRef<HTMLElement | null>(null);
@@ -252,8 +272,11 @@ export function Dialog({
   if (!open) return null;
 
   const screen = width === 'screen';
-  const root = `${dialogRootClassName(width, align)} ${anchor == null ? '' : 'lg:bg-transparent'}`;
-  const panel = dialogPanelClassName(width);
+  const root = `${phone && width !== 'screen' ? 'h-viewport items-end bg-scrim/40' : dialogRootClassName(width, align)} ${anchor == null ? '' : 'lg:bg-transparent'}`;
+  const panel =
+    phone && width !== 'screen'
+      ? `phone-sheet flex max-h-sheet w-full flex-col overflow-hidden rounded-t-xl border border-edge-subtle bg-card text-strong shadow-modal outline-none ${width === 'settings' || width === 'template' ? 'h-full max-h-full' : fillSheet ? 'h-sheet' : ''}`
+      : dialogPanelClassName(width);
 
   return (
     <div
@@ -273,8 +296,55 @@ export function Dialog({
         aria-labelledby={titleId}
         aria-describedby={describedBy}
         tabIndex={-1}
+        onPointerDown={(event) => {
+          if (
+            phone &&
+            event.target instanceof Element &&
+            event.target.closest('[data-sheet-drag]')
+          )
+            swipe.current = { x: event.clientX, y: event.clientY };
+        }}
+        onPointerUp={(event) => {
+          const start = swipe.current;
+          swipe.current = null;
+          if (
+            start &&
+            event.clientY - start.y > 64 &&
+            event.clientY - start.y > Math.abs(event.clientX - start.x)
+          )
+            onClose();
+        }}
+        onPointerCancel={() => {
+          swipe.current = null;
+        }}
       >
-        {(actions === undefined && !headerActions) || hideTitle || screen ? (
+        {phone && !screen ? (
+          <div
+            data-sheet-drag=""
+            className="flex h-4 shrink-0 touch-none items-center justify-center"
+            aria-hidden="true"
+          >
+            <span className="h-1 w-9 rounded-full bg-edge-line" />
+          </div>
+        ) : null}
+        {phone && !hideTitle && !screen ? (
+          <PhoneSheetHeader
+            title={title}
+            titleId={titleId}
+            onClose={onClose}
+            trailing={
+              <>
+                {actions}
+                {headerActions ? (
+                  <div
+                    ref={setHeaderTarget}
+                    className="flex shrink-0 items-center"
+                  />
+                ) : null}
+              </>
+            }
+          />
+        ) : (actions === undefined && !headerActions) || hideTitle || screen ? (
           <h2
             className={dialogTitleClassName(hideTitle || screen)}
             id={titleId}
@@ -295,9 +365,13 @@ export function Dialog({
             ) : null}
           </div>
         )}
-        <DialogHeaderActionsContext.Provider value={headerTarget}>
-          {children}
-        </DialogHeaderActionsContext.Provider>
+        <PhoneSheetContext.Provider
+          value={phone && width !== 'screen' && width !== 'settings'}
+        >
+          <DialogHeaderActionsContext.Provider value={headerTarget}>
+            {children}
+          </DialogHeaderActionsContext.Provider>
+        </PhoneSheetContext.Provider>
       </div>
     </div>
   );
@@ -316,6 +390,8 @@ export function DialogHeaderAction({
   const target = useContext(DialogHeaderActionsContext);
   return target === null ? null : createPortal(children, target);
 }
+
+const PhoneSheetContext = createContext(false);
 
 const FixedDialogContext = createContext(false);
 
@@ -337,10 +413,11 @@ export function DialogBody({
   readonly children: ReactNode;
 }): ReactNode {
   const fixed = useContext(FixedDialogContext);
+  const phone = useContext(PhoneSheetContext);
   return (
     <div
       className={
-        fixed
+        fixed || phone
           ? 'min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-3'
           : 'px-5 py-3'
       }
@@ -363,6 +440,38 @@ export function DialogFooter({
   readonly children: ReactNode;
 }): ReactNode {
   const fixed = useContext(FixedDialogContext);
+  const phone = useContext(PhoneSheetContext);
+  if (phone) {
+    const nodes = Children.toArray(children);
+    const buttons = nodes.filter(
+      (node) => isValidElement(node) && node.type === Button,
+    );
+    const primary =
+      buttons.findLast(
+        (node) =>
+          isValidElement<{ variant?: string }>(node) &&
+          (node.props.variant === undefined ||
+            node.props.variant === 'primary' ||
+            node.props.variant === 'danger'),
+      ) ?? buttons.at(-1);
+    const extra = nodes.filter(
+      (node) =>
+        node !== primary &&
+        (!isValidElement<{ children?: ReactNode }>(node) ||
+          node.type !== Button ||
+          node.props.children !== 'Cancel'),
+    );
+    return (
+      <>
+        {extra.length === 0 ? null : (
+          <div className="shrink-0 px-5 pb-2">{extra}</div>
+        )}
+        <div className="shrink-0 border-t border-edge-subtle bg-card px-4 pb-5 pt-3 [&_button]:min-h-11 [&_button]:w-full">
+          {primary}
+        </div>
+      </>
+    );
+  }
   return (
     <div className={`${dialogFooterClassName()} ${fixed ? 'shrink-0' : ''}`}>
       {children}

@@ -32,7 +32,6 @@ import {
   replaceAll,
   replaceNext,
   SearchQuery,
-  selectMatches,
   setSearchQuery,
 } from '@codemirror/search';
 import { EditorState, type Extension } from '@codemirror/state';
@@ -44,10 +43,11 @@ import {
 } from '@codemirror/view';
 import {
   buttonClassName,
-  checkboxClassNames,
-  checkParts,
+  chevronDownParts,
+  moreParts,
+  replaceParts,
+  openOptionsSheet,
   closeParts,
-  compactButtonVisualClassName,
   fieldClassName,
   glyph,
 } from '@notesapp/ui';
@@ -181,29 +181,23 @@ function button(label: string, run: () => void): HTMLButtonElement {
   return control;
 }
 
-/** A checkbox of the panel with its label beside it. */
-function checkbox(
+/** An icon button has the same target and focus treatment as app controls. */
+function iconButton(
   label: string,
-  checked: boolean,
-  change: () => void,
-): { readonly element: HTMLLabelElement; readonly input: HTMLInputElement } {
-  const classes = checkboxClassNames();
-  const element = document.createElement('label');
-  element.className = classes.label;
-  const frame = document.createElement('span');
-  frame.className = classes.frame;
-  const input = document.createElement('input');
-  input.type = 'checkbox';
-  input.className = classes.box;
-  input.checked = checked;
-  input.addEventListener('change', change);
-  frame.append(input, glyph(classes.mark, checkParts));
-  const words = document.createElement('span');
-  words.textContent = label;
-  element.append(frame, words);
-  return { element, input };
+  parts: Parameters<typeof glyph>[1],
+  run: () => void,
+): HTMLButtonElement {
+  const control = button(label, run);
+  control.className = buttonClassName({
+    variant: 'ghost',
+    size: 'sm',
+    iconOnly: true,
+  });
+  control.setAttribute('aria-label', label);
+  control.title = label;
+  control.replaceChildren(glyph(glyphClass, parts));
+  return control;
 }
-
 /** One band of the panel. */
 function band(...children: readonly HTMLElement[]): HTMLElement {
   const row = document.createElement('div');
@@ -220,9 +214,15 @@ class SearchPanel implements Panel {
   private query: SearchQuery;
   private readonly searchField: HTMLInputElement;
   private readonly replaceField: HTMLInputElement;
-  private readonly caseField: HTMLInputElement;
-  private readonly regexpField: HTMLInputElement;
-  private readonly wordField: HTMLInputElement;
+  private readonly count: HTMLSpanElement;
+  private readonly toggles: readonly HTMLButtonElement[];
+  private readonly replacement: HTMLElement;
+  private replaceVisible = false;
+  private closeOptions: (() => void) | undefined;
+  private destroyed = false;
+  private matches: { from: number; to: number }[] = [];
+  private countedQuery: SearchQuery | null = null;
+  private countedDoc: EditorState['doc'] | null = null;
 
   constructor(view: EditorView) {
     this.view = view;
@@ -240,77 +240,114 @@ class SearchPanel implements Panel {
       input.addEventListener('input', commit);
       input.addEventListener('change', commit);
     }
-    const matchCase = checkbox(
-      searchPanelWords.matchCase,
-      this.query.caseSensitive,
-      commit,
+    this.count = document.createElement('span');
+    this.count.className =
+      'pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-secondary text-muted';
+    this.count.setAttribute('aria-live', 'polite');
+    this.searchField.classList.add('pr-16');
+    const search = document.createElement('div');
+    search.className = 'relative min-w-0 flex-1 lg:max-w-80';
+    search.append(this.searchField, this.count);
+    const options = [
+      { label: searchPanelWords.matchCase, text: 'Aa', key: 'caseSensitive' },
+      { label: searchPanelWords.regexp, text: '.*', key: 'regexp' },
+      { label: searchPanelWords.wholeWord, text: 'W', key: 'wholeWord' },
+    ] as const;
+    this.toggles = options.map((option) => {
+      const toggle = button(option.text, () =>
+        this.option(option.key, !this.query[option.key]),
+      );
+      toggle.className = buttonClassName({
+        variant: 'ghost',
+        size: 'sm',
+        className: 'hidden lg:inline-flex aria-pressed:bg-active',
+      });
+      toggle.title = option.label;
+      toggle.setAttribute('aria-label', option.label);
+      return toggle;
+    });
+    const replacementToggle = iconButton('Show replace', replaceParts, () =>
+      this.showReplace(!this.replaceVisible),
     );
-    const regexp = checkbox(searchPanelWords.regexp, this.query.regexp, commit);
-    const wholeWord = checkbox(
-      searchPanelWords.wholeWord,
-      this.query.wholeWord,
-      commit,
-    );
-    this.caseField = matchCase.input;
-    this.regexpField = regexp.input;
-    this.wordField = wholeWord.input;
-
-    const close = document.createElement('button');
-    close.type = 'button';
-    close.className = buttonClassName({
+    replacementToggle.classList.add('hidden', 'lg:inline-flex');
+    replacementToggle.setAttribute('aria-pressed', 'false');
+    const more = button('More', () => {
+      more.disabled = true;
+      void openOptionsSheet('Find options', [
+        ...options.map((option) => ({
+          label: option.label,
+          read: () => this.query[option.key],
+          change: (checked: boolean) => this.option(option.key, checked),
+        })),
+        ...(view.state.readOnly
+          ? []
+          : [
+              {
+                label: 'Replace',
+                read: () => this.replaceVisible,
+                change: (checked: boolean) => this.showReplace(checked),
+              },
+            ]),
+      ])
+        .then((close) => {
+          if (this.destroyed) close();
+          else this.closeOptions = close;
+        })
+        .finally(() => {
+          more.disabled = false;
+        });
+    });
+    more.className = buttonClassName({
       variant: 'ghost',
       size: 'sm',
       iconOnly: true,
-      compact: true,
+      className: 'lg:hidden',
     });
-    close.setAttribute('aria-label', searchPanelWords.close);
-    close.title = searchPanelWords.close;
-    const closeSurface = document.createElement('span');
-    closeSurface.className = compactButtonVisualClassName({
-      variant: 'ghost',
-      size: 'sm',
-      iconOnly: true,
-    });
-    closeSurface.append(glyph(glyphClass, closeParts));
-    close.append(closeSurface);
-    close.addEventListener('click', () => {
-      closeSearchPanel(view);
-    });
-
+    more.setAttribute('aria-label', 'More find options');
+    more.title = 'More find options';
+    more.replaceChildren(glyph(glyphClass, moreParts));
+    const close = iconButton(searchPanelWords.close, closeParts, () =>
+      closeSearchPanel(view),
+    );
+    close.classList.add('lg:ml-auto');
+    const previous = iconButton(
+      searchPanelWords.previous,
+      chevronDownParts,
+      () => {
+        findPrevious(view);
+      },
+    );
+    previous.querySelector('svg')?.classList.add('rotate-180');
     const rows = [
       band(
-        this.searchField,
-        button(searchPanelWords.previous, () => {
-          findPrevious(view);
-        }),
-        button(searchPanelWords.next, () => {
+        search,
+        previous,
+        iconButton(searchPanelWords.next, chevronDownParts, () => {
           findNext(view);
         }),
-        button(searchPanelWords.selectAll, () => {
-          selectMatches(view);
-        }),
+        ...this.toggles,
+        ...(view.state.readOnly ? [] : [replacementToggle]),
+        more,
         close,
       ),
     ];
-    if (!view.state.readOnly)
-      rows.push(
-        band(
-          this.replaceField,
-          button(searchPanelWords.replaceOne, () => {
-            replaceNext(view);
-          }),
-          button(searchPanelWords.replaceAll, () => {
-            replaceAll(view);
-          }),
-        ),
-      );
-    rows.push(band(matchCase.element, regexp.element, wholeWord.element));
-
+    this.replacement = band(
+      this.replaceField,
+      button(searchPanelWords.replaceOne, () => {
+        replaceNext(view);
+      }),
+      button(searchPanelWords.replaceAll, () => {
+        replaceAll(view);
+      }),
+    );
+    this.replacement.hidden = true;
+    if (!view.state.readOnly) rows.push(this.replacement);
     this.dom = document.createElement('div');
     this.dom.className = 'cm-np-search';
     this.dom.setAttribute('role', 'search');
     this.dom.setAttribute('aria-label', searchPanelWords.panel);
     this.dom.append(...rows);
+    this.refresh();
     this.dom.addEventListener('keydown', (event) => {
       this.keydown(event);
     });
@@ -320,9 +357,9 @@ class SearchPanel implements Panel {
   private commit(): void {
     const query = new SearchQuery({
       search: this.searchField.value,
-      caseSensitive: this.caseField.checked,
-      regexp: this.regexpField.checked,
-      wholeWord: this.wordField.checked,
+      caseSensitive: this.query.caseSensitive,
+      regexp: this.query.regexp,
+      wholeWord: this.query.wholeWord,
       replace: this.replaceField.value,
     });
     if (query.eq(this.query)) return;
@@ -356,6 +393,7 @@ class SearchPanel implements Panel {
       for (const effect of transaction.effects)
         if (effect.is(setSearchQuery) && !effect.value.eq(this.query))
           this.setQuery(effect.value);
+    this.refresh();
   }
 
   /** Shows a query that the editor set, for example from the selection. */
@@ -363,9 +401,66 @@ class SearchPanel implements Panel {
     this.query = query;
     this.searchField.value = query.search;
     this.replaceField.value = query.replace;
-    this.caseField.checked = query.caseSensitive;
-    this.regexpField.checked = query.regexp;
-    this.wordField.checked = query.wholeWord;
+    this.refresh();
+  }
+
+  private option(
+    key: 'caseSensitive' | 'regexp' | 'wholeWord',
+    checked: boolean,
+  ): void {
+    const query = new SearchQuery({
+      search: this.query.search,
+      replace: this.query.replace,
+      caseSensitive: this.query.caseSensitive,
+      regexp: this.query.regexp,
+      wholeWord: this.query.wholeWord,
+      [key]: checked,
+    });
+    this.query = query;
+    this.view.dispatch({ effects: setSearchQuery.of(query) });
+    this.refresh();
+  }
+  private showReplace(show: boolean): void {
+    this.replaceVisible = show;
+    this.replacement.hidden = !show;
+    this.dom
+      .querySelector('[aria-label="Show replace"]')
+      ?.setAttribute('aria-pressed', String(show));
+  }
+  private refresh(): void {
+    const state = this.view.state;
+    if (this.countedDoc !== state.doc || this.countedQuery !== this.query) {
+      this.matches = [];
+      if (this.query.valid) {
+        const cursor = this.query.getCursor(state.doc);
+        for (;;) {
+          const match = cursor.next();
+          if (match.done) break;
+          this.matches.push({ from: match.value.from, to: match.value.to });
+        }
+      }
+      this.countedDoc = state.doc;
+      this.countedQuery = this.query;
+    }
+    let current = this.matches.findIndex(
+      (match) =>
+        match.from === state.selection.main.from &&
+        match.to === state.selection.main.to,
+    );
+    if (current < 0)
+      current = this.matches.findIndex(
+        (match) => match.to >= state.selection.main.head,
+      );
+    this.count.textContent = `${this.matches.length === 0 ? 0 : current < 0 ? 1 : current + 1} of ${this.matches.length}`;
+    [this.query.caseSensitive, this.query.regexp, this.query.wholeWord].forEach(
+      (pressed, index) =>
+        this.toggles[index]?.setAttribute('aria-pressed', String(pressed)),
+    );
+  }
+
+  destroy(): void {
+    this.destroyed = true;
+    this.closeOptions?.();
   }
 
   mount(): void {
