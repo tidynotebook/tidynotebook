@@ -244,7 +244,8 @@ await test('New folder here names a folder inside the chosen one and chooses it'
   await render(createElement(Picker, { start: 'Projects' }));
   await act(async () => button('New folder in Projects').click());
   const draft = fieldOf('Folder name').closest('[role="treeitem"]');
-  assert.ok(draft?.closest('[role="tree"]'));
+  assert.ok(draft);
+  assert.ok(draft.closest('[role="tree"]'));
   assert.equal(draft.previousElementSibling, row('Projects'));
   assert.equal(draft.getAttribute('aria-level'), '2');
   assert.equal(container.querySelector('label'), null);
