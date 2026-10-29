@@ -35,8 +35,8 @@ export function MetaFacts({
     >
       {facts.map((fact, index) => (
         <span key={`${index}:${fact}`} className="whitespace-nowrap">
-          {index === 0 ? '' : ' · '}
           {fact}
+          {index === facts.length - 1 ? '' : ' ·'}
         </span>
       ))}
     </p>

@@ -655,7 +655,7 @@ export function kbdClassName(): string {
  * states its meaning in its word.
  */
 export function badgeClassName(): string {
-  return 'inline-flex items-center rounded-sm bg-hover px-2 text-secondary text-muted';
+  return 'inline-flex items-center rounded-sm bg-active px-2 text-secondary text-muted';
 }
 
 /** The real fill percentage, clamped to the track. */

@@ -18,6 +18,7 @@
  * every server call is a generated operation.
  */
 import {
+  Children,
   useCallback,
   useRef,
   useEffect,
@@ -45,7 +46,7 @@ import {
 } from '@notesapp/api-client';
 import {
   Button,
-  Checkbox,
+  Badge,
   ChevronRightIcon,
   MetaFacts,
   WrapText,
@@ -134,6 +135,7 @@ function AdminGroup({
   readonly toolbar?: ReactNode;
   readonly children: ReactNode;
 }): ReactNode {
+  if (Children.toArray(children).length === 0) return null;
   return (
     <section>
       {title === undefined ? null : (
@@ -144,7 +146,9 @@ function AdminGroup({
             {title}
           </h3>
           {count === undefined ? null : (
-            <span className="text-secondary text-muted">{count}</span>
+            <span className="ui-group-count text-secondary text-muted">
+              {count}
+            </span>
           )}
           {toolbar}
         </div>
@@ -472,14 +476,10 @@ function AccountsPage({
                           <p className="m-0 flex flex-wrap items-center gap-2 text-body text-strong">
                             <span>{name}</span>
                             {account.installationRole === 'administrator' ? (
-                              <span className="rounded-sm bg-hover px-1 text-secondary text-muted">
-                                Administrator
-                              </span>
+                              <Badge>Administrator</Badge>
                             ) : null}
                             {account.state === 'disabled' ? (
-                              <span className="rounded-sm bg-hover px-1 text-secondary text-muted">
-                                Disabled
-                              </span>
+                              <Badge>Disabled</Badge>
                             ) : null}
                           </p>
                           <MetaFacts
@@ -1079,23 +1079,23 @@ function ControlsDialog({
               set({ downloadGigabytes: value });
             }}
           />
-          <div className="flex flex-wrap gap-cluster">
-            <Checkbox
-              id="controls-teams"
-              label="Teams"
-              checked={form.teams}
-              onChange={(checked) => {
-                set({ teams: checked });
-              }}
-            />
-            <Checkbox
-              id="controls-collaboration"
-              label="Collaboration"
-              checked={form.collaboration}
-              onChange={(checked) => {
-                set({ collaboration: checked });
-              }}
-            />
+          <div className="ui-form-following-group ui-settings-groups">
+            <AdminGroup title="Access">
+              <SettingSwitchRow
+                label="Teams"
+                help=""
+                checked={form.teams}
+                disabled={busy}
+                onChange={(teams) => set({ teams })}
+              />
+              <SettingSwitchRow
+                label="Collaboration"
+                help=""
+                checked={form.collaboration}
+                disabled={busy}
+                onChange={(collaboration) => set({ collaboration })}
+              />
+            </AdminGroup>
           </div>
         </DialogBody>
         <DialogFooter>

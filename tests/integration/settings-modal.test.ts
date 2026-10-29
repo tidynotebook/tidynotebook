@@ -24,6 +24,7 @@ import {
   useLocation,
   useNavigate,
 } from 'react-router';
+import { setLastAdministrator } from './support/administration-settings-fixture.ts';
 import {
   calls,
   setAdministrator,
@@ -772,6 +773,17 @@ await test('administration deep links and the old route respect the signed-in ro
     );
     assert.doesNotMatch(container.textContent ?? '', /Manage accounts/);
     assert.ok(button('Invite a person'));
+    for (const line of container.querySelectorAll('.ui-meta-facts')) {
+      const facts = [...line.querySelectorAll('span')];
+      assert.ok(
+        facts.every((fact) => !fact.textContent?.trim().startsWith('·')),
+      );
+      assert.ok(
+        facts
+          .slice(0, -1)
+          .every((fact) => fact.textContent?.trim().endsWith('·')),
+      );
+    }
     assert.match(container.textContent ?? '', /Let anybody sign up/);
   } finally {
     setAdministrator(false);
@@ -802,11 +814,8 @@ await test('phone admin draft forms keep one frame and return focus without a sa
       await click(start);
       assert.ok(container.querySelector(field), field);
       assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
-      assert.ok(
-        container
-          .querySelector('.ui-settings-action')
-          ?.contains(document.activeElement),
-      );
+      assert.equal(document.activeElement?.tagName, 'H2');
+      assert.equal(document.activeElement?.getAttribute('tabindex'), '-1');
       await escape();
       assert.equal(container.querySelector(field), null);
       assert.equal(
@@ -823,29 +832,48 @@ await test('phone admin draft forms keep one frame and return focus without a sa
       container.querySelector('.ui-settings-action')?.textContent ?? '',
       /sam@example.com/,
     );
+    assert.equal(button('Role').querySelector('[data-setting-help]'), null);
     for (const [opener, field] of [
       ['Role', '#account-role'],
       ['Limits and access', '#controls-standing'],
     ] as const) {
       await click(button(opener));
       assert.ok(container.querySelector(field));
-      assert.ok(
-        container
-          .querySelector('.ui-settings-action')
-          ?.contains(document.activeElement),
-      );
+      assert.equal(document.activeElement?.tagName, 'H2');
+      assert.equal(document.activeElement?.getAttribute('tabindex'), '-1');
+      if (opener === 'Limits and access') {
+        const switches = container.querySelectorAll(
+          '.ui-settings-action [role="switch"]',
+        );
+        assert.equal(switches.length, 2);
+        assert.equal(switches[0]?.getAttribute('aria-label'), 'Teams');
+        assert.equal(
+          container.querySelectorAll('.ui-settings-action input[type=checkbox]')
+            .length,
+          0,
+        );
+      }
       await escape();
       assert.equal(container.querySelector(field), null);
       assert.ok(button(opener));
     }
     await escape();
+    setLastAdministrator(true);
+    await show('/w/one?settings=accounts');
+    await click(button('Account: Sam Lee'));
+    assert.doesNotMatch(
+      container.querySelector('.ui-settings-action')?.textContent ?? '',
+      /Danger zone/,
+    );
+    await escape();
     assert.equal(container.querySelector('.ui-settings-action'), null);
     assert.equal(
-      document.activeElement === row,
+      document.activeElement?.getAttribute('aria-label') === 'Account: Sam Lee',
       true,
       'Focus returns to the account row',
     );
   } finally {
+    setLastAdministrator(false);
     setAdministrator(false);
     window.matchMedia = original;
   }

@@ -10,6 +10,7 @@
  * Accounts is a part of Settings (record 0138).
  */
 import {
+  Children,
   createContext,
   useContext,
   useSyncExternalStore,
@@ -86,7 +87,7 @@ export function SettingActionRow({
       <span data-setting-label className="block text-body">
         {label}
       </span>
-      {help === undefined ? null : (
+      {help === undefined || help.trim() === '' ? null : (
         <span data-setting-help className="block text-secondary text-muted">
           <WrapText>{help}</WrapText>
         </span>
@@ -128,6 +129,7 @@ export function SettingsSection({
 }): ReactNode {
   const topic = useContext(SettingsTopicContext);
   const phone = usePhoneSettings();
+  if (Children.toArray(children).length === 0) return null;
   if (topic !== null)
     return (
       <section className={'ui-section'} aria-label={section.title}>
@@ -199,7 +201,7 @@ export function SettingRow({
         >
           {label}
         </p>
-        {help === undefined ? null : (
+        {help === undefined || help.trim() === '' ? null : (
           <p
             data-setting-help
             className="order-3 m-0 line-clamp-2 w-full break-words text-secondary text-muted lg:line-clamp-1"
@@ -258,12 +260,14 @@ export function SettingChoiceRow({
         >
           {label}
         </span>
-        <span
-          data-setting-help
-          className="line-clamp-2 break-words text-secondary text-muted lg:line-clamp-1 pointer-coarse:order-4 pointer-coarse:w-full pointer-coarse:basis-full"
-        >
-          <WrapText>{help}</WrapText>
-        </span>
+        {help.trim() === '' ? null : (
+          <span
+            data-setting-help
+            className="line-clamp-2 break-words text-secondary text-muted lg:line-clamp-1 pointer-coarse:order-4 pointer-coarse:w-full pointer-coarse:basis-full"
+          >
+            <WrapText>{help}</WrapText>
+          </span>
+        )}
       </span>
       <span
         data-setting-control

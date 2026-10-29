@@ -553,7 +553,7 @@ await test('a key cap is the quietest step in the code face', () => {
 });
 
 await test('a badge sits on a surface the contrast test holds', () => {
-  assert.ok(badgeClassName().includes('bg-hover'));
+  assert.ok(badgeClassName().includes('bg-active'));
   assert.ok(badgeClassName().includes('text-muted'));
 });
 

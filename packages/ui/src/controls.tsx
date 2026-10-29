@@ -473,7 +473,9 @@ export function SelectField({
           id={id}
           className={selectClassName()}
           value={value}
-          aria-describedby={hint === undefined ? undefined : hintId}
+          aria-describedby={
+            hint === undefined || hint.trim() === '' ? undefined : hintId
+          }
           onChange={(event): void => {
             onChange(event.target.value);
           }}
@@ -486,7 +488,7 @@ export function SelectField({
         </select>
         <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted" />
       </div>
-      {hint === undefined ? null : (
+      {hint === undefined || hint.trim() === '' ? null : (
         <p className="mb-0 mt-1 text-secondary text-muted" id={hintId}>
           <WrapText>{hint}</WrapText>
         </p>
@@ -647,7 +649,11 @@ export function Switch({
       role="switch"
       aria-checked={checked}
       aria-label={label}
-      aria-describedby={hint === undefined || hideLabel ? undefined : hintId}
+      aria-describedby={
+        hint === undefined || hint.trim() === '' || hideLabel
+          ? undefined
+          : hintId
+      }
       aria-description={hideLabel ? hint : undefined}
       disabled={disabled}
       className={
@@ -662,7 +668,7 @@ export function Switch({
           <span data-setting-label className="block">
             {label}
           </span>
-          {hint === undefined ? null : (
+          {hint === undefined || hint.trim() === '' ? null : (
             <span
               data-setting-help
               id={hintId}

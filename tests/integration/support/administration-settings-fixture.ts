@@ -45,8 +45,15 @@ const account: AccountSummary = {
 export async function getInstallation() {
   return { data: installation };
 }
+let lastAdministrator = false;
+export function setLastAdministrator(value: boolean): void {
+  lastAdministrator = value;
+}
 export async function listAccounts() {
-  return { data: { accounts: [account] } };
+  const listed: AccountSummary = lastAdministrator
+    ? { ...account, installationRole: 'administrator', self: true }
+    : account;
+  return { data: { accounts: [listed] } };
 }
 export async function listInvitations() {
   return { data: { invitations: [] } };

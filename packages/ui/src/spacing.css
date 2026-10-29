@@ -840,3 +840,13 @@
     }
   }
 }
+
+/* Counts stay beside their heading, even when action toolbars wrap. */
+@layer utilities {
+  .ui-group-toolbar:has(> .ui-group-count) > .text-group {
+    flex-basis: 0;
+  }
+}
+@utility ui-settings-empty {
+  margin-inline: 8px;
+}

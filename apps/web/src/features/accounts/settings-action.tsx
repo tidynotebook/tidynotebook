@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
-import { FixedDialogLayout, isTouchInput, type Dialog } from '@notesapp/ui';
+import { FixedDialogLayout, type Dialog } from '@notesapp/ui';
 import { usePhoneSettings } from './settings-section.tsx';
 import type { SettingsActionHost } from './settings-action-context.ts';
 /** An action replaces the section content without changing the modal frame. */
@@ -63,13 +63,16 @@ export default function SettingsAction({
     // autoFocus, or the read-only secret field can select its value.
     const frame = window.requestAnimationFrame(() => {
       const held = panel.current;
+      if (phone) {
+        target
+          .closest('section[aria-labelledby]')
+          ?.querySelector<HTMLElement>('h2[tabindex="-1"]')
+          ?.focus({ preventScroll: true });
+        return;
+      }
       if (held !== null && !held.contains(document.activeElement))
         (
-          held.querySelector<HTMLElement>(
-            isTouchInput()
-              ? 'input:not([data-list-search]), select, textarea'
-              : 'input, select, textarea',
-          ) ??
+          held.querySelector<HTMLElement>('input, select, textarea') ??
           held.querySelector<HTMLElement>(
             '[role="treeitem"][aria-selected="true"]',
           ) ??
@@ -79,7 +82,7 @@ export default function SettingsAction({
         ).focus();
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [open, target]);
+  }, [open, target, phone]);
   if (!open || target === null) return null;
   return createPortal(
     <section
