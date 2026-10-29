@@ -65,6 +65,8 @@
   }
   &.ui-icon-button {
     width: var(--ui-compact-height);
+    min-width: var(--ui-compact-height);
+    flex-shrink: 0;
     height: var(--ui-compact-height);
     min-height: var(--ui-compact-height);
     padding: 0;
@@ -360,10 +362,12 @@
 @utility ui-rail-link {
   &.ui-rail-link {
     width: 40px;
+    min-width: 40px;
     height: 40px;
     min-height: 40px;
     @media (pointer: coarse) {
       width: 44px;
+      min-width: 44px;
       height: 44px;
       min-height: 44px;
     }

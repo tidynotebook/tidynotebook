@@ -497,7 +497,7 @@ function Sidebar({
         quiet and every action stays in the tab order.
       */}
             <div className="px-2 pt-1">
-              <div className="flex items-center gap-1">
+              <div className="flex flex-wrap items-center gap-1">
                 <Button
                   variant="ghost"
                   size="sm"

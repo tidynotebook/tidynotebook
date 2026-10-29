@@ -101,8 +101,8 @@ try {
             y = 100;
           await touch('touchStart', x, y);
           for (let i = 1; i <= 4; i++) {
-            await pause(fast ? 8 : 60);
             await touch('touchMove', x - (distance * i) / 4, y);
+            await pause(fast ? 8 : 60);
           }
           const mid = await measure();
           assert.ok(mid.x < -distance + 3, `Direct drag: ${mid.x}`);
