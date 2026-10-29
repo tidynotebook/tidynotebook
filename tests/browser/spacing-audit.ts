@@ -95,16 +95,18 @@ export async function auditSpacing(page: Page) {
     )) {
       if (!visible(row)) continue;
       const label = row.querySelector('[data-setting-label]');
-      const control = row.querySelector('[data-setting-control]');
-      if (!label || !control)
+      const controls = row.querySelectorAll('[data-setting-control]');
+      if (!label || controls.length === 0)
         throw new Error('A setting row must mark its label and control.');
-      check(
-        row,
-        'setting-control-label-top',
-        control.getBoundingClientRect().top - label.getBoundingClientRect().top,
-        0,
-        2,
-      );
+      for (const control of controls)
+        check(
+          row,
+          'setting-control-label-top',
+          control.getBoundingClientRect().top -
+            label.getBoundingClientRect().top,
+          0,
+          2,
+        );
     }
     if (coarse && innerWidth < 1024) {
       for (const row of document.querySelectorAll('.ui-drawer-row')) {

@@ -61,7 +61,8 @@ import { noteRowMeta } from '../../lib/note-row.ts';
 import { showNewNoteInHeader } from '../../lib/notes-home-action.ts';
 import type { NoteSummary } from '../../lib/note-list.ts';
 import { pinnedIndex } from '../../lib/row-window.ts';
-import { scrollerOf, useRowWindow } from '../../shell/row-window.ts';
+import { scrollerOf } from '../../shell/row-window.ts';
+import { useContentRowWindow } from '../../shell/content-row-window.ts';
 
 /** The quiet heading of one time band of the list. */
 const groupLabelClassName = pageGroupLabelClassName();
@@ -124,11 +125,7 @@ function NoteGroupList({
 }): ReactNode {
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const keys = useMemo(() => notes.map((note) => note.fileId), [notes]);
-  const rows = useRowWindow(
-    notes.length,
-    'note-list',
-    pinnedIndex(keys, focusedId),
-  );
+  const rows = useContentRowWindow(keys, pinnedIndex(keys, focusedId), 'list');
   return (
     <ul className={pageListClassName()} ref={rows.listRef}>
       {rows.indexes.map((index) => {

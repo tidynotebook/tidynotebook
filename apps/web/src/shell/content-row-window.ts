@@ -14,6 +14,7 @@ import {
 export function useContentRowWindow(
   keys: readonly string[],
   pinned: number | null,
+  kind: 'tree' | 'list' = 'tree',
 ): RowWindowControl {
   const listRef = useRef<HTMLElement | null>(null);
   const sizes = useRef(new Map<string, number>());
@@ -61,7 +62,9 @@ export function useContentRowWindow(
     estimate.current = coarse
       ? 44
       : parseFloat(
-          getComputedStyle(list).getPropertyValue('--ui-tree-height'),
+          getComputedStyle(list).getPropertyValue(
+            kind === 'tree' ? '--ui-tree-height' : '--ui-list-height',
+          ),
         ) || 28;
     const oldOffsets = offsets();
     const listTop = () =>
@@ -90,7 +93,7 @@ export function useContentRowWindow(
     );
     setWindow((current) => (sameRowWindow(current, next) ? current : next));
     // Refs hold the current order and measurements across scroll events.
-  }, []);
+  }, [kind]);
 
   useLayoutEffect(() => {
     const list = listRef.current;

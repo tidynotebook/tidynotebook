@@ -645,7 +645,7 @@ export function Switch({
       disabled={disabled}
       className={
         hideLabel
-          ? 'ui-switch-control inline-flex items-center justify-center rounded-md bg-transparent text-strong'
+          ? 'ui-switch-control inline-flex items-start justify-center rounded-md bg-transparent text-strong'
           : classes.row
       }
       onClick={() => onChange(!checked)}
@@ -662,11 +662,7 @@ export function Switch({
           )}
         </span>
       )}
-      <span
-        data-setting-control={hideLabel ? undefined : true}
-        className={classes.track}
-        aria-hidden="true"
-      >
+      <span data-setting-control className={classes.track} aria-hidden="true">
         <span className={classes.thumb} />
       </span>
     </button>
