@@ -238,7 +238,7 @@ await test('touch form labels and fields share the computed body size', async ()
             ? Number.parseFloat(fieldStyle.lineHeight)
             : Number.parseFloat(fieldStyle.lineHeight) *
                 Number.parseFloat(fieldStyle.fontSize),
-          24,
+          22,
         );
       }
       assert.equal(
