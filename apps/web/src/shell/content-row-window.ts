@@ -56,7 +56,7 @@ export function useContentRowWindow(
       sizes.current.clear();
       width.current = newWidth;
     }
-    const coarse = matchMedia(
+    const coarse = globalThis.window.matchMedia(
       '(max-width: 1023px) and (pointer: coarse)',
     ).matches;
     estimate.current = coarse
@@ -88,7 +88,7 @@ export function useContentRowWindow(
     const next = contentRowWindow(
       measured,
       -listTop(),
-      scroller?.clientHeight ?? innerHeight,
+      scroller?.clientHeight ?? globalThis.window.innerHeight,
       defaultOverscan,
     );
     setWindow((current) => (sameRowWindow(current, next) ? current : next));
