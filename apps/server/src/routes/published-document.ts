@@ -209,10 +209,10 @@ const gateClasses =
 
 /** The heading of a page that shows no content, the title of a page. */
 const gateHeadingClasses =
-  'mb-2 mt-0 text-xl font-semibold tracking-heading text-strong';
+  'mb-2 mt-0 text-title-page tracking-heading text-strong';
 
 /** The one sentence under the heading of a page that shows no content. */
-const gateHintClasses = 'm-0 text-help text-muted';
+const gateHintClasses = 'm-0 text-secondary text-muted';
 
 /**
  * The classes of the box of a published task: `taskBoxClassName` of
@@ -228,7 +228,7 @@ export const publishedTaskBoxClasses =
  * `tests/integration/published-styles.test.ts` holds this copy to it.
  */
 export const publishedCodeFigureClasses =
-  '[&_figure.notes-code]:relative [&_figure.notes-code]:mx-0 [&_figure.notes-code]:my-4 [&_figure.notes-code_pre]:my-0 [&_figure.notes-code_pre]:pt-11 md:[&_figure.notes-code_pre]:pt-10 [&_.notes-code-label]:absolute [&_.notes-code-label]:left-4 [&_.notes-code-label]:top-3 [&_.notes-code-label]:z-10 [&_.notes-code-label]:font-mono [&_.notes-code-label]:text-help [&_.notes-code-label]:text-muted';
+  '[&_figure.notes-code]:relative [&_figure.notes-code]:mx-0 [&_figure.notes-code]:my-4 [&_figure.notes-code_pre]:my-0 [&_figure.notes-code_pre]:pt-11 md:[&_figure.notes-code_pre]:pt-10 [&_.notes-code-label]:absolute [&_.notes-code-label]:left-4 [&_.notes-code-label]:top-3 [&_.notes-code-label]:z-10 [&_.notes-code-label]:font-mono [&_.notes-code-label]:text-secondary [&_.notes-code-label]:text-muted';
 
 /**
  * The typography of the note body.
@@ -361,16 +361,16 @@ const passwordFormClasses = 'mt-6 flex flex-col gap-4';
 const passwordFieldGroupClasses = 'flex flex-col gap-1.5';
 
 /** The classes of the label above the password field. */
-const labelClasses = 'text-control font-medium text-strong';
+const labelClasses = 'text-label text-strong';
 
 /** The classes of the group of reasons of the report form. */
 const reasonGroupClasses = 'm-0 flex flex-col gap-2 border-0 p-0';
 
 /** The classes of one reason of the report form, a radio and its words. */
-const reasonClasses = 'flex items-center gap-2 text-ui text-ink';
+const reasonClasses = 'flex items-center gap-2 text-body text-strong';
 
 /** The classes of the foot of a page, which holds the report link. */
-export const footClasses = 'mt-12 text-help text-muted';
+export const footClasses = 'mt-12 text-secondary text-muted';
 
 /**
  * The classes of the one button of this page, and of its one field.
@@ -390,15 +390,15 @@ export const footClasses = 'mt-12 text-help text-muted';
  * before it compares.
  */
 export const publishedButtonClasses =
-  'inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-control font-medium no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed bg-accent-fill text-on-accent hover:bg-accent-fill-hover disabled:bg-hover disabled:hover:bg-hover disabled:text-muted min-h-11 px-3 md:min-h-8';
+  'inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-label no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed bg-accent-fill text-on-accent hover:bg-accent-fill-hover disabled:bg-hover disabled:hover:bg-hover disabled:text-muted min-h-11 px-3 md:min-h-8';
 
 /** The classes of the password field. See {@link publishedButtonClasses}. */
 export const publishedFieldClasses =
-  'w-full min-h-11 rounded-md border bg-app px-3 text-ui pointer-coarse:text-base text-strong outline-none focus-visible:ring-2 focus-visible:ring-focus/25 md:min-h-8 border-edge-line focus-visible:border-focus';
+  'w-full min-h-11 rounded-md border bg-app px-3 text-body pointer-coarse:text-base text-strong outline-none focus-visible:ring-2 focus-visible:ring-focus/25 md:min-h-8 border-edge-line focus-visible:border-focus';
 
 /** The classes of the document frame, which the shell document also writes. */
 export const bodyClasses =
-  'm-0 bg-app font-sans text-ui leading-relaxed text-ink antialiased';
+  'm-0 bg-app font-sans text-body text-strong antialiased';
 
 /** Every class name that this document writes, for the stylesheet test. */
 export const publishedDocumentClasses: readonly string[] = [
