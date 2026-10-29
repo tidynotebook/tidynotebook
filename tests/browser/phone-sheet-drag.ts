@@ -112,6 +112,27 @@ try {
       await pause(280);
       assert.equal((await measure()).y, 0);
       results.push(`${kind} ${reduced}: direct drag and snap back`);
+      if (kind === 'Settings') {
+        const body = await p.locator('.ui-settings-content').boundingBox();
+        assert.ok(body);
+        const x = 190,
+          y = body.y + 80;
+        await touch('touchStart', x, y);
+        await pause(20);
+        for (let i = 1; i <= 4; i++) {
+          await touch('touchMove', x, y + i * 12);
+          await pause(60);
+        }
+        assert.ok(
+          (await measure()).y > 0,
+          'A downward body drag at the top must move the sheet',
+        );
+        await pause(130);
+        await touch('touchEnd', x, y + 48);
+        await pause(280);
+        assert.equal((await measure()).y, 0);
+        results.push(`${kind} ${reduced}: body at top drags sheet`);
+      }
       const up = await drag(-90);
       assert.ok(up.y >= -24 && up.y < 0);
       await pause(280);
