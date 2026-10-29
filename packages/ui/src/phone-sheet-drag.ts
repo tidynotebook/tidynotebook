@@ -29,8 +29,11 @@ export function followPhoneSheetDrag(
     panel.contains(document.activeElement) &&
     document.activeElement.matches(fields);
   const scrollers = () =>
-    [...panel.querySelectorAll<HTMLElement>('*')].filter((e) =>
-      /auto|scroll/.test(getComputedStyle(e).overflowY),
+    [...panel.querySelectorAll<HTMLElement>('*')].filter(
+      (e) =>
+        e.clientHeight > 0 &&
+        e.clientWidth > 0 &&
+        /auto|scroll/.test(getComputedStyle(e).overflowY),
     );
   const atTop = () => scrollers().every((e) => e.scrollTop <= 0);
   const prior = new Map<HTMLElement, string>();
