@@ -307,7 +307,7 @@ function SessionsSettings(): ReactNode {
               </ListRow>
             </ul>
           )}
-          <div className="ui-group-toolbar ui-group-heading mt-6 border-b border-edge-subtle">
+          <div className="ui-group-toolbar ui-group-heading ui-group-after border-b border-edge-subtle">
             <h3 className="m-0 min-w-0 flex-1 text-group text-muted">
               Other devices
             </h3>

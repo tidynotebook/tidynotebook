@@ -164,13 +164,15 @@
   min-height: var(--ui-header-height);
 }
 @utility ui-settings-heading {
-  padding: 24px 24px 0;
-  @media (max-width: 1023px) and (pointer: coarse) {
-    height: var(--ui-header-height);
-    min-height: var(--ui-header-height);
-    padding: 0 2px;
-    column-gap: 0;
-    align-items: center;
+  &.ui-settings-heading {
+    padding: 24px 24px 0;
+    @media (max-width: 1023px) and (pointer: coarse) {
+      height: var(--ui-header-height);
+      min-height: var(--ui-header-height);
+      padding: 0 2px;
+      column-gap: 0;
+      align-items: center;
+    }
   }
 }
 @utility ui-settings-content {
@@ -284,29 +286,35 @@
 
 /* Phone edges, headers, and groups use one layout at every sheet level. */
 @utility ui-settings-list {
-  @media (max-width: 1023px) and (pointer: coarse) {
-    padding: 8px 8px 0;
-    & nav > .ui-section {
-      margin-top: var(--ui-section-gap);
-    }
-    & .ui-group-heading {
-      padding-inline: 8px;
+  &.ui-settings-list {
+    @media (max-width: 1023px) and (pointer: coarse) {
+      padding: 8px 8px 0;
+      & nav > .ui-section {
+        margin-top: var(--ui-section-gap);
+      }
+      & .ui-group-heading {
+        padding-inline: 8px;
+      }
     }
   }
 }
 @utility ui-account-card {
-  @media (max-width: 1023px) and (pointer: coarse) {
-    margin-inline: 8px;
-    padding: 12px 0;
+  &.ui-account-card {
+    @media (max-width: 1023px) and (pointer: coarse) {
+      margin-inline: 8px;
+      padding: 12px 0;
+    }
   }
 }
 @utility ui-settings-navigation-footer {
-  @media (max-width: 1023px) and (pointer: coarse) {
-    margin-inline: 16px;
-    padding: 12px 0;
-    & > a {
-      margin-inline: -8px;
-      width: calc(100% + 16px);
+  &.ui-settings-navigation-footer {
+    @media (max-width: 1023px) and (pointer: coarse) {
+      margin-inline: 16px;
+      padding: 12px 0;
+      & > a {
+        margin-inline: -8px;
+        width: calc(100% + 16px);
+      }
     }
   }
 }
@@ -314,9 +322,11 @@
   margin: 0 0 16px;
 }
 @utility ui-sheet-header {
-  @media (max-width: 1023px) and (pointer: coarse) {
-    padding-inline: 2px;
-    column-gap: 0;
+  &.ui-sheet-header {
+    @media (max-width: 1023px) and (pointer: coarse) {
+      padding-inline: 2px;
+      column-gap: 0;
+    }
   }
 }
 @utility ui-setting-align {
@@ -340,9 +350,11 @@
 }
 
 @utility ui-phone-drawer {
-  @media (width < 48rem) and (pointer: coarse) {
-    width: min(calc(100% - 56px), 320px);
-    touch-action: pan-y pinch-zoom;
+  &.ui-phone-drawer {
+    @media (width < 48rem) and (pointer: coarse) {
+      width: min(calc(100% - 56px), 320px);
+      touch-action: pan-y pinch-zoom;
+    }
   }
 }
 @utility ui-rail-link {
@@ -364,5 +376,16 @@
   @media (pointer: coarse) {
     height: 36px;
     min-height: 36px;
+  }
+}
+
+@utility ui-section-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-section-gap);
+}
+@utility ui-group-after {
+  &.ui-group-after {
+    margin-top: var(--ui-section-gap);
   }
 }

@@ -284,7 +284,7 @@ function AccountsPage(): ReactNode {
       sections={state.kind === 'ready' ? administrationSections : undefined}
     >
       <PageHeader title={accountsTitle} description={accountsDescription} />
-      <div className="space-y-6">
+      <div className="ui-section-stack">
         {notice === '' ? null : <Notice tone="success" message={notice} />}
         {failure === '' ? null : <Notice tone="problem" message={failure} />}
         {state.kind === 'loading' ? (

@@ -299,7 +299,7 @@ export function ThemeSettings(): ReactNode {
           })}
         </div>
       </fieldset>
-      <fieldset className="m-0 mt-6 border-0 p-0">
+      <fieldset className="ui-group-after m-0 border-0 p-0">
         <legend className="sr-only">Theme</legend>
         <div className="ui-group-toolbar ui-group-heading border-b border-edge-subtle">
           <span

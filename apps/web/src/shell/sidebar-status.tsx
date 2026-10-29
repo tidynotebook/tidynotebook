@@ -105,7 +105,7 @@ export function SidebarStatus({
           </div>
         )}
         <span className="sr-only">
-          {footer.line}
+          {short === footer.line ? '' : footer.line}
           {store.error === null ? '' : ` ${store.error}`}
         </span>
       </div>
