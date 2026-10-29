@@ -166,6 +166,8 @@ try {
           ),
         );
       async function shot(name: string) {
+        if (await p.locator('.phone-sheet').count())
+          await p.locator('.phone-sheet[data-sheet-ready]').waitFor();
         await settle();
         const typography = await auditText(
           p,

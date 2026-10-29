@@ -52,9 +52,7 @@ export type Page = {
   keyboard: { press(key: string): Promise<void> };
 };
 type Context = {
-  newCDPSession(
-    page: Page,
-  ): Promise<{
+  newCDPSession(page: Page): Promise<{
     send(method: string, params: Record<string, unknown>): Promise<unknown>;
   }>;
   addInitScript<A>(run: (argument: A) => void, argument: A): Promise<void>;
