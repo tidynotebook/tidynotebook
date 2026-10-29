@@ -228,7 +228,7 @@ export const publishedTaskBoxClasses =
  * `tests/integration/published-styles.test.ts` holds this copy to it.
  */
 export const publishedCodeFigureClasses =
-  '[&_figure.notes-code]:relative [&_figure.notes-code]:mx-0 [&_figure.notes-code]:my-4 [&_figure.notes-code_pre]:my-0 [&_figure.notes-code_pre]:pt-11 md:[&_figure.notes-code_pre]:pt-10 [&_.notes-code-label]:absolute [&_.notes-code-label]:left-4 [&_.notes-code-label]:top-3 [&_.notes-code-label]:z-10 [&_.notes-code-label]:font-mono [&_.notes-code-label]:text-secondary [&_.notes-code-label]:text-muted';
+  '[&_figure.notes-code]:relative [&_figure.notes-code]:mx-0 [&_figure.notes-code]:my-4 [&_figure.notes-code_pre]:my-0 [&_figure.notes-code_pre]:pt-12 [&_.notes-code-label]:absolute [&_.notes-code-label]:left-4 [&_.notes-code-label]:top-3 [&_.notes-code-label]:z-10 [&_.notes-code-label]:font-mono [&_.notes-code-label]:text-secondary [&_.notes-code-label]:text-muted';
 
 /**
  * The typography of the note body.
@@ -390,11 +390,11 @@ export const footClasses = 'mt-12 text-secondary text-muted';
  * before it compares.
  */
 export const publishedButtonClasses =
-  'inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-label no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed bg-accent-fill text-on-accent hover:bg-accent-fill-hover disabled:bg-hover disabled:hover:bg-hover disabled:text-muted min-h-11 px-3 md:min-h-8';
+  'ui-button inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-md text-label no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed bg-accent-fill text-on-accent hover:bg-accent-fill-hover disabled:bg-hover disabled:hover:bg-hover disabled:text-muted';
 
 /** The classes of the password field. See {@link publishedButtonClasses}. */
 export const publishedFieldClasses =
-  'w-full min-h-11 rounded-md border bg-app px-3 text-body pointer-coarse:text-base text-strong outline-none focus-visible:ring-2 focus-visible:ring-focus/25 md:min-h-8 border-edge-line focus-visible:border-focus';
+  'ui-field w-full rounded-md border bg-app px-3 text-body pointer-coarse:text-base text-strong outline-none focus-visible:ring-2 focus-visible:ring-focus/25 border-edge-line focus-visible:border-focus';
 
 /** The classes of the document frame, which the shell document also writes. */
 export const bodyClasses =

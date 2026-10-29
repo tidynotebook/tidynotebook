@@ -215,6 +215,13 @@ export async function auditSpacing(page: Page) {
         pad = coarse && innerWidth < 1024 ? spec.sheetPad : spec.settingsPad;
       check(e, 'settings-left-inset', parseFloat(style.paddingLeft), pad);
       check(e, 'settings-right-inset', parseFloat(style.paddingRight), pad);
+      if (e.classList.contains('ui-settings-content'))
+        check(
+          e,
+          'settings-horizontal-overflow',
+          Math.max(0, e.scrollWidth - e.clientWidth),
+          0,
+        );
       if (e.classList.contains('ui-settings-heading')) {
         if (coarse && innerWidth < 1024)
           check(

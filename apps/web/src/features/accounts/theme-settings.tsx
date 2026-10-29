@@ -301,7 +301,7 @@ export function ThemeSettings(): ReactNode {
       </fieldset>
       <fieldset className="m-0 mt-6 border-0 p-0">
         <legend className="sr-only">Theme</legend>
-        <div className="ui-group-heading flex items-center gap-cluster border-b border-edge-subtle">
+        <div className="ui-group-toolbar ui-group-heading border-b border-edge-subtle">
           <span
             className="min-w-0 flex-1 text-group text-muted"
             aria-hidden="true"

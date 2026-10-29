@@ -104,10 +104,15 @@ const spacingStep = ((): number => {
   return Number(found[1]) * 16;
 })();
 
-/** The box of the control at each width, quietest first. */
-const boxes = headerControl
-  .split(' ')
-  .filter((part) => part.endsWith('size-11') || part.endsWith('size-7'));
+/** Read the real shared role values from the compiled stylesheet. */
+assert.ok(headerControl.split(' ').includes('ui-button'));
+assert.ok(headerControl.split(' ').includes('ui-icon-button'));
+assert.match(css, /width:\s*var\(--ui-compact-height\)/);
+const compactPixels = [
+  ...css.matchAll(/--ui-compact-height:\s*([\d.]+)px/g),
+].map((match) => Number(match[1]));
+assert.equal(compactPixels.length, 2, 'one compact size for each pointer');
+const boxes = [compactPixels[1] ?? 0, compactPixels[0] ?? 0];
 
 /** The name a failure message gives each width. */
 const widths = ['under touch', 'from the medium width up'];
@@ -117,7 +122,7 @@ function holdsTheLine(pull: string, mark: number): void {
   const parts = pull.split(' ');
   assert.equal(parts.length, boxes.length, 'one pull for each width');
   for (const [index, box] of boxes.entries()) {
-    const inside = (stepsOf(box, 'width') * spacingStep - mark) / 2;
+    const inside = (box - mark) / 2;
     const taken =
       -stepsOf(
         parts[index] ?? '',

@@ -3,6 +3,9 @@
   --container-page: 45rem;
 }
 @layer base {
+  fieldset {
+    min-inline-size: 0;
+  }
   :root {
     --ui-control-height: 32px;
     --ui-compact-height: 28px;
@@ -181,4 +184,18 @@
 }
 @utility ui-field-error {
   margin: var(--ui-label-gap) 0 0;
+}
+
+@utility ui-group-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  & > .text-group {
+    flex: 1 1 100%;
+    min-width: 0;
+    @media (min-width: 1024px) and (pointer: fine) {
+      flex-basis: 0;
+    }
+  }
 }
