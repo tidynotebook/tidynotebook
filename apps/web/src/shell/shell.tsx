@@ -1563,7 +1563,7 @@ function ShellFrame({
   return (
     <SyncProvider value={sync}>
       <DeleteNoticeProvider>
-        <div className="flex h-viewport flex-col bg-app text-ink">
+        <div className="flex h-viewport flex-col bg-app text-strong">
           <a
             className={buttonClassName({
               variant: 'primary',

@@ -56,7 +56,7 @@ export function OAuthConsentView({
       {facts.localWarning === null ? null : (
         <Notice className="mb-5" message={facts.localWarning} />
       )}
-      <p className="mb-4 mt-0 text-body text-ink">{facts.accessSentence}</p>
+      <p className="mb-4 mt-0 text-body text-strong">{facts.accessSentence}</p>
       {facts.writeRequested ? (
         <fieldset className="m-0 min-w-0 border-0 p-0" disabled={busy}>
           <SelectField

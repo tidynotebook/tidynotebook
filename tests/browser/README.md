@@ -1,6 +1,6 @@
 # Browser checks
 
-`touch-typography.mjs` checks the deployed application at 320 and 390 px, in
+`touch-typography.ts` checks the deployed application at 320 and 390 px, in
 light and dark mode, with `hasTouch` and `isMobile` enabled. It reads every
 visible UI text node and field, checks the shared touch combinations, compares
 field labels with field text, and checks the title hierarchy and control layout.

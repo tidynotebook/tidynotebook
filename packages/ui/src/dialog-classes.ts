@@ -51,18 +51,19 @@ export function dialogRootClassName(
 
 /** The panel of a dialog, as classes. */
 export function dialogPanelClassName(width: DialogWidth): string {
-  if (width === 'screen') return 'relative h-full w-full text-ink outline-none';
+  if (width === 'screen')
+    return 'relative h-full w-full text-strong outline-none';
   if (width === 'settings')
-    return 'flex h-full max-h-full w-full flex-col overflow-hidden bg-card text-ink outline-none lg:h-settings lg:max-w-settings lg:rounded-xl lg:border lg:border-edge-subtle lg:shadow-modal';
+    return 'flex h-full max-h-full w-full flex-col overflow-hidden bg-card text-strong outline-none lg:h-settings lg:max-w-settings lg:rounded-xl lg:border lg:border-edge-subtle lg:shadow-modal';
   if (width === 'template')
-    return 'flex h-full max-h-full w-full flex-col overflow-hidden rounded-t-xl border border-edge-subtle bg-card text-ink shadow-modal outline-none lg:h-template lg:max-w-3xl lg:rounded-xl';
+    return 'flex h-full max-h-full w-full flex-col overflow-hidden rounded-t-xl border border-edge-subtle bg-card text-strong shadow-modal outline-none lg:h-template lg:max-w-3xl lg:rounded-xl';
   const measure =
     width === 'small'
       ? 'max-w-md'
       : width === 'large'
         ? 'max-w-3xl'
         : 'max-w-xl';
-  return `w-full ${measure} max-h-full overflow-y-auto overscroll-contain rounded-xl border border-edge-subtle bg-card text-ink shadow-modal outline-none`;
+  return `w-full ${measure} max-h-full overflow-y-auto overscroll-contain rounded-xl border border-edge-subtle bg-card text-strong shadow-modal outline-none`;
 }
 
 /** The title of a dialog, as classes. */

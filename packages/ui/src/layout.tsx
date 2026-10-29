@@ -3,10 +3,9 @@
  *
  * Every screen frames itself with `Page` and titles itself with `PageHeader`,
  * so spacing, measure, and the heading ramp are decided once. The heading ramp
- * of the chrome is: a page title is `text-xl`, a card or section title is
- * `text-base`, a list row title is `text-body`, and a quiet group label is
- * `text-secondary`. There is no smaller size than `text-kbd`, which is a
- * keyboard hint and nothing else.
+ * of the chrome uses the roles of `typography.ts`: page and header titles,
+ * body rows, labels, values, secondary text, and quiet group headings.
+ * Keyboard hints and avatar letters alone use the small step.
  *
  * Distance is decided once as well. `pageGutter` below is the one distance
  * from the edge of the screen to the content of a page, and every frame that

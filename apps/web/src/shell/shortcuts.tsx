@@ -41,7 +41,7 @@ export function ShortcutsDialog({
               className="flex items-center justify-between gap-group"
               key={shortcut.keys}
             >
-              <dt className="min-w-0 text-ink">{shortcut.description}</dt>
+              <dt className="min-w-0 text-strong">{shortcut.description}</dt>
               <dd className="m-0 shrink-0">
                 <KeyHint keys={shortcut.keys} />
               </dd>

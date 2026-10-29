@@ -2,20 +2,21 @@ import assert from 'node:assert/strict';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { touchTextRoles } from '../../packages/ui/src/typography.ts';
-const { chromium } = await import(
+import { hasChromium, isRecord, type Page } from './browser.ts';
+const loaded: unknown = await import(
   pathToFileURL(
     process.env.PLAYWRIGHT_MODULE ??
       '.local-app/node_modules/playwright-core/index.mjs',
   ).href
 );
+assert.ok(hasChromium(loaded), 'The external module must provide Chromium.');
+const { chromium } = loaded;
 import * as api from '@notesapp/api-client';
 const base = process.env.UI_AUDIT_ORIGIN ?? 'http://localhost:3517',
   statePath = process.env.UI_AUDIT_STATE ?? '.local-app/review-session.json',
-  state = JSON.parse(readFileSync(statePath, 'utf8')),
-  fixture = JSON.parse(
-    readFileSync(
-      process.env.UI_AUDIT_FIXTURE ?? '.local-app/review-fixture.json',
-    ),
+  state = readState(statePath),
+  fixture = readFixture(
+    process.env.UI_AUDIT_FIXTURE ?? '.local-app/review-fixture.json',
   ),
   { workspaceId } = fixture,
   home = `${base}/w/${workspaceId}`,
@@ -36,9 +37,9 @@ async function originalState() {
 mkdirSync('.local-app/screenshots', { recursive: true });
 const original = await originalState(),
   browser = await chromium.launch(),
-  results = [],
-  errors = [],
-  writes = [];
+  results: Result[] = [],
+  errors: { variant: string; error: string }[] = [],
+  writes: { method: string; url: string }[] = [];
 try {
   for (const width of process.env.TOUCH_WIDTHS?.split(',').map(Number) ?? [
     320, 390,
@@ -47,6 +48,7 @@ try {
       'light',
       'dark',
     ]) {
+      assert.ok(scheme === 'light' || scheme === 'dark');
       const variant = `${width}-${scheme}`,
         c = await browser.newContext({
           storageState: statePath,
@@ -63,6 +65,7 @@ try {
       await c.route('**/api/account', async (r) => {
         const response = await r.fetch(),
           a = await response.json();
+        assert.ok(isRecord(a));
         await r.fulfill({
           response,
           json: { ...a, accountPortal: true, mcpAuthorization: true },
@@ -153,16 +156,16 @@ try {
               .map((a) => a.finished.catch(() => {})),
           ),
         );
-      async function shot(name) {
+      async function shot(name: string) {
         await settle();
         const typography = await auditText(p, touchTextRoles);
         const issues = await p.evaluate(() => {
-          const visible = (e) =>
+          const visible = (e: Element) =>
             e.checkVisibility({
               visibilityProperty: true,
               opacityProperty: true,
             }) && e.getBoundingClientRect().width > 0;
-          const inScroller = (e) => {
+          const inScroller = (e: Element) => {
             for (let a = e.parentElement; a; a = a.parentElement) {
               const s = getComputedStyle(a);
               if (
@@ -178,7 +181,7 @@ try {
                 'button,[role="menuitem"],[role="treeitem"],input:not([type="checkbox"]),select,textarea',
               ),
             ].filter(visible),
-            problems = [];
+            problems: Problem[] = [];
           for (const e of controls) {
             const b = e.getBoundingClientRect(),
               label =
@@ -210,6 +213,8 @@ try {
           ].filter(visible)) {
             const b = e.getBoundingClientRect(),
               clone = e.cloneNode(true);
+            if (!(clone instanceof HTMLElement))
+              throw new Error('Expected a help element.');
             clone.style.cssText = `position:absolute;visibility:hidden;width:${b.width}px;display:block;-webkit-line-clamp:unset;max-height:none;height:auto;`;
             document.body.append(clone);
             const full = clone.getBoundingClientRect().height;
@@ -241,13 +246,13 @@ try {
         process.stdout.write(`${variant} ${name} ${JSON.stringify(issues)}\n`);
       }
       const d = p.getByRole('dialog', { name: 'Settings', exact: true }),
-        go = async (path) => {
+        go = async (path: string) => {
           await p.goto(path.startsWith('http') ? path : `${home}${path}`);
           await p
             .getByRole('button', { name: 'Open navigation', exact: true })
             .waitFor();
         },
-        settings = async (page) => {
+        settings = async (page: string) => {
           await go(`?settings=${page}`);
           await d.waitFor();
         };
@@ -329,6 +334,14 @@ try {
         true,
       );
       await shot('move');
+      const folderSearch = p
+        .getByRole('dialog', { name: 'Move Personal to', exact: true })
+        .getByRole('button', { name: 'Search folders', exact: true });
+      if (await folderSearch.count()) {
+        await folderSearch.click();
+        await shot('move-filter');
+        await p.keyboard.press('Escape');
+      }
       await p.getByRole('button', { name: 'Cancel', exact: true }).click();
       await p
         .getByRole('button', { name: 'Close navigation', exact: true })
@@ -375,7 +388,7 @@ try {
         'api-keys-apps',
       ]) {
         await settings(section);
-        const titles = {
+        const titles: Record<string, string> = {
           appearance: 'Appearance and editor',
           'api-keys-apps': 'API keys and apps',
           'daily-notes': 'Daily notes',
@@ -385,7 +398,8 @@ try {
         await d
           .getByRole('heading', {
             name:
-              titles[section] ?? section[0].toUpperCase() + section.slice(1),
+              titles[section] ??
+              section.charAt(0).toUpperCase() + section.slice(1),
             exact: true,
           })
           .waitFor();
@@ -471,7 +485,7 @@ try {
             ['Create API key', 'create-key'],
             ['Revoke Design key', 'revoke-key'],
             ['Revoke Design app', 'revoke-app'],
-          ]) {
+          ] as const) {
             await d.getByRole('button', { name: trigger, exact: true }).click();
             await shot(name);
             await d
@@ -489,6 +503,7 @@ try {
         .getByLabel('Server', { exact: true })
         .evaluate((e) => {
           const label = document.querySelector(`label[for="${e.id}"]`);
+          if (!label) throw new Error('The field label is missing.');
           return {
             field: getComputedStyle(e).fontSize,
             label: getComputedStyle(label).fontSize,
@@ -533,6 +548,12 @@ try {
       await go(`/notes/${note.fileId}`);
       await p.locator('.cm-editor').waitFor();
       await shot('note-editor');
+      await p
+        .getByRole('button', { name: 'Account: UI review', exact: true })
+        .click();
+      await p.getByRole('menuitem', { name: 'Settings' }).waitFor();
+      await shot('note-account-menu');
+      await p.keyboard.press('Escape');
       for (const trigger of ['Note actions', 'Row actions', 'Column actions']) {
         const button = p.getByRole('button', { name: trigger, exact: true });
         if (await button.count()) {
@@ -630,18 +651,18 @@ try {
 }
 
 /** Inspect real visible text, including fields, without counting clipped accessibility text. */
-async function auditText(page, roles) {
+async function auditText(page: Page, roles: typeof touchTextRoles) {
   return page.evaluate((roles) => {
     const allowed = new Set(
       Object.values(roles).map((r) => `${r.size}/${r.line}/${r.weight}`),
     );
-    const problems = [],
-      combinations = {};
+    const problems: Problem[] = [],
+      combinations: Record<string, string[]> = {};
     const roots = [...document.querySelectorAll('[role="dialog"]')].filter(
       (e) => e.checkVisibility(),
     );
     const root = roots.at(-1) ?? document.body;
-    const visible = (e, rect) => {
+    const visible = (e: Element, rect: DOMRect) => {
       if (
         !e.checkVisibility({
           visibilityProperty: true,
@@ -675,7 +696,16 @@ async function auditText(page, roles) {
       }
       return true;
     };
-    const inspect = (e, text) => {
+    const colors: Record<string, string> = {};
+    for (const role of ['strong', 'muted', 'danger']) {
+      const probe = document.createElement('span');
+      probe.style.color = `var(--notes-text-${role === 'danger' ? 'strong' : role})`;
+      if (role === 'danger') probe.style.color = 'var(--notes-danger-text)';
+      document.body.append(probe);
+      colors[role] = getComputedStyle(probe).color;
+      probe.remove();
+    }
+    const inspect = (e: Element, text: string) => {
       const s = getComputedStyle(e),
         size = parseFloat(s.fontSize),
         line = parseFloat(s.lineHeight),
@@ -684,16 +714,32 @@ async function auditText(page, roles) {
       (combinations[key] ??= []).push(text.slice(0, 70));
       if (!allowed.has(key))
         problems.push({ kind: 'text-combination', text, key });
+      if (e.classList.contains('text-value') && s.color !== colors.muted)
+        problems.push({ kind: 'value-colour', text, colour: s.color });
+      if (
+        (e.classList.contains('text-title-header') ||
+          e.classList.contains('text-title-page')) &&
+        s.color !== colors.strong
+      )
+        problems.push({ kind: 'title-colour', text, colour: s.color });
+      if (
+        (e.classList.contains('text-secondary') ||
+          e.classList.contains('text-group')) &&
+        ![colors.muted, colors.danger].includes(s.color)
+      )
+        problems.push({ kind: 'secondary-colour', text, colour: s.color });
+
       if (size === 11 && !e.closest('kbd,.text-small,.text-avatar'))
         problems.push({ kind: 'small-role', text, key });
     };
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     while (walker.nextNode()) {
       const t = walker.currentNode,
-        text = t.textContent.trim();
+        text = (t.textContent ?? '').trim();
       if (!text) continue;
-      const e = t.parentElement,
-        range = document.createRange();
+      const e = t.parentElement;
+      if (e === null) continue;
+      const range = document.createRange();
       range.selectNodeContents(t);
       if (visible(e, range.getBoundingClientRect())) inspect(e, text);
     }
@@ -701,7 +747,19 @@ async function auditText(page, roles) {
       'input:not([type="checkbox"]):not([type="radio"]),textarea,select',
     )) {
       if (!visible(e, e.getBoundingClientRect())) continue;
+      if (!(
+        e instanceof HTMLInputElement ||
+        e instanceof HTMLTextAreaElement ||
+        e instanceof HTMLSelectElement
+      ))
+        continue;
       inspect(e, e.value || e.getAttribute('aria-label') || e.id);
+      if (getComputedStyle(e).fontWeight !== '400')
+        problems.push({
+          kind: 'field-weight',
+          field: e.id,
+          weight: getComputedStyle(e).fontWeight,
+        });
       const label = [...document.querySelectorAll('label')].find(
         (l) => l.htmlFor === e.id,
       );
@@ -738,8 +796,8 @@ async function auditText(page, roles) {
         if (childSize > size)
           problems.push({
             kind: 'inverted-heading',
-            title: title.textContent.trim(),
-            text: e.textContent.trim().slice(0, 50),
+            title: (title.textContent ?? '').trim(),
+            text: (e.textContent ?? '').trim().slice(0, 50),
             size,
             childSize,
           });
@@ -747,4 +805,46 @@ async function auditText(page, roles) {
     }
     return { combinations, problems };
   }, roles);
+}
+
+type Problem = { kind: string; [key: string]: unknown };
+type Result = {
+  variant: string;
+  screen: string;
+  issues: Problem[];
+  combinations: Record<string, string[]>;
+};
+function readState(path: string): {
+  cookies: { name: string; value: string }[];
+} {
+  const data: unknown = JSON.parse(readFileSync(path, 'utf8'));
+  assert.ok(isRecord(data) && Array.isArray(data.cookies));
+  return {
+    cookies: data.cookies.map((cookie: unknown) => {
+      assert.ok(
+        isRecord(cookie) &&
+          typeof cookie.name === 'string' &&
+          typeof cookie.value === 'string',
+      );
+      return { name: cookie.name, value: cookie.value };
+    }),
+  };
+}
+function readFixture(path: string): {
+  workspaceId: string;
+  files: { fileId: string }[];
+} {
+  const data: unknown = JSON.parse(readFileSync(path, 'utf8'));
+  assert.ok(
+    isRecord(data) &&
+      typeof data.workspaceId === 'string' &&
+      Array.isArray(data.files),
+  );
+  return {
+    workspaceId: data.workspaceId,
+    files: data.files.map((file: unknown) => {
+      assert.ok(isRecord(file) && typeof file.fileId === 'string');
+      return { fileId: file.fileId };
+    }),
+  };
 }
