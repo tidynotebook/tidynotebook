@@ -213,7 +213,14 @@ export function compactButtonVisualClassName(options: {
   readonly iconOnly: boolean;
 }): string {
   const variant = options.variant ?? 'primary';
-  const sizeClass = options.iconOnly ? 'size-full' : 'h-full px-0';
+  const size = options.size ?? 'md';
+  const sizeClass = options.iconOnly
+    ? size === 'sm'
+      ? 'size-8 md:size-7'
+      : 'size-9 md:size-8'
+    : size === 'sm'
+      ? 'min-h-8 px-2 md:min-h-7'
+      : 'min-h-9 px-3 md:min-h-8';
   return [
     `inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md ${transitionSurface}`,
     'group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-focus',
@@ -265,11 +272,11 @@ export function edgeControlClassName(options: {
 }): string {
   return options.edge === 'start'
     ? options.mark === 'avatar'
-      ? '-ms-3 md:-ms-1'
-      : '-ms-4 md:-ms-2'
+      ? '-ms-2.5 md:-ms-0.5'
+      : '-ms-3.5 md:-ms-1.5'
     : options.mark === 'avatar'
-      ? '-me-3 md:-me-1'
-      : '-me-4 md:-me-2';
+      ? '-me-2.5 md:-me-0.5'
+      : '-me-3.5 md:-me-1.5';
 }
 
 /**
@@ -291,7 +298,7 @@ export function edgeControlClassName(options: {
  * `control-classes.test.ts` holds the strings to that arithmetic.
  */
 export function controlStripClassName(): string {
-  return 'flex items-center overflow-x-auto py-1 -mx-4 md:-mx-3 md:px-1';
+  return 'flex items-center overflow-x-auto py-1 -mx-3.5 md:-mx-2.5 md:px-1';
 }
 
 /**

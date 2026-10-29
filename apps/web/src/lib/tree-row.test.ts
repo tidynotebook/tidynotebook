@@ -139,9 +139,9 @@ await test('the create parent keeps its quiet fill outside a selection', () => {
 });
 
 await test('siblings use a small gap while each row keeps its target size', () => {
-  assert.ok(treeItemsClassName.includes('space-y-0.5'));
-  assert.ok(treeRowClassName().includes('md:min-h-7'));
-  assert.ok(treeRowClassName().includes('min-h-11'));
+  assert.ok(treeItemsClassName.includes('space-y-1'));
+  assert.ok(treeRowClassName().includes('ui-tree-row'));
+  assert.ok(treeRowClassName().includes('ui-tree-row'));
 });
 
 await test('no level of the tree draws a guide line', () => {
@@ -157,7 +157,7 @@ await test('the top of the tree separates from the All notes row', () => {
   // The defect this covers: the All notes row sits outside the folder list,
   // so the spacing inside that list never reached it, and a marked All notes
   // row touched the marked folder below it as one band.
-  assert.ok(treeListClassName.includes('mt-0.5'));
+  assert.ok(treeListClassName.includes('mt-1'));
   assert.ok(!treeListClassName.includes('border'));
   assert.ok(!treeListClassName.includes('pl-'));
 });

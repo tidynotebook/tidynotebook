@@ -11,6 +11,7 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { spacingSpec } from './spacing.ts';
 import {
   avatarClassName,
   badgeClassName,
@@ -378,13 +379,17 @@ await test('a button names one appearance and one size', () => {
   assert.ok(buttonClassName({ className: 'mt-2' }).endsWith('mt-2'));
 });
 
-await test('a button is 32 px on a desktop and 28 px when it is small', () => {
-  const medium = buttonClassName({ size: 'md' }).split(' ');
-  assert.ok(medium.includes('min-h-11'), 'the touch minimum');
-  assert.ok(medium.includes('md:min-h-8'), 'the desktop control height');
-  const small = buttonClassName({ size: 'sm' }).split(' ');
-  assert.ok(small.includes('min-h-11'), 'the touch minimum');
-  assert.ok(small.includes('md:min-h-7'), 'the small desktop height');
+await test('text buttons share one spacing role while inline actions are compact', () => {
+  for (const size of ['sm', 'md'] as const) {
+    assert.ok(buttonClassName({ size }).split(' ').includes('ui-button'));
+    assert.ok(!buttonClassName({ size }).split(' ').includes('ui-compact'));
+  }
+  assert.ok(
+    buttonClassName({ size: 'inline' }).split(' ').includes('ui-compact'),
+  );
+  assert.equal(spacingSpec.fine.button, 32);
+  assert.equal(spacingSpec.coarse.button, 44);
+  assert.equal(spacingSpec.fine.compact, 28);
 });
 
 await test('a compact icon keeps its touch target and reduces its visible surface', () => {
@@ -400,8 +405,11 @@ await test('a compact icon keeps its touch target and reduces its visible surfac
     iconOnly: true,
   });
 
-  assert.ok(button.includes('size-11'), 'the square touch target');
-  assert.ok(button.includes('px-0'), 'the icon has no text inset');
+  assert.ok(button.includes('ui-icon-button'), 'the square target role');
+  assert.ok(
+    button.includes('ui-icon-button'),
+    'the icon role removes text padding',
+  );
   assert.ok(!button.includes('px-2.5'), 'the text inset does not squeeze it');
   assert.ok(button.includes('group'), 'the visual state owner');
   assert.ok(
@@ -430,20 +438,21 @@ await test('a compact text button has a quiet surface inside its touch target', 
     iconOnly: false,
   });
 
-  assert.ok(button.includes('min-h-11'), 'the touch target height');
-  assert.ok(button.includes('px-0'), 'the outer target has no text inset');
+  assert.ok(button.includes('ui-compact'), 'the compact target role');
+  assert.ok(button.includes('ui-button'), 'the shared target padding');
   assert.ok(button.includes('group'), 'the visual state owner');
   assert.ok(!button.includes('bg-card'), 'the outer target has no fill');
   assert.ok(visual.includes('min-h-8'), 'the visible touch surface');
   assert.ok(visual.includes('md:min-h-7'), 'the small desktop surface');
-  assert.ok(visual.includes('px-2.5'), 'the visible text inset');
+  assert.ok(visual.includes('px-2'), 'the visible text inset');
   assert.ok(visual.includes('bg-card'), 'the secondary surface fill');
 });
 
 await test('a row is 28 px on a desktop and 44 px under touch', () => {
   const parts = rowClassName().split(' ');
-  assert.ok(parts.includes('min-h-11'), 'the touch minimum');
-  assert.ok(parts.includes('md:min-h-7'), 'the desktop row height');
+  assert.ok(parts.includes('ui-tree-row'), 'the shared tree row role');
+  assert.equal(spacingSpec.fine.tree, 28);
+  assert.equal(spacingSpec.coarse.tree, 44);
   assert.ok(parts.includes('rounded-md'), 'the row radius');
   assert.ok(parts.includes('px-2'), 'the row inset');
 });
@@ -475,7 +484,7 @@ await test('a row that only holds actions promises none of its own', () => {
   assert.ok(!container.includes('cursor-pointer'), 'the pointer');
   assert.ok(!container.includes('hover:'), 'the hover fill');
   assert.ok(!container.includes('focus-visible:'), 'the focus outline');
-  assert.ok(container.includes('min-h-11'), 'the size of a row');
+  assert.ok(container.includes('ui-tree-row'), 'the shared size of a row');
 });
 
 await test('a field rests on the divider and answers focus on it', () => {
@@ -485,8 +494,9 @@ await test('a field rests on the divider and answers focus on it', () => {
   assert.ok(field.includes('focus-visible:ring-2'), 'the focus ring');
   assert.ok(field.includes('focus-visible:ring-focus/25'), 'the ring strength');
   assert.ok(field.includes('bg-app'), 'the field fill');
-  assert.ok(field.includes('min-h-11'), 'the touch minimum');
-  assert.ok(field.includes('md:min-h-8'), 'the desktop field height');
+  assert.ok(field.includes('ui-field'), 'the shared field geometry');
+  assert.equal(spacingSpec.fine.field, 32);
+  assert.equal(spacingSpec.coarse.field, 44);
 });
 
 await test('every field sets its text at 16 px under touch', () => {
@@ -663,14 +673,9 @@ await test('the pull answers the box of the control it corrects', () => {
     iconOnly: true,
     compact: true,
   }).split(' ');
-  assert.ok(
-    box.includes(`size-${String(smallControlBox.touch / spacingStep)}`),
-    'the touch box of a small compact control',
-  );
-  assert.ok(
-    box.includes(`md:size-${String(smallControlBox.wide / spacingStep)}`),
-    'the wide box of a small compact control',
-  );
+  assert.ok(box.includes('ui-icon-button'));
+  assert.equal(spacingSpec.coarse.compact, smallControlBox.touch);
+  assert.equal(spacingSpec.fine.compact, smallControlBox.wide);
   assert.ok(
     avatarClassName()
       .split(' ')
@@ -780,7 +785,8 @@ await test('a select is a field with the native appearance removed', () => {
   for (const part of fieldClassName().split(' '))
     assert.ok(select.includes(part), `the field class ${part}`);
   assert.ok(select.includes('appearance-none'), 'no native shape');
-  assert.ok(select.includes('pr-9'), 'room for the chevron');
+  assert.ok(select.includes('ui-select'), 'the shared chevron inset');
+  assert.equal(spacingSpec.selectRight, 36);
 });
 
 await test('the view that shows takes the mark of a current row', () => {
@@ -929,7 +935,7 @@ await test('history controls take the tool size of every format tool', async () 
     compact: true,
   }).split(' ');
   const history = historyButtonClassName().split(' ');
-  for (const token of ['size-11', 'md:size-7', 'px-0', 'group'])
+  for (const token of ['ui-button', 'ui-icon-button', 'group'])
     assert.ok(tool.includes(token), `${token} left the format tool`);
   for (const token of tool)
     assert.ok(history.includes(token), `${token} is missing on a history tool`);
@@ -942,7 +948,7 @@ await test('history controls retain their size and focus when unavailable', asyn
     historyButtonVisualClassName,
   } = await import('./control-classes.ts');
   const off = historyButtonClassName();
-  assert.ok(off.split(' ').includes('size-11'));
+  assert.ok(off.split(' ').includes('ui-icon-button'));
   assert.ok(off.split(' ').includes('aria-disabled:cursor-not-allowed'));
   assert.ok(!off.includes('opacity'));
   assert.ok(!off.includes('hover:'));
@@ -961,9 +967,10 @@ await test('history controls retain their size and focus when unavailable', asyn
   });
 });
 
-await test('the touch button recipe keeps the approved 44 px target on every width', () => {
+await test('the touch button recipe uses the shared icon target on each pointer', () => {
   const classes = buttonClassName({ size: 'touch', iconOnly: true });
-  assert.ok(classes.split(' ').includes('size-11'));
+  assert.ok(classes.split(' ').includes('ui-icon-button'));
+  assert.equal(spacingSpec.coarse.compact, 44);
   assert.ok(!/md:size-[78]/.test(classes));
   assert.ok(!/md:min-h-[78]/.test(buttonClassName({ size: 'touch' })));
 });

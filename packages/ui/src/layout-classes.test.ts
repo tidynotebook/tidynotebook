@@ -31,12 +31,13 @@ await test('clustered page actions keep their compact default', () => {
   assert.ok(!classes.includes('w-full'));
 });
 
-await test('every page column is the note measure, centred in its row', () => {
+await test('every page column uses the shared centred page measure', () => {
   // Decision 0137. One measure and one centre on every page, so a move
   // between two pages does not move the column.
   const column = pageColumnClassName().split(' ');
-  assert.ok(column.includes('max-w-note'));
-  assert.ok(column.includes('mx-auto'));
+  assert.ok(column.includes('ui-page-column'));
+  assert.ok(column.includes('ui-page-column'));
+  assert.ok(!column.includes('max-w-note'));
   assert.ok(column.includes('flex-1'));
   assert.ok(column.includes('min-w-0'));
   assert.ok(!column.some((name) => /^max-w-(?!note$)/.test(name)));

@@ -49,12 +49,9 @@ export const pageGutter = 'px-gutter sm:px-gutter-wide';
  * The page owns the `main` landmark, so a route renders exactly one of them
  * and a child state returns a section instead of a second landmark.
  *
- * Every page is the one row of decision 0137: the column of the note measure
- * and the side region to its right. The page takes no width of its own, so
- * the column stays where it is when a person moves from one page to another.
- * A page of two or more sections passes them in `sections`, in page order,
- * and the side region lists them. The page renders its sections from the same
- * list, so the two cannot disagree.
+ * Every page uses one centred 720 px column. Sections stay inside that
+ * column. The note editor retains its own document measure and outline.
+ * The optional sections prop remains compatible with existing callers.
  */
 export function Page({
   children,
