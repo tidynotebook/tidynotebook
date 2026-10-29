@@ -142,7 +142,7 @@ try {
         await open();
       }
       const footer = panel
-        .locator('.ui-sidebar-status')
+        .locator('[role=status] .ui-sidebar-status')
         .filter({ visible: true })
         .first();
       await footer.waitFor();

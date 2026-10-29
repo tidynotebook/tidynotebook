@@ -394,22 +394,14 @@
   }
 }
 
-/* A phone row keeps its content at 16 px and extends its state fill to 8 px. */
+/* The state fill extends into the gutter without adding scrollable content. */
 @utility ui-setting-row {
   @media (pointer: coarse) {
-    &:is(button) {
-      position: relative;
-      isolation: isolate;
-      &::before {
-        content: '';
-        position: absolute;
-        inset: 0 -8px;
-        z-index: -1;
-        border-radius: 6px;
-      }
-      &:hover:not(:disabled)::before {
-        background: var(--color-hover);
-      }
+    &:is(button):hover:not(:disabled),
+    &:is(button):active:not(:disabled) {
+      box-shadow:
+        8px 0 0 var(--color-hover),
+        -8px 0 0 var(--color-hover);
     }
   }
 }

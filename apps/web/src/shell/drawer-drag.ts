@@ -88,6 +88,7 @@ export function followDrawerDrag(
         return;
       }
       drag.active = true;
+      panel.style.transition = 'none';
       suppressClick = true;
       panel.setPointerCapture(e.pointerId);
     }
@@ -118,7 +119,6 @@ export function followDrawerDrag(
     }
   };
   const transition = panel.style.transition;
-  panel.style.transition = 'none';
   panel.dataset.drawerReady = '';
   panel.addEventListener('pointerdown', down);
   panel.addEventListener('pointermove', move, { passive: false });
