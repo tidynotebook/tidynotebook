@@ -75,6 +75,8 @@ const errors: string[] = [];
 const writes: string[] = [];
 mkdirSync('.local-app/screenshots', { recursive: true });
 async function settle(page: Page) {
+  if (await page.locator('.phone-sheet').count())
+    await page.locator('.phone-sheet[data-sheet-ready]').waitFor();
   await page.evaluate(async () => {
     await Promise.all(
       document

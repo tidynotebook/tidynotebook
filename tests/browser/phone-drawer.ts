@@ -108,6 +108,10 @@ try {
           const mid = await measure();
           assert.ok(mid.x < -distance + 3, `Direct drag: ${mid.x}`);
           assert.ok(mid.opacity < 0.99);
+          if (!fast && distance === 40 && width === 390)
+            await p.screenshot({
+              path: `.local-app/screenshots/k-drawer-drag-390-${scheme}.png`,
+            });
           if (!fast) await pause(130);
           await touch('touchEnd', 0, 0);
           await pause(260);
