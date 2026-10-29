@@ -53,6 +53,13 @@ export async function auditSpacing(page: Page) {
         e.getBoundingClientRect().height,
         compact ? role.compact : role.button,
       );
+      if (e.classList.contains('ui-icon-button'))
+        check(
+          e,
+          'icon-button-width',
+          e.getBoundingClientRect().width,
+          role.compact,
+        );
       if (!e.classList.contains('ui-icon-button')) {
         const pad = compact && !coarse ? 8 : role.buttonPad;
         check(e, 'button-left-pad', parseFloat(style.paddingLeft), pad);
@@ -114,6 +121,22 @@ export async function auditSpacing(page: Page) {
     for (const e of document.querySelectorAll('.ui-setting-row')) {
       if (visible(e) && e.querySelector('.ui-setting-row'))
         check(e, 'nested-setting-row', 1, 0);
+    }
+    for (const e of document.querySelectorAll('.ui-calendar-day')) {
+      if (visible(e)) {
+        check(
+          e,
+          'calendar-height',
+          e.getBoundingClientRect().height,
+          role.compact,
+        );
+        check(
+          e,
+          'calendar-grid-pad',
+          parseFloat(getComputedStyle(e).paddingLeft),
+          0,
+        );
+      }
     }
     const groups = [...document.querySelectorAll('.ui-field-group')].filter(
       visible,

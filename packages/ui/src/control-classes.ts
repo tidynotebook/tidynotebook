@@ -397,7 +397,7 @@ export function sidebarViewClassName(options: {
   readonly current: boolean;
 }): string {
   return [
-    `inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-md ${transitionSurface} ${focusOutline} md:size-8`,
+    `ui-button ui-icon-button inline-flex shrink-0 cursor-pointer items-center justify-center rounded-md ${transitionSurface} ${focusOutline}`,
     options.current
       ? 'bg-active text-strong'
       : 'text-muted hover:bg-hover hover:text-strong',
@@ -431,7 +431,7 @@ export function taskBoxClassName(): string {
  */
 export function tabClassName(options: { readonly selected: boolean }): string {
   return [
-    `inline-flex min-h-11 shrink-0 cursor-pointer items-center rounded-md px-3 text-label ${transitionSurface} ${focusOutline} md:min-h-7`,
+    `ui-button ui-compact inline-flex shrink-0 cursor-pointer items-center rounded-md text-label ${transitionSurface} ${focusOutline}`,
     options.selected
       ? 'bg-active text-strong'
       : 'text-muted hover:bg-hover hover:text-strong',
@@ -448,7 +448,7 @@ export function tabClassName(options: { readonly selected: boolean }): string {
  * field.
  */
 export function inlineFieldClassName(): string {
-  return `min-w-0 flex-1 rounded-sm border bg-app px-1 text-body ${touchFieldText} text-strong outline-none ${transitionField} border-edge-line focus-visible:border-focus`;
+  return `ui-field min-w-0 flex-1 rounded-sm border bg-app text-body ${touchFieldText} text-strong outline-none ${transitionField} border-edge-line focus-visible:border-focus`;
 }
 
 /** The classes of the parts of one checkbox and its label. */
@@ -631,7 +631,7 @@ export function textAreaClassName(
  * body step of the chrome and the touch step of every field.
  */
 export function bareFieldClassName(): string {
-  return `min-w-0 flex-1 border-0 bg-transparent py-3 text-body ${touchFieldText} text-strong outline-none placeholder:text-muted`;
+  return `ui-field min-w-0 flex-1 border-0 bg-transparent text-body ${touchFieldText} text-strong outline-none placeholder:text-muted`;
 }
 
 /**
@@ -736,7 +736,7 @@ export function calendarDayClassName(options: {
         ? 'text-ink'
         : 'text-muted';
   return [
-    `relative inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border text-body tabular-nums ${transitionSurface} ${focusOutlineInset} md:h-7`,
+    `ui-calendar-day relative inline-flex w-full cursor-pointer items-center justify-center rounded-md border text-body tabular-nums ${transitionSurface} ${focusOutlineInset}`,
     options.today ? 'border-edge-line text-label' : 'border-transparent',
     options.selected
       ? 'bg-active text-label'

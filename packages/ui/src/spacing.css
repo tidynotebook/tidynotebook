@@ -59,6 +59,7 @@
     height: var(--ui-field-height);
     min-height: var(--ui-field-height);
     padding-inline: 12px;
+    border-radius: 6px;
   }
   &.ui-field:where(textarea) {
     height: auto;
@@ -202,4 +203,10 @@
       flex-basis: 0;
     }
   }
+}
+/* A seven-column calendar centres short dates without text-button side insets. */
+@utility ui-calendar-day {
+  height: var(--ui-compact-height);
+  min-height: var(--ui-compact-height);
+  padding: 0;
 }

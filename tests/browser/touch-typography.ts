@@ -291,6 +291,18 @@ try {
           .getByRole('button', { name: 'Close navigation', exact: true })
           .waitFor();
       await shot('drawer');
+      if (spacing) {
+        await p
+          .getByRole('button', { name: 'Calendar', exact: true })
+          .filter({ visible: true })
+          .click();
+        await p.locator('.ui-calendar-day').first().waitFor();
+        await shot('calendar');
+        await p
+          .getByRole('button', { name: 'Notes', exact: true })
+          .filter({ visible: true })
+          .click();
+      }
       await p
         .getByRole('button', { name: 'Expand all folders', exact: true })
         .click();
@@ -301,6 +313,20 @@ try {
         })
         .waitFor();
       await shot('drawer-expanded');
+      if (spacing) {
+        await p
+          .getByRole('button', {
+            name: 'Actions for the note Home page',
+            exact: true,
+          })
+          .click();
+        await p.getByRole('menuitem', { name: 'Rename', exact: true }).click();
+        await p
+          .getByRole('textbox', { name: 'Name of the note', exact: true })
+          .waitFor();
+        await shot('drawer-rename');
+        await p.keyboard.press('Escape');
+      }
       await p
         .getByRole('button', { name: 'Collapse all folders', exact: true })
         .click();
@@ -370,6 +396,17 @@ try {
         .waitFor();
       await shot('shortcuts');
       await p.keyboard.press('Escape');
+      if (spacing) {
+        await p.keyboard.press('Control+p');
+        await p
+          .getByRole('dialog', {
+            name: 'Search notes and run actions',
+            exact: true,
+          })
+          .waitFor();
+        await shot('search');
+        await p.keyboard.press('Escape');
+      }
       await p
         .getByRole('button', { name: 'Use template', exact: true })
         .click();

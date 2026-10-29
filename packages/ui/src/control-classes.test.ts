@@ -731,8 +731,8 @@ await test('a day of the calendar keeps one size in every state', () => {
     // and one edge width, so a day that becomes today or selected moves no
     // neighbour.
     assert.ok(parts.includes('w-full'));
-    assert.ok(parts.includes('h-8'));
-    assert.ok(parts.includes('md:h-7'));
+    assert.ok(parts.includes('ui-calendar-day'));
+    assert.equal(spacingSpec.fine.compact, 28);
     assert.ok(parts.includes('border'));
     assert.ok(parts.includes('rounded-md'));
     // One colour utility for one element.
@@ -795,7 +795,7 @@ await test('the view that shows takes the mark of a current row', () => {
   for (const current of [true, false]) {
     const view = sidebarViewClassName({ current });
     assert.ok(view.includes(focusOutline), 'the one focus treatment');
-    assert.ok(view.includes('size-11'), 'the touch target');
+    assert.ok(view.includes('ui-icon-button'), 'the shared icon target');
   }
 });
 
@@ -808,18 +808,17 @@ await test('the open tab takes the fill of a chosen row and the others rest', ()
   assert.ok(!rest.includes('bg-active'));
   assert.ok(rest.includes('hover:bg-hover'));
   for (const tab of [open, rest]) {
-    assert.ok(tab.includes('min-h-11'));
-    assert.ok(tab.includes('md:min-h-7'));
+    assert.ok(tab.includes('ui-button'));
+    assert.ok(tab.includes('ui-compact'));
     assert.ok(tab.includes('rounded-md'));
     assert.ok(!tab.includes('border-b'));
   }
 });
 
-await test('a field inside a row keeps the height of the row', () => {
-  // Record 0164: the name of a tree row turns into this field, and the rows
-  // below it must not move.
+await test('a field inside a row keeps the shared field geometry', () => {
+  // An edited tree row grows to fit the same field as every form.
   const field = inlineFieldClassName();
-  assert.ok(!/(?:^| )(?:md:)?min-h-/u.test(field));
+  assert.ok(field.split(' ').includes('ui-field'));
   assert.ok(field.includes('border-edge-line'));
   assert.ok(field.includes('focus-visible:border-focus'));
   assert.ok(field.includes(touchFieldText));
