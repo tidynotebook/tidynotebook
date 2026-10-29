@@ -257,130 +257,50 @@ export function ThemeSettings(): ReactNode {
   return (
     <SettingsSection
       section={settingsSection('appearance')}
+      grouped
       description="System follows the device. The choice applies at once on this device and goes to your account in the background. Import a theme file to use your own colours."
     >
-      <fieldset className="m-0 border-0 p-0">
-        <legend className="ui-group-tiles-heading ui-group-heading w-full border-b border-edge-subtle p-0 text-group text-muted">
-          Mode
-        </legend>
-        <div className="ui-theme-tiles grid grid-cols-3 gap-cluster">
-          {appearanceChoices.map((choice) => {
-            const chosen = theme.choice === choice.value;
-            return (
-              <label className={cardClassName(chosen)} key={choice.value}>
-                <input
-                  className="sr-only"
-                  type="radio"
-                  name="theme-choice"
-                  value={choice.value}
-                  checked={chosen}
-                  onChange={(): void => {
-                    theme.setChoice(choice.value);
-                  }}
-                />
-                {choice.value === 'system' ? (
-                  <span className="flex" aria-hidden="true">
-                    <ThemePreview tokens={light} className="w-1/2" />
-                    <ThemePreview tokens={dark} className="w-1/2" />
-                  </span>
-                ) : (
-                  <ThemePreview
-                    tokens={choice.value === 'light' ? light : dark}
+      <div className="ui-settings-groups">
+        <fieldset className="ui-settings-group border-0 p-0">
+          <legend className="sr-only">Mode</legend>
+          <h3 className="ui-settings-tiles-heading w-full text-group text-muted">
+            Mode
+          </h3>
+          <div className="ui-theme-tiles grid grid-cols-3 gap-cluster">
+            {appearanceChoices.map((choice) => {
+              const chosen = theme.choice === choice.value;
+              return (
+                <label className={cardClassName(chosen)} key={choice.value}>
+                  <input
+                    className="sr-only"
+                    type="radio"
+                    name="theme-choice"
+                    value={choice.value}
+                    checked={chosen}
+                    onChange={(): void => {
+                      theme.setChoice(choice.value);
+                    }}
                   />
-                )}
-                <span className="flex min-h-9 items-center gap-2 px-2">
-                  <span className="inline-flex items-center" aria-hidden="true">
-                    {choice.icon}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate">
-                    {choice.label}
-                  </span>
-                  {chosen ? (
+                  {choice.value === 'system' ? (
+                    <span className="flex" aria-hidden="true">
+                      <ThemePreview tokens={light} className="w-1/2" />
+                      <ThemePreview tokens={dark} className="w-1/2" />
+                    </span>
+                  ) : (
+                    <ThemePreview
+                      tokens={choice.value === 'light' ? light : dark}
+                    />
+                  )}
+                  <span className="flex min-h-9 items-center gap-2 px-2">
                     <span
                       className="inline-flex items-center"
                       aria-hidden="true"
                     >
-                      <CheckIcon />
+                      {choice.icon}
                     </span>
-                  ) : null}
-                </span>
-              </label>
-            );
-          })}
-        </div>
-      </fieldset>
-      <fieldset className="ui-group-after m-0 border-0 p-0">
-        <legend className="sr-only">Theme</legend>
-        <div className="ui-group-tiles-heading ui-group-toolbar ui-group-heading border-b border-edge-subtle">
-          <span
-            className="min-w-0 flex-1 text-group text-muted"
-            aria-hidden="true"
-          >
-            Theme
-          </span>
-          {phone ? null : (
-            <>
-              <Button
-                variant="ghost"
-                size="sm"
-                icon={<UploadIcon />}
-                disabled={busy}
-                onClick={() => fileInput.current?.click()}
-              >
-                {busy ? 'Importing the theme' : 'Import theme file'}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                icon={<DownloadIcon />}
-                label={`Export the ${current.name} theme file`}
-                onClick={() => {
-                  save(
-                    new Blob([themeFileText(current)], {
-                      type: 'application/json',
-                    }),
-                    themeFileName(current.name),
-                  );
-                }}
-              >
-                Export theme file
-              </Button>
-            </>
-          )}
-        </div>
-        <ul className="ui-theme-tiles m-0 flex list-none gap-cluster overflow-x-auto p-0 pb-1 md:grid md:grid-cols-4 md:overflow-visible lg:grid-cols-4">
-          {theme.families.map((option) => {
-            const chosen = theme.familyId === option.id;
-            const only = onlyModeOf(option);
-            const importedTheme = isImportedFamilyId(option.id);
-            return (
-              <li
-                className="flex w-28 shrink-0 flex-col md:w-auto"
-                key={option.id}
-              >
-                <label className={cardClassName(chosen)}>
-                  <input
-                    className="sr-only"
-                    type="radio"
-                    name="theme-family"
-                    value={option.id}
-                    checked={chosen}
-                    onChange={(): void => {
-                      theme.setFamily(option.id);
-                    }}
-                  />
-                  <ThemePreview
-                    tokens={themeOfFamily(option, theme.resolved).tokens}
-                  />
-                  <span className="flex min-h-9 items-center gap-1 px-2">
                     <span className="min-w-0 flex-1 truncate">
-                      {option.name}
+                      {choice.label}
                     </span>
-                    {only === null ? null : (
-                      <span className="shrink-0 text-secondary text-muted">
-                        {only === 'dark' ? 'dark only' : 'light only'}
-                      </span>
-                    )}
                     {chosen ? (
                       <span
                         className="inline-flex items-center"
@@ -391,42 +311,129 @@ export function ThemeSettings(): ReactNode {
                     ) : null}
                   </span>
                 </label>
-                {importedTheme ? (
-                  <Button
-                    className="mt-1"
-                    variant="ghost"
-                    size="sm"
-                    tone="danger"
-                    icon={actionIcon(deleteGlyph)}
-                    disabled={busy}
-                    label={`${deleteForGoodLabel} ${option.name}`}
-                    onClick={() => {
-                      run(() => removeTheme(option));
-                    }}
-                  >
-                    {deleteForGoodLabel}
-                  </Button>
-                ) : null}
-              </li>
-            );
-          })}
-        </ul>
-        {phone ? (
-          <div className="ui-settings-card ui-group-after">
-            <SettingActionRow
-              label="Import theme file…"
-              actionLabel="Import theme file"
-              disabled={busy}
-              onClick={() => fileInput.current?.click()}
-            />
-            <SettingActionRow
-              label="Export theme file"
-              actionLabel="Export theme file"
-              onClick={exportCurrent}
-            />
+              );
+            })}
           </div>
-        ) : null}
-      </fieldset>
+        </fieldset>
+        <fieldset className="ui-settings-group border-0 p-0">
+          <legend className="sr-only">Theme</legend>
+          <div className="ui-settings-tiles-heading ui-group-toolbar">
+            <span
+              className="min-w-0 flex-1 text-group text-muted"
+              aria-hidden="true"
+            >
+              Theme
+            </span>
+            {phone ? null : (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon={<UploadIcon />}
+                  disabled={busy}
+                  onClick={() => fileInput.current?.click()}
+                >
+                  {busy ? 'Importing the theme' : 'Import theme file'}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon={<DownloadIcon />}
+                  label={`Export the ${current.name} theme file`}
+                  onClick={() => {
+                    save(
+                      new Blob([themeFileText(current)], {
+                        type: 'application/json',
+                      }),
+                      themeFileName(current.name),
+                    );
+                  }}
+                >
+                  Export theme file
+                </Button>
+              </>
+            )}
+          </div>
+          <ul className="ui-theme-tiles m-0 flex list-none gap-cluster overflow-x-auto p-0 pb-1 md:grid md:grid-cols-4 md:overflow-visible lg:grid-cols-4">
+            {theme.families.map((option) => {
+              const chosen = theme.familyId === option.id;
+              const only = onlyModeOf(option);
+              const importedTheme = isImportedFamilyId(option.id);
+              return (
+                <li
+                  className="flex w-28 shrink-0 flex-col md:w-auto"
+                  key={option.id}
+                >
+                  <label className={cardClassName(chosen)}>
+                    <input
+                      className="sr-only"
+                      type="radio"
+                      name="theme-family"
+                      value={option.id}
+                      checked={chosen}
+                      onChange={(): void => {
+                        theme.setFamily(option.id);
+                      }}
+                    />
+                    <ThemePreview
+                      tokens={themeOfFamily(option, theme.resolved).tokens}
+                    />
+                    <span className="flex min-h-9 items-center gap-1 px-2">
+                      <span className="min-w-0 flex-1 truncate">
+                        {option.name}
+                      </span>
+                      {only === null ? null : (
+                        <span className="shrink-0 text-secondary text-muted">
+                          {only === 'dark' ? 'dark only' : 'light only'}
+                        </span>
+                      )}
+                      {chosen ? (
+                        <span
+                          className="inline-flex items-center"
+                          aria-hidden="true"
+                        >
+                          <CheckIcon />
+                        </span>
+                      ) : null}
+                    </span>
+                  </label>
+                  {importedTheme ? (
+                    <Button
+                      className="mt-1"
+                      variant="ghost"
+                      size="sm"
+                      tone="danger"
+                      icon={actionIcon(deleteGlyph)}
+                      disabled={busy}
+                      label={`${deleteForGoodLabel} ${option.name}`}
+                      onClick={() => {
+                        run(() => removeTheme(option));
+                      }}
+                    >
+                      {deleteForGoodLabel}
+                    </Button>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+          {phone ? (
+            <div className="ui-settings-card">
+              <SettingActionRow
+                label="Import theme file…"
+                actionLabel="Import theme file"
+                disabled={busy}
+                onClick={() => fileInput.current?.click()}
+              />
+              <SettingActionRow
+                label="Export theme file"
+                actionLabel="Export theme file"
+                onClick={exportCurrent}
+              />
+            </div>
+          ) : null}
+        </fieldset>
+      </div>
       <input
         ref={fileInput}
         className="sr-only"

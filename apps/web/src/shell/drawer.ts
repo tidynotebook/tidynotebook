@@ -41,18 +41,8 @@ export function drawerClassName(open: boolean, size: SidebarSize): string {
   return `${base} ${overlay} ${wide}`;
 }
 
-/**
- * The classes of the part of the drawer under its phone title bar.
- *
- * The tree is the one part that grows with the notes, so it scrolls on its
- * own and the footer rows stay in place on a tall screen. On a short screen,
- * a phone held sideways or a phone with its keyboard open, every other part
- * of the drawer kept its height and the tree shrank to nothing, so no row of
- * it could be reached. The tree now keeps a minimum height, and the part
- * around it scrolls as one when the screen cannot hold them all. The title
- * bar with the close button stays above it.
- */
-export const drawerPanelClassName = 'ui-sidebar-body ui-drawer-scroll';
+/** The fixed top and footer surround the one scroll region. */
+export const drawerPanelClassName = 'ui-sidebar-panel';
 
 /** The classes of the box that scrolls the tree inside the drawer panel. */
 export const drawerTreeClassName = 'ui-sidebar-tree ui-drawer-scroll';
@@ -60,7 +50,6 @@ export const drawerTreeClassName = 'ui-sidebar-tree ui-drawer-scroll';
 /**
  * The classes of the calendar view inside the drawer panel.
  *
- * The month has a fixed height, so it keeps it and the panel scrolls when a
- * short screen needs it (record 0105).
+ * The month keeps its own height inside the shared tree scroll region.
  */
 export const drawerCalendarClassName = 'flex-1';

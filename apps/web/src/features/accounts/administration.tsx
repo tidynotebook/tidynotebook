@@ -60,7 +60,6 @@ import {
   Menu,
   MoreIcon,
   Notice,
-  pageListClassName,
   PlusIcon,
   ReadOnlyField,
   SelectField,
@@ -137,9 +136,9 @@ function AdminGroup({
 }): ReactNode {
   if (Children.toArray(children).length === 0) return null;
   return (
-    <section>
+    <section className="ui-settings-group">
       {title === undefined ? null : (
-        <div className="ui-group-toolbar ui-group-heading border-b border-edge-subtle">
+        <div className="ui-settings-group-heading ui-group-toolbar">
           <h3
             className={`m-0 min-w-0 flex-1 text-group ${danger ? 'text-danger' : 'text-muted'}`}
           >
@@ -404,7 +403,7 @@ function AccountsPage({
                   )
                 }
               >
-                <ul className={pageListClassName()}>
+                <ul className="ui-settings-items">
                   {state.invitations.length === 0 ? (
                     <li className="ui-settings-empty text-secondary text-muted">
                       No invitation waits.
@@ -412,7 +411,7 @@ function AccountsPage({
                   ) : (
                     state.invitations.map((invitation) => (
                       <ListRow key={invitation.invitationId}>
-                        <div className="min-w-0 flex-1">
+                        <div className="ui-settings-copy">
                           <p className="m-0 break-words text-body text-strong">
                             {invitation.email}
                           </p>
@@ -457,7 +456,7 @@ function AccountsPage({
                 title="Accounts"
                 count={String(state.accounts.length)}
               >
-                <ul className={pageListClassName()}>
+                <ul className="ui-settings-items">
                   {state.accounts.map((account) => {
                     const name = accountName(account),
                       actions = accountActions(
@@ -472,7 +471,7 @@ function AccountsPage({
                         >
                           <UsersIcon />
                         </span>
-                        <div className="min-w-0 flex-1">
+                        <div className="ui-settings-copy">
                           <p className="m-0 flex flex-wrap items-center gap-2 text-body text-strong">
                             <span>{name}</span>
                             {account.installationRole === 'administrator' ? (
@@ -501,7 +500,7 @@ function AccountsPage({
                       <li key={account.accountId}>
                         <button
                           type="button"
-                          className="ui-settings-phone-row flex w-full text-left text-body text-strong"
+                          className="ui-settings-row flex w-full text-left text-body text-strong"
                           aria-label={`Account: ${name}`}
                           onClick={(event) => {
                             detailOpener.current = event.currentTarget;
@@ -546,7 +545,7 @@ function AccountsPage({
           ) : null}
           {page === 'reports' ? (
             <AdminGroup>
-              <ul className={pageListClassName()}>
+              <ul className="ui-settings-items">
                 {state.reports.length === 0 ? (
                   <li className="ui-settings-empty text-secondary text-muted">
                     No report waits.
@@ -554,7 +553,7 @@ function AccountsPage({
                 ) : (
                   state.reports.map((report) => (
                     <ListRow key={report.reportId} className="flex-wrap">
-                      <div className="min-w-0 flex-1">
+                      <div className="ui-settings-copy">
                         <p className="m-0 text-body text-strong">
                           {reportReasonWord(report.reason)}
                         </p>
@@ -1079,7 +1078,7 @@ function ControlsDialog({
               set({ downloadGigabytes: value });
             }}
           />
-          <div className="ui-form-following-group ui-settings-groups">
+          <div className="ui-settings-groups">
             <AdminGroup title="Features">
               <SettingSwitchRow
                 label="Teams"

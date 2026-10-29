@@ -251,7 +251,7 @@ try {
         .first();
       await footer.waitFor();
       const box = await footer.boundingBox();
-      assert.equal(box?.height, phone ? 36 : 32);
+      assert.equal(box?.height, 32);
       results.push(`${width} ${scheme}: compact footer`);
       for (const [name, path] of [
         ['Published links', 'published'],

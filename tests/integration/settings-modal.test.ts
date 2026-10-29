@@ -424,7 +424,7 @@ await test('on a phone the sheet shows the list, then the section with Back', as
   const modal = dialog();
   assert.ok(modal);
   const nav = modal.querySelector('nav');
-  const list = nav?.parentElement?.parentElement;
+  const list = nav?.closest('.ui-settings-navigation');
   const detail = modal.querySelector('section[aria-labelledby]');
   assert.ok(list && detail);
   // The list level: the list shows and the section waits.
@@ -687,7 +687,11 @@ await test('Settings folder choices and name format do not open another modal', 
     modal?.querySelector('section[aria-labelledby] h2')?.textContent,
     'Save in',
   );
-  assert.ok(button('Back to section').parentElement?.querySelector('h2'));
+  assert.ok(
+    button('Back to section')
+      .closest('.ui-settings-heading')
+      ?.querySelector('h2'),
+  );
   const back = button('Back to section');
   back.focus();
   await escape();

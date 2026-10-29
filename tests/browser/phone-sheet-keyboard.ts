@@ -344,14 +344,20 @@ try {
           exact: true,
         });
         await welcome.waitFor();
-        assert.equal(
-          await welcome.evaluate(
-            (e) =>
-              e.scrollWidth <= e.clientWidth &&
-              e.scrollHeight <= e.clientHeight,
-          ),
-          true,
-          'A normal note name must be fully readable',
+        assert.deepEqual(
+          await welcome.evaluate((e) => ({
+            name: e.textContent,
+            height: e.getBoundingClientRect().height,
+            overflow: getComputedStyle(e).textOverflow,
+            whiteSpace: getComputedStyle(e).whiteSpace,
+          })),
+          {
+            name: 'Welcome to tidy notebook',
+            height: 20,
+            overflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          },
+          'A phone tree name keeps one line and its complete accessible text',
         );
       }
       await shot('drawer');

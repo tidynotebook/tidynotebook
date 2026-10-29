@@ -169,43 +169,7 @@
   height: var(--ui-header-height);
   min-height: var(--ui-header-height);
 }
-@utility ui-settings-heading {
-  &.ui-settings-heading {
-    padding: 24px 24px 0;
-    @media (max-width: 1023px) and (pointer: coarse) {
-      height: var(--ui-header-height);
-      min-height: var(--ui-header-height);
-      padding: 0 2px;
-      column-gap: 0;
-      align-items: center;
-    }
-  }
-}
-@utility ui-settings-content {
-  padding: 16px 24px 24px;
-  @media (max-width: 1023px) and (pointer: coarse) {
-    padding: var(--ui-content-gap) 16px 0;
-  }
-}
-@utility ui-settings-action {
-  margin-inline: -24px;
-  @media (max-width: 1023px) and (pointer: coarse) {
-    margin-inline: -16px;
-  }
-  & .ui-dialog-body.ui-dialog-body,
-  & .ui-dialog-footer.ui-dialog-footer {
-    padding-inline: 24px;
-    @media (max-width: 1023px) and (pointer: coarse) {
-      padding-inline: var(--ui-footer-pad);
-    }
-  }
-  & .ui-dialog-body.ui-dialog-body {
-    @media (max-width: 1023px) and (pointer: coarse) {
-      padding-top: 0;
-      padding-inline: 16px;
-    }
-  }
-}
+
 @utility ui-page-column {
   width: 100%;
   max-width: 720px;
@@ -248,67 +212,8 @@
   padding: 0;
 }
 
-@utility ui-setting-align {
-  &:not(:has(.ui-button, .ui-switch-control)) > [data-setting-control] {
-    margin-top: calc((1lh - 24px) / 2);
-  }
-  &.ui-setting-align {
-    align-items: start;
-  }
-  &:has(.ui-button, .ui-switch-control) {
-    --ui-setting-control-height: var(--ui-control-height);
-    &:has(.ui-compact):not(:has(.ui-button:not(.ui-compact))) {
-      --ui-setting-control-height: var(--ui-compact-height);
-    }
-    & [data-setting-label] {
-      min-height: var(--ui-setting-control-height);
-      padding-top: calc((var(--ui-setting-control-height) - 1lh) / 2);
-    }
-    & [data-setting-control] {
-      display: flex;
-      align-items: center;
-      min-height: var(--ui-setting-control-height);
-    }
-    & > [aria-hidden='true'] {
-      margin-top: calc((var(--ui-setting-control-height) - 16px) / 2);
-    }
-  }
-}
-
 /* Phone edges, headers, and groups use one layout at every sheet level. */
-@utility ui-settings-list {
-  &.ui-settings-list {
-    & nav > .ui-section {
-      margin-top: var(--ui-section-gap);
-    }
-    @media (max-width: 1023px) and (pointer: coarse) {
-      padding: 8px 8px 0;
-      & .ui-group-heading {
-        padding-inline: 8px;
-      }
-    }
-  }
-}
-@utility ui-account-card {
-  &.ui-account-card {
-    @media (max-width: 1023px) and (pointer: coarse) {
-      margin-inline: 8px;
-      padding: 12px 0;
-    }
-  }
-}
-@utility ui-settings-navigation-footer {
-  &.ui-settings-navigation-footer {
-    @media (max-width: 1023px) and (pointer: coarse) {
-      margin-inline: 16px;
-      padding: 12px 0;
-      & > a {
-        margin-inline: -8px;
-        width: calc(100% + 16px);
-      }
-    }
-  }
-}
+
 @utility ui-scope-line {
   margin: 0 0 16px;
 }
@@ -317,25 +222,6 @@
     @media (max-width: 1023px) and (pointer: coarse) {
       padding-inline: 2px;
       column-gap: 0;
-    }
-  }
-}
-@utility ui-setting-align {
-  @media (pointer: coarse) {
-    &:has(.ui-button, .ui-switch-control) {
-      & [data-setting-label] {
-        min-height: 1lh;
-        padding-top: 0;
-      }
-      & [data-setting-control] {
-        min-height: 1lh;
-      }
-      & [data-setting-control] .ui-button,
-      & [data-setting-control].ui-button,
-      & [data-setting-control] .ui-switch-control,
-      & [data-setting-control].ui-switch-control {
-        margin-block: calc((1lh - var(--ui-control-height)) / 2);
-      }
     }
   }
 }
@@ -419,28 +305,7 @@
 }
 
 /* Action help clears the full control when a row uses the phone layout. */
-@utility ui-setting-action-row {
-  @media (pointer: coarse) {
-    &:has([data-setting-control] .ui-button) {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      row-gap: var(--ui-help-gap);
-      & [data-setting-label] {
-        min-height: var(--ui-control-height);
-        padding-top: calc((var(--ui-control-height) - 1lh) / 2);
-      }
-      & [data-setting-control] {
-        min-height: var(--ui-control-height);
-      }
-      & [data-setting-control] .ui-button {
-        margin-block: 0;
-      }
-      & [data-setting-help] {
-        grid-column: 1 / -1;
-      }
-    }
-  }
-}
+
 @utility ui-group-content {
   & > :first-child {
     margin-top: 0;
@@ -454,268 +319,6 @@
     display: block;
   }
 }
-@layer utilities {
-  @media (pointer: coarse) and (width < 64rem) {
-    :root {
-      --ui-settings-row-height: 52px;
-      --ui-settings-row-pad: 12px;
-      --ui-settings-help-gap: 2px;
-      --ui-settings-group-gap: 24px;
-      --ui-settings-card-radius: 12px;
-      --ui-settings-heading-gap: 8px;
-    }
-    .phone-sheet .ui-settings-navigation {
-      background: var(--color-card);
-    }
-    .phone-sheet .ui-settings-sections > .ui-section {
-      margin-top: var(--ui-settings-group-gap);
-    }
-    .phone-sheet .ui-settings-sections > .ui-section:first-child {
-      margin-top: 16px;
-    }
-    .phone-sheet .ui-settings-content .ui-group-heading,
-    .phone-sheet .ui-settings-navigation .ui-settings-list .ui-group-heading {
-      padding: 0 16px;
-      margin-bottom: var(--ui-settings-heading-gap);
-      border: 0;
-    }
-    .phone-sheet .ui-settings-content .ui-group-toolbar {
-      row-gap: 8px;
-    }
-    .phone-sheet .ui-settings-content .ui-group-after {
-      margin-top: var(--ui-settings-group-gap);
-    }
-    .ui-settings-card {
-      overflow: hidden;
-      border-radius: var(--ui-settings-card-radius);
-      background: var(--color-card-raised);
-    }
-    .phone-sheet .ui-settings-navigation .ui-settings-list {
-      padding-inline: 16px;
-    }
-    .phone-sheet .ui-settings-list .ui-account-card {
-      margin-inline: 0;
-    }
-    .phone-sheet .ui-settings-list nav > .ui-section {
-      margin-top: var(--ui-settings-group-gap);
-    }
-    .phone-sheet .ui-settings-list nav > .ui-section:first-child {
-      margin-top: 16px;
-    }
-    .phone-sheet .ui-settings-content .ui-settings-card .ui-settings-phone-row,
-    .phone-sheet .ui-settings-content .ui-settings-card .ui-list-row,
-    .phone-sheet
-      .ui-settings-list
-      nav
-      .ui-settings-card
-      li
-      > button.ui-tree-row {
-      position: relative;
-      width: 100%;
-      min-height: var(--ui-settings-row-height);
-      height: auto;
-      padding: var(--ui-settings-row-pad) 16px;
-      gap: 16px;
-      align-items: center;
-      flex-wrap: nowrap;
-      border: 0;
-      border-radius: 0;
-      background: transparent;
-      box-shadow: none;
-    }
-    .ui-settings-card .ui-settings-phone-row + .ui-settings-phone-row::before,
-    .ui-settings-card .ui-list-row + .ui-list-row::before,
-    .ui-settings-list .ui-settings-card li + li > button::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 16px;
-      right: 0;
-      height: 1px;
-      background: var(--color-edge-subtle);
-    }
-    .phone-sheet .ui-settings-content .ui-settings-card .ui-setting-row {
-      display: flex;
-    }
-    .phone-sheet .ui-settings-content .ui-settings-card [data-setting-text] {
-      display: block;
-      min-width: 0;
-      flex: 1 1 0%;
-    }
-    .phone-sheet .ui-settings-content .ui-settings-card [data-setting-label] {
-      min-height: 0;
-      padding-top: 0;
-      white-space: normal;
-      overflow: visible;
-    }
-    .phone-sheet .ui-settings-content .ui-settings-card [data-setting-help] {
-      display: block;
-      width: auto;
-      margin: var(--ui-settings-help-gap) 0 0;
-      -webkit-line-clamp: unset;
-      white-space: normal;
-      overflow-wrap: anywhere;
-    }
-    .phone-sheet
-      .ui-settings-content
-      .ui-settings-card
-      [data-setting-help]:empty {
-      display: none;
-      margin: 0;
-    }
-    .phone-sheet .ui-settings-content .ui-settings-card [data-setting-control] {
-      min-height: 0;
-      margin: 0;
-      align-self: center;
-      max-width: 60%;
-    }
-    .phone-sheet
-      .ui-settings-content
-      .ui-settings-card
-      [data-setting-control]
-      .truncate {
-      white-space: normal;
-      overflow: visible;
-      overflow-wrap: anywhere;
-      text-overflow: clip;
-    }
-    .phone-sheet .ui-settings-content .ui-settings-card .ui-button {
-      min-height: 44px;
-      height: 44px;
-      margin: -8px 0;
-      padding-inline: 0;
-      border: 0;
-      background: transparent;
-      box-shadow: none;
-    }
-    .phone-sheet .ui-settings-content .ui-settings-card .ui-button > svg {
-      display: none;
-    }
-    .phone-sheet
-      .ui-settings-content
-      .ui-settings-card
-      .ui-settings-action-link {
-      display: block;
-      cursor: pointer;
-      text-decoration: none;
-    }
-    .phone-sheet
-      .ui-settings-content
-      .ui-settings-card
-      .ui-settings-action-link:disabled {
-      color: var(--color-muted);
-      cursor: default;
-    }
-    .ui-settings-action-link:focus-visible {
-      outline: 2px solid var(--color-focus);
-      outline-offset: -2px;
-    }
-    .phone-sheet
-      .ui-settings-content
-      .ui-settings-card
-      .ui-setting-align
-      > [aria-hidden='true'] {
-      margin-top: 0;
-    }
-    .phone-sheet
-      .ui-settings-content
-      .ui-settings-card
-      .ui-list-row
-      > [aria-hidden='true']
-      svg {
-      width: 20px;
-      height: 20px;
-    }
-    .phone-sheet
-      .ui-settings-content
-      .ui-settings-card
-      .ui-list-row
-      > .min-w-0 {
-      flex: 1;
-    }
-    .phone-sheet .ui-settings-content .ui-settings-card .ui-settings-empty {
-      margin: 0;
-      padding: 12px 16px;
-    }
-    .phone-sheet .ui-settings-content .ui-settings-card ul {
-      margin: 0;
-    }
-    .phone-sheet .ui-settings-content .ui-settings-card:has(.ui-theme-tiles),
-    .phone-sheet
-      .ui-settings-content
-      .ui-settings-card:has(> .ui-settings-group-stack) {
-      background: transparent;
-      overflow: visible;
-    }
-    .phone-sheet
-      .ui-settings-content
-      .ui-settings-card
-      .ui-settings-switch-wrap {
-      border: 0;
-    }
-    .phone-sheet .ui-settings-content .ui-settings-card .ui-settings-meta {
-      margin: var(--ui-settings-help-gap) 0 0;
-    }
-    .ui-settings-storage-row {
-      display: grid;
-      grid-template-columns: auto minmax(0, 1fr);
-      column-gap: 16px;
-      padding: 12px 16px;
-      margin-top: 0;
-    }
-    .ui-settings-storage-row > div {
-      display: contents;
-    }
-    .ui-settings-storage-row > div > p {
-      @apply text-value;
-      grid-column: 2;
-      grid-row: 1;
-      text-align: right;
-      margin: 0;
-    }
-    .ui-settings-storage-row [role='meter'] {
-      grid-column: 1 / -1;
-      margin-top: 8px;
-    }
-    .phone-sheet .ui-settings-content .ui-settings-joined {
-      overflow: hidden;
-      border-radius: var(--ui-settings-card-radius);
-      background: var(--color-card-raised);
-    }
-    .ui-settings-joined > .ui-section,
-    .ui-settings-joined > .ui-section > .ui-section,
-    .ui-settings-joined .ui-group-content {
-      display: contents;
-    }
-    .ui-settings-joined
-      > .ui-section
-      + .ui-section
-      .ui-settings-phone-row::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 16px;
-      right: 0;
-      height: 1px;
-      background: var(--color-edge-subtle);
-    }
-  }
-}
-@layer utilities {
-  @media (pointer: coarse) and (width < 64rem) {
-    .phone-sheet
-      .ui-settings-list
-      nav
-      .ui-settings-card
-      li
-      > button
-      > span:first-child
-      svg {
-      width: 20px;
-      height: 20px;
-    }
-  }
-}
 @utility ui-wrap-unit {
   display: inline-block;
   vertical-align: top;
@@ -727,41 +330,11 @@
   column-gap: 4px;
   row-gap: 0;
 }
-@layer utilities {
-  @media (pointer: coarse) and (width < 64rem) {
-    .phone-sheet .ui-settings-content .ui-group-heading.ui-group-tiles-heading {
-      padding-inline: 0;
-    }
-  }
-}
 @utility ui-dialog-form {
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
-}
-@utility ui-settings-groups {
-  & > section + section {
-    margin-top: var(--ui-settings-group-gap, var(--ui-section-gap));
-  }
-}
-@layer utilities {
-  @media (pointer: coarse) and (width < 64rem) {
-    .phone-sheet
-      .ui-settings-content
-      .ui-settings-card
-      li
-      + li
-      > .ui-settings-phone-row::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 16px;
-      right: 0;
-      height: 1px;
-      background: var(--color-edge-subtle);
-    }
-  }
 }
 
 /* Counts stay beside their heading, even when action toolbars wrap. */
@@ -769,9 +342,6 @@
   .ui-group-toolbar:has(> .ui-group-count) > .text-group {
     flex-basis: 0;
   }
-}
-@utility ui-settings-empty {
-  margin-inline: 8px;
 }
 
 /* Sidebar role values. Fine and coarse pointers share the same anatomy. */
@@ -809,35 +379,34 @@
       --ui-sidebar-switcher-y: 8px;
       --ui-sidebar-action: 40px;
       --ui-sidebar-rail-button: 44px;
-      --ui-sidebar-status-height: 36px;
+      --ui-sidebar-status-height: 32px;
     }
   }
 }
 @utility ui-sidebar-panel {
   display: flex;
   flex-direction: column;
-  min-height: 0;
   flex: 1;
-  padding: var(--ui-sidebar-panel-pad);
-  gap: var(--ui-sidebar-group-gap);
+  min-height: 0;
 }
-@utility ui-sidebar-body {
+@utility ui-sidebar-top {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
   gap: var(--ui-sidebar-group-gap);
-  overflow-y: auto;
+  padding: var(--ui-sidebar-panel-pad);
+  flex-shrink: 0;
 }
 @utility ui-sidebar-tree {
-  display: flex;
-  flex-direction: column;
   flex: 1;
-  min-height: calc(
-    (var(--ui-sidebar-row-line) + var(--ui-sidebar-row-y) * 2) * 2
-  );
+  min-height: 0;
+  padding: var(--ui-sidebar-panel-pad);
   overflow-y: auto;
-  gap: var(--ui-sidebar-item-gap);
+}
+@utility ui-sidebar-footer {
+  flex-shrink: 0;
+  @media (pointer: coarse) {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 }
 @utility ui-sidebar-tree-items {
   display: flex;
@@ -988,9 +557,10 @@
   }
 }
 @utility ui-sidebar-status {
-  height: var(--ui-sidebar-status-height);
+  height: auto;
   min-height: 0;
-  padding-inline: var(--ui-sidebar-panel-pad);
+  padding: 8px var(--ui-sidebar-panel-pad);
+  line-height: 16px;
   flex-shrink: 0;
 }
 
@@ -1004,4 +574,567 @@
 
 @utility ui-sidebar-message {
   padding: var(--ui-sidebar-row-pad);
+}
+
+@utility ui-scroll-region {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+@utility ui-scroll-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: inherit;
+  min-height: 100%;
+  flex-shrink: 0;
+}
+@utility ui-scroll-start {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  pointer-events: none;
+}
+@utility ui-scroll-end {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  pointer-events: none;
+}
+
+/* Settings roles belong to components, not to a route or a sheet selector. */
+@layer base {
+  :root {
+    --ui-settings-nav-pad: 8px;
+    --ui-settings-nav-row-y: 4px;
+    --ui-settings-nav-heading-line: 20px;
+    --ui-settings-nav-row-x: 8px;
+    --ui-settings-nav-item-gap: 2px;
+    --ui-settings-nav-group-gap: 8px;
+    --ui-settings-nav-heading-gap: 2px;
+    --ui-settings-content-pad: 24px;
+    --ui-settings-group-gap: 24px;
+    --ui-settings-heading-gap: 8px;
+    --ui-settings-row-y: 12px;
+    --ui-settings-row-x: 0px;
+    --ui-settings-copy-gap: 2px;
+    --ui-settings-control-box: 28px;
+    --ui-settings-control-target: 28px;
+    --ui-settings-form-gap: 12px;
+    --ui-settings-label-gap: 6px;
+    --ui-settings-help-gap: 4px;
+    --ui-settings-footer-pad: 24px;
+    --ui-settings-card-radius: 12px;
+    --ui-settings-header-height: 44px;
+    --ui-settings-header-target: 28px;
+    --ui-settings-header-gap: 28px;
+    --ui-settings-row-gap: 16px;
+  }
+  @media (pointer: coarse) and (width < 64rem) {
+    :root {
+      --ui-settings-nav-pad: 16px;
+      --ui-settings-nav-row-y: 12px;
+      --ui-settings-nav-row-x: 16px;
+      --ui-settings-nav-item-gap: 0px;
+      --ui-settings-nav-group-gap: 16px;
+      --ui-settings-nav-heading-gap: 8px;
+      --ui-settings-content-pad: 16px;
+      --ui-settings-group-gap: 16px;
+      --ui-settings-row-x: 16px;
+      --ui-settings-control-box: 20px;
+      --ui-settings-control-target: 44px;
+      --ui-settings-footer-pad: 16px;
+      --ui-settings-header-target: 44px;
+    }
+  }
+}
+@utility ui-settings-navigation {
+  background: var(--color-card);
+}
+@utility ui-settings-list {
+  padding: var(--ui-settings-nav-pad);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-settings-nav-group-gap);
+}
+@utility ui-account-card {
+  padding: var(--ui-settings-nav-pad);
+  border-bottom: 1px solid var(--color-edge-subtle);
+}
+@utility ui-settings-nav-groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-settings-nav-group-gap);
+}
+@utility ui-settings-nav-heading {
+  margin: 0;
+  padding: var(--ui-settings-nav-row-y) var(--ui-settings-nav-row-x);
+  height: calc(
+    var(--ui-settings-nav-heading-line) + 2 * var(--ui-settings-nav-row-y)
+  );
+  @media (pointer: coarse) and (width < 64rem) {
+    height: auto;
+    padding: 0 var(--ui-settings-nav-row-x);
+  }
+}
+@utility ui-settings-nav-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-settings-nav-item-gap);
+  margin: 0;
+  padding: 0;
+  @media (pointer: coarse) and (width < 64rem) {
+    border-radius: var(--ui-settings-card-radius);
+    background: var(--color-card-raised);
+  }
+}
+@utility ui-settings-nav-row {
+  &.ui-settings-nav-row {
+    position: relative;
+    height: auto;
+    min-height: 0;
+    padding: var(--ui-settings-nav-row-y) var(--ui-settings-nav-row-x);
+    gap: 8px;
+    align-items: center;
+    @media (pointer: coarse) and (width < 64rem) {
+      border-radius: 0;
+      li + li &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: var(--ui-settings-row-x);
+        right: 0;
+        border-top: 1px solid var(--color-edge-subtle);
+      }
+    }
+  }
+}
+@utility ui-settings-column {
+  padding: var(--ui-settings-content-pad);
+  gap: var(--ui-settings-group-gap);
+  @media (pointer: coarse) and (width < 64rem) {
+    padding: 0;
+    gap: 0;
+  }
+}
+@utility ui-settings-column-form {
+  padding: 0;
+  gap: 0;
+}
+@utility ui-settings-heading {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 8px;
+  .ui-settings-column-form > & {
+    padding: var(--ui-settings-content-pad);
+    padding-bottom: 0;
+  }
+  @media (pointer: coarse) and (width < 64rem) {
+    &.ui-settings-heading {
+      height: var(--ui-settings-header-height);
+      min-height: var(--ui-settings-header-height);
+      padding: 0 var(--ui-settings-content-pad);
+      gap: 8px;
+    }
+  }
+}
+@utility ui-settings-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-settings-copy-gap);
+  & > p {
+    margin: 0;
+  }
+  @media (pointer: coarse) and (width < 64rem) {
+    position: absolute;
+    left: 64px;
+    right: 64px;
+    pointer-events: none;
+    text-align: center;
+  }
+}
+@utility ui-settings-header-title {
+  margin: 0;
+}
+@utility ui-settings-header-slot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 24px;
+  & > .ui-button {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: var(--ui-settings-header-target);
+    height: var(--ui-settings-header-target);
+    min-height: 0;
+    padding: 0;
+  }
+}
+@utility ui-settings-header-end {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-settings-header-gap);
+  margin-left: auto;
+}
+@utility ui-settings-content {
+  overflow: hidden;
+}
+@utility ui-settings-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-settings-group-gap);
+  @media (pointer: coarse) and (width < 64rem) {
+    padding: var(--ui-settings-content-pad);
+  }
+}
+@utility ui-settings-group {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: var(--ui-settings-heading-gap);
+  margin: 0;
+}
+@utility ui-settings-groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-settings-group-gap);
+}
+@utility ui-settings-group-heading {
+  margin: 0;
+  padding-bottom: var(--ui-settings-heading-gap);
+  border-bottom: 1px solid var(--color-edge-subtle);
+  @media (pointer: coarse) and (width < 64rem) {
+    padding: 0 var(--ui-settings-row-x);
+    border: 0;
+  }
+}
+@utility ui-settings-tiles-heading {
+  margin: 0;
+  padding-bottom: var(--ui-settings-heading-gap);
+  border-bottom: 1px solid var(--color-edge-subtle);
+  @media (pointer: coarse) and (width < 64rem) {
+    padding-bottom: 0;
+    border: 0;
+  }
+}
+@utility ui-settings-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0;
+  gap: 0;
+  & > ul {
+    margin: 0;
+    padding: 0;
+  }
+  @media (pointer: coarse) and (width < 64rem) {
+    background: var(--color-card-raised);
+    border-radius: var(--ui-settings-card-radius);
+  }
+}
+@utility ui-settings-row {
+  &.ui-settings-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 0;
+    height: auto;
+    padding: var(--ui-settings-row-y) var(--ui-settings-row-x);
+    column-gap: var(--ui-settings-row-gap);
+    row-gap: var(--ui-settings-copy-gap);
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    &::after {
+      content: '';
+      position: absolute;
+      left: var(--ui-settings-row-x);
+      right: 0;
+      bottom: 0;
+      border-bottom: 1px solid var(--color-edge-subtle);
+    }
+    @media (pointer: coarse) and (width < 64rem) {
+      .ui-settings-card > &:last-child::after,
+      .ui-settings-card > :last-child > &:last-child::after,
+      .ui-settings-card > .ui-settings-items > &:last-child::after,
+      .ui-settings-items.ui-settings-card > &:last-child::after {
+        display: none;
+      }
+    }
+  }
+}
+@utility ui-settings-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  gap: var(--ui-settings-copy-gap);
+  & > p {
+    margin: 0;
+  }
+}
+@utility ui-settings-control {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  gap: 8px;
+  max-width: 60%;
+  min-height: var(--ui-settings-control-box);
+}
+@utility ui-settings-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+@utility ui-settings-action-link {
+  &.ui-settings-action-link {
+    display: block;
+  }
+}
+@utility ui-settings-help {
+  display: block;
+  padding-top: var(--ui-settings-copy-gap);
+}
+@utility ui-settings-button-slot {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: var(--ui-settings-control-box);
+  flex-shrink: 0;
+}
+@utility ui-settings-button-measure {
+  visibility: hidden;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding-inline: var(--ui-compact-pad);
+  @apply text-label;
+  @media (pointer: coarse) and (width < 64rem) {
+    padding: 0;
+    & > :first-child:not(:last-child) {
+      display: none;
+    }
+  }
+}
+@utility ui-settings-row-button {
+  &.ui-settings-row-button.ui-settings-row-button {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    height: var(--ui-settings-control-target);
+    min-height: 0;
+    width: 100%;
+    padding-inline: var(--ui-compact-pad);
+    @media (pointer: coarse) and (width < 64rem) {
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+      padding-inline: 0;
+      & > [aria-hidden] {
+        display: none;
+      }
+    }
+  }
+}
+@utility ui-settings-switch-slot {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: var(--ui-settings-control-box);
+}
+@utility ui-settings-switch-target {
+  &.ui-settings-switch-target {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    height: var(--ui-settings-control-target);
+    min-height: 0;
+  }
+}
+@utility ui-settings-empty {
+  margin: 0;
+  padding: var(--ui-settings-row-y) var(--ui-settings-row-x);
+}
+@utility ui-settings-message {
+  margin: 0;
+}
+@utility ui-settings-meta {
+  margin: 0;
+}
+@utility ui-settings-storage-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: var(--ui-settings-row-y) var(--ui-settings-row-x);
+}
+@utility ui-settings-joined {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  @media (pointer: coarse) and (width < 64rem) {
+    background: var(--color-card-raised);
+    border-radius: var(--ui-settings-card-radius);
+  }
+}
+@utility ui-settings-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-settings-form-gap);
+  padding: var(--ui-settings-content-pad);
+  --ui-form-gap: 0px;
+  --ui-label-gap: var(--ui-settings-label-gap);
+  --ui-help-gap: var(--ui-settings-help-gap);
+  & > p,
+  & > .ui-field-group {
+    margin: 0;
+  }
+}
+@utility ui-settings-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: var(--ui-settings-footer-pad);
+  @media (pointer: coarse) and (width < 64rem) {
+    padding-bottom: calc(
+      var(--ui-settings-footer-pad) + env(safe-area-inset-bottom, 0px)
+    );
+    & > button {
+      width: 100%;
+    }
+  }
+}
+@utility ui-settings-action {
+  overflow: hidden;
+}
+
+@layer utilities {
+  [data-scroll-edge] {
+    position: relative;
+    z-index: 2;
+  }
+  [data-scroll-edge]::before {
+    content: '';
+    pointer-events: none;
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    opacity: 0;
+    background: var(--color-edge-line);
+    transition: opacity 120ms ease-out;
+  }
+  [data-scroll-edge='above']::before {
+    bottom: 0;
+    box-shadow: var(--ui-scroll-shadow-down);
+  }
+  [data-scroll-edge='below']::before {
+    top: 0;
+    box-shadow: var(--ui-scroll-shadow-up);
+  }
+  [data-scroll-hidden='true']::before {
+    opacity: 1;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    [data-scroll-edge]::before {
+      transition: none;
+    }
+  }
+}
+
+@utility ui-settings-storage-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-settings-row-gap);
+}
+
+@utility ui-settings-items {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+@utility ui-settings-form-grid {
+  display: grid;
+  gap: var(--ui-settings-form-gap);
+}
+
+@utility ui-settings-joined {
+  & > .ui-settings-group {
+    position: relative;
+  }
+  @media (pointer: coarse) and (width < 64rem) {
+    & > .ui-settings-group:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: var(--ui-settings-row-x);
+      right: 0;
+      border-bottom: 1px solid var(--color-edge-subtle);
+    }
+  }
+}
+@utility ui-settings-dialog-heading {
+  &.ui-settings-dialog-heading {
+    padding: var(--ui-settings-content-pad);
+    padding-bottom: 0;
+  }
+}
+
+@utility ui-field-help {
+  margin: var(--ui-help-gap) 0 0;
+}
+
+@utility ui-settings-form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-settings-form-gap);
+}
+@utility ui-settings-form-legend {
+  padding: 0 0 var(--ui-settings-help-gap);
+}
+
+@utility ui-settings-nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-settings-nav-heading-gap);
+}
+
+@layer utilities {
+  button.ui-settings-row:focus-visible,
+  .ui-settings-switch-target:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: -2px;
+  }
+  button.ui-settings-row {
+    cursor: pointer;
+  }
+  button.ui-settings-row:disabled {
+    cursor: default;
+  }
+  .ui-settings-choice:hover:not(:disabled),
+  .ui-settings-switch:hover:not(:disabled) {
+    background: var(--color-hover);
+  }
 }

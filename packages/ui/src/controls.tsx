@@ -1,3 +1,7 @@
+import {
+  useSettingsSurface,
+  useSettingsRowActions,
+} from './settings-layout.tsx';
 import { WrapText } from './inline-text.tsx';
 /**
  * Accessible application controls.
@@ -44,12 +48,20 @@ export function Meter({
   readonly max: number;
   readonly text: string;
 }): ReactNode {
+  const settings = useSettingsSurface();
   const classes = meterClassNames(value, max);
   const percent = meterFillPercent(value, max);
   const words = meterAlmostFull(value, max) ? `${text}. Almost full` : text;
   return (
-    <div>
-      <p className={classes.text}>{words}</p>
+    <div className={settings ? 'ui-settings-storage-row' : undefined}>
+      {settings ? (
+        <div className="ui-settings-storage-line">
+          <span className="text-body text-strong">{label}</span>
+          <span className="text-value text-muted">{words}</span>
+        </div>
+      ) : (
+        <p className={classes.text}>{words}</p>
+      )}
       <div
         className={classes.track}
         role="meter"
@@ -124,6 +136,7 @@ export function Button({
   /** Keeps the touch target and draws a smaller surface inside it. */
   readonly compact?: boolean | undefined;
 }): ReactNode {
+  const settingsRow = useSettingsRowActions();
   const hasChildren = children !== undefined && children !== null;
   const classes = buttonClassName({
     variant,
@@ -149,11 +162,11 @@ export function Button({
     </>
   );
 
-  return (
+  const button = (
     <button
       ref={buttonRef}
       type={type ?? 'button'}
-      className={classes}
+      className={`${classes} ${settingsRow ? 'ui-settings-row-button' : ''}`}
       disabled={disabled ?? false}
       onClick={onClick}
       aria-label={name.ariaLabel}
@@ -179,6 +192,16 @@ export function Button({
         content
       )}
     </button>
+  );
+  return settingsRow ? (
+    <span className="ui-settings-button-slot">
+      <span aria-hidden="true" className="ui-settings-button-measure">
+        {content}
+      </span>
+      {button}
+    </span>
+  ) : (
+    button
   );
 }
 
@@ -641,9 +664,10 @@ export function Switch({
   readonly disabled?: boolean;
   readonly onChange: (checked: boolean) => void;
 }): ReactNode {
+  const settings = useSettingsSurface();
   const classes = switchClassNames(checked);
   const hintId = useId();
-  return (
+  const button = (
     <button
       type="button"
       role="switch"
@@ -658,13 +682,20 @@ export function Switch({
       disabled={disabled}
       className={
         hideLabel
-          ? 'ui-switch-control inline-flex items-center justify-center rounded-md bg-transparent text-strong'
-          : classes.row
+          ? `ui-switch-control inline-flex items-center justify-center rounded-md bg-transparent text-strong ${settings ? 'ui-settings-switch-target' : ''}`
+          : settings
+            ? 'ui-settings-row ui-settings-switch text-left text-strong'
+            : classes.row
       }
       onClick={() => onChange(!checked)}
     >
       {hideLabel ? null : (
-        <span data-setting-text className="min-w-0 flex-1 text-body">
+        <span
+          data-setting-text
+          className={
+            settings ? 'ui-settings-copy text-body' : 'min-w-0 flex-1 text-body'
+          }
+        >
           <span data-setting-label className="block">
             {label}
           </span>
@@ -679,13 +710,33 @@ export function Switch({
           )}
         </span>
       )}
-      <span
-        data-setting-control={hideLabel ? undefined : true}
-        className={classes.track}
-        aria-hidden="true"
-      >
-        <span className={classes.thumb} />
-      </span>
+      {settings && !hideLabel ? (
+        <span className="ui-settings-switch-slot">
+          <span
+            data-setting-control={hideLabel ? undefined : true}
+            className={classes.track}
+            aria-hidden="true"
+          >
+            <span className={classes.thumb} />
+          </span>
+        </span>
+      ) : (
+        <>
+          {' '}
+          <span
+            data-setting-control={hideLabel ? undefined : true}
+            className={classes.track}
+            aria-hidden="true"
+          >
+            <span className={classes.thumb} />
+          </span>
+        </>
+      )}
     </button>
+  );
+  return settings && hideLabel ? (
+    <span className="ui-settings-switch-slot">{button}</span>
+  ) : (
+    button
   );
 }

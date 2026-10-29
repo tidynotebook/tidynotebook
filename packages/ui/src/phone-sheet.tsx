@@ -21,6 +21,7 @@ export function PhoneSheetHeader({
   return (
     <header
       data-sheet-drag=""
+      data-scroll-edge="above"
       className="ui-sheet-header flex shrink-0 touch-pan-x touch-pinch-zoom items-center gap-1 px-1"
     >
       <span className="flex size-11 shrink-0 items-center justify-center">

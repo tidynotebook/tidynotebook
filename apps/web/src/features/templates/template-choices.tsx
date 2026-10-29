@@ -17,6 +17,7 @@ import {
   Button,
   DialogFooter,
   PhoneSheetHeader,
+  ScrollRegion,
   EmptyState,
   rowClassName,
   TextField,
@@ -261,7 +262,7 @@ export default function TemplateChoices({
         submit();
       }}
     >
-      <div className="lg:hidden">
+      <div data-scroll-edge="above" className="lg:hidden">
         <PhoneSheetHeader
           titleRef={phoneTitle}
           title={details ? selectedLabel : 'New note from template'}
@@ -293,7 +294,10 @@ export default function TemplateChoices({
           }
         />
       </div>
-      <header className="ui-dialog-heading hidden shrink-0 items-center gap-2 lg:flex">
+      <header
+        data-scroll-edge="above"
+        className="ui-dialog-heading hidden shrink-0 items-center gap-2 lg:flex"
+      >
         <span className="lg:hidden">
           <Button
             variant="ghost"
@@ -335,7 +339,7 @@ export default function TemplateChoices({
       </header>
       <div className="ui-dialog-body min-h-0 flex-1 overflow-hidden">
         <div className="grid h-full min-h-0 min-w-0 gap-4 lg:grid-cols-3">
-          <div
+          <ScrollRegion
             className={
               details
                 ? 'hidden min-h-0 min-w-0 flex-col lg:flex'
@@ -492,8 +496,8 @@ export default function TemplateChoices({
                 )}
               </>
             )}
-          </div>
-          <div
+          </ScrollRegion>
+          <ScrollRegion
             className={
               details
                 ? 'flex min-h-0 min-w-0 flex-col overflow-y-auto lg:col-span-2'
@@ -579,7 +583,7 @@ export default function TemplateChoices({
                 )}
               </>
             )}
-          </div>
+          </ScrollRegion>
         </div>
       </div>
       <div className={details ? 'shrink-0' : 'hidden shrink-0 lg:block'}>

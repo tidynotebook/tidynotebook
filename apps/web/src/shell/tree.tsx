@@ -1008,11 +1008,7 @@ function TreeRow({
   );
   const name =
     renaming === null ? (
-      <span
-        data-tree-name
-        className="min-w-0 flex-1 truncate max-lg:pointer-coarse:line-clamp-2 max-lg:pointer-coarse:whitespace-normal max-lg:pointer-coarse:break-words"
-        title={row.name}
-      >
+      <span data-tree-name className="min-w-0 flex-1 truncate" title={row.name}>
         {row.name}
       </span>
     ) : (

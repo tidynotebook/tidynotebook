@@ -47,6 +47,8 @@ import {
 import {
   avatarClassName,
   Button,
+  SettingsSurface,
+  ScrollRegion,
   CalendarIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -69,7 +71,6 @@ import {
   Meter,
   MetaFacts,
   Notice,
-  pageListClassName,
   rowClassName,
   SignOutIcon,
   Switch,
@@ -290,6 +291,7 @@ function SessionsSettings(): ReactNode {
   return (
     <SettingsSection
       section={settingsSection('sessions')}
+      grouped
       description="These devices are signed in to your account. Sign out a device that you do not use or do not know."
     >
       {notice === null ? null : (
@@ -304,14 +306,14 @@ function SessionsSettings(): ReactNode {
           label="The signed in devices are loading."
         />
       ) : (
-        <div className="ui-settings-group-stack">
+        <div className="ui-settings-groups">
           {current === undefined ? null : (
-            <div>
-              <h3 className="ui-group-heading border-b border-edge-subtle text-group text-muted">
+            <div className="ui-settings-group">
+              <h3 className="ui-settings-group-heading text-group text-muted">
                 This device
               </h3>
               <ul
-                className={`${pageListClassName()} ui-settings-card`}
+                className="ui-settings-items ui-settings-card"
                 aria-label="This device"
               >
                 <ListRow>
@@ -321,7 +323,7 @@ function SessionsSettings(): ReactNode {
                   >
                     <ComputerIcon />
                   </span>
-                  <div className="min-w-0 flex-1">
+                  <div className="ui-settings-copy">
                     <p className="m-0 truncate text-body text-strong">
                       {deviceName(current.userAgent)}
                     </p>
@@ -333,96 +335,95 @@ function SessionsSettings(): ReactNode {
               </ul>
             </div>
           )}
-          <div className="ui-group-toolbar ui-group-heading ui-group-after border-b border-edge-subtle">
-            <h3 className="m-0 min-w-0 flex-1 text-group text-muted">
-              Other devices
-            </h3>
-            {others.length === 0 || phone ? null : (
-              <Button
-                size="sm"
-                variant="secondary"
-                className="max-lg:w-full"
-                icon={<SignOutIcon />}
-                disabled={busy}
-                onClick={() => {
-                  change(async () => {
-                    const ended = await revokeOtherSessions();
-                    return {
-                      error: ended.error,
-                      done: otherSessionsEndedText(ended.data?.revoked ?? 0),
-                    };
-                  });
-                }}
-              >
-                Sign out every other device
-              </Button>
-            )}
-          </div>
-          {others.length === 0 ? (
-            <p className="mt-3 text-secondary text-muted">No other devices.</p>
-          ) : null}
-          <ul className={`${pageListClassName()} ui-settings-card`}>
-            {others.map((session) => {
-              const name = deviceName(session.userAgent);
-              return (
-                <ListRow
-                  key={session.sessionId}
-                  className="ui-setting-align flex-wrap"
+          <div className="ui-settings-group">
+            <div className="ui-group-toolbar ui-settings-group-heading">
+              <h3 className="m-0 min-w-0 flex-1 text-group text-muted">
+                Other devices
+              </h3>
+              {others.length === 0 || phone ? null : (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="max-lg:w-full"
+                  icon={<SignOutIcon />}
+                  disabled={busy}
+                  onClick={() => {
+                    change(async () => {
+                      const ended = await revokeOtherSessions();
+                      return {
+                        error: ended.error,
+                        done: otherSessionsEndedText(ended.data?.revoked ?? 0),
+                      };
+                    });
+                  }}
                 >
-                  <span
-                    className="inline-flex shrink-0 items-center text-muted"
-                    aria-hidden="true"
-                  >
-                    <ComputerIcon />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p
-                      data-setting-label
-                      className="m-0 truncate text-body text-strong"
-                    >
-                      {name}
-                    </p>
-                    <MetaFacts
-                      facts={sessionFacts(session, now)}
-                      className="ui-settings-meta"
-                    />
-                  </div>
-                  {session.current ? null : (
-                    <span data-setting-control>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        disabled={busy}
-                        label={`Sign out ${name}`}
-                        onClick={() => {
-                          change(async () => ({
-                            error: (
-                              await revokeSession({
-                                path: { sessionId: session.sessionId },
-                              })
-                            ).error,
-                            done: `${name} is signed out.`,
-                          }));
-                        }}
-                      >
-                        Sign out
-                      </Button>
-                    </span>
-                  )}
-                </ListRow>
-              );
-            })}
-            {phone && others.length > 0 ? (
-              <li>
-                <SettingActionRow
-                  label="Sign out every other device…"
-                  actionLabel="Sign out every other device"
-                  danger
-                  onClick={() => setEndingOthers(true)}
-                />
-              </li>
+                  Sign out every other device
+                </Button>
+              )}
+            </div>
+            {others.length === 0 ? (
+              <p className="m-0 text-secondary text-muted">No other devices.</p>
             ) : null}
-          </ul>
+            <ul className="ui-settings-items ui-settings-card">
+              {others.map((session) => {
+                const name = deviceName(session.userAgent);
+                return (
+                  <ListRow key={session.sessionId} className="flex-wrap">
+                    <span
+                      className="inline-flex shrink-0 items-center text-muted"
+                      aria-hidden="true"
+                    >
+                      <ComputerIcon />
+                    </span>
+                    <div className="ui-settings-copy">
+                      <p
+                        data-setting-label
+                        className="m-0 truncate text-body text-strong"
+                      >
+                        {name}
+                      </p>
+                      <MetaFacts
+                        facts={sessionFacts(session, now)}
+                        className="ui-settings-meta"
+                      />
+                    </div>
+                    {session.current ? null : (
+                      <span data-setting-control>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          disabled={busy}
+                          label={`Sign out ${name}`}
+                          onClick={() => {
+                            change(async () => ({
+                              error: (
+                                await revokeSession({
+                                  path: { sessionId: session.sessionId },
+                                })
+                              ).error,
+                              done: `${name} is signed out.`,
+                            }));
+                          }}
+                        >
+                          Sign out
+                        </Button>
+                      </span>
+                    )}
+                  </ListRow>
+                );
+              })}
+              {phone && others.length > 0 ? (
+                <li>
+                  <SettingActionRow
+                    label="Sign out every other device…"
+                    actionLabel="Sign out every other device"
+                    danger
+                    onClick={() => setEndingOthers(true)}
+                  />
+                </li>
+              ) : null}
+            </ul>
+          </div>
           <SettingsDialog
             open={endingOthers}
             title="Sign out every other device?"
@@ -522,11 +523,7 @@ function ProfileSettings({
         void save();
       }}
     >
-      <div
-        className={
-          phone ? 'ui-dialog-body min-h-0 flex-1 overflow-auto' : undefined
-        }
-      >
+      <DialogBody>
         <TextField
           id="profile-name"
           label="Name"
@@ -543,10 +540,8 @@ function ProfileSettings({
         {problem === '' ? null : (
           <Notice className="mb-3" tone="problem" message={problem} />
         )}
-      </div>
-      <div
-        className={phone ? 'ui-dialog-footer' : 'flex flex-wrap gap-cluster'}
-      >
+      </DialogBody>
+      <DialogFooter>
         <Button
           className={phone ? 'w-full' : undefined}
           type="submit"
@@ -573,7 +568,7 @@ function ProfileSettings({
             Cancel
           </Button>
         )}
-      </div>
+      </DialogFooter>
     </form>
   );
 
@@ -854,23 +849,15 @@ export function SettingsModal({
           <Notice key={notice} className="mt-3" tone="info" message={notice} />
         ))}
         {storageLine(account.storage) === '' ? null : (
-          <div className="ui-settings-storage-row mt-3">
-            <span className="ui-phone-only text-body text-strong">Storage</span>
-            <Meter
-              label="Storage"
-              value={account.storage.usedBytes}
-              max={account.storage.limitBytes}
-              text={storageLine(account.storage)}
-            />
-          </div>
+          <Meter
+            label="Storage"
+            value={account.storage.usedBytes}
+            max={account.storage.limitBytes}
+            text={storageLine(account.storage)}
+          />
         )}
         {transferUsage(account.month, account.controls).map((usage) => (
-          <div key={usage.label} className="ui-settings-storage-row mt-3">
-            <span className="ui-phone-only text-body text-strong">
-              {usage.label}
-            </span>
-            <Meter {...usage} />
-          </div>
+          <Meter key={usage.label} {...usage} />
         ))}
         {documents === null ? null : (
           <LegalLinks className="mt-3" documents={documents} />
@@ -971,236 +958,267 @@ export function SettingsModal({
       align="center"
       returnFocus={returnFocus}
     >
-      <SettingsActionContext.Provider value={actionHost}>
-        <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-          <div
-            className={`${listLevel ? 'flex' : 'hidden'} ui-settings-navigation min-h-0 flex-1 flex-col bg-surface lg:flex lg:w-60 lg:flex-none lg:border-r lg:border-edge-subtle`}
-          >
+      <SettingsSurface>
+        <SettingsActionContext.Provider value={actionHost}>
+          <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
             <div
-              data-sheet-drag=""
-              className="ui-sheet-header flex shrink-0 touch-pan-x touch-pinch-zoom items-center gap-cluster px-4 lg:hidden"
+              data-scroll-frame=""
+              className={`${listLevel ? 'flex' : 'hidden'} ui-settings-navigation min-h-0 flex-1 flex-col lg:flex lg:w-60 lg:flex-none lg:border-r lg:border-edge-subtle`}
             >
-              <Button
-                variant="ghost"
-                icon={<CloseIcon />}
-                label="Close Settings"
-                onClick={onClose}
-              />
-              <p
-                ref={listTitle}
-                tabIndex={-1}
-                className="m-0 min-w-0 flex-1 text-center text-title-header text-strong outline-none"
-              >
-                {settingsTitle}
-              </p>
-              <span className="w-11 shrink-0" aria-hidden="true" />
-            </div>
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 ui-settings-list">
-              <div className="ui-account-card flex items-center gap-3 border-b border-edge-subtle px-2 pb-3">
-                <span className={avatarClassName()} aria-hidden="true">
-                  {initial}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-title-header text-strong">
-                    {account.name ?? account.email ?? ''}
-                  </span>
-                  {account.email === null ||
-                  account.email === undefined ? null : (
-                    <span className="block truncate text-secondary text-muted">
-                      {account.email}
-                    </span>
-                  )}
-                </span>
-              </div>
-              <nav ref={settingsList} aria-label="Settings sections">
-                {settingsPageGroups
-                  .filter((group) => pages.some((page) => page.group === group))
-                  .map((group) => (
-                    <section
-                      key={group}
-                      aria-label={
-                        group === 'Workspace' && workspaceName !== ''
-                          ? `Workspace ${workspaceName}`
-                          : group
-                      }
-                      className="ui-section"
-                    >
-                      <h3 className="ui-group-heading flex items-center gap-2 px-2 text-group text-muted">
-                        {group}
-                        {group === 'Workspace' && workspaceName !== '' ? (
-                          <span className="min-w-0 truncate rounded-sm bg-hover px-2 text-secondary text-muted">
-                            {workspaceName}
-                          </span>
-                        ) : null}
-                      </h3>
-                      <ul className="ui-settings-card m-0 list-none p-0">
-                        {pages
-                          .filter((page) => page.group === group)
-                          .map((page) => {
-                            const current =
-                              !listLevel && activePage?.path === page.path;
-                            const desktopCurrent =
-                              activePage?.path === page.path;
-                            return (
-                              <li key={page.path}>
-                                <button
-                                  type="button"
-                                  data-settings-page={page.path}
-                                  className={rowClassName({
-                                    current: desktopCurrent && !listLevel,
-                                    className: `w-full text-left ${desktopCurrent && listLevel ? 'lg:bg-active' : ''}`,
-                                  })}
-                                  aria-current={current ? 'page' : undefined}
-                                  onClick={() => {
-                                    onChoose(page.path);
-                                  }}
-                                >
-                                  <span
-                                    className="inline-flex shrink-0 items-center"
-                                    aria-hidden="true"
-                                  >
-                                    {pageIcons[page.path]}
-                                  </span>
-                                  <span className="min-w-0 flex-1 truncate">
-                                    {page.title}
-                                  </span>
-                                  <span
-                                    className="inline-flex shrink-0 items-center text-muted lg:hidden"
-                                    aria-hidden="true"
-                                  >
-                                    <ChevronRightIcon />
-                                  </span>
-                                </button>
-                              </li>
-                            );
-                          })}
-                      </ul>
-                    </section>
-                  ))}
-              </nav>
-            </div>
-          </div>
-          <section
-            aria-labelledby={pageTitleId}
-            data-dialog-escape={activeAction === null ? undefined : 'local'}
-            onKeyDown={(event) => {
-              if (activeAction !== null && event.key === 'Escape') {
-                event.preventDefault();
-                event.stopPropagation();
-                activeAction.close();
-              }
-            }}
-            className={`${listLevel ? 'hidden' : 'flex'} min-h-0 min-w-0 flex-1 flex-col lg:flex`}
-          >
-            <div
-              data-sheet-drag=""
-              className="ui-settings-heading flex shrink-0 touch-pan-x touch-pinch-zoom items-start gap-cluster"
-            >
-              <Button
-                className={activeAction === null ? 'lg:hidden' : undefined}
-                variant="ghost"
-                icon={<ChevronLeftIcon />}
-                label={
-                  activeAction === null ? 'Back to Settings' : 'Back to section'
-                }
-                onClick={() => {
-                  if (activeAction === null) onChoose('');
-                  else activeAction.close();
-                }}
-              />
-              <div className="min-w-0 flex-1">
-                <h2
-                  id={pageTitleId}
-                  ref={sectionTitle}
-                  tabIndex={-1}
-                  className="m-0 text-title-header text-strong outline-none max-lg:text-center"
-                >
-                  {activeAction?.title ?? activePage?.title ?? settingsTitle}
-                </h2>
-                {scope === undefined ||
-                activeAction?.hideScope === true ? null : (
-                  <p className="mb-0 mt-1 text-secondary text-muted max-lg:hidden">
-                    {activeAction === null ? scope : activePage?.title}
-                  </p>
-                )}
-              </div>
               <div
-                ref={setActionHeaderTarget}
-                className="flex shrink-0 items-center empty:hidden"
-              />
-              <Button
-                variant="ghost"
-                icon={<CloseIcon />}
-                label="Close Settings"
-                onClick={onClose}
-              />
-            </div>
-            <div
-              className={`ui-settings-content min-h-0 flex-1 ${activeAction === null ? 'overflow-y-auto overscroll-contain' : 'flex flex-col'}`}
-            >
-              {scope === undefined ||
-              activeAction?.hideScope === true ? null : (
-                <p className="ui-scope-line text-secondary text-muted lg:hidden">
-                  {activeAction === null ? scope : activePage?.title}
+                data-sheet-drag=""
+                data-scroll-edge="above"
+                className="ui-settings-heading ui-settings-root-heading touch-pan-x touch-pinch-zoom lg:hidden"
+              >
+                <span className="ui-settings-header-slot">
+                  <Button
+                    variant="ghost"
+                    icon={<CloseIcon />}
+                    label="Close Settings"
+                    onClick={onClose}
+                  />
+                </span>
+                <p
+                  ref={listTitle}
+                  tabIndex={-1}
+                  className="ui-settings-title-block m-0 text-center text-title-header text-strong outline-none"
+                >
+                  {settingsTitle}
                 </p>
-              )}
-              <DialogHeaderActionsContext.Provider value={actionHeaderTarget}>
-                <div
-                  ref={setActionTarget}
-                  hidden={activeAction === null}
+                <span className="ui-settings-header-slot" aria-hidden="true" />
+              </div>
+              <ScrollRegion className="ui-settings-list min-h-0 flex-1">
+                <div className="ui-account-card flex items-center gap-3">
+                  <span className={avatarClassName()} aria-hidden="true">
+                    {initial}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-title-header text-strong">
+                      {account.name ?? account.email ?? ''}
+                    </span>
+                    {account.email === null ||
+                    account.email === undefined ? null : (
+                      <span className="block truncate text-secondary text-muted">
+                        {account.email}
+                      </span>
+                    )}
+                  </span>
+                </div>
+                <nav
+                  ref={settingsList}
+                  aria-label="Settings sections"
+                  className="ui-settings-nav-groups"
+                >
+                  {settingsPageGroups
+                    .filter((group) =>
+                      pages.some((page) => page.group === group),
+                    )
+                    .map((group) => (
+                      <section
+                        key={group}
+                        aria-label={
+                          group === 'Workspace' && workspaceName !== ''
+                            ? `Workspace ${workspaceName}`
+                            : group
+                        }
+                        className="ui-settings-nav-group"
+                      >
+                        <h3 className="ui-settings-nav-heading flex items-center gap-2 text-group text-muted">
+                          {group}
+                          {group === 'Workspace' && workspaceName !== '' ? (
+                            <span className="min-w-0 truncate rounded-sm bg-hover px-2 text-secondary text-muted">
+                              {workspaceName}
+                            </span>
+                          ) : null}
+                        </h3>
+                        <ul className="ui-settings-nav-card list-none">
+                          {pages
+                            .filter((page) => page.group === group)
+                            .map((page) => {
+                              const current =
+                                !listLevel && activePage?.path === page.path;
+                              const desktopCurrent =
+                                activePage?.path === page.path;
+                              return (
+                                <li key={page.path}>
+                                  <button
+                                    type="button"
+                                    data-settings-page={page.path}
+                                    className={rowClassName({
+                                      current: desktopCurrent && !listLevel,
+                                      className: `ui-settings-nav-row w-full text-left ${desktopCurrent && listLevel ? 'lg:bg-active' : ''}`,
+                                    }).replace('ui-tree-row', '')}
+                                    aria-current={current ? 'page' : undefined}
+                                    onClick={() => {
+                                      onChoose(page.path);
+                                    }}
+                                  >
+                                    <span
+                                      className="inline-flex shrink-0 items-center"
+                                      aria-hidden="true"
+                                    >
+                                      {pageIcons[page.path]}
+                                    </span>
+                                    <span className="min-w-0 flex-1 truncate">
+                                      {page.title}
+                                    </span>
+                                    <span
+                                      className="inline-flex shrink-0 items-center text-muted lg:hidden"
+                                      aria-hidden="true"
+                                    >
+                                      <ChevronRightIcon />
+                                    </span>
+                                  </button>
+                                </li>
+                              );
+                            })}
+                        </ul>
+                      </section>
+                    ))}
+                </nav>
+              </ScrollRegion>
+            </div>
+            <section
+              data-scroll-frame=""
+              aria-labelledby={pageTitleId}
+              data-dialog-escape={activeAction === null ? undefined : 'local'}
+              onKeyDown={(event) => {
+                if (activeAction !== null && event.key === 'Escape') {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  activeAction.close();
+                }
+              }}
+              className={`${listLevel ? 'hidden' : 'flex'} ui-settings-column ${activeAction === null ? '' : 'ui-settings-column-form'} min-h-0 min-w-0 flex-1 flex-col lg:flex`}
+            >
+              <div
+                data-sheet-drag=""
+                data-scroll-edge="above"
+                className="ui-settings-heading touch-pan-x touch-pinch-zoom"
+              >
+                <span
                   className={
                     activeAction === null
-                      ? undefined
-                      : 'flex min-h-0 flex-1 flex-col'
+                      ? 'ui-settings-header-slot lg:hidden'
+                      : 'ui-settings-header-slot'
                   }
-                />
-                <div
-                  className="ui-settings-sections"
-                  hidden={activeAction !== null}
-                  inert={activeAction !== null}
                 >
-                  <SettingsTopicContext.Provider
-                    value={{ hiddenTitles, helpSection: null }}
+                  <Button
+                    className={activeAction === null ? 'lg:hidden' : undefined}
+                    variant="ghost"
+                    icon={<ChevronLeftIcon />}
+                    label={
+                      activeAction === null
+                        ? 'Back to Settings'
+                        : 'Back to section'
+                    }
+                    onClick={() => {
+                      if (activeAction === null) onChoose('');
+                      else activeAction.close();
+                    }}
+                  />
+                </span>
+                <div className="ui-settings-title-block min-w-0 flex-1">
+                  <h2
+                    id={pageTitleId}
+                    ref={sectionTitle}
+                    tabIndex={-1}
+                    className="ui-settings-header-title text-title-header text-strong outline-none"
                   >
-                    {activePage?.path === 'export-import' ? (
-                      <>
-                        <h3 className="ui-phone-only ui-group-heading text-group text-muted">
-                          Workspace
-                        </h3>
-                        <div className="ui-settings-joined">
-                          {activePage.sections.map((key) => (
-                            <div key={key} className="ui-section">
+                    {activeAction?.title ?? activePage?.title ?? settingsTitle}
+                  </h2>
+                  {scope === undefined ||
+                  activeAction?.hideScope === true ? null : (
+                    <p className="text-secondary text-muted max-lg:hidden">
+                      {activeAction === null ? scope : activePage?.title}
+                    </p>
+                  )}
+                </div>
+                <div className="ui-settings-header-end">
+                  <div
+                    ref={setActionHeaderTarget}
+                    className="flex shrink-0 items-center empty:hidden"
+                  />
+                  <span className="ui-settings-header-slot">
+                    <Button
+                      variant="ghost"
+                      icon={<CloseIcon />}
+                      label="Close Settings"
+                      onClick={onClose}
+                    />
+                  </span>
+                </div>
+              </div>
+              <div
+                className={`ui-settings-content min-h-0 flex-1 flex flex-col`}
+              >
+                <DialogHeaderActionsContext.Provider value={actionHeaderTarget}>
+                  <div
+                    ref={setActionTarget}
+                    hidden={activeAction === null}
+                    className={
+                      activeAction === null
+                        ? undefined
+                        : 'flex min-h-0 flex-1 flex-col'
+                    }
+                  />
+                  <ScrollRegion
+                    className={`min-h-0 flex-1 ${activeAction !== null ? 'hidden' : ''}`}
+                  >
+                    <div
+                      className="ui-settings-page ui-settings-sections"
+                      hidden={activeAction !== null}
+                      inert={activeAction !== null}
+                    >
+                      {scope === undefined ? null : (
+                        <p className="ui-scope-line text-secondary text-muted lg:hidden">
+                          {scope}
+                        </p>
+                      )}
+                      <SettingsTopicContext.Provider
+                        value={{ hiddenTitles, helpSection: null }}
+                      >
+                        {activePage?.path === 'export-import' ? (
+                          <div className="ui-settings-group">
+                            <h3 className="ui-phone-only ui-settings-group-heading text-group text-muted">
+                              Workspace
+                            </h3>
+                            <div className="ui-settings-joined">
+                              {activePage.sections.map((key) => (
+                                <div key={key} className="ui-settings-group">
+                                  {sectionBodies[key]}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          activePage?.sections.map((key) => (
+                            <div key={key} className="ui-settings-group">
                               {sectionBodies[key]}
                             </div>
-                          ))}
-                        </div>
-                      </>
-                    ) : (
-                      activePage?.sections.map((key) => (
-                        <div key={key} className="ui-section">
-                          {sectionBodies[key]}
-                        </div>
-                      ))
-                    )}
-                  </SettingsTopicContext.Provider>
-                </div>
-              </DialogHeaderActionsContext.Provider>
-            </div>
-          </section>
-        </div>
-        {removing ? (
-          <RemoveOwnAccountDialog
-            store={store.store}
-            accountId={account.accountId}
-            onClose={() => {
-              setRemoving(false);
-            }}
-            onRemoved={() => {
-              session.refresh();
-            }}
-          />
-        ) : null}
-      </SettingsActionContext.Provider>
+                          ))
+                        )}
+                      </SettingsTopicContext.Provider>
+                    </div>
+                  </ScrollRegion>
+                </DialogHeaderActionsContext.Provider>
+              </div>
+            </section>
+          </div>
+          {removing ? (
+            <RemoveOwnAccountDialog
+              store={store.store}
+              accountId={account.accountId}
+              onClose={() => {
+                setRemoving(false);
+              }}
+              onRemoved={() => {
+                session.refresh();
+              }}
+            />
+          ) : null}
+        </SettingsActionContext.Provider>
+      </SettingsSurface>
     </Dialog>
   );
 }

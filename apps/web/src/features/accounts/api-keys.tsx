@@ -20,7 +20,6 @@ import {
   ReadOnlyField,
   SelectField,
   TextField,
-  pageListClassName,
 } from '@notesapp/ui';
 import { problemMessage } from '../../app.tsx';
 import { apiKeyExpiryChoices, apiKeyRevokeText } from '../../lib/api-keys.ts';
@@ -91,17 +90,17 @@ export function ApiKeySettings(): ReactNode {
       ) : (
         <>
           {keys.length === 0 ? (
-            <p className="ui-settings-empty mb-3 mt-0 text-secondary text-muted">
+            <p className="ui-settings-empty text-secondary text-muted">
               No API keys. Create a key for your program.
             </p>
           ) : (
-            <ul className={`${pageListClassName()} mb-3`}>
+            <ul className="ui-settings-items">
               {keys.map((key) => (
                 <ListRow
                   key={key.keyId}
                   className="flex items-center justify-between gap-4"
                 >
-                  <div className="min-w-0">
+                  <div className="ui-settings-copy">
                     <p className="m-0 break-words text-body text-strong">
                       {key.name}
                     </p>
@@ -129,7 +128,7 @@ export function ApiKeySettings(): ReactNode {
             </ul>
           )}
           {keys.length >= maxApiKeys ? (
-            <p className="ui-settings-empty mb-3 mt-0 text-secondary text-muted">
+            <p className="ui-settings-empty text-secondary text-muted">
               Your account has 25 API keys. Revoke a key before you create
               another.
             </p>
@@ -139,7 +138,7 @@ export function ApiKeySettings(): ReactNode {
               type="button"
               ref={createButton}
               aria-label="Create API key"
-              className="ui-settings-phone-row ui-settings-action-link text-accent text-left text-body"
+              className="ui-settings-row ui-settings-action-link text-accent text-left text-body"
               disabled={keys.length >= maxApiKeys}
               onClick={() => setCreating(true)}
             >

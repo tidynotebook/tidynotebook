@@ -73,12 +73,10 @@ await test('the panel carries the width of the chosen step', () => {
   );
 });
 
-await test('a short screen scrolls the drawer panel and keeps the tree', () => {
-  // The defect this covers: on a phone held sideways the tree shrank to a few
-  // pixels, the panel did not scroll, and no note could be reached.
-  assert.equal(drawerPanelClassName, 'ui-sidebar-body ui-drawer-scroll');
+await test('only the tree region scrolls between the fixed top and footer', () => {
+  assert.equal(drawerPanelClassName, 'ui-sidebar-panel');
   assert.equal(drawerTreeClassName, 'ui-sidebar-tree ui-drawer-scroll');
-  // The month keeps its height, and the panel scrolls it.
+  // The month uses the same scroll region.
   const calendar = drawerCalendarClassName.split(' ');
   assert.ok(!calendar.includes('min-h-0'));
   assert.ok(!calendar.some((name) => name.startsWith('overflow')));

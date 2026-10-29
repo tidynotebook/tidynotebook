@@ -13,7 +13,6 @@ import {
   LoadingState,
   Notice,
   focusOutline,
-  pageListClassName,
 } from '@notesapp/ui';
 import { problemMessage } from '../../app.tsx';
 import {
@@ -79,13 +78,13 @@ export function ConnectedAppSettings(): ReactNode {
             No connected apps. Connect an app from its settings.
           </p>
         ) : (
-          <ul className={pageListClassName()}>
+          <ul className="ui-settings-items">
             {apps.map((app) => (
               <ListRow
                 key={app.grantId}
                 className="flex items-center justify-between gap-4"
               >
-                <div className="min-w-0">
+                <div className="ui-settings-copy">
                   <p className="m-0 break-words text-body text-strong">
                     Name claimed by app: {connectedAppName(app)}
                   </p>

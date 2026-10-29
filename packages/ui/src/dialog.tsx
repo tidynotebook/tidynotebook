@@ -52,6 +52,8 @@ import { giveFocusBack } from './dialog-focus.ts';
 import { PhoneSheetHeader } from './phone-sheet.tsx';
 import { followPhoneSheetViewport } from './phone-sheet-viewport.ts';
 import { Button } from './controls.tsx';
+import { ScrollRegion } from './scroll-region.tsx';
+import { useSettingsSurface } from './settings-layout.tsx';
 import { transitionRaise } from './motion.ts';
 
 export type { DialogWidth } from './dialog-classes.ts';
@@ -128,6 +130,7 @@ export function Dialog({
   /** Gives the focus back on close, in place of the element that opened it. */
   readonly returnFocus?: (() => void) | undefined;
 }): ReactNode {
+  const settings = useSettingsSurface();
   const [phone, setPhone] = useState(
     () =>
       typeof window !== 'undefined' &&
@@ -337,6 +340,7 @@ export function Dialog({
         ref={panelRef}
         id={`${titleId}-panel`}
         className={`${panel} ${transitionRaise}`}
+        data-scroll-frame=""
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -371,13 +375,17 @@ export function Dialog({
           />
         ) : (actions === undefined && !headerActions) || hideTitle || screen ? (
           <h2
-            className={dialogTitleClassName(hideTitle || screen)}
+            data-scroll-edge="above"
+            className={`${dialogTitleClassName(hideTitle || screen)} ${settings ? 'ui-settings-dialog-heading' : ''}`}
             id={titleId}
           >
             {title}
           </h2>
         ) : (
-          <div className={dialogHeaderClassName()}>
+          <div
+            data-scroll-edge="above"
+            className={`${dialogHeaderClassName()} ${settings ? 'ui-settings-dialog-heading' : ''}`}
+          >
             <h2 className={dialogHeaderTitleClassName()} id={titleId}>
               {title}
             </h2>
@@ -445,16 +453,13 @@ export function DialogBody({
 }): ReactNode {
   const fixed = useContext(FixedDialogContext);
   const phone = useContext(PhoneSheetContext);
+  const settings = useSettingsSurface();
   return (
-    <div
-      className={
-        fixed || phone
-          ? 'min-h-0 flex-1 overflow-y-auto overscroll-contain ui-dialog-body'
-          : 'ui-dialog-body'
-      }
-    >
-      {children}
-    </div>
+    <ScrollRegion className={fixed || phone ? 'min-h-0 flex-1' : ''}>
+      <div className={settings ? 'ui-settings-form-body' : 'ui-dialog-body'}>
+        {children}
+      </div>
+    </ScrollRegion>
   );
 }
 
@@ -471,6 +476,7 @@ export function DialogFooter({
   readonly children: ReactNode;
 }): ReactNode {
   const fixed = useContext(FixedDialogContext);
+  const settings = useSettingsSurface();
   const phone = useContext(PhoneSheetContext);
   if (phone) {
     const nodes = Children.toArray(children);
@@ -502,14 +508,20 @@ export function DialogFooter({
         {extra.length === 0 ? null : (
           <div className="shrink-0 px-4 pb-2">{extra}</div>
         )}
-        <div className="ui-dialog-footer shrink-0 border-t border-edge-subtle bg-card [&_button]:min-h-11 [&_button]:w-full">
+        <div
+          data-scroll-edge="below"
+          className={`${settings ? 'ui-settings-footer' : 'ui-dialog-footer'} shrink-0 bg-card [&_button]:min-h-11 [&_button]:w-full`}
+        >
           {action}
         </div>
       </>
     );
   }
   return (
-    <div className={`${dialogFooterClassName()} ${fixed ? 'shrink-0' : ''}`}>
+    <div
+      data-scroll-edge="below"
+      className={`${settings ? 'ui-settings-footer' : dialogFooterClassName()} ${fixed ? 'shrink-0' : ''}`}
+    >
       {children}
     </div>
   );

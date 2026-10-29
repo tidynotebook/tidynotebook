@@ -170,15 +170,13 @@ export function DailyNoteSettingsFields(): ReactNode {
     <>
       <LayoutFields settings={settings} onSave={daily.save} />
       <DailyTemplatePicker settings={settings} onSave={daily.save} />
-      <div className="ui-settings-switch-wrap flex items-center border-b border-edge-subtle">
-        <Switch
-          label="Open today's note when the app opens"
-          checked={settings.openOnStart}
-          onChange={(checked) => {
-            daily.save({ ...settings, openOnStart: checked });
-          }}
-        />
-      </div>
+      <Switch
+        label="Open today's note when the app opens"
+        checked={settings.openOnStart}
+        onChange={(checked) => {
+          daily.save({ ...settings, openOnStart: checked });
+        }}
+      />
       {daily.saveProblem === null ? null : (
         <Notice className="mt-3" tone="problem" message={daily.saveProblem} />
       )}

@@ -19,6 +19,7 @@ import {
 } from 'react';
 import {
   Button,
+  SettingsRowActions,
   WrapText,
   ChevronRightIcon,
   Switch,
@@ -82,13 +83,16 @@ export function SettingActionRow({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className={`ui-settings-phone-row ui-settings-action-link text-left ${danger ? 'text-danger' : 'text-accent'}`}
+      className={`ui-settings-row ui-settings-action-link text-left ${danger ? 'text-danger' : 'text-accent'}`}
     >
       <span data-setting-label className="block text-body">
         {label}
       </span>
       {help === undefined || help.trim() === '' ? null : (
-        <span data-setting-help className="block text-secondary text-muted">
+        <span
+          data-setting-help
+          className="ui-settings-help text-secondary text-muted"
+        >
           <WrapText>{help}</WrapText>
         </span>
       )}
@@ -111,6 +115,7 @@ export const SettingsTopicContext = createContext<{
 /** One section: its name and sentence, then its controls. */
 export function SettingsSection({
   section,
+  grouped = false,
   heading,
   danger = false,
   description,
@@ -118,6 +123,7 @@ export function SettingsSection({
   children,
 }: {
   readonly section: PageSection;
+  readonly grouped?: boolean;
   /** The group label in the modal, when it is not the section title. */
   readonly heading?: string | undefined;
   /** Draws the group label in the danger colour, for the Danger zone. */
@@ -132,22 +138,30 @@ export function SettingsSection({
   if (Children.toArray(children).length === 0) return null;
   if (topic !== null)
     return (
-      <section className={'ui-section'} aria-label={section.title}>
+      <section className="ui-settings-group" aria-label={section.title}>
         {topic.hiddenTitles.includes(section.id) &&
         !(phone && section.id === 'profile-heading') ? null : (
           <h3
-            className={`ui-group-heading border-b border-edge-subtle text-group ${danger ? 'text-danger' : 'text-muted'}`}
+            className={`ui-settings-group-heading text-group ${danger ? 'text-danger' : 'text-muted'}`}
             id={section.id}
           >
             {heading ?? section.title}
           </h3>
         )}
         {topic.helpSection === section.id && description !== undefined ? (
-          <p className="mb-3 mt-0 text-secondary text-muted">{description}</p>
+          <p className="ui-settings-message text-secondary text-muted">
+            {description}
+          </p>
         ) : null}
-        <div className="ui-settings-card ui-group-content min-w-0">
+        <div
+          className={
+            grouped ? 'ui-settings-groups min-w-0' : 'ui-settings-card min-w-0'
+          }
+        >
           {warning === undefined ? null : (
-            <p className="mb-3 mt-0 text-secondary text-muted">{warning}</p>
+            <p className="ui-settings-message text-secondary text-muted">
+              {warning}
+            </p>
           )}
           {children}
         </div>
@@ -170,7 +184,9 @@ export function SettingsSection({
         </div>
         <div className="mt-2 min-w-0">
           {warning === undefined ? null : (
-            <p className="mb-3 mt-0 text-secondary text-muted">{warning}</p>
+            <p className="ui-settings-message text-secondary text-muted">
+              {warning}
+            </p>
           )}
           {children}
         </div>
@@ -193,30 +209,20 @@ export function SettingRow({
   readonly children?: ReactNode;
 }): ReactNode {
   return (
-    <div className="ui-setting-action-row ui-settings-phone-row ui-setting-row ui-setting-align flex flex-wrap items-start border-b border-edge-subtle lg:flex-nowrap">
-      <div data-setting-text className="contents lg:block lg:min-w-0 lg:flex-1">
-        <p
-          data-setting-label
-          className="order-1 m-0 min-w-0 flex-1 break-words text-body text-strong lg:truncate"
-        >
+    <div className="ui-settings-row">
+      <div data-setting-text className="ui-settings-copy">
+        <p data-setting-label className="text-body text-strong">
           {label}
         </p>
-        {help === undefined || help.trim() === '' ? null : (
-          <p
-            data-setting-help
-            className="order-3 m-0 line-clamp-2 w-full break-words text-secondary text-muted lg:line-clamp-1"
-            title={help}
-          >
+        {help?.trim() ? (
+          <p data-setting-help className="text-secondary text-muted">
             <WrapText>{help}</WrapText>
           </p>
-        )}
+        ) : null}
       </div>
       {children === undefined ? null : (
-        <div
-          data-setting-control
-          className="order-2 flex shrink-0 flex-wrap items-start gap-cluster"
-        >
-          {children}
+        <div data-setting-control className="ui-settings-control">
+          <SettingsRowActions>{children}</SettingsRowActions>
         </div>
       )}
     </div>
@@ -248,43 +254,24 @@ export function SettingChoiceRow({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="ui-settings-phone-row ui-setting-row ui-setting-align flex w-full items-start border-b border-edge-subtle bg-transparent text-left hover:bg-hover focus-visible:relative focus-visible:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-focus disabled:cursor-default disabled:text-muted pointer-coarse:flex-wrap pointer-coarse:gap-y-0"
+      className="ui-settings-row ui-settings-choice text-left hover:bg-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-focus"
     >
-      <span
-        data-setting-text
-        className="min-w-0 flex-1 pointer-coarse:contents"
-      >
-        <span
-          data-setting-label
-          className="block truncate text-body text-strong pointer-coarse:order-1 pointer-coarse:min-w-0 pointer-coarse:flex-1"
-        >
+      <span data-setting-text className="ui-settings-copy">
+        <span data-setting-label className="text-body text-strong">
           {label}
         </span>
-        {help.trim() === '' ? null : (
-          <span
-            data-setting-help
-            className="line-clamp-2 break-words text-secondary text-muted lg:line-clamp-1 pointer-coarse:order-4 pointer-coarse:w-full pointer-coarse:basis-full"
-          >
+        {help.trim() ? (
+          <span data-setting-help className="text-secondary text-muted">
             <WrapText>{help}</WrapText>
           </span>
-        )}
+        ) : null}
       </span>
       <span
         data-setting-control
-        className="inline-flex min-w-0 max-w-1/2 items-center gap-2 text-value text-muted pointer-coarse:order-2"
-        title={value}
+        className="ui-settings-control text-value text-muted"
       >
-        {valueIcon === undefined ? null : (
-          <span className="inline-flex shrink-0" aria-hidden="true">
-            {valueIcon}
-          </span>
-        )}
-        <span className="truncate">{value}</span>
-      </span>
-      <span
-        className="inline-flex shrink-0 text-muted pointer-coarse:order-3"
-        aria-hidden="true"
-      >
+        {valueIcon}
+        <span className="ui-settings-value">{value}</span>
         <ChevronRightIcon />
       </span>
     </button>
@@ -305,27 +292,13 @@ export function SettingSwitchRow({
   readonly disabled: boolean;
   readonly onChange: (checked: boolean) => void;
 }): ReactNode {
-  const phone = usePhoneSettings();
-  if (phone)
-    return (
-      <Switch
-        label={label}
-        hint={help}
-        checked={checked}
-        disabled={disabled}
-        onChange={onChange}
-      />
-    );
   return (
-    <SettingRow label={label} help={help}>
-      <Switch
-        hideLabel
-        label={label}
-        hint={help}
-        checked={checked}
-        disabled={disabled}
-        onChange={onChange}
-      />
-    </SettingRow>
+    <Switch
+      label={label}
+      hint={help}
+      checked={checked}
+      disabled={disabled}
+      onChange={onChange}
+    />
   );
 }

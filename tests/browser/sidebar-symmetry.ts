@@ -21,21 +21,24 @@ export async function auditSidebar(page: Page) {
     const box = (e: Element) => e.getBoundingClientRect();
     const panel = root.querySelector('.ui-sidebar-panel');
     if (!panel) throw new Error('Panel missing');
-    const style = getComputedStyle(panel),
-      pad = coarse ? 12 : 8;
-    for (const side of [
-      style.paddingTop,
-      style.paddingBottom,
-      style.paddingLeft,
-      style.paddingRight,
-    ])
-      eq('panel padding', parseFloat(side), pad);
-    eq('group gap', parseFloat(style.gap), pad);
+    const pad = coarse ? 12 : 8;
+    for (const region of root.querySelectorAll(
+      '.ui-sidebar-top,.ui-sidebar-tree',
+    )) {
+      const style = getComputedStyle(region);
+      for (const side of [
+        style.paddingTop,
+        style.paddingBottom,
+        style.paddingLeft,
+        style.paddingRight,
+      ])
+        eq('region padding', parseFloat(side), pad);
+    }
     for (const parent of root.querySelectorAll(
-      '.ui-sidebar-body,.ui-sidebar-tree-items',
+      '.ui-sidebar-top,.ui-sidebar-tree-items',
     )) {
       const children = [...parent.children].filter(visible);
-      const gap = parent.classList.contains('ui-sidebar-body') ? pad : 2;
+      const gap = parent.classList.contains('ui-sidebar-top') ? pad : 2;
       for (let index = 1; index < children.length; index++) {
         const previous = children[index - 1],
           next = children[index];
@@ -62,6 +65,8 @@ export async function auditSidebar(page: Page) {
       if (label) {
         const l = box(label);
         eq('content height', r.height, l.height + 2 * y);
+        eq('single row line', l.height, 20);
+        eq('one line row', r.height, coarse ? 36 : 28);
         eq('text vertical symmetry', l.top - r.top, r.bottom - l.bottom);
       }
       if (leading) {
@@ -164,7 +169,7 @@ export async function auditSidebar(page: Page) {
     for (const footer of root.querySelectorAll('.ui-sidebar-status')) {
       if (!visible(footer)) continue;
       const f = getComputedStyle(footer);
-      eq('footer height', box(footer).height, coarse ? 36 : 32);
+      eq('footer height', box(footer).height, 32);
       eq('footer left', parseFloat(f.paddingLeft), pad);
       eq('footer right', parseFloat(f.paddingRight), pad);
       for (const child of footer.children) {
@@ -325,7 +330,7 @@ try {
         .getByRole('button', { name: 'Expand folder Projects', exact: true })
         .click();
       await p.locator('#notes-sidebar').screenshot({
-        path: `.local-app/screenshots/s1-sidebar-${width}-${scheme}.png`,
+        path: `.local-app/screenshots/s2-sidebar-${width}-${scheme}.png`,
         animations: 'disabled',
       });
       await p.evaluate(() => {
@@ -346,7 +351,7 @@ try {
           overlay.append(e);
         };
         for (const el of document.querySelectorAll(
-          '#notes-sidebar .ui-sidebar-panel,#notes-sidebar .ui-sidebar-row,#notes-sidebar .ui-sidebar-body,#notes-sidebar .ui-sidebar-tree-items,#notes-sidebar .ui-sidebar-actions,#notes-sidebar .ui-sidebar-rail-group,#notes-sidebar .ui-sidebar-rail',
+          '#notes-sidebar .ui-sidebar-top,#notes-sidebar .ui-sidebar-tree,#notes-sidebar .ui-sidebar-row,#notes-sidebar .ui-sidebar-footer,#notes-sidebar .ui-sidebar-tree-items,#notes-sidebar .ui-sidebar-actions,#notes-sidebar .ui-sidebar-rail-group,#notes-sidebar .ui-sidebar-rail',
         )) {
           const r = el.getBoundingClientRect(),
             s = getComputedStyle(el);
@@ -379,7 +384,7 @@ try {
         }
       });
       await p.locator('#notes-sidebar').screenshot({
-        path: `.local-app/screenshots/s1-sidebar-${width}-${scheme}-padding.png`,
+        path: `.local-app/screenshots/s2-sidebar-${width}-${scheme}-padding.png`,
         animations: 'disabled',
       });
       process.stdout.write(

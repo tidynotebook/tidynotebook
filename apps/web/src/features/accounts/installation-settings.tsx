@@ -296,7 +296,7 @@ function MailSettingsForm({
             message="The server can no longer read the saved password. Enter it again and save."
           />
         ) : null}
-        <div className="md:grid md:grid-cols-3 md:gap-x-group">
+        <div className="ui-settings-form-grid md:grid-cols-3">
           <div className="md:col-span-2">
             <TextField
               id="mail-host"
@@ -337,7 +337,7 @@ function MailSettingsForm({
           }}
         />
         <fieldset className="m-0 min-w-0 border-0 p-0">
-          <div className="md:grid md:grid-cols-2 md:gap-x-group">
+          <div className="ui-settings-form-grid md:grid-cols-2">
             <TextField
               id="mail-username"
               label="User name"
@@ -666,34 +666,36 @@ function LegalDocumentEditor({
         ) : (
           <>
             {fields.length === 0 ? null : (
-              <fieldset className="m-0 mb-1 min-w-0 border-0 p-0">
-                <legend className="mb-1 p-0 text-label text-strong">
+              <fieldset className="m-0 min-w-0 border-0 p-0">
+                <legend className="ui-settings-form-legend text-label text-strong">
                   Facts of your service
                 </legend>
-                <p className="mb-3 mt-0 text-secondary text-muted">
-                  Each fact fills its place in the text below.
-                </p>
-                <div className="md:grid md:grid-cols-2 md:gap-x-group">
-                  {fields.map((field, index) => (
-                    <div
-                      key={field.blank}
-                      className={field.wide ? 'md:col-span-2' : undefined}
-                    >
-                      <TextField
-                        id={`legal-blank-${String(index)}`}
-                        label={field.label}
-                        value={values[field.blank] ?? ''}
-                        autoComplete="off"
-                        onChange={(value) => {
-                          setValues((current) => ({
-                            ...current,
-                            [field.blank]: value,
-                          }));
-                          setFailure('');
-                        }}
-                      />
-                    </div>
-                  ))}
+                <div className="ui-settings-form-fields">
+                  <p className="m-0 text-secondary text-muted">
+                    Each fact fills its place in the text below.
+                  </p>
+                  <div className="ui-settings-form-grid md:grid-cols-2">
+                    {fields.map((field, index) => (
+                      <div
+                        key={field.blank}
+                        className={field.wide ? 'md:col-span-2' : undefined}
+                      >
+                        <TextField
+                          id={`legal-blank-${String(index)}`}
+                          label={field.label}
+                          value={values[field.blank] ?? ''}
+                          autoComplete="off"
+                          onChange={(value) => {
+                            setValues((current) => ({
+                              ...current,
+                              [field.blank]: value,
+                            }));
+                            setFailure('');
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </fieldset>
             )}

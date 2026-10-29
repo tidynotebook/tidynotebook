@@ -547,3 +547,13 @@
     box-shadow: var(--shadow-overlay);
   }
 }
+
+/* Scroll edges use the active appearance, including custom themes. */
+:root {
+  --ui-scroll-shadow-color: rgb(0 0 0 / 0.35);
+  --ui-scroll-shadow-down: 0 6px 10px -6px var(--ui-scroll-shadow-color);
+  --ui-scroll-shadow-up: 0 -6px 10px -6px var(--ui-scroll-shadow-color);
+}
+[data-theme='dark'] {
+  --ui-scroll-shadow-color: rgb(0 0 0 / 0.7);
+}

@@ -30,6 +30,11 @@
       "file": "packages/editor/src/widgets.ts",
       "rule": "inner-html",
       "reason": "The mathematics widget writes the markup that `renderMath` in @notesapp/markdown returned, which strips every element and every attribute outside the KaTeX drawing set first. The editor builds its own DOM, so no React node can carry that markup."
+    },
+    {
+      "file": "apps/web/src/shell/tree.tsx",
+      "rule": "inline-style",
+      "reason": "Tree indentation comes from the current folder depth and the shared indent token. The tree has no fixed depth limit, so a finite set of utility classes cannot state every level."
     }
   ]
 }

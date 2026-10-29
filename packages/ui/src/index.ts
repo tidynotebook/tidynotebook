@@ -300,3 +300,15 @@ export { ReplaceIcon } from './icons.tsx';
 export { phoneSheetMotion } from './motion.ts';
 
 export { WrapText, MetaFacts } from './inline-text.tsx';
+
+export {
+  ScrollRegion,
+  observeScrollEdges,
+  type ScrollEdges,
+} from './scroll-region.tsx';
+
+export {
+  SettingsSurface,
+  SettingsRowActions,
+  useSettingsSurface,
+} from './settings-layout.tsx';

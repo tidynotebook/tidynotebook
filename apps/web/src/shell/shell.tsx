@@ -65,6 +65,7 @@ import {
   AnchoredMenu,
   avatarClassName,
   Button,
+  ScrollRegion,
   buttonClassName,
   CloseIcon,
   compactButtonVisualClassName,
@@ -163,7 +164,6 @@ import type { DragItem } from '../lib/folder-moves.ts';
 import {
   drawerCalendarClassName,
   drawerClassName,
-  drawerPanelClassName,
   drawerTreeClassName,
 } from './drawer.ts';
 import {
@@ -475,26 +475,28 @@ function Sidebar({
   }));
   const expand = () => setOpenFolders(expandedFolders(expansion, knownFolders));
 
+  const fixedTop = useRef<HTMLDivElement>(null),
+    fixedBottom = useRef<HTMLDivElement>(null);
   return (
     <div className="ui-sidebar-panel">
-      <div className="ui-sidebar-header md:hidden">
-        <span className="text-title-header text-strong">
-          {sidebarViewLabels[view]}
-        </span>
-        <span className="ui-sidebar-slot">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="ui-sidebar-header-close"
-            label="Close navigation"
-            title="Close navigation"
-            icon={<CloseIcon />}
-            onClick={onClose}
-          />
-        </span>
-      </div>
-
-      <div className={drawerPanelClassName}>
+      <div ref={fixedTop} data-scroll-edge="above" className="ui-sidebar-top">
+        {' '}
+        <div className="ui-sidebar-header md:hidden">
+          <span className="text-title-header text-strong">
+            {sidebarViewLabels[view]}
+          </span>
+          <span className="ui-sidebar-slot">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ui-sidebar-header-close"
+              label="Close navigation"
+              title="Close navigation"
+              icon={<CloseIcon />}
+              onClick={onClose}
+            />
+          </span>
+        </div>
         <WorkspaceSwitcher
           workspaceId={workspaceId}
           onNavigate={onClose}
@@ -502,14 +504,8 @@ function Sidebar({
           onRename={onRenameWorkspace}
           onDelete={onDeleteWorkspace}
         />
-
         {view === 'notes' ? (
           <>
-            {/*
-        The actions of the tree are one row of icons (decision 0093). Each one
-        is a compact ghost control with a name and a title, so the row stays
-        quiet and every action stays in the tab order.
-      */}
             <div className="ui-drawer-actions">
               <div className="ui-drawer-actions-row ui-sidebar-actions">
                 <Button
@@ -619,31 +615,39 @@ function Sidebar({
                 </p>
               )}
             </div>
-
-            <div className={drawerTreeClassName}>
-              <section className="ui-sidebar-tree-items" aria-label="Folders">
-                <div
-                  className={treeRowClassName({
-                    wrapOnPhone: true,
-                    open: location.pathname === notesPath,
-                    selected: selectedFolder === '',
-                    dropTarget: drag.over === '',
-                  })}
-                  onDragOver={(event) => {
-                    if (!drag.accepts('')) return;
-                    event.preventDefault();
-                    event.dataTransfer.dropEffect = 'move';
-                    drag.hover('');
-                  }}
-                  onDragLeave={() => {
-                    if (drag.over === '') drag.hover(null);
-                  }}
-                  onDrop={(event) => {
-                    event.preventDefault();
-                    drag.drop('');
-                  }}
-                >
-                  {/*
+          </>
+        ) : null}
+      </div>
+      <ScrollRegion
+        className={drawerTreeClassName}
+        above={fixedTop}
+        below={fixedBottom}
+      >
+        {view === 'notes' ? (
+          <>
+            <section className="ui-sidebar-tree-items" aria-label="Folders">
+              <div
+                className={treeRowClassName({
+                  wrapOnPhone: true,
+                  open: location.pathname === notesPath,
+                  selected: selectedFolder === '',
+                  dropTarget: drag.over === '',
+                })}
+                onDragOver={(event) => {
+                  if (!drag.accepts('')) return;
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = 'move';
+                  drag.hover('');
+                }}
+                onDragLeave={() => {
+                  if (drag.over === '') drag.hover(null);
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  drag.drop('');
+                }}
+              >
+                {/*
               The root of the tree is a link and not a button, because the
               workspace screen is the list of all notes and this row names it.
               It looked inert before: it set the parent of the next create
@@ -652,106 +656,103 @@ function Sidebar({
               `All notes`. It still does both of those, and the selection
               follows the note that opens, by record 0034.
             */}
-                  <div className={treeRowLeadingClassName}>
-                    <span className={rowSpacerClassName} aria-hidden="true" />
-                    <Link
-                      className={treeRowNameClassName}
-                      to={notesPath}
-                      aria-current={
-                        location.pathname === notesPath ? 'page' : undefined
-                      }
-                      onClick={() => {
-                        onSelectFolder('');
-                        onNavigate();
-                      }}
-                    >
-                      <span
-                        className="inline-flex shrink-0 items-center"
-                        aria-hidden="true"
-                      >
-                        <FolderIcon />
-                      </span>
-                      <span data-tree-name className="min-w-0 flex-1 truncate">
-                        {allNotesTitle}
-                      </span>
-                    </Link>
-                  </div>
-                  <span className="ui-sidebar-slot">
-                    <Menu
-                      label="Actions for All notes"
-                      icon={<MoreIcon />}
-                      triggerClassName="ui-sidebar-row-action ui-sidebar-row-menu"
-                      items={[
-                        {
-                          id: 'new-note',
-                          label: 'New note',
-                          onSelect: () => onNewNoteIn(''),
-                        },
-                        {
-                          id: 'new-folder',
-                          label: 'New folder',
-                          onSelect: () => onNewFolderIn(''),
-                        },
-                        {
-                          id: 'template',
-                          label: 'New note from template',
-                          onSelect: () => onFromTemplate(''),
-                        },
-                      ]}
-                    />
-                  </span>
-                </div>
-                {files.loading ? (
-                  <div className="ui-sidebar-message">
-                    <LoadingState
-                      shape="list"
-                      rows={4}
-                      label="Your notes are loading."
-                    />
-                  </div>
-                ) : tree.length === 0 ? (
-                  <p className="ui-sidebar-message text-secondary text-muted">
-                    No notes yet.
-                  </p>
-                ) : (
-                  <div className={treeListClassName}>
-                    <NoteTree
-                      workspaceId={workspaceId}
-                      nodes={tree}
-                      knownFolders={knownFolders}
-                      activeFileId={fileId}
-                      selectedFolder={selectedFolder}
-                      folders={folders}
-                      drag={drag}
-                      onSelectFolder={onSelectFolder}
-                      onNavigate={onNavigate}
-                      onNewNoteIn={onNewNoteIn}
-                      onNewFolderIn={onNewFolderIn}
-                      onPublish={onPublish}
-                      onMove={onMove}
-                    />
-                  </div>
-                )}
-                {files.limitNotice === null ? null : (
-                  <p
-                    className="ui-sidebar-message text-secondary text-muted"
-                    role="status"
-                    aria-live="polite"
+                <div className={treeRowLeadingClassName}>
+                  <span className={rowSpacerClassName} aria-hidden="true" />
+                  <Link
+                    className={treeRowNameClassName}
+                    to={notesPath}
+                    aria-current={
+                      location.pathname === notesPath ? 'page' : undefined
+                    }
+                    onClick={() => {
+                      onSelectFolder('');
+                      onNavigate();
+                    }}
                   >
-                    {files.limitNotice}
-                  </p>
-                )}
-              </section>
-              {drag.problem === null ? null : (
-                <p className={treeMessageClassName('problem')} role="alert">
-                  {drag.problem}
+                    <span
+                      className="inline-flex shrink-0 items-center"
+                      aria-hidden="true"
+                    >
+                      <FolderIcon />
+                    </span>
+                    <span data-tree-name className="min-w-0 flex-1 truncate">
+                      {allNotesTitle}
+                    </span>
+                  </Link>
+                </div>
+                <span className="ui-sidebar-slot">
+                  <Menu
+                    label="Actions for All notes"
+                    icon={<MoreIcon />}
+                    triggerClassName="ui-sidebar-row-action ui-sidebar-row-menu"
+                    items={[
+                      {
+                        id: 'new-note',
+                        label: 'New note',
+                        onSelect: () => onNewNoteIn(''),
+                      },
+                      {
+                        id: 'new-folder',
+                        label: 'New folder',
+                        onSelect: () => onNewFolderIn(''),
+                      },
+                      {
+                        id: 'template',
+                        label: 'New note from template',
+                        onSelect: () => onFromTemplate(''),
+                      },
+                    ]}
+                  />
+                </span>
+              </div>
+              {files.loading ? (
+                <div className="ui-sidebar-message">
+                  <LoadingState
+                    shape="list"
+                    rows={4}
+                    label="Your notes are loading."
+                  />
+                </div>
+              ) : tree.length === 0 ? (
+                <p className="ui-sidebar-message text-secondary text-muted">
+                  No notes yet.
+                </p>
+              ) : (
+                <div className={treeListClassName}>
+                  <NoteTree
+                    workspaceId={workspaceId}
+                    nodes={tree}
+                    knownFolders={knownFolders}
+                    activeFileId={fileId}
+                    selectedFolder={selectedFolder}
+                    folders={folders}
+                    drag={drag}
+                    onSelectFolder={onSelectFolder}
+                    onNavigate={onNavigate}
+                    onNewNoteIn={onNewNoteIn}
+                    onNewFolderIn={onNewFolderIn}
+                    onPublish={onPublish}
+                    onMove={onMove}
+                  />
+                </div>
+              )}
+              {files.limitNotice === null ? null : (
+                <p
+                  className="ui-sidebar-message text-secondary text-muted"
+                  role="status"
+                  aria-live="polite"
+                >
+                  {files.limitNotice}
                 </p>
               )}
-            </div>
+            </section>
+            {drag.problem === null ? null : (
+              <p className={treeMessageClassName('problem')} role="alert">
+                {drag.problem}
+              </p>
+            )}
           </>
         ) : (
-          // The calendar has the view of its own (record 0105), so the month
-          // always shows and the panel scrolls when a short screen needs it.
           <div className={drawerCalendarClassName}>
             <SidebarCalendar
               today={today()}
@@ -773,7 +774,13 @@ function Sidebar({
             )}
           </div>
         )}
-
+      </ScrollRegion>
+      <div
+        ref={fixedBottom}
+        data-scroll-edge="below"
+        className="ui-sidebar-footer"
+      >
+        {' '}
         <Suspense fallback={<div className="ui-sidebar-status shrink-0" />}>
           <SidebarStatus workspaceId={workspaceId} />
         </Suspense>

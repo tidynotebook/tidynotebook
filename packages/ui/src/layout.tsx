@@ -1,3 +1,4 @@
+import { useSettingsSurface, SettingsRowActions } from './settings-layout.tsx';
 /**
  * Layout primitives of the application.
  *
@@ -268,17 +269,24 @@ export function ListRow({
   /** The accessible name of the row, when its text is not the whole name. */
   readonly label?: string | undefined;
 }): ReactNode {
+  const settings = useSettingsSurface();
+  const content = settings ? (
+    <SettingsRowActions>{children}</SettingsRowActions>
+  ) : (
+    children
+  );
   const interactive = href !== undefined || onClick !== undefined;
   const classes = rowClassName({
     selected,
     current,
     interactive,
-    className: `ui-list-row ${className ?? ''}`,
+    className: `${settings ? 'ui-settings-row' : 'ui-list-row'} ${className ?? ''}`,
   });
+  const rowClasses = settings ? classes.replace('ui-tree-row', '') : classes;
   // The list item stays a list item, and the control inside it takes the whole
   // row. `display: contents` would have done the same with one element fewer,
   // and it drops the item out of the list that assistive software counts.
-  const filling = `${classes} min-w-0 flex-1`;
+  const filling = `${rowClasses} min-w-0 flex-1`;
   if (href !== undefined)
     return (
       <li className="flex">
@@ -288,7 +296,7 @@ export function ListRow({
           aria-current={current === true ? 'page' : undefined}
           aria-label={label}
         >
-          {children}
+          {content}
         </a>
       </li>
     );
@@ -302,9 +310,9 @@ export function ListRow({
           aria-label={label}
           onClick={onClick}
         >
-          {children}
+          {content}
         </button>
       </li>
     );
-  return <li className={classes}>{children}</li>;
+  return <li className={rowClasses}>{content}</li>;
 }
