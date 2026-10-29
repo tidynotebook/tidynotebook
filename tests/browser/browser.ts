@@ -9,7 +9,10 @@ export type Locator = {
   count(): Promise<number>;
   locator(selector: string): Locator;
   and(locator: Locator): Locator;
-  getByRole(role: string, options?: { name: string; exact?: boolean }): Locator;
+  getByRole(
+    role: string,
+    options?: { name: string; exact?: boolean; level?: number },
+  ): Locator;
   getByText(text: string | RegExp, options?: { exact?: boolean }): Locator;
   getByLabel(label: string, options?: { exact?: boolean }): Locator;
   scrollIntoViewIfNeeded(): Promise<void>;
@@ -30,7 +33,10 @@ type Route = {
 export type Page = {
   goto(url: string): Promise<unknown>;
   locator(selector: string): Locator;
-  getByRole(role: string, options?: { name: string; exact?: boolean }): Locator;
+  getByRole(
+    role: string,
+    options?: { name: string; exact?: boolean; level?: number },
+  ): Locator;
   getByText(text: string | RegExp, options?: { exact?: boolean }): Locator;
   getByLabel(label: string, options?: { exact?: boolean }): Locator;
   setDefaultTimeout(timeout: number): void;

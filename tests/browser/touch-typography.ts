@@ -420,6 +420,7 @@ try {
               titles[section] ??
               section.charAt(0).toUpperCase() + section.slice(1),
             exact: true,
+            level: 2,
           })
           .waitFor();
         if (section === 'daily-notes')

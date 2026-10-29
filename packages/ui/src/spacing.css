@@ -153,8 +153,8 @@
   @media (max-width: 1023px) and (pointer: coarse) {
     margin-inline: -16px;
   }
-  & .ui-dialog-body,
-  & .ui-dialog-footer {
+  & .ui-dialog-body.ui-dialog-body,
+  & .ui-dialog-footer.ui-dialog-footer {
     padding-inline: 24px;
     @media (max-width: 1023px) and (pointer: coarse) {
       padding-inline: 16px;

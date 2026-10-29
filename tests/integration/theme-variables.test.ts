@@ -229,7 +229,9 @@ await test('touch form labels and fields share the computed 16 px size', async (
       // Give the font fixture the compiled token and font rules unchanged.
       const variables = /:root, :host\s*\{([^}]+)\}/.exec(built);
       const scale =
-        /@media \(pointer: coarse\)\s*\{\s*:root\s*\{([^}]+)\}/.exec(built);
+        /@media \(pointer: coarse\)\s*\{\s*:root\s*\{(?=[^}]*--text-control:)([^}]+)\}/.exec(
+          built,
+        );
       assert.ok(variables?.[1]);
       assert.ok(scale?.[1]);
       const fontRules = ['text-label', 'text-body', 'text-secondary'].map(
@@ -294,9 +296,10 @@ await test('shared touch roles set the full size, line height, and weight', asyn
     Object.values(textRoleClasses).flatMap((value) => value.split(' ')),
   );
   const variables = /:root, :host\s*\{([^}]+)\}/.exec(built);
-  const scale = /@media \(pointer: coarse\)\s*\{\s*:root\s*\{([^}]+)\}/.exec(
-    built,
-  );
+  const scale =
+    /@media \(pointer: coarse\)\s*\{\s*:root\s*\{(?=[^}]*--text-control:)([^}]+)\}/.exec(
+      built,
+    );
   assert.ok(variables?.[1]);
   assert.ok(scale?.[1]);
   const browser = new Window({
