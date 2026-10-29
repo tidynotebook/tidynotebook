@@ -307,7 +307,7 @@ function SessionsSettings(): ReactNode {
               </ListRow>
             </ul>
           )}
-          <div className="mt-4 flex flex-wrap items-center gap-2 border-b border-edge-subtle pb-2">
+          <div className="ui-group-heading mt-6 flex flex-wrap items-center gap-2 border-b border-edge-subtle">
             <h3 className="m-0 min-w-0 flex-1 text-group text-muted">
               Other devices
             </h3>
@@ -1039,7 +1039,9 @@ export function SettingsModal({
                     value={{ hiddenTitles, helpSection: null }}
                   >
                     {activePage?.sections.map((key) => (
-                      <div key={key}>{sectionBodies[key]}</div>
+                      <div key={key} className="ui-section">
+                        {sectionBodies[key]}
+                      </div>
                     ))}
                   </SettingsTopicContext.Provider>
                 </div>

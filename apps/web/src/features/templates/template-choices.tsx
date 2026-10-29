@@ -293,7 +293,7 @@ export default function TemplateChoices({
           }
         />
       </div>
-      <header className="hidden h-14 shrink-0 items-center gap-2 px-3 lg:flex lg:h-16 lg:px-6">
+      <header className="ui-dialog-heading hidden shrink-0 items-center gap-2 lg:flex">
         <span className="lg:hidden">
           <Button
             variant="ghost"

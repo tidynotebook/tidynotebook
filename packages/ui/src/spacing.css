@@ -179,3 +179,6 @@
 @utility ui-field-label {
   margin: 0 0 var(--ui-label-gap);
 }
+@utility ui-field-error {
+  margin: var(--ui-label-gap) 0 0;
+}

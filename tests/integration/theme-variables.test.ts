@@ -432,8 +432,8 @@ await test('the compact tree spacing reaches the built stylesheet', async () => 
       stylesheets.map((name) => readFile(resolve(assets, name), 'utf8')),
     )
   ).join('\n');
-  assert.ok(spacing.includes('.space-y-0\\.5'), 'sibling gap');
-  assert.ok(spacing.includes('.mt-0\\.5'), 'branch gap');
+  assert.ok(spacing.includes('.space-y-1'), 'sibling gap');
+  assert.ok(spacing.includes('.mt-1'), 'branch gap');
   assert.ok(spacing.includes('.pl-2'), 'branch indent');
 });
 

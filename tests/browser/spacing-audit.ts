@@ -81,6 +81,39 @@ export async function auditSpacing(page: Page) {
       check(e, 'setting-bottom-pad', parseFloat(style.paddingBottom), 8);
       check(e, 'setting-control-gap', parseFloat(style.columnGap), spec.rowGap);
     }
+    for (const e of document.querySelectorAll('.ui-list-row')) {
+      if (visible(e))
+        check(
+          e,
+          'list-min-height',
+          parseFloat(getComputedStyle(e).minHeight),
+          role.list,
+        );
+    }
+    for (const e of document.querySelectorAll(
+      '.ui-tree-row:not(.ui-list-row):not(.ui-setting-row)',
+    )) {
+      if (visible(e))
+        check(
+          e,
+          'tree-min-height',
+          parseFloat(getComputedStyle(e).minHeight),
+          role.tree,
+        );
+    }
+    for (const e of document.querySelectorAll('.ui-group-heading')) {
+      if (visible(e))
+        check(
+          e,
+          'group-heading-gap',
+          parseFloat(getComputedStyle(e).marginBottom),
+          spec.groupGap,
+        );
+    }
+    for (const e of document.querySelectorAll('.ui-setting-row')) {
+      if (visible(e) && e.querySelector('.ui-setting-row'))
+        check(e, 'nested-setting-row', 1, 0);
+    }
     const groups = [...document.querySelectorAll('.ui-field-group')].filter(
       visible,
     );
@@ -173,6 +206,25 @@ export async function auditSpacing(page: Page) {
       check(e, 'dialog-right-inset', parseFloat(style.paddingRight), pad);
       if (e.classList.contains('ui-dialog-footer'))
         check(e, 'footer-top-pad', parseFloat(style.paddingTop), 16);
+    }
+    for (const e of document.querySelectorAll(
+      '.ui-settings-heading,.ui-settings-content',
+    )) {
+      if (!visible(e)) continue;
+      const style = getComputedStyle(e),
+        pad = coarse && innerWidth < 1024 ? spec.sheetPad : spec.settingsPad;
+      check(e, 'settings-left-inset', parseFloat(style.paddingLeft), pad);
+      check(e, 'settings-right-inset', parseFloat(style.paddingRight), pad);
+      if (e.classList.contains('ui-settings-heading')) {
+        if (coarse && innerWidth < 1024)
+          check(
+            e,
+            'settings-header-height',
+            e.getBoundingClientRect().height,
+            spec.sheetHeader,
+          );
+        else check(e, 'settings-title-top', parseFloat(style.paddingTop), 24);
+      }
     }
     for (const e of document.querySelectorAll('.ui-sheet-header'))
       if (visible(e))

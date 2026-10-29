@@ -70,10 +70,7 @@ export function SettingsSection({
       </section>
     );
   return (
-    <section
-      className="border-t border-edge-subtle py-6"
-      aria-labelledby={section.id}
-    >
+    <section className="ui-section" aria-labelledby={section.id}>
       <div>
         <div className="md:col-span-1">
           <h2
