@@ -431,3 +431,19 @@
     touch-action: pan-y pinch-zoom;
   }
 }
+
+/* The disclosure and folder glyph share one touch target, with desktop gutters. */
+@utility ui-drawer-row {
+  @media (width < 48rem) and (pointer: coarse) {
+    & > :first-child > .ui-tree-spacer {
+      width: 28px;
+      min-width: 28px;
+    }
+    & > :first-child > .ui-icon-button {
+      margin-right: -16px;
+      & svg {
+        translate: -8px 0;
+      }
+    }
+  }
+}
