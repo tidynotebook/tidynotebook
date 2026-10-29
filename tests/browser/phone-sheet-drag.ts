@@ -130,6 +130,10 @@ try {
         assert.equal((await measure()).y, 0);
         results.push(`${kind} ${reduced}: direct drag and snap back`);
         if (kind === 'Settings') {
+          await p.locator('.ui-settings-content').evaluate((e) => {
+            e.scrollTop = 0;
+          });
+          await pause(60);
           const body = await p.locator('.ui-settings-content').boundingBox();
           assert.ok(body);
           const x = 190,
