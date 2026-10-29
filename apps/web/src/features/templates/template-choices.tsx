@@ -548,7 +548,7 @@ export default function TemplateChoices({
                   </>
                 ) : (
                   <section
-                    className="flex min-h-24 flex-1 flex-col"
+                    className="ui-form-following-group flex min-h-24 flex-1 flex-col"
                     aria-label={`Preview of ${selectedLabel ?? ''}`}
                   >
                     <p className="ui-group-heading text-group text-muted">

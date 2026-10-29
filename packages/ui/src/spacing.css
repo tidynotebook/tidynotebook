@@ -461,3 +461,10 @@
     }
   }
 }
+
+/* Fields already end with the form gap. Complete the interval before a group. */
+@utility ui-form-following-group {
+  @media (pointer: coarse) {
+    margin-top: calc(var(--ui-section-gap) - var(--ui-form-gap));
+  }
+}

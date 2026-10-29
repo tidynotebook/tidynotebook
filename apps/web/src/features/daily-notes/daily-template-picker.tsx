@@ -260,7 +260,7 @@ function TemplateSelection({
             aria-label="Template preview"
             className="min-w-0 lg:h-96 lg:overflow-y-auto"
           >
-            <h3 className="mb-2 mt-0 text-group text-muted lg:sr-only">
+            <h3 className="ui-group-heading text-group text-muted lg:sr-only">
               Preview
             </h3>
             {selected === null ? (

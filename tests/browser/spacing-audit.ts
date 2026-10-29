@@ -417,6 +417,22 @@ export async function auditSpacing(page: Page) {
             16,
           );
       }
+      for (const section of document.querySelectorAll(
+        '.ui-form-following-group',
+      )) {
+        if (!visible(section)) continue;
+        const fields =
+          section.previousElementSibling?.querySelectorAll('.ui-field-group');
+        const field = fields?.[fields.length - 1];
+        if (field)
+          check(
+            section,
+            'form-group-space-above',
+            section.getBoundingClientRect().top -
+              field.getBoundingClientRect().bottom,
+            16,
+          );
+      }
       for (const nav of document.querySelectorAll('.ui-settings-list nav')) {
         const card = nav.previousElementSibling;
         const groups = [...nav.querySelectorAll(':scope > .ui-section')];
