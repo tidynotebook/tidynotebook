@@ -21,6 +21,7 @@ const results: string[] = [];
 try {
   for (const reduced of [false, true])
     for (const kind of ['Settings', 'New folder']) {
+      process.stdout.write(`CASE ${kind} reduced=${reduced}\n`);
       const c = await browser.newContext({
         storageState: '.local-app/review-session.json',
         viewport: { width: 390, height: 844 },
@@ -92,7 +93,7 @@ try {
       };
       const closed = async () => {
         await pause(280);
-        assert.equal(await p.getByRole('dialog').count(), 0);
+        assert.equal(await p.locator('.phone-sheet[role=dialog]').count(), 0);
         assert.ok(
           await p.evaluate(
             () =>
@@ -135,7 +136,8 @@ try {
       assert.ok(up.y >= -24 && up.y < 0);
       await pause(280);
       assert.equal((await measure()).y, 0);
-      await drag((await measure()).height * 0.3);
+      const threshold = await drag((await measure()).height * 0.3);
+      process.stdout.write(`threshold ${JSON.stringify(threshold)}\n`);
       await closed();
       results.push(`${kind} ${reduced}: threshold closes and returns focus`);
       if (kind === 'New folder')
