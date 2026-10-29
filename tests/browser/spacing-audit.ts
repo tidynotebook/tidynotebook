@@ -202,13 +202,28 @@ export async function auditSpacing(page: Page) {
     for (const e of document.querySelectorAll(
       '.ui-tree-row:not(.ui-list-row):not(.ui-setting-row)',
     )) {
-      if (visible(e))
+      if (visible(e)) {
         check(
           e,
           'tree-min-height',
           parseFloat(getComputedStyle(e).minHeight),
           role.tree,
         );
+        if (coarse) {
+          check(
+            e,
+            'tree-top-pad',
+            parseFloat(getComputedStyle(e).paddingTop),
+            8,
+          );
+          check(
+            e,
+            'tree-bottom-pad',
+            parseFloat(getComputedStyle(e).paddingBottom),
+            8,
+          );
+        }
+      }
     }
     for (const e of document.querySelectorAll('.ui-group-heading')) {
       if (visible(e))

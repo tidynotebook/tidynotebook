@@ -389,3 +389,35 @@
     margin-top: var(--ui-section-gap);
   }
 }
+
+/* A phone row keeps its content at 16 px and extends its state fill to 8 px. */
+@utility ui-setting-row {
+  @media (pointer: coarse) {
+    &:is(button) {
+      position: relative;
+      isolation: isolate;
+      &::before {
+        content: '';
+        position: absolute;
+        inset: 0 -8px;
+        z-index: -1;
+        border-radius: 6px;
+      }
+      &:hover:not(:disabled)::before {
+        background: var(--color-hover);
+      }
+    }
+  }
+}
+@utility ui-tree-row {
+  @media (pointer: coarse) {
+    &.ui-tree-row:not(.ui-setting-row):not(.ui-list-row) {
+      padding-block: 8px;
+      & .ui-icon-button,
+      & .ui-tree-spacer,
+      & .ui-field {
+        margin-block: -8px;
+      }
+    }
+  }
+}
