@@ -228,6 +228,9 @@
   }
 }
 @utility ui-setting-align {
+  &:not(:has(.ui-button, .ui-switch-control)) > [data-setting-control] {
+    margin-top: calc((1lh - 24px) / 2);
+  }
   &.ui-setting-align {
     align-items: start;
   }
