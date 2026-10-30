@@ -94,8 +94,10 @@ function MenuRow({
   item,
   choosing,
   onRun,
+  showFocus,
 }: {
   readonly item: MenuItem;
+  readonly showFocus: boolean;
   /** True when any row of this menu states a selection. */
   readonly choosing: boolean;
   readonly onRun: (item: MenuItem) => void;
@@ -106,9 +108,10 @@ function MenuRow({
       role={choosing ? 'menuitemradio' : 'menuitem'}
       aria-checked={choosing ? item.selected === true : undefined}
       tabIndex={-1}
+      data-menu-input={showFocus ? 'keyboard' : 'pointer'}
       className={rowClassName({
         danger: item.danger,
-        className: 'w-full text-left md:min-h-8',
+        className: `w-full text-left md:min-h-8 ${showFocus ? '' : 'focus-visible:outline-none'}`,
       })}
       disabled={item.disabled ?? false}
       onClick={() => onRun(item)}
@@ -160,6 +163,7 @@ function MenuList({
   align,
   matchWidth,
   initialIndex,
+  keyboard = false,
   onClose,
   isInside,
 }: {
@@ -173,12 +177,14 @@ function MenuList({
   readonly align: MenuAlign;
   readonly matchWidth: boolean;
   readonly initialIndex: number;
+  readonly keyboard?: boolean;
   /** Closes the list. `restoreFocus` is true after a key or a chosen row. */
   readonly onClose: (restoreFocus: boolean) => void;
   /** A press here does not count as a press outside, such as the trigger. */
   readonly isInside?: ((target: Node) => boolean) | undefined;
 }): ReactNode {
   const [activeIndex, setActiveIndex] = useState(initialIndex);
+  const [showFocus, setShowFocus] = useState(keyboard);
   const listRef = useRef<HTMLDivElement | null>(null);
 
   // The arrow keys run over both regions in the order they are on the screen,
@@ -299,6 +305,8 @@ function MenuList({
       id={id}
       className={`fixed z-50 ${menuSurfaceClassName()} ${matchWidth ? '' : 'min-w-56'}`}
       role="menu"
+      onPointerDownCapture={() => setShowFocus(false)}
+      onKeyDownCapture={() => setShowFocus(true)}
       aria-label={label}
       onKeyDown={(event): void => {
         if (event.key === 'ArrowDown') {
@@ -336,7 +344,12 @@ function MenuList({
                 <Divider />
               </Inset>
             ) : null}
-            <MenuRow item={item} choosing={choosing} onRun={run} />
+            <MenuRow
+              item={item}
+              choosing={choosing}
+              onRun={run}
+              showFocus={showFocus}
+            />
           </Fragment>
         ))}
       </div>
@@ -349,6 +362,7 @@ function MenuList({
               item={item}
               choosing={choosing}
               onRun={run}
+              showFocus={showFocus}
             />
           ))}
         </Stack>
@@ -417,6 +431,7 @@ export function Menu({
 }): ReactNode {
   const [open, setOpen] = useState(false);
   const [startIndex, setStartIndex] = useState(0);
+  const [keyboard, setKeyboard] = useState(false);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
@@ -490,12 +505,14 @@ export function Menu({
           // A trigger with visible text needs no tooltip. An icon-only one does,
           // because nothing else on the screen states its purpose.
           title={children === undefined ? label : undefined}
-          onClick={() => {
+          onClick={(event) => {
+            setKeyboard(event.detail === 0);
             setStartIndex(0);
             setOpen((value) => !value);
           }}
           onKeyDown={(event): void => {
             if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+              setKeyboard(true);
               event.preventDefault();
               setStartIndex(event.key === 'ArrowDown' ? 0 : enabledCount - 1);
               setOpen(true);
@@ -528,6 +545,7 @@ export function Menu({
           align={align}
           matchWidth={matchTrigger}
           initialIndex={Math.max(0, startIndex)}
+          keyboard={keyboard}
           onClose={close}
           isInside={isInside}
         />
@@ -554,6 +572,7 @@ export function AnchoredMenu({
   pinned = [],
   anchor,
   align = 'start',
+  keyboard = false,
   onClose,
 }: {
   readonly label: string;
@@ -565,6 +584,7 @@ export function AnchoredMenu({
    */
   readonly pinned?: readonly MenuItem[] | undefined;
   readonly anchor: MenuAnchor;
+  readonly keyboard?: boolean;
   readonly align?: MenuAlign | undefined;
   readonly onClose: (restoreFocus: boolean) => void;
 }): ReactNode {
@@ -580,6 +600,7 @@ export function AnchoredMenu({
       align={align}
       matchWidth={false}
       initialIndex={0}
+      keyboard={keyboard}
       onClose={onClose}
     />
   );

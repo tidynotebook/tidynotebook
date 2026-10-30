@@ -42,6 +42,12 @@ export async function auditSettings(page: Page) {
       if (el.matches('.ui-settings-row')) {
         eq('row vertical padding', parseFloat(s.paddingTop), 12);
         eq('row horizontal padding', parseFloat(s.paddingLeft), phone ? 16 : 0);
+        for (const text of el.querySelectorAll(
+          '.ui-settings-copy,.ui-settings-copy > span,.ui-settings-copy > p',
+        )) {
+          if (visible(text) && getComputedStyle(text).textAlign !== 'left')
+            errors.push('Row label and help text must align left');
+        }
         const copy = el.querySelector('.ui-settings-copy');
         const control = el.querySelector(
           '.ui-settings-control,.ui-settings-switch-slot,.ui-settings-button-slot',
@@ -397,7 +403,7 @@ try {
               : section === 'account' && phone
                 ? [['Name', 'name-edit']]
                 : section === 'mail'
-                  ? [['Mail server', 'mail-server']]
+                  ? []
                   : section === 'legal'
                     ? [
                         ['Terms', 'terms'],

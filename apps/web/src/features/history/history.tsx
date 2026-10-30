@@ -558,6 +558,15 @@ function HistoryDetail({
   );
   return (
     <Page
+      emptyState={
+        items.length === 0 && historyError === null ? (
+          <EmptyState
+            icon={<HistoryIcon size={20} />}
+            title="No version yet"
+            description="Save this note once and its first version appears here."
+          />
+        ) : null
+      }
       sections={days.map((day) => ({
         id: dayHeadingId(day.key),
         title: day.label,
@@ -571,7 +580,16 @@ function HistoryDetail({
             : `${name}. Restore makes a version the newest. Nothing is lost.`
         }
       />
-      <Stack gap={4} as="div">
+      <Stack
+        gap={4}
+        as="div"
+        hidden={
+          items.length === 0 &&
+          historyError === null &&
+          actionError === null &&
+          actionMessage === ''
+        }
+      >
         {actionMessage === '' ? null : (
           <Notice tone="success" message={actionMessage} />
         )}
@@ -581,13 +599,7 @@ function HistoryDetail({
         {historyError === null ? null : (
           <Notice tone="problem" message={historyError} />
         )}
-        {items.length === 0 && historyError === null ? (
-          <EmptyState
-            icon={<HistoryIcon size={20} />}
-            title="No version yet"
-            description="Save this note once and its first version appears here."
-          />
-        ) : (
+        {items.length === 0 && historyError === null ? null : (
           <Stack gap={6} as="div">
             {days.map((day) => (
               <section key={day.key} aria-labelledby={dayHeadingId(day.key)}>

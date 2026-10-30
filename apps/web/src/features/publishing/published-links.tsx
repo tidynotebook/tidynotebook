@@ -64,10 +64,6 @@ import {
   sortLinks,
 } from './publishing.ts';
 
-/** What the screen says under its title. */
-const publishedLinksDescription =
-  'A published link opens a note or a folder for a person who has no account. The person reads the note and cannot change it.';
-
 /** How far the read of the list got. */
 type ListState =
   | { readonly kind: 'loading' }
@@ -168,12 +164,28 @@ function PublishedLinksList({
   };
 
   return (
-    <Page>
-      <PageHeader
-        title={publishedLinksTitle}
-        description={publishedLinksDescription}
-      />
-      <Stack gap={4} as="div">
+    <Page
+      emptyState={
+        state.kind === 'ready' && rows.length === 0 ? (
+          <EmptyState
+            icon={<LinkIcon size={20} />}
+            title="No published links"
+            description="Open a note or a folder and select Publish. You get one link that opens it for a person who has no account."
+          />
+        ) : null
+      }
+    >
+      <PageHeader title={publishedLinksTitle} />
+      <Stack
+        gap={4}
+        as="div"
+        hidden={
+          state.kind === 'ready' &&
+          rows.length === 0 &&
+          notice === '' &&
+          failure === ''
+        }
+      >
         {notice === '' ? null : <Notice tone="success" message={notice} />}
         {failure === '' ? null : <Notice tone="problem" message={failure} />}
         {state.kind === 'loading' ? (
@@ -188,13 +200,7 @@ function PublishedLinksList({
               Try again
             </Button>
           </Notice>
-        ) : rows.length === 0 ? (
-          <EmptyState
-            icon={<LinkIcon size={20} />}
-            title="No published links"
-            description="Open a note or a folder and select Publish. You get one link that opens it for a person who has no account."
-          />
-        ) : (
+        ) : rows.length === 0 ? null : (
           <section aria-labelledby="published-links-heading">
             <h2
               className={pageGroupLabelClassName()}

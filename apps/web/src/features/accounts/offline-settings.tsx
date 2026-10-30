@@ -210,7 +210,6 @@ export function OfflineSettingsSection({
   return (
     <SettingsSection
       section={sectionOf(settingsSections, 'offline')}
-      rows
       description="Your notes are always kept on this device. Images and older versions take more space, so you choose whether to keep them too."
     >
       {offline.status === 'failed' ? (
@@ -233,7 +232,7 @@ export function OfflineSettingsSection({
           label="What this device keeps offline is loading."
         />
       ) : (
-        <div className="flex flex-col">
+        <>
           <SettingSwitchRow
             label="Images"
             help={
@@ -258,7 +257,7 @@ export function OfflineSettingsSection({
               offline.setChoice('history', keep);
             }}
           />
-        </div>
+        </>
       )}
       {offline.problem === '' ? null : (
         <Notice tone="problem" message={offline.problem} />

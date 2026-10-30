@@ -177,6 +177,7 @@ type OpenMenu = {
   readonly keys: readonly string[];
   /** The row that takes the focus back when a key closes the menu. */
   readonly returnKey: string;
+  readonly keyboard: boolean;
 };
 
 /** The target of an action that one row starts. */
@@ -712,12 +713,12 @@ export function NoteTree({
 
   /** Opens the menu of one row at a place on the screen. */
   const openMenu = useCallback(
-    (key: string, anchor: MenuAnchor): void => {
+    (key: string, anchor: MenuAnchor, keyboard = false): void => {
       // A row outside the selection acts for itself alone, and the selection
       // gives way to it, as a file manager does on a right click.
       if (!isRowSelected(selection, key)) setSelection(emptySelection);
       setFocusKey(key);
-      setMenu({ anchor, keys: targetsFor(key), returnKey: key });
+      setMenu({ anchor, keys: targetsFor(key), returnKey: key, keyboard });
     },
     [selection, targetsFor],
   );
@@ -799,7 +800,8 @@ export function NoteTree({
         return;
       case 'menu': {
         const element = elements.current.get(action.key);
-        if (element !== undefined) openMenu(action.key, anchorOf(element));
+        if (element !== undefined)
+          openMenu(action.key, anchorOf(element), true);
         return;
       }
       case 'trash':
@@ -902,7 +904,7 @@ export function NoteTree({
               onDragItems={() =>
                 targetsOfKeys(targetsFor(row.key)).map(dragItemOf)
               }
-              onMenu={(anchor) => openMenu(row.key, anchor)}
+              onMenu={(anchor, keyboard) => openMenu(row.key, anchor, keyboard)}
               onRenameEvent={renameEvent}
             />
           ),
@@ -920,6 +922,7 @@ export function NoteTree({
         <AnchoredMenu
           label={openTree.label}
           anchor={menu.anchor}
+          keyboard={menu.keyboard}
           align="start"
           items={openTree.rows.map((row): MenuItem => ({
             id: row.id,
@@ -990,7 +993,7 @@ function TreeRow({
   readonly onPlainClick: () => void;
   readonly onToggle: () => void;
   readonly onDragItems: () => readonly DragItem[];
-  readonly onMenu: (anchor: MenuAnchor) => void;
+  readonly onMenu: (anchor: MenuAnchor, keyboard?: boolean) => void;
   readonly onRenameEvent: (event: RenameEvent) => void;
 }): ReactNode {
   const isFolder = row.kind === 'folder';
@@ -1207,7 +1210,7 @@ function TreeRow({
             onMouseDown={keepFocus}
             onClick={(event) => {
               event.stopPropagation();
-              onMenu(anchorOf(event.currentTarget));
+              onMenu(anchorOf(event.currentTarget), event.detail === 0);
             }}
             glyph={
               <>

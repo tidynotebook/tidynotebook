@@ -267,16 +267,18 @@ await test('a page under the note list adds no part of its own', () => {
 await test('every page but All notes names the page above it', () => {
   // Record 0138. One back control on every page, and none on the top.
   for (const page of framePages)
-    assert.equal(pageParents[page] === null, page === 'notes', page);
+    assert.equal(
+      pageParents[page] === null,
+      ['notes', 'trash', 'published'].includes(page),
+      page,
+    );
   assert.equal(backTarget('notes', 'w1', null), null);
   assert.equal(backTarget(null, 'w1', null), null);
 });
 
 await test('a page goes back to the page above it', () => {
-  assert.deepEqual(backTarget('trash', 'w1', null), {
-    to: '/w/w1',
-    label: 'Back to your notes',
-  });
+  assert.equal(backTarget('trash', 'w1', null), null);
+  assert.equal(backTarget('published', 'w1', null), null);
   assert.deepEqual(backTarget('settings', 'w1', null), {
     to: '/w/w1',
     label: 'Back to your notes',

@@ -140,7 +140,7 @@ try {
       await check('history');
       await p.goto(home + '?settings=account');
       await p
-        .getByRole('heading', { name: 'Account', exact: true, level: 2 })
+        .getByRole('heading', { name: 'Profile', exact: true, level: 2 })
         .waitFor();
       await check('navigation');
       await p.keyboard.press('Escape');

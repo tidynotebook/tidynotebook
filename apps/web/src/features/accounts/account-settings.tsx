@@ -6,6 +6,7 @@ import {
   Pill,
   Stack,
   Card,
+  Divider,
   RowCopy,
   ContentHeader,
   HeaderSlot,
@@ -659,7 +660,11 @@ function chosenPage<T extends { readonly path: string }>(
   value: string,
 ): T | undefined {
   const path = settingsPageOf(value);
-  return pages.find((page) => page.path === path) ?? pages[0];
+  return (
+    pages.find((page) => page.path === path) ??
+    pages.find((page) => page.path === 'appearance') ??
+    pages[0]
+  );
 }
 
 /** The Settings modal over the current page. */
@@ -950,6 +955,7 @@ export function SettingsModal({
           : activePage.path === 'appearance'
             ? [settingsSection('appearance').id]
             : [];
+  const sectionForm = activePage?.path === 'mail';
   const scope =
     activePage?.group === 'Workspace'
       ? `${workspaceName === '' ? 'This' : workspaceName} ${activePage.scope}`
@@ -1000,11 +1006,20 @@ export function SettingsModal({
                 pad={{ fine: 2, coarse: 4 }}
                 gap={{ fine: 2, coarse: 4 }}
                 className="ui-settings-list flex-1"
+                elementRef={settingsList}
               >
                 <Inline
+                  as="button"
+                  type="button"
+                  data-settings-page="account"
+                  aria-label={`Profile, ${account.name ?? ''}, ${account.email ?? ''}`}
+                  aria-current={
+                    activePage?.path === 'account' ? 'page' : undefined
+                  }
+                  onClick={() => onChoose('account')}
                   gap={3}
                   pad={{ fine: 2, coarse: 4 }}
-                  className="border-b border-edge-subtle"
+                  className={`${rowClassName({ layout: false, current: activePage?.path === 'account' })} ui-account-card w-full text-left rounded-md`}
                 >
                   <span className={avatarClassName()} aria-hidden="true">
                     {initial}
@@ -1020,16 +1035,22 @@ export function SettingsModal({
                       </span>
                     )}
                   </span>
+                  <span className="lg:hidden">
+                    <ChevronRightIcon />
+                  </span>
                 </Inline>
+                <Divider />
                 <Stack
-                  ref={settingsList}
                   aria-label="Settings sections"
                   gap={{ fine: 2, coarse: 4 }}
                   as="nav"
                 >
                   {settingsPageGroups
                     .filter((group) =>
-                      pages.some((page) => page.group === group),
+                      pages.some(
+                        (page) =>
+                          page.group === group && page.path !== 'account',
+                      ),
                     )
                     .map((group) => (
                       <Stack
@@ -1050,7 +1071,10 @@ export function SettingsModal({
                         </NavigationHeading>
                         <Card as="ul" responsive className="list-none">
                           {pages
-                            .filter((page) => page.group === group)
+                            .filter(
+                              (page) =>
+                                page.group === group && page.path !== 'account',
+                            )
                             .map((page) => {
                               const current =
                                 !listLevel && activePage?.path === page.path;
@@ -1099,8 +1123,14 @@ export function SettingsModal({
             </div>
             <Stack
               as="section"
-              pad={{ fine: activeAction === null ? 6 : 0, coarse: 0 }}
-              gap={{ fine: activeAction === null ? 6 : 0, coarse: 0 }}
+              pad={{
+                fine: activeAction === null && !sectionForm ? 6 : 0,
+                coarse: 0,
+              }}
+              gap={{
+                fine: activeAction === null && !sectionForm ? 6 : 0,
+                coarse: 0,
+              }}
               data-scroll-frame=""
               aria-labelledby={pageTitleId}
               data-dialog-escape={activeAction === null ? undefined : 'local'}
@@ -1116,58 +1146,72 @@ export function SettingsModal({
               <ContentHeader
                 data-sheet-drag=""
                 data-scroll-edge="above"
-                pad={{ fine: activeAction === null ? 0 : 6, coarse: 0 }}
-                padX={{ fine: activeAction === null ? 0 : 6, coarse: 4 }}
+                pad={{
+                  fine: activeAction === null && !sectionForm ? 0 : 6,
+                  coarse: 0,
+                }}
+                padX={{
+                  fine: activeAction === null && !sectionForm ? 0 : 6,
+                  coarse: 4,
+                }}
                 className="touch-pan-x touch-pinch-zoom"
               >
-                <HeaderSlot
-                  className={activeAction === null ? 'lg:hidden' : ''}
-                >
-                  <IconButton
-                    size="header"
-                    className={activeAction === null ? 'lg:hidden' : undefined}
-                    glyph={<ChevronLeftIcon />}
-                    label={
-                      activeAction === null
-                        ? 'Back to Settings'
-                        : 'Back to section'
-                    }
-                    onClick={() => {
-                      if (activeAction === null) onChoose('');
-                      else activeAction.close();
-                    }}
-                  />
-                </HeaderSlot>
-                <HeaderTitle className="min-w-0 flex-1">
-                  <h2
-                    id={pageTitleId}
-                    ref={sectionTitle}
-                    tabIndex={-1}
-                    className="ui-settings-header-title text-title-header text-strong outline-none"
-                  >
-                    {activeAction?.title ?? activePage?.title ?? settingsTitle}
-                  </h2>
+                <Stack gap={0.5} className="min-w-0 flex-1">
+                  <Inline gap={2} className="min-w-0">
+                    <HeaderSlot
+                      className={activeAction === null ? 'lg:hidden' : ''}
+                    >
+                      <IconButton
+                        size="header"
+                        className={
+                          activeAction === null ? 'lg:hidden' : undefined
+                        }
+                        glyph={<ChevronLeftIcon />}
+                        label={
+                          activeAction === null
+                            ? 'Back to Settings'
+                            : 'Back to section'
+                        }
+                        onClick={() => {
+                          if (activeAction === null) onChoose('');
+                          else activeAction.close();
+                        }}
+                      />
+                    </HeaderSlot>
+                    <HeaderTitle className="min-w-0 flex-1">
+                      <h2
+                        id={pageTitleId}
+                        ref={sectionTitle}
+                        tabIndex={-1}
+                        className="ui-settings-header-title text-title-header text-strong outline-none"
+                      >
+                        {activeAction?.title ??
+                          activePage?.title ??
+                          settingsTitle}
+                      </h2>
+                    </HeaderTitle>
+                    <Inline gap={8} justify="end" className="shrink-0">
+                      <div
+                        ref={setActionHeaderTarget}
+                        className="flex shrink-0 items-center empty:hidden"
+                      />
+                      <HeaderSlot>
+                        <IconButton
+                          size="header"
+                          glyph={<CloseIcon />}
+                          label="Close Settings"
+                          onClick={onClose}
+                        />
+                      </HeaderSlot>
+                    </Inline>
+                  </Inline>
                   {scope === undefined ||
                   activeAction?.hideScope === true ? null : (
                     <p className="text-secondary text-muted max-lg:hidden">
                       {activeAction === null ? scope : activePage?.title}
                     </p>
                   )}
-                </HeaderTitle>
-                <Inline gap={8} justify="end" className="flex-1">
-                  <div
-                    ref={setActionHeaderTarget}
-                    className="flex shrink-0 items-center empty:hidden"
-                  />
-                  <HeaderSlot>
-                    <IconButton
-                      size="header"
-                      glyph={<CloseIcon />}
-                      label="Close Settings"
-                      onClick={onClose}
-                    />
-                  </HeaderSlot>
-                </Inline>
+                </Stack>
               </ContentHeader>
               <div className="ui-settings-content overflow-hidden flex-1 flex flex-col">
                 <DialogHeaderActionsContext.Provider value={actionHeaderTarget}>
@@ -1180,49 +1224,62 @@ export function SettingsModal({
                         : 'flex overflow-hidden flex-1 flex-col'
                     }
                   />
-                  <Region
-                    className={`overflow-hidden flex-1 ${activeAction !== null ? 'hidden' : ''}`}
-                  >
+                  {sectionForm ? (
                     <Stack
-                      gap={{ fine: 6, coarse: 4 }}
-                      pad={{ fine: 0, coarse: 4 }}
-                      className="ui-settings-sections"
+                      fill
+                      className={
+                        activeAction === null ? 'overflow-hidden' : 'hidden'
+                      }
                       hidden={activeAction !== null}
                       inert={activeAction !== null}
                     >
-                      {scope === undefined ? null : (
-                        <p className="text-secondary text-muted lg:hidden">
-                          {scope}
-                        </p>
-                      )}
-                      <SettingsTopicContext.Provider
-                        value={{ hiddenTitles, helpSection: null }}
-                      >
-                        {activePage?.path === 'export-import' ? (
-                          <Stack gap={2}>
-                            <SectionHeading
-                              label={<>Workspace</>}
-                              divider
-                              inset={{ fine: 0, coarse: 4 }}
-                            />
-                            <Card responsive>
-                              {activePage.sections.map((key) => (
-                                <Stack key={key} gap={2}>
-                                  {sectionBodies[key]}
-                                </Stack>
-                              ))}
-                            </Card>
-                          </Stack>
-                        ) : (
-                          activePage?.sections.map((key) => (
-                            <Stack key={key} gap={2}>
-                              {sectionBodies[key]}
-                            </Stack>
-                          ))
-                        )}
-                      </SettingsTopicContext.Provider>
+                      {sectionBodies['admin-mail']}
                     </Stack>
-                  </Region>
+                  ) : (
+                    <Region
+                      className={`overflow-hidden flex-1 ${activeAction !== null ? 'hidden' : ''}`}
+                    >
+                      <Stack
+                        gap={{ fine: 6, coarse: 4 }}
+                        pad={{ fine: 0, coarse: 4 }}
+                        className="ui-settings-sections"
+                        hidden={activeAction !== null}
+                        inert={activeAction !== null}
+                      >
+                        {scope === undefined ? null : (
+                          <p className="text-secondary text-muted lg:hidden">
+                            {scope}
+                          </p>
+                        )}
+                        <SettingsTopicContext.Provider
+                          value={{ hiddenTitles, helpSection: null }}
+                        >
+                          {activePage?.path === 'export-import' ? (
+                            <Stack gap={2}>
+                              <SectionHeading
+                                label={<>Workspace</>}
+                                divider
+                                inset={{ fine: 0, coarse: 4 }}
+                              />
+                              <Card responsive>
+                                {activePage.sections.map((key) => (
+                                  <Stack key={key} gap={2}>
+                                    {sectionBodies[key]}
+                                  </Stack>
+                                ))}
+                              </Card>
+                            </Stack>
+                          ) : (
+                            activePage?.sections.map((key) => (
+                              <Stack key={key} gap={2}>
+                                {sectionBodies[key]}
+                              </Stack>
+                            ))
+                          )}
+                        </SettingsTopicContext.Provider>
+                      </Stack>
+                    </Region>
+                  )}
                 </DialogHeaderActionsContext.Provider>
               </div>
             </Stack>

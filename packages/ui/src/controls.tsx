@@ -125,6 +125,8 @@ export function Button({
   ariaPressed,
   tabIndex,
   compact = false,
+  optical = false,
+  hideTextOnPhone = false,
   iconSize,
   ref: nativeRef,
   ...nativeProps
@@ -162,6 +164,8 @@ export function Button({
   readonly tabIndex?: number | undefined;
   /** Keeps the touch target and draws a smaller surface inside it. */
   readonly compact?: boolean | undefined;
+  readonly optical?: boolean;
+  readonly hideTextOnPhone?: boolean;
 }): ReactNode {
   const settingsRow = useSettingsRowActions();
   const hasChildren = children !== undefined && children !== null;
@@ -186,7 +190,11 @@ export function Button({
           {icon}
         </span>
       ) : null}
-      {hasChildren ? <span>{children}</span> : null}
+      {hasChildren ? (
+        <span className={hideTextOnPhone ? 'max-md:hidden' : undefined}>
+          {children}
+        </span>
+      ) : null}
     </>
   );
 
@@ -195,7 +203,7 @@ export function Button({
       {...nativeProps}
       ref={buttonRef ?? nativeRef}
       type={type ?? 'button'}
-      className={`${classes} ${settingsRow ? 'ds-row-button absolute left-0 top-1/2 -translate-y-1/2 h-7 w-full px-3 coarse:h-11 coarse:border-0 coarse:bg-transparent coarse:px-0 ' : ''}`}
+      className={`${classes} ${optical ? 'absolute inset-x-1 top-0 coarse:inset-x-0' : ''} ${settingsRow ? 'ds-row-button absolute left-0 top-1/2 -translate-y-1/2 h-7 w-full px-3 coarse:h-11 coarse:border-0 coarse:bg-transparent coarse:px-0 ' : ''}`}
       disabled={disabled ?? false}
       onClick={onClick}
       aria-label={name.ariaLabel}
@@ -222,6 +230,18 @@ export function Button({
       )}
     </button>
   );
+  if (optical)
+    return (
+      <span className="relative inline-flex h-7 shrink-0 coarse:h-11">
+        <span
+          aria-hidden="true"
+          className="invisible inline-flex items-center gap-2 px-3 text-label coarse:px-4"
+        >
+          {content}
+        </span>
+        {button}
+      </span>
+    );
   return settingsRow ? (
     <span className="ui-settings-button-slot relative inline-flex h-7 shrink-0 items-center coarse:h-5">
       <span

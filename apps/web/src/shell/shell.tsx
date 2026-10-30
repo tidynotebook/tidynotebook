@@ -16,7 +16,6 @@ import {
   Button,
   buttonClassName,
   CloseIcon,
-  compactButtonVisualClassName,
   FolderIcon,
   LoadingState,
   Menu,
@@ -1694,37 +1693,23 @@ function ShellFrame({
               0065): the compact outer box keeps the touch target and the
               surface inside it is what a person sees.
             */}
-            <button
-              type="button"
-              className={buttonClassName({
-                variant: 'ghost',
-                size: 'sm',
-                compact: true,
-                className: 'shrink-0',
-              })}
-              aria-label="Search"
+            <Button
+              variant="ghost"
+              size="compact"
+              optical
+              hideTextOnPhone
+              icon={<SearchIcon />}
+              label="Search"
               title="Search"
               onClick={openPalette}
             >
-              <span
-                className={compactButtonVisualClassName({
-                  variant: 'ghost',
-                  size: 'sm',
-                  iconOnly: false,
-                })}
-              >
-                <span
-                  className="inline-flex shrink-0 items-center"
-                  aria-hidden="true"
-                >
-                  <SearchIcon />
-                </span>
+              <Inline gap={2}>
                 <span className="max-md:hidden">Search</span>
                 <span className="max-lg:hidden">
                   <KeyHint keys={paletteKeys} />
                 </span>
-              </span>
-            </button>
+              </Inline>
+            </Button>
 
             <Menu
               label={accountLabel}

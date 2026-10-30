@@ -52,24 +52,24 @@ await test('billing and connected apps keep their server capability rules', () =
 
 await test('the modal groups its sections as the wireframe does, with no Sign out', () => {
   assert.deepEqual(settingsPageGroups, [
-    'General',
+    'Security',
+    'Preferences',
     'Workspace',
-    'Account',
     'Administration',
   ]);
   assert.deepEqual(
     settingsPages.map((page) => [page.group, page.title]),
     [
-      ['General', 'Appearance and editor'],
-      ['General', 'Offline'],
+      ['Security', 'Profile'],
+      ['Security', 'Plan and billing'],
+      ['Security', 'Devices'],
+      ['Security', 'API keys and apps'],
+      ['Preferences', 'Appearance and editor'],
+      ['Preferences', 'Offline'],
       ['Workspace', 'Daily notes'],
       ['Workspace', 'Templates'],
       ['Workspace', 'Export and import'],
-      ['Account', 'Account'],
-      ['Account', 'Plan and billing'],
-      ['Account', 'Devices'],
-      ['Account', 'API keys and apps'],
-      ['Administration', 'Accounts'],
+      ['Administration', 'Users'],
       ['Administration', 'Mail'],
       ['Administration', 'Legal documents'],
       ['Administration', 'Reports'],

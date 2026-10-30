@@ -6,6 +6,7 @@ import {
   DialogBody,
   DialogFooter,
   ListRow,
+  SectionHeading,
   LoadingState,
   Notice,
   focusOutline,
@@ -69,6 +70,7 @@ export function ConnectedAppSettings(): ReactNode {
         aria-label="Connected apps"
         className={focusOutline}
       >
+        {phone ? null : <SectionHeading label="Connected apps" divider />}
         {error === '' ? null : <Notice tone="problem" message={error} />}
         {apps === null ? (
           error === '' ? (

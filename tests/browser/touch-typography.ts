@@ -1,4 +1,8 @@
-import { auditComposition, captureSurface } from './symmetry.ts';
+import {
+  auditComposition,
+  auditHoverPadding,
+  captureSurface,
+} from './symmetry.ts';
 import { auditText, type Problem } from './text-audit.ts';
 import assert from 'node:assert/strict';
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
@@ -302,6 +306,7 @@ try {
         issues.push(
           ...typography.problems,
           ...(process.env.DS1_AUDIT ? (await auditComposition(p)).issues : []),
+          ...(process.env.HOVER_AUDIT ? await auditHoverPadding(p) : []),
           ...(measured?.issues ?? []),
           ...(borders ? await auditBorderSpacing(p) : []),
         );
@@ -850,7 +855,7 @@ try {
         await settings(section);
         await shot(`admin-${section}`);
         for (const name of section === 'mail'
-          ? ['Mail server']
+          ? []
           : section === 'legal'
             ? ['Terms', 'Privacy notice']
             : []) {

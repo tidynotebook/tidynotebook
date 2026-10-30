@@ -15,11 +15,7 @@ import {
 } from '@notesapp/ui';
 
 import { SettingsDialog } from './settings-dialog.tsx';
-import {
-  SettingChoiceRow,
-  SettingRow,
-  SettingActionRow,
-} from './settings-section.tsx';
+import { SettingChoiceRow, SettingActionRow } from './settings-section.tsx';
 /** Administration settings use rows and draft forms in the Settings frame.
  * A save uses the generated API. Cancel leaves the stored settings unchanged.
  */
@@ -103,44 +99,8 @@ export function MailSettingsBody({
   /** Reads the page again after a change. */
   readonly onSaved: () => void;
 }): ReactNode {
-  const [editing, setEditing] = useState(false);
-  return (
-    <Card responsive>
-      <SettingChoiceRow
-        label="Mail server"
-        help={
-          mail.source === 'environment'
-            ? 'Set by the server configuration.'
-            : 'Without a mail server, an invitation shows its link once and nobody can reset a password.'
-        }
-        value={mail.host ?? 'Not set up'}
-        disabled={mail.source === 'environment'}
-        onClick={() => setEditing(true)}
-      />
-      <SettingRow label="Sender">
-        <span className="text-value text-muted">
-          {mail.sender ?? 'Not set up'}
-        </span>
-      </SettingRow>
-      {mail.source === 'environment' ? <EnvironmentMail /> : null}
-      <SettingsDialog
-        open={editing}
-        title="Mail server"
-        titleId="mail-settings-title"
-        hideScope
-        onClose={() => setEditing(false)}
-      >
-        <MailSettingsForm
-          mail={mail}
-          onClose={() => setEditing(false)}
-          onSaved={() => {
-            setEditing(false);
-            onSaved();
-          }}
-        />
-      </SettingsDialog>
-    </Card>
-  );
+  if (mail.source === 'environment') return <EnvironmentMail />;
+  return <MailSettingsForm mail={mail} onSaved={onSaved} />;
 }
 
 /** The mail server that the server environment sets, with its test. */
@@ -184,11 +144,9 @@ function formOf(mail: MailSettings): MailForm {
 function MailSettingsForm({
   mail,
   onSaved,
-  onClose,
 }: {
   readonly mail: MailSettings;
   readonly onSaved: () => void;
-  readonly onClose: () => void;
 }): ReactNode {
   const saved = formOf(mail);
   const [form, setForm] = useState<MailForm>(saved);
@@ -308,6 +266,7 @@ function MailSettingsForm({
               label="Server"
               value={form.host}
               placeholder="smtp.example.com"
+              hint="Without a mail server, an invitation shows its link once and nobody can reset a password."
               autoComplete="off"
               required
               onChange={(host) => {
@@ -407,7 +366,14 @@ function MailSettingsForm({
         <OutcomeNotice outcome={outcome} />
       </DialogBody>
       <DialogFooter>
-        <Button variant="ghost" onClick={onClose}>
+        <Button
+          variant="ghost"
+          onClick={() => {
+            setForm(formOf(mail));
+            setFieldErrors({});
+            setOutcome(noOutcome);
+          }}
+        >
           Cancel
         </Button>
         <Button
@@ -419,7 +385,7 @@ function MailSettingsForm({
             form.sender.trim() === ''
           }
         >
-          {working === 'save' ? 'Saving' : 'Done'}
+          {working === 'save' ? 'Saving' : 'Save'}
         </Button>
       </DialogFooter>
       {confirming ? (

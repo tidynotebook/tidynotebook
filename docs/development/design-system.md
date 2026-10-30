@@ -4,16 +4,18 @@ This page owns the UI composition, spacing, density and depth contract for every
 
 ## Rules
 
-Use Tailwind utilities inside components in `packages/ui`. Feature code
-composes components. It does not set spacing, size or depth itself.
+Use Tailwind in `packages/ui` components. Features compose them without spacing, size or depth rules.
 
 Use one spacing scale and the named size roles. `apps/web/src/tailwind.css`
 owns all tokens in `@theme`. The `coarse:` and `fine:` variants select pointer
 density. A component defines both densities with one rule set.
 
-The parent owns the space. Containers set padding and gaps. Children do not
-add outer margins. Keep vertical padding equal and horizontal padding equal.
-Containers offer `pad`, or symmetric `padX` and `padY`.
+Parents own padding and gaps; children have no outer margins. Keep padding symmetric,
+with `pad`, or symmetric `padX` and `padY`.
+
+Every control with a fill has equal space between its content and each side
+of the fill, including on hover. Content must not touch a fill edge. An
+optical slot can extend the fill without moving its content.
 
 Rows get height from a line box and equal vertical padding. Do not use a
 minimum height to add blank space. Keep glyphs on the padding line. Extend a
@@ -27,14 +29,12 @@ at rest. Its soft shadow shows only while it covers hidden scroll content.
 
 ## Tokens and CSS
 
-`apps/web/src/tailwind.css` owns the spacing step, size list, radius, shadows,
-surfaces and type roles. Use tokens through Tailwind utilities. Feature code
-must not read spacing variables or use arbitrary values.
+`apps/web/src/tailwind.css` owns spacing, sizes, radius, shadows, surfaces and
+type roles. Use Tailwind tokens, not spacing variables or arbitrary values.
 
-The allowed spacing steps are `0`, `0.5`, `1`, `2`, `3`, `4`, `6`, `8` and `12`.
-A prop takes a TypeScript union of those steps, or a `fine` and `coarse` pair.
-The shared size roles distinguish glyphs, controls, row actions, toolbars,
-headers and rails. The code owns their values.
+Typed spacing steps are `0`, `0.5`, `1`, `2`, `3`, `4`, `6`, `8` and `12`,
+or a `fine` and `coarse` pair. Shared size roles distinguish glyphs, controls,
+row actions, toolbars, headers and rails. Code owns their values.
 
 Use `text-title-page`, `text-title-header`, `text-body`, `text-label`,
 `text-value`, `text-secondary`, `text-group` and `text-small`. Each role sets
@@ -52,9 +52,6 @@ coordinates and virtual list offsets are browser geometry, not spacing choices.
 
 ## Components
 
-The shared components own their Tailwind strings and typed variants.
-`packages/ui/src/static.ts` exposes the same pure recipes to server pages.
-
 - `Stack` owns a vertical gap and alignment.
 - `Inline` owns a horizontal gap, alignment, justification and wrapping.
 - `Inset` owns symmetric padding.
@@ -64,10 +61,10 @@ The shared components own their Tailwind strings and typed variants.
   `shadow-edge-top` and `shadow-edge-bottom`, follow the sentinels. Shadows
   change with `duration-120`. Reduced motion removes the transition.
 - `Divider` has no margin. Its parent owns the space.
-- `ListRow` owns the leading slot, label and help column, value and trailing
-  slot. It centers content vertically. Densities are `tree`, `setting` and
-  `menu`. The `indent` prop adds empty slots before disclosure. Trailing types
-  are `chevron`, `value`, `switch`, `action`, `menu` or none.
+- `ListRow` owns leading and trailing slots, label, help and value. It centers
+  content vertically. Densities are `tree`, `setting` and `menu`; `indent` adds
+  empty disclosure slots. Trailing types are `chevron`, `value`, `switch`,
+  `action`, `menu` or none.
 - `IconButton` uses `row`, `toolbar`, `header` or `rail` size. Its target grows
   around a fixed glyph box.
 - `Button` uses `compact` or `default` size and a semantic variant.
@@ -96,24 +93,42 @@ belongs inside each region. The top holds the phone header, workspace switcher
 and toolbar. Only the tree scrolls. The status footer has no extra panel
 padding below it. Phone safe area belongs below the status line.
 
-Tree rows use the shared anatomy and indent slots. Names stay on one line
-with an ellipsis. Accessible names stay complete. Desktop tooltips show full
-names. Phone row menus stay visible. Fine pointer menus show on hover and
-keyboard focus. A view without real menu actions keeps an empty menu slot.
+Tree rows share anatomy and indent slots. Names use an ellipsis; accessible
+names stay complete. Desktop tooltips show full names. Phone row menus stay
+visible. Fine pointer menus show on hover and keyboard focus. A view without
+real menu actions keeps an empty menu slot.
 
-All rail buttons use the same size role. The rail owns its padding and item
-gap. The status line uses the panel inset and its own line height.
+Rail buttons share one size role. The rail owns padding and item gap; the
+status line uses the panel inset and its own line height.
+
+## Page lists
+
+Pages reached from the rail have no back control before the title. A list
+page has one content edge for its title and rows. Keep the title on its own.
+When the list is empty, use the `Page` empty-state slot. It centers the shared
+`EmptyState` in the free area under the title, with an icon, title and one help
+line. Put the explanation there instead of repeating it below the page title.
 
 ## Settings
+
+Order settings by scope: the Profile card, Security, Preferences, Workspace,
+then Administration (administrators only). Its account list is Users, with
+the `accounts` deep link. Profile has no second entry in a group. Keep the
+workspace name with its group and Appearance and editor as the default.
+Deep links name their section regardless of group order.
 
 Desktop navigation uses the sidebar density. Its account card has equal
 padding. Desktop content is a scrolling region with a stack of flat row
 groups and full-width dividers. Phone groups use cards. Their headings align
 with the inner card content. Headings above tiles align with the tiles.
 
-The title block is followed by exactly one group gap. Descriptions add no
-outer spacing. Rows center their text and controls. Help stays in its text
-column. Phone action rows have no second filled or outlined button.
+The title block has one group gap after it. Descriptions add no outer space.
+Rows center content vertically and align label and help text left. Phone
+action rows have no second filled or outlined button.
+
+Keep a short form on its section page. Add a sub-level only when a picker
+needs a long list, an editor needs the full height, or a separate step needs
+its own confirmation. Mail is a section form, with a saved draft and a footer.
 
 All levels use the container header and footer roles. Forms use a stack of
 fields. Back, Close and Cancel discard drafts. Primary actions retain their
@@ -127,10 +142,8 @@ minimum heights, arbitrary values and inline spacing. Shared UI code can use
 only scale steps. The CSS check refuses layout utilities, screen descendant
 selectors and doubled-class selectors.
 
-`tools/design-system-allow.json` records remaining cases with a reason.
-Entries can only be removed. New exceptions require a component variant and
-an update to this contract. The target is an empty list.
+`tools/design-system-allow.json` records cases with a reason and can only
+shrink. New exceptions require a component variant and a contract update.
 
-`tests/browser/symmetry.ts` checks content edges and records visual parity on
-all review surfaces in both themes and pointer densities. A change beyond the
-allowed tolerance must be removed or explained as a fix to this standard.
+`tests/browser/symmetry.ts` checks content edges and visual parity in both
+themes and pointer densities. Remove or explain changes beyond the tolerance.

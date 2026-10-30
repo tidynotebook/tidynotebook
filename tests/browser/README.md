@@ -40,3 +40,6 @@ slots, the note footer and page list content edges at both pointer densities.
 It also checks that a row fill and hit area extend into the page gutter.
 Parity records include the painted surface, current state and visible content
 position, so unchanged wrapper boxes cannot hide these regressions.
+
+Set `HOVER_AUDIT=1` with the review screen audit to hover each visible control
+and check positive, symmetric padding between its content and its fill.

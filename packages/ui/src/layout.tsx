@@ -73,14 +73,26 @@ export { pageGutter } from './public-layout.ts';
  */
 export function Page({
   children,
+  emptyState,
 }: {
   readonly children: ReactNode;
+  readonly emptyState?: ReactNode;
   readonly sections?: readonly PageSection[] | undefined;
 }): ReactNode {
   return (
-    <main className={`${pageRowClassName()} ${pageGutter} py-6 coarse:py-4`}>
+    <main
+      className={`${pageRowClassName()} ${pageGutter} min-h-full py-6 coarse:py-4`}
+    >
       <Stack gap={{ fine: 4, coarse: 3 }} className={pageColumnClassName()}>
         {children}
+        {emptyState ? (
+          <div
+            data-page-empty=""
+            className="flex flex-1 items-center justify-center"
+          >
+            {emptyState}
+          </div>
+        ) : null}
       </Stack>
     </main>
   );
@@ -300,7 +312,7 @@ export function listRowClasses(
   contentEdge = false,
 ): string {
   return density === 'setting'
-    ? 'ui-settings-row relative flex min-w-0 w-full items-center gap-4 py-3 px-0 coarse:px-4 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:border-b after:border-edge-subtle coarse:after:left-4 last:after:hidden'
+    ? 'ui-settings-row ui-setting-fill fine:isolate fine:before:pointer-events-auto fine:before:absolute fine:before:inset-y-0 fine:before:-inset-x-2 fine:before:-z-10 fine:before:rounded-md fine:before:bg-inherit text-left relative flex min-w-0 w-full items-center gap-4 py-3 px-0 coarse:px-4 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:border-b after:border-edge-subtle coarse:after:left-4 last:after:hidden'
     : `flex min-w-0 w-full items-center gap-2 rounded-md text-left py-1 coarse:rounded-lg coarse:py-2 ${contentEdge ? 'px-0 ' + contentEdgeRowClassName : 'px-2 coarse:px-3'}`;
 }
 export function ListRow({
@@ -389,7 +401,7 @@ export function ListRow({
       {leading}
       <span
         data-setting-text={rowDensity === 'setting' ? '' : undefined}
-        className="ui-settings-copy flex min-w-0 flex-1 flex-col gap-0.5"
+        className="ui-settings-copy text-left flex min-w-0 flex-1 flex-col gap-0.5"
       >
         <span
           data-setting-label={rowDensity === 'setting' ? '' : undefined}

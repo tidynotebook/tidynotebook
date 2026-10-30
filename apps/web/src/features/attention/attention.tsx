@@ -50,7 +50,6 @@ import {
   type ParkedPlace,
 } from './parked-actions.ts';
 import { useNow } from '../../shell/now.ts';
-import { productName } from '@notesapp/core';
 
 /** One row of the list with its four actions. */
 function ParkedSaveRow({
@@ -244,24 +243,32 @@ export function AttentionRoute(): ReactNode {
   };
 
   return (
-    <Page>
-      <PageHeader
-        title={attentionTitle}
-        description={`${productName} keeps text here when it cannot complete a save. Retry the save, or create a new note from its text.`}
-      />
-      <Stack gap={4} as="div">
-        {error === null ? null : <Notice tone="problem" message={error} />}
-        {failure === null ? null : <Notice tone="problem" message={failure} />}
-        {notice === '' ? null : <StatusRegion message={notice} />}
-        {saves.length === 0 ? (
-          // Nothing waits here, which is the good state, so the mark is the
-          // check and not the alert of a screen that reports a problem.
+    <Page
+      emptyState={
+        saves.length === 0 ? (
           <EmptyState
             icon={<CheckIcon size={20} />}
             title="No save needs attention"
             description="There is no kept text for you to review."
           />
-        ) : (
+        ) : null
+      }
+    >
+      <PageHeader title={attentionTitle} />
+      <Stack
+        gap={4}
+        as="div"
+        hidden={
+          saves.length === 0 &&
+          error === null &&
+          failure === null &&
+          notice === ''
+        }
+      >
+        {error === null ? null : <Notice tone="problem" message={error} />}
+        {failure === null ? null : <Notice tone="problem" message={failure} />}
+        {notice === '' ? null : <StatusRegion message={notice} />}
+        {saves.length === 0 ? null : ( // check and not the alert of a screen that reports a problem. // Nothing waits here, which is the good state, so the mark is the
           <section aria-labelledby="attention-heading">
             <h2 className={pageGroupLabelClassName()} id="attention-heading">
               Text to review

@@ -5,6 +5,8 @@ export type Locator = {
     animations?: 'disabled';
   }): Promise<unknown>;
   click(): Promise<void>;
+  hover(): Promise<void>;
+  nth(index: number): Locator;
   focus(): Promise<void>;
   fill(value: string): Promise<void>;
   press(key: string): Promise<void>;
@@ -63,6 +65,7 @@ export type Page = {
     animations?: 'disabled';
   }): Promise<unknown>;
   keyboard: { press(key: string): Promise<void> };
+  mouse: { move(x: number, y: number): Promise<void> };
 };
 type Context = {
   unrouteAll(options: { behavior: 'wait' | 'ignoreErrors' }): Promise<void>;

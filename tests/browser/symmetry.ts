@@ -186,8 +186,9 @@ export async function auditComposition(page: Page) {
       kind: string,
       actual: number,
       expected: number,
+      tolerance = 1,
     ) => {
-      if (!Number.isFinite(actual) || Math.abs(actual - expected) > 1)
+      if (!Number.isFinite(actual) || Math.abs(actual - expected) > tolerance)
         issues.push({
           kind,
           text: (e.getAttribute('aria-label') ?? e.textContent ?? '')
@@ -246,6 +247,20 @@ export async function auditComposition(page: Page) {
       if (gx !== undefined) check(e, 'column gap', parseFloat(s.columnGap), gx);
       if (gy !== undefined) check(e, 'row gap', parseFloat(s.rowGap), gy);
     }
+    for (const item of document.querySelectorAll(
+      '[data-menu-input="pointer"]:focus',
+    )) {
+      const style = getComputedStyle(item);
+      check(
+        item,
+        'pointer menu focus ring',
+        style.outlineStyle === 'none' || parseFloat(style.outlineWidth) === 0
+          ? 1
+          : 0,
+        1,
+        0,
+      );
+    }
     const rows = [...document.querySelectorAll('[data-ui-row]')].filter(
         visible,
       ),
@@ -264,6 +279,20 @@ export async function auditComposition(page: Page) {
             : coarse
               ? 12
               : 8;
+      for (const copy of [
+        e,
+        ...e.querySelectorAll(
+          '.ui-settings-copy,.ui-settings-copy > span,.ui-settings-copy > p',
+        ),
+      ].filter(visible)) {
+        check(
+          copy,
+          'row text alignment',
+          getComputedStyle(copy).textAlign === 'left' ? 1 : 0,
+          1,
+          0,
+        );
+      }
       check(e, 'row vertical inset', parseFloat(s.paddingTop), y);
       check(e, 'row bottom inset', parseFloat(s.paddingBottom), y);
       check(e, 'row left inset', parseFloat(s.paddingLeft), x);
@@ -329,13 +358,13 @@ export async function auditComposition(page: Page) {
           e,
           'text button left inset',
           parseFloat(s.paddingLeft),
-          coarse ? 16 : 12,
+          coarse ? 16 : parts.contains('h-7') ? 8 : 12,
         );
         check(
           e,
           'text button right inset',
           parseFloat(s.paddingRight),
-          coarse ? 16 : 12,
+          coarse ? 16 : parts.contains('h-7') ? 8 : 12,
         );
       } else {
         check(e, 'icon button left inset', parseFloat(s.paddingLeft), 0);
@@ -555,7 +584,7 @@ export async function auditContentParity(page: Page) {
     probe.remove();
     const selected = [
       ...document.querySelectorAll(
-        '[aria-label="Sidebar views"] [aria-current],[aria-label="Sidebar views"] [aria-pressed="true"],nav [aria-current],.ui-settings-nav-row[aria-current]',
+        '[aria-label="Sidebar views"] [aria-current],[aria-label="Sidebar views"] [aria-pressed="true"],nav [aria-current],.ui-settings-nav-row[aria-current],.ui-account-card[aria-current]',
       ),
     ].filter(visible);
     for (const item of new Set(selected)) {
@@ -577,4 +606,114 @@ export async function auditContentParity(page: Page) {
     }
     return { issues, measurements };
   });
+}
+
+/** A hover fill contains both content edges with symmetric, positive padding. */
+export async function auditHoverPadding(page: Page) {
+  const controls = page.locator(
+    'button,a,[role="menuitem"],[role="menuitemradio"]',
+  );
+  const issues: {
+    kind: string;
+    text: string;
+    actual: number;
+    expected: number;
+  }[] = [];
+  for (let index = 0; index < (await controls.count()); index++) {
+    const control = controls.nth(index);
+    if (
+      !(await control.evaluate((element) => {
+        if (
+          !element.checkVisibility({
+            visibilityProperty: true,
+            opacityProperty: true,
+          }) ||
+          element.closest('[inert],.sr-only')
+        )
+          return false;
+        const box = element.getBoundingClientRect(),
+          hit = document.elementFromPoint(
+            box.x + box.width / 2,
+            box.y + box.height / 2,
+          );
+        return (
+          box.width > 0 &&
+          box.height > 0 &&
+          hit !== null &&
+          element.contains(hit)
+        );
+      }))
+    )
+      continue;
+    await control.hover();
+    const measured = await control.evaluate((element) => {
+      const visible = (item: Element) =>
+        item.checkVisibility({
+          visibilityProperty: true,
+          opacityProperty: true,
+        }) && !item.closest('.invisible,.sr-only');
+      const painted = (item: Element) =>
+        !['transparent', 'rgba(0, 0, 0, 0)'].includes(
+          getComputedStyle(item).backgroundColor,
+        );
+      const surface = painted(element)
+        ? element
+        : [...element.children].find(
+            (child) => visible(child) && painted(child),
+          );
+      if (!surface) return null;
+      const box = surface.getBoundingClientRect(),
+        style = getComputedStyle(surface),
+        before = getComputedStyle(surface, '::before');
+      const boxes: { left: number; right: number }[] = [];
+      for (const child of surface.childNodes) {
+        if (child instanceof Element && visible(child)) {
+          if (getComputedStyle(child).display === 'contents') {
+            for (const nested of child.children)
+              if (visible(nested)) boxes.push(nested.getBoundingClientRect());
+          } else boxes.push(child.getBoundingClientRect());
+        } else if (
+          child.nodeType === Node.TEXT_NODE &&
+          child.textContent?.trim()
+        ) {
+          const range = document.createRange();
+          range.selectNodeContents(child);
+          boxes.push(range.getBoundingClientRect());
+        }
+      }
+      if (!boxes.length) return null;
+      const extension =
+        surface.classList.contains('ui-content-row') ||
+        (surface.classList.contains('ui-setting-fill') &&
+          matchMedia('(pointer:fine)').matches)
+          ? Math.abs(parseFloat(before.left))
+          : 0;
+      return {
+        text: element.getAttribute('aria-label') ?? element.textContent ?? '',
+        left:
+          Math.min(...boxes.map((part) => part.left)) - box.left + extension,
+        right:
+          box.right - Math.max(...boxes.map((part) => part.right)) + extension,
+        padding: parseFloat(style.paddingLeft) + extension,
+        border: parseFloat(style.borderLeftWidth),
+      };
+    });
+    if (measured) {
+      const { text, left, right, padding, border } = measured;
+      if (
+        left <= 0 ||
+        right <= 0 ||
+        Math.abs(left - right) > 1 ||
+        left < padding + border - 1
+      )
+        issues.push({
+          kind: 'hover fill padding',
+          text: text.trim().slice(0, 80),
+          actual: Math.min(left, right),
+          expected: Math.max(padding + border, 1),
+        });
+    }
+  }
+  await page.mouse.move(0, 0);
+  return issues;
 }

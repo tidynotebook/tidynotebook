@@ -15,9 +15,9 @@ import { settingsSections, type SettingsSectionKey } from './page-sections.ts';
 
 /** The groups of the modal sidebar, in order. */
 export const settingsPageGroups = [
-  'General',
+  'Security',
+  'Preferences',
   'Workspace',
-  'Account',
   'Administration',
 ] as const;
 
@@ -30,16 +30,44 @@ export type SettingsPageGroup = (typeof settingsPageGroups)[number];
  */
 export const settingsPages = [
   {
+    path: 'account',
+    title: 'Profile',
+    group: 'Security',
+    sections: ['profile', 'account', 'remove-account'],
+    scope: 'Your account owns every note in your workspaces.',
+  },
+  {
+    path: 'billing',
+    title: 'Plan and billing',
+    group: 'Security',
+    sections: ['billing'],
+    scope: 'Your plan, payment method and invoices.',
+  },
+  {
+    path: 'devices',
+    title: 'Devices',
+    group: 'Security',
+    sections: ['sessions'],
+    scope: 'Signed in to your account.',
+  },
+  {
+    path: 'api-keys-apps',
+    title: 'API keys and apps',
+    group: 'Security',
+    sections: ['api-keys', 'connected-apps'],
+    scope: 'Each key has all your current access.',
+  },
+  {
     path: 'appearance',
     title: 'Appearance and editor',
-    group: 'General',
+    group: 'Preferences',
     sections: ['appearance', 'spelling'],
     scope: 'Follows your account to every device. Changes apply at once.',
   },
   {
     path: 'offline',
     title: 'Offline',
-    group: 'General',
+    group: 'Preferences',
     sections: ['offline'],
     scope: 'This device only. Notes are always kept on this device.',
   },
@@ -65,36 +93,8 @@ export const settingsPages = [
     scope: 'workspace.',
   },
   {
-    path: 'account',
-    title: 'Account',
-    group: 'Account',
-    sections: ['profile', 'account', 'remove-account'],
-    scope: 'Your account owns every note in your workspaces.',
-  },
-  {
-    path: 'billing',
-    title: 'Plan and billing',
-    group: 'Account',
-    sections: ['billing'],
-    scope: 'Your plan, payment method and invoices.',
-  },
-  {
-    path: 'devices',
-    title: 'Devices',
-    group: 'Account',
-    sections: ['sessions'],
-    scope: 'Signed in to your account.',
-  },
-  {
-    path: 'api-keys-apps',
-    title: 'API keys and apps',
-    group: 'Account',
-    sections: ['api-keys', 'connected-apps'],
-    scope: 'Each key has all your current access.',
-  },
-  {
     path: 'accounts',
-    title: 'Accounts',
+    title: 'Users',
     group: 'Administration',
     sections: ['admin-accounts'],
     scope: 'People who can use this installation. Their notes stay private.',
@@ -229,6 +229,6 @@ export function legacySettingsTarget({
     settingsPageForAnchor(hash) ??
     (settingsPage === undefined
       ? ''
-      : (settingsPageOf(settingsPage) ?? settingsPages[0].path));
+      : (settingsPageOf(settingsPage) ?? 'appearance'));
   return `${path}${searchWithSettings(search, page)}`;
 }

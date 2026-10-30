@@ -376,7 +376,7 @@ await test('text buttons use the default and compact size roles', () => {
   for (const size of ['default', 'compact'] as const) {
     const parts = buttonClassName({ size }).split(' ');
     assert.ok(parts.includes(size === 'default' ? 'h-8' : 'h-7'));
-    assert.ok(parts.includes('px-3'));
+    assert.ok(parts.includes(size === 'default' ? 'px-3' : 'px-2'));
     assert.ok(parts.includes('coarse:h-11'));
     assert.ok(parts.includes('coarse:px-4'));
   }
@@ -414,7 +414,7 @@ await test('compact secondary actions keep their surface and padding', () => {
   }).split(' ');
   for (const part of [
     'h-7',
-    'px-3',
+    'px-2',
     'coarse:h-11',
     'coarse:px-4',
     'bg-card',

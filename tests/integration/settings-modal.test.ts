@@ -339,19 +339,18 @@ await test('the sidebar has the three groups, the workspace name and no Sign out
   const groups = [...nav.querySelectorAll('section')].map((group) =>
     group.getAttribute('aria-label'),
   );
-  assert.deepEqual(groups, ['General', 'Workspace Personal', 'Account']);
+  assert.deepEqual(groups, ['Security', 'Preferences', 'Workspace Personal']);
   const rows = [...nav.querySelectorAll('[data-settings-page]')].map(
     (row) => row.textContent,
   );
   assert.deepEqual(rows, [
+    'Devices',
+    'API keys',
     'Appearance and editor',
     'Offline',
     'Daily notes',
     'Templates',
     'Export and import',
-    'Account',
-    'Devices',
-    'API keys',
   ]);
   assert.doesNotMatch(nav.textContent ?? '', /Sign out|Spelling/);
   // The account card names who is signed in.
@@ -364,7 +363,12 @@ await test('the sidebar has the three groups, the workspace name and no Sign out
     danger?.closest('section')?.textContent?.includes('Delete account'),
   );
   assert.match(modal.textContent ?? '', /12 MB of 5 GB used/);
-  assert.equal(sectionButton('account').getAttribute('aria-current'), 'page');
+  assert.equal(
+    modal
+      .querySelector('[aria-label^="Profile,"]')
+      ?.getAttribute('aria-current'),
+    'page',
+  );
 });
 
 await test('Delete account stays in Settings and Escape returns to Account', async () => {
@@ -792,6 +796,32 @@ await test('administration deep links and the old route respect the signed-in ro
   }
 });
 
+await test('Mail is a section form whose Save stays disabled until a value changes', async () => {
+  setAdministrator(true);
+  try {
+    await show('/w/one?settings=mail');
+    assert.ok(container.querySelector('#mail-host'));
+    assert.equal(
+      [...container.querySelectorAll('button')].some(
+        (item) => item.textContent === 'Mail server',
+      ),
+      false,
+    );
+    const save = button('Save');
+    assert.equal(save.hasAttribute('disabled'), true);
+    await act(async () => {
+      const field = container.querySelector<HTMLInputElement>('#mail-host');
+      assert.ok(field);
+      field.value = 'smtp.changed.example';
+      field.dispatchEvent(new window.Event('input', { bubbles: true }));
+    });
+    await click(button('Cancel'));
+    assert.equal(button('Save').hasAttribute('disabled'), true);
+  } finally {
+    setAdministrator(false);
+  }
+});
+
 await test('phone admin draft forms keep one frame and return focus without a save', async () => {
   const original = window.matchMedia.bind(window);
   window.matchMedia = (query) => {
@@ -806,7 +836,6 @@ await test('phone admin draft forms keep one frame and return focus without a sa
   setAdministrator(true);
   try {
     for (const [page, opener, field] of [
-      ['mail', 'Mail server', '#mail-host'],
       ['legal', 'Terms', '#legal-kind'],
       ['accounts', '+ Invite a person', '#invite-email'],
     ] as const) {

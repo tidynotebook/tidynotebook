@@ -232,6 +232,16 @@ export function NotesHomeView(): ReactNode {
 
   return (
     <Page
+      emptyState={
+        !files.loading && total === 0 ? (
+          <EmptyState
+            icon={<FileTextIcon size={20} />}
+            title="No notes yet"
+            description="Write your first note."
+            action={actions}
+          />
+        ) : null
+      }
       sections={
         files.loading || total === 0 ? undefined : noteGroupSections(groups)
       }
@@ -239,11 +249,6 @@ export function NotesHomeView(): ReactNode {
       <Stack gap={4} as="div" ref={keepOffset}>
         <PageHeader
           title="All notes"
-          description={
-            files.loading || total === 0
-              ? undefined
-              : `${String(total)} ${total === 1 ? 'note' : 'notes'}`
-          }
           actions={showNewNoteInHeader(files.loading, total) ? actions : null}
         />
         {newNote.error === null ? null : (
@@ -251,14 +256,7 @@ export function NotesHomeView(): ReactNode {
         )}
         {files.loading ? (
           <LoadingState shape="list" rows={6} label="Your notes are loading." />
-        ) : total === 0 ? (
-          <EmptyState
-            icon={<FileTextIcon size={20} />}
-            title="No notes yet"
-            description="Write your first note."
-            action={actions}
-          />
-        ) : (
+        ) : total === 0 ? null : (
           <Stack gap={{ fine: 6, coarse: 4 }}>
             {groups.map((group) => (
               <Stack

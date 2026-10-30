@@ -5,8 +5,8 @@ import { useEffect, useRef, type RefObject } from 'react';
 export function useSettingsListFocus(
   scope: string,
   path: string | undefined,
-): RefObject<HTMLElement | null> {
-  const list = useRef<HTMLElement | null>(null);
+): RefObject<HTMLDivElement | null> {
+  const list = useRef<HTMLDivElement | null>(null);
   const previous = useRef({ scope, path });
   useEffect(() => {
     const before = previous.current;

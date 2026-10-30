@@ -196,7 +196,7 @@ export function buttonClassName(
   } as const;
   const sizeClass = options.iconOnly
     ? `ui-icon-button ${iconSizes[options.iconSize ?? 'header']} p-0`
-    : `${compactSize ? 'h-7' : 'h-8'} px-3 coarse:h-11 coarse:px-4`;
+    : `${compactSize ? 'h-7' : 'h-8'} ${size === 'compact' || size === 'inline' ? 'px-2' : 'px-3'} coarse:h-11 coarse:px-4`;
   return [
     `ui-button inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-md text-label no-underline ${transitionSurface} ${compact ? 'focus-visible:outline-none' : options.iconOnly ? focusOutlineInset : focusOutline} disabled:cursor-not-allowed`,
     variantClass,
@@ -221,7 +221,7 @@ export function compactButtonVisualClassName(options: {
   readonly iconOnly: boolean;
 }): string {
   const variant = options.variant ?? 'primary';
-  const sizeClass = options.iconOnly ? 'h-7 w-7' : 'h-7';
+  const sizeClass = options.iconOnly ? 'h-7 w-7' : 'h-7 px-2';
   return [
     `inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md ${transitionSurface}`,
     'group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-focus',

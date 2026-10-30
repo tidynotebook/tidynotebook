@@ -324,10 +324,19 @@ function TrashList({
   };
 
   return (
-    <Page>
+    <Page
+      emptyState={
+        !loading && items.length === 0 ? (
+          <EmptyState
+            icon={emptyStateIcon(trashPageGlyph)}
+            title="The trash is empty"
+            description="Notes you delete stay here until you restore them or delete them for good."
+          />
+        ) : null
+      }
+    >
       <PageHeader
         title="Trash"
-        description="Restore puts a note back. Notes stay here until you delete them."
         actionLayout="inline"
         actions={
           items.length === 0 ? undefined : (
@@ -387,7 +396,13 @@ function TrashList({
           </Button>
         </DialogFooter>
       </Dialog>
-      <Stack gap={4} as="div">
+      <Stack
+        gap={4}
+        as="div"
+        hidden={
+          !loading && items.length === 0 && failure === null && outcome === null
+        }
+      >
         {outcome === null ? null : (
           <p className="sr-only" role="status" aria-live="polite">
             {outcome}
@@ -396,13 +411,7 @@ function TrashList({
         {failure === null ? null : <Notice tone="problem" message={failure} />}
         {loading ? (
           <LoadingState shape="list" rows={4} label="The trash is loading." />
-        ) : items.length === 0 ? (
-          <EmptyState
-            icon={emptyStateIcon(trashPageGlyph)}
-            title="The trash is empty"
-            description="Notes stay here until you restore them or delete them for good."
-          />
-        ) : (
+        ) : items.length === 0 ? null : (
           <section aria-labelledby="trash-heading">
             <h2 className={pageGroupLabelClassName()} id="trash-heading">
               Deleted notes

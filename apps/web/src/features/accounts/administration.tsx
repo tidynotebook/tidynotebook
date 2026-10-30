@@ -349,7 +349,11 @@ function AccountsPage({
     setDialog({ kind: 'none' });
   };
   return (
-    <Stack gap={{ fine: 6, coarse: 4 }}>
+    <Stack
+      gap={{ fine: 6, coarse: 4 }}
+      fill={page === 'mail'}
+      className={page === 'mail' ? 'overflow-hidden' : undefined}
+    >
       {notice === '' ? null : <Notice tone="success" message={notice} />}
       {failure === '' ? null : <Notice tone="problem" message={failure} />}
       {state.kind === 'loading' ? (

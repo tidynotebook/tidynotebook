@@ -5,6 +5,7 @@ import {
   Stack,
   Inline,
   RowCopy,
+  SectionHeading,
   Button,
   DialogBody,
   DialogFooter,
@@ -96,6 +97,24 @@ export function ApiKeySettings(): ReactNode {
         )
       ) : (
         <>
+          {phone ? null : (
+            <SectionHeading
+              label="Keys"
+              divider
+              action={
+                <Button
+                  variant="secondary"
+                  size="compact"
+                  label="Create API key"
+                  buttonRef={createButton}
+                  disabled={keys.length >= maxApiKeys}
+                  onClick={() => setCreating(true)}
+                >
+                  + Create API key
+                </Button>
+              }
+            />
+          )}
           {keys.length === 0 ? (
             <Inset
               padY={3}
@@ -103,7 +122,9 @@ export function ApiKeySettings(): ReactNode {
               as="p"
               className="text-secondary text-muted"
             >
-              No API keys. Create a key for your program.
+              {phone
+                ? 'No API keys. Create a key for your program.'
+                : 'No API keys yet.'}
             </Inset>
           ) : (
             <Stack gap={0} pad={0} as="ul">
@@ -163,16 +184,7 @@ export function ApiKeySettings(): ReactNode {
               disabled={keys.length >= maxApiKeys}
               onClick={() => setCreating(true)}
             ></ListRow>
-          ) : (
-            <Button
-              variant="secondary"
-              buttonRef={createButton}
-              disabled={keys.length >= maxApiKeys}
-              onClick={() => setCreating(true)}
-            >
-              Create API key
-            </Button>
-          )}
+          ) : null}
         </>
       )}
       {creating ? (
