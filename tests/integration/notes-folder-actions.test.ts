@@ -56,7 +56,10 @@ await test('All notes lists notes from every folder without a folder section', (
       ),
     );
     assert.match(html, /All notes/);
-    assert.match(html, /2 notes/);
+    assert.equal(
+      (html.match(/<a[^>]+class="[^"]*\bui-list-row\b/g) ?? []).length,
+      2,
+    );
     assert.match(html, /nested-note/);
     assert.match(html, /direct-note/);
     assert.match(html, /New note/);

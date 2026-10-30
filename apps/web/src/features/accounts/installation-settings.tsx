@@ -355,7 +355,7 @@ function MailSettingsForm({
           </Stack>
         </Stack>
         <Stack gap={3}>
-          <SectionHeading label="Sender" />
+          <SectionHeading label="Sending" />
           <TextField
             id="mail-sender"
             label="Sender"

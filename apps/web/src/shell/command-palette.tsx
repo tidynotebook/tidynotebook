@@ -1,5 +1,6 @@
 import {
   Inline,
+  Stack,
   Inset,
   bareFieldClassName,
   Button,
@@ -433,137 +434,148 @@ function PaletteDialog({
           {stepChoices.notice}
         </Inset>
       ) : null}
-      {step === null ? (
-        <Inset pad={4} as="p" className="text-secondary text-muted">
-          In {workspaceName}
-          {content.offline ? ' · Offline, results from this device' : ''}
-        </Inset>
-      ) : null}
-      <Inset
-        ref={listRef}
-        id="command-palette-list"
-        pad={4}
-        as="ul"
-        className="ui-content-list max-h-80 list-none overflow-y-auto empty:hidden"
-        role="listbox"
-        aria-label={stepAction?.label ?? 'Results'}
+      <Stack
+        gap={{ fine: 6, coarse: 4 }}
+        padY={{ fine: 0, coarse: 4 }}
+        className="overflow-hidden"
       >
-        {rows.map((row, index) => (
-          <Fragment key={row.id}>
-            {index === firstNote ? (
-              <Inset
-                as="li"
-                padX={0}
-                padY={1}
-                role="presentation"
-                className="text-group text-muted"
+        {step === null ? (
+          <Inset
+            data-search-scope=""
+            padX={4}
+            as="p"
+            className="text-secondary text-muted"
+          >
+            In {workspaceName}
+            {content.offline ? ' · Offline, results from this device' : ''}
+          </Inset>
+        ) : null}
+        <Inset
+          ref={listRef}
+          id="command-palette-list"
+          padX={4}
+          as="ul"
+          className="ui-content-list max-h-80 list-none overflow-y-auto empty:hidden"
+          role="listbox"
+          aria-label={stepAction?.label ?? 'Results'}
+        >
+          {rows.map((row, index) => (
+            <Fragment key={row.id}>
+              {index === firstNote ? (
+                <Inset
+                  as="li"
+                  padX={0}
+                  padY={index === 0 ? 0 : 1}
+                  role="presentation"
+                  className="text-group text-muted"
+                >
+                  Notes
+                </Inset>
+              ) : null}
+              {index === firstAction ? (
+                <Inset
+                  as="li"
+                  padX={0}
+                  padY={index === 0 ? 0 : 1}
+                  role="presentation"
+                  className="text-group text-muted"
+                >
+                  Actions
+                </Inset>
+              ) : null}
+              {index === firstChoice ? (
+                <Inset
+                  as="li"
+                  padX={0}
+                  padY={index === 0 ? 0 : 1}
+                  role="presentation"
+                  className="text-group text-muted"
+                >
+                  {stepAction?.label}
+                </Inset>
+              ) : null}
+              <li
+                id={row.id}
+                role="option"
+                aria-selected={index === active}
+                className={rowClassName({
+                  selected: index === active,
+                  contentEdge: true,
+                  className: '',
+                })}
+                onMouseEnter={() => setSelected(index)}
+                onMouseDown={(event): void => {
+                  event.preventDefault();
+                  run(row);
+                }}
               >
-                Notes
-              </Inset>
-            ) : null}
-            {index === firstAction ? (
-              <Inset
-                as="li"
-                padX={0}
-                padY={1}
-                role="presentation"
-                className="text-group text-muted"
-              >
-                Actions
-              </Inset>
-            ) : null}
-            {index === firstChoice ? (
-              <Inset
-                as="li"
-                padX={0}
-                padY={1}
-                role="presentation"
-                className="text-group text-muted"
-              >
-                {stepAction?.label}
-              </Inset>
-            ) : null}
-            <li
-              id={row.id}
-              role="option"
-              aria-selected={index === active}
-              className={rowClassName({
-                selected: index === active,
-                contentEdge: true,
-                className: '',
-              })}
-              onMouseEnter={() => setSelected(index)}
-              onMouseDown={(event): void => {
-                event.preventDefault();
-                run(row);
-              }}
-            >
-              <span
-                className="inline-flex shrink-0 items-center text-muted"
-                aria-hidden="true"
-              >
-                {row.kind === 'action' ? (
-                  actionIcon(row.action.icon)
-                ) : (
-                  <FileTextIcon />
-                )}
-              </span>
-              {row.kind === 'choice' ? (
-                <>
-                  <span className="min-w-0 flex-1 truncate">
-                    {row.choice.label}
-                  </span>
-                  {row.choice.detail === null ? null : (
-                    <span className="shrink-0 truncate text-muted">
-                      {row.choice.detail}
-                    </span>
+                <span
+                  className="inline-flex shrink-0 items-center text-muted"
+                  aria-hidden="true"
+                >
+                  {row.kind === 'action' ? (
+                    actionIcon(row.action.icon)
+                  ) : (
+                    <FileTextIcon />
                   )}
-                </>
-              ) : row.kind === 'note' ? (
-                <>
-                  <span className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate">
-                      {paletteNoteLabel(row.match.path).name}
+                </span>
+                {row.kind === 'choice' ? (
+                  <>
+                    <span className="min-w-0 flex-1 truncate">
+                      {row.choice.label}
                     </span>
-                    {row.match.excerpt === null ? null : (
-                      <span className="truncate text-muted">
-                        {row.match.excerpt.map((part, at) =>
-                          part.marked ? (
-                            <mark
-                              key={at}
-                              className="bg-transparent text-label text-accent"
-                            >
-                              {part.text}
-                            </mark>
-                          ) : (
-                            <span key={at}>{part.text}</span>
-                          ),
-                        )}
+                    {row.choice.detail === null ? null : (
+                      <span className="shrink-0 truncate text-muted">
+                        {row.choice.detail}
                       </span>
                     )}
-                  </span>
-                  {paletteNoteLabel(row.match.path).folder === null ? null : (
-                    <span className="max-w-1/3 shrink-0 truncate text-muted">
-                      {paletteNoteLabel(row.match.path).folder}
+                  </>
+                ) : row.kind === 'note' ? (
+                  <>
+                    <span className="flex min-w-0 flex-1 flex-col">
+                      <span className="truncate">
+                        {paletteNoteLabel(row.match.path).name}
+                      </span>
+                      {row.match.excerpt === null ? null : (
+                        <span className="truncate text-muted">
+                          {row.match.excerpt.map((part, at) =>
+                            part.marked ? (
+                              <mark
+                                key={at}
+                                className="bg-transparent text-label text-accent"
+                              >
+                                {part.text}
+                              </mark>
+                            ) : (
+                              <span key={at}>{part.text}</span>
+                            ),
+                          )}
+                        </span>
+                      )}
                     </span>
-                  )}
-                </>
-              ) : (
-                <>
-                  <span className="min-w-0 flex-1 truncate">
-                    {row.action.label}
-                  </span>
-                  {row.action.keys === undefined ? null : (
-                    <span className="shrink-0">
-                      <KeyHint keys={row.action.keys} />
+                    {paletteNoteLabel(row.match.path).folder === null ? null : (
+                      <span className="max-w-1/3 shrink-0 truncate text-muted">
+                        {paletteNoteLabel(row.match.path).folder}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <span className="min-w-0 flex-1 truncate">
+                      {row.action.label}
                     </span>
-                  )}
-                </>
-              )}
-            </li>
-          </Fragment>
-        ))}
-      </Inset>
+                    {row.action.keys === undefined ? null : (
+                      <span className="shrink-0">
+                        <KeyHint keys={row.action.keys} />
+                      </span>
+                    )}
+                  </>
+                )}
+              </li>
+            </Fragment>
+          ))}
+        </Inset>
+      </Stack>
       {step === null || stepChoices === null ? (
         content.pending ? (
           <Inset as="p" className="text-secondary text-muted" role="status">

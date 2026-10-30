@@ -29,8 +29,11 @@ await test('each screen offers Reload as the one button of the recipe', () => {
     const markup = startFailureMarkup(cause);
     const buttons = markup.match(/<button\b[^>]*>/g) ?? [];
     assert.equal(buttons.length, 1);
-    assert.ok(markup.includes(`<span>${reloadLabel}</span></button>`), markup);
-    assert.ok(markup.includes(`class="${buttonClassName({})}"`), markup);
+    assert.ok(markup.includes(`>${reloadLabel}</span>`), markup);
+    const classes =
+      buttons[0]?.match(/class="([^"]+)"/)?.[1]?.split(/\s+/) ?? [];
+    for (const token of buttonClassName({}).split(/\s+/).filter(Boolean))
+      assert.ok(classes.includes(token), token);
     // The page script adds the one handler. The markup holds no script and
     // no inline handler, which the content policy of the shell refuses.
     assert.doesNotMatch(markup, /<script|\son[a-z]+=/i);

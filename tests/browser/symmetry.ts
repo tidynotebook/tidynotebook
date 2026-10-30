@@ -381,6 +381,23 @@ export async function auditComposition(page: Page) {
             coarse ? 36 : 28,
           );
     }
+    const searchScope = document.querySelector('[data-search-scope]');
+    const searchGroup = document.querySelector(
+      '#command-palette-list [role=presentation]',
+    );
+    if (
+      searchScope &&
+      searchGroup &&
+      visible(searchScope) &&
+      visible(searchGroup)
+    )
+      check(
+        searchGroup,
+        'search scope group gap',
+        searchGroup.getBoundingClientRect().top -
+          searchScope.getBoundingClientRect().bottom,
+        coarse ? 16 : 24,
+      );
     const rows = [...document.querySelectorAll('[data-ui-row]')].filter(
         visible,
       ),

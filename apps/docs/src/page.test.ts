@@ -205,8 +205,7 @@ await test('docs uses the shared footer below its page resources and frame', () 
   const html = pageDocument(view);
   assert.equal((html.match(/<footer/g) ?? []).length, 1);
   assert.ok(
-    html.indexOf('class="public-footer"') >
-      html.indexOf('aria-label="Page resources"'),
+    html.indexOf('<footer') > html.indexOf('aria-label="Page resources"'),
   );
   assert.ok(
     html.includes('Open source. Write in Markdown. Export your notes.'),

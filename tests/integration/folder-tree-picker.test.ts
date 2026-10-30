@@ -109,7 +109,7 @@ async function render(
   });
 }
 function rows(): HTMLElement[] {
-  return [...container.querySelectorAll<HTMLElement>('[role="treeitem"]')];
+  return [...document.body.querySelectorAll<HTMLElement>('[role="treeitem"]')];
 }
 function row(name: string): HTMLElement {
   const found = rows().find((candidate) =>
@@ -122,7 +122,7 @@ function names(): string[] {
   return rows().map((candidate) => candidate.textContent ?? '');
 }
 function button(label: string): HTMLButtonElement {
-  const found = [...container.querySelectorAll('button')].find(
+  const found = [...document.body.querySelectorAll('button')].find(
     (candidate) =>
       candidate.textContent === label ||
       candidate.getAttribute('aria-label') === label,
@@ -151,12 +151,12 @@ async function type(id: string, value: string): Promise<void> {
   });
 }
 function fieldOf(label: string): HTMLInputElement {
-  const found = [...container.querySelectorAll('label')].find(
+  const found = [...document.body.querySelectorAll('label')].find(
     (candidate) => candidate.textContent === label,
   );
   const input = found?.htmlFor
     ? document.getElementById(found.htmlFor)
-    : [...container.querySelectorAll('input')].find(
+    : [...document.body.querySelectorAll('input')].find(
         (candidate) => candidate.getAttribute('aria-label') === label,
       );
   assert.ok(
@@ -185,7 +185,7 @@ function Picker(props: { readonly start: string }) {
 
 await test('the tree opens at the chosen folder and has the ARIA of the sidebar tree', async () => {
   await render(createElement(Picker, { start: 'Projects/Research' }));
-  const tree = container.querySelector('[role="tree"]');
+  const tree = document.body.querySelector('[role="tree"]');
   assert.equal(tree?.getAttribute('aria-label'), 'Save in');
   assert.deepEqual(names(), [
     'All notes',
@@ -231,13 +231,13 @@ await test('arrow keys move, close and open, and Enter chooses a row', async () 
   await press('ArrowUp');
   await press('Enter');
   assert.equal(
-    container.querySelector('output')?.textContent,
+    document.body.querySelector('output')?.textContent,
     'Projects/Launch',
   );
   assert.equal(row('Launch').getAttribute('aria-selected'), 'true');
   await press('Home');
   await press(' ');
-  assert.equal(container.querySelector('output')?.textContent, '');
+  assert.equal(document.body.querySelector('output')?.textContent, '');
 });
 
 await test('New folder here names a folder inside the chosen one and chooses it', async () => {
@@ -248,22 +248,22 @@ await test('New folder here names a folder inside the chosen one and chooses it'
   assert.ok(draft.closest('[role="tree"]'));
   assert.equal(draft.previousElementSibling, row('Projects'));
   assert.equal(draft.getAttribute('aria-level'), '2');
-  assert.equal(container.querySelector('label'), null);
+  assert.equal(document.body.querySelector('label'), null);
   assert.throws(() => button('Add folder'));
   assert.throws(() => button('Cancel'));
   await type(fieldOf('Folder name').id, 'launch');
   await act(async () => button('Create folder').click());
   assert.match(
-    container.textContent ?? '',
+    document.body.textContent ?? '',
     /A folder named Projects\/launch already exists/,
   );
   await type(fieldOf('Folder name').id, 'a\\b');
   await act(async () => button('Create folder').click());
-  assert.match(container.textContent ?? '', /backslash/);
+  assert.match(document.body.textContent ?? '', /backslash/);
   await type(fieldOf('Folder name').id, 'Archive');
   await act(async () => button('Create folder').click());
   assert.equal(
-    container.querySelector('output')?.textContent,
+    document.body.querySelector('output')?.textContent,
     'Projects/Archive',
   );
   assert.equal(row('Archive').getAttribute('aria-selected'), 'true');
@@ -281,18 +281,18 @@ await test('New folder chooses its parent in the tree field and creates inside i
       onCreated: (folder: string) => created.push(folder),
     }),
   );
-  assert.equal(container.querySelector('[role="tree"]'), null);
+  assert.equal(document.body.querySelector('[role="tree"]'), null);
   const inside =
-    container.querySelector<HTMLButtonElement>('#new-folder-inside');
+    document.body.querySelector<HTMLButtonElement>('#new-folder-inside');
   assert.ok(inside);
   assert.match(inside.textContent ?? '', /Projects/);
   await act(async () => inside.click());
-  assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
+  assert.equal(document.body.querySelectorAll('[role="dialog"]').length, 1);
   await act(async () => row('Research').click());
-  assert.equal(container.querySelector('[role="tree"]'), null);
-  assert.ok(!container.textContent?.includes('Done'));
+  assert.equal(document.body.querySelector('[role="tree"]'), null);
+  assert.ok(!document.body.textContent?.includes('Done'));
   await type('new-folder-name', 'Q4');
-  const form = container.querySelector('[role="dialog"] form');
+  const form = document.body.querySelector('[role="dialog"] form');
   assert.ok(form);
   await act(async () =>
     form.dispatchEvent(
@@ -321,7 +321,7 @@ await test('Move dims the moved folder and its children and moves into a chosen 
     }),
   );
   assert.equal(
-    container.querySelector('[role="dialog"] h2')?.textContent,
+    document.body.querySelector('[role="dialog"] h2')?.textContent,
     'Move Launch to',
   );
   assert.equal(
@@ -399,7 +399,7 @@ await test('folder search opens on request and narrows a large tree', async () =
       onSelect: () => {},
     }),
   );
-  assert.equal(container.querySelector('input'), null);
+  assert.equal(document.body.querySelector('input'), null);
   assert.equal(
     button('Search folders').closest('[role="treeitem"]'),
     row('All notes'),
@@ -415,7 +415,7 @@ await test('folder search opens on request and narrows a large tree', async () =
   await act(async () => {
     await new Promise((resolve) => setTimeout(resolve, 20));
   });
-  assert.equal(container.querySelector('input'), null);
+  assert.equal(document.body.querySelector('input'), null);
   assert.equal(document.activeElement, button('Search folders'));
   assert.equal(names().length, 11);
 });
@@ -436,7 +436,7 @@ await test('Move places folder search beside its title and Escape keeps the move
     }),
   );
   const search = button('Search folders');
-  const heading = container.querySelector('[role="dialog"] h2');
+  const heading = document.body.querySelector('[role="dialog"] h2');
   assert.ok(heading?.parentElement?.contains(search));
   assert.equal(search.closest('[role="treeitem"]'), null);
   await act(async () => search.click());
@@ -444,8 +444,8 @@ await test('Move places folder search beside its title and Escape keeps the move
   await type(field.id, 'Folder 4');
   field.focus();
   await press('Escape');
-  assert.ok(container.querySelector('[role="dialog"]'));
-  assert.equal(container.querySelector('input'), null);
+  assert.ok(document.body.querySelector('[role="dialog"]'));
+  assert.equal(document.body.querySelector('input'), null);
 });
 
 await test('touch folder filtering waits for a direct field tap', async () => {
@@ -488,13 +488,13 @@ await test('eight folders have no search control', async () => {
     }),
   );
   assert.throws(() => button('Search folders'));
-  assert.equal(container.querySelector('input'), null);
+  assert.equal(document.body.querySelector('input'), null);
 });
 
 await test('the Templates folder setting chooses its folder in the tree, with no root row', async () => {
   await render(createElement(TemplateSettingsFields));
   await act(async () => button('Templates folder').click());
-  assert.ok(container.querySelector('[role="tree"]'));
+  assert.ok(document.body.querySelector('[role="tree"]'));
   assert.ok(!names().includes('All notes'));
   assert.equal(row('Templates').getAttribute('aria-selected'), 'true');
   const before = templateSaves.length;
@@ -507,7 +507,7 @@ await test('the Templates folder setting chooses its folder in the tree, with no
 await test('the Daily notes folder setting chooses its folder in the tree', async () => {
   await render(createElement(DailyNoteSettingsFields));
   await act(async () => button('Folder').click());
-  assert.equal(container.querySelector('#daily-folder'), null);
+  assert.equal(document.body.querySelector('#daily-folder'), null);
   assert.ok(names().includes('All notes'));
   assert.equal(row('Daily').getAttribute('aria-selected'), 'true');
   await act(async () => button('Open Projects').click());
@@ -523,7 +523,7 @@ await test('Name format shows the live date or its validation error in one help 
   await act(async () => button('Name format').click());
   const field = fieldOf('Name format');
   assert.match(
-    container.querySelector('#daily-format-hint')?.textContent ?? '',
+    document.body.querySelector('#daily-format-hint')?.textContent ?? '',
     /Use YYYY, MM and DD for the date. Today: \d{4}-\d{2}-\d{2}/,
   );
   await type(field.id, 'DD-MM-YYYY');
@@ -534,9 +534,9 @@ await test('Name format shows the live date or its validation error in one help 
       ?.textContent?.endsWith(expected),
   );
   await type(field.id, 'YYYY');
-  assert.equal(container.querySelector('#daily-format-hint'), null);
+  assert.equal(document.body.querySelector('#daily-format-hint'), null);
   assert.match(
-    container.querySelector('#daily-format-error')?.textContent ?? '',
+    document.body.querySelector('#daily-format-error')?.textContent ?? '',
     /Add a month/,
   );
   assert.equal(field.getAttribute('aria-invalid'), 'true');
@@ -552,7 +552,7 @@ await test('daily template selection searches only templates and supports No tem
   assert.throws(() => button('Reading list'));
   const search = fieldOf('Search templates');
   await type(search.id, 'missing');
-  assert.match(container.textContent ?? '', /No matching templates/);
+  assert.match(document.body.textContent ?? '', /No matching templates/);
   assert.ok(button('No template'));
   assert.equal(dailySaves.length, before);
   await act(async () => button('Cancel').click());
@@ -599,12 +599,12 @@ await test('the desktop field popup stays in the dialog focus scope and Escape c
       }),
     );
     const field =
-      container.querySelector<HTMLButtonElement>('#new-folder-inside');
+      document.body.querySelector<HTMLButtonElement>('#new-folder-inside');
     assert.ok(field);
     await act(async () => field.click());
-    const popup = container.querySelector('#new-folder-inside-tree');
-    const dialog = container.querySelector('[role="dialog"]');
-    const form = container.querySelector('form');
+    const popup = document.body.querySelector('#new-folder-inside-tree');
+    const dialog = document.body.querySelector('[role="dialog"]');
+    const form = document.body.querySelector('form');
     assert.ok(popup && dialog && form);
     assert.ok(popup.classList.contains('fixed'));
     assert.equal(dialog.contains(popup), true);
@@ -614,8 +614,8 @@ await test('the desktop field popup stays in the dialog focus scope and Escape c
         new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
       ),
     );
-    assert.equal(container.querySelector('#new-folder-inside-tree'), null);
-    assert.ok(container.querySelector('[role="dialog"]'));
+    assert.equal(document.body.querySelector('#new-folder-inside-tree'), null);
+    assert.ok(document.body.querySelector('[role="dialog"]'));
     assert.equal(document.activeElement, field);
     await render(createElement('div'));
   } finally {

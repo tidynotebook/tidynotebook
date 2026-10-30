@@ -408,7 +408,7 @@ export const publishedDocumentClasses: readonly string[] = [
   publishedButtonClasses,
   publishedFieldClasses,
   publishedTextAreaClasses,
-].flatMap((group) => group.split(' '));
+].flatMap((group) => group.split(/\s+/).filter(Boolean));
 
 /**
  * The `<title>` of every state of the page.

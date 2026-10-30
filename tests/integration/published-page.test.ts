@@ -481,7 +481,7 @@ await test('readable notes and folder lists survive a failed footer settings rea
     for (const options of [{}, { note: dayTwoId }]) {
       const page = await readPage(folder.token, options);
       assert.equal(page.response.status, 200);
-      assert.ok(page.html.includes('class="public-footer"'));
+      assert.ok(/<footer[^>]+class="public-footer(?:\s|")/.test(page.html));
       assert.ok(page.html.includes('href="/login"'));
       assert.doesNotMatch(
         page.html,

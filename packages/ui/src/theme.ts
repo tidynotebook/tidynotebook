@@ -517,7 +517,8 @@ function surfaceState(
   surface: string,
   minimum: number,
 ): string {
-  const target = relativeLuminance(surface) < 0.5 ? '#ffffff' : '#000000';
+  const extreme = relativeLuminance(surface) < 0.5 ? 1 : 0;
+  const target = `#${channelHex(extreme).repeat(3)}`;
   for (let step = 1; step <= 100; step += 1) {
     const fill = mixHexColors(target, surface, step / 100) ?? surface;
     if (contrastRatio(fill, surface) >= minimum) return fill;

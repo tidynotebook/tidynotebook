@@ -145,7 +145,7 @@ async function settle(): Promise<void> {
 }
 /** Find a button by its text or accessible label. */
 function button(label: string): HTMLButtonElement {
-  const found = [...container.querySelectorAll('button')].find(
+  const found = [...document.body.querySelectorAll('button')].find(
     (candidate) =>
       candidate.textContent === label ||
       candidate.getAttribute('aria-label') === label ||
@@ -160,7 +160,7 @@ async function click(label: string): Promise<void> {
 }
 /** The input of a labelled field. */
 function field(id: string): HTMLInputElement {
-  const found = container.querySelector(`#${id}`);
+  const found = document.body.querySelector(`#${id}`);
   assert.ok(found instanceof window.HTMLInputElement, `Missing field: ${id}`);
   return found;
 }
@@ -177,7 +177,7 @@ async function type(id: string, value: string): Promise<void> {
 }
 /** The Save in field, a button named by its label and its value. */
 function saveIn(): HTMLButtonElement {
-  const found = container.querySelector('#template-note-folder');
+  const found = document.body.querySelector('#template-note-folder');
   assert.ok(
     found instanceof window.HTMLButtonElement,
     'Missing field: Save in',
@@ -186,7 +186,7 @@ function saveIn(): HTMLButtonElement {
 }
 /** Submit the dialog form, as Enter in a field does. */
 async function submit(): Promise<void> {
-  const form = container.querySelector('[role="dialog"] form');
+  const form = document.body.querySelector('[role="dialog"] form');
   assert.ok(form);
   await act(async () =>
     form.dispatchEvent(
@@ -219,7 +219,10 @@ await test('a failed preview retries the same selection and guards creation unti
     1,
     'The first template reads its preview on open.',
   );
-  assert.equal(document.activeElement, field('search-templates'));
+  assert.ok(
+    document.activeElement === field('search-templates'),
+    'Focus returns to the expected element.',
+  );
   assert.equal(button('Meeting').getAttribute('aria-pressed'), 'true');
   assert.equal(button('Create note').disabled, true);
   await click('Meeting');
@@ -231,7 +234,7 @@ await test('a failed preview retries the same selection and guards creation unti
   await act(async () => first.finish(null));
   assert.equal(serverReads, 1);
   assert.match(
-    container.textContent ?? '',
+    document.body.textContent ?? '',
     /Can't load this template. It is not on this device./,
   );
   assert.equal(button('Create note').disabled, true);
@@ -242,15 +245,15 @@ await test('a failed preview retries the same selection and guards creation unti
   assert.ok(retry);
   assert.equal(retry.fileId, first.fileId);
   assert.equal(retry.workspaceId, first.workspaceId);
-  assert.match(container.textContent ?? '', /Loading preview/);
+  assert.match(document.body.textContent ?? '', /Loading preview/);
   assert.equal(button('Create note').disabled, true);
   await click('Create note');
   assert.equal(creations.length, 0);
   await act(async () => retry.finish(templateNote('Recovered meeting text')));
   await settle();
-  assert.match(container.textContent ?? '', /Recovered meeting text/);
+  assert.match(document.body.textContent ?? '', /Recovered meeting text/);
   assert.ok(
-    container.querySelector('section[aria-label="Preview of Meeting"]'),
+    document.body.querySelector('section[aria-label="Preview of Meeting"]'),
   );
   assert.equal(button('Create note').disabled, false);
   await click('Create note');
@@ -281,8 +284,8 @@ await test('a retry completion from the previous workspace cannot replace the ne
   await settle();
   assert.equal(button('Create note').disabled, false);
   await act(async () => oldRetry.finish(templateNote('Stale workspace text')));
-  assert.match(container.textContent ?? '', /Current workspace text/);
-  assert.doesNotMatch(container.textContent ?? '', /Stale workspace text/);
+  assert.match(document.body.textContent ?? '', /Current workspace text/);
+  assert.doesNotMatch(document.body.textContent ?? '', /Stale workspace text/);
   assert.equal(button('Create note').disabled, false);
 });
 
@@ -292,12 +295,12 @@ await test('creation errors reach the frame and remain after the dialog closes u
   await show('workspace-error', true);
   await chooseMeeting('Create error test');
   await click('Create note');
-  const notices = container.querySelector(
+  const notices = document.body.querySelector(
     'section[aria-label="Frame notices"]',
   );
   assert.equal(notices?.textContent, message);
-  assert.equal(container.querySelectorAll('[role="alert"]').length, 0);
-  assert.equal(container.querySelector('[role="dialog"]'), null);
+  assert.equal(document.body.querySelectorAll('[role="alert"]').length, 0);
+  assert.equal(document.body.querySelector('[role="dialog"]'), null);
   setCreationError(null);
   await click('Open template dialog');
   await settle();
@@ -319,14 +322,14 @@ await test('selecting the same template keeps its pending read and ready preview
   assert.equal(button('Create note').disabled, false);
   await click('Meeting');
   assert.equal(reads.length, 0, 'The ready selection needs no new read.');
-  assert.match(container.textContent ?? '', /Meeting preview text/);
+  assert.match(document.body.textContent ?? '', /Meeting preview text/);
 });
 
 await test('the preview shows the rendered note with the date, the time and the typed name', async () => {
   await show('workspace-render');
   await chooseMeeting('# {{title}}\n\nOn {{date}} at {{time}}\n');
   const region = (): string =>
-    container.querySelector('[role="region"][aria-label="The new note"]')
+    document.body.querySelector('[role="region"][aria-label="The new note"]')
       ?.textContent ?? '';
   assert.match(
     region(),
@@ -340,7 +343,7 @@ await test('the preview shows the rendered note with the date, the time and the 
   await settle();
   assert.match(region(), /^# Kickoff\n/);
   assert.equal(
-    container
+    document.body
       .querySelector('[role="region"][aria-label="The new note"]')
       ?.getAttribute('data-path'),
     'Meetings/Kickoff.md',
@@ -359,7 +362,7 @@ await test('the last used template is remembered for this workspace and falls ba
     await show('workspace-last');
     const first = reads.shift();
     assert.equal(first?.fileId, templateId);
-    const second = container.querySelector<HTMLButtonElement>(
+    const second = document.body.querySelector<HTMLButtonElement>(
       'button[aria-pressed="false"]',
     );
     assert.ok(second);
@@ -373,7 +376,10 @@ await test('the last used template is remembered for this workspace and falls ba
     await click('Open template dialog');
     await settle();
     assert.equal(reads.shift()?.fileId, 'second-template');
-    assert.equal(document.activeElement, field('search-templates'));
+    assert.ok(
+      document.activeElement === field('search-templates'),
+      'Focus returns to the expected element.',
+    );
     await show('workspace-other');
     assert.equal(reads.shift()?.fileId, templateId);
   } finally {
@@ -390,7 +396,7 @@ await test('the name is checked for empty, invalid characters and a clash in the
   await chooseMeeting('Body');
   const count = creations.length;
   const problem = (): string =>
-    container.querySelector('#template-note-name-error')?.textContent ?? '';
+    document.body.querySelector('#template-note-name-error')?.textContent ?? '';
   await type('template-note-name', '   ');
   await submit();
   assert.equal(creations.length, count);
@@ -401,7 +407,7 @@ await test('the name is checked for empty, invalid characters and a clash in the
   assert.match(problem(), /A note named plan is already in this folder/);
   await submit();
   assert.equal(creations.length, count);
-  assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
+  assert.equal(document.body.querySelectorAll('[role="dialog"]').length, 1);
   await type('template-note-name', 'Plan 2');
   assert.equal(problem(), '');
   await submit();
@@ -421,9 +427,9 @@ await test('Save in opens the folder tree in the same dialog and creates the not
     'template-note-folder-label template-note-folder',
   );
   await act(async () => saveIn().click());
-  const tree = container.querySelector('[role="tree"]');
+  const tree = document.body.querySelector('[role="tree"]');
   assert.ok(tree);
-  assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
+  assert.equal(document.body.querySelectorAll('[role="dialog"]').length, 1);
   assert.ok(tree.closest('[role="dialog"]'));
   // The details stay: the folder choice does not replace the dialog body.
   assert.ok(field('template-note-name'));
@@ -435,16 +441,16 @@ await test('Save in opens the folder tree in the same dialog and creates the not
       new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
     ),
   );
-  assert.equal(container.querySelector('[role="tree"]'), null);
-  assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
+  assert.equal(document.body.querySelector('[role="tree"]'), null);
+  assert.equal(document.body.querySelectorAll('[role="dialog"]').length, 1);
   await act(async () => saveIn().click());
   await click('Open Projects');
   const launch = [
-    ...container.querySelectorAll<HTMLElement>('[role="treeitem"]'),
+    ...document.body.querySelectorAll<HTMLElement>('[role="treeitem"]'),
   ].find((row) => row.textContent === 'Launch');
   assert.ok(launch);
   await act(async () => launch.click());
-  assert.equal(container.querySelector('[role="tree"]'), null);
+  assert.equal(document.body.querySelector('[role="tree"]'), null);
   assert.match(saveIn().textContent ?? '', /Launch/);
   assert.equal(field('template-note-name').value, `Meeting ${todayText()}`);
   await click('Create note');
@@ -464,9 +470,12 @@ await test('Back restores list focus and Manage templates sits in the header', a
     focusedWhileHidden = search.closest('.hidden') !== null;
   });
   await click('Back to templates');
-  assert.equal(document.activeElement, field('search-templates'));
+  assert.ok(
+    document.activeElement === field('search-templates'),
+    'Focus returns to the expected element.',
+  );
   assert.equal(focusedWhileHidden, false);
-  const manage = container.querySelector<HTMLButtonElement>(
+  const manage = document.body.querySelector<HTMLButtonElement>(
     'button[aria-label="Manage templates"]',
   );
   assert.ok(manage);
@@ -476,15 +485,17 @@ await test('Back restores list focus and Manage templates sits in the header', a
     manage.closest('header')?.querySelector('h2,h3')?.textContent,
     'New note from template',
   );
-  assert.equal(container.querySelector('a[href*="settings"]'), null);
+  assert.equal(document.body.querySelector('a[href*="settings"]'), null);
   // It closes the dialog and opens Settings at Templates over the same page.
   await act(async () => manage.click());
   await settle();
-  assert.equal(container.querySelector('[role="dialog"]'), null);
+  assert.equal(document.body.querySelector('[role="dialog"]'), null);
   assert.equal(address, '/w/one/notes/n1?settings=templates');
 });
 
 await test('touch template navigation leaves the keyboard closed until search is selected', async () => {
+  const viewport = { width: browser.innerWidth, height: browser.innerHeight };
+  browser.happyDOM.setWindowSize({ width: 390, height: 844 });
   const points = Object.getOwnPropertyDescriptor(navigator, 'maxTouchPoints');
   Object.defineProperty(navigator, 'maxTouchPoints', {
     configurable: true,
@@ -493,15 +504,32 @@ await test('touch template navigation leaves the keyboard closed until search is
   try {
     await show('workspace-touch');
     const search = field('search-templates');
-    assert.notEqual(document.activeElement, search);
-    assert.equal(document.activeElement, container.querySelector('header h3'));
+    assert.ok(
+      document.activeElement !== search,
+      'Search waits for a direct field tap.',
+    );
+    assert.ok(
+      document.activeElement ===
+        document.body.querySelector('.ui-sheet-header h2'),
+      'Focus returns to the expected element.',
+    );
     await chooseMeeting('Touch preview');
     await click('Back to templates');
-    assert.equal(document.activeElement, button('Meeting'));
-    assert.notEqual(document.activeElement, search);
+    assert.ok(
+      document.activeElement === button('Meeting'),
+      'Focus returns to the expected element.',
+    );
+    assert.ok(
+      document.activeElement !== search,
+      'Search waits for a direct field tap.',
+    );
     await act(async () => search.focus());
-    assert.equal(document.activeElement, search);
+    assert.ok(
+      document.activeElement === search,
+      'Focus returns to the expected element.',
+    );
   } finally {
+    browser.happyDOM.setWindowSize(viewport);
     if (points === undefined)
       Reflect.deleteProperty(navigator, 'maxTouchPoints');
     else Object.defineProperty(navigator, 'maxTouchPoints', points);
@@ -527,9 +555,12 @@ await test('an incomplete list with no available templates does not claim a sear
   setTemplateAvailability({ empty: true, partial: true });
   try {
     await show('workspace-partial');
-    assert.match(container.textContent ?? '', /Some templates may be missing/);
+    assert.match(
+      document.body.textContent ?? '',
+      /Some templates may be missing/,
+    );
     assert.doesNotMatch(
-      container.textContent ?? '',
+      document.body.textContent ?? '',
       /No template matches|No templates yet/,
     );
   } finally {
@@ -543,7 +574,7 @@ await test('rows show only the name, and the subfolder only for a repeated name'
     await show('workspace-duplicates');
     const initialRead = reads.shift();
     assert.equal(initialRead?.fileId, templateId);
-    const choices = [...container.querySelectorAll('button[aria-pressed]')];
+    const choices = [...document.body.querySelectorAll('button[aria-pressed]')];
     assert.equal(choices.length, 2);
     assert.equal(choices[0]?.textContent, 'MeetingFirst');
     assert.equal(choices[1]?.textContent, 'MeetingSecond');
@@ -553,7 +584,7 @@ await test('rows show only the name, and the subfolder only for a repeated name'
   await show('workspace-single');
   assert.equal(button('Meeting').textContent, 'Meeting');
   assert.doesNotMatch(
-    container.textContent ?? '',
+    document.body.textContent ?? '',
     /From the "Templates" folder/,
   );
 });

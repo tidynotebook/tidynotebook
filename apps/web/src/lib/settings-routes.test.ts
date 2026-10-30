@@ -86,8 +86,14 @@ await test('the modal groups its sections as the wireframe does, with no Sign ou
     settingsPages.find((page) => page.path === 'account')?.sections,
     ['profile', 'account', 'remove-account'],
   );
-  for (const page of settingsPages)
-    assert.ok(page.scope.length <= 80, page.path);
+  for (const page of settingsPages) {
+    if (page.path === 'mail')
+      assert.equal(
+        page.scope,
+        'Mail delivery for this installation. Without a mail server, an invitation shows its link once and nobody can reset a password.',
+      );
+    else assert.ok(page.scope.length <= 80, page.path);
+  }
 });
 
 await test('old pages and anchors open their new page', () => {

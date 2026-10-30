@@ -229,7 +229,7 @@ await test('the served list holds account metadata and the Settings decisions', 
     sectionKeys,
     settingsSections
       .map((section) => section.key)
-      .filter((key) => key !== 'billing'),
+      .filter((key) => key !== 'billing' && !key.startsWith('admin-')),
   );
   assert.equal(
     sectionKeys.indexOf('connected-apps'),

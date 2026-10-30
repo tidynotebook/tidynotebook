@@ -900,7 +900,7 @@ await test('Mail is a section form whose Save stays disabled until a value chang
       [...container.querySelectorAll('.ui-settings-column h3')].map(
         (e) => e.textContent,
       ),
-      ['Server', 'Sign-in', 'Sender'],
+      ['Server', 'Sign-in', 'Sending'],
     );
     const pair = container.querySelector('[data-field-pair]');
     assert.ok(pair?.querySelector('#mail-host'));

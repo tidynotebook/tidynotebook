@@ -328,6 +328,7 @@ await test('the built documentation site', async (t) => {
     'ui-icon-button',
     'ui-page-column',
     'ui-tree-row',
+    'ui-content-list',
   ]);
 
   await t.test('every class of a page is in the built stylesheet', async () => {

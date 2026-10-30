@@ -45,14 +45,14 @@ await test('the template action is the third icon of the sidebar row', () => {
     [...order].sort((a, b) => a - b),
   );
   const template = row.slice(
-    row.lastIndexOf('<Button', row.indexOf('New note from template')),
+    row.lastIndexOf('<IconButton', row.indexOf('New note from template')),
     row.indexOf('/>', row.indexOf('New note from template')),
   );
   for (const part of [
     'variant="ghost"',
-    'compact',
+    'size="toolbar"',
     'title="New note from template"',
-    "icon={actionIcon('template')}",
+    "glyph={actionIcon('template')}",
     'onClick={() => onFromTemplate(selectedFolder)}',
   ])
     assert.ok(template.includes(part), part);
