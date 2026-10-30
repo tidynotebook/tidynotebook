@@ -502,6 +502,29 @@ export async function auditContentParity(page: Page) {
           1,
         );
     }
+    for (const body of [
+      ...document.querySelectorAll('[data-disclosure-content]'),
+    ].filter(visible)) {
+      const header = document.getElementById(
+        body.getAttribute('data-disclosure-content') ?? '',
+      );
+      const label = header?.querySelector(':scope > span:last-child');
+      const edge = label && visible(label) ? firstX(label) : null;
+      if (edge !== null)
+        check(
+          body,
+          'disclosure content edge',
+          body.getBoundingClientRect().left,
+          edge,
+        );
+      for (const text of [...body.querySelectorAll(':scope > p')].filter(
+        visible,
+      )) {
+        const x = firstX(text);
+        if (edge !== null && x !== null)
+          check(text, 'disclosure text edge', x, edge);
+      }
+    }
     const title = document.querySelector('#notes-outline > span:last-child');
     if (title && visible(title)) {
       const edge = firstX(title);

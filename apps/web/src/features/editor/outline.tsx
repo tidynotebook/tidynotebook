@@ -85,8 +85,9 @@ export function OutlinePanel({
               <ListRow
                 as="button"
                 density="tree"
+                contentEdge
                 data-outline-level={heading.level}
-                indent={heading.level}
+                indent={heading.level - 1}
                 onClick={(): void => {
                   revealInNote(view, heading.from);
                 }}
@@ -97,8 +98,9 @@ export function OutlinePanel({
               <ListRow
                 as="div"
                 density="tree"
+                contentEdge
                 data-outline-level={heading.level}
-                indent={heading.level}
+                indent={heading.level - 1}
               >
                 <span className="min-w-0 flex-1 truncate">{heading.text}</span>
               </ListRow>

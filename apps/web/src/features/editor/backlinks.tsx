@@ -146,7 +146,7 @@ export function Backlinks({
         {state.rows.map((item) => (
           <li key={item.fileId}>
             <Link
-              className={rowClassName()}
+              className={rowClassName({ contentEdge: true })}
               to={`/w/${workspaceId}/notes/${item.fileId}`}
             >
               <span className="min-w-0 flex-1 truncate">

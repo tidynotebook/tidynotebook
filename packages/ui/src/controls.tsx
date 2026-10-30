@@ -656,9 +656,15 @@ export function CollapsibleSection({
         // The `section` above is already the named region of this group, so
         // the panel carries the identifier that `aria-controls` names and no
         // role of its own. It used to carry both, which put two regions with
-        // one name in the list a person moves through.
-        <Inset id={panelId} pad={2}>
-          {children}
+        // one name in the list a person moves through. The content keeps the
+        // header's disclosure slot. Child rows add only deeper indent levels.
+        <Inset id={panelId} padX={{ fine: 3, coarse: 4 }} padY={2}>
+          <Inline gap={2} align="start">
+            <span className="w-4 shrink-0" aria-hidden="true" />
+            <div data-disclosure-content={id} className="min-w-0 flex-1">
+              {children}
+            </div>
+          </Inline>
         </Inset>
       ) : null}
     </Stack>
