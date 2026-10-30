@@ -4,7 +4,12 @@ import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as pause } from 'node:timers/promises';
 import { hasChromium, isRecord, routeAuditAssets } from './browser.ts';
-import { auditContentParity, captureSurface } from './symmetry.ts';
+import {
+  auditContentParity,
+  auditComposition,
+  auditHoverPadding,
+  captureSurface,
+} from './symmetry.ts';
 const module: unknown = await import(
   pathToFileURL(
     process.env.PLAYWRIGHT_MODULE ??
@@ -85,6 +90,10 @@ try {
       const check = async (name: string) => {
         await pause(120);
         const result = await auditContentParity(p);
+        if (name === 'trash' || name === 'trash-menu') {
+          assert.deepEqual((await auditComposition(p)).issues, []);
+          assert.deepEqual(await auditHoverPadding(p), []);
+        }
         results.push({ width, scheme, name, ...result });
         issues.push(
           ...result.issues.map(
@@ -157,6 +166,19 @@ try {
           .waitFor();
         await pause(100);
         await check(name);
+        if (path === 'trash') {
+          await p
+            .getByRole('button', {
+              name: 'Actions for Personal/Reading/Reading list',
+              exact: true,
+            })
+            .click();
+          await p
+            .getByRole('menuitem', { name: 'Delete for good', exact: true })
+            .waitFor();
+          await check('trash-menu');
+          await p.keyboard.press('Escape');
+        }
       }
       await p.goto(home);
       await p.getByRole('button', { name: 'Search', exact: true }).click();

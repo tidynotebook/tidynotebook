@@ -514,17 +514,32 @@ export async function auditComposition(page: Page) {
             ? e.firstElementChild
             : null;
         const paddingStyle = fill ? getComputedStyle(fill) : s;
+        if (fill) {
+          check(
+            e,
+            'compact target left inset',
+            parseFloat(s.paddingLeft),
+            coarse ? 16 : 12,
+          );
+          check(
+            e,
+            'compact target right inset',
+            parseFloat(s.paddingRight),
+            coarse ? 16 : 12,
+          );
+        }
+        const side = fill ? 8 : coarse ? 16 : parts.contains('h-7') ? 8 : 12;
         check(
           e,
           'text button left inset',
           parseFloat(paddingStyle.paddingLeft),
-          coarse ? 16 : parts.contains('h-7') ? 8 : 12,
+          side,
         );
         check(
           e,
           'text button right inset',
           parseFloat(paddingStyle.paddingRight),
-          coarse ? 16 : parts.contains('h-7') ? 8 : 12,
+          side,
         );
       } else {
         check(e, 'icon button left inset', parseFloat(s.paddingLeft), 0);
