@@ -236,16 +236,27 @@ export function ThemeSettings(): ReactNode {
                       theme.setChoice(choice.value);
                     }}
                   />
-                  {choice.value === 'system' ? (
-                    <span className="flex" aria-hidden="true">
-                      <ThemePreview theme={light} className="w-1/2" />
-                      <ThemePreview theme={dark} className="w-1/2" />
-                    </span>
-                  ) : (
-                    <ThemePreview
-                      theme={choice.value === 'light' ? light : dark}
-                    />
-                  )}
+                  <span className="relative block" data-mode-preview="">
+                    {choice.value === 'system' ? (
+                      <span className="flex" aria-hidden="true">
+                        <ThemePreview theme={light} className="w-1/2" />
+                        <ThemePreview theme={dark} className="w-1/2" />
+                      </span>
+                    ) : (
+                      <ThemePreview
+                        theme={choice.value === 'light' ? light : dark}
+                      />
+                    )}
+                    {chosen ? (
+                      <span
+                        data-mode-check=""
+                        className="absolute right-2 top-2 inline-flex rounded-md bg-card text-strong"
+                        aria-hidden="true"
+                      >
+                        <CheckIcon />
+                      </span>
+                    ) : null}
+                  </span>
                   <Inline padY={2} gap={2} padX={2} align="center" as="span">
                     <span
                       className="inline-flex items-center"
@@ -253,17 +264,12 @@ export function ThemeSettings(): ReactNode {
                     >
                       {choice.icon}
                     </span>
-                    <span className="min-w-0 flex-1 truncate">
+                    <span
+                      data-mode-label=""
+                      className="min-w-0 flex-1 whitespace-nowrap"
+                    >
                       {choice.label}
                     </span>
-                    {chosen ? (
-                      <span
-                        className="inline-flex items-center"
-                        aria-hidden="true"
-                      >
-                        <CheckIcon />
-                      </span>
-                    ) : null}
                   </Inline>
                 </label>
               );

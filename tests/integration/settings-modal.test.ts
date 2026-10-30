@@ -466,6 +466,16 @@ await test('Appearance and editor: preview cards apply at once, and spelling is 
     ['system', 'light', 'dark'],
   );
   assert.equal(modes[0]?.checked, true);
+  for (const mode of modes) {
+    const tile = mode.closest('label');
+    assert.ok(tile);
+    const label = tile.querySelector('[data-mode-label]');
+    assert.ok(label);
+    assert.equal(label.classList.contains('truncate'), false);
+    assert.equal(label.parentElement?.querySelector('[data-mode-check]'), null);
+    if (mode.checked)
+      assert.ok(tile.querySelector('[data-mode-preview] [data-mode-check]'));
+  }
   await act(async () => modes[2]?.click());
   assert.deepEqual(calls.choices, ['dark']);
   const families = [
@@ -730,7 +740,17 @@ await test('phone Settings uses navigation and action rows with one edit level',
   };
   try {
     await show('/w/one/notes/n1?settings=account');
-    assert.ok(container.querySelector('#profile-heading'));
+    assert.equal(container.querySelector('#profile-heading'), null);
+    assert.ok(
+      [...container.querySelectorAll('h3')].some(
+        (heading) => heading.textContent === 'Usage',
+      ),
+    );
+    assert.ok(
+      [...container.querySelectorAll('h3')].some(
+        (heading) => heading.textContent === 'Danger zone',
+      ),
+    );
     assert.equal(
       [...container.querySelectorAll('button')].some(
         (b) => b.getAttribute('aria-label') === 'Edit name',

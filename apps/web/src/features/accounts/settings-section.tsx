@@ -127,12 +127,8 @@ export function SettingsSection({
   readonly children: ReactNode;
 }): ReactNode {
   const topic = useContext(SettingsTopicContext);
-  const phone = usePhoneSettings();
   if (Children.toArray(children).length === 0) return null;
-  const hidden =
-    topic !== null &&
-    topic.hiddenTitles.includes(section.id) &&
-    !(phone && section.id === 'profile-heading');
+  const hidden = topic !== null && topic.hiddenTitles.includes(section.id);
   return (
     <Stack as="section" gap={2} aria-label={section.title}>
       {hidden ? null : topic !== null ? (

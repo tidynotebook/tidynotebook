@@ -55,6 +55,17 @@ export async function auditSettings(page: Page) {
         }
       }
     }
+    for (const label of [
+      ...document.querySelectorAll('[data-mode-label]'),
+    ].filter(visible)) {
+      const range = document.createRange();
+      range.selectNodeContents(label);
+      const text = range.getBoundingClientRect();
+      if (text.width > box(label).width + 1)
+        errors.push(`Mode label is cut: ${label.textContent}`);
+      if (label.parentElement?.querySelector('[data-mode-check]'))
+        errors.push('Mode check must not take label width');
+    }
     for (const el of document.querySelectorAll(
       '.ui-settings-row,.ui-settings-nav-row,.ui-account-card,.ui-settings-form-body,.ui-settings-footer',
     )) {
