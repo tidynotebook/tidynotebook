@@ -239,6 +239,7 @@ try {
           isMobile: phone,
           colorScheme: scheme,
         });
+
       await c.addInitScript(
         (s) => localStorage.setItem('notesapp.theme', s),
         scheme,

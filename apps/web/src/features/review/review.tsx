@@ -1,3 +1,13 @@
+import {
+  Stack,
+  buttonClassName,
+  CheckIcon,
+  EmptyState,
+  LoadingState,
+  Notice,
+  Page,
+  PageHeader,
+} from '@notesapp/ui';
 /**
  * The Review of one note: the text that caused it, beside the note now.
  *
@@ -18,15 +28,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
 import type { DiffHunk } from '@notesapp/editor';
 import type { LocalStore, ReviewRecord } from '@notesapp/sync';
-import {
-  buttonClassName,
-  CheckIcon,
-  EmptyState,
-  LoadingState,
-  Notice,
-  Page,
-  PageHeader,
-} from '@notesapp/ui';
+
 import { useLocalStore, useSession } from '../../app.tsx';
 import { attentionTitle } from '../attention/attention-link.tsx';
 import { requestDiff } from '../history/diff-worker.ts';
@@ -190,7 +192,7 @@ function ReviewDetail({
   return (
     <Page>
       <PageHeader title={page.title} description={page.description} />
-      <div className="space-y-4">
+      <Stack gap={4} as="div">
         {page.opensAttention ? (
           <div>
             <Link
@@ -222,7 +224,7 @@ function ReviewDetail({
         ) : (
           <Notice tone="problem" message="The comparison did not finish." />
         )}
-      </div>
+      </Stack>
     </Page>
   );
 }

@@ -1,3 +1,27 @@
+import {
+  ContentHeader,
+  Form,
+  Grid,
+  Inset,
+  Stack,
+  Button,
+  DialogFooter,
+  PhoneSheetHeader,
+  Region,
+  EmptyState,
+  rowClassName,
+  TextField,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  CloseIcon,
+  SettingsIcon,
+  buttonClassName,
+  isTouchInput,
+  LoadingState,
+  Notice,
+  TemplateIcon,
+} from '@notesapp/ui';
+
 /**
  * The body of New note from template: the list and the details (issue 517,
  * item 3). `new-from-template.tsx` loads it when the dialog opens, so the
@@ -13,24 +37,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import {
-  Button,
-  DialogFooter,
-  PhoneSheetHeader,
-  ScrollRegion,
-  EmptyState,
-  rowClassName,
-  TextField,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  CloseIcon,
-  SettingsIcon,
-  buttonClassName,
-  isTouchInput,
-  LoadingState,
-  Notice,
-  TemplateIcon,
-} from '@notesapp/ui';
+
 import { useOpenSettings } from '../../shell/settings-modal.tsx';
 import { firstTemplate, lastTemplateKey } from '../../lib/last-template.ts';
 import { FolderField } from '../folders/folder-tree-picker.tsx';
@@ -255,8 +262,11 @@ export default function TemplateChoices({
     openSettings('templates');
   };
   return (
-    <form
-      className="flex min-h-0 flex-1 flex-col"
+    <Form
+      regions
+      gap={{ fine: 6, coarse: 0 }}
+
+      className="flex overflow-hidden flex-1 flex-col"
       onSubmit={(event) => {
         event.preventDefault();
         submit();
@@ -294,9 +304,9 @@ export default function TemplateChoices({
           }
         />
       </div>
-      <header
+      <ContentHeader
         data-scroll-edge="above"
-        className="ui-dialog-heading hidden shrink-0 items-center gap-2 lg:flex"
+        className="ui-dialog-heading hidden shrink-0 items-center lg:flex"
       >
         <span className="lg:hidden">
           <Button
@@ -336,14 +346,18 @@ export default function TemplateChoices({
             onClick={onClose}
           />
         </span>
-      </header>
-      <div className="ui-dialog-body min-h-0 flex-1 overflow-hidden">
-        <div className="grid h-full min-h-0 min-w-0 gap-4 lg:grid-cols-3">
-          <ScrollRegion
+      </ContentHeader>
+      <Inset
+        pad={{ fine: 0, coarse: 4 }}
+        className="ui-dialog-body flex-1 overflow-hidden"
+      >
+        <Grid gap={4} as="div" className="h-full min-w-0 lg:grid-cols-3">
+          <Region
+            gap={3}
             className={
               details
-                ? 'hidden min-h-0 min-w-0 flex-col lg:flex'
-                : 'flex min-h-0 min-w-0 flex-col'
+                ? 'hidden overflow-hidden min-w-0 flex-col lg:flex'
+                : 'flex overflow-hidden min-w-0 flex-col'
             }
           >
             {settings.status === 'loading' || files.loading ? (
@@ -425,9 +439,10 @@ export default function TemplateChoices({
                     No template matches "{search}".
                   </p>
                 ) : (
-                  <div
+                  <Inset
                     ref={listRef}
-                    className="flex min-h-0 flex-1 flex-col overflow-auto"
+                    as="div"
+                    className="flex flex-1 flex-col overflow-auto"
                     role="group"
                     aria-label="Templates"
                     onKeyDown={(event) => {
@@ -492,28 +507,28 @@ export default function TemplateChoices({
                         </span>
                       </button>
                     ))}
-                  </div>
+                  </Inset>
                 )}
               </>
             )}
-          </ScrollRegion>
-          <ScrollRegion
+          </Region>
+          <Region
+            gap={{ fine: 6, coarse: 4 }}
             className={
               details
-                ? 'flex min-h-0 min-w-0 flex-col overflow-y-auto lg:col-span-2'
-                : 'hidden min-h-0 min-w-0 flex-col overflow-y-auto lg:col-span-2 lg:flex'
+                ? 'flex overflow-hidden min-w-0 flex-col overflow-y-auto lg:col-span-2'
+                : 'hidden overflow-hidden min-w-0 flex-col overflow-y-auto lg:col-span-2 lg:flex'
             }
           >
             {selected === null ? (
               <p className="text-secondary text-muted">Choose a template</p>
             ) : (
               <>
-                <div className="grid min-w-0 shrink-0 gap-x-3 sm:grid-cols-2">
+                <Grid gap={3} className="min-w-0 shrink-0 sm:grid-cols-2">
                   <TextField
                     id="template-note-name"
                     label="Name"
                     value={name}
-                    reserveErrorSpace
                     error={
                       showProblem || (nameTouched && problem !== null)
                         ? (problem ?? undefined)
@@ -531,7 +546,7 @@ export default function TemplateChoices({
                     folders={folders}
                     onChange={setDestination}
                   />
-                </div>
+                </Grid>
                 {readyPreview === null ? (
                   <LoadingState shape="note" label="Loading preview" />
                 ) : readyPreview.text === null ? (
@@ -551,8 +566,10 @@ export default function TemplateChoices({
                     </Button>
                   </>
                 ) : (
-                  <section
-                    className="ui-form-following-group flex min-h-24 flex-1 flex-col"
+                  <Stack
+                    gap={2}
+                    as="section"
+                    className="ui-form-following-group flex flex-1 flex-col"
                     aria-label={`Preview of ${selectedLabel ?? ''}`}
                   >
                     <p className="ui-group-heading text-group text-muted">
@@ -579,19 +596,22 @@ export default function TemplateChoices({
                         />
                       </Suspense>
                     )}
-                  </section>
+                  </Stack>
                 )}
               </>
             )}
-          </ScrollRegion>
-        </div>
-      </div>
+          </Region>
+        </Grid>
+      </Inset>
       <div className={details ? 'shrink-0' : 'hidden shrink-0 lg:block'}>
         <DialogFooter>
           {selected === null ? null : (
-            <p className="m-0 mr-auto hidden self-center text-secondary text-muted lg:block">
+            <Inset
+              as="p"
+              className="hidden self-center text-secondary text-muted lg:block"
+            >
               Date and time are set when you create the note.
-            </p>
+            </Inset>
           )}
           <span className="hidden lg:inline-flex">
             <Button variant="ghost" onClick={onClose}>
@@ -609,6 +629,6 @@ export default function TemplateChoices({
           )}
         </DialogFooter>
       </div>
-    </form>
+    </Form>
   );
 }

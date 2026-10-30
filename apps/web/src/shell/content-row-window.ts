@@ -14,7 +14,6 @@ import {
 export function useContentRowWindow(
   keys: readonly string[],
   pinned: number | null,
-  kind: 'tree' | 'list' = 'tree',
 ): RowWindowControl {
   const listRef = useRef<HTMLElement | null>(null);
   const sizes = useRef(new Map<string, number>());
@@ -56,16 +55,11 @@ export function useContentRowWindow(
       sizes.current.clear();
       width.current = newWidth;
     }
-    const coarse = globalThis.window.matchMedia(
-      '(max-width: 1023px) and (pointer: coarse)',
-    ).matches;
-    estimate.current = coarse
-      ? 44
-      : parseFloat(
-          getComputedStyle(list).getPropertyValue(
-            kind === 'tree' ? '--ui-tree-height' : '--ui-list-height',
-          ),
-        ) || 28;
+    const sample =
+      list.querySelector('[data-ui-row]') ?? list.firstElementChild;
+    const sampleHeight = sample?.getBoundingClientRect().height ?? 0;
+    if (sampleHeight > 0) estimate.current = sampleHeight;
+    gap.current = parseFloat(getComputedStyle(list).rowGap) || 0;
     const oldOffsets = offsets();
     const listTop = () =>
       list.getBoundingClientRect().top -
@@ -78,8 +72,6 @@ export function useContentRowWindow(
       // Hidden or not-yet-laid-out rows do not replace a useful estimate.
       if (height > 0) {
         if (key !== undefined) sizes.current.set(key, height);
-        if (position > 0)
-          gap.current = parseFloat(getComputedStyle(element).marginTop) || 0;
       }
     }
     const measured = offsets();
@@ -96,11 +88,13 @@ export function useContentRowWindow(
     );
     setWindow((current) => (sameRowWindow(current, next) ? current : next));
     // Refs hold the current order and measurements across scroll events.
-  }, [kind]);
+  }, []);
 
   useLayoutEffect(() => {
     const list = listRef.current;
     if (!list) return;
+    list.dataset.windowBefore = String(kept.before);
+    list.dataset.windowAfter = String(kept.after);
     list.style.paddingTop = `${kept.before}px`;
     list.style.paddingBottom = `${kept.after}px`;
     update();

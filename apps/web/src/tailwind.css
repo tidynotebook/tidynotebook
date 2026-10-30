@@ -1,4 +1,6 @@
-@import '../../../packages/ui/src/spacing.css';
+@layer theme, base, components, utilities;
+@custom-variant coarse (@media (pointer: coarse));
+@custom-variant fine (@media (pointer: fine));
 @import 'tailwindcss';
 @source "../../../packages/ui/src";
 @source "../../../packages/editor/src";
@@ -145,29 +147,6 @@
    */
   --spacing-viewport: var(--viewport-height, 100dvh);
 
-  /*
-   * The layout scale. Four named steps decide every distance that a person
-   * reads as structure, so no screen picks its own number.
-   *
-   * `gutter` is the distance from the edge of the screen to the content of
-   * the page, and `gutter-wide` is the same distance from the small width up.
-   * `cluster` separates two controls that belong together, for example a
-   * button and the button next to it in one toolbar. `group` separates two
-   * things that do not belong together, for example the product mark and the
-   * search field of the header.
-   *
-   * A distance inside one control, such as an icon and the word next to it,
-   * stays on the numeric scale. It is not structure that a person reads, so
-   * it needs no name.
-   *
-   * `packages/ui/src/layout.tsx` holds the one class string of the gutter and
-   * every page frame reads it from there.
-   */
-  --spacing-gutter: calc(var(--spacing) * 4);
-  --spacing-gutter-wide: calc(var(--spacing) * 6);
-  --spacing-cluster: calc(var(--spacing) * 2);
-  --spacing-group: calc(var(--spacing) * 3);
-
   --text-page: 1.125rem;
   --text-page--line-height: 1.625rem;
   --text-header: 0.875rem;
@@ -211,7 +190,7 @@
    */
   --shadow-raised: 0 1px 2px
     color-mix(in srgb, var(--notes-scrim, #000000) 10%, transparent);
-  --shadow-overlay:
+  --depth-overlay:
     0 2px 4px color-mix(in srgb, var(--notes-scrim, #000000) 10%, transparent),
     0 8px 20px color-mix(in srgb, var(--notes-scrim, #000000) 18%, transparent);
   --shadow-modal:
@@ -317,65 +296,61 @@
 }
 
 /* Shared UI text roles. packages/ui/src/typography.ts names the contract. */
-@utility text-title-page {
-  font-size: var(--text-page);
-  line-height: var(--text-page--line-height);
-  font-weight: 600;
+@theme inline {
+  --text-title-page: var(--text-page);
+  --text-title-page--line-height: var(--text-page--line-height);
+  --text-title-page--font-weight: 600;
 }
-@utility text-title-header {
-  font-size: var(--text-header);
-  line-height: var(--text-header--line-height);
-  font-weight: 600;
+@theme inline {
+  --text-title-header: var(--text-header);
+  --text-title-header--line-height: var(--text-header--line-height);
+  --text-title-header--font-weight: 600;
 }
-@utility text-body {
-  font-size: var(--text-ui);
-  line-height: var(--text-ui--line-height);
-  font-weight: 400;
+@theme inline {
+  --text-body: var(--text-ui);
+  --text-body--line-height: var(--text-ui--line-height);
+  --text-body--font-weight: 400;
 }
-@utility text-label {
-  font-size: var(--text-control);
-  line-height: var(--text-control--line-height);
-  font-weight: 500;
+@theme inline {
+  --text-label: var(--text-control);
+  --text-label--line-height: var(--text-control--line-height);
+  --text-label--font-weight: 500;
 }
-@utility text-value {
-  font-size: var(--text-ui);
-  line-height: var(--text-ui--line-height);
-  font-weight: 400;
+@theme inline {
+  --text-value: var(--text-ui);
+  --text-value--line-height: var(--text-ui--line-height);
+  --text-value--font-weight: 400;
 }
-@utility text-secondary {
-  font-size: var(--text-help);
-  line-height: var(--text-help--line-height);
-  font-weight: 400;
+@theme inline {
+  --text-secondary: var(--text-help);
+  --text-secondary--line-height: var(--text-help--line-height);
+  --text-secondary--font-weight: 400;
 }
-@utility text-group {
-  font-size: var(--text-group);
-  line-height: var(--text-group--line-height);
-  font-weight: 600;
+@theme static {
+  --text-group--font-weight: 600;
 }
-@utility text-small {
-  font-size: var(--text-kbd);
-  line-height: var(--text-kbd--line-height);
-  font-weight: 400;
+@theme inline {
+  --text-small: var(--text-kbd);
+  --text-small--line-height: var(--text-kbd--line-height);
+  --text-small--font-weight: 400;
 }
-@utility text-avatar {
-  font-size: var(--text-kbd);
-  line-height: var(--text-kbd--line-height);
-  font-weight: 600;
+@theme inline {
+  --text-avatar: var(--text-kbd);
+  --text-avatar--line-height: var(--text-kbd--line-height);
+  --text-avatar--font-weight: 600;
 }
-@utility text-preview-body {
-  font-size: var(--text-preview);
-  line-height: var(--text-preview--line-height);
-  font-weight: 400;
+@theme inline {
+  --text-preview-body: var(--text-preview);
+  --text-preview-body--line-height: var(--text-preview--line-height);
+  --text-preview-body--font-weight: 400;
 }
-@utility text-preview-first {
-  font-size: var(--text-preview-first);
-  line-height: var(--text-preview-first--line-height);
-  font-weight: 600;
+@theme static {
+  --text-preview-first--font-weight: 600;
 }
-@utility text-preview-heading {
-  font-size: var(--text-preview);
-  line-height: var(--text-preview--line-height);
-  font-weight: 600;
+@theme inline {
+  --text-preview-heading: var(--text-preview);
+  --text-preview-heading--line-height: var(--text-preview--line-height);
+  --text-preview-heading--font-weight: 600;
 }
 
 /*
@@ -451,109 +426,39 @@
   --color-syntax-punctuation: var(--notes-syntax-punctuation, #b8b6b1);
 }
 
-/* Public navigation shared by app, docs, and static documents. */
-
-.public-footer {
-  margin-top: 64px;
-  border-top: 1px solid var(--notes-border-subtle);
-  padding: 32px 0 16px;
-}
-.public-footer-grid {
-  display: grid;
-  grid-template-columns: 1.5fr repeat(4, minmax(0, 1fr));
-  gap: 24px;
-}
-.public-footer h2 {
-  margin: 0 0 12px;
-  font-size: var(--text-help);
-  line-height: var(--text-help--line-height);
-  font-weight: 600;
-  color: var(--notes-text-strong);
-}
-.public-footer nav a {
-  display: block;
-  padding: 4px 0;
-  font-size: var(--text-control);
-  line-height: var(--text-control--line-height);
-  color: var(--notes-text-muted);
-  text-decoration: none;
-}
-.public-footer a:hover {
-  text-decoration: underline;
-}
-.public-footer a:focus-visible {
-  outline: 2px solid var(--notes-focus);
-  outline-offset: 4px;
-  border-radius: 4px;
-}
-.public-footer-wordmark {
-  align-items: center;
-  text-decoration: none;
-  color: var(--notes-text-strong);
-  font-weight: 600;
-  display: inline-flex;
-  padding: 0;
-  gap: 8px;
-  font-size: var(--text-ui);
-  line-height: var(--text-ui--line-height);
-}
-.public-footer-brand p {
-  margin: 12px 0 0;
-  font-size: var(--text-help);
-  line-height: var(--text-help--line-height);
-  color: var(--notes-text-muted);
-}
-@media (max-width: 700px) {
-  .public-footer {
-    margin-top: 48px;
-    padding-top: 24px;
-  }
-  .public-footer-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .public-footer-brand {
-    grid-column: 1/-1;
-  }
-}
-
-@utility phone-sheet {
-  &:not([data-sheet-ready]) {
-    opacity: 0;
-  }
-  & > form {
-    display: flex;
-    flex: 1;
-    min-height: 0;
-    flex-direction: column;
-    overflow: hidden;
-  }
-}
-
-@utility phone-sheet-fill {
-  & [role='tree'] {
-    max-height: none;
-  }
-}
-
 /* Overlay depth follows appearance, including imported dark themes. */
 [data-theme='dark'] {
-  --shadow-overlay:
+  --depth-overlay:
     0 2px 4px color-mix(in srgb, var(--notes-scrim, #000000) 40%, transparent),
     0 12px 32px color-mix(in srgb, var(--notes-scrim, #000000) 55%, transparent);
 }
-@layer utilities {
-  /* Tailwind expands its shadow recipe. Read the live token on dark overlays. */
-  [data-theme='dark'] .shadow-overlay {
-    box-shadow: var(--shadow-overlay);
-  }
-}
 
-/* Scroll edges use the active appearance, including custom themes. */
-:root {
-  --ui-scroll-shadow-color: rgb(0 0 0 / 0.35);
-  --ui-scroll-shadow-down: 0 6px 10px -6px var(--ui-scroll-shadow-color);
-  --ui-scroll-shadow-up: 0 -6px 10px -6px var(--ui-scroll-shadow-color);
+@theme inline {
+  --color-page: var(--notes-bg, #191919);
+  --color-panel: var(--notes-surface, #141414);
+}
+@theme static {
+  --depth-edge-top: 0 -6px 10px -6px rgb(0 0 0 / 0.35);
+  --depth-edge-bottom: 0 6px 10px -6px rgb(0 0 0 / 0.35);
+  --transition-duration-120: 120ms;
 }
 [data-theme='dark'] {
-  --ui-scroll-shadow-color: rgb(0 0 0 / 0.7);
+  --depth-edge-top: 0 -6px 10px -6px rgb(0 0 0 / 0.7);
+  --depth-edge-bottom: 0 6px 10px -6px rgb(0 0 0 / 0.7);
+}
+@theme static {
+  --container-page: 45rem;
+  --spacing-drawer: min(calc(100vw - 3.5rem), 20rem);
+  --spacing-safe: env(safe-area-inset-bottom, 0px);
+  --grid-template-columns-sidebar-narrow: 17rem minmax(0, 1fr);
+  --grid-template-columns-sidebar-medium: 19rem minmax(0, 1fr);
+  --grid-template-columns-sidebar-wide: 21rem minmax(0, 1fr);
+  --grid-template-columns-sidebar-widest: 23rem minmax(0, 1fr);
+  --grid-template-rows-sidebar: auto minmax(0, 1fr) auto;
+}
+
+@theme inline static {
+  --shadow-overlay: var(--depth-overlay);
+  --shadow-edge-top: var(--depth-edge-top);
+  --shadow-edge-bottom: var(--depth-edge-bottom);
 }

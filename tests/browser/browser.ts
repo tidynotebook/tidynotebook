@@ -5,6 +5,7 @@ export type Locator = {
     animations?: 'disabled';
   }): Promise<unknown>;
   click(): Promise<void>;
+  focus(): Promise<void>;
   fill(value: string): Promise<void>;
   press(key: string): Promise<void>;
   waitFor(): Promise<void>;
@@ -104,4 +105,37 @@ export function hasChromium(value: unknown): value is { chromium: Chromium } {
 /** Accept object data only after JSON validation. */
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/** Read local compiled assets during source checks, before the one image build. */
+export async function routeAuditAssets(context: Context): Promise<void> {
+  const assets = process.env.UI_AUDIT_ASSETS;
+  if (!assets) return;
+  const { resolve, extname } = await import('node:path'),
+    { existsSync, readFileSync } = await import('node:fs');
+  await context.route('**/*', async (route) => {
+    const request = route.request(),
+      url = new URL(request.url());
+    if (url.pathname.startsWith('/api/'))
+      return route.fulfill({ response: await route.fetch() });
+    if (request.method() !== 'GET') return route.continue();
+    const path = resolve(
+      assets,
+      request.isNavigationRequest() ? 'index.html' : `.${url.pathname}`,
+    );
+    if (!path.startsWith(resolve(assets) + '/') || !existsSync(path))
+      return route.continue();
+    const types: Record<string, string> = {
+      '.html': 'text/html',
+      '.css': 'text/css',
+      '.js': 'text/javascript',
+      '.woff2': 'font/woff2',
+      '.svg': 'image/svg+xml',
+      '.png': 'image/png',
+    };
+    return route.fulfill({
+      body: readFileSync(path),
+      contentType: types[extname(path)] ?? 'application/octet-stream',
+    });
+  });
 }

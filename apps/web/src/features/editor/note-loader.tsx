@@ -1,3 +1,12 @@
+import {
+  Inline,
+  Inset,
+  LoadingState,
+  Button,
+  Notice,
+  PageHeader,
+  PageRegion,
+} from '@notesapp/ui';
 /**
  * The read that puts one note on the screen, and the states that are not one.
  *
@@ -31,14 +40,7 @@ import { getFile, listDeletedFiles } from '@notesapp/api-client';
 import type { LocalFileSummary, LocalStore } from '@notesapp/sync';
 import type { LinkTarget } from '@notesapp/editor';
 import { classifyUrl } from '@notesapp/markdown';
-import {
-  LoadingState,
-  Button,
-  Notice,
-  pageGutter,
-  PageHeader,
-  PageRegion,
-} from '@notesapp/ui';
+
 import { problemMessage } from '../../app.tsx';
 import {
   blockedLinkNotice,
@@ -445,10 +447,10 @@ export function NoteEditorLoader({
     return (
       <PageRegion>
         <PageHeader title="Can't open this note" description={status.message} />
-        <div className="flex flex-wrap gap-2">
+        <Inline gap={2} wrap as="div">
           <Button onClick={readAgain}>Try again</Button>
           <AllNotesAction workspaceId={workspaceId} />
-        </div>
+        </Inline>
       </PageRegion>
     );
   if (store === null)
@@ -458,9 +460,13 @@ export function NoteEditorLoader({
         <p className="text-secondary text-danger" role="alert">
           Editing is unavailable on this device. You can read the saved text.
         </p>
-        <pre className="overflow-x-auto rounded-lg border border-edge-subtle bg-card p-3 text-body">
+        <Inset
+          pad={3}
+          as="pre"
+          className="overflow-x-auto rounded-lg border border-edge-subtle bg-card text-body"
+        >
           {status.text}
-        </pre>
+        </Inset>
       </PageRegion>
     );
 
@@ -482,15 +488,15 @@ export function NoteEditorLoader({
 
   const activeStore = store;
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <Inset as="div" className="flex h-full flex-col">
       {linkNotice === '' ? null : (
-        <div className={`${pageGutter} pt-4`}>
+        <Inset pad={{ fine: 6, coarse: 4 }}>
           <Notice
             tone="info"
             message={linkNotice}
             onDismiss={() => setLinkNotice('')}
           />
-        </div>
+        </Inset>
       )}
       <NoteEditor
         // The revision decides the instance, and not the count of the reads.
@@ -560,6 +566,6 @@ export function NoteEditorLoader({
             setLinkNotice(blockedLinkNotice);
         }}
       />
-    </div>
+    </Inset>
   );
 }

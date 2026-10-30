@@ -17,25 +17,12 @@ and declared in `apps/web/src/tailwind.css`, the only file that may declare a
 face. No module or document names a family, and the diagram frame carries
 that stylesheet and its faces inside it. Record 0061.
 
-## The type steps
+## Type and composition
 
-Use the text roles in `packages/ui/src/typography.ts` and the application stylesheet.
-
-| Role                    | Class                       | Touch size / line / weight |
-| ----------------------- | --------------------------- | -------------------------- |
-| Page title              | `text-title-page`           | 20 / 28 / 600              |
-| Header or section title | `text-title-header`         | 16 / 24 / 600              |
-| Body                    | `text-body`                 | 16 / 24 / 400              |
-| Field label or button   | `text-label`                | 16 / 24 / 500              |
-| Setting value, muted    | `text-value`                | 16 / 24 / 400              |
-| Help or metadata, muted | `text-secondary`            | 14 / 20 / 400              |
-| Group heading, muted    | `text-group`                | 14 / 20 / 600              |
-| Key hint or avatar      | `text-small`, `text-avatar` | 11 / 16 / 400 or 600       |
-
-Touch previews use `text-preview-body` (14/20/400), `text-title-header` for the
-first heading, and `text-preview-heading` (14/20/600) for other headings. Fine
-pointers keep compact steps. Note text keeps `text-note`. Do not override role
-weights or line heights. Errors and danger groups use danger colour.
+Follow the [design system](design-system.md) for type roles, spacing,
+containers and controls. `packages/ui/src/typography.ts` names the type
+roles. `apps/web/src/tailwind.css` owns their values for each pointer density.
+Note text keeps its document scale. Errors and danger groups use danger colour.
 
 ## The planes and the edges
 
@@ -51,17 +38,9 @@ count. Separate everything else with space or fill.
 
 ## Elevation, radius and space
 
-Elevation is `shadow-raised`, `shadow-overlay` and `shadow-modal`, from the
-scrim of the palette (record 0052). A raised surface is `bg-card`,
-`edge-subtle` and one step. Radius: `rounded-sm` for a keyboard hint, a task box
-and a meter, `rounded-md` for a control and a row, `rounded-lg` for a card, a
-menu, a toast and a code block, `rounded-xl` for a dialog, `rounded-full` for an
-avatar alone.
-
-Space comes from the named steps `gutter`, `gutter-wide`, `cluster` and
-`group`, plus the numeric scale inside one control. `pageGutter` in
-`packages/ui/src/layout.tsx` is the one distance from the screen edge to the
-content. The [page layouts](layouts.md) define the three page families.
+Follow the [design system](design-system.md). Raised surfaces and scroll
+edges use the central theme roles. Compose the shared containers and controls
+instead of adding spacing or depth in a feature.
 
 ## Controls
 
@@ -71,12 +50,11 @@ Every control reads `packages/ui/src/control-classes.ts` (record 0065).
   `secondary` is every other button, `bg-card` with `edge-line` and
   `shadow-raised`. `ghost` is an icon only action and a Cancel. `danger` is a
   destructive confirmation, and a quiet button that starts one takes the
-  danger tone from the recipe. `md` is 32 px, `sm` is 28 px, and `compact`
-  keeps the touch target and draws a smaller surface inside it. A disabled
+  danger tone from the recipe. Use the default or compact size role. A disabled
   button is `text-muted`, a filled one on `bg-hover`, and nothing fades.
 - `rowClassName`: every clickable row, in the tree, a list, a menu, the palette
-  and the sidebar footer. 28 px on a desktop, `rounded-md`, `hover:bg-hover`.
-  The open or chosen row is `bg-active text-strong font-medium`. No ring. A row
+  and the sidebar. Use the density of `ListRow`. A current navigation row
+  uses its active state. A single-choice menu uses a check mark. A row
   that destroys something takes the danger tone from the recipe and never a
   colour class of its own (record 0065).
 - `fieldClassName`: a text field, a select and a read only field. 32 px,

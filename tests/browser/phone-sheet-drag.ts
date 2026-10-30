@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as pause } from 'node:timers/promises';
-import { hasChromium, isRecord } from './browser.ts';
+import { routeAuditAssets, hasChromium, isRecord } from './browser.ts';
 const loaded: unknown = await import(
   pathToFileURL(
     process.env.PLAYWRIGHT_MODULE ??
@@ -31,6 +31,8 @@ try {
           colorScheme: scheme,
           reducedMotion: reduced ? 'reduce' : 'no-preference',
         });
+        await routeAuditAssets(c);
+
         await c.addInitScript(
           (s) => localStorage.setItem('notesapp.theme', s),
           scheme,
@@ -180,6 +182,7 @@ try {
         await closed();
         results.push(`${kind} ${reduced}: flick closes and returns focus`);
         if (kind === 'Settings') {
+          await p.setViewportSize({ width: 390, height: 420 });
           await open();
           const before = await p.evaluate(() => {
             const body = document.querySelector<HTMLElement>(

@@ -17,7 +17,7 @@ await test('a frame notice leaves the note on the screen', () => {
   assert.ok(frameNoticeRowClassName().split(' ').includes('shrink-0'));
   const note = noteScreenClassName().split(' ');
   assert.ok(note.includes('flex-1'));
-  assert.ok(note.includes('min-h-0'));
+  assert.ok(note.includes('overflow-hidden'));
   assert.ok(!note.includes('h-full'));
 });
 

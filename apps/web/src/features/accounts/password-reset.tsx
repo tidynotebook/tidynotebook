@@ -1,3 +1,14 @@
+import {
+  Form,
+  Inset,
+  Stack,
+  Button,
+  buttonClassName,
+  Checkbox,
+  Notice,
+  TextField,
+} from '@notesapp/ui';
+
 /**
  * The pages of a password reset (record 0141).
  *
@@ -12,13 +23,7 @@
 import { useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router';
 import { requestPasswordReset, resetPassword } from '@notesapp/api-client';
-import {
-  Button,
-  buttonClassName,
-  Checkbox,
-  Notice,
-  TextField,
-} from '@notesapp/ui';
+
 import { problemMessage, useSession } from '../../app.tsx';
 import { forgotPasswordRoute, resetTokenOf } from '../../lib/accounts.ts';
 import { problemCode } from '../../lib/problem-text.ts';
@@ -55,11 +60,11 @@ export function ForgotPasswordPage(): ReactNode {
   if (sentTo !== null)
     return (
       <AuthFrame title="Open the link in your mail">
-        <p className="mb-6 mt-0 text-secondary text-muted">
+        <Inset as="p" className="text-secondary text-muted">
           If {sentTo} has an account, a message with a link goes to it. Open the
           link within 1 hour to choose a new password. If no message comes, look
           in your spam folder, or ask again in a few minutes.
-        </p>
+        </Inset>
         <Link className={buttonClassName({ variant: 'secondary' })} to="/login">
           Go to sign in
         </Link>
@@ -68,11 +73,11 @@ export function ForgotPasswordPage(): ReactNode {
 
   return (
     <AuthFrame title="Reset your password">
-      <p className="mb-6 mt-0 text-secondary text-muted">
+      <Inset as="p" className="text-secondary text-muted">
         Enter the address of your account. A link to choose a new password goes
         to it.
-      </p>
-      <form
+      </Inset>
+      <Form
         onSubmit={(event): void => {
           event.preventDefault();
           void submit();
@@ -88,15 +93,13 @@ export function ForgotPasswordPage(): ReactNode {
           autoFocus
           onChange={setEmail}
         />
-        {error === '' ? null : (
-          <Notice className="mb-4" tone="problem" message={error} />
-        )}
+        {error === '' ? null : <Notice tone="problem" message={error} />}
         <Button type="submit" disabled={busy} className="w-full">
           {busy ? 'Sending the link' : 'Send link'}
         </Button>
-      </form>
+      </Form>
       <Link
-        className={`mt-3 w-full ${buttonClassName({ variant: 'ghost' })}`}
+        className={`w-full ${buttonClassName({ variant: 'ghost' })}`}
         to="/login"
       >
         Back to sign in
@@ -159,10 +162,10 @@ export function ResetPasswordPage(): ReactNode {
   if (done)
     return (
       <AuthFrame title="Your password changed">
-        <p className="mb-6 mt-0 text-secondary text-muted">
+        <Inset as="p" className="text-secondary text-muted">
           Every device that was signed in is signed out. Sign in with your new
           password.
-        </p>
+        </Inset>
         <Link
           className={buttonClassName({ variant: 'primary' })}
           to="/login"
@@ -184,7 +187,7 @@ export function ResetPasswordPage(): ReactNode {
   if (expired)
     return (
       <AuthFrame title="Choose a new password">
-        <div className="mt-4 space-y-3">
+        <Stack gap={3} as="div">
           <Notice tone="problem" message={invalidLink} />
           <Link
             className={buttonClassName({ variant: 'secondary' })}
@@ -192,17 +195,17 @@ export function ResetPasswordPage(): ReactNode {
           >
             Ask for a new link
           </Link>
-        </div>
+        </Stack>
       </AuthFrame>
     );
 
   return (
     <AuthFrame title="Choose a new password">
-      <p className="mb-6 mt-0 text-secondary text-muted">
+      <Inset as="p" className="text-secondary text-muted">
         Choose a new password for your account. Every device that is signed in
         then signs out.
-      </p>
-      <form
+      </Inset>
+      <Form
         onSubmit={(event): void => {
           event.preventDefault();
           void submit();
@@ -229,21 +232,19 @@ export function ResetPasswordPage(): ReactNode {
           required
           onChange={setConfirmation}
         />
-        <div className="mb-4">
+        <Inset as="div">
           <Checkbox
             id="reset-reveal"
             label="Show the password"
             checked={reveal}
             onChange={setReveal}
           />
-        </div>
-        {error === '' ? null : (
-          <Notice className="mb-4" tone="problem" message={error} />
-        )}
+        </Inset>
+        {error === '' ? null : <Notice tone="problem" message={error} />}
         <Button type="submit" disabled={busy} className="w-full">
           {busy ? 'Saving your password' : 'Save password'}
         </Button>
-      </form>
+      </Form>
     </AuthFrame>
   );
 }

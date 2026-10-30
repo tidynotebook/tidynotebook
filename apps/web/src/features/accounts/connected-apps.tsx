@@ -1,11 +1,7 @@
-import { SettingsDialog } from './settings-dialog.tsx';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
-  listConnectedApps,
-  revokeConnectedApp,
-  type ConnectedApp,
-} from '@notesapp/api-client';
-import {
+  Inset,
+  Stack,
+  RowCopy,
   Button,
   DialogBody,
   DialogFooter,
@@ -14,6 +10,15 @@ import {
   Notice,
   focusOutline,
 } from '@notesapp/ui';
+
+import { SettingsDialog } from './settings-dialog.tsx';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  listConnectedApps,
+  revokeConnectedApp,
+  type ConnectedApp,
+} from '@notesapp/api-client';
+
 import { problemMessage } from '../../app.tsx';
 import {
   connectedAppFacts,
@@ -74,17 +79,22 @@ export function ConnectedAppSettings(): ReactNode {
             </Button>
           )
         ) : apps.length === 0 ? (
-          <p className="ui-settings-empty m-0 text-secondary text-muted">
+          <Inset
+            padY={3}
+            padX={{ fine: 0, coarse: 4 }}
+            as="p"
+            className="text-secondary text-muted"
+          >
             No connected apps. Connect an app from its settings.
-          </p>
+          </Inset>
         ) : (
-          <ul className="ui-settings-items">
+          <Stack gap={0} pad={0} as="ul">
             {apps.map((app) => (
               <ListRow
                 key={app.grantId}
-                className="flex items-center justify-between gap-4"
+                className="flex items-center justify-between"
               >
-                <div className="ui-settings-copy">
+                <RowCopy>
                   <p className="m-0 break-words text-body text-strong">
                     Name claimed by app: {connectedAppName(app)}
                   </p>
@@ -95,15 +105,18 @@ export function ConnectedAppSettings(): ReactNode {
                     </p>
                   ) : (
                     <>
-                      <p className="mb-0 mt-1 break-words text-secondary text-muted">
+                      <Inset
+                        as="p"
+                        className="break-words text-secondary text-muted"
+                      >
                         {connectedAppIdentity(app)}
-                      </p>
-                      <p className="mb-0 mt-1 text-secondary text-muted">
+                      </Inset>
+                      <Inset as="p" className="text-secondary text-muted">
                         {connectedAppFacts(app, now)}
-                      </p>
+                      </Inset>
                     </>
                   )}
-                </div>
+                </RowCopy>
                 <Button
                   variant="secondary"
                   tone="danger"
@@ -119,7 +132,7 @@ export function ConnectedAppSettings(): ReactNode {
                 </Button>
               </ListRow>
             ))}
-          </ul>
+          </Stack>
         )}
       </div>
       {revoking === null ? null : (
@@ -200,9 +213,7 @@ function RevokeAppDialog({
         <p className="m-0 text-body text-strong">
           {connectedAppRevokeText(connectedAppName(app))}
         </p>
-        {error === '' ? null : (
-          <Notice className="mt-3" tone="problem" message={error} />
-        )}
+        {error === '' ? null : <Notice tone="problem" message={error} />}
       </DialogBody>
       <DialogFooter>
         <Button variant="ghost" onClick={onClose}>

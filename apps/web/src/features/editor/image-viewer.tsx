@@ -1,3 +1,18 @@
+import {
+  CanvasImage,
+  Inline,
+  Inset,
+  Button,
+  buttonClassName,
+  CloseIcon,
+  CopyIcon,
+  Dialog,
+  DownloadIcon,
+  ArrowRightIcon,
+  ZoomInIcon,
+  ZoomOutIcon,
+} from '@notesapp/ui';
+
 /**
  * The image viewer of a note (record 0145).
  *
@@ -25,17 +40,7 @@ import {
   type ReactNode,
 } from 'react';
 import type { ImageOpenRequest } from '@notesapp/editor';
-import {
-  Button,
-  buttonClassName,
-  CloseIcon,
-  CopyIcon,
-  Dialog,
-  DownloadIcon,
-  ArrowRightIcon,
-  ZoomInIcon,
-  ZoomOutIcon,
-} from '@notesapp/ui';
+
 import {
   actionNeedsPicture,
   closesOnRelease,
@@ -336,18 +341,22 @@ function ImageViewerBody({
 
   return (
     <div className="relative h-full w-full" onKeyDown={onKeyDown}>
-      <div
+      <Inline
+        as="div"
+        pad={6}
         ref={scrollerRef}
-        className={`flex h-full w-full overflow-auto overscroll-contain p-6 ${overflows ? 'cursor-grab active:cursor-grabbing' : ''}`}
+        align="safe-center"
+        justify="safe-center"
+        className={`flex h-full w-full overflow-auto overscroll-contain ${overflows ? 'cursor-grab active:cursor-grabbing' : ''}`}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={endPress}
       >
         {failed ? null : (
-          <img
+          <CanvasImage
             ref={pictureRef}
-            className={`m-auto max-w-none shrink-0 select-none ${size === null ? 'invisible' : ''}`}
+            className={`max-w-none shrink-0 select-none ${size === null ? 'invisible' : ''}`}
             src={image.url}
             alt={image.alt}
             width={size?.width}
@@ -366,110 +375,129 @@ function ImageViewerBody({
             }}
           />
         )}
-      </div>
+      </Inline>
       {/*
         The one bar of tools floats over the picture. It is a raised surface,
         so it reads on a light picture and on a dark one alike.
       */}
-      <div className="absolute inset-x-3 top-3 mx-auto flex w-fit max-w-full flex-wrap items-center justify-center gap-1 rounded-lg border border-edge-subtle bg-card p-1 text-strong shadow-overlay">
-        <p className="m-0 hidden max-w-xs truncate px-2 text-label md:block">
-          {imageTitle(image.alt)}
-        </p>
-        <Button
-          variant="ghost"
-          size="sm"
-          label="Zoom out"
-          icon={<ZoomOutIcon />}
-          disabled={idle || scale <= lowest}
-          onClick={() => {
-            zoomTo(zoomOut(scale, lowest));
-          }}
-        />
-        <span className="w-12 text-center text-secondary tabular-nums text-muted">
-          {idle ? '' : zoomPercent(scale)}
-        </span>
-        <Button
-          variant="ghost"
-          size="sm"
-          label="Zoom in"
-          icon={<ZoomInIcon />}
-          disabled={idle || scale >= zoomLimits.max}
-          onClick={() => {
-            zoomTo(zoomIn(scale));
-          }}
-        />
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={idle || zoom.kind === 'fit'}
-          onClick={() => {
-            setZoom(fit);
-          }}
+      <div className="absolute inset-x-3 top-3 flex justify-center">
+        <Inline
+          gap={1}
+          pad={1}
+          wrap
+          align="center"
+          justify="center"
+          as="div"
+          className="w-fit max-w-full rounded-lg border border-edge-subtle bg-card text-strong shadow-overlay"
         >
-          Fit
-        </Button>
-        {imageActions(image.external).map((action) =>
-          action === 'open' ? (
-            <a
-              key={action}
-              className={buttonClassName({
-                variant: 'ghost',
-                size: 'sm',
-                iconOnly: true,
-              })}
-              href={image.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              referrerPolicy="no-referrer"
-              aria-label={imageActionLabels[action]}
-              title={imageActionLabels[action]}
-            >
-              {actionIcon(action)}
-            </a>
-          ) : (
-            <Button
-              key={action}
-              variant="ghost"
-              size="sm"
-              label={imageActionLabels[action]}
-              icon={actionIcon(action)}
-              disabled={actionNeedsPicture(action) && idle}
-              onClick={() => {
-                run(action);
-              }}
-            />
-          ),
-        )}
-        {image.remove === undefined ? null : (
+          <Inset
+            padX={2}
+            as="p"
+            className="hidden max-w-xs truncate text-label md:block"
+          >
+            {imageTitle(image.alt)}
+          </Inset>
           <Button
             variant="ghost"
             size="sm"
+            label="Zoom out"
+            icon={<ZoomOutIcon />}
+            disabled={idle || scale <= lowest}
             onClick={() => {
-              if (image.remove?.() === true) {
-                onRemoved?.();
-                onClose();
-              } else setMessage('This image changed. Open it again.');
+              zoomTo(zoomOut(scale, lowest));
+            }}
+          />
+          <span className="w-12 text-center text-secondary tabular-nums text-muted">
+            {idle ? '' : zoomPercent(scale)}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            label="Zoom in"
+            icon={<ZoomInIcon />}
+            disabled={idle || scale >= zoomLimits.max}
+            onClick={() => {
+              zoomTo(zoomIn(scale));
+            }}
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={idle || zoom.kind === 'fit'}
+            onClick={() => {
+              setZoom(fit);
             }}
           >
-            Remove
+            Fit
           </Button>
-        )}
-        <Button
-          variant="ghost"
-          size="sm"
-          label="Close"
-          icon={<CloseIcon />}
-          onClick={onClose}
-        />
+          {imageActions(image.external).map((action) =>
+            action === 'open' ? (
+              <a
+                key={action}
+                className={buttonClassName({
+                  variant: 'ghost',
+                  size: 'sm',
+                  iconOnly: true,
+                })}
+                href={image.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                referrerPolicy="no-referrer"
+                aria-label={imageActionLabels[action]}
+                title={imageActionLabels[action]}
+              >
+                {actionIcon(action)}
+              </a>
+            ) : (
+              <Button
+                key={action}
+                variant="ghost"
+                size="sm"
+                label={imageActionLabels[action]}
+                icon={actionIcon(action)}
+                disabled={actionNeedsPicture(action) && idle}
+                onClick={() => {
+                  run(action);
+                }}
+              />
+            ),
+          )}
+          {image.remove === undefined ? null : (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                if (image.remove?.() === true) {
+                  onRemoved?.();
+                  onClose();
+                } else setMessage('This image changed. Open it again.');
+              }}
+            >
+              Remove
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            label="Close"
+            icon={<CloseIcon />}
+            onClick={onClose}
+          />
+        </Inline>
       </div>
       <div
         className="pointer-events-none absolute inset-x-3 bottom-4 flex justify-center"
         role="status"
       >
         {status === '' ? null : (
-          <p className="m-0 rounded-lg border border-edge-subtle bg-card px-3 py-2 text-body text-strong shadow-overlay">
+          <Inset
+            padX={3}
+            padY={2}
+            as="p"
+            className="rounded-lg border border-edge-subtle bg-card text-body text-strong shadow-overlay"
+          >
             {status}
-          </p>
+          </Inset>
         )}
       </div>
     </div>

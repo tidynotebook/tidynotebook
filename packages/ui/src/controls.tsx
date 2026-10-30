@@ -1,3 +1,6 @@
+import { Stack, Inline, Inset } from './primitives.tsx';
+import { ListRow } from './layout.tsx';
+import { Pill } from './section-heading.tsx';
 import {
   useSettingsSurface,
   useSettingsRowActions,
@@ -13,21 +16,28 @@ import { WrapText } from './inline-text.tsx';
  * the distances inside itself.
  */
 import { isTouchInput } from './input-focus.ts';
-import { useEffect, useRef, useId, type ReactNode, type Ref } from 'react';
 import {
-  badgeClassName,
+  useEffect,
+  useRef,
+  useId,
+  type ReactNode,
+  type Ref,
+  type ComponentProps,
+  type MouseEventHandler,
+} from 'react';
+import {
   buttonClassName,
+  compactButtonVisualClassName,
   buttonName,
   checkboxClassNames,
-  compactButtonVisualClassName,
   fieldClassName,
   meterAlmostFull,
   meterFillPercent,
   meterClassNames,
-  selectClassName,
   switchClassNames,
   textAreaClassName,
   type ButtonSize,
+  type IconSize,
   type ButtonTone,
   type ButtonVariant,
 } from './control-classes.ts';
@@ -53,12 +63,16 @@ export function Meter({
   const percent = meterFillPercent(value, max);
   const words = meterAlmostFull(value, max) ? `${text}. Almost full` : text;
   return (
-    <div className={settings ? 'ui-settings-storage-row' : undefined}>
+    <Stack
+      gap={2}
+      padY={settings ? 3 : 0}
+      padX={settings ? { fine: 0, coarse: 4 } : 0}
+    >
       {settings ? (
-        <div className="ui-settings-storage-line">
+        <Inline gap={4} justify="between">
           <span className="text-body text-strong">{label}</span>
           <span className="text-value text-muted">{words}</span>
-        </div>
+        </Inline>
       ) : (
         <p className={classes.text}>{words}</p>
       )}
@@ -81,7 +95,7 @@ export function Meter({
           {value > 0 ? <rect width="2" height="100%" /> : null}
         </svg>
       </div>
-    </div>
+    </Stack>
   );
 }
 
@@ -111,13 +125,26 @@ export function Button({
   ariaPressed,
   tabIndex,
   compact = false,
-}: {
+  iconSize,
+  ref: nativeRef,
+  ...nativeProps
+}: Omit<
+  ComponentProps<'button'>,
+  | 'onClick'
+  | 'children'
+  | 'className'
+  | 'title'
+  | 'type'
+  | 'disabled'
+  | 'tabIndex'
+> & {
+  readonly iconSize?: IconSize | undefined;
   readonly type?: 'button' | 'submit' | undefined;
   readonly variant?: ButtonVariant | undefined;
   readonly size?: ButtonSize | undefined;
   readonly tone?: ButtonTone | undefined;
   readonly disabled?: boolean | undefined;
-  readonly onClick?: (() => void) | undefined;
+  readonly onClick?: MouseEventHandler<HTMLButtonElement> | undefined;
   readonly children?: ReactNode | undefined;
   readonly label?: string | undefined;
   readonly icon?: ReactNode | undefined;
@@ -140,9 +167,10 @@ export function Button({
   const hasChildren = children !== undefined && children !== null;
   const classes = buttonClassName({
     variant,
-    size,
+    size: settingsRow ? 'compact' : size,
     tone,
     iconOnly: !hasChildren,
+    iconSize,
     compact,
     className: extraClassName,
   });
@@ -164,9 +192,10 @@ export function Button({
 
   const button = (
     <button
-      ref={buttonRef}
+      {...nativeProps}
+      ref={buttonRef ?? nativeRef}
       type={type ?? 'button'}
-      className={`${classes} ${settingsRow ? 'ui-settings-row-button' : ''}`}
+      className={`${classes} ${settingsRow ? 'ds-row-button absolute left-0 top-1/2 -translate-y-1/2 h-7 w-full px-3 coarse:h-11 coarse:border-0 coarse:bg-transparent coarse:px-0 ' : ''}`}
       disabled={disabled ?? false}
       onClick={onClick}
       aria-label={name.ariaLabel}
@@ -194,8 +223,11 @@ export function Button({
     </button>
   );
   return settingsRow ? (
-    <span className="ui-settings-button-slot">
-      <span aria-hidden="true" className="ui-settings-button-measure">
+    <span className="ui-settings-button-slot relative inline-flex h-7 shrink-0 items-center coarse:h-5">
+      <span
+        aria-hidden="true"
+        className="ui-settings-button-measure invisible inline-flex items-center gap-2 px-3 text-label coarse:px-0"
+      >
         {content}
       </span>
       {button}
@@ -216,7 +248,7 @@ export function Badge({
 }: {
   readonly children: ReactNode;
 }): ReactNode {
-  return <span className={badgeClassName()}>{children}</span>;
+  return <Pill>{children}</Pill>;
 }
 
 /**
@@ -248,7 +280,6 @@ export function TextField({
   placeholder,
   required,
   autoFocus,
-  reserveErrorSpace = false,
   hideLabel = false,
 }: {
   readonly describedBy?: string | undefined;
@@ -267,8 +298,6 @@ export function TextField({
   readonly placeholder?: string | undefined;
   readonly required?: boolean | undefined;
   readonly autoFocus?: boolean | undefined;
-  /** Keeps a blank error line so validation does not move the next control. */
-  readonly reserveErrorSpace?: boolean | undefined;
   /** Keeps a visible placeholder with an accessible label. */
   readonly hideLabel?: boolean | undefined;
 }): ReactNode {
@@ -284,46 +313,48 @@ export function TextField({
     .filter(Boolean)
     .join(' ');
   return (
-    <div className="ui-field-group">
+    <div className="ui-field-group flex flex-col gap-2">
       <label
         className={hideLabel ? 'sr-only' : fieldLabelClassName}
         htmlFor={id}
       >
         {label}
       </label>
-      <input
-        ref={inputRef}
-        onKeyDown={onKeyDown}
-        id={id}
-        className={fieldClassName({ invalid: hasError })}
-        type={inputType ?? 'text'}
-        value={value}
-        autoComplete={autoComplete}
-        placeholder={placeholder}
-        required={required ?? false}
-        data-list-search={listSearch ? '' : undefined}
-        autoFocus={(autoFocus ?? false) && (!listSearch || !isTouchInput())}
-        aria-invalid={hasError}
-        aria-describedby={described === '' ? undefined : described}
-        onChange={(event): void => {
-          onChange(event.target.value);
-        }}
-      />
-      {hasHint ? (
-        <p className="mb-0 mt-1 text-secondary text-muted" id={hintId}>
-          <WrapText>{hint}</WrapText>
-        </p>
-      ) : null}
-      {hasError || reserveErrorSpace ? (
-        <p
-          className={`mt-1 text-secondary text-danger ${reserveErrorSpace ? 'mb-0 min-h-5' : ''}`}
-          id={errorId}
-          role={hasError ? 'alert' : undefined}
-          aria-hidden={hasError ? undefined : true}
-        >
-          {hasError ? error : null}
-        </p>
-      ) : null}
+      <div className="flex flex-col gap-1">
+        <input
+          ref={inputRef}
+          onKeyDown={onKeyDown}
+          id={id}
+          className={fieldClassName({ invalid: hasError })}
+          type={inputType ?? 'text'}
+          value={value}
+          autoComplete={autoComplete}
+          placeholder={placeholder}
+          required={required ?? false}
+          data-list-search={listSearch ? '' : undefined}
+          autoFocus={(autoFocus ?? false) && (!listSearch || !isTouchInput())}
+          aria-invalid={hasError}
+          aria-describedby={described === '' ? undefined : described}
+          onChange={(event): void => {
+            onChange(event.target.value);
+          }}
+        />
+        {hasHint ? (
+          <p className="m-0 text-secondary text-muted" id={hintId}>
+            <WrapText>{hint}</WrapText>
+          </p>
+        ) : null}
+        {hasError ? (
+          <p
+            className="m-0 text-secondary text-danger"
+            id={errorId}
+            role={hasError ? 'alert' : undefined}
+            aria-hidden={hasError ? undefined : true}
+          >
+            {hasError ? error : null}
+          </p>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -362,36 +393,38 @@ export function TextAreaField({
     .filter(Boolean)
     .join(' ');
   return (
-    <div className="ui-field-group">
+    <div className="ui-field-group flex flex-col gap-2">
       <label className={fieldLabelClassName} htmlFor={id}>
         {label}
       </label>
-      <textarea
-        id={id}
-        className={textAreaClassName({ invalid: hasError })}
-        value={value}
-        required={required ?? false}
-        spellCheck={false}
-        aria-invalid={hasError}
-        aria-describedby={described === '' ? undefined : described}
-        onChange={(event): void => {
-          onChange(event.target.value);
-        }}
-      />
-      {hasHint ? (
-        <p className="mb-0 mt-1 text-secondary text-muted" id={hintId}>
-          <WrapText>{hint}</WrapText>
-        </p>
-      ) : null}
-      {hasError ? (
-        <p
-          className="mt-1 text-secondary text-danger"
-          id={errorId}
-          role="alert"
-        >
-          {error}
-        </p>
-      ) : null}
+      <div className="flex flex-col gap-1">
+        <textarea
+          id={id}
+          className={textAreaClassName({ invalid: hasError })}
+          value={value}
+          required={required ?? false}
+          spellCheck={false}
+          aria-invalid={hasError}
+          aria-describedby={described === '' ? undefined : described}
+          onChange={(event): void => {
+            onChange(event.target.value);
+          }}
+        />
+        {hasHint ? (
+          <p className="m-0 text-secondary text-muted" id={hintId}>
+            <WrapText>{hint}</WrapText>
+          </p>
+        ) : null}
+        {hasError ? (
+          <p
+            className="m-0 text-secondary text-danger"
+            id={errorId}
+            role="alert"
+          >
+            {error}
+          </p>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -434,22 +467,24 @@ export function ReadOnlyField({
     inputRef.current?.focus();
   }, [takeFocus]);
   return (
-    <div className="ui-field-group">
+    <div className="ui-field-group flex flex-col gap-2">
       <label className={fieldLabelClassName} htmlFor={id}>
         {label}
       </label>
-      <input
-        ref={inputRef}
-        id={id}
-        className={fieldClassName({ className: 'font-mono' })}
-        type="text"
-        value={value}
-        readOnly
-        aria-describedby={describedBy}
-        onFocus={(event): void => {
-          event.currentTarget.select();
-        }}
-      />
+      <div className="flex flex-col gap-1">
+        <input
+          ref={inputRef}
+          id={id}
+          className={fieldClassName({ className: 'font-mono' })}
+          type="text"
+          value={value}
+          readOnly
+          aria-describedby={describedBy}
+          onFocus={(event): void => {
+            event.currentTarget.select();
+          }}
+        />
+      </div>
     </div>
   );
 }
@@ -487,35 +522,39 @@ export function SelectField({
 }): ReactNode {
   const hintId = `${id}-hint`;
   return (
-    <div className="ui-field-group">
+    <div className="ui-field-group flex flex-col gap-2">
       <label className={fieldLabelClassName} htmlFor={id}>
         {label}
       </label>
-      <div className="relative">
-        <select
-          id={id}
-          className={selectClassName()}
-          value={value}
-          aria-describedby={
-            hint === undefined || hint.trim() === '' ? undefined : hintId
-          }
-          onChange={(event): void => {
-            onChange(event.target.value);
-          }}
+      <div className="flex flex-col gap-1">
+        <div
+          className={`${fieldClassName().replaceAll('focus:', 'focus-within:')} flex items-center gap-2`}
         >
-          {options.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted" />
+          <select
+            id={id}
+            className="h-full min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 text-body text-strong outline-none"
+            value={value}
+            aria-describedby={
+              hint === undefined || hint.trim() === '' ? undefined : hintId
+            }
+            onChange={(event): void => {
+              onChange(event.target.value);
+            }}
+          >
+            {options.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <ChevronDownIcon className="pointer-events-none shrink-0 text-muted" />
+        </div>
+        {hint === undefined || hint.trim() === '' ? null : (
+          <p className="m-0 text-secondary text-muted" id={hintId}>
+            <WrapText>{hint}</WrapText>
+          </p>
+        )}
       </div>
-      {hint === undefined || hint.trim() === '' ? null : (
-        <p className="mb-0 mt-1 text-secondary text-muted" id={hintId}>
-          <WrapText>{hint}</WrapText>
-        </p>
-      )}
     </div>
   );
 }
@@ -593,7 +632,7 @@ export function CollapsibleSection({
 }): ReactNode {
   const panelId = `${id}-panel`;
   return (
-    <section className="mt-2" aria-labelledby={id}>
+    <Stack as="section" gap={2} aria-labelledby={id}>
       <button
         id={id}
         type="button"
@@ -618,11 +657,11 @@ export function CollapsibleSection({
         // the panel carries the identifier that `aria-controls` names and no
         // role of its own. It used to carry both, which put two regions with
         // one name in the list a person moves through.
-        <div id={panelId} className="py-2 pl-2">
+        <Inset id={panelId} pad={2}>
           {children}
-        </div>
+        </Inset>
       ) : null}
-    </section>
+    </Stack>
   );
 }
 
@@ -638,13 +677,15 @@ export function StatusRegion({
   readonly message: string;
 }): ReactNode {
   return (
-    <p
-      className="my-1 text-secondary text-muted"
+    <Inset
+      as="p"
+      padY={1}
+      className="text-secondary text-muted"
       role="status"
       aria-live="polite"
     >
       {message}
-    </p>
+    </Inset>
   );
 }
 
@@ -664,79 +705,77 @@ export function Switch({
   readonly disabled?: boolean;
   readonly onChange: (checked: boolean) => void;
 }): ReactNode {
-  const settings = useSettingsSurface();
-  const classes = switchClassNames(checked);
-  const hintId = useId();
-  const button = (
-    <button
-      type="button"
+  const hintId = useId(),
+    classes = switchClassNames(checked);
+  if (hideLabel)
+    return (
+      <span className="relative inline-flex h-7 w-10 shrink-0 items-center justify-center coarse:h-5">
+        <button
+          type="button"
+          role="switch"
+          aria-label={label}
+          aria-checked={checked}
+          disabled={disabled}
+          className="absolute left-1/2 top-1/2 inline-flex h-7 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center bg-transparent p-0 coarse:h-11"
+          onClick={() => onChange(!checked)}
+        >
+          <span className={classes.track}>
+            <span className={classes.thumb} />
+          </span>
+        </button>
+      </span>
+    );
+  return (
+    <ListRow
+      as="button"
+      density="setting"
+      label={label}
+      help={hint ? <WrapText>{hint}</WrapText> : undefined}
+      helpId={hintId}
+      trailing={{ kind: 'switch', checked }}
       role="switch"
       aria-checked={checked}
-      aria-label={label}
-      aria-describedby={
-        hint === undefined || hint.trim() === '' || hideLabel
-          ? undefined
-          : hintId
-      }
-      aria-description={hideLabel ? hint : undefined}
+      aria-describedby={hint ? hintId : undefined}
       disabled={disabled}
-      className={
-        hideLabel
-          ? `ui-switch-control inline-flex items-center justify-center rounded-md bg-transparent text-strong ${settings ? 'ui-settings-switch-target' : ''}`
-          : settings
-            ? 'ui-settings-row ui-settings-switch text-left text-strong'
-            : classes.row
-      }
       onClick={() => onChange(!checked)}
-    >
-      {hideLabel ? null : (
-        <span
-          data-setting-text
-          className={
-            settings ? 'ui-settings-copy text-body' : 'min-w-0 flex-1 text-body'
-          }
-        >
-          <span data-setting-label className="block">
-            {label}
-          </span>
-          {hint === undefined || hint.trim() === '' ? null : (
-            <span
-              data-setting-help
-              id={hintId}
-              className="block text-secondary text-muted"
-            >
-              <WrapText>{hint}</WrapText>
-            </span>
-          )}
-        </span>
-      )}
-      {settings && !hideLabel ? (
-        <span className="ui-settings-switch-slot">
-          <span
-            data-setting-control={hideLabel ? undefined : true}
-            className={classes.track}
-            aria-hidden="true"
-          >
-            <span className={classes.thumb} />
-          </span>
-        </span>
-      ) : (
-        <>
-          {' '}
-          <span
-            data-setting-control={hideLabel ? undefined : true}
-            className={classes.track}
-            aria-hidden="true"
-          >
-            <span className={classes.thumb} />
-          </span>
-        </>
-      )}
-    </button>
+    />
   );
-  return settings && hideLabel ? (
-    <span className="ui-settings-switch-slot">{button}</span>
-  ) : (
-    button
+}
+export const SwitchRow = Switch;
+export const Field = TextField;
+/** A field whose value opens a choice instead of text entry. */
+export function FieldButton({
+  invalid = false,
+  className = '',
+  ...props
+}: ComponentProps<'button'> & { readonly invalid?: boolean }): ReactNode {
+  return (
+    <button
+      {...props}
+      className={`${fieldClassName({ invalid })} flex cursor-pointer items-center gap-2 text-left ${className}`}
+    />
+  );
+}
+/** A custom field has the same label and help distances as a text field. */
+export function FieldGroup({
+  id,
+  label,
+  children,
+  ...props
+}: Omit<ComponentProps<'div'>, 'id'> & {
+  readonly id: string;
+  readonly label: string;
+}): ReactNode {
+  return (
+    <Stack
+      {...props}
+      gap={2}
+      className={`ui-field-group ${props.className ?? ''}`}
+    >
+      <label id={`${id}-label`} htmlFor={id} className={fieldLabelClassName}>
+        {label}
+      </label>
+      <Stack gap={1}>{children}</Stack>
+    </Stack>
   );
 }

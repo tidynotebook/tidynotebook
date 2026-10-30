@@ -1,3 +1,33 @@
+import {
+  Form,
+  ListRow,
+  Inline,
+  Inset,
+  SectionHeading,
+  Stack,
+  Card,
+  RowCopy,
+  Button,
+  Badge,
+  ChevronRightIcon,
+  MetaFacts,
+  WrapText,
+  buttonClassName,
+  CopyIcon,
+  Dialog,
+  DialogBody,
+  DialogFooter,
+  LoadingState,
+  Menu,
+  MoreIcon,
+  Notice,
+  PlusIcon,
+  ReadOnlyField,
+  SelectField,
+  TextField,
+  UsersIcon,
+} from '@notesapp/ui';
+
 /**
  * The accounts page of an administrator (records 0108 to 0112).
  *
@@ -44,28 +74,7 @@ import {
   type Invitation,
   type LinkReport,
 } from '@notesapp/api-client';
-import {
-  Button,
-  Badge,
-  ChevronRightIcon,
-  MetaFacts,
-  WrapText,
-  buttonClassName,
-  CopyIcon,
-  Dialog,
-  DialogBody,
-  DialogFooter,
-  ListRow,
-  LoadingState,
-  Menu,
-  MoreIcon,
-  Notice,
-  PlusIcon,
-  ReadOnlyField,
-  SelectField,
-  TextField,
-  UsersIcon,
-} from '@notesapp/ui';
+
 import { problemMessage, useSession } from '../../app.tsx';
 import { problemCode } from '../../lib/problem-text.ts';
 import {
@@ -136,24 +145,19 @@ function AdminGroup({
 }): ReactNode {
   if (Children.toArray(children).length === 0) return null;
   return (
-    <section className="ui-settings-group">
+    <Stack gap={2} as="section">
       {title === undefined ? null : (
-        <div className="ui-settings-group-heading ui-group-toolbar">
-          <h3
-            className={`m-0 min-w-0 flex-1 text-group ${danger ? 'text-danger' : 'text-muted'}`}
-          >
-            {title}
-          </h3>
-          {count === undefined ? null : (
-            <span className="ui-group-count text-secondary text-muted">
-              {count}
-            </span>
-          )}
-          {toolbar}
-        </div>
+        <SectionHeading
+          label={title}
+          count={count}
+          action={toolbar}
+          danger={danger}
+          divider
+          inset={{ fine: 0, coarse: 4 }}
+        />
       )}
-      <div className="ui-settings-card">{children}</div>
-    </section>
+      <Card responsive>{children}</Card>
+    </Stack>
   );
 }
 
@@ -345,7 +349,7 @@ function AccountsPage({
     setDialog({ kind: 'none' });
   };
   return (
-    <div className="ui-settings-groups">
+    <Stack gap={{ fine: 6, coarse: 4 }}>
       {notice === '' ? null : <Notice tone="success" message={notice} />}
       {failure === '' ? null : <Notice tone="problem" message={failure} />}
       {state.kind === 'loading' ? (
@@ -403,15 +407,20 @@ function AccountsPage({
                   )
                 }
               >
-                <ul className="ui-settings-items">
+                <Stack gap={0} pad={0} as="ul">
                   {state.invitations.length === 0 ? (
-                    <li className="ui-settings-empty text-secondary text-muted">
+                    <Inset
+                      padY={3}
+                      padX={{ fine: 0, coarse: 4 }}
+                      as="li"
+                      className="text-secondary text-muted"
+                    >
                       No invitation waits.
-                    </li>
+                    </Inset>
                   ) : (
                     state.invitations.map((invitation) => (
                       <ListRow key={invitation.invitationId}>
-                        <div className="ui-settings-copy">
+                        <RowCopy>
                           <p className="m-0 break-words text-body text-strong">
                             {invitation.email}
                           </p>
@@ -419,7 +428,7 @@ function AccountsPage({
                             className="ui-settings-meta"
                             facts={invitationFacts(invitation, now)}
                           />
-                        </div>
+                        </RowCopy>
                         <Button
                           variant="secondary"
                           label={`Revoke the invitation of ${invitation.email}`}
@@ -450,13 +459,13 @@ function AccountsPage({
                       />
                     </li>
                   ) : null}
-                </ul>
+                </Stack>
               </AdminGroup>
               <AdminGroup
                 title="Accounts"
                 count={String(state.accounts.length)}
               >
-                <ul className="ui-settings-items">
+                <Stack gap={0} pad={0} as="ul">
                   {state.accounts.map((account) => {
                     const name = accountName(account),
                       actions = accountActions(
@@ -471,8 +480,14 @@ function AccountsPage({
                         >
                           <UsersIcon />
                         </span>
-                        <div className="ui-settings-copy">
-                          <p className="m-0 flex flex-wrap items-center gap-2 text-body text-strong">
+                        <RowCopy>
+                          <Inline
+                            gap={2}
+                            wrap
+                            align="center"
+                            as="p"
+                            className="text-body text-strong"
+                          >
                             <span>{name}</span>
                             {account.installationRole === 'administrator' ? (
                               <Badge>Administrator</Badge>
@@ -480,7 +495,7 @@ function AccountsPage({
                             {account.state === 'disabled' ? (
                               <Badge>Disabled</Badge>
                             ) : null}
-                          </p>
+                          </Inline>
                           <MetaFacts
                             className="ui-settings-meta"
                             facts={[
@@ -493,24 +508,30 @@ function AccountsPage({
                                 : `Active ${relativeTime(account.lastActiveAt, now)}`,
                             ].filter(Boolean)}
                           />
-                        </div>
+                        </RowCopy>
                       </>
                     );
                     return phone ? (
                       <li key={account.accountId}>
-                        <button
-                          type="button"
+                        <ListRow
+                          as="button"
+                          density="setting"
+
                           className="ui-settings-row flex w-full text-left text-body text-strong"
                           aria-label={`Account: ${name}`}
                           onClick={(event) => {
-                            detailOpener.current = event.currentTarget;
+                            if (
+                              event.currentTarget instanceof
+                              window.HTMLButtonElement
+                            )
+                              detailOpener.current = event.currentTarget;
                             setDetail(account);
                             setFailure('');
                           }}
                         >
                           {content}
                           <ChevronRightIcon />
-                        </button>
+                        </ListRow>
                       </li>
                     ) : (
                       <ListRow key={account.accountId}>
@@ -530,7 +551,7 @@ function AccountsPage({
                       </ListRow>
                     );
                   })}
-                </ul>
+                </Stack>
               </AdminGroup>
             </>
           ) : null}
@@ -545,15 +566,20 @@ function AccountsPage({
           ) : null}
           {page === 'reports' ? (
             <AdminGroup>
-              <ul className="ui-settings-items">
+              <Stack gap={0} pad={0} as="ul">
                 {state.reports.length === 0 ? (
-                  <li className="ui-settings-empty text-secondary text-muted">
+                  <Inset
+                    padY={3}
+                    padX={{ fine: 0, coarse: 4 }}
+                    as="li"
+                    className="text-secondary text-muted"
+                  >
                     No report waits.
-                  </li>
+                  </Inset>
                 ) : (
                   state.reports.map((report) => (
                     <ListRow key={report.reportId} className="flex-wrap">
-                      <div className="ui-settings-copy">
+                      <RowCopy>
                         <p className="m-0 text-body text-strong">
                           {reportReasonWord(report.reason)}
                         </p>
@@ -566,8 +592,8 @@ function AccountsPage({
                             <WrapText>{report.note}</WrapText>
                           </p>
                         )}
-                      </div>
-                      <div className="flex flex-wrap gap-cluster">
+                      </RowCopy>
+                      <Inline gap={2} wrap as="div">
                         {report.address === null ? null : (
                           <a
                             className={buttonClassName({
@@ -613,11 +639,11 @@ function AccountsPage({
                         >
                           Close
                         </Button>
-                      </div>
+                      </Inline>
                     </ListRow>
                   ))
                 )}
-              </ul>
+              </Stack>
             </AdminGroup>
           ) : null}
         </>
@@ -632,7 +658,7 @@ function AccountsPage({
           onClose={() => setDetail(null)}
         >
           <DialogBody>
-            <div className="ui-settings-groups">
+            <Stack gap={{ fine: 6, coarse: 4 }}>
               <AdminGroup title="Account">
                 <SettingRow label="Email">
                   <span className="text-value text-muted">
@@ -692,7 +718,7 @@ function AccountsPage({
                     />
                   ))}
               </AdminGroup>
-            </div>
+            </Stack>
           </DialogBody>
         </SettingsDialog>
       ) : null}
@@ -809,7 +835,7 @@ function AccountsPage({
           </DialogFooter>
         </AdminDialog>
       ) : null}
-    </div>
+    </Stack>
   );
 }
 
@@ -866,7 +892,8 @@ function InviteDialog({
       onClose={onClose}
     >
       {made === null ? (
-        <form
+        <Form
+          regions
           className="ui-dialog-form"
           onSubmit={(event): void => {
             event.preventDefault();
@@ -874,11 +901,11 @@ function InviteDialog({
           }}
         >
           <DialogBody>
-            <p className="mb-4 mt-0 text-secondary text-muted">
+            <Inset as="p" className="text-secondary text-muted">
               {mailConfigured
                 ? `The link goes to this address by mail. It works for ${lifetime}.`
                 : `This installation sends no mail, so you get the link here and send it yourself. It works for ${lifetime}.`}
-            </p>
+            </Inset>
             <TextField
               id="invite-email"
               label="Email address"
@@ -898,7 +925,7 @@ function InviteDialog({
               {busy ? 'Inviting' : 'Invite'}
             </Button>
           </DialogFooter>
-        </form>
+        </Form>
       ) : (
         <>
           <DialogBody>
@@ -908,9 +935,9 @@ function InviteDialog({
               </p>
             ) : (
               <>
-                <p className="mb-4 mt-0 text-body text-strong">
+                <Inset as="p" className="text-body text-strong">
                   Send this link to {made.email}. It appears here once.
-                </p>
+                </Inset>
                 <ReadOnlyField
                   id="invite-link"
                   label="Invitation link"
@@ -990,7 +1017,8 @@ function ControlsDialog({
       width="small"
       onClose={onClose}
     >
-      <form
+      <Form
+        regions
         className="ui-dialog-form"
         onSubmit={(event): void => {
           event.preventDefault();
@@ -1004,13 +1032,11 @@ function ControlsDialog({
         }}
       >
         <DialogBody>
-          <p className="mb-4 mt-0 text-secondary text-muted">
+          <Inset as="p" className="text-secondary text-muted">
             The limits count every workspace that {accountName(account)} owns.
             An empty limit is no limit.
-          </p>
-          {failure === '' ? null : (
-            <Notice className="mb-4" tone="problem" message={failure} />
-          )}
+          </Inset>
+          {failure === '' ? null : <Notice tone="problem" message={failure} />}
           <SelectField
             id="controls-standing"
             label="Access"
@@ -1078,7 +1104,7 @@ function ControlsDialog({
               set({ downloadGigabytes: value });
             }}
           />
-          <div className="ui-settings-groups">
+          <Stack gap={{ fine: 6, coarse: 4 }}>
             <AdminGroup title="Features">
               <SettingSwitchRow
                 label="Teams"
@@ -1095,7 +1121,7 @@ function ControlsDialog({
                 onChange={(collaboration) => set({ collaboration })}
               />
             </AdminGroup>
-          </div>
+          </Stack>
         </DialogBody>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>
@@ -1105,7 +1131,7 @@ function ControlsDialog({
             {busy ? 'Saving' : 'Save'}
           </Button>
         </DialogFooter>
-      </form>
+      </Form>
     </AdminDialog>
   );
 }
@@ -1134,7 +1160,8 @@ function RoleDialog({
       titleId="account-role-title"
       onClose={onClose}
     >
-      <form
+      <Form
+        regions
         className="ui-dialog-form"
         onSubmit={(event) => {
           event.preventDefault();
@@ -1177,7 +1204,7 @@ function RoleDialog({
             Save
           </Button>
         </DialogFooter>
-      </form>
+      </Form>
     </AdminDialog>
   );
 }

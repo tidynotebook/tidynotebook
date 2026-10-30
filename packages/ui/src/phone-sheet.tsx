@@ -1,8 +1,9 @@
-/** The header used by every phone sheet, including template details. */
+/** One header for every level of a phone sheet. */
 import type { ReactNode, Ref } from 'react';
-import { Button } from './controls.tsx';
+import { IconButton } from './icon-button.tsx';
 import { CloseIcon } from './icons.tsx';
-
+import { ContentHeader, HeaderTitle, HeaderSlot } from './content-header.tsx';
+import { Inline } from './primitives.tsx';
 export function PhoneSheetHeader({
   title,
   titleId,
@@ -19,32 +20,35 @@ export function PhoneSheetHeader({
   readonly trailing?: ReactNode;
 }): ReactNode {
   return (
-    <header
+    <ContentHeader
       data-sheet-drag=""
       data-scroll-edge="above"
-      className="ui-sheet-header flex shrink-0 touch-pan-x touch-pinch-zoom items-center gap-1 px-1"
+      padX={4}
+      className="ui-sheet-header touch-pan-x touch-pinch-zoom"
     >
-      <span className="flex size-11 shrink-0 items-center justify-center">
+      <HeaderSlot>
         {leading ?? (
-          <Button
-            variant="ghost"
-            icon={<CloseIcon />}
+          <IconButton
+            glyph={<CloseIcon />}
+            size="header"
             label="Close dialog"
             onClick={onClose}
           />
         )}
-      </span>
-      <h2
-        id={titleId}
-        ref={titleRef}
-        tabIndex={-1}
-        className="m-0 min-w-0 flex-1 truncate text-center text-title-header text-strong outline-none"
-      >
-        {title}
-      </h2>
-      <span className="flex size-11 shrink-0 items-center justify-center">
-        {trailing}
-      </span>
-    </header>
+      </HeaderSlot>
+      <HeaderTitle>
+        <h2
+          id={titleId}
+          ref={titleRef}
+          tabIndex={-1}
+          className="truncate text-title-header text-strong outline-none"
+        >
+          {title}
+        </h2>
+      </HeaderTitle>
+      <Inline justify="end" className="flex-1">
+        <HeaderSlot>{trailing}</HeaderSlot>
+      </Inline>
+    </ContentHeader>
   );
 }

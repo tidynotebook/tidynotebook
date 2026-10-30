@@ -1,3 +1,21 @@
+import {
+  Stack,
+  ListRow,
+  IconSlot,
+  Inline,
+  IconButton,
+  AnchoredMenu,
+  Badge,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  FileTextIcon,
+  FolderIcon,
+  FolderOpenIcon,
+  inlineFieldClassName,
+  MoreIcon,
+  type MenuAnchor,
+  type MenuItem,
+} from '@notesapp/ui';
 /**
  * The tree of the sidebar: one list of rows with a selection (record 0164).
  *
@@ -34,19 +52,7 @@ import {
 } from 'react';
 import { useNavigate } from 'react-router';
 import type { PublicationScope } from '@notesapp/core';
-import {
-  AnchoredMenu,
-  Badge,
-  ChevronDownIcon,
-  ChevronRightIcon,
-  FileTextIcon,
-  FolderIcon,
-  FolderOpenIcon,
-  inlineFieldClassName,
-  MoreIcon,
-  type MenuAnchor,
-  type MenuItem,
-} from '@notesapp/ui';
+
 import { useLocalStore, useRequestSync, useSession } from '../app.tsx';
 import { useDeleteNotice } from '../features/trash/trash.tsx';
 import { deleteNotes } from '../features/editor/note-delete.ts';
@@ -79,13 +85,10 @@ import {
 } from '../lib/tree-rename.ts';
 import {
   treeIndentClassName,
-  treeIndentStyle,
   treeItemClassName,
   treeItemsClassName,
   treeMessageClassName,
   treeRowClassName,
-  treeRowLeadingClassName,
-  treeRowNameClassName,
   rowActionClassName,
   rowSpacerClassName,
 } from '../lib/tree-row.ts';
@@ -824,7 +827,9 @@ export function NoteTree({
 
   return (
     <>
-      <div
+      <Stack
+        gap={0.5}
+        pad={0}
         ref={rowsInView.listRef}
         className={treeItemsClassName}
         role="tree"
@@ -843,14 +848,18 @@ export function NoteTree({
               aria-disabled="true"
               aria-selected="false"
               className={treeIndentClassName(row.level)}
-              style={treeIndentStyle(row.level)}
             >
-              <div className={treeRowClassName({ wrapOnPhone: true })}>
-                <span className={rowSpacerClassName} aria-hidden="true" />
+              <ListRow
+                as="div"
+                density="tree"
+                indent={row.level - 1}
+                className={treeRowClassName({ wrapOnPhone: true })}
+              >
+                <IconSlot className={rowSpacerClassName} aria-hidden="true" />
                 <span className="min-w-0 truncate text-muted">
                   This folder is empty.
                 </span>
-              </div>
+              </ListRow>
             </div>
           ) : (
             <TreeRow
@@ -898,7 +907,7 @@ export function NoteTree({
             />
           ),
         )}
-      </div>
+      </Stack>
       {message === null ? null : (
         <p
           className={treeMessageClassName(message.tone)}
@@ -1071,7 +1080,7 @@ function TreeRow({
       aria-haspopup="menu"
       tabIndex={tabbable ? 0 : -1}
       className={`${treeIndentClassName(row.level)} ${treeItemClassName}`}
-      style={treeIndentStyle(row.level)}
+
       draggable={renaming === null}
       onFocus={(event) => onFocus(event.currentTarget)}
       onBlur={(event) => {
@@ -1126,7 +1135,10 @@ function TreeRow({
         drag.drop(row.path);
       }}
     >
-      <div
+      <ListRow
+        as="div"
+        density="tree"
+        indent={row.level - 1}
         className={treeRowClassName({
           wrapOnPhone: true,
           open,
@@ -1136,16 +1148,17 @@ function TreeRow({
           dropTarget: isTarget,
         })}
       >
-        <div className={treeRowLeadingClassName}>
+        <Inline gap={1} className="ui-sidebar-leading min-w-0 flex-1">
           {isFolder ? (
-            <span className="ui-sidebar-slot">
+            <IconSlot className="ui-sidebar-slot">
               {/* The keys open and close a folder with Right and Left on the
             row, so the chevron is no stop of the keys. A screen reader on
             a touch screen reaches it by a swipe, by its name. */}
-              <button
+              <IconButton
+                size="row"
                 type="button"
                 tabIndex={-1}
-                aria-label={controls.toggle ?? undefined}
+                label={controls.toggle ?? 'Toggle folder'}
                 className={rowActionClassName}
                 onMouseDown={keepFocus}
                 onClick={(event) => {
@@ -1153,33 +1166,42 @@ function TreeRow({
                   onToggle();
                 }}
                 title={controls.toggle ?? undefined}
-              >
-                <span className="inline-flex text-muted" aria-hidden="true">
-                  {row.expanded ? <ChevronDownIcon /> : <ChevronRightIcon />}
-                </span>
-              </button>
-            </span>
+                glyph={
+                  <>
+                    <span className="inline-flex text-muted" aria-hidden="true">
+                      {row.expanded ? (
+                        <ChevronDownIcon />
+                      ) : (
+                        <ChevronRightIcon />
+                      )}
+                    </span>
+                  </>
+                }
+              ></IconButton>
+            </IconSlot>
           ) : (
-            <span className={rowSpacerClassName} aria-hidden="true" />
+            <IconSlot className={rowSpacerClassName} aria-hidden="true" />
           )}
-          <div className={treeRowNameClassName}>
+          <Inline gap={2} className="ui-sidebar-name min-w-0 flex-1">
             {icon}
             {name}
             {badge}
-          </div>
-        </div>
+          </Inline>
+        </Inline>
         {/*
           The action button opens the menu that a right click, Shift + F10
           and the Menu key open. It is no stop of the keys, and a screen
           reader on a touch screen, which has neither key, reaches it by a
           swipe, by its name.
         */}
-        <span className="ui-sidebar-slot">
-          <button
+        <IconSlot className="ui-sidebar-slot">
+          <IconButton
+            size="row"
             type="button"
             tabIndex={-1}
-            aria-label={controls.actions}
+            label={controls.actions}
             aria-haspopup="menu"
+            reveal
             className={`${rowActionClassName} ui-sidebar-row-menu`}
             title={controls.actions}
             onMouseDown={keepFocus}
@@ -1187,13 +1209,16 @@ function TreeRow({
               event.stopPropagation();
               onMenu(anchorOf(event.currentTarget));
             }}
-          >
-            <span className="inline-flex text-muted" aria-hidden="true">
-              <MoreIcon />
-            </span>
-          </button>
-        </span>
-      </div>
+            glyph={
+              <>
+                <span className="inline-flex text-muted" aria-hidden="true">
+                  <MoreIcon />
+                </span>
+              </>
+            }
+          ></IconButton>
+        </IconSlot>
+      </ListRow>
     </div>
   );
 }

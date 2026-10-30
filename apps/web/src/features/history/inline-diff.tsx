@@ -1,3 +1,5 @@
+import { Inline, Stack, Inset } from '@notesapp/ui';
+
 /**
  * One unified line comparison of two texts.
  *
@@ -47,24 +49,39 @@ export function InlineDiff({
   if (blocks.length === 0)
     return <p className="m-0 text-secondary text-muted">{sameText}</p>;
   return (
-    <ol className="m-0 list-none space-y-4 p-0" aria-label="Line differences">
+    <Stack
+      gap={4}
+      pad={0}
+      as="ol"
+      className="list-none"
+      aria-label="Line differences"
+    >
       {blocks.map((block, index) => (
         <li
           className="overflow-hidden rounded-lg border border-edge-subtle"
           key={`${idPrefix}-block-${String(index)}`}
         >
-          <h4 className="m-0 bg-surface px-3 py-2 text-label text-strong">
+          <Inset
+            padX={3}
+            padY={2}
+            as="h4"
+            className="bg-surface text-label text-strong"
+          >
             {diffBlockHeading(block, oldLabel, newLabel)}
-          </h4>
-          <ol className="m-0 list-none p-0 font-mono text-preview">
+          </Inset>
+          <Inset pad={0} as="ol" className="list-none font-mono text-preview">
             {block.rows.map((row, rowIndex) => (
-              <li
+              <Inline
+                as="li"
+                gap={2}
+                padX={3}
+                padY={1}
                 // The tone of a changed line is a fill from the palette and
                 // never a fade of a text colour (decisions 0057 and 0065).
                 // The text on a tone surface is the strong text, which the
                 // contrast test holds on each of the three surfaces, and the
                 // sign in front of the line states the change as well.
-                className={`flex gap-cluster px-3 py-1 ${row.kind === 'removed' ? 'bg-danger-surface text-strong' : row.kind === 'added' ? 'bg-success-surface text-strong' : 'text-muted'}`}
+                className={`${row.kind === 'removed' ? 'bg-danger-surface text-strong' : row.kind === 'added' ? 'bg-success-surface text-strong' : 'text-muted'}`}
                 key={`${idPrefix}-block-${String(index)}-row-${String(rowIndex)}`}
               >
                 <span className="w-3 shrink-0" aria-hidden="true">
@@ -76,11 +93,11 @@ export function InlineDiff({
                   )}
                   {row.text === '' ? '(empty line)' : row.text}
                 </code>
-              </li>
+              </Inline>
             ))}
-          </ol>
+          </Inset>
         </li>
       ))}
-    </ol>
+    </Stack>
   );
 }

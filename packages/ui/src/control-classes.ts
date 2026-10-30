@@ -46,7 +46,9 @@ export const focusOutlineInset =
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
 /** How large a button is. */
-export type ButtonSize = 'sm' | 'md' | 'touch' | 'inline';
+export type ButtonSize =
+  'compact' | 'default' | 'sm' | 'md' | 'touch' | 'inline';
+export type IconSize = 'row' | 'toolbar' | 'header' | 'rail';
 
 /**
  * The tone of a quiet button.
@@ -173,6 +175,7 @@ export function buttonClassName(
     readonly size?: ButtonSize | undefined;
     readonly tone?: ButtonTone | undefined;
     readonly iconOnly?: boolean | undefined;
+    readonly iconSize?: IconSize | undefined;
     readonly compact?: boolean | undefined;
     readonly className?: string | undefined;
   } = {},
@@ -184,13 +187,18 @@ export function buttonClassName(
     ? 'group bg-transparent'
     : buttonVariantClassName(variant, options.tone, 'button');
 
+  const compactSize = compact || size === 'compact' || size === 'inline';
+  const iconSizes = {
+    row: 'h-7 w-7 coarse:h-9 coarse:w-10',
+    toolbar: 'h-7 w-7 coarse:h-10 coarse:w-10',
+    header: 'h-7 w-7 coarse:h-11 coarse:w-11',
+    rail: 'h-7 w-7 coarse:h-11 coarse:w-11',
+  } as const;
   const sizeClass = options.iconOnly
-    ? 'ui-icon-button'
-    : compact || size === 'inline'
-      ? 'ui-compact'
-      : '';
+    ? `ui-icon-button ${iconSizes[options.iconSize ?? 'header']} p-0`
+    : `${compactSize ? 'h-7' : 'h-8'} px-3 coarse:h-11 coarse:px-4`;
   return [
-    `ui-button inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-md text-label no-underline ${transitionSurface} ${compact ? 'focus-visible:outline-none' : focusOutline} disabled:cursor-not-allowed`,
+    `ui-button inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-md text-label no-underline ${transitionSurface} ${compact ? 'focus-visible:outline-none' : options.iconOnly ? focusOutlineInset : focusOutline} disabled:cursor-not-allowed`,
     variantClass,
     sizeClass,
     options.className ?? '',
@@ -213,14 +221,7 @@ export function compactButtonVisualClassName(options: {
   readonly iconOnly: boolean;
 }): string {
   const variant = options.variant ?? 'primary';
-  const size = options.size ?? 'md';
-  const sizeClass = options.iconOnly
-    ? size === 'sm'
-      ? 'size-8 md:size-7'
-      : 'size-9 md:size-8'
-    : size === 'sm'
-      ? 'min-h-8 px-2 md:min-h-7'
-      : 'min-h-9 px-3 md:min-h-8';
+  const sizeClass = options.iconOnly ? 'h-7 w-7' : 'h-7';
   return [
     `inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md ${transitionSurface}`,
     'group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-focus',
@@ -266,17 +267,14 @@ export type FrameEdge = 'start' | 'end';
  * 14 px and then 6 px, and the avatar takes 10 px and then 2 px.
  * `control-classes.test.ts` holds each string below to that arithmetic.
  */
+/** The same optical slot works at either edge. Targets grow around it. */
 export function edgeControlClassName(options: {
   readonly edge: FrameEdge;
   readonly mark: EdgeMark;
 }): string {
-  return options.edge === 'start'
-    ? options.mark === 'avatar'
-      ? '-ms-2.5 pointer-fine:-ms-0.5'
-      : '-ms-3.5 pointer-fine:-ms-1.5'
-    : options.mark === 'avatar'
-      ? '-me-2.5 pointer-fine:-me-0.5'
-      : '-me-3.5 pointer-fine:-me-1.5';
+  return options.mark === 'avatar'
+    ? 'relative inline-flex h-6 w-6'
+    : 'relative inline-flex h-4 w-4';
 }
 
 /**
@@ -298,7 +296,7 @@ export function edgeControlClassName(options: {
  * `control-classes.test.ts` holds the strings to that arithmetic.
  */
 export function controlStripClassName(): string {
-  return 'flex items-center overflow-x-auto py-1 -mx-3.5 pointer-fine:-mx-2.5 pointer-fine:px-1';
+  return 'flex items-center overflow-x-auto py-1';
 }
 
 /**
@@ -333,6 +331,7 @@ export function controlStripClassName(): string {
  */
 export function rowClassName(
   options: {
+    readonly layout?: boolean;
     readonly selected?: boolean | undefined;
     /** Aligns a Settings control with the content column. */
     readonly flush?: boolean | undefined;
@@ -370,7 +369,7 @@ export function rowClassName(
       : 'disabled:cursor-not-allowed disabled:text-muted disabled:hover:bg-transparent disabled:hover:text-muted'
     : '';
   return [
-    `ui-tree-row flex items-center gap-2 rounded-md ${options.flush === true ? 'px-0' : 'px-2'} text-body ${colour} no-underline ${transitionSurface}`,
+    `${options.layout === false ? '' : 'ui-tree-row flex items-center gap-2 rounded-md py-1 coarse:py-2 coarse:rounded-lg ' + (options.flush === true ? 'px-0' : 'px-2 coarse:px-3')} text-body ${colour} no-underline ${transitionSurface}`,
     interactive ? 'cursor-pointer' : '',
     disabled,
     interactive
@@ -397,7 +396,7 @@ export function sidebarViewClassName(options: {
   readonly current: boolean;
 }): string {
   return [
-    `ui-button ui-icon-button inline-flex shrink-0 cursor-pointer items-center justify-center rounded-md ${transitionSurface} ${focusOutline}`,
+    `ui-button ui-icon-button h-7 w-7 p-0 coarse:h-11 coarse:w-11 inline-flex shrink-0 cursor-pointer items-center justify-center rounded-md ${transitionSurface} ${focusOutline}`,
     options.current
       ? 'bg-active text-strong'
       : 'text-muted hover:bg-hover hover:text-strong',
@@ -431,7 +430,7 @@ export function taskBoxClassName(): string {
  */
 export function tabClassName(options: { readonly selected: boolean }): string {
   return [
-    `ui-button ui-compact inline-flex shrink-0 cursor-pointer items-center rounded-md text-label ${transitionSurface} ${focusOutline}`,
+    `ui-button ui-compact h-7 px-3 coarse:h-11 coarse:px-4 inline-flex shrink-0 cursor-pointer items-center rounded-md text-label ${transitionSurface} ${focusOutline}`,
     options.selected
       ? 'bg-active text-strong'
       : 'text-muted hover:bg-hover hover:text-strong',
@@ -448,7 +447,7 @@ export function tabClassName(options: { readonly selected: boolean }): string {
  * field.
  */
 export function inlineFieldClassName(): string {
-  return `ui-field min-w-0 flex-1 rounded-sm border bg-app text-body text-strong outline-none ${transitionField} border-edge-line focus-visible:border-focus`;
+  return `ui-field h-8 px-3 coarse:h-11 min-w-0 flex-1 rounded-md border bg-app text-body text-strong outline-none ${transitionField} border-edge-line focus-visible:border-focus`;
 }
 
 /** The classes of the parts of one checkbox and its label. */
@@ -573,7 +572,7 @@ export function fieldClassName(
   } = {},
 ): string {
   return [
-    `ui-field w-full ${fieldSurface} text-body`,
+    `ui-field h-8 px-3 coarse:h-11 w-full ${fieldSurface} text-body`,
     fieldEdge(options.invalid === true),
     options.className ?? '',
   ]
@@ -599,10 +598,13 @@ function fieldEdge(invalid: boolean): string {
  * code face at the control step, as a source text is.
  */
 export function textAreaClassName(
-  options: { readonly invalid?: boolean | undefined } = {},
+  options: {
+    readonly invalid?: boolean | undefined;
+    readonly size?: 'document' | 'short';
+  } = {},
 ): string {
   return [
-    `block w-full min-h-64 resize-y py-2 font-mono text-body ${fieldSurface}`,
+    `block w-full ${options.size === 'short' ? '' : 'min-h-64 font-mono'} resize-y py-2 text-body ${fieldSurface}`,
     fieldEdge(options.invalid === true),
   ].join(' ');
 }
@@ -615,7 +617,7 @@ export function textAreaClassName(
  * body step of the chrome and the touch step of every field.
  */
 export function bareFieldClassName(): string {
-  return `ui-field min-w-0 flex-1 border-0 bg-transparent text-body text-strong outline-none placeholder:text-muted`;
+  return `ui-field ui-bare-field min-w-0 flex-1 border-0 bg-transparent text-body text-strong outline-none placeholder:text-muted`;
 }
 
 /**
@@ -628,7 +630,7 @@ export function bareFieldClassName(): string {
  */
 export function selectClassName(): string {
   return fieldClassName({
-    className: 'ui-select cursor-pointer appearance-none',
+    className: 'ui-select cursor-pointer appearance-none pr-3',
   });
 }
 
@@ -682,7 +684,7 @@ export function meterClassNames(
   readonly fill: string;
 } {
   return {
-    text: 'mb-1 mt-0 text-secondary text-muted',
+    text: 'text-secondary text-muted',
     track: 'h-1.5 w-full overflow-hidden rounded-sm bg-hover',
     fill: `block h-1.5 w-full rounded-sm ${meterAlmostFull(value, max) ? 'fill-danger-fill' : 'fill-accent-fill'}`,
   };
@@ -720,7 +722,7 @@ export function calendarDayClassName(options: {
         ? 'text-ink'
         : 'text-muted';
   return [
-    `ui-calendar-day relative inline-flex w-full cursor-pointer items-center justify-center rounded-md border text-body tabular-nums ${transitionSurface} ${focusOutlineInset}`,
+    `ui-calendar-day h-7 coarse:h-11 p-0 relative inline-flex w-full cursor-pointer items-center justify-center rounded-md border text-body tabular-nums ${transitionSurface} ${focusOutlineInset}`,
     options.today ? 'border-edge-line text-label' : 'border-transparent',
     options.selected
       ? 'bg-active text-label'
@@ -802,7 +804,7 @@ export function historyButtonVisualClassName(disabled: boolean): string {
     disabled
       ? 'bg-transparent text-muted'
       : 'bg-transparent text-strong group-hover:bg-hover',
-    'size-8 md:size-7',
+    'h-7 w-7',
   ].join(' ');
 }
 
@@ -830,8 +832,7 @@ export function switchClassNames(checked: boolean): {
   return {
     row: rowClassName({
       flush: true,
-      className:
-        'ui-settings-phone-row ui-setting-row ui-setting-align w-full text-left',
+      className: 'w-full text-left py-3 px-0 coarse:px-4',
     }),
     track: `inline-flex h-6 w-10 shrink-0 items-center rounded-full border border-edge-line p-1 ${checked ? 'justify-end bg-accent-fill' : 'justify-start bg-hover'}`,
     thumb: `size-4 rounded-full ${checked ? 'bg-on-accent' : 'bg-muted'}`,

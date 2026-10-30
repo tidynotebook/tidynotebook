@@ -1,3 +1,4 @@
+import { Inset, Button, Notice, pageGutter } from '@notesapp/ui';
 /**
  * The one-pane note editor screen.
  *
@@ -54,7 +55,7 @@ import {
   type RichWidgetResolvers,
   type TableMenuRequest,
 } from '@notesapp/editor';
-import { Button, CollapsibleSection, Notice, pageGutter } from '@notesapp/ui';
+
 import { useSpellCheck, useTheme } from '../../app.tsx';
 import { ActiveNoteScope, useActiveNoteControl } from './active-note.tsx';
 import { downloadNote, transferFailureMessage } from '../export/export.ts';
@@ -64,12 +65,7 @@ import {
   useRegisterNoteActions,
   type NoteScreenActions,
 } from './note-actions.tsx';
-import {
-  noteFrameClassName,
-  noteOutlineScrollClassName,
-  noteRowClassName,
-  noteSideRegionClassName,
-} from '../../lib/note-column.ts';
+import { noteFrameClassName, noteRowClassName } from '../../lib/note-column.ts';
 import { localWriteFailureMessage } from '../../lib/local-write.ts';
 import { FormatToolbar, toolSlashCommands } from './format-toolbar.tsx';
 import { TableMenu } from './table-menu.tsx';
@@ -95,7 +91,7 @@ import {
 import { shouldFocusNewNoteOnOpen } from '../../lib/note-name-input.ts';
 import { useHeadingName } from './heading-name.ts';
 import { duplicateNote as makeCopy } from '../notes/duplicate-note.ts';
-import { OutlinePanel } from './outline.tsx';
+import { NoteSide } from './note-side.tsx';
 import { useDeleteNotice } from '../trash/trash.tsx';
 import { createDiagramFrame, diagramFramePath } from '../../diagram/frame.ts';
 import { useRegisterNoteDraftFlush } from './save-status.tsx';
@@ -111,7 +107,6 @@ import {
   remoteChangeWritesDraft,
   storedDocumentStep,
 } from './head-replaced.ts';
-import { Backlinks } from './backlinks.tsx';
 import { ReviewNoticeBar } from '../review/review-notice.tsx';
 import { ImageViewer } from './image-viewer.tsx';
 import { recordTiming } from './timing.ts';
@@ -1414,7 +1409,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
   useRegisterNoteActions(noteScreenActions);
 
   return (
-    <div className="flex h-full min-h-0 min-w-0 flex-col" ref={rootRef}>
+    <Inset as="div" className="flex h-full min-w-0 flex-col" ref={rootRef}>
       <NoteHeader
         fileId={fileId}
         name={name}
@@ -1440,7 +1435,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
       />
       <div
         ref={marginRef}
-        className={`flex min-h-0 flex-1 flex-col ${pageGutter}`}
+        className={`flex overflow-hidden flex-1 flex-col ${pageGutter}`}
       >
         {/*
           The name field is in the frame header, which is one row of 44 px and
@@ -1449,19 +1444,19 @@ const NoteEditorBody = memo(function NoteEditorBody({
           points at this message with `aria-describedby`.
         */}
         {pathError === '' ? null : (
-          <div className="mt-4" id={noteNameErrorId(fileId)}>
+          <Inset as="div" id={noteNameErrorId(fileId)}>
             <Notice tone="problem" message={pathError} />
-          </div>
+          </Inset>
         )}
         {writeFailure === null ? null : (
-          <div className="mt-4">
+          <Inset as="div">
             <Notice tone="problem" message={writeFailure} />
-          </div>
+          </Inset>
         )}
         {editorNotice === '' ? null : (
-          <div className="mt-4">
+          <Inset as="div">
             <Notice tone="problem" message={editorNotice} />
-          </div>
+          </Inset>
         )}
         {/*
           A save of this device that joined work of another device offers
@@ -1488,12 +1483,12 @@ const NoteEditorBody = memo(function NoteEditorBody({
           }}
         />
         {attachState.kind === 'uploading' ? (
-          <p className="m-0 mt-4 text-secondary text-muted" role="status">
+          <Inset as="p" className="text-secondary text-muted" role="status">
             {`Uploading ${attachState.name}.`}
-          </p>
+          </Inset>
         ) : null}
         {attachState.kind === 'failed' ? (
-          <div className="mt-4">
+          <Inset as="div">
             <Notice tone="problem" message={attachState.message}>
               <Button
                 variant="secondary"
@@ -1505,7 +1500,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
                 Try again
               </Button>
             </Notice>
-          </div>
+          </Inset>
         ) : null}
 
         {/*
@@ -1532,9 +1527,10 @@ const NoteEditorBody = memo(function NoteEditorBody({
                 onClose={closeTableMenu}
               />
             )}
-            <div
+            <Inset
               ref={containerRef}
-              className="min-h-0 flex-1 overflow-hidden max-lg:pointer-coarse:overflow-visible"
+              as="div"
+              className="flex-1 overflow-hidden max-lg:pointer-coarse:overflow-visible"
               onPaste={(event): void => {
                 const dropped = Array.from(event.clipboardData?.files ?? []);
                 if (dropped.some((file) => file.type.startsWith('image/'))) {
@@ -1564,36 +1560,20 @@ const NoteEditorBody = memo(function NoteEditorBody({
             region both fit, so a note on a laptop keeps its full measure
             (decision 0055).
           */}
-          <aside
-            className={noteSideRegionClassName()}
-            aria-label="Note outline and inbound links"
-          >
-            <div className={noteOutlineScrollClassName()}>
-              <OutlinePanel
-                text={initialText}
-                open={outlineOpen}
-                onToggle={setOutlineOpen}
-              />
-            </div>
-            <div className="min-h-0 max-h-1/2 shrink-0 overflow-y-auto overscroll-contain">
-              <CollapsibleSection
-                id="notes-backlinks"
-                title="Links to this note"
-                open={backlinksOpen}
-                onToggle={setBacklinksOpen}
-              >
-                <Backlinks
-                  store={store}
-                  accountId={accountId}
-                  workspaceId={workspaceId}
-                  fileId={fileId}
-                />
-              </CollapsibleSection>
-            </div>
-          </aside>
+          <NoteSide
+            store={store}
+            accountId={accountId}
+            workspaceId={workspaceId}
+            fileId={fileId}
+            text={initialText}
+            outlineOpen={outlineOpen}
+            onOutlineChange={setOutlineOpen}
+            backlinksOpen={backlinksOpen}
+            onBacklinksChange={setBacklinksOpen}
+          />
         </div>
       </div>
       {imageUndo.toast ?? copyNote.toast}
-    </div>
+    </Inset>
   );
 });

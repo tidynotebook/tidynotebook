@@ -1,12 +1,14 @@
-/** One short status line. Details retain the full save and connection messages. */
-import { useEffect, useId, useState, type ReactNode } from 'react';
 import {
+  StatusLine,
   Button,
   Dialog,
   DialogBody,
   DialogFooter,
   focusOutlineInset,
 } from '@notesapp/ui';
+/** One short status line. Details retain the full save and connection messages. */
+import { useEffect, useId, useState, type ReactNode } from 'react';
+
 import { useLocalStore, useSession, useSyncState } from '../app.tsx';
 import {
   AttentionLink,
@@ -93,18 +95,19 @@ export function SidebarStatus({
     <>
       <div role="status" aria-live="polite" className="shrink-0">
         {details ? (
-          <button
+          <StatusLine
+            as="button"
             type="button"
-            className={`ui-sidebar-status flex w-full cursor-pointer items-center gap-2 bg-transparent text-left text-secondary text-muted hover:bg-hover ${focusOutlineInset}`}
+            className={`ui-sidebar-status flex w-full cursor-pointer items-center bg-transparent text-left text-secondary text-muted hover:bg-hover ${focusOutlineInset}`}
             aria-label={`${short}. Show save details`}
             onClick={() => setOpen(true)}
           >
             {content}
-          </button>
+          </StatusLine>
         ) : (
-          <div className="ui-sidebar-status flex items-center gap-2 text-secondary text-muted">
+          <StatusLine className="ui-sidebar-status flex items-center text-secondary text-muted">
             {content}
-          </div>
+          </StatusLine>
         )}
         <span className="sr-only">{short === message ? '' : message}</span>
       </div>

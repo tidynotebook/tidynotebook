@@ -28,7 +28,7 @@ import {
   type FormatContext,
   type SlashCommand,
 } from '@notesapp/editor';
-import { controlStripClassName } from '@notesapp/ui';
+
 import type { ActionIconName } from './palette-items.ts';
 import { tableActionRows } from './table-menu.ts';
 
@@ -277,14 +277,10 @@ export function pressKeepsTextFocus(press: ToolbarPress): boolean {
  * of the system, so a finger that scrolled the row left the application, and
  * with the keyboard closed the row was out of reach.
  */
-export function formatToolbarFrameClassName(): string {
-  return 'shrink-0 border-b border-edge-line px-2';
-}
+export { formatToolbarFrameClassName } from '@notesapp/ui';
 
 /** The classes of the column that holds the row, on the note measure (0055). */
-export function formatToolbarColumnClassName(): string {
-  return 'mx-auto w-full max-w-note';
-}
+export { formatToolbarColumnClassName } from '@notesapp/ui';
 
 /**
  * The classes of the row itself.
@@ -296,11 +292,7 @@ export function formatToolbarColumnClassName(): string {
  * step between groups. From the medium width up a control is as small as its
  * mark, so the row spaces the groups by the named step of a group.
  */
-export function formatToolbarClassName(): string {
-  return `${controlStripClassName()} gap-1 md:gap-group`;
-}
+export { formatToolbarClassName } from '@notesapp/ui';
 
 /** The classes of one group of the row, which never shrinks in the strip. */
-export function formatToolGroupClassName(): string {
-  return 'flex shrink-0 items-center gap-1';
-}
+export { formatToolGroupClassName } from '@notesapp/ui';

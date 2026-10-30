@@ -121,7 +121,7 @@ await test('the row stands on the measure of the note, above a divider', () => {
   assert.ok(frame.includes('px-2'));
   const column = formatToolbarColumnClassName().split(' ');
   // Decision 0055: the one measure of the note, centred.
-  for (const name of ['mx-auto', 'w-full', 'max-w-note']) {
+  for (const name of ['w-full', 'max-w-note']) {
     assert.ok(noteColumnClassName().split(' ').includes(name));
     assert.ok(column.includes(name), `the column lacks ${name}`);
   }

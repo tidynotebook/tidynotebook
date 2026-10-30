@@ -1,3 +1,20 @@
+import {
+  Form,
+  Inset,
+  Button,
+  ChevronsUpDownIcon,
+  Dialog,
+  DialogBody,
+  DialogFooter,
+  LoadingState,
+  Menu,
+  type MenuItem,
+  Page,
+  PageHeader,
+  rowClassName,
+  TextField,
+} from '@notesapp/ui';
+
 /**
  * The workspaces of the account, and the control that moves between them.
  *
@@ -25,20 +42,7 @@ import {
   updateWorkspace,
   type Workspace,
 } from '@notesapp/api-client';
-import {
-  Button,
-  ChevronsUpDownIcon,
-  Dialog,
-  DialogBody,
-  DialogFooter,
-  LoadingState,
-  Menu,
-  type MenuItem,
-  Page,
-  PageHeader,
-  rowClassName,
-  TextField,
-} from '@notesapp/ui';
+
 import { deleteGlyph } from '../lib/delete-label.ts';
 import { problemMessage, useWorkspace } from '../app.tsx';
 import { addressInWorkspace, isMemberOf } from '../lib/workspace-choice.ts';
@@ -209,7 +213,8 @@ export function NewWorkspaceDialog({
       titleId="new-workspace-title"
       width="small"
     >
-      <form
+      <Form
+        regions
         onSubmit={(event): void => {
           event.preventDefault();
           create();
@@ -237,7 +242,7 @@ export function NewWorkspaceDialog({
             Make workspace
           </Button>
         </DialogFooter>
-      </form>
+      </Form>
     </Dialog>
   );
 }
@@ -308,7 +313,8 @@ export function RenameWorkspaceDialog({
       titleId="rename-workspace-title"
       width="small"
     >
-      <form
+      <Form
+        regions
         onSubmit={(event): void => {
           event.preventDefault();
           rename();
@@ -336,7 +342,7 @@ export function RenameWorkspaceDialog({
             Rename workspace
           </Button>
         </DialogFooter>
-      </form>
+      </Form>
     </Dialog>
   );
 }
@@ -398,17 +404,18 @@ export function DeleteWorkspaceDialog({
       titleId="delete-workspace-title"
       width="small"
     >
-      <form
+      <Form
+        regions
         onSubmit={(event): void => {
           event.preventDefault();
           remove();
         }}
       >
         <DialogBody>
-          <p className="mb-4 mt-0 text-body text-strong">
+          <Inset as="p" className="text-body text-strong">
             Every note, version and published link of {workspace.name} goes. You
             cannot get them back.
-          </p>
+          </Inset>
           <TextField
             id="delete-workspace-name"
             label={`Type ${workspace.name} to confirm`}
@@ -433,7 +440,7 @@ export function DeleteWorkspaceDialog({
             Delete permanently
           </Button>
         </DialogFooter>
-      </form>
+      </Form>
     </Dialog>
   );
 }
@@ -532,6 +539,7 @@ export function WorkspaceSwitcher({
     <div className="shrink-0">
       <Menu
         label={`Workspace: ${openWorkspace.name}`}
+        trigger="row"
         items={items}
         pinned={pinned}
         matchTrigger

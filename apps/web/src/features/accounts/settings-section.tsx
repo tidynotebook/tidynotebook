@@ -1,3 +1,13 @@
+import {
+  Card,
+  Button,
+  Stack,
+  ListRow,
+  SectionHeading,
+  WrapText,
+  Switch,
+  type PageSection,
+} from '@notesapp/ui';
 /**
  * One section of Settings and of the pages that belong to it.
  *
@@ -17,14 +27,6 @@ import {
   type ReactNode,
   type Ref,
 } from 'react';
-import {
-  Button,
-  SettingsRowActions,
-  WrapText,
-  ChevronRightIcon,
-  Switch,
-  type PageSection,
-} from '@notesapp/ui';
 
 const phoneQuery = '(pointer: coarse) and (max-width: 1023px)';
 function subscribePhone(change: () => void): () => void {
@@ -78,25 +80,16 @@ export function SettingActionRow({
       </SettingRow>
     );
   return (
-    <button
-      type="button"
-      aria-label={label}
-      disabled={disabled}
+    <ListRow
+      as="button"
+      density="setting"
+      label={label}
+      labelTone={danger ? 'danger' : 'accent'}
+      help={help?.trim() ? <WrapText>{help}</WrapText> : undefined}
       onClick={onClick}
-      className={`ui-settings-row ui-settings-action-link text-left ${danger ? 'text-danger' : 'text-accent'}`}
-    >
-      <span data-setting-label className="block text-body">
-        {label}
-      </span>
-      {help === undefined || help.trim() === '' ? null : (
-        <span
-          data-setting-help
-          className="ui-settings-help text-secondary text-muted"
-        >
-          <WrapText>{help}</WrapText>
-        </span>
-      )}
-    </button>
+      disabled={disabled}
+      className="ui-settings-action-link text-left"
+    />
   );
 }
 
@@ -136,62 +129,53 @@ export function SettingsSection({
   const topic = useContext(SettingsTopicContext);
   const phone = usePhoneSettings();
   if (Children.toArray(children).length === 0) return null;
-  if (topic !== null)
-    return (
-      <section className="ui-settings-group" aria-label={section.title}>
-        {topic.hiddenTitles.includes(section.id) &&
-        !(phone && section.id === 'profile-heading') ? null : (
-          <h3
-            className={`ui-settings-group-heading text-group ${danger ? 'text-danger' : 'text-muted'}`}
-            id={section.id}
-          >
-            {heading ?? section.title}
-          </h3>
-        )}
-        {topic.helpSection === section.id && description !== undefined ? (
-          <p className="ui-settings-message text-secondary text-muted">
-            {description}
-          </p>
-        ) : null}
-        <div
-          className={
-            grouped ? 'ui-settings-groups min-w-0' : 'ui-settings-card min-w-0'
-          }
-        >
-          {warning === undefined ? null : (
-            <p className="ui-settings-message text-secondary text-muted">
-              {warning}
-            </p>
-          )}
-          {children}
-        </div>
-      </section>
-    );
+  const hidden =
+    topic !== null &&
+    topic.hiddenTitles.includes(section.id) &&
+    !(phone && section.id === 'profile-heading');
   return (
-    <section className="ui-section" aria-labelledby={section.id}>
-      <div>
-        <div className="md:col-span-1">
+    <Stack as="section" gap={2} aria-label={section.title}>
+      {hidden ? null : topic !== null ? (
+        <SectionHeading
+          id={section.id}
+          label={heading ?? section.title}
+          danger={danger}
+          divider
+          inset={{ fine: 0, coarse: 4 }}
+        />
+      ) : (
+        <Stack gap={1}>
           <h2
-            className="m-0 text-title-header text-strong"
             id={section.id}
             tabIndex={-1}
+            className="text-title-header text-strong"
           >
             {section.title}
           </h2>
           {description === undefined ? null : (
-            <p className="mb-0 mt-1 text-secondary text-muted">{description}</p>
+            <p className="text-secondary text-muted">{description}</p>
           )}
-        </div>
-        <div className="mt-2 min-w-0">
+        </Stack>
+      )}
+      {topic?.helpSection === section.id && description !== undefined ? (
+        <p className="text-secondary text-muted">{description}</p>
+      ) : null}
+      {grouped ? (
+        <Stack gap={{ fine: 6, coarse: 4 }} className="min-w-0">
           {warning === undefined ? null : (
-            <p className="ui-settings-message text-secondary text-muted">
-              {warning}
-            </p>
+            <p className="text-secondary text-muted">{warning}</p>
           )}
           {children}
-        </div>
-      </div>
-    </section>
+        </Stack>
+      ) : (
+        <Card responsive className="min-w-0">
+          {warning === undefined ? null : (
+            <p className="text-secondary text-muted">{warning}</p>
+          )}
+          {children}
+        </Card>
+      )}
+    </Stack>
   );
 }
 
@@ -209,23 +193,13 @@ export function SettingRow({
   readonly children?: ReactNode;
 }): ReactNode {
   return (
-    <div className="ui-settings-row">
-      <div data-setting-text className="ui-settings-copy">
-        <p data-setting-label className="text-body text-strong">
-          {label}
-        </p>
-        {help?.trim() ? (
-          <p data-setting-help className="text-secondary text-muted">
-            <WrapText>{help}</WrapText>
-          </p>
-        ) : null}
-      </div>
-      {children === undefined ? null : (
-        <div data-setting-control className="ui-settings-control">
-          <SettingsRowActions>{children}</SettingsRowActions>
-        </div>
-      )}
-    </div>
+    <ListRow
+      as="div"
+      density="setting"
+      label={label}
+      help={help?.trim() ? <WrapText>{help}</WrapText> : undefined}
+      control={children}
+    />
   );
 }
 
@@ -248,33 +222,23 @@ export function SettingChoiceRow({
   readonly buttonRef?: Ref<HTMLButtonElement>;
 }): ReactNode {
   return (
-    <button
-      ref={buttonRef}
-      type="button"
-      aria-label={label}
+    <ListRow
+      as="button"
+      density="setting"
+      buttonRef={buttonRef}
+      label={label}
+      help={help.trim() ? <WrapText>{help}</WrapText> : undefined}
+      value={
+        <>
+          {valueIcon}
+          <span>{value}</span>
+        </>
+      }
+      trailing={{ kind: 'chevron' }}
       disabled={disabled}
       onClick={onClick}
-      className="ui-settings-row ui-settings-choice text-left hover:bg-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-focus"
-    >
-      <span data-setting-text className="ui-settings-copy">
-        <span data-setting-label className="text-body text-strong">
-          {label}
-        </span>
-        {help.trim() ? (
-          <span data-setting-help className="text-secondary text-muted">
-            <WrapText>{help}</WrapText>
-          </span>
-        ) : null}
-      </span>
-      <span
-        data-setting-control
-        className="ui-settings-control text-value text-muted"
-      >
-        {valueIcon}
-        <span className="ui-settings-value">{value}</span>
-        <ChevronRightIcon />
-      </span>
-    </button>
+      className="ui-settings-choice text-left"
+    />
   );
 }
 

@@ -1,3 +1,19 @@
+import {
+  Form,
+  Card,
+  Grid,
+  Stack,
+  Button,
+  Dialog,
+  DialogBody,
+  DialogFooter,
+  LoadingState,
+  Notice,
+  SelectField,
+  TextAreaField,
+  TextField,
+} from '@notesapp/ui';
+
 import { SettingsDialog } from './settings-dialog.tsx';
 import {
   SettingChoiceRow,
@@ -19,17 +35,7 @@ import {
   type MailSecurity,
   type MailSettings,
 } from '@notesapp/api-client';
-import {
-  Button,
-  Dialog,
-  DialogBody,
-  DialogFooter,
-  LoadingState,
-  Notice,
-  SelectField,
-  TextAreaField,
-  TextField,
-} from '@notesapp/ui';
+
 import { problemMessage } from '../../app.tsx';
 import { problemCode } from '../../lib/problem-text.ts';
 import {
@@ -65,7 +71,6 @@ function OutcomeNotice({ outcome }: { readonly outcome: Outcome }): ReactNode {
   if (outcome.kind === 'none') return null;
   return (
     <Notice
-      className="mb-3"
       tone={outcome.kind === 'done' ? 'success' : 'problem'}
       message={outcome.message}
     />
@@ -100,7 +105,7 @@ export function MailSettingsBody({
 }): ReactNode {
   const [editing, setEditing] = useState(false);
   return (
-    <div className="ui-settings-card">
+    <Card responsive>
       <SettingChoiceRow
         label="Mail server"
         help={
@@ -134,7 +139,7 @@ export function MailSettingsBody({
           }}
         />
       </SettingsDialog>
-    </div>
+    </Card>
   );
 }
 
@@ -281,7 +286,8 @@ function MailSettingsForm({
   };
 
   return (
-    <form
+    <Form
+      regions
       className="ui-dialog-form"
       onSubmit={(event): void => {
         event.preventDefault();
@@ -291,12 +297,11 @@ function MailSettingsForm({
       <DialogBody>
         {lostPassword ? (
           <Notice
-            className="mb-3"
             tone="problem"
             message="The server can no longer read the saved password. Enter it again and save."
           />
         ) : null}
-        <div className="ui-settings-form-grid md:grid-cols-3">
+        <Grid gap={3} className="md:grid-cols-3">
           <div className="md:col-span-2">
             <TextField
               id="mail-host"
@@ -320,7 +325,7 @@ function MailSettingsForm({
               update({ port });
             }}
           />
-        </div>
+        </Grid>
         <SelectField
           id="mail-security"
           label="Security"
@@ -336,8 +341,8 @@ function MailSettingsForm({
             });
           }}
         />
-        <fieldset className="m-0 min-w-0 border-0 p-0">
-          <div className="ui-settings-form-grid md:grid-cols-2">
+        <Stack gap={1} pad={0} as="fieldset" className="min-w-0 border-0">
+          <Grid gap={3} className="md:grid-cols-2">
             <TextField
               id="mail-username"
               label="User name"
@@ -360,7 +365,7 @@ function MailSettingsForm({
                 update({ password });
               }}
             />
-          </div>
+          </Grid>
           <p
             id="mail-signin-hint"
             className="ui-field-help text-secondary text-muted"
@@ -369,7 +374,7 @@ function MailSettingsForm({
               ? 'Leave the password empty to keep the saved one. Leave both fields empty for a server that takes mail with no sign-in.'
               : 'Leave both fields empty for a server that takes mail with no sign-in.'}
           </p>
-        </fieldset>
+        </Stack>
         <TextField
           id="mail-sender"
           label="Sender"
@@ -383,7 +388,7 @@ function MailSettingsForm({
           }}
         />
         {stored ? (
-          <div className="ui-settings-card">
+          <Card responsive>
             <SettingActionRow
               label="Send a test message"
               actionLabel="Send a test message"
@@ -397,7 +402,7 @@ function MailSettingsForm({
               disabled={busy}
               onClick={() => setConfirming(true)}
             />
-          </div>
+          </Card>
         ) : null}
         <OutcomeNotice outcome={outcome} />
       </DialogBody>
@@ -428,7 +433,7 @@ function MailSettingsForm({
           onConfirm={remove}
         />
       ) : null}
-    </form>
+    </Form>
   );
 }
 
@@ -480,7 +485,7 @@ export function LegalDocumentsBody({
   const [editing, setEditing] = useState<LegalDocumentRowName | null>(null);
   const locked = legal.source === 'environment';
   return (
-    <div className="ui-settings-card">
+    <Card responsive>
       {legalDocumentRows.map((row) => (
         <SettingChoiceRow
           key={row.name}
@@ -512,7 +517,7 @@ export function LegalDocumentsBody({
           />
         </SettingsDialog>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -630,7 +635,8 @@ function LegalDocumentEditor({
   };
 
   return (
-    <form
+    <Form
+      regions
       className="ui-dialog-form"
       aria-label={title}
       onSubmit={(event): void => {
@@ -666,15 +672,15 @@ function LegalDocumentEditor({
         ) : (
           <>
             {fields.length === 0 ? null : (
-              <fieldset className="m-0 min-w-0 border-0 p-0">
+              <Stack gap={1} pad={0} as="fieldset" className="min-w-0 border-0">
                 <legend className="ui-settings-form-legend text-label text-strong">
                   Facts of your service
                 </legend>
-                <div className="ui-settings-form-fields">
+                <Stack gap={3}>
                   <p className="m-0 text-secondary text-muted">
                     Each fact fills its place in the text below.
                   </p>
-                  <div className="ui-settings-form-grid md:grid-cols-2">
+                  <Grid gap={3} className="md:grid-cols-2">
                     {fields.map((field, index) => (
                       <div
                         key={field.blank}
@@ -695,9 +701,9 @@ function LegalDocumentEditor({
                         />
                       </div>
                     ))}
-                  </div>
-                </div>
-              </fieldset>
+                  </Grid>
+                </Stack>
+              </Stack>
             )}
             <TextAreaField
               id="legal-text"
@@ -724,7 +730,7 @@ function LegalDocumentEditor({
             update({ version: next });
           }}
         />
-        <div className="ui-settings-card">
+        <Card responsive>
           <SettingActionRow
             label="Start again from template"
             actionLabel="Start again from template"
@@ -742,10 +748,8 @@ function LegalDocumentEditor({
               onClick={() => setConfirming(true)}
             />
           ) : null}
-        </div>
-        {failure === '' ? null : (
-          <Notice className="mb-3" tone="problem" message={failure} />
-        )}
+        </Card>
+        {failure === '' ? null : <Notice tone="problem" message={failure} />}
       </DialogBody>
       <DialogFooter>
         <Button variant="ghost" onClick={onClose}>
@@ -784,6 +788,6 @@ function LegalDocumentEditor({
           }}
         />
       ) : null}
-    </form>
+    </Form>
   );
 }

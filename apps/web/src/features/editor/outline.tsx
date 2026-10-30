@@ -1,3 +1,4 @@
+import { ListRow, Inset, CollapsibleSection } from '@notesapp/ui';
 /**
  * The note outline panel, which reads the live buffer and moves the caret.
  *
@@ -11,7 +12,7 @@ import {
   previewStructureOf,
   type OutlineHeading,
 } from '@notesapp/editor';
-import { CollapsibleSection, rowClassName } from '@notesapp/ui';
+
 import { revealInNote, useActiveNote } from './active-note.tsx';
 
 /**
@@ -21,8 +22,6 @@ import { revealInNote, useActiveNote } from './active-note.tsx';
  * how far it sits from the left and never by a guide line, which is what the
  * folder tree does as well (record 0064).
  */
-const outlineIndent = (level: number): string =>
-  ['', 'pl-3', 'pl-6', 'pl-8', 'pl-12', 'pl-12'][level - 1] ?? '';
 
 /** The headings of one Markdown source, read from the shared grammar. */
 function outlineOfText(source: string): readonly OutlineHeading[] {
@@ -79,34 +78,28 @@ export function OutlinePanel({
       open={open}
       onToggle={onToggle}
     >
-      <ol className="m-0 list-none p-0">
+      <Inset pad={0} as="ol" className="list-none">
         {headings.map((heading, index) => (
           <li key={`${String(index)}:${heading.text}`}>
             {view !== null ? (
-              <button
-                type="button"
-                className={rowClassName({
-                  className: `w-full text-left ${outlineIndent(heading.level)}`,
-                })}
+              <ListRow
+                as="button"
+                density="tree"
+                indent={heading.level - 1}
                 onClick={(): void => {
                   revealInNote(view, heading.from);
                 }}
               >
                 <span className="min-w-0 flex-1 truncate">{heading.text}</span>
-              </button>
+              </ListRow>
             ) : (
-              <span
-                className={rowClassName({
-                  interactive: false,
-                  className: outlineIndent(heading.level),
-                })}
-              >
+              <ListRow as="div" density="tree" indent={heading.level - 1}>
                 <span className="min-w-0 flex-1 truncate">{heading.text}</span>
-              </span>
+              </ListRow>
             )}
           </li>
         ))}
-      </ol>
+      </Inset>
     </CollapsibleSection>
   );
 }

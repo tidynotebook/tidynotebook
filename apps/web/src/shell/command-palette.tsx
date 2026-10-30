@@ -1,3 +1,16 @@
+import {
+  Inline,
+  Inset,
+  bareFieldClassName,
+  Button,
+  Dialog,
+  EmptyState,
+  FileTextIcon,
+  LoadingState,
+  Notice,
+  rowClassName,
+  SearchIcon,
+} from '@notesapp/ui';
 /**
  * The one command palette of the application.
  *
@@ -36,17 +49,7 @@ import {
 import { useNavigate } from 'react-router';
 import { searchFiles as searchRemote } from '@notesapp/api-client';
 import type { LocalStore } from '@notesapp/sync';
-import {
-  bareFieldClassName,
-  Button,
-  Dialog,
-  EmptyState,
-  FileTextIcon,
-  LoadingState,
-  Notice,
-  rowClassName,
-  SearchIcon,
-} from '@notesapp/ui';
+
 import { actionIcon, emptyStateIcon } from './action-icons.tsx';
 import { KeyHint } from './key-hint.tsx';
 import {
@@ -102,8 +105,6 @@ type Row =
     };
 
 /** The class of the quiet label above a group of rows. */
-const groupLabelClassName =
-  'px-2 pb-1 pt-2 text-secondary text-muted first:pt-1';
 
 /** Reads the content matches of one query from this device and the server. */
 function useContentHits(
@@ -363,7 +364,14 @@ function PaletteDialog({
       hideTitle
       width="medium"
     >
-      <div className="flex items-center gap-cluster border-b border-edge-line px-gutter py-1">
+      <Inline
+        gap={2}
+        padX={4}
+        padY={1}
+        align="center"
+        as="div"
+        className="border-b border-edge-line"
+      >
         <span className="shrink-0 text-muted" aria-hidden="true">
           <SearchIcon />
         </span>
@@ -411,44 +419,69 @@ function PaletteDialog({
         <span className="hidden shrink-0 sm:inline">
           <KeyHint keys="Escape" />
         </span>
-      </div>
+      </Inline>
       <p className="sr-only" aria-live="polite">
         {announcement}
       </p>
       {stepChoices?.status === 'ready' && stepChoices.notice !== null ? (
-        <p className="m-0 border-b border-edge-line px-gutter py-2 text-secondary text-muted">
+        <Inset
+          padX={4}
+          padY={2}
+          as="p"
+          className="border-b border-edge-line text-secondary text-muted"
+        >
           {stepChoices.notice}
-        </p>
+        </Inset>
       ) : null}
       {step === null ? (
-        <p className="mx-4 my-2 text-secondary text-muted">
+        <Inset pad={4} as="p" className="text-secondary text-muted">
           In {workspaceName}
           {content.offline ? ' · Offline, results from this device' : ''}
-        </p>
+        </Inset>
       ) : null}
-      <ul
+      <Inset
         ref={listRef}
         id="command-palette-list"
-        className="m-0 max-h-80 list-none overflow-y-auto p-2 empty:hidden"
+        pad={2}
+        as="ul"
+        className="max-h-80 list-none overflow-y-auto empty:hidden"
         role="listbox"
         aria-label={stepAction?.label ?? 'Results'}
       >
         {rows.map((row, index) => (
           <Fragment key={row.id}>
             {index === firstNote ? (
-              <li role="presentation" className={groupLabelClassName}>
+              <Inset
+                as="li"
+                padX={2}
+                padY={1}
+                role="presentation"
+                className="text-group text-muted"
+              >
                 Notes
-              </li>
+              </Inset>
             ) : null}
             {index === firstAction ? (
-              <li role="presentation" className={groupLabelClassName}>
+              <Inset
+                as="li"
+                padX={2}
+                padY={1}
+                role="presentation"
+                className="text-group text-muted"
+              >
                 Actions
-              </li>
+              </Inset>
             ) : null}
             {index === firstChoice ? (
-              <li role="presentation" className={groupLabelClassName}>
+              <Inset
+                as="li"
+                padX={2}
+                padY={1}
+                role="presentation"
+                className="text-group text-muted"
+              >
                 {stepAction?.label}
-              </li>
+              </Inset>
             ) : null}
             <li
               id={row.id}
@@ -456,7 +489,7 @@ function PaletteDialog({
               aria-selected={index === active}
               className={rowClassName({
                 selected: index === active,
-                className: 'md:min-h-8',
+                className: '',
               })}
               onMouseEnter={() => setSelected(index)}
               onMouseDown={(event): void => {
@@ -529,25 +562,25 @@ function PaletteDialog({
             </li>
           </Fragment>
         ))}
-      </ul>
+      </Inset>
       {step === null || stepChoices === null ? (
         content.pending ? (
-          <p className="m-4 text-secondary text-muted" role="status">
+          <Inset as="p" className="text-secondary text-muted" role="status">
             Searching...
-          </p>
+          </Inset>
         ) : rows.length === 0 ? (
-          <p className="m-4 text-secondary text-muted" role="status">
+          <Inset as="p" className="text-secondary text-muted" role="status">
             No note and no action matches that.
-          </p>
+          </Inset>
         ) : null
       ) : stepChoices.status === 'loading' ? (
-        <div className="px-2 pb-2">
+        <Inset padX={2} padY={2} as="div">
           <LoadingState shape="list" rows={3} label={stepChoices.label} />
-        </div>
+        </Inset>
       ) : stepChoices.status === 'unavailable' ? (
-        <div className="px-2 pb-2">
+        <Inset padX={2} padY={2} as="div">
           <Notice tone="info" message={stepChoices.message} />
-        </div>
+        </Inset>
       ) : stepChoices.choices.length === 0 ? (
         // A list that is not complete states so above and claims no empty
         // folder.
@@ -575,7 +608,9 @@ function PaletteDialog({
           />
         )
       ) : rows.length === 0 ? (
-        <p className="m-4 text-secondary text-muted">{step.noMatch}</p>
+        <Inset as="p" className="text-secondary text-muted">
+          {step.noMatch}
+        </Inset>
       ) : null}
     </Dialog>
   );

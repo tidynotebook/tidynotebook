@@ -1,3 +1,4 @@
+import { fixedRegionClasses } from './scroll-classes.ts';
 /** Scroll sentinels report hidden content to adjacent fixed regions. */
 import {
   useEffect,
@@ -5,7 +6,15 @@ import {
   useState,
   type ReactNode,
   type RefObject,
+  type HTMLAttributes,
 } from 'react';
+import {
+  compositionData,
+  insetClasses,
+  spaceClasses,
+  type InsetProps,
+  type SpaceValue,
+} from './primitives.tsx';
 import { scrollEdgesFrom, type ScrollEdges } from './scroll-edges.ts';
 export type { ScrollEdges } from './scroll-edges.ts';
 export function observeScrollEdges(
@@ -37,44 +46,65 @@ function ownEdge(
   const owners = edgeOwners.get(edge) ?? new Map<HTMLElement, boolean>();
   edgeOwners.set(edge, owners);
   owners.set(root, hidden && root.getBoundingClientRect().height > 0);
-  const update = () =>
-    edge.setAttribute(
-      'data-scroll-hidden',
-      String([...owners.values()].some(Boolean)),
+  const update = () => {
+    const hidden = [...owners.values()].some(Boolean);
+    edge.setAttribute('data-scroll-hidden', String(hidden));
+    edge.toggleAttribute(
+      edge.dataset.scrollEdge === 'above'
+        ? 'data-edge-bottom'
+        : 'data-edge-top',
+      hidden,
     );
+  };
   update();
   return () => {
     owners.delete(root);
     update();
   };
 }
-export function ScrollRegion({
+export function Region({
   children,
   className,
+  scroll = 'y',
+  edge = 'both',
+  gap = 0,
+  pad,
+  padX,
+  padY,
+  elementRef,
+  safeArea = false,
   above,
   below,
-}: {
-  readonly children: ReactNode;
-  readonly className?: string;
-  readonly above?: RefObject<HTMLElement | null>;
-  readonly below?: RefObject<HTMLElement | null>;
-}): ReactNode {
+  ...nativeProps
+}: Omit<HTMLAttributes<HTMLDivElement>, 'children'> &
+  InsetProps & {
+    readonly safeArea?: boolean;
+    readonly children: ReactNode;
+    readonly scroll?: 'none' | 'y';
+    readonly edge?: 'top' | 'bottom' | 'both';
+    readonly gap?: SpaceValue;
+    readonly elementRef?: RefObject<HTMLDivElement | null>;
+    readonly className?: string;
+    readonly above?: RefObject<HTMLElement | null>;
+    readonly below?: RefObject<HTMLElement | null>;
+  }): ReactNode {
   const root = useRef<HTMLDivElement>(null),
     start = useRef<HTMLSpanElement>(null),
     end = useRef<HTMLSpanElement>(null);
   const [edges, setEdges] = useState<ScrollEdges>({ start: false, end: false });
   useEffect(() => {
-    if (!root.current || !start.current || !end.current) return;
+    if (scroll !== 'y' || !root.current || !start.current || !end.current)
+      return;
     return observeScrollEdges(
       root.current,
       start.current,
       end.current,
       setEdges,
     );
-  }, []);
+  }, [scroll]);
   useEffect(() => {
     const held = root.current;
-    if (!held) return;
+    if (!held || scroll !== 'y') return;
     const frame = held.closest('[data-scroll-frame]');
     const edgesInFrame = frame
       ? Array.from(
@@ -99,20 +129,50 @@ export function ScrollRegion({
       releaseTop();
       releaseBottom();
     };
-  }, [above, below, edges, className]);
+  }, [above, below, edges, className, scroll]);
 
   return (
     <div
-      ref={root}
-      className={`ui-scroll-region ${className ?? ''}`}
+      {...nativeProps}
+      {...compositionData('region', { pad, padX, padY })}
+      ref={(element) => {
+        root.current = element;
+        if (elementRef) elementRef.current = element;
+      }}
+      className={`${scroll === 'y' ? 'ui-scroll-region flex-1 overflow-y-auto overscroll-contain' : `flex flex-col ${spaceClasses('gap', gap)} ${fixedRegionClasses(edge)}`} ${insetClasses({ pad, padX, padY })} ${className ?? ''}`}
+      data-scroll-edge={
+        scroll === 'none' ? (edge === 'top' ? 'below' : 'above') : undefined
+      }
       data-scroll-start-hidden={edges.start}
       data-scroll-end-hidden={edges.end}
     >
-      <div className="ui-scroll-content">
-        <span ref={start} aria-hidden="true" className="ui-scroll-start" />
-        {children}
-        <span ref={end} aria-hidden="true" className="ui-scroll-end" />
-      </div>
+      {scroll === 'none' ? (
+        <>
+          {children}
+          {safeArea ? (
+            <div aria-hidden="true" className="h-0 coarse:h-safe" />
+          ) : null}
+        </>
+      ) : (
+        <div
+          {...compositionData('stack', { gap })}
+          className={`ui-scroll-content relative flex min-h-full shrink-0 flex-col ${spaceClasses('gap', gap)}`}
+        >
+          <span
+            ref={start}
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 top-0 h-px"
+          />
+          {children}
+          <span
+            ref={end}
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-px"
+          />
+        </div>
+      )}
     </div>
   );
 }
+
+export { fixedRegionClasses } from './scroll-classes.ts';

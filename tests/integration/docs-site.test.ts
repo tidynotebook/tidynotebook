@@ -317,7 +317,18 @@ await test('the built documentation site', async (t) => {
   }
 
   /** Class names that select nothing by themselves. */
-  const markers = new Set(['group']);
+  const markers = new Set([
+    'group',
+    'public-footer',
+    'public-footer-brand',
+    'public-footer-grid',
+    'public-footer-wordmark',
+    'ui-button',
+    'ui-group-heading',
+    'ui-icon-button',
+    'ui-page-column',
+    'ui-tree-row',
+  ]);
 
   await t.test('every class of a page is in the built stylesheet', async () => {
     const sheets = [

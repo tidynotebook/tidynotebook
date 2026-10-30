@@ -1,3 +1,4 @@
+import { Inset, Notice } from '@notesapp/ui';
 /**
  * One version of a note, as the note surface draws it.
  *
@@ -29,7 +30,7 @@ import {
   type RichWidgetResolvers,
 } from '@notesapp/editor';
 import type { LocalStore } from '@notesapp/sync';
-import { Notice } from '@notesapp/ui';
+
 import { blockedLinkNotice } from '../../lib/note-link.ts';
 import {
   openExternalLink,
@@ -175,11 +176,14 @@ export default function VersionPreview({
       {linkNotice === '' ? null : (
         <Notice message={linkNotice} onDismiss={() => setLinkNotice('')} />
       )}
-      <div
+      <Inset
         ref={containerRef}
         role="region"
         aria-label={label}
-        className="max-h-96 overflow-y-auto rounded-lg border border-edge-subtle bg-app px-4 py-2"
+        padX={4}
+        padY={2}
+        as="div"
+        className="max-h-96 overflow-y-auto rounded-lg border border-edge-subtle bg-app"
       />
     </div>
   );

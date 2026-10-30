@@ -1,4 +1,53 @@
 import {
+  Form,
+  NavigationHeading,
+  SectionHeading,
+  IconButton,
+  Pill,
+  Stack,
+  Card,
+  RowCopy,
+  ContentHeader,
+  HeaderSlot,
+  HeaderTitle,
+  Inline,
+  avatarClassName,
+  Button,
+  SettingsSurface,
+  Region,
+  CalendarIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  CloseIcon,
+  ComputerIcon,
+  Dialog,
+  DialogBody,
+  DialogFooter,
+  DialogHeaderActionsContext,
+  DownloadIcon,
+  ExternalLinkIcon,
+  FileTextIcon,
+  KeyIcon,
+  MailIcon,
+  FlagIcon,
+  PaletteIcon,
+  PersonIcon,
+  ListRow,
+  LoadingState,
+  Meter,
+  MetaFacts,
+  Notice,
+  rowClassName,
+  SignOutIcon,
+  Switch,
+  TemplateIcon,
+  TextField,
+  UploadIcon,
+  UsersIcon,
+  type PageSection,
+} from '@notesapp/ui';
+
+import {
   SettingsActionContext,
   type SettingsActionRegistration,
 } from './settings-action-context.ts';
@@ -44,42 +93,7 @@ import {
   updateProfile,
   type AccountSession,
 } from '@notesapp/api-client';
-import {
-  avatarClassName,
-  Button,
-  SettingsSurface,
-  ScrollRegion,
-  CalendarIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  CloseIcon,
-  ComputerIcon,
-  Dialog,
-  DialogBody,
-  DialogFooter,
-  DialogHeaderActionsContext,
-  DownloadIcon,
-  ExternalLinkIcon,
-  FileTextIcon,
-  KeyIcon,
-  MailIcon,
-  FlagIcon,
-  PaletteIcon,
-  PersonIcon,
-  ListRow,
-  LoadingState,
-  Meter,
-  MetaFacts,
-  Notice,
-  rowClassName,
-  SignOutIcon,
-  Switch,
-  TemplateIcon,
-  TextField,
-  UploadIcon,
-  UsersIcon,
-  type PageSection,
-} from '@notesapp/ui';
+
 import {
   problemMessage,
   useLocalStore,
@@ -210,9 +224,7 @@ function SpellCheckSettings(): ReactNode {
         checked={pending ?? stored}
         onChange={change}
       />
-      {problem === '' ? null : (
-        <Notice className="mt-3" tone="problem" message={problem} />
-      )}
+      {problem === '' ? null : <Notice tone="problem" message={problem} />}
     </SettingsSection>
   );
 }
@@ -295,7 +307,7 @@ function SessionsSettings(): ReactNode {
       description="These devices are signed in to your account. Sign out a device that you do not use or do not know."
     >
       {notice === null ? null : (
-        <Notice className="mb-3" tone={notice.tone} message={notice.message} />
+        <Notice tone={notice.tone} message={notice.message} />
       )}
       {state.kind === 'failed' ? (
         <Notice tone="problem" message={state.message} />
@@ -306,16 +318,15 @@ function SessionsSettings(): ReactNode {
           label="The signed in devices are loading."
         />
       ) : (
-        <div className="ui-settings-groups">
+        <Stack gap={{ fine: 6, coarse: 4 }}>
           {current === undefined ? null : (
-            <div className="ui-settings-group">
-              <h3 className="ui-settings-group-heading text-group text-muted">
-                This device
-              </h3>
-              <ul
-                className="ui-settings-items ui-settings-card"
-                aria-label="This device"
-              >
+            <Stack gap={2}>
+              <SectionHeading
+                label={<>This device</>}
+                divider
+                inset={{ fine: 0, coarse: 4 }}
+              />
+              <Card as="ul" responsive aria-label="This device">
                 <ListRow>
                   <span
                     className="inline-flex shrink-0 items-center text-muted"
@@ -323,48 +334,54 @@ function SessionsSettings(): ReactNode {
                   >
                     <ComputerIcon />
                   </span>
-                  <div className="ui-settings-copy">
+                  <RowCopy>
                     <p className="m-0 truncate text-body text-strong">
                       {deviceName(current.userAgent)}
                     </p>
                     <p className="ui-settings-meta m-0 text-secondary text-muted">
                       To sign out of this device, use the account menu.
                     </p>
-                  </div>
+                  </RowCopy>
                 </ListRow>
-              </ul>
-            </div>
+              </Card>
+            </Stack>
           )}
-          <div className="ui-settings-group">
-            <div className="ui-group-toolbar ui-settings-group-heading">
-              <h3 className="m-0 min-w-0 flex-1 text-group text-muted">
-                Other devices
-              </h3>
-              {others.length === 0 || phone ? null : (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="max-lg:w-full"
-                  icon={<SignOutIcon />}
-                  disabled={busy}
-                  onClick={() => {
-                    change(async () => {
-                      const ended = await revokeOtherSessions();
-                      return {
-                        error: ended.error,
-                        done: otherSessionsEndedText(ended.data?.revoked ?? 0),
-                      };
-                    });
-                  }}
-                >
-                  Sign out every other device
-                </Button>
-              )}
-            </div>
+          <Stack gap={2}>
+            <SectionHeading
+              label={<>Other devices</>}
+              divider
+              inset={{ fine: 0, coarse: 4 }}
+              action={
+                <>
+                  {others.length === 0 || phone ? null : (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="max-lg:w-full"
+                      icon={<SignOutIcon />}
+                      disabled={busy}
+                      onClick={() => {
+                        change(async () => {
+                          const ended = await revokeOtherSessions();
+                          return {
+                            error: ended.error,
+                            done: otherSessionsEndedText(
+                              ended.data?.revoked ?? 0,
+                            ),
+                          };
+                        });
+                      }}
+                    >
+                      Sign out every other device
+                    </Button>
+                  )}
+                </>
+              }
+            />
             {others.length === 0 ? (
               <p className="m-0 text-secondary text-muted">No other devices.</p>
             ) : null}
-            <ul className="ui-settings-items ui-settings-card">
+            <Card as="ul" responsive>
               {others.map((session) => {
                 const name = deviceName(session.userAgent);
                 return (
@@ -375,7 +392,7 @@ function SessionsSettings(): ReactNode {
                     >
                       <ComputerIcon />
                     </span>
-                    <div className="ui-settings-copy">
+                    <RowCopy>
                       <p
                         data-setting-label
                         className="m-0 truncate text-body text-strong"
@@ -386,7 +403,7 @@ function SessionsSettings(): ReactNode {
                         facts={sessionFacts(session, now)}
                         className="ui-settings-meta"
                       />
-                    </div>
+                    </RowCopy>
                     {session.current ? null : (
                       <span data-setting-control>
                         <Button
@@ -422,8 +439,8 @@ function SessionsSettings(): ReactNode {
                   />
                 </li>
               ) : null}
-            </ul>
-          </div>
+            </Card>
+          </Stack>
           <SettingsDialog
             open={endingOthers}
             title="Sign out every other device?"
@@ -456,7 +473,7 @@ function SessionsSettings(): ReactNode {
               </Button>
             </DialogFooter>
           </SettingsDialog>
-        </div>
+        </Stack>
       )}
     </SettingsSection>
   );
@@ -512,12 +529,10 @@ function ProfileSettings({
   }
 
   const profileForm = (
-    <form
-      className={
-        phone
-          ? 'ui-settings-profile-form flex min-h-0 flex-1 flex-col'
-          : 'border-b border-edge-subtle py-3'
-      }
+    <Form
+      regions
+
+      className="ui-settings-profile-form flex-1 overflow-hidden"
       onSubmit={(event): void => {
         event.preventDefault();
         void save();
@@ -537,9 +552,7 @@ function ProfileSettings({
             setProblem('');
           }}
         />
-        {problem === '' ? null : (
-          <Notice className="mb-3" tone="problem" message={problem} />
-        )}
+        {problem === '' ? null : <Notice tone="problem" message={problem} />}
       </DialogBody>
       <DialogFooter>
         <Button
@@ -569,7 +582,7 @@ function ProfileSettings({
           </Button>
         )}
       </DialogFooter>
-    </form>
+    </Form>
   );
 
   return (
@@ -625,11 +638,7 @@ function ProfileSettings({
         </SettingRow>
       )}
       {saved ? (
-        <Notice
-          className="my-2"
-          tone="info"
-          message="Your new name appears in your account."
-        />
+        <Notice tone="info" message="Your new name appears in your account." />
       ) : null}
       <SettingRow label="Email" help="Use this address to sign in.">
         <span className="min-w-0 truncate text-value text-muted">
@@ -672,6 +681,7 @@ export function SettingsModal({
   readonly onClose: () => void;
   readonly returnFocus: (() => void) | undefined;
 }): ReactNode {
+  const phoneLayout = usePhoneSettings();
   const session = useSession();
   const store = useLocalStore();
   const [exporting, setExporting] = useState(false);
@@ -695,7 +705,7 @@ export function SettingsModal({
   const titleId = useId();
   const pageTitleId = useId();
   const sectionTitle = useRef<HTMLHeadingElement | null>(null);
-  const listTitle = useRef<HTMLParagraphElement | null>(null);
+  const listTitle = useRef<HTMLDivElement | null>(null);
   const account = session.account;
   const accountId = account?.accountId ?? null;
   const documents = useLegalDocuments();
@@ -787,7 +797,7 @@ export function SettingsModal({
           }}
         />
         {exportError === '' ? null : (
-          <Notice className="my-2" tone="problem" message={exportError} />
+          <Notice tone="problem" message={exportError} />
         )}
       </SettingsSection>
     ),
@@ -831,10 +841,10 @@ export function SettingsModal({
           onClick={() => importInput.current?.click()}
         />
         {importNotice === '' ? null : (
-          <Notice className="my-2" tone="info" message={importNotice} />
+          <Notice tone="info" message={importNotice} />
         )}
         {importError === '' ? null : (
-          <Notice className="my-2" tone="problem" message={importError} />
+          <Notice tone="problem" message={importError} />
         )}
       </SettingsSection>
     ),
@@ -846,7 +856,7 @@ export function SettingsModal({
         description="Your account owns every note in your workspaces. No other account can read them."
       >
         {monthNotices(account.month).map((notice) => (
-          <Notice key={notice} className="mt-3" tone="info" message={notice} />
+          <Notice key={notice} tone="info" message={notice} />
         ))}
         {storageLine(account.storage) === '' ? null : (
           <Meter
@@ -859,9 +869,7 @@ export function SettingsModal({
         {transferUsage(account.month, account.controls).map((usage) => (
           <Meter key={usage.label} {...usage} />
         ))}
-        {documents === null ? null : (
-          <LegalLinks className="mt-3" documents={documents} />
-        )}
+        {documents === null ? null : <LegalLinks documents={documents} />}
       </SettingsSection>
     ),
     'remove-account': (
@@ -901,7 +909,7 @@ export function SettingsModal({
           }}
         />
         {portal.error === '' ? null : (
-          <Notice className="my-2" tone="problem" message={portal.error} />
+          <Notice tone="problem" message={portal.error} />
         )}
       </SettingsSection>
     ),
@@ -960,35 +968,44 @@ export function SettingsModal({
     >
       <SettingsSurface>
         <SettingsActionContext.Provider value={actionHost}>
-          <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+          <div className="flex flex-1 overflow-hidden flex-col lg:flex-row">
             <div
               data-scroll-frame=""
-              className={`${listLevel ? 'flex' : 'hidden'} ui-settings-navigation min-h-0 flex-1 flex-col lg:flex lg:w-60 lg:flex-none lg:border-r lg:border-edge-subtle`}
+              className={`${listLevel ? 'flex' : 'hidden'} ui-settings-navigation bg-card overflow-hidden flex-1 flex-col lg:flex lg:w-60 lg:flex-none lg:border-r lg:border-edge-subtle`}
             >
-              <div
+              <ContentHeader
                 data-sheet-drag=""
                 data-scroll-edge="above"
-                className="ui-settings-heading ui-settings-root-heading touch-pan-x touch-pinch-zoom lg:hidden"
+                padX={{ fine: 0, coarse: 4 }}
+                className="ui-settings-root-heading touch-pan-x touch-pinch-zoom lg:hidden"
               >
-                <span className="ui-settings-header-slot">
-                  <Button
-                    variant="ghost"
-                    icon={<CloseIcon />}
+                <HeaderSlot>
+                  <IconButton
+                    size="header"
+                    glyph={<CloseIcon />}
                     label="Close Settings"
                     onClick={onClose}
                   />
-                </span>
-                <p
+                </HeaderSlot>
+                <HeaderTitle
                   ref={listTitle}
                   tabIndex={-1}
-                  className="ui-settings-title-block m-0 text-center text-title-header text-strong outline-none"
+                  className="text-center text-title-header text-strong outline-none"
                 >
                   {settingsTitle}
-                </p>
-                <span className="ui-settings-header-slot" aria-hidden="true" />
-              </div>
-              <ScrollRegion className="ui-settings-list min-h-0 flex-1">
-                <div className="ui-account-card flex items-center gap-3">
+                </HeaderTitle>
+                <HeaderSlot aria-hidden="true" />
+              </ContentHeader>
+              <Region
+                pad={{ fine: 2, coarse: 4 }}
+                gap={{ fine: 2, coarse: 4 }}
+                className="ui-settings-list flex-1"
+              >
+                <Inline
+                  gap={3}
+                  pad={{ fine: 2, coarse: 4 }}
+                  className="border-b border-edge-subtle"
+                >
                   <span className={avatarClassName()} aria-hidden="true">
                     {initial}
                   </span>
@@ -1003,35 +1020,35 @@ export function SettingsModal({
                       </span>
                     )}
                   </span>
-                </div>
-                <nav
+                </Inline>
+                <Stack
                   ref={settingsList}
                   aria-label="Settings sections"
-                  className="ui-settings-nav-groups"
+                  gap={{ fine: 2, coarse: 4 }}
+                  as="nav"
                 >
                   {settingsPageGroups
                     .filter((group) =>
                       pages.some((page) => page.group === group),
                     )
                     .map((group) => (
-                      <section
+                      <Stack
                         key={group}
                         aria-label={
                           group === 'Workspace' && workspaceName !== ''
                             ? `Workspace ${workspaceName}`
                             : group
                         }
-                        className="ui-settings-nav-group"
+                        gap={{ fine: 0.5, coarse: 2 }}
+                        as="section"
                       >
-                        <h3 className="ui-settings-nav-heading flex items-center gap-2 text-group text-muted">
+                        <NavigationHeading>
                           {group}
                           {group === 'Workspace' && workspaceName !== '' ? (
-                            <span className="min-w-0 truncate rounded-sm bg-hover px-2 text-secondary text-muted">
-                              {workspaceName}
-                            </span>
+                            <Pill>{workspaceName}</Pill>
                           ) : null}
-                        </h3>
-                        <ul className="ui-settings-nav-card list-none">
+                        </NavigationHeading>
+                        <Card as="ul" responsive className="list-none">
                           {pages
                             .filter((page) => page.group === group)
                             .map((page) => {
@@ -1041,10 +1058,12 @@ export function SettingsModal({
                                 activePage?.path === page.path;
                               return (
                                 <li key={page.path}>
-                                  <button
-                                    type="button"
+                                  <ListRow
+                                    as="button"
+                                    density={phoneLayout ? 'setting' : 'tree'}
                                     data-settings-page={page.path}
                                     className={rowClassName({
+                                      layout: false,
                                       current: desktopCurrent && !listLevel,
                                       className: `ui-settings-nav-row w-full text-left ${desktopCurrent && listLevel ? 'lg:bg-active' : ''}`,
                                     }).replace('ui-tree-row', '')}
@@ -1068,17 +1087,20 @@ export function SettingsModal({
                                     >
                                       <ChevronRightIcon />
                                     </span>
-                                  </button>
+                                  </ListRow>
                                 </li>
                               );
                             })}
-                        </ul>
-                      </section>
+                        </Card>
+                      </Stack>
                     ))}
-                </nav>
-              </ScrollRegion>
+                </Stack>
+              </Region>
             </div>
-            <section
+            <Stack
+              as="section"
+              pad={{ fine: activeAction === null ? 6 : 0, coarse: 0 }}
+              gap={{ fine: activeAction === null ? 6 : 0, coarse: 0 }}
               data-scroll-frame=""
               aria-labelledby={pageTitleId}
               data-dialog-escape={activeAction === null ? undefined : 'local'}
@@ -1089,24 +1111,22 @@ export function SettingsModal({
                   activeAction.close();
                 }
               }}
-              className={`${listLevel ? 'hidden' : 'flex'} ui-settings-column ${activeAction === null ? '' : 'ui-settings-column-form'} min-h-0 min-w-0 flex-1 flex-col lg:flex`}
+              className={`${listLevel ? 'hidden' : 'flex'} ui-settings-column ${activeAction === null ? '' : 'ui-settings-column-form'} overflow-hidden min-w-0 flex-1 flex-col lg:flex`}
             >
-              <div
+              <ContentHeader
                 data-sheet-drag=""
                 data-scroll-edge="above"
-                className="ui-settings-heading touch-pan-x touch-pinch-zoom"
+                pad={{ fine: activeAction === null ? 0 : 6, coarse: 0 }}
+                padX={{ fine: activeAction === null ? 0 : 6, coarse: 4 }}
+                className="touch-pan-x touch-pinch-zoom"
               >
-                <span
-                  className={
-                    activeAction === null
-                      ? 'ui-settings-header-slot lg:hidden'
-                      : 'ui-settings-header-slot'
-                  }
+                <HeaderSlot
+                  className={activeAction === null ? 'lg:hidden' : ''}
                 >
-                  <Button
+                  <IconButton
+                    size="header"
                     className={activeAction === null ? 'lg:hidden' : undefined}
-                    variant="ghost"
-                    icon={<ChevronLeftIcon />}
+                    glyph={<ChevronLeftIcon />}
                     label={
                       activeAction === null
                         ? 'Back to Settings'
@@ -1117,8 +1137,8 @@ export function SettingsModal({
                       else activeAction.close();
                     }}
                   />
-                </span>
-                <div className="ui-settings-title-block min-w-0 flex-1">
+                </HeaderSlot>
+                <HeaderTitle className="min-w-0 flex-1">
                   <h2
                     id={pageTitleId}
                     ref={sectionTitle}
@@ -1133,25 +1153,23 @@ export function SettingsModal({
                       {activeAction === null ? scope : activePage?.title}
                     </p>
                   )}
-                </div>
-                <div className="ui-settings-header-end">
+                </HeaderTitle>
+                <Inline gap={8} justify="end" className="flex-1">
                   <div
                     ref={setActionHeaderTarget}
                     className="flex shrink-0 items-center empty:hidden"
                   />
-                  <span className="ui-settings-header-slot">
-                    <Button
-                      variant="ghost"
-                      icon={<CloseIcon />}
+                  <HeaderSlot>
+                    <IconButton
+                      size="header"
+                      glyph={<CloseIcon />}
                       label="Close Settings"
                       onClick={onClose}
                     />
-                  </span>
-                </div>
-              </div>
-              <div
-                className={`ui-settings-content min-h-0 flex-1 flex flex-col`}
-              >
+                  </HeaderSlot>
+                </Inline>
+              </ContentHeader>
+              <div className="ui-settings-content overflow-hidden flex-1 flex flex-col">
                 <DialogHeaderActionsContext.Provider value={actionHeaderTarget}>
                   <div
                     ref={setActionTarget}
@@ -1159,19 +1177,21 @@ export function SettingsModal({
                     className={
                       activeAction === null
                         ? undefined
-                        : 'flex min-h-0 flex-1 flex-col'
+                        : 'flex overflow-hidden flex-1 flex-col'
                     }
                   />
-                  <ScrollRegion
-                    className={`min-h-0 flex-1 ${activeAction !== null ? 'hidden' : ''}`}
+                  <Region
+                    className={`overflow-hidden flex-1 ${activeAction !== null ? 'hidden' : ''}`}
                   >
-                    <div
-                      className="ui-settings-page ui-settings-sections"
+                    <Stack
+                      gap={{ fine: 6, coarse: 4 }}
+                      pad={{ fine: 0, coarse: 4 }}
+                      className="ui-settings-sections"
                       hidden={activeAction !== null}
                       inert={activeAction !== null}
                     >
                       {scope === undefined ? null : (
-                        <p className="ui-scope-line text-secondary text-muted lg:hidden">
+                        <p className="text-secondary text-muted lg:hidden">
                           {scope}
                         </p>
                       )}
@@ -1179,31 +1199,33 @@ export function SettingsModal({
                         value={{ hiddenTitles, helpSection: null }}
                       >
                         {activePage?.path === 'export-import' ? (
-                          <div className="ui-settings-group">
-                            <h3 className="ui-phone-only ui-settings-group-heading text-group text-muted">
-                              Workspace
-                            </h3>
-                            <div className="ui-settings-joined">
+                          <Stack gap={2}>
+                            <SectionHeading
+                              label={<>Workspace</>}
+                              divider
+                              inset={{ fine: 0, coarse: 4 }}
+                            />
+                            <Card responsive>
                               {activePage.sections.map((key) => (
-                                <div key={key} className="ui-settings-group">
+                                <Stack key={key} gap={2}>
                                   {sectionBodies[key]}
-                                </div>
+                                </Stack>
                               ))}
-                            </div>
-                          </div>
+                            </Card>
+                          </Stack>
                         ) : (
                           activePage?.sections.map((key) => (
-                            <div key={key} className="ui-settings-group">
+                            <Stack key={key} gap={2}>
                               {sectionBodies[key]}
-                            </div>
+                            </Stack>
                           ))
                         )}
                       </SettingsTopicContext.Provider>
-                    </div>
-                  </ScrollRegion>
+                    </Stack>
+                  </Region>
                 </DialogHeaderActionsContext.Provider>
               </div>
-            </section>
+            </Stack>
           </div>
           {removing ? (
             <RemoveOwnAccountDialog

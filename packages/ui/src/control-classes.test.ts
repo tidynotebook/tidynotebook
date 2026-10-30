@@ -190,21 +190,15 @@ await test('no recipe draws a ring except the focus ring of a field', () => {
   }
 });
 
-await test('every recipe takes one radius of the named scale', () => {
-  // The avatar is the one exception the design guide names: a circle of an
-  // initial, and `rounded-full` is what draws a circle.
+await test('each pointer uses one radius from the scale', () => {
   for (const [name, classes] of recipes) {
-    const found = classes
-      .split(' ')
-      .filter((part) => /(?:^|:)rounded(?:-|$)/.test(part));
-    assert.equal(found.length, 1, `${name} names ${String(found.length)}`);
-    assert.ok(
-      (name === 'avatar'
-        ? ['rounded-full']
-        : ['rounded-sm', 'rounded-md', 'rounded-lg', 'rounded-xl']
-      ).includes(found[0] ?? ''),
-      `${found[0] ?? ''} of the ${name}`,
-    );
+    const parts = classes.split(' '),
+      base = parts.filter((p) => /^rounded(?:-|$)/.test(p)),
+      coarse = parts.filter((p) => /^coarse:rounded(?:-|$)/.test(p));
+    assert.equal(base.length, 1, name);
+    assert.ok(coarse.length <= 1, name);
+    for (const p of [...base, ...coarse])
+      assert.match(p, /^(coarse:)?rounded-(sm|md|lg|xl|full)$/);
   }
 });
 
@@ -378,80 +372,62 @@ await test('a button names one appearance and one size', () => {
   assert.ok(buttonClassName({ className: 'mt-2' }).endsWith('mt-2'));
 });
 
-await test('text buttons share one spacing role while inline actions are compact', () => {
-  for (const size of ['sm', 'md'] as const) {
-    assert.ok(buttonClassName({ size }).split(' ').includes('ui-button'));
-    assert.ok(!buttonClassName({ size }).split(' ').includes('ui-compact'));
+await test('text buttons use the default and compact size roles', () => {
+  for (const size of ['default', 'compact'] as const) {
+    const parts = buttonClassName({ size }).split(' ');
+    assert.ok(parts.includes(size === 'default' ? 'h-8' : 'h-7'));
+    assert.ok(parts.includes('px-3'));
+    assert.ok(parts.includes('coarse:h-11'));
+    assert.ok(parts.includes('coarse:px-4'));
   }
-  assert.ok(
-    buttonClassName({ size: 'inline' }).split(' ').includes('ui-compact'),
-  );
   assert.equal(spacingSpec.fine.button, 32);
   assert.equal(spacingSpec.coarse.button, 44);
-  assert.equal(spacingSpec.fine.compact, 28);
 });
 
-await test('a compact icon keeps its touch target and reduces its visible surface', () => {
-  const button = buttonClassName({
-    variant: 'danger',
-    size: 'sm',
-    iconOnly: true,
-    compact: true,
-  });
-  const visual = compactButtonVisualClassName({
-    variant: 'danger',
-    size: 'sm',
-    iconOnly: true,
-  });
-
-  assert.ok(button.includes('ui-icon-button'), 'the square target role');
-  assert.ok(
-    button.includes('ui-icon-button'),
-    'the icon role removes text padding',
-  );
-  assert.ok(!button.includes('px-2.5'), 'the text inset does not squeeze it');
-  assert.ok(button.includes('group'), 'the visual state owner');
-  assert.ok(
-    button.includes('focus-visible:outline-none'),
-    'the outer target has no second outline',
-  );
-  assert.ok(!button.includes('bg-danger-fill'), 'the outer target has no fill');
-  assert.ok(visual.includes('size-8'), 'the visible touch surface');
-  assert.ok(visual.includes('md:size-7'), 'the small desktop surface');
-  assert.ok(visual.includes('bg-danger-fill'), 'the confirmation fill');
-  assert.ok(
-    visual.includes('group-focus-visible:outline-focus'),
-    'the visible focus surface',
-  );
+await test('icon targets have one focus outline and no text inset', () => {
+  for (const size of ['row', 'toolbar', 'header', 'rail'] as const) {
+    const parts = buttonClassName({
+      variant: 'ghost',
+      iconOnly: true,
+      iconSize: size,
+    }).split(' ');
+    assert.ok(parts.includes('p-0'));
+    assert.ok(parts.includes('h-7'));
+    assert.ok(
+      parts.includes(
+        size === 'row'
+          ? 'coarse:h-9'
+          : size === 'toolbar'
+            ? 'coarse:h-10'
+            : 'coarse:h-11',
+      ),
+    );
+    assert.ok(parts.includes('focus-visible:-outline-offset-2'));
+    assert.ok(!parts.includes('focus-visible:outline-none'));
+  }
 });
 
-await test('a compact text button has a quiet surface inside its touch target', () => {
-  const button = buttonClassName({
+await test('compact secondary actions keep their surface and padding', () => {
+  const parts = buttonClassName({
     variant: 'secondary',
-    size: 'sm',
-    compact: true,
-  });
-  const visual = compactButtonVisualClassName({
-    variant: 'secondary',
-    size: 'sm',
-    iconOnly: false,
-  });
-
-  assert.ok(button.includes('ui-compact'), 'the compact target role');
-  assert.ok(button.includes('ui-button'), 'the shared target padding');
-  assert.ok(button.includes('group'), 'the visual state owner');
-  assert.ok(!button.includes('bg-card'), 'the outer target has no fill');
-  assert.ok(visual.includes('min-h-8'), 'the visible touch surface');
-  assert.ok(visual.includes('md:min-h-7'), 'the small desktop surface');
-  assert.ok(visual.includes('px-2'), 'the visible text inset');
-  assert.ok(visual.includes('bg-card'), 'the secondary surface fill');
+    size: 'compact',
+  }).split(' ');
+  for (const part of [
+    'h-7',
+    'px-3',
+    'coarse:h-11',
+    'coarse:px-4',
+    'bg-card',
+    'border-edge-line',
+  ])
+    assert.ok(parts.includes(part), part);
 });
 
-await test('a row is 28 px on a desktop and 40 px under touch', () => {
+await test('a row has the line height plus equal padding', () => {
   const parts = rowClassName().split(' ');
   assert.ok(parts.includes('ui-tree-row'), 'the shared tree row role');
   assert.equal(spacingSpec.fine.tree, 28);
-  assert.equal(spacingSpec.coarse.tree, 40);
+  assert.equal(spacingSpec.coarse.tree, 36);
   assert.ok(parts.includes('rounded-md'), 'the row radius');
   assert.ok(parts.includes('px-2'), 'the row inset');
 });
@@ -642,22 +618,14 @@ const edges: readonly FrameEdge[] = ['start', 'end'];
 /** Every mark that a control at a frame edge draws. */
 const marks: readonly EdgeMark[] = ['icon', 'avatar'];
 
-/** The utility that pulls a control by one distance, on one side. */
-function pullUtility(edge: FrameEdge, pixels: number, wide: boolean): string {
-  const side = edge === 'start' ? 'ms' : 'me';
-  const steps = pixels / spacingStep;
-  return `${wide ? 'pointer-fine:' : ''}-${side}-${String(steps)}`;
-}
-
 for (const edge of edges)
   for (const mark of marks)
-    await test(`the ${mark} at the ${edge} edge lands on the gutter line`, () => {
-      const touch = (smallControlBox.touch - markWidth[mark]) / 2;
-      const wide = (smallControlBox.wide - markWidth[mark]) / 2;
-      assert.equal(
-        edgeControlClassName({ edge, mark }),
-        `${pullUtility(edge, touch, false)} ${pullUtility(edge, wide, true)}`,
-      );
+    await test(`the ${mark} slot at the ${edge} edge keeps its optical size`, () => {
+      const parts = edgeControlClassName({ edge, mark }).split(' ');
+      const step = markWidth[mark] / spacingStep;
+      assert.ok(parts.includes(`h-${step}`));
+      assert.ok(parts.includes(`w-${step}`));
+      assert.ok(!parts.some((p) => p.startsWith('-m')));
     });
 
 await test('the pull answers the box of the control it corrects', () => {
@@ -681,40 +649,11 @@ await test('the pull answers the box of the control it corrects', () => {
   );
 });
 
-await test('a strip of controls that scrolls takes the pull of its edges', () => {
-  // The focus outline is two pixels drawn two pixels out from the surface.
-  const outline = 4;
-  // Under touch the surface of a small compact control is 32 px inside its
-  // 44 px box, so the box holds the outline and the strip adds nothing.
-  const touchSurface = 32;
-  assert.ok(
-    compactButtonVisualClassName({
-      variant: 'ghost',
-      size: 'sm',
-      iconOnly: true,
-    })
-      .split(' ')
-      .includes(`size-${String(touchSurface / spacingStep)}`),
-    'the touch surface of a small compact control',
-  );
-  assert.ok((smallControlBox.touch - touchSurface) / 2 >= outline);
-  const touchPull = (smallControlBox.touch - markWidth.icon) / 2;
-  // From the medium width the surface is the box, so the strip pads the
-  // outline and grows by it as well, which keeps the mark on the line.
-  const widePull = (smallControlBox.wide - markWidth.icon) / 2 + outline;
-  const strip = controlStripClassName().split(' ');
-  assert.ok(strip.includes(`-mx-${String(touchPull / spacingStep)}`));
-  assert.ok(
-    strip.includes(`pointer-fine:-mx-${String(widePull / spacingStep)}`),
-  );
-  assert.ok(strip.includes(`pointer-fine:px-${String(outline / spacingStep)}`));
-  assert.ok(strip.includes(`py-${String(outline / spacingStep)}`));
-  assert.ok(strip.includes('overflow-x-auto'));
-  // The two pulls are the ones of a control at the edge of a frame.
-  assert.equal(
-    edgeControlClassName({ edge: 'start', mark: 'icon' }),
-    `-ms-${String(touchPull / spacingStep)} pointer-fine:-ms-${String((widePull - outline) / spacingStep)}`,
-  );
+await test('a control strip owns equal vertical padding and scrolls', () => {
+  const parts = controlStripClassName().split(' ');
+  assert.ok(parts.includes('overflow-x-auto'));
+  assert.ok(parts.includes('py-1'));
+  assert.ok(!parts.some((p) => /^(-?m|space-)/.test(p)));
 });
 
 await test('a day of the calendar keeps one size in every state', () => {
@@ -731,6 +670,8 @@ await test('a day of the calendar keeps one size in every state', () => {
     // neighbour.
     assert.ok(parts.includes('w-full'));
     assert.ok(parts.includes('ui-calendar-day'));
+    assert.ok(parts.includes('h-7'));
+    assert.ok(parts.includes('coarse:h-11'));
     assert.equal(spacingSpec.fine.compact, 28);
     assert.ok(parts.includes('border'));
     assert.ok(parts.includes('rounded-md'));
@@ -894,8 +835,8 @@ await test('history controls draw the surface of every other format tool', async
   // The same surface size, focus ring and colours as a small ghost tool, so
   // the 16 px glyph sits at the same size, colour and height in the row.
   for (const token of [
-    'size-8',
-    'md:size-7',
+    'h-7',
+    'w-7',
     'items-center',
     'justify-center',
     'rounded-md',

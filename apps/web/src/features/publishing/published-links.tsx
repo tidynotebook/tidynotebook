@@ -1,3 +1,17 @@
+import {
+  Stack,
+  Inline,
+  Button,
+  EmptyState,
+  LinkIcon,
+  ListRow,
+  LoadingState,
+  Notice,
+  Page,
+  pageGroupLabelClassName,
+  PageHeader,
+  pageListClassName,
+} from '@notesapp/ui';
 /**
  * Published links: every read-only link of one workspace, with Revoke.
  *
@@ -36,18 +50,7 @@ import {
   revokePublishedLink,
   type PublishedLink,
 } from '@notesapp/api-client';
-import {
-  Button,
-  EmptyState,
-  LinkIcon,
-  ListRow,
-  LoadingState,
-  Notice,
-  Page,
-  pageGroupLabelClassName,
-  PageHeader,
-  pageListClassName,
-} from '@notesapp/ui';
+
 import { problemMessage } from '../../app.tsx';
 import { useDocumentTitle } from '../../shell/document-title.ts';
 import { useNow } from '../../shell/now.ts';
@@ -170,7 +173,7 @@ function PublishedLinksList({
         title={publishedLinksTitle}
         description={publishedLinksDescription}
       />
-      <div className="space-y-4">
+      <Stack gap={4} as="div">
         {notice === '' ? null : <Notice tone="success" message={notice} />}
         {failure === '' ? null : <Notice tone="problem" message={failure} />}
         {state.kind === 'loading' ? (
@@ -219,17 +222,25 @@ function PublishedLinksList({
                       <p className="m-0 truncate text-body text-strong">
                         {name}
                       </p>
-                      <p
-                        className="m-0 flex flex-wrap gap-cluster text-secondary text-muted"
+                      <Inline
+                        gap={2}
+                        wrap
+                        as="p"
+                        className="text-secondary text-muted"
                         title={facts.join(', ')}
                       >
                         {facts.slice(0, shownLinkFacts).map((fact) => (
                           <span key={fact}>{fact}</span>
                         ))}
-                      </p>
+                      </Inline>
                     </div>
                     {link.takenDown ? null : (
-                      <div className="flex shrink-0 items-center gap-cluster">
+                      <Inline
+                        gap={2}
+                        align="center"
+                        as="div"
+                        className="shrink-0"
+                      >
                         <Button
                           variant="secondary"
                           size="sm"
@@ -239,7 +250,7 @@ function PublishedLinksList({
                         >
                           Revoke
                         </Button>
-                      </div>
+                      </Inline>
                     )}
                   </ListRow>
                 );
@@ -247,7 +258,7 @@ function PublishedLinksList({
             </ul>
           </section>
         )}
-      </div>
+      </Stack>
     </Page>
   );
 }

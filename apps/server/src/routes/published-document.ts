@@ -1,4 +1,11 @@
 import {
+  staticButtonClasses,
+  staticFieldClasses,
+  staticTextAreaClasses,
+  staticTaskBoxClasses,
+  codeFigureClassName,
+} from '@notesapp/ui/static';
+import {
   renderPublicFooter,
   type PublicFooterOptions,
 } from '@notesapp/ui/public-footer';
@@ -205,7 +212,7 @@ export const pageClasses = `${publicLayout.reading} py-8`;
  * reader meets one short block and not one line at the top of an empty page.
  */
 const gateClasses =
-  'mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center px-gutter py-10 sm:px-gutter-wide';
+  'mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center px-6 py-12 coarse:px-4';
 
 /** The heading of a page that shows no content, the title of a page. */
 const gateHeadingClasses =
@@ -219,16 +226,13 @@ const gateHintClasses = 'm-0 text-secondary text-muted';
  * `packages/ui/src/control-classes.ts` under the variant of the box of a task
  * item. See {@link publishedButtonClasses}.
  */
-export const publishedTaskBoxClasses =
-  '[&_.task-list-item_input]:size-4 [&_.task-list-item_input]:appearance-none [&_.task-list-item_input]:rounded-sm [&_.task-list-item_input]:border [&_.task-list-item_input]:border-edge [&_.task-list-item_input]:bg-app [&_.task-list-item_input]:align-middle';
+export const publishedTaskBoxClasses = staticTaskBoxClasses;
 
 /**
  * The classes of a code figure of the note: `codeFigureClassName` of
- * `packages/ui/src/code-figure.ts`, written out, as `publishedButtonClasses` is.
- * `tests/integration/published-styles.test.ts` holds this copy to it.
+ * `packages/ui/src/code-figure.ts`, shared with the application.
  */
-export const publishedCodeFigureClasses =
-  '[&_figure.notes-code]:relative [&_figure.notes-code]:mx-0 [&_figure.notes-code]:my-4 [&_figure.notes-code_pre]:my-0 [&_figure.notes-code_pre]:pt-12 [&_.notes-code-label]:absolute [&_.notes-code-label]:left-4 [&_.notes-code-label]:top-3 [&_.notes-code-label]:z-10 [&_.notes-code-label]:font-mono [&_.notes-code-label]:text-secondary [&_.notes-code-label]:text-muted';
+export const publishedCodeFigureClasses = codeFigureClassName;
 
 /**
  * The typography of the note body.
@@ -372,29 +376,10 @@ const reasonClasses = 'flex items-center gap-2 text-body text-strong';
 /** The classes of the foot of a page, which holds the report link. */
 export const footClasses = 'mt-12 text-secondary text-muted';
 
-/**
- * The classes of the one button of this page, and of its one field.
- *
- * They are the primary button and the field of
- * `packages/ui/src/control-classes.ts`, written out. This server runs in Node
- * and `@notesapp/ui` is browser code that imports React, so the boundary of
- * `tools/check-boundaries.mjs` refuses the import and the strings have to be
- * written twice. Two copies of one fact drift, so
- * `tests/integration/published-styles.test.ts` reads both and holds this copy
- * to the recipe, class for class.
- *
- * The one difference the test allows is the motion scale. Decision 0054 keeps
- * every transition, duration and easing in `packages/ui/src/motion.ts`, and
- * `tools/check-design-rules.mjs` refuses one anywhere else, including here, so
- * this page states no motion and the test subtracts the named transition
- * before it compares.
- */
-export const publishedButtonClasses =
-  'ui-button inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-md text-label no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed bg-accent-fill text-on-accent hover:bg-accent-fill-hover disabled:bg-hover disabled:hover:bg-hover disabled:text-muted';
-
-/** The classes of the password field. See {@link publishedButtonClasses}. */
-export const publishedFieldClasses =
-  'ui-field w-full rounded-md border bg-app px-3 text-body text-strong outline-none focus-visible:ring-2 focus-visible:ring-focus/25 border-edge-line focus-visible:border-focus';
+/** Static controls read the same React-free recipes as the application. */
+export const publishedButtonClasses = staticButtonClasses;
+export const publishedFieldClasses = staticFieldClasses;
+export const publishedTextAreaClasses = staticTextAreaClasses;
 
 /** The classes of the document frame, which the shell document also writes. */
 export const bodyClasses =
@@ -422,6 +407,7 @@ export const publishedDocumentClasses: readonly string[] = [
   footClasses,
   publishedButtonClasses,
   publishedFieldClasses,
+  publishedTextAreaClasses,
 ].flatMap((group) => group.split(' '));
 
 /**
@@ -526,7 +512,7 @@ function reportForm(action: string, reasons: readonly ReportReason[]): string {
     choices,
     '</fieldset>',
     `<label class="${labelClasses}" for="report-note">More details (optional)</label>`,
-    `<textarea class="${publishedFieldClasses}" id="report-note" name="note" rows="4" maxlength="2000"></textarea>`,
+    `<textarea class="${publishedTextAreaClasses}" id="report-note" name="note" rows="4" maxlength="2000"></textarea>`,
     `<button class="${publishedButtonClasses}" type="submit">Send report</button>`,
     '</form>',
   ].join('\n');

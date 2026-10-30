@@ -1,3 +1,5 @@
+import { pageGutter } from './public-layout.ts';
+import { Stack, Inline } from './primitives.tsx';
 import { useSettingsSurface, SettingsRowActions } from './settings-layout.tsx';
 /**
  * Layout primitives of the application.
@@ -11,7 +13,7 @@ import { useSettingsSurface, SettingsRowActions } from './settings-layout.tsx';
  * Distance is decided once as well. `pageGutter` below is the one distance
  * from the edge of the screen to the content of a page, and every frame that
  * is not a `Page`, such as the application header and the note column, reads
- * the same constant. `gap-cluster` and `gap-group` separate controls inside
+ * the same constant. `gap-2` and `gap-4` separate controls inside
  * a row. The four values live in the central theme of
  * `apps/web/src/tailwind.css`.
  *
@@ -25,8 +27,19 @@ import { useSettingsSurface, SettingsRowActions } from './settings-layout.tsx';
  * and
  * [decision 0065](../../../docs/decisions/0065-one-recipe-for-a-control-and-one-grid-for-an-icon.md).
  */
-import { createContext, useContext, type ReactNode } from 'react';
-import { rowClassName } from './control-classes.ts';
+import {
+  createElement,
+  type ElementType,
+  type ComponentPropsWithRef,
+  createContext,
+  useContext,
+  type ReactNode,
+  type HTMLAttributes,
+  type Ref,
+  type MouseEventHandler,
+} from 'react';
+import { rowClassName, buttonClassName } from './control-classes.ts';
+import { ChevronRightIcon, MoreIcon } from './icons.tsx';
 import {
   pageColumnClassName,
   pageHeaderActionsClassName,
@@ -42,7 +55,7 @@ import {
  * or a column that owns its own scrolling, still lines its content up with
  * every page of the application.
  */
-export const pageGutter = 'px-gutter sm:px-gutter-wide';
+export { pageGutter } from './public-layout.ts';
 
 /**
  * The frame of one route.
@@ -61,8 +74,10 @@ export function Page({
   readonly sections?: readonly PageSection[] | undefined;
 }): ReactNode {
   return (
-    <main className={`${pageRowClassName()} ${pageGutter}`}>
-      <div className={pageColumnClassName()}>{children}</div>
+    <main className={`${pageRowClassName()} ${pageGutter} py-6 coarse:py-4`}>
+      <Stack gap={{ fine: 4, coarse: 3 }} className={pageColumnClassName()}>
+        {children}
+      </Stack>
     </main>
   );
 }
@@ -126,15 +141,21 @@ export function PageHeader({
 }): ReactNode {
   const back = useContext(PageBackContext);
   return (
-    <div className="ui-page-header flex flex-wrap items-start justify-between gap-group">
+    <Inline
+      gap={4}
+      align="start"
+      justify="between"
+      wrap
+      className="ui-page-header"
+    >
       <div
         className={
           actionLayout === 'inline'
-            ? 'min-w-0 grow basis-0'
-            : 'min-w-0 grow basis-full sm:basis-0'
+            ? 'min-w-0 grow basis-0 flex flex-col gap-1'
+            : 'min-w-0 grow basis-full sm:basis-0 flex flex-col gap-1'
         }
       >
-        <div className="flex min-w-0 items-start gap-1">
+        <Inline gap={1} align="start" className="min-w-0">
           {back}
           <h1
             className="m-0 min-w-0 text-title-page tracking-heading text-strong"
@@ -142,9 +163,9 @@ export function PageHeader({
           >
             {title}
           </h1>
-        </div>
+        </Inline>
         {description === undefined || description === '' ? null : (
-          <p className="mb-0 mt-1 text-secondary text-muted">{description}</p>
+          <p className="text-secondary text-muted">{description}</p>
         )}
       </div>
       {actions === undefined ? null : (
@@ -152,39 +173,43 @@ export function PageHeader({
           {actions}
         </div>
       )}
-    </div>
+    </Inline>
   );
 }
 
 /** A raised surface that groups related content. */
-export function Card({
+export function Card<T extends ElementType = 'div'>({
+  as,
   children,
   title,
   titleId,
-  className,
+  className = '',
+  responsive = false,
+  ...props
 }: {
+  readonly as?: T;
   readonly children: ReactNode;
   readonly title?: string | undefined;
   readonly titleId?: string | undefined;
   readonly className?: string | undefined;
-}): ReactNode {
-  const body = (
-    <>
-      {title === undefined ? null : (
-        <h2 className="mb-3 mt-0 text-title-header text-strong" id={titleId}>
-          {title}
-        </h2>
-      )}
-      {children}
-    </>
-  );
-  const classes = `rounded-lg border border-edge-subtle bg-card p-4 shadow-raised ${className ?? ''}`;
-  if (title === undefined || titleId === undefined)
-    return <div className={classes}>{body}</div>;
-  return (
-    <section className={classes} aria-labelledby={titleId}>
-      {body}
-    </section>
+  readonly responsive?: boolean;
+} & Omit<
+  ComponentPropsWithRef<T>,
+  'as' | 'children' | 'className'
+>): ReactNode {
+  return createElement(
+    as ?? 'div',
+    {
+      ...props,
+      'data-ui-card': '',
+      className: `flex min-w-0 flex-col gap-0 rounded-xl ${responsive ? 'bg-transparent coarse:bg-card-raised' : 'bg-card-raised'} ${className}`,
+    },
+    title === undefined ? null : (
+      <h2 id={titleId} className="text-title-header text-strong">
+        {title}
+      </h2>
+    ),
+    children,
   );
 }
 
@@ -216,22 +241,23 @@ export function EmptyState({
   readonly action?: ReactNode | undefined;
 }): ReactNode {
   return (
-    <div className="py-8 text-center">
+    <Stack
+      pad={{ fine: 3, coarse: 4 }}
+      gap={3}
+      align="center"
+      className="text-center"
+    >
       {icon === undefined ? null : (
-        <p className="m-0 flex justify-center text-muted" aria-hidden="true">
+        <span className="text-muted" aria-hidden="true">
           {icon}
-        </p>
+        </span>
       )}
-      <h2 className="mb-0 mt-3 text-title-header text-strong">{title}</h2>
+      <h2 className="text-title-header text-strong">{title}</h2>
       {description === undefined || description === '' ? null : (
-        <p className="mx-auto mb-0 mt-1 max-w-sm text-secondary text-muted">
-          {description}
-        </p>
+        <p className="max-w-sm text-secondary text-muted">{description}</p>
       )}
-      {action === undefined ? null : (
-        <div className="mt-4 flex justify-center">{action}</div>
-      )}
-    </div>
+      {action}
+    </Stack>
   );
 }
 
@@ -249,70 +275,207 @@ export function EmptyState({
  * `selected` is a choice a person made and `current` is the route that is
  * open; both read as one mark.
  */
+export type RowDensity = 'tree' | 'setting' | 'menu';
+export type RowTrailing =
+  | { readonly kind: 'chevron' }
+  | { readonly kind: 'value' }
+  | { readonly kind: 'switch'; readonly checked: boolean }
+  | {
+      readonly kind: 'action';
+      readonly label: string;
+      readonly onClick: () => void;
+      readonly danger?: boolean;
+    }
+  | {
+      readonly kind: 'menu';
+      readonly label: string;
+      readonly onClick: () => void;
+    };
+export function listRowClasses(density: RowDensity): string {
+  return density === 'setting'
+    ? 'ui-settings-row relative flex min-w-0 w-full items-center gap-4 py-3 px-0 coarse:px-4 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:border-b after:border-edge-subtle coarse:after:left-4 last:after:hidden'
+    : 'flex min-w-0 w-full items-center gap-2 rounded-md px-2 py-1 coarse:rounded-lg coarse:px-3 coarse:py-2';
+}
 export function ListRow({
   children,
-  className,
+  className = '',
   selected,
   current,
   href,
   onClick,
   label,
-}: {
-  readonly children: ReactNode;
+  leading,
+  help,
+  helpId,
+  value,
+  trailing,
+  control: customControl,
+  labelTone,
+  density,
+  indent = 0,
+  as,
+  buttonRef,
+  ...nativeProps
+}: Omit<HTMLAttributes<HTMLElement>, 'onClick'> & {
+  readonly children?: ReactNode;
   readonly className?: string | undefined;
   readonly selected?: boolean | undefined;
   readonly current?: boolean | undefined;
-  /** Makes the whole row a link to this address. */
   readonly href?: string | undefined;
-  /** Makes the whole row a button that runs this. */
-  readonly onClick?: (() => void) | undefined;
-  /** The accessible name of the row, when its text is not the whole name. */
-  readonly label?: string | undefined;
+  readonly onClick?: MouseEventHandler<HTMLElement> | undefined;
+  readonly label?: ReactNode;
+  readonly leading?: ReactNode;
+  readonly help?: ReactNode;
+  readonly helpId?: string;
+  readonly value?: ReactNode;
+  readonly trailing?: RowTrailing;
+  readonly density?: RowDensity;
+  readonly control?: ReactNode;
+  readonly labelTone?: 'accent' | 'danger';
+  readonly indent?: number;
+  readonly as?: 'li' | 'div' | 'button' | 'a';
+  readonly buttonRef?: Ref<HTMLButtonElement> | undefined;
+  readonly disabled?: boolean | undefined;
 }): ReactNode {
-  const settings = useSettingsSurface();
-  const content = settings ? (
-    <SettingsRowActions>{children}</SettingsRowActions>
+  const settings = useSettingsSurface(),
+    rowDensity = density ?? (settings ? 'setting' : 'tree');
+  const structured = children === undefined;
+  const control =
+    customControl ??
+    (trailing?.kind === 'chevron' ? (
+      <ChevronRightIcon />
+    ) : trailing?.kind === 'switch' ? (
+      <span
+        className={`inline-flex h-6 w-10 shrink-0 items-center rounded-full border border-edge-line p-1 ${trailing.checked ? 'justify-end bg-accent-fill' : 'justify-start bg-hover'}`}
+        aria-hidden="true"
+      >
+        <span
+          className={`h-4 w-4 rounded-full ${trailing.checked ? 'bg-on-accent' : 'bg-muted'}`}
+        />
+      </span>
+    ) : trailing?.kind === 'action' ? (
+      <button
+        type="button"
+        className={buttonClassName({
+          variant: 'ghost',
+          size: 'compact',
+          tone: trailing.danger ? 'danger' : undefined,
+        })}
+        onClick={trailing.onClick}
+      >
+        {trailing.label}
+      </button>
+    ) : trailing?.kind === 'menu' ? (
+      <button
+        type="button"
+        aria-label={trailing.label}
+        className={buttonClassName({ variant: 'ghost', iconOnly: true })}
+        onClick={trailing.onClick}
+      >
+        <MoreIcon />
+      </button>
+    ) : null);
+  const body = structured ? (
+    <>
+      {leading}
+      <span
+        data-setting-text={rowDensity === 'setting' ? '' : undefined}
+        className="ui-settings-copy flex min-w-0 flex-1 flex-col gap-0.5"
+      >
+        <span
+          data-setting-label={rowDensity === 'setting' ? '' : undefined}
+          className={`${selected || current ? 'text-label' : 'text-body'} ${labelTone === 'danger' ? 'text-danger' : labelTone === 'accent' ? 'text-accent' : 'text-strong'} ${rowDensity === 'tree' ? 'truncate' : ''}`}
+        >
+          {label}
+        </span>
+        {help ? (
+          <span
+            data-setting-help={rowDensity === 'setting' ? '' : undefined}
+            id={helpId}
+            className="text-secondary text-muted"
+          >
+            {help}
+          </span>
+        ) : null}
+      </span>
+      {value !== undefined || control ? (
+        <span
+          data-setting-control={rowDensity === 'setting' ? '' : undefined}
+          className={`ui-settings-control inline-flex shrink-0 items-center justify-end gap-2 text-value text-muted ${rowDensity === 'setting' ? 'h-7 coarse:h-5' : ''}`}
+        >
+          {value}
+          {control}
+        </span>
+      ) : null}
+    </>
   ) : (
     children
   );
-  const interactive = href !== undefined || onClick !== undefined;
-  const classes = rowClassName({
+  const content =
+    rowDensity === 'setting' ? (
+      <SettingsRowActions>{body}</SettingsRowActions>
+    ) : (
+      body
+    );
+  const classes = `${listRowClasses(rowDensity)} ${rowClassName({
+    layout: false,
     selected,
     current,
-    interactive,
-    className: `${settings ? 'ui-settings-row' : 'ui-list-row'} ${className ?? ''}`,
-  });
-  const rowClasses = settings ? classes.replace('ui-tree-row', '') : classes;
-  // The list item stays a list item, and the control inside it takes the whole
-  // row. `display: contents` would have done the same with one element fewer,
-  // and it drops the item out of the list that assistive software counts.
-  const filling = `${rowClasses} min-w-0 flex-1`;
-  if (href !== undefined)
-    return (
-      <li className="flex">
-        <a
-          className={filling}
-          href={href}
-          aria-current={current === true ? 'page' : undefined}
-          aria-label={label}
-        >
-          {content}
-        </a>
+    interactive: href !== undefined || onClick !== undefined,
+  })
+    .replace('ui-tree-row', '')
+    .replace('px-2', '')
+    .replace('gap-2', '')} ${className}`;
+  const ariaLabel =
+    nativeProps['aria-label'] ??
+    (typeof label === 'string' ? label : undefined);
+  const row =
+    href !== undefined ? (
+      <a
+        {...nativeProps}
+        data-ui-row={rowDensity}
+        className={classes}
+        href={href}
+        aria-current={current ? 'page' : undefined}
+        aria-label={ariaLabel}
+      >
+        {content}
+      </a>
+    ) : onClick !== undefined || as === 'button' ? (
+      <button
+        {...nativeProps}
+        data-ui-row={rowDensity}
+        ref={buttonRef}
+        type="button"
+        className={classes}
+        onClick={onClick}
+        aria-label={ariaLabel}
+      >
+        {content}
+      </button>
+    ) : as === 'div' ? (
+      <div {...nativeProps} className={classes}>
+        {content}
+      </div>
+    ) : (
+      <li {...nativeProps} className={classes}>
+        {content}
       </li>
     );
-  if (onClick !== undefined)
-    return (
-      <li className="flex">
-        <button
-          type="button"
-          className={filling}
-          aria-current={current === true ? 'page' : undefined}
-          aria-label={label}
-          onClick={onClick}
-        >
-          {content}
-        </button>
-      </li>
+  const wrapped =
+    indent > 0 ? (
+      <div className="flex w-full items-stretch">
+        {Array.from({ length: indent }, (_, index) => (
+          <span key={index} className="w-5 shrink-0" aria-hidden="true" />
+        ))}
+        {row}
+      </div>
+    ) : (
+      row
     );
-  return <li className={rowClasses}>{content}</li>;
+  return (href !== undefined || onClick !== undefined) && as === undefined ? (
+    <li className="flex">{wrapped}</li>
+  ) : (
+    wrapped
+  );
 }

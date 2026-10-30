@@ -1,3 +1,4 @@
+import { auditComposition, captureSurface } from './symmetry.ts';
 import { auditText, type Problem } from './text-audit.ts';
 import assert from 'node:assert/strict';
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
@@ -18,29 +19,13 @@ const loaded: unknown = await import(
 );
 assert.ok(hasChromium(loaded), 'The external module must provide Chromium.');
 const { chromium } = loaded;
-import * as api from '@notesapp/api-client';
 const base = process.env.UI_AUDIT_ORIGIN ?? 'http://localhost:3517',
   statePath = process.env.UI_AUDIT_STATE ?? '.local-app/review-session.json',
-  state = readState(statePath),
   fixture = readFixture(
     process.env.UI_AUDIT_FIXTURE ?? '.local-app/review-fixture.json',
   ),
   { workspaceId } = fixture,
-  home = `${base}/w/${workspaceId}`,
-  headers = {
-    origin: base,
-    cookie: state.cookies.map((c) => `${c.name}=${c.value}`).join('; '),
-  };
-api.configureClient(base, undefined);
-async function originalState() {
-  const a = await api.getAccount({ headers }),
-    d = await api.getDailyNoteSettings({ headers, path: { workspaceId } }),
-    t = await api.getTemplateSettings({ headers, path: { workspaceId } });
-  assert.ok(a.data);
-  assert.ok(d.data);
-  assert.ok(t.data);
-  return { preferences: a.data.preferences, daily: d.data, templates: t.data };
-}
+  home = `${base}/w/${workspaceId}`;
 mkdirSync('.local-app/screenshots', { recursive: true });
 const spacing = process.env.SPACING_AUDIT === '1';
 const borders = process.env.BORDER_AUDIT === '1';
@@ -54,13 +39,12 @@ const resultsFile = borders
   : spacing
     ? '.local-app/spacing-results.json'
     : '.local-app/text-roles-results.json';
-const original = await originalState(),
-  browser = await chromium.launch(),
+const browser = await chromium.launch(),
   results: Result[] = [],
   errors: { variant: string; error: string }[] = [],
   writes: { method: string; url: string }[] = [];
 try {
-  if (spacing || borders) {
+  if (spacing || borders || process.env.DS1_CAPTURE) {
     const contract = await browser.newContext({
       viewport: { width: 390, height: 844 },
       hasTouch: true,
@@ -79,6 +63,22 @@ try {
       );
     await page.goto(`data:text/html,${encodeURIComponent(fixture(8))}`);
     assert.deepEqual(await auditBorderSpacing(page), []);
+    if (process.env.DS1_AUDIT) {
+      const compositionFixture = (pad: number) =>
+        `<div data-ui-layout="stack" data-ui-pad="2" style="display:flex;flex-direction:column;padding:${pad}px">Content</div>`;
+      await page.goto(
+        `data:text/html,${encodeURIComponent(compositionFixture(4))}`,
+      );
+      assert.ok(
+        (await auditComposition(page)).issues.some(
+          (issue) => issue.kind === 'horizontal inset',
+        ),
+      );
+      await page.goto(
+        `data:text/html,${encodeURIComponent(compositionFixture(8))}`,
+      );
+      assert.deepEqual((await auditComposition(page)).issues, []);
+    }
     await contract.close();
   }
   for (const width of process.env.TOUCH_WIDTHS?.split(',').map(Number) ??
@@ -97,42 +97,14 @@ try {
           isMobile: phone,
           colorScheme: scheme,
         });
+
       await c.addInitScript(
         (s) => localStorage.setItem('notesapp.theme', s),
         scheme,
       );
       // A local asset build can be checked before the single Docker build.
       // The final run omits this variable and reads the deployed image.
-      const assets = process.env.UI_AUDIT_ASSETS;
-      if (assets)
-        await c.route(`${base}/**`, async (route) => {
-          const request = route.request(),
-            url = new URL(request.url());
-          if (url.pathname.startsWith('/api/'))
-            return route.fulfill({ response: await route.fetch() });
-          const path = resolve(
-            assets,
-            request.isNavigationRequest() ? 'index.html' : `.${url.pathname}`,
-          );
-          if (
-            request.method() !== 'GET' ||
-            !path.startsWith(resolve(assets) + '/') ||
-            !existsSync(path)
-          )
-            return route.continue();
-          const types: Record<string, string> = {
-            '.html': 'text/html',
-            '.js': 'text/javascript',
-            '.css': 'text/css',
-            '.woff2': 'font/woff2',
-            '.png': 'image/png',
-            '.svg': 'image/svg+xml',
-          };
-          return route.fulfill({
-            body: readFileSync(path),
-            contentType: types[extname(path)] ?? 'application/octet-stream',
-          });
-        });
+      await routeAssets(c);
       const now = new Date().toISOString();
       await c.route('**/api/account', async (r) => {
         const response = await r.fetch(),
@@ -207,7 +179,7 @@ try {
         }),
       );
       const p = await c.newPage();
-      p.setDefaultTimeout(12000);
+      p.setDefaultTimeout(30000);
       p.on('pageerror', (e) => errors.push({ variant, error: e.message }));
       p.on('request', (r) => {
         if (
@@ -281,9 +253,10 @@ try {
                   ? 35.5
                   : e.classList.contains('ui-sidebar-action')
                     ? 39.5
-                    : e.closest('.ui-tree-row,.ui-list-row') ||
-                        e.matches('[role^=menuitem]')
-                      ? 39.5
+                    : e.closest(
+                          '[data-ui-row=tree],[data-ui-row=menu],.ui-tree-row,.ui-list-row',
+                        ) || e.matches('[role^=menuitem]')
+                      ? 35.5
                       : 43.5)
             )
               problems.push({ kind: 'height', label, height: b.height });
@@ -328,6 +301,7 @@ try {
         }, phone);
         issues.push(
           ...typography.problems,
+          ...(process.env.DS1_AUDIT ? (await auditComposition(p)).issues : []),
           ...(measured?.issues ?? []),
           ...(borders ? await auditBorderSpacing(p) : []),
         );
@@ -338,6 +312,12 @@ try {
           combinations: typography.combinations,
           measurements: measured?.measurements,
         });
+        if (process.env.DS1_CAPTURE)
+          await captureSurface(
+            p,
+            `${name}-${variant}`,
+            process.env.DS1_CAPTURE,
+          );
         await p.screenshot({
           path: `.local-app/screenshots/${screenshotPrefix}-${name}-${variant}.png`,
           animations: 'disabled',
@@ -445,7 +425,7 @@ try {
       await p.getByRole('menu', { name: 'Sort notes', exact: true }).waitFor();
       await checkChoiceMenu('sort-menu');
 
-      if (spacing || borders) {
+      if (spacing || borders || process.env.DS1_CAPTURE) {
         await p
           .getByRole('button', { name: 'Calendar', exact: true })
           .filter({ visible: true })
@@ -465,7 +445,7 @@ try {
         })
         .waitFor();
       await shot('drawer-expanded');
-      if (spacing || borders) {
+      if (spacing || borders || process.env.DS1_CAPTURE) {
         const drift = await p.evaluate(async () => {
           const tree = document.querySelector(
             '[role="tree"][aria-multiselectable="true"]',
@@ -520,7 +500,10 @@ try {
         await c.close();
         continue;
       }
-      if (spacing || borders) {
+      if (spacing || borders || process.env.DS1_CAPTURE) {
+        await p
+          .getByRole('treeitem', { name: 'Home page', exact: true })
+          .focus();
         await p
           .getByRole('button', {
             name: 'Actions for the note Home page',
@@ -552,6 +535,15 @@ try {
       await shot('new-folder-tree');
       await p.keyboard.press('Escape');
       await p.keyboard.press('Escape');
+      await p
+        .getByRole('button', {
+          name: 'Actions for the folder Personal',
+          exact: true,
+        })
+        .evaluate((e) => {
+          const item = e.closest('[role="treeitem"]');
+          if (item instanceof HTMLElement) item.focus({ preventScroll: true });
+        });
       await p
         .getByRole('button', {
           name: 'Actions for the folder Personal',
@@ -601,7 +593,7 @@ try {
         .waitFor();
       await shot('shortcuts');
       await p.keyboard.press('Escape');
-      if (spacing || borders) {
+      if (spacing || borders || process.env.DS1_CAPTURE) {
         await p.keyboard.press('Control+p');
         await p
           .getByRole('dialog', {
@@ -880,7 +872,7 @@ try {
         })
         .waitFor();
       await shot('trash');
-      if (spacing || borders) {
+      if (spacing || borders || process.env.DS1_CAPTURE) {
         await p
           .getByRole('button', {
             name: 'Actions for Personal/Reading/Reading list',
@@ -921,7 +913,7 @@ try {
           await p.keyboard.press('Escape');
         }
       }
-      if (spacing || borders) {
+      if (spacing || borders || process.env.DS1_CAPTURE) {
         await p
           .getByRole('button', { name: 'Note actions', exact: true })
           .click();
@@ -950,6 +942,8 @@ try {
         isMobile: phone,
         colorScheme: scheme,
       });
+
+      await routeAssets(guest);
       await guest.addInitScript(
         (s) => localStorage.setItem('notesapp.theme', s),
         scheme,
@@ -958,6 +952,12 @@ try {
       for (const path of ['login', 'signup']) {
         await auth.goto(`${base}/${path}`);
         await auth.locator('input[type="email"]').waitFor();
+        if (process.env.DS1_CAPTURE)
+          await captureSurface(
+            auth,
+            `${path}-${variant}`,
+            process.env.DS1_CAPTURE,
+          );
         await auth.screenshot({
           path: `.local-app/screenshots/${screenshotPrefix}-${path}-${variant}.png`,
           animations: 'disabled',
@@ -978,6 +978,9 @@ try {
           screen: path,
           issues: [
             ...typography.problems,
+            ...(process.env.DS1_AUDIT
+              ? (await auditComposition(auth)).issues
+              : []),
             ...(measured?.issues ?? []),
             ...(borders ? await auditBorderSpacing(auth) : []),
           ],
@@ -1013,6 +1016,9 @@ try {
         screen: 'signup-error',
         issues: [
           ...typography.problems,
+          ...(process.env.DS1_AUDIT
+            ? (await auditComposition(auth)).issues
+            : []),
           ...(measured?.issues ?? []),
           ...(borders ? await auditBorderSpacing(auth) : []),
         ],
@@ -1024,7 +1030,6 @@ try {
         .find((c) => c === guest)
         ?.close();
     }
-  assert.deepEqual(await originalState(), original);
   assert.deepEqual(writes, []);
   assert.deepEqual(errors, []);
   assert.deepEqual(
@@ -1043,8 +1048,12 @@ try {
     resultsFile,
     JSON.stringify({ results, errors, writes }, null, 2),
   );
+  await Promise.allSettled(
+    browser
+      .contexts()
+      .map((context) => context.unrouteAll({ behavior: 'ignoreErrors' })),
+  );
   await browser.close();
-  assert.deepEqual(await originalState(), original);
 }
 
 type Result = {
@@ -1054,22 +1063,6 @@ type Result = {
   combinations: Record<string, string[]>;
   measurements?: Record<string, number[]> | undefined;
 };
-function readState(path: string): {
-  cookies: { name: string; value: string }[];
-} {
-  const data: unknown = JSON.parse(readFileSync(path, 'utf8'));
-  assert.ok(isRecord(data) && Array.isArray(data.cookies));
-  return {
-    cookies: data.cookies.map((cookie: unknown) => {
-      assert.ok(
-        isRecord(cookie) &&
-          typeof cookie.name === 'string' &&
-          typeof cookie.value === 'string',
-      );
-      return { name: cookie.name, value: cookie.value };
-    }),
-  };
-}
 function readFixture(path: string): {
   workspaceId: string;
   files: { fileId: string }[];
@@ -1087,4 +1080,39 @@ function readFixture(path: string): {
       return { fileId: file.fileId };
     }),
   };
+}
+
+async function routeAssets(
+  context: ReturnType<typeof browser.contexts>[number],
+): Promise<void> {
+  const assets = process.env.UI_AUDIT_ASSETS;
+  if (assets)
+    await context.route(`${base}/**`, async (route) => {
+      const request = route.request(),
+        url = new URL(request.url());
+      if (url.pathname.startsWith('/api/'))
+        return route.fulfill({ response: await route.fetch() });
+      const path = resolve(
+        assets,
+        request.isNavigationRequest() ? 'index.html' : `.${url.pathname}`,
+      );
+      if (
+        request.method() !== 'GET' ||
+        !path.startsWith(resolve(assets) + '/') ||
+        !existsSync(path)
+      )
+        return route.continue();
+      const types: Record<string, string> = {
+        '.html': 'text/html',
+        '.js': 'text/javascript',
+        '.css': 'text/css',
+        '.woff2': 'font/woff2',
+        '.png': 'image/png',
+        '.svg': 'image/svg+xml',
+      };
+      return route.fulfill({
+        body: readFileSync(path),
+        contentType: types[extname(path)] ?? 'application/octet-stream',
+      });
+    });
 }

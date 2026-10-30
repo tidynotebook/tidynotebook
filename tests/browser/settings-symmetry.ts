@@ -73,7 +73,7 @@ export async function auditSettings(page: Page) {
       if (el.matches('.ui-settings-form-body'))
         eq('form inset', parseFloat(s.paddingLeft), phone ? 16 : 24);
       if (el.matches('.ui-settings-footer'))
-        eq('footer inset', parseFloat(s.paddingLeft), phone ? 16 : 24);
+        eq('footer inset', parseFloat(s.paddingLeft), phone ? 12 : 24);
     }
     for (const card of document.querySelectorAll(
       '.ui-settings-card,.ui-settings-nav-card',
@@ -148,7 +148,7 @@ export async function auditSettings(page: Page) {
       const label = field.querySelector('label'),
         control = field.querySelector('input,select,textarea');
       if (label && control && visible(label))
-        eq('label to field', box(control).top - box(label).bottom, 6);
+        eq('label to field', box(control).top - box(label).bottom, 8);
       const next = field.nextElementSibling;
       if (
         next?.matches('.ui-field-group') &&
@@ -274,6 +274,7 @@ try {
           isMobile: phone,
           colorScheme: scheme,
         });
+
       await c.addInitScript(
         (s) => localStorage.setItem('notesapp.theme', s),
         scheme,

@@ -127,7 +127,7 @@ export const bodyClasses =
 
 /** The header: the chrome plane, the height of the frame header. */
 export const headerClasses =
-  'flex h-header shrink-0 items-center gap-cluster border-b border-edge-subtle bg-surface px-2 md:px-3';
+  'flex h-header shrink-0 items-center gap-2 border-b border-edge-subtle bg-surface px-2 md:px-3';
 
 /** The product mark and the name of the site, the link to the home page. */
 export const homeLinkClasses =
@@ -151,7 +151,7 @@ export const mainClasses = 'min-w-0 flex-1 overflow-y-auto';
 
 /** The line above the title: the group of the page and its two actions. */
 export const toolbarClasses =
-  'mb-2 flex min-h-8 flex-wrap items-center justify-between gap-cluster';
+  'mb-2 flex min-h-8 flex-wrap items-center justify-between gap-2';
 
 /** The group of the page above its title. */
 export const groupClasses = 'm-0 text-help font-medium text-muted';
@@ -198,7 +198,7 @@ export const articleClasses = [
 
 /** The links to the previous and the next page under the text. */
 export const pagerClasses =
-  'mt-12 grid grid-cols-1 gap-cluster border-t border-edge-line pt-6 sm:grid-cols-2';
+  'mt-12 grid grid-cols-1 gap-2 border-t border-edge-line pt-6 sm:grid-cols-2';
 
 /** One link of the pager, a row of the recipe that holds two lines. */
 const pagerLinkClasses = rowClassName({
@@ -210,7 +210,7 @@ export const pagerHintClasses = 'text-control text-muted';
 
 /** The foot of a page, which names the source and the licence. */
 export const footClasses =
-  'mt-8 flex flex-wrap gap-x-group gap-y-1 pb-10 text-control text-muted';
+  'mt-8 flex flex-wrap gap-x-3 gap-y-1 pb-10 text-control text-muted';
 
 /** A link of the foot. */
 export const footLinkClasses =
@@ -229,7 +229,7 @@ export const searchPanelClasses =
 
 /** The field row at the top of the search panel. */
 export const searchFieldRowClasses =
-  'flex items-center gap-cluster border-b border-edge-line pl-gutter pr-2';
+  'flex items-center gap-2 border-b border-edge-line pl-4 pr-2';
 
 /** The field of the search, as the command palette of the application draws it. */
 export const searchFieldClasses =
@@ -263,7 +263,7 @@ const codeCopyClasses = buttonClassName({
 
 /** The shell of the page that answers an address with no page. */
 export const emptyStateClasses =
-  'mx-auto flex max-w-sm flex-col items-center gap-2 px-gutter py-20 text-center';
+  'mx-auto flex max-w-sm flex-col items-center gap-2 px-4 py-20 text-center';
 
 /** The keyboard hint of the search button. */
 const searchHint = `<kbd class="${kbdClassName()}">/</kbd>`;
@@ -504,7 +504,7 @@ ${head(
           <div class="${pageColumnClassName()} py-6">
             <div class="${toolbarClasses}">
               <p class="${groupClasses}">${escapeText(view.group ?? productName)}</p>
-              <div class="flex items-center gap-cluster">
+              <div class="flex items-center gap-2">
                 <button type="button" class="${secondary}" data-docs-copy-page data-docs-copied="${words.copied}">${icon(CopyIcon)}<span data-docs-copy-label>${words.copyPage}</span></button>
                 <a class="${ghost}" href="${escapeAttribute(markdown)}">${icon(FileTextIcon)}${words.viewMarkdown}</a>
               </div>

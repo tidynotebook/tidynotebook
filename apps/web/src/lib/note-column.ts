@@ -14,7 +14,6 @@
  *
  * The rules live here, outside JSX, so a unit test can read them.
  */
-import { pageRowClassName, pageSideClassName } from '@notesapp/ui';
 
 /**
  * The classes of the column that the text and the footer share.
@@ -23,9 +22,7 @@ import { pageRowClassName, pageSideClassName } from '@notesapp/ui';
  * reach the editor adapter reads this constant, the way every page frame reads
  * `pageGutter` from `@notesapp/ui`.
  */
-export function noteColumnClassName(): string {
-  return 'mx-auto flex w-full max-w-note flex-col gap-1';
-}
+export { noteColumnClassName } from '@notesapp/ui';
 
 /**
  * The classes of the note screen inside the content area of the frame.
@@ -33,9 +30,7 @@ export function noteColumnClassName(): string {
  * It takes the height that the frame notices leave, so its foot stays on the
  * screen (`./frame-content.ts`). The text scrolls inside it.
  */
-export function noteScreenClassName(): string {
-  return 'flex min-h-0 min-w-0 flex-1 flex-col';
-}
+export { noteScreenClassName } from '@notesapp/ui';
 
 /**
  * The classes of the frame that holds the note text and the note footer.
@@ -47,9 +42,7 @@ export function noteScreenClassName(): string {
  * `packages/editor/src/editor-theme.ts`, where it scrolls with the text and a
  * click in it still places the caret.
  */
-export function noteFrameClassName(): string {
-  return 'flex min-h-0 min-w-0 flex-1 flex-col';
-}
+export { noteFrameClassName } from '@notesapp/ui';
 
 /**
  * The row of the note screen: the note frame and the side region.
@@ -57,19 +50,13 @@ export function noteFrameClassName(): string {
  * It is the row of every page, so the note text and the column of any other
  * page share one centre. The row fills the height of the note screen.
  */
-export function noteRowClassName(): string {
-  return `${pageRowClassName()} min-h-0 flex-1`;
-}
+export { noteRowClassName } from '@notesapp/ui';
 
 /** The side region limits its children to the height of the note screen. */
-export function noteSideRegionClassName(): string {
-  return `${pageSideClassName()} min-h-0 overflow-hidden`;
-}
+export { noteSideRegionClassName } from '@notesapp/ui';
 
 /** The outline keeps its natural height until it needs to scroll. */
-export function noteOutlineScrollClassName(): string {
-  return 'min-h-0 overflow-y-auto overscroll-contain';
-}
+export { noteOutlineScrollClassName } from '@notesapp/ui';
 
 /**
  * The classes of the footer row under the note text.
@@ -84,11 +71,6 @@ export function noteOutlineScrollClassName(): string {
  * while the text has the focus on a narrow screen under a finger, and comes
  * back when the text lets the focus go. A desktop keeps it.
  */
-export function noteFooterClassName(typing: boolean): string {
-  const base =
-    'shrink-0 border-t border-edge-line px-2 py-2 text-secondary text-muted';
-  return typing ? `${base} ${phoneTypingHiddenClassName}` : base;
-}
+export { noteFooterClassName } from '@notesapp/ui';
 
 /** Hides a part of the note on a phone while the text has the focus. */
-const phoneTypingHiddenClassName = 'max-md:pointer-coarse:hidden';

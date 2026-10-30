@@ -26,21 +26,18 @@
  *
  * The rules live here, outside JSX, so a unit test can read them.
  */
-import { focusOutline, transitionSurface } from '@notesapp/ui';
 
 /** The text shown when the note has no name. */
 export const noteNameFieldPlaceholder = 'Note name';
 
 /** Both the input and its width span must use the same text metrics. */
-export const noteNameFieldText = `px-1 py-1 text-body`;
+export { noteNameFieldText } from '@notesapp/ui';
 
 /** The span sets the width without a character minimum or script measurement. */
-export const noteNameFieldContainer = 'relative inline-grid min-w-0 max-w-full';
+export { noteNameFieldContainer } from '@notesapp/ui';
 
 /** Keep the width span out of sight and leave 1 px for the input caret. */
-export const noteNameFieldMeasure = `invisible overflow-hidden whitespace-pre border-r border-transparent ${noteNameFieldText}`;
+export { noteNameFieldMeasure } from '@notesapp/ui';
 
 /** The classes of the inline editable note name in the frame header. */
-export function noteNameFieldClassName(): string {
-  return `absolute inset-0 w-full min-w-0 max-w-full truncate rounded-md border-0 bg-transparent ${noteNameFieldText} text-strong outline-none ${transitionSurface} hover:bg-hover ${focusOutline}`;
-}
+export { noteNameFieldClassName } from '@notesapp/ui';

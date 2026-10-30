@@ -1,3 +1,11 @@
+import {
+  IconButton,
+  Rail,
+  Stack,
+  CalendarIcon,
+  FolderIcon,
+  LinkIcon,
+} from '@notesapp/ui';
 /**
  * The view bar of the sidebar (record 0105).
  *
@@ -7,12 +15,7 @@
  * names and the stored choice, and `sidebarViewClassName` draws a button.
  */
 import { useCallback, useState, type ReactNode } from 'react';
-import {
-  CalendarIcon,
-  FolderIcon,
-  LinkIcon,
-  sidebarViewClassName,
-} from '@notesapp/ui';
+
 import { Link, useLocation } from 'react-router';
 import { actionIcon } from './action-icons.tsx';
 import { trashPageGlyph } from '../lib/delete-label.ts';
@@ -69,33 +72,29 @@ export function SidebarViewBar({
 }): ReactNode {
   const location = useLocation();
   return (
-    <nav
+    <Rail
       aria-label="Sidebar views"
       className="ui-sidebar-rail border-r border-edge-subtle"
     >
-      <div className="ui-sidebar-rail-group">
+      <Stack gap={0.5} align="center" className="ui-sidebar-rail-group">
         {sidebarViews.map((candidate) => (
-          <button
+          <IconButton
             key={candidate}
-            type="button"
-            className={`${sidebarViewClassName({
-              current:
-                candidate === view &&
-                !/\/(trash|published)$/.test(location.pathname),
-            })} ui-sidebar-rail-button`}
-            aria-label={sidebarViewLabels[candidate]}
-            title={sidebarViewLabels[candidate]}
-            aria-pressed={candidate === view}
+            size="rail"
+            glyph={viewIcons[candidate]}
+            label={sidebarViewLabels[candidate]}
+            current={
+              candidate === view &&
+              !/\/(trash|published)$/.test(location.pathname)
+            }
+            ariaPressed={candidate === view}
             onClick={() => onChoose(candidate)}
-          >
-            <span className="inline-flex" aria-hidden="true">
-              {viewIcons[candidate]}
-            </span>
-          </button>
+            className="ui-sidebar-rail-button"
+          />
         ))}
-      </div>
+      </Stack>
       <div aria-hidden="true" />
-      <div className="ui-sidebar-rail-group">
+      <Stack gap={0.5} align="center" className="ui-sidebar-rail-group">
         {[
           { name: 'Published links', path: 'published', icon: <LinkIcon /> },
           { name: 'Trash', path: 'trash', icon: actionIcon(trashPageGlyph) },
@@ -103,20 +102,25 @@ export function SidebarViewBar({
           const to = `/w/${workspaceId}/${item.path}`,
             current = location.pathname === to;
           return (
-            <Link
+            <IconButton
               key={item.path}
-              to={to}
-              aria-label={item.name}
-              title={item.name}
-              aria-current={current ? 'page' : undefined}
-              className={`${sidebarViewClassName({ current })} ui-rail-link ui-sidebar-rail-button`}
-              onClick={onNavigate}
-            >
-              {item.icon}
-            </Link>
+              size="rail"
+              glyph={item.icon}
+              label={item.name}
+              current={current}
+              render={(props) => (
+                <Link
+                  {...props}
+                  className={`${props.className} ui-rail-link ui-sidebar-rail-button`}
+                  to={to}
+                  aria-current={current ? 'page' : undefined}
+                  onClick={onNavigate}
+                />
+              )}
+            />
           );
         })}
-      </div>
-    </nav>
+      </Stack>
+    </Rail>
   );
 }

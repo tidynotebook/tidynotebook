@@ -37,12 +37,12 @@ export function Toast({
 }): ReactNode {
   return (
     <div
-      className={`pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center pb-gutter ${pageGutter}`}
+      className={`pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center pb-4 ${pageGutter}`}
       role="status"
       aria-live="polite"
     >
       <div
-        className={`pointer-events-auto flex w-full max-w-md flex-wrap items-center gap-group rounded-lg border border-overlay-edge bg-overlay px-3 py-3 text-body text-strong shadow-overlay ${transitionRaise}`}
+        className={`pointer-events-auto flex w-full max-w-md flex-wrap items-center gap-4 rounded-lg border border-overlay-edge bg-overlay p-3 coarse:p-4 text-body text-strong shadow-overlay ${transitionRaise}`}
       >
         <span className="min-w-0 flex-1">{message}</span>
         {children}

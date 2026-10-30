@@ -55,7 +55,7 @@ export function useNavigationDrawer(
             (target) =>
               target?.isConnected && target.getClientRects().length > 0,
           )
-          ?.focus();
+          ?.focus({ preventScroll: true });
       drawerWasOpenRef.current = false;
       return;
     }
@@ -71,7 +71,9 @@ export function useNavigationDrawer(
             ),
           );
     const frame = modal
-      ? window.requestAnimationFrame(() => focusable()[0]?.focus())
+      ? window.requestAnimationFrame(() =>
+          focusable()[0]?.focus({ preventScroll: true }),
+        )
       : null;
     const previousOverflow = document.body.style.overflow;
     if (modal) document.body.style.overflow = 'hidden';

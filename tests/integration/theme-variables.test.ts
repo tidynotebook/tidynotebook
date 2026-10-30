@@ -192,7 +192,12 @@ await test('touch form labels and fields share the computed body size', async ()
       const style = document.createElement('style');
       // This style engine does not support Tailwind's layers and preflight.
       // Give the font fixture the compiled token and font rules unchanged.
-      const variables = /:root, :host\s*\{([^}]+)\}/.exec(built);
+      const variables = [
+        '',
+        [...built.matchAll(/:root, :host\s*\{([^}]+)\}/g)]
+          .map((match) => match[1] ?? '')
+          .join('\n'),
+      ] as const;
       const scale =
         /@media \(pointer: coarse\)\s*\{\s*:root\s*\{(?=[^}]*--text-control:)([^}]+)\}/.exec(
           built,
@@ -203,7 +208,12 @@ await test('touch form labels and fields share the computed body size', async ()
         (name) => {
           const rule = new RegExp(`\\.${name}\\s*\\{([^}]+)\\}`).exec(built);
           assert.ok(rule?.[0]);
-          return rule[0];
+          // Happy DOM cannot resolve Tailwind's nested fallback for unset overrides.
+          // These override properties are not set in this isolated fixture.
+          return rule[0].replace(
+            /var\(--tw-(?:leading|font-weight),\s*(var\(--[a-z-]+\))\)/g,
+            '$1',
+          );
         },
       );
       const fontVariables = variables[1].match(
@@ -253,7 +263,12 @@ await test('shared touch roles set the full size, line height, and weight', asyn
   const built = await buildCss(
     Object.values(textRoleClasses).flatMap((value) => value.split(' ')),
   );
-  const variables = /:root, :host\s*\{([^}]+)\}/.exec(built);
+  const variables = [
+    '',
+    [...built.matchAll(/:root, :host\s*\{([^}]+)\}/g)]
+      .map((match) => match[1] ?? '')
+      .join('\n'),
+  ] as const;
   const scale =
     /@media \(pointer: coarse\)\s*\{\s*:root\s*\{(?=[^}]*--text-control:)([^}]+)\}/.exec(
       built,
@@ -272,9 +287,19 @@ await test('shared touch roles set the full size, line height, and weight', asyn
         const name = classes.split(' ')[0];
         const rule = new RegExp(`\\.${name}\\s*\\{([^}]+)\\}`).exec(built);
         assert.ok(rule?.[0], `${name} reaches the compiled stylesheet`);
-        return rule[0];
+        // Happy DOM cannot resolve Tailwind's nested fallback for unset overrides.
+        // These override properties are not set in this isolated fixture.
+        return rule[0].replace(
+          /var\(--tw-(?:leading|font-weight),\s*(var\(--[a-z-]+\))\)/g,
+          '$1',
+        );
       });
-    const fontVariables = variables[1].match(/--text-[a-z-]+:[^;]+;/g);
+    const fontVariables = [
+      ...(variables[1].match(/--text-[a-z-]+:[^;]+;/g) ?? []),
+      ...[...built.matchAll(/--text-[a-z-]+--font-weight:\s*\d+;/g)].map(
+        (match) => match[0],
+      ),
+    ];
     assert.ok(fontVariables);
     style.textContent = `:root { ${fontVariables.join(' ')} } ${rules.join(' ')} @media (pointer: coarse) { :root { ${scale[1]} } }`;
     browser.document.head.append(style);
@@ -298,21 +323,10 @@ await test('shared touch roles set the full size, line height, and weight', asyn
 });
 
 await test('the footer of a note gives its row to the text on a phone', async () => {
-  // The rule of `noteFooterClassName` stacks two variants. The served
-  // stylesheet holds it under both queries, so the count goes away while a
-  // person types on a phone and stays on a desktop. Other phone utilities
-  // can precede this rule inside the same media block.
-  const assets = resolve(root, 'apps/web/dist/web/assets');
-  const served = (
-    await Promise.all(
-      (await readdir(assets))
-        .filter((name) => name.endsWith('.css'))
-        .map((name) => readFile(resolve(assets, name), 'utf8')),
-    )
-  ).join('\n');
+  const built = await buildCss(['coarse:max-md:hidden']);
   assert.match(
-    served,
-    /@media not all and \(width>=48rem\)\{@media \(pointer:coarse\)\{(?:[^{}]+\{[^{}]*\})*\.max-md\\:pointer-coarse\\:hidden\{display:none\}/,
+    built,
+    /@media \(pointer: coarse\)\s*\{\s*@media \(width < 48rem\)\s*\{\s*\.coarse\\:max-md\\:hidden\s*\{\s*display: none/,
   );
 });
 
@@ -369,7 +383,16 @@ await test('every class of every control recipe reaches the built stylesheet', a
     selectClassName(),
   );
   // A marker class selects nothing by itself.
-  const markers = new Set(['group']);
+  const markers = new Set([
+    'group',
+    'ui-button',
+    'ui-calendar-day',
+    'ui-field',
+    'ui-bare-field', // A borderless search control uses its parent inset.
+    'ui-icon-button',
+    'ui-select',
+    'ui-tree-row',
+  ]);
   const missing = new Set<string>();
   for (const answer of answers)
     for (const name of answer.split(' ').filter(Boolean)) {
@@ -390,9 +413,9 @@ await test('the compact tree spacing reaches the built stylesheet', async () => 
       stylesheets.map((name) => readFile(resolve(assets, name), 'utf8')),
     )
   ).join('\n');
-  assert.ok(spacing.includes('.space-y-1'), 'sibling gap');
-  assert.ok(spacing.includes('.mt-1'), 'branch gap');
-  assert.ok(spacing.includes('.pl-2'), 'branch indent');
+  assert.ok(spacing.includes('.gap-0\\.5'), 'parent-owned sibling gap');
+  assert.ok(spacing.includes('.gap-1'), 'parent-owned branch gap');
+  assert.ok(spacing.includes('.w-5'), 'shared indent slot');
 });
 
 await test('the one vendored face is declared and its files are served', async () => {
@@ -426,7 +449,9 @@ await test('every palette fallback of the stylesheet is the registry value', () 
   // the inline script runs, so they are a second copy of the Default dark
   // palette. This test is what stops that copy from drifting.
   const registry = new Map(themeProperties(defaultThemeFor('dark')));
-  const block = /@theme inline \{([\s\S]*?)\n\}/.exec(stylesheetSource);
+  const block = [
+    ...stylesheetSource.matchAll(/@theme inline \{([\s\S]*?)\n\}/g),
+  ].find((part) => part[1]?.includes('--color-app:'));
   assert.ok(block !== null, 'the stylesheet states no inline theme block');
   const declarations = [
     ...(block[1] ?? '').matchAll(

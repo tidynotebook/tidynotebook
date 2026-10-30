@@ -1,3 +1,20 @@
+import {
+  Inset,
+  Inline,
+  Stack,
+  Button,
+  CheckIcon,
+  CopyIcon,
+  EmptyState,
+  ListRow,
+  LoadingState,
+  Notice,
+  Page,
+  pageGroupLabelClassName,
+  PageHeader,
+  pageListClassName,
+  StatusRegion,
+} from '@notesapp/ui';
 /**
  * The Needs attention screen: every save the server refused for good.
  *
@@ -19,20 +36,7 @@
  */
 import { useState, type ReactNode } from 'react';
 import { useParams } from 'react-router';
-import {
-  Button,
-  CheckIcon,
-  CopyIcon,
-  EmptyState,
-  ListRow,
-  LoadingState,
-  Notice,
-  Page,
-  pageGroupLabelClassName,
-  PageHeader,
-  pageListClassName,
-  StatusRegion,
-} from '@notesapp/ui';
+
 import { actionIcon } from '../../shell/action-icons.tsx';
 import { deleteGlyph } from '../../lib/delete-label.ts';
 import { attentionTitle, useParkedSaves } from './attention-link.tsx';
@@ -67,24 +71,26 @@ function ParkedSaveRow({
   const lines = parkedSaveLines(save, now);
 
   return (
-    <ListRow className="flex-col items-stretch py-3">
+    <ListRow className="flex-col items-stretch">
       <div className="min-w-0">
         <p className="m-0 truncate text-body text-strong">{save.name}</p>
         <p className="m-0 text-secondary text-muted">{lines.cause}</p>
         <p className="m-0 text-secondary text-muted">{lines.kept}</p>
       </div>
-      <details>
+      <Stack gap={2} as="details">
         <summary className="cursor-pointer text-secondary text-muted">
           Kept text
         </summary>
-        <pre
-          className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap rounded-lg border border-edge-subtle bg-surface p-3 font-mono text-preview text-strong"
+        <Inset
+          pad={3}
+          as="pre"
+          className="max-h-48 overflow-auto whitespace-pre-wrap rounded-lg border border-edge-subtle bg-surface font-mono text-preview text-strong"
           aria-label={`Kept text of ${save.name}`}
         >
           {save.text}
-        </pre>
-      </details>
-      <div className="flex flex-wrap items-center gap-cluster">
+        </Inset>
+      </Stack>
+      <Inline gap={2} wrap align="center" as="div">
         <Button
           variant="primary"
           size="sm"
@@ -161,7 +167,7 @@ function ParkedSaveRow({
             Discard
           </Button>
         )}
-      </div>
+      </Inline>
     </ListRow>
   );
 }
@@ -243,7 +249,7 @@ export function AttentionRoute(): ReactNode {
         title={attentionTitle}
         description={`${productName} keeps text here when it cannot complete a save. Retry the save, or create a new note from its text.`}
       />
-      <div className="space-y-4">
+      <Stack gap={4} as="div">
         {error === null ? null : <Notice tone="problem" message={error} />}
         {failure === null ? null : <Notice tone="problem" message={failure} />}
         {notice === '' ? null : <StatusRegion message={notice} />}
@@ -274,7 +280,7 @@ export function AttentionRoute(): ReactNode {
             </ul>
           </section>
         )}
-      </div>
+      </Stack>
     </Page>
   );
 }

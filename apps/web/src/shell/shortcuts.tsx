@@ -1,3 +1,11 @@
+import {
+  Stack,
+  Inline,
+  Button,
+  Dialog,
+  DialogBody,
+  DialogFooter,
+} from '@notesapp/ui';
 /**
  * The keyboard shortcuts dialog.
  *
@@ -15,7 +23,7 @@
  */
 import type { ReactNode } from 'react';
 import { shortcuts } from '@notesapp/editor';
-import { Button, Dialog, DialogBody, DialogFooter } from '@notesapp/ui';
+
 import { KeyHint } from './key-hint.tsx';
 
 /** The dialog that lists every shortcut. */
@@ -35,19 +43,22 @@ export function ShortcutsDialog({
       width="medium"
     >
       <DialogBody>
-        <dl className="m-0 flex flex-col gap-2 text-body">
+        <Stack gap={2} as="dl" className="text-body">
           {shortcuts.map((shortcut) => (
-            <div
-              className="flex items-center justify-between gap-group"
+            <Inline
+              gap={4}
+              align="center"
+              justify="between"
+              as="div"
               key={shortcut.keys}
             >
               <dt className="min-w-0 text-strong">{shortcut.description}</dt>
               <dd className="m-0 shrink-0">
                 <KeyHint keys={shortcut.keys} />
               </dd>
-            </div>
+            </Inline>
           ))}
-        </dl>
+        </Stack>
       </DialogBody>
       <DialogFooter>
         <Button variant="secondary" onClick={onClose}>

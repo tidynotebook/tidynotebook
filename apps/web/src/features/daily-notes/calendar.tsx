@@ -1,3 +1,15 @@
+import {
+  Inline,
+  Inset,
+  Stack,
+  Button,
+  calendarDayClassName,
+  calendarNoteMarkClassName,
+  CalendarDayIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  rowClassName,
+} from '@notesapp/ui';
 /**
  * The calendar view of the sidebar (records 0099, 0100 and 0105).
  *
@@ -13,15 +25,7 @@
  */
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { addMonths, sameCalendarDate, type CalendarDate } from '@notesapp/core';
-import {
-  Button,
-  calendarDayClassName,
-  calendarNoteMarkClassName,
-  CalendarDayIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  rowClassName,
-} from '@notesapp/ui';
+
 import {
   dateAfterKey,
   dayName,
@@ -89,7 +93,7 @@ export function SidebarCalendar({
   };
 
   return (
-    <section aria-label="Calendar">
+    <Stack gap={1} as="section" aria-label="Calendar">
       {/*
         The title keeps a base width for a short month name. When the
         sidebar is too narrow for it and the three touch targets, the actions
@@ -106,7 +110,7 @@ export function SidebarCalendar({
             {monthTitle(month, undefined, 'short')}
           </span>
         </h2>
-        <div className="ml-auto flex items-center">
+        <Inline align="center" as="div">
           <Button
             variant="ghost"
             size="sm"
@@ -131,26 +135,29 @@ export function SidebarCalendar({
             icon={<ChevronRightIcon />}
             onClick={() => setSelected((date) => addMonths(date, 1))}
           />
-        </div>
+        </Inline>
       </div>
-      <table
+      <Inset
         role="grid"
         aria-label={monthTitle(month)}
-        className="mt-1 w-full table-fixed border-collapse"
+        as="table"
+        className="w-full table-fixed border-collapse"
       >
         <thead>
           <tr>
             {weekdayOrder(firstDay).map((weekday) => {
               const names = weekdayNames(weekday);
               return (
-                <th
+                <Inset
                   key={weekday}
                   scope="col"
                   abbr={names.long}
-                  className="pb-1 text-center text-group text-muted"
+                  padY={1}
+                  as="th"
+                  className="text-center text-group text-muted"
                 >
                   {names.narrow}
-                </th>
+                </Inset>
               );
             })}
           </tr>
@@ -166,7 +173,7 @@ export function SidebarCalendar({
                 return (
                   <td
                     key={dayKey(cell.date)}
-                    className="p-px text-center"
+                    className="text-center"
                     aria-selected={isSelected}
                   >
                     <button
@@ -210,7 +217,7 @@ export function SidebarCalendar({
             </tr>
           ))}
         </tbody>
-      </table>
-    </section>
+      </Inset>
+    </Stack>
   );
 }

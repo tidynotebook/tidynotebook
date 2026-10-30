@@ -20,7 +20,8 @@ On a desktop, Settings has a list of sections on the left: **General**
 workspace (**Daily notes**, **Templates**, **Export and import**) and
 **Account** (**Account**, **Plan and billing**, **Devices**, **API keys and
 apps**). On a phone, Settings fills the screen. Select a section to open it,
-and select **Back** to go back to the list.
+and select **Back** to go back to the list. An administrator also sees the
+**Administration** group: **Accounts**, **Mail**, **Legal documents** and **Reports**.
 
 Forms and confirmations open inside Settings. They do not add another modal.
 Use **Back**, **Cancel**, or **Done** to return to the section. Escape returns
@@ -146,16 +147,36 @@ bytes. Administrator limit fields also use GB. New accounts without a configured
 limit start with 5 GB. Existing stored limits keep their byte values; an old
 5 GiB limit therefore shows as 5.4 GB. No account limit is reduced.
 
-An administrator also sees **Manage accounts** at the bottom of the list of
-sections, which opens the accounts page.
-See [Accounts and invitations](accounts.md). When the installation has terms
-and a privacy notice, this section links them.
+When the installation has terms and a privacy notice, this section links them.
+
+## Accounts
+
+Only an administrator sees this Administration section. It holds the sign-up
+policy, invitations and the list of accounts. On a phone, select an account
+to open its details. See [Accounts and invitations](accounts.md).
+
+## Mail
+
+Only an administrator sees this section. Select **Mail server** to open the
+connection and sender form. Select **Done** to save, or **Back** to discard it.
+See [Mail settings](accounts.md#mail).
+
+## Legal documents
+
+Only an administrator sees this section. Select **Terms** or **Privacy notice**
+to open its editor. Each row states whether its document is added.
+See [Legal documents](accounts.md#legal-documents).
+
+## Reports
+
+Only an administrator sees reports about published links. Open a report to
+read it and choose an action. See [Reports of published links](accounts.md#reports-of-published-links).
 
 ## Billing
 
 **Plan and billing** shows only when the installation has a billing service. Select
 **Open billing** to see and change your plan, your payment method and your
-invoices. The billing pages open in the same tab and know your account, so you
+invoices. The billing pages open in a new tab and know your account, so you
 do not sign in again. A locked account opens billing from the screen that it
 signs in to.
 

@@ -1,3 +1,20 @@
+import {
+  Stack,
+  Inline,
+  Button,
+  Dialog,
+  DialogBody,
+  DialogFooter,
+  Menu,
+  MoreIcon,
+  EmptyState,
+  ListRow,
+  LoadingState,
+  Notice,
+  Page,
+  pageGroupLabelClassName,
+  PageHeader,
+} from '@notesapp/ui';
 /**
  * The trash: the deleted notes of one workspace, with Restore and Delete.
  *
@@ -23,21 +40,7 @@ import {
 } from '@notesapp/api-client';
 import type { LocalStore } from '@notesapp/sync';
 import { generateUUID } from '@notesapp/core';
-import {
-  Button,
-  Dialog,
-  DialogBody,
-  DialogFooter,
-  Menu,
-  MoreIcon,
-  EmptyState,
-  ListRow,
-  LoadingState,
-  Notice,
-  Page,
-  pageGroupLabelClassName,
-  PageHeader,
-} from '@notesapp/ui';
+
 import { emptyStateIcon } from '../../shell/action-icons.tsx';
 import { deleteTrashLabel, trashPageGlyph } from '../../lib/delete-label.ts';
 import {
@@ -384,7 +387,7 @@ function TrashList({
           </Button>
         </DialogFooter>
       </Dialog>
-      <div className="space-y-4">
+      <Stack gap={4} as="div">
         {outcome === null ? null : (
           <p className="sr-only" role="status" aria-live="polite">
             {outcome}
@@ -419,7 +422,7 @@ function TrashList({
                 return (
                   <ListRow
                     key={item.fileId}
-                    className="border-b border-edge-subtle py-2"
+                    className="border-b border-edge-subtle"
                   >
                     <div className="min-w-0 flex-1">
                       <p className="m-0 line-clamp-2 break-words text-body text-strong lg:line-clamp-1">
@@ -429,7 +432,12 @@ function TrashList({
                         {parts.join(' \u00b7 ')}
                       </p>
                     </div>
-                    <div className="flex shrink-0 items-center gap-cluster">
+                    <Inline
+                      gap={2}
+                      align="center"
+                      as="div"
+                      className="shrink-0"
+                    >
                       <Button
                         variant="secondary"
                         size="sm"
@@ -463,14 +471,14 @@ function TrashList({
                           },
                         ]}
                       />
-                    </div>
+                    </Inline>
                   </ListRow>
                 );
               })}
             </ul>
           </section>
         )}
-      </div>
+      </Stack>
     </Page>
   );
 }

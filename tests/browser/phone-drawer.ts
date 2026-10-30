@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as pause } from 'node:timers/promises';
-import { hasChromium, isRecord } from './browser.ts';
+import { routeAuditAssets, hasChromium, isRecord } from './browser.ts';
 const loaded: unknown = await import(
   pathToFileURL(
     process.env.PLAYWRIGHT_MODULE ??
@@ -31,6 +31,8 @@ try {
         isMobile: phone,
         colorScheme: scheme,
       });
+      await routeAuditAssets(c);
+
       await c.addInitScript(
         (s) => localStorage.setItem('notesapp.theme', s),
         scheme,

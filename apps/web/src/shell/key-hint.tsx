@@ -1,3 +1,5 @@
+import { Inline, kbdClassName } from '@notesapp/ui';
+
 /**
  * The one key hint of the application.
  *
@@ -18,7 +20,7 @@
  * once.
  */
 import { Fragment, type ReactNode } from 'react';
-import { kbdClassName } from '@notesapp/ui';
+
 import { keyHintParts, type KeyCap } from './modifier-key.ts';
 
 /** One key cap of a hint. */
@@ -36,7 +38,7 @@ function KeyCapHint({ cap }: { readonly cap: KeyCap }): ReactNode {
 /** One key line, with the caps of this device. */
 export function KeyHint({ keys }: { readonly keys: string }): ReactNode {
   return (
-    <kbd className="inline-flex items-center gap-1">
+    <Inline gap={1} as="kbd" className="inline-flex items-center">
       {keyHintParts(keys).map((part, index) => (
         <Fragment key={`${String(index)}:${part.kind}`}>
           {part.kind === 'or' ? (
@@ -46,6 +48,6 @@ export function KeyHint({ keys }: { readonly keys: string }): ReactNode {
           )}
         </Fragment>
       ))}
-    </kbd>
+    </Inline>
   );
 }

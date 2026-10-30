@@ -1,13 +1,15 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Link } from 'react-router';
-import type { LocalStore } from '@notesapp/sync';
 import {
+  Inline,
   Button,
   buttonClassName,
   Notice,
   PageHeader,
   PageRegion,
 } from '@notesapp/ui';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Link } from 'react-router';
+import type { LocalStore } from '@notesapp/sync';
+
 import { useRequestSync } from '../../app.tsx';
 import { useParkedSaves } from '../attention/attention-link.tsx';
 import { restoreNote } from '../trash/trash.tsx';
@@ -54,7 +56,7 @@ export function PurgedNotePage({
             : 'It is gone for good.'
         }
       />
-      <div className="flex flex-wrap gap-2">
+      <Inline gap={2} wrap as="div">
         {hasText ? (
           <Link
             className={buttonClassName()}
@@ -64,7 +66,7 @@ export function PurgedNotePage({
           </Link>
         ) : null}
         <AllNotesAction workspaceId={workspaceId} />
-      </div>
+      </Inline>
     </PageRegion>
   );
 }
@@ -104,10 +106,8 @@ export function DeletedNotePage({
             : 'You are offline. Connect to restore this note.'
         }
       />
-      {problem === '' ? null : (
-        <Notice className="mb-3" tone="problem" message={problem} />
-      )}
-      <div className="flex flex-wrap gap-2">
+      {problem === '' ? null : <Notice tone="problem" message={problem} />}
+      <Inline gap={2} wrap as="div">
         <Button
           disabled={busy || !online}
           onClick={() => {
@@ -140,7 +140,7 @@ export function DeletedNotePage({
           {busy ? 'Restoring' : 'Restore note'}
         </Button>
         <AllNotesAction workspaceId={workspaceId} />
-      </div>
+      </Inline>
     </PageRegion>
   );
 }

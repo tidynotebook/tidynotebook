@@ -1,3 +1,12 @@
+import {
+  Form,
+  Button,
+  Dialog,
+  DialogBody,
+  DialogFooter,
+  Notice,
+  TextField,
+} from '@notesapp/ui';
 /**
  * The folder dialogs: new folder and move to folder.
  *
@@ -27,14 +36,7 @@ import {
   type ReactNode,
 } from 'react';
 import type { LocalStore } from '@notesapp/sync';
-import {
-  Button,
-  Dialog,
-  DialogBody,
-  DialogFooter,
-  Notice,
-  TextField,
-} from '@notesapp/ui';
+
 import { FolderField, FolderTreePicker } from './folder-tree-picker.tsx';
 import { applyMoves } from './apply-moves.ts';
 import {
@@ -126,7 +128,8 @@ export function NewFolderDialog({
       titleId="new-folder-title"
       width="small"
     >
-      <form
+      <Form
+        regions
         onSubmit={(event): void => {
           event.preventDefault();
           create();
@@ -164,7 +167,7 @@ export function NewFolderDialog({
             Create folder
           </Button>
         </DialogFooter>
-      </form>
+      </Form>
     </Dialog>
   );
 }
@@ -293,7 +296,8 @@ export function MoveItemsDialog({
       width="small"
       returnFocus={returnFocus}
     >
-      <form
+      <Form
+        regions
         onSubmit={(event): void => {
           event.preventDefault();
           move();
@@ -326,7 +330,7 @@ export function MoveItemsDialog({
             }}
           />
           {message === null ? null : (
-            <Notice className="mt-3" tone="problem" message={message} />
+            <Notice tone="problem" message={message} />
           )}
         </DialogBody>
         <DialogFooter>
@@ -341,7 +345,7 @@ export function MoveItemsDialog({
             Move
           </Button>
         </DialogFooter>
-      </form>
+      </Form>
     </Dialog>
   );
 }

@@ -40,7 +40,6 @@ export const editorThemeVariables: readonly string[] = [
   '--font-sans',
   '--font-mono',
   '--spacing',
-  '--spacing-gutter',
   '--radius-sm',
   '--radius-md',
   '--radius-lg',
@@ -1057,7 +1056,7 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
     // little way into the cell, so a tap on the text of a short header cell
     // still reaches the text.
     '@media (max-width: 1023px) and (pointer: coarse)': {
-      '.cm-panels': { marginInline: 'calc(var(--spacing-gutter) * -1)' },
+      '.cm-panels': { marginInline: 'calc(var(--spacing) * -4)' },
     },
     '@media (pointer: coarse)': {
       // A finger takes the 44 px of a row in the completion list.

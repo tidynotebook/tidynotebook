@@ -1,3 +1,4 @@
+import { Inline } from '@notesapp/ui';
 /**
  * The links to the terms and the privacy notice of the installation (record
  * 0120), and the one read of them that a screen makes.
@@ -48,9 +49,7 @@ export function LegalLinks({
   readonly className?: string;
 }): ReactNode {
   return (
-    <p
-      className={`mt-0 flex flex-wrap gap-cluster text-body ${className ?? 'mb-0'}`}
-    >
+    <Inline as="p" gap={2} wrap className={`text-body ${className ?? ''}`}>
       {legalLinks(documents).map((link) => (
         <a
           key={link.label}
@@ -62,7 +61,7 @@ export function LegalLinks({
           {link.label}
         </a>
       ))}
-    </p>
+    </Inline>
   );
 }
 

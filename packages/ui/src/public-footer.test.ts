@@ -138,9 +138,9 @@ await test('the default and operator footers have no cloud product or support de
 await test('every column takes its accessible name from its heading', () => {
   const html = renderPublicFooter();
   assert.doesNotMatch(html, /aria-label=/);
-  const labels = [...html.matchAll(/<nav aria-labelledby="([^"]+)">/g)];
+  const labels = [...html.matchAll(/<nav aria-labelledby="([^"]+)"[^>]*>/g)];
   assert.equal(labels.length, 3);
-  for (const label of labels) assert.ok(html.includes(`<h2 id="${label[1]}">`));
+  for (const label of labels) assert.ok(html.includes(`<h2 id="${label[1]}"`));
 });
 
 await test('both renderers reject unsafe URL schemes in links, the brand, and the icon', () => {

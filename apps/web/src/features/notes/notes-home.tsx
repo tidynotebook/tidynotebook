@@ -1,3 +1,19 @@
+import {
+  Stack,
+  Inline,
+  Button,
+  EmptyState,
+  FileTextIcon,
+  LoadingState,
+  Notice,
+  Page,
+  pageGroupLabelClassName,
+  PageHeader,
+  pageListClassName,
+  PlusIcon,
+  rowClassName,
+} from '@notesapp/ui';
+
 /**
  * The note list of one open area.
  *
@@ -33,19 +49,7 @@ import {
   type ReactNode,
 } from 'react';
 import { Link, useParams } from 'react-router';
-import {
-  Button,
-  EmptyState,
-  FileTextIcon,
-  LoadingState,
-  Notice,
-  Page,
-  pageGroupLabelClassName,
-  PageHeader,
-  pageListClassName,
-  PlusIcon,
-  rowClassName,
-} from '@notesapp/ui';
+
 import { useLocalStore, useSession } from '../../app.tsx';
 import { useDocumentTitle } from '../../shell/document-title.ts';
 import { useNow } from '../../shell/now.ts';
@@ -125,7 +129,7 @@ function NoteGroupList({
 }): ReactNode {
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const keys = useMemo(() => notes.map((note) => note.fileId), [notes]);
-  const rows = useContentRowWindow(keys, pinnedIndex(keys, focusedId), 'list');
+  const rows = useContentRowWindow(keys, pinnedIndex(keys, focusedId));
   return (
     <ul className={pageListClassName()} ref={rows.listRef}>
       {rows.indexes.map((index) => {
@@ -205,7 +209,14 @@ export function NotesHomeView(): ReactNode {
   );
   const total = files.notes.length;
   const actions = (
-    <div className="flex flex-wrap items-center justify-center gap-2 lg:flex-row-reverse">
+    <Inline
+      gap={2}
+      wrap
+      align="center"
+      justify="center"
+      as="div"
+      className="lg:flex-row-reverse"
+    >
       <Button
         icon={<PlusIcon />}
         disabled={store.store === null}
@@ -214,7 +225,7 @@ export function NotesHomeView(): ReactNode {
         New note
       </Button>
       <NewFromTemplate key={workspaceId} workspaceId={workspaceId} folder="" />
-    </div>
+    </Inline>
   );
   const keepOffset = useKeptOffset(workspaceId, !files.loading);
 
@@ -224,7 +235,7 @@ export function NotesHomeView(): ReactNode {
         files.loading || total === 0 ? undefined : noteGroupSections(groups)
       }
     >
-      <div ref={keepOffset}>
+      <Stack gap={4} as="div" ref={keepOffset}>
         <PageHeader
           title="All notes"
           description={
@@ -235,7 +246,7 @@ export function NotesHomeView(): ReactNode {
           actions={showNewNoteInHeader(files.loading, total) ? actions : null}
         />
         {newNote.error === null ? null : (
-          <Notice className="mb-4" tone="problem" message={newNote.error} />
+          <Notice tone="problem" message={newNote.error} />
         )}
         {files.loading ? (
           <LoadingState shape="list" rows={6} label="Your notes are loading." />
@@ -247,9 +258,11 @@ export function NotesHomeView(): ReactNode {
             action={actions}
           />
         ) : (
-          <div>
+          <Stack gap={{ fine: 6, coarse: 4 }}>
             {groups.map((group) => (
-              <section
+              <Stack
+                as="section"
+                gap={2}
                 className="ui-section"
                 key={group.label}
                 aria-labelledby={noteGroupHeadingId(group.label)}
@@ -265,11 +278,11 @@ export function NotesHomeView(): ReactNode {
                   workspaceId={workspaceId}
                   now={now}
                 />
-              </section>
+              </Stack>
             ))}
-          </div>
+          </Stack>
         )}
-      </div>
+      </Stack>
     </Page>
   );
 }

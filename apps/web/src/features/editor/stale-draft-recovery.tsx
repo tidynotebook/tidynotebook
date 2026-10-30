@@ -1,13 +1,18 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { isLocalStorageError, type LocalStore } from '@notesapp/sync';
-import { generateUUID } from '@notesapp/core';
 import {
+  Inset,
+  Inline,
+  Grid,
   Button,
   PageHeader,
   PageRegion,
   tabClassName,
   focusOutline,
 } from '@notesapp/ui';
+
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { isLocalStorageError, type LocalStore } from '@notesapp/sync';
+import { generateUUID } from '@notesapp/core';
+
 import { noteSaveReport, useNoteSavePublisher } from './save-status.tsx';
 
 /** Keeps an older draft out of the editor until its owner selects a version. */
@@ -117,10 +122,12 @@ export function StaleDraftRecovery({
         title="Two versions of this note"
         description="This note changed on another device. Choose which text to keep."
       />
-      <div
+      <Inline
         role="tablist"
         aria-label="Versions"
-        className="mb-3 flex gap-2 lg:hidden"
+        gap={2}
+        as="div"
+        className="lg:hidden"
       >
         {(['device', 'saved'] as const).map((entry) => (
           <button
@@ -158,8 +165,8 @@ export function StaleDraftRecovery({
             {entry === 'device' ? 'This device' : 'Saved version'}
           </button>
         ))}
-      </div>
-      <div className="grid gap-4 lg:grid-cols-2">
+      </Inline>
+      <Grid gap={4} as="div" className="lg:grid-cols-2">
         {(['device', 'saved'] as const).map((entry) => (
           <section
             key={entry}
@@ -168,21 +175,24 @@ export function StaleDraftRecovery({
             aria-labelledby={`recovery-${entry}-${wide ? 'heading' : 'tab'}`}
             className={tab === entry ? 'min-w-0' : 'hidden min-w-0 lg:block'}
           >
-            <h2
+            <Inset
               id={`recovery-${entry}-heading`}
-              className="mb-2 mt-0 hidden text-title-header lg:block"
+              as="h2"
+              className="hidden text-title-header lg:block"
             >
               {entry === 'device' ? 'This device' : 'Saved version'}
-            </h2>
-            <pre
+            </Inset>
+            <Inset
+              as="pre"
+              pad={3}
               tabIndex={0}
-              className={`m-0 max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-edge-subtle bg-card p-3 text-preview ${focusOutline}`}
+              className={`m-0 max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-edge-subtle bg-card text-preview ${focusOutline}`}
             >
               {entry === 'device' ? localText : acceptedText}
-            </pre>
+            </Inset>
           </section>
         ))}
-      </div>
+      </Grid>
       <p className="text-secondary text-muted">
         If you use the saved version, this device's text stays in Needs
         attention.
@@ -192,7 +202,7 @@ export function StaleDraftRecovery({
           {problem}
         </p>
       )}
-      <div className="flex flex-wrap gap-2" aria-busy={pending}>
+      <Inline gap={2} wrap as="div" aria-busy={pending}>
         <Button disabled={pending} onClick={() => void resolve(true)}>
           {pending ? 'Keeping...' : "Keep this device's text"}
         </Button>
@@ -203,7 +213,7 @@ export function StaleDraftRecovery({
         >
           Use saved version
         </Button>
-      </div>
+      </Inline>
     </PageRegion>
   );
 }

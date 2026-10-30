@@ -232,10 +232,10 @@ const yjsPackages = new Set(['yjs', 'lib0']);
 const editorBinding = 'y-codemirror.next';
 const editorBridgeEntry = '@notesapp/note-document/editor-bridge';
 const bridgeReaders = new Set(['editor']);
-// The one package with a second entry point, and the one entry it may add.
+// Explicit entry points isolate the editor bridge and React-free UI recipes.
 const secondEntries = new Map([
-  [yjsOwner, './editor-bridge'],
-  ['ui', './public-footer'],
+  [yjsOwner, ['./editor-bridge']],
+  ['ui', ['./public-footer', './static']],
 ]);
 /** The test data that a test file of any package may import (record 0155). */
 const sharedTestDataPrefix = 'packages/markdown/test-data/';
@@ -312,10 +312,12 @@ for (const item of packages) {
   const edges = new Set();
   graph.set(name, edges);
   const exports = record(item.manifest.exports);
-  const extraEntry = secondEntries.get(key);
+  const extraEntries = secondEntries.get(key) ?? [];
   if (
     !('.' in exports) ||
-    Object.keys(exports).some((entry) => entry !== '.' && entry !== extraEntry)
+    Object.keys(exports).some(
+      (entry) => entry !== '.' && !extraEntries.includes(entry),
+    )
   )
     fail(
       item.path,
@@ -378,11 +380,11 @@ function checkImport(file, specifier, isTest, isGenerated, isTypeOnly = false) {
   if (
     key === 'server' &&
     dependency === '@notesapp/ui' &&
-    specifier !== '@notesapp/ui/public-footer'
+    !['@notesapp/ui/public-footer', '@notesapp/ui/static'].includes(specifier)
   )
     fail(
       file,
-      'The server imports only the React-free public footer entry of ui.',
+      'The server imports only the React-free public footer and static entries of ui.',
     );
   const filePath = relative(directory, file).split(sep).join('/');
   // Decision 0018 keeps apps/web/src/lib/ pure. React never enters it.
@@ -464,7 +466,7 @@ function checkImport(file, specifier, isTest, isGenerated, isTypeOnly = false) {
     if (
       specifier !== dependency &&
       specifier !== editorBridgeEntry &&
-      specifier !== '@notesapp/ui/public-footer'
+      !['@notesapp/ui/public-footer', '@notesapp/ui/static'].includes(specifier)
     )
       fail(file, `Deep import ${specifier} is forbidden.`);
     if (!allowed[key]?.includes(short(dependency)))

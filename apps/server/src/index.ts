@@ -194,6 +194,7 @@ export {
   publishedDocument,
   publishedDocumentClasses,
   publishedFieldClasses,
+  publishedTextAreaClasses,
   publishedTaskBoxClasses,
   publishedCodeFigureClasses,
   publishedTitle,

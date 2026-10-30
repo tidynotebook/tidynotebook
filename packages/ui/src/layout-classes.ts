@@ -7,11 +7,10 @@ export type PageHeaderActionLayout = 'cluster' | 'split' | 'inline';
 export function pageHeaderActionsClassName(
   layout: PageHeaderActionLayout,
 ): string {
-  if (layout === 'inline')
-    return 'ml-auto flex shrink-0 items-center gap-cluster';
+  if (layout === 'inline') return 'flex shrink-0 items-center gap-2';
   return layout === 'split'
-    ? 'flex w-full items-center justify-between gap-group'
-    : 'flex shrink-0 items-center gap-cluster';
+    ? 'flex w-full items-center justify-between gap-4'
+    : 'flex shrink-0 items-center gap-2';
 }
 
 /**
@@ -23,17 +22,17 @@ export function pageHeaderActionsClassName(
  * [decision 0137](../../../docs/decisions/0137-every-page-shares-the-note-column-and-its-side-region.md).
  */
 export function pageRowClassName(): string {
-  return 'flex min-w-0 gap-6';
+  return 'flex min-w-0 justify-center gap-6';
 }
 
 /**
  * The column of a page: the note measure, centred in the space it owns.
  *
- * The column grows to the measure and the auto margins take the rest, so the
- * column of a page and the column of the note share one centre (0055).
+ * The parent centers the column, so the page and the note share one centre
+ * (0055).
  */
 export function pageColumnClassName(): string {
-  return 'ui-page-column min-w-0 flex-1';
+  return 'ui-page-column w-full min-w-0 max-w-page flex-1';
 }
 
 /**
@@ -133,7 +132,7 @@ export function sectionScrollTop(
  * shorter, so a step of the numeric scale keeps two fills apart.
  */
 export function pageListClassName(): string {
-  return '-mx-2 my-0 flex list-none flex-col gap-cluster p-0 md:gap-1';
+  return 'flex list-none flex-col gap-1 p-0';
 }
 
 /**

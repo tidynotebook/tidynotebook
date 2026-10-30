@@ -1,3 +1,16 @@
+import {
+  Form,
+  Stack,
+  Inset,
+  Button,
+  buttonClassName,
+  Checkbox,
+  LoadingState,
+  Notice,
+  ReadOnlyField,
+  TextField,
+} from '@notesapp/ui';
+
 /**
  * The page that accepts an invitation (record 0108).
  *
@@ -18,15 +31,7 @@ import {
   registerAccount,
   type LegalDocuments,
 } from '@notesapp/api-client';
-import {
-  Button,
-  buttonClassName,
-  Checkbox,
-  LoadingState,
-  Notice,
-  ReadOnlyField,
-  TextField,
-} from '@notesapp/ui';
+
 import { problemMessage, useSession } from '../../app.tsx';
 import { invitationTokenOf } from '../../lib/accounts.ts';
 import { passwordProblem, passwordRule } from '../../lib/password-policy.ts';
@@ -106,7 +111,7 @@ export function InvitationPage(): ReactNode {
       {state.kind === 'loading' ? (
         <LoadingState label="The invitation is loading." />
       ) : state.kind === 'invalid' ? (
-        <div className="mt-4 space-y-3">
+        <Stack gap={3} as="div">
           <Notice tone="problem" message={invalidInvitation} />
           <Link
             className={buttonClassName({ variant: 'secondary' })}
@@ -114,9 +119,9 @@ export function InvitationPage(): ReactNode {
           >
             Go to sign in
           </Link>
-        </div>
+        </Stack>
       ) : state.kind === 'unreachable' ? (
-        <div className="mt-4 space-y-3">
+        <Stack gap={3} as="div">
           <Notice tone="problem" message={state.message} />
           <Button
             onClick={() => {
@@ -125,7 +130,7 @@ export function InvitationPage(): ReactNode {
           >
             Try again
           </Button>
-        </div>
+        </Stack>
       ) : (
         <AcceptForm
           token={state.token}
@@ -201,14 +206,14 @@ function AcceptForm({
 
   return (
     <>
-      <p className="mb-6 mt-0 text-secondary text-muted">
+      <Inset as="p" className="text-secondary text-muted">
         You have an invitation to this installation. Choose a password, and your
         account and its own notes are ready.
-      </p>
+      </Inset>
       {trialOffer(trialSeconds) === null ? null : (
-        <Notice className="mb-4" message={trialOffer(trialSeconds) ?? ''} />
+        <Notice message={trialOffer(trialSeconds) ?? ''} />
       )}
-      <form
+      <Form
         onSubmit={(event): void => {
           event.preventDefault();
           void submit();
@@ -248,31 +253,29 @@ function AcceptForm({
           required
           onChange={setConfirmation}
         />
-        <div className="mb-4">
+        <Inset as="div">
           <Checkbox
             id="invite-reveal"
             label="Show the password"
             checked={reveal}
             onChange={setReveal}
           />
-        </div>
+        </Inset>
         {documents === null ? null : (
-          <div className="mb-4">
+          <Inset as="div">
             <Checkbox
               id="invite-consent"
               label={<ConsentLabel documents={documents} />}
               checked={accepted}
               onChange={setAccepted}
             />
-          </div>
+          </Inset>
         )}
-        {error === '' ? null : (
-          <Notice className="mb-4" tone="problem" message={error} />
-        )}
+        {error === '' ? null : <Notice tone="problem" message={error} />}
         <Button type="submit" disabled={busy} className="w-full">
           {busy ? 'Making your account' : 'Make account'}
         </Button>
-      </form>
+      </Form>
     </>
   );
 }

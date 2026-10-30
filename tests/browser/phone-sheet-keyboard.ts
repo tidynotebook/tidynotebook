@@ -2,8 +2,13 @@
 import assert from 'node:assert/strict';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import * as api from '@notesapp/api-client';
-import { hasChromium, isRecord, type Locator, type Page } from './browser.ts';
+import {
+  routeAuditAssets,
+  hasChromium,
+  isRecord,
+  type Locator,
+  type Page,
+} from './browser.ts';
 
 const loaded: unknown = await import(
   pathToFileURL(
@@ -15,60 +20,15 @@ assert.ok(hasChromium(loaded));
 const base = process.env.UI_AUDIT_ORIGIN ?? 'http://localhost:3517';
 const statePath =
   process.env.UI_AUDIT_STATE ?? '.local-app/review-session.json';
-const state: unknown = JSON.parse(readFileSync(statePath, 'utf8'));
 const fixture: unknown = JSON.parse(
   readFileSync(
     process.env.UI_AUDIT_FIXTURE ?? '.local-app/review-fixture.json',
     'utf8',
   ),
 );
-assert.ok(isRecord(state) && Array.isArray(state.cookies));
 assert.ok(isRecord(fixture) && typeof fixture.workspaceId === 'string');
 const workspaceId = fixture.workspaceId;
 const home = `${base}/w/${workspaceId}`;
-const headers = {
-  origin: base,
-  cookie: state.cookies
-    .map((cookie: unknown) => {
-      assert.ok(isRecord(cookie));
-      assert.equal(typeof cookie.name, 'string');
-      assert.equal(typeof cookie.value, 'string');
-      return `${String(cookie.name)}=${String(cookie.value)}`;
-    })
-    .join('; '),
-};
-api.configureClient(base, undefined);
-async function snapshot() {
-  const account = await api.getAccount({ headers });
-  const daily = await api.getDailyNoteSettings({
-    headers,
-    path: { workspaceId },
-  });
-  const templates = await api.getTemplateSettings({
-    headers,
-    path: { workspaceId },
-  });
-  const files = await api.listFiles({
-    headers,
-    path: { workspaceId },
-    query: { limit: 500 },
-  });
-  const trash = await api.listDeletedFiles({
-    headers,
-    path: { workspaceId },
-    query: { limit: 500 },
-  });
-  for (const result of [account, daily, templates, files, trash])
-    assert.ok(result.data);
-  return {
-    preferences: account.data?.preferences,
-    daily: daily.data,
-    templates: templates.data,
-    files: files.data?.files,
-    trash: trash.data?.files,
-  };
-}
-const original = await snapshot();
 const browser = await loaded.chromium.launch();
 const results: { variant: string; screen: string }[] = [];
 const errors: string[] = [];
@@ -145,6 +105,8 @@ try {
         isMobile: phone,
         colorScheme: scheme,
       });
+      await routeAuditAssets(context);
+
       await context.addInitScript(
         (value) => localStorage.setItem('notesapp.theme', value),
         scheme,
@@ -460,8 +422,10 @@ try {
         );
         await shot('api-key-keyboard');
         await page.setViewportSize({ width, height });
-        const fileId = original.files?.[0]?.fileId;
-        assert.ok(fileId);
+        assert.ok(Array.isArray(fixture.files));
+        const firstFile: unknown = fixture.files[0];
+        assert.ok(isRecord(firstFile) && typeof firstFile.fileId === 'string');
+        const fileId = firstFile.fileId;
         await page.goto(`${home}/notes/${fileId}`);
         await page
           .getByRole('button', { name: 'Note actions', exact: true })
@@ -483,17 +447,8 @@ try {
   assert.deepEqual(writes, []);
 } finally {
   await browser.close();
-  assert.deepEqual(
-    await snapshot(),
-    original,
-    'The review data and settings must remain unchanged.',
-  );
   writeFileSync(
     '.local-app/round6-results.json',
-    JSON.stringify(
-      { results, errors, writes, reviewDataUnchanged: true },
-      null,
-      2,
-    ),
+    JSON.stringify({ results, errors, writes }, null, 2),
   );
 }

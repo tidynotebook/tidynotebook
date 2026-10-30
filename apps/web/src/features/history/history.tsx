@@ -1,3 +1,23 @@
+import {
+  Stack,
+  Inset,
+  Inline,
+  Badge,
+  Button,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  EmptyState,
+  HistoryIcon,
+  ListRow,
+  LoadingState,
+  Notice,
+  Page,
+  pageGroupLabelClassName,
+  PageHeader,
+  pageListClassName,
+  rowClassName,
+  tabClassName,
+} from '@notesapp/ui';
 /**
  * The history of one note: a timeline of versions, with one way back.
  *
@@ -42,23 +62,7 @@ import {
 import { generateUUID } from '@notesapp/core';
 import type { DiffHunk, LineChangeCount } from '@notesapp/editor';
 import type { LocalStore } from '@notesapp/sync';
-import {
-  Badge,
-  Button,
-  ChevronDownIcon,
-  ChevronRightIcon,
-  EmptyState,
-  HistoryIcon,
-  ListRow,
-  LoadingState,
-  Notice,
-  Page,
-  pageGroupLabelClassName,
-  PageHeader,
-  pageListClassName,
-  rowClassName,
-  tabClassName,
-} from '@notesapp/ui';
+
 import {
   problemMessage,
   useLocalStore,
@@ -567,7 +571,7 @@ function HistoryDetail({
             : `${name}. Restore makes a version the newest. Nothing is lost.`
         }
       />
-      <div className="space-y-4">
+      <Stack gap={4} as="div">
         {actionMessage === '' ? null : (
           <Notice tone="success" message={actionMessage} />
         )}
@@ -584,7 +588,7 @@ function HistoryDetail({
             description="Save this note once and its first version appears here."
           />
         ) : (
-          <div className="space-y-6">
+          <Stack gap={6} as="div">
             {days.map((day) => (
               <section key={day.key} aria-labelledby={dayHeadingId(day.key)}>
                 <h2
@@ -616,7 +620,7 @@ function HistoryDetail({
                             className={rowClassName({
                               selected,
                               inset: false,
-                              className: 'min-w-0 flex-1 py-1',
+                              className: 'min-w-0 flex-1',
                             })}
                             aria-expanded={selected}
                             aria-controls={controlsWhenShown(panelId, selected)}
@@ -649,9 +653,9 @@ function HistoryDetail({
                             </span>
                           </button>
                           {current ? (
-                            <span className="shrink-0 px-2">
+                            <Inset padX={2} as="span" className="shrink-0">
                               <Badge>Current version</Badge>
-                            </span>
+                            </Inset>
                           ) : (
                             <Button
                               variant="secondary"
@@ -667,7 +671,7 @@ function HistoryDetail({
                           )}
                         </ListRow>
                         {selected ? (
-                          <li className="px-2 pb-4 pt-1" id={panelId}>
+                          <Inset padX={2} padY={1} as="li" id={panelId}>
                             <RevisionPanel
                               key={item.revisionId}
                               detail={detail}
@@ -688,7 +692,7 @@ function HistoryDetail({
                                     }
                               }
                             />
-                          </li>
+                          </Inset>
                         ) : null}
                       </Fragment>
                     );
@@ -712,9 +716,9 @@ function HistoryDetail({
                 </Button>
               </div>
             )}
-          </div>
+          </Stack>
         )}
-      </div>
+      </Stack>
     </Page>
   );
 }
@@ -799,10 +803,12 @@ function RevisionPanel({
   };
 
   return (
-    <div className="space-y-3">
+    <Stack gap={3} as="div">
       {views.length > 1 ? (
-        <div
-          className="flex items-center gap-1"
+        <Inline
+          gap={1}
+          align="center"
+          as="div"
           role="tablist"
           aria-label="Views of this version"
         >
@@ -829,11 +835,13 @@ function RevisionPanel({
               {revisionViewLabels[entry]}
             </button>
           ))}
-        </div>
+        </Inline>
       ) : (
         <h3 className="m-0 text-secondary text-muted">{currentVersionText}</h3>
       )}
-      <div
+      <Stack
+        gap={2}
+        as="div"
         role={views.length > 1 ? 'tabpanel' : undefined}
         id={`${panelId}-${view}`}
         aria-labelledby={
@@ -842,18 +850,20 @@ function RevisionPanel({
       >
         {view === 'changes' ? (
           <>
-            <p className="mb-2 mt-0 text-secondary text-muted">
+            <Inset as="p" className="text-secondary text-muted">
               Compared with current
-            </p>
+            </Inset>
             <RevisionChanges diff={diff} revisionId={detail.item.revisionId} />
           </>
         ) : note === null ? (
-          <pre
-            className="m-0 max-h-96 overflow-auto whitespace-pre-wrap rounded-lg border border-edge-subtle bg-app p-3 font-mono text-preview text-strong"
+          <Inset
+            pad={3}
+            as="pre"
+            className="max-h-96 overflow-auto whitespace-pre-wrap rounded-lg border border-edge-subtle bg-app font-mono text-preview text-strong"
             aria-label={`${name} in this version`}
           >
             {detail.text}
-          </pre>
+          </Inset>
         ) : (
           <Suspense fallback={<LoadingState label="The preview is loading." />}>
             <VersionPreview
@@ -867,8 +877,8 @@ function RevisionPanel({
             />
           </Suspense>
         )}
-      </div>
-    </div>
+      </Stack>
+    </Stack>
   );
 }
 

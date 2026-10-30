@@ -1,3 +1,12 @@
+import {
+  FieldGroup,
+  FieldButton,
+  Inset,
+  ChevronDownIcon,
+  FolderIcon,
+  LoadingState,
+} from '@notesapp/ui';
+
 /**
  * The one folder choice of the application (issue 517, item 4).
  *
@@ -7,12 +16,6 @@
  */
 import { lazy, Suspense, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import {
-  ChevronDownIcon,
-  FolderIcon,
-  fieldClassName,
-  LoadingState,
-} from '@notesapp/ui';
 
 export type { FolderTreePickerProps } from './folder-tree-view.tsx';
 import type { FolderTreePickerProps } from './folder-tree-view.tsx';
@@ -66,8 +69,9 @@ export function FolderField({
   };
   const shown = value === '' ? rootName : (value.split('/').at(-1) ?? value);
   return (
-    <div
-      className="ui-field-group"
+    <FieldGroup
+      id={id}
+      label={label}
       data-dialog-escape={open ? 'local' : undefined}
       onKeyDown={(event) => {
         if (open && event.key === 'Escape') {
@@ -77,13 +81,7 @@ export function FolderField({
         }
       }}
     >
-      <span
-        id={`${id}-label`}
-        className="ui-field-label block text-label text-strong"
-      >
-        {label}
-      </span>
-      <button
+      <FieldButton
         ref={buttonRef}
         id={id}
         type="button"
@@ -91,10 +89,7 @@ export function FolderField({
         aria-expanded={open}
         aria-controls={open ? `${id}-tree` : undefined}
         title={value === '' ? rootName : value}
-        className={fieldClassName({
-          invalid: error !== undefined,
-          className: 'flex cursor-pointer items-center gap-2 text-left',
-        })}
+        invalid={error !== undefined}
         onClick={() => setOpen((now) => !now)}
       >
         <span className="inline-flex shrink-0 text-muted" aria-hidden="true">
@@ -104,11 +99,11 @@ export function FolderField({
         <span className="inline-flex shrink-0 text-muted" aria-hidden="true">
           <ChevronDownIcon />
         </span>
-      </button>
+      </FieldButton>
       {error === undefined ? null : (
-        <p className="mb-0 mt-1 text-secondary text-danger" role="alert">
+        <Inset as="p" className="text-secondary text-danger" role="alert">
           {error}
-        </p>
+        </Inset>
       )}
       {open ? (
         <Suspense fallback={null}>
@@ -128,6 +123,6 @@ export function FolderField({
           </FieldPopover>
         </Suspense>
       ) : null}
-    </div>
+    </FieldGroup>
   );
 }

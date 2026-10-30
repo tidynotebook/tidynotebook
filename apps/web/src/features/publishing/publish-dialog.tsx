@@ -1,3 +1,16 @@
+import {
+  Stack,
+  Inset,
+  Button,
+  CopyIcon,
+  Dialog,
+  DialogBody,
+  DialogFooter,
+  Notice,
+  ReadOnlyField,
+  SelectField,
+  TextField,
+} from '@notesapp/ui';
 /**
  * The dialog that publishes one note or one folder.
  *
@@ -28,17 +41,7 @@
 import { useEffect, useId, useState, type ReactNode } from 'react';
 import { createPublishedLink } from '@notesapp/api-client';
 import type { PublicationScope } from '@notesapp/core';
-import {
-  Button,
-  CopyIcon,
-  Dialog,
-  DialogBody,
-  DialogFooter,
-  Notice,
-  ReadOnlyField,
-  SelectField,
-  TextField,
-} from '@notesapp/ui';
+
 import { copyText } from '../../platform.ts';
 import { problemCode, problemStatus } from '../../lib/problem-text.ts';
 import { optionalPasswordProblem } from '../../lib/password-policy.ts';
@@ -174,14 +177,14 @@ export function PublishDialog({
       {address === '' ? (
         <>
           <DialogBody>
-            <div className="flex flex-col gap-3" id={scopeId}>
+            <Stack gap={3} as="div" id={scopeId}>
               {sentences.map((sentence) => (
                 <p className="m-0 text-secondary text-muted" key={sentence}>
                   {sentence}
                 </p>
               ))}
-            </div>
-            <div className="mt-4">
+            </Stack>
+            <Stack gap={3} as="div">
               <SelectField
                 id={`${fieldId}-expiry`}
                 label="Expiry"
@@ -202,9 +205,9 @@ export function PublishDialog({
                   setPasswordError('');
                 }}
               />
-            </div>
+            </Stack>
             {failure === '' ? null : (
-              <Notice tone="problem" className="mt-3" message={failure} />
+              <Notice tone="problem" message={failure} />
             )}
           </DialogBody>
           <DialogFooter>
@@ -227,7 +230,7 @@ export function PublishDialog({
             <p className="m-0 text-body text-strong" id={scopeId}>
               {copyNow}
             </p>
-            <div className="mt-4">
+            <Inset as="div">
               <ReadOnlyField
                 id={`${fieldId}-address`}
                 label="Link"
@@ -235,21 +238,20 @@ export function PublishDialog({
                 takeFocus
                 describedBy={`${fieldId}-warning`}
               />
-            </div>
-            <p
-              className="mb-0 text-secondary text-muted"
+            </Inset>
+            <Inset
+              as="p"
+              className="text-secondary text-muted"
               id={`${fieldId}-warning`}
             >
               {loseItBack}
-            </p>
+            </Inset>
             {clipboardMissing ? (
-              <p className="mb-0 mt-2 text-secondary text-muted" role="status">
+              <Inset as="p" className="text-secondary text-muted" role="status">
                 {noClipboard}
-              </p>
+              </Inset>
             ) : null}
-            {asking ? (
-              <Notice tone="problem" className="mt-3" message={notCopied} />
-            ) : null}
+            {asking ? <Notice tone="problem" message={notCopied} /> : null}
           </DialogBody>
           <DialogFooter>
             {/*

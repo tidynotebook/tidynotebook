@@ -1,3 +1,23 @@
+import {
+  ListRow,
+  IconSlot,
+  Stack,
+  Inline,
+  IconButton,
+  Inset,
+  Button,
+  CheckIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  FolderIcon,
+  fieldClassName,
+  DialogHeaderAction,
+  isTouchInput,
+  FolderPlusIcon,
+  SearchIcon,
+  TextField,
+} from '@notesapp/ui';
+
 /**
  * The one folder choice of the application (issue 517, item 4).
  *
@@ -15,19 +35,7 @@
  */
 import { Fragment, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import {
-  Button,
-  CheckIcon,
-  ChevronDownIcon,
-  ChevronRightIcon,
-  FolderIcon,
-  fieldClassName,
-  DialogHeaderAction,
-  isTouchInput,
-  FolderPlusIcon,
-  SearchIcon,
-  TextField,
-} from '@notesapp/ui';
+
 import {
   folderTreeKeyAction,
   folderTreeRows,
@@ -46,8 +54,6 @@ import {
   treeItemClassName,
   treeItemsClassName,
   treeRowClassName,
-  treeRowLeadingClassName,
-  treeRowNameClassName,
 } from '../../lib/tree-row.ts';
 
 /** The filter field appears when the workspace has more folders than this. */
@@ -244,8 +250,13 @@ export default function FolderTreeView({
           }
         }}
       >
-        <div className={treeRowClassName()}>
-          <span className={rowSpacerClassName} aria-hidden="true" />
+        <ListRow
+          as="div"
+          density="tree"
+          indent={draftLevel - 1}
+          className={treeRowClassName()}
+        >
+          <IconSlot className={rowSpacerClassName} aria-hidden="true" />
           <span className="inline-flex shrink-0" aria-hidden="true">
             <FolderIcon />
           </span>
@@ -276,15 +287,17 @@ export default function FolderTreeView({
             className="size-11 shrink-0"
             onClick={createFolder}
           />
-        </div>
+        </ListRow>
         {problem === null ? null : (
-          <p
+          <Inset
             id={`${id}-new-folder-error`}
-            className="ui-field-error pl-12 text-secondary text-danger"
+            padX={12}
+            as="p"
+            className="ui-field-error text-secondary text-danger"
             role="alert"
           >
             {problem}
-          </p>
+          </Inset>
         )}
       </div>
     );
@@ -329,7 +342,7 @@ export default function FolderTreeView({
     </span>
   ) : null;
   return (
-    <div>
+    <Stack gap={1} as="div">
       {searchPlacement === 'header' ? (
         <DialogHeaderAction>{searchControl}</DialogHeaderAction>
       ) : null}
@@ -358,9 +371,10 @@ export default function FolderTreeView({
           />
         </div>
       ) : null}
-      <div
+      <Stack
         role="tree"
         aria-label={label}
+        gap={0.5}
         className={`${treeItemsClassName} max-h-72 overflow-y-auto`}
         onKeyDown={(event) => {
           if (
@@ -381,9 +395,9 @@ export default function FolderTreeView({
         }}
       >
         {rows.length === 0 ? (
-          <p className="m-0 px-2 py-2 text-secondary text-muted">
+          <Inset padX={2} padY={2} as="p" className="text-secondary text-muted">
             No folder matches "{filter}".
-          </p>
+          </Inset>
         ) : null}
         {creating === '' && !includeRoot ? inlineRow : null}
         {rows.map((row) => {
@@ -407,13 +421,33 @@ export default function FolderTreeView({
                   if (!row.disabled) choose(row.path);
                 }}
               >
-                <div className={treeRowClassName({ open: chosen })}>
-                  <div className={treeRowLeadingClassName}>
+                <ListRow
+                  as="div"
+                  density="tree"
+                  indent={row.level - 1}
+                  className={treeRowClassName({ open: chosen })}
+                >
+                  <Inline gap={1} className="min-w-0 flex-1">
                     {row.hasChildren ? (
-                      <button
+                      <IconButton
                         type="button"
                         tabIndex={-1}
-                        aria-label={`${row.expanded ? 'Close' : 'Open'} ${row.name}`}
+                        label={`${row.expanded ? 'Close' : 'Open'} ${row.name}`}
+                        size="row"
+                        glyph={
+                          <>
+                            <span
+                              className="inline-flex text-muted"
+                              aria-hidden="true"
+                            >
+                              {row.expanded ? (
+                                <ChevronDownIcon />
+                              ) : (
+                                <ChevronRightIcon />
+                              )}
+                            </span>
+                          </>
+                        }
                         className={rowActionClassName}
                         onMouseDown={(event) => event.preventDefault()}
                         onClick={(event) => {
@@ -421,23 +455,17 @@ export default function FolderTreeView({
                           toggle(row.path, !row.expanded);
                           focusRow(row.path);
                         }}
-                      >
-                        <span
-                          className="inline-flex text-muted"
-                          aria-hidden="true"
-                        >
-                          {row.expanded ? (
-                            <ChevronDownIcon />
-                          ) : (
-                            <ChevronRightIcon />
-                          )}
-                        </span>
-                      </button>
+                      ></IconButton>
                     ) : (
-                      <span className={rowSpacerClassName} aria-hidden="true" />
+                      <IconSlot
+                        className={rowSpacerClassName}
+                        aria-hidden="true"
+                      />
                     )}
-                    <div
-                      className={`${treeRowNameClassName} ${row.path === currentFolder || row.disabled ? 'pointer-coarse:flex-wrap pointer-coarse:gap-y-0' : ''} ${row.disabled ? 'cursor-default text-muted' : ''}`}
+                    <Inline
+                      gap={2}
+                      gapY={0}
+                      className="min-w-0 flex-1 coarse:flex-wrap"
                     >
                       <span className="inline-flex shrink-0" aria-hidden="true">
                         <FolderIcon />
@@ -448,38 +476,48 @@ export default function FolderTreeView({
                         {row.name}
                       </span>
                       {row.path === currentFolder || row.disabled ? (
-                        <span className="shrink-0 text-secondary text-muted pointer-coarse:basis-full pointer-coarse:pl-6">
+                        <Inset
+                          padX={{ fine: 0, coarse: 6 }}
+                          as="span"
+                          className="shrink-0 text-secondary text-muted pointer-coarse:basis-full"
+                        >
                           {row.path === currentFolder
                             ? 'Current folder'
                             : disabledNote?.(row.path)}
-                        </span>
+                        </Inset>
                       ) : null}
-                    </div>
-                  </div>
+                    </Inline>
+                  </Inline>
                   {searchPlacement === 'row' && row === rows[0]
                     ? searchControl
                     : null}
                   {chosen ? (
-                    <span
-                      className="inline-flex shrink-0 items-center pr-1"
+                    <Inset
+                      padX={1}
+                      as="span"
+                      className="inline-flex shrink-0 items-center"
                       aria-hidden="true"
                     >
                       <CheckIcon />
-                    </span>
+                    </Inset>
                   ) : searchPlacement === 'row' &&
                     row === rows[0] &&
                     canSearch ? (
                     <span className="w-5 shrink-0" aria-hidden="true" />
                   ) : null}
-                </div>
+                </ListRow>
               </div>
               {creating === row.path ? inlineRow : null}
             </Fragment>
           );
         })}
-      </div>
+      </Stack>
       {creating === null ? (
-        <div className="mt-1 border-0 border-t border-solid border-edge-subtle pt-1">
+        <Inset
+          padY={1}
+          as="div"
+          className="border-0 border-t border-solid border-edge-subtle"
+        >
           <Button
             variant="ghost"
             icon={<FolderPlusIcon />}
@@ -495,8 +533,8 @@ export default function FolderTreeView({
               ? 'New folder here'
               : `New folder in ${parentName}`}
           </Button>
-        </div>
+        </Inset>
       ) : null}
-    </div>
+    </Stack>
   );
 }

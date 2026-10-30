@@ -1,3 +1,24 @@
+import {
+  Form,
+  Viewport,
+  Inline,
+  Inset,
+  Stack,
+  AppMarkIcon,
+  PublicFooter,
+  installationFooterColumns,
+  Button,
+  buttonClassName,
+  Card,
+  Checkbox,
+  DownloadIcon,
+  LoadingState,
+  Notice,
+  Page,
+  SignOutIcon,
+  TextField,
+} from '@notesapp/ui';
+
 /**
  * Account screens: first-run setup, login, and settings.
  *
@@ -28,22 +49,7 @@ import {
   signInWithPassword,
 } from '@notesapp/api-client';
 import { RemoveOwnAccountDialog } from './remove-account-dialog.tsx';
-import {
-  AppMarkIcon,
-  PublicFooter,
-  installationFooterColumns,
-  Button,
-  buttonClassName,
-  Card,
-  Checkbox,
-  DownloadIcon,
-  LoadingState,
-  Notice,
-  Page,
-  pageGutter,
-  SignOutIcon,
-  TextField,
-} from '@notesapp/ui';
+
 import { actionIcon } from '../../shell/action-icons.tsx';
 import { deleteGlyph } from '../../lib/delete-label.ts';
 import { problemMessage, useLocalStore, useSession } from '../../app.tsx';
@@ -132,7 +138,7 @@ function SignedInFooter({
 }): ReactNode {
   const sentence = signedInSentence(email);
   return (
-    <div className="flex items-center justify-between gap-cluster">
+    <Inline gap={2} align="center" justify="between" as="div">
       <p
         className="m-0 min-w-0 truncate text-secondary text-muted"
         title={sentence}
@@ -148,7 +154,7 @@ function SignedInFooter({
       >
         Sign out
       </Button>
-    </div>
+    </Inline>
   );
 }
 
@@ -218,16 +224,14 @@ function LockedPage(): ReactNode {
       }
     >
       {lockedSentences(account, now).map((sentence) => (
-        <p key={sentence} className="mb-3 mt-0 text-secondary text-muted">
+        <Inset key={sentence} as="p" className="text-secondary text-muted">
           {sentence}
-        </p>
+        </Inset>
       ))}
-      {error === '' ? null : (
-        <Notice className="mb-4" tone="problem" message={error} />
-      )}
+      {error === '' ? null : <Notice tone="problem" message={error} />}
       {account.accountPortal ? (
         <Button
-          className="mt-2 w-full"
+          className="w-full"
           disabled={busy}
           onClick={() => {
             setExportError('');
@@ -239,10 +243,10 @@ function LockedPage(): ReactNode {
             : 'Open billing'}
         </Button>
       ) : null}
-      <p className="mb-2 mt-6 text-secondary text-muted">
+      <Inset as="p" className="text-secondary text-muted">
         You can export your notes or delete your account.
-      </p>
-      <div className="flex flex-wrap gap-cluster">
+      </Inset>
+      <Inline gap={2} wrap as="div">
         <Button
           variant="secondary"
           icon={<DownloadIcon />}
@@ -264,7 +268,7 @@ function LockedPage(): ReactNode {
         >
           Delete my account
         </Button>
-      </div>
+      </Inline>
       {removing ? (
         <RemoveOwnAccountDialog
           store={store.store}
@@ -365,7 +369,7 @@ function ConsentPage(): ReactNode {
       {state.kind === 'loading' ? (
         <LoadingState label="The terms are loading." />
       ) : state.kind === 'failed' ? (
-        <div className="mt-4 space-y-3">
+        <Stack gap={3} as="div">
           <Notice tone="problem" message={state.message} />
           <Button
             onClick={() => {
@@ -374,19 +378,15 @@ function ConsentPage(): ReactNode {
           >
             Try again
           </Button>
-        </div>
+        </Stack>
       ) : (
         <>
-          <p className="mb-3 mt-0 text-secondary text-muted">
+          <Inset as="p" className="text-secondary text-muted">
             Read the terms and the privacy notice of this service, then accept
             them to open your notes. A new version asks you again.
-          </p>
-          {documents === null ? null : (
-            <LegalLinks className="mb-6" documents={documents} />
-          )}
-          {error === '' ? null : (
-            <Notice className="mb-4" tone="problem" message={error} />
-          )}
+          </Inset>
+          {documents === null ? null : <LegalLinks documents={documents} />}
+          {error === '' ? null : <Notice tone="problem" message={error} />}
           <Button
             className="w-full"
             disabled={busy || documents === null}
@@ -396,11 +396,11 @@ function ConsentPage(): ReactNode {
           >
             {busy ? 'Saving your answer' : 'Accept and continue'}
           </Button>
-          <p className="mb-2 mt-6 text-secondary text-muted">
+          <Inset as="p" className="text-secondary text-muted">
             If you do not accept them, you can export your notes and delete your
             account.
-          </p>
-          <div className="flex flex-wrap gap-cluster">
+          </Inset>
+          <Inline gap={2} wrap as="div">
             <Button
               variant="secondary"
               icon={<DownloadIcon />}
@@ -422,7 +422,7 @@ function ConsentPage(): ReactNode {
             >
               Delete my account
             </Button>
-          </div>
+          </Inline>
         </>
       )}
       {removing ? (
@@ -592,7 +592,7 @@ export function LoginPage({
       {status.kind === 'loading' ? (
         <LoadingState label="The sign-in screen is loading." />
       ) : status.kind === 'unreachable' ? (
-        <div className="mt-4 space-y-3">
+        <Stack gap={3} as="div">
           <Notice tone="problem" message={status.message} />
           <Button
             onClick={() => {
@@ -601,17 +601,17 @@ export function LoginPage({
           >
             Try again
           </Button>
-        </div>
+        </Stack>
       ) : (
         <>
-          <p className="mb-6 mt-0 text-secondary text-muted">
+          <Inset as="p" className="text-secondary text-muted">
             {setup
               ? 'This installation has no account yet. What you enter here becomes the first account. It administers the installation and invites other people.'
               : oauthQuery === undefined
                 ? 'Enter the address and the password of your account.'
                 : oauthSignInDescription}
-          </p>
-          <form
+          </Inset>
+          <Form
             onSubmit={(event): void => {
               event.preventDefault();
               void submitPassword();
@@ -649,17 +649,15 @@ export function LoginPage({
                 onChange={setConfirmation}
               />
             ) : null}
-            <div className="mb-4">
+            <Inset as="div">
               <Checkbox
                 id="login-reveal"
                 label="Show the password"
                 checked={reveal}
                 onChange={setReveal}
               />
-            </div>
-            {error === '' ? null : (
-              <Notice className="mb-4" tone="problem" message={error} />
-            )}
+            </Inset>
+            {error === '' ? null : <Notice tone="problem" message={error} />}
             <Button type="submit" disabled={busy} className="w-full">
               {busy
                 ? setup
@@ -669,25 +667,25 @@ export function LoginPage({
                   ? 'Create account'
                   : 'Sign in'}
             </Button>
-          </form>
+          </Form>
           {status.kind === 'ready' && !setup && status.passwordReset ? (
             <>
               <Link
-                className={`mt-3 w-full ${buttonClassName({ variant: 'ghost' })}`}
+                className={`w-full ${buttonClassName({ variant: 'ghost' })}`}
                 to={forgotPasswordRoute}
               >
                 Forgot password
               </Link>
               {oauthQuery === undefined ? null : (
-                <p className="mt-2 text-secondary text-muted">
+                <Inset as="p" className="text-secondary text-muted">
                   {oauthResetSentence}
-                </p>
+                </Inset>
               )}
             </>
           ) : null}
           {status.kind === 'ready' && !setup && status.openRegistration ? (
             <Link
-              className={`mt-1 w-full ${buttonClassName({ variant: 'ghost' })}`}
+              className={`w-full ${buttonClassName({ variant: 'ghost' })}`}
               to={signUpRoute}
             >
               Create an account
@@ -726,10 +724,19 @@ export function AuthFrame({
         ],
   );
   return (
-    <div
-      className={`flex min-h-dvh flex-col items-center justify-center bg-surface ${pageGutter} py-8`}
+    <Viewport
+      as="div"
+      gap={6}
+      pad={{ fine: 6, coarse: 4 }}
+      align="center"
+      className="justify-center bg-surface"
     >
-      <div className="mb-6 flex items-center gap-3 text-title-header text-strong">
+      <Inline
+        gap={3}
+        align="center"
+        as="div"
+        className="text-title-header text-strong"
+      >
         <span
           className="inline-flex size-7 items-center justify-center rounded-md bg-active text-strong"
           aria-hidden="true"
@@ -737,19 +744,26 @@ export function AuthFrame({
           <AppMarkIcon />
         </span>
         <span>{productName}</span>
-      </div>
-      <Card className="w-full max-w-sm sm:p-6">
-        <h1 className="mb-2 mt-0 text-title-page tracking-heading text-strong">
-          {title}
-        </h1>
-        {children}
+      </Inline>
+      <Card className="w-full max-w-sm">
+        <Stack pad={{ fine: 6, coarse: 4 }} gap={4}>
+          <Inset
+            as="h1"
+            className="text-title-page tracking-heading text-strong"
+          >
+            {title}
+          </Inset>
+          {children}
+        </Stack>
       </Card>
       {footer === undefined || footer === null ? null : (
-        <div className="mt-6 w-full max-w-sm">{footer}</div>
+        <Inset as="div" className="w-full max-w-sm">
+          {footer}
+        </Inset>
       )}
       <div className="w-full max-w-5xl">
         <PublicFooter home="/" columns={columns} />
       </div>
-    </div>
+    </Viewport>
   );
 }

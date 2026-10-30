@@ -19,7 +19,7 @@ await test('split page actions occupy the row and keep its two ends', () => {
 
   assert.ok(classes.includes('w-full'));
   assert.ok(classes.includes('justify-between'));
-  assert.ok(classes.includes('gap-group'));
+  assert.ok(classes.includes('gap-4'));
   assert.ok(!classes.includes('shrink-0'));
 });
 
@@ -27,7 +27,7 @@ await test('clustered page actions keep their compact default', () => {
   const classes = pageHeaderActionsClassName('cluster').split(' ');
 
   assert.ok(classes.includes('shrink-0'));
-  assert.ok(classes.includes('gap-cluster'));
+  assert.ok(classes.includes('gap-2'));
   assert.ok(!classes.includes('w-full'));
 });
 
@@ -40,7 +40,7 @@ await test('every page column uses the shared centred page measure', () => {
   assert.ok(!column.includes('max-w-note'));
   assert.ok(column.includes('flex-1'));
   assert.ok(column.includes('min-w-0'));
-  assert.ok(!column.some((name) => /^max-w-(?!note$)/.test(name)));
+  assert.ok(column.includes('max-w-page'));
 });
 
 await test('the side region has one width and shows from the extra large width', () => {
@@ -135,7 +135,7 @@ await test('a list takes back the inset of its rows', () => {
   // Record 0138. A row carries px-2, so the list pulls by the same step and
   // the row text lines up with the page title.
   const list = pageListClassName().split(' ');
-  assert.ok(list.includes('-mx-2'));
+  assert.ok(!list.some((name) => name.startsWith('-m')));
   assert.ok(list.includes('list-none'));
   assert.ok(list.includes('p-0'));
   assert.ok(!list.some((name) => /^(m|mx)-/.test(name)));
@@ -147,8 +147,8 @@ await test('the rows of a list keep their controls apart', () => {
   const list = pageListClassName().split(' ');
   assert.ok(list.includes('flex'));
   assert.ok(list.includes('flex-col'));
-  assert.ok(list.includes('gap-cluster'));
-  assert.ok(list.includes('md:gap-1'));
+  assert.ok(list.includes('gap-1'));
+  assert.ok(!list.some((name) => name.startsWith('md:gap-')));
 });
 
 await test('a group label has no inset of its own', () => {

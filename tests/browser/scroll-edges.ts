@@ -81,11 +81,12 @@ try {
       const phone = width < 1024,
         c = await b.newContext({
           storageState: '.local-app/review-session.json',
-          viewport: { width, height: phone ? 844 : 900 },
+          viewport: { width, height: 420 },
           hasTouch: phone,
           isMobile: phone,
           colorScheme: scheme,
         });
+
       await c.addInitScript(
         (s) => localStorage.setItem('notesapp.theme', s),
         scheme,
@@ -153,10 +154,8 @@ try {
           .getByRole('button', { name: 'Expand all folders', exact: true })
           .click();
       await p
-        .getByRole('button', {
-          name: 'Actions for the note Home page',
-          exact: true,
-        })
+        .locator('[role="treeitem"][aria-expanded="true"]')
+        .first()
         .waitFor();
       for (const surface of ['sidebar', 'settings']) {
         if (surface === 'settings') {
@@ -175,7 +174,10 @@ try {
               );
               if (!root) throw Error('Scroller missing');
               const max = root.scrollHeight - root.clientHeight;
-              if (max < 5) throw Error(`${surface} does not overflow`);
+              if (max < 5)
+                throw Error(
+                  `${surface} does not overflow: ${JSON.stringify({ height: root.clientHeight, scroll: root.scrollHeight, viewport: innerHeight, css: root.className, parent: root.parentElement?.getBoundingClientRect(), items: root.textContent?.slice(0, 400) })}`,
+                );
               root.scrollTop =
                 position === 'top' ? 0 : position === 'middle' ? max / 2 : max;
               return { max, height: root.clientHeight };

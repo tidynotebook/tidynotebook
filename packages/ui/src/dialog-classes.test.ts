@@ -22,8 +22,8 @@ await test('a panel is never taller than the screen and scrolls inside', () => {
   for (const width of panels) {
     const parts = dialogPanelClassName(width).split(' ');
     assert.ok(parts.includes('max-h-full'), width);
-    assert.ok(parts.includes('overflow-y-auto'), width);
-    assert.ok(!parts.includes('overflow-hidden'), width);
+    assert.ok(parts.includes('flex-col'), width);
+    assert.ok(parts.includes('overflow-hidden'), width);
     assert.ok(parts.includes('rounded-xl'), width);
   }
 });
@@ -43,12 +43,12 @@ await test('the scrim does not scroll, so the title cannot leave the screen', ()
 
 await test('the title and the action row stay in view on the card fill', () => {
   const title = dialogTitleClassName(false).split(' ');
-  assert.ok(title.includes('sticky'));
-  assert.ok(title.includes('top-0'));
+  assert.ok(title.includes('shrink-0'));
+  assert.ok(title.includes('relative'));
   assert.ok(title.includes('bg-card'));
   const footer = dialogFooterClassName().split(' ');
-  assert.ok(footer.includes('sticky'));
-  assert.ok(footer.includes('bottom-0'));
+  assert.ok(footer.includes('shrink-0'));
+  assert.ok(footer.includes('relative'));
   assert.ok(footer.includes('bg-card'));
   // No rule separates the parts of a dialog (decision 0063).
   for (const parts of [title, footer])

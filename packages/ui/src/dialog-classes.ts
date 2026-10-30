@@ -1,3 +1,4 @@
+import { fixedRegionClasses } from './scroll-classes.ts';
 /**
  * The classes of the one modal dialog, as pure functions.
  *
@@ -48,7 +49,7 @@ export function dialogRootClassName(
   if (align === 'sheet') return 'bg-scrim/40 items-end lg:items-center lg:p-6';
   const position =
     align === 'center' ? 'items-center py-6' : 'items-start pb-6 pt-12';
-  return `bg-scrim/40 px-gutter ${position}`;
+  return `bg-scrim/40 px-4 ${position}`;
 }
 
 /** The panel of a dialog, as classes. */
@@ -58,32 +59,32 @@ export function dialogPanelClassName(
   fillSheet = false,
 ): string {
   if (phone && width !== 'screen')
-    return `phone-sheet relative flex max-h-sheet w-full flex-col overflow-hidden rounded-t-xl border-y border-edge-subtle bg-card text-strong shadow-modal outline-none ${width === 'settings' || width === 'template' ? 'h-full max-h-full' : fillSheet ? 'phone-sheet-fill' : ''}`;
+    return `phone-sheet not-data-sheet-ready:opacity-0 relative flex max-h-sheet w-full flex-col overflow-hidden rounded-t-xl border-y border-edge-subtle bg-card text-strong shadow-modal outline-none ${width === 'settings' || width === 'template' ? 'h-full max-h-full' : fillSheet ? 'phone-sheet-fill [&_[role=tree]]:max-h-none' : ''}`;
   if (width === 'screen')
     return 'relative h-full w-full text-strong outline-none';
   if (width === 'settings')
     return 'flex h-full max-h-full w-full flex-col overflow-hidden bg-card text-strong outline-none lg:h-settings lg:max-w-settings lg:rounded-xl lg:border lg:border-edge-subtle lg:shadow-modal';
   if (width === 'template')
-    return 'flex h-full max-h-full w-full flex-col overflow-hidden rounded-t-xl border border-edge-subtle bg-card text-strong shadow-modal outline-none lg:h-template lg:max-w-3xl lg:rounded-xl';
+    return 'flex h-full max-h-full w-full flex-col overflow-hidden p-6 rounded-t-xl border border-edge-subtle bg-card text-strong shadow-modal outline-none lg:h-template lg:max-w-3xl lg:rounded-xl';
   const measure =
     width === 'small'
       ? 'max-w-md'
       : width === 'large'
         ? 'max-w-3xl'
         : 'max-w-xl';
-  return `w-full ${measure} max-h-full overflow-y-auto overscroll-contain rounded-xl border border-edge-subtle bg-card text-strong shadow-modal outline-none`;
+  return `relative flex w-full flex-col gap-6 p-6 ${measure} max-h-full overflow-hidden overscroll-contain rounded-xl border border-edge-subtle bg-card text-strong shadow-modal outline-none`;
 }
 
 /** The title of a dialog, as classes. */
 export function dialogTitleClassName(hidden: boolean): string {
   return hidden
     ? 'sr-only'
-    : 'sticky top-0 z-10 m-0 bg-card ui-dialog-heading text-title-header text-strong';
+    : `${fixedRegionClasses('bottom')} bg-card text-title-header text-strong`;
 }
 
 /** The title row of a dialog that has controls next to its title. */
 export function dialogHeaderClassName(): string {
-  return 'sticky top-0 z-10 flex items-center gap-2 bg-card ui-dialog-heading';
+  return `${fixedRegionClasses('bottom')} flex items-center gap-2 bg-card`;
 }
 
 /** The title inside the title row of {@link dialogHeaderClassName}. */
@@ -93,5 +94,5 @@ export function dialogHeaderTitleClassName(): string {
 
 /** The action row at the bottom of a dialog, as classes. */
 export function dialogFooterClassName(): string {
-  return 'sticky bottom-0 z-10 flex flex-wrap justify-end ui-dialog-footer bg-card';
+  return `${fixedRegionClasses('top')} flex flex-wrap items-center justify-end gap-2 bg-card`;
 }

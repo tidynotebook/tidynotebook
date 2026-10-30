@@ -1,3 +1,4 @@
+import { Inline, Inset } from './primitives.tsx';
 /**
  * The one modal dialog of the application.
  *
@@ -35,7 +36,6 @@ import {
   type ComponentProps,
 } from 'react';
 import {
-  dialogFooterClassName,
   dialogPanelClassName,
   dialogRootClassName,
   dialogHeaderClassName,
@@ -52,7 +52,7 @@ import { giveFocusBack } from './dialog-focus.ts';
 import { PhoneSheetHeader } from './phone-sheet.tsx';
 import { followPhoneSheetViewport } from './phone-sheet-viewport.ts';
 import { Button } from './controls.tsx';
-import { ScrollRegion } from './scroll-region.tsx';
+import { Region } from './scroll-region.tsx';
 import { useSettingsSurface } from './settings-layout.tsx';
 import { transitionRaise } from './motion.ts';
 
@@ -455,11 +455,13 @@ export function DialogBody({
   const phone = useContext(PhoneSheetContext);
   const settings = useSettingsSurface();
   return (
-    <ScrollRegion className={fixed || phone ? 'min-h-0 flex-1' : ''}>
-      <div className={settings ? 'ui-settings-form-body' : 'ui-dialog-body'}>
-        {children}
-      </div>
-    </ScrollRegion>
+    <Region
+      pad={settings ? { fine: 6, coarse: 4 } : phone ? 4 : 0}
+      gap={3}
+      className={fixed || phone ? 'flex-1' : ''}
+    >
+      <div className="contents">{children}</div>
+    </Region>
   );
 }
 
@@ -475,7 +477,6 @@ export function DialogFooter({
 }: {
   readonly children: ReactNode;
 }): ReactNode {
-  const fixed = useContext(FixedDialogContext);
   const settings = useSettingsSurface();
   const phone = useContext(PhoneSheetContext);
   if (phone) {
@@ -506,23 +507,32 @@ export function DialogFooter({
     return (
       <>
         {extra.length === 0 ? null : (
-          <div className="shrink-0 px-4 pb-2">{extra}</div>
+          <Inset pad={4} className="shrink-0">
+            {extra}
+          </Inset>
         )}
-        <div
-          data-scroll-edge="below"
-          className={`${settings ? 'ui-settings-footer' : 'ui-dialog-footer'} shrink-0 bg-card [&_button]:min-h-11 [&_button]:w-full`}
+        <Region
+          scroll="none"
+          edge="top"
+          pad={3}
+          safeArea
+          className="ui-dialog-footer bg-card [&_button]:w-full"
         >
           {action}
-        </div>
+        </Region>
       </>
     );
   }
   return (
-    <div
-      data-scroll-edge="below"
-      className={`${settings ? 'ui-settings-footer' : dialogFooterClassName()} ${fixed ? 'shrink-0' : ''}`}
+    <Region
+      scroll="none"
+      edge="top"
+      pad={settings ? 6 : 0}
+      className="ui-dialog-footer"
     >
-      {children}
-    </div>
+      <Inline gap={2} justify="end" wrap>
+        {children}
+      </Inline>
+    </Region>
   );
 }

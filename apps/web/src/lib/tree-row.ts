@@ -28,7 +28,7 @@
  * `packages/ui`: `textStrong` meets 4.5 to 1 on the sidebar surface and on
  * both fills, and `focus` meets the 3 to 1 non-text minimum.
  */
-import { buttonClassName, rowClassName } from '@notesapp/ui';
+import { rowClassName } from '@notesapp/ui';
 
 /** What one row of the tree is right now. */
 export type TreeRowState = {
@@ -119,10 +119,8 @@ export const treeRowNameClassName =
   'ui-sidebar-name cursor-pointer truncate rounded-md border-0 bg-transparent text-left text-inherit no-underline';
 
 /** The indent comes from the shared role for every level. */
-export function treeIndentStyle(level: number): { paddingInlineStart: string } {
-  return {
-    paddingInlineStart: `calc(${String(Math.max(level - 1, 0))} * var(--ui-sidebar-indent))`,
-  };
+export function treeIndentCount(level: number): number {
+  return Math.max(0, level - 1);
 }
 /** Treeitems keep the focus outline inside the row. */
 export function treeIndentClassName(level: number): string {
@@ -165,12 +163,7 @@ export function treeMessageClassName(tone: 'status' | 'problem'): string {
  * A ghost control of the one recipe, square, and as small as a row allows on
  * a desktop while it keeps the 44 px touch target under the medium width.
  */
-export const rowActionClassName = buttonClassName({
-  variant: 'ghost',
-  size: 'sm',
-  iconOnly: true,
-  className: 'ui-sidebar-row-action',
-});
+export const rowActionClassName = 'ui-sidebar-row-action';
 
 /** The column that a row with no chevron keeps for one, so names line up. */
 export const rowSpacerClassName = 'ui-sidebar-slot';

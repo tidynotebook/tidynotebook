@@ -96,4 +96,5 @@ holds the built page, the editor and the stylesheet fallbacks to one registry.
 | `THIRD_PARTY_LICENSES.md` | The source and licence of every palette                 |
 
 `src/public-footer.ts` is the React-free public footer entry for static HTML.
-The server imports only this entry from UI. The React adapter uses the same tree.
+The server imports this entry and the React-free `src/static.ts` recipes.
+The React adapter uses the same footer tree.

@@ -77,9 +77,7 @@ export function SignOutDialog({
     >
       <DialogBody>
         <p className="m-0 text-body text-strong">{signOutQuestion(waiting)}</p>
-        {problem === '' ? null : (
-          <Notice className="mt-3" tone="problem" message={problem} />
-        )}
+        {problem === '' ? null : <Notice tone="problem" message={problem} />}
       </DialogBody>
       <DialogFooter>
         <Button variant="ghost" onClick={onClose}>

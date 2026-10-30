@@ -1,3 +1,15 @@
+import {
+  Form,
+  Inset,
+  Stack,
+  Button,
+  buttonClassName,
+  Checkbox,
+  LoadingState,
+  Notice,
+  TextField,
+} from '@notesapp/ui';
+
 /**
  * The pages of open registration (record 0114).
  *
@@ -16,14 +28,7 @@ import {
   signUpAccount,
   verifyAddress,
 } from '@notesapp/api-client';
-import {
-  Button,
-  buttonClassName,
-  Checkbox,
-  LoadingState,
-  Notice,
-  TextField,
-} from '@notesapp/ui';
+
 import { problemMessage, useSession } from '../../app.tsx';
 import {
   verificationTokenOf,
@@ -113,16 +118,16 @@ export function SignUpPage(): ReactNode {
   if (sentTo !== null)
     return (
       <AuthFrame title="Open the link in your mail">
-        <p className="mb-6 mt-0 text-secondary text-muted">
+        <Inset as="p" className="text-secondary text-muted">
           A message goes to {sentTo}. Open the link in it to finish your
           account. This browser can sign you in after verification. On another
           device, enter your password to sign in.
-        </p>
-        <p className="mb-6 mt-0 text-secondary text-muted">
+        </Inset>
+        <Inset as="p" className="text-secondary text-muted">
           Check your spam folder if the message does not arrive. To send another
           link or use a different address, return to the form. Email limits can
           delay another message.
-        </p>
+        </Inset>
         <Button
           variant="secondary"
           onClick={() => {
@@ -144,13 +149,13 @@ export function SignUpPage(): ReactNode {
   return (
     <AuthFrame title="Create an account">
       {trialOffer(trialSeconds) === null ? null : (
-        <Notice className="mb-4" message={trialOffer(trialSeconds) ?? ''} />
+        <Notice message={trialOffer(trialSeconds) ?? ''} />
       )}
-      <p className="mb-6 mt-0 text-secondary text-muted">
+      <Inset as="p" className="text-secondary text-muted">
         Enter your address and choose a password. A link goes to the address to
         prove that it is yours.
-      </p>
-      <form
+      </Inset>
+      <Form
         onSubmit={(event): void => {
           event.preventDefault();
           void submit();
@@ -177,27 +182,25 @@ export function SignUpPage(): ReactNode {
           error={fieldError}
           onChange={setPassword}
         />
-        <div className="mb-4">
+        <Inset as="div">
           <Checkbox
             id="signup-reveal"
             label="Show the password"
             checked={reveal}
             onChange={setReveal}
           />
-        </div>
+        </Inset>
         {documents === null ? null : (
-          <div className="mb-4">
+          <Inset as="div">
             <Checkbox
               id="signup-consent"
               label={<ConsentLabel documents={documents} />}
               checked={accepted}
               onChange={setAccepted}
             />
-          </div>
+          </Inset>
         )}
-        {error === '' ? null : (
-          <Notice className="mb-4" tone="problem" message={error} />
-        )}
+        {error === '' ? null : <Notice tone="problem" message={error} />}
         <Button type="submit" disabled={busy !== null} className="w-full">
           {busy === 'checking'
             ? 'Checking this browser'
@@ -205,9 +208,9 @@ export function SignUpPage(): ReactNode {
               ? 'Sending the link'
               : 'Create account'}
         </Button>
-      </form>
+      </Form>
       <Link
-        className={`mt-3 w-full ${buttonClassName({ variant: 'ghost' })}`}
+        className={`w-full ${buttonClassName({ variant: 'ghost' })}`}
         to="/login"
       >
         I have an account
@@ -290,7 +293,7 @@ export function VerifyPage(): ReactNode {
       {state.kind === 'loading' ? (
         <LoadingState label="The link is loading." />
       ) : state.kind === 'unreachable' ? (
-        <div className="mt-4 space-y-3">
+        <Stack gap={3} as="div">
           <Notice tone="problem" message={state.message} />
           <Button
             onClick={() => {
@@ -299,9 +302,9 @@ export function VerifyPage(): ReactNode {
           >
             Try again
           </Button>
-        </div>
+        </Stack>
       ) : (
-        <div className="mt-4 space-y-3">
+        <Stack gap={3} as="div">
           {state.kind === 'invalid' ? (
             <p className="text-secondary text-muted">
               {state.reason === 'registration_closed'
@@ -309,7 +312,9 @@ export function VerifyPage(): ReactNode {
                 : 'Links work once and for a short time.'}
             </p>
           ) : (
-            <p className="mb-6 mt-0 text-secondary text-muted">{state.email}</p>
+            <Inset as="p" className="text-secondary text-muted">
+              {state.email}
+            </Inset>
           )}
           <Link
             className={buttonClassName({
@@ -322,7 +327,7 @@ export function VerifyPage(): ReactNode {
           >
             {state.kind === 'verified' ? 'Continue' : recovery.label}
           </Link>
-        </div>
+        </Stack>
       )}
     </AuthFrame>
   );

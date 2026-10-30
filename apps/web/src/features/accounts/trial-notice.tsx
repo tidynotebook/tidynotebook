@@ -1,5 +1,6 @@
+import { Inline, Button, Notice } from '@notesapp/ui';
 import type { ReactNode } from 'react';
-import { Button, Notice } from '@notesapp/ui';
+
 import { useSession } from '../../app.tsx';
 import { trialStatus } from '../../lib/trial.ts';
 import { portalHome } from '../../lib/portal.ts';
@@ -31,8 +32,13 @@ export function TrialNotice(): ReactNode {
   ) : null;
   if (active)
     return (
-      <div
-        className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-1 min-h-10 text-secondary text-muted"
+      <Inline
+        padX={4}
+        padY={2}
+        wrap
+        align="center"
+        as="div"
+        className="text-secondary text-muted"
         aria-label="Trial status"
       >
         <span role="status">{message}</span>
@@ -40,7 +46,7 @@ export function TrialNotice(): ReactNode {
         {portal.error === '' ? null : (
           <Notice tone="problem" message={portal.error} />
         )}
-      </div>
+      </Inline>
     );
   return (
     <Notice message={message}>

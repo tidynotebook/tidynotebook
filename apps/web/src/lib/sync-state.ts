@@ -209,11 +209,7 @@ export const syncLineBudget = 48;
  * of one line of `text-body`, so it stays beside the first line when the
  * sentence takes two.
  */
-export const syncStatusClassNames = {
-  status: 'flex min-w-0 flex-1 items-start gap-2 py-1',
-  dotFrame: 'flex h-5 shrink-0 items-center',
-  line: 'min-w-0 flex-1 text-muted',
-} as const;
+export { syncStatusClassNames } from '@notesapp/ui';
 
 /**
  * Whether a state only reports how far the queue got.

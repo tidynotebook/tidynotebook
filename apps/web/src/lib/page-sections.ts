@@ -6,7 +6,7 @@
  * sections in the order of the list and reads the title and the heading of
  * each section from it, so the page and its list cannot disagree.
  */
-import type { PageSection } from '@notesapp/ui';
+import { type PageSection } from '@notesapp/ui';
 import type { NoteGroup } from './note-groups.ts';
 
 /** The sections of Settings, in page order. */

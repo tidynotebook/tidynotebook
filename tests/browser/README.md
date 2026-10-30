@@ -20,10 +20,17 @@ The state file is a Playwright storage state for a signed-in local test account.
 The fixture file holds `workspaceId` and `files` (each with a `fileId`). It names
 the existing design review corpus: Personal, Projects, and Templates folders,
 with seven templates including Meeting and Empty. The script changes only local
-form drafts. It compares account preferences and workspace settings before and
-after the run. Browser responses supply disposable keys, apps, Trash entries,
+form drafts. Browser responses supply disposable keys, apps, Trash entries,
 and published links. No server settings or note content are changed.
 
 Results are in `.local-app/text-roles-results.json`. Screenshots are in
 `.local-app/screenshots/text-roles-*.png`. Any invalid combination, unequal touch
 field size, inverted title, or layout error fails the command.
+
+DS1 also uses `DS1_AUDIT=1` to check typed component padding, parent gaps,
+row symmetry, optical slots, fields and controls on every review screen.
+`DS1_CAPTURE=/absolute/output/path` records screenshots and semantic geometry
+for comparison with `compareSurface` in `symmetry.ts`. Set `TOUCH_WIDTHS` to
+`1440,390,320` to include both pointer densities. `UI_AUDIT_ASSETS` can name
+a local web asset build for source checks before the single Docker build.
+Omit it when checking the deployed image.

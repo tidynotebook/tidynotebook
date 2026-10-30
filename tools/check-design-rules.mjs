@@ -215,7 +215,13 @@ export function colourTokens(css) {
 /** The one module that may name a duration, an easing, or a transition. */
 export const motionModule = 'packages/ui/src/motion.ts';
 /** The three named elevation steps of the central theme. */
-export const elevationSteps = ['raised', 'overlay', 'modal'];
+export const elevationSteps = [
+  'raised',
+  'overlay',
+  'modal',
+  'edge-top',
+  'edge-bottom',
+];
 // A utility starts a class string, follows a space, or follows the colon of a
 // variant. It never follows a letter, so `transition-shadow` is not a shadow
 // utility and `lease-held` is not an easing.
@@ -284,6 +290,7 @@ export const textRules = {
    * @returns {string | null}
    */
   'colour-token'(text, _path, context) {
+    text = text.replace(/shadow-edge-(?:top|bottom)/g, '');
     const tokens = context?.colourTokens;
     if (tokens === undefined) return null;
     for (const match of text.matchAll(colourClass)) {

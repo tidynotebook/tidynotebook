@@ -1,3 +1,4 @@
+import { Stack, Inset, Button, rowClassName } from '@notesapp/ui';
 /**
  * The notes that link to the open note.
  *
@@ -16,7 +17,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { listBacklinks } from '@notesapp/api-client';
 import { localBacklinks, type LocalStore } from '@notesapp/sync';
-import { Button, rowClassName } from '@notesapp/ui';
+
 import { Link } from 'react-router';
 import { displayNoteName } from '../../lib/note-name.ts';
 import { useFiles } from '../../shell/files.tsx';
@@ -113,7 +114,7 @@ export function Backlinks({
   if (state.kind === 'loading') return null;
   if (state.kind === 'failed')
     return (
-      <div className="space-y-2">
+      <Stack gap={2} as="div">
         <p className="m-0 text-secondary text-muted">
           The links to this note did not load.
         </p>
@@ -126,7 +127,7 @@ export function Backlinks({
         >
           Try again
         </Button>
-      </div>
+      </Stack>
     );
   if (state.rows.length === 0)
     return (
@@ -135,13 +136,13 @@ export function Backlinks({
       </p>
     );
   return (
-    <div className="space-y-2">
+    <Stack gap={2} as="div">
       {state.partial ? (
         <p className="m-0 text-secondary text-muted">
           These links come from this device.
         </p>
       ) : null}
-      <ul className="m-0 list-none p-0">
+      <Inset pad={0} as="ul" className="list-none">
         {state.rows.map((item) => (
           <li key={item.fileId}>
             <Link
@@ -154,7 +155,7 @@ export function Backlinks({
             </Link>
           </li>
         ))}
-      </ul>
-    </div>
+      </Inset>
+    </Stack>
   );
 }

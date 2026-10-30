@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  treeIndentStyle,
+  treeIndentCount,
   treeIndentClassName,
   treeItemClassName,
   treeItemsClassName,
@@ -99,16 +99,10 @@ await test('a row shows the focus of its treeitem inside the row', () => {
   assert.ok(!treeRowNameClassName.includes('focus:'));
 });
 
-await test('each tree level reads the shared indent step', () => {
+await test('each tree level uses indent slots without a depth limit', () => {
   for (const level of [1, 2, 4, 12])
-    assert.equal(
-      treeIndentStyle(level).paddingInlineStart,
-      `calc(${String(level - 1)} * var(--ui-sidebar-indent))`,
-    );
-  assert.equal(
-    treeIndentStyle(0).paddingInlineStart,
-    'calc(0 * var(--ui-sidebar-indent))',
-  );
+    assert.equal(treeIndentCount(level), level - 1);
+  assert.equal(treeIndentCount(0), 0);
 });
 
 await test('a row of a selection takes the fill of a chosen row', () => {

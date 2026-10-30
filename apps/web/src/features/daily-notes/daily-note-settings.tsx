@@ -178,7 +178,7 @@ export function DailyNoteSettingsFields(): ReactNode {
         }}
       />
       {daily.saveProblem === null ? null : (
-        <Notice className="mt-3" tone="problem" message={daily.saveProblem} />
+        <Notice tone="problem" message={daily.saveProblem} />
       )}
     </>
   );

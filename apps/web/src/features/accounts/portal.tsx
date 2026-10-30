@@ -1,3 +1,10 @@
+import {
+  Inset,
+  Button,
+  buttonClassName,
+  LoadingState,
+  Notice,
+} from '@notesapp/ui';
 /**
  * The route `/portal`, the way back to the account portal of the operator
  * (records 0190 and 0201).
@@ -11,7 +18,7 @@
  */
 import { useEffect, useRef, type ReactNode } from 'react';
 import { Link, Navigate, useLocation } from 'react-router';
-import { Button, buttonClassName, LoadingState, Notice } from '@notesapp/ui';
+
 import { useSession } from '../../app.tsx';
 import { portalStep } from '../../lib/portal.ts';
 import { useDocumentTitle } from '../../shell/document-title.ts';
@@ -22,7 +29,7 @@ import { useOpenPortal } from './open-portal.ts';
 function BackToNotes(): ReactNode {
   return (
     <Link
-      className={`mt-3 w-full ${buttonClassName({ variant: 'secondary' })}`}
+      className={`w-full ${buttonClassName({ variant: 'secondary' })}`}
       to="/"
     >
       Back to your notes
@@ -58,9 +65,9 @@ export function PortalPage(): ReactNode {
   if (step.kind === 'no-portal')
     return (
       <AuthFrame title={title}>
-        <p className="mb-3 mt-0 text-secondary text-muted">
+        <Inset as="p" className="text-secondary text-muted">
           This installation has no billing.
-        </p>
+        </Inset>
         <BackToNotes />
       </AuthFrame>
     );
@@ -70,7 +77,7 @@ export function PortalPage(): ReactNode {
         <LoadingState label="Billing is opening." />
       ) : (
         <>
-          <Notice className="mb-4" tone="problem" message={portal.error} />
+          <Notice tone="problem" message={portal.error} />
           <Button
             className="w-full"
             disabled={portal.busy || path === null}

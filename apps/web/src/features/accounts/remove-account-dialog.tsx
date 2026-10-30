@@ -1,3 +1,12 @@
+import {
+  Form,
+  Inset,
+  Button,
+  DialogBody,
+  DialogFooter,
+  TextField,
+} from '@notesapp/ui';
+
 import { SettingsDialog } from './settings-dialog.tsx';
 /**
  * The dialog that removes the account of the person, which Settings and the
@@ -8,7 +17,6 @@ import { useState, type ReactNode } from 'react';
 
 import { removeOwnAccount } from '@notesapp/api-client';
 import type { LocalStore } from '@notesapp/sync';
-import { Button, DialogBody, DialogFooter, TextField } from '@notesapp/ui';
 
 import { problemMessage } from '../../app.tsx';
 import { problemCode } from '../../lib/problem-text.ts';
@@ -67,18 +75,20 @@ export function RemoveOwnAccountDialog({
       width="small"
       onClose={onClose}
     >
-      <form
-        className="flex min-h-0 flex-1 flex-col"
+      <Form
+        regions
+
+        className="flex overflow-hidden flex-1 flex-col"
         onSubmit={(event): void => {
           event.preventDefault();
           void submit();
         }}
       >
         <DialogBody>
-          <p className="mb-4 mt-0 text-body text-strong">
+          <Inset as="p" className="text-body text-strong">
             Your account and every note in your workspaces go for good. You are
             signed out on every device.
-          </p>
+          </Inset>
           <TextField
             id="remove-own-password"
             label="Password"
@@ -88,7 +98,6 @@ export function RemoveOwnAccountDialog({
             required
             autoFocus
             error={error}
-            reserveErrorSpace
             onChange={(value) => {
               setPassword(value);
               setError('');
@@ -107,7 +116,7 @@ export function RemoveOwnAccountDialog({
             {busy ? 'Deleting your account' : 'Delete account'}
           </Button>
         </DialogFooter>
-      </form>
+      </Form>
     </SettingsDialog>
   );
 }

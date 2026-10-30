@@ -1,3 +1,17 @@
+import {
+  Stack,
+  Grid,
+  Inset,
+  Button,
+  DialogBody,
+  DialogFooter,
+  LoadingState,
+  Notice,
+  TextField,
+  TemplateIcon,
+  rowClassName,
+} from '@notesapp/ui';
+
 /** Daily notes use the same template list rules and preview as note creation. */
 import {
   lazy,
@@ -9,16 +23,7 @@ import {
 } from 'react';
 import { useParams } from 'react-router';
 import type { DailyNoteSettings } from '@notesapp/core';
-import {
-  Button,
-  DialogBody,
-  DialogFooter,
-  LoadingState,
-  Notice,
-  TextField,
-  TemplateIcon,
-  rowClassName,
-} from '@notesapp/ui';
+
 import { useLocalStore, useSession } from '../../app.tsx';
 import { useFiles } from '../../shell/files.tsx';
 import { readNoteText } from '../../shell/note-text.ts';
@@ -143,7 +148,7 @@ function TemplateSelection({
       titleId="daily-template-title"
     >
       <DialogBody>
-        <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2">
+        <Grid gap={4} as="div" className="min-w-0 grid-cols-1 lg:grid-cols-2">
           <div className="min-w-0">
             <TextField
               id="daily-template-search"
@@ -256,7 +261,9 @@ function TemplateSelection({
               <Notice tone="info" message="Some templates may be missing." />
             )}
           </div>
-          <section
+          <Stack
+            as="section"
+            gap={2}
             aria-label="Template preview"
             className="min-w-0 lg:h-96 lg:overflow-y-auto"
           >
@@ -264,9 +271,9 @@ function TemplateSelection({
               Preview
             </h3>
             {selected === null ? (
-              <p className="mt-0 text-secondary text-muted">
+              <Inset as="p" className="text-secondary text-muted">
                 Daily notes will start empty.
-              </p>
+              </Inset>
             ) : store === null || accountId === null || chosen === undefined ? (
               <Notice
                 tone="info"
@@ -308,8 +315,8 @@ function TemplateSelection({
                 />
               </Suspense>
             )}
-          </section>
-        </div>
+          </Stack>
+        </Grid>
       </DialogBody>
       <DialogFooter>
         <Button variant="ghost" onClick={onClose}>

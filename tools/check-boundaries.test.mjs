@@ -896,11 +896,19 @@ await test('only the named MCP protocol file can use the library transport', () 
   );
 });
 
-await test('the server imports only the React-free UI footer entry', () => {
+await test('the server imports only the React-free UI entries', () => {
   const files = workspace({
-    'packages/ui/package.json': manifest('ui'),
+    'packages/ui/package.json': JSON.stringify({
+      ...JSON.parse(manifest('ui')),
+      exports: {
+        '.': './src/index.ts',
+        './public-footer': './src/public-footer.ts',
+        './static': './src/static.ts',
+      },
+    }),
     'packages/ui/src/index.ts': 'export const control = 1;\n',
     'packages/ui/src/public-footer.ts': 'export const footer = 1;\n',
+    'packages/ui/src/static.ts': 'export const control = 1;\n',
     'apps/server/package.json': manifest('server', {
       '@notesapp/ui': 'workspace:*',
     }),
@@ -908,12 +916,19 @@ await test('the server imports only the React-free UI footer entry', () => {
       "import { footer } from '@notesapp/ui/public-footer';\nexport { footer };\n",
   });
   accepted(check(files));
+  accepted(
+    check({
+      ...files,
+      'apps/server/src/index.ts':
+        "export {control} from '@notesapp/ui/static';\n",
+    }),
+  );
   rejected(
     check({
       ...files,
       'apps/server/src/index.ts':
         "import { control } from '@notesapp/ui';\nexport { control };\n",
     }),
-    'The server imports only the React-free public footer entry',
+    'The server imports only the React-free public footer and static entries',
   );
 });

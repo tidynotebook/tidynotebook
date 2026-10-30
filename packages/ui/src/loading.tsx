@@ -47,7 +47,7 @@ function Rows({ count }: { readonly count: number }): ReactNode {
   return (
     <>
       {Array.from({ length: count }, (_unused, index) => (
-        <div key={index} className="flex min-h-8 items-center gap-group">
+        <div key={index} className="flex min-h-8 items-center gap-4">
           <div className="size-4 shrink-0 rounded-md bg-hover" />
           <div
             className={barClassName(
@@ -81,7 +81,7 @@ export function LoadingState({
     <div role="status" aria-live="polite" aria-busy="true">
       <span className="sr-only">{label}</span>
       <div
-        className="flex flex-col gap-group motion-safe:animate-pulse"
+        className="flex flex-col gap-4 motion-safe:animate-pulse"
         aria-hidden="true"
       >
         {shape === 'list' ? (

@@ -24,7 +24,7 @@ import { AuthFrame, LoginPage } from '../accounts/accounts.tsx';
 function OAuthMessage({ message }: { readonly message: string }): ReactNode {
   return (
     <AuthFrame title="Access to your notes">
-      <Notice className="mb-4" tone="problem" message={message} />
+      <Notice tone="problem" message={message} />
       <Link to="/" className={buttonClassName({ variant: 'secondary' })}>
         Open your account
       </Link>

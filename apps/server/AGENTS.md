@@ -43,7 +43,7 @@ authentication routes on one origin, and it holds no domain rule.
 ## Allowed imports
 
 `@notesapp/api-contract`, `@notesapp/core`, `@notesapp/logging`, `@notesapp/markdown`,
-`@notesapp/storage-server`, and the React-free `@notesapp/ui/public-footer` entry.
+`@notesapp/storage-server`, and the React-free `@notesapp/ui/public-footer` and `@notesapp/ui/static` entries.
 The server does not import the UI root. This package is Node only, so it may use a Node module and
 a Node only package such as `fastify`, `pg`, or `sharp`.
 

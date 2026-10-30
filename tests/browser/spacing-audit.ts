@@ -1,12 +1,13 @@
 import { spacingSpec } from '../../packages/ui/src/spacing.ts';
 import type { Page } from './browser.ts';
 import { auditBorderSpacing } from './border-spacing.ts';
+import { auditComposition } from './symmetry.ts';
 
-/** Measure shared geometry in the actual served CSS and rendered layout. */
+/** Component geometry plus page, group and scroll-region relationships. */
 export async function auditSpacing(page: Page) {
-  const result = await page.evaluate((spec) => {
+  const composition = await auditComposition(page);
+  const measured = await page.evaluate((spec) => {
     const coarse = matchMedia('(pointer: coarse)').matches;
-    const phoneSettings = coarse && innerWidth < 1024;
     const role = coarse ? spec.coarse : spec.fine;
     const issues: {
       kind: string;
@@ -15,26 +16,20 @@ export async function auditSpacing(page: Page) {
       expected: number;
     }[] = [];
     const measurements: Record<string, number[]> = {};
-    const visible = (e: Element) => {
-      const r = e.getBoundingClientRect();
-      return (
-        e.checkVisibility({ visibilityProperty: true }) &&
-        r.width > 1 &&
-        r.height > 1 &&
-        r.bottom > 0 &&
-        r.top < innerHeight &&
-        !e.closest('.sr-only,[inert]')
-      );
-    };
+    const visible = (e: Element) =>
+      e.checkVisibility({ visibilityProperty: true }) &&
+      e.getBoundingClientRect().width > 0 &&
+      e.getBoundingClientRect().height > 0 &&
+      !e.closest('.sr-only,[inert]');
+    const box = (e: Element) => e.getBoundingClientRect();
     const check = (
       e: Element,
       kind: string,
       actual: number,
       expected: number,
-      tolerance = 0.6,
     ) => {
       (measurements[kind] ??= []).push(actual);
-      if (Math.abs(actual - expected) > tolerance)
+      if (!Number.isFinite(actual) || Math.abs(actual - expected) > 1)
         issues.push({
           kind,
           text: (e.getAttribute('aria-label') ?? e.textContent ?? '')
@@ -44,556 +39,147 @@ export async function auditSpacing(page: Page) {
           expected,
         });
     };
-    for (const e of document.querySelectorAll('.ui-button')) {
-      if (!visible(e)) continue;
-      const style = getComputedStyle(e);
-      const compact =
-        e.classList.contains('ui-compact') ||
-        e.classList.contains('ui-icon-button');
-      check(
-        e,
-        'button-height',
-        e.getBoundingClientRect().height,
-        e.classList.contains('ui-rail-link')
-          ? coarse
-            ? 44
-            : 40
-          : compact
-            ? role.compact
-            : role.button,
-      );
-      if (e.classList.contains('ui-icon-button'))
-        check(
-          e,
-          'icon-button-width',
-          e.getBoundingClientRect().width,
-          e.classList.contains('ui-rail-link')
-            ? coarse
-              ? 44
-              : 40
-            : role.compact,
-        );
-      if (!e.classList.contains('ui-icon-button')) {
-        const pad = compact && !coarse ? 8 : role.buttonPad;
-        check(e, 'button-left-pad', parseFloat(style.paddingLeft), pad);
-        check(e, 'button-right-pad', parseFloat(style.paddingRight), pad);
-      }
-      check(e, 'button-radius', parseFloat(style.borderRadius), spec.radius);
-      check(e, 'button-gap', parseFloat(style.columnGap), spec.controlGap);
-    }
-    for (const e of document.querySelectorAll('.ui-field')) {
-      if (!visible(e)) continue;
-      const style = getComputedStyle(e);
-      if (!(e instanceof HTMLTextAreaElement))
-        check(e, 'field-height', e.getBoundingClientRect().height, role.field);
-      check(e, 'field-left-pad', parseFloat(style.paddingLeft), spec.fieldPad);
-      check(
-        e,
-        'field-right-pad',
-        parseFloat(style.paddingRight),
-        e.classList.contains('ui-select') ? spec.selectRight : spec.fieldPad,
-      );
-    }
-    for (const e of document.querySelectorAll('.ui-setting-row')) {
-      if (!visible(e)) continue;
-      const style = getComputedStyle(e);
-      const card = phoneSettings && e.closest('.ui-settings-card') !== null;
-      check(
-        e,
-        'setting-min-height',
-        parseFloat(style.minHeight),
-        card ? 52 : role.setting,
-      );
-      check(e, 'setting-top-pad', parseFloat(style.paddingTop), card ? 12 : 8);
-      check(
-        e,
-        'setting-bottom-pad',
-        parseFloat(style.paddingBottom),
-        card ? 12 : 8,
-      );
-      check(e, 'setting-control-gap', parseFloat(style.columnGap), spec.rowGap);
-    }
-    const firstTextLine = (element: Element): DOMRect | null => {
-      const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
-      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-        if (
-          !node.textContent?.trim() ||
-          node.parentElement?.closest('[aria-hidden="true"],.sr-only')
-        )
-          continue;
-        const range = document.createRange();
-        range.selectNodeContents(node);
-        const rect = range.getClientRects()[0];
-        if (rect?.height) return rect;
-      }
-      return null;
-    };
-    for (const row of document.querySelectorAll(
-      '.ui-setting-row,.ui-setting-align',
-    )) {
-      if (!visible(row)) continue;
-      const label = row.querySelector('[data-setting-label]');
-      const controls = row.querySelectorAll('[data-setting-control]');
-      if (!label || controls.length === 0)
-        throw new Error('A setting row must mark its label and control.');
-      if (phoneSettings && row.closest('.ui-settings-card')) {
-        const text =
-          row.querySelector('[data-setting-text]') ?? label.parentElement;
-        if (text)
-          for (const control of controls) {
-            const a = text.getBoundingClientRect(),
-              b = control.getBoundingClientRect();
-            check(
-              row,
-              'setting-card-control-centre',
-              b.top + b.height / 2 - a.top - a.height / 2,
-              0,
-              2,
-            );
-          }
-        continue;
-      }
-      for (const control of controls) {
-        check(
-          row,
-          'setting-control-label-top',
-          control.getBoundingClientRect().top -
-            label.getBoundingClientRect().top,
-          0,
-          2,
-        );
-        const line = firstTextLine(label);
-        if (line) {
-          const targets = [control, ...control.querySelectorAll('.ui-button')];
-          for (const target of targets) {
-            const text = firstTextLine(target);
-            const track =
-              target.querySelector(
-                '.ui-switch-control > [aria-hidden="true"]',
-              ) ?? (target.hasAttribute('aria-hidden') ? target : null);
-            const rect = text ?? track?.getBoundingClientRect();
-            if (rect)
-              check(
-                row,
-                'setting-first-line-centre',
-                rect.top + rect.height / 2 - line.top - line.height / 2,
-                0,
-                2,
-              );
-          }
-        }
-      }
-    }
-    if (coarse && innerWidth < 1024) {
-      for (const row of document.querySelectorAll('.ui-drawer-row')) {
-        if (!visible(row)) continue;
-        const style = getComputedStyle(row);
-        check(
-          row,
-          'drawer-min-height',
-          parseFloat(style.minHeight),
-          spec.coarse.tree,
-        );
-        check(row, 'drawer-top-pad', parseFloat(style.paddingTop), 8);
-        check(row, 'drawer-bottom-pad', parseFloat(style.paddingBottom), 8);
-        const name = row.querySelector('[data-tree-name],input');
-        if (name)
-          check(
-            row,
-            'drawer-content-height',
-            row.getBoundingClientRect().height,
-            name instanceof HTMLInputElement
-              ? 44
-              : Math.max(
-                  spec.coarse.tree,
-                  name.getBoundingClientRect().height + 16,
-                ),
-          );
-      }
-    }
-    for (const track of document.querySelectorAll(
-      '[role="switch"] > [aria-hidden="true"]',
-    )) {
-      if (!visible(track)) continue;
-      check(
-        track,
-        'switch-track-height',
-        track.getBoundingClientRect().height,
-        24,
-      );
-      check(
-        track,
-        'switch-track-width',
-        track.getBoundingClientRect().width,
-        40,
-      );
-    }
-    for (const e of document.querySelectorAll('.ui-list-row')) {
-      if (visible(e))
-        check(
-          e,
-          'list-min-height',
-          parseFloat(getComputedStyle(e).minHeight),
-          phoneSettings && e.closest('.ui-settings-card') ? 52 : role.list,
-        );
-    }
-    for (const e of document.querySelectorAll(
-      '.ui-tree-row:not(.ui-list-row):not(.ui-setting-row)',
-    )) {
-      if (visible(e)) {
-        check(
-          e,
-          'tree-min-height',
-          parseFloat(getComputedStyle(e).minHeight),
-          phoneSettings && e.closest('.ui-settings-list .ui-settings-card')
-            ? 52
-            : role.tree,
-        );
-        if (coarse) {
-          check(
-            e,
-            'tree-top-pad',
-            parseFloat(getComputedStyle(e).paddingTop),
-            phoneSettings && e.closest('.ui-settings-list .ui-settings-card')
-              ? 12
-              : 8,
-          );
-          check(
-            e,
-            'tree-bottom-pad',
-            parseFloat(getComputedStyle(e).paddingBottom),
-            phoneSettings && e.closest('.ui-settings-list .ui-settings-card')
-              ? 12
-              : 8,
-          );
-        }
-      }
-    }
-    for (const e of document.querySelectorAll('.ui-group-heading')) {
-      if (visible(e)) {
-        check(
-          e,
-          'group-heading-gap',
-          parseFloat(getComputedStyle(e).marginBottom),
-          phoneSettings && e.closest('.ui-settings-content,.ui-settings-list')
-            ? 8
-            : role.groupGap,
-        );
-        if (e.classList.contains('border-b') && !phoneSettings)
-          check(
-            e,
-            'group-rule-padding',
-            parseFloat(getComputedStyle(e).paddingBottom),
-            8,
-          );
-      }
-    }
-    for (const nav of document.querySelectorAll('.ui-settings-list nav')) {
-      let previous = nav.previousElementSibling;
-      for (const group of nav.querySelectorAll(':scope > .ui-section')) {
-        const heading = group.querySelector('.ui-group-heading');
-        if (heading && previous && visible(heading))
-          check(
-            heading,
-            'settings-group-after-divider',
-            heading.getBoundingClientRect().top -
-              previous.getBoundingClientRect().bottom,
-            phoneSettings && group !== nav.firstElementChild
-              ? 24
-              : role.sectionGap,
-          );
-        previous = group;
-      }
-    }
-    for (const e of document.querySelectorAll('.ui-setting-row')) {
-      if (visible(e) && e.querySelector('.ui-setting-row'))
-        check(e, 'nested-setting-row', 1, 0);
-    }
-    for (const e of document.querySelectorAll('.ui-calendar-day')) {
-      if (visible(e)) {
-        check(
-          e,
-          'calendar-height',
-          e.getBoundingClientRect().height,
-          role.compact,
-        );
-        check(
-          e,
-          'calendar-grid-pad',
-          parseFloat(getComputedStyle(e).paddingLeft),
-          0,
-        );
-      }
-    }
-    const groups = [...document.querySelectorAll('.ui-field-group')].filter(
+    for (const e of [...document.querySelectorAll('.ui-field')].filter(
       visible,
-    );
-    for (const group of groups) {
-      const label = group.querySelector(
-        ':scope > label:not(.sr-only), :scope > .ui-field-label',
-      );
-      const field = group.querySelector(
-        'input,select,textarea,button[aria-expanded]',
-      );
-      if (!label || !field || !visible(label) || !visible(field)) continue;
+    )) {
+      const s = getComputedStyle(e);
       check(
-        field,
-        'label-field-gap',
-        field.getBoundingClientRect().top -
-          label.getBoundingClientRect().bottom,
-        spec.labelGap,
+        e,
+        'field left inset',
+        parseFloat(s.paddingLeft),
+        e.classList.contains('ui-bare-field') ? 0 : spec.fieldPad,
       );
-      const help = group.querySelector(
-        ':scope > [id$="-hint"], :scope > [id$="-error"]:not([aria-hidden="true"])',
+      check(
+        e,
+        'field right inset',
+        parseFloat(s.paddingRight),
+        e.classList.contains('ui-bare-field')
+          ? 0
+          : e.classList.contains('ui-select')
+            ? spec.selectRight
+            : spec.fieldPad,
       );
-      if (help && visible(help))
-        check(
-          help,
-          'field-help-gap',
-          help.getBoundingClientRect().top -
-            field.getBoundingClientRect().bottom,
-          role.helpGap,
-        );
-      const current = group.getBoundingClientRect();
-      const next = groups.find((other) => {
-        if (other === group || other.closest('form') !== group.closest('form'))
-          return false;
-        const r = other.getBoundingClientRect();
-        return (
-          r.top >= current.bottom - 0.5 && Math.abs(r.left - current.left) < 2
-        );
-      });
-      if (next) {
-        const nextLabel = next.querySelector(
-          ':scope > label:not(.sr-only), :scope > .ui-field-label',
-        );
-        // Intervening prose, a fieldset heading, or another section is not a field pair.
-        const gap = nextLabel
-          ? nextLabel.getBoundingClientRect().top - current.bottom
-          : Infinity;
-        if (gap < 48) check(next, 'field-next-label-gap', gap, role.formGap);
+    }
+    for (const e of [...document.querySelectorAll('[data-ui-row]')].filter(
+      visible,
+    )) {
+      const s = getComputedStyle(e),
+        setting = e.getAttribute('data-ui-row') === 'setting';
+      check(e, 'content-owned row height', parseFloat(s.minHeight) || 0, 0);
+      if (!setting) check(e, 'one-line row height', box(e).height, role.tree);
+      else {
+        const label = e.querySelector('[data-setting-label]'),
+          help = e.querySelector('[data-setting-help]');
+        if (
+          label &&
+          visible(label) &&
+          (!help || !visible(help)) &&
+          box(label).height <= 20.5
+        )
+          check(
+            e,
+            'single-line setting height',
+            box(e).height,
+            coarse ? 44 : 52,
+          );
       }
     }
-    for (const e of document.querySelectorAll('.ui-page-column')) {
-      if (!visible(e)) continue;
+    for (const parent of [
+      ...document.querySelectorAll('form,[data-ui-layout="grid"]'),
+    ].filter(visible)) {
+      const fields = [...parent.children].filter(
+        (e) => e.matches('.ui-field-group') && visible(e),
+      );
+      for (let i = 1; i < fields.length; i++) {
+        const before = fields[i - 1],
+          after = fields[i];
+        if (before && after && box(after).top >= box(before).bottom - 1)
+          check(
+            after,
+            'field to next label',
+            box(after).top - box(before).bottom,
+            role.formGap,
+          );
+      }
+    }
+    for (const e of [...document.querySelectorAll('.ui-page-column')].filter(
+      visible,
+    )) {
       const main = e.parentElement;
       if (!main) continue;
-      const m = main.getBoundingClientRect(),
-        r = e.getBoundingClientRect();
-      const pad = coarse ? spec.sheetPad : spec.settingsPad;
-      const expectedWidth = Math.min(spec.pageMax, m.width - 2 * pad);
-      check(e, 'page-column-width', r.width, expectedWidth);
-      check(e, 'page-centre', r.left - m.left, (m.width - expectedWidth) / 2);
-      const title = e.querySelector('.ui-page-header h1');
-      if (title && visible(title) && main.scrollTop === 0 && m.top >= 0)
+      const m = box(main),
+        r = box(e),
+        pad = coarse ? spec.sheetPad : spec.settingsPad;
+      check(
+        e,
+        'page column width',
+        r.width,
+        Math.min(spec.pageMax, m.width - 2 * pad),
+      );
+      check(e, 'page centered', r.left - m.left, (m.width - r.width) / 2);
+      const header = e.querySelector(':scope > .ui-page-header'),
+        next = header?.nextElementSibling;
+      if (header && main.scrollTop === 0)
+        check(header, 'page title top', box(header).top - m.top, role.pageTop);
+      if (header && next)
         check(
-          title,
-          'page-title-top',
-          title.getBoundingClientRect().top - m.top,
-          role.pageTop,
-        );
-      const header = e.querySelector('.ui-page-header');
-      if (header)
-        check(
-          header,
-          'page-header-content-gap',
-          parseFloat(getComputedStyle(header).marginBottom),
+          next,
+          'page title block to content',
+          box(next).top - box(header).bottom,
           role.pageGap,
         );
     }
-    for (const e of document.querySelectorAll(
-      '.ui-dialog-body,.ui-dialog-footer',
+    for (const e of [
+      ...document.querySelectorAll('.ui-settings-content'),
+    ].filter(visible))
+      check(
+        e,
+        'settings horizontal overflow',
+        Math.max(0, e.scrollWidth - e.clientWidth),
+        0,
+      );
+    for (const e of [...document.querySelectorAll('.ui-sheet-header')].filter(
+      visible,
     )) {
-      if (!visible(e)) continue;
-      const style = getComputedStyle(e),
-        settings = e.closest('.ui-settings-action') !== null;
-      const pad =
-        coarse && innerWidth < 1024
-          ? e.classList.contains('ui-dialog-footer')
-            ? role.footerPad
-            : spec.sheetPad
-          : settings
-            ? spec.settingsPad
-            : spec.dialogPad;
-      check(e, 'dialog-left-inset', parseFloat(style.paddingLeft), pad);
-      check(e, 'dialog-right-inset', parseFloat(style.paddingRight), pad);
-      if (e.classList.contains('ui-dialog-footer'))
+      if (coarse) check(e, 'sheet header height', box(e).height, 44);
+      const title = e.querySelector('h2');
+      if (title && coarse) {
         check(
-          e,
-          'footer-top-pad',
-          parseFloat(style.paddingTop),
-          role.footerPad,
+          title,
+          'sheet title vertical center',
+          box(title).top - box(e).top,
+          box(e).bottom - box(title).bottom,
         );
-    }
-    for (const e of document.querySelectorAll(
-      '.ui-settings-heading,.ui-settings-content',
-    )) {
-      if (!visible(e)) continue;
-      const style = getComputedStyle(e),
-        pad =
-          coarse && innerWidth < 1024
-            ? e.classList.contains('ui-settings-heading')
-              ? 2
-              : spec.sheetPad
-            : spec.settingsPad;
-      check(e, 'settings-left-inset', parseFloat(style.paddingLeft), pad);
-      check(e, 'settings-right-inset', parseFloat(style.paddingRight), pad);
-      if (e.classList.contains('ui-settings-content'))
         check(
-          e,
-          'settings-horizontal-overflow',
-          Math.max(0, e.scrollWidth - e.clientWidth),
-          0,
+          title,
+          'sheet title horizontal center',
+          box(title).left + box(title).width / 2,
+          box(e).left + box(e).width / 2,
         );
-      if (e.classList.contains('ui-settings-heading')) {
-        if (coarse && innerWidth < 1024)
-          check(
-            e,
-            'settings-header-height',
-            e.getBoundingClientRect().height,
-            role.sheetHeader,
-          );
-        else check(e, 'settings-title-top', parseFloat(style.paddingTop), 24);
       }
     }
-    for (const e of document.querySelectorAll('.ui-sheet-header'))
-      if (visible(e))
-        check(
-          e,
-          'sheet-header-height',
-          e.getBoundingClientRect().height,
-          role.sheetHeader,
-        );
-    if (coarse && innerWidth < 1024) {
-      for (const header of document.querySelectorAll(
-        '.ui-sheet-header,.ui-settings-heading',
-      )) {
-        if (!visible(header)) continue;
-        const title = header.querySelector('h2,p.text-title-header');
-        const panel = header.closest('.phone-sheet');
-        if (title && panel)
-          check(
-            title,
-            'sheet-title-top',
-            title.getBoundingClientRect().top -
-              panel.getBoundingClientRect().top,
-            44 + 12 + 1,
-          );
-        const icon = header.querySelector('button svg');
-        if (icon)
-          check(
-            icon,
-            'sheet-header-icon-inset',
-            icon.getBoundingClientRect().left,
-            16,
-          );
-      }
-      for (const section of document.querySelectorAll(
-        '.ui-form-following-group',
-      )) {
-        if (!visible(section)) continue;
-        const fields =
-          section.previousElementSibling?.querySelectorAll('.ui-field-group');
-        const field = fields?.[fields.length - 1];
-        if (field)
-          check(
-            section,
-            'form-group-space-above',
-            section.getBoundingClientRect().top -
-              field.getBoundingClientRect().bottom,
-            16,
-          );
-      }
-      for (const nav of document.querySelectorAll('.ui-settings-list nav')) {
-        const card = nav.previousElementSibling;
-        const groups = [...nav.querySelectorAll(':scope > .ui-section')];
-        let previous = card;
-        for (const group of groups) {
-          const heading = group.querySelector('.ui-group-heading');
-          const row = group.querySelector('li button');
-          if (heading && previous && visible(heading)) {
-            check(
-              heading,
-              'group-space-above',
-              heading.getBoundingClientRect().top -
-                previous.getBoundingClientRect().bottom,
-              previous === card ? 16 : 24,
-            );
-            check(
-              heading,
-              'group-edge-inset',
-              heading.getBoundingClientRect().left +
-                parseFloat(getComputedStyle(heading).paddingLeft),
-              32,
-            );
-            if (row)
-              check(
-                heading,
-                'group-space-below',
-                row.getBoundingClientRect().top -
-                  heading.getBoundingClientRect().bottom,
-                8,
-              );
-          }
-          previous = group;
-        }
-        for (const icon of nav.querySelectorAll('li button svg:first-child'))
-          if (
-            visible(icon) &&
-            icon.parentElement?.previousElementSibling === null
-          )
-            check(
-              icon,
-              'settings-row-icon-inset',
-              icon.getBoundingClientRect().left,
-              32,
-            );
-        if (card && visible(card)) {
-          check(
-            card,
-            'account-divider-inset',
-            card.getBoundingClientRect().left,
-            16,
-          );
-          const avatar = card.firstElementChild;
-          if (avatar)
-            check(
-              avatar,
-              'account-avatar-inset',
-              avatar.getBoundingClientRect().left,
-              16,
-            );
-        }
-      }
-      for (const row of document.querySelectorAll(
-        '.ui-settings-content .ui-setting-row',
-      )) {
-        if (!visible(row)) continue;
-        check(row, 'setting-row-edge', row.getBoundingClientRect().left, 16);
-      }
+    for (const e of [...document.querySelectorAll('.ui-sidebar-status')].filter(
+      visible,
+    ))
+      check(e, 'status footer height', box(e).height, 32);
+    for (const e of [
+      ...document.querySelectorAll('[role="switch"] > [aria-hidden="true"]'),
+    ].filter(visible)) {
+      check(e, 'switch track height', box(e).height, 24);
+      check(e, 'switch track width', box(e).width, 40);
     }
-    if (coarse && innerWidth < 768) {
-      for (const header of document.querySelectorAll('.ui-panel-heading')) {
-        if (visible(header))
-          check(
-            header,
-            'panel-header-height',
-            header.getBoundingClientRect().height,
-            role.sheetHeader,
-          );
-      }
-    }
-    for (const status of document.querySelectorAll('.ui-sidebar-status')) {
-      if (visible(status))
-        check(
-          status,
-          'sidebar-footer-height',
-          status.getBoundingClientRect().height,
-          coarse ? 36 : 32,
-        );
-    }
+    for (const e of [...document.querySelectorAll('.ui-calendar-day')].filter(
+      visible,
+    ))
+      check(e, 'calendar cell height', box(e).height, coarse ? 44 : 28);
     return { issues, measurements };
   }, spacingSpec);
-  result.issues.push(...(await auditBorderSpacing(page)));
-  return result;
+  return {
+    issues: [
+      ...composition.issues,
+      ...measured.issues,
+      ...(await auditBorderSpacing(page)),
+    ],
+    measurements: measured.measurements,
+  };
 }

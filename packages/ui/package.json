@@ -13,6 +13,10 @@
     "./public-footer": {
       "types": "./dist/public-footer.d.ts",
       "default": "./dist/public-footer.js"
+    },
+    "./static": {
+      "types": "./dist/static.d.ts",
+      "default": "./dist/static.js"
     }
   },
   "scripts": {

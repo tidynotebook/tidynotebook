@@ -81,7 +81,7 @@ await test('deleted note rows have one named space between them', () => {
 
   assert.ok(classes.includes('flex'));
   assert.ok(classes.includes('flex-col'));
-  assert.ok(classes.includes('gap-cluster'));
+  assert.ok(classes.includes('gap-1'));
 });
 
 await test('the deleted note list lines up with the page', () => {

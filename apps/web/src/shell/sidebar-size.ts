@@ -1,3 +1,4 @@
+import { sidebarInsetClassName } from '@notesapp/ui';
 /**
  * How wide the sidebar is, and whether it is on the screen at all.
  *
@@ -60,14 +61,6 @@ const stepWidthClasses: Readonly<Record<SidebarStep, string>> = {
   widest: 'w-92',
 };
 
-/** The content inset of each step, from the medium width up. */
-const stepInsetClasses: Readonly<Record<SidebarStep, string>> = {
-  narrow: 'md:pl-68',
-  medium: 'md:pl-76',
-  wide: 'md:pl-84',
-  widest: 'md:pl-92',
-};
-
 /** How wide one step is, in pixels. */
 export function sidebarWidthPx(step: SidebarStep): number {
   return stepWidths[step];
@@ -85,7 +78,7 @@ export function sidebarWidthClass(step: SidebarStep): string {
  * Below the medium width the sidebar is an overlay, so no step insets there.
  */
 export function sidebarInsetClass(size: SidebarSize): string {
-  return size.collapsed ? 'md:pl-0' : stepInsetClasses[size.step];
+  return sidebarInsetClassName(size);
 }
 
 /** The step whose width is closest to `width` in pixels. */

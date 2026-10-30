@@ -1,3 +1,28 @@
+import {
+  Stack,
+  Grid,
+  Inline,
+  SectionHeading,
+  Card,
+  ThemePreview,
+  Button,
+  CheckIcon,
+  ComputerIcon,
+  defaultThemeFamilyId,
+  DownloadIcon,
+  MoonIcon,
+  Notice,
+  readThemeFile,
+  SunIcon,
+  themeFileMaximumBytes,
+  themeFileText,
+  themeOfFamily,
+  transitionSurface,
+  UploadIcon,
+  type AppearanceChoice,
+  type ThemeFamily,
+} from '@notesapp/ui';
+
 /**
  * The appearance of Appearance and editor in Settings (records 0143 and
  * issue 517, item 6).
@@ -21,25 +46,7 @@
  */
 import { useRef, useState, type ReactNode } from 'react';
 import { deleteTheme, importTheme } from '@notesapp/api-client';
-import {
-  Button,
-  CheckIcon,
-  ComputerIcon,
-  defaultThemeFamilyId,
-  DownloadIcon,
-  MoonIcon,
-  Notice,
-  readThemeFile,
-  SunIcon,
-  themeFileMaximumBytes,
-  themeFileText,
-  themeOfFamily,
-  transitionSurface,
-  UploadIcon,
-  type AppearanceChoice,
-  type ThemeFamily,
-  type ThemeTokens,
-} from '@notesapp/ui';
+
 import { actionIcon } from '../../shell/action-icons.tsx';
 import { deleteForGoodLabel, deleteGlyph } from '../../lib/delete-label.ts';
 import { problemMessage, useSession, useTheme } from '../../app.tsx';
@@ -83,56 +90,6 @@ function settingsSection(key: SettingsSectionKey) {
  * a title, two lines of text and a link, each painted with a token of the
  * theme registry, so the card shows what the screen becomes on selection.
  */
-function ThemePreview({
-  tokens,
-  className = '',
-}: {
-  readonly tokens: ThemeTokens;
-  readonly className?: string;
-}): ReactNode {
-  return (
-    <span
-      aria-hidden="true"
-      className={`flex h-14 min-w-0 overflow-hidden ${className}`}
-      style={{ backgroundColor: tokens.background }}
-    >
-      <span
-        className="flex w-1/4 flex-col gap-1 p-2"
-        style={{
-          backgroundColor: tokens.surface,
-          borderRight: `1px solid ${tokens.borderSubtle}`,
-        }}
-      >
-        {[0, 1, 2].map((line) => (
-          <span
-            key={line}
-            className="block h-1 rounded-sm"
-            style={{ backgroundColor: tokens.textMuted }}
-          />
-        ))}
-      </span>
-      <span className="flex flex-1 flex-col gap-1 p-2">
-        <span
-          className="block h-1.5 w-1/2 rounded-sm"
-          style={{ backgroundColor: tokens.textStrong }}
-        />
-        <span
-          className="block h-1 w-3/4 rounded-sm"
-          style={{ backgroundColor: tokens.textMuted }}
-        />
-        <span
-          className="block h-1 w-2/3 rounded-sm"
-          style={{ backgroundColor: tokens.textMuted }}
-        />
-        <span
-          className="block h-1 w-1/4 rounded-sm"
-          style={{ backgroundColor: tokens.accentFill }}
-        />
-      </span>
-    </span>
-  );
-}
-
 /** The mode of a family that has only one, or `null` for both modes. */
 export function onlyModeOf(family: ThemeFamily): 'light' | 'dark' | null {
   const modes = new Set(family.variants.map((variant) => variant.appearance));
@@ -251,8 +208,8 @@ export function ThemeSettings(): ReactNode {
       new Blob([themeFileText(current)], { type: 'application/json' }),
       themeFileName(current.name),
     );
-  const light = themeOfFamily(current, 'light').tokens;
-  const dark = themeOfFamily(current, 'dark').tokens;
+  const light = themeOfFamily(current, 'light');
+  const dark = themeOfFamily(current, 'dark');
 
   return (
     <SettingsSection
@@ -260,13 +217,11 @@ export function ThemeSettings(): ReactNode {
       grouped
       description="System follows the device. The choice applies at once on this device and goes to your account in the background. Import a theme file to use your own colours."
     >
-      <div className="ui-settings-groups">
-        <fieldset className="ui-settings-group border-0 p-0">
+      <Stack gap={{ fine: 6, coarse: 4 }}>
+        <Stack gap={2} pad={0} className="border-0">
           <legend className="sr-only">Mode</legend>
-          <h3 className="ui-settings-tiles-heading w-full text-group text-muted">
-            Mode
-          </h3>
-          <div className="ui-theme-tiles grid grid-cols-3 gap-cluster">
+          <SectionHeading label={<>Mode</>} divider />
+          <Grid gap={2} as="div" className="ui-theme-tiles grid-cols-3">
             {appearanceChoices.map((choice) => {
               const chosen = theme.choice === choice.value;
               return (
@@ -283,15 +238,15 @@ export function ThemeSettings(): ReactNode {
                   />
                   {choice.value === 'system' ? (
                     <span className="flex" aria-hidden="true">
-                      <ThemePreview tokens={light} className="w-1/2" />
-                      <ThemePreview tokens={dark} className="w-1/2" />
+                      <ThemePreview theme={light} className="w-1/2" />
+                      <ThemePreview theme={dark} className="w-1/2" />
                     </span>
                   ) : (
                     <ThemePreview
-                      tokens={choice.value === 'light' ? light : dark}
+                      theme={choice.value === 'light' ? light : dark}
                     />
                   )}
-                  <span className="flex min-h-9 items-center gap-2 px-2">
+                  <Inline padY={2} gap={2} padX={2} align="center" as="span">
                     <span
                       className="inline-flex items-center"
                       aria-hidden="true"
@@ -309,59 +264,67 @@ export function ThemeSettings(): ReactNode {
                         <CheckIcon />
                       </span>
                     ) : null}
-                  </span>
+                  </Inline>
                 </label>
               );
             })}
-          </div>
-        </fieldset>
-        <fieldset className="ui-settings-group border-0 p-0">
+          </Grid>
+        </Stack>
+        <Stack gap={2} pad={0} className="border-0">
           <legend className="sr-only">Theme</legend>
-          <div className="ui-settings-tiles-heading ui-group-toolbar">
-            <span
-              className="min-w-0 flex-1 text-group text-muted"
-              aria-hidden="true"
-            >
-              Theme
-            </span>
-            {phone ? null : (
+          <SectionHeading
+            label={<>Theme</>}
+            divider
+            action={
               <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  icon={<UploadIcon />}
-                  disabled={busy}
-                  onClick={() => fileInput.current?.click()}
-                >
-                  {busy ? 'Importing the theme' : 'Import theme file'}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  icon={<DownloadIcon />}
-                  label={`Export the ${current.name} theme file`}
-                  onClick={() => {
-                    save(
-                      new Blob([themeFileText(current)], {
-                        type: 'application/json',
-                      }),
-                      themeFileName(current.name),
-                    );
-                  }}
-                >
-                  Export theme file
-                </Button>
+                {phone ? null : (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon={<UploadIcon />}
+                      disabled={busy}
+                      onClick={() => fileInput.current?.click()}
+                    >
+                      {busy ? 'Importing the theme' : 'Import theme file'}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon={<DownloadIcon />}
+                      label={`Export the ${current.name} theme file`}
+                      onClick={() => {
+                        save(
+                          new Blob([themeFileText(current)], {
+                            type: 'application/json',
+                          }),
+                          themeFileName(current.name),
+                        );
+                      }}
+                    >
+                      Export theme file
+                    </Button>
+                  </>
+                )}
               </>
-            )}
-          </div>
-          <ul className="ui-theme-tiles m-0 flex list-none gap-cluster overflow-x-auto p-0 pb-1 md:grid md:grid-cols-4 md:overflow-visible lg:grid-cols-4">
+            }
+          />
+          <Inline
+            gap={2}
+            pad={0}
+            padY={1}
+            as="ul"
+            className="ui-theme-tiles list-none overflow-x-auto md:grid md:grid-cols-4 md:overflow-visible lg:grid-cols-4"
+          >
             {theme.families.map((option) => {
               const chosen = theme.familyId === option.id;
               const only = onlyModeOf(option);
               const importedTheme = isImportedFamilyId(option.id);
               return (
-                <li
-                  className="flex w-28 shrink-0 flex-col md:w-auto"
+                <Stack
+                  gap={1}
+                  as="li"
+                  className="w-28 shrink-0 md:w-auto"
                   key={option.id}
                 >
                   <label className={cardClassName(chosen)}>
@@ -376,9 +339,9 @@ export function ThemeSettings(): ReactNode {
                       }}
                     />
                     <ThemePreview
-                      tokens={themeOfFamily(option, theme.resolved).tokens}
+                      theme={themeOfFamily(option, theme.resolved)}
                     />
-                    <span className="flex min-h-9 items-center gap-1 px-2">
+                    <Inline padY={2} gap={1} padX={2} align="center" as="span">
                       <span className="min-w-0 flex-1 truncate">
                         {option.name}
                       </span>
@@ -395,11 +358,10 @@ export function ThemeSettings(): ReactNode {
                           <CheckIcon />
                         </span>
                       ) : null}
-                    </span>
+                    </Inline>
                   </label>
                   {importedTheme ? (
                     <Button
-                      className="mt-1"
                       variant="ghost"
                       size="sm"
                       tone="danger"
@@ -413,12 +375,12 @@ export function ThemeSettings(): ReactNode {
                       {deleteForGoodLabel}
                     </Button>
                   ) : null}
-                </li>
+                </Stack>
               );
             })}
-          </ul>
+          </Inline>
           {phone ? (
-            <div className="ui-settings-card">
+            <Card responsive>
               <SettingActionRow
                 label="Import theme file…"
                 actionLabel="Import theme file"
@@ -430,10 +392,10 @@ export function ThemeSettings(): ReactNode {
                 actionLabel="Export theme file"
                 onClick={exportCurrent}
               />
-            </div>
+            </Card>
           ) : null}
-        </fieldset>
-      </div>
+        </Stack>
+      </Stack>
       <input
         ref={fileInput}
         className="sr-only"
@@ -447,22 +409,22 @@ export function ThemeSettings(): ReactNode {
         }}
       />
       {outcome.kind === 'none' ? null : (
-        <div className="mt-4">
+        <Stack gap={2} as="div">
           <Notice
             tone={outcome.kind === 'done' ? 'success' : 'problem'}
             message={outcome.message}
           />
           {outcome.kind === 'refused' && outcome.problems.length > 0 ? (
-            <ul className="m-0 mt-2 flex flex-col gap-1 pl-6 text-body text-strong">
+            <Stack gap={1} padX={6} as="ul" className="text-body text-strong">
               {outcome.problems.map((problem) => (
                 <li key={problem}>{problem}</li>
               ))}
-            </ul>
+            </Stack>
           ) : null}
-        </div>
+        </Stack>
       )}
       {theme.syncError === null ? null : (
-        <Notice className="mt-4" tone="problem" message={theme.syncError} />
+        <Notice tone="problem" message={theme.syncError} />
       )}
     </SettingsSection>
   );

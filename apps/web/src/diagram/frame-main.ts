@@ -99,7 +99,6 @@ function fail(requestId: string, message: string, source: string): void {
   if (host !== null) {
     host.textContent = '';
     const note = document.createElement('p');
-    note.className = 'my-1';
     note.textContent = message;
     host.appendChild(note);
     const code = document.createElement('pre');

@@ -14,7 +14,10 @@ export function WrapText({
     ) : /^\s+$/.test(part) ? (
       part
     ) : (
-      <span key={index} className="ui-wrap-unit">
+      <span
+        key={index}
+        className="inline-block w-max max-w-full align-top wrap-anywhere"
+      >
         {part}
       </span>
     ),
@@ -31,7 +34,7 @@ export function MetaFacts({
 }): ReactNode {
   return (
     <p
-      className={`ui-meta-facts m-0 flex flex-wrap text-secondary text-muted ${className}`}
+      className={`ui-meta-facts flex flex-wrap gap-x-1 gap-y-0 text-secondary text-muted ${className}`}
     >
       {facts.map((fact, index) => (
         <span key={`${index}:${fact}`} className="whitespace-nowrap">

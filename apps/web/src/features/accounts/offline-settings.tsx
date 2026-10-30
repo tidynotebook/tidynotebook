@@ -261,7 +261,7 @@ export function OfflineSettingsSection({
         </div>
       )}
       {offline.problem === '' ? null : (
-        <Notice className="mt-3" tone="problem" message={offline.problem} />
+        <Notice tone="problem" message={offline.problem} />
       )}
     </SettingsSection>
   );

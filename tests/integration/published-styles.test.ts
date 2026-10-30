@@ -36,6 +36,7 @@ import {
   publishedCodeFigureClasses,
   publishedDocumentClasses,
   publishedFieldClasses,
+  publishedTextAreaClasses,
   publishedTaskBoxClasses,
 } from '@notesapp/server';
 import {
@@ -44,6 +45,7 @@ import {
   defaultThemeFor,
   fieldClassName,
   taskBoxClassName,
+  textAreaClassName,
   themeProperties,
   transitionField,
   transitionSurface,
@@ -357,6 +359,18 @@ await test('the field of the published page is the field recipe', () => {
     classesOf(publishedFieldClasses),
     withoutMotion(classesOf(fieldClassName()), transitionField),
   );
+});
+
+await test('a public report keeps a multiline field instead of a single-line height', () => {
+  assert.deepEqual(
+    classesOf(publishedTextAreaClasses),
+    withoutMotion(
+      classesOf(textAreaClassName({ size: 'short' })),
+      transitionField,
+    ),
+  );
+  for (const name of ['h-8', 'coarse:h-11', 'min-h-64'])
+    assert.ok(!classesOf(publishedTextAreaClasses).has(name));
 });
 
 await test('the code figure of the published page is the code figure recipe', () => {

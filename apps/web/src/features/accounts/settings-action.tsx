@@ -1,3 +1,4 @@
+import { Inset, FixedDialogLayout, type Dialog } from '@notesapp/ui';
 /** The action view loads after Settings opens. */
 import {
   useLayoutEffect,
@@ -7,7 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
-import { FixedDialogLayout, type Dialog } from '@notesapp/ui';
+
 import { usePhoneSettings } from './settings-section.tsx';
 import type { SettingsActionHost } from './settings-action-context.ts';
 /** An action replaces the section content without changing the modal frame. */
@@ -85,9 +86,10 @@ export default function SettingsAction({
   }, [open, target, phone]);
   if (!open || target === null) return null;
   return createPortal(
-    <section
+    <Inset
       ref={panel}
-      className="ui-settings-action flex min-h-0 flex-1 flex-col"
+      as="section"
+      className="ui-settings-action flex overflow-hidden flex-1 flex-col"
       aria-label={title}
       data-dialog-escape="local"
       tabIndex={-1}
@@ -100,7 +102,7 @@ export default function SettingsAction({
       }}
     >
       <FixedDialogLayout phone={phone}>{children}</FixedDialogLayout>
-    </section>,
+    </Inset>,
     target,
   );
 }

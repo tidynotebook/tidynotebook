@@ -1,3 +1,41 @@
+import {
+  Inline,
+  ApplicationContent,
+  Panel,
+  PanelHeader,
+  useToolbarOverflow,
+  Stack,
+  Region,
+  IconSlot,
+  Toolbar,
+  IconButton,
+  ListRow,
+  StatusLine,
+  AnchoredMenu,
+  avatarClassName,
+  Button,
+  buttonClassName,
+  CloseIcon,
+  compactButtonVisualClassName,
+  FolderIcon,
+  LoadingState,
+  Menu,
+  MenuIcon,
+  MoreIcon,
+  type MenuItem,
+  type MenuAnchor,
+  focusOutline,
+  focusOutlineInset,
+  Notice,
+  PageBackProvider,
+  pageColumnClassName,
+  pageGutter,
+  pageSideClassName,
+  PanelLeftIcon,
+  SearchIcon,
+  transitionSurface,
+} from '@notesapp/ui';
+
 import { useNavigationDrawer } from './use-navigation-drawer.ts';
 import { TrialNotice } from '../features/accounts/trial-notice.tsx';
 /**
@@ -61,33 +99,7 @@ import {
   useNavigate,
   useParams,
 } from 'react-router';
-import {
-  AnchoredMenu,
-  avatarClassName,
-  Button,
-  ScrollRegion,
-  buttonClassName,
-  CloseIcon,
-  compactButtonVisualClassName,
-  edgeControlClassName,
-  FolderIcon,
-  LoadingState,
-  Menu,
-  MenuIcon,
-  MoreIcon,
-  type MenuItem,
-  type MenuAnchor,
-  focusOutline,
-  focusOutlineInset,
-  Notice,
-  PageBackProvider,
-  pageColumnClassName,
-  pageGutter,
-  pageSideClassName,
-  PanelLeftIcon,
-  SearchIcon,
-  transitionSurface,
-} from '@notesapp/ui';
+
 import { trashPageGlyph } from '../lib/delete-label.ts';
 import {
   SyncProvider,
@@ -122,10 +134,7 @@ import {
   folderExpansionLabels,
 } from '../lib/folder-expansion.ts';
 import { noteOrderLabel, noteOrders } from '../lib/note-order.ts';
-import {
-  frameContentClassName,
-  frameNoticeRowClassName,
-} from '../lib/frame-content.ts';
+import { frameNoticeRowClassName } from '../lib/frame-content.ts';
 import {
   MoveItemsDialog,
   NewFolderDialog,
@@ -169,7 +178,6 @@ import {
 import {
   formatSidebarSize,
   parseSidebarSize,
-  sidebarInsetClass,
   sidebarSizeStorageKey,
   sidebarWidthPx,
   stepAfterKey,
@@ -183,7 +191,6 @@ import {
   treeListClassName,
   treeMessageClassName,
   treeRowClassName,
-  treeRowLeadingClassName,
   treeRowNameClassName,
 } from '../lib/tree-row.ts';
 import { moveNoteToTrashPaletteLabel, noteTrashRow } from '../lib/note-menu.ts';
@@ -319,11 +326,20 @@ function Breadcrumb({
   const { leafFilled } = useHeaderSlot();
   return (
     <nav className="min-w-0 flex-1" aria-label="Where you are">
-      <ol className="m-0 flex min-w-0 list-none items-center gap-1 p-0 text-body">
+      <Inline
+        gap={1}
+        pad={0}
+        align="center"
+        as="ol"
+        className="min-w-0 list-none text-body"
+      >
         {parts.map((part, index) =>
           part.to === null ? (
-            <li
-              className="flex min-w-0 flex-1 items-center gap-1"
+            <Inline
+              gap={1}
+              align="center"
+              as="li"
+              className="min-w-0 flex-1"
               key={breadcrumbKey(part, index)}
             >
               {index === 0 ? null : (
@@ -337,13 +353,16 @@ function Breadcrumb({
                 </span>
               )}
               <HeaderLeafSlot className="flex min-w-0 flex-1 items-center empty:hidden" />
-            </li>
+            </Inline>
           ) : (
             // A separator stands between two parts and never after the
             // last one, which a page that is not the note ends on
             // (record 0139).
-            <li
-              className="flex shrink-0 items-center gap-1 max-md:hidden"
+            <Inline
+              gap={1}
+              align="center"
+              as="li"
+              className="shrink-0 max-md:hidden"
               key={breadcrumbKey(part, index)}
             >
               {index === 0 ? null : (
@@ -360,10 +379,10 @@ function Breadcrumb({
               >
                 {part.label}
               </Link>
-            </li>
+            </Inline>
           ),
         )}
-      </ol>
+      </Inline>
     </nav>
   );
 }
@@ -475,28 +494,35 @@ function Sidebar({
   }));
   const expand = () => setOpenFolders(expandedFolders(expansion, knownFolders));
 
+  const actionLayout = useToolbarOverflow(5);
   const fixedTop = useRef<HTMLDivElement>(null),
     fixedBottom = useRef<HTMLDivElement>(null);
   return (
-    <div className="ui-sidebar-panel">
-      <div ref={fixedTop} data-scroll-edge="above" className="ui-sidebar-top">
-        {' '}
-        <div className="ui-sidebar-header md:hidden">
+    <Panel regions pad={0} className="ui-sidebar-panel">
+      <Region
+        scroll="none"
+        edge="bottom"
+        pad={{ fine: 2, coarse: 3 }}
+        gap={{ fine: 2, coarse: 3 }}
+        elementRef={fixedTop}
+        data-scroll-edge="above"
+        className="ui-sidebar-top"
+      >
+        <PanelHeader className="ui-sidebar-header md:hidden">
           <span className="text-title-header text-strong">
             {sidebarViewLabels[view]}
           </span>
-          <span className="ui-sidebar-slot">
-            <Button
-              variant="ghost"
-              size="sm"
+          <IconSlot className="ui-sidebar-slot">
+            <IconButton
+              size="header"
               className="ui-sidebar-header-close"
               label="Close navigation"
               title="Close navigation"
-              icon={<CloseIcon />}
+              glyph={<CloseIcon />}
               onClick={onClose}
             />
-          </span>
-        </div>
+          </IconSlot>
+        </PanelHeader>
         <WorkspaceSwitcher
           workspaceId={workspaceId}
           onNavigate={onClose}
@@ -506,11 +532,12 @@ function Sidebar({
         />
         {view === 'notes' ? (
           <>
-            <div className="ui-drawer-actions">
-              <div className="ui-drawer-actions-row ui-sidebar-actions">
-                <Button
+            <div ref={actionLayout.ref} className="ui-drawer-actions">
+              <Toolbar className="ui-drawer-actions-row ui-sidebar-actions">
+                <IconButton
+                  size="toolbar"
                   variant="ghost"
-                  size="sm"
+
                   className="ui-sidebar-action"
                   label={
                     selectedFolder === ''
@@ -518,51 +545,59 @@ function Sidebar({
                       : `New note in ${selectedFolder}`
                   }
                   title="New note"
-                  icon={actionIcon('new-note')}
+                  glyph={actionIcon('new-note')}
                   onClick={() => onNewNoteIn(selectedFolder)}
                 />
-                <Button
+                <IconButton
+                  size="toolbar"
                   variant="ghost"
-                  size="sm"
+
                   className="ui-sidebar-action"
                   label="New folder"
                   title="New folder"
-                  icon={actionIcon('new-folder')}
+                  glyph={actionIcon('new-folder')}
                   onClick={() => onNewFolderIn('')}
                 />
-                <Button
+                <IconButton
+                  size="toolbar"
                   variant="ghost"
-                  size="sm"
+
                   className="ui-sidebar-action"
                   label="New note from template"
                   title="New note from template"
-                  icon={actionIcon('template')}
+                  glyph={actionIcon('template')}
                   onClick={() => onFromTemplate(selectedFolder)}
                 />
-                <div className="ui-drawer-actions-wide">
+                <div className={actionLayout.compact ? 'hidden' : 'contents'}>
                   <Menu
                     label="Sort notes"
+                    trigger="toolbar"
                     icon={actionIcon('sort')}
                     triggerClassName="ui-sidebar-action"
                     align="start"
                     items={sortItems}
                   />
-                  <Button
+                  <IconButton
+                    size="toolbar"
                     variant="ghost"
-                    size="sm"
+
                     className="ui-sidebar-action"
                     label={folderExpansionLabels[expansion]}
                     title={folderExpansionLabels[expansion]}
-                    icon={actionIcon(
+                    glyph={actionIcon(
                       expansion === 'expand' ? 'expand-all' : 'collapse-all',
                     )}
                     disabled={knownFolders.length === 0}
                     onClick={expand}
                   />
                 </div>
-                <div ref={overflowActions} className="ui-drawer-actions-more">
+                <div
+                  ref={overflowActions}
+                  className={actionLayout.compact ? 'contents' : 'hidden'}
+                >
                   <Menu
                     label="More drawer actions"
+                    trigger="toolbar"
                     icon={<MoreIcon />}
                     triggerClassName="ui-sidebar-action"
                     items={[
@@ -605,7 +640,7 @@ function Sidebar({
                     }}
                   />
                 )}
-              </div>
+              </Toolbar>
               {newNoteProblem === null ? null : (
                 <p
                   className="ui-sidebar-message text-secondary text-danger"
@@ -617,16 +652,27 @@ function Sidebar({
             </div>
           </>
         ) : null}
-      </div>
-      <ScrollRegion
+      </Region>
+      <Region
+        scroll="y"
+        edge="both"
+        pad={{ fine: 2, coarse: 3 }}
         className={drawerTreeClassName}
         above={fixedTop}
         below={fixedBottom}
       >
         {view === 'notes' ? (
           <>
-            <section className="ui-sidebar-tree-items" aria-label="Folders">
-              <div
+            <Stack
+              as="section"
+              gap={0.5}
+              pad={0}
+              className="ui-sidebar-tree-items"
+              aria-label="Folders"
+            >
+              <ListRow
+                as="div"
+                density="tree"
                 className={treeRowClassName({
                   wrapOnPhone: true,
                   open: location.pathname === notesPath,
@@ -656,10 +702,12 @@ function Sidebar({
               `All notes`. It still does both of those, and the selection
               follows the note that opens, by record 0034.
             */}
-                <div className={treeRowLeadingClassName}>
-                  <span className={rowSpacerClassName} aria-hidden="true" />
-                  <Link
-                    className={treeRowNameClassName}
+                <Inline gap={1} className="ui-sidebar-leading min-w-0 flex-1">
+                  <IconSlot className={rowSpacerClassName} aria-hidden="true" />
+                  <Inline
+                    as={Link}
+                    gap={2}
+                    className={`${treeRowNameClassName} min-w-0 flex-1`}
                     to={notesPath}
                     aria-current={
                       location.pathname === notesPath ? 'page' : undefined
@@ -678,12 +726,13 @@ function Sidebar({
                     <span data-tree-name className="min-w-0 flex-1 truncate">
                       {allNotesTitle}
                     </span>
-                  </Link>
-                </div>
-                <span className="ui-sidebar-slot">
+                  </Inline>
+                </Inline>
+                <IconSlot className="ui-sidebar-slot">
                   <Menu
                     label="Actions for All notes"
                     icon={<MoreIcon />}
+                    trigger="row-action"
                     triggerClassName="ui-sidebar-row-action ui-sidebar-row-menu"
                     items={[
                       {
@@ -703,8 +752,8 @@ function Sidebar({
                       },
                     ]}
                   />
-                </span>
-              </div>
+                </IconSlot>
+              </ListRow>
               {files.loading ? (
                 <div className="ui-sidebar-message">
                   <LoadingState
@@ -718,7 +767,7 @@ function Sidebar({
                   No notes yet.
                 </p>
               ) : (
-                <div className={treeListClassName}>
+                <Stack gap={0.5} pad={0} className={treeListClassName}>
                   <NoteTree
                     workspaceId={workspaceId}
                     nodes={tree}
@@ -734,7 +783,7 @@ function Sidebar({
                     onPublish={onPublish}
                     onMove={onMove}
                   />
-                </div>
+                </Stack>
               )}
               {files.limitNotice === null ? null : (
                 <p
@@ -745,7 +794,7 @@ function Sidebar({
                   {files.limitNotice}
                 </p>
               )}
-            </section>
+            </Stack>
             {drag.problem === null ? null : (
               <p className={treeMessageClassName('problem')} role="alert">
                 {drag.problem}
@@ -774,18 +823,23 @@ function Sidebar({
             )}
           </div>
         )}
-      </ScrollRegion>
-      <div
-        ref={fixedBottom}
+      </Region>
+      <Region
+        scroll="none"
+        edge="top"
+        safeArea
+        elementRef={fixedBottom}
         data-scroll-edge="below"
         className="ui-sidebar-footer"
       >
         {' '}
-        <Suspense fallback={<div className="ui-sidebar-status shrink-0" />}>
+        <Suspense
+          fallback={<StatusLine className="ui-sidebar-status shrink-0" />}
+        >
           <SidebarStatus workspaceId={workspaceId} />
         </Suspense>
-      </div>
-    </div>
+      </Region>
+    </Panel>
   );
 }
 
@@ -1576,18 +1630,19 @@ function ShellFrame({
             toggle stood 14 px inside the gutter on a phone and the avatar
             stood 10 px inside it, so one bar showed three different edges.
           */}
-          <header
-            className={`z-30 flex h-header shrink-0 items-center gap-1 border-b border-edge-subtle bg-surface md:gap-cluster ${pageGutter}`}
+          <Inline
+            as="header"
+            gap={{ fine: 2, coarse: 1 }}
+            className={`z-30 flex h-header shrink-0 items-center border-b border-edge-subtle bg-surface  ${pageGutter}`}
           >
-            <Button
+            <IconButton
+              size="header"
               buttonRef={menuButtonRef}
               variant="ghost"
-              size="sm"
-              compact
-              className={`shrink-0 md:hidden ${edgeControlClassName({ edge: 'start', mark: 'icon' })}`}
+              slotClassName="md:hidden"
               label="Open navigation"
               title="Open navigation"
-              icon={<MenuIcon />}
+              glyph={<MenuIcon />}
               ariaControls="notes-sidebar"
               ariaExpanded={drawerOpen}
               onClick={() => {
@@ -1595,12 +1650,11 @@ function ShellFrame({
                 setDrawerOpen((open) => !open);
               }}
             />
-            <Button
+            <IconButton
+              size="header"
               buttonRef={desktopMenuButtonRef}
               variant="ghost"
-              size="sm"
-              compact
-              className={`shrink-0 max-md:hidden ${edgeControlClassName({ edge: 'start', mark: 'icon' })}`}
+              slotClassName="max-md:hidden"
               label={
                 displayedSidebar.collapsed
                   ? 'Show the sidebar'
@@ -1611,7 +1665,7 @@ function ShellFrame({
                   ? 'Show the sidebar'
                   : 'Hide the sidebar'
               }
-              icon={<PanelLeftIcon />}
+              glyph={<PanelLeftIcon />}
               ariaControls="notes-sidebar"
               ariaExpanded={!displayedSidebar.collapsed}
               onClick={toggleSidebar}
@@ -1631,7 +1685,7 @@ function ShellFrame({
               }}
             />
 
-            <HeaderSlot className="flex shrink-0 items-center gap-cluster empty:hidden" />
+            <HeaderSlot className="flex shrink-0 items-center empty:hidden" />
 
             {/*
               A hand written button and not a `Button`, because the word and
@@ -1688,15 +1742,9 @@ function ShellFrame({
               items={accountItems}
               pinned={signOutItem}
               compact
-              triggerClassName={buttonClassName({
-                variant: 'ghost',
-                size: 'sm',
-                iconOnly: true,
-                compact: true,
-                className: `shrink-0 ${edgeControlClassName({ edge: 'end', mark: 'avatar' })}`,
-              })}
+              trigger="avatar"
             />
-          </header>
+          </Inline>
 
           <div
             ref={drawerScrimRef}
@@ -1722,7 +1770,7 @@ function ShellFrame({
               onChoose={setSidebarView}
               onNavigate={() => setDrawerOpen(false)}
             />
-            <div className="flex min-w-0 flex-1 flex-col">
+            <Stack className="h-full min-w-0 flex-1">
               <Sidebar
                 workspaceId={workspaceId}
                 view={sidebarView}
@@ -1746,13 +1794,15 @@ function ShellFrame({
                 onDeleteWorkspace={() => setWorkspaceDialog('delete')}
                 onClose={() => setDrawerOpen(false)}
               />
-            </div>
+            </Stack>
             <SidebarResizer size={sidebar.size} onStep={sidebar.setStep} />
           </aside>
 
-          <div
+          <ApplicationContent
             id="notes-content"
-            className={`${frameContentClassName()} ${sidebarInsetClass(displayedSidebar)}`}
+            sidebar={
+              displayedSidebar.collapsed ? undefined : displayedSidebar.step
+            }
           >
             {/*
               The frame notices stand in the column of the page under them
@@ -1760,7 +1810,11 @@ function ShellFrame({
               with the page and with the note (decision 0137).
             */}
             <div className={`${frameNoticeRowClassName()} ${pageGutter}`}>
-              <div className={`${pageColumnClassName()} pt-4 empty:hidden`}>
+              <Stack
+                gap={4}
+                padY={4}
+                className={`${pageColumnClassName()} empty:hidden`}
+              >
                 <TrialNotice />
                 {templateProblem !== null ? (
                   <Notice tone="problem" message={templateProblem} />
@@ -1812,7 +1866,7 @@ function ShellFrame({
                 ) : persistence.notice.kind === 'at-risk' ? (
                   <Notice tone="problem" message={persistence.notice.message} />
                 ) : null}
-              </div>
+              </Stack>
               <div className={pageSideClassName()} />
             </div>
             {/*
@@ -1822,7 +1876,7 @@ function ShellFrame({
             <PageBackProvider value={<BackLink />}>
               <Outlet />
             </PageBackProvider>
-          </div>
+          </ApplicationContent>
 
           <DeleteNoticeBar />
 

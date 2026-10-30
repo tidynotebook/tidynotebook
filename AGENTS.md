@@ -24,7 +24,7 @@ Skills are optional Markdown instructions for repeated tasks. They contain no sc
 
 ## Code
 
-- Follow the [spacing standard](docs/development/spacing-standard.md) for spacing.
+- Follow the [design system](docs/development/design-system.md) for UI composition and spacing.
 
 - `apps/server` owns HTTP handlers. `apps/web` owns the client. `apps/docs` owns the documentation site.
 - `packages/core` owns domain rules. It imports no transport, database, browser, or React code.

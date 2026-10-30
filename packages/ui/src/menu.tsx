@@ -1,3 +1,6 @@
+import { rowActionVisibility } from './icon-button.tsx';
+import { Stack, Inset, Divider } from './primitives.tsx';
+import { listRowClasses } from './layout.tsx';
 /**
  * A menu button with full keyboard support.
  *
@@ -82,7 +85,6 @@ export type MenuItem = {
  * The one hairline inside a menu: between two groups of rows, and above the
  * pinned rows. It is the subtle edge of a raised surface (decision 0063).
  */
-const menuDividerClassName = 'border-t border-edge-subtle';
 
 /** Where the menu opens relative to its trigger. */
 export type MenuAlign = 'start' | 'end';
@@ -291,7 +293,8 @@ function MenuList({
   };
 
   return createPortal(
-    <div
+    <Stack
+      gap={1}
       ref={listRef}
       id={id}
       className={`fixed z-50 ${menuSurfaceClassName()} ${matchWidth ? '' : 'min-w-56'}`}
@@ -317,28 +320,29 @@ function MenuList({
       }}
     >
       {header === undefined ? null : (
-        <div
+        <Inset
+          pad={2}
           role="presentation"
-          className="mb-1 border-b border-edge-subtle px-2 py-2"
+          className="border-b border-edge-subtle"
         >
           {header}
-        </div>
+        </Inset>
       )}
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="overflow-hidden flex-1 overflow-y-auto">
         {items.map((item, index) => (
           <Fragment key={item.id}>
             {startsGroup(items, index) ? (
-              <div
-                role="separator"
-                className={`my-1 ${menuDividerClassName}`}
-              />
+              <Inset padY={1}>
+                <Divider />
+              </Inset>
             ) : null}
             <MenuRow item={item} choosing={choosing} onRun={run} />
           </Fragment>
         ))}
       </div>
       {pinned.length === 0 ? null : (
-        <div className={`mt-1 shrink-0 pt-1 ${menuDividerClassName}`}>
+        <Stack gap={1} className="shrink-0">
+          <Divider />
           {pinned.map((item) => (
             <MenuRow
               key={item.id}
@@ -347,9 +351,9 @@ function MenuList({
               onRun={run}
             />
           ))}
-        </div>
+        </Stack>
       )}
-    </div>,
+    </Stack>,
     document.body,
   );
 }
@@ -369,6 +373,7 @@ export function Menu({
   matchTrigger = false,
   align = 'end',
   triggerClassName,
+  trigger = 'default',
   compact = false,
   children,
 }: {
@@ -395,6 +400,7 @@ export function Menu({
    */
   readonly matchTrigger?: boolean | undefined;
   readonly align?: MenuAlign | undefined;
+  readonly trigger?: 'row' | 'row-action' | 'toolbar' | 'avatar' | 'default';
   readonly triggerClassName?: string | undefined;
   /**
    * Keeps the touch target of the trigger and draws a smaller surface inside
@@ -451,7 +457,7 @@ export function Menu({
         // often shows more than text: an icon, a label that has to take the
         // free width, and a chevron at the far edge. A plain span made those
         // three one inline box, so the parts could not be laid out at all.
-        <span className="flex min-w-0 flex-1 items-center gap-cluster">
+        <span className="flex min-w-0 flex-1 items-center gap-2">
           {children}
         </span>
       )}
@@ -459,57 +465,58 @@ export function Menu({
   );
 
   return (
-    <div className="relative" ref={rootRef}>
-      <button
-        ref={triggerRef}
-        type="button"
+    <div className="relative flex items-center" ref={rootRef}>
+      <span
         className={
-          triggerClassName ??
-          buttonClassName({
-            variant: 'ghost',
-            size: compact ? 'sm' : 'md',
-            iconOnly: children === undefined,
-            compact,
-          })
+          trigger === 'avatar'
+            ? 'relative inline-flex h-6 w-6 shrink-0 items-center justify-center'
+            : 'contents'
         }
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-controls={open ? menuId : undefined}
-        // `label` names the trigger whether or not it also shows text, because
-        // visible text says what the menu is about and not what the control
-        // does. A trigger reading `Personal` is a workspace name; its name has
-        // to say that it opens the workspace menu. The visible text stays
-        // inside the name, so speech input still reaches it.
-        aria-label={label}
-        // A trigger with visible text needs no tooltip. An icon-only one does,
-        // because nothing else on the screen states its purpose.
-        title={children === undefined ? label : undefined}
-        onClick={() => {
-          setStartIndex(0);
-          setOpen((value) => !value);
-        }}
-        onKeyDown={(event): void => {
-          if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-            event.preventDefault();
-            setStartIndex(event.key === 'ArrowDown' ? 0 : enabledCount - 1);
-            setOpen(true);
-          }
-        }}
       >
-        {compact ? (
-          <span
-            className={compactButtonVisualClassName({
-              variant: 'ghost',
-              size: 'sm',
-              iconOnly: children === undefined,
-            })}
-          >
-            {triggerContent}
-          </span>
-        ) : (
-          triggerContent
-        )}
-      </button>
+        <button
+          ref={triggerRef}
+          type="button"
+          className={`${trigger === 'row' ? listRowClasses('tree') : buttonClassName({ variant: 'ghost', size: compact ? 'compact' : 'default', iconOnly: children === undefined, iconSize: trigger === 'toolbar' ? 'toolbar' : trigger === 'row-action' ? 'row' : 'header', compact })} ${trigger === 'row-action' || trigger === 'avatar' ? `absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 ${trigger === 'row-action' ? rowActionVisibility : ''}` : ''} ${triggerClassName ?? ''}`}
+
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-controls={open ? menuId : undefined}
+          // `label` names the trigger whether or not it also shows text, because
+          // visible text says what the menu is about and not what the control
+          // does. A trigger reading `Personal` is a workspace name; its name has
+          // to say that it opens the workspace menu. The visible text stays
+          // inside the name, so speech input still reaches it.
+          aria-label={label}
+          // A trigger with visible text needs no tooltip. An icon-only one does,
+          // because nothing else on the screen states its purpose.
+          title={children === undefined ? label : undefined}
+          onClick={() => {
+            setStartIndex(0);
+            setOpen((value) => !value);
+          }}
+          onKeyDown={(event): void => {
+            if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+              event.preventDefault();
+              setStartIndex(event.key === 'ArrowDown' ? 0 : enabledCount - 1);
+              setOpen(true);
+            }
+          }}
+        >
+          {compact ? (
+            <span
+              className={compactButtonVisualClassName({
+                variant: 'ghost',
+                size: 'sm',
+                iconOnly: children === undefined,
+              })}
+            >
+              {triggerContent}
+            </span>
+          ) : (
+            triggerContent
+          )}
+        </button>
+      </span>
       {open ? (
         <MenuList
           id={menuId}

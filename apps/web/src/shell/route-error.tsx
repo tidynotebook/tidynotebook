@@ -1,3 +1,11 @@
+import {
+  Inset,
+  Inline,
+  Button,
+  buttonClassName,
+  Page,
+  PageHeader,
+} from '@notesapp/ui';
 /**
  * The screen of a route boundary (record 0161).
  *
@@ -12,7 +20,7 @@
  */
 import { useEffect, type ReactNode } from 'react';
 import { Link, useLocation, useParams, useRouteError } from 'react-router';
-import { Button, buttonClassName, Page, PageHeader } from '@notesapp/ui';
+
 import {
   openNotesLabel,
   reloadLabel,
@@ -68,10 +76,12 @@ export function RouteError({
   );
   return scope === 'application' ? (
     <AuthFrame title={screen.title}>
-      <p className="mb-6 mt-0 text-secondary text-muted">
+      <Inset as="p" className="text-secondary text-muted">
         {screen.description}
-      </p>
-      <div className="flex flex-wrap gap-cluster">{actions}</div>
+      </Inset>
+      <Inline gap={2} wrap as="div">
+        {actions}
+      </Inline>
     </AuthFrame>
   ) : (
     <Page>

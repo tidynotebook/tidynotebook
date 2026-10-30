@@ -302,7 +302,8 @@ export { phoneSheetMotion } from './motion.ts';
 export { WrapText, MetaFacts } from './inline-text.tsx';
 
 export {
-  ScrollRegion,
+  Region,
+  fixedRegionClasses,
   observeScrollEdges,
   type ScrollEdges,
 } from './scroll-region.tsx';
@@ -312,3 +313,53 @@ export {
   SettingsRowActions,
   useSettingsSurface,
 } from './settings-layout.tsx';
+export {
+  Stack,
+  Inline,
+  Inset,
+  Grid,
+  Divider,
+  Panel,
+  Toolbar,
+  spaceClasses,
+  insetClasses,
+  type Space,
+  type SpaceValue,
+  type DensityValue,
+} from './primitives.tsx';
+export { IconButton, type IconButtonSize } from './icon-button.tsx';
+export { IconSlot, Rail, StatusLine } from './primitives.tsx';
+export {
+  listRowClasses,
+  type RowDensity,
+  type RowTrailing,
+} from './layout.tsx';
+export { useToolbarOverflow } from './toolbar-overflow.ts';
+export { PanelHeader } from './primitives.tsx';
+export { SectionHeading, Pill } from './section-heading.tsx';
+
+export { Field, SwitchRow } from './controls.tsx';
+export {
+  ContentHeader,
+  HeaderTitle,
+  HeaderSlot,
+  RowCopy,
+  RowControl,
+  ContentGroups,
+} from './content-header.tsx';
+export { PreviewSurface } from './preview-surface.tsx';
+export { Dialog as Sheet } from './dialog.tsx';
+
+export * from './frame-classes.ts';
+export {
+  ApplicationContent,
+  sidebarInsetClassName,
+  type SidebarWidth,
+} from './application-content.tsx';
+export { NavigationHeading } from './navigation-heading.tsx';
+export { FieldPopover as Popover } from './field-popover.tsx';
+export { Viewport, CanvasImage } from './primitives.tsx';
+export { FieldButton } from './controls.tsx';
+export { ThemePreview } from './theme-preview.tsx';
+export { FieldGroup } from './controls.tsx';
+export { Form } from './primitives.tsx';

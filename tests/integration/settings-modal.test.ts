@@ -744,9 +744,7 @@ await test('phone Settings uses navigation and action rows with one edit level',
     assert.equal(container.querySelector('#profile-name'), null);
     await settle();
     assert.equal(document.activeElement?.getAttribute('aria-label'), 'Name');
-    const remove = container.querySelector<HTMLButtonElement>(
-      '.ui-settings-action-link.text-danger',
-    );
+    const remove = button('Delete account…');
     assert.ok(remove);
     await click(remove);
     assert.ok(container.querySelector('#remove-own-password'));

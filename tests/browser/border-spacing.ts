@@ -40,6 +40,23 @@ export async function auditBorderSpacing(page: Page) {
             ? [{ e, y: r.bottom, side: 'bottom' }]
             : []),
         ];
+      })
+      .filter((border) => {
+        // A border clipped by its own scroll region is not a visible divider.
+        for (
+          let parent = border.e.parentElement;
+          parent;
+          parent = parent.parentElement
+        ) {
+          const s = getComputedStyle(parent),
+            r = parent.getBoundingClientRect();
+          if (
+            ['auto', 'scroll', 'hidden', 'clip'].includes(s.overflowY) &&
+            (border.y < r.top || border.y > r.bottom)
+          )
+            return false;
+        }
+        return true;
       });
     const report = (e: Element, rect: DOMRect, control: boolean) => {
       // A line partly clipped by a scrolling body is not a layout gap.

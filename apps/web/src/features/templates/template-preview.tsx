@@ -3,7 +3,7 @@ import '../../lib/markdown.ts';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { classifyUrl, renderMarkdown } from '@notesapp/markdown';
 import type { LocalStore } from '@notesapp/sync';
-import { LoadingState, Notice } from '@notesapp/ui';
+import { Stack, PreviewSurface, LoadingState, Notice } from '@notesapp/ui';
 import { useAttachmentUrls } from '../editor/note-editor-attachments.ts';
 
 const noUploads: ReadonlyMap<string, string> = new Map();
@@ -122,7 +122,7 @@ export default function TemplatePreview({
     };
   }, [text, path, highlights, attachmentUrls]);
   return (
-    <div className={fill ? 'flex min-h-0 flex-1 flex-col' : undefined}>
+    <Stack fill={fill}>
       {state === 'loading' ? (
         <LoadingState shape="note" label="Loading preview" />
       ) : null}
@@ -132,13 +132,14 @@ export default function TemplatePreview({
           message="The preview could not be shown. Choose the template again."
         />
       ) : null}
-      <div
+      <PreviewSurface
+        fill={fill}
+        expandOnPhone={expandOnPhone}
         ref={host}
         role="region"
         aria-label={label}
         aria-busy={state === 'loading'}
-        className={`${fill ? 'min-h-0 flex-1 overflow-auto' : expandOnPhone ? 'min-h-24 lg:max-h-72 lg:overflow-auto' : 'min-h-24 max-h-72 overflow-auto'} rounded-lg border border-edge-subtle bg-app px-4 py-2 text-preview-body text-strong [&_h1]:my-2 [&_h1]:text-preview-first [&_h2]:my-2 [&_h2]:text-preview-heading [&_h3]:my-2 [&_h3]:text-preview-heading [&_h4]:text-preview-heading [&_h5]:text-preview-heading [&_h6]:text-preview-heading [&_strong]:font-semibold [&_b]:font-semibold [&_th]:font-semibold [&_p]:my-2 [&_ul]:list-disc [&_ul]:pl-6 [&_li.task-list-item]:list-none [&_.task-list-item_input]:size-4 [&_.task-list-item_input]:mr-2 [&_.task-list-item_input]:align-middle [&_.notes-task-mark]:hidden [&_ol]:list-decimal [&_ol]:pl-6 [&_pre]:overflow-auto [&_pre]:bg-surface [&_pre]:p-3 [&_a]:text-accent [&_table]:w-full [&_td]:p-2 [&_th]:p-2 [&_img]:max-w-full`}
       />
-    </div>
+    </Stack>
   );
 }

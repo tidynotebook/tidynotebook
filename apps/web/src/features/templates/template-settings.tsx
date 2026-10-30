@@ -148,11 +148,7 @@ export function TemplateSettingsFields(): ReactNode {
     <>
       <FolderField settings={state.settings} onSave={templates.save} />
       {templates.saveProblem === null ? null : (
-        <Notice
-          className="mt-3"
-          tone="problem"
-          message={templates.saveProblem}
-        />
+        <Notice tone="problem" message={templates.saveProblem} />
       )}
     </>
   );

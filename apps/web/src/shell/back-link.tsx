@@ -1,3 +1,4 @@
+import { IconButton, ChevronLeftIcon } from '@notesapp/ui';
 /**
  * The one back control of a page (record 0138).
  *
@@ -10,12 +11,7 @@
  */
 import type { ReactNode } from 'react';
 import { Link, useMatches, useParams } from 'react-router';
-import {
-  buttonClassName,
-  ChevronLeftIcon,
-  compactButtonVisualClassName,
-  edgeControlClassName,
-} from '@notesapp/ui';
+
 import { backTarget, framePageOf } from '../lib/breadcrumb.ts';
 
 /** The caret back to the page above the open page. */
@@ -32,28 +28,11 @@ export function BackLink(): ReactNode {
   );
   if (target === null) return null;
   return (
-    <Link
-      className={buttonClassName({
-        variant: 'ghost',
-        size: 'sm',
-        iconOnly: true,
-        compact: true,
-        className: `shrink-0 ${edgeControlClassName({ edge: 'start', mark: 'icon' })}`,
-      })}
-      to={target.to}
-      aria-label={target.label}
-      title={target.label}
-    >
-      <span
-        className={compactButtonVisualClassName({
-          variant: 'ghost',
-          size: 'sm',
-          iconOnly: true,
-        })}
-        aria-hidden="true"
-      >
-        <ChevronLeftIcon />
-      </span>
-    </Link>
+    <IconButton
+      size="header"
+      glyph={<ChevronLeftIcon />}
+      label={target.label}
+      render={(props) => <Link {...props} to={target.to} />}
+    />
   );
 }
