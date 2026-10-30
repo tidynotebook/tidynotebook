@@ -442,9 +442,9 @@ function PaletteDialog({
       <Inset
         ref={listRef}
         id="command-palette-list"
-        pad={2}
+        pad={4}
         as="ul"
-        className="max-h-80 list-none overflow-y-auto empty:hidden"
+        className="ui-content-list max-h-80 list-none overflow-y-auto empty:hidden"
         role="listbox"
         aria-label={stepAction?.label ?? 'Results'}
       >
@@ -453,7 +453,7 @@ function PaletteDialog({
             {index === firstNote ? (
               <Inset
                 as="li"
-                padX={2}
+                padX={0}
                 padY={1}
                 role="presentation"
                 className="text-group text-muted"
@@ -464,7 +464,7 @@ function PaletteDialog({
             {index === firstAction ? (
               <Inset
                 as="li"
-                padX={2}
+                padX={0}
                 padY={1}
                 role="presentation"
                 className="text-group text-muted"
@@ -475,7 +475,7 @@ function PaletteDialog({
             {index === firstChoice ? (
               <Inset
                 as="li"
-                padX={2}
+                padX={0}
                 padY={1}
                 role="presentation"
                 className="text-group text-muted"
@@ -489,6 +489,7 @@ function PaletteDialog({
               aria-selected={index === active}
               className={rowClassName({
                 selected: index === active,
+                contentEdge: true,
                 className: '',
               })}
               onMouseEnter={() => setSelected(index)}

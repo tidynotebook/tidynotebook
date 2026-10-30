@@ -452,7 +452,7 @@ await test('every palette fallback of the stylesheet is the registry value', () 
   const block = [
     ...stylesheetSource.matchAll(/@theme inline \{([\s\S]*?)\n\}/g),
   ].find((part) => part[1]?.includes('--color-app:'));
-  assert.ok(block !== null, 'the stylesheet states no inline theme block');
+  assert.ok(block !== undefined, 'the stylesheet states no inline theme block');
   const declarations = [
     ...(block[1] ?? '').matchAll(
       /--color-[a-z-]+:\s*var\((--notes-[a-z-]+),\s*(#[0-9a-f]{6})\);/g,

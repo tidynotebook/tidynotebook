@@ -38,7 +38,11 @@ import {
   type Ref,
   type MouseEventHandler,
 } from 'react';
-import { rowClassName, buttonClassName } from './control-classes.ts';
+import {
+  rowClassName,
+  buttonClassName,
+  contentEdgeRowClassName,
+} from './control-classes.ts';
 import { ChevronRightIcon, MoreIcon } from './icons.tsx';
 import {
   pageColumnClassName,
@@ -291,10 +295,13 @@ export type RowTrailing =
       readonly label: string;
       readonly onClick: () => void;
     };
-export function listRowClasses(density: RowDensity): string {
+export function listRowClasses(
+  density: RowDensity,
+  contentEdge = false,
+): string {
   return density === 'setting'
     ? 'ui-settings-row relative flex min-w-0 w-full items-center gap-4 py-3 px-0 coarse:px-4 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:border-b after:border-edge-subtle coarse:after:left-4 last:after:hidden'
-    : 'flex min-w-0 w-full items-center gap-2 rounded-md px-2 py-1 coarse:rounded-lg coarse:px-3 coarse:py-2';
+    : `flex min-w-0 w-full items-center gap-2 rounded-md text-left py-1 coarse:rounded-lg coarse:py-2 ${contentEdge ? 'px-0 ' + contentEdgeRowClassName : 'px-2 coarse:px-3'}`;
 }
 export function ListRow({
   children,
@@ -313,6 +320,7 @@ export function ListRow({
   labelTone,
   density,
   indent = 0,
+  contentEdge = false,
   as,
   buttonRef,
   ...nativeProps
@@ -333,6 +341,7 @@ export function ListRow({
   readonly control?: ReactNode;
   readonly labelTone?: 'accent' | 'danger';
   readonly indent?: number;
+  readonly contentEdge?: boolean;
   readonly as?: 'li' | 'div' | 'button' | 'a';
   readonly buttonRef?: Ref<HTMLButtonElement> | undefined;
   readonly disabled?: boolean | undefined;
@@ -417,7 +426,7 @@ export function ListRow({
     ) : (
       body
     );
-  const classes = `${listRowClasses(rowDensity)} ${rowClassName({
+  const classes = `${listRowClasses(rowDensity, contentEdge)} ${rowClassName({
     layout: false,
     selected,
     current,
@@ -454,11 +463,11 @@ export function ListRow({
         {content}
       </button>
     ) : as === 'div' ? (
-      <div {...nativeProps} className={classes}>
+      <div {...nativeProps} data-ui-row={rowDensity} className={classes}>
         {content}
       </div>
     ) : (
-      <li {...nativeProps} className={classes}>
+      <li {...nativeProps} data-ui-row={rowDensity} className={classes}>
         {content}
       </li>
     );

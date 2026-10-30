@@ -329,9 +329,14 @@ export function controlStripClassName(): string {
  * the recipe itself, so every Delete row of the product was the colour of
  * every other row.
  */
+/** Row content stays on the parent edge; its painted hit surface grows into the gutter. */
+export const contentEdgeRowClassName =
+  'ui-content-row relative isolate before:absolute before:inset-y-0 before:-inset-x-2 coarse:before:-inset-x-3 before:-z-10 before:rounded-md coarse:before:rounded-lg before:bg-inherit before:pointer-events-auto';
+
 export function rowClassName(
   options: {
     readonly layout?: boolean;
+    readonly contentEdge?: boolean;
     readonly selected?: boolean | undefined;
     /** Aligns a Settings control with the content column. */
     readonly flush?: boolean | undefined;
@@ -369,7 +374,8 @@ export function rowClassName(
       : 'disabled:cursor-not-allowed disabled:text-muted disabled:hover:bg-transparent disabled:hover:text-muted'
     : '';
   return [
-    `${options.layout === false ? '' : 'ui-tree-row flex items-center gap-2 rounded-md py-1 coarse:py-2 coarse:rounded-lg ' + (options.flush === true ? 'px-0' : 'px-2 coarse:px-3')} text-body ${colour} no-underline ${transitionSurface}`,
+    `${options.layout === false ? '' : 'ui-tree-row flex items-center gap-2 rounded-md py-1 coarse:py-2 coarse:rounded-lg ' + (options.flush === true || options.contentEdge ? 'px-0' : 'px-2 coarse:px-3')} text-body ${colour} no-underline ${transitionSurface}`,
+    options.contentEdge ? contentEdgeRowClassName : '',
     interactive ? 'cursor-pointer' : '',
     disabled,
     interactive

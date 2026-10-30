@@ -614,11 +614,12 @@ function HistoryDetail({
                     const label = savedAtLabel(row.time);
                     return (
                       <Fragment key={item.revisionId}>
-                        <ListRow className="flex-wrap">
+                        <ListRow contentEdge className="flex-wrap">
                           <button
                             type="button"
                             className={rowClassName({
                               selected,
+                              contentEdge: true,
                               inset: false,
                               className: 'min-w-0 flex-1',
                             })}

@@ -17,6 +17,9 @@ await test('the text and the footer share one centred column', () => {
   assert.ok(column.includes('self-center'));
   assert.ok(column.includes('w-full'));
   assert.ok(column.includes('max-w-note'));
+  const footer = noteFooterClassName(false).split(' ');
+  assert.ok(footer.includes('flex'));
+  assert.ok(footer.includes('flex-col'));
 });
 
 await test('the column holds no name of its own', () => {

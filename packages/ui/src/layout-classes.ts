@@ -132,7 +132,7 @@ export function sectionScrollTop(
  * shorter, so a step of the numeric scale keeps two fills apart.
  */
 export function pageListClassName(): string {
-  return 'flex list-none flex-col gap-1 p-0';
+  return 'ui-content-list flex list-none flex-col gap-1 p-0';
 }
 
 /**

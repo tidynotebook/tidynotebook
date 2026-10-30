@@ -34,3 +34,9 @@ for comparison with `compareSurface` in `symmetry.ts`. Set `TOUCH_WIDTHS` to
 `1440,390,320` to include both pointer densities. `UI_AUDIT_ASSETS` can name
 a local web asset build for source checks before the single Docker build.
 Omit it when checking the deployed image.
+
+`content-parity.ts` checks selected rail and navigation surfaces, outline indent
+slots, the note footer and page list content edges at both pointer densities.
+It also checks that a row fill and hit area extend into the page gutter.
+Parity records include the painted surface, current state and visible content
+position, so unchanged wrapper boxes cannot hide these regressions.

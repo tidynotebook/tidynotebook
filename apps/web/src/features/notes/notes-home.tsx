@@ -156,6 +156,7 @@ function NoteGroupList({
             <Link
               className={rowClassName({
                 inset: false,
+                contentEdge: true,
                 className: 'ui-list-row min-w-0 flex-1',
               })}
               to={`/w/${workspaceId}/notes/${note.fileId}`}

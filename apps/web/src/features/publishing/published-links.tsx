@@ -211,7 +211,11 @@ function PublishedLinksList({
                   now,
                 );
                 return (
-                  <ListRow key={link.publicationId} className="flex-wrap">
+                  <ListRow
+                    contentEdge
+                    key={link.publicationId}
+                    className="flex-wrap"
+                  >
                     <span
                       className="inline-flex shrink-0 items-center text-muted"
                       aria-hidden="true"

@@ -71,7 +71,7 @@ function ParkedSaveRow({
   const lines = parkedSaveLines(save, now);
 
   return (
-    <ListRow className="flex-col items-stretch">
+    <ListRow contentEdge className="flex-col items-stretch">
       <div className="min-w-0">
         <p className="m-0 truncate text-body text-strong">{save.name}</p>
         <p className="m-0 text-secondary text-muted">{lines.cause}</p>

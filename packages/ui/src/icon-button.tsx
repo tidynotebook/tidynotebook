@@ -31,6 +31,7 @@ export function IconButton({
   readonly render?: (props: {
     readonly className: string;
     readonly 'aria-label': string;
+    readonly 'aria-current': 'page' | undefined;
     readonly title: string;
     readonly children: ReactNode;
   }) => ReactNode;
@@ -46,17 +47,20 @@ export function IconButton({
               iconSize: size,
             }),
       'aria-label': label,
+      'aria-current': current ? 'page' : undefined,
       title: label,
       children: glyph,
     })
   ) : (
     <Button
       {...props}
+      aria-current={current ? 'page' : undefined}
+      ariaPressed={current ? true : size === 'rail' ? false : props.ariaPressed}
       variant={props.variant ?? 'ghost'}
       icon={glyph}
       iconSize={size}
       label={label}
-      className={`${positions[size]} ${current ? 'bg-active text-strong' : ''} ${reveal ? rowActionVisibility : ''} ${className}`}
+      className={`${positions[size]} ${current ? 'aria-pressed:bg-active aria-pressed:text-strong aria-pressed:hover:bg-active' : ''} ${reveal ? rowActionVisibility : ''} ${className}`}
     />
   );
   return size === 'row' || size === 'header' ? (

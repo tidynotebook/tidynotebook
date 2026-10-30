@@ -37,6 +37,42 @@ export async function captureSurface(
           index = counts.get(base) ?? 0;
         counts.set(base, index + 1);
         const r = e.getBoundingClientRect();
+        let contentX: number | null = null;
+        const walker = document.createTreeWalker(
+          e,
+          NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT,
+        );
+        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+          if (
+            node instanceof Element &&
+            !node.checkVisibility({
+              visibilityProperty: true,
+              opacityProperty: true,
+            })
+          )
+            continue;
+          if (node instanceof SVGElement && node.tagName === 'svg') {
+            contentX = node.getBoundingClientRect().left;
+            break;
+          }
+          if (
+            node.nodeType !== Node.TEXT_NODE ||
+            !node.textContent?.trim() ||
+            !node.parentElement?.checkVisibility({
+              visibilityProperty: true,
+              opacityProperty: true,
+            }) ||
+            node.parentElement.closest('.sr-only,svg')
+          )
+            continue;
+          const range = document.createRange();
+          range.selectNodeContents(node);
+          const textBox = range.getClientRects()[0];
+          if (textBox?.width) {
+            contentX = textBox.left;
+            break;
+          }
+        }
         return {
           key: `${base}:${index}`,
           text,
@@ -44,6 +80,10 @@ export async function captureSurface(
           y: r.y,
           width: r.width,
           height: r.height,
+          contentX,
+          surface: getComputedStyle(e).backgroundColor,
+          current:
+            e.getAttribute('aria-current') ?? e.getAttribute('aria-pressed'),
         };
       });
   }, process.env.DS1_SCOPE ?? '');
@@ -60,6 +100,9 @@ type Geometry = {
   y: number;
   width: number;
   height: number;
+  contentX?: number | null;
+  surface?: string;
+  current?: string | null;
 };
 function isGeometry(value: unknown): value is Geometry {
   if (!value || typeof value !== 'object') return false;
@@ -68,6 +111,14 @@ function isGeometry(value: unknown): value is Geometry {
     typeof value.key === 'string' &&
     'text' in value &&
     typeof value.text === 'string' &&
+    (!('contentX' in value) ||
+      value.contentX === null ||
+      (typeof value.contentX === 'number' &&
+        Number.isFinite(value.contentX))) &&
+    (!('surface' in value) || typeof value.surface === 'string') &&
+    (!('current' in value) ||
+      value.current === null ||
+      typeof value.current === 'string') &&
     ['x', 'y', 'width', 'height'].every(
       (name) =>
         typeof Reflect.get(value, name) === 'number' &&
@@ -97,6 +148,15 @@ export function compareSurface(before: string, after: string) {
     const previous = old.get(next.key);
     if (!previous || !previous.height || !next.height) continue;
     const delta = Math.max(
+      typeof next.contentX === 'number' && typeof previous.contentX === 'number'
+        ? Math.abs(next.contentX - previous.contentX)
+        : 0,
+      previous.surface !== undefined && next.surface !== previous.surface
+        ? 2
+        : 0,
+      previous.current !== undefined && next.current !== previous.current
+        ? 2
+        : 0,
       ...(['x', 'y', 'width', 'height'] as const).map((p) =>
         Math.abs(next[p] - previous[p]),
       ),
@@ -109,7 +169,7 @@ export function compareSurface(before: string, after: string) {
 
 /** Every composed surface uses the same measured contract. */
 export async function auditComposition(page: Page) {
-  return page.evaluate(() => {
+  const result = await page.evaluate(() => {
     const coarse = matchMedia('(pointer:coarse)').matches,
       issues: {
         kind: string;
@@ -195,7 +255,15 @@ export async function auditComposition(page: Page) {
         r = e.getBoundingClientRect(),
         setting = e.getAttribute('data-ui-row') === 'setting',
         y = setting ? 12 : coarse ? 8 : 4,
-        x = setting ? (coarse ? 16 : 0) : coarse ? 12 : 8;
+        x = e.classList.contains('ui-content-row')
+          ? 0
+          : setting
+            ? coarse
+              ? 16
+              : 0
+            : coarse
+              ? 12
+              : 8;
       check(e, 'row vertical inset', parseFloat(s.paddingTop), y);
       check(e, 'row bottom inset', parseFloat(s.paddingBottom), y);
       check(e, 'row left inset', parseFloat(s.paddingLeft), x);
@@ -319,5 +387,171 @@ export async function auditComposition(page: Page) {
         );
     }
     return { issues, counts: { layouts: layouts.length, rows: rows.length } };
+  });
+  result.issues.push(...(await auditContentParity(page)).issues);
+  return result;
+}
+
+/** Selected surfaces and visible leading content must match their semantic owner. */
+export async function auditContentParity(page: Page) {
+  return page.evaluate(() => {
+    const issues: {
+      kind: string;
+      text: string;
+      actual: number;
+      expected: number;
+    }[] = [];
+    const measurements: {
+      kind: string;
+      text: string;
+      actual: number;
+      expected: number;
+    }[] = [];
+    const visible = (e: Element) =>
+      e.checkVisibility({ visibilityProperty: true, opacityProperty: true }) &&
+      e.getBoundingClientRect().width > 0 &&
+      e.getBoundingClientRect().height > 0 &&
+      !e.closest('[inert],.sr-only');
+    const firstX = (e: Element): number | null => {
+      const walker = document.createTreeWalker(
+        e,
+        NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT,
+      );
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        if (
+          node instanceof SVGElement &&
+          node.tagName === 'svg' &&
+          visible(node)
+        )
+          return node.getBoundingClientRect().left;
+        if (
+          node.nodeType !== Node.TEXT_NODE ||
+          !node.textContent?.trim() ||
+          !node.parentElement ||
+          !visible(node.parentElement) ||
+          node.parentElement.closest('svg')
+        )
+          continue;
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        const rect = range.getClientRects()[0];
+        if (rect?.width) return rect.left;
+      }
+      return null;
+    };
+    const check = (
+      e: Element,
+      kind: string,
+      actual: number,
+      expected: number,
+    ) => {
+      const item = {
+        kind,
+        text: (e.getAttribute('aria-label') ?? e.textContent ?? '')
+          .trim()
+          .slice(0, 80),
+        actual,
+        expected,
+      };
+      measurements.push(item);
+      if (
+        !Number.isFinite(actual) ||
+        Math.abs(actual - expected) >
+          (kind.includes('surface') || kind.includes('semantics') ? 0 : 1)
+      )
+        issues.push(item);
+    };
+    for (const list of [
+      ...document.querySelectorAll(
+        '.ui-page-column ul,.ui-page-column ol,#command-palette-list',
+      ),
+    ].filter(visible)) {
+      const pageColumn = list.closest('.ui-page-column');
+      const owner = pageColumn ?? list;
+      const edge =
+        owner.getBoundingClientRect().left +
+        parseFloat(getComputedStyle(owner).paddingLeft);
+      for (const li of list.children) {
+        if (!visible(li)) continue;
+        const row = li.querySelector(':scope > a,:scope > button') ?? li;
+        const x = firstX(row);
+        if (x !== null) check(row, 'page row content edge', x, edge);
+      }
+    }
+    for (const row of [...document.querySelectorAll('.ui-content-row')].filter(
+      visible,
+    )) {
+      const box = row.getBoundingClientRect(),
+        painted = getComputedStyle(row, '::before');
+      const pad = matchMedia('(pointer:coarse)').matches ? 12 : 8;
+      check(row, 'row fill left extent', parseFloat(painted.left), -pad);
+      check(row, 'row fill right extent', parseFloat(painted.right), -pad);
+      const hit = document.elementFromPoint(
+        box.left - pad / 2,
+        box.top + box.height / 2,
+      );
+      const center = document.elementFromPoint(
+        box.left + box.width / 2,
+        box.top + box.height / 2,
+      );
+      if (center && row.contains(center))
+        check(
+          row,
+          'row gutter hit semantics',
+          hit === row || (hit !== null && row.contains(hit)) ? 1 : 0,
+          1,
+        );
+    }
+    const title = document.querySelector('#notes-outline > span:last-child');
+    if (title && visible(title)) {
+      const edge = firstX(title);
+      if (edge !== null)
+        for (const row of [
+          ...document.querySelectorAll(
+            '#notes-outline-panel button,#notes-outline-panel [data-outline-level]',
+          ),
+        ].filter(visible)) {
+          const x = firstX(row),
+            level = Number(row.getAttribute('data-outline-level') ?? 1);
+          if (x !== null)
+            check(row, 'outline content edge', x, edge + (level - 1) * 20);
+        }
+    }
+    const line = document.querySelector('.cm-content .cm-line'),
+      footer = document.querySelector('footer');
+    if (line && footer && visible(line) && visible(footer)) {
+      const edge = firstX(line),
+        x = firstX(footer);
+      if (x !== null && edge !== null)
+        check(footer, 'note footer content edge', x, edge);
+    }
+    const probe = document.createElement('span');
+    probe.className = 'bg-active';
+    document.body.append(probe);
+    const active = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    const selected = [
+      ...document.querySelectorAll(
+        '[aria-label="Sidebar views"] [aria-current],[aria-label="Sidebar views"] [aria-pressed="true"],nav [aria-current],.ui-settings-nav-row[aria-current]',
+      ),
+    ].filter(visible);
+    for (const item of new Set(selected)) {
+      if (item.closest('[aria-label="Sidebar views"]'))
+        check(
+          item,
+          'rail current semantics',
+          item.hasAttribute('aria-current') ? 1 : 0,
+          1,
+        );
+      let surface: Element | null =
+        item.querySelector(':scope > .ui-sidebar-row') ?? item;
+      let color = getComputedStyle(surface).backgroundColor;
+      while (surface && ['transparent', 'rgba(0, 0, 0, 0)'].includes(color)) {
+        surface = surface.parentElement;
+        if (surface) color = getComputedStyle(surface).backgroundColor;
+      }
+      check(item, 'selected navigation surface', color === active ? 1 : 0, 1);
+    }
+    return { issues, measurements };
   });
 }

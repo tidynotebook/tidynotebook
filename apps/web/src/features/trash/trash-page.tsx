@@ -421,6 +421,7 @@ function TrashList({
                 if (item.pending) parts.push('waiting to go up');
                 return (
                   <ListRow
+                    contentEdge
                     key={item.fileId}
                     className="border-b border-edge-subtle"
                   >
