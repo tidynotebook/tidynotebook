@@ -26,7 +26,7 @@ Use the public stable tag. The clone provides Compose files and operator
 scripts that match the image.
 
 ```bash
-git clone --branch v0.22.1 --depth 1 \
+git clone --branch v0.23.0 --depth 1 \
   https://github.com/tidynotebook/tidynotebook.git notesapp
 cd notesapp
 ```
