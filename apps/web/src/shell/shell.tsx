@@ -155,12 +155,9 @@ import {
   templateDestinationFor,
   type TemplateDestination,
 } from '../lib/templates.ts';
-import { SidebarCalendar } from '../features/daily-notes/calendar.tsx';
+import { SidebarCalendar } from '../features/daily-notes/calendar-entry.tsx';
 import { dailyNoteDate, type PublicationScope } from '@notesapp/core';
-const PublishDialog = lazy(async () => ({
-  default: (await import('../features/publishing/publish-dialog.tsx'))
-    .PublishDialog,
-}));
+import { PublishDialog } from '../features/publishing/publish-dialog-entry.tsx';
 import { publishedLinksTitle } from '../features/publishing/publishing.ts';
 import { accountsTitle } from '../lib/accounts.ts';
 import {
@@ -216,7 +213,11 @@ import {
   useHeaderSlot,
 } from './header-slot.tsx';
 import { KeyHint } from './key-hint.tsx';
-import { SettingsModalHost, useOpenSettings } from './settings-modal.tsx';
+import {
+  SettingsModalHost,
+  useOpenSettings,
+  preloadSettings,
+} from './settings-modal.tsx';
 import { useSignOut } from './sign-out.tsx';
 import { syncStateIsQuiet } from '../lib/sync-state.ts';
 import type { CalendarMonth } from '../lib/calendar-month.ts';
@@ -229,7 +230,7 @@ import {
   type BreadcrumbPart,
   type PageTitles,
 } from '../lib/breadcrumb.ts';
-import { settingsTitle } from '../features/accounts/accounts.tsx';
+import { settingsTitle } from '../lib/settings-address.ts';
 import { BackLink } from './back-link.tsx';
 import { notFoundTitle } from './not-found.tsx';
 import {
@@ -553,6 +554,12 @@ function Sidebar({
                   variant="ghost"
 
                   className="ui-sidebar-action"
+                  onPointerEnter={() => {
+                    void NewFolderDialog.preload();
+                  }}
+                  onFocus={() => {
+                    void NewFolderDialog.preload();
+                  }}
                   label="New folder"
                   title="New folder"
                   glyph={actionIcon('new-folder')}
@@ -563,6 +570,12 @@ function Sidebar({
                   variant="ghost"
 
                   className="ui-sidebar-action"
+                  onPointerEnter={() => {
+                    void NewFromTemplateDialog.preload();
+                  }}
+                  onFocus={() => {
+                    void NewFromTemplateDialog.preload();
+                  }}
                   label="New note from template"
                   title="New note from template"
                   glyph={actionIcon('template')}
@@ -803,16 +816,22 @@ function Sidebar({
           </>
         ) : (
           <div className={drawerCalendarClassName}>
-            <SidebarCalendar
-              today={today()}
-              openNoteDate={
-                openNotePath === null || layout === null
-                  ? null
-                  : dailyNoteDate(openNotePath, layout)
+            <Suspense
+              fallback={
+                <LoadingState shape="list" rows={3} label="Loading calendar" />
               }
-              daysWithNotes={markedDays}
-              onOpen={daily.open}
-            />
+            >
+              <SidebarCalendar
+                today={today()}
+                openNoteDate={
+                  openNotePath === null || layout === null
+                    ? null
+                    : dailyNoteDate(openNotePath, layout)
+                }
+                daysWithNotes={markedDays}
+                onOpen={daily.open}
+              />
+            </Suspense>
             {daily.openProblem === null ? null : (
               <p
                 className="ui-sidebar-message text-secondary text-danger"
@@ -1276,6 +1295,9 @@ function ShellFrame({
     {
       id: 'settings',
       label: 'Settings',
+      onIntent: () => {
+        void preloadSettings().catch(() => {});
+      },
       hint: <KeyHint keys="Cmd or Ctrl + ," />,
       icon: actionIcon('settings'),
       onSelect: () => {

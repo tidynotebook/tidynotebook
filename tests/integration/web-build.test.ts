@@ -1,3 +1,8 @@
+import { gzipSync } from 'node:zlib';
+import {
+  firstScreenBudgetBytes,
+  firstScreenCeilingBytes,
+} from '../../tools/performance/bundle-policy.ts';
 /**
  * The installed worker that the browser build writes.
  *
@@ -344,4 +349,58 @@ await test('the build emits one card of a link preview under a hashed name', asy
     'utf8',
   );
   assert.ok(!manifest.includes('social-card'));
+});
+
+await test('the first screen meets the shared CI budget and defers action implementations', async () => {
+  const scripts = await firstScreenScripts(distribution);
+  const bytes = scripts.reduce(
+    (total, script) => total + gzipSync(script.bytes, { level: 9 }).byteLength,
+    0,
+  );
+  assert.ok(
+    bytes <= firstScreenBudgetBytes,
+    `${bytes} exceeds ${firstScreenBudgetBytes}`,
+  );
+  assert.ok(firstScreenBudgetBytes <= firstScreenCeilingBytes);
+  const deferred = [
+    'features/accounts/accounts.tsx',
+    'features/accounts/account-settings.tsx',
+    'features/accounts/administration.tsx',
+    'features/accounts/installation-settings.tsx',
+    'features/accounts/theme-settings.tsx',
+    'features/daily-notes/calendar.tsx',
+    'features/folders/folder-dialogs.tsx',
+    'shell/workspace-dialogs.tsx',
+    'features/templates/new-from-template-dialog.tsx',
+    'features/publishing/publish-dialog.tsx',
+    'features/history/history.tsx',
+  ];
+  const critical = new Set(scripts.map((script) => script.file));
+  const found = new Set<string>();
+  for (const script of await builtScripts(distribution)) {
+    const map = await readFile(
+      join(distribution, script.file + '.map'),
+      'utf8',
+    ).catch(() => null);
+    if (map === null) continue;
+    const data: unknown = JSON.parse(map);
+    assert.ok(data !== null && typeof data === 'object');
+    const sources: unknown = Reflect.get(data, 'sources');
+    assert.ok(Array.isArray(sources));
+    const checked: unknown[] = sources;
+    for (const source of checked) {
+      assert.equal(typeof source, 'string');
+      if (typeof source !== 'string') continue;
+      for (const path of deferred)
+        if (source.endsWith('/' + path)) {
+          found.add(path);
+          assert.ok(
+            !critical.has(script.file),
+            `${path} is eager in ${script.file}`,
+          );
+        }
+    }
+  }
+  for (const path of deferred)
+    assert.ok(found.has(path), `${path} still ships as a deferred feature`);
 });

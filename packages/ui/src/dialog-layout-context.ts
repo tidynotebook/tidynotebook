@@ -2,3 +2,4 @@
 import { createContext } from 'react';
 export const DialogInsetContext = createContext(false);
 export const SectionFormContext = createContext(false);
+export const DeferredDialogOpener = createContext<HTMLElement | null>(null);

@@ -62,7 +62,7 @@ const hooks = registerHooks({
   resolve(specifier, context, next) {
     if (
       (context.parentURL?.endsWith(
-        '/features/templates/new-from-template.js',
+        '/features/templates/new-from-template-dialog.js',
       ) ||
         context.parentURL?.endsWith(
           '/features/templates/template-choices.js',

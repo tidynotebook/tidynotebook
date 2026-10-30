@@ -1,3 +1,5 @@
+import { PublishDialog } from '../publishing/publish-dialog-entry.tsx';
+import { MoveItemsDialog } from '../folders/folders.tsx';
 /**
  * The actions of the note route, in the frame header.
  *
@@ -103,6 +105,12 @@ export function NoteHeaderActions({
             id: row.id,
             label: row.label,
             icon: actionIcon(row.icon),
+            onIntent: () => {
+              if (row.id === 'publish') void PublishDialog.preload();
+              if (row.id === 'move') void MoveItemsDialog.preload();
+              if (row.id === 'history')
+                void import('../history/history.tsx').catch(() => {});
+            },
             onSelect,
           },
         ];

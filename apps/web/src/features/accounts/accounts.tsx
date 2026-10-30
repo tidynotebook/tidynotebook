@@ -1,20 +1,15 @@
+import { AuthFrame } from './auth-frame.tsx';
 import {
   Form,
-  Viewport,
   Inline,
   Inset,
   Stack,
-  AppMarkIcon,
-  PublicFooter,
-  installationFooterColumns,
   Button,
   buttonClassName,
-  Card,
   Checkbox,
   DownloadIcon,
   LoadingState,
   Notice,
-  Page,
   SignOutIcon,
   TextField,
 } from '@notesapp/ui';
@@ -55,12 +50,8 @@ import { deleteGlyph } from '../../lib/delete-label.ts';
 import { problemMessage, useLocalStore, useSession } from '../../app.tsx';
 import { problemCode, problemStatus } from '../../lib/problem-text.ts';
 import { forgotPasswordRoute, signUpRoute } from '../../lib/accounts.ts';
-import { consentTo, waitsForConsent } from '../../lib/legal.ts';
-import {
-  isLocked,
-  lockedSentences,
-  signedInSentence,
-} from '../../lib/locked.ts';
+import { consentTo } from '../../lib/legal.ts';
+import { lockedSentences, signedInSentence } from '../../lib/locked.ts';
 import { portalHome } from '../../lib/portal.ts';
 import { returnOf } from '../../lib/sign-in-return.ts';
 import {
@@ -70,7 +61,7 @@ import {
 } from '../../lib/oauth-consent.ts';
 import { useOpenPortal } from './open-portal.ts';
 import { useNow } from '../../shell/now.ts';
-import { LegalLinks, useLegalDocuments } from './legal-links.tsx';
+import { LegalLinks } from './legal-links.tsx';
 
 import { passwordProblem, passwordRule } from '../../lib/password-policy.ts';
 
@@ -80,32 +71,9 @@ import { useDocumentTitle } from '../../shell/document-title.ts';
 import { productName } from '@notesapp/core';
 
 /** The title of the settings page, which is also its breadcrumb part. */
-export const settingsTitle = 'Settings';
+export { settingsTitle } from '../../lib/settings-address.ts';
 
-/** Redirects to login when no session exists. */
-export function RequireSession({
-  children,
-}: {
-  readonly children: ReactNode;
-}): ReactNode {
-  const session = useSession();
-  if (session.status === 'loading') {
-    return (
-      <Page>
-        <LoadingState label="Your account is loading." />
-      </Page>
-    );
-  }
-  if (session.status === 'signed-out' || session.account === null) {
-    return <Navigate to="/login" replace />;
-  }
-  // The application opens after consent to the current legal documents
-  // (record 0120).
-  if (waitsForConsent(session.account)) return <ConsentPage />;
-  // A locked account signs in to one screen (record 0201).
-  if (isLocked(session.account)) return <LockedPage />;
-  return children;
-}
+export { RequireSession } from './require-session.tsx';
 
 /**
  * Downloads the archive of each workspace that the account owns.
@@ -167,7 +135,7 @@ function SignedInFooter({
  * when it changes, and the screen reads it again then and when the person
  * comes back to the tab, so an unlock opens the application with no reload.
  */
-function LockedPage(): ReactNode {
+export function LockedPage(): ReactNode {
   const session = useSession();
   const store = useLocalStore();
   const now = useNow();
@@ -299,7 +267,7 @@ type DocumentsState =
  * their notes, delete their account, or sign out, and the application stays
  * closed until they accept.
  */
-function ConsentPage(): ReactNode {
+export function ConsentPage(): ReactNode {
   const session = useSession();
   const store = useLocalStore();
   const [state, setState] = useState<DocumentsState>({ kind: 'loading' });
@@ -697,73 +665,4 @@ export function LoginPage({
   );
 }
 
-/**
- * The frame of a screen before a session: the wordmark over one raised panel
- * on the chrome plane (decisions 0062 and 0064). Sign in, first-run setup,
- * the acceptance of an invitation and the reset of a password use it. The
- * public footer sits outside the panel and uses the installation legal URLs.
- */
-export function AuthFrame({
-  documents: suppliedDocuments,
-  title,
-  children,
-  footer,
-}: {
-  readonly title: string;
-  readonly children: ReactNode;
-  readonly footer?: ReactNode;
-  readonly documents?: LegalDocuments | null;
-}): ReactNode {
-  const documents = useLegalDocuments(suppliedDocuments);
-  const columns = installationFooterColumns(
-    documents === null
-      ? []
-      : [
-          { label: 'Terms', href: documents.terms.url },
-          { label: 'Privacy', href: documents.privacy.url },
-        ],
-  );
-  return (
-    <Viewport
-      as="div"
-      gap={6}
-      pad={{ fine: 6, coarse: 4 }}
-      align="center"
-      className="justify-center bg-surface"
-    >
-      <Inline
-        gap={3}
-        align="center"
-        as="div"
-        className="text-title-header text-strong"
-      >
-        <span
-          className="inline-flex size-7 items-center justify-center rounded-md bg-active text-strong"
-          aria-hidden="true"
-        >
-          <AppMarkIcon />
-        </span>
-        <span>{productName}</span>
-      </Inline>
-      <Card className="w-full max-w-sm">
-        <Stack pad={{ fine: 6, coarse: 4 }} gap={4}>
-          <Inset
-            as="h1"
-            className="text-title-page tracking-heading text-strong"
-          >
-            {title}
-          </Inset>
-          {children}
-        </Stack>
-      </Card>
-      {footer === undefined || footer === null ? null : (
-        <Inset as="div" className="w-full max-w-sm">
-          {footer}
-        </Inset>
-      )}
-      <div className="w-full max-w-5xl">
-        <PublicFooter home="/" columns={columns} />
-      </div>
-    </Viewport>
-  );
-}
+export { AuthFrame } from './auth-frame.tsx';

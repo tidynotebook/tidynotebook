@@ -3,21 +3,17 @@ import { gzipSync } from 'node:zlib';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { firstScreenScripts } from './first-route.ts';
+import {
+  firstScreenCeilingBytes,
+  firstScreenBudgetBytes,
+  withinFirstScreenBudget,
+} from './bundle-policy.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const dist = resolve(root, 'apps/web/dist/web');
-// The JavaScript share of the 3-second critical-path budget for a JS-heavy
-// page in The Performance Inequality Gap, 2026 (Alex Russell): a P75 phone on
-// a 9 Mbps link reads 0.62 MiB of compressed JavaScript (record 0136). No
-// budget may pass it.
-const ceilingBytes = Math.floor(0.62 * 1024 * 1024);
-// The first screen as record 0177 left it, with a margin of about one
-// twentieth, so a change that grows the first screen states its reason in a
-// change of this line (record 0177). The 256 bytes over 300 KiB are for
-// issue 517: the first screen came within 2 bytes of the budget, and a
-// change of the stylesheet alone moved it 12 to 29 bytes through the
-// content hashes in the chunk names.
-const budgetBytes = Math.min(ceilingBytes, 300 * 1024 + 256);
+// Keep the existing first-screen measurement and compression unchanged.
+const ceilingBytes = firstScreenCeilingBytes;
+const budgetBytes = firstScreenBudgetBytes;
 const files = [];
 let gzipBytes = 0;
 for (const script of await firstScreenScripts(dist)) {
@@ -37,7 +33,7 @@ const report = {
   gzipBytes,
   budgetBytes,
   ceilingBytes,
-  status: gzipBytes <= budgetBytes ? 'pass' : 'fail',
+  status: withinFirstScreenBudget(gzipBytes) ? 'pass' : 'fail',
 };
 process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
 if (report.status === 'fail') process.exitCode = 1;

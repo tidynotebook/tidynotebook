@@ -401,7 +401,7 @@ try {
         await visibleFieldAndFooter(
           page,
           field,
-          dialog().getByRole('button', { name: 'Done', exact: true }),
+          dialog().getByRole('button', { name: 'Save', exact: true }),
         );
         await shot('name-format-keyboard');
         await page.setViewportSize({ width, height });

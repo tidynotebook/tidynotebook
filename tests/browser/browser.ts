@@ -88,6 +88,7 @@ export type Browser = {
     isMobile: boolean;
     colorScheme: 'light' | 'dark';
     reducedMotion?: 'reduce' | 'no-preference';
+    serviceWorkers?: 'allow' | 'block';
   }): Promise<Context>;
   contexts(): Context[];
   close(): Promise<void>;

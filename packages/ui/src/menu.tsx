@@ -79,6 +79,8 @@ export type MenuItem = {
    */
   readonly group?: string | undefined;
   readonly onSelect: () => void;
+  /** Load an action when a pointer or keyboard shows intent. */
+  readonly onIntent?: () => void;
 };
 
 /**
@@ -114,6 +116,8 @@ function MenuRow({
         className: `w-full text-left md:min-h-8 ${showFocus ? '' : 'focus-visible:outline-none'}`,
       })}
       disabled={item.disabled ?? false}
+      onPointerEnter={item.onIntent}
+      onFocus={item.onIntent}
       onClick={() => onRun(item)}
     >
       {item.icon === undefined ? null : (

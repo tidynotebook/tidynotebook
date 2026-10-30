@@ -364,3 +364,5 @@ export { ThemePreview } from './theme-preview.tsx';
 export { FieldGroup } from './controls.tsx';
 export { Form } from './primitives.tsx';
 export { SettingEditRow } from './setting-edit-row.tsx';
+
+export { deferredDialog, DialogLoading } from './deferred-dialog.tsx';

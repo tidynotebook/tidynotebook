@@ -28,7 +28,7 @@ import {
   routeErrorScreen,
   type RouteErrorScope,
 } from '../lib/route-error.ts';
-import { AuthFrame } from '../features/accounts/accounts.tsx';
+import { AuthFrame } from '../features/accounts/auth-frame.tsx';
 import { webLogger } from '../logging.ts';
 import { useDocumentTitle } from './document-title.ts';
 

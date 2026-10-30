@@ -353,7 +353,7 @@ try {
       await p
         .getByRole('heading', { name: 'All notes', exact: true })
         .waitFor();
-      await p.getByText(/^[0-9]+ notes?$/).waitFor();
+      await p.locator('.ui-list-row').first().waitFor();
       await shot('all-notes');
       await p
         .getByRole('button', { name: 'Account: UI review', exact: true })

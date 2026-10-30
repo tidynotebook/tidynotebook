@@ -50,7 +50,7 @@ const boundaries = new Map([
     '/features/daily-notes/daily-template-picker.js',
     new Set(['../../shell/files.js', '../templates/templates.js']),
   ],
-  ['/features/folders/folders.js', new Set(['./apply-moves.js'])],
+  ['/features/folders/folder-dialogs.js', new Set(['./apply-moves.js'])],
   [
     '/features/templates/template-settings.js',
     new Set(['../../shell/files.js', './templates.js']),

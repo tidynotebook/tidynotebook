@@ -1,3 +1,4 @@
+import { preloadCalendar } from '../features/daily-notes/calendar-entry.tsx';
 import {
   IconButton,
   Rail,
@@ -88,6 +89,20 @@ export function SidebarViewBar({
               !/\/(trash|published)$/.test(location.pathname)
             }
             ariaPressed={candidate === view}
+            onPointerEnter={
+              candidate === 'calendar'
+                ? () => {
+                    void preloadCalendar().catch(() => {});
+                  }
+                : undefined
+            }
+            onFocus={
+              candidate === 'calendar'
+                ? () => {
+                    void preloadCalendar().catch(() => {});
+                  }
+                : undefined
+            }
             onClick={() => onChoose(candidate)}
             className="ui-sidebar-rail-button"
           />

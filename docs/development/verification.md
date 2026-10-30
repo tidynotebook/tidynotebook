@@ -34,7 +34,11 @@ merge](fast-forward-merge.md).
 
 The service performance budget and coverage report run nightly or on a manual
 main run. They do not block the push aggregate. The bundle budget runs with
-source checks. Browser measurements use a local Playwright install in
+source checks. Its policy is in `tools/performance/bundle-policy.ts`. The
+production-build integration test in `pnpm verify` uses the same limit and
+checks that Settings, calendar and action forms remain deferred. The DS1
+allowance follows the owner-approved remainder after those splits.
+Browser measurements use a local Playwright install in
 `.local-app/` when needed.
 
 On duplicate same-repo pull request events, GitHub leaves the skipped

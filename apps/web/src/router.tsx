@@ -27,7 +27,10 @@ import {
 } from 'react-router';
 import { LoadingState, Page } from '@notesapp/ui';
 import { RouteError } from './shell/route-error.tsx';
-import { LoginPage, RequireSession } from './features/accounts/accounts.tsx';
+import { RequireSession } from './features/accounts/require-session.tsx';
+const LoginPage = lazy(async () => ({
+  default: (await import('./features/accounts/accounts.tsx')).LoginPage,
+}));
 import type { FrameHandle } from './lib/breadcrumb.ts';
 import { createEarlyStart } from './lib/early-start.ts';
 import {
@@ -142,7 +145,7 @@ const routes: RouteObject[] = [
     // The application boundary: it holds every route below it.
     errorElement: <RouteError scope="application" />,
     children: [
-      { path: '/login', element: <LoginPage /> },
+      { path: '/login', element: deferred(<LoginPage />) },
       { path: oauthSignInRoute, element: deferred(<OAuthSignInPage />) },
       { path: oauthConsentRoute, element: deferred(<OAuthConsentPage />) },
       // The page that an invitation link opens. It needs no session, and the

@@ -37,3 +37,5 @@ export function isSettingsRoute(pathname: string): boolean {
 export function lastRouteKey(workspaceId: string): string {
   return `notesapp.last-route.${workspaceId}`;
 }
+
+export const settingsTitle = 'Settings';

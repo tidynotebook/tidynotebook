@@ -1,4 +1,9 @@
 import {
+  MoveItemsDialog,
+  NewFolderDialog,
+} from '../features/folders/folders.tsx';
+import { PublishDialog } from '../features/publishing/publish-dialog-entry.tsx';
+import {
   Stack,
   ListRow,
   IconSlot,
@@ -928,6 +933,13 @@ export function NoteTree({
             id: row.id,
             label: row.label,
             icon: actionIcon(row.icon),
+            onIntent: () => {
+              if (row.id === 'move') void MoveItemsDialog.preload();
+              if (row.id === 'new-folder') void NewFolderDialog.preload();
+              if (row.id === 'publish') void PublishDialog.preload();
+              if (row.id === 'history')
+                void import('../features/history/history.tsx').catch(() => {});
+            },
             onSelect: () => run(row.id, menu.keys),
           }))}
           pinned={openTree.pinned.map((row): MenuItem => ({

@@ -1,6 +1,7 @@
 import {
   DialogInsetContext,
   SectionFormContext,
+  DeferredDialogOpener,
 } from './dialog-layout-context.ts';
 import { Inline, Inset } from './primitives.tsx';
 /**
@@ -149,11 +150,13 @@ export function Dialog({
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [headerTarget, setHeaderTarget] = useState<HTMLDivElement | null>(null);
   // Capture before a child's autoFocus runs during the commit.
+  const deferredOpener = useContext(DeferredDialogOpener);
   const opener = useMemo(() => {
     const active =
-      typeof document === 'undefined' ? null : document.activeElement;
+      deferredOpener ??
+      (typeof document === 'undefined' ? null : document.activeElement);
     return open && active && active instanceof HTMLElement ? active : null;
-  }, [open]);
+  }, [open, deferredOpener]);
   // The latest close handler, which the effect below reads when a key or a
   // pointer asks for it. A screen passes a new function on every render, and
   // the effect must not run again for that: it moves focus when it starts and
@@ -373,11 +376,13 @@ export function Dialog({
           <DialogInsetContext.Provider
             value={!phone && width !== 'settings' && width !== 'screen'}
           >
-            <SectionFormContext.Provider value={false}>
-              <DialogHeaderActionsContext.Provider value={headerTarget}>
-                {children}
-              </DialogHeaderActionsContext.Provider>
-            </SectionFormContext.Provider>
+            <DeferredDialogOpener.Provider value={null}>
+              <SectionFormContext.Provider value={false}>
+                <DialogHeaderActionsContext.Provider value={headerTarget}>
+                  {children}
+                </DialogHeaderActionsContext.Provider>
+              </SectionFormContext.Provider>
+            </DeferredDialogOpener.Provider>
           </DialogInsetContext.Provider>
         </PhoneSheetContext.Provider>
       </div>

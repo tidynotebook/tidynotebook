@@ -1,3 +1,4 @@
+import { DialogLoading } from '@notesapp/ui';
 /**
  * Settings as a modal over the current page (issue 517, item 5).
  *
@@ -32,9 +33,10 @@ export function loadLegacySettings() {
   return import('./legacy-settings.tsx');
 }
 
+export const preloadSettings = () =>
+  import('../features/accounts/account-settings.tsx');
 const SettingsModal = lazy(async () => ({
-  default: (await import('../features/accounts/account-settings.tsx'))
-    .SettingsModal,
+  default: (await preloadSettings()).SettingsModal,
 }));
 
 /** The history state that marks an entry this tab added to open Settings. */
@@ -151,7 +153,15 @@ export function SettingsModalHost({
 
   if (value === null) return null;
   return (
-    <Suspense fallback={null}>
+    <Suspense
+      fallback={
+        <DialogLoading
+          title="Settings"
+          width="settings"
+          onClose={() => show(null)}
+        />
+      }
+    >
       <SettingsModal
         workspaceId={workspaceId}
         initial={initialOf(account?.name ?? account?.email ?? '')}
