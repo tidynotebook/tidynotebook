@@ -1,3 +1,4 @@
+import { DialogInsetContext } from './dialog-layout-context.ts';
 import { Inline, Inset } from './primitives.tsx';
 /**
  * The one modal dialog of the application.
@@ -46,8 +47,6 @@ import {
 } from './dialog-classes.ts';
 import { createPortal } from 'react-dom';
 import { isTouchInput } from './input-focus.ts';
-import { placeOverlay } from './overlay-position.ts';
-import { followVisibleArea, readVisibleArea } from './visible-area.ts';
 import { giveFocusBack } from './dialog-focus.ts';
 import { PhoneSheetHeader } from './phone-sheet.tsx';
 import { followPhoneSheetViewport } from './phone-sheet-viewport.ts';
@@ -102,11 +101,10 @@ export function Dialog({
   titleId,
   hideTitle = false,
   width = 'medium',
-  align = 'top',
+  align = 'center',
   children,
   describedBy,
   returnFocus,
-  anchor,
   actions,
   headerActions = false,
   fillSheet = false,
@@ -200,8 +198,7 @@ export function Dialog({
       if (
         event.target instanceof Element &&
         root !== null &&
-        event.target.closest('[data-notes-dialog-root]') !== root &&
-        root.contains(event.target)
+        event.target.closest('[data-notes-dialog-root]') !== root
       )
         return;
       if (event.key === 'Escape') {
@@ -246,40 +243,6 @@ export function Dialog({
   }, [open, opener]);
 
   useLayoutEffect(() => {
-    if (!open || phone || anchor === undefined || anchor === null) return;
-    /** Place the dialog next to its anchor on wide screens. */
-    const place = (): void => {
-      const panel = panelRef.current;
-      if (panel === null) return;
-      if (!window.matchMedia('(min-width: 1024px)').matches) {
-        panel.style.position = '';
-        panel.style.top = '';
-        panel.style.left = '';
-        panel.style.maxHeight = '';
-        return;
-      }
-      panel.style.position = 'fixed';
-      panel.style.maxHeight = '';
-      const position = placeOverlay({
-        anchor: anchor.getBoundingClientRect(),
-        overlay: panel.getBoundingClientRect(),
-        screen: readVisibleArea(),
-        align: 'end',
-      });
-      panel.style.top = `${String(position.top)}px`;
-      panel.style.left = `${String(position.left)}px`;
-      panel.style.maxHeight = `${String(position.maxHeight)}px`;
-    };
-    place();
-    const stop = followVisibleArea(place);
-    window.addEventListener('scroll', place, true);
-    return () => {
-      stop();
-      window.removeEventListener('scroll', place, true);
-    };
-  }, [open, anchor, phone]);
-
-  useLayoutEffect(() => {
     const root = rootRef.current;
     const panel = panelRef.current;
     if (!open || !phone || width === 'screen' || !root || !panel) return;
@@ -316,10 +279,10 @@ export function Dialog({
   if (!open) return null;
 
   const screen = width === 'screen';
-  const root = `${dialogRootClassName(width, align, phone)} ${anchor == null ? '' : 'lg:bg-transparent'}`;
+  const root = dialogRootClassName(width, align, phone);
   const panel = dialogPanelClassName(width, phone, fillSheet);
 
-  return (
+  const rendered = (
     <div
       ref={rootRef}
       className={`fixed inset-0 z-50 flex justify-center ${root} ${transitionRaise}`}
@@ -341,6 +304,9 @@ export function Dialog({
         id={`${titleId}-panel`}
         className={`${panel} ${transitionRaise}`}
         data-scroll-frame=""
+        data-dialog-inset={
+          !phone && width !== 'settings' && width !== 'screen' ? '' : undefined
+        }
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -401,13 +367,20 @@ export function Dialog({
         <PhoneSheetContext.Provider
           value={phone && width !== 'screen' && width !== 'settings'}
         >
-          <DialogHeaderActionsContext.Provider value={headerTarget}>
-            {children}
-          </DialogHeaderActionsContext.Provider>
+          <DialogInsetContext.Provider
+            value={!phone && width !== 'settings' && width !== 'screen'}
+          >
+            <DialogHeaderActionsContext.Provider value={headerTarget}>
+              {children}
+            </DialogHeaderActionsContext.Provider>
+          </DialogInsetContext.Provider>
         </PhoneSheetContext.Provider>
       </div>
     </div>
   );
+  return width === 'settings' || width === 'screen'
+    ? rendered
+    : createPortal(rendered, document.body);
 }
 
 /** A body control can share its dialog's title row without another header. */
@@ -454,9 +427,10 @@ export function DialogBody({
   const fixed = useContext(FixedDialogContext);
   const phone = useContext(PhoneSheetContext);
   const settings = useSettingsSurface();
+  const ownsInset = useContext(DialogInsetContext);
   return (
     <Region
-      pad={settings ? { fine: 6, coarse: 4 } : phone ? 4 : 0}
+      pad={ownsInset ? 0 : settings ? { fine: 6, coarse: 4 } : phone ? 4 : 0}
       gap={3}
       className={fixed || phone ? 'flex-1' : ''}
     >
@@ -479,6 +453,15 @@ export function DialogFooter({
 }): ReactNode {
   const settings = useSettingsSurface();
   const phone = useContext(PhoneSheetContext);
+  const ownsInset = useContext(DialogInsetContext);
+  const all = Children.toArray(children);
+  const isCancel = (node: ReactNode) =>
+    isValidElement<{ children?: ReactNode }>(node) &&
+    node.props.children === 'Cancel';
+  children = [
+    ...all.filter(isCancel),
+    ...all.filter((node) => !isCancel(node)),
+  ];
   if (phone) {
     const nodes = Children.toArray(children);
     const buttons = nodes.filter(
@@ -527,7 +510,7 @@ export function DialogFooter({
     <Region
       scroll="none"
       edge="top"
-      pad={settings ? 6 : 0}
+      pad={!ownsInset && settings ? 6 : 0}
       className="ui-dialog-footer"
     >
       <Inline gap={2} justify="end" wrap>

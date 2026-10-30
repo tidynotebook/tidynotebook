@@ -342,7 +342,7 @@ try {
           await d.waitFor();
         };
       async function closeSettingsAction() {
-        await d
+        await p
           .getByRole('button', {
             name: phone ? 'Back to section' : 'Cancel',
             exact: true,
@@ -684,17 +684,20 @@ try {
         if (section === 'daily-notes')
           for (const field of ['Folder', 'Name format', 'Template']) {
             await d.getByRole('button', { name: field, exact: true }).click();
-            await d
-              .getByRole('heading', {
-                name:
-                  field === 'Folder'
-                    ? 'Save in'
-                    : field === 'Template'
-                      ? 'Choose template'
-                      : 'Name format',
-                exact: true,
-              })
-              .waitFor();
+            if (field === 'Name format')
+              await d.locator('#daily-format').waitFor();
+            else
+              await d
+                .getByRole('heading', {
+                  name:
+                    field === 'Folder'
+                      ? 'Save in'
+                      : field === 'Template'
+                        ? 'Choose template'
+                        : 'Name format',
+                  exact: true,
+                })
+                .waitFor();
             if (field === 'Folder')
               await d.getByRole('treeitem').first().waitFor();
             if (field === 'Template')
@@ -740,7 +743,11 @@ try {
               );
               await shot('daily-template-preview-scrolled');
             }
-            await closeSettingsAction();
+            if (field === 'Name format')
+              await d
+                .getByRole('button', { name: 'Cancel', exact: true })
+                .click();
+            else await closeSettingsAction();
           }
         if (section === 'templates') {
           await d
@@ -774,7 +781,7 @@ try {
               exact: true,
             })
             .click();
-          await d
+          await p
             .getByRole('heading', { name: 'Delete your account?', exact: true })
             .waitFor();
           await shot('delete-account');
@@ -787,7 +794,7 @@ try {
             ['Revoke Design app', 'revoke-app'],
           ] as const) {
             await d.getByRole('button', { name: trigger, exact: true }).click();
-            await d
+            await p
               .getByRole('heading', {
                 name:
                   name === 'create-key'

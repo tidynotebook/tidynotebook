@@ -274,6 +274,37 @@ try {
           );
         }
       }
+      // A tall viewport removes overflow and must remove Settings hairlines.
+      await p.setViewportSize({ width, height: 2400 });
+      await pause(300);
+      const fitted = await p.evaluate(() => {
+        const root = document.querySelector(
+          '.ui-settings-content > .ui-scroll-region',
+        );
+        const header = document.querySelector(
+          '.ui-settings-column > .ui-settings-heading',
+        );
+        if (!root || !header) throw Error('Settings regions missing');
+        return {
+          fits: root.scrollHeight <= root.clientHeight + 1,
+          opacity: getComputedStyle(header, '::before').opacity,
+          shadow: getComputedStyle(header, '::before').boxShadow,
+        };
+      });
+      assert.equal(fitted.fits, true);
+      assert.equal(
+        fitted.opacity,
+        '0',
+        'A fitted Settings region has no hairline',
+      );
+      assert.equal(fitted.shadow, 'none');
+      results.push({
+        width,
+        scheme,
+        surface: 'settings',
+        position: 'fits',
+        ...fitted,
+      });
       await c.unrouteAll({ behavior: 'ignoreErrors' });
       await c.close();
     }

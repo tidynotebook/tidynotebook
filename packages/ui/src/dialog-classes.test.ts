@@ -33,6 +33,14 @@ await test('the scrim does not scroll, so the title cannot leave the screen', ()
     for (const align of ['top', 'center'] as const) {
       const parts = dialogRootClassName(width, align).split(' ');
       assert.ok(!parts.some((part) => part.startsWith('overflow')), width);
+      assert.ok(
+        parts.includes('items-center'),
+        'Desktop dialogs stay centered',
+      );
+      assert.ok(
+        parts.includes('bg-scrim/40'),
+        'Desktop dialogs keep their scrim',
+      );
       // The space the scrim keeps above and below the panel bounds it.
       assert.ok(
         parts.some((part) => /^(?:pb|py)-/.test(part)),

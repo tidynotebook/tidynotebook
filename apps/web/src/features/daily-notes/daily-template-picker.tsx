@@ -146,6 +146,7 @@ function TemplateSelection({
       onClose={onClose}
       title="Choose template"
       titleId="daily-template-title"
+      level
     >
       <DialogBody>
         <Grid gap={4} as="div" className="min-w-0 grid-cols-1 lg:grid-cols-2">

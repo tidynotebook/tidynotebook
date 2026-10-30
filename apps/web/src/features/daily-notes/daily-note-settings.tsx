@@ -10,7 +10,7 @@ import { SettingsDialog } from '../accounts/settings-dialog.tsx';
  * Template choices and layouts apply with Done. Back cancels a draft.
  * The start choice applies when the person selects it.
  */
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   cleanFolderPath,
   dailyNoteLayoutProblem,
@@ -18,6 +18,7 @@ import {
 } from '@notesapp/core';
 import {
   Switch,
+  SettingEditRow,
   Button,
   DialogBody,
   FolderIcon,
@@ -47,25 +48,33 @@ function LayoutFields({
   readonly onSave: (next: DailyNoteSettings) => void;
 }): ReactNode {
   const [folder, setFolder] = useState(settings.folder);
-  const files = useFiles();
-  const [editing, setEditing] = useState<'folder' | 'format' | null>(null);
   const [format, setFormat] = useState(settings.format);
-  // A stored layout that changes, from this section or from another device,
-  // is what the fields show next.
+  const [editing, setEditing] = useState<'folder' | 'format' | null>(null);
+  const formatButton = useRef<HTMLButtonElement | null>(null);
+  const files = useFiles();
   useEffect(() => {
     setFolder(settings.folder);
     setFormat(settings.format);
   }, [settings.folder, settings.format]);
-
-  const layout = { folder: cleanFolderPath(folder), format };
-  const problem = dailyNoteLayoutProblem(layout);
+  const problem = dailyNoteLayoutProblem({
+    folder: cleanFolderPath(folder),
+    format,
+  });
   const sentence =
     problem === null ? undefined : layoutProblemSentences[problem];
-
   const close = (): void => {
     setFolder(settings.folder);
     setFormat(settings.format);
     setEditing(null);
+    if (editing === 'format')
+      window.requestAnimationFrame(() => formatButton.current?.focus());
+  };
+  const save = (): void => {
+    const next = layoutToStore({ folder, format }, settings);
+    if (next !== null) onSave({ ...settings, ...next });
+    setEditing(null);
+    if (editing === 'format')
+      window.requestAnimationFrame(() => formatButton.current?.focus());
   };
   return (
     <>
@@ -76,70 +85,71 @@ function LayoutFields({
         value={settings.folder === '' ? 'All notes' : settings.folder}
         onClick={() => setEditing('folder')}
       />
-      <SettingChoiceRow
-        label="Name format"
-        help={`Today's note: ${dailyNotePreview(today(), settings)}`}
-        value={settings.format}
-        onClick={() => setEditing('format')}
-      />
+      {editing === 'format' ? (
+        <SettingEditRow
+          label="Edit name format"
+          onCancel={close}
+          disabled={problem !== null || format === settings.format}
+          onSubmit={(event) => {
+            event.preventDefault();
+            save();
+          }}
+        >
+          <TextField
+            id="daily-format"
+            label="Name format"
+            value={format}
+            onChange={setFormat}
+            autoFocus
+            hint={
+              problem === null
+                ? `Use YYYY, MM and DD for the date. Today: ${dailyNotePreview(today(), { folder: '', format })}`
+                : undefined
+            }
+            error={
+              problem !== null && problem !== 'folder' ? sentence : undefined
+            }
+          />
+        </SettingEditRow>
+      ) : (
+        <SettingChoiceRow
+          label="Name format"
+          buttonRef={formatButton}
+          help={`Today's note: ${dailyNotePreview(today(), settings)}`}
+          value={settings.format}
+          onClick={() => setEditing('format')}
+        />
+      )}
       <SettingsDialog
-        open={editing !== null}
+        open={editing === 'folder'}
         onClose={close}
-        title={editing === 'folder' ? 'Save in' : 'Name format'}
+        title="Save in"
         titleId="daily-layout-title"
         headerActions
         width="small"
         align="sheet"
       >
         <DialogBody>
-          {editing === 'folder' ? (
-            <>
-              <FolderTreePicker
-                label="Folders"
-                searchPlacement="header"
-                folders={knownFolderPaths(
-                  files.notes.map((note) => note.path),
-                  files.emptyFolders,
-                )}
-                selected={folder}
-                onSelect={setFolder}
-                autoFocus
-              />
-            </>
-          ) : (
-            <TextField
-              id="daily-format"
-              label="Name format"
-              value={format}
-              onChange={setFormat}
-              hint={
-                problem === null
-                  ? `Use YYYY, MM and DD for the date. Today: ${dailyNotePreview(today(), { folder: '', format })}`
-                  : undefined
-              }
-              error={
-                problem !== null && problem !== 'folder' ? sentence : undefined
-              }
-            />
-          )}
+          <FolderTreePicker
+            label="Folders"
+            searchPlacement="header"
+            folders={knownFolderPaths(
+              files.notes.map((note) => note.path),
+              files.emptyFolders,
+            )}
+            selected={folder}
+            onSelect={setFolder}
+            autoFocus
+          />
         </DialogBody>
-        {editing !== null ? (
-          <DialogFooter>
-            <Button variant="ghost" onClick={close}>
-              Cancel
-            </Button>
-            <Button
-              disabled={problem !== null}
-              onClick={() => {
-                const next = layoutToStore({ folder, format }, settings);
-                if (next !== null) onSave({ ...settings, ...next });
-                setEditing(null);
-              }}
-            >
-              Done
-            </Button>
-          </DialogFooter>
-        ) : null}
+        <DialogFooter>
+          <Button variant="ghost" onClick={close}>
+            Cancel
+          </Button>
+          <Button disabled={problem !== null} onClick={save}>
+            Done
+          </Button>
+        </DialogFooter>
       </SettingsDialog>
     </>
   );

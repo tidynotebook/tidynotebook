@@ -36,18 +36,30 @@ export function observeScrollEdges(
   observer.observe(end);
   return () => observer.disconnect();
 }
-const edgeOwners = new WeakMap<HTMLElement, Map<HTMLElement, boolean>>();
+const edgeOwners = new WeakMap<
+  HTMLElement,
+  Map<HTMLElement, { hidden: boolean; overflow: boolean }>
+>();
 function ownEdge(
   edge: HTMLElement | undefined,
   root: HTMLElement,
   hidden: boolean,
 ): () => void {
   if (!edge) return () => {};
-  const owners = edgeOwners.get(edge) ?? new Map<HTMLElement, boolean>();
+  const owners =
+    edgeOwners.get(edge) ??
+    new Map<HTMLElement, { hidden: boolean; overflow: boolean }>();
   edgeOwners.set(edge, owners);
-  owners.set(root, hidden && root.getBoundingClientRect().height > 0);
+  const overflow =
+    root.getBoundingClientRect().height > 0 &&
+    root.scrollHeight > root.clientHeight + 1;
+  owners.set(root, { hidden: hidden && overflow, overflow });
   const update = () => {
-    const hidden = [...owners.values()].some(Boolean);
+    const hidden = [...owners.values()].some((owner) => owner.hidden);
+    edge.toggleAttribute(
+      'data-scroll-overflow',
+      [...owners.values()].some((owner) => owner.overflow),
+    );
     edge.setAttribute('data-scroll-hidden', String(hidden));
     edge.toggleAttribute(
       edge.dataset.scrollEdge === 'above'
@@ -101,6 +113,17 @@ export function Region({
       end.current,
       setEdges,
     );
+  }, [scroll]);
+  useEffect(() => {
+    const held = root.current;
+    if (!held || scroll !== 'y' || typeof ResizeObserver === 'undefined')
+      return;
+    const observer = new ResizeObserver(() =>
+      setEdges((edges) => ({ ...edges })),
+    );
+    observer.observe(held);
+    if (held.firstElementChild) observer.observe(held.firstElementChild);
+    return () => observer.disconnect();
   }, [scroll]);
   useEffect(() => {
     const held = root.current;

@@ -24,8 +24,8 @@ edge in each container. Nesting adds the shared indent step. A leaf keeps an
 empty disclosure slot. Calendar cells keep control height in equal columns.
 
 Keep items closer than groups. The group gap equals the container padding.
-A fixed region next to scrolling content always shows a hairline, including
-at rest. Its soft shadow shows only while it covers hidden scroll content.
+The sidebar keeps its hairlines at rest. Other fixed regions show a hairline
+only if adjacent content overflows. Shadows show only under hidden content.
 
 ## Tokens and CSS
 
@@ -57,8 +57,8 @@ coordinates and virtual list offsets are browser geometry, not spacing choices.
 - `Inset` owns symmetric padding.
 - `Region` separates fixed and scrolling areas. Scroll sentinels set
   `data-edge-top` and `data-edge-bottom` on adjacent fixed regions. Hairlines
-  use `border-edge-subtle` in every scroll state. Only the scroll cue shadows,
-  `shadow-edge-top` and `shadow-edge-bottom`, follow the sentinels. Shadows
+  use `border-edge-subtle` when content overflows, or `data-edge-always` marks
+  a sidebar edge. `shadow-edge-top` and `shadow-edge-bottom` follow sentinels and
   change with `duration-120`. Reduced motion removes the transition.
 - `Divider` has no margin. Its parent owns the space.
 - `ListRow` owns leading and trailing slots, label, help and value. It centers
@@ -126,8 +126,8 @@ The title block has one group gap after it. Descriptions add no outer space.
 Rows center content vertically and align label and help text left. Phone
 action rows have no second filled or outlined button.
 
-Keep a short form on its section page. Add a sub-level only when a picker
-needs a long list, an editor needs the full height, or a separate step needs
+Keep short value edits in place, and short forms on their section page.
+Use a sub-level for a long picker or a full-height editor; an action needs
 its own confirmation. Mail is a section form, with a saved draft and a footer.
 
 All levels use the container header and footer roles. Forms use a stack of

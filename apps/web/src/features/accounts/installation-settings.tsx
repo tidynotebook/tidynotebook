@@ -474,6 +474,7 @@ export function LegalDocumentsBody({
             'Document'
           }
           titleId="legal-document-title"
+          level
           hideScope
           onClose={() => setEditing(null)}
         >

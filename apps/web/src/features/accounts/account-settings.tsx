@@ -1,5 +1,6 @@
 import {
   Form,
+  SettingEditRow,
   NavigationHeading,
   SectionHeading,
   IconButton,
@@ -362,17 +363,7 @@ function SessionsSettings(): ReactNode {
                       className="max-lg:w-full"
                       icon={<SignOutIcon />}
                       disabled={busy}
-                      onClick={() => {
-                        change(async () => {
-                          const ended = await revokeOtherSessions();
-                          return {
-                            error: ended.error,
-                            done: otherSessionsEndedText(
-                              ended.data?.revoked ?? 0,
-                            ),
-                          };
-                        });
-                      }}
+                      onClick={() => setEndingOthers(true)}
                     >
                       Sign out every other device
                     </Button>
@@ -443,7 +434,7 @@ function SessionsSettings(): ReactNode {
               ) : null}
             </Card>
           </Stack>
-          <SettingsDialog
+          <Dialog
             open={endingOthers}
             title="Sign out every other device?"
             titleId="end-devices-title"
@@ -451,7 +442,7 @@ function SessionsSettings(): ReactNode {
           >
             <DialogBody>
               <p className="m-0 text-body text-strong">
-                You can sign in again on those devices.
+                Every other device must sign in again.
               </p>
             </DialogBody>
             <DialogFooter>
@@ -459,7 +450,7 @@ function SessionsSettings(): ReactNode {
                 Cancel
               </Button>
               <Button
-                tone="danger"
+                variant="danger"
                 onClick={() => {
                   setEndingOthers(false);
                   change(async () => {
@@ -474,7 +465,7 @@ function SessionsSettings(): ReactNode {
                 Sign out
               </Button>
             </DialogFooter>
-          </SettingsDialog>
+          </Dialog>
         </Stack>
       )}
     </SettingsSection>
@@ -528,8 +519,16 @@ function ProfileSettings({
     session.adoptProfileName(nextName);
     setSaved(true);
     setEditing(false);
+    window.requestAnimationFrame(() => nameButton.current?.focus());
   }
 
+  const cancelName = (): void => {
+    setEditing(false);
+    setAttempted(false);
+    setProblem('');
+    setDraft(name ?? '');
+    window.requestAnimationFrame(() => nameButton.current?.focus());
+  };
   const profileForm = (
     <Form
       regions
@@ -608,7 +607,37 @@ function ProfileSettings({
             {profileForm}
           </SettingsDialog>
         ) : (
-          profileForm
+          <SettingEditRow
+            label="Edit name"
+            onCancel={cancelName}
+            busy={busy}
+            disabled={
+              profileNameProblem(draft) !== null ||
+              draft.trim() === (name ?? '').trim()
+            }
+            onSubmit={(event) => {
+              event.preventDefault();
+              void save();
+            }}
+          >
+            <TextField
+              id="profile-name"
+              label="Name"
+              value={draft}
+              autoComplete="name"
+              autoFocus
+              hint="Use no more than 256 characters."
+              error={attempted ? (profileNameProblem(draft) ?? '') : ''}
+              onChange={(value) => {
+                setDraft(value);
+                setSaved(false);
+                setProblem('');
+              }}
+            />
+            {problem === '' ? null : (
+              <Notice tone="problem" message={problem} />
+            )}
+          </SettingEditRow>
         )
       ) : phone ? (
         <SettingChoiceRow
@@ -630,6 +659,7 @@ function ProfileSettings({
             variant="secondary"
             size="sm"
             label="Edit name"
+            buttonRef={nameButton}
             onClick={() => {
               setEditing(true);
               setSaved(false);

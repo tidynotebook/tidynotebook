@@ -500,6 +500,7 @@ function Sidebar({
     <Panel regions pad={0} className="ui-sidebar-panel">
       <Region
         scroll="none"
+        data-edge-always=""
         edge="bottom"
         pad={{ fine: 2, coarse: 3 }}
         gap={{ fine: 2, coarse: 3 }}
@@ -825,6 +826,7 @@ function Sidebar({
       </Region>
       <Region
         scroll="none"
+        data-edge-always=""
         edge="top"
         safeArea
         elementRef={fixedBottom}

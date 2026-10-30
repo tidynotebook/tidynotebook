@@ -240,10 +240,15 @@ async function settle(): Promise<void> {
 }
 
 function dialog(): HTMLElement | null {
-  return container.querySelector<HTMLElement>('[role="dialog"]');
+  return document.querySelector<HTMLElement>('[role="dialog"]');
 }
 
-function button(label: string, scope: ParentNode = container): HTMLElement {
+function button(
+  label: string,
+  scope: ParentNode = [...document.querySelectorAll('[role="dialog"]')].at(
+    -1,
+  ) ?? container,
+): HTMLElement {
   const found = [...scope.querySelectorAll<HTMLElement>('button')].find(
     (candidate) =>
       candidate.getAttribute('aria-label') === label ||
@@ -380,11 +385,11 @@ await test('Delete account stays in Settings and Escape returns to Account', asy
     ?.closest('section');
   assert.ok(danger);
   await click(button('Delete account', danger));
-  assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
-  assert.ok(container.querySelector('#remove-own-password'));
+  assert.equal(document.querySelectorAll('[role="dialog"]').length, 2);
+  assert.ok(document.querySelector('#remove-own-password'));
   await escape();
-  assert.equal(container.querySelector('#remove-own-password'), null);
-  assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
+  assert.equal(document.querySelector('#remove-own-password'), null);
+  assert.equal(document.querySelectorAll('[role="dialog"]').length, 1);
   assert.equal(address, '/w/one/notes/n1?settings=account');
 });
 
@@ -616,6 +621,19 @@ await test('Devices puts the current session first and the group action before a
       0,
   );
   await click(bulk);
+  assert.deepEqual(sessionWrites, []);
+  let confirmation = document.getElementById('end-devices-title-panel');
+  assert.ok(confirmation);
+  assert.match(
+    confirmation.textContent ?? '',
+    /Every other device must sign in again\./,
+  );
+  await click(button('Cancel', confirmation));
+  assert.deepEqual(sessionWrites, []);
+  await click(bulk);
+  confirmation = document.getElementById('end-devices-title-panel');
+  assert.ok(confirmation);
+  await click(button('Sign out', confirmation));
   assert.deepEqual(sessionWrites, ['others']);
   assert.match(modal.textContent ?? '', /No other devices./);
   assert.ok(modal.querySelector('[aria-label="This device"]'));
@@ -630,9 +648,9 @@ await test('API key create, validation, secret and revoke use one Settings frame
   const create = button('Create API key');
   await click(create);
   assert.equal(dialog(), modal);
-  assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
-  assert.equal(create.closest('[hidden]') !== null, true);
-  const name = container.querySelector<HTMLInputElement>('#api-key-name');
+  assert.equal(document.querySelectorAll('[role="dialog"]').length, 2);
+  assert.equal(document.querySelectorAll('[role="dialog"]').length, 2);
+  const name = document.querySelector<HTMLInputElement>('#api-key-name');
   assert.ok(name);
   assert.equal(document.activeElement, name);
   await act(async () => {
@@ -646,10 +664,10 @@ await test('API key create, validation, secret and revoke use one Settings frame
   await click(button('Create key'));
   assert.equal(name.value, 'Review client');
   assert.equal(dialog(), modal);
-  assert.ok(container.querySelector('#api-key-name[aria-invalid="true"]'));
+  assert.ok(document.querySelector('#api-key-name[aria-invalid="true"]'));
   refuseApiKeyCreation(false);
   await click(button('Create key'));
-  const secret = container.querySelector<HTMLInputElement>('#api-key-secret');
+  const secret = document.querySelector<HTMLInputElement>('#api-key-secret');
   assert.ok(secret);
   assert.equal(
     modal.querySelector('h2[tabindex="-1"]')?.textContent,
@@ -673,20 +691,46 @@ await test('API key create, validation, secret and revoke use one Settings frame
     if (clipboard === undefined) Reflect.deleteProperty(navigator, 'clipboard');
     else Object.defineProperty(navigator, 'clipboard', clipboard);
   }
-  assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
+  assert.equal(
+    document.querySelectorAll('[role="dialog"]').length,
+    1,
+    [...document.querySelectorAll('[role="dialog"]')]
+      .map((item) => item.getAttribute('aria-labelledby'))
+      .join(','),
+  );
   await click(button('Done'));
-  assert.equal(container.querySelector('#api-key-secret'), null);
+  assert.equal(document.querySelector('#api-key-secret'), null);
   assert.equal(document.activeElement, create);
   await click(button('Revoke Review client'));
-  assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
+  assert.equal(document.querySelectorAll('[role="dialog"]').length, 2);
   await click(button('Revoke key'));
-  assert.equal(container.querySelector('#api-key-secret'), null);
+  assert.equal(document.querySelector('#api-key-secret'), null);
   assert.equal(
-    container.querySelector('[aria-label="Revoke Review client"]'),
+    document.querySelector('[aria-label="Revoke Review client"]'),
     null,
   );
   assert.equal(dialog(), modal);
   assert.equal(document.activeElement, create);
+});
+
+await test('desktop Name edits keep their field and actions inside the existing row', async () => {
+  await show('/w/one?settings=account');
+  const edit = button('Edit name');
+  await click(edit);
+  const form = container.querySelector('form[aria-label="Edit name"]');
+  assert.ok(form);
+  assert.ok(form.querySelector('#profile-name'));
+  assert.equal(form.querySelector('.ui-scroll-region,.ui-dialog-footer'), null);
+  assert.deepEqual(
+    [...form.querySelectorAll('button')].map((item) =>
+      item.textContent?.trim(),
+    ),
+    ['Cancel', 'Save'],
+  );
+  assert.equal(document.querySelectorAll('[role="dialog"]').length, 1);
+  await click(button('Cancel', form));
+  assert.equal(container.querySelector('#profile-name'), null);
+  assert.equal(document.activeElement, button('Edit name'));
 });
 
 await test('Settings folder choices and name format do not open another modal', async () => {

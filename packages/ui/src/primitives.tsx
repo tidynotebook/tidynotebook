@@ -1,5 +1,7 @@
 /** Typed composition. Spacing belongs to a parent, not to a feature class. */
+import { DialogInsetContext } from './dialog-layout-context.ts';
 import {
+  useContext,
   createElement,
   type ComponentPropsWithRef,
   type ReactNode,
@@ -433,8 +435,14 @@ export function Form({
   readonly regions?: boolean;
   readonly gap?: SpaceValue;
 }): ReactNode {
+  const dialogInset = useContext(DialogInsetContext);
   return (
-    <Stack {...props} as="form" gap={gap} fill={regions}>
+    <Stack
+      {...props}
+      as="form"
+      gap={regions && dialogInset ? 6 : gap}
+      fill={regions}
+    >
       {children}
     </Stack>
   );

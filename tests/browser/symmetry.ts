@@ -288,6 +288,48 @@ export async function auditComposition(page: Page) {
             parseFloat(getComputedStyle(header).paddingRight),
         );
     }
+    for (const dialog of [
+      ...document.querySelectorAll('[data-dialog-inset]'),
+    ].filter(visible)) {
+      const box = dialog.getBoundingClientRect(),
+        style = getComputedStyle(dialog);
+      for (const padding of [
+        style.paddingTop,
+        style.paddingBottom,
+        style.paddingLeft,
+        style.paddingRight,
+      ])
+        check(dialog, 'dialog inset', parseFloat(padding), 24);
+      check(
+        dialog,
+        'dialog viewport center',
+        box.top + box.height / 2,
+        innerHeight / 2,
+      );
+      const scrim = dialog.closest('[data-notes-dialog-root]');
+      if (scrim)
+        check(
+          dialog,
+          'dialog scrim semantics',
+          ['transparent', 'rgba(0, 0, 0, 0)'].includes(
+            getComputedStyle(scrim).backgroundColor,
+          )
+            ? 0
+            : 1,
+          1,
+          0,
+        );
+      const body = dialog.querySelector('.ui-scroll-region'),
+        footer = dialog.querySelector('.ui-dialog-footer');
+      for (const region of [body, footer])
+        if (region && visible(region))
+          check(
+            region,
+            'dialog nested inset',
+            parseFloat(getComputedStyle(region).paddingLeft),
+            0,
+          );
+    }
     const rows = [...document.querySelectorAll('[data-ui-row]')].filter(
         visible,
       ),

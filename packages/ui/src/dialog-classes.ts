@@ -39,17 +39,14 @@ export type DialogAlign = 'top' | 'center' | 'sheet';
 /** The scrim that holds the panel, as classes. */
 export function dialogRootClassName(
   width: DialogWidth,
-  align: DialogAlign,
+  _align: DialogAlign,
   phone = false,
 ): string {
   if (phone && width !== 'screen') return 'h-viewport items-end';
   if (width === 'screen') return 'bg-scrim/80';
   if (width === 'settings')
     return 'bg-scrim/40 items-stretch lg:items-center lg:p-6';
-  if (align === 'sheet') return 'bg-scrim/40 items-end lg:items-center lg:p-6';
-  const position =
-    align === 'center' ? 'items-center py-6' : 'items-start pb-6 pt-12';
-  return `bg-scrim/40 px-4 ${position}`;
+  return 'bg-scrim/40 px-6 py-6 items-center';
 }
 
 /** The panel of a dialog, as classes. */

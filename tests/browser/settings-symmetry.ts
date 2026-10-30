@@ -477,7 +477,9 @@ try {
           const button = p.getByRole('button', { name: label, exact: true });
           await button.click();
           await p
-            .locator('.ui-settings-action, #mail-host, #invite-email')
+            .locator(
+              '.ui-settings-action, #daily-format, #profile-name, #api-key-name, #mail-host, #invite-email',
+            )
             .first()
             .waitFor();
           await check(
