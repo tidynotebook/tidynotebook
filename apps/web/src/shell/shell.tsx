@@ -675,7 +675,7 @@ function Sidebar({
                 className={treeRowClassName({
                   wrapOnPhone: true,
                   open: location.pathname === notesPath,
-                  selected: selectedFolder === '',
+                  selected: location.pathname === notesPath,
                   dropTarget: drag.over === '',
                 })}
                 onDragOver={(event) => {

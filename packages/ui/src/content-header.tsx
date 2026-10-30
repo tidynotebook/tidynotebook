@@ -23,7 +23,8 @@ export function ContentHeader({
       padX={padX}
       padY={padY}
       gap={2}
-      className={`ui-settings-heading relative shrink-0 coarse:h-11 ${fixedRegionClasses('bottom')} ${className}`}
+      justify="between"
+      className={`ui-settings-heading relative shrink-0 ${pad === undefined && padY === undefined ? 'coarse:h-11' : ''} ${fixedRegionClasses('bottom')} ${className}`}
     >
       {children}
     </Inline>
@@ -47,11 +48,15 @@ export function HeaderTitle({
 export function HeaderSlot({
   children,
   className = '',
+  side,
   ...props
-}: ComponentPropsWithRef<'span'>): ReactNode {
+}: ComponentPropsWithRef<'span'> & {
+  readonly side?: 'leading' | 'trailing';
+}): ReactNode {
   return (
     <span
       {...props}
+      data-header-slot={side}
       className={`relative inline-flex h-6 w-4 shrink-0 items-center justify-center ${className}`}
     >
       {children}

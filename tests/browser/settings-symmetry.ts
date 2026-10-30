@@ -23,6 +23,38 @@ export async function auditSettings(page: Page) {
       if (Math.abs(a - b) > 1) errors.push(`${name}: ${a} != ${b}`);
     };
     const box = (e: Element) => e.getBoundingClientRect();
+    for (const header of [
+      ...document.querySelectorAll('.ui-settings-heading'),
+    ].filter(visible)) {
+      const style = getComputedStyle(header);
+      if (
+        header.closest('.ui-settings-column') ||
+        header.classList.contains('ui-settings-root-heading')
+      ) {
+        eq('header top padding', parseFloat(style.paddingTop), phone ? 16 : 24);
+        eq(
+          'header bottom padding',
+          parseFloat(style.paddingBottom),
+          phone ? 16 : 24,
+        );
+        const close = header.querySelector('[aria-label="Close Settings"]');
+        if (close && visible(close)) {
+          if (
+            close
+              .closest('[data-header-slot]')
+              ?.getAttribute('data-header-slot') !== 'trailing'
+          )
+            errors.push('Close must be in the right header slot');
+          const glyph = close.querySelector('svg');
+          if (glyph)
+            eq(
+              'close glyph on right content edge',
+              box(glyph).right,
+              box(header).right - parseFloat(style.paddingRight),
+            );
+        }
+      }
+    }
     for (const el of document.querySelectorAll(
       '.ui-settings-row,.ui-settings-nav-row,.ui-account-card,.ui-settings-form-body,.ui-settings-footer',
     )) {
@@ -176,7 +208,16 @@ export async function auditSettings(page: Page) {
     if (phone) {
       for (const h of document.querySelectorAll('.ui-settings-heading')) {
         if (!visible(h)) continue;
-        eq('header height', box(h).height, 44);
+        const parts = [...h.children].filter(
+          (item) =>
+            visible(item) && getComputedStyle(item).position !== 'absolute',
+        );
+        if (parts.length) {
+          const first = Math.min(...parts.map((item) => box(item).top));
+          const last = Math.max(...parts.map((item) => box(item).bottom));
+          eq('header content top inset', first - box(h).top, 16);
+          eq('header content bottom inset', box(h).bottom - last, 16);
+        }
         const title = h.querySelector('h2,p');
         if (title) {
           eq(
@@ -184,10 +225,12 @@ export async function auditSettings(page: Page) {
             box(title).left + box(title).width / 2,
             box(h).left + box(h).width / 2,
           );
+          const line =
+            title.parentElement?.closest('[data-ui-layout="inline"]') ?? h;
           eq(
-            'header title centered',
-            box(title).top - box(h).top,
-            box(h).bottom - box(title).bottom,
+            'header title line center',
+            box(title).top + box(title).height / 2,
+            box(line).top + box(line).height / 2,
           );
         }
       }

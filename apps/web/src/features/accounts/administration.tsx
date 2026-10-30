@@ -465,10 +465,7 @@ function AccountsPage({
                   ) : null}
                 </Stack>
               </AdminGroup>
-              <AdminGroup
-                title="Accounts"
-                count={String(state.accounts.length)}
-              >
+              <AdminGroup title="Users" count={String(state.accounts.length)}>
                 <Stack gap={0} pad={0} as="ul">
                   {state.accounts.map((account) => {
                     const name = accountName(account),

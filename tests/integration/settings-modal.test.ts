@@ -812,12 +812,66 @@ await test('Mail is a section form whose Save stays disabled until a value chang
     await act(async () => {
       const field = container.querySelector<HTMLInputElement>('#mail-host');
       assert.ok(field);
-      field.value = 'smtp.changed.example';
+      Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value',
+      )?.set?.call(field, 'smtp.changed.example');
       field.dispatchEvent(new window.Event('input', { bubbles: true }));
     });
+    assert.equal(button('Save').hasAttribute('disabled'), false);
+    await click(button('Save'));
+    const sender = container.querySelector<HTMLInputElement>('#mail-sender');
+    assert.ok(sender?.required);
+    assert.equal(sender.getAttribute('aria-invalid'), 'true');
+    assert.match(container.textContent ?? '', /Enter the sender address\./);
     await click(button('Cancel'));
     assert.equal(button('Save').hasAttribute('disabled'), true);
   } finally {
+    setAdministrator(false);
+  }
+});
+
+await test('phone Mail has one pinned Save and the Close control is in its trailing header slot', async () => {
+  const original = window.matchMedia.bind(window);
+  window.matchMedia = (query) => {
+    const result = original(query);
+    Object.defineProperty(result, 'matches', {
+      value:
+        query.includes('pointer: coarse') ||
+        query.includes('max-width: 1023px'),
+    });
+    return result;
+  };
+  setAdministrator(true);
+  try {
+    for (const page of ['mail', 'offline', 'daily-notes', 'account']) {
+      await show(`/w/one?settings=${page}`);
+      const column = container.querySelector('.ui-settings-column');
+      assert.ok(column);
+      const close = button('Close Settings', column);
+      assert.equal(
+        close.closest('[data-header-slot]')?.getAttribute('data-header-slot'),
+        'trailing',
+      );
+      const back = button('Back to Settings', column);
+      assert.equal(
+        back.closest('[data-header-slot]')?.getAttribute('data-header-slot'),
+        'leading',
+      );
+      if (page === 'mail') {
+        const footer = column.querySelector('.ui-dialog-footer');
+        assert.ok(footer);
+        assert.deepEqual(
+          [...footer.querySelectorAll('button')].map((item) =>
+            item.textContent?.trim(),
+          ),
+          ['Save'],
+        );
+        assert.equal(footer.querySelector('button')?.type, 'submit');
+      }
+    }
+  } finally {
+    window.matchMedia = original;
     setAdministrator(false);
   }
 });
@@ -856,6 +910,11 @@ await test('phone admin draft forms keep one frame and return focus without a sa
       );
     }
     await show('/w/one?settings=accounts');
+    assert.ok(
+      [...container.querySelectorAll('h3')].some(
+        (heading) => heading.textContent?.trim() === 'Users',
+      ),
+    );
     const row = button('Account: Sam Lee');
     row.focus();
     await click(row);

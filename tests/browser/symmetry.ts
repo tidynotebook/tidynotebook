@@ -261,6 +261,33 @@ export async function auditComposition(page: Page) {
         0,
       );
     }
+    for (const close of [
+      ...document.querySelectorAll(
+        '.ui-settings-heading [aria-label="Close Settings"]',
+      ),
+    ].filter(visible)) {
+      check(
+        close,
+        'right Close slot',
+        close
+          .closest('[data-header-slot]')
+          ?.getAttribute('data-header-slot') === 'trailing'
+          ? 1
+          : 0,
+        1,
+        0,
+      );
+      const glyph = close.querySelector('svg'),
+        header = close.closest('header');
+      if (glyph && header)
+        check(
+          close,
+          'right Close glyph edge',
+          glyph.getBoundingClientRect().right,
+          header.getBoundingClientRect().right -
+            parseFloat(getComputedStyle(header).paddingRight),
+        );
+    }
     const rows = [...document.querySelectorAll('[data-ui-row]')].filter(
         visible,
       ),
@@ -582,6 +609,19 @@ export async function auditContentParity(page: Page) {
     document.body.append(probe);
     const active = getComputedStyle(probe).backgroundColor;
     probe.remove();
+    const allNotes = [
+      ...document.querySelectorAll('#notes-sidebar .ui-sidebar-tree-items a'),
+    ].find((item) => item.textContent?.trim() === 'All notes');
+    if (allNotes && visible(allNotes)) {
+      const row = allNotes.closest('.ui-sidebar-row');
+      if (row)
+        check(
+          row,
+          'All notes current surface semantics',
+          getComputedStyle(row).backgroundColor === active ? 1 : 0,
+          allNotes.getAttribute('aria-current') === 'page' ? 1 : 0,
+        );
+    }
     const selected = [
       ...document.querySelectorAll(
         '[aria-label="Sidebar views"] [aria-current],[aria-label="Sidebar views"] [aria-pressed="true"],nav [aria-current],.ui-settings-nav-row[aria-current],.ui-account-card[aria-current]',

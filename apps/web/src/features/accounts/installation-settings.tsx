@@ -151,7 +151,12 @@ function MailSettingsForm({
   const saved = formOf(mail);
   const [form, setForm] = useState<MailForm>(saved);
   const [fieldErrors, setFieldErrors] = useState<
-    Readonly<{ port?: string; password?: string }>
+    Readonly<{
+      host?: string;
+      sender?: string;
+      port?: string;
+      password?: string;
+    }>
   >({});
   const [outcome, setOutcome] = useState<Outcome>(noOutcome);
   const [working, setWorking] = useState<'save' | 'test' | 'remove' | null>(
@@ -198,13 +203,17 @@ function MailSettingsForm({
     // A new user name needs its password. A saved one is kept when the field
     // stays empty.
     const needsPassword = name !== '' && form.password === '' && !keepsPassword;
+    const hostMissing = form.host.trim() === '';
+    const senderMissing = form.sender.trim() === '';
     setFieldErrors({
+      ...(hostMissing ? { host: 'Enter the mail server name.' } : {}),
+      ...(senderMissing ? { sender: 'Enter the sender address.' } : {}),
       ...(port === null ? { port: 'Enter a port from 1 to 65535.' } : {}),
       ...(needsPassword
         ? { password: 'Enter the password of the user name.' }
         : {}),
     });
-    if (port === null || needsPassword) return;
+    if (port === null || needsPassword || hostMissing || senderMissing) return;
     run('save', async () => {
       const result = await updateMailSettings({
         body: {
@@ -246,6 +255,7 @@ function MailSettingsForm({
   return (
     <Form
       regions
+      noValidate
       className="ui-dialog-form"
       onSubmit={(event): void => {
         event.preventDefault();
@@ -264,6 +274,7 @@ function MailSettingsForm({
             <TextField
               id="mail-host"
               label="Server"
+              error={fieldErrors.host}
               value={form.host}
               placeholder="smtp.example.com"
               hint="Without a mail server, an invitation shows its link once and nobody can reset a password."
@@ -337,6 +348,7 @@ function MailSettingsForm({
         <TextField
           id="mail-sender"
           label="Sender"
+          error={fieldErrors.sender}
           value={form.sender}
           placeholder={`${productName} <no-reply@notes.example.com>`}
           autoComplete="off"
@@ -376,15 +388,7 @@ function MailSettingsForm({
         >
           Cancel
         </Button>
-        <Button
-          type="submit"
-          disabled={
-            busy ||
-            !changed ||
-            form.host.trim() === '' ||
-            form.sender.trim() === ''
-          }
-        >
+        <Button type="submit" disabled={busy || !changed}>
           {working === 'save' ? 'Saving' : 'Save'}
         </Button>
       </DialogFooter>

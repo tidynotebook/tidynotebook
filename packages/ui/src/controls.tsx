@@ -339,6 +339,12 @@ export function TextField({
         htmlFor={id}
       >
         {label}
+        {required ? (
+          <span aria-hidden="true" className="text-danger">
+            {' '}
+            *
+          </span>
+        ) : null}
       </label>
       <div className="flex flex-col gap-1">
         <input

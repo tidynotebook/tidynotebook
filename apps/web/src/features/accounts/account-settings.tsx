@@ -9,6 +9,7 @@ import {
   Divider,
   RowCopy,
   ContentHeader,
+  FixedDialogLayout,
   HeaderSlot,
   HeaderTitle,
   Inline,
@@ -982,17 +983,10 @@ export function SettingsModal({
               <ContentHeader
                 data-sheet-drag=""
                 data-scroll-edge="above"
-                padX={{ fine: 0, coarse: 4 }}
+                pad={{ fine: 0, coarse: 4 }}
                 className="ui-settings-root-heading touch-pan-x touch-pinch-zoom lg:hidden"
               >
-                <HeaderSlot>
-                  <IconButton
-                    size="header"
-                    glyph={<CloseIcon />}
-                    label="Close Settings"
-                    onClick={onClose}
-                  />
-                </HeaderSlot>
+                <HeaderSlot side="leading" aria-hidden="true" />
                 <HeaderTitle
                   ref={listTitle}
                   tabIndex={-1}
@@ -1000,7 +994,14 @@ export function SettingsModal({
                 >
                   {settingsTitle}
                 </HeaderTitle>
-                <HeaderSlot aria-hidden="true" />
+                <HeaderSlot side="trailing">
+                  <IconButton
+                    size="header"
+                    glyph={<CloseIcon />}
+                    label="Close Settings"
+                    onClick={onClose}
+                  />
+                </HeaderSlot>
               </ContentHeader>
               <Region
                 pad={{ fine: 2, coarse: 4 }}
@@ -1123,14 +1124,8 @@ export function SettingsModal({
             </div>
             <Stack
               as="section"
-              pad={{
-                fine: activeAction === null && !sectionForm ? 6 : 0,
-                coarse: 0,
-              }}
-              gap={{
-                fine: activeAction === null && !sectionForm ? 6 : 0,
-                coarse: 0,
-              }}
+              pad={0}
+              gap={0}
               data-scroll-frame=""
               aria-labelledby={pageTitleId}
               data-dialog-escape={activeAction === null ? undefined : 'local'}
@@ -1146,19 +1141,13 @@ export function SettingsModal({
               <ContentHeader
                 data-sheet-drag=""
                 data-scroll-edge="above"
-                pad={{
-                  fine: activeAction === null && !sectionForm ? 0 : 6,
-                  coarse: 0,
-                }}
-                padX={{
-                  fine: activeAction === null && !sectionForm ? 0 : 6,
-                  coarse: 4,
-                }}
+                pad={{ fine: 6, coarse: 4 }}
                 className="touch-pan-x touch-pinch-zoom"
               >
                 <Stack gap={0.5} className="min-w-0 flex-1">
-                  <Inline gap={2} className="min-w-0">
+                  <Inline gap={2} justify="between" className="min-w-0 w-full">
                     <HeaderSlot
+                      side="leading"
                       className={activeAction === null ? 'lg:hidden' : ''}
                     >
                       <IconButton
@@ -1195,7 +1184,7 @@ export function SettingsModal({
                         ref={setActionHeaderTarget}
                         className="flex shrink-0 items-center empty:hidden"
                       />
-                      <HeaderSlot>
+                      <HeaderSlot side="trailing">
                         <IconButton
                           size="header"
                           glyph={<CloseIcon />}
@@ -1207,7 +1196,7 @@ export function SettingsModal({
                   </Inline>
                   {scope === undefined ||
                   activeAction?.hideScope === true ? null : (
-                    <p className="text-secondary text-muted max-lg:hidden">
+                    <p className="text-secondary text-muted">
                       {activeAction === null ? scope : activePage?.title}
                     </p>
                   )}
@@ -1225,32 +1214,29 @@ export function SettingsModal({
                     }
                   />
                   {sectionForm ? (
-                    <Stack
-                      fill
-                      className={
-                        activeAction === null ? 'overflow-hidden' : 'hidden'
-                      }
-                      hidden={activeAction !== null}
-                      inert={activeAction !== null}
-                    >
-                      {sectionBodies['admin-mail']}
-                    </Stack>
+                    <FixedDialogLayout phone={phoneLayout}>
+                      <Stack
+                        fill
+                        className={
+                          activeAction === null ? 'overflow-hidden' : 'hidden'
+                        }
+                        hidden={activeAction !== null}
+                        inert={activeAction !== null}
+                      >
+                        {sectionBodies['admin-mail']}
+                      </Stack>
+                    </FixedDialogLayout>
                   ) : (
                     <Region
                       className={`overflow-hidden flex-1 ${activeAction !== null ? 'hidden' : ''}`}
                     >
                       <Stack
                         gap={{ fine: 6, coarse: 4 }}
-                        pad={{ fine: 0, coarse: 4 }}
+                        pad={{ fine: 6, coarse: 4 }}
                         className="ui-settings-sections"
                         hidden={activeAction !== null}
                         inert={activeAction !== null}
                       >
-                        {scope === undefined ? null : (
-                          <p className="text-secondary text-muted lg:hidden">
-                            {scope}
-                          </p>
-                        )}
                         <SettingsTopicContext.Provider
                           value={{ hiddenTitles, helpSection: null }}
                         >
