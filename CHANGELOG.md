@@ -7,25 +7,38 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## Unreleased
 
+## 0.23.0 - 2026-10-30
+
+### Added
+
+- Administrators can use Users, Mail, Legal documents and Reports inside Settings. Other accounts do not see these sections.
+
 ### Changed
 
-- The sidebar has one row of icons: New note, New folder, New note from template, Sort and Collapse. The Use template button and the Today's note row are removed from the sidebar. The calendar view and Search still open today's note.
-- Storage use shows binary units, so the default limit of 5 GiB reads as 5 GB and not 5.4 GB.
-- New note from template is one dialog. The list shows template names only, with Manage templates in the title row. You set the name of the note (the template name and today's date by default) and the folder in the same dialog. The preview shows the note as it will read, with the date, the time and the name filled in. A name that is empty, has a character that cannot be stored, or is already in the folder shows an error before the note is made.
-- Every folder choice is a tree like the sidebar: the template destination, the parent of New folder, Move to folder, and the Templates and Daily notes folder settings. The tree opens at the current folder, has Filter folders for more than 8 folders, supports the arrow keys, and has New folder here. Move to folder shows the moved folder and its children as unavailable.
-- Settings is a modal over the note or page that you have open, and it never replaces it. On a desktop it has a list of sections on the left in three groups: General, Workspace (with the workspace name) and Account. On a phone it fills the screen with the section list first, then the section with Back. Escape, the close button, the area outside it and the browser Back button close it, and the focus goes back to the control that opened it. Ctrl + , or Cmd + , opens it. The address keeps the open section, for example `?settings=account`. Old Settings links and section anchors open the modal at the matching section over the last page of the workspace, or over All notes. Manage templates in New note from template opens it at Templates.
-- Each Settings section is compact: one short line under the title, then rows with the label and help on the left and the control on the right. Profile and email is now Account, with Name, Email, Usage, and Delete account in a Danger zone. Export and import are two rows of one section.
-- Appearance is now Appearance and editor. Mode and Theme are cards with a small picture of the application, painted from the colours of each theme. A theme with one mode says "dark only". Import theme file is next to the Theme heading, and an imported theme is a card with Delete.
-- Check spelling is a switch under Editor on Appearance and editor. The Spelling section is removed, and its old links open Appearance and editor.
-- Sign out is only in the account menu. When saves wait on the device, it asks to keep them or remove them, as the old Sign out section did. Devices says to use the account menu to sign out of this device.
+- Shared controls use one type, spacing and surface system on desktop and touch devices. Note text keeps its own scale. Menus and their hover states remain distinct in light and dark modes.
+- Settings opens over the current note or page. The profile card opens Profile, followed by Security, Preferences, Workspace and Administration groups. Existing Settings links keep working, and the old administrator page opens the Users section.
+- Phone dialogs use a sheet with direct drag feedback, a scrolling body and a pinned primary action. Fields and actions stay above the on-screen keyboard. Back, Close and Cancel discard edits and return focus to the control that opened the view.
+- The phone drawer keeps part of the note visible. Tree names use one line, and a More menu keeps the action row on one line when space is limited. Published links and Trash are at the bottom of the icon rail, with Trash last.
+- Save status uses one short line. Waiting and problem states keep their colours, live messages and details. The status counts waiting saves from the latest edit.
+- Every folder choice uses the same tree, arrow keys and filter. New folder is an editable row under the chosen folder. Enter or the check creates and selects it; Escape or an outside press cancels it.
+- New note from template shows template names and a filled preview, with the note name and destination in the same dialog. Phone lists and previews use separate levels. Daily notes uses the same folder and template pickers, and short name edits stay on the section.
+- Find and replace uses a compact bar with a match count, navigation icons and a Replace row shown on request. Phone options open in a sheet. Existing keyboard shortcuts remain.
+- Trash uses Restore and a row menu, with confirmations for permanent deletion. Empty Trash is in the page menu. Trash and Published links show a centered empty state when there are no items. Version history has a short title and readable phone summaries.
+- Mail uses one form column with Server, Sign-in and Sending groups. Required fields are marked, Save is enabled when a value changes, and validation appears at the field when saved.
+- Storage use and administrator limits use decimal GB. New accounts have a default limit of 5,000,000,000 bytes. Existing byte limits stay unchanged.
+- Settings, calendar and action forms load when needed. Triggers preload their code on hover or keyboard focus.
 
 ### Fixed
 
-- The storage meter is in proportion to the use. A small use shows a thin line and not a twelfth of the track.
+- Undo and Redo keep one live working-copy session and preserve editor focus.
+- Code blocks show quiet fences and one focus ring.
+- Scroll-edge lines and shadows take no layout space. Close stays in the right header slot on every phone sheet.
+- The storage meter shows use in proportion to the limit. A small use shows a thin line.
+- Smaller fields do not trigger focus zoom on iOS. Pinch zoom remains available.
 
 ### Removed
 
-- The writing tips card on All notes. Its stored dismissal on a device is ignored.
+- The writing tips card on All notes. A stored dismissal on the device is ignored.
 
 ## 0.22.1 - 2026-10-27
 
