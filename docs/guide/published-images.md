@@ -40,9 +40,9 @@ the new tag, as [Upgrade](upgrade.md) states.
 ```bash
 (
   set -euo pipefail
-  tag=v0.22.1
-  commit=e58d2795e4d77e33436ad1104506f0f39c48d77a
-  image=ghcr.io/tidynotebook/tidynotebook@sha256:e5eb009b472ca9f0e77da55175b944f56a6a76f7797b13fbd63c62f866947f14
+  tag=v0.23.0
+  commit=4dee1c09ddb4f380d46247929acea414e41f2018
+  image=ghcr.io/tidynotebook/tidynotebook@sha256:a70252e8fbcad2b74c9b4cab496584b4387d0f57d7e0eb2da72668de0a00c37f
   test "$(git rev-parse --verify "$tag^{commit}")" = "$commit"
   test "$(git rev-parse HEAD)" = "$commit"
   settings_file="$(mktemp .env.XXXXXX)"
