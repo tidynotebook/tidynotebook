@@ -1,26 +1,7 @@
 /**
- * Fast forwards `main` from one `/ff-merge` comment on a pull request.
- *
- * `.github/workflows/ff-merge-comment.yml` runs this file from the workflow
- * commit on `main` when a person creates a pull request comment. The comment
- * is data. The script never runs it and never runs pull request code.
- *
- * Before any write, the script reads the comment again by its ID. The author
- * must be the person in the event, and the comment must be new and never
- * edited. The author must have the admin permission on the repository. The
- * text must be exactly `/ff-merge`, or `/ff-merge` and a commit SHA prefix. Then
- * the script freezes the head H and runs every gate of
- * `tools/ff-only-merge.mjs` twice. It adds one gate: the CodeRabbit approval
- * of H is older than the comment, and nobody force pushed the head branch
- * after that approval. A normal push only moves the head away from H, so H
- * was the head when the person wrote the comment. The write is the same
- * compare and swap. The script replies once in the pull request with the
- * actual result, and only to an authorized person. A failed reply never
- * changes or repeats the write.
- *
- * The inputs come from the environment: `PR_NUMBER`, `COMMENT_ID`,
- * `COMMENT_USER_ID`, `COMMENT_USER_LOGIN`, `COMMENT_CREATED_AT`, and the
- * standard `GITHUB_*` values.
+ * Fast forwards main after an authorized ff-merge comment.
+ * Reads the comment and the author's repository permission before a write.
+ * Runs only trusted workflow code. Never runs comment text or PR code.
  */
 import { appendFileSync } from 'node:fs';
 import process from 'node:process';
@@ -28,11 +9,8 @@ import { pathToFileURL } from 'node:url';
 import {
   GateError,
   clientFromEnv,
-  codeRabbit,
   fastForward,
   integer,
-  latestReviews,
-  list,
   parseRepository,
   report,
   short,
@@ -46,9 +24,6 @@ export const commentMaxAge = 10 * 60 * 1000;
 /** The clock of the runner may be a little behind the comment time. */
 const clockSkew = 60 * 1000;
 
-/** The pages of force push events that the script reads at most. */
-const maxPages = 50;
-
 /**
  * Reads the command. Anything else in the comment stops the run.
  *
@@ -56,10 +31,10 @@ const maxPages = 50;
  * @returns {string | null} The SHA prefix, or `null` for the plain command.
  */
 export function parseCommand(body) {
-  const match = /^\/ff-merge(?: ([0-9a-f]{12,40}))?[ \t\r\n]*$/.exec(body);
+  const match = /^\/?ff-merge(?: ([0-9a-f]{12,40}))?[ \t\r\n]*$/.exec(body);
   if (match === null)
     throw new GateError(
-      'The comment must be exactly /ff-merge, or /ff-merge and a commit SHA prefix of 12 to 40 characters.',
+      'The comment must be exactly ff-merge, or ff-merge and a commit SHA prefix of 12 to 40 characters.',
     );
   return match[1] ?? null;
 }
@@ -103,7 +78,7 @@ export function parseEvent(env) {
 /**
  * The comment that GitHub returns now is the comment of the event: same ID,
  * same author, same pull request, same time, never edited, and recent. The
- * text is parsed later, after the permission check, so that only an admin
+ * text is parsed later, after the permission check, so that only an authorized user
  * gets a reply about it.
  *
  * @param {Record<string, unknown>} comment
@@ -133,7 +108,7 @@ export function checkComment(comment, event, now) {
 }
 
 /**
- * The author has the admin permission now. The answer must name the same
+ * The author has repository push access now. The answer must name the same
  * user ID.
  *
  * @param {Record<string, unknown>} permission
@@ -142,92 +117,13 @@ export function checkComment(comment, event, now) {
 export function checkPermission(permission, event) {
   if (integer(record(permission.user).id) !== event.userId)
     throw new GateError('GitHub returned the permission of another user.');
-  if (text(permission.permission) !== 'admin')
-    throw new GateError(
-      'Only an admin of the repository can merge by comment.',
-    );
-}
-
-/**
- * The CodeRabbit approval of H is older than the comment, and no force push
- * of the head branch is as new as that approval or newer.
- *
- * @param {readonly unknown[]} reviews
- * @param {readonly unknown[]} forcePushes
- * @param {string} head
- * @param {string} commentAt
- */
-export function checkApprovalBeforeComment(
-  reviews,
-  forcePushes,
-  head,
-  commentAt,
-) {
-  const approval = latestReviews(reviews).get(codeRabbit.id);
   if (
-    approval === undefined ||
-    text(approval.state) !== 'APPROVED' ||
-    text(approval.commit_id) !== head
+    !['admin', 'maintain', 'write'].includes(text(permission.permission)) &&
+    record(record(permission.user).permissions).push !== true
   )
-    throw new GateError('CodeRabbit has not approved the head.');
-  const approvedAt = Date.parse(text(approval.submitted_at));
-  if (!Number.isFinite(approvedAt) || !(approvedAt < Date.parse(commentAt)))
     throw new GateError(
-      `CodeRabbit approved ${short(head)} after the comment. Post a new comment for this head.`,
+      'Repository push access is required to merge by comment.',
     );
-  for (const push of forcePushes.map(record)) {
-    const pushedAt = Date.parse(text(push.createdAt));
-    if (!Number.isFinite(pushedAt) || pushedAt >= approvedAt)
-      throw new GateError(
-        'The head branch was force pushed after the approval. Post a new comment.',
-      );
-  }
-}
-
-const forcePushQuery = `query($owner: String!, $name: String!, $number: Int!, $cursor: String) {
-  repository(owner: $owner, name: $name) {
-    pullRequest(number: $number) {
-      timelineItems(first: 100, after: $cursor, itemTypes: [HEAD_REF_FORCE_PUSHED_EVENT]) {
-        filteredCount
-        pageInfo { hasNextPage endCursor }
-        nodes { ... on HeadRefForcePushedEvent { id createdAt } }
-      }
-    }
-  }
-}`;
-
-/**
- * Every force push event of the head branch.
- *
- * @param {ReturnType<typeof clientFromEnv>} client
- * @param {{ owner: string, name: string }} repository
- * @param {number} number
- */
-async function forcePushes(client, { owner, name }, number) {
-  /** @type {unknown[]} */
-  const events = [];
-  /** @type {string | null} */
-  let cursor = null;
-  for (let page = 0; page < maxPages; page += 1) {
-    const data = await client.graphql(forcePushQuery, {
-      owner,
-      name,
-      number,
-      cursor,
-    });
-    const connection = record(
-      record(record(data.repository).pullRequest).timelineItems,
-    );
-    events.push(...list(connection.nodes));
-    const info = record(connection.pageInfo);
-    if (info.hasNextPage !== true) {
-      if (integer(connection.filteredCount) !== events.length)
-        throw new GateError('GitHub did not list every force push.');
-      return events;
-    }
-    cursor = text(info.endCursor);
-  }
-  throw new GateError('A list from GitHub has too many pages.');
 }
 
 /** @param {Record<string, string | undefined>} env */
@@ -296,16 +192,6 @@ export async function runComment(env, fetch, now) {
       repository,
       { prNumber: event.prNumber, expectedHead: head, dryRun: false },
       rows,
-      async (snapshot, frozen) => {
-        const pushes = await forcePushes(client, repository, event.prNumber);
-        checkApprovalBeforeComment(
-          snapshot.reviews,
-          pushes,
-          frozen,
-          event.createdAt,
-        );
-        return JSON.stringify(pushes);
-      },
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

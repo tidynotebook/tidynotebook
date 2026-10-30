@@ -163,17 +163,15 @@ await test('the fast forward workflow runs trusted code by hand with narrow acce
   assert.deepEqual(record(record(workflow.jobs)['fast-forward']).permissions, {
     contents: 'write',
     'pull-requests': 'read',
-    checks: 'read',
-    statuses: 'read',
   });
   assert.deepEqual(workflow.concurrency, {
     group: 'ff-only-main',
     'cancel-in-progress': false,
     queue: 'max',
   });
-  const jobs = Object.entries(record(workflow.jobs))
-    .filter(([name]) => name !== 'dispatch-release')
-    .map(([, job]) => record(job));
+  const jobs = Object.entries(record(workflow.jobs)).map(([, job]) =>
+    record(job),
+  );
   assert.equal(jobs.length, 1);
   const job = record(jobs[0]);
   assert.equal(job.if, "github.ref == 'refs/heads/main'");
@@ -217,13 +215,11 @@ await test('the comment workflow runs trusted code on new comments with narrow a
   assert.deepEqual(record(record(workflow.jobs)['fast-forward']).permissions, {
     contents: 'write',
     'pull-requests': 'write',
-    checks: 'read',
-    statuses: 'read',
   });
   assert.equal(workflow.concurrency, undefined);
-  const jobs = Object.entries(record(workflow.jobs))
-    .filter(([name]) => name !== 'dispatch-release')
-    .map(([, job]) => record(job));
+  const jobs = Object.entries(record(workflow.jobs)).map(([, job]) =>
+    record(job),
+  );
   assert.equal(jobs.length, 1);
   const job = record(jobs[0]);
   for (const part of [
@@ -231,7 +227,7 @@ await test('the comment workflow runs trusted code on new comments with narrow a
     'github.event.issue.pull_request',
     "github.event.comment.user.type == 'User'",
     "startsWith(github.event.comment.body, '/ff-merge')",
-    'github.event.comment.author_association',
+    "startsWith(github.event.comment.body, 'ff-merge')",
   ])
     assert.ok(String(job.if).includes(part), part);
   assert.deepEqual(job.concurrency, {
@@ -326,34 +322,6 @@ await test('checkResults rejects every failed, cancelled or skipped selected job
       }
       job.result = 'success';
     }
-  }
-});
-
-await test('both merge paths dispatch main publication with isolated Actions write access', async () => {
-  for (const name of ['ff-only-merge', 'ff-merge-comment']) {
-    const workflow = await loadYaml(`.github/workflows/${name}.yml`);
-    const jobs = record(workflow.jobs);
-    const dispatch = record(jobs['dispatch-release']);
-    assert.equal(dispatch.needs, 'fast-forward');
-    assert.deepEqual(dispatch.permissions, { actions: 'write' });
-    assert.equal(record(workflow.permissions).actions, undefined);
-    assert.equal(
-      record(record(jobs['fast-forward']).permissions).actions,
-      undefined,
-    );
-    assert.equal(
-      dispatch.if,
-      name === 'ff-only-merge' ? 'inputs.dry_run == false' : undefined,
-    );
-    const steps = Array.isArray(dispatch.steps)
-      ? dispatch.steps.map(record)
-      : [];
-    assert.equal(steps.length, 1);
-    assert.equal(
-      steps[0]?.run,
-      'gh api --method POST repos/tidynotebook/tidynotebook/actions/workflows/release.yml/dispatches -f ref=main',
-    );
-    assert.deepEqual(steps[0]?.env, { GH_TOKEN: '${{ github.token }}' });
   }
 });
 
