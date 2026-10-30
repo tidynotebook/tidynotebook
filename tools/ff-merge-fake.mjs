@@ -2,7 +2,7 @@
  * A fake GitHub API for the tests of the fast forward scripts. It is not a
  * test file itself.
  */
-import { codeRabbit, mainRef } from './ff-only-merge.mjs';
+import { mainRef } from './ff-only-merge.mjs';
 import { record } from './workspace.mjs';
 
 export const api = 'https://api.github.test';
@@ -14,9 +14,9 @@ export const H = 'a'.repeat(40);
 export const old = 'd'.repeat(40);
 
 export const rabbit = {
-  login: codeRabbit.login,
+  login: 'coderabbitai[bot]',
   type: 'Bot',
-  id: codeRabbit.id,
+  id: 136622811,
 };
 export const person = { login: 'person', type: 'User', id: 7 };
 /** The time of the `/ff-merge` comment, after every review of the state. */

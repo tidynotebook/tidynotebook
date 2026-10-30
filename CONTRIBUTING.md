@@ -20,14 +20,11 @@ Unit tests sit beside the code. Integration tests use the services in
 
 ## Review and merge
 
-The author may run `@coderabbitai approve` only after a clean CodeRabbit full
-review and a clean independent review on the exact current head. A clean
-review has no open findings. A new head requires both reviews again.
-The merge workflow does not verify the independent review. The author must
-confirm that it is clean before requesting approval.
-The owner merges through the unchanged
-[fast forward merge gate](docs/development/fast-forward-merge.md).
-See [decision 0235](docs/decisions/0235-authors-may-request-approval-after-clean-reviews.md).
+A repository admin or a user with push access can comment `ff-merge` on a PR
+to fast forward `main` to its head. `/ff-merge` also works. The merge workflows
+do not require CodeRabbit approval, CI results, or resolved review threads.
+GitHub still enforces the rules configured on `main`.
+See [fast forward merge](docs/development/fast-forward-merge.md).
 
 ## License
 

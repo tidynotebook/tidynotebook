@@ -3,9 +3,8 @@
 `release.yml` is the only core image publication path. Each main push builds
 and proves native amd64 and arm64 images, then publishes
 `ghcr.io/tidynotebook/tidynotebook:main`. Fast forward merges use `GITHUB_TOKEN`, which
-does not trigger push workflows. Both merge workflows therefore dispatch this
-workflow on main after a successful merge. A manual run on main can recover a
-failed dispatch. Late runs stop if main has moved. Each ref has its own
+does not trigger push workflows. The merge workflows do not start image publication. Run this workflow
+manually on main to publish an image after a fast forward merge. Late runs stop if main has moved. Each ref has its own
 concurrency group, so publication on one ref cannot block another.
 
 An existing stable tag `vMAJOR.MINOR.PATCH` selects a version. Push the tag or
