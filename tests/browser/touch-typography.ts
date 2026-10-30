@@ -38,11 +38,13 @@ const screenshotPrefix = borders
   : spacing
     ? 'spacing'
     : 'text-roles';
-const resultsFile = borders
-  ? '.local-app/border-results.json'
-  : spacing
-    ? '.local-app/spacing-results.json'
-    : '.local-app/text-roles-results.json';
+const resultsFile =
+  process.env.UI_AUDIT_RESULTS ??
+  (borders
+    ? '.local-app/border-results.json'
+    : spacing
+      ? '.local-app/spacing-results.json'
+      : '.local-app/text-roles-results.json');
 const browser = await chromium.launch(),
   results: Result[] = [],
   errors: { variant: string; error: string }[] = [],
@@ -80,6 +82,21 @@ try {
       );
       await page.goto(
         `data:text/html,${encodeURIComponent(compositionFixture(8))}`,
+      );
+      assert.deepEqual((await auditComposition(page)).issues, []);
+      const headerFixture = (inFlow: boolean) =>
+        `<style>body{margin:0}header{display:flex;justify-content:space-between;position:relative;padding:16px}header::after{content:"";${inFlow ? '' : 'position:absolute;'}}button{border:0;padding:0;display:flex}svg{width:16px;height:16px}</style><header class="ui-sheet-header"><span data-header-slot="leading"></span><span data-header-slot="trailing"><button aria-label="Close dialog"><svg></svg></button></span></header>`;
+      await page.goto(
+        `data:text/html,${encodeURIComponent(headerFixture(true))}`,
+      );
+      assert.ok(
+        (await auditComposition(page)).issues.some(
+          (issue) => issue.kind === 'right Close glyph edge',
+        ),
+        'An in-flow scroll edge must fail the header-slot check',
+      );
+      await page.goto(
+        `data:text/html,${encodeURIComponent(headerFixture(false))}`,
       );
       assert.deepEqual((await auditComposition(page)).issues, []);
     }
@@ -269,13 +286,20 @@ try {
               e.scrollWidth > e.clientWidth + 1 &&
               !e.querySelector('.truncate') &&
               !inScroller(e)
-            )
-              problems.push({
-                kind: 'button-overflow',
-                label,
-                width: b.width,
-                scroll: e.scrollWidth,
-              });
+            ) {
+              // Hover surfaces can extend out of a row without overflowing
+              // its text. A Range measures content, without pseudo elements.
+              const range = document.createRange();
+              range.selectNodeContents(e);
+              const content = range.getBoundingClientRect();
+              if (content.left < b.left - 1 || content.right > b.right + 1)
+                problems.push({
+                  kind: 'button-overflow',
+                  label,
+                  width: b.width,
+                  scroll: e.scrollWidth,
+                });
+            }
           }
           for (const e of [
             ...document.querySelectorAll(
@@ -586,8 +610,17 @@ try {
         await folderSearch.click();
         await shot('move-filter');
         await p.keyboard.press('Escape');
+        await p
+          .locator('input[placeholder="Filter folders"]')
+          .waitFor({ state: 'hidden' });
       }
-      await p.keyboard.press('Escape');
+      await p
+        .getByRole('dialog', { name: 'Move Personal to', exact: true })
+        .getByRole('button', {
+          name: phone ? 'Close dialog' : 'Cancel',
+          exact: true,
+        })
+        .click();
       if (phone)
         await p
           .getByRole('button', { name: 'Close navigation', exact: true })
@@ -647,6 +680,7 @@ try {
       ]) {
         await settings(section);
         const titles: Record<string, string> = {
+          account: 'Profile',
           appearance: 'Appearance and editor',
           'api-keys-apps': 'API keys and apps',
           'daily-notes': 'Daily notes',
@@ -1002,7 +1036,7 @@ try {
       await auth
         .getByRole('textbox', { name: 'Email address', exact: true })
         .fill('type-check@example.com');
-      await auth.getByLabel('Password', { exact: true }).fill('short');
+      await auth.locator('#signup-password').fill('short');
       await auth
         .getByRole('button', { name: 'Create account', exact: true })
         .click();

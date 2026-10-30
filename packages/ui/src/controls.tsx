@@ -203,7 +203,7 @@ export function Button({
       {...nativeProps}
       ref={buttonRef ?? nativeRef}
       type={type ?? 'button'}
-      className={`${classes} ${optical ? 'absolute inset-x-1 top-0 coarse:inset-x-0' : ''} ${settingsRow ? 'ds-row-button absolute left-0 top-1/2 -translate-y-1/2 h-7 w-full px-3 coarse:h-11 coarse:border-0 coarse:bg-transparent coarse:px-0 ' : ''}`}
+      className={`${classes} ${optical ? 'absolute inset-x-1 top-0 coarse:inset-x-0' : ''} ${settingsRow ? 'ds-row-button absolute left-0 top-1/2 -translate-y-1/2 h-7 w-full px-2 coarse:h-11 coarse:border-0 coarse:bg-transparent coarse:px-0 ' : ''}`}
       disabled={disabled ?? false}
       onClick={onClick}
       aria-label={name.ariaLabel}
@@ -246,7 +246,7 @@ export function Button({
     <span className="ui-settings-button-slot relative inline-flex h-7 shrink-0 items-center coarse:h-5">
       <span
         aria-hidden="true"
-        className="ui-settings-button-measure invisible inline-flex items-center gap-2 px-3 text-label coarse:px-0"
+        className="ui-settings-button-measure invisible inline-flex items-center gap-2 px-2 text-label coarse:px-0"
       >
         {content}
       </span>

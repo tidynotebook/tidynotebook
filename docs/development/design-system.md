@@ -26,6 +26,8 @@ empty disclosure slot. Calendar cells keep control height in equal columns.
 Keep items closer than groups. The group gap equals the container padding.
 The sidebar keeps its hairlines at rest. Other fixed regions show a hairline
 only if adjacent content overflows. Shadows show only under hidden content.
+Hairlines and shadows stay outside the layout. They must not add a flex or
+grid item. Sheet headers keep Back on the left and Close in the right slot.
 
 Overlay and raised-card state tokens keep at least 1.2:1 surface contrast.
 
@@ -145,5 +147,4 @@ selectors and doubled-class selectors.
 `tools/design-system-allow.json` records cases with a reason and can only
 shrink. New exceptions require a component variant and a contract update.
 
-`tests/browser/symmetry.ts` checks content edges and visual parity in both
-themes and pointer densities. Remove or explain changes beyond the tolerance.
+`tests/browser/symmetry.ts` checks content edges and visual parity in both themes and pointer densities. Remove or explain changes beyond the tolerance.

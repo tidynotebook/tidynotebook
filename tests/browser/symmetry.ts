@@ -178,7 +178,8 @@ export async function auditComposition(page: Page) {
         expected: number;
       }[] = [];
     const visible = (e: Element) =>
-      e.checkVisibility({ visibilityProperty: true }) &&
+      e.checkVisibility({ visibilityProperty: true, opacityProperty: true }) &&
+      !e.closest('[inert]') &&
       e.getBoundingClientRect().width > 0 &&
       e.getBoundingClientRect().height > 0;
     const check = (
@@ -263,7 +264,7 @@ export async function auditComposition(page: Page) {
     }
     for (const close of [
       ...document.querySelectorAll(
-        '.ui-settings-heading [aria-label="Close Settings"]',
+        '.ui-settings-heading [aria-label="Close Settings"],.ui-sheet-header button[aria-label^="Close"]',
       ),
     ].filter(visible)) {
       check(
@@ -343,10 +344,25 @@ export async function auditComposition(page: Page) {
         check(column, 'form maximum width', Math.max(0, edge.width - 512), 0);
       for (const field of fields) {
         if (field.closest('[data-short-field]')) continue;
-        const box = field.getBoundingClientRect();
-        check(field, 'form left edge', box.left, edge.left);
+        // A picker may have a search field in one grid cell and a preview
+        // beside it. Its field follows that cell, not the whole dialog.
+        const grid = field.closest('[data-ui-layout="grid"]');
+        const cell =
+          grid && column.contains(grid)
+            ? [...grid.children].find((child) => child.contains(field))
+            : undefined;
+        const fieldEdge =
+          cell && !field.closest('[data-field-pair]')
+            ? cell.getBoundingClientRect()
+            : edge;
+        // A native select sits inside the shared bordered field with its
+        // chevron. Compare the field frame, not its inset text control.
+        const box = (
+          field.closest('.ui-field') ?? field
+        ).getBoundingClientRect();
+        check(field, 'form left edge', box.left, fieldEdge.left);
         const pair = field.closest('[data-field-pair]');
-        if (!pair) check(field, 'form right edge', box.right, edge.right);
+        if (!pair) check(field, 'form right edge', box.right, fieldEdge.right);
       }
     }
     const sidePanel = document.querySelector(
@@ -491,16 +507,23 @@ export async function auditComposition(page: Page) {
           : 32;
       check(e, 'control height', r.height, expected);
       if (!icon) {
+        // Compact controls keep a large transparent target around a smaller
+        // painted span. The fill owns the visual side padding.
+        const fill =
+          parts.contains('group') && parts.contains('bg-transparent')
+            ? e.firstElementChild
+            : null;
+        const paddingStyle = fill ? getComputedStyle(fill) : s;
         check(
           e,
           'text button left inset',
-          parseFloat(s.paddingLeft),
+          parseFloat(paddingStyle.paddingLeft),
           coarse ? 16 : parts.contains('h-7') ? 8 : 12,
         );
         check(
           e,
           'text button right inset',
-          parseFloat(s.paddingRight),
+          parseFloat(paddingStyle.paddingRight),
           coarse ? 16 : parts.contains('h-7') ? 8 : 12,
         );
       } else {
@@ -807,6 +830,13 @@ export async function auditHoverPadding(page: Page) {
         '.bg-overlay,.bg-card-raised,.coarse\\:bg-card-raised',
       );
       if (!surface) return null;
+      // A responsive raised card is a flat, transparent group on desktop.
+      if (
+        ['transparent', 'rgba(0, 0, 0, 0)'].includes(
+          getComputedStyle(surface).backgroundColor,
+        )
+      )
+        return null;
       await new Promise((resolve) => setTimeout(resolve, 150));
       const colour = (value: string) => {
         const probe = document.createElement('span');
@@ -893,6 +923,9 @@ export async function auditHoverPadding(page: Page) {
           ? Math.abs(parseFloat(before.left))
           : 0;
       return {
+        row: element.matches(
+          '[data-ui-row],.ui-list-row,[role^="menuitem"],[role="option"]',
+        ),
         text: element.getAttribute('aria-label') ?? element.textContent ?? '',
         left:
           Math.min(...boxes.map((part) => part.left)) - box.left + extension,
@@ -900,15 +933,19 @@ export async function auditHoverPadding(page: Page) {
           box.right - Math.max(...boxes.map((part) => part.right)) + extension,
         padding: parseFloat(style.paddingLeft) + extension,
         border: parseFloat(style.borderLeftWidth),
+        rightPadding: parseFloat(style.paddingRight) + extension,
       };
     });
     if (measured) {
-      const { text, left, right, padding, border } = measured;
+      const { text, left, right, padding, rightPadding, border, row } =
+        measured;
       if (
         left <= 0 ||
         right <= 0 ||
-        Math.abs(left - right) > 1 ||
-        left < padding + border - 1
+        (!row && Math.abs(left - right) > 1) ||
+        Math.abs(padding - rightPadding) > 1 ||
+        left < padding + border - 1 ||
+        right < rightPadding + border - 1
       )
         issues.push({
           kind: 'hover fill padding',

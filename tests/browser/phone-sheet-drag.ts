@@ -64,6 +64,9 @@ try {
             await p
               .getByRole('button', { name: 'New folder', exact: true })
               .click();
+            await p
+              .getByRole('textbox', { name: 'Name', exact: true })
+              .waitFor();
           }
           await p.locator('[role=dialog][data-sheet-ready]').waitFor();
           await pause(260);
@@ -96,6 +99,7 @@ try {
         ) => {
           const box = await p
             .locator('[data-sheet-drag]')
+            .filter({ visible: true })
             .first()
             .boundingBox();
           assert.ok(box);

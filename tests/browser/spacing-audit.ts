@@ -66,10 +66,25 @@ export async function auditSpacing(page: Page) {
       const s = getComputedStyle(e),
         setting = e.getAttribute('data-ui-row') === 'setting';
       check(e, 'content-owned row height', parseFloat(s.minHeight) || 0, 0);
-      if (!setting) check(e, 'one-line row height', box(e).height, role.tree);
-      else {
+      if (!setting) {
+        // Rows own padding, while a search control, an inline field or a
+        // second help line can make their content taller than one text line.
+        const vertical = coarse ? 8 : 4;
+        check(e, 'row top padding', parseFloat(s.paddingTop), vertical);
+        check(e, 'row bottom padding', parseFloat(s.paddingBottom), vertical);
+        const content = Math.max(
+          20,
+          ...[...e.children].filter(visible).map((child) => box(child).height),
+        );
+        check(
+          e,
+          'content-owned row height',
+          box(e).height,
+          content + 2 * vertical,
+        );
+      } else {
         const label = e.querySelector('[data-setting-label]'),
-          help = e.querySelector('[data-setting-help]');
+          help = e.querySelector('[data-setting-help],.ui-settings-meta');
         if (
           label &&
           visible(label) &&
@@ -121,7 +136,7 @@ export async function auditSpacing(page: Page) {
         next = header?.nextElementSibling;
       if (header && main.scrollTop === 0)
         check(header, 'page title top', box(header).top - m.top, role.pageTop);
-      if (header && next)
+      if (header && next && main.scrollTop === 0)
         check(
           next,
           'page title block to content',

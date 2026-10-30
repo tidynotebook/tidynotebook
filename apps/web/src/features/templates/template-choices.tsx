@@ -278,6 +278,7 @@ export default function TemplateChoices({
           titleRef={phoneTitle}
           title={details ? selectedLabel : 'New note from template'}
           onClose={onClose}
+          closeLabel="Close template dialog"
           leading={
             details ? (
               <Button
@@ -286,22 +287,17 @@ export default function TemplateChoices({
                 label="Back to templates"
                 onClick={back}
               />
-            ) : (
-              <Button
-                variant="ghost"
-                icon={<CloseIcon />}
-                label="Close template dialog"
-                onClick={onClose}
-              />
-            )
+            ) : null
           }
           trailing={
-            <Button
-              variant="ghost"
-              icon={details ? <CloseIcon /> : <SettingsIcon />}
-              label={details ? 'Close template dialog' : 'Manage templates'}
-              onClick={details ? onClose : manage}
-            />
+            details ? null : (
+              <Button
+                variant="ghost"
+                icon={<SettingsIcon />}
+                label="Manage templates"
+                onClick={manage}
+              />
+            )
           }
         />
       </div>

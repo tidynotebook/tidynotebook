@@ -24,10 +24,9 @@ export function SettingEditRow({
       gap={3}
       aria-label={label}
       data-dialog-escape="local"
-      className={listRowClasses('setting').replace(
-        'items-center',
-        'items-stretch',
-      )}
+      className={listRowClasses('setting')
+        .replace('items-center', 'items-stretch')
+        .replace('gap-4', '')}
       onSubmit={onSubmit}
       onKeyDown={(event) => {
         if (event.key === 'Escape') {

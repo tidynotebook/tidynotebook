@@ -11,6 +11,7 @@ export function PhoneSheetHeader({
   onClose,
   leading,
   trailing,
+  closeLabel = 'Close dialog',
 }: {
   readonly title: ReactNode;
   readonly titleId?: string;
@@ -18,6 +19,7 @@ export function PhoneSheetHeader({
   readonly onClose: () => void;
   readonly leading?: ReactNode;
   readonly trailing?: ReactNode;
+  readonly closeLabel?: string;
 }): ReactNode {
   return (
     <ContentHeader
@@ -26,16 +28,7 @@ export function PhoneSheetHeader({
       padX={4}
       className="ui-sheet-header touch-pan-x touch-pinch-zoom"
     >
-      <HeaderSlot>
-        {leading ?? (
-          <IconButton
-            glyph={<CloseIcon />}
-            size="header"
-            label="Close dialog"
-            onClick={onClose}
-          />
-        )}
-      </HeaderSlot>
+      <HeaderSlot side="leading">{leading}</HeaderSlot>
       <HeaderTitle>
         <h2
           id={titleId}
@@ -46,8 +39,16 @@ export function PhoneSheetHeader({
           {title}
         </h2>
       </HeaderTitle>
-      <Inline justify="end" className="flex-1">
-        <HeaderSlot>{trailing}</HeaderSlot>
+      <Inline gap={8} justify="end">
+        {trailing ? <HeaderSlot>{trailing}</HeaderSlot> : null}
+        <HeaderSlot side="trailing">
+          <IconButton
+            glyph={<CloseIcon />}
+            size="header"
+            label={closeLabel}
+            onClick={onClose}
+          />
+        </HeaderSlot>
       </Inline>
     </ContentHeader>
   );

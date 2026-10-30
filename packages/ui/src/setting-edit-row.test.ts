@@ -12,7 +12,9 @@ import {
   SettingsSurface,
   Panel,
   CollapsibleSection,
+  PhoneSheetHeader,
 } from '../dist/index.js';
+import { fixedRegionClasses } from './scroll-classes.ts';
 import { DialogInsetContext } from '../dist/dialog-layout-context.js';
 await test('an inline value edit has no dialog inset or internal scroll line and Cancel precedes Save', () => {
   const html = renderToStaticMarkup(
@@ -34,7 +36,31 @@ await test('an inline value edit has no dialog inset or internal scroll line and
   assert.ok(!html.includes('ui-dialog-footer'));
   assert.ok(html.indexOf('Cancel') < html.lastIndexOf('Save'));
   assert.match(html, /data-ui-gap="3"/);
+  assert.ok(!/\bclass="[^"]*\bgap-4\b/.test(html));
   assert.match(html, /data-dialog-escape="local"/);
+});
+
+await test('every scroll-edge layer stays outside flex and grid flow', () => {
+  for (const edge of ['top', 'bottom', 'both'] as const) {
+    const classes = fixedRegionClasses(edge).split(/\s+/);
+    assert.ok(classes.includes('before:absolute'));
+    assert.ok(classes.includes('after:absolute'));
+  }
+});
+
+await test('a phone sheet keeps its Close control in the trailing header slot', () => {
+  const html = renderToStaticMarkup(
+    createElement(PhoneSheetHeader, {
+      title: 'New folder',
+      onClose: () => {},
+    }),
+  );
+  assert.match(html, /data-header-slot="leading"/);
+  assert.match(
+    html,
+    /data-header-slot="trailing"[^]*aria-label="Close dialog"/,
+  );
+  assert.equal((html.match(/aria-label="Close dialog"/g) ?? []).length, 1);
 });
 await test('a desktop dialog owns one inset and keeps Cancel before its primary action', () => {
   const html = renderToStaticMarkup(

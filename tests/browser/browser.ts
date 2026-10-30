@@ -10,7 +10,9 @@ export type Locator = {
   focus(): Promise<void>;
   fill(value: string): Promise<void>;
   press(key: string): Promise<void>;
-  waitFor(): Promise<void>;
+  waitFor(options?: {
+    state?: 'attached' | 'detached' | 'visible' | 'hidden';
+  }): Promise<void>;
   first(): Locator;
   filter(options: { visible: boolean }): Locator;
   count(): Promise<number>;

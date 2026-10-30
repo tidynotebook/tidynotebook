@@ -80,7 +80,6 @@ try {
         await account.click();
         const settings = page.getByRole('menuitem', {
           name: 'Settings',
-          exact: true,
         });
         await settings.hover();
         await pause(80);
@@ -92,18 +91,36 @@ try {
           (await dialog.locator('[aria-busy=true]').count()) > 0,
           'a cold Settings load shows its frame at once',
         );
+        if (phone)
+          await page.locator('[role=dialog][data-sheet-ready]').waitFor();
+        const settle = () =>
+          page.evaluate(() =>
+            Promise.all(
+              document
+                .getAnimations()
+                .filter(
+                  (animation) =>
+                    animation.effect?.getComputedTiming().iterations !==
+                    Infinity,
+                )
+                .map((animation) => animation.finished.catch(() => {})),
+            ),
+          );
+        await settle();
         const before = await dialog.boundingBox();
         releaseSettings();
         await page
           .locator(phone ? '.ui-settings-list' : '.ui-settings-column')
           .waitFor();
-        await pause(120);
+        if (phone)
+          await page.locator('[role=dialog][data-sheet-ready]').waitFor();
+        await settle();
         const after = await dialog.boundingBox();
         assert.ok(before && after);
         for (const key of ['x', 'y', 'width', 'height'] as const)
           assert.ok(
             Math.abs(before[key] - after[key]) <= 1,
-            `Settings ${key} stays stable`,
+            `Settings ${key} stays stable: ${JSON.stringify(before)} -> ${JSON.stringify(after)}`,
           );
         assert.deepEqual(
           await page.locator('main').boundingBox(),
@@ -140,9 +157,13 @@ try {
         await pause(80);
         assert.ok(folderRequested, 'New folder preloads on intent');
         await folder.click();
-        await dialog.waitFor();
+        const action = page.getByRole('dialog', {
+          name: 'New folder',
+          exact: true,
+        });
+        await action.waitFor();
         assert.ok(
-          (await dialog.locator('[aria-busy=true]').count()) > 0,
+          (await action.locator('[aria-busy=true]').count()) > 0,
           'a cold action shows its frame at once',
         );
         releaseFolder();
@@ -153,7 +174,7 @@ try {
         await input.focus();
         await input.press('Escape');
         await pause(60);
-        assert.equal(await dialog.count(), 0);
+        assert.equal(await action.count(), 0);
         assert.equal(
           await page.evaluate(() =>
             document.activeElement?.getAttribute('aria-label'),
