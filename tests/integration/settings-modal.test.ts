@@ -281,6 +281,35 @@ async function escape(): Promise<void> {
   await settle();
 }
 
+/** Compare identity without formatting the connected DOM graph on failure. */
+function assertElement(
+  actual: Element | null | undefined,
+  expected: Element | null | undefined,
+): void {
+  assert.ok(actual === expected, 'The expected DOM element does not match.');
+}
+
+await test('a failed DOM identity check has a bounded diagnostic', () => {
+  const oldButton = document.createElement('button');
+  const restoredButton = document.createElement('button');
+  container.append(oldButton);
+  oldButton.replaceWith(restoredButton);
+  try {
+    assert.throws(
+      () => assertElement(restoredButton, oldButton),
+      (error: unknown) => {
+        assert.ok(error instanceof assert.AssertionError);
+        assert.equal(error.actual, false);
+        assert.equal(error.expected, true);
+        assert.ok(error.message.length < 200);
+        return true;
+      },
+    );
+  } finally {
+    restoredButton.remove();
+  }
+});
+
 await test('Settings opens over the note, and Escape closes it with the note and focus kept', async () => {
   await show('/w/one/notes/n1');
   const field = container.querySelector<HTMLTextAreaElement>('#note-text');
@@ -300,12 +329,12 @@ await test('Settings opens over the note, and Escape closes it with the note and
   await click(sectionButton('devices'));
   assert.equal(address, '/w/one/notes/n1?settings=devices');
   await escape();
-  assert.equal(dialog(), null);
+  assertElement(dialog(), null);
   assert.equal(address, '/w/one/notes/n1');
   assert.equal(mounts, 1, 'The note never mounted again');
-  assert.equal(container.querySelector('#note-text'), field);
+  assertElement(container.querySelector('#note-text'), field);
   assert.equal(field.value, 'Unsaved draft');
-  assert.equal(document.activeElement, opener);
+  assertElement(document.activeElement, opener);
 });
 
 await test('a Settings deep link focuses its section title, not the first navigation row', async () => {
@@ -313,14 +342,14 @@ await test('a Settings deep link focuses its section title, not the first naviga
   const title = dialog()?.querySelector('h2[tabindex="-1"]');
   assert.ok(title);
   assert.equal(title.textContent, 'Daily notes');
-  assert.equal(document.activeElement, title);
+  assertElement(document.activeElement, title);
 });
 
 await test('Close and the scrim remove the parameter of a deep link', async () => {
   await show('/w/one/notes/n1?settings=account');
   assert.ok(dialog(), address);
   await click(button('Close Settings', dialog() ?? container));
-  assert.equal(dialog(), null);
+  assertElement(dialog(), null);
   assert.equal(address, '/w/one/notes/n1');
   await show('/w/one?settings=offline');
   const scrim = container.querySelector<HTMLElement>(
@@ -331,7 +360,7 @@ await test('Close and the scrim remove the parameter of a deep link', async () =
     scrim.dispatchEvent(new window.MouseEvent('mousedown', { bubbles: true })),
   );
   await settle();
-  assert.equal(dialog(), null);
+  assertElement(dialog(), null);
   assert.equal(address, '/w/one');
 });
 
@@ -388,7 +417,7 @@ await test('Delete account stays in Settings and Escape returns to Account', asy
   assert.equal(document.querySelectorAll('[role="dialog"]').length, 2);
   assert.ok(document.querySelector('#remove-own-password'));
   await escape();
-  assert.equal(document.querySelector('#remove-own-password'), null);
+  assertElement(document.querySelector('#remove-own-password'), null);
   assert.equal(document.querySelectorAll('[role="dialog"]').length, 1);
   assert.equal(address, '/w/one/notes/n1?settings=account');
 });
@@ -450,10 +479,10 @@ await test('on a phone the sheet shows the list, then the section with Back', as
   );
   await click(button('Back to Settings', detail));
   assert.equal(address, '/w/one/notes/n1?settings=');
-  assert.equal(document.activeElement, sectionButton('templates'));
+  assertElement(document.activeElement, sectionButton('templates'));
   // Close from the list returns to the note.
   await click(button('Close Settings', list));
-  assert.equal(dialog(), null);
+  assertElement(dialog(), null);
   assert.equal(address, '/w/one/notes/n1');
 });
 
@@ -545,7 +574,7 @@ await test('Sign out in the account menu keeps the waiting saves check', async (
   await showSignOut();
   await click(button('Sign out'));
   assert.equal(calls.signOut, 1, 'No waiting saves: sign out at once');
-  assert.equal(dialog(), null);
+  assertElement(dialog(), null);
 
   setWaiting([{ id: 'save-1' }]);
   await click(button('Sign out'));
@@ -560,7 +589,7 @@ await test('Sign out in the account menu keeps the waiting saves check', async (
   assert.ok(button('Remove and sign out', modal));
   await click(button('Sign out and keep them', modal));
   assert.equal(calls.signOut, 2);
-  assert.equal(dialog(), null);
+  assertElement(dialog(), null);
 
   setWaiting(new Error('The store did not answer.'));
   await click(button('Sign out'));
@@ -569,7 +598,7 @@ await test('Sign out in the account menu keeps the waiting saves check', async (
   assert.match(unknown.textContent ?? '', /cannot say what is still waiting/);
   assert.throws(() => button('Remove and sign out', unknown));
   await click(button('Cancel', unknown));
-  assert.equal(dialog(), null);
+  assertElement(dialog(), null);
   assert.equal(calls.signOut, 2);
 });
 
@@ -604,7 +633,7 @@ await test('Devices puts the current session first and the group action before a
     current.textContent ?? '',
     /To sign out of this device, use the account menu./,
   );
-  assert.equal(current.querySelector('button'), null);
+  assertElement(current.querySelector('button'), null);
   const bulk = button('Sign out every other device');
   assert.equal(
     bulk.parentElement?.querySelector('h3')?.textContent,
@@ -647,12 +676,12 @@ await test('API key create, validation, secret and revoke use one Settings frame
   assert.ok(modal);
   const create = button('Create API key');
   await click(create);
-  assert.equal(dialog(), modal);
+  assertElement(dialog(), modal);
   assert.equal(document.querySelectorAll('[role="dialog"]').length, 2);
   assert.equal(document.querySelectorAll('[role="dialog"]').length, 2);
   const name = document.querySelector<HTMLInputElement>('#api-key-name');
   assert.ok(name);
-  assert.equal(document.activeElement, name);
+  assertElement(document.activeElement, name);
   await act(async () => {
     Object.getOwnPropertyDescriptor(
       window.HTMLInputElement.prototype,
@@ -663,7 +692,7 @@ await test('API key create, validation, secret and revoke use one Settings frame
   refuseApiKeyCreation(true);
   await click(button('Create key'));
   assert.equal(name.value, 'Review client');
-  assert.equal(dialog(), modal);
+  assertElement(dialog(), modal);
   assert.ok(document.querySelector('#api-key-name[aria-invalid="true"]'));
   refuseApiKeyCreation(false);
   await click(button('Create key'));
@@ -684,7 +713,7 @@ await test('API key create, validation, secret and revoke use one Settings frame
       container.textContent ?? '',
       /The key could not be copied. Select it and copy it./,
     );
-    assert.equal(document.activeElement, secret);
+    assertElement(document.activeElement, secret);
     assert.equal(secret.selectionStart, 0);
     assert.equal(secret.selectionEnd, secret.value.length);
   } finally {
@@ -699,18 +728,18 @@ await test('API key create, validation, secret and revoke use one Settings frame
       .join(','),
   );
   await click(button('Done'));
-  assert.equal(document.querySelector('#api-key-secret'), null);
-  assert.equal(document.activeElement, create);
+  assertElement(document.querySelector('#api-key-secret'), null);
+  assertElement(document.activeElement, create);
   await click(button('Revoke Review client'));
   assert.equal(document.querySelectorAll('[role="dialog"]').length, 2);
   await click(button('Revoke key'));
-  assert.equal(document.querySelector('#api-key-secret'), null);
-  assert.equal(
+  assertElement(document.querySelector('#api-key-secret'), null);
+  assertElement(
     document.querySelector('[aria-label="Revoke Review client"]'),
     null,
   );
-  assert.equal(dialog(), modal);
-  assert.equal(document.activeElement, create);
+  assertElement(dialog(), modal);
+  assertElement(document.activeElement, create);
 });
 
 await test('desktop Name edits keep their field and actions inside the existing row', async () => {
@@ -720,7 +749,10 @@ await test('desktop Name edits keep their field and actions inside the existing 
   const form = container.querySelector('form[aria-label="Edit name"]');
   assert.ok(form);
   assert.ok(form.querySelector('#profile-name'));
-  assert.equal(form.querySelector('.ui-scroll-region,.ui-dialog-footer'), null);
+  assertElement(
+    form.querySelector('.ui-scroll-region,.ui-dialog-footer'),
+    null,
+  );
   assert.deepEqual(
     [...form.querySelectorAll('button')].map((item) =>
       item.textContent?.trim(),
@@ -729,18 +761,18 @@ await test('desktop Name edits keep their field and actions inside the existing 
   );
   assert.equal(document.querySelectorAll('[role="dialog"]').length, 1);
   await click(button('Cancel', form));
-  assert.equal(container.querySelector('#profile-name'), null);
-  assert.equal(document.activeElement, button('Edit name'));
+  assertElement(container.querySelector('#profile-name'), null);
+  assertElement(document.activeElement, button('Edit name'));
 });
 
 await test('Settings folder choices and name format do not open another modal', async () => {
   await show('/w/one/notes/n1?settings=templates');
   const modal = dialog();
   await click(button('Templates folder'));
-  assert.equal(dialog(), modal);
+  assertElement(dialog(), modal);
   assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
   assert.ok(container.querySelector('[role="tree"]'));
-  assert.equal(container.querySelector('#template-folder'), null);
+  assertElement(container.querySelector('#template-folder'), null);
   assert.equal(
     modal?.querySelector('section[aria-labelledby] h2')?.textContent,
     'Save in',
@@ -753,7 +785,7 @@ await test('Settings folder choices and name format do not open another modal', 
   const back = button('Back to section');
   back.focus();
   await escape();
-  assert.equal(container.querySelector('[role="tree"]'), null);
+  assertElement(container.querySelector('[role="tree"]'), null);
   assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
   assert.equal(
     modal?.querySelector('section[aria-labelledby] h2')?.textContent,
@@ -767,7 +799,7 @@ await test('Settings folder choices and name format do not open another modal', 
   assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
   assert.ok(container.querySelector('#daily-format'));
   await escape();
-  assert.equal(container.querySelector('#daily-format'), null);
+  assertElement(container.querySelector('#daily-format'), null);
   assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
 });
 
@@ -784,7 +816,7 @@ await test('phone Settings uses navigation and action rows with one edit level',
   };
   try {
     await show('/w/one/notes/n1?settings=account');
-    assert.equal(container.querySelector('#profile-heading'), null);
+    assertElement(container.querySelector('#profile-heading'), null);
     assert.ok(
       [...container.querySelectorAll('h3')].some(
         (heading) => heading.textContent === 'Usage',
@@ -809,7 +841,7 @@ await test('phone Settings uses navigation and action rows with one edit level',
     assert.ok(editScope === null || editScope.textContent !== 'Account');
     assert.equal(container.querySelectorAll('[role="dialog"]').length, 1);
     await escape();
-    assert.equal(container.querySelector('#profile-name'), null);
+    assertElement(container.querySelector('#profile-name'), null);
     await settle();
     assert.equal(document.activeElement?.getAttribute('aria-label'), 'Name');
     const remove = button('Delete account…');
@@ -817,7 +849,7 @@ await test('phone Settings uses navigation and action rows with one edit level',
     await click(remove);
     assert.ok(container.querySelector('#remove-own-password'));
     await escape();
-    assert.equal(container.querySelector('#remove-own-password'), null);
+    assertElement(container.querySelector('#remove-own-password'), null);
   } finally {
     window.matchMedia = original;
     await show('/w/one/notes/n1?settings=account');
@@ -827,7 +859,7 @@ await test('phone Settings uses navigation and action rows with one edit level',
 await test('administration deep links and the old route respect the signed-in role', async () => {
   await show('/w/one/accounts');
   assert.equal(address, '/w/one?settings=');
-  assert.equal(
+  assertElement(
     container.querySelector('[data-settings-page="accounts"]'),
     null,
   );
@@ -966,7 +998,7 @@ await test('phone admin draft forms keep one frame and return focus without a sa
       assert.equal(document.activeElement?.tagName, 'H2');
       assert.equal(document.activeElement?.getAttribute('tabindex'), '-1');
       await escape();
-      assert.equal(container.querySelector(field), null);
+      assertElement(container.querySelector(field), null);
       assert.equal(
         document.activeElement === start,
         true,
@@ -1008,7 +1040,7 @@ await test('phone admin draft forms keep one frame and return focus without a sa
         );
       }
       await escape();
-      assert.equal(container.querySelector(field), null);
+      assertElement(container.querySelector(field), null);
       assert.ok(button(opener));
     }
     await escape();
@@ -1020,7 +1052,7 @@ await test('phone admin draft forms keep one frame and return focus without a sa
       /Danger zone/,
     );
     await escape();
-    assert.equal(container.querySelector('.ui-settings-action'), null);
+    assertElement(container.querySelector('.ui-settings-action'), null);
     assert.equal(
       document.activeElement?.getAttribute('aria-label') === 'Account: Sam Lee',
       true,
