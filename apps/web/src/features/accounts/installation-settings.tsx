@@ -1,7 +1,8 @@
 import {
   Form,
   Card,
-  Grid,
+  Inline,
+  SectionHeading,
   Stack,
   Button,
   Dialog,
@@ -255,6 +256,7 @@ function MailSettingsForm({
   return (
     <Form
       regions
+      section
       noValidate
       className="ui-dialog-form"
       onSubmit={(event): void => {
@@ -269,95 +271,105 @@ function MailSettingsForm({
             message="The server can no longer read the saved password. Enter it again and save."
           />
         ) : null}
-        <Grid gap={3} className="md:grid-cols-3">
-          <div className="md:col-span-2">
-            <TextField
-              id="mail-host"
-              label="Server"
-              error={fieldErrors.host}
-              value={form.host}
-              placeholder="smtp.example.com"
-              hint="Without a mail server, an invitation shows its link once and nobody can reset a password."
-              autoComplete="off"
-              required
-              onChange={(host) => {
-                update({ host });
-              }}
-            />
-          </div>
-          <TextField
-            id="mail-port"
-            label="Port"
-            value={form.port}
-            required
-            error={fieldErrors.port}
-            onChange={(port) => {
-              update({ port });
+        <Stack gap={3}>
+          <SectionHeading label="Server" />
+          <Inline gap={3} align="start" className="w-full" data-field-pair="">
+            <div className="min-w-0 flex-1">
+              <TextField
+                id="mail-host"
+                label="Server"
+                error={fieldErrors.host}
+                value={form.host}
+                placeholder="smtp.example.com"
+                autoComplete="off"
+                required
+                onChange={(host) => {
+                  update({ host });
+                }}
+              />
+            </div>
+            <div className="w-28 shrink-0" data-short-field="">
+              <TextField
+                id="mail-port"
+                label="Port"
+                value={form.port}
+                required
+                error={fieldErrors.port}
+                onChange={(port) => {
+                  update({ port });
+                }}
+              />
+            </div>
+          </Inline>
+          <SelectField
+            id="mail-security"
+            label="Security"
+            value={form.security}
+            options={mailSecurityOptions}
+            hint="TLS and STARTTLS protect the connection."
+            onChange={(value) => {
+              const next = mailSecurityOf(value);
+              if (next === null) return;
+              update({
+                security: next,
+                port: portAfterSecurity(form.port, form.security, next),
+              });
             }}
           />
-        </Grid>
-        <SelectField
-          id="mail-security"
-          label="Security"
-          value={form.security}
-          options={mailSecurityOptions}
-          hint="TLS and STARTTLS protect the connection."
-          onChange={(value) => {
-            const next = mailSecurityOf(value);
-            if (next === null) return;
-            update({
-              security: next,
-              port: portAfterSecurity(form.port, form.security, next),
-            });
-          }}
-        />
-        <Stack gap={1} pad={0} as="fieldset" className="min-w-0 border-0">
-          <Grid gap={3} className="md:grid-cols-2">
-            <TextField
-              id="mail-username"
-              label="User name"
-              describedBy="mail-signin-hint"
-              value={form.username}
-              autoComplete="off"
-              onChange={(username) => {
-                update({ username });
-              }}
-            />
-            <TextField
-              id="mail-password"
-              label="Password"
-              describedBy="mail-signin-hint"
-              value={form.password}
-              inputType="password"
-              autoComplete="new-password"
-              error={fieldErrors.password}
-              onChange={(password) => {
-                update({ password });
-              }}
-            />
-          </Grid>
-          <p
-            id="mail-signin-hint"
-            className="ui-field-help text-secondary text-muted"
-          >
-            {keepsPassword
-              ? 'Leave the password empty to keep the saved one. Leave both fields empty for a server that takes mail with no sign-in.'
-              : 'Leave both fields empty for a server that takes mail with no sign-in.'}
-          </p>
         </Stack>
-        <TextField
-          id="mail-sender"
-          label="Sender"
-          error={fieldErrors.sender}
-          value={form.sender}
-          placeholder={`${productName} <no-reply@notes.example.com>`}
-          autoComplete="off"
-          required
-          hint="An address that the mail server lets you send from."
-          onChange={(sender) => {
-            update({ sender });
-          }}
-        />
+        <Stack gap={3}>
+          <SectionHeading label="Sign-in" />
+          <Stack gap={1} pad={0} as="fieldset" className="min-w-0 border-0">
+            <Stack gap={3}>
+              <TextField
+                id="mail-username"
+                label="User name"
+                describedBy="mail-signin-hint"
+                value={form.username}
+                autoComplete="off"
+                onChange={(username) => {
+                  update({ username });
+                }}
+              />
+              <TextField
+                id="mail-password"
+                label="Password"
+                describedBy="mail-signin-hint"
+                value={form.password}
+                inputType="password"
+                autoComplete="new-password"
+                error={fieldErrors.password}
+                onChange={(password) => {
+                  update({ password });
+                }}
+              />
+            </Stack>
+            <p
+              id="mail-signin-hint"
+              className="ui-field-help text-secondary text-muted"
+            >
+              {keepsPassword
+                ? 'Leave the password empty to keep the saved one. Leave both fields empty for a server that takes mail with no sign-in.'
+                : 'Leave both fields empty for a server that takes mail with no sign-in.'}
+            </p>
+          </Stack>
+        </Stack>
+        <Stack gap={3}>
+          <SectionHeading label="Sender" />
+          <TextField
+            id="mail-sender"
+            label="Sender"
+            error={fieldErrors.sender}
+            value={form.sender}
+            placeholder={`${productName} <no-reply@notes.example.com>`}
+            autoComplete="off"
+            required
+            hint="An address that the mail server lets you send from."
+            onChange={(sender) => {
+              update({ sender });
+            }}
+          />
+        </Stack>
         {stored ? (
           <Card responsive>
             <SettingActionRow
@@ -651,12 +663,9 @@ function LegalDocumentEditor({
                   <p className="m-0 text-secondary text-muted">
                     Each fact fills its place in the text below.
                   </p>
-                  <Grid gap={3} className="md:grid-cols-2">
+                  <Stack gap={3}>
                     {fields.map((field, index) => (
-                      <div
-                        key={field.blank}
-                        className={field.wide ? 'md:col-span-2' : undefined}
-                      >
+                      <div key={field.blank}>
                         <TextField
                           id={`legal-blank-${String(index)}`}
                           label={field.label}
@@ -672,7 +681,7 @@ function LegalDocumentEditor({
                         />
                       </div>
                     ))}
-                  </Grid>
+                  </Stack>
                 </Stack>
               </Stack>
             )}

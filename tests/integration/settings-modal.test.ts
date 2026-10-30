@@ -896,6 +896,24 @@ await test('Mail is a section form whose Save stays disabled until a value chang
   setAdministrator(true);
   try {
     await show('/w/one?settings=mail');
+    assert.deepEqual(
+      [...container.querySelectorAll('.ui-settings-column h3')].map(
+        (e) => e.textContent,
+      ),
+      ['Server', 'Sign-in', 'Sender'],
+    );
+    const pair = container.querySelector('[data-field-pair]');
+    assert.ok(pair?.querySelector('#mail-host'));
+    assert.ok(pair?.querySelector('[data-short-field].w-28 #mail-port'));
+    assert.equal(container.querySelector('#mail-host-hint'), null);
+    const username = container.querySelector('#mail-username');
+    const password = container.querySelector('#mail-password');
+    assert.ok(username && password);
+    assert.ok(
+      !username.closest('[data-field-pair]') &&
+        !password.closest('[data-field-pair]'),
+    );
+
     assert.ok(container.querySelector('#mail-host'));
     assert.equal(
       [...container.querySelectorAll('button')].some(

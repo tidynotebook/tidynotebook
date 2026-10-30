@@ -20,6 +20,7 @@ export function SettingEditRow({
 }): ReactNode {
   return (
     <Form
+      column={false}
       gap={3}
       aria-label={label}
       data-dialog-escape="local"

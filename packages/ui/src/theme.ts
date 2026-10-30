@@ -334,6 +334,10 @@ export const derivedPropertyNames = [
   'surfaceOverlay',
   'cardRaised',
   'borderOverlay',
+  'overlayHover',
+  'overlaySelected',
+  'cardRaisedHover',
+  'cardRaisedSelected',
   'accentFillHover',
   'dangerFillHover',
   'accentSurface',
@@ -402,6 +406,10 @@ const derivedProperties: Readonly<Record<DerivedPropertyName, string>> = {
   surfaceOverlay: '--notes-surface-overlay',
   cardRaised: '--notes-card-raised',
   borderOverlay: '--notes-border-overlay',
+  overlayHover: '--notes-overlay-hover',
+  overlaySelected: '--notes-overlay-selected',
+  cardRaisedHover: '--notes-card-raised-hover',
+  cardRaisedSelected: '--notes-card-raised-selected',
   accentFillHover: '--notes-accent-fill-hover',
   dangerFillHover: '--notes-danger-fill-hover',
   accentSurface: '--notes-accent-surface',
@@ -464,10 +472,15 @@ export function mixHexColors(
 const derivedValues: Readonly<
   Record<DerivedPropertyName, (tokens: ThemeTokens) => string>
 > = {
+  overlayHover: (tokens) => surfaceState(tokens, overlaySurface(tokens), 1.22),
+  overlaySelected: (tokens) =>
+    surfaceState(tokens, overlaySurface(tokens), 1.35),
+  cardRaisedHover: (tokens) =>
+    surfaceState(tokens, raisedSurface(tokens), 1.22),
+  cardRaisedSelected: (tokens) =>
+    surfaceState(tokens, raisedSurface(tokens), 1.35),
   surfaceOverlay: overlaySurface,
-  cardRaised: (tokens) =>
-    mixHexColors(tokens.textStrong, tokens.surfaceCard, 0.03) ??
-    tokens.surfaceCard,
+  cardRaised: raisedSurface,
   borderOverlay: (tokens) =>
     relativeLuminance(tokens.surfaceCard) < relativeLuminance(tokens.textStrong)
       ? (mixHexColors(tokens.border, tokens.surfaceCard, 0.26) ?? tokens.border)
@@ -491,6 +504,26 @@ const derivedValues: Readonly<
     mixHexColors(tokens.dangerText, tokens.background, toneSurfaceBlend) ??
     tokens.background,
 };
+
+/** State fills are computed from their own surface for every palette. */
+function raisedSurface(tokens: ThemeTokens): string {
+  return (
+    mixHexColors(tokens.textStrong, tokens.surfaceCard, 0.03) ??
+    tokens.surfaceCard
+  );
+}
+function surfaceState(
+  tokens: ThemeTokens,
+  surface: string,
+  minimum: number,
+): string {
+  const target = relativeLuminance(surface) < 0.5 ? '#ffffff' : '#000000';
+  for (let step = 1; step <= 100; step += 1) {
+    const fill = mixHexColors(target, surface, step / 100) ?? surface;
+    if (contrastRatio(fill, surface) >= minimum) return fill;
+  }
+  return tokens.surfaceActive;
+}
 
 /** Raise a dark overlay while retaining readable text in imported palettes. */
 function overlaySurface(tokens: ThemeTokens): string {

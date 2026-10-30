@@ -659,32 +659,29 @@ export function CollapsibleSection({
   const panelId = `${id}-panel`;
   return (
     <Stack as="section" gap={2} aria-labelledby={id}>
-      <button
+      <ListRow
+        as="button"
+        density="tree"
         id={id}
-        type="button"
-        className={buttonClassName({
-          variant: 'ghost',
-          size: 'sm',
-          className: 'w-full justify-start text-muted',
-        })}
         aria-expanded={open}
         aria-controls={panelId}
-        onClick={(): void => {
-          onToggle(!open);
-        }}
+        onClick={() => onToggle(!open)}
       >
-        <span className="inline-flex items-center" aria-hidden="true">
+        <span
+          className="inline-flex w-4 shrink-0 items-center"
+          aria-hidden="true"
+        >
           {open ? <ChevronDownIcon /> : <ChevronRightIcon />}
         </span>
-        <span className="flex-1 text-left">{title}</span>
-      </button>
+        <span className="flex-1 text-left text-muted">{title}</span>
+      </ListRow>
       {open ? (
         // The `section` above is already the named region of this group, so
         // the panel carries the identifier that `aria-controls` names and no
         // role of its own. It used to carry both, which put two regions with
         // one name in the list a person moves through. The content keeps the
         // header's disclosure slot. Child rows add only deeper indent levels.
-        <Inset id={panelId} padX={{ fine: 3, coarse: 4 }} padY={2}>
+        <Inset id={panelId} padX={{ fine: 2, coarse: 3 }} padY={2}>
           <Inline gap={2} align="start">
             <span className="w-4 shrink-0" aria-hidden="true" />
             <div data-disclosure-content={id} className="min-w-0 flex-1">

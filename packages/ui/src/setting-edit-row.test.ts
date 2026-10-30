@@ -10,6 +10,8 @@ import {
   DialogFooter,
   Button,
   SettingsSurface,
+  Panel,
+  CollapsibleSection,
 } from '../dist/index.js';
 import { DialogInsetContext } from '../dist/dialog-layout-context.js';
 await test('an inline value edit has no dialog inset or internal scroll line and Cancel precedes Save', () => {
@@ -63,4 +65,25 @@ await test('a desktop dialog owns one inset and keeps Cancel before its primary 
   assert.match(html, /data-ui-pad="0"/);
   assert.ok(!html.includes('data-ui-pad="6"'));
   assert.ok(html.indexOf('Cancel') < html.lastIndexOf('Save'));
+});
+
+await test('the note side panel uses symmetric panel padding and tree disclosure rows', () => {
+  const html = renderToStaticMarkup(
+    createElement(Panel, {
+      children: createElement(CollapsibleSection, {
+        id: 'outline',
+        title: 'Outline',
+        open: true,
+        onToggle: () => {},
+        children: 'Launch plan',
+      }),
+    }),
+  );
+  assert.match(html, /data-ui-layout="panel"/);
+  assert.match(
+    html,
+    /data-ui-pad="\{&quot;fine&quot;:2,&quot;coarse&quot;:3\}"/,
+  );
+  assert.match(html, /data-ui-row="tree"/);
+  assert.match(html, /data-disclosure-content="outline"/);
 });

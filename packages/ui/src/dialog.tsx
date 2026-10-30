@@ -1,4 +1,7 @@
-import { DialogInsetContext } from './dialog-layout-context.ts';
+import {
+  DialogInsetContext,
+  SectionFormContext,
+} from './dialog-layout-context.ts';
 import { Inline, Inset } from './primitives.tsx';
 /**
  * The one modal dialog of the application.
@@ -370,9 +373,11 @@ export function Dialog({
           <DialogInsetContext.Provider
             value={!phone && width !== 'settings' && width !== 'screen'}
           >
-            <DialogHeaderActionsContext.Provider value={headerTarget}>
-              {children}
-            </DialogHeaderActionsContext.Provider>
+            <SectionFormContext.Provider value={false}>
+              <DialogHeaderActionsContext.Provider value={headerTarget}>
+                {children}
+              </DialogHeaderActionsContext.Provider>
+            </SectionFormContext.Provider>
           </DialogInsetContext.Provider>
         </PhoneSheetContext.Provider>
       </div>
@@ -428,13 +433,35 @@ export function DialogBody({
   const phone = useContext(PhoneSheetContext);
   const settings = useSettingsSurface();
   const ownsInset = useContext(DialogInsetContext);
+  const sectionForm = useContext(SectionFormContext);
   return (
     <Region
-      pad={ownsInset ? 0 : settings ? { fine: 6, coarse: 4 } : phone ? 4 : 0}
+      pad={
+        sectionForm
+          ? undefined
+          : ownsInset
+            ? 0
+            : settings
+              ? { fine: 6, coarse: 4 }
+              : phone
+                ? 4
+                : 0
+      }
+      padX={sectionForm ? { fine: 6, coarse: 4 } : undefined}
+      padY={sectionForm ? 0 : undefined}
       gap={3}
       className={fixed || phone ? 'flex-1' : ''}
     >
-      <div className="contents">{children}</div>
+      <div
+        data-form-column=""
+        className={
+          sectionForm
+            ? 'flex w-full flex-col gap-6 fine:max-w-lg'
+            : 'flex w-full flex-col gap-3 fine:max-w-lg'
+        }
+      >
+        {children}
+      </div>
     </Region>
   );
 }
@@ -454,6 +481,7 @@ export function DialogFooter({
   const settings = useSettingsSurface();
   const phone = useContext(PhoneSheetContext);
   const ownsInset = useContext(DialogInsetContext);
+  const sectionForm = useContext(SectionFormContext);
   const all = Children.toArray(children);
   const isCancel = (node: ReactNode) =>
     isValidElement<{ children?: ReactNode }>(node) &&
@@ -513,7 +541,14 @@ export function DialogFooter({
       pad={!ownsInset && settings ? 6 : 0}
       className="ui-dialog-footer"
     >
-      <Inline gap={2} justify="end" wrap>
+      <Inline
+        gap={2}
+        justify="end"
+        wrap
+        className={
+          sectionForm || ownsInset ? 'w-full fine:max-w-lg' : undefined
+        }
+      >
         {children}
       </Inline>
     </Region>

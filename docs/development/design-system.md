@@ -27,6 +27,8 @@ Keep items closer than groups. The group gap equals the container padding.
 The sidebar keeps its hairlines at rest. Other fixed regions show a hairline
 only if adjacent content overflows. Shadows show only under hidden content.
 
+Overlay and raised-card state tokens keep at least 1.2:1 surface contrast.
+
 ## Tokens and CSS
 
 `apps/web/src/tailwind.css` owns spacing, sizes, radius, shadows, surfaces and
@@ -122,16 +124,14 @@ padding. Desktop content is a scrolling region with a stack of flat row
 groups and full-width dividers. Phone groups use cards. Their headings align
 with the inner card content. Headings above tiles align with the tiles.
 
-The title block has one group gap after it. Descriptions add no outer space.
-Rows center content vertically and align label and help text left. Phone
-action rows have no second filled or outlined button.
+Title blocks have one group gap after them. Rows center their content and
+align text left. Phone action rows have no second filled or outlined button.
 
-Keep short value edits in place, and short forms on their section page.
-Use a sub-level for a long picker or a full-height editor; an action needs
-its own confirmation. Mail is a section form, with a saved draft and a footer.
+Keep short edits and forms on the section. Long pickers, editors and confirms can use a sub-level.
 
-All levels use the container header and footer roles. Forms use a stack of
-fields. Back, Close and Cancel discard drafts. Primary actions retain their
+Forms use one edge and `fine:max-w-lg`, with full phone width. Only a fixed
+`w-28` short field can sit beside its long field. Other fields share both edges. Use `SectionHeading` groups, `gap-6`, and fields `gap-3`.
+All levels use the container header and footer roles. Back, Close and Cancel discard drafts. Primary actions retain their
 verb or value-edit label. Focus stays in the modal and returns to its trigger.
 
 ## Checks

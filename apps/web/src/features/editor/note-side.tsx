@@ -1,7 +1,7 @@
 /** The note outline and inbound links share one side region. */
 import type { ReactNode } from 'react';
 import type { LocalStore } from '@notesapp/sync';
-import { Inset, CollapsibleSection } from '@notesapp/ui';
+import { Inset, Panel, CollapsibleSection } from '@notesapp/ui';
 import { OutlinePanel } from './outline.tsx';
 import { Backlinks } from './backlinks.tsx';
 import {
@@ -30,7 +30,8 @@ export function NoteSide({
   readonly onBacklinksChange: (open: boolean) => void;
 }): ReactNode {
   return (
-    <aside
+    <Panel
+      as="aside"
       className={noteSideRegionClassName()}
       aria-label="Note outline and inbound links"
     >
@@ -59,6 +60,6 @@ export function NoteSide({
           />
         </CollapsibleSection>
       </Inset>
-    </aside>
+    </Panel>
   );
 }

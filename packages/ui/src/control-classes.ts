@@ -1,3 +1,4 @@
+import { overlayStateClasses } from './surface-classes.ts';
 /**
  * The one recipe of every control, as pure functions.
  *
@@ -512,7 +513,7 @@ const menuSurfaceParts = [
     value: '1px solid var(--notes-border-overlay)',
   },
   {
-    classes: 'bg-overlay',
+    classes: `bg-overlay ${overlayStateClasses}`,
     property: 'backgroundColor',
     value: 'var(--notes-surface-overlay)',
   },

@@ -1,3 +1,7 @@
+import {
+  raisedStateClasses,
+  responsiveRaisedStateClasses,
+} from './surface-classes.ts';
 import { pageGutter } from './public-layout.ts';
 import { Stack, Inline } from './primitives.tsx';
 import { useSettingsSurface, SettingsRowActions } from './settings-layout.tsx';
@@ -218,7 +222,7 @@ export function Card<T extends ElementType = 'div'>({
     {
       ...props,
       'data-ui-card': '',
-      className: `flex min-w-0 flex-col gap-0 rounded-xl ${responsive ? 'bg-transparent coarse:bg-card-raised' : 'bg-card-raised'} ${className}`,
+      className: `flex min-w-0 flex-col gap-0 rounded-xl ${responsive ? 'bg-transparent coarse:bg-card-raised ' + responsiveRaisedStateClasses : 'bg-card-raised ' + raisedStateClasses} ${className}`,
     },
     title === undefined ? null : (
       <h2 id={titleId} className="text-title-header text-strong">

@@ -1,3 +1,4 @@
+import { overlayStateClasses } from './surface-classes.ts';
 import { fixedRegionClasses } from './scroll-classes.ts';
 /**
  * The classes of the one modal dialog, as pure functions.
@@ -56,20 +57,20 @@ export function dialogPanelClassName(
   fillSheet = false,
 ): string {
   if (phone && width !== 'screen')
-    return `phone-sheet not-data-sheet-ready:opacity-0 relative flex max-h-sheet w-full flex-col overflow-hidden rounded-t-xl border-y border-edge-subtle bg-card text-strong shadow-modal outline-none ${width === 'settings' || width === 'template' ? 'h-full max-h-full' : fillSheet ? 'phone-sheet-fill [&_[role=tree]]:max-h-none' : ''}`;
+    return `${width === 'settings' ? '' : overlayStateClasses} phone-sheet not-data-sheet-ready:opacity-0 relative flex max-h-sheet w-full flex-col overflow-hidden rounded-t-xl border-y border-edge-subtle bg-card text-strong shadow-modal outline-none ${width === 'settings' || width === 'template' ? 'h-full max-h-full' : fillSheet ? 'phone-sheet-fill [&_[role=tree]]:max-h-none' : ''}`;
   if (width === 'screen')
     return 'relative h-full w-full text-strong outline-none';
   if (width === 'settings')
     return 'flex h-full max-h-full w-full flex-col overflow-hidden bg-card text-strong outline-none lg:h-settings lg:max-w-settings lg:rounded-xl lg:border lg:border-edge-subtle lg:shadow-modal';
   if (width === 'template')
-    return 'flex h-full max-h-full w-full flex-col overflow-hidden p-6 rounded-t-xl border border-edge-subtle bg-card text-strong shadow-modal outline-none lg:h-template lg:max-w-3xl lg:rounded-xl';
+    return `${overlayStateClasses} flex h-full max-h-full w-full flex-col overflow-hidden p-6 rounded-t-xl border border-edge-subtle bg-card text-strong shadow-modal outline-none lg:h-template lg:max-w-3xl lg:rounded-xl`;
   const measure =
     width === 'small'
       ? 'max-w-md'
       : width === 'large'
         ? 'max-w-3xl'
         : 'max-w-xl';
-  return `relative flex w-full flex-col gap-6 p-6 ${measure} max-h-full overflow-hidden overscroll-contain rounded-xl border border-edge-subtle bg-card text-strong shadow-modal outline-none`;
+  return `${overlayStateClasses} relative flex w-full flex-col gap-6 p-6 ${measure} max-h-full overflow-hidden overscroll-contain rounded-xl border border-edge-subtle bg-card text-strong shadow-modal outline-none`;
 }
 
 /** The title of a dialog, as classes. */

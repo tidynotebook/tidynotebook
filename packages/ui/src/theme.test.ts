@@ -405,3 +405,23 @@ await test('overlay surfaces retain text and icon contrast in every palette', ()
     '#ffffff',
   );
 });
+
+await test('overlay and raised-card state fills have at least 1.2 contrast in every palette', () => {
+  for (const family of themeFamilies)
+    for (const theme of Object.values(family.variants)) {
+      if (!theme) continue;
+      for (const [surface, states] of [
+        ['surfaceOverlay', ['overlayHover', 'overlaySelected']],
+        ['cardRaised', ['cardRaisedHover', 'cardRaisedSelected']],
+      ] as const)
+        for (const state of states) {
+          assert.ok(
+            contrastRatio(
+              derivedValue(theme.tokens, surface),
+              derivedValue(theme.tokens, state),
+            ) >= 1.2,
+            `${theme.id}: ${state}`,
+          );
+        }
+    }
+});

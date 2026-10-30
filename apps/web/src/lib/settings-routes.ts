@@ -104,7 +104,8 @@ export const settingsPages = [
     title: 'Mail',
     group: 'Administration',
     sections: ['admin-mail'],
-    scope: 'Mail delivery for this installation.',
+    scope:
+      'Mail delivery for this installation. Without a mail server, an invitation shows its link once and nobody can reset a password.',
   },
   {
     path: 'legal',

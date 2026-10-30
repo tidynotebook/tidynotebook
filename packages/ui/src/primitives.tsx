@@ -1,5 +1,9 @@
+import { useSettingsSurface } from './settings-layout.tsx';
 /** Typed composition. Spacing belongs to a parent, not to a feature class. */
-import { DialogInsetContext } from './dialog-layout-context.ts';
+import {
+  DialogInsetContext,
+  SectionFormContext,
+} from './dialog-layout-context.ts';
 import {
   useContext,
   createElement,
@@ -428,22 +432,32 @@ export function CanvasImage(props: ComponentPropsWithRef<'img'>): ReactNode {
 /** A form either groups fields or contains independently padded regions. */
 export function Form({
   regions = false,
+  section = false,
+  column,
+  className = '',
   gap = regions ? 0 : 3,
   children,
   ...props
 }: ComponentPropsWithRef<'form'> & {
   readonly regions?: boolean;
+  readonly section?: boolean;
+  readonly column?: boolean;
   readonly gap?: SpaceValue;
 }): ReactNode {
   const dialogInset = useContext(DialogInsetContext);
+  const settings = useSettingsSurface();
+  const bounded = column ?? (settings || dialogInset);
   return (
-    <Stack
-      {...props}
-      as="form"
-      gap={regions && dialogInset ? 6 : gap}
-      fill={regions}
-    >
-      {children}
-    </Stack>
+    <SectionFormContext.Provider value={section}>
+      <Stack
+        {...props}
+        className={`${bounded && !section ? 'w-full fine:max-w-lg fine:self-start' : ''} ${section ? 'fine:flex-none' : ''} ${className}`}
+        as="form"
+        gap={regions && dialogInset ? 6 : gap}
+        fill={regions}
+      >
+        {children}
+      </Stack>
+    </SectionFormContext.Provider>
   );
 }

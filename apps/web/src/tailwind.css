@@ -389,6 +389,10 @@
   --color-card: var(--notes-surface-card, #222222);
   --color-card-raised: var(--notes-card-raised, #282828);
   --color-overlay: var(--notes-surface-overlay, #2a2a2a);
+  --color-overlay-hover: var(--notes-overlay-hover, #393939);
+  --color-overlay-selected: var(--notes-overlay-selected, #3f3f3f);
+  --color-card-raised-hover: var(--notes-card-raised-hover, #373737);
+  --color-card-raised-selected: var(--notes-card-raised-selected, #3e3e3e);
   --color-overlay-edge: var(--notes-border-overlay, #3a3a39);
   --color-hover: var(--notes-surface-hover, #2b2b2b);
   --color-active: var(--notes-surface-active, #323232);

@@ -263,6 +263,7 @@ export default function TemplateChoices({
   };
   return (
     <Form
+      column={false}
       regions
       gap={{ fine: 6, coarse: 0 }}
 

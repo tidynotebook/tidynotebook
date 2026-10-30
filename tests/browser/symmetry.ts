@@ -330,6 +330,57 @@ export async function auditComposition(page: Page) {
             0,
           );
     }
+    for (const column of [
+      ...document.querySelectorAll('[data-form-column]'),
+    ].filter(visible)) {
+      const fields = [
+        ...column.querySelectorAll(
+          'input:not([type=checkbox]),select,textarea',
+        ),
+      ].filter(visible);
+      const edge = column.getBoundingClientRect();
+      if (!coarse)
+        check(column, 'form maximum width', Math.max(0, edge.width - 512), 0);
+      for (const field of fields) {
+        if (field.closest('[data-short-field]')) continue;
+        const box = field.getBoundingClientRect();
+        check(field, 'form left edge', box.left, edge.left);
+        const pair = field.closest('[data-field-pair]');
+        if (!pair) check(field, 'form right edge', box.right, edge.right);
+      }
+    }
+    const sidePanel = document.querySelector(
+      '[aria-label="Note outline and inbound links"]',
+    );
+    if (sidePanel && visible(sidePanel)) {
+      const style = getComputedStyle(sidePanel);
+      for (const padding of [
+        style.paddingTop,
+        style.paddingBottom,
+        style.paddingLeft,
+        style.paddingRight,
+      ])
+        check(
+          sidePanel,
+          'note panel inset',
+          parseFloat(padding),
+          coarse ? 12 : 8,
+        );
+      check(
+        sidePanel,
+        'note panel group gap',
+        parseFloat(style.gap),
+        coarse ? 12 : 8,
+      );
+      for (const header of sidePanel.querySelectorAll('[aria-expanded]'))
+        if (visible(header))
+          check(
+            header,
+            'note panel tree header',
+            header.getBoundingClientRect().height,
+            coarse ? 36 : 28,
+          );
+    }
     const rows = [...document.querySelectorAll('[data-ui-row]')].filter(
         visible,
       ),
@@ -728,6 +779,60 @@ export async function auditHoverPadding(page: Page) {
     )
       continue;
     await control.hover();
+    const stateContrast = await control.evaluate(async (element) => {
+      if (
+        !element.matches(
+          '[data-ui-row],[role=menuitem],[role=menuitemradio],[role=option]',
+        )
+      )
+        return null;
+      const surface = element.parentElement?.closest(
+        '.bg-overlay,.bg-card-raised,.coarse\\:bg-card-raised',
+      );
+      if (!surface) return null;
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      const colour = (value: string) => {
+        const probe = document.createElement('span');
+        probe.style.backgroundColor = value;
+        element.append(probe);
+        const result = getComputedStyle(probe).backgroundColor;
+        probe.remove();
+        return result;
+      };
+      const luminance = (value: string) => {
+        const channels =
+          value
+            .match(/[\d.]+/g)
+            ?.slice(0, 3)
+            .map(Number) ?? [];
+        return channels.reduce((sum, c, i) => {
+          const v = c / 255;
+          return (
+            sum +
+            (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4) *
+              ([0.2126, 0.7152, 0.0722][i] ?? 0)
+          );
+        }, 0);
+      };
+      const base = luminance(getComputedStyle(surface).backgroundColor);
+      const fills = [
+        getComputedStyle(element).backgroundColor,
+        colour('var(--notes-surface-active)'),
+      ];
+      return Math.min(
+        ...fills.map((fill) => {
+          const v = luminance(fill);
+          return (Math.max(v, base) + 0.05) / (Math.min(v, base) + 0.05);
+        }),
+      );
+    });
+    if (stateContrast !== null && stateContrast < 1.2)
+      issues.push({
+        kind: 'surface state contrast',
+        text: await control.evaluate((e) => e.textContent ?? ''),
+        actual: stateContrast,
+        expected: 1.2,
+      });
     const measured = await control.evaluate((element) => {
       const visible = (item: Element) =>
         item.checkVisibility({
