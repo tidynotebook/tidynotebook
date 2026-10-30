@@ -1,8 +1,6 @@
 name: Fast forward main
 
-# A person runs this by hand. It moves main to the reviewed head of one pull
-# request without a new test run. tools/ff-only-merge.mjs holds every gate.
-# See docs/development/fast-forward-merge.md.
+# Manual fast forward to a specified pull request head, without review or CI gates.
 
 on:
   workflow_dispatch:
@@ -12,11 +10,11 @@ on:
         required: true
         type: string
       expected_head_sha:
-        description: Full 40 character head commit SHA that was reviewed
+        description: Full 40 character head commit SHA
         required: true
         type: string
       dry_run:
-        description: Check every gate and write nothing
+        description: Check the fast forward and write nothing
         required: true
         type: boolean
         default: true
@@ -35,8 +33,6 @@ jobs:
     permissions:
       contents: write
       pull-requests: read
-      checks: read
-      statuses: read
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -55,24 +51,10 @@ jobs:
         with:
           node-version-file: .node-version
           package-manager-cache: false
-      - name: Check the gates and fast forward main
+      - name: Fast forward main
         env:
           GITHUB_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ inputs.pr_number }}
           EXPECTED_HEAD_SHA: ${{ inputs.expected_head_sha }}
           DRY_RUN: ${{ inputs.dry_run }}
         run: node tools/ff-only-merge.mjs
-
-  dispatch-release:
-    name: Start main image publication
-    needs: fast-forward
-    if: inputs.dry_run == false
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    permissions:
-      actions: write
-    steps:
-      - name: Dispatch main publication after the successful merge
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh api --method POST repos/tidynotebook/tidynotebook/actions/workflows/release.yml/dispatches -f ref=main

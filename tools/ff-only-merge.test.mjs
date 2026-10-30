@@ -3,28 +3,20 @@ import test from 'node:test';
 import {
   GateError,
   checkRange,
-  checkRequiredChecks,
-  checkReviews,
-  codeRabbit,
   mainRef,
   parseInputs,
-  requiredChecks,
   run,
 } from './ff-only-merge.mjs';
 import {
   B,
   C,
   H,
-  actions,
   api,
   fakeGitHub,
   graphqlUrl,
   old,
   passing,
-  person,
-  rabbit,
   repo,
-  review,
 } from './ff-merge-fake.mjs';
 
 const env = {
@@ -132,21 +124,20 @@ await test('a passing pull request moves main from B to H with one compare and s
   );
   assert.ok(!github.calls.some((call) => /\/merge\b|\/git\/refs\//.test(call)));
   assert.ok(
-    github.calls.some((call) => call.includes(`/commits/${H}/statuses?`)),
-  );
-  assert.ok(
-    !github.calls.some((call) => call.includes(`/commits/${H}/status?`)),
+    !github.calls.some((call) =>
+      /reviews|rules|check-runs|statuses/.test(call),
+    ),
   );
 });
 
-await test('a dry run checks every gate twice and never writes', async () => {
+await test('a dry run checks the fast forward twice and never writes', async () => {
   const state = passing();
   const github = fakeGitHub(state);
   const outcome = await run({ ...env, DRY_RUN: 'true' }, github.fetch);
   assert.equal(outcome.ok, true, outcome.result);
   assert.match(
     outcome.result,
-    /Every gate holds on a{40}\. This was a dry run/,
+    /The fast forward is valid for a{40}\. This was a dry run/,
   );
   assert.equal(github.mutations.length, 0);
   assert.equal(state.main, B);
@@ -159,53 +150,12 @@ await test('a dry run checks every gate twice and never writes', async () => {
     github.calls.filter((call) => call.includes('/compare/')).length,
     2,
   );
-
-  const blocked = passing();
-  blocked.threads = [{ id: 'T1', isResolved: false, isOutdated: false }];
-  const stopped = await run(
-    { ...env, DRY_RUN: 'true' },
-    fakeGitHub(blocked).fetch,
-  );
-  assert.equal(stopped.ok, false);
-  assert.match(stopped.result, /not resolved/);
 });
 
-await test('every list is read past its first page', async () => {
-  const state = passing();
-  state.threads = [
-    { id: 'T1', isResolved: true, isOutdated: false },
-    { id: 'T2', isResolved: true, isOutdated: false },
-    { id: 'T3', isResolved: false, isOutdated: true },
-  ];
-  state.reviews.push(review(3, person, 'COMMENTED'));
-  const github = fakeGitHub(state);
-  const outcome = await run(env, github.fetch);
-  assert.match(
-    outcome.result,
-    /1 review thread\(s\) are not resolved, 1 of them outdated/,
-  );
-  assert.ok(
-    github.calls.some((call) =>
-      call.includes('/pulls/5/reviews?per_page=100&page=2'),
-    ),
-  );
-  assert.ok(
-    github.calls.some((call) =>
-      call.includes('/rules/branches/main?per_page=100&page=3'),
-    ),
-  );
-});
-
-await test('the pull request is open, ready, from this repository and into main', async () => {
-  await expectStop((state) => {
-    state.pr.head.repo = { id: 2 };
-  }, /head branch is not in this repository/);
+await test('the pull request is open and targets this repository and main', async () => {
   await expectStop((state) => {
     state.pr.base.repo = { id: 2 };
   }, /belongs to another repository/);
-  await expectStop((state) => {
-    state.pr.draft = true;
-  }, /is a draft/);
   await expectStop((state) => {
     state.pr.base.ref = 'release';
   }, /does not target main/);
@@ -220,260 +170,27 @@ await test('the head must be the expected SHA', async () => {
   }, /The head is dddddddddddd, not the expected aaaaaaaaaaaa/);
 });
 
-await test('only a CodeRabbit approval of exactly H counts', async () => {
-  await expectStop((state) => {
-    state.reviews = [review(1, rabbit, 'APPROVED', old)];
-  }, /CodeRabbit approved dddddddddddd, not the head/);
-  await expectStop((state) => {
-    state.reviews = [];
-  }, /CodeRabbit has not approved/);
-  await expectStop((state) => {
-    state.reviews = [
-      review(
-        1,
-        { ...rabbit, login: 'coderabbit', type: 'User', id: 9 },
-        'APPROVED',
-      ),
-    ];
-  }, /CodeRabbit has not approved/);
-  await expectStop((state) => {
-    state.reviews = [review(1, { ...rabbit, id: 9 }, 'APPROVED')];
-  }, /matches CodeRabbit only in part/);
-  await expectStop((state) => {
-    state.reviews = [review(1, { ...rabbit, type: 'User' }, 'APPROVED')];
-  }, /matches CodeRabbit only in part/);
-  const other = passing();
-  const dependabot = { login: 'dependabot[bot]', type: 'Bot', id: 49699333 };
-  other.reviews.push(review(3, dependabot, 'COMMENTED'));
-  other.statuses.push({
-    id: 5,
-    context: 'Other',
-    state: 'success',
-    creator: dependabot,
-  });
-  assert.equal((await run(env, fakeGitHub(other).fetch)).ok, true);
-});
-
-await test('a green CodeRabbit status without an approval is not enough', async () => {
-  await expectStop((state) => {
-    state.reviews = [review(1, rabbit, 'COMMENTED')];
-  }, /CodeRabbit has not approved/);
-});
-
-await test('the CodeRabbit status on H is a success from CodeRabbit', async () => {
-  await expectStop((state) => {
-    state.statuses = [];
-  }, /CodeRabbit has no status/);
-  await expectStop((state) => {
-    state.statuses = [
-      { id: 30, context: 'CodeRabbit', state: 'failure', creator: rabbit },
-      ...state.statuses,
-    ];
-  }, /not a success/);
-  await expectStop((state) => {
-    state.statuses.push({
-      id: 1,
-      context: 'CodeRabbit',
-      state: 'success',
-      creator: person,
-    });
-  }, /Another account wrote a CodeRabbit status/);
-});
-
-await test('the context name alone does not prove who wrote a status', async () => {
-  await expectStop((state) => {
-    state.statuses = [
-      { id: 30, context: 'CodeRabbit', state: 'success', creator: null },
-      ...state.statuses,
-    ];
-  }, /Another account wrote a CodeRabbit status/);
-  await expectStop((state) => {
-    state.statuses = [{ id: 30, context: 'CodeRabbit', state: 'success' }];
-  }, /Another account wrote a CodeRabbit status/);
-  await expectStop((state) => {
-    state.statuses = [
-      {
-        id: 30,
-        context: 'CodeRabbit',
-        state: 'success',
-        creator: { login: codeRabbit.login, type: 'Bot' },
-      },
-    ];
-  }, /matches CodeRabbit only in part/);
-});
-
-await test('the latest review of each reviewer decides', () => {
-  assert.throws(
-    () =>
-      checkReviews(
-        [
-          review(1, person, 'APPROVED'),
-          review(2, person, 'CHANGES_REQUESTED'),
-          review(3, rabbit, 'APPROVED'),
-        ],
-        H,
-      ),
-    /person requests changes/,
-  );
-  checkReviews(
-    [
-      review(1, person, 'CHANGES_REQUESTED'),
-      review(2, person, 'APPROVED'),
-      review(3, rabbit, 'APPROVED'),
-    ],
-    H,
-  );
-  checkReviews(
-    [
-      review(1, person, 'CHANGES_REQUESTED'),
-      review(2, person, 'COMMENTED'),
-      review(3, rabbit, 'APPROVED'),
-    ].map((item) => (item.id === 1 ? { ...item, state: 'DISMISSED' } : item)),
-    H,
-  );
-  assert.throws(
-    () =>
-      checkReviews(
-        [review(1, rabbit, 'APPROVED'), review(2, rabbit, 'CHANGES_REQUESTED')],
-        H,
-      ),
-    /requests changes/,
-  );
-  checkReviews(
-    [review(1, rabbit, 'APPROVED'), review(2, rabbit, 'COMMENTED', old)],
-    H,
-  );
-  const later = {
-    ...review(1, rabbit, 'CHANGES_REQUESTED'),
-    submitted_at: '2026-10-16T12:00:00Z',
-  };
-  assert.throws(
-    () => checkReviews([later, review(2, rabbit, 'APPROVED')], H),
-    /requests changes/,
+await test('reviews, checks, statuses and rules do not add merge gates', async () => {
+  const state = passing();
+  state.reviews = [];
+  state.statuses = [];
+  state.checkRuns = [];
+  state.threads = [{ id: 'T1', isResolved: false, isOutdated: false }];
+  state.rules = [{ type: 'update' }];
+  state.pr.draft = true;
+  state.pr.head.repo = { id: 2 };
+  const github = fakeGitHub(state);
+  const outcome = await run(env, github.fetch);
+  assert.equal(outcome.ok, true, outcome.result);
+  assert.equal(state.main, H);
+  assert.ok(
+    !github.calls.some((call) =>
+      /reviews|rules|check-runs|statuses/.test(call),
+    ),
   );
 });
 
-await test('every review thread is resolved, also an outdated one', async () => {
-  await expectStop((state) => {
-    state.threads = [{ id: 'T1', isResolved: false, isOutdated: false }];
-  }, /1 review thread\(s\) are not resolved, 0 of them outdated/);
-  await expectStop((state) => {
-    state.threads = [{ id: 'T1', isResolved: false, isOutdated: true }];
-  }, /1 of them outdated/);
-});
-
-await test('every required check succeeds on H from its named app', async () => {
-  const required = [{ context: 'Check', integrationId: 15368 }];
-  const lint = passing().checkRuns[0];
-  assert.throws(
-    () => checkRequiredChecks(required, [], [], H),
-    /"Check" has no result/,
-  );
-  assert.throws(
-    () => checkRequiredChecks(required, [{ ...lint, app: { id: 1 } }], [], H),
-    /"Check" has no result/,
-  );
-  assert.throws(
-    () =>
-      checkRequiredChecks(
-        required,
-        [],
-        [{ id: 1, context: 'Check', state: 'success' }],
-        H,
-      ),
-    /"Check" has no result/,
-  );
-  assert.throws(
-    () => checkRequiredChecks(required, [{ ...lint, head_sha: old }], [], H),
-    /"Check" has no result/,
-  );
-  assert.throws(
-    () =>
-      checkRequiredChecks(
-        required,
-        [{ ...lint, conclusion: 'failure' }],
-        [],
-        H,
-      ),
-    /did not succeed/,
-  );
-  assert.throws(
-    () =>
-      checkRequiredChecks(
-        required,
-        [lint, { ...lint, id: 11, status: 'in_progress', conclusion: null }],
-        [],
-        H,
-      ),
-    /did not succeed/,
-  );
-  checkRequiredChecks(
-    required,
-    [lint, { ...lint, id: 9, conclusion: 'failure' }],
-    [],
-    H,
-  );
-  checkRequiredChecks(
-    [{ context: 'Docs', integrationId: null }],
-    [],
-    [{ id: 1, context: 'Docs', state: 'success' }],
-    H,
-  );
-  assert.throws(
-    () =>
-      checkRequiredChecks(
-        [{ context: 'Docs', integrationId: null }],
-        [],
-        [
-          { id: 2, context: 'Docs', state: 'failure' },
-          { id: 1, context: 'Docs', state: 'success' },
-        ],
-        H,
-      ),
-    /did not succeed/,
-  );
-  await expectStop((state) => {
-    state.checkRuns = [];
-  }, /"Check" has no result/);
-});
-
-await test('a rule that the gate does not evaluate stops it', () => {
-  const rules = passing().rules;
-  assert.deepEqual(requiredChecks(rules), [
-    { context: 'Check', integrationId: 15368 },
-  ]);
-  assert.throws(
-    () => requiredChecks([...rules, { type: 'update' }]),
-    /rule "update"/,
-  );
-  assert.throws(
-    () => requiredChecks([...rules, { type: 'merge_queue' }]),
-    /rule "merge_queue"/,
-  );
-  assert.throws(
-    () =>
-      requiredChecks(
-        rules.map((rule) =>
-          rule.type === 'pull_request'
-            ? {
-                ...rule,
-                parameters: {
-                  ...rule.parameters,
-                  required_approving_review_count: 1,
-                },
-              }
-            : rule,
-        ),
-      ),
-    /requires approvals/,
-  );
-  assert.throws(
-    () => requiredChecks(rules.slice(0, 3)),
-    /no required status check/,
-  );
-});
-
-await test('main must be an ancestor of H with no merge commit between them', async () => {
+await test('main must be an ancestor of H', async () => {
   const state = passing();
   checkRange(state.compare, state.commits, B, H);
   assert.throws(
@@ -504,33 +221,13 @@ await test('main must be an ancestor of H with no merge commit between them', as
     () => checkRange({ ...state.compare, ahead_by: 300 }, state.commits, B, H),
     /every commit/,
   );
-  await expectStop((changed) => {
-    changed.commits[0] = { sha: C, parents: [{ sha: B }, { sha: old }] };
-  }, /cccccccccccc is a merge commit/);
+  state.commits[0] = { sha: C, parents: [{ sha: B }, { sha: old }] };
+  checkRange(state.compare, state.commits, B, H);
 });
 
 await test('any change between the two reads stops the write', async () => {
   /** @type {((state: import('./ff-merge-fake.mjs').State) => void)[]} */
   const changes = [
-    (state) => state.reviews.push(review(3, person, 'COMMENTED')),
-    (state) =>
-      state.threads.push({ id: 'T2', isResolved: true, isOutdated: false }),
-    (state) =>
-      state.statuses.unshift({
-        id: 22,
-        context: 'CodeRabbit',
-        state: 'success',
-        creator: rabbit,
-      }),
-    (state) =>
-      state.checkRuns.push({
-        id: 12,
-        name: 'Other',
-        head_sha: H,
-        status: 'completed',
-        conclusion: 'success',
-        app: actions,
-      }),
     (state) => {
       state.main = C;
       state.compare = {
@@ -610,7 +307,7 @@ await test('the run stops outside main and never sends the token to another host
   /** @type {import('./ff-only-merge.mjs').Fetch} */
   const redirect = async (address, init) => {
     const reply = await github.fetch(address, init);
-    return address.includes('/rules/')
+    return address.includes('/compare/')
       ? {
           ...reply,
           headers: { get: () => '<https://evil.test/x>; rel="next"' },

@@ -13,11 +13,8 @@ import {
   commentAt,
   fakeGitHub,
   graphqlUrl,
-  old,
   passing,
-  rabbit,
   repo,
-  review,
 } from './ff-merge-fake.mjs';
 import { mainRef } from './ff-only-merge.mjs';
 
@@ -100,7 +97,9 @@ async function expectRepliedStop(change, message) {
 }
 
 await test('the command is exactly /ff-merge or /ff-merge and a SHA prefix', () => {
+  assert.equal(parseCommand('ff-merge'), null);
   assert.equal(parseCommand('/ff-merge'), null);
+  assert.equal(parseCommand(`ff-merge ${H}`), H);
   assert.equal(parseCommand('/ff-merge\r\n'), null);
   assert.equal(parseCommand('/ff-merge aaaaaaaaaaaa'), 'aaaaaaaaaaaa');
   assert.equal(parseCommand(`/ff-merge ${H}`), H);
@@ -119,7 +118,7 @@ await test('the command is exactly /ff-merge or /ff-merge and a SHA prefix', () 
     'please /ff-merge',
     '/FF-MERGE',
   ])
-    assert.throws(() => parseCommand(body), /must be exactly \/ff-merge/);
+    assert.throws(() => parseCommand(body), /must be exactly ff-merge/);
 });
 
 await test('the event values are data of a strict shape', () => {
@@ -222,63 +221,76 @@ await test('an admin gets a reply about a malformed command', async () => {
   }, /must be exactly/);
 });
 
-await test('a non-admin gets no reply, also for a malformed command', async () => {
+await test('a user without push access gets no reply, also for a malformed command', async () => {
   await expectSilentStop((state) => {
-    state.permission.permission = 'write';
+    state.permission.permission = 'read';
     state.comment.body = '/ff-merge please';
-  }, /Only an admin/);
+  }, /push access is required/);
 });
 
-await test('only an admin can merge by comment', async () => {
-  for (const permission of ['write', 'read', 'none', ''])
+await test('users without push access cannot merge by comment', async () => {
+  for (const permission of ['triage', 'read', 'none', ''])
     await expectSilentStop((state) => {
       state.permission.permission = permission;
-    }, /Only an admin/);
+    }, /push access is required/);
   await expectSilentStop((state) => {
     state.permission.user = { ...state.permission.user, id: 8 };
   }, /permission of another user/);
 });
 
-await test('a head that moved after the comment stops, even with a later approval', async () => {
-  await expectRepliedStop((state) => {
-    state.reviews = [
-      review(1, rabbit, 'APPROVED', old),
-      { ...review(2, rabbit, 'APPROVED'), submitted_at: at(30) },
-    ];
-  }, /CodeRabbit approved aaaaaaaaaaaa after the comment/);
-  await expectRepliedStop((state) => {
-    state.reviews = [
-      { ...review(2, rabbit, 'APPROVED'), submitted_at: commentAt },
-    ];
-  }, /after the comment/);
-  await expectRepliedStop((state) => {
-    state.reviews = [review(1, rabbit, 'APPROVED', old)];
-  }, /CodeRabbit approved dddddddddddd, not the head/);
+await test('admin, maintain and write permissions can merge without approval or checks', async () => {
+  for (const permission of ['admin', 'maintain', 'write']) {
+    const { state, github, outcome } = await attempt((state) => {
+      state.permission.permission = permission;
+      state.comment.body = 'ff-merge';
+      state.reviews = [];
+      state.statuses = [];
+      state.checkRuns = [];
+      state.threads = [{ id: 'T1', isResolved: false, isOutdated: true }];
+    });
+    assert.equal(outcome.ok, true, outcome.result);
+    assert.equal(state.main, H);
+    assert.ok(
+      !github.calls.some((call) =>
+        /reviews|rules|check-runs|statuses/.test(call),
+      ),
+    );
+    assert.equal(
+      github.calls.filter(
+        (call) => call.startsWith('POST ') && call.endsWith('/graphql'),
+      ).length,
+      1,
+    );
+  }
 });
 
-await test('a force push after the approval stops, an older one does not', async () => {
-  await expectRepliedStop((state) => {
-    state.forcePushes = [{ id: 'F1', createdAt: '2026-10-16T10:30:00Z' }];
-  }, /force pushed after the approval/);
-  await expectRepliedStop((state) => {
-    state.forcePushes = [{ id: 'F1', createdAt: '2026-10-16T10:02:00Z' }];
-  }, /force pushed after the approval/);
-  const { outcome } = await attempt((state) => {
-    state.forcePushes = [{ id: 'F1', createdAt: '2026-10-16T10:01:30Z' }];
-  });
-  assert.equal(outcome.ok, true, outcome.result);
+await test('a custom repository role with push access can merge', async () => {
+  const state = passing();
+  const github = fakeGitHub(state);
+  /** @type {import('./ff-only-merge.mjs').Fetch} */
+  const fetch = async (address, init) => {
+    const reply = await github.fetch(address, init);
+    if (!address.includes('/collaborators/')) return reply;
+    return {
+      ...reply,
+      text: async () =>
+        JSON.stringify({
+          permission: 'custom',
+          user: { id: 7, permissions: { push: true } },
+        }),
+    };
+  };
+  assert.equal((await runComment(env, fetch, now)).ok, true);
 });
 
-await test('a change between the two reads stops the write', async () => {
-  const { state, github, outcome } = await attempt(() => {}, {
-    afterForcePushes: (changed) => {
-      changed.forcePushes.push({ id: 'F2', createdAt: '2026-10-16T09:00:00Z' });
+await test('a head that changes during the run stops the write', async () => {
+  const { github, outcome } = await attempt(() => {}, {
+    afterRead: (state) => {
+      state.pr.head.sha = 'd'.repeat(40);
     },
   });
   assert.equal(outcome.ok, false);
-  assert.match(outcome.result, /changed between the two reads/);
   assert.equal(github.mutations.length, 0);
-  assert.equal(state.replies.length, 1);
 });
 
 await test('a re-run after the merge stops and says so', async () => {
