@@ -197,30 +197,55 @@ try {
                   : '.ui-settings-column > .ui-settings-heading',
               ),
               bottom = document.querySelector('.ui-sidebar-footer');
+            const probe = document.createElement('span');
+            probe.className = 'border-edge-subtle';
+            document.body.append(probe);
+            const lineColor = getComputedStyle(probe).borderTopColor;
+            probe.remove();
+            const edge = (element: Element | null) => {
+              if (!element) return null;
+              const style = getComputedStyle(element, '::before');
+              return {
+                opacity: style.opacity,
+                width: style.borderTopWidth,
+                style: style.borderTopStyle,
+                color: style.borderTopColor,
+                shadow: style.boxShadow,
+              };
+            };
             return {
+              lineColor,
               start: root?.dataset.scrollStartHidden,
               end: root?.dataset.scrollEndHidden,
               top: top?.getAttribute('data-scroll-hidden'),
-              topOpacity: top
-                ? getComputedStyle(top, '::before').opacity
-                : undefined,
+              topEdge: edge(top),
               bottom:
                 surface === 'sidebar'
                   ? bottom?.getAttribute('data-scroll-hidden')
                   : undefined,
-              bottomOpacity:
-                surface === 'sidebar' && bottom
-                  ? getComputedStyle(bottom, '::before').opacity
-                  : undefined,
+              bottomEdge: surface === 'sidebar' ? edge(bottom) : null,
             };
           }, surface);
           assert.equal(state.start, String(position !== 'top'));
           assert.equal(state.end, String(position !== 'end'));
           assert.equal(state.top, String(position !== 'top'));
-          assert.equal(state.topOpacity, position === 'top' ? '0' : '1');
+          const checkEdge = (edge: typeof state.topEdge, hidden: boolean) => {
+            assert.ok(edge, 'The fixed region must have an edge');
+            assert.equal(edge.opacity, '1', 'The hairline stays visible');
+            assert.equal(edge.width, '1px');
+            assert.equal(edge.style, 'solid');
+            assert.equal(edge.color, state.lineColor);
+            assert.notEqual(edge.color, 'rgba(0, 0, 0, 0)');
+            assert.equal(
+              edge.shadow !== 'none',
+              hidden,
+              'Only hidden content casts a scroll shadow',
+            );
+          };
+          checkEdge(state.topEdge, position !== 'top');
           if (surface === 'sidebar') {
             assert.equal(state.bottom, String(position !== 'end'));
-            assert.equal(state.bottomOpacity, position === 'end' ? '0' : '1');
+            checkEdge(state.bottomEdge, position !== 'end');
             if (position !== 'end') {
               await p.locator('#notes-sidebar').screenshot({
                 path: `${out}/sidebar-${position}-${width}-${scheme}.png`,

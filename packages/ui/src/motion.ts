@@ -71,6 +71,6 @@ export const phoneSheetMotion = {
   easing: 'ease-out',
 } as const;
 
-/** Scroll dividers fade only while content passes under a fixed region. */
+/** Scroll shadows change while content passes under a fixed region. */
 export const transitionScrollEdge =
-  'before:transition-opacity before:duration-120 motion-reduce:before:transition-none after:transition-opacity after:duration-120 motion-reduce:after:transition-none';
+  'before:transition-shadow before:duration-120 motion-reduce:before:transition-none after:transition-shadow after:duration-120 motion-reduce:after:transition-none';

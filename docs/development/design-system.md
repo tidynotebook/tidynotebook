@@ -22,7 +22,8 @@ edge in each container. Nesting adds the shared indent step. A leaf keeps an
 empty disclosure slot. Calendar cells keep control height in equal columns.
 
 Keep items closer than groups. The group gap equals the container padding.
-A fixed region shows an edge only while it covers hidden scroll content.
+A fixed region next to scrolling content always shows a hairline, including
+at rest. Its soft shadow shows only while it covers hidden scroll content.
 
 ## Tokens and CSS
 
@@ -58,8 +59,10 @@ The shared components own their Tailwind strings and typed variants.
 - `Inline` owns a horizontal gap, alignment, justification and wrapping.
 - `Inset` owns symmetric padding.
 - `Region` separates fixed and scrolling areas. Scroll sentinels set
-  `data-edge-top` and `data-edge-bottom` on adjacent fixed regions. Edges fade
-  with `duration-120`. Reduced motion removes the transition.
+  `data-edge-top` and `data-edge-bottom` on adjacent fixed regions. Hairlines
+  use `border-edge-subtle` in every scroll state. Only the scroll cue shadows,
+  `shadow-edge-top` and `shadow-edge-bottom`, follow the sentinels. Shadows
+  change with `duration-120`. Reduced motion removes the transition.
 - `Divider` has no margin. Its parent owns the space.
 - `ListRow` owns the leading slot, label and help column, value and trailing
   slot. It centers content vertically. Densities are `tree`, `setting` and
