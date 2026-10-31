@@ -11,6 +11,10 @@ export function noteScreenClassName(): string {
 export function noteFrameClassName(): string {
   return 'flex overflow-hidden min-w-0 flex-1 flex-col';
 }
+/** Keep the editor bounded when phone find controls need visible overflow. */
+export function noteEditorHostClassName(): string {
+  return 'min-h-0 flex-1 overflow-hidden max-lg:pointer-coarse:overflow-visible';
+}
 export function noteRowClassName(): string {
   return `${pageRowClassName()} overflow-hidden flex-1`;
 }

@@ -1,4 +1,10 @@
-import { Inset, Button, Notice, pageGutter } from '@notesapp/ui';
+import {
+  Inset,
+  Button,
+  Notice,
+  pageGutter,
+  noteEditorHostClassName,
+} from '@notesapp/ui';
 /**
  * The one-pane note editor screen.
  *
@@ -1530,7 +1536,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
             <Inset
               ref={containerRef}
               as="div"
-              className="flex-1 overflow-hidden max-lg:pointer-coarse:overflow-visible"
+              className={noteEditorHostClassName()}
               onPaste={(event): void => {
                 const dropped = Array.from(event.clipboardData?.files ?? []);
                 if (dropped.some((file) => file.type.startsWith('image/'))) {

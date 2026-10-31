@@ -43,3 +43,16 @@ position, so unchanged wrapper boxes cannot hide these regressions.
 
 Set `HOVER_AUDIT=1` with the review screen audit to hover each visible control
 and check positive, symmetric padding between its content and its fill.
+
+`note-scroll.ts` checks a long note with real touch and mouse input at 320,
+390 and 1440 px in light and dark mode. Phone checks include a reduced height
+for the keyboard. The editor must stay on screen, scroll after input, and
+reach the end. Use a disposable account and a note that exceeds one screen:
+
+```sh
+UI_AUDIT_STATE=.local-app/review-session.json \
+SCROLL_NOTE_PATH=/w/<workspace>/notes/<note> \
+node tests/browser/note-scroll.ts
+```
+
+The test reads the note and saves screenshots in `.local-app/screenshots/`.

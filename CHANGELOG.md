@@ -7,6 +7,12 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## Unreleased
 
+## 0.23.1 - 2026-10-31
+
+### Fixed
+
+- Open notes scroll on phones. Long notes stay within the screen, with the formatting tools and word count visible.
+
 ## 0.23.0 - 2026-10-30
 
 ### Added
