@@ -67,13 +67,33 @@ try {
             start.content > start.height + 500,
             'The test note is long.',
           );
-          await cdp.send('Input.synthesizeScrollGesture', {
-            x: width / 2,
-            y: start.top + start.height * 0.75,
-            yDistance: -150,
-            speed: 600,
-            gestureSourceType: phone ? 'touch' : 'mouse',
-          });
+          const x = width / 2,
+            y = start.top + start.height * 0.75;
+          if (phone) {
+            await cdp.send('Input.dispatchTouchEvent', {
+              type: 'touchStart',
+              touchPoints: [{ x, y }],
+            });
+            for (let distance = 10; distance <= 150; distance += 10) {
+              await cdp.send('Input.dispatchTouchEvent', {
+                type: 'touchMove',
+                touchPoints: [{ x, y: y - distance }],
+              });
+              await page.evaluate(() => new Promise(requestAnimationFrame));
+            }
+            await cdp.send('Input.dispatchTouchEvent', {
+              type: 'touchEnd',
+              touchPoints: [],
+            });
+          } else {
+            await cdp.send('Input.synthesizeScrollGesture', {
+              x,
+              y,
+              yDistance: -150,
+              speed: 600,
+              gestureSourceType: 'mouse',
+            });
+          }
           const moved = await page.evaluate(async () => {
             const end = performance.now() + 5000;
             while (performance.now() < end) {
