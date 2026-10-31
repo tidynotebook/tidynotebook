@@ -54,46 +54,62 @@ try {
             scroller.scrollTop = 0;
             await new Promise(requestAnimationFrame);
             const box = scroller.getBoundingClientRect();
+            const footer = scroller.closest('main')?.querySelector('footer');
+            if (!(footer instanceof HTMLElement))
+              throw Error('Word count missing.');
+            const footerBox = footer.getBoundingClientRect();
             return {
               height: scroller.clientHeight,
               content: scroller.scrollHeight,
               top: box.top,
               bottom: box.bottom,
+              footerTop: footerBox.top,
+              footerBottom: footerBox.bottom,
+              footerHeight: footerBox.height,
             };
           });
           assert.ok(start.height > 100, 'The editor has room for text.');
           assert.ok(start.bottom <= height, 'The editor stays on the screen.');
+          assert.ok(
+            start.footerHeight > 0 &&
+              start.footerTop >= 0 &&
+              start.footerBottom <= height,
+            'The resting word count stays on the screen.',
+          );
           assert.ok(
             start.content > start.height + 500,
             'The test note is long.',
           );
           const x = width / 2,
             y = start.top + start.height * 0.75;
-          if (phone) {
-            await cdp.send('Input.dispatchTouchEvent', {
-              type: 'touchStart',
-              touchPoints: [{ x, y }],
-            });
-            for (let distance = 10; distance <= 150; distance += 10) {
+          const scroll = async () => {
+            if (phone) {
               await cdp.send('Input.dispatchTouchEvent', {
-                type: 'touchMove',
-                touchPoints: [{ x, y: y - distance }],
+                type: 'touchStart',
+                touchPoints: [{ x, y }],
               });
-              await page.evaluate(() => new Promise(requestAnimationFrame));
+              for (let distance = 10; distance <= 150; distance += 10) {
+                await cdp.send('Input.dispatchTouchEvent', {
+                  type: 'touchMove',
+                  touchPoints: [{ x, y: y - distance }],
+                });
+                await page.evaluate(() => new Promise(requestAnimationFrame));
+              }
+              await cdp.send('Input.dispatchTouchEvent', {
+                type: 'touchEnd',
+                touchPoints: [],
+              });
+            } else {
+              await cdp.send('Input.synthesizeScrollGesture', {
+                x,
+                y,
+                yDistance: -150,
+                speed: 600,
+                gestureSourceType: 'mouse',
+              });
             }
-            await cdp.send('Input.dispatchTouchEvent', {
-              type: 'touchEnd',
-              touchPoints: [],
-            });
-          } else {
-            await cdp.send('Input.synthesizeScrollGesture', {
-              x,
-              y,
-              yDistance: -150,
-              speed: 600,
-              gestureSourceType: 'mouse',
-            });
-          }
+          };
+          await scroll();
           const moved = await page.evaluate(async () => {
             const end = performance.now() + 5000;
             while (performance.now() < end) {
@@ -129,6 +145,35 @@ try {
             return false;
           });
           assert.ok(reachedEnd, 'The end of the note can be reached.');
+          // Start near the end after CodeMirror has rendered the final lines.
+          // A second gesture must cover the remaining distance.
+          await page.evaluate(async () => {
+            const scroller = document.querySelector('.cm-scroller');
+            if (!(scroller instanceof HTMLElement))
+              throw Error('Editor missing.');
+            scroller.scrollTop =
+              scroller.scrollHeight - scroller.clientHeight - 80;
+            await new Promise(requestAnimationFrame);
+          });
+          await scroll();
+          const inputReachedEnd = await page.evaluate(async () => {
+            const end = performance.now() + 5000;
+            while (performance.now() < end) {
+              const scroller = document.querySelector('.cm-scroller');
+              if (
+                scroller &&
+                scroller.scrollTop > 0 &&
+                scroller.scrollHeight -
+                  scroller.clientHeight -
+                  scroller.scrollTop <
+                  2
+              )
+                return true;
+              await new Promise(requestAnimationFrame);
+            }
+            return false;
+          });
+          assert.ok(inputReachedEnd, 'A second input gesture reaches the end.');
           process.stdout.write(`PASS ${width} x ${height} ${scheme}\n`);
         }
         assert.deepEqual(errors, [], 'The page has no script errors.');

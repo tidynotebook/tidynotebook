@@ -50,6 +50,8 @@ for the keyboard. The editor must stay on screen, scroll after input, and
 reach the end. Use a disposable account and a note that exceeds one screen:
 
 ```sh
+PLAYWRIGHT_MODULE=/absolute/path/to/playwright-core/index.mjs \
+UI_AUDIT_ORIGIN=http://localhost:3517 \
 UI_AUDIT_STATE=.local-app/review-session.json \
 SCROLL_NOTE_PATH=/w/<workspace>/notes/<note> \
 node tests/browser/note-scroll.ts
