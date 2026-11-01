@@ -627,11 +627,14 @@ function HistoryDetail({
                     const label = savedAtLabel(row.time);
                     return (
                       <Fragment key={item.revisionId}>
-                        <ListRow contentEdge className="flex-wrap">
+                        <ListRow
+                          selected={selected}
+                          contentEdge
+                          className="flex-wrap"
+                        >
                           <button
                             type="button"
                             className={rowClassName({
-                              selected,
                               contentEdge: true,
                               inset: false,
                               className: 'min-w-0 flex-1',
@@ -666,23 +669,23 @@ function HistoryDetail({
                               </span>
                             </span>
                           </button>
-                          {current ? (
-                            <Inset padX={2} as="span" className="shrink-0">
+                          <Inset padX={2} as="span" className="shrink-0">
+                            {current ? (
                               <Badge>Current version</Badge>
-                            </Inset>
-                          ) : (
-                            <Button
-                              variant="secondary"
-                              size="compact"
-                              disabled={busy || !restorable}
-                              label={`Restore the version ${label.toLowerCase()}`}
-                              onClick={() => {
-                                void restore(item.revisionId);
-                              }}
-                            >
-                              Restore
-                            </Button>
-                          )}
+                            ) : (
+                              <Button
+                                variant="secondary"
+                                size="compact"
+                                disabled={busy || !restorable}
+                                label={`Restore the version ${label.toLowerCase()}`}
+                                onClick={() => {
+                                  void restore(item.revisionId);
+                                }}
+                              >
+                                Restore
+                              </Button>
+                            )}
+                          </Inset>
                         </ListRow>
                         {selected ? (
                           <Inset padX={2} padY={1} as="li" id={panelId}>

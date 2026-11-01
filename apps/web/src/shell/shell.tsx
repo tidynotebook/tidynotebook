@@ -363,7 +363,11 @@ function Breadcrumb({
               gap={1}
               align="center"
               as="li"
-              className="shrink-0 max-md:hidden"
+              className={
+                index === parts.length - 1
+                  ? 'min-w-0 flex-1'
+                  : 'shrink-0 max-md:hidden'
+              }
               key={breadcrumbKey(part, index)}
             >
               {index === 0 ? null : (
@@ -372,7 +376,8 @@ function Breadcrumb({
                 </span>
               )}
               <Link
-                className={`max-w-32 truncate rounded-md text-muted no-underline hover:text-strong ${transitionSurface} ${focusOutline}`}
+                title={part.label}
+                className={`${index === parts.length - 1 ? 'max-w-full' : 'max-w-32'} truncate rounded-md text-muted no-underline hover:text-strong ${transitionSurface} ${focusOutline}`}
                 to={part.to}
                 onClick={() => {
                   if (part.folder !== null) onSelectFolder(part.folder);

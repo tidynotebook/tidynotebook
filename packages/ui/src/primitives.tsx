@@ -343,10 +343,12 @@ export function Panel<T extends Tag = 'div'>({
 }
 export function Toolbar({
   floating = false,
+  trailing,
   children,
   className = '',
 }: {
   readonly floating?: boolean;
+  readonly trailing?: ReactNode;
   readonly children: ReactNode;
   readonly className?: string | undefined;
 }): ReactNode {
@@ -354,11 +356,20 @@ export function Toolbar({
     <Inline
       gap={floating ? 1 : 0.5}
       pad={floating ? 1 : 0}
-      wrap={floating}
+      wrap={false}
       justify={floating ? 'center' : 'start'}
       className={`${floating ? 'w-fit max-w-full rounded-lg border border-overlay-edge bg-overlay state-overlay text-strong shadow-overlay' : ''} ${className}`}
     >
-      {children}
+      {floating ? (
+        <Inline gap={1} wrap justify="center" className="min-w-0 flex-1">
+          {children}
+        </Inline>
+      ) : (
+        children
+      )}
+      {trailing === undefined ? null : (
+        <span className="shrink-0 self-start">{trailing}</span>
+      )}
     </Inline>
   );
   return floating ? (

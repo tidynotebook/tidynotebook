@@ -74,3 +74,7 @@ export const phoneSheetMotion = {
 /** Scroll shadows change while content passes under a fixed region. */
 export const transitionScrollEdge =
   'before:transition-shadow before:duration-120 motion-reduce:before:transition-none after:transition-shadow after:duration-120 motion-reduce:after:transition-none';
+
+/** A scroll cue follows hidden content with the region edge timing. */
+export const transitionScrollCue =
+  'transition-opacity duration-120 motion-reduce:transition-none';

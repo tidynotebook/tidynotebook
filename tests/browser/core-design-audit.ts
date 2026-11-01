@@ -50,6 +50,14 @@ try {
           .evaluate((element) => element.getAttribute('aria-invalid')),
         'true',
       );
+      await page.getByLabel('Email address').fill('writer@example..com');
+      await page
+        .getByLabel('Password', { exact: true })
+        .fill('A local test password');
+      await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+      await page
+        .getByText('Enter an email address.', { exact: true })
+        .waitFor();
       await context.close();
     }
 } finally {
