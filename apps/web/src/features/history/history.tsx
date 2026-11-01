@@ -635,6 +635,7 @@ function HistoryDetail({
                           <button
                             type="button"
                             className={rowClassName({
+                              selected,
                               contentEdge: true,
                               inset: false,
                               className: 'min-w-0 flex-1',
