@@ -40,7 +40,7 @@ const edgeOwners = new WeakMap<
   HTMLElement,
   Map<HTMLElement, { hidden: boolean; overflow: boolean }>
 >();
-function ownEdge(
+export function ownScrollEdge(
   edge: HTMLElement | undefined,
   root: HTMLElement,
   hidden: boolean,
@@ -78,6 +78,7 @@ export function Region({
   children,
   className,
   scroll = 'y',
+  bounded = false,
   edge = 'both',
   gap = 0,
   pad,
@@ -93,6 +94,7 @@ export function Region({
     readonly safeArea?: boolean;
     readonly children: ReactNode;
     readonly scroll?: 'none' | 'y';
+    readonly bounded?: boolean;
     readonly edge?: 'top' | 'bottom' | 'both';
     readonly gap?: SpaceValue;
     readonly elementRef?: RefObject<HTMLDivElement | null>;
@@ -146,8 +148,8 @@ export function Region({
       bottom =
         below?.current ??
         edgesInFrame.find((element) => element.dataset.scrollEdge === 'below');
-    const releaseTop = ownEdge(top, held, edges.start),
-      releaseBottom = ownEdge(bottom, held, edges.end);
+    const releaseTop = ownScrollEdge(top, held, edges.start),
+      releaseBottom = ownScrollEdge(bottom, held, edges.end);
     return () => {
       releaseTop();
       releaseBottom();
@@ -179,7 +181,7 @@ export function Region({
       ) : (
         <div
           {...compositionData('stack', { gap })}
-          className={`ui-scroll-content relative flex min-h-full shrink-0 flex-col ${spaceClasses('gap', gap)}`}
+          className={`ui-scroll-content ${bounded ? 'h-full' : ''} relative flex min-h-full shrink-0 flex-col ${spaceClasses('gap', gap)}`}
         >
           <span
             ref={start}
@@ -199,38 +201,3 @@ export function Region({
 }
 
 export { fixedRegionClasses } from './scroll-classes.ts';
-
-/** Connect a native scroller to fixed regions without changing its document. */
-export function observeElementScrollEdges(root: HTMLElement): () => void {
-  const frame =
-    root.closest('[data-scroll-frame]') ?? root.parentElement?.parentElement;
-  const edges = frame
-    ? Array.from(
-        frame.querySelectorAll<HTMLElement>('[data-scroll-edge]'),
-      ).filter((edge) => edge.closest('[data-scroll-frame]') === frame)
-    : [];
-  let releases: (() => void)[] = [];
-  const update = () => {
-    for (const release of releases) release();
-    releases = edges.map((edge) =>
-      ownEdge(
-        edge,
-        root,
-        edge.dataset.scrollEdge === 'above'
-          ? root.scrollTop > 1
-          : root.scrollTop + root.clientHeight < root.scrollHeight - 1,
-      ),
-    );
-  };
-  root.addEventListener('scroll', update, { passive: true });
-  const observer =
-    typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update);
-  observer?.observe(root);
-  if (root.firstElementChild) observer?.observe(root.firstElementChild);
-  update();
-  return () => {
-    root.removeEventListener('scroll', update);
-    observer?.disconnect();
-    for (const release of releases) release();
-  };
-}

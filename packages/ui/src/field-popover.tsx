@@ -1,4 +1,3 @@
-import { overlayStateClasses } from './surface-classes.ts';
 /** A field popup: over the content on desktop, in the sheet on a phone. */
 import {
   useEffect,
@@ -85,8 +84,8 @@ export function FieldPopover({
       data-dialog-escape="local"
       className={
         wide
-          ? `fixed z-50 overflow-y-auto rounded-lg border border-overlay-edge bg-overlay p-1 shadow-overlay ${overlayStateClasses}`
-          : `rounded-lg border border-overlay-edge bg-overlay p-1 shadow-overlay ${overlayStateClasses}`
+          ? `fixed z-50 overflow-y-auto rounded-lg border border-overlay-edge bg-overlay p-1 shadow-overlay state-overlay`
+          : `rounded-lg border border-overlay-edge bg-overlay p-1 shadow-overlay state-overlay`
       }
       onKeyDown={(event) => {
         if (event.key === 'Escape') {

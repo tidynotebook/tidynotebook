@@ -83,6 +83,17 @@ export function inspectDesignSource(path, source) {
       for (let token of text.split(/\s+/).filter(Boolean)) {
         if (/\[[^\]]+\]:(?!not\()/.test(token) || /(?:^|:)\[--/.test(token))
           add('arbitrary-value', token);
+        if (
+          /(?:^|:)content-[\w-]+:/.test(token) &&
+          ![
+            'packages/ui/src/static.ts',
+            'packages/ui/src/preview-surface.tsx',
+            'packages/ui/src/code-figure.ts',
+            'packages/ui/src/dialog-classes.ts',
+            'apps/docs/src/page.ts',
+          ].includes(path)
+        )
+          add('content-boundary', token);
         const candidate = baseCandidate(token);
         token = candidate;
         if (/^-?(?:p[xytrblse]?|gap(?:-[xy])?)-/.test(token)) {

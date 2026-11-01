@@ -898,7 +898,7 @@ await test('a delayed restore reread shows pending feedback before editable reco
   assert.doesNotMatch(container.textContent ?? '', /is in Trash/);
   const pending = container.querySelector('[role="status"][aria-busy="true"]');
   assert.ok(pending);
-  assert.match(pending.textContent ?? '', /The note is loading\./);
+  assert.match(pending.textContent ?? '', /Loading note/);
   await act(async () => {
     delayed.resolve(saved);
     await delayed.promise;

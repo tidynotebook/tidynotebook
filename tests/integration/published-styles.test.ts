@@ -51,8 +51,6 @@ import {
   transitionSurface,
 } from '@notesapp/ui';
 import {
-  codeBlockClass,
-  codeLabelClass,
   codeTokenClasses,
   orderedMarkerStyle,
   orderedMarkerStyles,
@@ -346,7 +344,7 @@ await test('the task box of the published page is the task box recipe', () => {
   // The review of the merged branch: the published task box named the
   // component edge under an exception of the design gate. It is the one
   // recipe of the task box, written under the variant of a task item.
-  const variant = '[&_.task-list-item_input]:';
+  const variant = 'content-task-list-item-input:';
   const classes = [...classesOf(publishedTaskBoxClasses)];
   assert.ok(classes.every((name) => name.startsWith(variant)));
   assert.deepEqual(
@@ -382,12 +380,13 @@ await test('the code figure of the published page is the code figure recipe', ()
     classesOf(codeFigureClassName),
   );
   assert.ok(
-    publishedDocumentClasses.includes(`[&_figure.${codeBlockClass}]:relative`),
+    publishedDocumentClasses.includes('content-figure-notes-code:relative'),
   );
   for (const name of classesOf(codeFigureClassName))
     assert.ok(
-      name.includes(`[&_figure.${codeBlockClass}`) ||
-        name.includes(`[&_.${codeLabelClass}]`),
+      name.includes('content-figure-notes-code') ||
+        name.includes('content-notes-code-label') ||
+        name.startsWith('content-pre:'),
       name,
     );
 });

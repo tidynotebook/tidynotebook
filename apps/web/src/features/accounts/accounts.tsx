@@ -67,7 +67,7 @@ import { passwordProblem, passwordRule } from '../../lib/password-policy.ts';
 import { downloadAll, transferFailureMessage } from '../export/export.ts';
 
 import { useDocumentTitle } from '../../shell/document-title.ts';
-import { productName } from '@notesapp/core';
+import { productName, normalizeEmail } from '@notesapp/core';
 
 /** The title of the settings page, which is also its breadcrumb part. */
 export { settingsTitle } from '../../lib/settings-address.ts';
@@ -450,6 +450,7 @@ export function LoginPage({
       ? signInState.email
       : '',
   );
+  const [emailError, setEmailError] = useState('');
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [reveal, setReveal] = useState(false);
@@ -607,13 +608,24 @@ export function LoginPage({
       ) : (
         <>
           <Form
+            noValidate
             onSubmit={(event): void => {
               event.preventDefault();
-              void submitPassword();
+              setEmailError(
+                normalizeEmail(email) === null && email.trim() !== ''
+                  ? 'Enter an email address.'
+                  : '',
+              );
+              if (
+                event.currentTarget.checkValidity() &&
+                normalizeEmail(email) !== null
+              )
+                void submitPassword();
             }}
           >
             <TextField
               id="login-email"
+              error={emailError}
               label="Email address"
               value={email}
               inputType="email"

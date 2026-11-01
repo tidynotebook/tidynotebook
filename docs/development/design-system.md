@@ -1,5 +1,7 @@
 # Design system
 
+This page owns the UI composition, spacing, density and depth contract for every surface.
+
 ## Rules
 
 Use Tailwind in `packages/ui` components. Features compose them without spacing, size or depth rules.
@@ -11,8 +13,9 @@ density. Width selects layout. Pointer type selects density only. A component de
 Parents own padding and gaps; children have no outer margins. Keep padding symmetric,
 with `pad`, or symmetric `padX` and `padY`.
 
-Controls have equal space on each side, including on hover.
-An optical slot can extend the fill without moving content.
+Every control with a fill has equal space between its content and each side
+of the fill, including on hover. Content must not touch a fill edge. An
+optical slot can extend the fill without moving its content.
 
 Rows get height from a line box and equal vertical padding. Do not use a
 minimum height to add blank space. Keep glyphs on the padding line. Extend a
@@ -30,8 +33,7 @@ Overlay and raised-card state tokens keep at least 1.2:1 surface contrast.
 
 ## Tokens and CSS
 
-`apps/web/src/tailwind.css` owns spacing, sizes, radius, shadows, surfaces and
-type roles. Use Tailwind tokens, not spacing variables or arbitrary values.
+`apps/web/src/tailwind.css` owns spacing, sizes, radius, shadows, surfaces and type roles. Use Tailwind tokens, not spacing variables or arbitrary values.
 
 Typed spacing steps are `0`, `0.5`, `1`, `2`, `3`, `4`, `6`, `8` and `12`,
 or a `fine` and `coarse` pair. Shared size roles distinguish glyphs, controls,
@@ -39,8 +41,8 @@ row actions, toolbars, headers and rails. Code owns their values.
 
 Use `text-title-page`, `text-title-header`, `text-body`, `text-label`,
 `text-value`, `text-secondary`, `text-group` and `text-small`.
-`PreviewBlock` uses `text-code` with the mono font and secondary size. Each role sets
-size, line height and weight. Note text keeps its own rendering scale.
+Each role sets size, line height and weight. Note text keeps its own rendering scale.
+`PreviewBlock` uses `text-code` with the mono font and secondary size.
 
 Use the page, panel, card, raised card and overlay surfaces. Menus and popovers
 use the overlay surface, edge and shadow. Scroll edges use
@@ -48,10 +50,10 @@ use the overlay surface, edge and shadow. Scroll edges use
 valid for custom themes.
 
 `state-overlay` and `state-raised` set only inherited hover and selected tokens.
+Named content variants style markup that React does not render, such as rendered Markdown. Only the shared content surfaces use them.
 CSS can hold only theme tokens, named content and pointer variants, the base reset and
 the iOS viewport rule. Do not add layout utilities, screen selectors,
-doubled-class selectors or inline spacing styles. Runtime overlay and viewport
-coordinates and virtual list offsets are browser geometry, not spacing choices.
+doubled-class selectors or inline spacing styles. Runtime overlay and viewport coordinates and virtual list offsets are browser geometry, not spacing choices.
 
 ## Components
 
@@ -141,10 +143,8 @@ verb or value-edit label. Focus stays in the modal and returns to its trigger.
 `tools/check-design-system.mjs` runs in `pnpm lint`. It refuses feature
 margins except `m-0`, child space utilities, padding and gap utilities,
 minimum heights, arbitrary values and inline spacing. Shared UI code can use
-only scale steps. The CSS check refuses layout utilities, screen descendant
-selectors and doubled-class selectors.
+only scale steps. The CSS check refuses layout utilities and unsupported selectors.
 
-`tools/design-system-allow.json` records cases with a reason and can only
-shrink. New exceptions require a component variant and a contract update.
+`tools/design-system-allow.json` records cases with a reason and can only shrink. New exceptions require a component variant and a contract update.
 
-`tests/browser/symmetry.ts` checks content edges and visual parity in both themes and pointer densities. Remove or explain changes beyond the tolerance.
+`tests/browser/symmetry.ts` checks content edges and visual parity in both themes and pointer densities.

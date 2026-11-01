@@ -482,24 +482,69 @@ client and the same local account. Each screen has desktop and phone captures
 in light and dark. The account before captures remain in the original folder.
 Account after captures use the same mocked setup and error responses as the audit.
 
-| Screen             | Before example                                                                   | After example                                                                   |
-| ------------------ | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Notes              | [Phone light](core-screens-design/before/notes-phone-light.png)                  | [Phone light](core-screens-design/after/notes-phone-light.png)                  |
-| Editor             | [Phone light](core-screens-design/before/editor-phone-light.png)                 | [Phone light](core-screens-design/after/editor-phone-light.png)                 |
-| Settings           | [Phone light](core-screens-design/before/settings-phone-light.png)               | [Phone light](core-screens-design/after/settings-phone-light.png)               |
-| Trash              | [Phone light](core-screens-design/before/trash-phone-light.png)                  | [Phone light](core-screens-design/after/trash-phone-light.png)                  |
-| History            | [Phone light](core-screens-design/before/history-phone-light.png)                | [Phone light](core-screens-design/after/history-phone-light.png)                |
-| Publish            | [Phone light](core-screens-design/before/publish-phone-light.png)                | [Phone light](core-screens-design/after/publish-phone-light.png)                |
-| Search             | [Phone light](core-screens-design/before/search-phone-light.png)                 | [Phone light](core-screens-design/after/search-phone-light.png)                 |
-| login              | [Desktop light](core-screens-design/login-desktop-light.png)                     | [Desktop light](core-screens-design/after/login-desktop-light.png)              |
-| signup-validation  | [Desktop light](core-screens-design/before/signup-validation-desktop-light.png)  | [Desktop light](core-screens-design/after/signup-validation-desktop-light.png)  |
-| setup              | [Desktop light](core-screens-design/before/setup-desktop-light.png)              | [Desktop light](core-screens-design/after/setup-desktop-light.png)              |
-| forgot             | [Desktop light](core-screens-design/before/forgot-desktop-light.png)             | [Desktop light](core-screens-design/after/forgot-desktop-light.png)             |
-| reset-notoken      | [Desktop light](core-screens-design/reset-notoken-desktop-light.png)             | [Desktop light](core-screens-design/after/reset-notoken-desktop-light.png)      |
-| invitation-notoken | [Desktop light](core-screens-design/before/invitation-notoken-desktop-light.png) | [Desktop light](core-screens-design/after/invitation-notoken-desktop-light.png) |
-| verify-notoken     | [Desktop light](core-screens-design/before/verify-notoken-desktop-light.png)     | [Desktop light](core-screens-design/after/verify-notoken-desktop-light.png)     |
+| Screen              | Before example                                                                   | After example                                                                   |
+| ------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| All notes           | [Phone light](core-screens-design/before/notes-phone-light.png)                  | [Phone light](core-screens-design/after/notes-phone-light.png)                  |
+| Editor              | [Phone light](core-screens-design/before/editor-phone-light.png)                 | [Phone light](core-screens-design/after/editor-phone-light.png)                 |
+| Settings            | [Phone light](core-screens-design/before/settings-phone-light.png)               | [Phone light](core-screens-design/after/settings-phone-light.png)               |
+| Trash               | [Phone light](core-screens-design/before/trash-phone-light.png)                  | [Phone light](core-screens-design/after/trash-phone-light.png)                  |
+| Version history     | [Phone light](core-screens-design/before/history-phone-light.png)                | [Phone light](core-screens-design/after/history-phone-light.png)                |
+| Published links     | [Phone light](core-screens-design/before/publish-phone-light.png)                | [Phone light](core-screens-design/after/publish-phone-light.png)                |
+| Search              | [Phone light](core-screens-design/before/search-phone-light.png)                 | [Phone light](core-screens-design/after/search-phone-light.png)                 |
+| Sign in             | [Desktop light](core-screens-design/login-desktop-light.png)                     | [Desktop light](core-screens-design/after/login-desktop-light.png)              |
+| Sign up validation  | [Desktop light](core-screens-design/before/signup-validation-desktop-light.png)  | [Desktop light](core-screens-design/after/signup-validation-desktop-light.png)  |
+| First account setup | [Desktop light](core-screens-design/before/setup-desktop-light.png)              | [Desktop light](core-screens-design/after/setup-desktop-light.png)              |
+| Forgot password     | [Desktop light](core-screens-design/before/forgot-desktop-light.png)             | [Desktop light](core-screens-design/after/forgot-desktop-light.png)             |
+| Reset link          | [Desktop light](core-screens-design/reset-notoken-desktop-light.png)             | [Desktop light](core-screens-design/after/reset-notoken-desktop-light.png)      |
+| Invitation          | [Desktop light](core-screens-design/before/invitation-notoken-desktop-light.png) | [Desktop light](core-screens-design/after/invitation-notoken-desktop-light.png) |
+| Verify address      | [Desktop light](core-screens-design/before/verify-notoken-desktop-light.png)     | [Desktop light](core-screens-design/after/verify-notoken-desktop-light.png)     |
 
 Full capture sets: [before](core-screens-design/before/) and [after](core-screens-design/after/).
 
-The designer also identified a saved-status line that owner commit `323f1fca`
-removed. The footer now shows a line only when work needs attention.
+The sidebar footer showed a saved line, which owner commit `323f1fca` does not allow.
+The footer now shows a line only when work needs attention.
+
+## Verification
+
+- `pnpm verify`: contract, generated files, types, lint, format, build and type-aware lint passed.
+- Unit results: 3,789 passed. Two Compose configuration tests could not run with Docker disabled by the owner. Assertions were kept.
+- Theme integration tests: 18 passed, including real generated CSS.
+- Browser regression checks: passed in light and dark at 390 px and 1440 px.
+- Full service integration tests need MinIO. It is not installed on this host. CI runs these checks with its test services.
+
+The local test uses isolated Postgres ports 55483 and 55484. The server uses
+local file storage. No Docker command or download was allowed to run.
+
+## Designer review changes
+
+- R-1: Restored the full fill rule and page authority. Kept the type role sentences together.
+- R-2: Removed duplicate content variants. The check permits content variants only at the five approved shared markup boundaries.
+- R-3: Added real data and the review capture set below. The Card menu capture uses the real shared Card and Menu components in a browser fixture. Its hover fill matches the overlay token in both themes.
+- R-4: Required-field errors name their field.
+- R-5: Account screens use the core normalizeEmail rule and pass their email error to TextField.
+- R-6: The note count uses muted value text after the All notes heading.
+- R-7: Removed the state alias module. Components use the named utilities directly.
+- R-8: Scroll shadow scrims have the same fallback as the other depth tokens.
+- R-9: Updated screen names and the saved-line description.
+
+The two separate phone follow-ups are recorded in [issue 531](https://github.com/tidynotebook/tidynotebook/issues/531).
+
+| Review state               | Before example                                                          | After example                                                          |
+| -------------------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| All notes with folders     | [Light](core-screens-design/before/notes-folders-desktop-light.png)     | [Light](core-screens-design/after/notes-folders-desktop-light.png)     |
+| Editor at 1024 px          | [Light](core-screens-design/before/editor-tablet-light.png)             | [Light](core-screens-design/after/editor-tablet-light.png)             |
+| Settings at 1024 px        | [Light](core-screens-design/before/settings-tablet-light.png)           | [Light](core-screens-design/after/settings-tablet-light.png)           |
+| Version changes            | [Light](core-screens-design/before/history-diff-phone-light.png)        | [Light](core-screens-design/after/history-diff-phone-light.png)        |
+| Kept text                  | [Light](core-screens-design/before/attention-kept-phone-light.png)      | [Light](core-screens-design/after/attention-kept-phone-light.png)      |
+| Publish dialog             | [Light](core-screens-design/before/publish-dialog-phone-light.png)      | [Light](core-screens-design/after/publish-dialog-phone-light.png)      |
+| Image tools                | [Light](core-screens-design/before/image-viewer-phone-light.png)        | [Light](core-screens-design/after/image-viewer-phone-light.png)        |
+| Image message              | [Light](core-screens-design/before/image-toast-phone-light.png)         | [Light](core-screens-design/after/image-toast-phone-light.png)         |
+| Public footer with a mouse | [Light](core-screens-design/before/login-narrow-fine-pointer-light.png) | [Light](core-screens-design/after/login-narrow-fine-pointer-light.png) |
+
+The paired dark captures use the same file names with `dark` in place of `light`.
+Card menu hover: [light](core-screens-design/after/card-menu-hover-light.png)
+and [dark](core-screens-design/after/card-menu-hover-dark.png).
+
+After the review fixes, 86 DOM and CSS integration tests and 192 targeted unit
+checks passed. The first screen uses 315,200 compressed bytes within the
+315,392-byte budget. The two Docker-only unit checks still require CI.
