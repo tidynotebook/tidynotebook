@@ -364,7 +364,7 @@ export { Viewport, CanvasImage } from './primitives.tsx';
 export { FieldButton } from './controls.tsx';
 export { ThemePreview } from './theme-preview.tsx';
 export { FieldGroup } from './controls.tsx';
-export { Form } from './primitives.tsx';
+export { Form } from './form.tsx';
 export { SettingEditRow } from './setting-edit-row.tsx';
 
 export { deferredDialog, DialogLoading } from './deferred-dialog.tsx';
