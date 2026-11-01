@@ -97,6 +97,11 @@ try {
       await page.goto(`${home}/settings/appearance`);
       const scroller = page.locator('[data-settings-scroll]');
       await scroller.waitFor({ state: 'visible' });
+      assert.ok(
+        await page
+          .locator('[data-scroll-shadow]')
+          .evaluate((element) => element.getBoundingClientRect().height >= 16),
+      );
       await pause(250);
       assert.ok(
         await scroller.evaluate(
