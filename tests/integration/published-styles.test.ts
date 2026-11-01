@@ -247,8 +247,8 @@ await test('the published page draws what the live preview draws', async () => {
     'input:checked + .notes-task-mark {\n    display: inline-block;',
     // A table sizes to its text and scrolls on its own, and a header cell
     // follows the alignment of its column.
-    'table {\n    display: block;',
-    'table {\n    overflow-x: auto;',
+    '.notes-table-scroll {\n    max-width: 100%;',
+    '.notes-table-scroll {\n    overflow-x: auto;',
     'th {\n    text-align: start;',
     ':is(th, td)[align=right] {\n    text-align: right;',
     ':is(th, td)[align=center] {\n    text-align: center;',

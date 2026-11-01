@@ -827,15 +827,8 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
     },
 
     // A table is a grid over its text (record 0095). A block wrapper of
-    // `table-grid.ts` puts one element around the lines of each table. The
-    // element scrolls sideways on its own, so a wide table moves inside its
-    // outline and never moves the rest of the note, and its collapsed
-    // borders pass to the anonymous table the rows form inside it. The rows
-    // are lines of the editor, so the source stays editable text and no
-    // widget replaces the table.
-    //
-    // The table starts where every other line starts. Its grips straddle its
-    // edge (record 0147), so it keeps no room beside it or above it.
+    // Each table scrolls inside the note. Its shared column tracks come
+    // from all source rows, so viewport changes cannot resize the columns.
     '.cm-np-table': {
       display: 'block',
       overflowX: 'auto',
@@ -847,24 +840,17 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
       paddingBlock: 'var(--spacing-note-block)',
     },
     '.cm-np-table-line': {
-      display: 'table-row',
+      display: 'grid',
+      gridTemplateColumns: 'max-content var(--notes-table-columns)',
+      width: 'max-content',
       fontSize: 'var(--text-note-mono)',
       paddingBlock: '0',
     },
-    // Every cell draws its outline in the one divider of the palette, so the
-    // table reads as a grid of cells a person writes into. A cell wraps at a
-    // word, as a cell of Notion and of Obsidian does, so the browser sizes
-    // each column from its text up to the note column, and the table scrolls
-    // sideways only when its columns cannot fit (record 0147). `pre-wrap` and
-    // not `normal`, because the spaces inside a cell belong to the source.
-    //
-    // A word never breaks. `.cm-content` lets a long word break anywhere, and
-    // a table cell that inherits that counts every letter as a place to
-    // break when it sizes its column, so a column shrank to a few letters and
-    // cut its words in two. A word longer than the note column scrolls the
-    // table instead.
+    // Fixed tracks keep rows aligned while text wraps at word boundaries.
     '.cm-np-table-cell': {
-      display: 'table-cell',
+      display: 'block',
+      boxSizing: 'border-box',
+      minWidth: '0',
       paddingInline: 'calc(var(--spacing) * 3)',
       paddingBlock: 'calc(var(--spacing) * 1.5)',
       verticalAlign: 'top',
@@ -873,20 +859,12 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
       overflowWrap: 'normal',
       wordBreak: 'normal',
     },
-    // An empty cell keeps a width a pointer can reach. A browser ignores
-    // `min-width` on a table cell, so a block of no height inside the cell
-    // holds the width instead: it is the narrowest the column can be, and it
-    // never caps how wide the text makes it.
-    '.cm-np-table-cell::before, .cm-np-table-head::before': {
-      content: "''",
-      display: 'block',
-      width: 'calc(var(--spacing) * 12)',
-      height: '0',
-    },
     // The header row takes the hover fill and the heading weight, so the head
     // of the table differs by fill before it differs by a line.
     '.cm-np-table-head': {
-      display: 'table-cell',
+      display: 'block',
+      boxSizing: 'border-box',
+      minWidth: '0',
       paddingInline: 'calc(var(--spacing) * 3)',
       paddingBlock: 'calc(var(--spacing) * 1.5)',
       verticalAlign: 'top',
@@ -910,8 +888,21 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
     // inset of a nested table lives. `live-preview.ts` marks the range.
     // The hidden separator between two cells: a real cell that draws
     // nothing and takes no width (`live-preview.ts`).
-    '.cm-np-table-gap': { display: 'table-cell', padding: '0', width: '0' },
-    '.cm-np-table-lead': { display: 'table-cell', padding: '0' },
+    '.cm-np-table-gap': { display: 'none' },
+    '.cm-np-table-lead': {
+      display: 'block',
+      gridColumn: '1',
+      gridRow: '1',
+      padding: '0',
+    },
+    '.cm-np-table-line > br': { display: 'none' },
+    '.cm-np-table-line::after': {
+      content: 'var(--notes-table-tail-content, none)',
+      gridColumn: 'var(--notes-table-tail, 1) / -1',
+      gridRow: '1',
+      border: '1px solid var(--notes-border-line)',
+      display: 'block',
+    },
     '.cm-np-table-quoted-1': {
       paddingInlineStart: `calc(var(--spacing) * ${String(quoteBarStep)})`,
     },
@@ -925,7 +916,7 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
       paddingInlineStart: `calc(var(--spacing) * ${String(quoteBarStep * 4)})`,
     },
     // The delimiter row keeps no height of its own.
-    '.cm-np-table-closed': { fontSize: '0', lineHeight: '0' },
+    '.cm-np-table-closed': { display: 'none' },
     // The controls of a table (records 0097, 0098 and 0147) stand in one
     // layer over the text, which lets every press but a press on a control
     // reach the text below.

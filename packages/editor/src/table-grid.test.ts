@@ -28,6 +28,7 @@ import {
   cellText,
   pastedCells,
   gridParts,
+  tableColumnTracks,
   nextCellEdit,
   previousCellEdit,
   removeColumnEdit,
@@ -752,4 +753,36 @@ await test('an add bar adds a row or a column at the end, from any cell', () => 
     applied(inBody, tableEditSpec(inBody, appendColumnEdit)),
     '| a   | b   | ‸    |\n| --- | --- | --- |\n| 1   | 2   |     |',
   );
+});
+
+await test('empty cells without padding keep their column in the table model', () => {
+  const state = stateOf('| a | b | c |\n| --- | --- | --- |\n|x||z|‸');
+  const table = tableAt(state, 1);
+  assert.ok(table);
+  assert.deepEqual(tableData(state, table).body, [['x', '', 'z']]);
+});
+
+await test('column tracks include the full large table and change only with text', () => {
+  const source =
+    '| Date | Value |\n| --- | --- |\n' +
+    '| short | 1 |\n'.repeat(2000) +
+    '| longestwordinthetable | 2 |';
+  const state = stateOf(source + '‸');
+  const table = tableAt(state, 1);
+  assert.ok(table);
+  const tracks = tableColumnTracks(state, table);
+  const offscreen = tableAt(state, source.length - 2);
+  assert.ok(offscreen);
+  assert.equal(tableColumnTracks(state, offscreen), tracks);
+  assert.ok(tracks.includes('25.2ch'), tracks);
+  const edited = state.update({
+    changes: {
+      from: source.indexOf('longestwordinthetable'),
+      to: source.indexOf('longestwordinthetable') + 21,
+      insert: 'x',
+    },
+  }).state;
+  const changed = tableAt(edited, 1);
+  assert.ok(changed);
+  assert.notEqual(tableColumnTracks(edited, changed), tracks);
 });

@@ -33,6 +33,7 @@ import {
   type Extension,
   Transaction,
   type Range,
+  type Text,
   type TransactionSpec,
 } from '@codemirror/state';
 import {
@@ -129,7 +130,7 @@ function cellsBetween(
   const cells: TableCellBox[] = [];
   let at = from;
   for (const pipe of pipes) {
-    if (pipe.from > at) cells.push(cellBox(state, at, pipe.from));
+    if (pipe.from > at || at > from) cells.push(cellBox(state, at, pipe.from));
     at = pipe.to;
   }
   if (to > at) cells.push(cellBox(state, at, to));
@@ -1312,11 +1313,41 @@ type GridParts = {
   readonly atomic: DecorationSet;
 };
 
-/** The element that wraps the lines of one table. */
-const tableWrapper = BlockWrapper.create({
-  tagName: 'div',
-  attributes: { class: 'cm-np-table' },
-});
+/** A scroll reuses widths. A document edit gets a new cache. */
+const columnTracks = new WeakMap<Text, Map<number, string>>();
+
+/** Stable tracks from all rows, including rows outside the viewport. */
+export function tableColumnTracks(state: EditorState, table: TableBox): string {
+  let cached = columnTracks.get(state.doc);
+  if (cached === undefined) {
+    cached = new Map();
+    columnTracks.set(state.doc, cached);
+  }
+  const previous = cached.get(table.from);
+  if (previous !== undefined) return previous;
+  const columns =
+    table.rows.find((row) => row.kind === 'delimiter')?.cells.length ?? 0;
+  const widths = Array.from({ length: columns }, () => 6);
+  for (const row of table.rows) {
+    if (row.kind === 'delimiter') continue;
+    row.cells.slice(0, columns).forEach((cell, column) => {
+      const text = state.doc.sliceString(cell.textFrom, cell.textTo);
+      const longest = text
+        .split(/\s+/u)
+        .reduce((size, word) => Math.max(size, [...word].length), 0);
+      widths[column] = Math.max(
+        widths[column] ?? 6,
+        Math.min([...text].length, 32),
+        longest,
+      );
+    });
+  }
+  const tracks = widths
+    .map((width) => `calc(${String(width * 1.2)}ch + var(--spacing) * 6 + 2px)`)
+    .join(' ');
+  cached.set(table.from, tracks);
+  return tracks;
+}
 
 /** The ranges that a caret and a deletion treat as one unit. */
 const atomicMark = Decoration.mark({});
@@ -1340,7 +1371,15 @@ export function gridParts(
       if (seen.has(table.from)) continue;
       seen.add(table.from);
       const start = table.rows[0]?.lineFrom ?? table.from;
-      wrappers.push(tableWrapper.range(start, table.to));
+      wrappers.push(
+        BlockWrapper.create({
+          tagName: 'div',
+          attributes: {
+            class: 'cm-np-table',
+            style: `--notes-table-columns: ${tableColumnTracks(state, table)}`,
+          },
+        }).range(start, table.to),
+      );
       for (const row of table.rows) {
         if (row.kind === 'delimiter') {
           if (row.to > row.from)
