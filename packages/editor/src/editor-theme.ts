@@ -842,6 +842,7 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
     '.cm-np-table-line': {
       display: 'grid',
       gridTemplateColumns: 'max-content var(--notes-table-columns)',
+      backgroundImage: 'var(--notes-table-rules)',
       width: 'max-content',
       fontSize: 'var(--text-note-mono)',
       paddingBlock: '0',
@@ -851,6 +852,7 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
       display: 'block',
       boxSizing: 'border-box',
       minWidth: '0',
+      minHeight: 'calc(1lh + var(--spacing) * 3 + 2px)',
       paddingInline: 'calc(var(--spacing) * 3)',
       paddingBlock: 'calc(var(--spacing) * 1.5)',
       verticalAlign: 'top',
@@ -865,6 +867,7 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
       display: 'block',
       boxSizing: 'border-box',
       minWidth: '0',
+      minHeight: 'calc(1lh + var(--spacing) * 3 + 2px)',
       paddingInline: 'calc(var(--spacing) * 3)',
       paddingBlock: 'calc(var(--spacing) * 1.5)',
       verticalAlign: 'top',

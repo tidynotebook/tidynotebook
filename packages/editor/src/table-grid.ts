@@ -1314,16 +1314,28 @@ type GridParts = {
 };
 
 /** A scroll reuses widths. A document edit gets a new cache. */
-const columnTracks = new WeakMap<Text, Map<number, string>>();
+const columnTracks = new WeakMap<
+  Text,
+  Map<string, { tracks: string; rules: string }>
+>();
 
 /** Stable tracks from all rows, including rows outside the viewport. */
 export function tableColumnTracks(state: EditorState, table: TableBox): string {
+  return tableLayout(state, table).tracks;
+}
+
+/** Column tracks and the borders of omitted trailing cells. */
+function tableLayout(
+  state: EditorState,
+  table: TableBox,
+): { tracks: string; rules: string } {
   let cached = columnTracks.get(state.doc);
   if (cached === undefined) {
     cached = new Map();
     columnTracks.set(state.doc, cached);
   }
-  const previous = cached.get(table.from);
+  const key = `${String(table.from)}:${String(table.to)}`;
+  const previous = cached.get(key);
   if (previous !== undefined) return previous;
   const columns =
     table.rows.find((row) => row.kind === 'delimiter')?.cells.length ?? 0;
@@ -1342,11 +1354,21 @@ export function tableColumnTracks(state: EditorState, table: TableBox): string {
       );
     });
   }
-  const tracks = widths
-    .map((width) => `calc(${String(width * 1.2)}ch + var(--spacing) * 6 + 2px)`)
-    .join(' ');
-  cached.set(table.from, tracks);
-  return tracks;
+  const sizes = widths.map(
+    (width) => `calc(${String(width * 1.2)}ch + var(--spacing) * 6 + 2px)`,
+  );
+  const tracks = sizes.join(' ');
+  const rules =
+    sizes
+      .slice(0, -1)
+      .map((_, index) => {
+        const edge = `calc(${sizes.slice(0, index + 1).join(' + ')})`;
+        return `linear-gradient(to right, transparent calc(${edge} - 1px), var(--notes-border-line) calc(${edge} - 1px), var(--notes-border-line) ${edge}, transparent ${edge})`;
+      })
+      .join(', ') || 'none';
+  const result = { tracks, rules };
+  cached.set(key, result);
+  return result;
 }
 
 /** The ranges that a caret and a deletion treat as one unit. */
@@ -1371,12 +1393,13 @@ export function gridParts(
       if (seen.has(table.from)) continue;
       seen.add(table.from);
       const start = table.rows[0]?.lineFrom ?? table.from;
+      const layout = tableLayout(state, table);
       wrappers.push(
         BlockWrapper.create({
           tagName: 'div',
           attributes: {
             class: 'cm-np-table',
-            style: `--notes-table-columns: ${tableColumnTracks(state, table)}`,
+            style: `--notes-table-columns: ${layout.tracks}; --notes-table-rules: ${layout.rules}`,
           },
         }).range(start, table.to),
       );
