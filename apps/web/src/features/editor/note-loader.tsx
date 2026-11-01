@@ -1,4 +1,5 @@
 import {
+  PreviewBlock,
   Inline,
   Inset,
   LoadingState,
@@ -409,7 +410,7 @@ export function NoteEditorLoader({
   if (status.kind === 'loading')
     return (
       <PageRegion>
-        <LoadingState shape="note" label="The note is loading." />
+        <LoadingState shape="note" label="Loading note" />
       </PageRegion>
     );
   if (status.kind === 'unknown')
@@ -460,13 +461,7 @@ export function NoteEditorLoader({
         <p className="text-secondary text-danger" role="alert">
           Editing is unavailable on this device. You can read the saved text.
         </p>
-        <Inset
-          pad={3}
-          as="pre"
-          className="overflow-x-auto rounded-lg border border-edge-subtle bg-card text-body"
-        >
-          {status.text}
-        </Inset>
+        <PreviewBlock className="max-h-96">{status.text}</PreviewBlock>
       </PageRegion>
     );
 

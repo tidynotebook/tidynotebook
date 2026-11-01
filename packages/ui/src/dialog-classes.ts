@@ -57,7 +57,7 @@ export function dialogPanelClassName(
   fillSheet = false,
 ): string {
   if (phone && width !== 'screen')
-    return `${width === 'settings' ? '' : overlayStateClasses} phone-sheet not-data-sheet-ready:opacity-0 relative flex max-h-sheet w-full flex-col overflow-hidden rounded-t-xl border-y border-edge-subtle bg-card text-strong shadow-modal outline-none ${width === 'settings' || width === 'template' ? 'h-full max-h-full' : fillSheet ? 'phone-sheet-fill [&_[role=tree]]:max-h-none' : ''}`;
+    return `${width === 'settings' ? '' : overlayStateClasses} phone-sheet not-data-sheet-ready:opacity-0 relative flex max-h-sheet w-full flex-col overflow-hidden rounded-t-xl border-y border-edge-subtle bg-card text-strong shadow-modal outline-none ${width === 'settings' || width === 'template' ? 'h-full max-h-full' : fillSheet ? 'phone-sheet-fill content-tree:max-h-none' : ''}`;
   if (width === 'screen')
     return 'relative h-full w-full text-strong outline-none';
   if (width === 'settings')

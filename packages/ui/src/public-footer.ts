@@ -142,7 +142,7 @@ export function publicFooterTree({
         'div',
         {
           className:
-            'public-footer-grid grid grid-cols-6 gap-6 coarse:grid-cols-2',
+            'public-footer-grid grid grid-cols-2 md:grid-cols-6 gap-6 ',
         },
         [
           node(

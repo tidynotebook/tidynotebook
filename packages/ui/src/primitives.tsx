@@ -1,16 +1,19 @@
-import { useSettingsSurface } from './settings-layout.tsx';
-/** Typed composition. Spacing belongs to a parent, not to a feature class. */
 import {
-  DialogInsetContext,
-  SectionFormContext,
-} from './dialog-layout-context.ts';
-import {
+  useState,
   useContext,
   createElement,
   type ComponentPropsWithRef,
   type ReactNode,
   type ElementType,
 } from 'react';
+import { FormSubmittedContext } from './form-context.ts';
+import { useSettingsSurface } from './settings-layout.tsx';
+/** Typed composition. Spacing belongs to a parent, not to a feature class. */
+import {
+  DialogInsetContext,
+  SectionFormContext,
+} from './dialog-layout-context.ts';
+
 export type Space = 0 | 0.5 | 1 | 2 | 3 | 4 | 6 | 8 | 12;
 export type DensityValue<T> = T | { readonly fine: T; readonly coarse: T };
 export type SpaceValue = DensityValue<Space>;
@@ -339,16 +342,31 @@ export function Panel<T extends Tag = 'div'>({
   );
 }
 export function Toolbar({
+  floating = false,
   children,
   className = '',
 }: {
+  readonly floating?: boolean;
   readonly children: ReactNode;
   readonly className?: string | undefined;
 }): ReactNode {
-  return (
-    <Inline gap={0.5} className={className}>
+  const content = (
+    <Inline
+      gap={floating ? 1 : 0.5}
+      pad={floating ? 1 : 0}
+      wrap={floating}
+      justify={floating ? 'center' : 'start'}
+      className={`${floating ? 'w-fit max-w-full rounded-lg border border-overlay-edge bg-overlay state-overlay text-strong shadow-overlay' : ''} ${className}`}
+    >
       {children}
     </Inline>
+  );
+  return floating ? (
+    <div className="absolute inset-x-3 top-3 flex justify-center">
+      {content}
+    </div>
+  ) : (
+    content
   );
 }
 export function IconSlot({
@@ -391,7 +409,7 @@ export function StatusLine<T extends Tag = 'div'>({
     as ?? 'div',
     {
       ...rest,
-      className: `flex h-8 w-full shrink-0 items-center gap-2 px-2 py-2 text-secondary coarse:px-3 ${className}`,
+      className: `flex w-full shrink-0 items-center gap-2 px-2 py-2 text-secondary coarse:px-3 ${className}`,
     },
     children,
   );
@@ -431,6 +449,7 @@ export function CanvasImage(props: ComponentPropsWithRef<'img'>): ReactNode {
 }
 /** A form either groups fields or contains independently padded regions. */
 export function Form({
+  onSubmit,
   regions = false,
   section = false,
   column,
@@ -444,20 +463,35 @@ export function Form({
   readonly column?: boolean;
   readonly gap?: SpaceValue;
 }): ReactNode {
+  const [submitted, setSubmitted] = useState(false);
   const dialogInset = useContext(DialogInsetContext);
   const settings = useSettingsSurface();
   const bounded = column ?? (settings || dialogInset);
   return (
     <SectionFormContext.Provider value={section}>
-      <Stack
-        {...props}
-        className={`${bounded && !section ? 'w-full fine:max-w-lg fine:self-start' : ''} ${section ? 'fine:flex-none' : ''} ${className}`}
-        as="form"
-        gap={regions && dialogInset ? 6 : gap}
-        fill={regions}
-      >
-        {children}
-      </Stack>
+      <FormSubmittedContext.Provider value={submitted}>
+        <Stack
+          {...props}
+          className={`${bounded && !section ? 'w-full fine:max-w-lg fine:self-start' : ''} ${section ? 'fine:flex-none' : ''} ${className}`}
+          as="form"
+          noValidate
+          onSubmit={(event) => {
+            setSubmitted(true);
+            if (!event.currentTarget.checkValidity()) {
+              event.preventDefault();
+              event.currentTarget
+                .querySelector<HTMLElement>(':invalid')
+                ?.focus();
+              return;
+            }
+            onSubmit?.(event);
+          }}
+          gap={regions && dialogInset ? 6 : gap}
+          fill={regions}
+        >
+          {children}
+        </Stack>
+      </FormSubmittedContext.Provider>
     </SectionFormContext.Provider>
   );
 }

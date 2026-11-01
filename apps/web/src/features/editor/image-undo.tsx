@@ -1,3 +1,4 @@
+import { IconButton, Button, CloseIcon, Toast } from '@notesapp/ui';
 import {
   useCallback,
   useEffect,
@@ -8,7 +9,6 @@ import {
 } from 'react';
 import { runHistoryAction, type EditorView } from '@notesapp/editor';
 import { copyNoticeMs } from '../../lib/copy-note.ts';
-import { Button, CloseIcon, Toast } from '@notesapp/ui';
 
 /** Offer the existing editor Undo only while this removal is still latest. */
 export function useImageUndo(viewRef: RefObject<EditorView | null>): {
@@ -52,14 +52,13 @@ export function useImageUndo(viewRef: RefObject<EditorView | null>): {
     toast:
       notice === null ? null : (
         <Toast message="Image removed from note.">
-          <Button variant="secondary" size="sm" onClick={notice.run}>
+          <Button variant="secondary" size="compact" onClick={notice.run}>
             Undo
           </Button>
-          <Button
+          <IconButton
             variant="ghost"
-            size="sm"
             label="Close message"
-            icon={<CloseIcon />}
+            glyph={<CloseIcon />}
             onClick={clear}
           />
         </Toast>

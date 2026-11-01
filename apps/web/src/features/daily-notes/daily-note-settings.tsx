@@ -162,11 +162,7 @@ export function DailyNoteSettingsFields(): ReactNode {
 
   if (state.status === 'loading')
     return (
-      <LoadingState
-        shape="list"
-        rows={2}
-        label="The daily note settings are loading."
-      />
+      <LoadingState shape="list" rows={2} label="Loading daily note settings" />
     );
   if (state.status === 'unavailable')
     return (

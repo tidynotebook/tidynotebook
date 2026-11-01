@@ -511,6 +511,7 @@ export function DialogFooter({
     const action = isValidElement<ComponentProps<typeof Button>>(primary)
       ? cloneElement(primary, {
           variant: primary.props.variant === 'danger' ? 'danger' : 'primary',
+          full: true,
         })
       : primary;
     const extra = nodes.filter(
@@ -530,9 +531,10 @@ export function DialogFooter({
         <Region
           scroll="none"
           edge="top"
-          pad={3}
+          padX={4}
+          padY={3}
           safeArea
-          className="ui-dialog-footer bg-card [&_button]:w-full"
+          className="ui-dialog-footer bg-card"
         >
           {action}
         </Region>

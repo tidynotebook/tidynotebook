@@ -282,7 +282,7 @@ await test('the task box takes the edge through its one recipe', () => {
   );
   assert.equal(
     textRules['stateful-edge'](
-      '[&_.task-list-item_input]:border [&_.task-list-item_input]:border-edge [&_.task-list-item_input]:bg-app',
+      'content-task-list-item-input:border content-task-list-item-input:border-edge content-task-list-item-input:bg-app',
       'apps/server/src/routes/published-document.ts',
     ),
     null,

@@ -6,6 +6,7 @@ import {
   useToolbarOverflow,
   Stack,
   Region,
+  fixedRegionClasses,
   IconSlot,
   Toolbar,
   IconButton,
@@ -769,11 +770,7 @@ function Sidebar({
               </ListRow>
               {files.loading ? (
                 <div className="ui-sidebar-message">
-                  <LoadingState
-                    shape="list"
-                    rows={4}
-                    label="Your notes are loading."
-                  />
+                  <LoadingState shape="list" rows={4} label="Loading notes" />
                 </div>
               ) : tree.length === 0 ? (
                 <p className="ui-sidebar-message text-secondary text-muted">
@@ -1626,11 +1623,14 @@ function ShellFrame({
   return (
     <SyncProvider value={sync}>
       <DeleteNoticeProvider>
-        <div className="flex h-viewport flex-col bg-app text-strong">
+        <div
+          data-scroll-frame=""
+          className="flex h-viewport flex-col bg-app text-strong"
+        >
           <a
             className={buttonClassName({
               variant: 'primary',
-              size: 'sm',
+              size: 'compact',
               className:
                 'fixed left-2 top-2 z-50 -translate-y-20 focus-visible:translate-y-0',
             })}
@@ -1655,8 +1655,9 @@ function ShellFrame({
           */}
           <Inline
             as="header"
+            data-scroll-edge="above"
             gap={{ fine: 2, coarse: 1 }}
-            className={`z-30 flex h-header shrink-0 items-center border-b border-edge-subtle bg-surface  ${pageGutter}`}
+            className={`z-30 flex h-header shrink-0 items-center ${fixedRegionClasses('bottom')} bg-surface  ${pageGutter}`}
           >
             <IconButton
               size="header"
@@ -1846,7 +1847,11 @@ function ShellFrame({
                     tone="problem"
                     message="Search did not load. Try again."
                   >
-                    <Button variant="secondary" size="sm" onClick={openPalette}>
+                    <Button
+                      variant="secondary"
+                      size="compact"
+                      onClick={openPalette}
+                    >
                       Try again
                     </Button>
                   </Notice>
@@ -1855,7 +1860,7 @@ function ShellFrame({
                   <Notice tone="problem" message={shortcutsLoadFailure}>
                     <Button
                       variant="secondary"
-                      size="sm"
+                      size="compact"
                       onClick={() => setShortcutsFailed(false)}
                     >
                       Close
@@ -1866,7 +1871,7 @@ function ShellFrame({
                   <Notice tone="info" message={persistence.notice.message}>
                     <Button
                       variant="secondary"
-                      size="sm"
+                      size="compact"
                       onClick={persistence.close}
                     >
                       Close

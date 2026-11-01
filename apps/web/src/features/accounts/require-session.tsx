@@ -20,7 +20,7 @@ export function RequireSession({
   if (session.status === 'loading') {
     return (
       <Page>
-        <LoadingState label="Your account is loading." />
+        <LoadingState label="Loading account" />
       </Page>
     );
   }
@@ -34,7 +34,7 @@ export function RequireSession({
       <Suspense
         fallback={
           <Page>
-            <LoadingState label="Reading the terms" />
+            <LoadingState label="Loading the terms" />
           </Page>
         }
       >
@@ -47,7 +47,7 @@ export function RequireSession({
       <Suspense
         fallback={
           <Page>
-            <LoadingState label="Reading account access" />
+            <LoadingState label="Loading account access" />
           </Page>
         }
       >

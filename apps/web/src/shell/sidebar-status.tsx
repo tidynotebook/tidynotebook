@@ -104,12 +104,10 @@ export function SidebarStatus({
           >
             {content}
           </StatusLine>
-        ) : (
-          <StatusLine className="ui-sidebar-status flex items-center text-secondary text-muted">
-            {content}
-          </StatusLine>
-        )}
-        <span className="sr-only">{short === message ? '' : message}</span>
+        ) : null}
+        <span className="sr-only">
+          {!details || short === message ? '' : message}
+        </span>
       </div>
       <Dialog
         open={open}

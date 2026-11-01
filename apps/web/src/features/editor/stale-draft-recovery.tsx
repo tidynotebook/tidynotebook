@@ -1,4 +1,5 @@
 import {
+  PreviewBlock,
   Inset,
   Inline,
   Grid,
@@ -182,14 +183,9 @@ export function StaleDraftRecovery({
             >
               {entry === 'device' ? 'This device' : 'Saved version'}
             </Inset>
-            <Inset
-              as="pre"
-              pad={3}
-              tabIndex={0}
-              className={`m-0 max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-edge-subtle bg-card text-preview ${focusOutline}`}
-            >
+            <PreviewBlock tabIndex={0} className={`max-h-96 ${focusOutline}`}>
               {entry === 'device' ? localText : acceptedText}
-            </Inset>
+            </PreviewBlock>
           </section>
         ))}
       </Grid>

@@ -245,7 +245,7 @@ await test('the link limit gets its own sentence and names no code', () => {
 await test('every other cause keeps the shared sentence', () => {
   assert.equal(
     publishFailureSentence('not_found', 404),
-    'That note is not on the server.',
+    'The server could not find this.',
   );
   assert.equal(
     publishFailureSentence(null, 500),

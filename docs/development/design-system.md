@@ -1,21 +1,18 @@
 # Design system
 
-This page owns the UI composition, spacing, density and depth contract for every surface.
-
 ## Rules
 
 Use Tailwind in `packages/ui` components. Features compose them without spacing, size or depth rules.
 
 Use one spacing scale and the named size roles. `apps/web/src/tailwind.css`
 owns all tokens in `@theme`. The `coarse:` and `fine:` variants select pointer
-density. A component defines both densities with one rule set.
+density. Width selects layout. Pointer type selects density only. A component defines both densities with one rule set.
 
 Parents own padding and gaps; children have no outer margins. Keep padding symmetric,
 with `pad`, or symmetric `padX` and `padY`.
 
-Every control with a fill has equal space between its content and each side
-of the fill, including on hover. Content must not touch a fill edge. An
-optical slot can extend the fill without moving its content.
+Controls have equal space on each side, including on hover.
+An optical slot can extend the fill without moving content.
 
 Rows get height from a line box and equal vertical padding. Do not use a
 minimum height to add blank space. Keep glyphs on the padding line. Extend a
@@ -41,7 +38,8 @@ or a `fine` and `coarse` pair. Shared size roles distinguish glyphs, controls,
 row actions, toolbars, headers and rails. Code owns their values.
 
 Use `text-title-page`, `text-title-header`, `text-body`, `text-label`,
-`text-value`, `text-secondary`, `text-group` and `text-small`. Each role sets
+`text-value`, `text-secondary`, `text-group` and `text-small`.
+`PreviewBlock` uses `text-code` with the mono font and secondary size. Each role sets
 size, line height and weight. Note text keeps its own rendering scale.
 
 Use the page, panel, card, raised card and overlay surfaces. Menus and popovers
@@ -49,7 +47,8 @@ use the overlay surface, edge and shadow. Scroll edges use
 `shadow-edge-top` and `shadow-edge-bottom`. Theme overrides keep these roles
 valid for custom themes.
 
-CSS can hold only theme tokens, custom pointer variants, the base reset and
+`state-overlay` and `state-raised` set only inherited hover and selected tokens.
+CSS can hold only theme tokens, named content and pointer variants, the base reset and
 the iOS viewport rule. Do not add layout utilities, screen selectors,
 doubled-class selectors or inline spacing styles. Runtime overlay and viewport
 coordinates and virtual list offsets are browser geometry, not spacing choices.
@@ -77,7 +76,8 @@ coordinates and virtual list offsets are browser geometry, not spacing choices.
 - `Card` is a raised, rounded container without padding. Its rows own their
   padding. Dividers between rows align with the inner row edge.
 - `Panel` owns equal padding and a stack whose group gap equals that padding.
-- `Toolbar` is an inline group of icon buttons with the item gap.
+- `Toolbar` is an inline group of icon buttons with the item gap. Its floating variant owns the overlay surface and position.
+- `PreviewBlock` owns the preview surface, subtle edge, radius and equal inset.
 - `Field`, `TextField`, `SelectField` and `TextAreaField` share label, control,
   help and error spacing. A form is a stack of fields.
 - `SwitchRow` is a setting row whose whole surface toggles its switch.

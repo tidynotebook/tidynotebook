@@ -114,11 +114,13 @@ await test('the arrow keys move inside the row and wrap at both ends', () => {
 
 await test('the row stands on the measure of the note, above a divider', () => {
   const frame = formatToolbarFrameClassName().split(' ');
-  assert.ok(frame.includes('border-b'));
-  assert.ok(frame.includes('border-edge-line'));
+  assert.ok(frame.includes('before:bottom-0'));
+  assert.ok(frame.includes('before:border-edge-subtle'));
   // The footer uses the same inline padding, so the row, the text and the
   // word count start on one line.
   assert.ok(frame.includes('px-2'));
+  assert.ok(frame.includes('data-scroll-overflow:before:opacity-100'));
+  assert.ok(!frame.includes('border-b'));
   const column = formatToolbarColumnClassName().split(' ');
   // Decision 0055: the one measure of the note, centred.
   for (const name of ['w-full', 'max-w-note']) {
@@ -134,7 +136,7 @@ await test('the row stays above the text on a phone', () => {
   for (const name of formatToolbarFrameClassName().split(' ')) {
     const utility = name.split(':').at(-1) ?? name;
     assert.ok(!utility.startsWith('order-'), `${name} moves the row`);
-    assert.ok(!utility.startsWith('border-t'), `${name} moves the divider`);
+    assert.ok(name !== 'border-t', `${name} moves the divider`);
     assert.ok(utility !== 'border-b-0', `${name} drops the divider`);
   }
 });

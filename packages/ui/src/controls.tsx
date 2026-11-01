@@ -1,3 +1,14 @@
+import {
+  useContext,
+  useEffect,
+  useRef,
+  useId,
+  type ReactNode,
+  type Ref,
+  type ComponentProps,
+  type MouseEventHandler,
+} from 'react';
+import { FormSubmittedContext } from './form-context.ts';
 import { Stack, Inline, Inset } from './primitives.tsx';
 import { ListRow } from './layout.tsx';
 import { Pill } from './section-heading.tsx';
@@ -16,15 +27,7 @@ import { WrapText } from './inline-text.tsx';
  * the distances inside itself.
  */
 import { isTouchInput } from './input-focus.ts';
-import {
-  useEffect,
-  useRef,
-  useId,
-  type ReactNode,
-  type Ref,
-  type ComponentProps,
-  type MouseEventHandler,
-} from 'react';
+
 import {
   buttonClassName,
   compactButtonVisualClassName,
@@ -109,7 +112,7 @@ export function Meter({
 export function Button({
   type,
   variant = 'primary',
-  size = 'md',
+  size = 'default',
   tone,
   disabled,
   onClick,
@@ -124,6 +127,7 @@ export function Button({
   ariaHasPopup,
   ariaPressed,
   tabIndex,
+  full = false,
   compact = false,
   optical = false,
   hideTextOnPhone = false,
@@ -163,6 +167,7 @@ export function Button({
    */
   readonly tabIndex?: number | undefined;
   /** Keeps the touch target and draws a smaller surface inside it. */
+  readonly full?: boolean;
   readonly compact?: boolean | undefined;
   readonly optical?: boolean;
   readonly hideTextOnPhone?: boolean;
@@ -203,7 +208,7 @@ export function Button({
       {...nativeProps}
       ref={buttonRef ?? nativeRef}
       type={type ?? 'button'}
-      className={`${classes} ${optical ? 'absolute inset-x-1 top-0 coarse:inset-x-0' : ''} ${settingsRow ? 'ds-row-button absolute left-0 top-1/2 -translate-y-1/2 h-7 w-full px-2 coarse:h-11 coarse:border-0 coarse:bg-transparent coarse:px-0 ' : ''}`}
+      className={`${full ? 'w-full' : ''} ${classes} ${optical ? 'absolute inset-x-1 top-0 coarse:inset-x-0' : ''} ${settingsRow ? 'ds-row-button absolute left-0 top-1/2 -translate-y-1/2 h-7 w-full px-2 coarse:h-11 coarse:border-0 coarse:bg-transparent coarse:px-0 ' : ''}`}
       disabled={disabled ?? false}
       onClick={onClick}
       aria-label={name.ariaLabel}
@@ -293,7 +298,7 @@ export function TextField({
   label,
   value,
   onChange,
-  error,
+  error: suppliedError,
   hint,
   inputType,
   autoComplete,
@@ -321,6 +326,16 @@ export function TextField({
   /** Keeps a visible placeholder with an accessible label. */
   readonly hideLabel?: boolean | undefined;
 }): ReactNode {
+  const submitted = useContext(FormSubmittedContext);
+  const error =
+    suppliedError ||
+    (submitted && required && value.trim() === ''
+      ? 'Enter a value.'
+      : submitted &&
+          inputType === 'email' &&
+          !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value)
+        ? 'Enter an email address.'
+        : '');
   const errorId = `${id}-error`;
   const hintId = `${id}-hint`;
   const hasError = error !== undefined && error !== '';
@@ -339,12 +354,6 @@ export function TextField({
         htmlFor={id}
       >
         {label}
-        {required ? (
-          <span aria-hidden="true" className="text-danger">
-            {' '}
-            *
-          </span>
-        ) : null}
       </label>
       <div className="flex flex-col gap-1">
         <input
@@ -357,6 +366,7 @@ export function TextField({
           autoComplete={autoComplete}
           placeholder={placeholder}
           required={required ?? false}
+          aria-required={required ?? false}
           data-list-search={listSearch ? '' : undefined}
           autoFocus={(autoFocus ?? false) && (!listSearch || !isTouchInput())}
           aria-invalid={hasError}
@@ -398,7 +408,7 @@ export function TextAreaField({
   label,
   value,
   onChange,
-  error,
+  error: suppliedError,
   hint,
   required,
 }: {
@@ -411,6 +421,10 @@ export function TextAreaField({
   readonly hint?: string | undefined;
   readonly required?: boolean | undefined;
 }): ReactNode {
+  const submitted = useContext(FormSubmittedContext);
+  const error =
+    suppliedError ||
+    (submitted && required && value.trim() === '' ? 'Enter a value.' : '');
   const errorId = `${id}-error`;
   const hintId = `${id}-hint`;
   const hasError = error !== undefined && error !== '';
@@ -429,6 +443,7 @@ export function TextAreaField({
           className={textAreaClassName({ invalid: hasError })}
           value={value}
           required={required ?? false}
+          aria-required={required ?? false}
           spellCheck={false}
           aria-invalid={hasError}
           aria-describedby={described === '' ? undefined : described}

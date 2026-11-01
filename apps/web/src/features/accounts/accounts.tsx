@@ -5,7 +5,6 @@ import {
   Inset,
   Stack,
   Button,
-  buttonClassName,
   Checkbox,
   DownloadIcon,
   LoadingState,
@@ -115,7 +114,7 @@ function SignedInFooter({
       </p>
       <Button
         variant="secondary"
-        size="sm"
+        size="compact"
         icon={<SignOutIcon />}
         disabled={disabled}
         onClick={onSignOut}
@@ -335,7 +334,7 @@ export function ConsentPage(): ReactNode {
       }
     >
       {state.kind === 'loading' ? (
-        <LoadingState label="The terms are loading." />
+        <LoadingState label="Loading terms" />
       ) : state.kind === 'failed' ? (
         <Stack gap={3} as="div">
           <Notice tone="problem" message={state.message} />
@@ -556,9 +555,44 @@ export function LoginPage({
     <AuthFrame
       title={status.kind === 'loading' ? productName : title}
       documents={documents}
+      description={
+        setup
+          ? 'This installation has no account yet. What you enter here becomes the first account. It administers the installation and invites other people.'
+          : oauthQuery === undefined
+            ? 'Enter the address and the password of your account.'
+            : oauthSignInDescription
+      }
+      footer={
+        <Inline gap={4} wrap justify="center">
+          {' '}
+          {status.kind === 'ready' && !setup && status.passwordReset ? (
+            <>
+              <Link
+                className="text-secondary text-accent underline"
+                to={forgotPasswordRoute}
+              >
+                Forgot password
+              </Link>
+              {oauthQuery === undefined ? null : (
+                <Inset as="p" className="text-secondary text-muted">
+                  {oauthResetSentence}
+                </Inset>
+              )}
+            </>
+          ) : null}
+          {status.kind === 'ready' && !setup && status.openRegistration ? (
+            <Link
+              className="text-secondary text-accent underline"
+              to={signUpRoute}
+            >
+              Create an account
+            </Link>
+          ) : null}
+        </Inline>
+      }
     >
       {status.kind === 'loading' ? (
-        <LoadingState label="The sign-in screen is loading." />
+        <LoadingState label="Loading sign-in screen" />
       ) : status.kind === 'unreachable' ? (
         <Stack gap={3} as="div">
           <Notice tone="problem" message={status.message} />
@@ -572,13 +606,6 @@ export function LoginPage({
         </Stack>
       ) : (
         <>
-          <Inset as="p" className="text-secondary text-muted">
-            {setup
-              ? 'This installation has no account yet. What you enter here becomes the first account. It administers the installation and invites other people.'
-              : oauthQuery === undefined
-                ? 'Enter the address and the password of your account.'
-                : oauthSignInDescription}
-          </Inset>
           <Form
             onSubmit={(event): void => {
               event.preventDefault();
@@ -636,29 +663,6 @@ export function LoginPage({
                   : 'Sign in'}
             </Button>
           </Form>
-          {status.kind === 'ready' && !setup && status.passwordReset ? (
-            <>
-              <Link
-                className={`w-full ${buttonClassName({ variant: 'ghost' })}`}
-                to={forgotPasswordRoute}
-              >
-                Forgot password
-              </Link>
-              {oauthQuery === undefined ? null : (
-                <Inset as="p" className="text-secondary text-muted">
-                  {oauthResetSentence}
-                </Inset>
-              )}
-            </>
-          ) : null}
-          {status.kind === 'ready' && !setup && status.openRegistration ? (
-            <Link
-              className={`w-full ${buttonClassName({ variant: 'ghost' })}`}
-              to={signUpRoute}
-            >
-              Create an account
-            </Link>
-          ) : null}
         </>
       )}
     </AuthFrame>

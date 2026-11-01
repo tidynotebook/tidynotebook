@@ -1,4 +1,6 @@
 import {
+  fixedRegionClasses,
+  observeElementScrollEdges,
   Inline,
   Stack,
   Inset,
@@ -12,6 +14,7 @@ import {
   rowClassName,
   SearchIcon,
 } from '@notesapp/ui';
+
 /**
  * The one command palette of the application.
  *
@@ -356,6 +359,11 @@ function PaletteDialog({
       ? ''
       : pickAnnouncement(stepAction.label, step, stepChoices, rows.length);
 
+  useEffect(
+    () =>
+      listRef.current ? observeElementScrollEdges(listRef.current) : undefined,
+    [rows.length],
+  );
   return (
     <Dialog
       open
@@ -371,7 +379,8 @@ function PaletteDialog({
         padY={1}
         align="center"
         as="div"
-        className="border-b border-edge-line"
+        data-scroll-edge="above"
+        className={fixedRegionClasses('bottom')}
       >
         <span className="shrink-0 text-muted" aria-hidden="true">
           <SearchIcon />
@@ -425,12 +434,7 @@ function PaletteDialog({
         {announcement}
       </p>
       {stepChoices?.status === 'ready' && stepChoices.notice !== null ? (
-        <Inset
-          padX={4}
-          padY={2}
-          as="p"
-          className="border-b border-edge-line text-secondary text-muted"
-        >
+        <Inset padX={4} padY={2} as="p" className="text-secondary text-muted">
           {stepChoices.notice}
         </Inset>
       ) : null}
@@ -608,7 +612,7 @@ function PaletteDialog({
               step.empty.action === null ? undefined : (
                 <Button
                   variant="secondary"
-                  size="sm"
+                  size="compact"
                   onClick={() => {
                     const fill = step.empty.action;
                     if (fill !== null) closeThen(fill.run);

@@ -77,7 +77,7 @@ export function ReviewView(): ReactNode {
     return (
       <Page>
         <PageHeader title="Review" />
-        <LoadingState label="The review is loading." />
+        <LoadingState label="Loading review" />
       </Page>
     );
   return (
@@ -168,7 +168,7 @@ function ReviewDetail({
         <LoadingState
           shape="list"
           rows={4}
-          label="The review of this note is loading."
+          label="Loading review of this note"
         />
       </Page>
     );
@@ -196,7 +196,10 @@ function ReviewDetail({
         {page.opensAttention ? (
           <div>
             <Link
-              className={buttonClassName({ variant: 'primary', size: 'sm' })}
+              className={buttonClassName({
+                variant: 'primary',
+                size: 'compact',
+              })}
               to={`/w/${workspaceId}/attention`}
             >
               {`Open ${attentionTitle}`}
@@ -206,11 +209,7 @@ function ReviewDetail({
         {page.missing !== null ? (
           <p className="m-0 text-secondary text-muted">{page.missing}</p>
         ) : comparison.status === 'loading' ? (
-          <LoadingState
-            shape="list"
-            rows={4}
-            label="The comparison is loading."
-          />
+          <LoadingState shape="list" rows={4} label="Loading comparison" />
         ) : comparison.status === 'ready' ? (
           <InlineDiff
             hunks={comparison.hunks}

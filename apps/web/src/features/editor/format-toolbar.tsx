@@ -1,3 +1,4 @@
+import { IconButton, HistoryButton } from '@notesapp/ui';
 /**
  * The row of formatting tools above the note text (record 0094).
  *
@@ -35,7 +36,7 @@ import {
   type HistoryAction,
   type FormatContext,
 } from '@notesapp/editor';
-import { Button, HistoryButton } from '@notesapp/ui';
+
 import {
   formatToolbarClassName,
   formatToolbarColumnClassName,
@@ -145,7 +146,7 @@ export function FormatToolbar({
 
   let place = 2;
   return (
-    <div className={formatToolbarFrameClassName()}>
+    <div data-scroll-edge="above" className={formatToolbarFrameClassName()}>
       <div
         className={formatToolbarColumnClassName()}
         onPointerDown={(event): void => {
@@ -219,14 +220,13 @@ export function FormatToolbar({
                 const at = place;
                 place += 1;
                 return (
-                  <Button
+                  <IconButton
                     key={tool.id}
                     variant="ghost"
-                    size="sm"
                     compact
                     label={formatActionOf(tool.id).label}
                     title={titleOf(tool.id)}
-                    icon={actionIcon(tool.icon)}
+                    glyph={actionIcon(tool.icon)}
                     tabIndex={at === tabStop ? 0 : -1}
                     disabled={enabled[at] !== true}
                     onClick={() => onFormat(tool.id)}

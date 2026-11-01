@@ -126,7 +126,7 @@ function deferred(element: ReactNode): ReactNode {
     <Suspense
       fallback={
         <Page>
-          <LoadingState label="The screen is loading." />
+          <LoadingState label="Loading screen" />
         </Page>
       }
     >

@@ -1,5 +1,6 @@
 /** A reserved column keeps the page clear of an open desktop panel. */
-import type { ReactNode, HTMLAttributes } from 'react';
+import { useEffect, useRef, type ReactNode, type HTMLAttributes } from 'react';
+import { observeElementScrollEdges } from './scroll-region.tsx';
 const columns = {
   narrow: 'md:grid-cols-sidebar-narrow',
   medium: 'md:grid-cols-sidebar-medium',
@@ -15,13 +16,23 @@ export function ApplicationContent({
 }: HTMLAttributes<HTMLDivElement> & {
   readonly sidebar?: SidebarWidth | undefined;
 }): ReactNode {
+  const scroller = useRef<HTMLDivElement>(null);
+  useEffect(
+    () =>
+      scroller.current
+        ? observeElementScrollEdges(scroller.current)
+        : undefined,
+    [],
+  );
   return (
     <div
       {...props}
       className={`grid flex-1 grid-cols-1 overflow-hidden ${sidebar ? columns[sidebar] : ''} ${className}`}
     >
       {sidebar ? <div aria-hidden="true" className="hidden md:block" /> : null}
-      <div className="flex flex-col overflow-y-auto">{children}</div>
+      <div ref={scroller} className="flex flex-col overflow-y-auto">
+        {children}
+      </div>
     </div>
   );
 }

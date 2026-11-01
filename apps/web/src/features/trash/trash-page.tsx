@@ -116,7 +116,7 @@ export function TrashView(): ReactNode {
     return (
       <Page>
         <PageHeader title="Trash" />
-        <LoadingState shape="list" rows={4} label="The trash is loading." />
+        <LoadingState shape="list" rows={4} label="Loading trash" />
       </Page>
     );
 
@@ -410,7 +410,7 @@ function TrashList({
         )}
         {failure === null ? null : <Notice tone="problem" message={failure} />}
         {loading ? (
-          <LoadingState shape="list" rows={4} label="The trash is loading." />
+          <LoadingState shape="list" rows={4} label="Loading trash" />
         ) : items.length === 0 ? null : (
           <section aria-labelledby="trash-heading">
             <h2 className={pageGroupLabelClassName()} id="trash-heading">
@@ -429,11 +429,7 @@ function TrashList({
                 if (when !== '') parts.push(`deleted ${when}`);
                 if (item.pending) parts.push('waiting to go up');
                 return (
-                  <ListRow
-                    contentEdge
-                    key={item.fileId}
-                    className="border-b border-edge-subtle"
-                  >
+                  <ListRow contentEdge key={item.fileId} className="">
                     <div className="min-w-0 flex-1">
                       <p className="m-0 line-clamp-2 break-words text-body text-strong lg:line-clamp-1">
                         {folder === null ? name : name.slice(folder.length + 1)}
@@ -450,7 +446,7 @@ function TrashList({
                     >
                       <Button
                         variant="secondary"
-                        size="sm"
+                        size="compact"
                         compact
                         disabled={busy}
                         label={`Restore ${name}`}

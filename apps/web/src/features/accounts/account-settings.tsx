@@ -315,11 +315,7 @@ function SessionsSettings(): ReactNode {
       {state.kind === 'failed' ? (
         <Notice tone="problem" message={state.message} />
       ) : state.kind === 'loading' ? (
-        <LoadingState
-          shape="list"
-          rows={2}
-          label="The signed in devices are loading."
-        />
+        <LoadingState shape="list" rows={2} label="Loading signed in devices" />
       ) : (
         <Stack gap={{ fine: 6, coarse: 4 }}>
           {current === undefined ? null : (
@@ -358,7 +354,7 @@ function SessionsSettings(): ReactNode {
                 <>
                   {others.length === 0 || phone ? null : (
                     <Button
-                      size="sm"
+                      size="compact"
                       variant="secondary"
                       className="max-lg:w-full"
                       icon={<SignOutIcon />}
@@ -401,7 +397,7 @@ function SessionsSettings(): ReactNode {
                       <span data-setting-control>
                         <Button
                           variant="secondary"
-                          size="sm"
+                          size="compact"
                           disabled={busy}
                           label={`Sign out ${name}`}
                           onClick={() => {
@@ -657,7 +653,7 @@ function ProfileSettings({
           </span>
           <Button
             variant="secondary"
-            size="sm"
+            size="compact"
             label="Edit name"
             buttonRef={nameButton}
             onClick={() => {
@@ -953,22 +949,22 @@ export function SettingsModal({
     'connected-apps': <ConnectedAppSettings />,
     sessions: <SessionsSettings />,
     'admin-accounts': (
-      <Suspense fallback={<LoadingState label="Reading accounts" />}>
+      <Suspense fallback={<LoadingState label="Loading accounts" />}>
         <AdministrationSettings page="accounts" />
       </Suspense>
     ),
     'admin-mail': (
-      <Suspense fallback={<LoadingState label="Reading mail settings" />}>
+      <Suspense fallback={<LoadingState label="Loading mail settings" />}>
         <AdministrationSettings page="mail" />
       </Suspense>
     ),
     'admin-legal': (
-      <Suspense fallback={<LoadingState label="Reading legal documents" />}>
+      <Suspense fallback={<LoadingState label="Loading legal documents" />}>
         <AdministrationSettings page="legal" />
       </Suspense>
     ),
     'admin-reports': (
-      <Suspense fallback={<LoadingState label="Reading reports" />}>
+      <Suspense fallback={<LoadingState label="Loading reports" />}>
         <AdministrationSettings page="reports" />
       </Suspense>
     ),

@@ -21,7 +21,7 @@ export function TrialNotice(): ReactNode {
   const action = account.accountPortal ? (
     <Button
       variant="secondary"
-      size="sm"
+      size="compact"
       disabled={portal.busy}
       onClick={() => {
         void portal.open(portalHome, true);

@@ -271,13 +271,13 @@ class CodeControls {
     control.type = 'button';
     control.className = buttonClassName({
       variant: 'ghost',
-      size: 'sm',
+      size: 'compact',
       compact: true,
     });
     const surface = document.createElement('span');
     surface.className = compactButtonVisualClassName({
       variant: 'ghost',
-      size: 'sm',
+      size: 'compact',
       iconOnly: false,
     });
     const word = document.createElement('span');

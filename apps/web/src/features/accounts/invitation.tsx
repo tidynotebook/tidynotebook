@@ -109,7 +109,7 @@ export function InvitationPage(): ReactNode {
   return (
     <AuthFrame title="Make your account">
       {state.kind === 'loading' ? (
-        <LoadingState label="The invitation is loading." />
+        <LoadingState label="Loading invitation" />
       ) : state.kind === 'invalid' ? (
         <Stack gap={3} as="div">
           <Notice tone="problem" message={invalidInvitation} />

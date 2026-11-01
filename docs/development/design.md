@@ -30,8 +30,8 @@ Three planes (record 0052): `bg-surface` is chrome, `bg-app` is the page,
 `bg-card` is raised. `bg-hover` and `bg-active` are the states of a row or chip.
 
 Three edges (records 0053 and 0063): `edge-line` is the resting edge of a
-control and the one divider. `edge-subtle` is the edge of a raised surface and
-a hairline inside a group that already differs in fill. `edge` is only a task
+control. `edge-subtle` is the edge of a raised surface and every hairline,
+group divider and scroll edge. `edge` is only a task
 box, a checkbox, a radio, a switch track and a drop target. Draw a divider only
 where a person must see the boundary of a region they scroll or a list they
 count. Separate everything else with space or fill.
@@ -102,7 +102,7 @@ overlay opens above the keyboard of a phone.
 
 ## Surfaces a person waits on or reads
 
-- An empty state is an icon at 20 px, a title in `text-ui font-semibold`, one
+- An empty state is an icon at 20 px, a title in `text-title-header`, one
   sentence in `text-control text-muted`, and one action. No box.
 - A notice is a tone surface, `bg-accent-surface`, `bg-success-surface` or
   `bg-danger-surface`, a mark in the tone colour and text in `text-strong`. No
