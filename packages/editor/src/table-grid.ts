@@ -193,6 +193,48 @@ export function tableAt(state: EditorState, pos: number): TableBox | null {
   return null;
 }
 
+/** Finish a table that crosses the current parser boundary. */
+function tableTree(state: EditorState, from: number, to: number): Tree {
+  let tree = ensureSyntaxTree(state, to, 250) ?? syntaxTree(state);
+  for (;;) {
+    let end = to;
+    let found = false;
+    tree.iterate({
+      from,
+      to,
+      enter(node) {
+        if (node.name !== 'Table') return true;
+        found = true;
+        end = Math.max(end, node.to);
+        return false;
+      },
+    });
+    if (!found || end >= state.doc.length) return tree;
+    // Parsing a little beyond the table proves its end. A partial table
+    // grows until the parser reaches its last row. No source scan is used.
+    const next = ensureSyntaxTree(
+      state,
+      Math.min(state.doc.length, end + 4096),
+      // A table can have up to 10,000 cells. Finish this bounded block
+      // before sizing it, including when other tests or views use the CPU.
+      250,
+    );
+    if (next === null || next === tree) return tree;
+    let nextEnd = to;
+    next.iterate({
+      from,
+      to,
+      enter(node) {
+        if (node.name !== 'Table') return true;
+        nextEnd = Math.max(nextEnd, node.to);
+        return false;
+      },
+    });
+    tree = next;
+    if (nextEnd <= end) return tree;
+  }
+}
+
 /** Every table that meets the range from `from` to `to`. */
 export function tablesIn(
   state: EditorState,
@@ -200,7 +242,7 @@ export function tablesIn(
   to: number,
 ): readonly TableBox[] {
   const tables: TableBox[] = [];
-  treeOf(state, to).iterate({
+  tableTree(state, from, to).iterate({
     from,
     to,
     enter: (node) => {

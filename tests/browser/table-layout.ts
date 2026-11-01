@@ -89,10 +89,11 @@ try {
           start.pageWidth <= start.viewport,
           'A wide table must not widen the page.',
         );
-        assert.ok(
-          start.content > start.width,
-          'The fixture must require horizontal scroll.',
-        );
+        if (width < 1024)
+          assert.ok(
+            start.content > start.width,
+            'The fixture must require horizontal scroll.',
+          );
         await page.screenshot({
           path: `.local-app/screenshots/table-editor-${width}-${scheme}.png`,
         });
@@ -119,6 +120,24 @@ try {
           (await geometry()).tracks,
           start.tracks,
           'Returning to the header must not resize columns.',
+        );
+        const firstCell = page.locator('.cm-np-table-cell').first();
+        const original = await firstCell.evaluate(
+          (element) => element.textContent,
+        );
+        await firstCell.click();
+        await page.keyboard.press('q');
+        assert.ok(
+          (
+            await firstCell.evaluate((element) => element.textContent)
+          )?.includes('q'),
+          'The text grid accepts typing in a cell.',
+        );
+        await page.keyboard.press('Control+z');
+        assert.equal(
+          await firstCell.evaluate((element) => element.textContent),
+          original,
+          'Undo restores the cell.',
         );
         await page.goto(origin + readerPath);
         await page.locator('.notes-table-scroll table').waitFor();

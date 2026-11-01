@@ -34,6 +34,7 @@ import {
   removeColumnEdit,
   removeRowEdit,
   tableAt,
+  tablesIn,
   tableData,
   tableEditSpec,
   tableGridEditing,
@@ -785,4 +786,19 @@ await test('column tracks include the full large table and change only with text
   const changed = tableAt(edited, 1);
   assert.ok(changed);
   assert.notEqual(tableColumnTracks(edited, changed), tracks);
+});
+
+await test('the first viewport sizes a table from its last row before background parsing', () => {
+  const doc =
+    '| Date | Value |\n| --- | --- |\n' +
+    '| short | 1 |\n'.repeat(2000) +
+    '| longestwordinthetable | 2 |\n\nAfter';
+  const state = EditorState.create({
+    doc,
+    extensions: noteMarkdownExtensions({ headless: true }),
+  });
+  const table = tablesIn(state, 0, 100)[0];
+  assert.ok(table);
+  assert.equal(table.rows.length, 2003);
+  assert.ok(tableColumnTracks(state, table).includes('25.2ch'));
 });
