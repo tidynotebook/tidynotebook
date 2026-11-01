@@ -1255,46 +1255,50 @@ export function SettingsModal({
                       </Stack>
                     </FixedDialogLayout>
                   ) : (
-                    <ScrollCueRegion
-                      data-settings-scroll=""
-                      hidden={activeAction !== null}
-                      className="flex-1"
-                    >
-                      <Stack
-                        gap={{ fine: 6, coarse: 4 }}
-                        pad={{ fine: 6, coarse: 4 }}
-                        className="ui-settings-sections"
-                        hidden={activeAction !== null}
-                        inert={activeAction !== null}
-                      >
-                        <SettingsTopicContext.Provider
-                          value={{ hiddenTitles, helpSection: null }}
-                        >
-                          {activePage?.path === 'export-import' ? (
-                            <Stack gap={2}>
-                              <SectionHeading
-                                label={<>Workspace</>}
-                                divider
-                                inset={{ fine: 0, coarse: 4 }}
-                              />
-                              <Card responsive>
-                                {activePage.sections.map((key) => (
+                    <Stack fill hidden={activeAction !== null}>
+                      <Stack fill padY={{ fine: 6, coarse: 4 }}>
+                        <ScrollCueRegion data-settings-scroll="">
+                          <Stack
+                            gap={{ fine: 6, coarse: 4 }}
+                            padX={{ fine: 6, coarse: 4 }}
+                            className="ui-settings-sections"
+                            hidden={activeAction !== null}
+                            inert={activeAction !== null}
+                          >
+                            <SettingsTopicContext.Provider
+                              value={{ hiddenTitles, helpSection: null }}
+                            >
+                              {activePage?.path === 'export-import' ? (
+                                <Stack gap={2}>
+                                  <SectionHeading
+                                    label={<>Workspace</>}
+                                    divider
+                                    inset={{ fine: 0, coarse: 4 }}
+                                  />
+                                  <Card responsive>
+                                    {activePage.sections.map((key) => (
+                                      <Stack key={key} gap={2}>
+                                        {sectionBodies[key]}
+                                      </Stack>
+                                    ))}
+                                  </Card>
+                                </Stack>
+                              ) : (
+                                activePage?.sections.map((key) => (
                                   <Stack key={key} gap={2}>
                                     {sectionBodies[key]}
                                   </Stack>
-                                ))}
-                              </Card>
-                            </Stack>
-                          ) : (
-                            activePage?.sections.map((key) => (
-                              <Stack key={key} gap={2}>
-                                {sectionBodies[key]}
-                              </Stack>
-                            ))
-                          )}
-                        </SettingsTopicContext.Provider>
+                                ))
+                              )}
+                            </SettingsTopicContext.Provider>
+                          </Stack>
+                        </ScrollCueRegion>
                       </Stack>
-                    </ScrollCueRegion>
+                      <div
+                        aria-hidden="true"
+                        className="h-0 shrink-0 coarse:h-safe"
+                      />
+                    </Stack>
                   )}
                 </DialogHeaderActionsContext.Provider>
               </div>

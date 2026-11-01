@@ -127,9 +127,9 @@ Desktop navigation uses the sidebar density. Its account card has equal
 padding. Desktop content is a scrolling region with a stack of flat row
 groups and full-width dividers. Phone groups use cards. Their headings align
 with the inner card content. Headings above tiles align with the tiles.
+Keep vertical padding outside the Settings scroller and side padding inside; rows and tiles use inset focus outlines, with the phone safe area below the bottom inset.
 
-Title blocks have one group gap after them. Rows center their content and
-align text left. Phone action rows have no second filled or outlined button.
+Title blocks have one group gap after them. Rows center their content and align text left. Phone action rows have no second filled or outlined button.
 
 Keep short edits and forms on the section. Long pickers, editors and confirms can use a sub-level.
 
