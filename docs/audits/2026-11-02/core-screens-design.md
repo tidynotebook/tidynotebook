@@ -434,3 +434,72 @@ shadow-overlay` and feature positions (`inset-x-3 top-3`). The status
 | Q-9  | Type role for preview and code text?                                                | Add one contract role (`text-code`, mono, secondary size) and use it only in `PreviewBlock`. Remove `text-preview` from features.                                            |
 | Q-10 | Can layout change with pointer type?                                                | No. Width selects layout, pointer selects density only. Add this sentence to DS Rules.                                                                                       |
 | Q-11 | Signed-in screenshots                                                               | Run the screenshot pass on one disposable Docker deployment when the slot is free, before implementation starts, and add the results to this report.                         |
+
+## Implementation record
+
+The owner accepted Q-1 to Q-10. Q-11 uses an isolated native Postgres server
+and local file storage on port 4583. No Docker or S3 download was used.
+The original findings above remain as the before record.
+
+| Finding | Change                                                                                                                                     |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| D-1     | Card has a raised shadow and an inset outline. Every theme has a fill or edge contrast test.                                               |
+| D-2     | Public footer uses two columns below md and six columns from md.                                                                           |
+| D-3     | Form disables browser bubbles. Required fields show an accessible field error on submit.                                                   |
+| D-4     | Generic missing-resource text is neutral.                                                                                                  |
+| D-5     | Sign-in and sign-up navigation uses footer links.                                                                                          |
+| D-6     | App header uses the shared conditional scroll edge.                                                                                        |
+| D-7     | Editor toolbar and footer use shared conditional scroll edges. The native editor scroller reports hidden content.                          |
+| D-8     | Image viewer uses floating Toolbar and Toast.                                                                                              |
+| D-9     | Button sizes are compact and default. Icon actions use IconButton. Shared consumers and tests use the new names.                           |
+| D-10    | PreviewBlock owns text, rendered version, picture and diff preview surfaces.                                                               |
+| D-11    | Hairlines use edge-subtle. Resting control edges use edge-line. The interface guide agrees.                                                |
+| D-12    | Switch tracks use edge. ListRow uses the shared switch recipe.                                                                             |
+| D-13    | Phone footer and body use the same horizontal inset. Button has a full prop.                                                               |
+| D-14    | Layout guide states the Page width. Original scope marks later owner decisions.                                                            |
+| D-15    | Account card group gap equals padding. Title and description share a small gap.                                                            |
+| D-16    | Trash and folder rows have no border in their layout box.                                                                                  |
+| D-17    | Search header uses a conditional scroll edge from the results scroller.                                                                    |
+| D-18    | Menu and loading rows use content and padding. StatusLine has no fixed height. The check covers shared row minimum heights.                |
+| D-19    | State token swaps use approved named utilities. Content selectors use named variants. The check rejects arbitrary properties and variants. |
+| D-20    | Scroll shadows mix from the theme scrim.                                                                                                   |
+| D-21    | Required fields have no red marker.                                                                                                        |
+| D-22    | All notes shows its count. A row shows its folder. Date groups state the time.                                                             |
+| D-23    | Loading labels use Loading plus the object.                                                                                                |
+| D-24    | The interface guide uses the EmptyState title role.                                                                                        |
+| D-25    | Sign-up description sits with the title, before the trial notice.                                                                          |
+| D-26    | Note groups use SectionHeading.                                                                                                            |
+| D-27    | IdentityMark and TileSelectedBadge own sizes and positions.                                                                                |
+
+The designer approved `state-overlay`, `state-raised` and the normal
+`coarse:state-raised` variant. Each utility sets only inherited hover and
+selected tokens. The check rejects all other declarations in these utilities.
+
+## Screenshot comparison
+
+Signed-in before captures use the audit commit. After captures use the fixed
+client and the same local account. Each screen has desktop and phone captures
+in light and dark. The account before captures remain in the original folder.
+Account after captures use the same mocked setup and error responses as the audit.
+
+| Screen             | Before example                                                                   | After example                                                                   |
+| ------------------ | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Notes              | [Phone light](core-screens-design/before/notes-phone-light.png)                  | [Phone light](core-screens-design/after/notes-phone-light.png)                  |
+| Editor             | [Phone light](core-screens-design/before/editor-phone-light.png)                 | [Phone light](core-screens-design/after/editor-phone-light.png)                 |
+| Settings           | [Phone light](core-screens-design/before/settings-phone-light.png)               | [Phone light](core-screens-design/after/settings-phone-light.png)               |
+| Trash              | [Phone light](core-screens-design/before/trash-phone-light.png)                  | [Phone light](core-screens-design/after/trash-phone-light.png)                  |
+| History            | [Phone light](core-screens-design/before/history-phone-light.png)                | [Phone light](core-screens-design/after/history-phone-light.png)                |
+| Publish            | [Phone light](core-screens-design/before/publish-phone-light.png)                | [Phone light](core-screens-design/after/publish-phone-light.png)                |
+| Search             | [Phone light](core-screens-design/before/search-phone-light.png)                 | [Phone light](core-screens-design/after/search-phone-light.png)                 |
+| login              | [Desktop light](core-screens-design/login-desktop-light.png)                     | [Desktop light](core-screens-design/after/login-desktop-light.png)              |
+| signup-validation  | [Desktop light](core-screens-design/before/signup-validation-desktop-light.png)  | [Desktop light](core-screens-design/after/signup-validation-desktop-light.png)  |
+| setup              | [Desktop light](core-screens-design/before/setup-desktop-light.png)              | [Desktop light](core-screens-design/after/setup-desktop-light.png)              |
+| forgot             | [Desktop light](core-screens-design/before/forgot-desktop-light.png)             | [Desktop light](core-screens-design/after/forgot-desktop-light.png)             |
+| reset-notoken      | [Desktop light](core-screens-design/reset-notoken-desktop-light.png)             | [Desktop light](core-screens-design/after/reset-notoken-desktop-light.png)      |
+| invitation-notoken | [Desktop light](core-screens-design/before/invitation-notoken-desktop-light.png) | [Desktop light](core-screens-design/after/invitation-notoken-desktop-light.png) |
+| verify-notoken     | [Desktop light](core-screens-design/before/verify-notoken-desktop-light.png)     | [Desktop light](core-screens-design/after/verify-notoken-desktop-light.png)     |
+
+Full capture sets: [before](core-screens-design/before/) and [after](core-screens-design/after/).
+
+The designer also identified a saved-status line that owner commit `323f1fca`
+removed. The footer now shows a line only when work needs attention.

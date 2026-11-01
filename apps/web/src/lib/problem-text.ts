@@ -57,7 +57,7 @@ const sentences: Readonly<Record<string, string>> = {
   last_administrator:
     'The installation needs an administrator. Make another account an administrator first.',
   mutation_reused: 'That save was already sent. Nothing changed.',
-  not_found: 'That note is not on the server.',
+  not_found: 'The server could not find this.',
   not_ready: 'The server is still starting. Try again in a moment.',
   open_registration_unavailable:
     'Open sign-up needs a mail server, an address for published pages and legal documents first.',

@@ -1,5 +1,5 @@
 import {
-  Inset,
+  PreviewBlock,
   Inline,
   Stack,
   Button,
@@ -80,19 +80,17 @@ function ParkedSaveRow({
         <summary className="cursor-pointer text-secondary text-muted">
           Kept text
         </summary>
-        <Inset
-          pad={3}
-          as="pre"
-          className="max-h-48 overflow-auto whitespace-pre-wrap rounded-lg border border-edge-subtle bg-surface font-mono text-preview text-strong"
+        <PreviewBlock
+          className="max-h-96"
           aria-label={`Kept text of ${save.name}`}
         >
           {save.text}
-        </Inset>
+        </PreviewBlock>
       </Stack>
       <Inline gap={2} wrap align="center" as="div">
         <Button
           variant="primary"
-          size="sm"
+          size="compact"
           label={`Retry the save of ${save.name}`}
           onClick={() => {
             onRetry(save);
@@ -102,7 +100,7 @@ function ParkedSaveRow({
         </Button>
         <Button
           variant="secondary"
-          size="sm"
+          size="compact"
           label={`Save as new note from ${save.name}`}
           onClick={() => {
             onSaveAsNew(save);
@@ -112,7 +110,7 @@ function ParkedSaveRow({
         </Button>
         <Button
           variant="secondary"
-          size="sm"
+          size="compact"
           icon={<CopyIcon />}
           label={
             copied
@@ -131,7 +129,7 @@ function ParkedSaveRow({
           <>
             <Button
               variant="danger"
-              size="sm"
+              size="compact"
               icon={actionIcon(deleteGlyph)}
               label={`Confirm discard of the kept text of ${save.name}`}
               onClick={() => {
@@ -143,7 +141,7 @@ function ParkedSaveRow({
             </Button>
             <Button
               variant="ghost"
-              size="sm"
+              size="compact"
               label={`Keep the text of ${save.name}`}
               onClick={() => {
                 setConfirming(false);
@@ -155,7 +153,7 @@ function ParkedSaveRow({
         ) : (
           <Button
             variant="ghost"
-            size="sm"
+            size="compact"
             tone="danger"
             icon={actionIcon(deleteGlyph)}
             label={`Discard the kept text of ${save.name}`}
@@ -195,7 +193,7 @@ export function AttentionRoute(): ReactNode {
         <LoadingState
           shape="list"
           rows={3}
-          label="The saves that need attention are loading."
+          label="Loading saves that need attention"
         />
       </Page>
     );

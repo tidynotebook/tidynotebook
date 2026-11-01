@@ -1,4 +1,5 @@
 /** Shared geometry for document frames and their controls. */
+import { fixedRegionClasses } from './scroll-classes.ts';
 import { pageRowClassName, pageSideClassName } from './layout-classes.ts';
 import { controlStripClassName, focusOutline } from './control-classes.ts';
 import { transitionSurface } from './motion.ts';
@@ -25,12 +26,11 @@ export function noteOutlineScrollClassName(): string {
   return 'overflow-hidden overflow-y-auto overscroll-contain';
 }
 export function noteFooterClassName(typing: boolean): string {
-  const base =
-    'flex flex-col shrink-0 border-t border-edge-line px-2 py-2 text-secondary text-muted';
+  const base = `flex flex-col shrink-0 px-2 py-2 text-secondary text-muted ${fixedRegionClasses('top')}`;
   return typing ? `${base} ${phoneTypingHiddenClassName}` : base;
 }
 export function formatToolbarFrameClassName(): string {
-  return 'flex justify-center shrink-0 border-b border-edge-line px-2';
+  return `flex justify-center shrink-0 px-2 ${fixedRegionClasses('bottom')}`;
 }
 export function formatToolbarColumnClassName(): string {
   return 'w-full max-w-note';

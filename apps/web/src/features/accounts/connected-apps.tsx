@@ -74,7 +74,7 @@ export function ConnectedAppSettings(): ReactNode {
         {error === '' ? null : <Notice tone="problem" message={error} />}
         {apps === null ? (
           error === '' ? (
-            <LoadingState label="Reading connected apps" />
+            <LoadingState label="Loading connected apps" />
           ) : (
             <Button variant="secondary" onClick={() => setLoad(load + 1)}>
               Try again

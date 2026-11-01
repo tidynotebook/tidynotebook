@@ -131,11 +131,7 @@ export function TemplateSettingsFields(): ReactNode {
 
   if (state.status === 'loading')
     return (
-      <LoadingState
-        shape="list"
-        rows={1}
-        label="The template settings are loading."
-      />
+      <LoadingState shape="list" rows={1} label="Loading template settings" />
     );
   if (state.status === 'unavailable')
     return (

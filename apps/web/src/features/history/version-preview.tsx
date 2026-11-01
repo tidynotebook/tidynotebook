@@ -1,4 +1,5 @@
-import { Inset, Notice } from '@notesapp/ui';
+import { PreviewBlock, Notice } from '@notesapp/ui';
+
 /**
  * One version of a note, as the note surface draws it.
  *
@@ -176,14 +177,12 @@ export default function VersionPreview({
       {linkNotice === '' ? null : (
         <Notice message={linkNotice} onDismiss={() => setLinkNotice('')} />
       )}
-      <Inset
+      <PreviewBlock
         ref={containerRef}
         role="region"
         aria-label={label}
-        padX={4}
-        padY={2}
         as="div"
-        className="max-h-96 overflow-y-auto rounded-lg border border-edge-subtle bg-app"
+        className="max-h-96"
       />
     </div>
   );

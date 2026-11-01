@@ -87,7 +87,7 @@ await test('a meter refuses numbers that cannot state a value against a maximum'
 });
 
 /** Every button size. */
-const sizes: readonly ButtonSize[] = ['sm', 'md'];
+const sizes: readonly ButtonSize[] = ['compact', 'default'];
 
 /** Every recipe of the module, with the name a failure message reads. */
 const recipes: readonly (readonly [string, string])[] = [
@@ -101,7 +101,7 @@ const recipes: readonly (readonly [string, string])[] = [
     'compact danger icon',
     compactButtonVisualClassName({
       variant: 'danger',
-      size: 'sm',
+      size: 'compact',
       iconOnly: true,
     }),
   ],
@@ -634,7 +634,7 @@ await test('the pull answers the box of the control it corrects', () => {
   // assertions fail when it does not.
   const box = buttonClassName({
     variant: 'ghost',
-    size: 'sm',
+    size: 'compact',
     iconOnly: true,
     compact: true,
   }).split(' ');
@@ -828,7 +828,7 @@ await test('history controls draw the surface of every other format tool', async
   } = await import('./control-classes.ts');
   const tool = compactButtonVisualClassName({
     variant: 'ghost',
-    size: 'sm',
+    size: 'compact',
     iconOnly: true,
   }).split(' ');
   const on = historyButtonVisualClassName(false).split(' ');
@@ -869,7 +869,7 @@ await test('history controls take the tool size of every format tool', async () 
   // same target, so the row keeps one width and one gap.
   const tool = buttonClassName({
     variant: 'ghost',
-    size: 'sm',
+    size: 'compact',
     iconOnly: true,
     compact: true,
   }).split(' ');
@@ -907,11 +907,11 @@ await test('history controls retain their size and focus when unavailable', asyn
 });
 
 await test('the touch button recipe uses the shared icon target on each pointer', () => {
-  const classes = buttonClassName({ size: 'touch', iconOnly: true });
+  const classes = buttonClassName({ size: 'default', iconOnly: true });
   assert.ok(classes.split(' ').includes('ui-icon-button'));
   assert.equal(spacingSpec.coarse.compact, 44);
   assert.ok(!/md:size-[78]/.test(classes));
-  assert.ok(!/md:min-h-[78]/.test(buttonClassName({ size: 'touch' })));
+  assert.ok(!/md:min-h-[78]/.test(buttonClassName({ size: 'default' })));
 });
 
 await test('Settings switches share the content edge in both states', () => {

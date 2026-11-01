@@ -1,4 +1,5 @@
 import {
+  IconButton,
   ContentHeader,
   Form,
   Grid,
@@ -281,9 +282,9 @@ export default function TemplateChoices({
           closeLabel="Close template dialog"
           leading={
             details ? (
-              <Button
+              <IconButton
                 variant="ghost"
-                icon={<ChevronLeftIcon />}
+                glyph={<ChevronLeftIcon />}
                 label="Back to templates"
                 onClick={back}
               />
@@ -291,9 +292,9 @@ export default function TemplateChoices({
           }
           trailing={
             details ? null : (
-              <Button
+              <IconButton
                 variant="ghost"
-                icon={<SettingsIcon />}
+                glyph={<SettingsIcon />}
                 label="Manage templates"
                 onClick={manage}
               />
@@ -306,9 +307,9 @@ export default function TemplateChoices({
         className="ui-dialog-heading hidden shrink-0 items-center lg:flex"
       >
         <span className="lg:hidden">
-          <Button
+          <IconButton
             variant="ghost"
-            icon={details ? <ChevronLeftIcon /> : <CloseIcon />}
+            glyph={details ? <ChevronLeftIcon /> : <CloseIcon />}
             label={details ? 'Back to templates' : 'Close template dialog'}
             onClick={details ? back : onClose}
           />
@@ -329,16 +330,16 @@ export default function TemplateChoices({
             aria-label="Manage templates"
             title="Manage templates"
             onClick={manage}
-            className={buttonClassName({ variant: 'ghost', size: 'sm' })}
+            className={buttonClassName({ variant: 'ghost', size: 'compact' })}
           >
             <SettingsIcon />
             <span className="hidden lg:inline">Manage templates</span>
           </button>
         </span>
         <span className={details ? 'inline-flex' : 'hidden lg:inline-flex'}>
-          <Button
+          <IconButton
             variant="ghost"
-            icon={<CloseIcon />}
+            glyph={<CloseIcon />}
             label="Close template dialog"
             onClick={onClose}
           />

@@ -425,3 +425,16 @@ await test('overlay and raised-card state fills have at least 1.2 contrast in ev
         }
     }
 });
+
+await test('raised cards keep a visible fill or edge against page and panel', () => {
+  for (const theme of themes)
+    for (const background of [theme.tokens.background, theme.tokens.surface]) {
+      assert.ok(
+        Math.max(
+          contrastRatio(background, derivedValue(theme.tokens, 'cardRaised')),
+          contrastRatio(background, theme.tokens.borderSubtle),
+        ) >= 1.1,
+        theme.id,
+      );
+    }
+});

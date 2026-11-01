@@ -49,7 +49,7 @@ export function SaveProblemControl({
       <Button
         buttonRef={trigger}
         variant="secondary"
-        size="sm"
+        size="compact"
         tone={problem.kind === 'not-saved' ? 'danger' : undefined}
         ariaExpanded={open}
         ariaControls={open ? `${id}-panel` : undefined}

@@ -47,7 +47,7 @@ function Rows({ count }: { readonly count: number }): ReactNode {
   return (
     <>
       {Array.from({ length: count }, (_unused, index) => (
-        <div key={index} className="flex min-h-8 items-center gap-4">
+        <div key={index} className="flex items-center gap-4 py-1 text-body">
           <div className="size-4 shrink-0 rounded-md bg-hover" />
           <div
             className={barClassName(

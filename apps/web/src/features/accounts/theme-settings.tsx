@@ -1,4 +1,5 @@
 import {
+  TileSelectedBadge,
   Stack,
   Grid,
   Inline,
@@ -248,13 +249,9 @@ export function ThemeSettings(): ReactNode {
                       />
                     )}
                     {chosen ? (
-                      <span
-                        data-mode-check=""
-                        className="absolute right-2 top-2 inline-flex rounded-md bg-card text-strong"
-                        aria-hidden="true"
-                      >
+                      <TileSelectedBadge>
                         <CheckIcon />
-                      </span>
+                      </TileSelectedBadge>
                     ) : null}
                   </span>
                   <Inline padY={2} gap={2} padX={2} align="center" as="span">
@@ -287,7 +284,7 @@ export function ThemeSettings(): ReactNode {
                   <>
                     <Button
                       variant="ghost"
-                      size="sm"
+                      size="compact"
                       icon={<UploadIcon />}
                       disabled={busy}
                       onClick={() => fileInput.current?.click()}
@@ -296,7 +293,7 @@ export function ThemeSettings(): ReactNode {
                     </Button>
                     <Button
                       variant="ghost"
-                      size="sm"
+                      size="compact"
                       icon={<DownloadIcon />}
                       label={`Export the ${current.name} theme file`}
                       onClick={() => {
@@ -369,7 +366,7 @@ export function ThemeSettings(): ReactNode {
                   {importedTheme ? (
                     <Button
                       variant="ghost"
-                      size="sm"
+                      size="compact"
                       tone="danger"
                       icon={actionIcon(deleteGlyph)}
                       disabled={busy}

@@ -1,4 +1,5 @@
 import {
+  IdentityMark,
   Button,
   ChevronsUpDownIcon,
   LoadingState,
@@ -249,12 +250,7 @@ export function WorkspaceSwitcher({
           className: 'ui-sidebar-switcher w-full text-left',
         }).replace('ui-tree-row', '')}
       >
-        <span
-          className="inline-flex size-5 shrink-0 items-center justify-center rounded-sm bg-active text-avatar text-strong"
-          aria-hidden="true"
-        >
-          {initialOf(openWorkspace.name)}
-        </span>
+        <IdentityMark>{initialOf(openWorkspace.name)}</IdentityMark>
         <span className="min-w-0 flex-1 truncate text-label text-strong">
           {openWorkspace.name}
         </span>

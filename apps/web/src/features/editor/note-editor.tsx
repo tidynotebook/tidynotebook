@@ -1498,7 +1498,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
             <Notice tone="problem" message={attachState.message}>
               <Button
                 variant="secondary"
-                size="sm"
+                size="compact"
                 onClick={() => {
                   retryUpload();
                 }}

@@ -211,12 +211,12 @@ export function PublishDialog({
             )}
           </DialogBody>
           <DialogFooter>
-            <Button variant="ghost" size="sm" onClick={requestClose}>
+            <Button variant="ghost" size="compact" onClick={requestClose}>
               Cancel
             </Button>
             <Button
               variant="primary"
-              size="sm"
+              size="compact"
               disabled={busy}
               onClick={publish}
             >
@@ -263,13 +263,13 @@ export function PublishDialog({
             */}
             <Button
               variant="secondary"
-              size="sm"
+              size="compact"
               icon={<CopyIcon />}
               onClick={copy}
             >
               {copied ? 'Copied' : 'Copy link'}
             </Button>
-            <Button variant="primary" size="sm" onClick={requestClose}>
+            <Button variant="primary" size="compact" onClick={requestClose}>
               {asking ? 'Close anyway' : 'Done'}
             </Button>
           </DialogFooter>

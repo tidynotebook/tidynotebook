@@ -120,7 +120,7 @@ export function Backlinks({
         </p>
         <Button
           variant="secondary"
-          size="sm"
+          size="compact"
           onClick={(): void => {
             setAttempt((value) => value + 1);
           }}

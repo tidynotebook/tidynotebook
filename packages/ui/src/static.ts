@@ -23,7 +23,7 @@ export const staticFieldClasses = withoutMotion(
 );
 export const staticTaskBoxClasses = taskBoxClassName()
   .split(' ')
-  .map((name) => `[&_.task-list-item_input]:${name}`)
+  .map((name) => `content-task-list-item-input:${name}`)
   .join(' ');
 
 export const staticTextAreaClasses = withoutMotion(

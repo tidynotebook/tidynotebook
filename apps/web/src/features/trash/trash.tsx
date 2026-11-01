@@ -1,3 +1,4 @@
+import { IconButton, Button, CloseIcon, Toast } from '@notesapp/ui';
 /** The deletion notice and its existing guarded restore operation. */
 import {
   createContext,
@@ -12,7 +13,7 @@ import {
 import { useNavigate } from 'react-router';
 import { restoreFile } from '@notesapp/api-client';
 import { generateUUID } from '@notesapp/core';
-import { Button, CloseIcon, Toast } from '@notesapp/ui';
+
 import { problemMessage, useLocalStore, useRequestSync } from '../../app.tsx';
 
 /** How long the notice after a deletion stays on screen. */
@@ -215,18 +216,17 @@ export function DeleteNoticeBar(): ReactNode {
     <Toast message={failure ?? message}>
       <Button
         variant="secondary"
-        size="sm"
+        size="compact"
         disabled={busy}
         title={restoreLabel}
         onClick={restore}
       >
         {busy ? 'Restoring' : 'Restore'}
       </Button>
-      <Button
+      <IconButton
         variant="ghost"
-        size="sm"
         label="Close this notice"
-        icon={<CloseIcon />}
+        glyph={<CloseIcon />}
         onClick={dismiss}
       />
     </Toast>

@@ -63,7 +63,7 @@ export function NoteView(): ReactNode {
   if (accountId === null)
     return (
       <Page>
-        <LoadingState shape="note" label="The note is loading." />
+        <LoadingState shape="note" label="Loading note" />
       </Page>
     );
 
@@ -72,7 +72,7 @@ export function NoteView(): ReactNode {
       <Suspense
         fallback={
           <PageRegion>
-            <LoadingState shape="note" label="The editor is loading." />
+            <LoadingState shape="note" label="Loading editor" />
           </PageRegion>
         }
       >

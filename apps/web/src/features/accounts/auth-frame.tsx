@@ -1,6 +1,5 @@
-import type { ReactNode } from 'react';
-import type { LegalDocuments } from '@notesapp/api-client';
 import {
+  IdentityMark,
   Viewport,
   Inline,
   Inset,
@@ -10,6 +9,9 @@ import {
   installationFooterColumns,
   Card,
 } from '@notesapp/ui';
+import type { ReactNode } from 'react';
+import type { LegalDocuments } from '@notesapp/api-client';
+
 import { productName } from '@notesapp/core';
 import { useLegalDocuments } from './legal-links.tsx';
 /**
@@ -21,10 +23,12 @@ import { useLegalDocuments } from './legal-links.tsx';
 export function AuthFrame({
   documents: suppliedDocuments,
   title,
+  description,
   children,
   footer,
 }: {
   readonly title: string;
+  readonly description?: ReactNode;
   readonly children: ReactNode;
   readonly footer?: ReactNode;
   readonly documents?: LegalDocuments | null;
@@ -52,22 +56,24 @@ export function AuthFrame({
         as="div"
         className="text-title-header text-strong"
       >
-        <span
-          className="inline-flex size-7 items-center justify-center rounded-md bg-active text-strong"
-          aria-hidden="true"
-        >
+        <IdentityMark size="brand">
           <AppMarkIcon />
-        </span>
+        </IdentityMark>
         <span>{productName}</span>
       </Inline>
       <Card className="w-full max-w-sm">
-        <Stack pad={{ fine: 6, coarse: 4 }} gap={4}>
-          <Inset
-            as="h1"
-            className="text-title-page tracking-heading text-strong"
-          >
-            {title}
-          </Inset>
+        <Stack pad={{ fine: 6, coarse: 4 }} gap={{ fine: 6, coarse: 4 }}>
+          <Stack gap={1}>
+            <Inset
+              as="h1"
+              className="text-title-page tracking-heading text-strong"
+            >
+              {title}
+            </Inset>
+            {description === undefined ? null : (
+              <p className="text-secondary text-muted">{description}</p>
+            )}
+          </Stack>
           {children}
         </Stack>
       </Card>

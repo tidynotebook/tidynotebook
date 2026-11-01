@@ -47,8 +47,7 @@ export const focusOutlineInset =
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
 /** How large a button is. */
-export type ButtonSize =
-  'compact' | 'default' | 'sm' | 'md' | 'touch' | 'inline';
+export type ButtonSize = 'compact' | 'default';
 export type IconSize = 'row' | 'toolbar' | 'header' | 'rail';
 
 /**
@@ -182,13 +181,13 @@ export function buttonClassName(
   } = {},
 ): string {
   const variant = options.variant ?? 'primary';
-  const size = options.size ?? 'md';
+  const size = options.size ?? 'default';
   const compact = options.compact === true;
   const variantClass = compact
     ? 'group bg-transparent'
     : buttonVariantClassName(variant, options.tone, 'button');
 
-  const compactSize = compact || size === 'compact' || size === 'inline';
+  const compactSize = compact || size === 'compact';
   const iconSizes = {
     row: 'h-7 w-7 coarse:h-9 coarse:w-10',
     toolbar: 'h-7 w-7 coarse:h-10 coarse:w-10',
@@ -197,7 +196,7 @@ export function buttonClassName(
   } as const;
   const sizeClass = options.iconOnly
     ? `ui-icon-button ${iconSizes[options.iconSize ?? 'header']} p-0`
-    : `${compactSize ? 'h-7' : 'h-8'} ${size === 'compact' || size === 'inline' ? 'px-2' : 'px-3'} coarse:h-11 coarse:px-4`;
+    : `${compactSize ? 'h-7' : 'h-8'} ${size === 'compact' ? 'px-2' : 'px-3'} coarse:h-11 coarse:px-4`;
   return [
     `ui-button inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-md text-label no-underline ${transitionSurface} ${compact ? 'focus-visible:outline-none' : options.iconOnly ? focusOutlineInset : focusOutline} disabled:cursor-not-allowed`,
     variantClass,
@@ -487,7 +486,7 @@ export function checkboxClassNames(
   options: { readonly disabled?: boolean | undefined } = {},
 ): CheckboxClassNames {
   return {
-    label: `inline-flex min-h-11 items-center gap-2 text-body md:min-h-8 ${options.disabled === true ? 'cursor-not-allowed text-muted' : 'cursor-pointer text-strong'}`,
+    label: `inline-flex py-3 items-center gap-2 text-body fine:py-2 ${options.disabled === true ? 'cursor-not-allowed text-muted' : 'cursor-pointer text-strong'}`,
     frame: 'relative inline-flex size-4 shrink-0 items-center justify-center',
     box: `peer size-4 cursor-pointer appearance-none rounded-sm border border-edge bg-app ${transitionSurface} checked:border-accent-fill checked:bg-accent-fill disabled:cursor-not-allowed disabled:checked:border-edge disabled:checked:bg-hover ${focusOutline}`,
     mark: 'pointer-events-none absolute inset-0 hidden text-on-accent peer-checked:block peer-disabled:text-muted',
@@ -796,7 +795,7 @@ export function buttonName(options: {
 export function historyButtonClassName(): string {
   return buttonClassName({
     variant: 'ghost',
-    size: 'sm',
+    size: 'compact',
     iconOnly: true,
     compact: true,
     className: 'shrink-0 aria-disabled:cursor-not-allowed',
@@ -841,7 +840,7 @@ export function switchClassNames(checked: boolean): {
       flush: true,
       className: 'w-full text-left py-3 px-0 coarse:px-4',
     }),
-    track: `inline-flex h-6 w-10 shrink-0 items-center rounded-full border border-edge-line p-1 ${checked ? 'justify-end bg-accent-fill' : 'justify-start bg-hover'}`,
+    track: `inline-flex h-6 w-10 shrink-0 items-center rounded-full border border-edge p-1 ${checked ? 'justify-end bg-accent-fill' : 'justify-start bg-hover'}`,
     thumb: `size-4 rounded-full ${checked ? 'bg-on-accent' : 'bg-muted'}`,
   };
 }

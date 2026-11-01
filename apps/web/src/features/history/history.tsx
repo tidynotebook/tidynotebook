@@ -1,4 +1,5 @@
 import {
+  PreviewBlock,
   Stack,
   Inset,
   Inline,
@@ -174,7 +175,7 @@ export function HistoryView(): ReactNode {
     return (
       <Page>
         <PageHeader title="Version history" />
-        <LoadingState shape="list" rows={5} label="The history is loading." />
+        <LoadingState shape="list" rows={5} label="Loading history" />
       </Page>
     );
   return (
@@ -521,7 +522,7 @@ function HistoryDetail({
         <LoadingState
           shape="list"
           rows={5}
-          label="The history of this note is loading."
+          label="Loading history of this note"
         />
       </Page>
     );
@@ -672,7 +673,7 @@ function HistoryDetail({
                           ) : (
                             <Button
                               variant="secondary"
-                              size="sm"
+                              size="compact"
                               disabled={busy || !restorable}
                               label={`Restore the version ${label.toLowerCase()}`}
                               onClick={() => {
@@ -717,7 +718,7 @@ function HistoryDetail({
               <div>
                 <Button
                   variant="secondary"
-                  size="sm"
+                  size="compact"
                   disabled={loadingMore}
                   onClick={() => {
                     void loadMore();
@@ -785,22 +786,24 @@ function RevisionPanel({
   const tabRefs = useRef<Partial<Record<RevisionView, HTMLButtonElement>>>({});
 
   if (detail === null || detail.status === 'loading')
-    return <LoadingState label="This version is loading." />;
+    return <LoadingState label="Loading version" />;
   if (detail.status === 'error')
     return <Notice tone="problem" message={detail.message} />;
   if (kind === 'attachment') {
     const picture = attachmentPreviewView(preview, detail.item.revisionId);
     if (picture.kind === 'picture')
       return (
-        <img
-          className="max-h-96 rounded-lg border border-edge-line"
-          src={picture.url}
-          alt={`${name} as it was in this version`}
-        />
+        <PreviewBlock as="div">
+          <img
+            className="max-h-96"
+            src={picture.url}
+            alt={`${name} as it was in this version`}
+          />
+        </PreviewBlock>
       );
     if (picture.kind === 'failed')
       return <Notice tone="problem" message={attachmentPreviewFailedMessage} />;
-    return <LoadingState label="The picture of this version is loading." />;
+    return <LoadingState label="Loading picture of this version" />;
   }
 
   /** Moves between the tabs with the arrow keys, as a tab list does. */
@@ -869,16 +872,14 @@ function RevisionPanel({
             <RevisionChanges diff={diff} revisionId={detail.item.revisionId} />
           </>
         ) : note === null ? (
-          <Inset
-            pad={3}
-            as="pre"
-            className="max-h-96 overflow-auto whitespace-pre-wrap rounded-lg border border-edge-subtle bg-app font-mono text-preview text-strong"
+          <PreviewBlock
+            className="max-h-96"
             aria-label={`${name} in this version`}
           >
             {detail.text}
-          </Inset>
+          </PreviewBlock>
         ) : (
-          <Suspense fallback={<LoadingState label="The preview is loading." />}>
+          <Suspense fallback={<LoadingState label="Loading preview" />}>
             <VersionPreview
               key={detail.item.revisionId}
               store={note.store}
@@ -914,7 +915,7 @@ function RevisionChanges({
       <LoadingState
         shape="list"
         rows={4}
-        label="The comparison of the two versions is loading."
+        label="Loading comparison of the two versions"
       />
     );
   if (diff.status === 'ready')

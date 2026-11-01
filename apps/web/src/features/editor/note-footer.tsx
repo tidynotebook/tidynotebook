@@ -1,3 +1,4 @@
+import { observeElementScrollEdges } from '@notesapp/ui';
 /**
  * The quiet footer of the note screen.
  *
@@ -63,8 +64,12 @@ export function NoteFooter({
       text.removeEventListener('blur', leave);
     };
   }, [view]);
+  useEffect(
+    () => (view ? observeElementScrollEdges(view.scrollDOM) : undefined),
+    [view],
+  );
   return (
-    <footer className={noteFooterClassName(typing)}>
+    <footer data-scroll-edge="below" className={noteFooterClassName(typing)}>
       <div className={noteColumnClassName()}>
         <span>
           {count} {count === 1 ? 'word' : 'words'}

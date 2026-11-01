@@ -54,7 +54,7 @@ export type NoteHeaderActionsProps = {
  */
 const noteMenuTriggerClassName = buttonClassName({
   variant: 'ghost',
-  size: 'sm',
+  size: 'compact',
   iconOnly: true,
   compact: true,
   className: 'shrink-0',

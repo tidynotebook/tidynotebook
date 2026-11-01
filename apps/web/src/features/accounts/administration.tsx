@@ -360,7 +360,7 @@ function AccountsPage({
         <LoadingState
           shape="list"
           rows={3}
-          label="Reading administration settings"
+          label="Loading administration settings"
         />
       ) : state.kind === 'failed' ? (
         <Notice tone="problem" message={state.message}>

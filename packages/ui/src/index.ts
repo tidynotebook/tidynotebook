@@ -347,6 +347,8 @@ export {
   RowControl,
   ContentGroups,
 } from './content-header.tsx';
+export { IdentityMark, TileSelectedBadge } from './identity.tsx';
+export { PreviewBlock } from './preview-block.tsx';
 export { PreviewSurface } from './preview-surface.tsx';
 export { Dialog as Sheet } from './dialog.tsx';
 
@@ -366,3 +368,5 @@ export { Form } from './primitives.tsx';
 export { SettingEditRow } from './setting-edit-row.tsx';
 
 export { deferredDialog, DialogLoading } from './deferred-dialog.tsx';
+
+export { observeElementScrollEdges } from './scroll-region.tsx';

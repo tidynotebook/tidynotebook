@@ -226,11 +226,7 @@ export function OfflineSettingsSection({
         // A choice that nothing has read yet is not a choice that is off
         // (record 0038), and the `Checkbox` primitive states no waiting
         // state, so the section shows the shape of the two rows instead.
-        <LoadingState
-          shape="list"
-          rows={2}
-          label="What this device keeps offline is loading."
-        />
+        <LoadingState shape="list" rows={2} label="Loading offline data" />
       ) : (
         <>
           <SettingSwitchRow

@@ -166,6 +166,9 @@
   /* Titles and note annotations keep their size under either pointer. */
   --text-title: 0.875rem;
   --text-title--line-height: 1.375rem;
+  --text-code: 0.8125rem;
+  --text-code--line-height: 1.25rem;
+  --text-code--font-weight: 400;
   --text-preview: 0.8125rem;
   --text-preview--line-height: 1.25rem;
   --radius-sm: 0.25rem;
@@ -283,6 +286,9 @@
     --text-header--line-height: 1.5rem;
     --text-preview-first: 0.9375rem;
     --text-preview-first--line-height: 1.375rem;
+    --text-code: 0.8125rem;
+    --text-code--line-height: 1.25rem;
+    --text-code--font-weight: 400;
     --text-preview: 0.8125rem;
     --text-preview--line-height: 1.125rem;
     --text-control: 0.875rem;
@@ -443,13 +449,17 @@
   --color-panel: var(--notes-surface, #141414);
 }
 @theme static {
-  --depth-edge-top: 0 -6px 10px -6px rgb(0 0 0 / 0.35);
-  --depth-edge-bottom: 0 6px 10px -6px rgb(0 0 0 / 0.35);
+  --depth-edge-top: 0 -6px 10px -6px
+    color-mix(in srgb, var(--notes-scrim) 35%, transparent);
+  --depth-edge-bottom: 0 6px 10px -6px
+    color-mix(in srgb, var(--notes-scrim) 35%, transparent);
   --transition-duration-120: 120ms;
 }
 [data-theme='dark'] {
-  --depth-edge-top: 0 -6px 10px -6px rgb(0 0 0 / 0.7);
-  --depth-edge-bottom: 0 6px 10px -6px rgb(0 0 0 / 0.7);
+  --depth-edge-top: 0 -6px 10px -6px
+    color-mix(in srgb, var(--notes-scrim) 70%, transparent);
+  --depth-edge-bottom: 0 6px 10px -6px
+    color-mix(in srgb, var(--notes-scrim) 70%, transparent);
 }
 @theme static {
   --container-page: 45rem;
@@ -466,4 +476,38 @@
   --shadow-overlay: var(--depth-overlay);
   --shadow-edge-top: var(--depth-edge-top);
   --shadow-edge-bottom: var(--depth-edge-bottom);
+}
+
+@custom-variant content-tree (& [role=tree]);
+@custom-variant content-figure-notes-code (& figure.notes-code);
+@custom-variant content-figure-notes-code-pre (& figure.notes-code pre);
+@custom-variant content-notes-code-label (& .notes-code-label);
+@custom-variant content-task-list-item-input (& .task-list-item input);
+@custom-variant content-h1 (& h1);
+@custom-variant content-h2 (& h2);
+@custom-variant content-h3 (& h3);
+@custom-variant content-h4 (& h4);
+@custom-variant content-h5 (& h5);
+@custom-variant content-h6 (& h6);
+@custom-variant content-strong (& strong);
+@custom-variant content-b (& b);
+@custom-variant content-th (& th);
+@custom-variant content-ul (& ul);
+@custom-variant content-li-task-list-item (& li.task-list-item);
+@custom-variant content-task-list-item (& .task-list-item);
+@custom-variant content-notes-task-mark (& .notes-task-mark);
+@custom-variant content-ol (& ol);
+@custom-variant content-pre (& pre);
+@custom-variant content-a (& a);
+@custom-variant content-table (& table);
+@custom-variant content-td (& td);
+@custom-variant content-img (& img);
+
+@utility state-overlay {
+  --notes-surface-hover: var(--notes-overlay-hover);
+  --notes-surface-active: var(--notes-overlay-selected);
+}
+@utility state-raised {
+  --notes-surface-hover: var(--notes-card-raised-hover);
+  --notes-surface-active: var(--notes-card-raised-selected);
 }
