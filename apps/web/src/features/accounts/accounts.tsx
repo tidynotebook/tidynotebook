@@ -560,6 +560,7 @@ export function LoginPage({
   return (
     <AuthFrame
       title={status.kind === 'loading' ? productName : title}
+      showSignIn={false}
       documents={documents}
       description={
         setup
