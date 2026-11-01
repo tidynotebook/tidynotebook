@@ -1,3 +1,4 @@
+import { hasEmailProblem } from '../../lib/email-problem.ts';
 import { normalizeEmail } from '@notesapp/core';
 import {
   Form,
@@ -111,6 +112,10 @@ export function SignUpPage(): ReactNode {
     });
     setBusy(null);
     if (result.data === undefined) {
+      if (hasEmailProblem(result.error)) {
+        setEmailError('Enter an email address.');
+        return;
+      }
       setError(problemMessage(result.error));
       return;
     }

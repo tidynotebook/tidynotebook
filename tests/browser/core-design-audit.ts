@@ -58,6 +58,24 @@ try {
       await page
         .getByText('Enter an email address.', { exact: true })
         .waitFor();
+      await context.route('**/api/auth/sign-in/email', async (route) => {
+        await route.fulfill({
+          status: 400,
+          contentType: 'application/problem+json',
+          body: JSON.stringify({
+            type: 'about:blank',
+            title: 'Invalid email',
+            status: 400,
+            code: 'invalid_request',
+            issues: [{ path: '/email', message: 'Invalid email' }],
+          }),
+        });
+      });
+      await page.getByLabel('Email address').fill('writer@example.com');
+      await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+      await page
+        .getByText('Enter an email address.', { exact: true })
+        .waitFor();
       await context.close();
     }
 } finally {
