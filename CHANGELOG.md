@@ -7,6 +7,13 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## Unreleased
 
+## 0.23.2 - 2026-11-02
+
+### Fixed
+
+- Tables use consistent column widths in the editor, published notes and guide. Wide tables scroll with keyboard focus, and long text wraps within each column.
+- Account forms, Settings, notes and shared controls use the design system spacing, type and surfaces. Scroll edges remain visible in light and dark modes.
+
 ## 0.23.1 - 2026-10-31
 
 ### Fixed
