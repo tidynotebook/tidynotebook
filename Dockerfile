@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # The Node release of .node-version, pinned by tag and SHA-256 digest
-FROM node:26.12.1-bookworm-slim@sha256:28147155d47dc31abe0a46e0d12b59b2fb3d0a2dcc5dc65fce76a074180b16fe AS base
+FROM node:26.13.0-bookworm-slim@sha256:bc0a2afd3b74ce12222fc8bab99271e66257f021078f5f4a5d687a77d280c1d9 AS base
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
@@ -58,7 +58,7 @@ RUN tar --exclude='node_modules' --exclude='dist' --exclude='*.tsbuildinfo' \
     package.json pnpm-lock.yaml pnpm-workspace.yaml .node-version .npmrc .pnpmfile.cjs \
     tsconfig.json tsconfig.base.json patches packages apps/server apps/web tools
 
-FROM node:26.12.1-bookworm-slim@sha256:28147155d47dc31abe0a46e0d12b59b2fb3d0a2dcc5dc65fce76a074180b16fe AS runner
+FROM node:26.13.0-bookworm-slim@sha256:bc0a2afd3b74ce12222fc8bab99271e66257f021078f5f4a5d687a77d280c1d9 AS runner
 RUN apt-get update && apt-get install --no-install-recommends -y \
     libpcre2-8-0=10.42-1+deb12u2 perl-base=5.36.0-7+deb12u4 && \
     rm -rf /var/lib/apt/lists/*
