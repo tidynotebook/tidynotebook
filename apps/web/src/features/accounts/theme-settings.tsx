@@ -100,7 +100,7 @@ export function onlyModeOf(family: ThemeFamily): 'light' | 'dark' | null {
 
 /** The classes of one selectable card, chosen or not. */
 function cardClassName(chosen: boolean): string {
-  return `flex min-w-0 cursor-pointer flex-col overflow-hidden rounded-md border bg-card text-body text-strong ${transitionSurface} focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus ${
+  return `flex min-w-0 cursor-pointer flex-col overflow-hidden rounded-md border bg-card text-body text-strong ${transitionSurface} focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-focus ${
     chosen
       ? 'border-strong ring-1 ring-strong'
       : 'border-edge-line hover:bg-hover'
