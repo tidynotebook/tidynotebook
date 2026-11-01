@@ -52,7 +52,7 @@ try {
             const table = document.querySelector('.cm-np-table');
             if (!(table instanceof HTMLElement)) throw Error('Table missing.');
             const rows = [
-              ...table.querySelectorAll(
+              ...document.querySelectorAll(
                 '.cm-np-table-line:not(.cm-np-table-closed)',
               ),
             ];
@@ -154,7 +154,7 @@ try {
           path: `.local-app/screenshots/table-reader-${width}-${scheme}.png`,
         });
         assert.deepEqual(errors, []);
-        console.log(`Table layout passed: ${width} px, ${scheme}.`);
+        process.stdout.write(`Table layout passed: ${width} px, ${scheme}.\n`);
       } finally {
         await context.close();
       }
