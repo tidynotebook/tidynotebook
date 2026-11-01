@@ -69,7 +69,8 @@ The check measures browser text independently of the implementation. No column
 can exceed its widest cell plus padding by more than 2 px. It also checks the
 long-text cap, wrapping before horizontal scroll, row height, page overflow,
 stable tracks after scrolling, typing, undo, and keyboard access to the reader
-scroll area. Screenshots go to `.local-app/screenshots/`.
+scroll area. Set `TABLE_WIDE_READER_PATH` to a published table with many columns
+to check horizontal scroll and keyboard scroll. Screenshots go to `.local-app/screenshots/`.
 
 ```sh
 PLAYWRIGHT_MODULE=/absolute/path/to/playwright-core/index.mjs \

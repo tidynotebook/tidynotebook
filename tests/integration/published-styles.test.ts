@@ -248,6 +248,7 @@ await test('the published page draws what the live preview draws', async () => {
     // A table sizes to its text and scrolls on its own, and a header cell
     // follows the alignment of its column.
     '.notes-table-scroll {\n    max-width: 100%;',
+    '.notes-table-scroll {\n    width: fit-content;',
     '.notes-table-scroll {\n    overflow-x: auto;',
     'th {\n    text-align: start;',
     ':is(th, td)[align=right] {\n    text-align: right;',

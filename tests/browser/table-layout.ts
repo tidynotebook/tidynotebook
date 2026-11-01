@@ -221,16 +221,33 @@ try {
         );
         await page.goto(origin + readerPath);
         await page.locator('.notes-table-scroll table').waitFor();
-        await page.locator('.notes-table-scroll').focus();
-        assert.ok(
-          await page
-            .locator('.notes-table-scroll')
-            .evaluate((element) => element === document.activeElement),
-          'A keyboard user can focus the reader scroll area.',
-        );
         const reader = await page
           .locator('.notes-table-scroll')
           .evaluate((element) => {
+            const style = getComputedStyle(element);
+            if (
+              element.matches(':focus-visible') ||
+              (style.outlineStyle !== 'none' &&
+                parseFloat(style.outlineWidth) > 0)
+            )
+              throw Error('The resting scroll area has a focus ring.');
+            if (
+              [
+                style.borderTopWidth,
+                style.borderRightWidth,
+                style.borderBottomWidth,
+                style.borderLeftWidth,
+              ].some((width) => parseFloat(width) > 0)
+            )
+              throw Error('The scroll area has a resting border.');
+            const table = element.querySelector('table');
+            if (table === null) throw Error('Reader table missing.');
+            const tableWidth = table.getBoundingClientRect().width;
+            if (
+              tableWidth <= element.clientWidth &&
+              Math.abs(element.getBoundingClientRect().width - tableWidth) > 1
+            )
+              throw Error('The scroll area is wider than its table.');
             const rows = [...element.querySelectorAll('tr')];
             const header = [...(rows[0]?.querySelectorAll('th') ?? [])].map(
               (cell) => cell.getBoundingClientRect(),
@@ -262,9 +279,62 @@ try {
           'Reader text wraps before horizontal scroll.',
         );
         assert.ok(reader.pageWidth <= reader.viewport);
+        await page.keyboard.press('Tab');
+        assert.ok(
+          await page.locator('.notes-table-scroll').evaluate((element) => {
+            const style = getComputedStyle(element);
+            return (
+              element === document.activeElement &&
+              element.matches(':focus-visible') &&
+              style.outlineStyle !== 'none' &&
+              parseFloat(style.outlineWidth) >= 2
+            );
+          }),
+          'Keyboard focus has a visible ring around the table.',
+        );
+        await page
+          .locator('.notes-table-scroll')
+          .evaluate((element) => element.blur());
+        assert.ok(
+          await page.locator('.notes-table-scroll').evaluate((element) => {
+            const style = getComputedStyle(element);
+            return (
+              !element.matches(':focus-visible') &&
+              (style.outlineStyle === 'none' ||
+                parseFloat(style.outlineWidth) === 0)
+            );
+          }),
+          'The focus ring leaves when the scroll area loses focus.',
+        );
         await page.screenshot({
           path: `.local-app/screenshots/table-reader-${width}-${scheme}.png`,
         });
+        const wideReaderPath = process.env.TABLE_WIDE_READER_PATH;
+        if (wideReaderPath !== undefined) {
+          await page.goto(origin + wideReaderPath);
+          const scrollArea = page.locator('.notes-table-scroll');
+          await scrollArea.waitFor();
+          assert.ok(
+            await scrollArea.evaluate(
+              (element) =>
+                element.scrollWidth > element.clientWidth &&
+                document.documentElement.scrollWidth <= innerWidth,
+            ),
+            'A wide table scrolls inside the page.',
+          );
+          await page.keyboard.press('Tab');
+          await page.keyboard.press('ArrowRight');
+          assert.ok(
+            await scrollArea.evaluate(async (element) => {
+              await new Promise(requestAnimationFrame);
+              await new Promise(requestAnimationFrame);
+              return (
+                element === document.activeElement && element.scrollLeft > 0
+              );
+            }),
+            'A keyboard user can scroll a wide table.',
+          );
+        }
         assert.deepEqual(errors, []);
         process.stdout.write(`Table layout passed: ${width} px, ${scheme}.\n`);
       } finally {
