@@ -449,16 +449,16 @@
 }
 @theme static {
   --depth-edge-top: 0 -6px 10px -6px
-    color-mix(in srgb, var(--notes-scrim) 35%, transparent);
+    color-mix(in srgb, var(--notes-scrim, #000000) 35%, transparent);
   --depth-edge-bottom: 0 6px 10px -6px
-    color-mix(in srgb, var(--notes-scrim) 35%, transparent);
+    color-mix(in srgb, var(--notes-scrim, #000000) 35%, transparent);
   --transition-duration-120: 120ms;
 }
 [data-theme='dark'] {
   --depth-edge-top: 0 -6px 10px -6px
-    color-mix(in srgb, var(--notes-scrim) 70%, transparent);
+    color-mix(in srgb, var(--notes-scrim, #000000) 70%, transparent);
   --depth-edge-bottom: 0 6px 10px -6px
-    color-mix(in srgb, var(--notes-scrim) 70%, transparent);
+    color-mix(in srgb, var(--notes-scrim, #000000) 70%, transparent);
 }
 @theme static {
   --container-page: 45rem;
@@ -479,7 +479,6 @@
 
 @custom-variant content-tree (& [role=tree]);
 @custom-variant content-figure-notes-code (& figure.notes-code);
-@custom-variant content-figure-notes-code-pre (& figure.notes-code pre);
 @custom-variant content-notes-code-label (& .notes-code-label);
 @custom-variant content-task-list-item-input (& .task-list-item input);
 @custom-variant content-h1 (& h1);
@@ -488,11 +487,9 @@
 @custom-variant content-h4 (& h4);
 @custom-variant content-h5 (& h5);
 @custom-variant content-h6 (& h6);
-@custom-variant content-strong (& strong);
-@custom-variant content-b (& b);
+@custom-variant content-emphasis (& :is(strong, b));
 @custom-variant content-th (& th);
 @custom-variant content-ul (& ul);
-@custom-variant content-li-task-list-item (& li.task-list-item);
 @custom-variant content-task-list-item (& .task-list-item);
 @custom-variant content-notes-task-mark (& .notes-task-mark);
 @custom-variant content-ol (& ol);

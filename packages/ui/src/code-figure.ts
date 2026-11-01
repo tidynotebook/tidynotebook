@@ -14,4 +14,4 @@
  * this recipe and the selectors to the class names of `@notesapp/markdown`.
  */
 export const codeFigureClassName =
-  'content-figure-notes-code:relative content-figure-notes-code:mx-0 content-figure-notes-code:my-4 content-figure-notes-code-pre:my-0 content-figure-notes-code-pre:pt-12 content-notes-code-label:absolute content-notes-code-label:left-4 content-notes-code-label:top-3 content-notes-code-label:z-10 content-notes-code-label:font-mono content-notes-code-label:text-secondary content-notes-code-label:text-muted';
+  'content-figure-notes-code:relative content-figure-notes-code:mx-0 content-figure-notes-code:my-4 content-pre:my-0 content-pre:pt-12 content-notes-code-label:absolute content-notes-code-label:left-4 content-notes-code-label:top-3 content-notes-code-label:z-10 content-notes-code-label:font-mono content-notes-code-label:text-secondary content-notes-code-label:text-muted';

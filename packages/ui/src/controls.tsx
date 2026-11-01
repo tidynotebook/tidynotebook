@@ -330,12 +330,8 @@ export function TextField({
   const error =
     suppliedError ||
     (submitted && required && value.trim() === ''
-      ? 'Enter a value.'
-      : submitted &&
-          inputType === 'email' &&
-          !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value)
-        ? 'Enter an email address.'
-        : '');
+      ? `Enter the ${typeof label === 'string' ? label.toLowerCase() : 'value'}.`
+      : '');
   const errorId = `${id}-error`;
   const hintId = `${id}-hint`;
   const hasError = error !== undefined && error !== '';
@@ -424,7 +420,9 @@ export function TextAreaField({
   const submitted = useContext(FormSubmittedContext);
   const error =
     suppliedError ||
-    (submitted && required && value.trim() === '' ? 'Enter a value.' : '');
+    (submitted && required && value.trim() === ''
+      ? `Enter the ${typeof label === 'string' ? label.toLowerCase() : 'value'}.`
+      : '');
   const errorId = `${id}-error`;
   const hintId = `${id}-hint`;
   const hasError = error !== undefined && error !== '';

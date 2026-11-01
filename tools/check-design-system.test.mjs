@@ -86,3 +86,19 @@ await test('state utilities set only the approved inherited theme tokens', () =>
     ).some((issue) => issue.rule === 'component-css'),
   );
 });
+
+await test('content variants stay at shared markup boundaries', () => {
+  assert.ok(
+    inspectDesignSource(
+      'apps/web/src/example.tsx',
+      'const c="content-pre:p-3";',
+    ).some((issue) => issue.rule === 'content-boundary'),
+  );
+  assert.deepEqual(
+    inspectDesignSource(
+      'packages/ui/src/preview-surface.tsx',
+      'const c="content-pre:p-3";',
+    ),
+    [],
+  );
+});

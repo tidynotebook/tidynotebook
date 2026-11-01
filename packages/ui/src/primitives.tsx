@@ -449,6 +449,7 @@ export function CanvasImage(props: ComponentPropsWithRef<'img'>): ReactNode {
 }
 /** A form either groups fields or contains independently padded regions. */
 export function Form({
+  noValidate: customValidation = false,
   onSubmit,
   regions = false,
   section = false,
@@ -477,7 +478,7 @@ export function Form({
           noValidate
           onSubmit={(event) => {
             setSubmitted(true);
-            if (!event.currentTarget.checkValidity()) {
+            if (!customValidation && !event.currentTarget.checkValidity()) {
               event.preventDefault();
               event.currentTarget
                 .querySelector<HTMLElement>(':invalid')

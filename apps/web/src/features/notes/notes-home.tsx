@@ -244,7 +244,8 @@ export function NotesHomeView(): ReactNode {
     >
       <Stack gap={4} as="div" ref={keepOffset}>
         <PageHeader
-          title={`All notes (${total})`}
+          title="All notes"
+          count={files.loading ? undefined : total}
           actions={showNewNoteInHeader(files.loading, total) ? actions : null}
         />
         {newNote.error === null ? null : (

@@ -40,7 +40,10 @@ try {
       assert.equal(geometry.noValidate, true);
       assert.equal(geometry.overflow, false);
       await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-      await page.getByText('Enter a value.', { exact: true }).first().waitFor();
+      await page
+        .getByText('Enter the email address.', { exact: true })
+        .first()
+        .waitFor();
       assert.equal(
         await page
           .getByLabel('Email address')

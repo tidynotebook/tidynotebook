@@ -4,10 +4,6 @@ import {
   buttonClassName,
   contentEdgeRowClassName,
 } from './control-classes.ts';
-import {
-  raisedStateClasses,
-  responsiveRaisedStateClasses,
-} from './surface-classes.ts';
 import { pageGutter } from './public-layout.ts';
 import { Stack, Inline } from './primitives.tsx';
 import { useSettingsSurface, SettingsRowActions } from './settings-layout.tsx';
@@ -150,12 +146,14 @@ export const PageBackProvider = PageBackContext.Provider;
  */
 export function PageHeader({
   title,
+  count,
   description,
   actions,
   actionLayout = 'cluster',
   id,
 }: {
   readonly title: string;
+  readonly count?: number | undefined;
   readonly description?: string | undefined;
   readonly actions?: ReactNode | undefined;
   readonly actionLayout?: PageHeaderActionLayout | undefined;
@@ -185,6 +183,9 @@ export function PageHeader({
           >
             {title}
           </h1>
+          {count === undefined ? null : (
+            <span className="text-value text-muted">{count}</span>
+          )}
         </Inline>
         {description === undefined || description === '' ? null : (
           <p className="text-secondary text-muted">{description}</p>
@@ -224,7 +225,7 @@ export function Card<T extends ElementType = 'div'>({
     {
       ...props,
       'data-ui-card': '',
-      className: `flex min-w-0 flex-col gap-0 rounded-xl ${responsive ? 'bg-transparent coarse:bg-card-raised coarse:shadow-raised coarse:outline coarse:outline-1 coarse:-outline-offset-1 coarse:outline-edge-subtle ' + responsiveRaisedStateClasses : 'bg-card-raised shadow-raised outline outline-1 -outline-offset-1 outline-edge-subtle ' + raisedStateClasses} ${className}`,
+      className: `flex min-w-0 flex-col gap-0 rounded-xl ${responsive ? 'bg-transparent coarse:bg-card-raised coarse:shadow-raised coarse:outline coarse:outline-1 coarse:-outline-offset-1 coarse:outline-edge-subtle ' + 'coarse:state-raised' : 'bg-card-raised shadow-raised outline outline-1 -outline-offset-1 outline-edge-subtle ' + 'state-raised'} ${className}`,
     },
     title === undefined ? null : (
       <h2 id={titleId} className="text-title-header text-strong">

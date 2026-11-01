@@ -1,3 +1,4 @@
+import { normalizeEmail } from '@notesapp/core';
 import {
   Form,
   Inset,
@@ -49,6 +50,7 @@ const invalidLink = 'This link no longer works.';
 
 /** The page that asks for an account. */
 export function SignUpPage(): ReactNode {
+  const [emailError, setEmailError] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [reveal, setReveal] = useState(false);
@@ -168,13 +170,24 @@ export function SignUpPage(): ReactNode {
         <Notice message={trialOffer(trialSeconds) ?? ''} />
       )}
       <Form
+        noValidate
         onSubmit={(event): void => {
           event.preventDefault();
-          void submit();
+          setEmailError(
+            normalizeEmail(email) === null && email.trim() !== ''
+              ? 'Enter an email address.'
+              : '',
+          );
+          if (
+            event.currentTarget.checkValidity() &&
+            normalizeEmail(email) !== null
+          )
+            void submit();
         }}
       >
         <TextField
           id="signup-email"
+          error={emailError}
           label="Email address"
           value={email}
           inputType="email"
