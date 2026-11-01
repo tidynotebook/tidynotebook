@@ -19,7 +19,7 @@
     "@notesapp/core": "workspace:*",
     "@notesapp/note-document": "workspace:*",
     "@notesapp/sync": "workspace:*",
-    "dexie": "4.4.6"
+    "dexie": "4.4.7"
   },
   "devDependencies": {
     "@types/node": "catalog:",
