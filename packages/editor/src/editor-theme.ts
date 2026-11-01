@@ -844,6 +844,7 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
       gridTemplateColumns: 'max-content var(--notes-table-columns)',
       backgroundImage: 'var(--notes-table-rules)',
       width: 'max-content',
+      maxWidth: 'none',
       fontSize: 'var(--text-note-mono)',
       paddingBlock: '0',
     },
@@ -858,7 +859,7 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
       verticalAlign: 'top',
       border: '1px solid var(--notes-border-line)',
       whiteSpace: 'pre-wrap',
-      overflowWrap: 'normal',
+      overflowWrap: 'anywhere',
       wordBreak: 'normal',
     },
     // The header row takes the hover fill and the heading weight, so the head
@@ -876,7 +877,7 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
       fontWeight: 'var(--font-weight-note-heading)',
       color: 'var(--notes-text-strong)',
       whiteSpace: 'pre-wrap',
-      overflowWrap: 'normal',
+      overflowWrap: 'anywhere',
       wordBreak: 'normal',
     },
     // The cell that holds the caret carries the one focus treatment, drawn

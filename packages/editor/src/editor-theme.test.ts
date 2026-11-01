@@ -373,12 +373,10 @@ await test('a table is a grid of outlined cells that scrolls on its own', () => 
   for (const box of [head, cell]) {
     // The outline is the one divider of the palette (record 0063).
     assert.equal(box.border, '1px solid var(--notes-border-line)');
-    // A cell wraps at a word and never inside one, so a column takes the
-    // width of its text up to the note column (record 0147). Regression: a
-    // cell inherited the break anywhere of the content, and the browser sized
-    // a column by single letters and cut its words in two.
+    // Source widths are stable estimates. A wide glyph must wrap inside
+    // its track instead of painting over the next cell.
     assert.equal(box.whiteSpace, 'pre-wrap');
-    assert.equal(box.overflowWrap, 'normal');
+    assert.equal(box.overflowWrap, 'anywhere');
     assert.equal(box.wordBreak, 'normal');
     // A browser ignores a minimum width on a table cell, so a block of no
     // height inside the cell holds the width of an empty one.
