@@ -371,7 +371,7 @@ function Breadcrumb({
               key={breadcrumbKey(part, index)}
             >
               {index === 0 ? null : (
-                <span className="text-muted" aria-hidden="true">
+                <span className="text-muted max-md:hidden" aria-hidden="true">
                   /
                 </span>
               )}

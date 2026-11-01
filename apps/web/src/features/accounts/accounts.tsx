@@ -1,3 +1,4 @@
+import { hasEmailProblem } from '../../lib/email-problem.ts';
 import { AuthFrame } from './auth-frame.tsx';
 import {
   Form,
@@ -511,6 +512,10 @@ export function LoginPage({
         });
     setBusy(false);
     if (result.error !== undefined || result.data === undefined) {
+      if (hasEmailProblem(result.error)) {
+        setEmailError('Enter an email address.');
+        return;
+      }
       const code = problemCode(result.error);
       const httpStatus = result.response?.status ?? problemStatus(result.error);
       if (code === 'oauth_request_invalid') {
