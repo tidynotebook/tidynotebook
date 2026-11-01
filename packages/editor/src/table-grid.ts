@@ -1528,8 +1528,8 @@ const gridView = ViewPlugin.fromClass(
         read: (view) => {
           const context = this.context;
           const head = view.contentDOM.querySelector('.cm-np-table-head');
-          const body =
-            view.contentDOM.querySelector('.cm-np-table-cell') ?? head;
+          const bodyCell = view.contentDOM.querySelector('.cm-np-table-cell');
+          const body = bodyCell ?? head;
           if (
             context === null ||
             body === null ||
@@ -1538,14 +1538,19 @@ const gridView = ViewPlugin.fromClass(
             return null;
           const bodyStyle = getComputedStyle(body);
           const headStyle = head === null ? bodyStyle : getComputedStyle(head);
+          const bodyWeight =
+            bodyCell === null
+              ? getComputedStyle(view.contentDOM).fontWeight
+              : bodyStyle.fontWeight;
           const font = (style: CSSStyleDeclaration): string =>
             `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
           const measure = (text: string, header: boolean): number => {
             const style = header ? headStyle : bodyStyle;
-            const actualFont =
-              header && head === null
+            const actualFont = header
+              ? head === null
                 ? `${style.fontStyle} ${style.getPropertyValue('--font-weight-note-heading')} ${style.fontSize} ${style.fontFamily}`
-                : font(style);
+                : font(style)
+              : `${style.fontStyle} ${bodyWeight} ${style.fontSize} ${style.fontFamily}`;
             const key = `${actualFont}:${style.letterSpacing}:${text}`;
             const cached = this.widths.get(key);
             if (cached !== undefined) return cached;
