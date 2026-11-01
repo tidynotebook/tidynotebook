@@ -1358,11 +1358,13 @@ function tableLayout(
     (width) => `calc(${String(width * 1.2)}ch + var(--spacing) * 6 + 2px)`,
   );
   const tracks = sizes.join(' ');
+  let total = 0;
   const rules =
-    sizes
+    widths
       .slice(0, -1)
       .map((_, index) => {
-        const edge = `calc(${sizes.slice(0, index + 1).join(' + ')})`;
+        total += widths[index] ?? 0;
+        const edge = `calc(${String(total * 1.2)}ch + var(--spacing) * ${String((index + 1) * 6)} + ${String((index + 1) * 2)}px)`;
         return `linear-gradient(to right, transparent calc(${edge} - 1px), var(--notes-border-line) calc(${edge} - 1px), var(--notes-border-line) ${edge}, transparent ${edge})`;
       })
       .join(', ') || 'none';
