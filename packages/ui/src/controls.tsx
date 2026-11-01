@@ -39,6 +39,7 @@ import {
   meterClassNames,
   switchClassNames,
   textAreaClassName,
+  requiredFieldMessage,
   type ButtonSize,
   type IconSize,
   type ButtonTone,
@@ -330,7 +331,7 @@ export function TextField({
   const error =
     suppliedError ||
     (submitted && required && value.trim() === ''
-      ? `Enter the ${typeof label === 'string' ? label.toLowerCase() : 'value'}.`
+      ? requiredFieldMessage(typeof label === 'string' ? label : 'value')
       : '');
   const errorId = `${id}-error`;
   const hintId = `${id}-hint`;
@@ -421,7 +422,7 @@ export function TextAreaField({
   const error =
     suppliedError ||
     (submitted && required && value.trim() === ''
-      ? `Enter the ${typeof label === 'string' ? label.toLowerCase() : 'value'}.`
+      ? requiredFieldMessage(typeof label === 'string' ? label : 'value')
       : '');
   const errorId = `${id}-error`;
   const hintId = `${id}-hint`;

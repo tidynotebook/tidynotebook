@@ -174,7 +174,11 @@ export function SignUpPage(): ReactNode {
         onSubmit={(event): void => {
           event.preventDefault();
           setEmailError(
-            normalizeEmail(email) === null && email.trim() !== ''
+            email.trim() !== '' &&
+              (normalizeEmail(email) === null ||
+                event.currentTarget
+                  .querySelector('input[type=email]')
+                  ?.matches(':invalid'))
               ? 'Enter an email address.'
               : '',
           );

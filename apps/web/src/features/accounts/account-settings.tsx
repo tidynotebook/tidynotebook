@@ -18,6 +18,7 @@ import {
   Button,
   SettingsSurface,
   Region,
+  ScrollCueRegion,
   CalendarIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -776,6 +777,8 @@ export function SettingsModal({
       onChoose(activePage.path);
   }, [value, activePage, onChoose]);
   if (account === null) return null;
+  const profileName =
+    account.name && account.name !== account.email ? account.name : null;
 
   // Each section renders in the order of the page, and the type holds one
   // body for each name of the list (decision 0137).
@@ -1039,7 +1042,7 @@ export function SettingsModal({
                   as="button"
                   type="button"
                   data-settings-page="account"
-                  aria-label={`Profile, ${account.name ?? ''}, ${account.email ?? ''}`}
+                  aria-label={`Profile, ${profileName ? `${profileName}, ` : ''}${account.email ?? ''}`}
                   aria-current={
                     activePage?.path === 'account' ? 'page' : undefined
                   }
@@ -1053,10 +1056,9 @@ export function SettingsModal({
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-title-header text-strong">
-                      {account.name ?? account.email ?? ''}
+                      {profileName ?? account.email ?? ''}
                     </span>
-                    {account.email === null ||
-                    account.email === undefined ? null : (
+                    {!profileName || !account.email ? null : (
                       <span className="block truncate text-secondary text-muted">
                         {account.email}
                       </span>
@@ -1253,8 +1255,10 @@ export function SettingsModal({
                       </Stack>
                     </FixedDialogLayout>
                   ) : (
-                    <Region
-                      className={`overflow-hidden flex-1 ${activeAction !== null ? 'hidden' : ''}`}
+                    <ScrollCueRegion
+                      data-settings-scroll=""
+                      hidden={activeAction !== null}
+                      className="flex-1"
                     >
                       <Stack
                         gap={{ fine: 6, coarse: 4 }}
@@ -1290,7 +1294,7 @@ export function SettingsModal({
                           )}
                         </SettingsTopicContext.Provider>
                       </Stack>
-                    </Region>
+                    </ScrollCueRegion>
                   )}
                 </DialogHeaderActionsContext.Provider>
               </div>

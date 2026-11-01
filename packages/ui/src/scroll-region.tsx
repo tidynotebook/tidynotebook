@@ -78,6 +78,7 @@ export function Region({
   children,
   className,
   scroll = 'y',
+  onEdgesChange,
   bounded = false,
   edge = 'both',
   gap = 0,
@@ -94,6 +95,7 @@ export function Region({
     readonly safeArea?: boolean;
     readonly children: ReactNode;
     readonly scroll?: 'none' | 'y';
+    readonly onEdgesChange?: (edges: ScrollEdges) => void;
     readonly bounded?: boolean;
     readonly edge?: 'top' | 'bottom' | 'both';
     readonly gap?: SpaceValue;
@@ -106,6 +108,7 @@ export function Region({
     start = useRef<HTMLSpanElement>(null),
     end = useRef<HTMLSpanElement>(null);
   const [edges, setEdges] = useState<ScrollEdges>({ start: false, end: false });
+  useEffect(() => onEdgesChange?.(edges), [edges, onEdgesChange]);
   useEffect(() => {
     if (scroll !== 'y' || !root.current || !start.current || !end.current)
       return;

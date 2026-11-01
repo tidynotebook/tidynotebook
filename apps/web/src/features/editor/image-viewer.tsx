@@ -383,7 +383,17 @@ function ImageViewerBody({
         The one bar of tools floats over the picture. It is a raised surface,
         so it reads on a light picture and on a dark one alike.
       */}
-      <Toolbar floating>
+      <Toolbar
+        floating
+        trailing={
+          <IconButton
+            variant="ghost"
+            label="Close"
+            glyph={<CloseIcon />}
+            onClick={onClose}
+          />
+        }
+      >
         <Inset
           padX={2}
           as="p"
@@ -467,12 +477,6 @@ function ImageViewerBody({
             Remove
           </Button>
         )}
-        <IconButton
-          variant="ghost"
-          label="Close"
-          glyph={<CloseIcon />}
-          onClick={onClose}
-        />
       </Toolbar>
       {status === '' ? null : <Toast message={status} />}
     </div>

@@ -13,6 +13,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spacingSpec } from './spacing.ts';
 import {
+  requiredFieldMessage,
   avatarClassName,
   badgeClassName,
   bareFieldClassName,
@@ -925,4 +926,13 @@ await test('Settings switches share the content edge in both states', () => {
     rowClassName().split(' ').includes('px-2'),
     'other rows keep their inset',
   );
+});
+
+await test('required field copy preserves names and initial abbreviations', () => {
+  assert.equal(
+    requiredFieldMessage('Email address'),
+    'Enter the email address.',
+  );
+  assert.equal(requiredFieldMessage('API key name'), 'Enter the API key name.');
+  assert.equal(requiredFieldMessage('New API key'), 'Enter the new API key.');
 });

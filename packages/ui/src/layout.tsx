@@ -175,17 +175,19 @@ export function PageHeader({
             : 'min-w-0 grow basis-full sm:basis-0 flex flex-col gap-1'
         }
       >
-        <Inline gap={1} align="start" className="min-w-0">
+        <Inline gap={1} align="center" className="min-w-0">
           {back}
-          <h1
-            className="m-0 min-w-0 text-title-page tracking-heading text-strong"
-            id={id}
-          >
-            {title}
-          </h1>
-          {count === undefined ? null : (
-            <span className="text-value text-muted">{count}</span>
-          )}
+          <Inline gap={1} align="baseline" className="min-w-0">
+            <h1
+              className="m-0 min-w-0 text-title-page tracking-heading text-strong"
+              id={id}
+            >
+              {title}
+            </h1>
+            {count === undefined ? null : (
+              <span className="text-value text-muted">{count}</span>
+            )}
+          </Inline>
         </Inline>
         {description === undefined || description === '' ? null : (
           <p className="text-secondary text-muted">{description}</p>

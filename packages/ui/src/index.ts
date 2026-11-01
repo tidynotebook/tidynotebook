@@ -370,3 +370,5 @@ export { SettingEditRow } from './setting-edit-row.tsx';
 export { deferredDialog, DialogLoading } from './deferred-dialog.tsx';
 
 export { observeElementScrollEdges } from './native-scroll-edges.ts';
+
+export { ScrollCueRegion } from './scroll-cue-region.tsx';

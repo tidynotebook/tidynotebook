@@ -1,3 +1,4 @@
+import { useLocation } from 'react-router';
 import {
   IdentityMark,
   Viewport,
@@ -34,6 +35,7 @@ export function AuthFrame({
   readonly documents?: LegalDocuments | null;
 }): ReactNode {
   const documents = useLegalDocuments(suppliedDocuments);
+  const location = useLocation();
   const columns = installationFooterColumns(
     documents === null
       ? []
@@ -41,6 +43,7 @@ export function AuthFrame({
           { label: 'Terms', href: documents.terms.url },
           { label: 'Privacy', href: documents.privacy.url },
         ],
+    { signIn: location.pathname === '/login' ? null : '/login' },
   );
   return (
     <Viewport

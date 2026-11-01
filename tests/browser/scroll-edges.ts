@@ -170,7 +170,7 @@ try {
               const root = document.querySelector<HTMLElement>(
                 surface === 'sidebar'
                   ? '.ui-sidebar-tree'
-                  : '.ui-settings-content > .ui-scroll-region',
+                  : '.ui-settings-content [data-settings-scroll]',
               );
               if (!root) throw Error('Scroller missing');
               const max = root.scrollHeight - root.clientHeight;
@@ -189,7 +189,7 @@ try {
             const root = document.querySelector<HTMLElement>(
               surface === 'sidebar'
                 ? '.ui-sidebar-tree'
-                : '.ui-settings-content > .ui-scroll-region',
+                : '.ui-settings-content [data-settings-scroll]',
             );
             const top = document.querySelector(
                 surface === 'sidebar'
@@ -279,7 +279,7 @@ try {
       await pause(300);
       const fitted = await p.evaluate(() => {
         const root = document.querySelector(
-          '.ui-settings-content > .ui-scroll-region',
+          '.ui-settings-content [data-settings-scroll]',
         );
         const header = document.querySelector(
           '.ui-settings-column > .ui-settings-heading',

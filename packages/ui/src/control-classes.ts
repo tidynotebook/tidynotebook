@@ -843,3 +843,8 @@ export function switchClassNames(checked: boolean): {
     thumb: `size-4 rounded-full ${checked ? 'bg-on-accent' : 'bg-muted'}`,
   };
 }
+
+/** Name the missing field and keep initial abbreviations intact. */
+export function requiredFieldMessage(label: string): string {
+  return `Enter the ${label.replace(/^[A-Z](?![A-Z])/, (initial) => initial.toLowerCase())}.`;
+}
