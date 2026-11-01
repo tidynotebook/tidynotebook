@@ -202,7 +202,7 @@ await test('an unsafe neighbour of a safe element leaves', async () => {
     ['<form action="https://example.com"><button>Send</button></form>', 'Send'],
     [
       '<table><tr><td colspan="0" rowspan="2" align="justify" style="x">c</td></tr></table>',
-      '<div class="notes-table-scroll"><table><tbody><tr><td rowspan="2">c</td></tr></tbody></table></div>',
+      '<div class="notes-table-scroll" tabindex="0"><table><tbody><tr><td rowspan="2">c</td></tr></tbody></table></div>',
     ],
     [
       '<ol start="3" type="a"><li>three</li></ol>',
@@ -605,7 +605,9 @@ await test('a reader table keeps one native table inside its scroll area', async
     '| Date | Bhushan | Mayuri |\n| :--- | ---: | :---: |\n| 2026-09-23 | 98.50 | 81.50 |\n| next || value |\n| short |',
   );
   assert.equal((html.match(/class="notes-table-scroll"/g) ?? []).length, 1);
-  assert.ok(html.startsWith('<div class="notes-table-scroll"><table>'));
+  assert.ok(
+    html.startsWith('<div class="notes-table-scroll" tabindex="0"><table>'),
+  );
   assert.ok(html.endsWith('</table></div>'));
   assert.ok(html.includes('<th align="left">Date</th>'));
   assert.ok(html.includes('<th align="right">Bhushan</th>'));

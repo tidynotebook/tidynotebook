@@ -235,6 +235,7 @@
   --text-note: 1rem;
   --text-note--line-height: 1.65;
   --container-note: 40rem;
+  --container-table-cell: 20em;
   /*
    * The Settings modal from the large width: 940 by 620 px (issue 517).
    * The height is not a spacing token: max-w reads the spacing scale before

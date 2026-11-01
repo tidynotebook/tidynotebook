@@ -522,6 +522,7 @@ export function contentText(
   state: EditorState,
   from: number,
   to: number,
+  preserveSpace = false,
 ): string {
   let text = '';
   let at = from;
@@ -540,7 +541,7 @@ export function contentText(
     },
   });
   text += state.doc.sliceString(Math.max(at, from), to);
-  return text.replace(/\s+/g, ' ').trim();
+  return preserveSpace ? text.trim() : text.replace(/\s+/g, ' ').trim();
 }
 
 /** The label of a footnote reference or definition node, or null. */

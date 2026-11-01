@@ -704,7 +704,7 @@ function wrapTables() {
       parent.children[index] = {
         type: 'element',
         tagName: 'div',
-        properties: { className: ['notes-table-scroll'] },
+        properties: { className: ['notes-table-scroll'], tabIndex: 0 },
         children: [node],
       };
       return index + 1;

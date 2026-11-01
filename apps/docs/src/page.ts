@@ -191,7 +191,7 @@ export const articleClasses = [
   codeFigureClassName,
   '[&_:not(pre)>code]:rounded-sm [&_:not(pre)>code]:bg-surface [&_:not(pre)>code]:px-1 [&_:not(pre)>code]:py-0.5 [&_:not(pre)>code]:text-strong',
   '[&_hr]:my-8 [&_hr]:border-edge-line',
-  '[&_.notes-table-scroll]:my-4 [&_.notes-table-scroll]:overflow-x-auto [&_table]:w-full [&_table]:border-collapse [&_table]:text-ui',
+  '[&_.notes-table-scroll]:my-4 [&_.notes-table-scroll]:overflow-x-auto [&_.notes-table-scroll]:focus-visible:outline-2 [&_.notes-table-scroll]:focus-visible:-outline-offset-2 [&_.notes-table-scroll]:focus-visible:outline-focus [&_table]:w-full [&_th]:max-w-table-cell [&_td]:max-w-table-cell [&_th]:wrap-anywhere [&_td]:wrap-anywhere [&_table]:border-collapse [&_table]:text-ui',
   '[&_th]:border [&_th]:border-edge-line [&_th]:bg-surface [&_th]:p-2 [&_th]:text-left [&_th]:align-top [&_th]:font-medium [&_th]:text-strong',
   '[&_td]:border [&_td]:border-edge-line [&_td]:p-2 [&_td]:align-top',
 ].join(' ');

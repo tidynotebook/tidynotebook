@@ -28,7 +28,7 @@ import {
   cellText,
   pastedCells,
   gridParts,
-  tableColumnTracks,
+  tableColumnWidths,
   nextCellEdit,
   previousCellEdit,
   removeColumnEdit,
@@ -771,11 +771,14 @@ await test('column tracks include the full large table and change only with text
   const state = stateOf(source + '‸');
   const table = tableAt(state, 1);
   assert.ok(table);
-  const tracks = tableColumnTracks(state, table);
+  const tracks = tableColumnWidths(state, table, (text) => text.length);
   const offscreen = tableAt(state, source.length - 2);
   assert.ok(offscreen);
-  assert.equal(tableColumnTracks(state, offscreen), tracks);
-  assert.ok(tracks.includes('25.2ch'), tracks);
+  assert.deepEqual(
+    tableColumnWidths(state, offscreen, (text) => text.length),
+    tracks,
+  );
+  assert.deepEqual(tracks, [21, 5]);
   const edited = state.update({
     changes: {
       from: source.indexOf('longestwordinthetable'),
@@ -785,7 +788,10 @@ await test('column tracks include the full large table and change only with text
   }).state;
   const changed = tableAt(edited, 1);
   assert.ok(changed);
-  assert.notEqual(tableColumnTracks(edited, changed), tracks);
+  assert.notDeepEqual(
+    tableColumnWidths(edited, changed, (text) => text.length),
+    tracks,
+  );
 });
 
 await test('the first viewport sizes a table from its last row before background parsing', () => {
@@ -800,5 +806,24 @@ await test('the first viewport sizes a table from its last row before background
   const table = tablesIn(state, 0, 100)[0];
   assert.ok(table);
   assert.equal(table.rows.length, 2003);
-  assert.ok(tableColumnTracks(state, table).includes('25.2ch'));
+  assert.deepEqual(
+    tableColumnWidths(state, table, (text) => text.length),
+    [21, 5],
+  );
+});
+
+await test('measurement excludes source padding and preserves interior spaces', () => {
+  const state = stateOf('| H | Count |\n| --- | --- |\n| a  b | 1 |‸');
+  const table = tableAt(state, 1);
+  assert.ok(table);
+  const measured: string[] = [];
+  assert.deepEqual(
+    tableColumnWidths(state, table, (text) => {
+      measured.push(text);
+      return text.length;
+    }),
+    [4, 5],
+  );
+  assert.ok(measured.includes('a  b'));
+  assert.ok(!measured.includes(' a  b '));
 });

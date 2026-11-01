@@ -1,8 +1,9 @@
 /** Check table geometry in a disposable deployment with a long table note. */
 import assert from 'node:assert/strict';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
+import { parseMarkdown } from '@notesapp/markdown';
 import { pathToFileURL } from 'node:url';
-import { hasChromium } from './browser.ts';
+import { hasChromium, isRecord } from './browser.ts';
 
 const loaded: unknown = await import(
   pathToFileURL(
@@ -20,6 +21,23 @@ assert.ok(
 assert.ok(
   readerPath?.startsWith('/published/'),
   'Set TABLE_READER_PATH to its published page.',
+);
+const fixture: unknown = JSON.parse(
+  readFileSync(
+    process.env.TABLE_FIXTURE_PATH ?? '.local-app/table-fixture.json',
+    'utf8',
+  ),
+);
+assert.ok(isRecord(fixture) && typeof fixture.text === 'string');
+const parsed = parseMarkdown(fixture.text);
+const sourceTable = parsed.children.find((node) => node.type === 'table');
+assert.ok(sourceTable?.type === 'table');
+const cellRows = sourceTable.children.map((row) =>
+  row.children.map((cell) =>
+    cell.children
+      .map((piece) => ('value' in piece ? piece.value : ''))
+      .join(''),
+  ),
 );
 const origin = process.env.UI_AUDIT_ORIGIN ?? 'http://localhost:3000';
 mkdirSync('.local-app/screenshots', { recursive: true });
@@ -46,7 +64,7 @@ try {
         await page.goto(origin + notePath);
         await page.locator('.cm-np-table-head').first().waitFor();
         const geometry = async () =>
-          page.evaluate(async () => {
+          page.evaluate(async (sourceRows) => {
             await document.fonts.ready;
             await new Promise(requestAnimationFrame);
             const table = document.querySelector('.cm-np-table');
@@ -74,6 +92,69 @@ try {
                 if (box.height < 24)
                   throw Error('An empty cell has no usable height.');
               }
+            const header = table.querySelector('.cm-np-table-head');
+            const body = table.querySelector('.cm-np-table-cell');
+            if (body === null) throw Error('Body missing.');
+            const bodyStyle = getComputedStyle(body);
+            const maxima = [0, 0, 0];
+            // Measure actual browser text independently of the canvas used
+            // by the implementation. The probe takes no space in the note.
+            const probe = document.createElement('span');
+            probe.style.position = 'absolute';
+            probe.style.whiteSpace = 'pre';
+            probe.style.visibility = 'hidden';
+            document.body.append(probe);
+            const widths = new Map<string, number>();
+            try {
+              sourceRows.forEach((row, rowIndex) =>
+                row.forEach((text, column) => {
+                  const style =
+                    header !== null && rowIndex === 0
+                      ? getComputedStyle(header)
+                      : bodyStyle;
+                  const weight =
+                    rowIndex === 0
+                      ? bodyStyle.getPropertyValue('--font-weight-note-heading')
+                      : style.fontWeight;
+                  const font = `${style.fontStyle} ${weight} ${style.fontSize} ${style.fontFamily}`;
+                  const key = `${font}:${text}`;
+                  let width = widths.get(key);
+                  if (width === undefined) {
+                    probe.style.font = font;
+                    probe.style.letterSpacing = style.letterSpacing;
+                    probe.style.fontVariantNumeric = style.fontVariantNumeric;
+                    probe.style.fontFeatureSettings = style.fontFeatureSettings;
+                    probe.textContent = text;
+                    width = probe.getBoundingClientRect().width;
+                    widths.set(key, width);
+                  }
+                  maxima[column] = Math.max(
+                    maxima[column] ?? 0,
+                    width +
+                      parseFloat(style.paddingLeft) +
+                      parseFloat(style.paddingRight) +
+                      parseFloat(style.borderLeftWidth) +
+                      parseFloat(style.borderRightWidth),
+                  );
+                }),
+              );
+            } finally {
+              probe.remove();
+            }
+            for (const [column, box] of bounds) {
+              const limit = maxima[Number(column) - 2] ?? 0;
+              const padding =
+                parseFloat(bodyStyle.paddingLeft) +
+                parseFloat(bodyStyle.paddingRight) +
+                parseFloat(bodyStyle.borderLeftWidth) +
+                parseFloat(bodyStyle.borderRightWidth);
+              if (box.width > 20 * parseFloat(bodyStyle.fontSize) + padding + 2)
+                throw Error('A long token bypasses the column cap.');
+              if (box.width > limit + 2)
+                throw Error(
+                  `Column ${column} has redundant space: ${String(box.width)} px for ${String(limit)} px of content and padding.`,
+                );
+            }
             return {
               tracks: getComputedStyle(rows[0] ?? table).gridTemplateColumns,
               columns: bounds.size,
@@ -82,18 +163,17 @@ try {
               pageWidth: document.documentElement.scrollWidth,
               viewport: innerWidth,
             };
-          });
+          }, cellRows);
         const start = await geometry();
         assert.equal(start.columns, 3);
         assert.ok(
           start.pageWidth <= start.viewport,
           'A wide table must not widen the page.',
         );
-        if (width < 1024)
-          assert.ok(
-            start.content > start.width,
-            'The fixture must require horizontal scroll.',
-          );
+        assert.ok(
+          start.content <= start.width + 1,
+          'Three columns shrink and wrap to fit a phone.',
+        );
         await page.screenshot({
           path: `.local-app/screenshots/table-editor-${width}-${scheme}.png`,
         });
@@ -141,6 +221,13 @@ try {
         );
         await page.goto(origin + readerPath);
         await page.locator('.notes-table-scroll table').waitFor();
+        await page.locator('.notes-table-scroll').focus();
+        assert.ok(
+          await page
+            .locator('.notes-table-scroll')
+            .evaluate((element) => element === document.activeElement),
+          'A keyboard user can focus the reader scroll area.',
+        );
         const reader = await page
           .locator('.notes-table-scroll')
           .evaluate((element) => {
@@ -160,6 +247,8 @@ try {
                   throw Error('Reader columns do not align.');
               });
             return {
+              width: element.clientWidth,
+              content: element.scrollWidth,
               display: getComputedStyle(
                 element.querySelector('table') ?? element,
               ).display,
@@ -168,6 +257,10 @@ try {
             };
           });
         assert.equal(reader.display, 'table');
+        assert.ok(
+          reader.content <= reader.width + 1,
+          'Reader text wraps before horizontal scroll.',
+        );
         assert.ok(reader.pageWidth <= reader.viewport);
         await page.screenshot({
           path: `.local-app/screenshots/table-reader-${width}-${scheme}.png`,
