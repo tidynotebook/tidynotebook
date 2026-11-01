@@ -40,6 +40,7 @@ type Route = {
   continue(): Promise<void>;
   fetch(): Promise<Response>;
   fulfill(options: {
+    status?: number;
     response?: Response;
     json?: unknown;
     body?: Uint8Array;
