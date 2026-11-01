@@ -333,7 +333,7 @@ export const noteBodyClasses = [
   // A table is a grid that sizes to its text and scrolls on its own when it
   // cannot fit, as `.cm-np-table` draws it (record 0147). The collapsed edges
   // pass to the rows, and a header cell takes the alignment of its column.
-  '[&_table]:my-4 [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto [&_table]:border-collapse [&_table]:text-note-mono',
+  '[&_.notes-table-scroll]:my-4 [&_.notes-table-scroll]:w-fit [&_.notes-table-scroll]:overflow-x-auto [&_.notes-table-scroll]:focus-visible:outline-2 [&_.notes-table-scroll]:focus-visible:-outline-offset-2 [&_.notes-table-scroll]:focus-visible:outline-focus [&_.notes-table-scroll]:max-w-full [&_th]:max-w-table-cell [&_td]:max-w-table-cell [&_th]:wrap-anywhere [&_td]:wrap-anywhere [&_table]:border-collapse [&_table]:text-note-mono',
   '[&_th]:border [&_th]:border-edge-line [&_th]:bg-hover [&_th]:px-3 [&_th]:py-1.5 [&_th]:text-start [&_th]:align-top [&_th]:font-note-heading [&_th]:text-strong',
   '[&_td]:border [&_td]:border-edge-line [&_td]:px-3 [&_td]:py-1.5 [&_td]:align-top',
   '[&_:is(th,td)[align=center]]:text-center [&_:is(th,td)[align=right]]:text-right [&_:is(th,td)[align=left]]:text-left',

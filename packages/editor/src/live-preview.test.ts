@@ -1805,3 +1805,28 @@ await test('a hidden mark at either edge of a cell stays inside the cell', () =>
   assert.deepEqual(lineElements(quoted, null)[0]?.top, row, quoted);
   assert.deepEqual(lineElements(listed, null)[2]?.top, row, listed);
 });
+
+await test('compact empty cells and mixed edge pipes keep explicit column positions', () => {
+  const doc =
+    '| a | b | c |\n| :--- | ---: | :---: |\n|x||z|\nx|y|z\n| short |\n| a | b | c | extra |';
+  const state = parsedWhole(
+    EditorState.create({
+      doc,
+      extensions: noteMarkdown(),
+    }),
+  );
+  const built = buildPreview(state, [{ from: 0, to: doc.length }], {
+    from: doc.length,
+    to: doc.length,
+  });
+  const columns: string[] = [];
+  const row = doc.indexOf('|x||z|');
+  built.layout.between(row, row + 6, (from, to, value) => {
+    if (/cm-np-table-cell/.test(value.spec.class ?? ''))
+      columns.push(value.spec.attributes.style);
+  });
+  assert.deepEqual(
+    columns.sort(),
+    [2, 3, 4].map((column) => `grid-column: ${String(column)}; grid-row: 1`),
+  );
+});

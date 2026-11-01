@@ -58,3 +58,26 @@ node tests/browser/note-scroll.ts
 ```
 
 The test reads the note and saves screenshots in `.local-app/screenshots/`.
+
+`table-layout.ts` checks a three-column table in the editor and its published
+page at 320, 390, and 1440 px, in light and dark mode. Run it with a Weight-style
+table and with a long fixture that has compact empty cells, short rows, rows
+without edge pipes, and a long cell below the first viewport. `TABLE_FIXTURE_PATH`
+names a JSON file with the fixture Markdown in `text`.
+
+The check measures browser text independently of the implementation. No column
+can exceed its widest cell plus padding by more than 2 px. It also checks the
+long-text cap, wrapping before horizontal scroll, row height, page overflow,
+stable tracks after scrolling, typing, undo, and keyboard access to the reader
+scroll area. Set `TABLE_WIDE_READER_PATH` to a published table with many columns
+to check horizontal scroll and keyboard scroll. Screenshots go to `.local-app/screenshots/`.
+
+```sh
+PLAYWRIGHT_MODULE=/absolute/path/to/playwright-core/index.mjs \
+UI_AUDIT_ORIGIN=http://localhost:3000 \
+UI_AUDIT_STATE=.local-app/review-session.json \
+TABLE_FIXTURE_PATH=.local-app/table-fixture.json \
+TABLE_NOTE_PATH=/w/<workspace>/notes/<note> \
+TABLE_READER_PATH=/published/<token> \
+node tests/browser/table-layout.ts
+```

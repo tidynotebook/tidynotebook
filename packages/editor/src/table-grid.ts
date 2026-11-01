@@ -29,6 +29,7 @@ import {
   ChangeSet,
   EditorSelection,
   EditorState,
+  StateEffect,
   type ChangeSpec,
   type Extension,
   Transaction,
@@ -45,9 +46,11 @@ import {
 } from '@codemirror/view';
 import type { SyntaxNode, Tree } from '@lezer/common';
 import { diffChars } from 'diff';
+import { fitTableColumns } from './table-widths.ts';
 import { isEditOfAPerson } from './commands.ts';
 import {
   delimiterRowParts,
+  contentText,
   tableAlignments,
   type ColumnAlign,
 } from './live-preview.ts';
@@ -129,7 +132,7 @@ function cellsBetween(
   const cells: TableCellBox[] = [];
   let at = from;
   for (const pipe of pipes) {
-    if (pipe.from > at) cells.push(cellBox(state, at, pipe.from));
+    if (pipe.from > at || at > from) cells.push(cellBox(state, at, pipe.from));
     at = pipe.to;
   }
   if (to > at) cells.push(cellBox(state, at, to));
@@ -192,6 +195,48 @@ export function tableAt(state: EditorState, pos: number): TableBox | null {
   return null;
 }
 
+/** Finish a table that crosses the current parser boundary. */
+function tableTree(state: EditorState, from: number, to: number): Tree {
+  let tree = ensureSyntaxTree(state, to, 250) ?? syntaxTree(state);
+  for (;;) {
+    let end = to;
+    let found = false;
+    tree.iterate({
+      from,
+      to,
+      enter(node) {
+        if (node.name !== 'Table') return true;
+        found = true;
+        end = Math.max(end, node.to);
+        return false;
+      },
+    });
+    if (!found || end >= state.doc.length) return tree;
+    // Parsing a little beyond the table proves its end. A partial table
+    // grows until the parser reaches its last row. No source scan is used.
+    const next = ensureSyntaxTree(
+      state,
+      Math.min(state.doc.length, end + 4096),
+      // A table can have up to 10,000 cells. Finish this bounded block
+      // before sizing it, including when other tests or views use the CPU.
+      250,
+    );
+    if (next === null || next === tree) return tree;
+    let nextEnd = to;
+    next.iterate({
+      from,
+      to,
+      enter(node) {
+        if (node.name !== 'Table') return true;
+        nextEnd = Math.max(nextEnd, node.to);
+        return false;
+      },
+    });
+    tree = next;
+    if (nextEnd <= end) return tree;
+  }
+}
+
 /** Every table that meets the range from `from` to `to`. */
 export function tablesIn(
   state: EditorState,
@@ -199,7 +244,7 @@ export function tablesIn(
   to: number,
 ): readonly TableBox[] {
   const tables: TableBox[] = [];
-  treeOf(state, to).iterate({
+  tableTree(state, from, to).iterate({
     from,
     to,
     enter: (node) => {
@@ -1312,11 +1357,45 @@ type GridParts = {
   readonly atomic: DecorationSet;
 };
 
-/** The element that wraps the lines of one table. */
-const tableWrapper = BlockWrapper.create({
-  tagName: 'div',
-  attributes: { class: 'cm-np-table' },
-});
+type TableLayout = { readonly tracks: string; readonly rules: string };
+
+/** Read all source rows with an injected text measurement. */
+export function tableColumnWidths(
+  state: EditorState,
+  table: TableBox,
+  measure: (text: string, header: boolean) => number,
+): readonly number[] {
+  const columns =
+    table.rows.find((row) => row.kind === 'delimiter')?.cells.length ?? 0;
+  const widths = Array.from({ length: columns }, () => 0);
+  for (const row of table.rows) {
+    if (row.kind === 'delimiter') continue;
+    row.cells.slice(0, columns).forEach((cell, column) => {
+      const text = contentText(state, cell.textFrom, cell.textTo, true);
+      widths[column] = Math.max(
+        widths[column] ?? 0,
+        measure(text, row.kind === 'header'),
+      );
+    });
+  }
+  return widths;
+}
+
+/** Fixed pixel tracks and the borders of omitted trailing cells. */
+function tableLayout(widths: readonly number[]): TableLayout {
+  let total = 0;
+  return {
+    tracks: widths.map((width) => `${String(width)}px`).join(' '),
+    rules:
+      widths
+        .slice(0, -1)
+        .map((width) => {
+          total += width;
+          return `linear-gradient(to right, transparent ${String(total - 1)}px, var(--notes-border-line) ${String(total - 1)}px, var(--notes-border-line) ${String(total)}px, transparent ${String(total)}px)`;
+        })
+        .join(', ') || 'none',
+  };
+}
 
 /** The ranges that a caret and a deletion treat as one unit. */
 const atomicMark = Decoration.mark({});
@@ -1331,6 +1410,7 @@ const atomicMark = Decoration.mark({});
 export function gridParts(
   state: EditorState,
   ranges: readonly Span[],
+  layouts: ReadonlyMap<number, TableLayout> = new Map(),
 ): GridParts {
   const wrappers: Range<BlockWrapper>[] = [];
   const atomic: Range<Decoration>[] = [];
@@ -1340,7 +1420,19 @@ export function gridParts(
       if (seen.has(table.from)) continue;
       seen.add(table.from);
       const start = table.rows[0]?.lineFrom ?? table.from;
-      wrappers.push(tableWrapper.range(start, table.to));
+      const layout = layouts.get(table.from);
+      wrappers.push(
+        BlockWrapper.create({
+          tagName: 'div',
+          attributes: {
+            class: 'cm-np-table',
+            style:
+              layout === undefined
+                ? 'visibility: hidden'
+                : `--notes-table-columns: ${layout.tracks}; --notes-table-rules: ${layout.rules}`,
+          },
+        }).range(start, table.to),
+      );
       for (const row of table.rows) {
         if (row.kind === 'delimiter') {
           if (row.to > row.from)
@@ -1357,23 +1449,170 @@ export function gridParts(
   };
 }
 
-/** Builds the grid parts of the view and keeps them current. */
+const tableCharacters = new Intl.Segmenter(undefined, {
+  granularity: 'grapheme',
+});
+
+const measuredTables = StateEffect.define<ReadonlyMap<number, TableLayout>>();
+
+/** Measures text with the loaded editor fonts, independently of visible rows. */
 const gridView = ViewPlugin.fromClass(
   class {
     parts: GridParts;
+    private layouts: ReadonlyMap<number, TableLayout> = new Map();
+    private readonly widths = new Map<string, number>();
+    private readonly context: CanvasRenderingContext2D | null;
+    private alive = true;
+    private readonly fontsChanged = (): void => {
+      this.widths.clear();
+      if (this.alive) this.schedule();
+    };
+
+    private readonly view: EditorView;
 
     constructor(view: EditorView) {
+      this.view = view;
+      this.context = view.dom.ownerDocument
+        .createElement('canvas')
+        .getContext('2d');
       this.parts = gridParts(view.state, view.visibleRanges);
+      view.dom.ownerDocument.fonts.addEventListener(
+        'loadingdone',
+        this.fontsChanged,
+      );
+      void view.dom.ownerDocument.fonts.ready.then(this.fontsChanged);
+      this.schedule();
     }
 
     update(update: ViewUpdate): void {
+      let measured = false;
+      for (const effect of update.transactions.flatMap(
+        (transaction) => transaction.effects,
+      )) {
+        if (!effect.is(measuredTables)) continue;
+        this.layouts = effect.value;
+        measured = true;
+      }
       if (
-        !update.docChanged &&
-        !update.viewportChanged &&
-        syntaxTree(update.startState) === syntaxTree(update.state)
+        measured ||
+        update.docChanged ||
+        update.viewportChanged ||
+        syntaxTree(update.startState) !== syntaxTree(update.state)
       )
-        return;
-      this.parts = gridParts(update.view.state, update.view.visibleRanges);
+        this.parts = gridParts(
+          update.state,
+          update.view.visibleRanges,
+          this.layouts,
+        );
+      if (
+        !measured &&
+        (update.docChanged ||
+          update.viewportChanged ||
+          update.geometryChanged ||
+          syntaxTree(update.startState) !== syntaxTree(update.state))
+      )
+        this.schedule();
+    }
+
+    destroy(): void {
+      this.alive = false;
+      this.view.dom.ownerDocument.fonts.removeEventListener(
+        'loadingdone',
+        this.fontsChanged,
+      );
+    }
+
+    private schedule(): void {
+      this.view.requestMeasure({
+        key: this,
+        read: (view) => {
+          const context = this.context;
+          const head = view.contentDOM.querySelector('.cm-np-table-head');
+          const bodyCell = view.contentDOM.querySelector('.cm-np-table-cell');
+          const body = bodyCell ?? head;
+          if (
+            context === null ||
+            body === null ||
+            view.dom.ownerDocument.fonts.status === 'loading'
+          )
+            return null;
+          const bodyStyle = getComputedStyle(body);
+          const headStyle = head === null ? bodyStyle : getComputedStyle(head);
+          const bodyWeight =
+            bodyCell === null
+              ? getComputedStyle(view.contentDOM).fontWeight
+              : bodyStyle.fontWeight;
+          const font = (style: CSSStyleDeclaration): string =>
+            `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+          const measure = (text: string, header: boolean): number => {
+            const style = header ? headStyle : bodyStyle;
+            const actualFont = header
+              ? head === null
+                ? `${style.fontStyle} ${style.getPropertyValue('--font-weight-note-heading')} ${style.fontSize} ${style.fontFamily}`
+                : font(style)
+              : `${style.fontStyle} ${bodyWeight} ${style.fontSize} ${style.fontFamily}`;
+            const key = `${actualFont}:${style.letterSpacing}:${text}`;
+            const cached = this.widths.get(key);
+            if (cached !== undefined) return cached;
+            context.font = actualFont;
+            context.letterSpacing =
+              style.letterSpacing === 'normal' ? '0px' : style.letterSpacing;
+            const width = context.measureText(text).width;
+            if (this.widths.size >= 50_000) this.widths.clear();
+            this.widths.set(key, width);
+            return width;
+          };
+          const padding =
+            parseFloat(bodyStyle.paddingLeft) +
+            parseFloat(bodyStyle.paddingRight) +
+            parseFloat(bodyStyle.borderLeftWidth) +
+            parseFloat(bodyStyle.borderRightWidth);
+          const maximum = parseFloat(bodyStyle.maxWidth);
+          const layouts = new Map<number, TableLayout>();
+          for (const range of view.visibleRanges)
+            for (const table of tablesIn(view.state, range.from, range.to)) {
+              if (layouts.has(table.from)) continue;
+              const natural = tableColumnWidths(view.state, table, measure).map(
+                (width) => Math.min(Math.ceil(width) + padding, maximum),
+              );
+              const minimum = tableColumnWidths(
+                view.state,
+                table,
+                (text, header) => {
+                  let width = 0;
+                  for (const part of tableCharacters.segment(text))
+                    width = Math.max(width, measure(part.segment, header));
+                  return width;
+                },
+              ).map((width, column) =>
+                Math.min(natural[column] ?? 0, Math.ceil(width) + padding),
+              );
+              const wrapper = view.contentDOM.querySelector('.cm-np-table');
+              const available =
+                wrapper instanceof HTMLElement
+                  ? wrapper.clientWidth
+                  : view.contentDOM.clientWidth;
+              layouts.set(
+                table.from,
+                tableLayout(fitTableColumns(natural, minimum, available)),
+              );
+            }
+          return { doc: view.state.doc, layouts };
+        },
+        write: (result, view) => {
+          if (
+            result === null ||
+            result.doc !== view.state.doc ||
+            JSON.stringify([...result.layouts]) ===
+              JSON.stringify([...this.layouts])
+          )
+            return;
+          queueMicrotask(() => {
+            if (this.alive && result.doc === view.state.doc)
+              view.dispatch({ effects: measuredTables.of(result.layouts) });
+          });
+        },
+      });
     }
   },
   {
