@@ -1313,6 +1313,10 @@ type GridParts = {
   readonly atomic: DecorationSet;
 };
 
+const tableCharacters = new Intl.Segmenter(undefined, {
+  granularity: 'grapheme',
+});
+
 /** A scroll reuses widths. A document edit gets a new cache. */
 const columnTracks = new WeakMap<
   Text,
@@ -1346,10 +1350,14 @@ function tableLayout(
       const text = state.doc.sliceString(cell.textFrom, cell.textTo);
       const longest = text
         .split(/\s+/u)
-        .reduce((size, word) => Math.max(size, [...word].length), 0);
+        .reduce(
+          (size, word) =>
+            Math.max(size, Array.from(tableCharacters.segment(word)).length),
+          0,
+        );
       widths[column] = Math.max(
         widths[column] ?? 6,
-        Math.min([...text].length, 32),
+        Math.min(Array.from(tableCharacters.segment(text)).length, 32),
         longest,
       );
     });
