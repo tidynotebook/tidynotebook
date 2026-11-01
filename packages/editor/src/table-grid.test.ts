@@ -779,13 +779,16 @@ await test('column tracks include the full large table and change only with text
     tracks,
   );
   assert.deepEqual(tracks, [21, 5]);
-  const edited = state.update({
-    changes: {
-      from: source.indexOf('longestwordinthetable'),
-      to: source.indexOf('longestwordinthetable') + 21,
-      insert: 'x',
-    },
-  }).state;
+  // This model check needs the edited table, independent of the view parse budget.
+  const edited = parsedWhole(
+    state.update({
+      changes: {
+        from: source.indexOf('longestwordinthetable'),
+        to: source.indexOf('longestwordinthetable') + 21,
+        insert: 'x',
+      },
+    }).state,
+  );
   const changed = tableAt(edited, 1);
   assert.ok(changed);
   assert.notDeepEqual(
