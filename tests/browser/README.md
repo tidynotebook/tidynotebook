@@ -58,3 +58,20 @@ node tests/browser/note-scroll.ts
 ```
 
 The test reads the note and saves screenshots in `.local-app/screenshots/`.
+
+`table-layout.ts` checks a long, three-column table in the editor and its
+published page at 320, 390, and 1440 px, in light and dark mode. The fixture
+must have compact empty cells, short rows, rows without edge pipes, and a long
+cell below the first viewport. It must require horizontal scroll on a phone.
+It checks column positions and widths, row height, page overflow, and stable
+tracks after vertical and horizontal scroll. It saves editor and reader
+screenshots in `.local-app/screenshots/`.
+
+```sh
+PLAYWRIGHT_MODULE=/absolute/path/to/playwright-core/index.mjs \
+UI_AUDIT_ORIGIN=http://localhost:3000 \
+UI_AUDIT_STATE=.local-app/review-session.json \
+TABLE_NOTE_PATH=/w/<workspace>/notes/<note> \
+TABLE_READER_PATH=/published/<token> \
+node tests/browser/table-layout.ts
+```
