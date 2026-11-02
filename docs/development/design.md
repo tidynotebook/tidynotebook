@@ -70,7 +70,7 @@ Every control reads `packages/ui/src/control-classes.ts` (record 0065).
   SVG fill is `fill-accent-fill`, and both use `h-1.5 rounded-sm`.
   `meterFillPercent` gives the real fraction. A second SVG rectangle keeps
   positive use visible with a 2 px minimum. The fill reaches the end of the
-  track only when use is at or above the maximum. From 90% and below the
+  track only when use is at or above the maximum. From 90 percent and below the
   maximum, `meterAlmostFull` keeps the accent fill and adds Almost full to
   the text. At or above the maximum, the fill and the text take the danger
   tone and the text adds Limit reached. The named meter states its minimum,
