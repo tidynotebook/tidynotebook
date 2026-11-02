@@ -5,7 +5,9 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { Pill } from '../dist/section-heading.js';
 
 await test('a neutral pill keeps its quiet surface and has no tone dot', () => {
-  const markup = renderToStaticMarkup(createElement(Pill, {}, 'Trial'));
+  const markup = renderToStaticMarkup(
+    createElement(Pill, { children: 'Trial' }),
+  );
   assert.match(markup, /bg-hover/);
   assert.match(markup, /text-muted/);
   assert.doesNotMatch(markup, /aria-hidden/);
@@ -14,7 +16,7 @@ await test('a neutral pill keeps its quiet surface and has no tone dot', () => {
 for (const tone of ['accent', 'success', 'danger'] as const) {
   await test(`a ${tone} pill states its fact with a tone surface and decorative dot`, () => {
     const markup = renderToStaticMarkup(
-      createElement(Pill, { tone }, 'Plan state'),
+      createElement(Pill, { tone, children: 'Plan state' }),
     );
     assert.ok(markup.includes(`bg-${tone}-surface`));
     assert.ok(markup.includes(`bg-${tone}`));
