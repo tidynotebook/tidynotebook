@@ -80,11 +80,7 @@ export function Meter({
       {settings ? (
         <Inline gap={4} justify="between">
           <span className="text-body text-strong">{label}</span>
-          <span
-            className={`text-value ${value >= max ? 'text-danger' : 'text-muted'}`}
-          >
-            {words}
-          </span>
+          <span className={classes.settingsValue}>{words}</span>
         </Inline>
       ) : (
         <p className={classes.text}>{words}</p>

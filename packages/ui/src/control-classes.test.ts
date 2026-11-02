@@ -71,6 +71,10 @@ for (const value of [0, 0.24, 1, 4, 5, 50, 89, 90, 99, 100, 125])
         value >= 100 ? 'fill-danger-fill' : 'fill-accent-fill',
       ),
     );
+    assert.equal(
+      classes.settingsValue,
+      `text-value ${value >= 100 ? 'text-danger' : 'text-muted'}`,
+    );
     assert.ok(classes.track.includes('overflow-hidden'));
   });
 
