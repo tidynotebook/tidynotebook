@@ -70,11 +70,12 @@ Every control reads `packages/ui/src/control-classes.ts` (record 0065).
   SVG fill is `fill-accent-fill`, and both use `h-1.5 rounded-sm`.
   `meterFillPercent` gives the real fraction. A second SVG rectangle keeps
   positive use visible with a 2 px minimum. The fill reaches the end of the
-  track only when use is at or above the maximum. From 90 percent and below the
-  maximum, `meterAlmostFull` keeps the accent fill and adds Almost full to
+  track only when use is at or above the maximum. For capacity meters, from
+  90 percent and below the maximum, `meterAlmostFull` keeps the accent fill and adds Almost full to
   the text. At or above the maximum, the fill and the text take the danger
-  tone and the text adds Limit reached. The named meter states its minimum,
-  maximum and current value.
+  tone and the text adds Limit reached. For `kind="progress"`, the fill stays
+  accent and the text stays as supplied at every value. Both kinds state
+  their minimum, maximum and current value.
 
 Focus uses `focus-visible:` with one outline, outward on a control and inward on
 a row in a scroller, two pixels in the focus colour. A primary button appears
