@@ -5,7 +5,6 @@ This page owns the UI composition, spacing, density and depth contract for every
 ## Rules
 
 Use Tailwind in `packages/ui` components. Features compose them without spacing, size or depth rules.
-
 Use one spacing scale and the named size roles. `apps/web/src/tailwind.css`
 owns all tokens in `@theme`. The `coarse:` and `fine:` variants select pointer
 density. Width selects layout. Pointer type selects density only. A component defines both densities with one rule set.
@@ -83,10 +82,8 @@ doubled-class selectors or inline spacing styles. Runtime overlay and viewport c
 - `Field`, `TextField`, `SelectField` and `TextAreaField` share label, control,
   help and error spacing. A form is a stack of fields.
 - `SwitchRow` is a setting row whose whole surface toggles its switch.
-- `Pill` states a fact. Neutral uses the small type role and quiet surface.
-  Accent, success and danger tones use their tone surface, a tone dot and strong text.
-- `Meter` uses accent fill below the limit. From 90 percent it says "Almost full".
-  At the limit it says "Limit reached" and uses danger fill and text.
+- `Pill` states a fact in small type. Neutral uses the quiet surface; accent, success and danger use their tone surface, a tone dot and strong text.
+- `Meter` uses accent fill and says "Almost full" from 90 percent. At the limit it says "Limit reached" with danger fill and text.
 - `Notice`, `EmptyState`, `Toast` and `Tooltip` use equal padding.
 - `Sheet` owns the phone header, scrolling body and pinned footer. Header
   glyphs align with the body inset. Its footer has one full-width primary
