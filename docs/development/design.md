@@ -69,9 +69,9 @@ Every control reads `packages/ui/src/control-classes.ts` (record 0065).
   against a maximum with no state or callback. The track is `bg-hover`, the
   SVG fill is `fill-accent-fill`, and both use `h-1.5 rounded-sm`.
   `meterFillPercent` gives the real fraction. A second SVG rectangle keeps
-  positive use visible with a 2 px minimum. Only use at or above the maximum fills the track. At `90%`,
-  `meterAlmostFull` gives the fill `fill-danger-fill` and adds Almost full to the
-  text. The named meter states its minimum, maximum and current value.
+  positive use visible with a 2 px minimum. Only use at or above the maximum fills the track. From 90 to 99 percent,
+  `meterAlmostFull` adds "Almost full" with normal fill. At the maximum, the
+  fill and value use danger and the text says "Limit reached". The named meter states its minimum, maximum and current value.
 
 Focus uses `focus-visible:` with one outline, outward on a control and inward on
 a row in a scroller, two pixels in the focus colour. A primary button appears
