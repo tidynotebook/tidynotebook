@@ -83,7 +83,10 @@ doubled-class selectors or inline spacing styles. Runtime overlay and viewport c
 - `Field`, `TextField`, `SelectField` and `TextAreaField` share label, control,
   help and error spacing. A form is a stack of fields.
 - `SwitchRow` is a setting row whose whole surface toggles its switch.
-- `Pill` states a fact. It uses the small type role and the quiet surface.
+- `Pill` states a fact. Neutral uses the small type role and quiet surface.
+  Accent, success and danger tones use their tone surface, a tone dot and strong text.
+- `Meter` uses accent fill below the limit. From 90 percent it says "Almost full".
+  At the limit it says "Limit reached" and uses danger fill and text.
 - `Notice`, `EmptyState`, `Toast` and `Tooltip` use equal padding.
 - `Sheet` owns the phone header, scrolling body and pinned footer. Header
   glyphs align with the body inset. Its footer has one full-width primary

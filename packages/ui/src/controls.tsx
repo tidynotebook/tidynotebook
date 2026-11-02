@@ -65,7 +65,12 @@ export function Meter({
   const settings = useSettingsSurface();
   const classes = meterClassNames(value, max);
   const percent = meterFillPercent(value, max);
-  const words = meterAlmostFull(value, max) ? `${text}. Almost full` : text;
+  const words =
+    value >= max
+      ? `${text}. Limit reached`
+      : meterAlmostFull(value, max)
+        ? `${text}. Almost full`
+        : text;
   return (
     <Stack
       gap={2}
@@ -75,7 +80,11 @@ export function Meter({
       {settings ? (
         <Inline gap={4} justify="between">
           <span className="text-body text-strong">{label}</span>
-          <span className="text-value text-muted">{words}</span>
+          <span
+            className={`text-value ${value >= max ? 'text-danger' : 'text-muted'}`}
+          >
+            {words}
+          </span>
         </Inline>
       ) : (
         <p className={classes.text}>{words}</p>

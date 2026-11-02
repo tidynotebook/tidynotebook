@@ -674,12 +674,12 @@ export function meterFillPercent(value: number, max: number): number {
   return Math.min(value / max, 1) * 100;
 }
 
-/** Whether the meter needs its warning in words and in its fill. */
+/** Whether use is near the limit but has not reached it. */
 export function meterAlmostFull(value: number, max: number): boolean {
-  return value / max >= 0.9;
+  return value / max >= 0.9 && value < max;
 }
 
-/** The one recipe of a static meter, including its text and warning. */
+/** The one recipe of a static meter, including its limit state. */
 export function meterClassNames(
   value: number,
   max: number,
@@ -689,9 +689,9 @@ export function meterClassNames(
   readonly fill: string;
 } {
   return {
-    text: 'text-secondary text-muted',
+    text: `text-secondary ${value >= max ? 'text-danger' : 'text-muted'}`,
     track: 'h-1.5 w-full overflow-hidden rounded-sm bg-hover',
-    fill: `block h-1.5 w-full rounded-sm ${meterAlmostFull(value, max) ? 'fill-danger-fill' : 'fill-accent-fill'}`,
+    fill: `block h-1.5 w-full rounded-sm ${value >= max ? 'fill-danger-fill' : 'fill-accent-fill'}`,
   };
 }
 
