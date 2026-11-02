@@ -52,25 +52,29 @@ const fieldLabelClassName = 'block text-label text-strong';
 
 /** A named value against a maximum, with no state or callback. */
 export function Meter({
+  kind = 'capacity',
   label,
   value,
   max,
   text,
 }: {
+  readonly kind?: 'capacity' | 'progress' | undefined;
   readonly label: string;
   readonly value: number;
   readonly max: number;
   readonly text: string;
 }): ReactNode {
   const settings = useSettingsSurface();
-  const classes = meterClassNames(value, max);
+  const classes = meterClassNames(value, max, kind);
   const percent = meterFillPercent(value, max);
   const words =
-    value >= max
-      ? `${text}. Limit reached`
-      : meterAlmostFull(value, max)
-        ? `${text}. Almost full`
-        : text;
+    kind === 'progress'
+      ? text
+      : value >= max
+        ? `${text}. Limit reached`
+        : meterAlmostFull(value, max)
+          ? `${text}. Almost full`
+          : text;
   return (
     <Stack
       gap={2}
@@ -87,7 +91,7 @@ export function Meter({
       )}
       <div
         className={classes.track}
-        role="meter"
+        role={kind === 'progress' ? 'progressbar' : 'meter'}
         aria-label={label}
         aria-valuemin={0}
         aria-valuemax={max}
