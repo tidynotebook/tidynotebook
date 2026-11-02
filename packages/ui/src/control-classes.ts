@@ -685,11 +685,13 @@ export function meterClassNames(
   max: number,
 ): {
   readonly text: string;
+  readonly settingsValue: string;
   readonly track: string;
   readonly fill: string;
 } {
   return {
     text: `text-secondary ${value >= max ? 'text-danger' : 'text-muted'}`,
+    settingsValue: `text-value ${value >= max ? 'text-danger' : 'text-muted'}`,
     track: 'h-1.5 w-full overflow-hidden rounded-sm bg-hover',
     fill: `block h-1.5 w-full rounded-sm ${value >= max ? 'fill-danger-fill' : 'fill-accent-fill'}`,
   };
