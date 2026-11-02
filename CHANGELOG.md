@@ -7,6 +7,13 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## Unreleased
 
+## 0.23.3 - 2026-11-02
+
+### Changed
+
+- Plan badges support accent, success and danger tones. Their dots and words state the status on page and card surfaces.
+- Usage meters show Almost full from 90 percent and Limit reached at capacity. Task progress keeps its normal fill and supplied text at every value.
+
 ## 0.23.2 - 2026-11-02
 
 ### Fixed
