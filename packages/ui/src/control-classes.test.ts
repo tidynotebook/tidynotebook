@@ -64,11 +64,11 @@ const variants: readonly ButtonVariant[] = [
 for (const value of [0, 0.24, 1, 4, 5, 50, 89, 90, 99, 100, 125])
   await test(`a meter at ${String(value)} of 100 has its real percentage`, () => {
     assert.equal(meterFillPercent(value, 100), Math.min(value, 100));
-    assert.equal(meterAlmostFull(value, 100), value >= 90);
+    assert.equal(meterAlmostFull(value, 100), value >= 90 && value < 100);
     const classes = meterClassNames(value, 100);
     assert.ok(
       classes.fill.includes(
-        value >= 90 ? 'fill-danger-fill' : 'fill-accent-fill',
+        value >= 100 ? 'fill-danger-fill' : 'fill-accent-fill',
       ),
     );
     assert.ok(classes.track.includes('overflow-hidden'));

@@ -48,13 +48,36 @@ export function SectionHeading({
     </Stack>
   );
 }
+const pillTones = {
+  neutral: 'bg-hover text-muted',
+  accent: 'bg-accent-surface text-strong',
+  success: 'bg-success-surface text-strong',
+  danger: 'bg-danger-surface text-strong',
+};
+const pillDots = {
+  neutral: '',
+  accent: 'bg-accent',
+  success: 'bg-success',
+  danger: 'bg-danger',
+};
+
 export function Pill({
   children,
+  tone = 'neutral',
 }: {
   readonly children: ReactNode;
+  readonly tone?: 'neutral' | 'accent' | 'success' | 'danger';
 }): ReactNode {
   return (
-    <span className="inline-flex shrink-0 items-center rounded-sm bg-hover px-2 py-0.5 text-small text-muted">
+    <span
+      className={`inline-flex shrink-0 items-center gap-1 rounded-sm px-2 py-0.5 text-small ${pillTones[tone]}`}
+    >
+      {tone === 'neutral' ? null : (
+        <span
+          aria-hidden="true"
+          className={`size-1.5 shrink-0 rounded-full ${pillDots[tone]}`}
+        />
+      )}
       {children}
     </span>
   );
