@@ -5,9 +5,7 @@ This page owns the UI composition, spacing, density and depth contract for every
 ## Rules
 
 Use Tailwind in `packages/ui` components. Features compose them without spacing, size or depth rules.
-Use one spacing scale and the named size roles. `apps/web/src/tailwind.css`
-owns all tokens in `@theme`. The `coarse:` and `fine:` variants select pointer
-density. Width selects layout. Pointer type selects density only. A component defines both densities with one rule set.
+Use one spacing scale and the named size roles. `apps/web/src/tailwind.css` owns all tokens in `@theme`. The `coarse:` and `fine:` variants select pointer density. Width selects layout. Pointer type selects density only. A component defines both densities with one rule set.
 
 Parents own padding and gaps; children have no outer margins. Keep padding symmetric,
 with `pad`, or symmetric `padX` and `padY`.
@@ -83,7 +81,9 @@ doubled-class selectors or inline spacing styles. Runtime overlay and viewport c
   help and error spacing. A form is a stack of fields.
 - `SwitchRow` is a setting row whose whole surface toggles its switch.
 - `Pill` states a fact in small type. Neutral uses the quiet surface; accent, success and danger use their tone surface, a tone dot and strong text.
+  A toned pill states its tone with its dot and its words. Its surface is decoration and has no surface contrast rule, also on a raised card.
 - `Meter` uses accent fill and says "Almost full" from 90 percent. At the limit it says "Limit reached" with danger fill and text.
+  Meter kind progress shows a task that advances, such as a bounded wait. It keeps the accent fill and its supplied words at every value.
 - `Notice`, `EmptyState`, `Toast` and `Tooltip` use equal padding.
 - `Sheet` owns the phone header, scrolling body and pinned footer. Header
   glyphs align with the body inset. Its footer has one full-width primary
