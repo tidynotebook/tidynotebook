@@ -95,14 +95,20 @@ async function api(path, signal, checkDeadline = () => {}) {
         'X-GitHub-Api-Version': '2022-11-28',
       },
     },
-  );
+  ).catch((error) => {
+    checkDeadline();
+    throw error;
+  });
   checkDeadline();
   assert.equal(
     response.status,
     200,
     `Cannot read release proof: ${path} (${response.status}).`,
   );
-  const body = await response.json();
+  const body = await response.json().catch((error) => {
+    checkDeadline();
+    throw error;
+  });
   checkDeadline();
   return record(body);
 }

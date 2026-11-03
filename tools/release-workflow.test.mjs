@@ -288,3 +288,55 @@ await test('proof API errors fail immediately without a sleep or retry', async (
   await clock.advance(proofBudget);
   assert.equal(clock.calls(), 1);
 });
+
+for (const stage of ['fetch', 'body']) {
+  await test(`a late ${stage} rejection reports the prior proof timeout before the timer callback`, async (t) => {
+    let calls = 0;
+    const failure = new Error('late API failure');
+    const clock = proofClock(t, async (path, signal) => {
+      calls++;
+      if (calls <= 2)
+        return Response.json(
+          path.includes('/actions/')
+            ? { workflow_runs: [] }
+            : { check_runs: [] },
+        );
+      const rejectLate = async () => {
+        clock.elapse(proofBudget - 10000);
+        assert.equal(signal.aborted, false);
+        throw failure;
+      };
+      if (stage === 'fetch') return rejectLate();
+      const response = Response.json({ workflow_runs: [run] });
+      t.mock.method(response, 'json', rejectLate);
+      return response;
+    });
+    const result = waitForProof(sha).catch((error) => error);
+    await setImmediate();
+    await clock.advance(10000);
+    /** @type {unknown} */
+    const error = await result;
+    assert.ok(error instanceof assert.AssertionError);
+    assert.match(error.message, /source has no push CI run/);
+    assert.notEqual(error, failure);
+    assert.equal(clock.calls(), 3);
+  });
+
+  await test(`a pre-deadline ${stage} rejection preserves the original error immediately`, async (t) => {
+    const failure = new Error('ordinary API failure');
+    const clock = proofClock(t, async () => {
+      const rejectEarly = async () => {
+        clock.elapse(1000);
+        throw failure;
+      };
+      if (stage === 'fetch') return rejectEarly();
+      const response = Response.json({});
+      t.mock.method(response, 'json', rejectEarly);
+      return response;
+    });
+    await assert.rejects(waitForProof(sha), (error) => error === failure);
+    assert.equal(clock.calls(), 1);
+    await clock.advance(proofBudget);
+    assert.equal(clock.calls(), 1);
+  });
+}
