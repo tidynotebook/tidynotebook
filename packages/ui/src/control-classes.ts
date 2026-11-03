@@ -651,13 +651,6 @@ export function kbdClassName(): string {
   return 'inline-flex items-center rounded-sm border border-edge-line bg-surface px-2 py-1 font-mono text-small text-muted';
 }
 
-/** Inline hints suit a pointer; a keyboard reference keeps its keys on touch. */
-export function keyHintClassName({
-  reference = false,
-}: { readonly reference?: boolean } = {}): string {
-  return `inline-flex items-center${reference ? '' : ' coarse:hidden'}`;
-}
-
 /**
  * The appearance of a badge, as classes.
  *

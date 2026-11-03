@@ -102,7 +102,6 @@ export {
   focusOutline,
   focusOutlineInset,
   kbdClassName,
-  keyHintClassName,
   menuSurfaceClassName,
   menuSurfaceStyle,
   menuSurfaceValues,

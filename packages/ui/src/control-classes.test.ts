@@ -30,7 +30,6 @@ import {
   focusOutline,
   focusOutlineInset,
   kbdClassName,
-  keyHintClassName,
   menuSurfaceClassName,
   menuSurfaceStyle,
   menuSurfaceValues,
@@ -532,11 +531,6 @@ await test('a key cap is the quietest step in the code face', () => {
   assert.ok(cap.includes('font-mono'), 'the code face');
   assert.ok(cap.includes('border-edge-line'), 'the resting edge');
   assert.ok(cap.includes('rounded-sm'), 'the smallest radius');
-});
-
-await test('touch hides inline keyboard hints but keeps the keyboard reference', () => {
-  assert.ok(keyHintClassName().includes('coarse:hidden'));
-  assert.ok(!keyHintClassName({ reference: true }).includes('coarse:hidden'));
 });
 
 await test('a badge sits on a surface the contrast test holds', () => {
