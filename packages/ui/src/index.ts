@@ -165,6 +165,11 @@ export {
   transitionRaise,
   transitionSurface,
 } from './motion.ts';
+export {
+  DialogList,
+  DialogListGroup,
+  useDialogListInset,
+} from './dialog-list.tsx';
 export type { DialogWidth } from './dialog.tsx';
 export {
   Dialog,

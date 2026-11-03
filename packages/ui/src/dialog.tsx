@@ -285,6 +285,8 @@ export function Dialog({
   if (!open) return null;
 
   const screen = width === 'screen';
+  const ownsInset =
+    !phone && !screen && width !== 'settings' && width !== 'command';
   const root = dialogRootClassName(width, align, phone);
   const panel = dialogPanelClassName(width, phone, fillSheet);
 
@@ -310,9 +312,7 @@ export function Dialog({
         id={`${titleId}-panel`}
         className={`${panel} ${transitionRaise}`}
         data-scroll-frame=""
-        data-dialog-inset={
-          !phone && width !== 'settings' && width !== 'screen' ? '' : undefined
-        }
+        data-dialog-inset={ownsInset ? '' : undefined}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -371,11 +371,9 @@ export function Dialog({
           </div>
         )}
         <PhoneSheetContext.Provider
-          value={phone && width !== 'screen' && width !== 'settings'}
+          value={phone && !screen && width !== 'settings'}
         >
-          <DialogInsetContext.Provider
-            value={!phone && width !== 'settings' && width !== 'screen'}
-          >
+          <DialogInsetContext.Provider value={ownsInset}>
             <DeferredDialogOpener.Provider value={null}>
               <SectionFormContext.Provider value={false}>
                 <DialogHeaderActionsContext.Provider value={headerTarget}>
@@ -407,7 +405,7 @@ export function DialogHeaderAction({
   return target === null ? null : createPortal(children, target);
 }
 
-const PhoneSheetContext = createContext(false);
+export const PhoneSheetContext = createContext(false);
 
 const FixedDialogContext = createContext(false);
 
