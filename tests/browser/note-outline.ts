@@ -36,20 +36,54 @@ assert.equal(source.trim().split(/\s+/u).length, 7183);
 writeFileSync('.local-app/outline-safe-note.md', source);
 const results: unknown[] = [];
 
-async function rows(page: Page, expected: number): Promise<void> {
-  assert.equal(
-    await page.evaluate(async (count) => {
+async function rows(
+  page: Page,
+  expected: number,
+  lastText?: string,
+): Promise<void> {
+  const passed = await page.evaluate(
+    async ({ count, last }) => {
       const end = performance.now() + 10000;
       do {
-        if (document.querySelectorAll('[data-outline-level]').length === count)
+        const found = document.querySelectorAll('[data-outline-level]');
+        if (
+          found.length === count &&
+          (last === undefined || found.item(count - 1)?.textContent === last)
+        )
           return true;
         await new Promise(requestAnimationFrame);
       } while (performance.now() < end);
       return false;
-    }, expected),
-    true,
-    `Expected ${String(expected)} outline rows.`,
+    },
+    { count: expected, last: lastText },
   );
+  if (!passed) {
+    await page.screenshot({ path: `${output}/note-outline-failure.png` });
+    const detail = await page.evaluate(() => ({
+      url: location.href,
+      rows: Array.from(document.querySelectorAll('[data-outline-level]')).map(
+        (row) => row.textContent,
+      ),
+      words: document.querySelector('footer')?.textContent,
+    }));
+    assert.fail(
+      `Expected ${String(expected)} outline rows: ${JSON.stringify(detail)}`,
+    );
+  }
+}
+
+/** Clear the full CodeMirror document, including text outside its DOM viewport. */
+async function replaceText(page: Page, text: string): Promise<void> {
+  const editor = page.locator('.cm-content');
+  await editor.press('Control+a');
+  await editor.press('Backspace');
+  if (text !== '') await editor.fill(text);
+}
+
+/** Wait for the checkpoint before a full-page navigation or a new session. */
+async function checkpoint(page: Page): Promise<void> {
+  await page.locator('.cm-content').press('Control+s');
+  await page.locator('[data-save-state="saved-server"]').waitFor();
 }
 
 const browser = await loaded.chromium.launch();
@@ -65,6 +99,7 @@ try {
         colorScheme: scheme,
       });
       try {
+        process.stdout.write(`Checking ${String(width)} ${scheme}\n`);
         await context.addInitScript(
           (theme) => localStorage.setItem('notesapp.theme', theme),
           scheme,
@@ -76,10 +111,14 @@ try {
         const editor = page.locator('.cm-content');
         await editor.waitFor();
         const start = performance.now();
-        await editor.fill(source);
+        await replaceText(page, source);
         await rows(page, 42);
+        await page
+          .getByText('7183 words', { exact: true })
+          .waitFor({ state: 'attached' });
+        await checkpoint(page);
         const elapsed = performance.now() - start;
-        const initial = await page.evaluate(() => ({
+        const pasted = await page.evaluate(() => ({
           scroll: document.querySelector('.cm-scroller')?.scrollTop,
           rows: Array.from(
             document.querySelectorAll('[data-outline-level]'),
@@ -88,25 +127,28 @@ try {
             text: row.textContent,
           })),
         }));
-        assert.equal(initial.rows.length, 42);
-        for (const [index, row] of initial.rows.entries()) {
+        assert.equal(pasted.rows.length, 42);
+        for (const [index, row] of pasted.rows.entries()) {
           assert.equal(row.text, `Section ${String(index + 1)}`);
           assert.equal(row.level, String((index % 6) + 1));
         }
         // Reopen at the start. All rows must exist without editor scrolling.
         await page.goto(origin + otherPath);
         await page.locator('.cm-content').waitFor();
-        await page.locator('.cm-content').fill('### Other note\n');
-        await rows(page, 1);
+        await replaceText(page, '### Other note\n');
+        await rows(page, 1, 'Other note');
+        await checkpoint(page);
+        const openedAt = performance.now();
         await page.goto(origin + notePath);
         await editor.waitFor();
         await rows(page, 42);
-        assert.equal(
-          await page.evaluate(
-            () => document.querySelector('.cm-scroller')?.scrollTop,
-          ),
-          0,
-        );
+        const initial = await page.evaluate(() => ({
+          scroll: document.querySelector('.cm-scroller')?.scrollTop,
+          headings: document.querySelectorAll('[data-outline-level]').length,
+        }));
+        const initialOpenMs = performance.now() - openedAt;
+        assert.equal(initial.scroll, 0);
+        assert.equal(initial.headings, 42);
         await page.screenshot({
           path: `${output}/note-outline-initial-${String(width)}-${scheme}.png`,
           animations: 'disabled',
@@ -144,10 +186,20 @@ try {
                       scroller &&
                       scroller.scrollTop > 0 &&
                       Array.from(document.querySelectorAll('.cm-line')).some(
-                        (line) =>
-                          line.textContent?.includes(text) &&
-                          line.getBoundingClientRect().top >= bounds.top &&
-                          line.getBoundingClientRect().bottom <= bounds.bottom,
+                        (line) => {
+                          if (!line.textContent?.includes(text)) return false;
+                          const range = document.createRange();
+                          range.selectNodeContents(line);
+                          const content = range.getBoundingClientRect();
+                          const selection = window.getSelection()?.anchorNode;
+                          return (
+                            content.top >= bounds.top &&
+                            content.bottom <= bounds.bottom &&
+                            selection !== null &&
+                            selection !== undefined &&
+                            line.contains(selection)
+                          );
+                        },
                       )
                     )
                       return true;
@@ -164,22 +216,21 @@ try {
         } else {
           assert.equal(
             await page
-              .getByRole('complementary', {
-                name: 'Note outline and inbound links',
-              })
+              .locator('aside[aria-label="Note outline and inbound links"]')
               .boundingBox(),
             null,
             'The outline is hidden on phones.',
           );
         }
         // Repeated text, skipped levels, fences, and edits at the end.
-        await editor.fill(
+        await replaceText(
+          page,
           source +
             '### Repeated\n\n###### Repeated\n\n```typescript\n# Fake\n```\n',
         );
         await rows(page, 44);
-        await editor.fill(source + '### Repeated\n\n###### Renamed\n');
-        await rows(page, 44);
+        await replaceText(page, source + '### Repeated\n\n###### Renamed\n');
+        await rows(page, 44, 'Renamed');
         assert.equal(
           await page
             .locator('[data-outline-level]')
@@ -187,15 +238,15 @@ try {
             .evaluate((el) => el.textContent),
           'Renamed',
         );
-        await editor.fill(source);
+        await replaceText(page, source);
         await rows(page, 42);
-        await editor.fill('No headings here.\n');
+        await replaceText(page, 'No headings here.\n');
         await rows(page, 0);
-        await editor.fill('');
+        await replaceText(page, '');
         await rows(page, 0);
-        await editor.fill(source);
+        await replaceText(page, source);
         await rows(page, 42);
-        await editor.press('Control+s');
+        await checkpoint(page);
         await page.goto(origin + notePath);
         await editor.waitFor();
         await rows(page, 42);
@@ -215,8 +266,10 @@ try {
           width,
           scheme,
           headings: 42,
-          initialLoadMs: elapsed,
+          replaceAndSaveMs: elapsed,
+          initialOpenMs,
           initial,
+          pasted,
           errors,
         });
       } finally {
