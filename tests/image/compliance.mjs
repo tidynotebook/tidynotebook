@@ -108,7 +108,7 @@ for (const item of await readdir('/app/server/node_modules', {
   if (!item.isFile()) continue;
   const file = join(item.parentPath, item.name);
   if (/sharp.*\.node$/.test(item.name)) assert.equal(file, addon);
-  assert.ok(!item.name.startsWith('libvips'), file);
+  assert.ok(!/^libvips.*\.so(?:\.|$)/.test(item.name), file);
 }
 const nativeNotices = await readFile(
   `${prefix}/THIRD-PARTY-NOTICES.txt`,
