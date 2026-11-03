@@ -71,11 +71,15 @@ function longNote(): string {
   return Array.from({ length: 42 }, (_, index) => {
     const level = (index % 6) + 1;
     return `${'#'.repeat(level)} Section ${String(index + 1)}\n\n${'Synthetic text for a long note. '.repeat(28)}\n\n`;
-  }).join('');
+  })
+    .join('')
+    .replace('Synthetic', 'Test note');
 }
 
 await test('an initial partial tree supplies every heading in a long note', () => {
   const doc = longNote();
+  assert.equal(doc.length, 38400);
+  assert.equal(doc.trim().split(/\s+/u).length, 7183);
   const state = EditorState.create({ doc, extensions: [noteMarkdown()] });
   const rows = outlineOf(state);
   assert.equal(rows.length, 42);

@@ -6,7 +6,9 @@ const source = Array.from(
   { length: 42 },
   (_, index) =>
     `${'#'.repeat((index % 6) + 1)} Section ${String(index + 1)}\n\n${'Synthetic text for a long note. '.repeat(28)}\n\n`,
-).join('');
+)
+  .join('')
+  .replace('Synthetic', 'Test note');
 const report = [];
 for (const repeats of [1, 25]) {
   const doc = source.repeat(repeats);
