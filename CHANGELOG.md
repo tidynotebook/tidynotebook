@@ -23,6 +23,7 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### Fixed
 
+- Finish documentation search-index writes before the build stops the search service. This prevents empty or partial search files on slow filesystems.
 - Hide inline keyboard hints for touch input. Keep desktop hints and the Keyboard shortcuts reference. ([PR 546](https://github.com/tidynotebook/tidynotebook/pull/546))
 
 ## 0.23.3 - 2026-11-02
