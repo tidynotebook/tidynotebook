@@ -79,11 +79,16 @@ export function requireEnvironment(value) {
   });
 }
 
-/** @param {string} path */
-async function api(path) {
+/** @param {string} path
+ * @param {AbortSignal} [signal]
+ * @param {() => void} [checkDeadline]
+ * @returns {Promise<Record<string, unknown>>} */
+async function api(path, signal, checkDeadline = () => {}) {
+  checkDeadline();
   const response = await fetch(
     `https://api.github.com/repos/${repository}/${path}`,
     {
+      signal: signal ?? null,
       headers: {
         authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
         accept: 'application/vnd.github+json',
@@ -91,26 +96,83 @@ async function api(path) {
       },
     },
   );
+  checkDeadline();
   assert.equal(
     response.status,
     200,
     `Cannot read release proof: ${path} (${response.status}).`,
   );
-  return record(await response.json());
+  const body = await response.json();
+  checkDeadline();
+  return record(body);
 }
 
-/** @param {string} path @param {string} key */
-async function pages(path, key) {
+/** @param {string} path @param {string} key
+ * @param {(path: string) => Promise<Record<string, unknown>>} [request]
+ * @returns {Promise<unknown[]>} */
+async function pages(path, key, request = api) {
   /** @type {unknown[]} */
   const result = [];
   for (let page = 1; page <= 50; page++) {
-    const body = await api(`${path}&per_page=100&page=${page}`);
+    /** @type {Record<string, unknown>} */
+    const body = await request(`${path}&per_page=100&page=${page}`);
     const items = body[key];
     assert.ok(Array.isArray(items));
     result.push(...items);
     if (items.length < 100) return result;
   }
   throw new Error('The release proof has too many pages.');
+}
+
+/** Wait for exact-source push proof within one monotonic forty-minute budget.
+ * @param {string} sha */
+export async function waitForProof(sha) {
+  const deadline = performance.now() + 40 * 60 * 1000;
+  let proofError = new assert.AssertionError({
+    message: 'The latest push CI Check must pass on this exact source SHA.',
+  });
+  const controller = new AbortController();
+  const timer = setTimeout(
+    () => controller.abort(proofError),
+    Math.max(0, deadline - performance.now()),
+  );
+  const checkDeadline = () => {
+    if (performance.now() >= deadline) controller.abort(proofError);
+    controller.signal.throwIfAborted();
+  };
+  /** @param {string} path */
+  const request = (path) => api(path, controller.signal, checkDeadline);
+  try {
+    for (;;) {
+      checkDeadline();
+      // API failures stop immediately. Only an absent or rejected proof retries.
+      const runs = await pages(
+        `actions/workflows/ci.yml/runs?head_sha=${sha}&event=push`,
+        'workflow_runs',
+        request,
+      );
+      const checks = await pages(
+        `commits/${sha}/check-runs?check_name=Check&filter=latest`,
+        'check_runs',
+        request,
+      );
+      checkDeadline();
+      try {
+        requireProof(runs, checks, sha);
+        checkDeadline();
+        return;
+      } catch (error) {
+        if (!(error instanceof assert.AssertionError)) throw error;
+        proofError = error;
+        checkDeadline();
+        await new Promise((resolve) =>
+          setTimeout(resolve, Math.min(10000, deadline - performance.now())),
+        );
+      }
+    }
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export async function main() {
@@ -136,25 +198,7 @@ export async function main() {
     const tag = await api(`commits/v${version}`);
     assert.equal(tag.sha, sha, 'The version tag moved.');
   }
-  // A push run on main can start before its CI run finishes. Recheck for at
-  // most forty minutes. An API error fails immediately.
-  for (let attempt = 0; ; attempt++) {
-    const runs = await pages(
-      `actions/workflows/ci.yml/runs?head_sha=${sha}&event=push`,
-      'workflow_runs',
-    );
-    const checks = await pages(
-      `commits/${sha}/check-runs?check_name=Check&filter=latest`,
-      'check_runs',
-    );
-    try {
-      requireProof(runs, checks, sha);
-      break;
-    } catch (error) {
-      if (attempt === 240) throw error;
-      await new Promise((resolve) => setTimeout(resolve, 10000));
-    }
-  }
+  await waitForProof(sha);
   if (process.env.GITHUB_OUTPUT)
     appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\n`);
 }
