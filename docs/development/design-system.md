@@ -18,7 +18,7 @@ Rows get height from a line box and equal vertical padding. Do not use a
 minimum height to add blank space. Keep glyphs on the padding line. Extend a
 pointer target outward without moving its glyph. Keep one leading content
 edge in each container. Nesting adds the shared indent step. A leaf keeps an
-empty disclosure slot. Calendar cells keep control height in equal columns.
+empty disclosure slot. Calendar cells keep control height in equal columns. The shared checkout frame recipe uses `min-h-checkout-frame` to reserve the initial vendor frame height.
 
 Keep items closer than groups. The group gap equals the container padding.
 The sidebar keeps its hairlines at rest. Other fixed regions show a hairline

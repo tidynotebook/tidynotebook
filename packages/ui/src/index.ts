@@ -152,6 +152,7 @@ export {
 } from './layout.tsx';
 export type { PageSection } from './layout-classes.ts';
 export {
+  checkoutFrameClassName,
   pageColumnClassName,
   pageGroupLabelClassName,
   pageListClassName,
