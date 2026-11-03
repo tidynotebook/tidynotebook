@@ -1,6 +1,6 @@
 # Core v0.23.5 publication plan
 
-- Status: Proposed. Publication is not authorized.
+Status: proposed. Publication is not authorized.
 
 This plan prepares core image and GitHub Release publication. It does not
 permit a tag, workflow dispatch, registry write or deployment. The changelog
