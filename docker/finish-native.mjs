@@ -10,6 +10,7 @@ import {
 } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import { nativeInputs } from './native-inputs.mjs';
+import { record } from '../tools/workspace.mjs';
 
 const prefix = '/opt/notesapp-native';
 const manifest = await nativeInputs();
@@ -53,13 +54,17 @@ execFileSync('cc', [
   '-o',
   join(prefix, 'bin/native-versions'),
 ]);
-const actual = JSON.parse(
-  execFileSync(join(prefix, 'bin/native-versions'), { encoding: 'utf8' }),
+const actual = record(
+  JSON.parse(
+    execFileSync(join(prefix, 'bin/native-versions'), { encoding: 'utf8' }),
+  ),
 );
 for (const name of ['heif', 'png', 'expat', 'vips']) {
+  const row = record(actual[name]);
   if (
-    actual[name].version !== manifest.versions[name] ||
-    !actual[name].path.startsWith(prefix + '/')
+    row.version !== manifest.versions[name] ||
+    typeof row.path !== 'string' ||
+    !row.path.startsWith(prefix + '/')
   )
     throw new Error(`Loaded native library differs: ${name}`);
 }

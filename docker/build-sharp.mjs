@@ -10,13 +10,12 @@ import {
 } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
+import { readJson, record } from '../tools/workspace.mjs';
 
 const require = createRequire('/prod/server/package.json');
 const sharpRequire = createRequire(require.resolve('sharp'));
-const sharp = dirname(sharpRequire.resolve('sharp/package.json'));
-const manifest = JSON.parse(
-  await readFile(join(sharp, 'package.json'), 'utf8'),
-);
+const sharp = dirname(dirname(require.resolve('sharp')));
+const manifest = await readJson(join(sharp, 'package.json'));
 execFileSync(process.execPath, ['install/build.js'], {
   cwd: sharp,
   stdio: 'inherit',
@@ -40,7 +39,7 @@ await rm(join(sharp, 'src/build'), { recursive: true });
 await mkdir(release, { recursive: true });
 await writeFile(join(release, addons[0]), addon);
 const removed = [];
-for (const name of Object.keys(manifest.optionalDependencies)) {
+for (const name of Object.keys(record(manifest.optionalDependencies))) {
   if (!name.startsWith('@img/sharp-')) continue;
   let file;
   try {
