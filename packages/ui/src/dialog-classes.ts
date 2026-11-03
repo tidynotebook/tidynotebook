@@ -21,8 +21,8 @@ import { fixedRegionClasses } from './scroll-classes.ts';
 /**
  * How wide a dialog panel is.
  *
- * `command` keeps the medium width and vertical inset. Its regions own
- * the horizontal inset, so scrolling rows keep room for their optical fill.
+ * `command` keeps the medium width. Its content frame owns the block inset
+ * and gaps. Regions own the same side inset, so rows keep their optical fill.
  *
  * `screen` is no panel at all: the content fills the screen over a deeper
  * scrim, with no fill, edge or radius of its own. It is for content that a
@@ -72,7 +72,7 @@ export function dialogPanelClassName(
       : width === 'large'
         ? 'max-w-3xl'
         : 'max-w-xl';
-  return `state-overlay relative flex w-full flex-col gap-6 ${width === 'command' ? 'py-6' : 'p-6'} ${measure} max-h-full overflow-hidden overscroll-contain rounded-xl border border-edge-subtle bg-card text-strong shadow-modal outline-none`;
+  return `state-overlay relative flex w-full flex-col ${width === 'command' ? '' : 'gap-6 p-6'} ${measure} max-h-full overflow-hidden overscroll-contain rounded-xl border border-edge-subtle bg-card text-strong shadow-modal outline-none`;
 }
 
 /** The title of a dialog, as classes. */

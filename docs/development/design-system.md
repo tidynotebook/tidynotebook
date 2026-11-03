@@ -88,8 +88,8 @@ doubled-class selectors or inline spacing styles. Runtime overlay and viewport c
 - `Sheet` owns the phone header, scrolling body and pinned footer. Header
   glyphs align with the body inset. Its footer has one full-width primary
   button and adds the safe area at the bottom.
-- `Dialog` owns equal desktop padding and title, body and footer gaps.
-  Command regions own the horizontal inset. Footers align inline actions to the end.
+- `Dialog` owns equal desktop padding and title, body and footer gaps. The command frame owns block insets and gaps; regions own equal side insets (desktop 6, phone 4) for row fills.
+  The phone handle and safe area are sheet chrome outside the content inset. Footers align inline actions to the end.
 - `Menu` and `Popover` own equal padding, the overlay surface and menu rows.
 
 ## Sidebar

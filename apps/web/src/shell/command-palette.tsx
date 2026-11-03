@@ -9,6 +9,7 @@ import {
   useDialogListInset,
   DialogList,
   DialogListGroup,
+  Stack,
   EmptyState,
   FileTextIcon,
   LoadingState,
@@ -257,7 +258,7 @@ function PaletteDialog({
   /** Closes the palette, then runs one piece of work. */
   readonly closeThen: (work: () => void) => void;
 }): ReactNode {
-  // Each region owns one dialog inset, including the scrolling list.
+  // The content frame and its regions share one outer inset.
   const contentInset = useDialogListInset();
   const navigate = useNavigate();
   const actions = useMemo(() => readActions(), [readActions]);
@@ -375,11 +376,10 @@ function PaletteDialog({
     [rows.length],
   );
   return (
-    <>
+    <DialogListGroup>
       <Inline
         gap={2}
         padX={contentInset}
-        padY={1}
         align="center"
         as="div"
         data-scroll-edge="above"
@@ -437,16 +437,16 @@ function PaletteDialog({
         {announcement}
       </p>
       {stepChoices?.status === 'ready' && stepChoices.notice !== null ? (
-        <Inset
-          padX={contentInset}
-          padY={2}
-          as="p"
-          className="text-secondary text-muted"
-        >
+        <Inset padX={contentInset} as="p" className="text-secondary text-muted">
           {stepChoices.notice}
         </Inset>
       ) : null}
-      <DialogListGroup>
+      <Stack
+        gap={contentInset}
+        className={
+          step !== null && rows.length === 0 ? 'hidden' : 'overflow-hidden'
+        }
+      >
         {step === null ? (
           <Inset
             data-search-scope=""
@@ -581,7 +581,7 @@ function PaletteDialog({
             </Fragment>
           ))}
         </DialogList>
-      </DialogListGroup>
+      </Stack>
       {step === null || stepChoices === null ? (
         content.pending ? (
           <Inset
@@ -604,7 +604,7 @@ function PaletteDialog({
         ) : null
       ) : stepChoices.status === 'loading' ||
         stepChoices.status === 'unavailable' ? (
-        <Inset padX={contentInset === 4 ? 2 : contentInset} padY={2} as="div">
+        <Inset padX={contentInset} as="div">
           {stepChoices.status === 'loading' ? (
             <LoadingState shape="list" rows={3} label={stepChoices.label} />
           ) : (
@@ -642,6 +642,6 @@ function PaletteDialog({
           {step.noMatch}
         </Inset>
       ) : null}
-    </>
+    </DialogListGroup>
   );
 }

@@ -21,19 +21,21 @@ export function DialogList({
   );
 }
 
-/** Groups dialog list content without clipping the optical row gutter. */
+/** Owns the command content inset and gaps; regions keep the row fill gutter. */
 export function DialogListGroup({
   children,
 }: {
   readonly children: ReactNode;
 }): ReactNode {
+  const inset = useDialogListInset();
   return (
-    <Stack
-      gap={{ fine: 6, coarse: 4 }}
-      padY={{ fine: 0, coarse: 4 }}
-      className="overflow-hidden"
-    >
-      {children}
-    </Stack>
+    <>
+      <Stack gap={inset} padY={inset} className="min-h-0 overflow-hidden">
+        {children}
+      </Stack>
+      {inset === 4 ? (
+        <div aria-hidden="true" className="h-safe shrink-0" />
+      ) : null}
+    </>
   );
 }
