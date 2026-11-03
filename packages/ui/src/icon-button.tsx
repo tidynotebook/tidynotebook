@@ -3,12 +3,6 @@ import { buttonClassName, sidebarViewClassName } from './control-classes.ts';
 import { Button } from './controls.tsx';
 import { IconSlot } from './primitives.tsx';
 export type IconButtonSize = 'row' | 'toolbar' | 'header' | 'rail';
-const positions = {
-  row: 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2',
-  header: 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2',
-  toolbar: '',
-  rail: '',
-} as const;
 export function IconButton({
   glyph,
   size = 'toolbar',
@@ -37,6 +31,11 @@ export function IconButton({
     readonly children: ReactNode;
   }) => ReactNode;
 }): ReactNode {
+  const disclosure = size === 'row' && props.compact;
+  const position =
+    size === 'toolbar' || size === 'rail'
+      ? ''
+      : `absolute top-1/2 -translate-y-1/2 ${disclosure ? '-left-2 coarse:-left-3' : 'left-1/2 -translate-x-1/2'}`;
   const control = render ? (
     render({
       className:
@@ -61,10 +60,10 @@ export function IconButton({
       icon={glyph}
       iconSize={size}
       label={label}
-      className={`${positions[size]} ${current ? 'aria-pressed:bg-active aria-pressed:text-strong aria-pressed:hover:bg-active' : ''} ${reveal ? rowActionVisibility : ''} ${className}`}
+      className={`${position} ${current ? 'aria-pressed:bg-active aria-pressed:text-strong aria-pressed:hover:bg-active' : ''} ${reveal ? rowActionVisibility : ''} ${className}`}
     />
   );
-  return size === 'row' || size === 'header' ? (
+  return position ? (
     <IconSlot className={slotClassName}>{control}</IconSlot>
   ) : (
     control

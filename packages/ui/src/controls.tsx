@@ -236,6 +236,7 @@ export function Button({
             size,
             tone,
             iconOnly: !hasChildren,
+            iconSize,
           })}
         >
           {content}
