@@ -26,7 +26,7 @@ jobs:
       actions: read
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 5
     outputs:
       base: ${{ steps.scope.outputs.base }}
       source: ${{ steps.scope.outputs.source }}
