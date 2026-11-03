@@ -7,6 +7,24 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## Unreleased
 
+## 0.23.4 - 2026-11-03
+
+### Security
+
+- Update DOMPurify to 3.4.17, fast-uri to 3.1.9 and 4.2.3, undici to 7.30.1, and qs to 6.17.1. These changes fix 17 dependency alerts. The affected DOMPurify and fast-uri versions ship in v0.23.3. ([PR 548](https://github.com/tidynotebook/tidynotebook/pull/548))
+- Update the test-only happy-dom dependency to 21.0.4. ([PR 538](https://github.com/tidynotebook/tidynotebook/pull/538))
+
+### Changed
+
+- Use Node 26.13.0 with matching Docker, local runtime, performance image and source records. Contributors must use this Node version. ([PR 541](https://github.com/tidynotebook/tidynotebook/pull/541))
+- Update six runtime dependencies and use one CodeMirror autocomplete version. ([PR 542](https://github.com/tidynotebook/tidynotebook/pull/542))
+- Update the build and test toolchain. ([PR 539](https://github.com/tidynotebook/tidynotebook/pull/539))
+- Update the pinned MinIO test-service image. ([PR 526](https://github.com/tidynotebook/tidynotebook/pull/526))
+
+### Fixed
+
+- Hide inline keyboard hints for touch input. Keep desktop hints and the Keyboard shortcuts reference. ([PR 546](https://github.com/tidynotebook/tidynotebook/pull/546))
+
 ## 0.23.3 - 2026-11-02
 
 ### Changed
