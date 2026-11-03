@@ -2,11 +2,13 @@ import {
   fixedRegionClasses,
   observeElementScrollEdges,
   Inline,
-  Stack,
   Inset,
   bareFieldClassName,
   Button,
   Dialog,
+  useDialogListInset,
+  DialogList,
+  DialogListGroup,
   EmptyState,
   FileTextIcon,
   LoadingState,
@@ -223,14 +225,22 @@ export function CommandPalette({
 
   if (!open) return null;
   return (
-    <PaletteDialog
-      {...props}
+    <Dialog
+      open
       onClose={() => onOpenChange(false)}
-      closeThen={(work) => {
-        setChosen({ run: work });
-        onOpenChange(false);
-      }}
-    />
+      title="Search notes and run actions"
+      titleId="command-palette-title"
+      hideTitle
+      width="command"
+    >
+      <PaletteDialog
+        {...props}
+        closeThen={(work) => {
+          setChosen({ run: work });
+          onOpenChange(false);
+        }}
+      />
+    </Dialog>
   );
 }
 
@@ -242,13 +252,13 @@ function PaletteDialog({
   store,
   accountId,
   actions: readActions,
-  onClose,
   closeThen,
 }: PaletteProps & {
-  readonly onClose: () => void;
   /** Closes the palette, then runs one piece of work. */
   readonly closeThen: (work: () => void) => void;
 }): ReactNode {
+  // Each region owns one dialog inset, including the scrolling list.
+  const contentInset = useDialogListInset();
   const navigate = useNavigate();
   const actions = useMemo(() => readActions(), [readActions]);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -365,17 +375,10 @@ function PaletteDialog({
     [rows.length],
   );
   return (
-    <Dialog
-      open
-      onClose={onClose}
-      title="Search notes and run actions"
-      titleId="command-palette-title"
-      hideTitle
-      width="medium"
-    >
+    <>
       <Inline
         gap={2}
-        padX={4}
+        padX={contentInset}
         padY={1}
         align="center"
         as="div"
@@ -434,19 +437,20 @@ function PaletteDialog({
         {announcement}
       </p>
       {stepChoices?.status === 'ready' && stepChoices.notice !== null ? (
-        <Inset padX={4} padY={2} as="p" className="text-secondary text-muted">
+        <Inset
+          padX={contentInset}
+          padY={2}
+          as="p"
+          className="text-secondary text-muted"
+        >
           {stepChoices.notice}
         </Inset>
       ) : null}
-      <Stack
-        gap={{ fine: 6, coarse: 4 }}
-        padY={{ fine: 0, coarse: 4 }}
-        className="overflow-hidden"
-      >
+      <DialogListGroup>
         {step === null ? (
           <Inset
             data-search-scope=""
-            padX={4}
+            padX={contentInset}
             as="p"
             className="text-secondary text-muted"
           >
@@ -454,11 +458,9 @@ function PaletteDialog({
             {content.offline ? ' · Offline, results from this device' : ''}
           </Inset>
         ) : null}
-        <Inset
+        <DialogList
           ref={listRef}
           id="command-palette-list"
-          padX={4}
-          as="ul"
           className="ui-content-list max-h-80 list-none overflow-y-auto empty:hidden"
           role="listbox"
           aria-label={stepAction?.label ?? 'Results'}
@@ -578,24 +580,34 @@ function PaletteDialog({
               </li>
             </Fragment>
           ))}
-        </Inset>
-      </Stack>
+        </DialogList>
+      </DialogListGroup>
       {step === null || stepChoices === null ? (
         content.pending ? (
-          <Inset as="p" className="text-secondary text-muted" role="status">
+          <Inset
+            padX={contentInset === 6 ? 6 : 0}
+            as="p"
+            className="text-secondary text-muted"
+            role="status"
+          >
             Searching...
           </Inset>
         ) : rows.length === 0 ? (
-          <Inset as="p" className="text-secondary text-muted" role="status">
+          <Inset
+            padX={contentInset === 6 ? 6 : 0}
+            as="p"
+            className="text-secondary text-muted"
+            role="status"
+          >
             No note and no action matches that.
           </Inset>
         ) : null
       ) : stepChoices.status === 'loading' ? (
-        <Inset padX={2} padY={2} as="div">
+        <Inset padX={contentInset === 6 ? 8 : 2} padY={2} as="div">
           <LoadingState shape="list" rows={3} label={stepChoices.label} />
         </Inset>
       ) : stepChoices.status === 'unavailable' ? (
-        <Inset padX={2} padY={2} as="div">
+        <Inset padX={contentInset === 6 ? 8 : 2} padY={2} as="div">
           <Notice tone="info" message={stepChoices.message} />
         </Inset>
       ) : stepChoices.choices.length === 0 ? (
@@ -625,10 +637,14 @@ function PaletteDialog({
           />
         )
       ) : rows.length === 0 ? (
-        <Inset as="p" className="text-secondary text-muted">
+        <Inset
+          padX={contentInset === 6 ? 6 : 0}
+          as="p"
+          className="text-secondary text-muted"
+        >
           {step.noMatch}
         </Inset>
       ) : null}
-    </Dialog>
+    </>
   );
 }

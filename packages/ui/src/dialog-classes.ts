@@ -21,6 +21,9 @@ import { fixedRegionClasses } from './scroll-classes.ts';
 /**
  * How wide a dialog panel is.
  *
+ * `command` keeps the medium width and vertical inset. Its regions own
+ * the horizontal inset, so scrolling rows keep room for their optical fill.
+ *
  * `screen` is no panel at all: the content fills the screen over a deeper
  * scrim, with no fill, edge or radius of its own. It is for content that a
  * person looks at rather than reads, such as a picture in the image viewer
@@ -31,7 +34,7 @@ import { fixedRegionClasses } from './scroll-classes.ts';
  * scroll on their own, so the panel itself does not scroll.
  */
 export type DialogWidth =
-  'small' | 'medium' | 'large' | 'template' | 'settings' | 'screen';
+  'small' | 'medium' | 'large' | 'template' | 'settings' | 'screen' | 'command';
 
 /** Where a dialog panel sits on the screen. */
 export type DialogAlign = 'top' | 'center' | 'sheet';
@@ -69,7 +72,7 @@ export function dialogPanelClassName(
       : width === 'large'
         ? 'max-w-3xl'
         : 'max-w-xl';
-  return `state-overlay relative flex w-full flex-col gap-6 p-6 ${measure} max-h-full overflow-hidden overscroll-contain rounded-xl border border-edge-subtle bg-card text-strong shadow-modal outline-none`;
+  return `state-overlay relative flex w-full flex-col gap-6 ${width === 'command' ? 'py-6' : 'p-6'} ${measure} max-h-full overflow-hidden overscroll-contain rounded-xl border border-edge-subtle bg-card text-strong shadow-modal outline-none`;
 }
 
 /** The title of a dialog, as classes. */
