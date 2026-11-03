@@ -373,15 +373,15 @@ export function Dialog({
         <PhoneSheetContext.Provider
           value={phone && !screen && width !== 'settings'}
         >
-          <DialogInsetContext.Provider value={ownsInset}>
+          <DialogInsetContext value={ownsInset}>
             <DeferredDialogOpener value={null}>
-              <SectionFormContext.Provider value={false}>
-                <DialogHeaderActionsContext.Provider value={headerTarget}>
+              <SectionFormContext value={false}>
+                <DialogHeaderActionsContext value={headerTarget}>
                   {children}
-                </DialogHeaderActionsContext.Provider>
-              </SectionFormContext.Provider>
+                </DialogHeaderActionsContext>
+              </SectionFormContext>
             </DeferredDialogOpener>
-          </DialogInsetContext.Provider>
+          </DialogInsetContext>
         </PhoneSheetContext.Provider>
       </div>
     </div>
