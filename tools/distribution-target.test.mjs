@@ -40,88 +40,40 @@ await test('reviewed targets preserve amd64 bytes and change only arm64 identiti
   );
   for (const architecture of ['amd64', 's390x', 'arm', 'unknown', ''])
     assert.throws(() => distributionArchitecture(architecture), /Unsupported/);
-  await validateNativeConsumer(join(root, 'apps/server'), 'x64');
 });
 
-await test('both native targets bind the complete library version map and refuse changes', async () => {
+await test('both source-built targets refuse stale versions and target identities', async () => {
   const directory = await mkdtemp(join(root, '.tooling/native-consumer-'));
   try {
+    await mkdir(join(directory, 'node_modules/sharp'), { recursive: true });
+    await writeFile(
+      join(directory, 'node_modules/sharp/package.json'),
+      JSON.stringify({ name: 'sharp', main: 'index.cjs' }),
+    );
+    await writeFile(
+      join(directory, 'node_modules/sharp/index.cjs'),
+      "module.exports = {versions:{vips:'8.18.7'}};",
+    );
+    const buildFile = join(directory, 'build.json');
     for (const arch of ['x64', 'arm64']) {
-      const name = `@img/sharp-libvips-linux-${arch}`;
-      const library = join(directory, 'node_modules', name);
-      const sharp = join(directory, 'node_modules/sharp');
-      await mkdir(library, { recursive: true });
-      await mkdir(sharp, { recursive: true });
-      await writeFile(
-        join(sharp, 'package.json'),
-        JSON.stringify({ name: 'sharp', main: 'index.cjs' }),
-      );
-      await writeFile(join(sharp, 'index.cjs'), 'module.exports = {};');
       const manifest = await distributionManifest(
         join(root, 'tools/native-sources.json'),
         arch,
       );
-      const exports = {
-        './package': './package.json',
-        './versions': './versions.json',
-      };
-      await writeFile(
-        join(library, 'package.json'),
-        JSON.stringify({ name, version: manifest.packageVersion, exports }),
-      );
-      await writeFile(
-        join(library, 'versions.json'),
-        JSON.stringify(manifest.versions),
-      );
-      await validateNativeConsumer(directory, arch);
-      // Each fixture has its own path, so Node cannot reuse required JSON.
-      for (const mismatch of [
-        {
-          label: 'version',
-          name,
-          version: '0.0.0',
-          versions: manifest.versions,
-        },
-        {
-          label: 'name',
-          name: '@img/unreviewed',
-          version: manifest.packageVersion,
-          versions: manifest.versions,
-        },
-        {
-          label: 'versions',
-          name,
-          version: manifest.packageVersion,
-          versions: { ...record(manifest.versions), vips: '0.0.0' },
-        },
+      await writeFile(buildFile, JSON.stringify(manifest));
+      await validateNativeConsumer(directory, arch, buildFile);
+      for (const changed of [
+        { package: 'unreviewed' },
+        { packageVersion: '0' },
+        { platform: 'linux-unknown-glibc' },
+        { versions: { ...record(manifest.versions), heif: '1.23.5' } },
+        { versions: { ...record(manifest.versions), png: '1.6.58' } },
+        { versions: { ...record(manifest.versions), expat: '2.8.5' } },
       ]) {
-        const wrong = join(directory, `wrong-${arch}-${mismatch.label}`);
-        await mkdir(join(wrong, 'node_modules', name), { recursive: true });
-        await mkdir(join(wrong, 'node_modules/sharp'), { recursive: true });
-        await writeFile(
-          join(wrong, 'node_modules/sharp/package.json'),
-          JSON.stringify({ main: 'index.cjs' }),
-        );
-        await writeFile(
-          join(wrong, 'node_modules/sharp/index.cjs'),
-          'module.exports = {};',
-        );
-        await writeFile(
-          join(wrong, 'node_modules', name, 'package.json'),
-          JSON.stringify({
-            name: mismatch.name,
-            version: mismatch.version,
-            exports,
-          }),
-        );
-        await writeFile(
-          join(wrong, 'node_modules', name, 'versions.json'),
-          JSON.stringify(mismatch.versions),
-        );
+        await writeFile(buildFile, JSON.stringify({ ...manifest, ...changed }));
         await assert.rejects(
-          validateNativeConsumer(wrong, arch),
+          validateNativeConsumer(directory, arch, buildFile),
           /does not match/,
-          `${arch}: ${mismatch.label}`,
         );
       }
     }

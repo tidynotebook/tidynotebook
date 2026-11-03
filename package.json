@@ -71,6 +71,8 @@
     "fake-indexeddb": "6.2.7",
     "fastify": "catalog:",
     "happy-dom": "21.0.4",
+    "node-addon-api": "8.9.2",
+    "node-gyp": "13.1.0",
     "oxc-parser": "0.156.0",
     "oxlint": "1.88.0",
     "oxlint-tsgolint": "7.0.2005",

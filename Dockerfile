@@ -6,7 +6,47 @@ ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN npm install -g --allow-scripts=pnpm pnpm@12.3.4
 
-FROM base AS builder
+FROM base AS native-toolchain
+# Build-only Rust compiler. No Rust toolchain is copied to the runner.
+COPY --from=rust:1.99.1-slim-bookworm@sha256:24707e70a4f1e23d9a7b25202ec43126d28a52294b96aad5c670df1fd1f1d400 /usr/local/cargo /usr/local/cargo
+COPY --from=rust:1.99.1-slim-bookworm@sha256:24707e70a4f1e23d9a7b25202ec43126d28a52294b96aad5c670df1fd1f1d400 /usr/local/rustup /usr/local/rustup
+ENV RUSTUP_HOME=/usr/local/rustup CARGO_HOME=/usr/local/cargo
+ENV PATH="/opt/native-tools/bin:/usr/local/cargo/bin:$PATH"
+ENV CARGO_HTTP_TIMEOUT=30 CARGO_HTTP_LOW_SPEED_LIMIT=1024 CARGO_NET_RETRY=2
+# Fix the build tool packages to a signed Debian snapshot.
+RUN rm /etc/apt/sources.list.d/debian.sources && \
+    printf '%s\n' \
+      'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/20261103T000000Z bookworm main' \
+      'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian-security/20261103T000000Z bookworm-security main' \
+      > /etc/apt/sources.list && \
+    apt-get -o Acquire::http::Timeout=30 -o Acquire::Retries=2 update && \
+    apt-get -o Acquire::http::Timeout=30 -o Acquire::Retries=2 install --no-install-recommends -y \
+      autoconf automake build-essential cmake curl gettext git gperf libssl-dev \
+      nasm patch pkg-config python3-venv xz-utils && \
+    rm -rf /var/lib/apt/lists/*
+RUN python3 -m venv /opt/native-tools && \
+    pip install --no-cache-dir --timeout 30 meson==1.12.1 ninja==1.13.0 && \
+    cargo install cargo-c --version 0.10.26 --locked
+
+FROM native-toolchain AS native-libraries
+WORKDIR /app
+COPY tools/native-sources.json tools/distribution-target.mjs tools/native-sources.mjs tools/workspace.mjs ./tools/
+RUN --mount=type=bind,source=tools,target=/source-inputs,readonly \
+    NATIVE_SOURCE_PROGRESS=true node tools/native-sources.mjs /sources /source-inputs/native-source-cache/native
+COPY docker/native-inputs.mjs docker/native-source.mjs docker/prepare-native.mjs ./docker/
+RUN node docker/prepare-native.mjs && \
+    cp /upstream/platforms/linux-x64/Toolchain.cmake /root/Toolchain.cmake && \
+    cp /upstream/platforms/linux-x64/meson.ini /root/meson.ini
+RUN --network=none PLATFORM="linux-$(node -p process.arch)" PKG_CONFIG="pkg-config --static" \
+      MESON="--native-file=/root/meson.ini" FLAGS="" RUSTFLAGS="" \
+      CARGO_BUILD_JOBS=2 bash -c 'source /upstream/versions.properties; source /upstream/build-fixed.sh'
+COPY docker/finish-native.mjs docker/native-versions.c ./docker/
+RUN --network=none node docker/finish-native.mjs
+
+FROM native-toolchain AS builder
+COPY --from=native-libraries /target /target
+COPY --from=native-libraries /opt/notesapp-native /opt/notesapp-native
+ENV LD_LIBRARY_PATH=/opt/notesapp-native/lib
 WORKDIR /app
 
 # Copy every workspace manifest that the context keeps, so the frozen install
@@ -43,6 +83,7 @@ COPY apps ./apps
 # Build contracts, libraries, web client, and server
 RUN pnpm build
 RUN pnpm --filter @notesapp/server deploy --prod /prod/server
+RUN node docker/build-sharp.mjs
 RUN node tools/runtime-dependencies.mjs /prod/server
 RUN node tools/distribution-notices.mjs /prod/server /prod/licenses
 RUN node tools/distribution-notices.mjs /usr/local/lib/node_modules/npm /prod/licenses/base-npm
@@ -77,6 +118,7 @@ RUN mkdir -p /var/lib/notesapp && chown -R notesapp:notesapp /var/lib/notesapp
 WORKDIR /app
 
 # Copy production server dependencies and built web assets only.
+COPY --from=native-libraries /opt/notesapp-native /opt/notesapp-native
 COPY --chown=notesapp:notesapp --from=builder /prod/server /app/server
 COPY --chown=notesapp:notesapp --from=builder /app/apps/web/dist /app/web/dist
 COPY --chown=notesapp:notesapp --from=builder /prod/licenses /app/licenses
@@ -89,6 +131,7 @@ COPY --chown=notesapp:notesapp docker/healthcheck.mjs /app/healthcheck.mjs
 
 USER notesapp:notesapp
 
+ENV LD_LIBRARY_PATH=/opt/notesapp-native/lib
 ENV NODE_ENV=production
 ENV NOTESAPP_HOST=0.0.0.0
 ENV NOTESAPP_PORT=3000
