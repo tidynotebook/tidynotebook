@@ -188,7 +188,10 @@ export function buttonClassName(
 
   const compactSize = compact || size === 'compact';
   const iconSizes = {
-    row: 'h-7 w-7 coarse:h-9 coarse:w-10',
+    // The target uses leading row padding; the glyph keeps its original slot.
+    row: compact
+      ? 'h-7 w-7 pl-1 coarse:h-9 coarse:w-8 coarse:pl-2'
+      : 'h-7 w-7 coarse:h-9 coarse:w-10',
     toolbar: 'h-7 w-7 coarse:h-10 coarse:w-10',
     header: 'h-7 w-7 coarse:h-11 coarse:w-11',
     rail: 'h-7 w-7 coarse:h-11 coarse:w-11',
@@ -211,16 +214,23 @@ export function buttonClassName(
  *
  * The button keeps its 44 px touch target. A small surface is 32 px under
  * touch and 28 px on a desktop. It takes the focus treatment, fill, and hover
- * state that a person sees. An icon-only surface stays square.
+ * state that a person sees. An icon-only surface stays square. A disclosure
+ * uses glyph padding to keep its fill inside the row focus outline.
  */
 export function compactButtonVisualClassName(options: {
   readonly variant?: ButtonVariant | undefined;
   readonly size?: ButtonSize | undefined;
   readonly tone?: ButtonTone | undefined;
   readonly iconOnly: boolean;
+  readonly iconSize?: IconSize | undefined;
 }): string {
   const variant = options.variant ?? 'primary';
-  const sizeClass = options.iconOnly ? 'h-7 w-7' : 'h-7 px-2';
+  const sizeClass =
+    options.iconSize === 'row'
+      ? 'p-0.5'
+      : options.iconOnly
+        ? 'h-7 w-7'
+        : 'h-7 px-2';
   return [
     `inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md ${transitionSurface}`,
     'group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-focus',

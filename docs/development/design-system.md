@@ -99,10 +99,10 @@ belongs inside each region. The top holds the phone header, workspace switcher
 and toolbar. Only the tree scrolls. The status footer has no extra panel
 padding below it. Phone safe area belongs below the status line.
 
-Sidebar disclosure and leaf slots reserve the full row action width. Targets
-and hover fills stay clear of content. Names use ellipses and full accessible
-names. Desktop tooltips show full names. Phone menus stay visible; fine pointer
-menus show on hover and focus. Views without menu actions keep an empty slot.
+Sidebar disclosures keep targets in the row and fills inside its focus outline,
+clear of folder icons. Leaf slots align icons. Names use ellipses and full
+accessible names. Desktop tooltips show full names. Phone menus stay visible;
+fine pointer menus show on hover and focus. Other views keep an empty menu slot.
 
 Rail buttons share one size role. The rail owns padding and item gap; the
 status line uses the panel inset and its own line height.
