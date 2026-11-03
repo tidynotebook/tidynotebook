@@ -72,6 +72,21 @@ Scanner silence does not replace the loaded-library and source proof. Retain
 findings and state coverage gaps. Do not suppress version matches to reduce a
 finding count.
 
+## Compatible runtime dependency patch
+
+The first exact-image scan also found
+[CVE-2026-111997](https://github.com/beaugunderson/ip-address/security/advisories/GHSA-rxp7-6hxx-x8q5)
+in ip-address 10.7.3. The approved lockfile patch selects 10.7.5 for both
+consumers, within their existing ranges. It includes the fix from 10.7.4.
+No override or manifest change is needed for this patch.
+
+The production consumer is `@fastify/rate-limit` 11.2.1. Its `normalizeIP`
+function calls Node's `isIPv6` before `Address6`. The reported percent-sign
+and line-terminator input fails that guard. This is a call-path limit, not a
+library fix. Direct checks of the fixed parser retain normal IPv6 results
+and reject the reported input. The final image scan must confirm that the
+older package version is absent.
+
 ## Worker and platform scope stays open
 
 The worker still inherits server environment, file and network access. Its
