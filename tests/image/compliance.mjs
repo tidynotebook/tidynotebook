@@ -36,6 +36,7 @@ async function json(file) {
   return record(JSON.parse(await readFile(file, 'utf8')));
 }
 assert.equal(process.platform, 'linux');
+assert.equal(process.getuid?.(), 10001);
 assert.ok(['x64', 'arm64'].includes(process.arch));
 const arch = process.arch;
 const require = createRequire('/app/server/package.json');
@@ -185,6 +186,13 @@ for (const folder of [
     }
   }
 }
+process.stdout.write(
+  JSON.stringify({
+    architecture: arch,
+    loadedNative: actual,
+    libraries: build.libraries,
+  }) + '\n',
+);
 process.stdout.write(`Distribution sources and notices pass: linux/${arch}\n`);
 
 // Exercise the shipped child, not the contributor's prebuilt Sharp package.

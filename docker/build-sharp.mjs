@@ -22,6 +22,7 @@ execFileSync(process.execPath, ['install/build.js'], {
   env: {
     ...process.env,
     NODE_PATH: '/app/node_modules',
+    PATH: '/app/node_modules/.bin:' + process.env.PATH,
     PKG_CONFIG_PATH: '/target/lib/pkgconfig',
     LD_LIBRARY_PATH: '/target/lib',
     SHARP_FORCE_GLOBAL_LIBVIPS: '1',
