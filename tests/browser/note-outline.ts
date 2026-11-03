@@ -28,8 +28,11 @@ const source = Array.from(
   { length: 42 },
   (_, index) =>
     `${'#'.repeat((index % 6) + 1)} Section ${String(index + 1)}\n\n${'Synthetic text for a long note. '.repeat(28)}\n\n`,
-).join('');
+)
+  .join('')
+  .replace('Synthetic', 'Test note');
 assert.equal(source.length, 38400);
+assert.equal(source.trim().split(/\s+/u).length, 7183);
 writeFileSync('.local-app/outline-safe-note.md', source);
 const results: unknown[] = [];
 
@@ -104,7 +107,27 @@ try {
           ),
           0,
         );
+        await page.screenshot({
+          path: `${output}/note-outline-initial-${String(width)}-${scheme}.png`,
+          animations: 'disabled',
+        });
         if (width >= 1280) {
+          const insets = await page.evaluate(() =>
+            Array.from(document.querySelectorAll('[data-outline-level]'))
+              .slice(0, 6)
+              .map(
+                (row) =>
+                  row.querySelector('span')?.getBoundingClientRect().left,
+              ),
+          );
+          for (let index = 1; index < insets.length; index += 1) {
+            const before = insets[index - 1],
+              current = insets[index];
+            assert.ok(
+              before !== undefined && current !== undefined && current > before,
+              'Deeper levels have a larger inset.',
+            );
+          }
           for (let index = 36; index < 42; index += 1) {
             const row = page.locator('[data-outline-level]').nth(index);
             await row.scrollIntoViewIfNeeded();
@@ -172,6 +195,7 @@ try {
         await rows(page, 0);
         await editor.fill(source);
         await rows(page, 42);
+        await editor.press('Control+s');
         await page.goto(origin + notePath);
         await editor.waitFor();
         await rows(page, 42);
