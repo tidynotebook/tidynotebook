@@ -1,6 +1,7 @@
 import type { ComponentProps, ReactNode } from 'react';
 import { buttonClassName, sidebarViewClassName } from './control-classes.ts';
 import { Button } from './controls.tsx';
+import { IconSlot } from './primitives.tsx';
 export type IconButtonSize = 'row' | 'toolbar' | 'header' | 'rail';
 const positions = {
   row: 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2',
@@ -64,11 +65,7 @@ export function IconButton({
     />
   );
   return size === 'row' || size === 'header' ? (
-    <span
-      className={`relative inline-flex h-4 w-4 shrink-0 items-center justify-center ${slotClassName}`}
-    >
-      {control}
-    </span>
+    <IconSlot className={slotClassName}>{control}</IconSlot>
   ) : (
     control
   );
