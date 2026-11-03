@@ -60,6 +60,7 @@ for (const name of Object.keys(record(manifest.optionalDependencies))) {
   }
   removed.push(dirname(await realpath(file)));
 }
+const obsoleteLinks = [];
 for (const item of await readdir('/prod/server/node_modules', {
   recursive: true,
   withFileTypes: true,
@@ -67,8 +68,9 @@ for (const item of await readdir('/prod/server/node_modules', {
   if (!item.isSymbolicLink()) continue;
   const path = join(item.parentPath, item.name);
   const target = await realpath(path);
-  if (removed.includes(target)) await rm(path);
+  if (removed.includes(target)) obsoleteLinks.push(path);
 }
+for (const path of obsoleteLinks) await rm(path, { force: true });
 for (const directory of removed) await rm(directory, { recursive: true });
 const probe = `const s=require('sharp'); if(s.versions.vips!=='8.18.7')process.exit(1);`;
 execFileSync(process.execPath, ['-e', probe], {
