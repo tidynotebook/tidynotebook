@@ -1,5 +1,10 @@
 /** Pure layout choices shared by the page primitives. */
 
+/** Reserve the initial vendor frame height in every checkout state. */
+export function checkoutFrameClassName(): string {
+  return 'relative min-h-checkout-frame';
+}
+
 /** How the actions below a page title use their row. */
 export type PageHeaderActionLayout = 'cluster' | 'split' | 'inline';
 

@@ -41,6 +41,7 @@ import {
 } from '@notesapp/server';
 import {
   buttonClassName,
+  checkoutFrameClassName,
   codeFigureClassName,
   defaultThemeFor,
   fieldClassName,
@@ -61,6 +62,23 @@ import { loadCompiler, webRequire } from './support/tailwind.ts';
 const root = resolve(fileURLToPath(import.meta.url), '../../..');
 const stylesheet = resolve(root, 'apps/web/src/tailwind.css');
 const distribution = join(root, 'apps/web/dist/web');
+
+await test('the built stylesheet reserves the initial checkout frame height', async () => {
+  const document = join(distribution, 'index.html');
+  const hrefs = documentStylesheetHrefs(document, statSync(document));
+  const css = (
+    await Promise.all(
+      hrefs.map((href) => readFile(join(distribution, href.slice(1)), 'utf8')),
+    )
+  ).join('\n');
+  for (const name of checkoutFrameClassName().split(' '))
+    assert.ok(css.includes(`.${name}{`), name);
+  assert.match(css, /--height-checkout-frame:\s*36\.25rem/);
+  assert.match(
+    css,
+    /\.min-h-checkout-frame\{min-height:var\(--height-checkout-frame\)\}/,
+  );
+});
 
 /** Compiles the application stylesheet with the given candidates. */
 async function buildCss(candidates: readonly string[]): Promise<string> {

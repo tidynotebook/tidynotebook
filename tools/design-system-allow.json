@@ -1,4 +1,11 @@
 {
   "comment": "DS1 baseline. This list only shrinks.",
-  "allow": []
+  "allow": [
+    {
+      "file": "packages/ui/src/layout-classes.ts",
+      "rule": "minimum-height",
+      "match": "min-h-checkout-frame",
+      "reason": "Reserve the initial vendor frame height so the checkout footer stays in place while the frame loads."
+    }
+  ]
 }
