@@ -1,4 +1,4 @@
-import { Inline, kbdClassName } from '@notesapp/ui';
+import { Inline, kbdClassName, keyHintClassName } from '@notesapp/ui';
 
 /**
  * The one key hint of the application.
@@ -36,9 +36,16 @@ function KeyCapHint({ cap }: { readonly cap: KeyCap }): ReactNode {
 }
 
 /** One key line, with the caps of this device. */
-export function KeyHint({ keys }: { readonly keys: string }): ReactNode {
+export function KeyHint({
+  keys,
+  reference = false,
+}: {
+  readonly keys: string;
+  /** The keyboard reference shows its keys for every input type. */
+  readonly reference?: boolean;
+}): ReactNode {
   return (
-    <Inline gap={1} as="kbd" className="inline-flex items-center">
+    <Inline gap={1} as="kbd" className={keyHintClassName({ reference })}>
       {keyHintParts(keys).map((part, index) => (
         <Fragment key={`${String(index)}:${part.kind}`}>
           {part.kind === 'or' ? (

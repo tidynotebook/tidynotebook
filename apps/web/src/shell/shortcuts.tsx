@@ -54,7 +54,7 @@ export function ShortcutsDialog({
             >
               <dt className="min-w-0 text-strong">{shortcut.description}</dt>
               <dd className="m-0 shrink-0">
-                <KeyHint keys={shortcut.keys} />
+                <KeyHint keys={shortcut.keys} reference />
               </dd>
             </Inline>
           ))}
