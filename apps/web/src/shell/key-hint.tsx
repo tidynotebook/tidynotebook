@@ -1,4 +1,4 @@
-import { Inline, kbdClassName, keyHintClassName } from '@notesapp/ui';
+import { Inline, kbdClassName } from '@notesapp/ui';
 
 /**
  * The one key hint of the application.
@@ -45,7 +45,11 @@ export function KeyHint({
   readonly reference?: boolean;
 }): ReactNode {
   return (
-    <Inline gap={1} as="kbd" className={keyHintClassName({ reference })}>
+    <Inline
+      gap={1}
+      as="kbd"
+      className={`inline-flex items-center${reference ? '' : ' coarse:hidden'}`}
+    >
       {keyHintParts(keys).map((part, index) => (
         <Fragment key={`${String(index)}:${part.kind}`}>
           {part.kind === 'or' ? (
