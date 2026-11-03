@@ -74,7 +74,7 @@ tidy notebook has two editions. They run the same code.
 - Native `linux/amd64` and `linux/arm64`. See [Supported platforms](docs/guide/published-images.md#supported-platforms).
 
 The [quick start](docs/guide/quickstart.md) runs the pinned stable image.
-To change the code, use Node.js 26.12.1 and pnpm 12.3.4. The backup guide
+To change the code, use Node.js 26.13.0 and pnpm 12.3.4. The backup guide
 lists the host tools needed for backups.
 
 ## Development
