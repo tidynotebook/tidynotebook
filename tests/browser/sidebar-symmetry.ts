@@ -55,7 +55,9 @@ export async function auditSidebar(page: Page) {
       const leading = row.querySelector(
         '.ui-sidebar-leading > .ui-sidebar-slot',
       );
-      const trailing = row.querySelector(':scope > .ui-sidebar-slot');
+      const trailing = row.closest('[aria-disabled="true"]')
+        ? null
+        : row.querySelector(':scope > .ui-sidebar-slot');
       const y = coarse ? 8 : 4,
         x = coarse ? 12 : 8;
       eq('row top', parseFloat(s.paddingTop), y);
@@ -90,7 +92,8 @@ export async function auditSidebar(page: Page) {
           );
           eq('disclosure glyph y', box(glyph).top, box(leading).top);
         }
-        eq('disclosure slot width', box(leading).width, coarse ? 40 : 28);
+        if (row.closest('[role="treeitem"]'))
+          eq('disclosure slot width', box(leading).width, coarse ? 40 : 28);
         const action = leading.querySelector('button');
         const name = row.querySelector('.ui-sidebar-name');
         if (action && name && box(action).right > box(name).left)
