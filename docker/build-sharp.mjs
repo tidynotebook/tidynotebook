@@ -1,6 +1,7 @@
 /** Compile Sharp against the fixed libraries and remove prebuilt fallbacks. */
 import { execFileSync } from 'node:child_process';
 import {
+  cp,
   mkdir,
   readFile,
   realpath,
@@ -16,8 +17,10 @@ const require = createRequire('/prod/server/package.json');
 const sharpRequire = createRequire(require.resolve('sharp'));
 const sharp = dirname(dirname(require.resolve('sharp')));
 const manifest = await readJson(join(sharp, 'package.json'));
+const buildRoot = '/native-sharp';
+await cp(sharp, buildRoot, { recursive: true });
 execFileSync(process.execPath, ['install/build.js'], {
-  cwd: sharp,
+  cwd: buildRoot,
   stdio: 'inherit',
   env: {
     ...process.env,
@@ -29,14 +32,15 @@ execFileSync(process.execPath, ['install/build.js'], {
     npm_config_nodedir: '/usr/local',
   },
 });
+const output = join(buildRoot, 'src/build/Release');
 const release = join(sharp, 'src/build/Release');
-const addons = (await readdir(release)).filter((file) =>
+const addons = (await readdir(output)).filter((file) =>
   /^sharp-linux-(?:x64|arm64)-[0-9.]+\.node$/.test(file),
 );
 if (addons.length !== 1 || !addons[0])
   throw new Error('Expected one source-built Sharp add-on.');
-const addon = await readFile(join(release, addons[0]));
-await rm(join(sharp, 'src/build'), { recursive: true });
+const addon = await readFile(join(output, addons[0]));
+await rm(join(sharp, 'src/build'), { recursive: true, force: true });
 await mkdir(release, { recursive: true });
 await writeFile(join(release, addons[0]), addon);
 const removed = [];
