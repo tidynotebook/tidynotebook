@@ -83,9 +83,18 @@ export async function auditSidebar(page: Page) {
       if (leading) {
         const glyph = leading.querySelector('svg');
         if (glyph) {
-          eq('disclosure glyph x', box(glyph).left, box(leading).left);
+          eq(
+            'disclosure glyph horizontal symmetry',
+            box(glyph).left - box(leading).left,
+            box(leading).right - box(glyph).right,
+          );
           eq('disclosure glyph y', box(glyph).top, box(leading).top);
         }
+        eq('disclosure slot width', box(leading).width, coarse ? 40 : 28);
+        const action = leading.querySelector('button');
+        const name = row.querySelector('.ui-sidebar-name');
+        if (action && name && box(action).right > box(name).left)
+          errors.push('Disclosure target overlaps folder content');
       }
       if (trailing) {
         const glyph = trailing.querySelector('svg');

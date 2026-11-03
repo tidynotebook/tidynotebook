@@ -374,14 +374,16 @@ export function Toolbar({
 }
 export function IconSlot({
   children,
+  size = 'glyph',
   className = '',
 }: {
   readonly children?: ReactNode;
+  readonly size?: 'glyph' | 'row-action';
   readonly className?: string | undefined;
 }): ReactNode {
   return (
     <span
-      className={`relative inline-flex h-4 w-4 shrink-0 items-center justify-center ${className}`}
+      className={`relative inline-flex h-4 ${size === 'row-action' ? 'w-7 coarse:w-10' : 'w-4'} shrink-0 items-center justify-center ${className}`}
     >
       {children}
     </span>

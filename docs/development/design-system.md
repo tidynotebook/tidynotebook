@@ -104,6 +104,10 @@ names stay complete. Desktop tooltips show full names. Phone row menus stay
 visible. Fine pointer menus show on hover and keyboard focus. A view without
 real menu actions keeps an empty menu slot.
 
+Sidebar disclosure slots reserve the full row action width at each pointer
+density. Leaf rows keep the same slot. The target and its hover fill stay
+clear of the folder or note icon.
+
 Rail buttons share one size role. The rail owns padding and item gap; the
 status line uses the panel inset and its own line height.
 
