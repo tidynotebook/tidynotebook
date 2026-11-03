@@ -237,10 +237,12 @@ export async function buildSite(input: BuildInput): Promise<BuildResult> {
     // Pagefind 1.5.2 can return from writeFiles before its buffered writes
     // finish. Closing its service can then leave empty or partial files.
     // Read the bytes instead and await Node's file writes before closing.
-    const generated = await search.getFiles();
-    if (generated.errors.length > 0)
-      throw new Error(`Pagefind did not write: ${generated.errors.join(' ')}`);
-    for (const file of generated.files)
+    const searchFiles = await search.getFiles();
+    if (searchFiles.errors.length > 0)
+      throw new Error(
+        `Pagefind did not write: ${searchFiles.errors.join(' ')}`,
+      );
+    for (const file of searchFiles.files)
       await write(join(input.output, 'pagefind', file.path), file.content);
   } finally {
     await pagefind.close();

@@ -116,6 +116,8 @@ jobs:
       - uses: ./.github/actions/setup # zizmor: ignore[self-repository]
       - name: Start this runner's services
         run: docker compose -p notesapp-test -f compose.test.yaml up -d --wait
+      - name: Check the delayed filesystem-write test tool
+        run: strace --version
       - run: pnpm build
       - run: tools/test-database/ensure-postgres.sh && tools/test-database/ensure-minio.sh
       - name: Run integration shard

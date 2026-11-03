@@ -15,6 +15,7 @@
  * documentation in the change that adds it.
  */
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 import { mkdtemp, readdir, readFile, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -399,6 +400,55 @@ await test('the built documentation site', async (t) => {
       assert.ok(typeof url === 'string' && addresses.has(url), String(url));
     }
   });
+
+  await t.test(
+    'a delayed index write finishes before the build returns',
+    () => {
+      const delayedOutput = join(output, 'delayed-write');
+      const entry = join(delayedOutput, 'pagefind/pagefind-entry.json');
+      // Delay the real filesystem write in Node and the Pagefind service.
+      // Pagefind's old writeFiles path returned early, then close killed it.
+      const checked = spawnSync(
+        'strace',
+        [
+          '-f',
+          '-o',
+          join(output, 'delayed-write.trace'),
+          '-e',
+          'trace=write,writev',
+          '-P',
+          entry,
+          '-e',
+          'inject=write:delay_enter=200ms',
+          '-e',
+          'inject=writev:delay_enter=200ms',
+          process.execPath,
+          '--input-type=module',
+          '-e',
+          `
+          import assert from 'node:assert/strict';
+          import {readFile} from 'node:fs/promises';
+          import {join} from 'node:path';
+          import {buildSite} from './apps/docs/src/build.ts';
+          const output = process.argv[1];
+          const result = await buildSite({
+            settings: {base: '/notesapp/', origin: 'https://docs.example.test'},
+            guide: join(process.cwd(), 'docs/guide'),
+            web: join(process.cwd(), 'apps/web/dist/web'),
+            output,
+            repository: process.cwd(),
+          });
+          const entry = JSON.parse(await readFile(join(output, 'pagefind/pagefind-entry.json'), 'utf8'));
+          assert.equal(entry.languages.en.page_count, result.pages.length);
+        `,
+          delayedOutput,
+        ],
+        { cwd: root, encoding: 'utf8', timeout: 30_000 },
+      );
+      assert.ifError(checked.error);
+      assert.equal(checked.status, 0, checked.stderr);
+    },
+  );
 
   await t.test('the files for agents name every page', async () => {
     const index = await readFile(join(output, 'llms.txt'), 'utf8');
