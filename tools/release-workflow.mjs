@@ -137,7 +137,7 @@ export async function main() {
     assert.equal(tag.sha, sha, 'The version tag moved.');
   }
   // A push run on main can start before its CI run finishes. Recheck for at
-  // most ten minutes. An API error fails immediately.
+  // most forty minutes. An API error fails immediately.
   for (let attempt = 0; ; attempt++) {
     const runs = await pages(
       `actions/workflows/ci.yml/runs?head_sha=${sha}&event=push`,
@@ -151,7 +151,7 @@ export async function main() {
       requireProof(runs, checks, sha);
       break;
     } catch (error) {
-      if (attempt === 60) throw error;
+      if (attempt === 240) throw error;
       await new Promise((resolve) => setTimeout(resolve, 10000));
     }
   }
