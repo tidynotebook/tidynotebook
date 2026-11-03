@@ -24,7 +24,7 @@ execFileSync(process.execPath, ['install/build.js'], {
   stdio: 'inherit',
   env: {
     ...process.env,
-    NODE_PATH: '/app/node_modules',
+    NODE_PATH: '/app/node_modules:' + dirname(sharp),
     PATH: '/app/node_modules/.bin:' + process.env.PATH,
     PKG_CONFIG_PATH: '/target/lib/pkgconfig',
     LD_LIBRARY_PATH: '/target/lib',
