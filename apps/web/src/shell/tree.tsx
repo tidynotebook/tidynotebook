@@ -863,7 +863,7 @@ export function NoteTree({
                 className={treeRowClassName({ wrapOnPhone: true })}
               >
                 <IconSlot
-                  size="row-action"
+                  rowAction
                   className={rowSpacerClassName}
                   aria-hidden="true"
                 />
@@ -1169,13 +1169,12 @@ function TreeRow({
       >
         <Inline gap={1} className="ui-sidebar-leading min-w-0 flex-1">
           {isFolder ? (
-            <IconSlot size="row-action" className="ui-sidebar-slot">
+            <IconSlot rowAction className="ui-sidebar-slot">
               {/* The keys open and close a folder with Right and Left on the
             row, so the chevron is no stop of the keys. A screen reader on
             a touch screen reaches it by a swipe, by its name. */}
               <IconButton
                 size="row"
-                type="button"
                 tabIndex={-1}
                 label={controls.toggle ?? 'Toggle folder'}
                 className={rowActionClassName}
@@ -1184,23 +1183,18 @@ function TreeRow({
                   event.stopPropagation();
                   onToggle();
                 }}
-                title={controls.toggle ?? undefined}
                 glyph={
-                  <>
-                    <span className="inline-flex text-muted" aria-hidden="true">
-                      {row.expanded ? (
-                        <ChevronDownIcon />
-                      ) : (
-                        <ChevronRightIcon />
-                      )}
-                    </span>
-                  </>
+                  row.expanded ? (
+                    <ChevronDownIcon className="text-muted" />
+                  ) : (
+                    <ChevronRightIcon className="text-muted" />
+                  )
                 }
               ></IconButton>
             </IconSlot>
           ) : (
             <IconSlot
-              size="row-action"
+              rowAction
               className={rowSpacerClassName}
               aria-hidden="true"
             />
@@ -1220,25 +1214,17 @@ function TreeRow({
         <IconSlot className="ui-sidebar-slot">
           <IconButton
             size="row"
-            type="button"
             tabIndex={-1}
             label={controls.actions}
             aria-haspopup="menu"
             reveal
             className={`${rowActionClassName} ui-sidebar-row-menu`}
-            title={controls.actions}
             onMouseDown={keepFocus}
             onClick={(event) => {
               event.stopPropagation();
               onMenu(anchorOf(event.currentTarget), event.detail === 0);
             }}
-            glyph={
-              <>
-                <span className="inline-flex text-muted" aria-hidden="true">
-                  <MoreIcon />
-                </span>
-              </>
-            }
+            glyph={<MoreIcon className="text-muted" />}
           ></IconButton>
         </IconSlot>
       </ListRow>
