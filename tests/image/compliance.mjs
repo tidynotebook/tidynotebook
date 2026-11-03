@@ -39,7 +39,9 @@ assert.equal(process.platform, 'linux');
 assert.ok(['x64', 'arm64'].includes(process.arch));
 const arch = process.arch;
 const require = createRequire('/app/server/package.json');
+/** @type {unknown} */
 const sharp = require('sharp');
+assert.ok(typeof sharp === 'function' && 'versions' in sharp);
 const native = await json('/app/licenses/native-source/manifest.json');
 const prefix = '/opt/notesapp-native';
 const build = await json(`${prefix}/build.json`);
@@ -75,7 +77,7 @@ for (const [name, version] of Object.entries(fixed)) {
   assert.ok(file.startsWith(`${prefix}/lib/`), file);
   assert.ok(sharedObjects.includes(file), `Sharp does not load ${file}`);
 }
-assert.equal(sharp.versions.vips, fixed.vips);
+assert.equal(record(sharp.versions).vips, fixed.vips);
 const addonFiles = Object.keys(require.cache).filter(
   (file) => file.endsWith('.node') && file.includes('/sharp/'),
 );
@@ -186,7 +188,11 @@ for (const folder of [
 process.stdout.write(`Distribution sources and notices pass: linux/${arch}\n`);
 
 // Exercise the shipped child, not the contributor's prebuilt Sharp package.
-const { inspectImage } = await import('/app/server/dist/jobs/inspect-image.js');
+const inspection = record(
+  await import('/app/server/dist/jobs/inspect-image.js'),
+);
+const inspectImage = inspection.inspectImage;
+assert.ok(typeof inspectImage === 'function');
 const scratch = await mkdtemp(join(tmpdir(), 'native-image-proof-'));
 const sample = () =>
   sharp({
@@ -224,11 +230,13 @@ try {
   const pixels = Buffer.alloc(2 * 4 * 3, 40);
   pixels.fill(80, 2 * 2 * 3);
   for (const format of ['gif', 'webp']) {
-    const frames = await sharp(pixels, {
-      raw: { width: 2, height: 4, channels: 3, pageHeight: 2 },
-    })
-      .toFormat(format)
-      .toBuffer();
+    const frames = Buffer.from(
+      await sharp(pixels, {
+        raw: { width: 2, height: 4, channels: 3, pageHeight: 2 },
+      })
+        .toFormat(format)
+        .toBuffer(),
+    );
     assert.equal((await sharp(frames, { animated: true }).metadata()).pages, 2);
     assert.deepEqual(await inspect(frames, `image/${format}`), {
       ok: true,
@@ -237,11 +245,18 @@ try {
       height: 4,
     });
   }
-  const large = await sharp({
-    create: { width: 10_000, height: 4_000, channels: 3, background: 'white' },
-  })
-    .png()
-    .toBuffer();
+  const large = Buffer.from(
+    await sharp({
+      create: {
+        width: 10_000,
+        height: 4_000,
+        channels: 3,
+        background: 'white',
+      },
+    })
+      .png()
+      .toBuffer(),
+  );
   assert.deepEqual(await inspect(large), {
     ok: true,
     mediaType: 'image/png',
