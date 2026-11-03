@@ -374,13 +374,13 @@ export function Dialog({
           value={phone && !screen && width !== 'settings'}
         >
           <DialogInsetContext.Provider value={ownsInset}>
-            <DeferredDialogOpener.Provider value={null}>
+            <DeferredDialogOpener value={null}>
               <SectionFormContext.Provider value={false}>
                 <DialogHeaderActionsContext.Provider value={headerTarget}>
                   {children}
                 </DialogHeaderActionsContext.Provider>
               </SectionFormContext.Provider>
-            </DeferredDialogOpener.Provider>
+            </DeferredDialogOpener>
           </DialogInsetContext.Provider>
         </PhoneSheetContext.Provider>
       </div>

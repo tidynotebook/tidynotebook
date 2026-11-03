@@ -585,7 +585,7 @@ function PaletteDialog({
       {step === null || stepChoices === null ? (
         content.pending ? (
           <Inset
-            padX={contentInset === 6 ? 6 : 0}
+            padX={contentInset}
             as="p"
             className="text-secondary text-muted"
             role="status"
@@ -594,7 +594,7 @@ function PaletteDialog({
           </Inset>
         ) : rows.length === 0 ? (
           <Inset
-            padX={contentInset === 6 ? 6 : 0}
+            padX={contentInset}
             as="p"
             className="text-secondary text-muted"
             role="status"
@@ -602,13 +602,14 @@ function PaletteDialog({
             No note and no action matches that.
           </Inset>
         ) : null
-      ) : stepChoices.status === 'loading' ? (
-        <Inset padX={contentInset === 6 ? 8 : 2} padY={2} as="div">
-          <LoadingState shape="list" rows={3} label={stepChoices.label} />
-        </Inset>
-      ) : stepChoices.status === 'unavailable' ? (
-        <Inset padX={contentInset === 6 ? 8 : 2} padY={2} as="div">
-          <Notice tone="info" message={stepChoices.message} />
+      ) : stepChoices.status === 'loading' ||
+        stepChoices.status === 'unavailable' ? (
+        <Inset padX={contentInset === 4 ? 2 : contentInset} padY={2} as="div">
+          {stepChoices.status === 'loading' ? (
+            <LoadingState shape="list" rows={3} label={stepChoices.label} />
+          ) : (
+            <Notice tone="info" message={stepChoices.message} />
+          )}
         </Inset>
       ) : stepChoices.choices.length === 0 ? (
         // A list that is not complete states so above and claims no empty
@@ -637,11 +638,7 @@ function PaletteDialog({
           />
         )
       ) : rows.length === 0 ? (
-        <Inset
-          padX={contentInset === 6 ? 6 : 0}
-          as="p"
-          className="text-secondary text-muted"
-        >
+        <Inset padX={contentInset} as="p" className="text-secondary text-muted">
           {step.noMatch}
         </Inset>
       ) : null}
