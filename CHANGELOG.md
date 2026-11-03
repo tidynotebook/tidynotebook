@@ -7,6 +7,22 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## Unreleased
 
+## 0.23.5 - 2026-11-03
+
+### Security
+
+- Build libheif 1.23.7, libpng 1.6.59 and Expat 2.10.0 from pinned sources with libvips 8.18.7 in Linux images. Remove prebuilt Sharp fallbacks and update the runtime ip-address dependency to 10.7.5. Native worker memory and access boundaries remain unproved. ([PR 552](https://github.com/tidynotebook/tidynotebook/pull/552))
+
+### Changed
+
+- Add the shared checkout minimum-height token and `checkoutFrameClassName()` recipe. The token is 36.25rem, or 580 px at a 16 px root. Cloud adoption and real Paddle checks remain pending. ([PR 556](https://github.com/tidynotebook/tidynotebook/pull/556))
+
+### Fixed
+
+- Include headings from the full note in the outline. ([PR 555](https://github.com/tidynotebook/tidynotebook/pull/555))
+- Use one search-dialog inset and keep bottom spacing for touch input. ([PR 553](https://github.com/tidynotebook/tidynotebook/pull/553))
+- Keep folder disclosure surfaces within their rows and reserve the disclosure target width. ([PR 554](https://github.com/tidynotebook/tidynotebook/pull/554))
+
 ## 0.23.4 - 2026-11-03
 
 ### Security
