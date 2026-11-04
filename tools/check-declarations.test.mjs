@@ -17,8 +17,8 @@ await test('typed lint builds absent declarations and stops on either tool failu
     const script = record(manifest.scripts)['lint:types'];
     assert.equal(typeof script, 'string');
     writeFileSync(
-      join(directory, 'tsc'),
-      '#!/bin/sh\necho build >> calls\n[ "$BUILD_EXIT" = 0 ] || exit "$BUILD_EXIT"\necho declaration > output.d.ts\n',
+      join(directory, 'pnpm'),
+      '#!/bin/sh\ntest "$1" = typecheck || exit 42\necho build >> calls\n[ "$BUILD_EXIT" = 0 ] || exit "$BUILD_EXIT"\necho declaration > output.d.ts\n',
       { mode: 0o700 },
     );
     writeFileSync(

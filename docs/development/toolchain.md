@@ -68,8 +68,8 @@ An error class avoids a TypeScript parameter property for the same reason.
 
 `pnpm lint` reads the sources only, so it passes in a fresh checkout with no
 build output. `pnpm lint:types` runs `oxlint --type-aware`, which needs the
-emitted declarations of workspace packages. It uses TypeScript build mode to
-create these files before lint runs. A failed build stops the command.
+emitted declarations of workspace packages. It runs the workspace typecheck command to
+create these files in package dependency order before lint runs. A failed build stops the command.
 `pnpm verify` and CI run typed lint directly after their full build.
 
 `tools/check-boundaries.mjs` holds the rules that
