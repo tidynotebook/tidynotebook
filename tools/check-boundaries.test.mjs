@@ -26,7 +26,8 @@ function manifest(name, dependencies = {}, devDependencies = {}) {
     scripts: {
       typecheck: 'tsc -p tsconfig.json',
       build: 'tsc -p tsconfig.json',
-      'test:unit': 'node ../../tools/run-tests.mjs unit',
+      'test:unit':
+        'node --config-file=../../node-test.config.json "src/**/*.test.{ts,mjs}"',
     },
     dependencies,
     devDependencies,

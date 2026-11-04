@@ -92,11 +92,11 @@ jobs:
       - uses: ./.github/actions/setup # zizmor: ignore[self-repository]
       - run: pnpm build
       - if: matrix.shard == 1
-        run: pnpm lint:types
+        run: pnpm exec oxlint --type-aware --deny-warnings
       - name: Run unit shard
         env:
           SHARD: ${{ matrix.shard }}
-        run: node tools/run-tests.mjs unit --shard="$SHARD/3"
+        run: node --test-shard="$SHARD/3" --no-experimental-test-coverage --config-file=node-test.config.json "apps/*/src/**/*.test.{ts,mjs}" "packages/*/src/**/*.test.{ts,mjs}" "tools/*.test.{ts,mjs}" "tools/sdk-codegen/src/**/*.test.{ts,mjs}"
 
   integration:
     name: Integration ${{ matrix.shard }}/4
@@ -114,12 +114,10 @@ jobs:
           persist-credentials: false
       # The action is part of the checked out event commit.
       - uses: ./.github/actions/setup # zizmor: ignore[self-repository]
-      - name: Start this runner's services
-        run: docker compose -p notesapp-test -f compose.test.yaml up -d --wait
       - name: Check the delayed filesystem-write test tool
         run: strace --version
       - run: pnpm build
-      - run: tools/test-database/ensure-postgres.sh && tools/test-database/ensure-minio.sh
+      - run: pnpm test:services
       - name: Run integration shard
         env:
           SHARD: ${{ matrix.shard }}
@@ -263,8 +261,8 @@ jobs:
         env:
           NOTESAPP_COVERAGE: 'on'
         run: |
-          node tools/run-tests.mjs unit
-          tools/test-database/ensure-minio.sh
+          pnpm test:unit:run
+          pnpm test:services
           node tools/run-tests.mjs integration
       - if: always()
         run: docker compose -p notesapp-test -f compose.test.yaml down --volumes

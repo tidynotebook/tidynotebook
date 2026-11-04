@@ -10,7 +10,7 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "build": "tsc -p tsconfig.json",
-    "test:unit": "node ../../tools/run-tests.mjs unit",
+    "test:unit": "node --config-file=../../node-test.config.json \"src/**/*.test.{ts,mjs}\"",
     "contract:lint": "redocly lint --config ../../packages/api-contract/redocly.yaml ../../packages/api-contract/openapi.yaml ../../packages/api-contract/asyncapi.yaml",
     "generate": "node src/generate.ts",
     "generated:check": "node src/check-generated.ts"

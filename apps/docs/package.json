@@ -10,7 +10,7 @@
   "scripts": {
     "typecheck": "tsc -b ../../packages/markdown/tsconfig.build.json ../../packages/ui/tsconfig.build.json && tsc -p tsconfig.json",
     "build": "node src/build.ts",
-    "test:unit": "node ../../tools/run-tests.mjs unit",
+    "test:unit": "node --config-file=../../node-test.config.json \"src/**/*.test.{ts,mjs}\"",
     "serve": "node src/serve.ts"
   },
   "dependencies": {

@@ -8,10 +8,37 @@ generated output comparison, types, lint, format, build, typed lint, unit
 tests, and integration tests. The build comes before typed lint because it
 supplies package declarations.
 
-`tools/run-tests.mjs` discovers unit tests beside the source and tool files.
-It discovers integration tests under `tests/integration/`. The tests use
-PostgreSQL and MinIO from `compose.test.yaml`. Each integration test creates
-its own database or bucket.
+Unit commands use Node file patterns beside package source and at the tools
+root. `pnpm test:unit` builds its required packages first.
+`pnpm test:unit:run` runs the same files after a build. Package commands use
+`pnpm --filter <package> test:unit` to select that package only.
+`tools/run-tests.mjs` selects integration files and keeps the slow files on
+separate CI shards. `node-test.config.json` holds the shared coverage settings.
+For a direct Node command, put `--no-experimental-test-coverage` before the
+file paths to hide its report.
+Integration commands also accept `NOTESAPP_COVERAGE=off`.
+
+`pnpm test:services` starts the named PostgreSQL and MinIO services from
+`compose.test.yaml`, waits for their health checks, then runs the mandatory
+test-profile migration. `pnpm verify` and `pnpm test:integration` include this
+setup. Each integration test creates its own database or bucket.
+
+Test setup now requires Docker Compose. It no longer uses an external service
+because a host port accepts connections. Stop any external service on the test
+ports before running the commands. Use the named disposable Compose services.
+
+For a focused check, use an explicit file path with the Node runner. Build and
+start the test services first for an integration test:
+
+```sh
+pnpm exec node --config-file=node-test.config.json packages/api-client/src/configure.test.ts
+pnpm build
+pnpm test:services
+pnpm exec node --config-file=node-test.config.json tests/integration/mcp-endpoint.test.ts
+```
+
+Use Node's `--test-name-pattern` before the file path to select a test case.
+The former basename form, such as `pnpm test:unit -- configure`, is retired.
 
 The documentation build test also needs Linux `strace` with syscall delay
 injection. It delays a real search-index write to check that the build waits
