@@ -1,0 +1,13 @@
+{
+  "$schema": "https://nodejs.org/dist/v26.13.0/docs/node-config-schema.json",
+  "test": {
+    "experimental-test-coverage": true,
+    "test-coverage-exclude": [
+      "**/*.test.ts",
+      "**/*.test.mjs",
+      "**/generated/**",
+      "**/dist/**",
+      "tests/**"
+    ]
+  }
+}

@@ -16,7 +16,10 @@ pnpm install --frozen-lockfile
 
 The optional `test-application` skill gives the fresh local Docker setup.
 Unit tests sit beside the code. Integration tests use the services in
-`compose.test.yaml`. `pnpm verify` starts those services as needed.
+`compose.test.yaml`. `pnpm verify` starts these named services, waits for their
+health checks, and runs the test-profile migration. Externally managed test
+services on the same ports are no longer used. Stop them before running checks.
+Use [verification](docs/development/verification.md) for focused test commands.
 
 ## Review and merge
 

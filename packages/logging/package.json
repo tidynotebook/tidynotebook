@@ -13,7 +13,7 @@
   "scripts": {
     "typecheck": "tsc -b tsconfig.build.json && tsc -p tsconfig.json",
     "build": "tsc -b tsconfig.build.json",
-    "test:unit": "node ../../tools/run-tests.mjs unit"
+    "test:unit": "node --config-file=../../node-test.config.json \"src/**/*.test.{ts,mjs}\""
   },
   "devDependencies": {
     "@types/node": "catalog:",
