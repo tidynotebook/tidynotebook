@@ -70,10 +70,13 @@ await test('native unit patterns cover each selected file once across three shar
       seen.push(
         ...[
           ...result.stdout.matchAll(/^ok \d+ - (.+\.test\.(?:ts|mjs))$/gm),
-        ].map((match) => match[1]),
+        ].map((match) => match[1] ?? ''),
       );
     }
-    assert.deepEqual(seen.sort(), selected.sort());
+    assert.deepEqual(
+      seen.sort((left, right) => left.localeCompare(right)),
+      selected.sort((left, right) => left.localeCompare(right)),
+    );
     writeFileSync(
       join(directory, selected[0] ?? ''),
       "throw new Error('deliberate unit failure');",
@@ -124,7 +127,10 @@ await test('integration scheduling covers every file once and separates the slow
     );
     seen.push(...selected);
   }
-  assert.deepEqual(seen.sort(), [...files].sort());
+  assert.deepEqual(
+    seen.sort((left, right) => left.localeCompare(right)),
+    [...files].sort((left, right) => left.localeCompare(right)),
+  );
   for (const shard of [
     '0/4',
     '5/4',
