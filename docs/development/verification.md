@@ -23,13 +23,13 @@ Integration commands also accept `NOTESAPP_COVERAGE=off`.
 test-profile migration. `pnpm verify` and `pnpm test:integration` include this
 setup. Each integration test creates its own database or bucket.
 
-Test setup now requires Docker Compose. It no longer uses an external service
-because a host port accepts connections. Stop any external service on the test
-ports before running the commands. Use the named disposable Compose services. Setup clears inherited test database
-and role password overrides before migration. Integration helpers and diagnostic
-commands use the fixed Compose connection values. The former
-`NOTESAPP_TEST_DATABASE_URL` and `NOTESAPP_TEST_S3_ENDPOINT` overrides no longer
-select test services. This also applies to focused integration checks.
+Test setup requires Docker Compose. It uses the named disposable services in
+`compose.test.yaml`. Stop any external service on the test ports before you run
+the commands. Setup clears inherited test database and role password overrides
+before migration. Integration helpers and diagnostic commands use the fixed
+Compose connection values. `NOTESAPP_TEST_DATABASE_URL` and
+`NOTESAPP_TEST_S3_ENDPOINT` do not select test services. This also applies to
+focused integration checks.
 
 For a focused check, use an explicit file path with the Node runner. Build and
 start the test services first for an integration test:
@@ -42,7 +42,6 @@ pnpm exec node --config-file=node-test.config.json tests/integration/mcp-endpoin
 ```
 
 Use Node's `--test-name-pattern` before the file path to select a test case.
-The former basename form, such as `pnpm test:unit -- configure`, is retired.
 
 The documentation build test also needs Linux `strace` with syscall delay
 injection. It delays a real search-index write to check that the build waits
