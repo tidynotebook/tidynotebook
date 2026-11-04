@@ -15,7 +15,7 @@
     "lint:types": "pnpm typecheck && oxlint --type-aware --deny-warnings",
     "format:check": "node tools/format.mjs --check",
     "format": "node tools/format.mjs --write",
-    "test:unit": "pnpm --filter @notesapp/api-contract --filter @notesapp/api-client --filter @notesapp/core --filter @notesapp/ui run build && pnpm test:unit:run",
+    "test:unit": "pnpm --filter @notesapp/api-contract --filter @notesapp/api-client --filter @notesapp/core --filter @notesapp/ui --filter @notesapp/storage-server... run build && pnpm test:unit:run",
     "test:integration": "pnpm run build && pnpm test:services && node tools/run-tests.mjs integration",
     "build": "tsc -p tsconfig.json && pnpm -r --if-present build && node tools/distribution-notices.mjs",
     "contract:lint": "pnpm --filter @notesapp/sdk-codegen run contract:lint",
