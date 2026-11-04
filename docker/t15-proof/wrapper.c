@@ -13,15 +13,65 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "report.h"
+
 extern char **environ;
 static long long millis(void) {
   struct timespec t;
   if (clock_gettime(CLOCK_MONOTONIC, &t)) return -1;
   return (long long)t.tv_sec * 1000 + t.tv_nsec / 1000000;
 }
+static int emit_report(const char *report, size_t used, long long deadline) {
+  if (used > REPORT_LIMIT) return 0;
+  int flags = fcntl(1, F_GETFL);
+  if (flags < 0 || fcntl(1, F_SETFL, flags | O_NONBLOCK)) return 0;
+  size_t sent = 0;
+  int ok = 1;
+  while (sent < used) {
+    long long now = millis();
+    if (now < 0 || now >= deadline) { ok = 0; break; }
+    ssize_t n = write(1, report + sent, used - sent);
+    if (n > 0) sent += (size_t)n;
+    else if (n < 0 && (errno == EINTR || errno == EAGAIN)) {
+      struct pollfd p = {1, POLLOUT, 0}; poll(&p, 1, 10);
+    } else { ok = 0; break; }
+  }
+  if (fcntl(1, F_SETFL, flags)) ok = 0;
+  return ok;
+}
+struct child_cleanup { int complete, main_status; unsigned reaped; };
+static struct child_cleanup finish_children(pid_t child, long long deadline) {
+  struct child_cleanup result = {0};
+  siginfo_t info;
+  /* Keep the main child waitable until group signaling is complete. This
+   * reserves its PID, so a reused PID or process group cannot be signaled. */
+  for (;;) {
+    if (!waitid(P_PID, child, &info, WEXITED | WNOHANG | WNOWAIT)) break;
+    if (errno != EINTR || millis() < 0 || millis() >= deadline) return result;
+  }
+  int signal_error = kill(-child, SIGKILL) && errno != ESRCH;
+  if (kill(child, SIGKILL) && errno != ESRCH) signal_error = 1;
+  int saw_main = 0;
+  for (;;) {
+    int status;
+    pid_t r = waitpid(-1, &status, WNOHANG);
+    if (r > 0) {
+      result.reaped++;
+      if (r == child) { result.main_status = status; saw_main = 1; }
+    } else if (r < 0 && errno == ECHILD) {
+      result.complete = saw_main && !signal_error;
+      return result;
+    } else if (r < 0 && errno != EINTR) return result;
+    long long now = millis();
+    if (now < 0 || now >= deadline) return result;
+    if (!r) { struct timespec delay = {0, 1000000}; nanosleep(&delay, NULL); }
+  }
+}
 int main(int argc, char **argv) {
   if (argc != 2 || strcmp(argv[1], "serve")) return 77;
   if (prctl(PR_SET_CHILD_SUBREAPER, 1, 0, 0, 0)) return 77;
+  struct sigaction action = { .sa_handler = SIG_DFL };
+  if (sigemptyset(&action.sa_mask) || sigaction(SIGCHLD, &action, NULL)) return 77;
   int pipefd[2];
   if (pipe2(pipefd, O_CLOEXEC)) return 77;
   long long start = millis();
@@ -48,11 +98,11 @@ int main(int argc, char **argv) {
     execve(args[0], args, env);
     _exit(77);
   }
-  if (setpgid(child, child) && errno != EACCES && errno != ESRCH) { kill(child, SIGKILL); waitpid(child, NULL, 0); return 77; }
+  int failed = setpgid(child, child) && errno != EACCES && errno != ESRCH;
   close(pipefd[1]);
-  char report[65536];
+  char report[REPORT_LIMIT];
   size_t used = 0;
-  int status = 0, done = 0, eof = 0, failed = 0;
+  int done = 0, eof = 0;
   if (fcntl(pipefd[0], F_SETFL, O_NONBLOCK)) failed = 1;
   while (!failed && (!done || !eof)) {
     long long now = millis();
@@ -68,50 +118,28 @@ int main(int argc, char **argv) {
     } else if (n == 0) eof = 1;
     else if (errno != EAGAIN && errno != EINTR) { failed = 1; break; }
     if (!done) {
-      pid_t result = waitpid(child, &status, WNOHANG);
-      if (result == child) done = 1;
-      else if (result < 0 && errno != EINTR) { failed = 1; break; }
+      siginfo_t info;
+      if (!waitid(P_PID, child, &info, WEXITED | WNOHANG | WNOWAIT)) done = info.si_pid == child;
+      else if (errno != EINTR) failed = 1;
     }
   }
   close(pipefd[0]);
-  if (!done) {
-    kill(-child, SIGKILL);
-    for (;;) {
-      pid_t r = waitpid(child, &status, WNOHANG);
-      if (r == child) break;
-      if (r < 0 && errno != EINTR) return 77;
-      if (millis() - start >= 120000) return 77;
-      struct timespec delay = {0, 1000000}; nanosleep(&delay, NULL);
-    }
-  }
-  if (failed || !WIFEXITED(status) || WEXITSTATUS(status)) {
-    kill(-child, SIGKILL);
-    for (;;) {
-      pid_t r = waitpid(-1, NULL, WNOHANG);
-      if (r < 0 && errno == ECHILD) break;
-      if (r < 0 && errno != EINTR) return 77;
-      if (millis() - start >= 120000) return 77;
-      struct timespec delay = {0, 1000000}; nanosleep(&delay, NULL);
-    }
+  /* Every path after fork uses this bounded kill/reap path, including
+   * a zero-exit supervisor that leaves an adopted descendant. */
+  struct child_cleanup cleanup = finish_children(child, start + 120000);
+  if (!cleanup.complete || cleanup.reaped != 1) {
+    const char *message = cleanup.complete
+      ? "{\"wrapper_refusal\":\"unexpected_child\",\"children_reaped\":true}\n"
+      : "{\"wrapper_refusal\":\"child_cleanup\",\"children_reaped\":false}\n";
+    /* One small fixed record, not the buffered report, on this refusal path. */
+    (void)emit_report(message, strlen(message), start + 120000);
+    return 77;
   }
   if (failed) return 77;
-  errno = 0;
-  if (waitpid(-1, NULL, WNOHANG) != -1 || errno != ECHILD) { kill(-child, SIGKILL); return 77; }
-  /* A report remains buffered until the probe stops, to bound app log output. */
-  int stdout_flags = fcntl(1, F_GETFL);
-  if (stdout_flags < 0 || fcntl(1, F_SETFL, stdout_flags | O_NONBLOCK)) return 77;
-  size_t sent = 0;
-  while (sent < used) {
-    if (millis() - start >= 120000) { fcntl(1, F_SETFL, stdout_flags); return 77; }
-    ssize_t n = write(STDOUT_FILENO, report + sent, used - sent);
-    if (n < 0 && (errno == EINTR || errno == EAGAIN)) { struct pollfd p = {1, POLLOUT, 0}; poll(&p, 1, 10); continue; }
-    if (n <= 0) { fcntl(1, F_SETFL, stdout_flags); return 77; }
-    sent += (size_t)n;
-  }
-  if (fcntl(1, F_SETFL, stdout_flags)) return 77;
-  if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) return 77;
-  static const char pass[] = "{\"status\":\"PASS\",\"scope\":\"local_diagnostic_only\",\"platform_proved\":false}\n";
-  if (used < sizeof pass - 1 || memcmp(report + used - (sizeof pass - 1), pass, sizeof pass - 1)) return 77;
+  int accepted = WIFEXITED(cleanup.main_status) && WEXITSTATUS(cleanup.main_status) == 0 && valid_report(report, used);
+  /* Rejected reports remain bounded diagnostic evidence. They cannot start the app. */
+  if (!emit_report(report, used, start + 120000)) return 77;
+  if (!accepted) return 77;
   char *args[] = {"/app/entrypoint.sh.original", "serve", NULL};
   execve(args[0], args, environ);
   return 77;

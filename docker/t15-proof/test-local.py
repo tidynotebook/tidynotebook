@@ -3,46 +3,56 @@ import hashlib
 import json
 import pathlib
 import platform
+import shlex
 import subprocess
 import sys
 import time
+from owned_container import InvocationFailure, run_owned
 
-image, destination, active_helper = sys.argv[1:]
+image, destination, active_helper, orphan_helper = sys.argv[1:]
 evidence = pathlib.Path(destination)
-evidence.mkdir(parents=True, exist_ok=True)
+evidence.mkdir(parents=True, exist_ok=False)
 if not image.startswith('sha256:'):
     raise SystemExit('Use an immutable local image ID.')
-config = json.loads(subprocess.check_output(['docker', 'image', 'inspect', image]))[0]
+config = json.loads(subprocess.check_output(['docker', 'image', 'inspect', image], timeout=10))[0]
 native = {'x86_64': 'amd64', 'aarch64': 'arm64'}.get(platform.machine())
 assert native and config['Architecture'] == native, 'Native architecture required'
 assert config['Config']['User'] == '10001:10001'
 args = ['--fixture-dir', '/opt/notesapp-native/proof-fixtures',
         '--as-bytes', '268435456', '--cpu-seconds', '2', '--wall-ms', '5000',
         '--output-bytes', '1048576', '--require-uid', '10001', '--require-gid', '10001']
-base = ['docker', 'run', '--rm', '--read-only', '--cap-drop', 'ALL',
+base = ['--read-only', '--cap-drop', 'ALL',
         '--security-opt', 'no-new-privileges', '--network', 'none', '--pids-limit', '64',
         '--memory', '512m', '--cpus', '2', '--tmpfs', '/tmp:rw,nosuid,nodev,noexec,size=64m']
 results = []
 
 def run(name, options, command, expected, reason=None):
-    start = time.monotonic()
-    invocation = base + ['--name', 't15-test-' + name] + options + [image] + command
-    result = subprocess.run(invocation, capture_output=True, timeout=125)
-    duration = time.monotonic() - start
-    (evidence / (name + '.stdout')).write_bytes(result.stdout)
-    (evidence / (name + '.stderr')).write_bytes(result.stderr)
-    record = {'name': name, 'exit': result.returncode, 'seconds': duration,
-              'stdout_bytes': len(result.stdout),
-              'stdout_sha256': hashlib.sha256(result.stdout).hexdigest(),
-              'stderr_sha256': hashlib.sha256(result.stderr).hexdigest(),
-              'command': invocation}
-    results.append(record)
-    (evidence / 'local-tests.json').write_text(json.dumps(results, indent=2) + '\n')
-    assert result.returncode == expected, record
-    assert len(result.stdout) + len(result.stderr) <= 65536, record
-    if reason:
-        assert reason in result.stdout.decode(), record
+    try:
+        result, record = run_owned(name, image, base + options, command, evidence)
+    except InvocationFailure as error:
+        results.append(error.record)
+        (evidence / 'local-tests.json').write_text(json.dumps(results, indent=2) + '\n')
+        raise
+    record.update({'expected_exit': expected, 'stdout_bytes': len(result.stdout),
+                   'stdout_sha256': hashlib.sha256(result.stdout).hexdigest(),
+                   'stderr_sha256': hashlib.sha256(result.stderr).hexdigest()})
+    try:
+        assert result.returncode == expected, record
+        assert len(result.stdout) + len(result.stderr) <= 65536, record
+        if reason:
+            assert reason in result.stdout.decode(), record
+    except Exception:
+        record['status'] = 'FAIL'
+        raise
+    finally:
+        results.append(record)
+        (evidence / (name + '.run.json')).write_text(json.dumps(record, indent=2) + '\n')
+        (evidence / 'local-tests.json').write_text(json.dumps(results, indent=2) + '\n')
     return result
+
+pass_line = '{"status":"PASS","scope":"local_diagnostic_only","platform_proved":false}'
+def report_lines(*lines):
+    return "printf '%s\\n' " + shlex.join(lines)
 
 probe = '/opt/notesapp-native/bin/native-boundary-proof'
 normal = ['--user', '10001:10001', '--entrypoint', '/usr/bin/env']
@@ -95,6 +105,14 @@ printf '%s\\n' '{"status":"PASS","scope":"local_diagnostic_only","platform_prove
     ('refuse', 'exit 77', 77),
     ('overflow', 'exec /usr/bin/head -c 70000 /dev/zero', 77),
     ('crash', 'kill -SEGV $$', 77),
+    ('text-pass', report_lines('INVALID', pass_line), 77),
+    ('refuse-pass', report_lines('{"status":"REFUSE","reason":"test","boundary_proved":false}', pass_line), 77),
+    ('broken-prefix-pass', report_lines('{"test":"guard","uid":10001', pass_line), 77),
+    ('typed-prefix-pass', report_lines('{"test":"guard","uid":"10001","gid":10001,"active_caps":0,"bounding":"0"}', pass_line), 77),
+    ('unknown-prefix-pass', report_lines('{"unexpected":true}', pass_line), 77),
+    ('duplicate-key-pass', report_lines('{"test":"guard","uid":10001,"uid":0,"gid":10001,"active_caps":0,"bounding":"0"}', pass_line), 77),
+    ('multiple-pass', report_lines(pass_line, pass_line), 77),
+    ('pass-tail', report_lines(pass_line, '{"canary_sha256":"' + '0' * 64 + '"}'), 77),
 ]:
     stub = inputs / ('probe-' + name)
     stub.write_text('#!/bin/sh\nset -eu\n' + body + '\n')
@@ -109,6 +127,35 @@ printf '%s\\n' '{"status":"PASS","scope":"local_diagnostic_only","platform_prove
         ['-c', 'exec 9</t15-descriptor; exec /app/entrypoint.sh serve'], expected)
     assert b'test-only-value' not in response.stdout + response.stderr
     assert (b'environment_preserved' in response.stdout) == (expected == 0)
+orphan_mounts = []
+for source, target in [(pathlib.Path(orphan_helper), probe), (original, '/app/entrypoint.sh.original')]:
+    orphan_mounts += ['--mount', 'type=bind,src=' + str(source.resolve()) + ',dst=' + target + ',readonly']
+response = run('wrapper-orphan', ['--user', '10001:10001'] + orphan_mounts + [
+    '--entrypoint', '/app/entrypoint.sh'], ['serve'], 77, 'unexpected_child')
+assert json.loads(response.stdout) == {'wrapper_refusal': 'unexpected_child', 'children_reaped': True}
+assert b'environment_preserved' not in response.stdout + response.stderr
+
+# This is an intentional FAILED invocation. The regression passes only when
+# its partial output and exact owned-container cleanup are recorded.
+try:
+    run_owned('timeout-regression', image, base + ['--user', '10001:10001',
+        '--entrypoint', '/bin/sh'], ['-c', 'printf timeout-started; printf timeout-stderr >&2; exec sleep 60'],
+        evidence, timeout=2)
+except InvocationFailure as error:
+    timeout_record = error.record
+else:
+    raise AssertionError('The deterministic timeout did not fail')
+assert timeout_record['status'] == 'FAIL' and timeout_record['timed_out']
+assert timeout_record['cleanup']['complete']
+assert timeout_record['container_id']
+assert (evidence / 'timeout-regression.stdout').read_bytes() == b'timeout-started'
+assert (evidence / 'timeout-regression.stderr').read_bytes() == b'timeout-stderr'
+assert any(event['action'] == 'ownership_verified' and event['running'] for event in timeout_record['cleanup']['events'])
+assert any(event['action'] == 'remove' and event['id'] == timeout_record['container_id'] for event in timeout_record['cleanup']['events'])
+(evidence / 'timeout-regression-check.json').write_text(json.dumps({
+    'regression': 'PASS', 'observed_invocation': 'FAIL',
+    'cleanup_complete': True, 'container_id': timeout_record['container_id']}, indent=2) + '\n')
+
 # A separate, default-deny outer filter forces policy installation to fail.
 # It has no socket allowance. No fixture is processed under this test profile.
 allowed = ('read write close close_range openat newfstatat fstat statx statfs fstatfs lseek pread64 access faccessat faccessat2 '
