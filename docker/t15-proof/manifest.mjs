@@ -36,6 +36,7 @@ for (const name of [
   'suite.h',
   'sha256.h',
   'wrapper.c',
+  'report.h',
   'manifest.mjs',
   'fixtures.mjs',
   'base-receipt.json',

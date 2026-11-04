@@ -13,9 +13,11 @@ RUN mkdir /out && cc -std=c11 -O2 -Wall -Wextra -Werror -Wl,-z,relro,-z,now -Wl,
     cc -std=c11 -O2 -static -Wall -Wextra -Werror \
     -o /out/entrypoint.sh /src/wrapper.c && \
     cc -std=c11 -O2 -static -Wall -Wextra -Werror -o /out/test-active-cap /src/test-active-cap.c && \
+    cc -std=c11 -O2 -static -Wall -Wextra -Werror -o /out/test-orphan /src/test-orphan.c && \
     cc --version > /out/compiler.txt
 FROM scratch AS test-tools
 COPY --from=compiler /out/test-active-cap /test-active-cap
+COPY --from=compiler /out/test-orphan /test-orphan
 
 FROM ghcr.io/tidynotebook/tidynotebook@sha256:8c899a0188642f686a1f3c95a11caa45c0ef3ae01902975b6f5b8d7ffa07d642 AS diagnostic
 USER root
