@@ -13,6 +13,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spacingSpec } from './spacing.ts';
 import {
+  requiredFieldMessage,
   avatarClassName,
   badgeClassName,
   bareFieldClassName,
@@ -63,12 +64,16 @@ const variants: readonly ButtonVariant[] = [
 for (const value of [0, 0.24, 1, 4, 5, 50, 89, 90, 99, 100, 125])
   await test(`a meter at ${String(value)} of 100 has its real percentage`, () => {
     assert.equal(meterFillPercent(value, 100), Math.min(value, 100));
-    assert.equal(meterAlmostFull(value, 100), value >= 90);
+    assert.equal(meterAlmostFull(value, 100), value >= 90 && value < 100);
     const classes = meterClassNames(value, 100);
     assert.ok(
       classes.fill.includes(
-        value >= 90 ? 'fill-danger-fill' : 'fill-accent-fill',
+        value >= 100 ? 'fill-danger-fill' : 'fill-accent-fill',
       ),
+    );
+    assert.equal(
+      classes.settingsValue,
+      `text-value ${value >= 100 ? 'text-danger' : 'text-muted'}`,
     );
     assert.ok(classes.track.includes('overflow-hidden'));
   });
@@ -87,7 +92,7 @@ await test('a meter refuses numbers that cannot state a value against a maximum'
 });
 
 /** Every button size. */
-const sizes: readonly ButtonSize[] = ['sm', 'md'];
+const sizes: readonly ButtonSize[] = ['compact', 'default'];
 
 /** Every recipe of the module, with the name a failure message reads. */
 const recipes: readonly (readonly [string, string])[] = [
@@ -101,7 +106,7 @@ const recipes: readonly (readonly [string, string])[] = [
     'compact danger icon',
     compactButtonVisualClassName({
       variant: 'danger',
-      size: 'sm',
+      size: 'compact',
       iconOnly: true,
     }),
   ],
@@ -634,7 +639,7 @@ await test('the pull answers the box of the control it corrects', () => {
   // assertions fail when it does not.
   const box = buttonClassName({
     variant: 'ghost',
-    size: 'sm',
+    size: 'compact',
     iconOnly: true,
     compact: true,
   }).split(' ');
@@ -828,7 +833,7 @@ await test('history controls draw the surface of every other format tool', async
   } = await import('./control-classes.ts');
   const tool = compactButtonVisualClassName({
     variant: 'ghost',
-    size: 'sm',
+    size: 'compact',
     iconOnly: true,
   }).split(' ');
   const on = historyButtonVisualClassName(false).split(' ');
@@ -869,7 +874,7 @@ await test('history controls take the tool size of every format tool', async () 
   // same target, so the row keeps one width and one gap.
   const tool = buttonClassName({
     variant: 'ghost',
-    size: 'sm',
+    size: 'compact',
     iconOnly: true,
     compact: true,
   }).split(' ');
@@ -907,11 +912,11 @@ await test('history controls retain their size and focus when unavailable', asyn
 });
 
 await test('the touch button recipe uses the shared icon target on each pointer', () => {
-  const classes = buttonClassName({ size: 'touch', iconOnly: true });
+  const classes = buttonClassName({ size: 'default', iconOnly: true });
   assert.ok(classes.split(' ').includes('ui-icon-button'));
   assert.equal(spacingSpec.coarse.compact, 44);
   assert.ok(!/md:size-[78]/.test(classes));
-  assert.ok(!/md:min-h-[78]/.test(buttonClassName({ size: 'touch' })));
+  assert.ok(!/md:min-h-[78]/.test(buttonClassName({ size: 'default' })));
 });
 
 await test('Settings switches share the content edge in both states', () => {
@@ -925,4 +930,13 @@ await test('Settings switches share the content edge in both states', () => {
     rowClassName().split(' ').includes('px-2'),
     'other rows keep their inset',
   );
+});
+
+await test('required field copy preserves names and initial abbreviations', () => {
+  assert.equal(
+    requiredFieldMessage('Email address'),
+    'Enter the email address.',
+  );
+  assert.equal(requiredFieldMessage('API key name'), 'Enter the API key name.');
+  assert.equal(requiredFieldMessage('New API key'), 'Enter the new API key.');
 });

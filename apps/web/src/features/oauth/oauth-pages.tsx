@@ -35,7 +35,7 @@ function OAuthMessage({ message }: { readonly message: string }): ReactNode {
 function OAuthLoading(): ReactNode {
   return (
     <AuthFrame title="Access to your notes">
-      <LoadingState label="The access request is loading." />
+      <LoadingState label="Loading access request" />
     </AuthFrame>
   );
 }

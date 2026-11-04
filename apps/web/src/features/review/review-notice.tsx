@@ -104,7 +104,7 @@ export function ReviewNoticeBar({
       >
         <Button
           variant="secondary"
-          size="sm"
+          size="compact"
           onClick={() => {
             void navigate(`/w/${workspaceId}/notes/${fileId}/review`);
           }}
@@ -113,7 +113,7 @@ export function ReviewNoticeBar({
         </Button>
         <Button
           variant="ghost"
-          size="sm"
+          size="compact"
           onClick={() => {
             dismiss(notice.reviewId);
           }}

@@ -233,12 +233,16 @@ export function tableAlignments(row: string): readonly ColumnAlign[] {
  * hidden padding of a table cell took the width of a column, and the hidden
  * marks of the bold word that ends an item stood beside the body.
  */
-function cellMark(classes: readonly string[]): Decoration {
+function cellMark(
+  classes: readonly string[],
+  attributes?: Record<string, string>,
+): Decoration {
   const [cell] = classes;
   if (cell === undefined || !layoutClasses.has(cell))
     throw new Error(`Not a cell class: ${String(cell)}`);
   return Decoration.mark({
     class: classes.filter((part) => part !== '').join(' '),
+    ...(attributes === undefined ? {} : { attributes }),
     inclusive: true,
   });
 }
@@ -518,6 +522,7 @@ export function contentText(
   state: EditorState,
   from: number,
   to: number,
+  preserveSpace = false,
 ): string {
   let text = '';
   let at = from;
@@ -536,7 +541,7 @@ export function contentText(
     },
   });
   text += state.doc.sliceString(Math.max(at, from), to);
-  return text.replace(/\s+/g, ' ').trim();
+  return preserveSpace ? text.trim() : text.replace(/\s+/g, ' ').trim();
 }
 
 /** The label of a footnote reference or definition node, or null. */
@@ -875,11 +880,14 @@ export function buildPreview(
     // and at its end lands inside it.
     if (to > from)
       cells.push(
-        cellMark([
-          header ? 'cm-np-table-head' : 'cm-np-table-cell',
-          align === null ? '' : `cm-np-align-${align}`,
-          active ? 'cm-np-table-active' : '',
-        ]).range(from, to),
+        cellMark(
+          [
+            header ? 'cm-np-table-head' : 'cm-np-table-cell',
+            align === null ? '' : `cm-np-align-${align}`,
+            active ? 'cm-np-table-active' : '',
+          ],
+          { style: `grid-column: ${String(column + 2)}; grid-row: 1` },
+        ).range(from, to),
       );
     tablePaddingHide(from, to);
   };
@@ -1349,21 +1357,39 @@ export function buildPreview(
       ) {
         if (child.name !== 'TableDelimiter') continue;
         if (child.from > at) {
-          tableCellMark(at, child.from, header, column);
+          if (column < alignments.length)
+            tableCellMark(at, child.from, header, column);
+          else hide(at, child.from);
           column += 1;
+        } else if (at > node.from) {
+          // A cell with no source text still needs a box. Its closing pipe
+          // supplies the range, while the pipe itself stays hidden.
+          if (column < alignments.length)
+            tableCellMark(child.from, child.to, header, column);
+          hide(child.from, child.to);
+          column += 1;
+          at = child.to;
+          continue;
         }
-        // The hidden separator still leaves a node in the row, and a node
-        // between two cells becomes an anonymous cell of the browser. After
-        // an edit that replaces some rows, a browser can split those
-        // anonymous cells, so the rows stop lining up. The gap makes each
-        // separator one real cell of no width, so every row holds the same
-        // cells. The mark is inclusive, so it opens before the hidden range
-        // and wraps it.
         cells.push(tableGap.range(child.from, child.to));
         hide(child.from, child.to);
         at = child.to;
       }
-      if (node.to > at) tableCellMark(at, node.to, header, column);
+      if (node.to > at) {
+        if (column < alignments.length)
+          tableCellMark(at, node.to, header, column);
+        else hide(at, node.to);
+        column += 1;
+      }
+      // Missing trailing cells keep the remaining area of the row outlined.
+      if (column < alignments.length)
+        items.push(
+          Decoration.line({
+            attributes: {
+              style: `--notes-table-tail-content: ''; --notes-table-tail: ${String(column + 2)}`,
+            },
+          }).range(doc.lineAt(node.from).from),
+        );
       return true;
     }
 

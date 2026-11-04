@@ -1,16 +1,11 @@
-import { useSettingsSurface } from './settings-layout.tsx';
-/** Typed composition. Spacing belongs to a parent, not to a feature class. */
 import {
-  DialogInsetContext,
-  SectionFormContext,
-} from './dialog-layout-context.ts';
-import {
-  useContext,
   createElement,
   type ComponentPropsWithRef,
   type ReactNode,
   type ElementType,
 } from 'react';
+/** Typed composition. Spacing belongs to a parent, not to a feature class. */
+
 export type Space = 0 | 0.5 | 1 | 2 | 3 | 4 | 6 | 8 | 12;
 export type DensityValue<T> = T | { readonly fine: T; readonly coarse: T };
 export type SpaceValue = DensityValue<Space>;
@@ -339,16 +334,42 @@ export function Panel<T extends Tag = 'div'>({
   );
 }
 export function Toolbar({
+  floating = false,
+  trailing,
   children,
   className = '',
 }: {
+  readonly floating?: boolean;
+  readonly trailing?: ReactNode;
   readonly children: ReactNode;
   readonly className?: string | undefined;
 }): ReactNode {
-  return (
-    <Inline gap={0.5} className={className}>
-      {children}
+  const content = (
+    <Inline
+      gap={floating ? 1 : 0.5}
+      pad={floating ? 1 : 0}
+      wrap={false}
+      justify={floating ? 'center' : 'start'}
+      className={`${floating ? 'w-fit max-w-full rounded-lg border border-overlay-edge bg-overlay state-overlay text-strong shadow-overlay' : ''} ${className}`}
+    >
+      {floating ? (
+        <Inline gap={1} wrap justify="center" className="min-w-0 flex-1">
+          {children}
+        </Inline>
+      ) : (
+        children
+      )}
+      {trailing === undefined ? null : (
+        <span className="shrink-0 self-start">{trailing}</span>
+      )}
     </Inline>
+  );
+  return floating ? (
+    <div className="absolute inset-x-3 top-3 flex justify-center">
+      {content}
+    </div>
+  ) : (
+    content
   );
 }
 export function IconSlot({
@@ -391,7 +412,7 @@ export function StatusLine<T extends Tag = 'div'>({
     as ?? 'div',
     {
       ...rest,
-      className: `flex h-8 w-full shrink-0 items-center gap-2 px-2 py-2 text-secondary coarse:px-3 ${className}`,
+      className: `flex w-full shrink-0 items-center gap-2 px-2 py-2 text-secondary coarse:px-3 ${className}`,
     },
     children,
   );
@@ -428,36 +449,4 @@ export function Viewport<T extends Tag = 'div'>(
 }
 export function CanvasImage(props: ComponentPropsWithRef<'img'>): ReactNode {
   return <img {...props} className={props.className} />;
-}
-/** A form either groups fields or contains independently padded regions. */
-export function Form({
-  regions = false,
-  section = false,
-  column,
-  className = '',
-  gap = regions ? 0 : 3,
-  children,
-  ...props
-}: ComponentPropsWithRef<'form'> & {
-  readonly regions?: boolean;
-  readonly section?: boolean;
-  readonly column?: boolean;
-  readonly gap?: SpaceValue;
-}): ReactNode {
-  const dialogInset = useContext(DialogInsetContext);
-  const settings = useSettingsSurface();
-  const bounded = column ?? (settings || dialogInset);
-  return (
-    <SectionFormContext.Provider value={section}>
-      <Stack
-        {...props}
-        className={`${bounded && !section ? 'w-full fine:max-w-lg fine:self-start' : ''} ${section ? 'fine:flex-none' : ''} ${className}`}
-        as="form"
-        gap={regions && dialogInset ? 6 : gap}
-        fill={regions}
-      >
-        {children}
-      </Stack>
-    </SectionFormContext.Provider>
-  );
 }

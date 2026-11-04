@@ -39,14 +39,14 @@ function copyControl(figure: HTMLElement, code: HTMLElement): HTMLElement {
   control.type = 'button';
   control.className = buttonClassName({
     variant: 'ghost',
-    size: 'sm',
+    size: 'compact',
     compact: true,
     className: publishedCopyPlace,
   });
   const surface = document.createElement('span');
   surface.className = compactButtonVisualClassName({
     variant: 'ghost',
-    size: 'sm',
+    size: 'compact',
     iconOnly: false,
   });
   const word = document.createElement('span');

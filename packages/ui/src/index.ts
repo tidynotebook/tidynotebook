@@ -152,6 +152,7 @@ export {
 } from './layout.tsx';
 export type { PageSection } from './layout-classes.ts';
 export {
+  checkoutFrameClassName,
   pageColumnClassName,
   pageGroupLabelClassName,
   pageListClassName,
@@ -165,6 +166,11 @@ export {
   transitionRaise,
   transitionSurface,
 } from './motion.ts';
+export {
+  DialogList,
+  DialogListGroup,
+  useDialogListInset,
+} from './dialog-list.tsx';
 export type { DialogWidth } from './dialog.tsx';
 export {
   Dialog,
@@ -347,6 +353,8 @@ export {
   RowControl,
   ContentGroups,
 } from './content-header.tsx';
+export { IdentityMark, TileSelectedBadge } from './identity.tsx';
+export { PreviewBlock } from './preview-block.tsx';
 export { PreviewSurface } from './preview-surface.tsx';
 export { Dialog as Sheet } from './dialog.tsx';
 
@@ -362,7 +370,11 @@ export { Viewport, CanvasImage } from './primitives.tsx';
 export { FieldButton } from './controls.tsx';
 export { ThemePreview } from './theme-preview.tsx';
 export { FieldGroup } from './controls.tsx';
-export { Form } from './primitives.tsx';
+export { Form } from './form.tsx';
 export { SettingEditRow } from './setting-edit-row.tsx';
 
 export { deferredDialog, DialogLoading } from './deferred-dialog.tsx';
+
+export { observeElementScrollEdges } from './native-scroll-edges.ts';
+
+export { ScrollCueRegion } from './scroll-cue-region.tsx';

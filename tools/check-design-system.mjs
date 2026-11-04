@@ -29,8 +29,25 @@ export function inspectDesignSource(path, source) {
     issues.push({ file: path, rule, match });
   };
   if (path.endsWith('.css')) {
-    for (const match of source.matchAll(/@utility\s+([\w-]+)/g))
-      add('component-css', match[1] ?? '');
+    const states = {
+      'state-overlay': ['--notes-overlay-hover', '--notes-overlay-selected'],
+      'state-raised': [
+        '--notes-card-raised-hover',
+        '--notes-card-raised-selected',
+      ],
+    };
+    for (const match of source.matchAll(/@utility\s+([\w-]+)\s*\{([^}]*)\}/g)) {
+      const name = match[1] ?? '';
+      const values = Object.entries(states).find(([key]) => key === name)?.[1];
+      const expected = values
+        ? `--notes-surface-hover: var(${values[0]}); --notes-surface-active: var(${values[1]});`
+        : '';
+      if (
+        !expected ||
+        (match[2] ?? '').replace(/\s+/g, ' ').trim() !== expected
+      )
+        add('component-css', name);
+    }
     for (const match of source.matchAll(/--(ui-[\w-]+)\s*:/g))
       add('role-alias', match[1] ?? '');
     for (const match of source.matchAll(/([^{};]+)\{/g)) {
@@ -63,10 +80,22 @@ export function inspectDesignSource(path, source) {
           ? record(node.value).raw
           : undefined;
     if (typeof text === 'string')
-      for (const token of text
-        .split(/\s+/)
-        .filter(Boolean)
-        .map(baseCandidate)) {
+      for (let token of text.split(/\s+/).filter(Boolean)) {
+        if (/\[[^\]]+\]:(?!not\()/.test(token) || /(?:^|:)\[--/.test(token))
+          add('arbitrary-value', token);
+        if (
+          /(?:^|:)content-[\w-]+:/.test(token) &&
+          ![
+            'packages/ui/src/static.ts',
+            'packages/ui/src/preview-surface.tsx',
+            'packages/ui/src/code-figure.ts',
+            'packages/ui/src/dialog-classes.ts',
+            'apps/docs/src/page.ts',
+          ].includes(path)
+        )
+          add('content-boundary', token);
+        const candidate = baseCandidate(token);
+        token = candidate;
         if (/^-?(?:p[xytrblse]?|gap(?:-[xy])?)-/.test(token)) {
           if (app) add('feature-spacing', token);
           else {
@@ -86,7 +115,12 @@ export function inspectDesignSource(path, source) {
           }
         }
         if (/^space-[xy]-/.test(token)) add('child-spacing', token);
-        if (app && /^min-h-/.test(token)) add('minimum-height', token);
+        if (
+          /^min-h-/.test(token) &&
+          (app ||
+            !['min-h-0', 'min-h-full', 'min-h-dvh', 'min-h-64'].includes(token))
+        )
+          add('minimum-height', token);
         if (/^[\w-]+-\[[^\]]+\]$/.test(token)) add('arbitrary-value', token);
       }
     for (const child of Object.values(node)) walk(child);

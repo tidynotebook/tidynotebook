@@ -29,7 +29,7 @@ await test('a static meter states its role, range, value and accessible name', (
   );
 });
 
-await test('a static meter states Almost full at the warning threshold', () => {
+await test('a static meter states Almost full near its limit', () => {
   const markup = renderToStaticMarkup(
     createElement(Meter, {
       label: 'Use',
@@ -38,7 +38,7 @@ await test('a static meter states Almost full at the warning threshold', () => {
       text: '90 of 100 used',
     }),
   );
-  assert.ok(markup.includes('fill-danger-fill'));
+  assert.ok(markup.includes('fill-accent-fill'));
   assert.ok(markup.includes('90 of 100 used. Almost full</p>'));
   assert.ok(markup.includes('aria-valuetext="90 of 100 used. Almost full"'));
 });
@@ -53,7 +53,7 @@ await test('a meter above its maximum keeps the real use in words and a valid AR
     }),
   );
   assert.ok(markup.includes('aria-valuenow="100"'));
-  assert.ok(markup.includes('125 of 100 used. Almost full</p>'));
+  assert.ok(markup.includes('125 of 100 used. Limit reached</p>'));
   assert.ok(markup.includes('fill-danger-fill'));
   assert.ok(markup.includes('width="100%"'));
 });
@@ -81,4 +81,45 @@ await test('half use fills half the track', () => {
     }),
   );
   assert.match(markup, /<rect width="50%"/);
+});
+
+await test('a full meter states the limit in words and danger text', () => {
+  const markup = renderToStaticMarkup(
+    createElement(Meter, {
+      label: 'Storage',
+      value: 100,
+      max: 100,
+      text: '100 of 100 used',
+    }),
+  );
+  assert.match(markup, /text-danger/);
+  assert.match(markup, /fill-danger-fill/);
+  assert.match(markup, /aria-valuetext="100 of 100 used. Limit reached"/);
+  assert.doesNotMatch(markup, /Almost full/);
+});
+
+await test('progress keeps the supplied check text and accent fill at and beyond completion', () => {
+  for (const value of [11, 12, 15]) {
+    const text = `Check ${value} of 12. Next check in 5 seconds.`;
+    const markup = renderToStaticMarkup(
+      createElement(Meter, {
+        kind: 'progress',
+        label: 'Checks with Paddle',
+        value,
+        max: 12,
+        text,
+      }),
+    );
+    assert.match(markup, /role="progressbar"/);
+    assert.match(markup, /aria-valuemin="0" aria-valuemax="12"/);
+    assert.ok(markup.includes(`aria-valuenow="${Math.min(value, 12)}"`));
+    assert.ok(markup.includes(`aria-valuetext="${text}"`));
+    assert.match(markup, /fill-accent-fill/);
+    assert.match(markup, /text-muted/);
+    assert.match(markup, /<rect width="2" height="100%"/);
+    assert.doesNotMatch(
+      markup,
+      /Almost full|Limit reached|fill-danger-fill|text-danger|role="meter"/,
+    );
+  }
 });

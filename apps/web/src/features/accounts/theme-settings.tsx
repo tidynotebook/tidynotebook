@@ -1,4 +1,5 @@
 import {
+  TileSelectedBadge,
   Stack,
   Grid,
   Inline,
@@ -99,7 +100,7 @@ export function onlyModeOf(family: ThemeFamily): 'light' | 'dark' | null {
 
 /** The classes of one selectable card, chosen or not. */
 function cardClassName(chosen: boolean): string {
-  return `flex min-w-0 cursor-pointer flex-col overflow-hidden rounded-md border bg-card text-body text-strong ${transitionSurface} focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus ${
+  return `flex min-w-0 cursor-pointer flex-col overflow-hidden rounded-md border bg-card text-body text-strong ${transitionSurface} focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-focus ${
     chosen
       ? 'border-strong ring-1 ring-strong'
       : 'border-edge-line hover:bg-hover'
@@ -248,13 +249,9 @@ export function ThemeSettings(): ReactNode {
                       />
                     )}
                     {chosen ? (
-                      <span
-                        data-mode-check=""
-                        className="absolute right-2 top-2 inline-flex rounded-md bg-card text-strong"
-                        aria-hidden="true"
-                      >
+                      <TileSelectedBadge>
                         <CheckIcon />
-                      </span>
+                      </TileSelectedBadge>
                     ) : null}
                   </span>
                   <Inline padY={2} gap={2} padX={2} align="center" as="span">
@@ -287,7 +284,7 @@ export function ThemeSettings(): ReactNode {
                   <>
                     <Button
                       variant="ghost"
-                      size="sm"
+                      size="compact"
                       icon={<UploadIcon />}
                       disabled={busy}
                       onClick={() => fileInput.current?.click()}
@@ -296,7 +293,7 @@ export function ThemeSettings(): ReactNode {
                     </Button>
                     <Button
                       variant="ghost"
-                      size="sm"
+                      size="compact"
                       icon={<DownloadIcon />}
                       label={`Export the ${current.name} theme file`}
                       onClick={() => {
@@ -369,7 +366,7 @@ export function ThemeSettings(): ReactNode {
                   {importedTheme ? (
                     <Button
                       variant="ghost"
-                      size="sm"
+                      size="compact"
                       tone="danger"
                       icon={actionIcon(deleteGlyph)}
                       disabled={busy}

@@ -1,4 +1,3 @@
-import { overlayStateClasses } from './surface-classes.ts';
 import { fixedRegionClasses } from './scroll-classes.ts';
 /**
  * The classes of the one modal dialog, as pure functions.
@@ -22,6 +21,9 @@ import { fixedRegionClasses } from './scroll-classes.ts';
 /**
  * How wide a dialog panel is.
  *
+ * `command` keeps the medium width. Its content frame owns the block inset
+ * and gaps. Regions own the same side inset, so rows keep their optical fill.
+ *
  * `screen` is no panel at all: the content fills the screen over a deeper
  * scrim, with no fill, edge or radius of its own. It is for content that a
  * person looks at rather than reads, such as a picture in the image viewer
@@ -32,7 +34,7 @@ import { fixedRegionClasses } from './scroll-classes.ts';
  * scroll on their own, so the panel itself does not scroll.
  */
 export type DialogWidth =
-  'small' | 'medium' | 'large' | 'template' | 'settings' | 'screen';
+  'small' | 'medium' | 'large' | 'template' | 'settings' | 'screen' | 'command';
 
 /** Where a dialog panel sits on the screen. */
 export type DialogAlign = 'top' | 'center' | 'sheet';
@@ -57,20 +59,20 @@ export function dialogPanelClassName(
   fillSheet = false,
 ): string {
   if (phone && width !== 'screen')
-    return `${width === 'settings' ? '' : overlayStateClasses} phone-sheet not-data-sheet-ready:opacity-0 relative flex max-h-sheet w-full flex-col overflow-hidden rounded-t-xl border-y border-edge-subtle bg-card text-strong shadow-modal outline-none ${width === 'settings' || width === 'template' ? 'h-full max-h-full' : fillSheet ? 'phone-sheet-fill [&_[role=tree]]:max-h-none' : ''}`;
+    return `${width === 'settings' ? '' : 'state-overlay'} phone-sheet not-data-sheet-ready:opacity-0 relative flex max-h-sheet w-full flex-col overflow-hidden rounded-t-xl border-y border-edge-subtle bg-card text-strong shadow-modal outline-none ${width === 'settings' || width === 'template' ? 'h-full max-h-full' : fillSheet ? 'phone-sheet-fill content-tree:max-h-none' : ''}`;
   if (width === 'screen')
     return 'relative h-full w-full text-strong outline-none';
   if (width === 'settings')
     return 'flex h-full max-h-full w-full flex-col overflow-hidden bg-card text-strong outline-none lg:h-settings lg:max-w-settings lg:rounded-xl lg:border lg:border-edge-subtle lg:shadow-modal';
   if (width === 'template')
-    return `${overlayStateClasses} flex h-full max-h-full w-full flex-col overflow-hidden p-6 rounded-t-xl border border-edge-subtle bg-card text-strong shadow-modal outline-none lg:h-template lg:max-w-3xl lg:rounded-xl`;
+    return `state-overlay flex h-full max-h-full w-full flex-col overflow-hidden p-6 rounded-t-xl border border-edge-subtle bg-card text-strong shadow-modal outline-none lg:h-template lg:max-w-3xl lg:rounded-xl`;
   const measure =
     width === 'small'
       ? 'max-w-md'
       : width === 'large'
         ? 'max-w-3xl'
         : 'max-w-xl';
-  return `${overlayStateClasses} relative flex w-full flex-col gap-6 p-6 ${measure} max-h-full overflow-hidden overscroll-contain rounded-xl border border-edge-subtle bg-card text-strong shadow-modal outline-none`;
+  return `state-overlay relative flex w-full flex-col ${width === 'command' ? '' : 'gap-6 p-6'} ${measure} max-h-full overflow-hidden overscroll-contain rounded-xl border border-edge-subtle bg-card text-strong shadow-modal outline-none`;
 }
 
 /** The title of a dialog, as classes. */

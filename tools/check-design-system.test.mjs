@@ -58,3 +58,47 @@ await test('custom layout CSS and specificity hacks are refused', () => {
       rule,
     );
 });
+
+await test('shared components reject arbitrary properties and variants and row minimum heights', () => {
+  const issues = inspectDesignSource(
+    'packages/ui/src/example.tsx',
+    'const x="[--surface:var(--fill)] [&_button]:w-full min-h-8";',
+  );
+  assert.equal(
+    issues.filter((issue) => issue.rule === 'arbitrary-value').length,
+    2,
+  );
+  assert.ok(issues.some((issue) => issue.rule === 'minimum-height'));
+});
+
+await test('state utilities set only the approved inherited theme tokens', () => {
+  assert.deepEqual(
+    inspectDesignSource(
+      'apps/web/src/tailwind.css',
+      '@utility state-overlay { --notes-surface-hover: var(--notes-overlay-hover); --notes-surface-active: var(--notes-overlay-selected); }',
+    ),
+    [],
+  );
+  assert.ok(
+    inspectDesignSource(
+      'apps/web/src/tailwind.css',
+      '@utility state-overlay { padding: 8px; }',
+    ).some((issue) => issue.rule === 'component-css'),
+  );
+});
+
+await test('content variants stay at shared markup boundaries', () => {
+  assert.ok(
+    inspectDesignSource(
+      'apps/web/src/example.tsx',
+      'const c="content-pre:p-3";',
+    ).some((issue) => issue.rule === 'content-boundary'),
+  );
+  assert.deepEqual(
+    inspectDesignSource(
+      'packages/ui/src/preview-surface.tsx',
+      'const c="content-pre:p-3";',
+    ),
+    [],
+  );
+});

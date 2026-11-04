@@ -42,11 +42,13 @@ await test('the frame of the note draws no space above the text', () => {
 
 await test('the footer draws the one divider above itself', () => {
   // The note text is a region a person scrolls, so the design guide draws a
-  // line there. It is `edge-line`, the one divider of the product.
+  // line only when the content overflows. The edge stays outside the layout.
   for (const typing of [false, true]) {
     const footer = noteFooterClassName(typing).split(' ');
-    assert.ok(footer.includes('border-t'));
-    assert.ok(footer.includes('border-edge-line'));
+    assert.ok(footer.includes('before:top-0'));
+    assert.ok(footer.includes('data-scroll-overflow:before:opacity-100'));
+    assert.ok(!footer.includes('border-t'));
+    assert.ok(footer.includes('before:border-edge-subtle'));
   }
 });
 

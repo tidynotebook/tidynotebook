@@ -347,7 +347,7 @@ await test('every class of every control recipe reaches the built stylesheet', a
   const answers: string[] = [];
   for (const variant of variants)
     for (const tone of [undefined, 'danger'] as const)
-      for (const size of ['sm', 'md'] as const)
+      for (const size of ['compact', 'default'] as const)
         for (const iconOnly of [false, true]) {
           for (const compact of [false, true])
             answers.push(

@@ -89,7 +89,7 @@ export function ApiKeySettings(): ReactNode {
       {error === '' ? null : <Notice tone="problem" message={error} />}
       {keys === null ? (
         error === '' ? (
-          <LoadingState label="Reading API keys" />
+          <LoadingState label="Loading API keys" />
         ) : (
           <Button variant="secondary" onClick={() => setLoad(load + 1)}>
             Try again

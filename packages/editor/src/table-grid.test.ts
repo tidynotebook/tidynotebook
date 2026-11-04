@@ -28,11 +28,13 @@ import {
   cellText,
   pastedCells,
   gridParts,
+  tableColumnWidths,
   nextCellEdit,
   previousCellEdit,
   removeColumnEdit,
   removeRowEdit,
   tableAt,
+  tablesIn,
   tableData,
   tableEditSpec,
   tableGridEditing,
@@ -752,4 +754,79 @@ await test('an add bar adds a row or a column at the end, from any cell', () => 
     applied(inBody, tableEditSpec(inBody, appendColumnEdit)),
     '| a   | b   | ‸    |\n| --- | --- | --- |\n| 1   | 2   |     |',
   );
+});
+
+await test('empty cells without padding keep their column in the table model', () => {
+  const state = stateOf('| a | b | c |\n| --- | --- | --- |\n|x||z|‸');
+  const table = tableAt(state, 1);
+  assert.ok(table);
+  assert.deepEqual(tableData(state, table).body, [['x', '', 'z']]);
+});
+
+await test('column tracks include the full large table and change only with text', () => {
+  const source =
+    '| Date | Value |\n| --- | --- |\n' +
+    '| short | 1 |\n'.repeat(2000) +
+    '| longestwordinthetable | 2 |';
+  const state = stateOf(source + '‸');
+  const table = tableAt(state, 1);
+  assert.ok(table);
+  const tracks = tableColumnWidths(state, table, (text) => text.length);
+  const offscreen = tableAt(state, source.length - 2);
+  assert.ok(offscreen);
+  assert.deepEqual(
+    tableColumnWidths(state, offscreen, (text) => text.length),
+    tracks,
+  );
+  assert.deepEqual(tracks, [21, 5]);
+  // This model check needs the edited table, independent of the view parse budget.
+  const edited = parsedWhole(
+    state.update({
+      changes: {
+        from: source.indexOf('longestwordinthetable'),
+        to: source.indexOf('longestwordinthetable') + 21,
+        insert: 'x',
+      },
+    }).state,
+  );
+  const changed = tableAt(edited, 1);
+  assert.ok(changed);
+  assert.notDeepEqual(
+    tableColumnWidths(edited, changed, (text) => text.length),
+    tracks,
+  );
+});
+
+await test('the first viewport sizes a table from its last row before background parsing', () => {
+  const doc =
+    '| Date | Value |\n| --- | --- |\n' +
+    '| short | 1 |\n'.repeat(2000) +
+    '| longestwordinthetable | 2 |\n\nAfter';
+  const state = EditorState.create({
+    doc,
+    extensions: noteMarkdownExtensions({ headless: true }),
+  });
+  const table = tablesIn(state, 0, 100)[0];
+  assert.ok(table);
+  assert.equal(table.rows.length, 2003);
+  assert.deepEqual(
+    tableColumnWidths(state, table, (text) => text.length),
+    [21, 5],
+  );
+});
+
+await test('measurement excludes source padding and preserves interior spaces', () => {
+  const state = stateOf('| H | Count |\n| --- | --- |\n| a  b | 1 |‸');
+  const table = tableAt(state, 1);
+  assert.ok(table);
+  const measured: string[] = [];
+  assert.deepEqual(
+    tableColumnWidths(state, table, (text) => {
+      measured.push(text);
+      return text.length;
+    }),
+    [4, 5],
+  );
+  assert.ok(measured.includes('a  b'));
+  assert.ok(!measured.includes(' a  b '));
 });

@@ -4,6 +4,8 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import {
   configureClient,
   createOwner,
@@ -11,7 +13,7 @@ import {
   setOperatorAccountControls,
 } from '@notesapp/api-client';
 import { createApp, loadServerConfig } from '@notesapp/server';
-import { meterClassNames, meterFillPercent } from '@notesapp/ui';
+import { Meter, meterClassNames, meterFillPercent } from '@notesapp/ui';
 import { directoryFiles } from '../../apps/web/src/pwa/precache.ts';
 import { formatBytes, storageLine } from '../../apps/web/src/lib/accounts.ts';
 import { transferUsage } from '../../apps/web/src/lib/monthly-limits.ts';
@@ -143,7 +145,14 @@ await test('Settings meters follow served account limits, and absent transfer li
         }),
     );
     const shipped = scripts.join('\n');
-    assert.match(shipped, /role:["'`]meter["'`]/);
+    // The role expression now selects progressbar for progress. Capacity stays meter.
+    assert.match(shipped, /role:[^,}]*["'`]meter["'`]/);
+    for (const use of uses) {
+      const markup = renderToStaticMarkup(createElement(Meter, use));
+      assert.match(markup, /role="meter"/);
+      assert.doesNotMatch(markup, /role="progressbar"/);
+      assert.ok(markup.includes(`aria-valuemax="${use.max}"`));
+    }
     for (const use of uses) assert.ok(shipped.includes(use.label), use.label);
     for (const attribute of [
       'aria-valuemin',

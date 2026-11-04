@@ -113,7 +113,7 @@ function MenuRow({
       data-menu-input={showFocus ? 'keyboard' : 'pointer'}
       className={rowClassName({
         danger: item.danger,
-        className: `w-full text-left md:min-h-8 ${showFocus ? '' : 'focus-visible:outline-none'}`,
+        className: `w-full text-left  ${showFocus ? '' : 'focus-visible:outline-none'}`,
       })}
       disabled={item.disabled ?? false}
       onPointerEnter={item.onIntent}
@@ -527,7 +527,7 @@ export function Menu({
             <span
               className={compactButtonVisualClassName({
                 variant: 'ghost',
-                size: 'sm',
+                size: 'compact',
                 iconOnly: children === undefined,
               })}
             >

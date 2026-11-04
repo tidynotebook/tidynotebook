@@ -165,7 +165,7 @@ const statefulEdge = /(?:^|[\s:])(?:border|ring)-edge(?![\w-])/;
 export const controlRecipeModule = 'packages/ui/src/control-classes.ts';
 
 /** The edge of the task box recipe, under the variant of a published task. */
-const publishedTaskBoxEdge = '[&_.task-list-item_input]:border-edge ';
+const publishedTaskBoxEdge = 'content-task-list-item-input:border-edge ';
 
 /** A `focus:` variant, and the two utilities a field may put behind one. */
 const pointerFocus = /(?:^|[\s:])focus:([a-z][\w-]*)/g;

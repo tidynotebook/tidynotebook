@@ -285,6 +285,8 @@ export function Dialog({
   if (!open) return null;
 
   const screen = width === 'screen';
+  const ownsInset =
+    !phone && !screen && width !== 'settings' && width !== 'command';
   const root = dialogRootClassName(width, align, phone);
   const panel = dialogPanelClassName(width, phone, fillSheet);
 
@@ -310,9 +312,7 @@ export function Dialog({
         id={`${titleId}-panel`}
         className={`${panel} ${transitionRaise}`}
         data-scroll-frame=""
-        data-dialog-inset={
-          !phone && width !== 'settings' && width !== 'screen' ? '' : undefined
-        }
+        data-dialog-inset={ownsInset ? '' : undefined}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -371,19 +371,17 @@ export function Dialog({
           </div>
         )}
         <PhoneSheetContext.Provider
-          value={phone && width !== 'screen' && width !== 'settings'}
+          value={phone && !screen && width !== 'settings'}
         >
-          <DialogInsetContext.Provider
-            value={!phone && width !== 'settings' && width !== 'screen'}
-          >
-            <DeferredDialogOpener.Provider value={null}>
-              <SectionFormContext.Provider value={false}>
-                <DialogHeaderActionsContext.Provider value={headerTarget}>
+          <DialogInsetContext value={ownsInset}>
+            <DeferredDialogOpener value={null}>
+              <SectionFormContext value={false}>
+                <DialogHeaderActionsContext value={headerTarget}>
                   {children}
-                </DialogHeaderActionsContext.Provider>
-              </SectionFormContext.Provider>
-            </DeferredDialogOpener.Provider>
-          </DialogInsetContext.Provider>
+                </DialogHeaderActionsContext>
+              </SectionFormContext>
+            </DeferredDialogOpener>
+          </DialogInsetContext>
         </PhoneSheetContext.Provider>
       </div>
     </div>
@@ -407,7 +405,7 @@ export function DialogHeaderAction({
   return target === null ? null : createPortal(children, target);
 }
 
-const PhoneSheetContext = createContext(false);
+export const PhoneSheetContext = createContext(false);
 
 const FixedDialogContext = createContext(false);
 
@@ -511,6 +509,7 @@ export function DialogFooter({
     const action = isValidElement<ComponentProps<typeof Button>>(primary)
       ? cloneElement(primary, {
           variant: primary.props.variant === 'danger' ? 'danger' : 'primary',
+          full: true,
         })
       : primary;
     const extra = nodes.filter(
@@ -530,9 +529,10 @@ export function DialogFooter({
         <Region
           scroll="none"
           edge="top"
-          pad={3}
+          padX={4}
+          padY={3}
           safeArea
-          className="ui-dialog-footer bg-card [&_button]:w-full"
+          className="ui-dialog-footer bg-card"
         >
           {action}
         </Region>

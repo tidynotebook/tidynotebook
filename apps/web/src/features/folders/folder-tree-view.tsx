@@ -280,9 +280,9 @@ export default function FolderTreeView({
               setProblem(null);
             }}
           />
-          <Button
+          <IconButton
             variant="ghost"
-            icon={<CheckIcon />}
+            glyph={<CheckIcon />}
             label="Create folder"
             className="size-11 shrink-0"
             onClick={createFolder}
@@ -323,10 +323,10 @@ export default function FolderTreeView({
           event.stopPropagation();
       }}
     >
-      <Button
+      <IconButton
         variant="ghost"
-        size={searchPlacement === 'header' ? 'md' : 'sm'}
-        icon={<SearchIcon />}
+        size="row"
+        glyph={<SearchIcon />}
         label="Search folders"
         buttonRef={searchButton}
         ariaExpanded={searching}
@@ -513,11 +513,7 @@ export default function FolderTreeView({
         })}
       </Stack>
       {creating === null ? (
-        <Inset
-          padY={1}
-          as="div"
-          className="border-0 border-t border-solid border-edge-subtle"
-        >
+        <Inset padY={1} as="div" className="border-0">
           <Button
             variant="ghost"
             icon={<FolderPlusIcon />}

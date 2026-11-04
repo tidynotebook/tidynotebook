@@ -223,7 +223,7 @@ function TemplateSelection({
                   message="Template settings are not available yet."
                 />
               ) : files.loading ? (
-                <LoadingState label="Reading templates" />
+                <LoadingState label="Loading templates" />
               ) : matching.length === 0 ? (
                 <p className="text-secondary text-muted">
                   {choices.length === 0
@@ -281,7 +281,7 @@ function TemplateSelection({
                 message="The template is not available on this device."
               />
             ) : ready === null ? (
-              <LoadingState label="Reading template" />
+              <LoadingState label="Loading template" />
             ) : ready.text === null ? (
               <>
                 <Notice

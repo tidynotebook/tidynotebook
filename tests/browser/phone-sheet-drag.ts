@@ -142,13 +142,13 @@ try {
         results.push(`${kind} ${reduced}: direct drag and snap back`);
         if (kind === 'Settings') {
           await p
-            .locator('.ui-settings-content > .ui-scroll-region')
+            .locator('.ui-settings-content [data-settings-scroll]')
             .evaluate((e) => {
               e.scrollTop = 0;
             });
           await pause(60);
           const body = await p
-            .locator('.ui-settings-content > .ui-scroll-region')
+            .locator('.ui-settings-content [data-settings-scroll]')
             .boundingBox();
           assert.ok(body);
           const x = 190,
@@ -190,7 +190,7 @@ try {
           await open();
           const before = await p.evaluate(() => {
             const body = document.querySelector<HTMLElement>(
-              '.ui-settings-content > .ui-scroll-region',
+              '.ui-settings-content [data-settings-scroll]',
             );
             if (!body) throw Error('Body missing');
             body.scrollTop = 160;
@@ -199,7 +199,7 @@ try {
           assert.ok(before > 0);
           await pause(50);
           const box = await p
-            .locator('.ui-settings-content > .ui-scroll-region')
+            .locator('.ui-settings-content [data-settings-scroll]')
             .boundingBox();
           assert.ok(box);
           await touch('touchStart', 190, box.y + 120);
@@ -212,7 +212,7 @@ try {
           await pause(100);
           assert.equal((await measure()).y, 0);
           const after = await p
-            .locator('.ui-settings-content > .ui-scroll-region')
+            .locator('.ui-settings-content [data-settings-scroll]')
             .evaluate((e) => e.scrollTop);
           assert.ok(after < before);
           results.push(`${kind} ${reduced}: scrolled body owns scrolling`);

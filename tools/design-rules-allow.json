@@ -14,7 +14,7 @@
     {
       "file": "packages/ui/src/control-classes.ts",
       "rule": "stateful-edge",
-      "reason": "The box of the checkbox recipe is one of the five controls that decision 0063 reserves the component edge for. A person reads the state of a checkbox from its shape alone, so its edge must meet the 3 to 1 non text minimum that theme.test.ts holds `border` to."
+      "reason": "The checkbox box and switch track recipes are two of the five controls that decision 0063 reserves the component edge for. A person reads the state of a checkbox from its shape alone, so its edge must meet the 3 to 1 non text minimum that theme.test.ts holds `border` to."
     },
     {
       "file": "apps/web/src/lib/tree-row.ts",

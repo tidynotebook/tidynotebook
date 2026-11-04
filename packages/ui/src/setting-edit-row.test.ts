@@ -45,6 +45,9 @@ await test('every scroll-edge layer stays outside flex and grid flow', () => {
     const classes = fixedRegionClasses(edge).split(/\s+/);
     assert.ok(classes.includes('before:absolute'));
     assert.ok(classes.includes('after:absolute'));
+    assert.ok(classes.includes('before:h-4'));
+    if (edge === 'both') assert.ok(classes.includes('after:h-4'));
+    assert.ok(!classes.includes('before:h-px'));
   }
 });
 

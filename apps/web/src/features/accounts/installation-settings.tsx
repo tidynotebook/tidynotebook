@@ -568,10 +568,10 @@ function LegalDocumentEditor({
 
   if (form === null)
     return loadFailure === '' ? (
-      <LoadingState shape="list" rows={3} label="The document is loading." />
+      <LoadingState shape="list" rows={3} label="Loading document" />
     ) : (
       <Notice tone="problem" message={loadFailure}>
-        <Button variant="secondary" size="sm" onClick={onClose}>
+        <Button variant="secondary" size="compact" onClick={onClose}>
           Back
         </Button>
       </Notice>

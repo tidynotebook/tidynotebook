@@ -13,6 +13,10 @@ It discovers integration tests under `tests/integration/`. The tests use
 PostgreSQL and MinIO from `compose.test.yaml`. Each integration test creates
 its own database or bucket.
 
+The documentation build test also needs Linux `strace` with syscall delay
+injection. It delays a real search-index write to check that the build waits
+for the file to finish before it stops the search service.
+
 Node cannot strip JSX. Logic that needs a unit test can live in a plain
 TypeScript module beside the component. Integration tests can check built
 styles and served results. Browser checks cover actual interaction and layout.

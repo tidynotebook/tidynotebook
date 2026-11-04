@@ -191,7 +191,7 @@ export const articleClasses = [
   codeFigureClassName,
   '[&_:not(pre)>code]:rounded-sm [&_:not(pre)>code]:bg-surface [&_:not(pre)>code]:px-1 [&_:not(pre)>code]:py-0.5 [&_:not(pre)>code]:text-strong',
   '[&_hr]:my-8 [&_hr]:border-edge-line',
-  '[&_table]:my-4 [&_table]:block [&_table]:w-full [&_table]:overflow-x-auto [&_table]:border-collapse [&_table]:text-ui',
+  '[&_.notes-table-scroll]:my-4 [&_.notes-table-scroll]:w-fit [&_.notes-table-scroll]:max-w-full [&_.notes-table-scroll]:overflow-x-auto [&_.notes-table-scroll]:focus-visible:outline-2 [&_.notes-table-scroll]:focus-visible:-outline-offset-2 [&_.notes-table-scroll]:focus-visible:outline-focus [&_table]:w-full [&_th]:max-w-table-cell [&_td]:max-w-table-cell [&_th]:wrap-anywhere [&_td]:wrap-anywhere [&_table]:border-collapse [&_table]:text-ui',
   '[&_th]:border [&_th]:border-edge-line [&_th]:bg-surface [&_th]:p-2 [&_th]:text-left [&_th]:align-top [&_th]:font-medium [&_th]:text-strong',
   '[&_td]:border [&_td]:border-edge-line [&_td]:p-2 [&_td]:align-top',
 ].join(' ');
@@ -257,7 +257,7 @@ export const codeBlockClasses = 'relative';
 /** The copy button of a code block, at the top right of the block. */
 const codeCopyClasses = buttonClassName({
   variant: 'secondary',
-  size: 'sm',
+  size: 'compact',
   className: 'absolute right-2 top-2',
 });
 
@@ -355,21 +355,21 @@ function header(settings: SiteSettings): string {
   const menu = buttonClassName({
     variant: 'ghost',
     iconOnly: true,
-    size: 'sm',
+    size: 'compact',
     className: 'md:hidden',
   });
   const search = buttonClassName({
     variant: 'secondary',
-    size: 'sm',
+    size: 'compact',
     className: 'justify-between gap-6 max-sm:hidden',
   });
   const searchIconOnly = buttonClassName({
     variant: 'ghost',
     iconOnly: true,
-    size: 'sm',
+    size: 'compact',
     className: 'sm:hidden',
   });
-  const source = buttonClassName({ variant: 'ghost', size: 'sm' });
+  const source = buttonClassName({ variant: 'ghost', size: 'compact' });
   return `<header class="${headerClasses}">
       <button type="button" class="${menu}" data-docs-menu data-docs-close-label="${words.closeContents}" aria-controls="docs-contents" aria-expanded="false" aria-label="${words.openContents}" title="${words.openContents}">${icon(MenuIcon)}</button>
       <a class="${homeLinkClasses}" href="${escapeAttribute(settings.base)}">${icon(AppMarkIcon)}<span class="truncate">${productName}</span><span class="font-medium text-muted">Docs</span></a>
@@ -439,7 +439,7 @@ function searchDialog(): string {
   const close = buttonClassName({
     variant: 'ghost',
     iconOnly: true,
-    size: 'sm',
+    size: 'compact',
   });
   return `<dialog id="docs-search" class="${searchDialogClasses}" aria-label="${words.searchLabel}" data-docs-search-dialog>
       <div class="${pageGutter} h-full">
@@ -477,8 +477,8 @@ export function pageDocument(view: PageView): string {
       : [
           `<link rel="canonical" href="${escapeAttribute(absoluteAddress(settings, pageHref(settings, page.slug)))}">`,
         ];
-  const secondary = buttonClassName({ variant: 'secondary', size: 'sm' });
-  const ghost = buttonClassName({ variant: 'ghost', size: 'sm' });
+  const secondary = buttonClassName({ variant: 'secondary', size: 'compact' });
+  const ghost = buttonClassName({ variant: 'ghost', size: 'compact' });
   return `<!doctype html>
 <html lang="en">
   <head>

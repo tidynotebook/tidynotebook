@@ -92,7 +92,11 @@ await test('a table row carries no margin, so none decides its column', () => {
   // The regression this holds: the table was the one construct that a
   // centring margin could not move, so it sat a hundred pixels left of every
   // other block of the note.
-  assert.equal(rule('.cm-np-table-line').display, 'table-row');
+  assert.equal(rule('.cm-np-table-line').display, 'grid');
+  assert.equal(
+    rule('.cm-np-table-line').gridTemplateColumns,
+    'max-content var(--notes-table-columns)',
+  );
   assert.equal(rule('.cm-np-table-line').marginInline, undefined);
   assert.equal(rule('.cm-np-table-line').marginLeft, undefined);
 });
@@ -285,7 +289,11 @@ await test('every cell of a line is a mark that no other mark splits', () => {
   // names one of them, and each of them is a cell.
   const cells = new Set<string>();
   for (const [selector, declarations] of Object.entries(noteSurfaceStyle())) {
-    if (declarations.display !== 'table-cell') continue;
+    if (
+      declarations.display !== 'table-cell' &&
+      !layoutClasses.has(selector.slice(1))
+    )
+      continue;
     for (const part of selector.split(',')) {
       const name = /^\.([\w-]+)$/.exec(part.trim())?.[1];
       assert.ok(name !== undefined, `${part} is a cell of no one class`);
@@ -358,30 +366,22 @@ await test('a table is a grid of outlined cells that scrolls on its own', () => 
   // A hidden separator is a real cell that draws nothing, so a row holds no
   // loose node that the browser wraps in an anonymous cell of its own.
   const gap = rule('.cm-np-table-gap');
-  assert.equal(gap.display, 'table-cell');
-  assert.equal(gap.width, '0');
-  assert.equal(gap.padding, '0');
+  assert.equal(gap.display, 'none');
   assert.equal(gap.border, undefined);
   const head = rule('.cm-np-table-head');
   const cell = rule('.cm-np-table-cell');
   for (const box of [head, cell]) {
     // The outline is the one divider of the palette (record 0063).
     assert.equal(box.border, '1px solid var(--notes-border-line)');
-    // A cell wraps at a word and never inside one, so a column takes the
-    // width of its text up to the note column (record 0147). Regression: a
-    // cell inherited the break anywhere of the content, and the browser sized
-    // a column by single letters and cut its words in two.
+    // Source widths are stable estimates. A wide glyph must wrap inside
+    // its track instead of painting over the next cell.
     assert.equal(box.whiteSpace, 'pre-wrap');
-    assert.equal(box.overflowWrap, 'normal');
+    assert.equal(box.overflowWrap, 'anywhere');
     assert.equal(box.wordBreak, 'normal');
     // A browser ignores a minimum width on a table cell, so a block of no
     // height inside the cell holds the width of an empty one.
-    assert.equal(box.minWidth, undefined);
+    assert.equal(box.minWidth, '0');
   }
-  const floor = rule('.cm-np-table-cell::before, .cm-np-table-head::before');
-  assert.equal(floor.display, 'block');
-  assert.equal(floor.height, '0');
-  assert.ok(floor.width !== undefined, 'an empty cell keeps a width');
   // The head differs by fill before it differs by a line.
   assert.equal(head.backgroundColor, 'var(--notes-surface-hover)');
   // The active cell takes the one focus treatment, inside its own edge.

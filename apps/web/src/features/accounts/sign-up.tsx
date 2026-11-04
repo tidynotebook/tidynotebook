@@ -1,3 +1,5 @@
+import { hasEmailProblem } from '../../lib/email-problem.ts';
+import { normalizeEmail } from '@notesapp/core';
 import {
   Form,
   Inset,
@@ -49,6 +51,7 @@ const invalidLink = 'This link no longer works.';
 
 /** The page that asks for an account. */
 export function SignUpPage(): ReactNode {
+  const [emailError, setEmailError] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [reveal, setReveal] = useState(false);
@@ -109,6 +112,10 @@ export function SignUpPage(): ReactNode {
     });
     setBusy(null);
     if (result.data === undefined) {
+      if (hasEmailProblem(result.error)) {
+        setEmailError('Enter an email address.');
+        return;
+      }
       setError(problemMessage(result.error));
       return;
     }
@@ -117,12 +124,17 @@ export function SignUpPage(): ReactNode {
 
   if (sentTo !== null)
     return (
-      <AuthFrame title="Open the link in your mail">
-        <Inset as="p" className="text-secondary text-muted">
-          A message goes to {sentTo}. Open the link in it to finish your
-          account. This browser can sign you in after verification. On another
-          device, enter your password to sign in.
-        </Inset>
+      <AuthFrame
+        title="Open the link in your mail"
+        description={
+          <>
+            {' '}
+            A message goes to {sentTo}. Open the link in it to finish your
+            account. This browser can sign you in after verification. On another
+            device, enter your password to sign in.{' '}
+          </>
+        }
+      >
         <Inset as="p" className="text-secondary text-muted">
           Check your spam folder if the message does not arrive. To send another
           link or use a different address, return to the form. Email limits can
@@ -147,22 +159,44 @@ export function SignUpPage(): ReactNode {
     );
 
   return (
-    <AuthFrame title="Create an account">
+    <AuthFrame
+      title="Create an account"
+      description="Enter your address and choose a password. A link goes to the address to prove that it is yours."
+      footer={
+        <div className="text-center">
+          {' '}
+          <Link className="text-secondary text-accent underline" to="/login">
+            I have an account
+          </Link>
+        </div>
+      }
+    >
       {trialOffer(trialSeconds) === null ? null : (
         <Notice message={trialOffer(trialSeconds) ?? ''} />
       )}
-      <Inset as="p" className="text-secondary text-muted">
-        Enter your address and choose a password. A link goes to the address to
-        prove that it is yours.
-      </Inset>
       <Form
+        noValidate
         onSubmit={(event): void => {
           event.preventDefault();
-          void submit();
+          setEmailError(
+            email.trim() !== '' &&
+              (normalizeEmail(email) === null ||
+                event.currentTarget
+                  .querySelector('input[type=email]')
+                  ?.matches(':invalid'))
+              ? 'Enter an email address.'
+              : '',
+          );
+          if (
+            event.currentTarget.checkValidity() &&
+            normalizeEmail(email) !== null
+          )
+            void submit();
         }}
       >
         <TextField
           id="signup-email"
+          error={emailError}
           label="Email address"
           value={email}
           inputType="email"
@@ -209,12 +243,6 @@ export function SignUpPage(): ReactNode {
               : 'Create account'}
         </Button>
       </Form>
-      <Link
-        className={`w-full ${buttonClassName({ variant: 'ghost' })}`}
-        to="/login"
-      >
-        I have an account
-      </Link>
     </AuthFrame>
   );
 }
@@ -291,7 +319,7 @@ export function VerifyPage(): ReactNode {
   return (
     <AuthFrame title={title}>
       {state.kind === 'loading' ? (
-        <LoadingState label="The link is loading." />
+        <LoadingState label="Loading link" />
       ) : state.kind === 'unreachable' ? (
         <Stack gap={3} as="div">
           <Notice tone="problem" message={state.message} />

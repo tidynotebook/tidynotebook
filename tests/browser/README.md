@@ -58,3 +58,47 @@ node tests/browser/note-scroll.ts
 ```
 
 The test reads the note and saves screenshots in `.local-app/screenshots/`.
+
+`table-layout.ts` checks a three-column table in the editor and its published
+page at 320, 390, and 1440 px, in light and dark mode. Run it with a Weight-style
+table and with a long fixture that has compact empty cells, short rows, rows
+without edge pipes, and a long cell below the first viewport. `TABLE_FIXTURE_PATH`
+names a JSON file with the fixture Markdown in `text`.
+
+The check measures browser text independently of the implementation. No column
+can exceed its widest cell plus padding by more than 2 px. It also checks the
+long-text cap, wrapping before horizontal scroll, row height, page overflow,
+stable tracks after scrolling, typing, undo, and keyboard access to the reader
+scroll area. Set `TABLE_WIDE_READER_PATH` to a published table with many columns
+to check horizontal scroll and keyboard scroll. Screenshots go to `.local-app/screenshots/`.
+
+```sh
+PLAYWRIGHT_MODULE=/absolute/path/to/playwright-core/index.mjs \
+UI_AUDIT_ORIGIN=http://localhost:3000 \
+UI_AUDIT_STATE=.local-app/review-session.json \
+TABLE_FIXTURE_PATH=.local-app/table-fixture.json \
+TABLE_NOTE_PATH=/w/<workspace>/notes/<note> \
+TABLE_READER_PATH=/published/<token> \
+node tests/browser/table-layout.ts
+```
+
+`note-outline.ts` checks a synthetic 7,183-word note with 42 headings. It
+checks the initial open, levels 1 to 6, navigation near the end, outline
+scrolling, edits, code fences, empty text, note switching, and reload. It uses
+both themes at desktop and phone widths. The current layout hides the outline
+on phones; the check confirms that behavior and tests document updates there.
+Use two disposable notes. The script replaces their text.
+
+```sh
+PLAYWRIGHT_MODULE=/absolute/path/to/playwright-core/index.mjs \
+UI_AUDIT_ORIGIN=http://localhost:3000 \
+UI_AUDIT_STATE=.local-app/review-session.json \
+OUTLINE_NOTE_PATH=/w/<workspace>/notes/<note> \
+OUTLINE_OTHER_PATH=/w/<workspace>/notes/<other-note> \
+node tests/browser/note-outline.ts
+```
+
+Results, the safe test note, and screenshots stay in `.local-app/`. After a
+build, run `node tools/performance/outline.ts` to measure the initial parse,
+50 edits, and cache reuse for 38,400 and 960,000 characters. This measures
+outline work alone. It does not measure React rendering or editor layout.

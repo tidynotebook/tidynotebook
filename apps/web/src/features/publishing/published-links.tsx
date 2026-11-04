@@ -189,14 +189,10 @@ function PublishedLinksList({
         {notice === '' ? null : <Notice tone="success" message={notice} />}
         {failure === '' ? null : <Notice tone="problem" message={failure} />}
         {state.kind === 'loading' ? (
-          <LoadingState
-            shape="list"
-            rows={3}
-            label="Your published links are loading."
-          />
+          <LoadingState shape="list" rows={3} label="Loading published links" />
         ) : state.kind === 'failed' ? (
           <Notice tone="problem" message={state.message}>
-            <Button variant="secondary" size="sm" onClick={reload}>
+            <Button variant="secondary" size="compact" onClick={reload}>
               Try again
             </Button>
           </Notice>
@@ -253,7 +249,7 @@ function PublishedLinksList({
                       >
                         <Button
                           variant="secondary"
-                          size="sm"
+                          size="compact"
                           disabled={busy !== null}
                           label={`Revoke the link to ${name}`}
                           onClick={() => revoke(link, name)}

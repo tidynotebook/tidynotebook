@@ -7,8 +7,8 @@ import {
   LoadingState,
   Notice,
   Page,
-  pageGroupLabelClassName,
   PageHeader,
+  SectionHeading,
   pageListClassName,
   PlusIcon,
   rowClassName,
@@ -69,7 +69,6 @@ import { scrollerOf } from '../../shell/row-window.ts';
 import { useContentRowWindow } from '../../shell/content-row-window.ts';
 
 /** The quiet heading of one time band of the list. */
-const groupLabelClassName = pageGroupLabelClassName();
 
 /**
  * Where the list of each workspace was scrolled to, for this session.
@@ -181,9 +180,6 @@ function NoteGroupList({
                   </span>
                 )}
               </span>
-              <span className="shrink-0 text-secondary text-muted">
-                {meta.when}
-              </span>
             </Link>
           </li>
         );
@@ -249,13 +245,14 @@ export function NotesHomeView(): ReactNode {
       <Stack gap={4} as="div" ref={keepOffset}>
         <PageHeader
           title="All notes"
+          count={files.loading ? undefined : total}
           actions={showNewNoteInHeader(files.loading, total) ? actions : null}
         />
         {newNote.error === null ? null : (
           <Notice tone="problem" message={newNote.error} />
         )}
         {files.loading ? (
-          <LoadingState shape="list" rows={6} label="Your notes are loading." />
+          <LoadingState shape="list" rows={6} label="Loading notes" />
         ) : total === 0 ? null : (
           <Stack gap={{ fine: 6, coarse: 4 }}>
             {groups.map((group) => (
@@ -266,12 +263,10 @@ export function NotesHomeView(): ReactNode {
                 key={group.label}
                 aria-labelledby={noteGroupHeadingId(group.label)}
               >
-                <h2
-                  className={groupLabelClassName}
+                <SectionHeading
                   id={noteGroupHeadingId(group.label)}
-                >
-                  {group.label}
-                </h2>
+                  label={group.label}
+                />
                 <NoteGroupList
                   notes={group.notes}
                   workspaceId={workspaceId}

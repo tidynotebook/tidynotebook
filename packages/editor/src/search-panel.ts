@@ -185,7 +185,10 @@ function field(label: string, value: string): HTMLInputElement {
 function button(label: string, run: () => void): HTMLButtonElement {
   const control = document.createElement('button');
   control.type = 'button';
-  control.className = buttonClassName({ variant: 'secondary', size: 'sm' });
+  control.className = buttonClassName({
+    variant: 'secondary',
+    size: 'compact',
+  });
   control.textContent = label;
   control.addEventListener('click', run);
   return control;
@@ -200,7 +203,7 @@ function iconButton(
   const control = button(label, run);
   control.className = buttonClassName({
     variant: 'ghost',
-    size: 'sm',
+    size: 'compact',
     iconOnly: true,
   });
   control.setAttribute('aria-label', label);
@@ -268,7 +271,7 @@ class SearchPanel implements Panel {
       );
       toggle.className = buttonClassName({
         variant: 'secondary',
-        size: 'sm',
+        size: 'compact',
         className: 'aria-pressed:bg-active',
       });
       toggle.title = option.label;
@@ -309,7 +312,7 @@ class SearchPanel implements Panel {
     });
     more.className = buttonClassName({
       variant: 'ghost',
-      size: 'sm',
+      size: 'compact',
       iconOnly: true,
     });
     more.setAttribute('aria-label', 'More find options');

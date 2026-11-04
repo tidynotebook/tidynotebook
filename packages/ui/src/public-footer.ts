@@ -65,7 +65,7 @@ export function installationFooterColumns(
     signIn = '/login',
   }: {
     readonly contact?: FooterLink;
-    readonly signIn?: string;
+    readonly signIn?: string | null;
   } = {},
 ): readonly FooterColumn[] {
   return hostedFooterColumns
@@ -75,7 +75,8 @@ export function installationFooterColumns(
         : column.title === 'Product'
           ? {
               ...column,
-              links: [{ label: 'Sign in', href: signIn }],
+              links:
+                signIn === null ? [] : [{ label: 'Sign in', href: signIn }],
             }
           : column.title === 'Resources'
             ? {
@@ -141,8 +142,7 @@ export function publicFooterTree({
       node(
         'div',
         {
-          className:
-            'public-footer-grid grid grid-cols-6 gap-6 coarse:grid-cols-2',
+          className: 'public-footer-grid grid grid-cols-2 md:grid-cols-6 gap-6',
         },
         [
           node(
@@ -190,15 +190,19 @@ export function publicFooterTree({
                   },
                   [column.title],
                 ),
-                ...column.links.map((link) =>
-                  node(
-                    'a',
-                    {
-                      href: footerAddress(link.href),
-                      className:
-                        'block py-1 text-body text-muted no-underline hover:underline focus-visible:outline-2 focus-visible:outline-focus',
-                    },
-                    [link.label],
+                node(
+                  'div',
+                  { className: 'flex flex-col gap-1' },
+                  column.links.map((link) =>
+                    node(
+                      'a',
+                      {
+                        href: footerAddress(link.href),
+                        className:
+                          'block py-1 text-body text-muted no-underline hover:underline focus-visible:outline-2 focus-visible:outline-focus',
+                      },
+                      [link.label],
+                    ),
                   ),
                 ),
               ],

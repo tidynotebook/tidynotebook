@@ -40,7 +40,7 @@ const edgeOwners = new WeakMap<
   HTMLElement,
   Map<HTMLElement, { hidden: boolean; overflow: boolean }>
 >();
-function ownEdge(
+export function ownScrollEdge(
   edge: HTMLElement | undefined,
   root: HTMLElement,
   hidden: boolean,
@@ -78,6 +78,8 @@ export function Region({
   children,
   className,
   scroll = 'y',
+  onEdgesChange,
+  bounded = false,
   edge = 'both',
   gap = 0,
   pad,
@@ -93,6 +95,8 @@ export function Region({
     readonly safeArea?: boolean;
     readonly children: ReactNode;
     readonly scroll?: 'none' | 'y';
+    readonly onEdgesChange?: (edges: ScrollEdges) => void;
+    readonly bounded?: boolean;
     readonly edge?: 'top' | 'bottom' | 'both';
     readonly gap?: SpaceValue;
     readonly elementRef?: RefObject<HTMLDivElement | null>;
@@ -104,6 +108,7 @@ export function Region({
     start = useRef<HTMLSpanElement>(null),
     end = useRef<HTMLSpanElement>(null);
   const [edges, setEdges] = useState<ScrollEdges>({ start: false, end: false });
+  useEffect(() => onEdgesChange?.(edges), [edges, onEdgesChange]);
   useEffect(() => {
     if (scroll !== 'y' || !root.current || !start.current || !end.current)
       return;
@@ -146,8 +151,8 @@ export function Region({
       bottom =
         below?.current ??
         edgesInFrame.find((element) => element.dataset.scrollEdge === 'below');
-    const releaseTop = ownEdge(top, held, edges.start),
-      releaseBottom = ownEdge(bottom, held, edges.end);
+    const releaseTop = ownScrollEdge(top, held, edges.start),
+      releaseBottom = ownScrollEdge(bottom, held, edges.end);
     return () => {
       releaseTop();
       releaseBottom();
@@ -179,7 +184,7 @@ export function Region({
       ) : (
         <div
           {...compositionData('stack', { gap })}
-          className={`ui-scroll-content relative flex min-h-full shrink-0 flex-col ${spaceClasses('gap', gap)}`}
+          className={`ui-scroll-content ${bounded ? 'h-full' : ''} relative flex min-h-full shrink-0 flex-col ${spaceClasses('gap', gap)}`}
         >
           <span
             ref={start}

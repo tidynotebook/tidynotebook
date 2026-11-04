@@ -41,6 +41,7 @@ import {
 } from '@notesapp/server';
 import {
   buttonClassName,
+  checkoutFrameClassName,
   codeFigureClassName,
   defaultThemeFor,
   fieldClassName,
@@ -51,8 +52,6 @@ import {
   transitionSurface,
 } from '@notesapp/ui';
 import {
-  codeBlockClass,
-  codeLabelClass,
   codeTokenClasses,
   orderedMarkerStyle,
   orderedMarkerStyles,
@@ -63,6 +62,23 @@ import { loadCompiler, webRequire } from './support/tailwind.ts';
 const root = resolve(fileURLToPath(import.meta.url), '../../..');
 const stylesheet = resolve(root, 'apps/web/src/tailwind.css');
 const distribution = join(root, 'apps/web/dist/web');
+
+await test('the built stylesheet reserves the initial checkout frame height', async () => {
+  const document = join(distribution, 'index.html');
+  const hrefs = documentStylesheetHrefs(document, statSync(document));
+  const css = (
+    await Promise.all(
+      hrefs.map((href) => readFile(join(distribution, href.slice(1)), 'utf8')),
+    )
+  ).join('\n');
+  for (const name of checkoutFrameClassName().split(' '))
+    assert.ok(css.includes(`.${name}{`), name);
+  assert.match(css, /--height-checkout-frame:\s*36\.25rem/);
+  assert.match(
+    css,
+    /\.min-h-checkout-frame\{min-height:var\(--height-checkout-frame\)\}/,
+  );
+});
 
 /** Compiles the application stylesheet with the given candidates. */
 async function buildCss(candidates: readonly string[]): Promise<string> {
@@ -247,8 +263,9 @@ await test('the published page draws what the live preview draws', async () => {
     'input:checked + .notes-task-mark {\n    display: inline-block;',
     // A table sizes to its text and scrolls on its own, and a header cell
     // follows the alignment of its column.
-    'table {\n    display: block;',
-    'table {\n    overflow-x: auto;',
+    '.notes-table-scroll {\n    max-width: 100%;',
+    '.notes-table-scroll {\n    width: fit-content;',
+    '.notes-table-scroll {\n    overflow-x: auto;',
     'th {\n    text-align: start;',
     ':is(th, td)[align=right] {\n    text-align: right;',
     ':is(th, td)[align=center] {\n    text-align: center;',
@@ -345,7 +362,7 @@ await test('the task box of the published page is the task box recipe', () => {
   // The review of the merged branch: the published task box named the
   // component edge under an exception of the design gate. It is the one
   // recipe of the task box, written under the variant of a task item.
-  const variant = '[&_.task-list-item_input]:';
+  const variant = 'content-task-list-item-input:';
   const classes = [...classesOf(publishedTaskBoxClasses)];
   assert.ok(classes.every((name) => name.startsWith(variant)));
   assert.deepEqual(
@@ -381,12 +398,13 @@ await test('the code figure of the published page is the code figure recipe', ()
     classesOf(codeFigureClassName),
   );
   assert.ok(
-    publishedDocumentClasses.includes(`[&_figure.${codeBlockClass}]:relative`),
+    publishedDocumentClasses.includes('content-figure-notes-code:relative'),
   );
   for (const name of classesOf(codeFigureClassName))
     assert.ok(
-      name.includes(`[&_figure.${codeBlockClass}`) ||
-        name.includes(`[&_.${codeLabelClass}]`),
+      name.includes('content-figure-notes-code') ||
+        name.includes('content-notes-code-label') ||
+        name.startsWith('content-pre:'),
       name,
     );
 });

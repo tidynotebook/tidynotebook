@@ -7,6 +7,55 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## Unreleased
 
+## 0.23.5 - 2026-11-04
+
+### Security
+
+- Build libheif 1.23.7, libpng 1.6.59 and Expat 2.10.0 from pinned sources with libvips 8.18.7 in Linux images. Remove prebuilt Sharp fallbacks and update the runtime ip-address dependency to 10.7.5. Native worker memory and access boundaries remain unproved. ([PR 552](https://github.com/tidynotebook/tidynotebook/pull/552))
+
+### Changed
+
+- Add the shared checkout minimum-height token and `checkoutFrameClassName()` recipe. The token is 36.25rem, or 580 px at a 16 px root. Cloud adoption and real Paddle checks remain pending. ([PR 556](https://github.com/tidynotebook/tidynotebook/pull/556))
+
+### Fixed
+
+- Include headings from the full note in the outline. ([PR 555](https://github.com/tidynotebook/tidynotebook/pull/555))
+- Use one search-dialog inset and keep bottom spacing for touch input. ([PR 553](https://github.com/tidynotebook/tidynotebook/pull/553))
+- Keep folder disclosure surfaces within their rows and reserve the disclosure target width. ([PR 554](https://github.com/tidynotebook/tidynotebook/pull/554))
+
+## 0.23.4 - 2026-11-03
+
+### Security
+
+- Update DOMPurify to 3.4.17, fast-uri to 3.1.9 and 4.2.3, undici to 7.30.1, and qs to 6.17.1. These changes fix 17 dependency alerts. The affected DOMPurify and fast-uri versions ship in v0.23.3. ([PR 548](https://github.com/tidynotebook/tidynotebook/pull/548))
+- Update the test-only happy-dom dependency to 21.0.4. ([PR 538](https://github.com/tidynotebook/tidynotebook/pull/538))
+
+### Changed
+
+- Use Node 26.13.0 with matching Docker, local runtime, performance image and source records. Contributors must use this Node version. ([PR 541](https://github.com/tidynotebook/tidynotebook/pull/541))
+- Update six runtime dependencies and use one CodeMirror autocomplete version. ([PR 542](https://github.com/tidynotebook/tidynotebook/pull/542))
+- Update the build and test toolchain. ([PR 539](https://github.com/tidynotebook/tidynotebook/pull/539))
+- Update the pinned MinIO test-service image. ([PR 526](https://github.com/tidynotebook/tidynotebook/pull/526))
+
+### Fixed
+
+- Finish documentation search-index writes before the build stops the search service. This prevents empty or partial search files on slow filesystems.
+- Hide inline keyboard hints for touch input. Keep desktop hints and the Keyboard shortcuts reference. ([PR 546](https://github.com/tidynotebook/tidynotebook/pull/546))
+
+## 0.23.3 - 2026-11-02
+
+### Changed
+
+- Plan badges support accent, success and danger tones. Their dots and words state the status on page and card surfaces.
+- Usage meters show Almost full from 90 percent and Limit reached at capacity. Task progress keeps its normal fill and supplied text at every value.
+
+## 0.23.2 - 2026-11-02
+
+### Fixed
+
+- Tables use consistent column widths in the editor, published notes and guide. Wide tables scroll with keyboard focus, and long text wraps within each column.
+- Account forms, Settings, notes and shared controls use the design system spacing, type and surfaces. Scroll edges remain visible in light and dark modes.
+
 ## 0.23.1 - 2026-10-31
 
 ### Fixed

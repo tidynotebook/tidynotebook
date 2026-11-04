@@ -59,12 +59,17 @@ export function ForgotPasswordPage(): ReactNode {
 
   if (sentTo !== null)
     return (
-      <AuthFrame title="Open the link in your mail">
-        <Inset as="p" className="text-secondary text-muted">
-          If {sentTo} has an account, a message with a link goes to it. Open the
-          link within 1 hour to choose a new password. If no message comes, look
-          in your spam folder, or ask again in a few minutes.
-        </Inset>
+      <AuthFrame
+        title="Open the link in your mail"
+        description={
+          <>
+            {' '}
+            If {sentTo} has an account, a message with a link goes to it. Open
+            the link within 1 hour to choose a new password. If no message
+            comes, look in your spam folder, or ask again in a few minutes.{' '}
+          </>
+        }
+      >
         <Link className={buttonClassName({ variant: 'secondary' })} to="/login">
           Go to sign in
         </Link>
@@ -72,11 +77,16 @@ export function ForgotPasswordPage(): ReactNode {
     );
 
   return (
-    <AuthFrame title="Reset your password">
-      <Inset as="p" className="text-secondary text-muted">
-        Enter the address of your account. A link to choose a new password goes
-        to it.
-      </Inset>
+    <AuthFrame
+      title="Reset your password"
+      description={
+        <>
+          {' '}
+          Enter the address of your account. A link to choose a new password
+          goes to it.{' '}
+        </>
+      }
+    >
       <Form
         onSubmit={(event): void => {
           event.preventDefault();
@@ -161,11 +171,16 @@ export function ResetPasswordPage(): ReactNode {
 
   if (done)
     return (
-      <AuthFrame title="Your password changed">
-        <Inset as="p" className="text-secondary text-muted">
-          Every device that was signed in is signed out. Sign in with your new
-          password.
-        </Inset>
+      <AuthFrame
+        title="Your password changed"
+        description={
+          <>
+            {' '}
+            Every device that was signed in is signed out. Sign in with your new
+            password.{' '}
+          </>
+        }
+      >
         <Link
           className={buttonClassName({ variant: 'primary' })}
           to="/login"
@@ -200,11 +215,16 @@ export function ResetPasswordPage(): ReactNode {
     );
 
   return (
-    <AuthFrame title="Choose a new password">
-      <Inset as="p" className="text-secondary text-muted">
-        Choose a new password for your account. Every device that is signed in
-        then signs out.
-      </Inset>
+    <AuthFrame
+      title="Choose a new password"
+      description={
+        <>
+          {' '}
+          Choose a new password for your account. Every device that is signed in
+          then signs out.{' '}
+        </>
+      }
+    >
       <Form
         onSubmit={(event): void => {
           event.preventDefault();

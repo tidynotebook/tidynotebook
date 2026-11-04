@@ -18,6 +18,7 @@ import {
   Button,
   SettingsSurface,
   Region,
+  ScrollCueRegion,
   CalendarIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -315,11 +316,7 @@ function SessionsSettings(): ReactNode {
       {state.kind === 'failed' ? (
         <Notice tone="problem" message={state.message} />
       ) : state.kind === 'loading' ? (
-        <LoadingState
-          shape="list"
-          rows={2}
-          label="The signed in devices are loading."
-        />
+        <LoadingState shape="list" rows={2} label="Loading signed in devices" />
       ) : (
         <Stack gap={{ fine: 6, coarse: 4 }}>
           {current === undefined ? null : (
@@ -358,7 +355,7 @@ function SessionsSettings(): ReactNode {
                 <>
                   {others.length === 0 || phone ? null : (
                     <Button
-                      size="sm"
+                      size="compact"
                       variant="secondary"
                       className="max-lg:w-full"
                       icon={<SignOutIcon />}
@@ -401,7 +398,7 @@ function SessionsSettings(): ReactNode {
                       <span data-setting-control>
                         <Button
                           variant="secondary"
-                          size="sm"
+                          size="compact"
                           disabled={busy}
                           label={`Sign out ${name}`}
                           onClick={() => {
@@ -657,7 +654,7 @@ function ProfileSettings({
           </span>
           <Button
             variant="secondary"
-            size="sm"
+            size="compact"
             label="Edit name"
             buttonRef={nameButton}
             onClick={() => {
@@ -780,6 +777,8 @@ export function SettingsModal({
       onChoose(activePage.path);
   }, [value, activePage, onChoose]);
   if (account === null) return null;
+  const profileName =
+    account.name && account.name !== account.email ? account.name : null;
 
   // Each section renders in the order of the page, and the type holds one
   // body for each name of the list (decision 0137).
@@ -953,22 +952,22 @@ export function SettingsModal({
     'connected-apps': <ConnectedAppSettings />,
     sessions: <SessionsSettings />,
     'admin-accounts': (
-      <Suspense fallback={<LoadingState label="Reading accounts" />}>
+      <Suspense fallback={<LoadingState label="Loading accounts" />}>
         <AdministrationSettings page="accounts" />
       </Suspense>
     ),
     'admin-mail': (
-      <Suspense fallback={<LoadingState label="Reading mail settings" />}>
+      <Suspense fallback={<LoadingState label="Loading mail settings" />}>
         <AdministrationSettings page="mail" />
       </Suspense>
     ),
     'admin-legal': (
-      <Suspense fallback={<LoadingState label="Reading legal documents" />}>
+      <Suspense fallback={<LoadingState label="Loading legal documents" />}>
         <AdministrationSettings page="legal" />
       </Suspense>
     ),
     'admin-reports': (
-      <Suspense fallback={<LoadingState label="Reading reports" />}>
+      <Suspense fallback={<LoadingState label="Loading reports" />}>
         <AdministrationSettings page="reports" />
       </Suspense>
     ),
@@ -1043,7 +1042,7 @@ export function SettingsModal({
                   as="button"
                   type="button"
                   data-settings-page="account"
-                  aria-label={`Profile, ${account.name ?? ''}, ${account.email ?? ''}`}
+                  aria-label={`Profile, ${profileName ? `${profileName}, ` : ''}${account.email ?? ''}`}
                   aria-current={
                     activePage?.path === 'account' ? 'page' : undefined
                   }
@@ -1057,10 +1056,9 @@ export function SettingsModal({
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-title-header text-strong">
-                      {account.name ?? account.email ?? ''}
+                      {profileName ?? account.email ?? ''}
                     </span>
-                    {account.email === null ||
-                    account.email === undefined ? null : (
+                    {!profileName || !account.email ? null : (
                       <span className="block truncate text-secondary text-muted">
                         {account.email}
                       </span>
@@ -1257,44 +1255,50 @@ export function SettingsModal({
                       </Stack>
                     </FixedDialogLayout>
                   ) : (
-                    <Region
-                      className={`overflow-hidden flex-1 ${activeAction !== null ? 'hidden' : ''}`}
-                    >
-                      <Stack
-                        gap={{ fine: 6, coarse: 4 }}
-                        pad={{ fine: 6, coarse: 4 }}
-                        className="ui-settings-sections"
-                        hidden={activeAction !== null}
-                        inert={activeAction !== null}
-                      >
-                        <SettingsTopicContext.Provider
-                          value={{ hiddenTitles, helpSection: null }}
-                        >
-                          {activePage?.path === 'export-import' ? (
-                            <Stack gap={2}>
-                              <SectionHeading
-                                label={<>Workspace</>}
-                                divider
-                                inset={{ fine: 0, coarse: 4 }}
-                              />
-                              <Card responsive>
-                                {activePage.sections.map((key) => (
+                    <Stack fill hidden={activeAction !== null}>
+                      <Stack fill padY={{ fine: 6, coarse: 4 }}>
+                        <ScrollCueRegion data-settings-scroll="">
+                          <Stack
+                            gap={{ fine: 6, coarse: 4 }}
+                            padX={{ fine: 6, coarse: 4 }}
+                            className="ui-settings-sections"
+                            hidden={activeAction !== null}
+                            inert={activeAction !== null}
+                          >
+                            <SettingsTopicContext.Provider
+                              value={{ hiddenTitles, helpSection: null }}
+                            >
+                              {activePage?.path === 'export-import' ? (
+                                <Stack gap={2}>
+                                  <SectionHeading
+                                    label={<>Workspace</>}
+                                    divider
+                                    inset={{ fine: 0, coarse: 4 }}
+                                  />
+                                  <Card responsive>
+                                    {activePage.sections.map((key) => (
+                                      <Stack key={key} gap={2}>
+                                        {sectionBodies[key]}
+                                      </Stack>
+                                    ))}
+                                  </Card>
+                                </Stack>
+                              ) : (
+                                activePage?.sections.map((key) => (
                                   <Stack key={key} gap={2}>
                                     {sectionBodies[key]}
                                   </Stack>
-                                ))}
-                              </Card>
-                            </Stack>
-                          ) : (
-                            activePage?.sections.map((key) => (
-                              <Stack key={key} gap={2}>
-                                {sectionBodies[key]}
-                              </Stack>
-                            ))
-                          )}
-                        </SettingsTopicContext.Provider>
+                                ))
+                              )}
+                            </SettingsTopicContext.Provider>
+                          </Stack>
+                        </ScrollCueRegion>
                       </Stack>
-                    </Region>
+                      <div
+                        aria-hidden="true"
+                        className="h-0 shrink-0 coarse:h-safe"
+                      />
+                    </Stack>
                   )}
                 </DialogHeaderActionsContext.Provider>
               </div>

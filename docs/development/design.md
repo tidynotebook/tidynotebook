@@ -30,8 +30,8 @@ Three planes (record 0052): `bg-surface` is chrome, `bg-app` is the page,
 `bg-card` is raised. `bg-hover` and `bg-active` are the states of a row or chip.
 
 Three edges (records 0053 and 0063): `edge-line` is the resting edge of a
-control and the one divider. `edge-subtle` is the edge of a raised surface and
-a hairline inside a group that already differs in fill. `edge` is only a task
+control. `edge-subtle` is the edge of a raised surface and every hairline,
+group divider and scroll edge. `edge` is only a task
 box, a checkbox, a radio, a switch track and a drop target. Draw a divider only
 where a person must see the boundary of a region they scroll or a list they
 count. Separate everything else with space or fill.
@@ -69,9 +69,13 @@ Every control reads `packages/ui/src/control-classes.ts` (record 0065).
   against a maximum with no state or callback. The track is `bg-hover`, the
   SVG fill is `fill-accent-fill`, and both use `h-1.5 rounded-sm`.
   `meterFillPercent` gives the real fraction. A second SVG rectangle keeps
-  positive use visible with a 2 px minimum. Only use at or above the maximum fills the track. At `90%`,
-  `meterAlmostFull` gives the fill `fill-danger-fill` and adds Almost full to the
-  text. The named meter states its minimum, maximum and current value.
+  positive use visible with a 2 px minimum. The fill reaches the end of the
+  track only when use is at or above the maximum. For capacity meters, from
+  90 percent and below the maximum, `meterAlmostFull` keeps the accent fill and adds Almost full to
+  the text. At or above the maximum, the fill and the text take the danger
+  tone and the text adds Limit reached. For `kind="progress"`, the fill stays
+  accent and the text stays as supplied at every value. Both kinds state
+  their minimum, maximum and current value.
 
 Focus uses `focus-visible:` with one outline, outward on a control and inward on
 a row in a scroller, two pixels in the focus colour. A primary button appears
@@ -102,7 +106,7 @@ overlay opens above the keyboard of a phone.
 
 ## Surfaces a person waits on or reads
 
-- An empty state is an icon at 20 px, a title in `text-ui font-semibold`, one
+- An empty state is an icon at 20 px, a title in `text-title-header`, one
   sentence in `text-control text-muted`, and one action. No box.
 - A notice is a tone surface, `bg-accent-surface`, `bg-success-surface` or
   `bg-danger-surface`, a mark in the tone colour and text in `text-strong`. No

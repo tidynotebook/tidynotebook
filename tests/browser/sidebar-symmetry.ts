@@ -55,7 +55,9 @@ export async function auditSidebar(page: Page) {
       const leading = row.querySelector(
         '.ui-sidebar-leading > .ui-sidebar-slot',
       );
-      const trailing = row.querySelector(':scope > .ui-sidebar-slot');
+      const trailing = row.closest('[aria-disabled="true"]')
+        ? null
+        : row.querySelector(':scope > .ui-sidebar-slot');
       const y = coarse ? 8 : 4,
         x = coarse ? 12 : 8;
       eq('row top', parseFloat(s.paddingTop), y);
@@ -85,6 +87,26 @@ export async function auditSidebar(page: Page) {
         if (glyph) {
           eq('disclosure glyph x', box(glyph).left, box(leading).left);
           eq('disclosure glyph y', box(glyph).top, box(leading).top);
+        }
+        const action = leading.querySelector('button');
+        const name = row.querySelector('.ui-sidebar-name');
+        if (action && name) {
+          const target = box(action);
+          const surface = action.querySelector(':scope > span');
+          const fits = (inner: DOMRect, outer: DOMRect, inset = 0) =>
+            inner.left >= outer.left + inset &&
+            inner.right <= outer.right - inset &&
+            inner.top >= outer.top + inset &&
+            inner.bottom <= outer.bottom - inset;
+          if (!fits(target, r)) errors.push('Disclosure target leaves its row');
+          if (target.right > box(name).left)
+            errors.push('Disclosure target overlaps folder content');
+          if (target.width < 24 || target.height < 24)
+            errors.push('Disclosure target is too small');
+          if (!surface || !fits(box(surface), r, 2))
+            errors.push('Disclosure surface covers the row focus outline');
+          if (surface && box(surface).right > box(name).left - 2)
+            errors.push('Disclosure surface touches the folder icon');
         }
       }
       if (trailing) {

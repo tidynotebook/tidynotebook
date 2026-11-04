@@ -1,3 +1,14 @@
+import {
+  useContext,
+  useEffect,
+  useRef,
+  useId,
+  type ReactNode,
+  type Ref,
+  type ComponentProps,
+  type MouseEventHandler,
+} from 'react';
+import { FormSubmittedContext } from './form-context.ts';
 import { Stack, Inline, Inset } from './primitives.tsx';
 import { ListRow } from './layout.tsx';
 import { Pill } from './section-heading.tsx';
@@ -16,15 +27,7 @@ import { WrapText } from './inline-text.tsx';
  * the distances inside itself.
  */
 import { isTouchInput } from './input-focus.ts';
-import {
-  useEffect,
-  useRef,
-  useId,
-  type ReactNode,
-  type Ref,
-  type ComponentProps,
-  type MouseEventHandler,
-} from 'react';
+
 import {
   buttonClassName,
   compactButtonVisualClassName,
@@ -36,6 +39,7 @@ import {
   meterClassNames,
   switchClassNames,
   textAreaClassName,
+  requiredFieldMessage,
   type ButtonSize,
   type IconSize,
   type ButtonTone,
@@ -48,20 +52,29 @@ const fieldLabelClassName = 'block text-label text-strong';
 
 /** A named value against a maximum, with no state or callback. */
 export function Meter({
+  kind = 'capacity',
   label,
   value,
   max,
   text,
 }: {
+  readonly kind?: 'capacity' | 'progress' | undefined;
   readonly label: string;
   readonly value: number;
   readonly max: number;
   readonly text: string;
 }): ReactNode {
   const settings = useSettingsSurface();
-  const classes = meterClassNames(value, max);
+  const classes = meterClassNames(value, max, kind);
   const percent = meterFillPercent(value, max);
-  const words = meterAlmostFull(value, max) ? `${text}. Almost full` : text;
+  const words =
+    kind === 'progress'
+      ? text
+      : value >= max
+        ? `${text}. Limit reached`
+        : meterAlmostFull(value, max)
+          ? `${text}. Almost full`
+          : text;
   return (
     <Stack
       gap={2}
@@ -71,14 +84,14 @@ export function Meter({
       {settings ? (
         <Inline gap={4} justify="between">
           <span className="text-body text-strong">{label}</span>
-          <span className="text-value text-muted">{words}</span>
+          <span className={classes.settingsValue}>{words}</span>
         </Inline>
       ) : (
         <p className={classes.text}>{words}</p>
       )}
       <div
         className={classes.track}
-        role="meter"
+        role={kind === 'progress' ? 'progressbar' : 'meter'}
         aria-label={label}
         aria-valuemin={0}
         aria-valuemax={max}
@@ -109,7 +122,7 @@ export function Meter({
 export function Button({
   type,
   variant = 'primary',
-  size = 'md',
+  size = 'default',
   tone,
   disabled,
   onClick,
@@ -124,6 +137,7 @@ export function Button({
   ariaHasPopup,
   ariaPressed,
   tabIndex,
+  full = false,
   compact = false,
   optical = false,
   hideTextOnPhone = false,
@@ -163,6 +177,7 @@ export function Button({
    */
   readonly tabIndex?: number | undefined;
   /** Keeps the touch target and draws a smaller surface inside it. */
+  readonly full?: boolean;
   readonly compact?: boolean | undefined;
   readonly optical?: boolean;
   readonly hideTextOnPhone?: boolean;
@@ -203,7 +218,7 @@ export function Button({
       {...nativeProps}
       ref={buttonRef ?? nativeRef}
       type={type ?? 'button'}
-      className={`${classes} ${optical ? 'absolute inset-x-1 top-0 coarse:inset-x-0' : ''} ${settingsRow ? 'ds-row-button absolute left-0 top-1/2 -translate-y-1/2 h-7 w-full px-2 coarse:h-11 coarse:border-0 coarse:bg-transparent coarse:px-0 ' : ''}`}
+      className={`${full ? 'w-full' : ''} ${classes} ${optical ? 'absolute inset-x-1 top-0 coarse:inset-x-0' : ''} ${settingsRow ? 'ds-row-button absolute left-0 top-1/2 -translate-y-1/2 h-7 w-full px-2 coarse:h-11 coarse:border-0 coarse:bg-transparent coarse:px-0 ' : ''}`}
       disabled={disabled ?? false}
       onClick={onClick}
       aria-label={name.ariaLabel}
@@ -221,6 +236,7 @@ export function Button({
             size,
             tone,
             iconOnly: !hasChildren,
+            iconSize,
           })}
         >
           {content}
@@ -293,7 +309,7 @@ export function TextField({
   label,
   value,
   onChange,
-  error,
+  error: suppliedError,
   hint,
   inputType,
   autoComplete,
@@ -321,6 +337,12 @@ export function TextField({
   /** Keeps a visible placeholder with an accessible label. */
   readonly hideLabel?: boolean | undefined;
 }): ReactNode {
+  const submitted = useContext(FormSubmittedContext);
+  const error =
+    suppliedError ||
+    (submitted && required && value.trim() === ''
+      ? requiredFieldMessage(typeof label === 'string' ? label : 'value')
+      : '');
   const errorId = `${id}-error`;
   const hintId = `${id}-hint`;
   const hasError = error !== undefined && error !== '';
@@ -339,12 +361,6 @@ export function TextField({
         htmlFor={id}
       >
         {label}
-        {required ? (
-          <span aria-hidden="true" className="text-danger">
-            {' '}
-            *
-          </span>
-        ) : null}
       </label>
       <div className="flex flex-col gap-1">
         <input
@@ -357,6 +373,7 @@ export function TextField({
           autoComplete={autoComplete}
           placeholder={placeholder}
           required={required ?? false}
+          aria-required={required ?? false}
           data-list-search={listSearch ? '' : undefined}
           autoFocus={(autoFocus ?? false) && (!listSearch || !isTouchInput())}
           aria-invalid={hasError}
@@ -398,7 +415,7 @@ export function TextAreaField({
   label,
   value,
   onChange,
-  error,
+  error: suppliedError,
   hint,
   required,
 }: {
@@ -411,6 +428,12 @@ export function TextAreaField({
   readonly hint?: string | undefined;
   readonly required?: boolean | undefined;
 }): ReactNode {
+  const submitted = useContext(FormSubmittedContext);
+  const error =
+    suppliedError ||
+    (submitted && required && value.trim() === ''
+      ? requiredFieldMessage(typeof label === 'string' ? label : 'value')
+      : '');
   const errorId = `${id}-error`;
   const hintId = `${id}-hint`;
   const hasError = error !== undefined && error !== '';
@@ -429,6 +452,7 @@ export function TextAreaField({
           className={textAreaClassName({ invalid: hasError })}
           value={value}
           required={required ?? false}
+          aria-required={required ?? false}
           spellCheck={false}
           aria-invalid={hasError}
           aria-describedby={described === '' ? undefined : described}

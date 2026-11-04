@@ -1,8 +1,8 @@
 import {
+  IconButton,
   Inline,
   Inset,
   Stack,
-  Button,
   calendarDayClassName,
   calendarNoteMarkClassName,
   CalendarDayIcon,
@@ -10,6 +10,7 @@ import {
   ChevronRightIcon,
   rowClassName,
 } from '@notesapp/ui';
+
 /**
  * The calendar view of the sidebar (records 0099, 0100 and 0105).
  *
@@ -111,28 +112,25 @@ export function SidebarCalendar({
           </span>
         </h2>
         <Inline align="center" as="div">
-          <Button
+          <IconButton
             variant="ghost"
-            size="sm"
             compact
             label="Open today's note"
-            icon={<CalendarDayIcon />}
+            glyph={<CalendarDayIcon />}
             onClick={() => openDay(today)}
           />
-          <Button
+          <IconButton
             variant="ghost"
-            size="sm"
             compact
             label="Previous month"
-            icon={<ChevronLeftIcon />}
+            glyph={<ChevronLeftIcon />}
             onClick={() => setSelected((date) => addMonths(date, -1))}
           />
-          <Button
+          <IconButton
             variant="ghost"
-            size="sm"
             compact
             label="Next month"
-            icon={<ChevronRightIcon />}
+            glyph={<ChevronRightIcon />}
             onClick={() => setSelected((date) => addMonths(date, 1))}
           />
         </Inline>

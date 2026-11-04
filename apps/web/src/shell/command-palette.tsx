@@ -1,10 +1,15 @@
 import {
+  fixedRegionClasses,
+  observeElementScrollEdges,
   Inline,
-  Stack,
   Inset,
   bareFieldClassName,
   Button,
   Dialog,
+  useDialogListInset,
+  DialogList,
+  DialogListGroup,
+  Stack,
   EmptyState,
   FileTextIcon,
   LoadingState,
@@ -12,6 +17,7 @@ import {
   rowClassName,
   SearchIcon,
 } from '@notesapp/ui';
+
 /**
  * The one command palette of the application.
  *
@@ -220,14 +226,22 @@ export function CommandPalette({
 
   if (!open) return null;
   return (
-    <PaletteDialog
-      {...props}
+    <Dialog
+      open
       onClose={() => onOpenChange(false)}
-      closeThen={(work) => {
-        setChosen({ run: work });
-        onOpenChange(false);
-      }}
-    />
+      title="Search notes and run actions"
+      titleId="command-palette-title"
+      hideTitle
+      width="command"
+    >
+      <PaletteDialog
+        {...props}
+        closeThen={(work) => {
+          setChosen({ run: work });
+          onOpenChange(false);
+        }}
+      />
+    </Dialog>
   );
 }
 
@@ -239,13 +253,13 @@ function PaletteDialog({
   store,
   accountId,
   actions: readActions,
-  onClose,
   closeThen,
 }: PaletteProps & {
-  readonly onClose: () => void;
   /** Closes the palette, then runs one piece of work. */
   readonly closeThen: (work: () => void) => void;
 }): ReactNode {
+  // The content frame and its regions share one outer inset.
+  const contentInset = useDialogListInset();
   const navigate = useNavigate();
   const actions = useMemo(() => readActions(), [readActions]);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -356,22 +370,20 @@ function PaletteDialog({
       ? ''
       : pickAnnouncement(stepAction.label, step, stepChoices, rows.length);
 
+  useEffect(
+    () =>
+      listRef.current ? observeElementScrollEdges(listRef.current) : undefined,
+    [rows.length],
+  );
   return (
-    <Dialog
-      open
-      onClose={onClose}
-      title="Search notes and run actions"
-      titleId="command-palette-title"
-      hideTitle
-      width="medium"
-    >
+    <DialogListGroup>
       <Inline
         gap={2}
-        padX={4}
-        padY={1}
+        padX={contentInset}
         align="center"
         as="div"
-        className="border-b border-edge-line"
+        data-scroll-edge="above"
+        className={fixedRegionClasses('bottom')}
       >
         <span className="shrink-0 text-muted" aria-hidden="true">
           <SearchIcon />
@@ -425,24 +437,20 @@ function PaletteDialog({
         {announcement}
       </p>
       {stepChoices?.status === 'ready' && stepChoices.notice !== null ? (
-        <Inset
-          padX={4}
-          padY={2}
-          as="p"
-          className="border-b border-edge-line text-secondary text-muted"
-        >
+        <Inset padX={contentInset} as="p" className="text-secondary text-muted">
           {stepChoices.notice}
         </Inset>
       ) : null}
       <Stack
-        gap={{ fine: 6, coarse: 4 }}
-        padY={{ fine: 0, coarse: 4 }}
-        className="overflow-hidden"
+        gap={contentInset}
+        className={
+          step !== null && rows.length === 0 ? 'hidden' : 'overflow-hidden'
+        }
       >
         {step === null ? (
           <Inset
             data-search-scope=""
-            padX={4}
+            padX={contentInset}
             as="p"
             className="text-secondary text-muted"
           >
@@ -450,11 +458,9 @@ function PaletteDialog({
             {content.offline ? ' · Offline, results from this device' : ''}
           </Inset>
         ) : null}
-        <Inset
+        <DialogList
           ref={listRef}
           id="command-palette-list"
-          padX={4}
-          as="ul"
           className="ui-content-list max-h-80 list-none overflow-y-auto empty:hidden"
           role="listbox"
           aria-label={stepAction?.label ?? 'Results'}
@@ -574,25 +580,36 @@ function PaletteDialog({
               </li>
             </Fragment>
           ))}
-        </Inset>
+        </DialogList>
       </Stack>
       {step === null || stepChoices === null ? (
         content.pending ? (
-          <Inset as="p" className="text-secondary text-muted" role="status">
+          <Inset
+            padX={contentInset}
+            as="p"
+            className="text-secondary text-muted"
+            role="status"
+          >
             Searching...
           </Inset>
         ) : rows.length === 0 ? (
-          <Inset as="p" className="text-secondary text-muted" role="status">
+          <Inset
+            padX={contentInset}
+            as="p"
+            className="text-secondary text-muted"
+            role="status"
+          >
             No note and no action matches that.
           </Inset>
         ) : null
-      ) : stepChoices.status === 'loading' ? (
-        <Inset padX={2} padY={2} as="div">
-          <LoadingState shape="list" rows={3} label={stepChoices.label} />
-        </Inset>
-      ) : stepChoices.status === 'unavailable' ? (
-        <Inset padX={2} padY={2} as="div">
-          <Notice tone="info" message={stepChoices.message} />
+      ) : stepChoices.status === 'loading' ||
+        stepChoices.status === 'unavailable' ? (
+        <Inset padX={contentInset} as="div">
+          {stepChoices.status === 'loading' ? (
+            <LoadingState shape="list" rows={3} label={stepChoices.label} />
+          ) : (
+            <Notice tone="info" message={stepChoices.message} />
+          )}
         </Inset>
       ) : stepChoices.choices.length === 0 ? (
         // A list that is not complete states so above and claims no empty
@@ -608,7 +625,7 @@ function PaletteDialog({
               step.empty.action === null ? undefined : (
                 <Button
                   variant="secondary"
-                  size="sm"
+                  size="compact"
                   onClick={() => {
                     const fill = step.empty.action;
                     if (fill !== null) closeThen(fill.run);
@@ -621,10 +638,10 @@ function PaletteDialog({
           />
         )
       ) : rows.length === 0 ? (
-        <Inset as="p" className="text-secondary text-muted">
+        <Inset padX={contentInset} as="p" className="text-secondary text-muted">
           {step.noMatch}
         </Inset>
       ) : null}
-    </Dialog>
+    </DialogListGroup>
   );
 }

@@ -98,3 +98,13 @@ Approved baseline E2 requires Restore to work offline. This remains OPEN in
 The UI stack keeps server-only Restore and gives truthful offline guidance.
 Offline Restore is not implemented or accepted by this UI review. The follow-up
 must add and verify the local inverse transaction and reconnect queue behavior.
+
+## Later owner decisions
+
+The design system and interface design pages own composition, tokens and controls.
+This record retains the original structure. These requirements are superseded:
+
+- Tips and their Next and Close controls: removed in `8b4e3b5d`.
+- Save status pill: removed in `323f1fca`.
+- Settings pages with Back: replaced with a modal in `7d4234a6`.
+- All notes shows its title and count. Rows show the folder. Date groups state the time.

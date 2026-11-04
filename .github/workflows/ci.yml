@@ -26,7 +26,7 @@ jobs:
       actions: read
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 5
     outputs:
       base: ${{ steps.scope.outputs.base }}
       source: ${{ steps.scope.outputs.source }}
@@ -116,6 +116,8 @@ jobs:
       - uses: ./.github/actions/setup # zizmor: ignore[self-repository]
       - name: Start this runner's services
         run: docker compose -p notesapp-test -f compose.test.yaml up -d --wait
+      - name: Check the delayed filesystem-write test tool
+        run: strace --version
       - run: pnpm build
       - run: tools/test-database/ensure-postgres.sh && tools/test-database/ensure-minio.sh
       - name: Run integration shard
@@ -132,7 +134,7 @@ jobs:
     permissions:
       contents: read
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       NOTESAPP_ORIGIN: https://notes.example.com
       NOTESAPP_BIND_HOST: 127.0.0.1
@@ -151,7 +153,7 @@ jobs:
     permissions:
       contents: read
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       NOTESAPP_ORIGIN: https://notes.example.com
       NOTESAPP_BIND_HOST: 127.0.0.1
@@ -168,7 +170,7 @@ jobs:
     needs: scope
     if: needs.scope.outputs.image == 'true'
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

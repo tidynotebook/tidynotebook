@@ -69,7 +69,7 @@ export function SettingActionRow({
       <SettingRow label={desktopLabel ?? label.replace(/…$/, '')} help={help}>
         <Button
           variant="secondary"
-          size="sm"
+          size="compact"
           tone={danger ? 'danger' : undefined}
           icon={icon}
           disabled={disabled}

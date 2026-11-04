@@ -1,6 +1,7 @@
+import { Form } from './form.tsx';
 /** A short value edit keeps the normal Settings row edge and divider. */
 import type { ComponentProps, ReactNode } from 'react';
-import { Form, Inline } from './primitives.tsx';
+import { Inline } from './primitives.tsx';
 import { listRowClasses } from './layout.tsx';
 import { Button } from './controls.tsx';
 export function SettingEditRow({

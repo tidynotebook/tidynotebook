@@ -184,3 +184,10 @@ await test('both renderers reject unsafe URL schemes in links, the brand, and th
       }).includes(`href="${href}"`),
     );
 });
+
+await test('the sign-in page can omit its own route without an empty column', () => {
+  const columns = installationFooterColumns([], { signIn: null });
+  assert.ok(!columns.some((column) => column.title === 'Product'));
+  assert.ok(columns.every((column) => column.links.length > 0));
+  assert.ok(!renderPublicFooter({ columns }).includes('>Sign in</a>'));
+});

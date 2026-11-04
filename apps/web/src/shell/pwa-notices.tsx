@@ -206,7 +206,7 @@ export function UpdateNotice({
         tone="info"
         message={`${productName} updates in another tab. This tab reloads when the update is done.`}
       >
-        <Button variant="secondary" size="sm" onClick={reload}>
+        <Button variant="secondary" size="compact" onClick={reload}>
           Reload
         </Button>
       </Notice>
@@ -214,7 +214,7 @@ export function UpdateNotice({
   if (mustReload && problem !== null)
     return (
       <Notice tone="problem" message={problem}>
-        <Button variant="secondary" size="sm" onClick={reload}>
+        <Button variant="secondary" size="compact" onClick={reload}>
           Reload
         </Button>
       </Notice>
@@ -233,7 +233,12 @@ export function UpdateNotice({
           : `A new version of ${productName} is ready.`)
       }
     >
-      <Button variant="primary" size="sm" disabled={busy} onClick={install}>
+      <Button
+        variant="primary"
+        size="compact"
+        disabled={busy}
+        onClick={install}
+      >
         {busy ? 'Updating' : 'Update now'}
       </Button>
     </Notice>

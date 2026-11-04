@@ -1,4 +1,7 @@
 import {
+  IconButton,
+  Toolbar,
+  Toast,
   CanvasImage,
   Inline,
   Inset,
@@ -380,126 +383,102 @@ function ImageViewerBody({
         The one bar of tools floats over the picture. It is a raised surface,
         so it reads on a light picture and on a dark one alike.
       */}
-      <div className="absolute inset-x-3 top-3 flex justify-center">
-        <Inline
-          gap={1}
-          pad={1}
-          wrap
-          align="center"
-          justify="center"
-          as="div"
-          className="w-fit max-w-full rounded-lg border border-edge-subtle bg-card text-strong shadow-overlay"
-        >
-          <Inset
-            padX={2}
-            as="p"
-            className="hidden max-w-xs truncate text-label md:block"
-          >
-            {imageTitle(image.alt)}
-          </Inset>
-          <Button
+      <Toolbar
+        floating
+        trailing={
+          <IconButton
             variant="ghost"
-            size="sm"
-            label="Zoom out"
-            icon={<ZoomOutIcon />}
-            disabled={idle || scale <= lowest}
-            onClick={() => {
-              zoomTo(zoomOut(scale, lowest));
-            }}
-          />
-          <span className="w-12 text-center text-secondary tabular-nums text-muted">
-            {idle ? '' : zoomPercent(scale)}
-          </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            label="Zoom in"
-            icon={<ZoomInIcon />}
-            disabled={idle || scale >= zoomLimits.max}
-            onClick={() => {
-              zoomTo(zoomIn(scale));
-            }}
-          />
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={idle || zoom.kind === 'fit'}
-            onClick={() => {
-              setZoom(fit);
-            }}
-          >
-            Fit
-          </Button>
-          {imageActions(image.external).map((action) =>
-            action === 'open' ? (
-              <a
-                key={action}
-                className={buttonClassName({
-                  variant: 'ghost',
-                  size: 'sm',
-                  iconOnly: true,
-                })}
-                href={image.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                referrerPolicy="no-referrer"
-                aria-label={imageActionLabels[action]}
-                title={imageActionLabels[action]}
-              >
-                {actionIcon(action)}
-              </a>
-            ) : (
-              <Button
-                key={action}
-                variant="ghost"
-                size="sm"
-                label={imageActionLabels[action]}
-                icon={actionIcon(action)}
-                disabled={actionNeedsPicture(action) && idle}
-                onClick={() => {
-                  run(action);
-                }}
-              />
-            ),
-          )}
-          {image.remove === undefined ? null : (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                if (image.remove?.() === true) {
-                  onRemoved?.();
-                  onClose();
-                } else setMessage('This image changed. Open it again.');
-              }}
-            >
-              Remove
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
             label="Close"
-            icon={<CloseIcon />}
+            glyph={<CloseIcon />}
             onClick={onClose}
           />
-        </Inline>
-      </div>
-      <div
-        className="pointer-events-none absolute inset-x-3 bottom-4 flex justify-center"
-        role="status"
+        }
       >
-        {status === '' ? null : (
-          <Inset
-            padX={3}
-            padY={2}
-            as="p"
-            className="rounded-lg border border-edge-subtle bg-card text-body text-strong shadow-overlay"
-          >
-            {status}
-          </Inset>
+        <Inset
+          padX={2}
+          as="p"
+          className="hidden max-w-xs truncate text-label md:block"
+        >
+          {imageTitle(image.alt)}
+        </Inset>
+        <IconButton
+          variant="ghost"
+          label="Zoom out"
+          glyph={<ZoomOutIcon />}
+          disabled={idle || scale <= lowest}
+          onClick={() => {
+            zoomTo(zoomOut(scale, lowest));
+          }}
+        />
+        <span className="w-12 text-center text-secondary tabular-nums text-muted">
+          {idle ? '' : zoomPercent(scale)}
+        </span>
+        <IconButton
+          variant="ghost"
+          label="Zoom in"
+          glyph={<ZoomInIcon />}
+          disabled={idle || scale >= zoomLimits.max}
+          onClick={() => {
+            zoomTo(zoomIn(scale));
+          }}
+        />
+        <Button
+          variant="ghost"
+          size="compact"
+          disabled={idle || zoom.kind === 'fit'}
+          onClick={() => {
+            setZoom(fit);
+          }}
+        >
+          Fit
+        </Button>
+        {imageActions(image.external).map((action) =>
+          action === 'open' ? (
+            <a
+              key={action}
+              className={buttonClassName({
+                variant: 'ghost',
+                size: 'compact',
+                iconOnly: true,
+              })}
+              href={image.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              referrerPolicy="no-referrer"
+              aria-label={imageActionLabels[action]}
+              title={imageActionLabels[action]}
+            >
+              {actionIcon(action)}
+            </a>
+          ) : (
+            <IconButton
+              key={action}
+              variant="ghost"
+              label={imageActionLabels[action]}
+              glyph={actionIcon(action)}
+              disabled={actionNeedsPicture(action) && idle}
+              onClick={() => {
+                run(action);
+              }}
+            />
+          ),
         )}
-      </div>
+        {image.remove === undefined ? null : (
+          <Button
+            variant="ghost"
+            size="compact"
+            onClick={() => {
+              if (image.remove?.() === true) {
+                onRemoved?.();
+                onClose();
+              } else setMessage('This image changed. Open it again.');
+            }}
+          >
+            Remove
+          </Button>
+        )}
+      </Toolbar>
+      {status === '' ? null : <Toast message={status} />}
     </div>
   );
 }

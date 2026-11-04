@@ -1,3 +1,4 @@
+import { hasEmailProblem } from '../../lib/email-problem.ts';
 import { AuthFrame } from './auth-frame.tsx';
 import {
   Form,
@@ -5,7 +6,6 @@ import {
   Inset,
   Stack,
   Button,
-  buttonClassName,
   Checkbox,
   DownloadIcon,
   LoadingState,
@@ -68,7 +68,7 @@ import { passwordProblem, passwordRule } from '../../lib/password-policy.ts';
 import { downloadAll, transferFailureMessage } from '../export/export.ts';
 
 import { useDocumentTitle } from '../../shell/document-title.ts';
-import { productName } from '@notesapp/core';
+import { productName, normalizeEmail } from '@notesapp/core';
 
 /** The title of the settings page, which is also its breadcrumb part. */
 export { settingsTitle } from '../../lib/settings-address.ts';
@@ -115,7 +115,7 @@ function SignedInFooter({
       </p>
       <Button
         variant="secondary"
-        size="sm"
+        size="compact"
         icon={<SignOutIcon />}
         disabled={disabled}
         onClick={onSignOut}
@@ -335,7 +335,7 @@ export function ConsentPage(): ReactNode {
       }
     >
       {state.kind === 'loading' ? (
-        <LoadingState label="The terms are loading." />
+        <LoadingState label="Loading terms" />
       ) : state.kind === 'failed' ? (
         <Stack gap={3} as="div">
           <Notice tone="problem" message={state.message} />
@@ -451,6 +451,7 @@ export function LoginPage({
       ? signInState.email
       : '',
   );
+  const [emailError, setEmailError] = useState('');
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [reveal, setReveal] = useState(false);
@@ -511,6 +512,10 @@ export function LoginPage({
         });
     setBusy(false);
     if (result.error !== undefined || result.data === undefined) {
+      if (hasEmailProblem(result.error)) {
+        setEmailError('Enter an email address.');
+        return;
+      }
       const code = problemCode(result.error);
       const httpStatus = result.response?.status ?? problemStatus(result.error);
       if (code === 'oauth_request_invalid') {
@@ -555,10 +560,46 @@ export function LoginPage({
   return (
     <AuthFrame
       title={status.kind === 'loading' ? productName : title}
+      showSignIn={false}
       documents={documents}
+      description={
+        setup
+          ? 'This installation has no account yet. What you enter here becomes the first account. It administers the installation and invites other people.'
+          : oauthQuery === undefined
+            ? 'Enter the address and the password of your account.'
+            : oauthSignInDescription
+      }
+      footer={
+        <Inline gap={4} wrap justify="center">
+          {' '}
+          {status.kind === 'ready' && !setup && status.passwordReset ? (
+            <>
+              <Link
+                className="text-secondary text-accent underline"
+                to={forgotPasswordRoute}
+              >
+                Forgot password
+              </Link>
+              {oauthQuery === undefined ? null : (
+                <Inset as="p" className="text-secondary text-muted">
+                  {oauthResetSentence}
+                </Inset>
+              )}
+            </>
+          ) : null}
+          {status.kind === 'ready' && !setup && status.openRegistration ? (
+            <Link
+              className="text-secondary text-accent underline"
+              to={signUpRoute}
+            >
+              Create an account
+            </Link>
+          ) : null}
+        </Inline>
+      }
     >
       {status.kind === 'loading' ? (
-        <LoadingState label="The sign-in screen is loading." />
+        <LoadingState label="Loading sign-in screen" />
       ) : status.kind === 'unreachable' ? (
         <Stack gap={3} as="div">
           <Notice tone="problem" message={status.message} />
@@ -572,21 +613,29 @@ export function LoginPage({
         </Stack>
       ) : (
         <>
-          <Inset as="p" className="text-secondary text-muted">
-            {setup
-              ? 'This installation has no account yet. What you enter here becomes the first account. It administers the installation and invites other people.'
-              : oauthQuery === undefined
-                ? 'Enter the address and the password of your account.'
-                : oauthSignInDescription}
-          </Inset>
           <Form
+            noValidate
             onSubmit={(event): void => {
               event.preventDefault();
-              void submitPassword();
+              setEmailError(
+                email.trim() !== '' &&
+                  (normalizeEmail(email) === null ||
+                    event.currentTarget
+                      .querySelector('input[type=email]')
+                      ?.matches(':invalid'))
+                  ? 'Enter an email address.'
+                  : '',
+              );
+              if (
+                event.currentTarget.checkValidity() &&
+                normalizeEmail(email) !== null
+              )
+                void submitPassword();
             }}
           >
             <TextField
               id="login-email"
+              error={emailError}
               label="Email address"
               value={email}
               inputType="email"
@@ -636,29 +685,6 @@ export function LoginPage({
                   : 'Sign in'}
             </Button>
           </Form>
-          {status.kind === 'ready' && !setup && status.passwordReset ? (
-            <>
-              <Link
-                className={`w-full ${buttonClassName({ variant: 'ghost' })}`}
-                to={forgotPasswordRoute}
-              >
-                Forgot password
-              </Link>
-              {oauthQuery === undefined ? null : (
-                <Inset as="p" className="text-secondary text-muted">
-                  {oauthResetSentence}
-                </Inset>
-              )}
-            </>
-          ) : null}
-          {status.kind === 'ready' && !setup && status.openRegistration ? (
-            <Link
-              className={`w-full ${buttonClassName({ variant: 'ghost' })}`}
-              to={signUpRoute}
-            >
-              Create an account
-            </Link>
-          ) : null}
         </>
       )}
     </AuthFrame>

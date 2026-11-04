@@ -1,7 +1,9 @@
 import {
-  raisedStateClasses,
-  responsiveRaisedStateClasses,
-} from './surface-classes.ts';
+  switchClassNames,
+  rowClassName,
+  buttonClassName,
+  contentEdgeRowClassName,
+} from './control-classes.ts';
 import { pageGutter } from './public-layout.ts';
 import { Stack, Inline } from './primitives.tsx';
 import { useSettingsSurface, SettingsRowActions } from './settings-layout.tsx';
@@ -42,11 +44,7 @@ import {
   type Ref,
   type MouseEventHandler,
 } from 'react';
-import {
-  rowClassName,
-  buttonClassName,
-  contentEdgeRowClassName,
-} from './control-classes.ts';
+
 import { ChevronRightIcon, MoreIcon } from './icons.tsx';
 import {
   pageColumnClassName,
@@ -148,12 +146,14 @@ export const PageBackProvider = PageBackContext.Provider;
  */
 export function PageHeader({
   title,
+  count,
   description,
   actions,
   actionLayout = 'cluster',
   id,
 }: {
   readonly title: string;
+  readonly count?: number | undefined;
   readonly description?: string | undefined;
   readonly actions?: ReactNode | undefined;
   readonly actionLayout?: PageHeaderActionLayout | undefined;
@@ -175,14 +175,19 @@ export function PageHeader({
             : 'min-w-0 grow basis-full sm:basis-0 flex flex-col gap-1'
         }
       >
-        <Inline gap={1} align="start" className="min-w-0">
+        <Inline gap={1} align="center" className="min-w-0">
           {back}
-          <h1
-            className="m-0 min-w-0 text-title-page tracking-heading text-strong"
-            id={id}
-          >
-            {title}
-          </h1>
+          <Inline gap={1} align="baseline" className="min-w-0">
+            <h1
+              className="m-0 min-w-0 text-title-page tracking-heading text-strong"
+              id={id}
+            >
+              {title}
+            </h1>
+            {count === undefined ? null : (
+              <span className="text-value text-muted">{count}</span>
+            )}
+          </Inline>
         </Inline>
         {description === undefined || description === '' ? null : (
           <p className="text-secondary text-muted">{description}</p>
@@ -222,7 +227,7 @@ export function Card<T extends ElementType = 'div'>({
     {
       ...props,
       'data-ui-card': '',
-      className: `flex min-w-0 flex-col gap-0 rounded-xl ${responsive ? 'bg-transparent coarse:bg-card-raised ' + responsiveRaisedStateClasses : 'bg-card-raised ' + raisedStateClasses} ${className}`,
+      className: `flex min-w-0 flex-col gap-0 rounded-xl ${responsive ? 'bg-transparent coarse:bg-card-raised coarse:shadow-raised coarse:outline coarse:outline-1 coarse:-outline-offset-1 coarse:outline-edge-subtle ' + 'coarse:state-raised' : 'bg-card-raised shadow-raised outline outline-1 -outline-offset-1 outline-edge-subtle ' + 'state-raised'} ${className}`,
     },
     title === undefined ? null : (
       <h2 id={titleId} className="text-title-header text-strong">
@@ -371,12 +376,10 @@ export function ListRow({
       <ChevronRightIcon />
     ) : trailing?.kind === 'switch' ? (
       <span
-        className={`inline-flex h-6 w-10 shrink-0 items-center rounded-full border border-edge-line p-1 ${trailing.checked ? 'justify-end bg-accent-fill' : 'justify-start bg-hover'}`}
+        className={switchClassNames(trailing.checked).track}
         aria-hidden="true"
       >
-        <span
-          className={`h-4 w-4 rounded-full ${trailing.checked ? 'bg-on-accent' : 'bg-muted'}`}
-        />
+        <span className={switchClassNames(trailing.checked).thumb} />
       </span>
     ) : trailing?.kind === 'action' ? (
       <button

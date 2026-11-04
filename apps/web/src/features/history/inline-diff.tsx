@@ -1,4 +1,4 @@
-import { Inline, Stack, Inset } from '@notesapp/ui';
+import { PreviewBlock, Inline, Stack, Inset } from '@notesapp/ui';
 
 /**
  * One unified line comparison of two texts.
@@ -57,10 +57,7 @@ export function InlineDiff({
       aria-label="Line differences"
     >
       {blocks.map((block, index) => (
-        <li
-          className="overflow-hidden rounded-lg border border-edge-subtle"
-          key={`${idPrefix}-block-${String(index)}`}
-        >
+        <PreviewBlock as="li" key={`${idPrefix}-block-${String(index)}`}>
           <Inset
             padX={3}
             padY={2}
@@ -69,7 +66,7 @@ export function InlineDiff({
           >
             {diffBlockHeading(block, oldLabel, newLabel)}
           </Inset>
-          <Inset pad={0} as="ol" className="list-none font-mono text-preview">
+          <Inset pad={0} as="ol" className="list-none">
             {block.rows.map((row, rowIndex) => (
               <Inline
                 as="li"
@@ -96,7 +93,7 @@ export function InlineDiff({
               </Inline>
             ))}
           </Inset>
-        </li>
+        </PreviewBlock>
       ))}
     </Stack>
   );
