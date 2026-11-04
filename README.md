@@ -42,7 +42,8 @@ image and [Upgrade](docs/guide/upgrade.md) to update an installation.
 
 ## Documentation
 
-The [user guide](docs/guide/README.md) covers writing notes and running a server.
+The user guide in [docs/guide/](docs/guide/README.md) covers writing notes and
+running a server.
 Start with these pages:
 
 - [Getting started](docs/guide/getting-started.md) to write your first note.
@@ -63,8 +64,9 @@ installation.
 
 To contribute code or documentation, start with [Contributing](CONTRIBUTING.md).
 It links to the development process and gives the setup and review steps.
-See [Architecture](docs/development/architecture.md) for the code design and
-[Documentation](docs/README.md) for the documentation rules.
+See [Architecture](docs/development/architecture.md) for the code design.
+[The documentation site](docs/development/docs-site.md) explains how to build
+the guide. [Documentation](docs/README.md) gives the documentation rules.
 Follow the [Code of conduct](CODE_OF_CONDUCT.md) in project spaces.
 
 Report security problems privately. Follow the [security policy](SECURITY.md).
