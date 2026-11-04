@@ -54,7 +54,7 @@ in `src/object-store/s3-store.ts` only. Markdown reads stay in this Node package
 A pure module such as `excerpt.ts` or `search-text.ts` has a `*.test.ts` next to it under
 `pnpm test:unit`. Everything that needs a database is an integration test in
 `tests/integration/`, with one disposable database per file against the service that
-`tools/test-database/ensure-postgres.sh` starts. Such a test proves the row access rule as
+`pnpm test:services` starts. Such a test proves the row access rule as
 well: `row-access.test.ts` is the pattern, and `object-store.test.ts` holds both adapters.
 
 ## Forbidden here
