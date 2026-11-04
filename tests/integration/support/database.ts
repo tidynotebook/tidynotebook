@@ -13,7 +13,6 @@
  * ```
  */
 import { createHash, randomUUID } from 'node:crypto';
-import process from 'node:process';
 import pg from 'pg';
 import type {
   Actor,
@@ -62,7 +61,7 @@ export type TestDatabase = {
 
 /** The Compose test server URL, and the guard that keeps it disposable. */
 export function testServerUrl(): string {
-  const url = process.env['NOTESAPP_TEST_DATABASE_URL'] ?? testDatabaseUrl;
+  const url = testDatabaseUrl;
   const name = databaseName(url);
   if (!isTestDatabaseName(name)) {
     throw new Error(
@@ -74,12 +73,12 @@ export function testServerUrl(): string {
 
 /** The runtime role password of the test service. */
 export function testPassword(): string {
-  return process.env['NOTESAPP_RUNTIME_PASSWORD'] ?? testRuntimePassword;
+  return testRuntimePassword;
 }
 
 /** The identity role password of the test service. */
 export function testIdentityPassword(): string {
-  return process.env['NOTESAPP_AUTH_DATABASE_PASSWORD'] ?? testAuthPassword;
+  return testAuthPassword;
 }
 
 /** Creates and migrates one disposable database. */

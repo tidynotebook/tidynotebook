@@ -46,7 +46,7 @@
     "test:browser:sidebar": "node tests/browser/sidebar-symmetry.ts",
     "test:browser:sheets": "node tests/browser/phone-sheet-keyboard.ts",
     "test:unit:run": "node --config-file=node-test.config.json \"apps/*/src/**/*.test.{ts,mjs}\" \"packages/*/src/**/*.test.{ts,mjs}\" \"tools/*.test.{ts,mjs}\" \"tools/sdk-codegen/src/**/*.test.{ts,mjs}\"",
-    "test:services": "docker compose -p notesapp-test -f compose.test.yaml up -d --wait && pnpm db:migrate --profile test"
+    "test:services": "docker compose -p notesapp-test -f compose.test.yaml up -d --wait && env -u NOTESAPP_TEST_DATABASE_URL -u NOTESAPP_RUNTIME_PASSWORD -u NOTESAPP_AUTH_DATABASE_PASSWORD pnpm db:migrate --profile test"
   },
   "devDependencies": {
     "@aws-sdk/client-s3": "catalog:",

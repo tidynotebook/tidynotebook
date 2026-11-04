@@ -25,7 +25,11 @@ setup. Each integration test creates its own database or bucket.
 
 Test setup now requires Docker Compose. It no longer uses an external service
 because a host port accepts connections. Stop any external service on the test
-ports before running the commands. Use the named disposable Compose services.
+ports before running the commands. Use the named disposable Compose services. Setup clears inherited test database
+and role password overrides before migration. Integration helpers and diagnostic
+commands use the fixed Compose connection values. The former
+`NOTESAPP_TEST_DATABASE_URL` and `NOTESAPP_TEST_S3_ENDPOINT` overrides no longer
+select test services. This also applies to focused integration checks.
 
 For a focused check, use an explicit file path with the Node runner. Build and
 start the test services first for an integration test:
