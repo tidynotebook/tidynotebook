@@ -1023,3 +1023,16 @@ await test('navigation materializes missing and zero-length cells with the write
     assert.equal(transaction.state.selection.main.head, cell.textTo);
   }
 });
+
+await test('a one-space empty cell keeps its caret inside its text mark', () => {
+  const state = stateOf('| A | B |\n| --- | --- |\n| x‸ | |');
+  const spec = tableEditSpec(state, nextCellEdit);
+  assert.ok(spec);
+  const transaction = state.update(spec);
+  assert.equal(transaction.docChanged, false);
+  const table = tablesIn(transaction.state, 0, transaction.state.doc.length)[0];
+  const cell = table?.rows[2]?.cells[1];
+  assert.ok(cell);
+  assert.equal(transaction.state.selection.main.head, cell.from);
+  assert.ok(cell.textFrom < cell.to);
+});

@@ -24,7 +24,10 @@ breaks for long tokens. Keep keyboard focus visible on each scroll wrapper.
 
 Moving to an existing cell changes only selection. It does not reformat table
 padding or create a text diff. This keeps navigation usable in long tables.
-Actual table edits still use the existing writer.
+Actual table edits still use the existing writer. Empty-cell caret positions
+remain inside a visible source space. After local input changes table widths,
+caret reveal waits for the measured tracks. It changes only the active table
+scroll position. Manual scroll input cancels a delayed reveal.
 
 The stored Markdown format does not change. The existing table model has no manual
 column resizing or stored widths. This change adds neither feature.
