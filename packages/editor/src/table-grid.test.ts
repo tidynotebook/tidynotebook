@@ -9,9 +9,11 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   EditorSelection,
+  StateEffect,
   EditorState,
   type TransactionSpec,
 } from '@codemirror/state';
+import { history, undoDepth, redoDepth, undo } from '@codemirror/commands';
 import { BlockWrapper } from '@codemirror/view';
 import { formatContextOf } from './format-context.ts';
 import { noteMarkdownExtensions, parsedWhole } from './language.ts';
@@ -206,11 +208,15 @@ await test('the header row and the last column cannot be removed', () => {
   assert.equal(tableEditSpec(one, removeColumnEdit), null);
 });
 
-await test('a command writes a messy table aligned', () => {
+await test('navigation keeps source and a table edit aligns it', () => {
   const state = stateOf('|a|bb|\n|-|-|\n|1‸|2|');
   assert.equal(
     applied(state, tableEditSpec(state, cellAboveEdit)),
-    '| a‸   | bb  |\n| --- | --- |\n| 1   | 2   |',
+    '|a‸|bb|\n|-|-|\n|1|2|',
+  );
+  assert.equal(
+    applied(state, tableEditSpec(state, alignColumnEdit('right'))),
+    '| a   | bb  |\n| --: | --- |\n| 1‸   | 2   |',
   );
 });
 
@@ -859,5 +865,161 @@ await test('new and inserted columns have fallback tracks before measurement', (
         }),
       ),
     );
+  }
+});
+
+await test('cell navigation preserves unformatted long table source', () => {
+  const doc =
+    '| A | B |\n| --- | --- |\n' +
+    '| short | x |\n'.repeat(300) +
+    '| ' +
+    'token'.repeat(100) +
+    ' | y |';
+  const state = stateOf(doc + '‸');
+  const table = tablesIn(state, 0, state.doc.length)[0];
+  assert.ok(table);
+  const first = table.rows[0]?.cells[0];
+  assert.ok(first);
+  const spec = tableEditSpec(state, nextCellEdit, first.textFrom);
+  assert.ok(spec);
+  const transaction = state.update(spec);
+  assert.equal(transaction.docChanged, false);
+  assert.equal(transaction.state.doc.toString(), doc);
+  assert.equal(
+    transaction.state.sliceDoc(
+      transaction.state.selection.main.from,
+      transaction.state.selection.main.to,
+    ),
+    'B',
+  );
+  let moved = transaction.state;
+  for (const edit of [
+    ...Array.from({ length: 100 }, () => nextCellEdit),
+    ...Array.from({ length: 100 }, () => previousCellEdit),
+  ]) {
+    const step = tableEditSpec(moved, edit);
+    assert.ok(step);
+    const next = moved.update(step);
+    assert.equal(next.docChanged, false);
+    moved = next.state;
+  }
+  assert.equal(moved.doc.toString(), doc);
+  assert.equal(
+    moved.sliceDoc(moved.selection.main.from, moved.selection.main.to),
+    'B',
+  );
+});
+
+await test('navigation preserves recent input and its document undo history', () => {
+  let state = stateOf(
+    '| A | B |\n| --- | --- |\n| one‸ | two |\n| three | four |',
+    true,
+  );
+  state = state.update({
+    effects: StateEffect.appendConfig.of(history()),
+  }).state;
+  const original = state.doc.toString();
+  state = state.update({
+    changes: { from: state.selection.main.head, insert: ' typed' },
+    userEvent: 'input.type',
+  }).state;
+  state = state.update({
+    changes: { from: state.selection.main.head, insert: ' pasted' },
+    userEvent: 'input.paste',
+  }).state;
+  const bytes = state.doc.toString();
+  const depth = undoDepth(state);
+  const redo = redoDepth(state);
+  assert.ok(depth > 0);
+  for (const edit of [
+    nextCellEdit,
+    nextCellEdit,
+    previousCellEdit,
+    cellAboveEdit,
+    cellBelowEdit,
+  ]) {
+    const spec = tableEditSpec(state, edit);
+    assert.ok(spec);
+    const transaction = state.update(spec);
+    assert.equal(transaction.docChanged, false);
+    state = transaction.state;
+    assert.equal(state.doc.toString(), bytes);
+    assert.equal(undoDepth(state), depth);
+    assert.equal(redoDepth(state), redo);
+  }
+  while (undoDepth(state) > 0)
+    assert.ok(
+      undo({
+        state,
+        dispatch: (transaction) => {
+          state = transaction.state;
+        },
+      }),
+    );
+  assert.equal(state.doc.toString(), original);
+});
+
+await test('navigation selects source across row boundaries and inline syntax', () => {
+  const values = [
+    'a\\|b',
+    '`code`',
+    '**bold**',
+    '日本語 👩🏽‍🚀',
+    '',
+    '[link](https://example.test)',
+  ];
+  let state = stateOf(
+    '| A‸ | B | C |\n| --- | --- | --- |\n| ' +
+      values.slice(0, 3).join(' | ') +
+      ' |\n| ' +
+      values.slice(3).join(' | ') +
+      ' |',
+  );
+  const bytes = state.doc.toString();
+  const selected = [];
+  for (let i = 0; i < 8; i++) {
+    const spec = tableEditSpec(state, nextCellEdit);
+    assert.ok(spec);
+    const transaction = state.update(spec);
+    assert.equal(transaction.docChanged, false);
+    state = transaction.state;
+    selected.push(
+      state.sliceDoc(state.selection.main.from, state.selection.main.to),
+    );
+    assert.equal(state.doc.toString(), bytes);
+  }
+  assert.deepEqual(selected, ['B', 'C', ...values]);
+  for (let i = 0; i < 8; i++) {
+    const spec = tableEditSpec(state, previousCellEdit);
+    assert.ok(spec);
+    const transaction = state.update(spec);
+    assert.equal(transaction.docChanged, false);
+    state = transaction.state;
+  }
+  assert.equal(
+    state.sliceDoc(state.selection.main.from, state.selection.main.to),
+    'A',
+  );
+  assert.equal(state.doc.toString(), bytes);
+});
+
+await test('navigation materializes missing and zero-length cells with the writer', () => {
+  for (const row of ['| x |', '| x ||']) {
+    const state = stateOf(
+      '| A | B |\n| --- | --- |\n' + row.replace('x', 'x‸'),
+    );
+    const spec = tableEditSpec(state, nextCellEdit);
+    assert.ok(spec);
+    const transaction = state.update(spec);
+    assert.equal(transaction.docChanged, true);
+    const table = tablesIn(
+      transaction.state,
+      0,
+      transaction.state.doc.length,
+    )[0];
+    assert.ok(table);
+    const cell = table.rows[2]?.cells[1];
+    assert.ok(cell && cell.to > cell.from);
+    assert.equal(transaction.state.selection.main.head, cell.textTo);
   }
 });

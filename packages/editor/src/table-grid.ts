@@ -455,8 +455,25 @@ function tableCommandSpec(
   if (table === null) return null;
   const at = cellAt(table, pos) ?? { row: 0, column: 0 };
   if (at === null) return null;
-  const result = edit(tableData(state, table), at);
+  const data = tableData(state, table);
+  const result = edit(data, at);
   if (result === null) return null;
+  // Moving within existing cells changes selection only. Reformatting here
+  // can turn a long table into a large padding diff on every Tab press.
+  if (result.data === data) {
+    const row = table.rows.filter((row) => row.kind !== 'delimiter')[
+      result.target.row
+    ];
+    const cell = row?.cells[result.target.column];
+    if (cell !== undefined && cell.to > cell.from)
+      return {
+        selection:
+          result.select === 'text'
+            ? EditorSelection.range(cell.textFrom, cell.textTo)
+            : EditorSelection.cursor(cell.textTo),
+        filter: false,
+      };
+  }
   const written = writeTable(result.data);
   const cell = written.cell(result.target);
   const from = table.from + cell.from;

@@ -71,7 +71,7 @@ try {
             const table = document.querySelector('.cm-np-table');
             if (!(table instanceof HTMLElement)) throw Error('Table missing.');
             const rows = [
-              ...document.querySelectorAll(
+              ...table.querySelectorAll(
                 '.cm-np-table-line:not(.cm-np-table-closed)',
               ),
             ];
@@ -257,14 +257,52 @@ try {
               await page.evaluate(async () => {
                 await new Promise(requestAnimationFrame);
                 await new Promise(requestAnimationFrame);
-                const selection = window.getSelection();
-                if (!selection?.rangeCount) return false;
-                const range = selection.getRangeAt(0).cloneRange();
-                range.collapse(false);
-                const parent = range.startContainer.parentElement;
-                const wrapper = parent?.closest('.cm-np-table');
+                // Use the editor caret API. A collapsed DOM Range can have
+                // a zero rectangle at a hidden Markdown boundary.
+                const record = (
+                  value: unknown,
+                ): value is Record<string, unknown> =>
+                  typeof value === 'object' && value !== null;
+                const content = document.querySelector('.cm-content');
+                if (content === null) return false;
+                const tile: unknown = Reflect.get(content, 'cmTile');
+                if (
+                  !record(tile) ||
+                  !record(tile.root) ||
+                  !record(tile.root.view)
+                )
+                  return false;
+                const view = tile.root.view;
+                const state = view.state;
+                if (
+                  !record(state) ||
+                  !record(state.selection) ||
+                  !record(state.selection.main)
+                )
+                  return false;
+                const head = state.selection.main.head;
+                if (
+                  typeof head !== 'number' ||
+                  typeof view.coordsAtPos !== 'function' ||
+                  typeof view.domAtPos !== 'function'
+                )
+                  return false;
+                const caret: unknown = view.coordsAtPos.call(view, head);
+                if (
+                  !record(caret) ||
+                  typeof caret.left !== 'number' ||
+                  typeof caret.right !== 'number'
+                )
+                  return false;
+                const position: unknown = view.domAtPos.call(view, head);
+                if (!record(position) || !(position.node instanceof Node))
+                  return false;
+                const element =
+                  position.node instanceof Element
+                    ? position.node
+                    : position.node.parentElement;
+                const wrapper = element?.closest('.cm-np-table');
                 if (!(wrapper instanceof HTMLElement)) return false;
-                const caret = range.getBoundingClientRect();
                 const bounds = wrapper.getBoundingClientRect();
                 return (
                   caret.left >= bounds.left - 1 &&
