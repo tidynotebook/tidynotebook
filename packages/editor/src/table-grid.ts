@@ -1654,13 +1654,20 @@ export function tableGridView(): Extension {
       class {
         update(update: ViewUpdate): void {
           if (
-            !update.view.hasFocus ||
-            (!update.selectionSet && !update.docChanged)
+            !update.focusChanged &&
+            !update.selectionSet &&
+            !update.transactions.some(
+              (transaction) =>
+                transaction.isUserEvent('input') ||
+                transaction.isUserEvent('undo') ||
+                transaction.isUserEvent('redo'),
+            )
           )
             return;
           update.view.requestMeasure({
             key: this,
             read: (view) => {
+              if (!view.hasFocus) return null;
               const head = view.state.selection.main.head;
               const node = view.domAtPos(head).node;
               const element =

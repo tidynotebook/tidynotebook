@@ -378,9 +378,8 @@ await test('a table is a grid of outlined cells that scrolls on its own', () => 
     assert.equal(box.whiteSpace, 'pre-wrap');
     assert.equal(box.overflowWrap, 'anywhere');
     assert.equal(box.wordBreak, 'normal');
-    // A browser ignores a minimum width on a table cell, so a block of no
-    // height inside the cell holds the width of an empty one.
-    assert.equal(box.minWidth, '0');
+    // Empty and populated grid cells share the readable editing floor.
+    assert.equal(box.minWidth, 'var(--container-table-cell-min)');
   }
   // The head differs by fill before it differs by a line.
   assert.equal(head.backgroundColor, 'var(--notes-surface-hover)');
