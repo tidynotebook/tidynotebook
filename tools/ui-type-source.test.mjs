@@ -1,37 +1,48 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readdir, readFile } from 'node:fs/promises';
-import { resolve, relative } from 'node:path';
-/** Size declarations belong to the central role and note-rendering stylesheet. */
-const allowed = new Map([
-  [
-    'apps/web/src/tailwind.css',
-    'Defines shared type roles and the separate note rendering scale.',
-  ],
-]);
-await test('UI source uses type roles instead of raw sizes', async () => {
-  const root = resolve(import.meta.dirname, '..');
-  /** @type {string[]} */
-  const problems = [];
-  /** @param {string} directory */
-  async function visit(directory) {
-    for (const entry of await readdir(directory, { withFileTypes: true })) {
-      const path = resolve(directory, entry.name);
-      if (entry.isDirectory()) await visit(path);
-      else if (/\.(tsx?|css)$/.test(path) && !path.endsWith('.test.ts')) {
-        const source = await readFile(path, 'utf8');
-        const name = relative(root, path);
-        if (allowed.has(name)) continue;
-        if (
-          /\btext-(?:xs|sm|base|lg|xl|[2-9]xl)\b|\btext-\[[^\]]+\]|\bfontSize\s*[:=]|font-size\s*:/.test(
-            source,
-          )
-        )
-          problems.push(name);
-      }
-    }
+import { rawTypeRole } from './check-design-rules.mjs';
+
+await test('raw type sizes are refused in whole source and CSS', () => {
+  for (const value of [
+    'text-xs',
+    'text-sm',
+    'text-base',
+    'text-lg',
+    'text-xl',
+    ...Array.from({ length: 8 }, (_, i) => `text-${i + 2}xl`),
+    'text-[13px]',
+    'fontSize: 12',
+    'fontSize = 12',
+    'font-size: 12px',
+  ]) {
+    for (const path of [
+      'apps/web/src/screen.tsx',
+      'packages/ui/src/control.ts',
+      'packages/ui/src/control.css',
+      'apps/web/src/screen.test.tsx',
+    ])
+      assert.equal(
+        rawTypeRole(path, `/* ${value} */`),
+        true,
+        `${path}: ${value}`,
+      );
+    assert.equal(rawTypeRole('apps/web/src/tailwind.css', value), false);
   }
-  await visit(resolve(root, 'apps/web/src'));
-  await visit(resolve(root, 'packages/ui/src'));
-  assert.deepEqual(problems, []);
+});
+await test('named roles and the original excluded paths pass', () => {
+  assert.equal(
+    rawTypeRole(
+      'apps/web/src/screen.tsx',
+      'text-body text-control font-size-adjust: 1',
+    ),
+    false,
+  );
+  for (const path of [
+    'apps/web/src/screen.test.ts',
+    'apps/docs/src/page.ts',
+    'packages/editor/src/widgets.ts',
+    'apps/server/src/routes/legal-document.ts',
+    'apps/web/index.html',
+  ])
+    assert.equal(rawTypeRole(path, 'text-sm'), false, path);
 });
