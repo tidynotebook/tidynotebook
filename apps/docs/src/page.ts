@@ -191,7 +191,7 @@ export const articleClasses = [
   codeFigureClassName,
   '[&_:not(pre)>code]:rounded-sm [&_:not(pre)>code]:bg-surface [&_:not(pre)>code]:px-1 [&_:not(pre)>code]:py-0.5 [&_:not(pre)>code]:text-strong',
   '[&_hr]:my-8 [&_hr]:border-edge-line',
-  '[&_.notes-table-scroll]:my-4 [&_.notes-table-scroll]:w-fit [&_.notes-table-scroll]:max-w-full [&_.notes-table-scroll]:overflow-x-auto [&_.notes-table-scroll]:focus-visible:outline-2 [&_.notes-table-scroll]:focus-visible:-outline-offset-2 [&_.notes-table-scroll]:focus-visible:outline-focus [&_table]:w-full [&_th]:max-w-table-cell [&_td]:max-w-table-cell [&_th]:min-w-table-cell-min [&_td]:min-w-table-cell-min [&_th]:wrap-break-word [&_td]:wrap-break-word [&_table]:border-collapse [&_table]:text-ui',
+  'content-table-scroll:my-4 content-table-scroll:w-fit content-table-scroll:max-w-full content-table-scroll:overflow-x-auto content-table-focus:outline-2 content-table-focus:-outline-offset-2 content-table-focus:outline-focus [&_table]:w-full content-table-cell:max-w-table-cell content-table-cell:min-w-table-cell-min content-table-cell:wrap-break-word [&_table]:border-collapse [&_table]:text-ui',
   '[&_th]:border [&_th]:border-edge-line [&_th]:bg-surface [&_th]:p-2 [&_th]:text-left [&_th]:align-top [&_th]:font-medium [&_th]:text-strong',
   '[&_td]:border [&_td]:border-edge-line [&_td]:p-2 [&_td]:align-top',
 ].join(' ');
