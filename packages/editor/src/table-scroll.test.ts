@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ChangeSet } from '@codemirror/state';
+import { ChangeSet, EditorState } from '@codemirror/state';
+import { noteMarkdownExtensions, parsedWhole } from './language.ts';
+import { tableAt } from './table-grid.ts';
 import { TableScrollRecords } from './table-scroll.ts';
 
 await test('each table retains its own identity and offset as earlier text shifts', () => {
@@ -65,4 +67,101 @@ await test('unparsed anchors map without text matching and joined headers retire
   records.clear();
   assert.equal([...records.values()].length, 0);
   assert.notEqual(records.register({ from: 16, to: 96 }), first);
+});
+
+await test('a partial header replacement retains a valid table without leading pipes', () => {
+  const source = 'Before\n\nAlpha | Beta\n--- | ---\nfirst | second\n\nAfter';
+  for (const edit of [
+    {
+      from: source.indexOf('Alpha'),
+      to: source.indexOf('Alpha') + 5,
+      insert: 'Z',
+    },
+    { from: source.indexOf('Alpha'), to: source.indexOf('Alpha') + 1 },
+    { from: 0, insert: 'Earlier prose\n\n' },
+    { from: source.indexOf('Alpha'), insert: 'New ' },
+  ]) {
+    const state = parsedWhole(
+      EditorState.create({
+        doc: source,
+        extensions: noteMarkdownExtensions({ headless: true }),
+      }),
+    );
+    const table = tableAt(state, source.indexOf('Alpha'));
+    assert.ok(table);
+    const records = new TableScrollRecords('editor');
+    const id = records.register(table);
+    const record = records.get(id);
+    assert.ok(record);
+    record.left = 181;
+    const transaction = state.update({ changes: edit });
+    const next = parsedWhole(transaction.state);
+    let calls = 0;
+    records.map(transaction.changes, (from) => {
+      calls++;
+      const table = tableAt(next, from);
+      const header = table?.rows[0];
+      return table !== null && header !== undefined && from <= header.to
+        ? table
+        : null;
+    });
+    assert.equal(
+      calls,
+      1,
+      'The grammar must check whether the header survives.',
+    );
+    assert.equal(records.get(id)?.left, 181);
+    const surviving = tableAt(next, next.doc.toString().indexOf(' | Beta'));
+    assert.ok(surviving);
+    assert.equal(records.at(surviving.from)?.id, id);
+  }
+});
+
+await test('mapped header fallback refuses removed syntax and full replacements', () => {
+  const state = parsedWhole(
+    EditorState.create({
+      doc: 'Alpha | Beta\n--- | ---\nfirst | second',
+      extensions: noteMarkdownExtensions({ headless: true }),
+    }),
+  );
+  const table = tableAt(state, 0);
+  assert.ok(table);
+  for (const replacement of ['New note', 'Gamma | Delta\n--- | ---\nx | y']) {
+    const records = new TableScrollRecords('editor');
+    const id = records.register(table);
+    let calls = 0;
+    records.map(
+      ChangeSet.of(
+        { from: table.from, to: table.to, insert: replacement },
+        state.doc.length,
+      ),
+      () => {
+        calls++;
+        return { from: 0, to: replacement.length };
+      },
+    );
+    assert.equal(
+      calls,
+      0,
+      'A full replacement cannot borrow a table identity.',
+    );
+    assert.equal(records.get(id), undefined);
+  }
+  const records = new TableScrollRecords('editor');
+  const id = records.register(table);
+  const transaction = state.update({
+    changes: { from: 0, to: 'Alpha | Beta'.length, insert: 'Alpha Beta' },
+  });
+  const next = parsedWhole(transaction.state);
+  let calls = 0;
+  records.map(transaction.changes, (from) => {
+    calls++;
+    return tableAt(next, from);
+  });
+  assert.equal(calls, 1);
+  assert.equal(
+    records.get(id),
+    undefined,
+    'A partial edit without a surviving header is refused.',
+  );
 });
