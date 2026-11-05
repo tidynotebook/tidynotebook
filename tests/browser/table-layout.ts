@@ -79,7 +79,15 @@ try {
               for (const cell of row.querySelectorAll(
                 '.cm-np-table-cell, .cm-np-table-head',
               )) {
-                const column = getComputedStyle(cell).gridColumnStart;
+                const style = getComputedStyle(cell);
+                const column = style.gridColumnStart;
+                if (
+                  cell.getBoundingClientRect().width + 1 <
+                  parseFloat(style.minWidth)
+                )
+                  throw Error('A cell is below the readable minimum.');
+                if (cell.scrollWidth > cell.clientWidth + 1)
+                  throw Error('Cell content is clipped.');
                 const box = cell.getBoundingClientRect();
                 const previous = bounds.get(column);
                 if (
@@ -150,7 +158,10 @@ try {
                 parseFloat(bodyStyle.borderRightWidth);
               if (box.width > 20 * parseFloat(bodyStyle.fontSize) + padding + 2)
                 throw Error('A long token bypasses the column cap.');
-              if (box.width > limit + 2)
+              if (
+                box.width >
+                Math.max(limit, parseFloat(bodyStyle.minWidth)) + 2
+              )
                 throw Error(
                   `Column ${column} has redundant space: ${String(box.width)} px for ${String(limit)} px of content and padding.`,
                 );
@@ -165,14 +176,22 @@ try {
             };
           }, cellRows);
         const start = await geometry();
-        assert.equal(start.columns, 3);
+        assert.equal(start.columns, sourceTable.children[0]?.children.length);
         assert.ok(
           start.pageWidth <= start.viewport,
           'A wide table must not widen the page.',
         );
+        assert.ok(start.content >= start.width);
         assert.ok(
-          start.content <= start.width + 1,
-          'Three columns shrink and wrap to fit a phone.',
+          await page
+            .locator('.cm-np-table-head')
+            .first()
+            .evaluate(
+              (cell) =>
+                cell.getBoundingClientRect().width + 1 >=
+                parseFloat(getComputedStyle(cell).minWidth),
+            ),
+          'Columns retain the readable minimum.',
         );
         await page.screenshot({
           path: `.local-app/screenshots/table-editor-${width}-${scheme}.png`,
@@ -191,6 +210,17 @@ try {
           element.scrollLeft = element.scrollWidth;
         });
         assert.equal((await geometry()).tracks, start.tracks);
+        assert.ok(
+          await page
+            .locator('.cm-np-table')
+            .evaluate(
+              (element) =>
+                element.scrollWidth <= element.clientWidth + 1 ||
+                element.scrollLeft + element.clientWidth >=
+                  element.scrollWidth - 1,
+            ),
+          'The last editor column is reachable.',
+        );
         await page.locator('.cm-scroller').evaluate(async (element) => {
           element.scrollTop = 0;
           await new Promise(requestAnimationFrame);
@@ -219,6 +249,32 @@ try {
           original,
           'Undo restores the cell.',
         );
+        for (const key of ['Tab', 'Shift+Tab']) {
+          for (let column = 1; column < start.columns; column++) {
+            await page.keyboard.press(key);
+            assert.ok(
+              await page.evaluate(async () => {
+                await new Promise(requestAnimationFrame);
+                await new Promise(requestAnimationFrame);
+                const selection = window.getSelection();
+                if (!selection?.rangeCount) return false;
+                const range = selection.getRangeAt(0).cloneRange();
+                range.collapse(false);
+                const parent = range.startContainer.parentElement;
+                const wrapper = parent?.closest('.cm-np-table');
+                if (!(wrapper instanceof HTMLElement)) return false;
+                const caret = range.getBoundingClientRect();
+                const bounds = wrapper.getBoundingClientRect();
+                return (
+                  caret.left >= bounds.left - 1 &&
+                  caret.right <= bounds.right + 1 &&
+                  document.documentElement.scrollWidth <= innerWidth
+                );
+              }),
+              'Cell navigation keeps the caret inside the table viewport.',
+            );
+          }
+        }
         await page.goto(origin + readerPath);
         await page.locator('.notes-table-scroll table').waitFor();
         const reader = await page
@@ -274,11 +330,29 @@ try {
             };
           });
         assert.equal(reader.display, 'table');
+        assert.ok(reader.content >= reader.width);
         assert.ok(
-          reader.content <= reader.width + 1,
-          'Reader text wraps before horizontal scroll.',
+          await page
+            .locator('.notes-table-scroll th')
+            .first()
+            .evaluate(
+              (cell) =>
+                cell.getBoundingClientRect().width + 1 >=
+                parseFloat(getComputedStyle(cell).minWidth),
+            ),
+          'Reader columns retain the readable minimum.',
         );
         assert.ok(reader.pageWidth <= reader.viewport);
+        assert.ok(
+          await page.locator('.notes-table-scroll').evaluate((element) => {
+            element.scrollLeft = element.scrollWidth;
+            return (
+              element.scrollLeft + element.clientWidth >=
+              element.scrollWidth - 1
+            );
+          }),
+          'The last reader column is reachable.',
+        );
         await page.keyboard.press('Tab');
         assert.ok(
           await page.locator('.notes-table-scroll').evaluate((element) => {

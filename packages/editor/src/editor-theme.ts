@@ -55,6 +55,7 @@ export const editorThemeVariables: readonly string[] = [
   '--spacing-note-block',
   '--text-note-mono',
   '--container-table-cell',
+  '--container-table-cell-min',
   '--text-note-script',
   '--text-note-script--line-height',
   '--text-note-small',
@@ -853,7 +854,7 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
     '.cm-np-table-cell': {
       display: 'block',
       boxSizing: 'border-box',
-      minWidth: '0',
+      minWidth: 'var(--container-table-cell-min)',
       maxWidth: 'calc(var(--container-table-cell) + var(--spacing) * 6 + 2px)',
       minHeight: 'calc(1lh + var(--spacing) * 3 + 2px)',
       paddingInline: 'calc(var(--spacing) * 3)',
@@ -869,7 +870,7 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
     '.cm-np-table-head': {
       display: 'block',
       boxSizing: 'border-box',
-      minWidth: '0',
+      minWidth: 'var(--container-table-cell-min)',
       maxWidth: 'calc(var(--container-table-cell) + var(--spacing) * 6 + 2px)',
       minHeight: 'calc(1lh + var(--spacing) * 3 + 2px)',
       paddingInline: 'calc(var(--spacing) * 3)',

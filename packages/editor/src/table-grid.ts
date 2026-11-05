@@ -1357,7 +1357,11 @@ type GridParts = {
   readonly atomic: DecorationSet;
 };
 
-type TableLayout = { readonly tracks: string; readonly rules: string };
+type TableLayout = {
+  readonly columns: number;
+  readonly tracks: string;
+  readonly rules: string;
+};
 
 /** Read all source rows with an injected text measurement. */
 export function tableColumnWidths(
@@ -1385,6 +1389,7 @@ export function tableColumnWidths(
 function tableLayout(widths: readonly number[]): TableLayout {
   let total = 0;
   return {
+    columns: widths.length,
     tracks: widths.map((width) => `${String(width)}px`).join(' '),
     rules:
       widths
@@ -1420,7 +1425,10 @@ export function gridParts(
       if (seen.has(table.from)) continue;
       seen.add(table.from);
       const start = table.rows[0]?.lineFrom ?? table.from;
-      const layout = layouts.get(table.from);
+      const measured = layouts.get(table.from);
+      const columns =
+        table.rows.find((row) => row.kind === 'delimiter')?.cells.length ?? 0;
+      const layout = measured?.columns === columns ? measured : undefined;
       wrappers.push(
         BlockWrapper.create({
           tagName: 'div',
@@ -1428,7 +1436,7 @@ export function gridParts(
             class: 'cm-np-table',
             style:
               layout === undefined
-                ? 'visibility: hidden'
+                ? `--notes-table-columns: repeat(${String(columns)}, var(--container-table-cell-min)); --notes-table-rules: none`
                 : `--notes-table-columns: ${layout.tracks}; --notes-table-rules: ${layout.rules}`,
           },
         }).range(start, table.to),
@@ -1449,8 +1457,8 @@ export function gridParts(
   };
 }
 
-const tableCharacters = new Intl.Segmenter(undefined, {
-  granularity: 'grapheme',
+const tableWords = new Intl.Segmenter(undefined, {
+  granularity: 'word',
 });
 
 const measuredTables = StateEffect.define<ReadonlyMap<number, TableLayout>>();
@@ -1568,24 +1576,35 @@ const gridView = ViewPlugin.fromClass(
             parseFloat(bodyStyle.borderLeftWidth) +
             parseFloat(bodyStyle.borderRightWidth);
           const maximum = parseFloat(bodyStyle.maxWidth);
+          const floor = parseFloat(bodyStyle.minWidth);
           const layouts = new Map<number, TableLayout>();
           for (const range of view.visibleRanges)
             for (const table of tablesIn(view.state, range.from, range.to)) {
               if (layouts.has(table.from)) continue;
               const natural = tableColumnWidths(view.state, table, measure).map(
-                (width) => Math.min(Math.ceil(width) + padding, maximum),
+                (width) =>
+                  Math.max(
+                    floor,
+                    Math.min(Math.ceil(width) + padding, maximum),
+                  ),
               );
               const minimum = tableColumnWidths(
                 view.state,
                 table,
                 (text, header) => {
                   let width = 0;
-                  for (const part of tableCharacters.segment(text))
+                  for (const part of tableWords.segment(text))
                     width = Math.max(width, measure(part.segment, header));
                   return width;
                 },
               ).map((width, column) =>
-                Math.min(natural[column] ?? 0, Math.ceil(width) + padding),
+                Math.max(
+                  floor,
+                  Math.min(
+                    natural[column] ?? floor,
+                    Math.ceil(width) + padding,
+                  ),
+                ),
               );
               const wrapper = view.contentDOM.querySelector('.cm-np-table');
               const available =
@@ -1629,7 +1648,45 @@ const gridView = ViewPlugin.fromClass(
 
 /** How a table looks: one scrolling grid for each table (record 0095). */
 export function tableGridView(): Extension {
-  return gridView;
+  return [
+    gridView,
+    ViewPlugin.fromClass(
+      class {
+        update(update: ViewUpdate): void {
+          if (
+            !update.view.hasFocus ||
+            (!update.selectionSet && !update.docChanged)
+          )
+            return;
+          update.view.requestMeasure({
+            key: this,
+            read: (view) => {
+              const head = view.state.selection.main.head;
+              const node = view.domAtPos(head).node;
+              const element =
+                node instanceof Element ? node : node.parentElement;
+              const wrapper = element?.closest('.cm-np-table');
+              const caret = view.coordsAtPos(head);
+              if (!(wrapper instanceof HTMLElement) || caret === null)
+                return null;
+              const bounds = wrapper.getBoundingClientRect();
+              const margin = view.defaultCharacterWidth;
+              const delta =
+                caret.left < bounds.left
+                  ? caret.left - bounds.left - margin
+                  : caret.right > bounds.right
+                    ? caret.right - bounds.right + margin
+                    : 0;
+              return { wrapper, delta };
+            },
+            write: (result) => {
+              if (result !== null) result.wrapper.scrollLeft += result.delta;
+            },
+          });
+        }
+      },
+    ),
+  ];
 }
 
 /** How a table is edited: the caret, the protected text, and the input. */
