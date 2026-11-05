@@ -5,6 +5,28 @@ import { noteMarkdownExtensions, parsedWhole } from './language.ts';
 import { tableAt } from './table-grid.ts';
 import { TableScrollRecords } from './table-scroll.ts';
 
+await test('default table identities work without secure-context browser APIs', () => {
+  const crypto = Object.getOwnPropertyDescriptor(globalThis, 'crypto');
+  assert.ok(crypto);
+  Object.defineProperty(globalThis, 'crypto', {
+    configurable: true,
+    value: undefined,
+  });
+  try {
+    const first = new TableScrollRecords();
+    const second = new TableScrollRecords();
+    const one = first.register({ from: 0, to: 20 });
+    const two = second.register({ from: 0, to: 20 });
+    assert.notEqual(one, two);
+    first.clear();
+    assert.notEqual(first.register({ from: 0, to: 20 }), one);
+    const named = new TableScrollRecords('editor');
+    assert.equal(named.register({ from: 0, to: 20 }), 'editor-1');
+  } finally {
+    Object.defineProperty(globalThis, 'crypto', crypto);
+  }
+});
+
 await test('each table retains its own identity and offset as earlier text shifts', () => {
   const records = new TableScrollRecords('editor');
   const first = records.register({ from: 10, to: 40 });

@@ -10,6 +10,8 @@ export type TableScrollRecord = {
   needsRestore: boolean;
 };
 
+let recordSets = 0;
+
 /** View state follows a surviving table header, never equal table text. */
 export class TableScrollRecords {
   private readonly positions = new Map<number, TableScrollRecord>();
@@ -17,7 +19,7 @@ export class TableScrollRecords {
   private next = 0;
   private readonly prefix: string;
 
-  constructor(prefix: string = crypto.randomUUID()) {
+  constructor(prefix = String(++recordSets)) {
     this.prefix = prefix;
   }
 
