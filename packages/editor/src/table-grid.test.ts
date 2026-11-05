@@ -840,7 +840,11 @@ await test('new and inserted columns have fallback tracks before measurement', (
     const updated = state.update(spec).state;
     const table = tablesIn(updated, 0, updated.doc.length)[0];
     assert.ok(table);
-    const parts = gridParts(updated, [{ from: 0, to: updated.doc.length }]);
+    const parts = gridParts(
+      updated,
+      [{ from: 0, to: updated.doc.length }],
+      new Map([[table.from, { columns: 2, tracks: '1px 1px', rules: 'none' }]]),
+    );
     const wrappers = parts.wrappers.iter();
     assert.ok(wrappers.value);
     assert.ok(

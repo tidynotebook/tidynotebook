@@ -32,13 +32,14 @@ assert.ok(isRecord(fixture) && typeof fixture.text === 'string');
 const parsed = parseMarkdown(fixture.text);
 const sourceTable = parsed.children.find((node) => node.type === 'table');
 assert.ok(sourceTable?.type === 'table');
-const cellRows = sourceTable.children.map((row) =>
-  row.children.map((cell) =>
-    cell.children
-      .map((piece) => ('value' in piece ? piece.value : ''))
-      .join(''),
-  ),
-);
+type TextNode = {
+  readonly type: string;
+  readonly value?: string;
+  readonly children?: readonly TextNode[];
+};
+const textOf = (node: TextNode): string =>
+  node.value ?? node.children?.map(textOf).join('') ?? '';
+const cellRows = sourceTable.children.map((row) => row.children.map(textOf));
 const origin = process.env.UI_AUDIT_ORIGIN ?? 'http://localhost:3000';
 mkdirSync('.local-app/screenshots', { recursive: true });
 const browser = await loaded.chromium.launch();
