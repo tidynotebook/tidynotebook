@@ -45,7 +45,8 @@ import {
   type ViewUpdate,
 } from '@codemirror/view';
 import type { SyntaxNode, Tree } from '@lezer/common';
-import { diffChars } from 'diff';
+import { diffArrays, diffChars } from 'diff';
+import { TableScrollRecords } from './table-scroll.ts';
 import { fitTableColumns } from './table-widths.ts';
 import { isEditOfAPerson } from './commands.ts';
 import {
@@ -343,9 +344,15 @@ export function tableData(state: EditorState, table: TableBox): TableData {
   };
 }
 
+type TableTextPart = Span & { readonly key: string };
+type TableTextRow = TableTextPart & {
+  readonly cells: readonly TableTextPart[];
+};
+
 /** One table written as text, and where each cell lands in it. */
 export type WrittenTable = {
   readonly text: string;
+  readonly rows: readonly TableTextRow[];
   /** The text range of one cell, as offsets into `text`. */
   readonly cell: (ref: CellRef) => Span;
 };
@@ -376,20 +383,42 @@ export function writeTable(data: TableData): WrittenTable {
     `|${widths
       .map((width, column) => ` ${(cells[column] ?? '').padEnd(width)} `)
       .join('|')}|`;
-  const delimiter = `|${widths
-    .map(
-      (width, column) =>
-        ` ${delimiterCell(data.alignments[column] ?? null, width)} `,
-    )
-    .join('|')}|`;
+  const delimiterCells = widths.map((width, column) =>
+    delimiterCell(data.alignments[column] ?? null, width),
+  );
+  const delimiter = `|${delimiterCells.map((text) => ` ${text} `).join('|')}|`;
   const lines = [line(data.header), delimiter, ...data.body.map(line)];
   const separator = `\n${data.lead}`;
+  let offset = 0;
+  const writtenRows = lines.map((text, index): TableTextRow => {
+    const values =
+      index === 1 ? delimiterCells : (rows[index === 0 ? 0 : index - 1] ?? []);
+    const from = offset;
+    let cellFrom = from + 2;
+    const cells = widths.map((width, column): TableTextPart => {
+      const value = values[column] ?? '';
+      const part = { from: cellFrom, to: cellFrom + value.length, key: value };
+      cellFrom += width + 3;
+      return part;
+    });
+    offset += text.length + separator.length;
+    return {
+      from,
+      to: from + text.length,
+      key:
+        index === 0
+          ? 'header'
+          : index === 1
+            ? 'delimiter'
+            : JSON.stringify(cells.map((cell) => cell.key)),
+      cells,
+    };
+  });
   const lineStart = (index: number): number =>
-    lines
-      .slice(0, index)
-      .reduce((sum, text) => sum + text.length + separator.length, 0);
+    writtenRows[index]?.from ?? offset;
   return {
     text: lines.join(separator),
+    rows: writtenRows,
     cell: ({ row, column }): Span => {
       const from =
         lineStart(row === 0 ? 0 : row + 1) +
@@ -401,30 +430,180 @@ export function writeTable(data: TableData): WrittenTable {
   };
 }
 
-/**
- * The smallest character changes that turn one table into its new text.
- *
- * A command writes the whole table again, and most of it is the same. The
- * changes keep every unchanged character where it is, so the text of a cell
- * that the command did not touch is never replaced.
- */
-function tableChanges(
-  state: EditorState,
-  table: TableBox,
-  text: string,
-): readonly ChangeSpec[] {
-  const changes: ChangeSpec[] = [];
-  let at = table.from;
-  for (const part of diffChars(
-    state.doc.sliceString(table.from, table.to),
-    text,
-  )) {
-    if (part.added === true) changes.push({ from: at, insert: part.value });
-    else if (part.removed === true) {
+// Bound each structural search. When many parts change, pair that unmatched
+// region in source order. Character searches run only inside those parts.
+const tableDiffDistance = 128;
+
+function pairedTableParts<T extends TableTextPart>(
+  before: readonly T[],
+  after: readonly T[],
+): readonly [T, T][] {
+  const plan = diffArrays([...before], [...after], {
+    comparator: (left, right) => left.key === right.key,
+    maxEditLength: tableDiffDistance,
+  });
+  const pairs: [T, T][] = [];
+  const pair = (
+    fromA: number,
+    toA: number,
+    fromB: number,
+    toB: number,
+  ): void => {
+    for (let index = 0; index < Math.min(toA - fromA, toB - fromB); index++) {
+      const left = before[fromA + index],
+        right = after[fromB + index];
+      if (left !== undefined && right !== undefined) pairs.push([left, right]);
+    }
+  };
+  if (plan === undefined) {
+    pair(0, before.length, 0, after.length);
+    return pairs;
+  }
+  let oldAt = 0,
+    newAt = 0,
+    oldPending = 0,
+    newPending = 0;
+  for (const part of plan) {
+    const length = part.value.length;
+    if (part.added) newAt += length;
+    else if (part.removed) oldAt += length;
+    else {
+      pair(oldPending, oldAt, newPending, newAt);
+      pair(oldAt, oldAt + length, newAt, newAt + length);
+      oldAt += length;
+      newAt += length;
+      oldPending = oldAt;
+      newPending = newAt;
+    }
+  }
+  pair(oldPending, before.length, newPending, after.length);
+  return pairs;
+}
+
+/** Exact changes within one gap or changed cell, never across kept cells. */
+function tablePartChanges(
+  changes: ChangeSpec[],
+  from: number,
+  before: string,
+  after: string,
+): void {
+  if (before === after) return;
+  let prefix = 0;
+  while (
+    prefix < before.length &&
+    prefix < after.length &&
+    before.charCodeAt(prefix) === after.charCodeAt(prefix)
+  )
+    prefix++;
+  // Keep UTF-16 pairs together when only one half matches.
+  if (
+    prefix > 0 &&
+    before.charCodeAt(prefix - 1) >= 0xd800 &&
+    before.charCodeAt(prefix - 1) <= 0xdbff &&
+    before.charCodeAt(prefix) >= 0xdc00 &&
+    before.charCodeAt(prefix) <= 0xdfff
+  )
+    prefix--;
+  let suffix = 0;
+  while (
+    suffix < before.length - prefix &&
+    suffix < after.length - prefix &&
+    before.charCodeAt(before.length - suffix - 1) ===
+      after.charCodeAt(after.length - suffix - 1)
+  )
+    suffix++;
+  if (
+    suffix > 0 &&
+    before.charCodeAt(before.length - suffix) >= 0xdc00 &&
+    before.charCodeAt(before.length - suffix) <= 0xdfff &&
+    before.charCodeAt(before.length - suffix - 1) >= 0xd800 &&
+    before.charCodeAt(before.length - suffix - 1) <= 0xdbff
+  )
+    suffix--;
+  const oldText = before.slice(prefix, before.length - suffix);
+  const newText = after.slice(prefix, after.length - suffix);
+  const start = from + prefix;
+  if (oldText === '' || newText === '') {
+    changes.push({ from: start, to: start + oldText.length, insert: newText });
+    return;
+  }
+  const parts = diffChars(oldText, newText, {
+    maxEditLength: tableDiffDistance,
+  });
+  if (parts === undefined) {
+    changes.push({ from: start, to: start + oldText.length, insert: newText });
+    return;
+  }
+  let at = start;
+  for (const part of parts) {
+    if (part.added) changes.push({ from: at, insert: part.value });
+    else if (part.removed) {
       changes.push({ from: at, to: at + part.value.length });
       at += part.value.length;
     } else at += part.value.length;
   }
+}
+
+/** Diff grammar rows and cells before their padding, preserving exact output. */
+function tableChanges(
+  state: EditorState,
+  table: TableBox,
+  written: WrittenTable,
+): readonly ChangeSpec[] {
+  const before = state.doc.sliceString(table.from, table.to),
+    after = written.text;
+  const columns = Math.max(0, ...table.rows.map((row) => row.cells.length));
+  const oldRows = table.rows.map((row): TableTextRow => {
+    const cells = row.cells.map((cell): TableTextPart => ({
+      from: cell.textFrom - table.from,
+      to: cell.textTo - table.from,
+      key: state.doc.sliceString(cell.textFrom, cell.textTo),
+    }));
+    return {
+      from: row.from - table.from,
+      to: row.to - table.from,
+      cells,
+      key:
+        row.kind === 'header'
+          ? 'header'
+          : row.kind === 'delimiter'
+            ? 'delimiter'
+            : JSON.stringify(
+                Array.from(
+                  { length: columns },
+                  (_, column) => cells[column]?.key ?? '',
+                ),
+              ),
+    };
+  });
+  const changes: ChangeSpec[] = [];
+  const gap = (fromA: number, toA: number, fromB: number, toB: number): void =>
+    tablePartChanges(
+      changes,
+      table.from + fromA,
+      before.slice(fromA, toA),
+      after.slice(fromB, toB),
+    );
+  let oldAt = 0,
+    newAt = 0;
+  for (const [oldRow, newRow] of pairedTableParts(oldRows, written.rows)) {
+    gap(oldAt, oldRow.from, newAt, newRow.from);
+    let oldCellAt = oldRow.from,
+      newCellAt = newRow.from;
+    for (const [oldCell, newCell] of pairedTableParts(
+      oldRow.cells,
+      newRow.cells,
+    )) {
+      gap(oldCellAt, oldCell.from, newCellAt, newCell.from);
+      gap(oldCell.from, oldCell.to, newCell.from, newCell.to);
+      oldCellAt = oldCell.to;
+      newCellAt = newCell.to;
+    }
+    gap(oldCellAt, oldRow.to, newCellAt, newRow.to);
+    oldAt = oldRow.to;
+    newAt = newRow.to;
+  }
+  gap(oldAt, before.length, newAt, after.length);
   return changes;
 }
 
@@ -481,7 +660,7 @@ function tableCommandSpec(
   const from = table.from + cell.from;
   const to = table.from + cell.to;
   return {
-    changes: tableChanges(state, table, written.text),
+    changes: tableChanges(state, table, written),
     selection:
       result.select === 'text'
         ? EditorSelection.range(from, to)
@@ -1284,12 +1463,12 @@ function tableEditFilter(
     if (grid !== null && owner !== null) {
       const pasted = pasteIntoTable(rewrite.data, owner.ref, grid);
       const written = writeTable(pasted.data);
-      specs.push(...tableChanges(start, table, written.text));
+      specs.push(...tableChanges(start, table, written));
       caret = { tableFrom: table.from, offset: written.cell(pasted.target).to };
       continue;
     }
     const written = writeTable(rewrite.data);
-    specs.push(...tableChanges(start, table, written.text));
+    specs.push(...tableChanges(start, table, written));
     if (rewrite.caret !== null)
       caret = {
         tableFrom: table.from,
@@ -1435,6 +1614,7 @@ export function gridParts(
   state: EditorState,
   ranges: readonly Span[],
   layouts: ReadonlyMap<number, TableLayout> = new Map(),
+  identity?: (table: TableBox) => string,
 ): GridParts {
   const wrappers: Range<BlockWrapper>[] = [];
   const atomic: Range<Decoration>[] = [];
@@ -1453,6 +1633,9 @@ export function gridParts(
           tagName: 'div',
           attributes: {
             class: 'cm-np-table',
+            ...(identity === undefined
+              ? {}
+              : { 'data-notes-table': identity(table) }),
             style:
               layout === undefined
                 ? `--notes-table-columns: repeat(${String(columns)}, var(--container-table-cell-min)); --notes-table-rules: none`
@@ -1623,6 +1806,32 @@ const gridView = ViewPlugin.fromClass(
   class {
     parts: GridParts;
     private layouts: ReadonlyMap<number, TableLayout> = new Map();
+    private readonly tables = new TableScrollRecords();
+    private readonly scrollKey = {};
+    private readonly rememberScroll = (event: Event): void => {
+      const element = event.target;
+      if (!(element instanceof HTMLElement) || !element.matches('.cm-np-table'))
+        return;
+      const record = this.tables.get(
+        element.getAttribute('data-notes-table') ?? '',
+      );
+      if (record?.element === element && !record.needsRestore)
+        record.left = element.scrollLeft;
+    };
+    private readonly manualScroll = (event: Event): void => {
+      const element =
+        event.target instanceof Element
+          ? event.target.closest('.cm-np-table')
+          : null;
+      if (!(element instanceof HTMLElement)) return;
+      const record = this.tables.get(
+        element.getAttribute('data-notes-table') ?? '',
+      );
+      if (record === undefined) return;
+      record.element = element;
+      record.left = element.scrollLeft;
+      record.needsRestore = false;
+    };
     private readonly widths = new Map<string, number>();
     private readonly context: CanvasRenderingContext2D | null;
     private alive = true;
@@ -1638,7 +1847,18 @@ const gridView = ViewPlugin.fromClass(
       this.context = view.dom.ownerDocument
         .createElement('canvas')
         .getContext('2d');
-      this.parts = gridParts(view.state, view.visibleRanges);
+      this.parts = gridParts(
+        view.state,
+        view.visibleRanges,
+        this.layouts,
+        (table) => this.tables.register(table),
+      );
+      view.contentDOM.addEventListener('scroll', this.rememberScroll, true);
+      for (const name of ['pointerdown', 'wheel', 'touchmove'])
+        view.contentDOM.addEventListener(name, this.manualScroll, {
+          capture: true,
+          passive: true,
+        });
       view.dom.ownerDocument.fonts.addEventListener(
         'loadingdone',
         this.fontsChanged,
@@ -1648,6 +1868,51 @@ const gridView = ViewPlugin.fromClass(
     }
 
     update(update: ViewUpdate): void {
+      if (update.docChanged) {
+        for (const element of update.view.contentDOM.querySelectorAll(
+          '.cm-np-table',
+        )) {
+          if (!(element instanceof HTMLElement)) continue;
+          const record = this.tables.get(
+            element.getAttribute('data-notes-table') ?? '',
+          );
+          if (record === undefined) continue;
+          if (record.element === element && !record.needsRestore)
+            record.left = element.scrollLeft;
+          record.needsRestore = true;
+        }
+        const ids = new Map(
+          Array.from(this.tables.values(), (record) => [
+            record.from,
+            record.id,
+          ]),
+        );
+        const tree = syntaxTree(update.state);
+        this.tables.map(update.changes, (from) => {
+          const line = update.state.doc.lineAt(from);
+          const delimiterEnd = update.state.doc.line(
+            Math.min(line.number + 1, update.state.doc.lines),
+          ).to;
+          if (delimiterEnd > tree.length) return undefined;
+          let node: SyntaxNode | null = tree.resolveInner(from, 1);
+          while (node !== null && node.name !== 'Table') node = node.parent;
+          const header = node?.getChild('TableHeader');
+          return node !== null &&
+            header !== null &&
+            header !== undefined &&
+            from >= header.from &&
+            from <= header.to
+            ? { from: node.from, to: node.to }
+            : null;
+        });
+        const layouts = new Map<number, TableLayout>();
+        for (const [from, layout] of this.layouts) {
+          const id = ids.get(from);
+          const record = id === undefined ? undefined : this.tables.get(id);
+          if (record !== undefined) layouts.set(record.from, layout);
+        }
+        this.layouts = layouts;
+      }
       let measured = false;
       for (const effect of update.transactions.flatMap(
         (transaction) => transaction.effects,
@@ -1666,6 +1931,7 @@ const gridView = ViewPlugin.fromClass(
           update.state,
           update.view.visibleRanges,
           this.layouts,
+          (table) => this.tables.register(table),
         );
       if (
         !measured &&
@@ -1679,10 +1945,67 @@ const gridView = ViewPlugin.fromClass(
 
     destroy(): void {
       this.alive = false;
+      this.view.contentDOM.removeEventListener(
+        'scroll',
+        this.rememberScroll,
+        true,
+      );
+      for (const name of ['pointerdown', 'wheel', 'touchmove'])
+        this.view.contentDOM.removeEventListener(name, this.manualScroll, true);
+      this.tables.clear();
       this.view.dom.ownerDocument.fonts.removeEventListener(
         'loadingdone',
         this.fontsChanged,
       );
+    }
+
+    private restoreScroll(): void {
+      this.view.requestMeasure({
+        key: this.scrollKey,
+        read: (view) => {
+          if (!this.alive) return null;
+          const visible = [];
+          for (const element of view.contentDOM.querySelectorAll(
+            '.cm-np-table',
+          )) {
+            if (!(element instanceof HTMLElement)) continue;
+            const record = this.tables.get(
+              element.getAttribute('data-notes-table') ?? '',
+            );
+            if (record !== undefined)
+              visible.push({
+                element,
+                record,
+                left: Math.min(
+                  record.left,
+                  Math.max(0, element.scrollWidth - element.clientWidth),
+                ),
+              });
+          }
+          return visible;
+        },
+        write: (visible, view) => {
+          if (!this.alive || visible === null) return;
+          const seen = new Set(visible.map(({ record }) => record.id));
+          for (const record of this.tables.values())
+            if (!seen.has(record.id)) record.element = null;
+          for (const { element, record, left } of visible) {
+            if (
+              this.tables.get(record.id) !== record ||
+              !view.contentDOM.contains(element)
+            )
+              continue;
+            // A new wrapper's default zero is not reader intent. Real input
+            // binds its current element and clears needsRestore before here.
+            if (record.element !== element || record.needsRestore)
+              element.scrollLeft = left;
+            record.element = element;
+            record.left = element.scrollLeft;
+            record.needsRestore = false;
+          }
+          view.plugin(tableCaretView)?.columnsReady();
+        },
+      });
     }
 
     private schedule(): void {
@@ -1779,13 +2102,13 @@ const gridView = ViewPlugin.fromClass(
             JSON.stringify([...result.layouts]) ===
             JSON.stringify([...this.layouts])
           ) {
-            view.plugin(tableCaretView)?.columnsReady();
+            this.restoreScroll();
             return;
           }
           queueMicrotask(() => {
             if (this.alive && result.doc === view.state.doc) {
               view.dispatch({ effects: measuredTables.of(result.layouts) });
-              view.plugin(tableCaretView)?.columnsReady();
+              this.restoreScroll();
             }
           });
         },

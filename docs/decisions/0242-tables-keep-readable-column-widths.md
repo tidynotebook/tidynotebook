@@ -29,6 +29,19 @@ remain inside a visible source space. After local input changes table widths,
 caret reveal waits for the measured tracks. It changes only the active table
 scroll position. Manual scroll input cancels a delayed reveal.
 
+Keep the writer's exact Markdown output. Align grammar rows, then cells, before
+diffing their text and padding. Cap each structural and character search with
+the installed diff library. If a search has no result, replace only its
+unmatched part exactly. No character search crosses a retained cell. This
+keeps long-table row creation from searching across all repeated padding.
+
+Keep horizontal reading positions in each editor view. A surviving header
+maps its table identity through source changes. Restore its offset after
+layout, before a valid local caret reveal. A new wrapper's default position
+does not replace a saved reading position. Actual pointer, wheel and touch
+input takes priority. Deleted tables and replaced notes lose their records;
+editor destruction removes the records and listeners.
+
 The stored Markdown format does not change. The existing table model has no manual
 column resizing or stored widths. This change adds neither feature.
 

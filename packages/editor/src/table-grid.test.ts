@@ -13,17 +13,26 @@ import {
   EditorState,
   type TransactionSpec,
 } from '@codemirror/state';
-import { history, undoDepth, redoDepth, undo } from '@codemirror/commands';
+import {
+  history,
+  undoDepth,
+  redoDepth,
+  undo,
+  redo,
+} from '@codemirror/commands';
 import { BlockWrapper } from '@codemirror/view';
 import { formatContextOf } from './format-context.ts';
 import { noteMarkdownExtensions, parsedWhole } from './language.ts';
 import {
+  type TableData,
+  type TableEdit,
   moveColumnEdit,
   moveRowEdit,
   alignColumnEdit,
   insertColumnLeftEdit,
   insertRowAboveEdit,
   addColumnEdit,
+  addRowEdit,
   appendColumnEdit,
   appendRowEdit,
   cellAboveEdit,
@@ -1035,4 +1044,163 @@ await test('a one-space empty cell keeps its caret inside its text mark', () => 
   assert.ok(cell);
   assert.equal(transaction.state.selection.main.head, cell.from);
   assert.ok(cell.textFrom < cell.to);
+});
+
+await test('long-table last-row creation preserves cells and exact serializer output', () => {
+  const source =
+    'Before\n\n| Text | Value | Empty |\n| --- | --- | --- |\n' +
+    Array.from(
+      { length: 300 },
+      (_, row) =>
+        '| ' +
+        (row === 299 ? 'token'.repeat(100) : 'same prose') +
+        ' | ' +
+        row +
+        ' | |',
+    ).join('\n') +
+    '\n\nAfter';
+  let state = stateOf(source + '‸');
+  state = state.update({
+    effects: StateEffect.appendConfig.of(history()),
+  }).state;
+  const table = tablesIn(state, 0, state.doc.length)[0];
+  assert.ok(table);
+  const cell = table.rows.at(-1)?.cells[2];
+  assert.ok(cell);
+  const data = tableData(state, table);
+  const expected = writeTable({
+    ...data,
+    body: [...data.body, data.alignments.map(() => '')],
+  });
+  const spec = tableEditSpec(state, nextCellEdit, cell.textFrom);
+  assert.ok(spec);
+  const transaction = state.update({ ...spec, userEvent: 'input.format' });
+  const output =
+    source.slice(0, table.from) + expected.text + source.slice(table.to);
+  assert.equal(transaction.state.doc.toString(), output);
+  assert.equal(
+    transaction.state.selection.main.head,
+    table.from + expected.cell({ row: 301, column: 0 }).to,
+  );
+  transaction.changes.iterChangedRanges((from, to) => {
+    assert.ok(from >= table.from && to <= table.to);
+    for (const row of table.rows.filter((row) => row.kind !== 'delimiter'))
+      for (const cell of row.cells)
+        if (cell.textFrom < cell.textTo)
+          assert.ok(
+            to <= cell.textFrom || from >= cell.textTo,
+            'Kept cell text must not be replaced.',
+          );
+  });
+  state = transaction.state;
+  assert.ok(
+    undo({
+      state,
+      dispatch: (transaction) => {
+        state = transaction.state;
+      },
+    }),
+  );
+  assert.equal(state.doc.toString(), source);
+  assert.ok(
+    redo({
+      state,
+      dispatch: (transaction) => {
+        state = transaction.state;
+      },
+    }),
+  );
+  assert.equal(state.doc.toString(), output);
+});
+
+await test('structural table edits match serialization with repeated and inline content', () => {
+  const values = [
+    'same',
+    'same',
+    '',
+    ' a  b ',
+    'a\\|b',
+    '**bold** `code`',
+    '日本語 👩🏽‍🚀',
+    '[link](https://example.test)',
+  ];
+  const edits: readonly TableEdit[] = [
+    addRowEdit,
+    insertRowAboveEdit,
+    removeRowEdit,
+    addColumnEdit,
+    insertColumnLeftEdit,
+    removeColumnEdit,
+    moveRowEdit(0),
+    moveColumnEdit(0),
+    alignColumnEdit('right'),
+  ];
+  for (const count of [1, 3, 130])
+    for (const columns of [2, 7]) {
+      const data: TableData = {
+        lead: '',
+        alignments: Array.from({ length: columns }, () => null),
+        header: Array.from(
+          { length: columns },
+          (_, index) => values[index % values.length] ?? '',
+        ),
+        body: Array.from({ length: count }, (_, row) =>
+          Array.from(
+            { length: columns },
+            (_, column) => values[(row + column) % values.length] ?? '',
+          ),
+        ),
+      };
+      const original = writeTable(data).text;
+      const state = stateOf('Before\n\n' + original + '\n\nAfter‸');
+      const table = tablesIn(state, 0, state.doc.length)[0];
+      assert.ok(table);
+      const parsed = tableData(state, table);
+      const at = { row: Math.min(2, count), column: 1 };
+      const cell = table.rows[at.row + 1]?.cells[at.column];
+      assert.ok(cell);
+      for (const edit of edits) {
+        const result = edit(parsed, at);
+        if (result === null) continue;
+        const spec = tableEditSpec(state, edit, cell.textFrom);
+        assert.ok(spec);
+        const transaction = state.update(spec);
+        const expected = writeTable(result.data);
+        assert.equal(
+          transaction.state.doc.toString(),
+          'Before\n\n' + expected.text + '\n\nAfter',
+        );
+        assert.equal(
+          transaction.state.selection.main.head,
+          table.from + expected.cell(result.target).to,
+        );
+      }
+    }
+});
+
+await test('capped table diff fallback retains exact large changed-cell text', () => {
+  const before: TableData = {
+    lead: '',
+    alignments: [null, null],
+    header: ['A', 'B'],
+    body: Array.from({ length: 130 }, () => ['a'.repeat(300), '👩🏽‍🚀'.repeat(60)]),
+  };
+  const after: TableData = {
+    ...before,
+    body: Array.from({ length: 130 }, () => ['b'.repeat(300), '👨🏽‍🚀'.repeat(60)]),
+  };
+  const state = stateOf(writeTable(before).text + '‸');
+  const spec = tableEditSpec(
+    state,
+    () => ({ data: after, target: { row: 130, column: 1 }, select: 'end' }),
+    2,
+  );
+  assert.ok(spec);
+  const transaction = state.update(spec);
+  const expected = writeTable(after);
+  assert.equal(transaction.state.doc.toString(), expected.text);
+  assert.equal(
+    transaction.state.selection.main.head,
+    expected.cell({ row: 130, column: 1 }).to,
+  );
 });
