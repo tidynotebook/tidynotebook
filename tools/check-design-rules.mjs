@@ -939,8 +939,14 @@ export async function main(directory, prune = false) {
     }
   }
   const allowPath = resolve(directory, 'tools/design-system-allow.json');
-  const data = record(JSON.parse(await readFile(allowPath, 'utf8')));
-  const entries = Array.isArray(data.allow) ? data.allow.map(record) : [];
+  const allowText = await readFile(allowPath, 'utf8').catch((error) => {
+    if (record(error).code === 'ENOENT') return '{"allow":[]}';
+    throw error;
+  });
+  const data = record(JSON.parse(allowText));
+  if (!Array.isArray(data.allow))
+    throw Error('Spacing exceptions need an allow array.');
+  const entries = data.allow.map(record);
   const allow = entries.map((entry) => {
     if (
       typeof entry.file !== 'string' ||
@@ -958,8 +964,11 @@ export async function main(directory, prune = false) {
   });
   const active = new Set(spacing.map(problemKey));
   if (prune) {
-    data.allow = allow.filter((i) => active.has(problemKey(i)));
-    await writeFile(allowPath, JSON.stringify(data, null, 2) + '\n');
+    const kept = allow.filter((i) => active.has(problemKey(i)));
+    if (kept.length !== allow.length) {
+      data.allow = kept;
+      await writeFile(allowPath, JSON.stringify(data, null, 2) + '\n');
+    }
   }
   const exact = new Set(allow.map(problemKey));
   const spacingFailures = spacing.filter((i) => !exact.has(problemKey(i)));
