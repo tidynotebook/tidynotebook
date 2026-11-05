@@ -501,6 +501,7 @@
 @custom-variant content-a (& a);
 @custom-variant content-table (& table);
 @custom-variant content-table-scroll (& .notes-table-scroll);
+@custom-variant content-table-focus (& .notes-table-scroll:focus-visible);
 @custom-variant content-table-cell (& :is(th, td));
 @custom-variant content-td (& td);
 @custom-variant content-img (& img);
