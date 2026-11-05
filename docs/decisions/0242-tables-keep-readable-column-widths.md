@@ -22,7 +22,11 @@ Use semantic tables in published pages, documentation and template previews.
 Give their cells the same floor and cap, with word wrapping and emergency
 breaks for long tokens. Keep keyboard focus visible on each scroll wrapper.
 
-The stored Markdown does not change. The existing table model has no manual
+Moving to an existing cell changes only selection. It does not reformat table
+padding or create a text diff. This keeps navigation usable in long tables.
+Actual table edits still use the existing writer.
+
+The stored Markdown format does not change. The existing table model has no manual
 column resizing or stored widths. This change adds neither feature.
 
 ## Consequences
