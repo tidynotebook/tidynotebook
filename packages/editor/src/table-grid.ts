@@ -110,7 +110,9 @@ function cellBox(state: EditorState, from: number, to: number): TableCellBox {
   const text = state.doc.sliceString(from, to);
   const trimmed = text.trim();
   if (trimmed === '') {
-    const at = from + Math.min(1, to - from);
+    // Keep the caret before a visible space, inside the cell mark. At the
+    // end of a one-space cell it would land on the hidden pipe instead.
+    const at = from + Math.min(1, Math.max(0, to - from - 1));
     return { from, to, textFrom: at, textTo: at };
   }
   const lead = text.length - text.trimStart().length;
@@ -1480,6 +1482,142 @@ const tableWords = new Intl.Segmenter(undefined, {
 
 const measuredTables = StateEffect.define<ReadonlyMap<number, TableLayout>>();
 
+/** Reveal only the active table after input and its column measurement. */
+class TableCaretReveal {
+  private readonly view: EditorView;
+  private pendingDoc: EditorState['doc'] | null = null;
+  private sequence = 0;
+
+  constructor(view: EditorView) {
+    this.view = view;
+  }
+
+  update(update: ViewUpdate): void {
+    const local = update.transactions.some(
+      (transaction) =>
+        transaction.isUserEvent('input') ||
+        transaction.isUserEvent('undo') ||
+        transaction.isUserEvent('redo'),
+    );
+    if (update.docChanged) {
+      this.sequence++;
+      this.pendingDoc =
+        local && inTableCell(update.state, update.state.selection.main.head)
+          ? update.state.doc
+          : null;
+      return;
+    }
+    if (
+      (update.focusChanged || update.selectionSet || local) &&
+      this.pendingDoc !== update.state.doc
+    )
+      this.schedule();
+  }
+
+  columnsReady(): void {
+    if (this.pendingDoc !== this.view.state.doc) return;
+    this.pendingDoc = null;
+    this.schedule();
+  }
+
+  cancel(): void {
+    this.pendingDoc = null;
+    this.sequence++;
+  }
+
+  private schedule(): void {
+    const sequence = ++this.sequence;
+    this.view.requestMeasure({
+      key: this,
+      read: (view) => {
+        if (sequence !== this.sequence || !view.hasFocus) return null;
+        const head = view.state.selection.main.head;
+        const table = tableAt(view.state, head);
+        const at = table === null ? null : cellAt(table, head);
+        if (table === null || at === null) return null;
+        const row = table.rows.filter((row) => row.kind !== 'delimiter')[
+          at.row
+        ];
+        const cell = row?.cells[at.column];
+        if (row === undefined || cell === undefined) return null;
+        const node = view.domAtPos(row.lineFrom).node;
+        const element = node instanceof Element ? node : node.parentElement;
+        const line = element?.closest('.cm-np-table-line');
+        if (
+          !(line instanceof HTMLElement) ||
+          view.posAtDOM(line, 0) !== row.lineFrom
+        )
+          return null;
+        const cellElement = Array.from(
+          line.querySelectorAll('.cm-np-table-cell, .cm-np-table-head'),
+        ).find(
+          (element): element is HTMLElement =>
+            element instanceof HTMLElement &&
+            element.style.gridColumnStart === String(at.column + 2),
+        );
+        const wrapper = line.closest('.cm-np-table');
+        if (!(wrapper instanceof HTMLElement) || cellElement === undefined)
+          return null;
+        let caret = view.coordsAtPos(head);
+        if (caret === null || caret.bottom <= caret.top)
+          caret = view.coordsAtPos(head, -1);
+        let left: number;
+        let right: number;
+        if (caret !== null && caret.bottom > caret.top) {
+          left = caret.left;
+          right = caret.right;
+        } else {
+          // Hidden syntax can have no caret rectangle. Only an empty cell
+          // can use its uniquely mapped content edge as a view-only anchor.
+          if (cell.textFrom !== cell.textTo) return null;
+          const style = getComputedStyle(cellElement);
+          left =
+            cellElement.getBoundingClientRect().left +
+            parseFloat(style.borderLeftWidth) +
+            parseFloat(style.paddingLeft);
+          right = left;
+        }
+        const bounds = wrapper.getBoundingClientRect();
+        const margin = view.defaultCharacterWidth;
+        const delta =
+          left < bounds.left
+            ? left - bounds.left - margin
+            : right > bounds.right
+              ? right - bounds.right + margin
+              : 0;
+        return { wrapper, delta };
+      },
+      write: (result) => {
+        if (
+          sequence === this.sequence &&
+          result !== null &&
+          result.delta !== 0
+        ) {
+          result.wrapper.scrollLeft += result.delta;
+          this.view.requestMeasure();
+        }
+      },
+    });
+  }
+}
+
+const tableCaretView = ViewPlugin.fromClass(TableCaretReveal, {
+  eventHandlers: {
+    pointerdown() {
+      this.cancel();
+      return false;
+    },
+    wheel() {
+      this.cancel();
+      return false;
+    },
+    touchmove() {
+      this.cancel();
+      return false;
+    },
+  },
+});
+
 /** Measures text with the loaded editor fonts, independently of visible rows. */
 const gridView = ViewPlugin.fromClass(
   class {
@@ -1636,16 +1774,19 @@ const gridView = ViewPlugin.fromClass(
           return { doc: view.state.doc, layouts };
         },
         write: (result, view) => {
+          if (result === null || result.doc !== view.state.doc) return;
           if (
-            result === null ||
-            result.doc !== view.state.doc ||
             JSON.stringify([...result.layouts]) ===
-              JSON.stringify([...this.layouts])
-          )
+            JSON.stringify([...this.layouts])
+          ) {
+            view.plugin(tableCaretView)?.columnsReady();
             return;
+          }
           queueMicrotask(() => {
-            if (this.alive && result.doc === view.state.doc)
+            if (this.alive && result.doc === view.state.doc) {
               view.dispatch({ effects: measuredTables.of(result.layouts) });
+              view.plugin(tableCaretView)?.columnsReady();
+            }
           });
         },
       });
@@ -1665,52 +1806,7 @@ const gridView = ViewPlugin.fromClass(
 
 /** How a table looks: one scrolling grid for each table (record 0095). */
 export function tableGridView(): Extension {
-  return [
-    gridView,
-    ViewPlugin.fromClass(
-      class {
-        update(update: ViewUpdate): void {
-          if (
-            !update.focusChanged &&
-            !update.selectionSet &&
-            !update.transactions.some(
-              (transaction) =>
-                transaction.isUserEvent('input') ||
-                transaction.isUserEvent('undo') ||
-                transaction.isUserEvent('redo'),
-            )
-          )
-            return;
-          update.view.requestMeasure({
-            key: this,
-            read: (view) => {
-              if (!view.hasFocus) return null;
-              const head = view.state.selection.main.head;
-              const node = view.domAtPos(head).node;
-              const element =
-                node instanceof Element ? node : node.parentElement;
-              const wrapper = element?.closest('.cm-np-table');
-              const caret = view.coordsAtPos(head);
-              if (!(wrapper instanceof HTMLElement) || caret === null)
-                return null;
-              const bounds = wrapper.getBoundingClientRect();
-              const margin = view.defaultCharacterWidth;
-              const delta =
-                caret.left < bounds.left
-                  ? caret.left - bounds.left - margin
-                  : caret.right > bounds.right
-                    ? caret.right - bounds.right + margin
-                    : 0;
-              return { wrapper, delta };
-            },
-            write: (result) => {
-              if (result !== null) result.wrapper.scrollLeft += result.delta;
-            },
-          });
-        }
-      },
-    ),
-  ];
+  return [gridView, tableCaretView];
 }
 
 /** How a table is edited: the caret, the protected text, and the input. */
