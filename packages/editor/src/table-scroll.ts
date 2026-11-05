@@ -62,10 +62,22 @@ export class TableScrollRecords {
     locate: (from: number) => TableScrollRange | null | undefined,
   ): void {
     const next = new Map<number, TableScrollRecord>();
+    const replaced: TableScrollRange[] = [];
+    changes.iterChangedRanges((from, to) => {
+      if (to > from) replaced.push({ from, to });
+    });
     for (const record of this.identities.values()) {
-      if (changes.touchesRange(record.from, record.to) === 'cover') continue;
-      const from = changes.mapPos(record.from, 1, MapMode.TrackAfter);
-      if (from === null) continue;
+      if (
+        replaced.some(
+          (range) => range.from <= record.from && range.to >= record.to,
+        )
+      )
+        continue;
+      // A partial header edit can replace its first character. Ask the
+      // grammar whether that mapped header survives before dropping it.
+      const from =
+        changes.mapPos(record.from, 1, MapMode.TrackAfter) ??
+        changes.mapPos(record.from, 1);
       const range = locate(from);
       if (range === null) continue;
       const mapped = {
