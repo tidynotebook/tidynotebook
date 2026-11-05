@@ -239,6 +239,7 @@
   --text-note--line-height: 1.65;
   --container-note: 40rem;
   --container-table-cell: 20em;
+  --container-table-cell-min: calc(4em + var(--spacing) * 6 + 2px);
   /*
    * The Settings modal from the large width: 940 by 620 px (issue 517).
    * The height is not a spacing token: max-w reads the spacing scale before
@@ -499,6 +500,7 @@
 @custom-variant content-pre (& pre);
 @custom-variant content-a (& a);
 @custom-variant content-table (& table);
+@custom-variant content-table-scroll (& .notes-table-scroll);
 @custom-variant content-td (& td);
 @custom-variant content-img (& img);
 

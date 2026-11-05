@@ -12,6 +12,7 @@ import {
   EditorState,
   type TransactionSpec,
 } from '@codemirror/state';
+import { BlockWrapper } from '@codemirror/view';
 import { formatContextOf } from './format-context.ts';
 import { noteMarkdownExtensions, parsedWhole } from './language.ts';
 import {
@@ -829,4 +830,30 @@ await test('measurement excludes source padding and preserves interior spaces', 
   );
   assert.ok(measured.includes('a  b'));
   assert.ok(!measured.includes(' a  b '));
+});
+
+await test('new and inserted columns have fallback tracks before measurement', () => {
+  for (const edit of [insertColumnLeftEdit, addColumnEdit, appendColumnEdit]) {
+    const state = stateOf('| A | B |\n| --- | --- |\n| x | y |‸');
+    const spec = tableEditSpec(state, edit, 2);
+    assert.ok(spec);
+    const updated = state.update(spec).state;
+    const table = tablesIn(updated, 0, updated.doc.length)[0];
+    assert.ok(table);
+    const parts = gridParts(updated, [{ from: 0, to: updated.doc.length }]);
+    const wrappers = parts.wrappers.iter();
+    assert.ok(wrappers.value);
+    assert.ok(
+      wrappers.value.eq(
+        BlockWrapper.create({
+          tagName: 'div',
+          attributes: {
+            class: 'cm-np-table',
+            style:
+              '--notes-table-columns: repeat(3, var(--container-table-cell-min)); --notes-table-rules: none',
+          },
+        }),
+      ),
+    );
+  }
 });

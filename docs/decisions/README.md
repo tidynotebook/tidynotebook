@@ -267,6 +267,7 @@ the development process. Old process records remain as history.
 | [0239](0239-registration-can-continue-on-the-signup-browser-once.md)                  | Registration can continue on the signup browser once                            |
 | [0240](0240-a-code-block-shows-quiet-fences-and-one-ring.md)                          | A code block shows quiet fences and one ring                                    |
 | [0241](0241-linux-images-build-fixed-native-libraries.md)                             | Linux images build fixed native libraries                                       |
+| [0242](0242-tables-keep-readable-column-widths.md)                                    | Tables keep readable column widths                                              |
 
 Records 0001 to 0015 record the decisions D1 to D15 of
 [the v0.1 revamp plan](../plans/003-v0.1-revamp.md). Record 0016 records the
