@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { inspectDesignSource } from './check-design-system.mjs';
+import { scanFile } from './check-design-rules.mjs';
+/** @param {string} path @param {string} source */
+const inspectDesignSource = (path, source) => scanFile(path, source).spacing;
 await test('features compose primitives instead of setting spacing', () => {
   const issues = inspectDesignSource(
     'apps/web/src/example.tsx',
@@ -101,4 +103,31 @@ await test('content variants stay at shared markup boundaries', () => {
     ),
     [],
   );
+});
+
+await test('CSS role aliases are refused', () => {
+  assert.deepEqual(
+    inspectDesignSource(
+      'packages/ui/src/example.css',
+      ':root { --ui-control: 12px; }',
+    ),
+    [
+      {
+        file: 'packages/ui/src/example.css',
+        rule: 'role-alias',
+        match: 'ui-control',
+      },
+    ],
+  );
+});
+
+await test('template spacing reads raw text while general rules read cooked text', () => {
+  const result = scanFile(
+    'apps/web/src/example.ts',
+    'const x = `p\\u002d5 text\\u002dxs`;',
+  );
+  assert.deepEqual(result.spacing, []);
+  assert.ok(result.rules.some((i) => i.rule === 'banned-class'));
+  const raw = scanFile('apps/web/src/example.ts', 'const x = `p-5`;');
+  assert.ok(raw.spacing.some((i) => i.rule === 'feature-spacing'));
 });

@@ -130,3 +130,5 @@ Trash only (record 0164). A row shows one name and one fact.
 - Light and dark both read: take a screenshot of each.
 - The keyboard reaches every action, and the focus is visible.
 - `pnpm lint` passes with no new entry in `tools/design-rules-allow.json`.
+
+The design command also checks spacing, CSS composition and raw type sizes in web and shared UI sources. It keeps the file and rule exceptions separate from exact spacing exceptions. The separate spacing command is removed. Use `node tools/check-design-rules.mjs`, with `--prune` to remove stale spacing exceptions.

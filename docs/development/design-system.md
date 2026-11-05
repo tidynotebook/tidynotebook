@@ -140,11 +140,11 @@ verb or value-edit label. Focus stays in the modal and returns to its trigger.
 
 ## Checks
 
-`tools/check-design-system.mjs` runs in `pnpm lint`. It refuses feature
+`tools/check-design-rules.mjs` runs in `pnpm lint`. It refuses feature
 margins except `m-0`, child space utilities, padding and gap utilities,
 minimum heights, arbitrary values and inline spacing. Shared UI code can use
 only scale steps. The CSS check refuses layout utilities, screen descendant selectors and doubled-class selectors.
 
-`tools/design-system-allow.json` records cases with a reason and can only shrink. New exceptions require a component variant and a contract update.
+`tools/design-system-allow.json` records cases with a reason and can only shrink. New exceptions require a component variant and a contract update. Run `node tools/check-design-rules.mjs --prune` to remove entries that no longer match.
 
 `tests/browser/symmetry.ts` checks content edges and visual parity in both themes and pointer densities. Remove or explain changes beyond the tolerance.
