@@ -6,6 +6,7 @@ import {
   rmSync,
   writeFileSync,
   readFileSync,
+  existsSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -76,17 +77,15 @@ const fixtureStylesheet = `@theme inline {
 
 /**
  * @param {Record<string, string>} files
- * @param {{ stylesheet?: boolean; prune?: boolean }} [options]
+ * @param {{ stylesheet?: boolean; prune?: boolean; allowDirectory?: boolean }} [options]
  * @returns {{ status: number; output: string; allow: string | null }}
  */
 function check(files, options) {
   const directory = mkdtempSync(join(tmpdir(), 'notesapp-design-'));
   try {
     mkdirSync(join(directory, 'tools'), { recursive: true });
-    writeFileSync(
-      join(directory, 'tools/design-system-allow.json'),
-      '{"allow":[]}',
-    );
+    if (options?.allowDirectory)
+      mkdirSync(join(directory, 'tools/design-system-allow.json'));
     mkdirSync(join(directory, 'apps/web/src'), { recursive: true });
     mkdirSync(join(directory, 'packages/ui/src'), { recursive: true });
     if (options?.stylesheet !== false)
@@ -104,12 +103,14 @@ function check(files, options) {
       },
     );
     return {
-      allow: options?.prune
-        ? readFileSync(
-            join(directory, 'tools/design-system-allow.json'),
-            'utf8',
-          )
-        : null,
+      allow:
+        !options?.allowDirectory &&
+        existsSync(join(directory, 'tools/design-system-allow.json'))
+          ? readFileSync(
+              join(directory, 'tools/design-system-allow.json'),
+              'utf8',
+            )
+          : null,
       status: result.status ?? 1,
       output: `${result.stdout ?? ''}${result.stderr ?? ''}`,
     };
@@ -1092,4 +1093,69 @@ await test('a general exception cannot accept a second rule in the same file', (
   });
   assert.equal(result.status, 1);
   assert.match(result.output, /colour-literal/);
+});
+
+await test('a separate root can omit spacing exceptions without creating a file', () => {
+  for (const prune of [false, true]) {
+    const clean = check(
+      { 'apps/web/src/screen.ts': 'export const name = "Open";' },
+      { prune },
+    );
+    assert.equal(clean.status, 0, clean.output);
+    assert.equal(clean.allow, null);
+    const refused = check(
+      { 'apps/web/src/screen.ts': 'const x = "p-5";' },
+      { prune },
+    );
+    assert.equal(refused.status, 1, refused.output);
+    assert.match(refused.output, /feature-spacing/);
+    assert.equal(refused.allow, null);
+  }
+});
+
+await test('prune leaves an unchanged spacing file untouched', () => {
+  const entry = {
+    file: 'packages/ui/src/layout-classes.ts',
+    rule: 'minimum-height',
+    match: 'min-h-checkout-frame',
+    reason: 'Reserve the frame.',
+  };
+  for (const allow of [[], [entry]]) {
+    const text =
+      JSON.stringify({ comment: 'Keep format and metadata.', allow }, null, 4) +
+      '\n\n';
+    const result = check(
+      {
+        'packages/ui/src/layout-classes.ts': allow.length
+          ? 'const x = "min-h-checkout-frame";'
+          : '',
+        'tools/design-system-allow.json': text,
+      },
+      { prune: true },
+    );
+    assert.equal(result.status, 0, result.output);
+    assert.equal(result.allow, text);
+  }
+});
+
+await test('spacing allowlist read, parse and schema errors remain fatal', () => {
+  for (const prune of [false, true]) {
+    const unreadable = check({}, { prune, allowDirectory: true });
+    assert.equal(unreadable.status, 1);
+    assert.match(unreadable.output, /EISDIR/);
+    for (const { text, diagnostic } of [
+      { text: '{', diagnostic: /SyntaxError/ },
+      { text: '{"allow":{}}', diagnostic: /allow array/ },
+      { text: 'null', diagnostic: /allow array/ },
+      { text: '{"allow":[{}]}', diagnostic: /Every exception needs/ },
+    ]) {
+      const result = check(
+        { 'tools/design-system-allow.json': text },
+        { prune },
+      );
+      assert.equal(result.status, 1, result.output);
+      assert.match(result.output, diagnostic);
+      if (prune) assert.equal(result.allow, text);
+    }
+  }
 });
