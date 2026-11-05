@@ -315,9 +315,10 @@ try {
           }
         }
         await page.goto(origin + readerPath);
-        await page.locator('.notes-table-scroll table').waitFor();
+        await page.locator('.notes-table-scroll table').first().waitFor();
         const reader = await page
           .locator('.notes-table-scroll')
+          .first()
           .evaluate((element) => {
             const style = getComputedStyle(element);
             if (
@@ -383,40 +384,50 @@ try {
         );
         assert.ok(reader.pageWidth <= reader.viewport);
         assert.ok(
-          await page.locator('.notes-table-scroll').evaluate((element) => {
-            element.scrollLeft = element.scrollWidth;
-            return (
-              element.scrollLeft + element.clientWidth >=
-              element.scrollWidth - 1
-            );
-          }),
+          await page
+            .locator('.notes-table-scroll')
+            .first()
+            .evaluate((element) => {
+              element.scrollLeft = element.scrollWidth;
+              return (
+                element.scrollLeft + element.clientWidth >=
+                element.scrollWidth - 1
+              );
+            }),
           'The last reader column is reachable.',
         );
         await page.keyboard.press('Tab');
         assert.ok(
-          await page.locator('.notes-table-scroll').evaluate((element) => {
-            const style = getComputedStyle(element);
-            return (
-              element === document.activeElement &&
-              element.matches(':focus-visible') &&
-              style.outlineStyle !== 'none' &&
-              parseFloat(style.outlineWidth) >= 2
-            );
-          }),
+          await page
+            .locator('.notes-table-scroll')
+            .first()
+            .evaluate((element) => {
+              const style = getComputedStyle(element);
+              return (
+                element === document.activeElement &&
+                element.matches(':focus-visible') &&
+                style.outlineStyle !== 'none' &&
+                parseFloat(style.outlineWidth) >= 2
+              );
+            }),
           'Keyboard focus has a visible ring around the table.',
         );
         await page
           .locator('.notes-table-scroll')
+          .first()
           .evaluate((element) => element.blur());
         assert.ok(
-          await page.locator('.notes-table-scroll').evaluate((element) => {
-            const style = getComputedStyle(element);
-            return (
-              !element.matches(':focus-visible') &&
-              (style.outlineStyle === 'none' ||
-                parseFloat(style.outlineWidth) === 0)
-            );
-          }),
+          await page
+            .locator('.notes-table-scroll')
+            .first()
+            .evaluate((element) => {
+              const style = getComputedStyle(element);
+              return (
+                !element.matches(':focus-visible') &&
+                (style.outlineStyle === 'none' ||
+                  parseFloat(style.outlineWidth) === 0)
+              );
+            }),
           'The focus ring leaves when the scroll area loses focus.',
         );
         await page.screenshot({
@@ -425,7 +436,7 @@ try {
         const wideReaderPath = process.env.TABLE_WIDE_READER_PATH;
         if (wideReaderPath !== undefined) {
           await page.goto(origin + wideReaderPath);
-          const scrollArea = page.locator('.notes-table-scroll');
+          const scrollArea = page.locator('.notes-table-scroll').first();
           await scrollArea.waitFor();
           assert.ok(
             await scrollArea.evaluate(
