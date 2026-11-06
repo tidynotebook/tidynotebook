@@ -101,3 +101,28 @@ Results, the safe test note, and screenshots stay in `.local-app/`. After a
 build, run `node tools/performance/outline.ts` to measure the initial parse,
 50 edits, and cache reuse for 38,400 and 960,000 characters. This measures
 outline work alone. It does not measure React rendering or editor layout.
+
+`table-viewport.ts` checks the real editor component with synthetic long notes.
+It observes DOM updates and frames during fast vertical leave/reentry, then
+checks input-free settled intervals. A known table must not return to fallback
+tracks. First-ever body-only visibility is checked separately. Container and
+font-size changes, passive horizontal position, edits/history and table/note
+replacement use the same editor instance.
+
+Serve the fixture with the existing web Vite configuration from the repository:
+
+```sh
+pnpm --filter @notesapp/web exec vite ../.. --config vite.config.ts --host 127.0.0.1 --port 3019
+```
+
+Then run with the existing Playwright installation:
+
+```sh
+PLAYWRIGHT_MODULE=/absolute/path/to/playwright-core/index.mjs \
+UI_AUDIT_ORIGIN=http://127.0.0.1:3019 \
+node tests/browser/table-viewport.ts
+```
+
+`TABLE_VIEWPORT_OUTPUT` selects the evidence directory. This component check
+uses no account, server write or Docker service. It is separate from production
+stack checks.
