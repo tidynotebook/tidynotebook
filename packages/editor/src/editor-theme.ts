@@ -282,31 +282,28 @@ export function panelRules(): Record<
   const rowHeight = 'calc(var(--spacing) * 7)';
   return {
     '.cm-panels': {
-      backgroundColor: 'var(--notes-surface)',
+      flexShrink: '0',
+      maxHeight: '100%',
+      overflowY: 'auto',
+      backgroundColor: 'var(--notes-bg)',
       color: 'var(--notes-text)',
       fontFamily: 'var(--font-sans)',
       fontSize: 'var(--text-control)',
     },
     '.cm-panels.cm-panels-top': {
-      borderBottom: '1px solid var(--notes-border-line)',
+      borderBottom: 'none',
     },
     '.cm-panels.cm-panels-bottom': {
       borderTop: '1px solid var(--notes-border-line)',
     },
     '.cm-np-search': {
+      containerType: 'inline-size',
       display: 'flex',
       flexDirection: 'column',
       gap: 'calc(var(--spacing) * 2)',
       paddingBlock: 'calc(var(--spacing) * 2)',
       paddingInline:
         'max(calc(var(--spacing) * 2), calc((100% - var(--container-note)) / 2))',
-    },
-    '.cm-np-search-row': {
-      display: 'flex',
-      flexWrap: 'nowrap',
-      alignItems: 'center',
-      columnGap: 'calc(var(--spacing) * 1)',
-      rowGap: 'calc(var(--spacing) * 1)',
     },
     // A field takes the room that the buttons leave on its band.
     '.cm-np-search-row[hidden]': { display: 'none' },
@@ -1054,9 +1051,6 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
     // A finger gets a larger hit area around the same grip. It reaches a
     // little way into the cell, so a tap on the text of a short header cell
     // still reaches the text.
-    '@media (max-width: 1023px) and (pointer: coarse)': {
-      '.cm-panels': { marginInline: 'calc(var(--spacing) * -4)' },
-    },
     '@media (pointer: coarse)': {
       // A finger takes the 44 px of a row in the completion list.
       '.cm-tooltip.cm-tooltip-autocomplete > ul > li': {

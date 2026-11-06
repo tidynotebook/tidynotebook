@@ -1,6 +1,7 @@
 /** The pure layout choices of shared page furniture. */
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { editorSearchClasses } from './editor-search-classes.ts';
 import {
   currentPageSection,
   pageColumnClassName,
@@ -156,4 +157,11 @@ await test('a group label has no inset of its own', () => {
   assert.ok(!label.some((name) => /^(p|px|pl|ps)-/.test(name)));
   assert.ok(label.includes('text-group'));
   assert.ok(label.includes('text-muted'));
+});
+
+await test('editor replace actions keep the shared page action cluster', () => {
+  assert.deepEqual(
+    new Set(editorSearchClasses.actions.split(' ')),
+    new Set(pageHeaderActionsClassName('cluster').split(' ')),
+  );
 });
