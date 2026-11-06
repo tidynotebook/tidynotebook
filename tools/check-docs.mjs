@@ -4,7 +4,7 @@
  * A separate root permits checks over disposable fixture trees.
  */
 import { readdir, readFile, stat } from 'node:fs/promises';
-import { dirname, join, relative, resolve, sep } from 'node:path';
+import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { root } from './workspace.mjs';
 
 /**
@@ -112,7 +112,7 @@ export const decisionIndexHeading = '## Index';
  * sees as a row. So every number has one record, and every record has one
  * row inside the one table under the index heading, in number order.
  *
- * @param {string[]} names The file names in `docs/decisions/`.
+ * @param {string[]} names The paths relative to `docs/decisions/`.
  * @param {string} index The text of `docs/decisions/README.md`.
  * @returns {string[]}
  */
@@ -120,13 +120,13 @@ export function decisionIndexFailures(names, index) {
   /** @type {string[]} */
   const failures = [];
   const records = names
-    .filter((name) => /^\d{4}-.+\.md$/.test(name))
-    .filter((name) => !name.startsWith('0000-'))
+    .filter((name) => /^\d{4}-.+\.md$/.test(basename(name)))
+    .filter((name) => !basename(name).startsWith('0000-'))
     .sort();
   /** @type {Map<string, string>} */
   const byNumber = new Map();
   for (const name of records) {
-    const number = name.slice(0, 4);
+    const number = basename(name).slice(0, 4);
     const earlier = byNumber.get(number);
     if (earlier === undefined) byNumber.set(number, name);
     else
@@ -148,7 +148,7 @@ export function decisionIndexFailures(names, index) {
   for (let line = first; line < lines.length; line += 1) {
     const text = lines[line] ?? '';
     if (!text.startsWith('|')) break;
-    const link = /\]\((\d{4}-[^)]+\.md)\)/.exec(text);
+    const link = /\]\(((?:[^)\s]+\/)?\d{4}-[^)\s]+\.md)\)/.exec(text);
     if (link !== null) rows.push(link[1] ?? '');
   }
   const listed = new Set(rows);
@@ -162,7 +162,7 @@ export function decisionIndexFailures(names, index) {
       failures.push(`the index row for ${row} names no record.`);
   for (const [position, row] of rows.entries()) {
     const previous = rows[position - 1];
-    if (previous !== undefined && previous >= row)
+    if (previous !== undefined && basename(previous) >= basename(row))
       failures.push(
         `the index row for ${row} follows ${previous}. Keep one row for each record, in number order.`,
       );
