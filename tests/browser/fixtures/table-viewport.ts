@@ -137,7 +137,13 @@ const fixture = {
     frames,
     firstVisits: [...firstVisits],
     text: view.state.doc.toString(),
-    selection: view.state.selection.toJSON(),
+    selection: {
+      ranges: view.state.selection.ranges.map(({ anchor, head }) => ({
+        anchor,
+        head,
+      })),
+      main: view.state.selection.mainIndex,
+    },
     top: view.scrollDOM.scrollTop,
   }),
   start: () => {
