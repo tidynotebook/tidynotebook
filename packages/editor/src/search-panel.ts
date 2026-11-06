@@ -206,7 +206,7 @@ function iconButton(
 /** One band of the panel. */
 function band(...children: readonly HTMLElement[]): HTMLElement {
   const row = document.createElement('div');
-  row.className = 'cm-np-search-row';
+  row.className = `cm-np-search-row ${editorSearchClasses.row}`;
   row.append(...children);
   return row;
 }
@@ -244,9 +244,15 @@ class SearchPanel implements Panel {
     this.searchField = field(searchPanelWords.find, this.query.search);
     // `openSearchPanel` of the package selects the field with this mark.
     this.searchField.setAttribute('main-field', 'true');
-    this.searchField.classList.add('cm-np-search-field');
+    this.searchField.classList.add(
+      'cm-np-search-field',
+      ...editorSearchClasses.query.split(' '),
+    );
     this.replaceField = field(searchPanelWords.replace, this.query.replace);
-    this.replaceField.classList.add('cm-np-search-field');
+    this.replaceField.classList.add(
+      'cm-np-search-field',
+      ...editorSearchClasses.replaceField.split(' '),
+    );
     for (const input of [this.searchField, this.replaceField]) {
       input.addEventListener('input', commit);
       input.addEventListener('change', commit);
@@ -304,13 +310,13 @@ class SearchPanel implements Panel {
     more.className = buttonClassName({
       variant: 'ghost',
       size: 'compact',
-      className: 'cm-np-search-more',
+      className: editorSearchClasses.more,
     });
     more.setAttribute('aria-label', 'Find options');
     const close = iconButton(searchPanelWords.close, closeParts, () =>
       closeSearchPanel(view),
     );
-    close.classList.add('cm-np-search-close');
+    close.classList.add(...editorSearchClasses.close.split(' '));
     const previous = iconButton(
       searchPanelWords.previous,
       chevronDownParts,
@@ -324,7 +330,7 @@ class SearchPanel implements Panel {
     });
     this.matchActions = [previous, next];
     const desktop = document.createElement('span');
-    desktop.className = 'cm-np-search-options';
+    desktop.className = editorSearchClasses.options;
     desktop.append(...this.toggles);
     const controls = band(
       this.count,
@@ -334,9 +340,9 @@ class SearchPanel implements Panel {
       more,
       ...(view.state.readOnly ? [] : [this.replacementToggle]),
     );
-    controls.classList.add('cm-np-search-controls');
+    controls.classList.add(...editorSearchClasses.controls.split(' '));
     const primary = document.createElement('div');
-    primary.className = 'cm-np-search-main';
+    primary.className = editorSearchClasses.main;
     primary.append(this.searchField, controls, close);
     const replaceOne = button(searchPanelWords.replaceOne, () => {
       replaceNext(view);
@@ -348,8 +354,9 @@ class SearchPanel implements Panel {
     const actions = document.createElement('div');
     actions.className = editorSearchClasses.actions;
     actions.append(...this.replaceActions);
-    this.replacement = band(this.replaceField, actions);
-    this.replacement.classList.add('cm-np-search-replacement');
+    this.replacement = document.createElement('div');
+    this.replacement.className = `cm-np-search-row cm-np-search-replacement ${editorSearchClasses.replacement}`;
+    this.replacement.append(this.replaceField, actions);
     this.replacement.hidden = true;
     this.status = document.createElement('div');
     this.status.className = editorSearchClasses.status;
@@ -476,7 +483,7 @@ class SearchPanel implements Panel {
     const invalid = this.query.search.length > 0 && !this.query.valid;
     this.searchField.className = fieldClassName({
       invalid,
-      className: 'cm-np-search-field',
+      className: `cm-np-search-field ${editorSearchClasses.query}`,
     });
     this.searchField.setAttribute('aria-invalid', String(invalid));
     this.status.className = invalid

@@ -305,46 +305,6 @@ export function panelRules(): Record<
       paddingInline:
         'max(calc(var(--spacing) * 2), calc((100% - var(--container-note)) / 2))',
     },
-    '.cm-np-search-row': {
-      display: 'flex',
-      flexWrap: 'nowrap',
-      alignItems: 'center',
-      columnGap: 'calc(var(--spacing) * 1)',
-      rowGap: 'calc(var(--spacing) * 1)',
-    },
-    '.cm-np-search-main': {
-      display: 'grid',
-      gridTemplateColumns: 'minmax(0, 1fr) auto',
-      gap: 'calc(var(--spacing) * 1)',
-      alignItems: 'center',
-    },
-    '.cm-np-search-main > .cm-np-search-field': {
-      gridColumn: '1',
-      gridRow: '1',
-    },
-    '.cm-np-search-close': { gridColumn: '2', gridRow: '1' },
-    '.cm-np-search-controls': { gridColumn: '1 / -1', gridRow: '2' },
-    '.cm-np-search-count': { flex: '1', whiteSpace: 'nowrap' },
-    '.cm-np-search-options': { display: 'none' },
-    '.cm-np-search-replacement': {
-      flexDirection: 'column',
-      alignItems: 'stretch',
-      gap: 'calc(var(--spacing) * 2)',
-    },
-    // Layout follows the editor width; pointer type controls target size only.
-    '@container (min-width: 600px)': {
-      '.cm-np-search-main': { gridTemplateColumns: 'minmax(0, 1fr) auto auto' },
-      '.cm-np-search-close': { gridColumn: '3' },
-      '.cm-np-search-controls': { gridColumn: '2', gridRow: '1' },
-      '.cm-np-search-count': { flex: 'none' },
-      '.cm-np-search-options': { display: 'contents' },
-      '.cm-np-search-more': { display: 'none' },
-      '.cm-np-search-replacement > .cm-np-search-field': { flex: '1' },
-      '.cm-np-search-replacement': {
-        flexDirection: 'row',
-        alignItems: 'center',
-      },
-    },
     // A field takes the room that the buttons leave on its band.
     '.cm-np-search-row[hidden]': { display: 'none' },
     '.cm-np-search-field': {
