@@ -282,18 +282,22 @@ export function panelRules(): Record<
   const rowHeight = 'calc(var(--spacing) * 7)';
   return {
     '.cm-panels': {
-      backgroundColor: 'var(--notes-surface)',
+      flexShrink: '0',
+      maxHeight: '100%',
+      overflowY: 'auto',
+      backgroundColor: 'var(--notes-bg)',
       color: 'var(--notes-text)',
       fontFamily: 'var(--font-sans)',
       fontSize: 'var(--text-control)',
     },
     '.cm-panels.cm-panels-top': {
-      borderBottom: '1px solid var(--notes-border-line)',
+      borderBottom: 'none',
     },
     '.cm-panels.cm-panels-bottom': {
       borderTop: '1px solid var(--notes-border-line)',
     },
     '.cm-np-search': {
+      containerType: 'inline-size',
       display: 'flex',
       flexDirection: 'column',
       gap: 'calc(var(--spacing) * 2)',
@@ -307,6 +311,39 @@ export function panelRules(): Record<
       alignItems: 'center',
       columnGap: 'calc(var(--spacing) * 1)',
       rowGap: 'calc(var(--spacing) * 1)',
+    },
+    '.cm-np-search-main': {
+      display: 'grid',
+      gridTemplateColumns: 'minmax(0, 1fr) auto',
+      gap: 'calc(var(--spacing) * 1)',
+      alignItems: 'center',
+    },
+    '.cm-np-search-main > .cm-np-search-field': {
+      gridColumn: '1',
+      gridRow: '1',
+    },
+    '.cm-np-search-close': { gridColumn: '2', gridRow: '1' },
+    '.cm-np-search-controls': { gridColumn: '1 / -1', gridRow: '2' },
+    '.cm-np-search-count': { flex: '1', whiteSpace: 'nowrap' },
+    '.cm-np-search-options': { display: 'none' },
+    '.cm-np-search-replacement': {
+      flexDirection: 'column',
+      alignItems: 'stretch',
+      gap: 'calc(var(--spacing) * 2)',
+    },
+    // Layout follows the editor width; pointer type controls target size only.
+    '@container (min-width: 600px)': {
+      '.cm-np-search-main': { gridTemplateColumns: 'minmax(0, 1fr) auto auto' },
+      '.cm-np-search-close': { gridColumn: '3' },
+      '.cm-np-search-controls': { gridColumn: '2', gridRow: '1' },
+      '.cm-np-search-count': { flex: 'none' },
+      '.cm-np-search-options': { display: 'contents' },
+      '.cm-np-search-more': { display: 'none' },
+      '.cm-np-search-replacement > .cm-np-search-field': { flex: '1' },
+      '.cm-np-search-replacement': {
+        flexDirection: 'row',
+        alignItems: 'center',
+      },
     },
     // A field takes the room that the buttons leave on its band.
     '.cm-np-search-row[hidden]': { display: 'none' },
@@ -1054,9 +1091,6 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
     // A finger gets a larger hit area around the same grip. It reaches a
     // little way into the cell, so a tap on the text of a short header cell
     // still reaches the text.
-    '@media (max-width: 1023px) and (pointer: coarse)': {
-      '.cm-panels': { marginInline: 'calc(var(--spacing) * -4)' },
-    },
     '@media (pointer: coarse)': {
       // A finger takes the 44 px of a row in the completion list.
       '.cm-tooltip.cm-tooltip-autocomplete > ul > li': {

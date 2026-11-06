@@ -44,23 +44,15 @@ import {
 import {
   buttonClassName,
   chevronDownParts,
-  moreParts,
-  replaceParts,
   openOptionsSheet,
   closeParts,
   fieldClassName,
   glyph,
+  editorSearchClasses,
 } from '@notesapp/ui';
 
-/** Editor DOM is a source of the application stylesheet. */
-export const searchPanelClasses = {
-  field: 'relative min-w-0 flex-1 lg:max-w-80',
-  count:
-    'pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 whitespace-nowrap text-secondary text-muted',
-  desktop: 'hidden lg:contents',
-  phone: 'lg:hidden',
-  queryPadding: 'pr-16',
-} as const;
+/** Styles read by the application stylesheet and its integration check. */
+export const searchPanelClasses = editorSearchClasses;
 
 /** The words of the panel, which a person reads and hears. */
 export const searchPanelWords = {
@@ -166,7 +158,7 @@ export function searchPanelKey(
 }
 
 /** The class of the glyph inside a control: the 16 px of a control. */
-const glyphClass = 'size-4 shrink-0';
+const glyphClass = editorSearchClasses.glyph;
 
 /** A text field of the panel. */
 function field(label: string, value: string): HTMLInputElement {
@@ -187,7 +179,7 @@ function button(label: string, run: () => void): HTMLButtonElement {
   control.type = 'button';
   control.className = buttonClassName({
     variant: 'secondary',
-    size: 'compact',
+    size: 'default',
   });
   control.textContent = label;
   control.addEventListener('click', run);
@@ -219,6 +211,8 @@ function band(...children: readonly HTMLElement[]): HTMLElement {
   return row;
 }
 
+let nextPanelId = 0;
+
 /** The find and replace panel of one view. */
 class SearchPanel implements Panel {
   readonly dom: HTMLElement;
@@ -230,6 +224,10 @@ class SearchPanel implements Panel {
   private readonly count: HTMLSpanElement;
   private readonly toggles: readonly HTMLButtonElement[];
   private readonly replacement: HTMLElement;
+  private readonly replacementToggle: HTMLButtonElement;
+  private readonly status: HTMLElement;
+  private readonly matchActions: readonly HTMLButtonElement[];
+  private readonly replaceActions: readonly HTMLButtonElement[];
   private replaceVisible = false;
   private closeOptions: (() => void) | undefined;
   private destroyed = false;
@@ -254,12 +252,8 @@ class SearchPanel implements Panel {
       input.addEventListener('change', commit);
     }
     this.count = document.createElement('span');
-    this.count.className = searchPanelClasses.count;
+    this.count.className = `cm-np-search-count ${editorSearchClasses.count}`;
     this.count.setAttribute('aria-live', 'polite');
-    this.searchField.classList.add(searchPanelClasses.queryPadding);
-    const search = document.createElement('div');
-    search.className = searchPanelClasses.field;
-    search.append(this.searchField, this.count);
     const options = [
       { label: searchPanelWords.matchCase, text: 'Aa', key: 'caseSensitive' },
       { label: searchPanelWords.regexp, text: '.*', key: 'regexp' },
@@ -270,7 +264,8 @@ class SearchPanel implements Panel {
         this.option(option.key, !this.query[option.key]),
       );
       toggle.className = buttonClassName({
-        variant: 'secondary',
+        variant: 'ghost',
+        iconOnly: true,
         size: 'compact',
         className: 'aria-pressed:bg-active',
       });
@@ -278,30 +273,26 @@ class SearchPanel implements Panel {
       toggle.setAttribute('aria-label', option.label);
       return toggle;
     });
-    const replacementToggle = iconButton('Show replace', replaceParts, () =>
+    this.replacementToggle = button('Replace', () =>
       this.showReplace(!this.replaceVisible),
     );
-
-    replacementToggle.setAttribute('aria-pressed', 'false');
-    replacementToggle.classList.add('aria-pressed:bg-active');
-    const more = button('More', () => {
+    this.replacementToggle.className = buttonClassName({
+      variant: 'ghost',
+      size: 'compact',
+      className: 'aria-expanded:bg-active',
+    });
+    this.replacementToggle.setAttribute('aria-label', 'Show replace');
+    this.replacementToggle.setAttribute('aria-expanded', 'false');
+    const more = button('Options', () => {
       more.disabled = true;
-      void openOptionsSheet('Find options', [
-        ...options.map((option) => ({
+      void openOptionsSheet(
+        'Find options',
+        options.map((option) => ({
           label: option.label,
           read: () => this.query[option.key],
           change: (checked: boolean) => this.option(option.key, checked),
         })),
-        ...(view.state.readOnly
-          ? []
-          : [
-              {
-                label: 'Replace',
-                read: () => this.replaceVisible,
-                change: (checked: boolean) => this.showReplace(checked),
-              },
-            ]),
-      ])
+      )
         .then((close) => {
           if (this.destroyed) close();
           else this.closeOptions = close;
@@ -313,15 +304,13 @@ class SearchPanel implements Panel {
     more.className = buttonClassName({
       variant: 'ghost',
       size: 'compact',
-      iconOnly: true,
+      className: 'cm-np-search-more',
     });
-    more.setAttribute('aria-label', 'More find options');
-    more.title = 'More find options';
-    more.replaceChildren(glyph(glyphClass, moreParts));
+    more.setAttribute('aria-label', 'Find options');
     const close = iconButton(searchPanelWords.close, closeParts, () =>
       closeSearchPanel(view),
     );
-    close.classList.add('lg:ml-auto');
+    close.classList.add('cm-np-search-close');
     const previous = iconButton(
       searchPanelWords.previous,
       chevronDownParts,
@@ -330,43 +319,52 @@ class SearchPanel implements Panel {
       },
     );
     previous.querySelector('svg')?.classList.add('rotate-180');
+    const next = iconButton(searchPanelWords.next, chevronDownParts, () => {
+      findNext(view);
+    });
+    this.matchActions = [previous, next];
     const desktop = document.createElement('span');
-    desktop.className = searchPanelClasses.desktop;
-    desktop.append(
-      ...this.toggles,
-      ...(view.state.readOnly ? [] : [replacementToggle]),
+    desktop.className = 'cm-np-search-options';
+    desktop.append(...this.toggles);
+    const controls = band(
+      this.count,
+      previous,
+      next,
+      desktop,
+      more,
+      ...(view.state.readOnly ? [] : [this.replacementToggle]),
     );
-    const phone = document.createElement('span');
-    phone.className = searchPanelClasses.phone;
-    phone.append(more);
-    const rows = [
-      band(
-        search,
-        previous,
-        iconButton(searchPanelWords.next, chevronDownParts, () => {
-          findNext(view);
-        }),
-        desktop,
-        phone,
-        close,
-      ),
-    ];
-    this.replacement = band(
-      this.replaceField,
-      button(searchPanelWords.replaceOne, () => {
-        replaceNext(view);
-      }),
-      button(searchPanelWords.replaceAll, () => {
-        replaceAll(view);
-      }),
-    );
+    controls.classList.add('cm-np-search-controls');
+    const primary = document.createElement('div');
+    primary.className = 'cm-np-search-main';
+    primary.append(this.searchField, controls, close);
+    const replaceOne = button(searchPanelWords.replaceOne, () => {
+      replaceNext(view);
+    });
+    const replaceEvery = button(searchPanelWords.replaceAll, () => {
+      replaceAll(view);
+    });
+    this.replaceActions = [replaceOne, replaceEvery];
+    const actions = document.createElement('div');
+    actions.className = editorSearchClasses.actions;
+    actions.append(...this.replaceActions);
+    this.replacement = band(this.replaceField, actions);
+    this.replacement.classList.add('cm-np-search-replacement');
     this.replacement.hidden = true;
-    if (!view.state.readOnly) rows.push(this.replacement);
+    this.status = document.createElement('div');
+    this.status.className = editorSearchClasses.status;
+    this.status.setAttribute('role', 'status');
+    this.status.id = `note-find-status-${String(++nextPanelId)}`;
+    this.searchField.setAttribute('aria-describedby', this.status.id);
     this.dom = document.createElement('div');
     this.dom.className = 'cm-np-search';
     this.dom.setAttribute('role', 'search');
     this.dom.setAttribute('aria-label', searchPanelWords.panel);
-    this.dom.append(...rows);
+    this.dom.append(
+      primary,
+      ...(view.state.readOnly ? [] : [this.replacement]),
+      this.status,
+    );
     this.refresh();
     this.dom.addEventListener('keydown', (event) => {
       this.keydown(event);
@@ -443,9 +441,12 @@ class SearchPanel implements Panel {
   private showReplace(show: boolean): void {
     this.replaceVisible = show;
     this.replacement.hidden = !show;
-    this.dom
-      .querySelector('[aria-label="Show replace"]')
-      ?.setAttribute('aria-pressed', String(show));
+    this.replacementToggle.setAttribute('aria-expanded', String(show));
+    this.replacementToggle.setAttribute(
+      'aria-label',
+      show ? 'Hide replace' : 'Show replace',
+    );
+    this.view.requestMeasure();
   }
   private refresh(): void {
     const state = this.view.state;
@@ -472,6 +473,31 @@ class SearchPanel implements Panel {
         (match) => match.to >= state.selection.main.head,
       );
     this.count.textContent = `${this.matches.length === 0 ? 0 : current < 0 ? 1 : current + 1} of ${this.matches.length}`;
+    const invalid = this.query.search.length > 0 && !this.query.valid;
+    this.searchField.className = fieldClassName({
+      invalid,
+      className: 'cm-np-search-field',
+    });
+    this.searchField.setAttribute('aria-invalid', String(invalid));
+    this.status.className = invalid
+      ? editorSearchClasses.error
+      : editorSearchClasses.status;
+    const message = invalid
+      ? 'Invalid regular expression. Check the pattern.'
+      : this.query.search.length === 0
+        ? 'Enter text to find.'
+        : this.matches.length === 0
+          ? 'No matches'
+          : '';
+    if (this.status.textContent !== message) {
+      this.status.textContent = message;
+      this.status.hidden = message.length === 0;
+      this.view.requestMeasure();
+    }
+    for (const action of this.matchActions)
+      action.disabled = this.matches.length === 0;
+    for (const action of this.replaceActions)
+      action.disabled = state.readOnly || this.matches.length === 0;
     [this.query.caseSensitive, this.query.regexp, this.query.wholeWord].forEach(
       (pressed, index) =>
         this.toggles[index]?.setAttribute('aria-pressed', String(pressed)),
