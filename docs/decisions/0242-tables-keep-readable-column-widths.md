@@ -42,6 +42,14 @@ does not replace a saved reading position. Actual pointer, wheel and touch
 input takes priority. Deleted tables and replaced notes lose their records;
 editor destruction removes the records and listeners.
 
+Keep measured layouts for surviving table identities when the viewport changes.
+CodeMirror can remove the header and all rows from the DOM, then render only
+body rows on reentry. A visible-table measurement must update those tables
+without discarding the other measured layouts. Otherwise reentry uses the
+empty-track floor and changes row heights during vertical scrolling. Content,
+font loading and container geometry still cause measurement of visible tables.
+Deleted tables and replaced notes lose their cached layouts.
+
 The stored Markdown format does not change. The existing table model has no manual
 column resizing or stored widths. This change adds neither feature.
 

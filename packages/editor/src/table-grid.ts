@@ -1953,6 +1953,8 @@ const gridView = ViewPlugin.fromClass(
       for (const name of ['pointerdown', 'wheel', 'touchmove'])
         this.view.contentDOM.removeEventListener(name, this.manualScroll, true);
       this.tables.clear();
+      this.layouts = new Map();
+      this.widths.clear();
       this.view.dom.ownerDocument.fonts.removeEventListener(
         'loadingdone',
         this.fontsChanged,
@@ -2098,16 +2100,25 @@ const gridView = ViewPlugin.fromClass(
         },
         write: (result, view) => {
           if (result === null || result.doc !== view.state.doc) return;
-          if (
-            JSON.stringify([...result.layouts]) ===
-            JSON.stringify([...this.layouts])
-          ) {
+          const changed = [...result.layouts].filter(([from, layout]) => {
+            const previous = this.layouts.get(from);
+            return (
+              previous?.columns !== layout.columns ||
+              previous.tracks !== layout.tracks ||
+              previous.rules !== layout.rules
+            );
+          });
+          if (changed.length === 0) {
             this.restoreScroll();
             return;
           }
           queueMicrotask(() => {
             if (this.alive && result.doc === view.state.doc) {
-              view.dispatch({ effects: measuredTables.of(result.layouts) });
+              // A viewport measurement updates only the tables it saw. Keep
+              // surviving tables ready for body-only reentry after scrolling.
+              const layouts = new Map(this.layouts);
+              for (const [from, layout] of changed) layouts.set(from, layout);
+              view.dispatch({ effects: measuredTables.of(layouts) });
               this.restoreScroll();
             }
           });
