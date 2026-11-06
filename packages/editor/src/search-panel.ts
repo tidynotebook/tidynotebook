@@ -496,9 +496,9 @@ class SearchPanel implements Panel {
         : this.matches.length === 0
           ? 'No matches'
           : '';
+    this.status.hidden = message.length === 0;
     if (this.status.textContent !== message) {
       this.status.textContent = message;
-      this.status.hidden = message.length === 0;
       this.view.requestMeasure();
     }
     for (const action of this.matchActions)

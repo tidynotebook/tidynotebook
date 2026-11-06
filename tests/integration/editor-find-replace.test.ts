@@ -145,6 +145,29 @@ await test('query typing, selection, options, counts and wrap navigation keep on
   }
 });
 
+await test('opening Find with selected matches hides the empty status row', () => {
+  const host = document.createElement('div');
+  document.body.append(host);
+  const view = createEditor(host, 'red red', () => {});
+  try {
+    view.dispatch({ selection: { anchor: 0, head: 3 } });
+    openFindAndReplace(view);
+    const field = host.querySelector<HTMLInputElement>(
+      'input[aria-label="Find"]',
+    );
+    const status = host.querySelector<HTMLElement>('[role="status"]');
+    assert.ok(field);
+    assert.ok(status);
+    assert.equal(field.value, 'red');
+    assert.equal(status.textContent, '');
+    assert.equal(status.hidden, true);
+    assert.equal(view.state.doc.toString(), 'red red');
+  } finally {
+    view.destroy();
+    host.remove();
+  }
+});
+
 await test('replace next, replace all, capture groups and undo preserve editing history', () => {
   const f = fixture('red-1 red-2 red-3');
   try {
