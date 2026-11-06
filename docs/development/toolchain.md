@@ -63,7 +63,7 @@ An error class avoids a TypeScript parameter property for the same reason.
 | `oxlint`                       | The source rules that need no type information, with no warning.   |
 | `tools/check-boundaries.mjs`   | The package graph, the browser rule, and the transport rule.       |
 | `tools/check-casts.mjs`        | No JavaScript file asserts a type with a JSDoc cast (record 0019). |
-| `tools/check-docs.mjs`         | The documentation rules of `docs/README.md`.                       |
+| `tools/check-docs.mjs`         | Document integrity and safe guide action names.                    |
 | `tools/check-design-rules.mjs` | The styling, spacing and type-role rules, and interface text.      |
 
 `pnpm lint` reads the sources only, so it passes in a fresh checkout with no
