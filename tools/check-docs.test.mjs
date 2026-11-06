@@ -225,6 +225,40 @@ await test('two records with one number fail', () => {
   assert.match(result.output, /share the number 0001/);
 });
 
+await test('nested records keep number and index checks', () => {
+  const nested = 'topic/0002-second.md';
+  const valid = check({
+    [`docs/decisions/${nested}`]: 'Another choice.\n',
+    'docs/decisions/README.md': decisionIndex(['0001-a-choice.md', nested]),
+  });
+  assert.equal(valid.status, 0, valid.output);
+  const missing = check({
+    [`docs/decisions/${nested}`]: 'Another choice.\n',
+  });
+  assert.equal(missing.status, 1, missing.output);
+  assert.match(missing.output, /topic\/0002-second\.md has no row/);
+  const duplicate = check({
+    'docs/decisions/topic/0001-duplicate.md': 'A duplicate.\n',
+    'docs/decisions/README.md': decisionIndex([
+      '0001-a-choice.md',
+      'topic/0001-duplicate.md',
+    ]),
+  });
+  assert.equal(duplicate.status, 1, duplicate.output);
+  assert.match(duplicate.output, /share the number 0001/);
+  const order = check({
+    'docs/decisions/z/0002-second.md': 'Second.\n',
+    'docs/decisions/a/0003-third.md': 'Third.\n',
+    'docs/decisions/README.md': decisionIndex([
+      '0001-a-choice.md',
+      'a/0003-third.md',
+      'z/0002-second.md',
+    ]),
+  });
+  assert.equal(order.status, 1, order.output);
+  assert.match(order.output, /0002-second\.md follows a\/0003-third\.md/);
+});
+
 await test('the index rule refuses a missing heading, a stray row and an order', () => {
   assert.match(
     String(decisionIndexFailures(['0001-a.md'], '# Records\n')[0]),
