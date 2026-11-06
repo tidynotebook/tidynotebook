@@ -7,6 +7,20 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## Unreleased
 
+## 0.23.6 - 2026-11-06
+
+### Changed
+
+- Simplify contributor test commands, build prerequisites in dependency order, and use disposable Compose test services. Consolidate design checks, including checks in separate source roots.
+- Focus the README on users and contributors and clarify guide source and build references.
+- Update the CI Buildx setup action to 4.4.1.
+
+### Fixed
+
+- Keep Markdown table columns readable, including empty and new columns. Wide tables scroll inside the table without widening the note or page. Normal words wrap, and long tokens stay within cell bounds. ([PR 566](https://github.com/tidynotebook/tidynotebook/pull/566))
+- Keep empty-cell carets visible after column insertion. Move between existing cells without rewriting Markdown or adding undo history. ([PR 566](https://github.com/tidynotebook/tidynotebook/pull/566))
+- Prevent long-table row creation stalls, preserve each table's horizontal reading position after edits, and keep table grids available on plain HTTP origins. ([PR 566](https://github.com/tidynotebook/tidynotebook/pull/566))
+
 ## 0.23.5 - 2026-11-04
 
 ### Security
