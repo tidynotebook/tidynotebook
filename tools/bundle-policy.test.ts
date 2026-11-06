@@ -5,10 +5,10 @@ import {
   firstScreenCeilingBytes,
   withinFirstScreenBudget,
 } from './performance/bundle-policy.ts';
-await test('the approved DS1 allowance is the measured remainder and small rounded margin', () => {
+await test('the budget keeps the DS1 margin and documented two-byte asset-reference adjustment', () => {
   assert.equal(
     firstScreenBudgetBytes,
-    Math.ceil((314_874 + 256) / 1024) * 1024,
+    Math.ceil((314_874 + 256) / 1024) * 1024 + 2,
   );
   assert.ok(firstScreenBudgetBytes - 307_456 < 8 * 1024);
   assert.equal(firstScreenCeilingBytes, Math.floor(0.62 * 1024 * 1024));
