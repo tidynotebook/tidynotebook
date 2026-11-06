@@ -37,8 +37,8 @@ on the Docker host until the upgrade and backup checks are complete.
 1. Fetch the new tag and check it out:
 
    ```bash
-   git fetch --depth 1 origin tag v0.23.5
-   git checkout v0.23.5
+   git fetch --depth 1 origin tag v0.23.6
+   git checkout v0.23.6
    ```
 
    The checkout supplies the Compose files, operator scripts, and migrations
