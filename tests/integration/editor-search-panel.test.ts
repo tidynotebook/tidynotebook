@@ -47,7 +47,7 @@ await test('find counts exact single selections and preserves replace history', 
     await import('../../packages/editor/node_modules/@codemirror/search/dist/index.js');
   const { history, undo, redo } =
     await import('../../packages/editor/node_modules/@codemirror/commands/dist/index.js');
-  const { createSearchPanel } =
+  const { createSearchPanel, searchPanelScrollMargins } =
     await import('../../packages/editor/dist/search-panel.js');
   const parent = document.createElement('div');
   document.body.append(parent);
@@ -58,12 +58,17 @@ await test('find counts exact single selections and preserves replace history', 
       extensions: [
         history(),
         EditorState.allowMultipleSelections.of(true),
+        searchPanelScrollMargins,
         search({ createPanel: createSearchPanel }),
       ],
     }),
   });
   try {
     openSearchPanel(view);
+    // Search wraps createPanel, so a direct getPanel(factory) lookup misses it.
+    const searchMargins = view.state.facet(EditorView.scrollMargins)[0];
+    assert.ok(searchMargins);
+    assert.deepEqual(searchMargins(view), { top: 0, bottom: 0 });
     const input = view.dom.querySelector<HTMLInputElement>('input[main-field]');
     assert.ok(input);
     const count = () =>
@@ -123,6 +128,7 @@ await test('find counts exact single selections and preserves replace history', 
     closeSearchPanel(view);
     assert.equal(view.dom.querySelector('[role=search]'), null);
     assert.ok(view.hasFocus);
+    assert.equal(searchMargins(view), null);
     const readonlyView = new EditorView({
       parent,
       state: EditorState.create({

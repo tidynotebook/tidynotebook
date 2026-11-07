@@ -38,7 +38,6 @@ import { EditorState, type Extension } from '@codemirror/state';
 import {
   EditorView,
   runScopeHandlers,
-  getPanel,
   type Panel,
   type ViewUpdate,
 } from '@codemirror/view';
@@ -72,6 +71,35 @@ export function currentSearchMatch(
       match.from === state.selection.main.from &&
       match.to === state.selection.main.to,
   );
+}
+
+/** Rectangles of the match that CodeMirror has actually rendered. */
+function renderedMatchRects(
+  view: EditorView,
+  match: { readonly from: number; readonly to: number },
+): readonly Pick<DOMRect, 'left' | 'right' | 'top' | 'bottom'>[] {
+  if (match.from === match.to) {
+    const caret = view.coordsAtPos(match.from);
+    return caret ? [caret] : [];
+  }
+  const rects: DOMRect[] = [];
+  for (const visible of view.visibleRanges) {
+    const from = Math.max(match.from, visible.from);
+    const to = Math.min(match.to, visible.to);
+    if (from >= to) continue;
+    const start = view.domAtPos(from, 1);
+    const end = view.domAtPos(to, -1);
+    if (
+      !view.contentDOM.contains(start.node) ||
+      !view.contentDOM.contains(end.node)
+    )
+      continue;
+    const range = view.dom.ownerDocument.createRange();
+    range.setStart(start.node, start.offset);
+    range.setEnd(end.node, end.offset);
+    rects.push(...range.getClientRects());
+  }
+  return rects;
 }
 
 /** The words of the panel, which a person reads and hears. */
@@ -551,6 +579,7 @@ class SearchPanel implements Panel {
 
   destroy(): void {
     this.destroyed = true;
+    if (searchPanels.get(this.view) === this) searchPanels.delete(this.view);
     this.closeOptions?.();
     this.observer?.disconnect();
     this.stopViewport?.();
@@ -582,15 +611,30 @@ class SearchPanel implements Panel {
         const width = Math.min(this.dom.offsetWidth, Math.max(0, right - left));
         const current = currentSearchMatch(this.view.state, this.matches);
         const match = current < 0 ? undefined : this.matches[current];
-        const start = match ? this.view.coordsAtPos(match.from) : null;
-        const end = match ? this.view.coordsAtPos(match.to) : null;
         const overlap =
-          start &&
-          end &&
-          start.top < top + height + 8 &&
-          end.bottom > top - 8 &&
-          Math.max(start.right, end.right) > right - width - 8;
-        const below = Boolean(overlap && this.view.scrollDOM.scrollTop < 1);
+          match &&
+          renderedMatchRects(this.view, match).some((rect) => {
+            // DOM ranges can include buffered lines outside the physical viewport.
+            const clipped = {
+              top: Math.max(rect.top, scroller.top, screen.top),
+              bottom: Math.min(rect.bottom, scroller.bottom, screen.bottom),
+              left: Math.max(rect.left, scroller.left, screen.left),
+              right: Math.min(rect.right, scroller.right, screen.right),
+            };
+            return (
+              clipped.bottom > clipped.top &&
+              clipped.right >= clipped.left &&
+              clipped.top < top + height + 8 &&
+              clipped.bottom > top - 8 &&
+              clipped.right >= right - width - 8 &&
+              clipped.left <= right + 8
+            );
+          });
+        // Retain the lower position while a small reveal scroll clears its foot.
+        const below = Boolean(
+          overlap &&
+          (this.view.scrollDOM.scrollTop < 1 || this.margin.bottom > 0),
+        );
         return {
           top: (below ? Math.max(top, bottom - height) : top) - editor.top,
           right: editor.right - right,
@@ -612,10 +656,22 @@ class SearchPanel implements Panel {
           : { top: box.margin, bottom: 0 };
         if (this.reveal && box.match) {
           this.reveal = false;
-          this.view.dispatch({
-            effects: EditorView.scrollIntoView(this.view.state.selection.main, {
-              y: 'nearest',
-            }),
+          const state = this.view.state;
+          const query = this.query;
+          // A measure write runs inside a view update. Dispatch after it ends.
+          queueMicrotask(() => {
+            if (
+              this.destroyed ||
+              this.view.state.doc !== state.doc ||
+              !this.view.state.selection.eq(state.selection) ||
+              this.query !== query
+            )
+              return;
+            this.view.dispatch({
+              effects: EditorView.scrollIntoView(state.selection.main, {
+                y: 'nearest',
+              }),
+            });
           });
         }
       },
@@ -638,13 +694,18 @@ class SearchPanel implements Panel {
   }
 }
 
+// The search package wraps createPanel with its own panel constructor, so
+// getPanel(view, createSearchPanel) cannot retrieve our measured instance.
+const searchPanels = new WeakMap<EditorView, SearchPanel>();
+
 /** The panel of `search({ createPanel })`. */
 export function createSearchPanel(view: EditorView): Panel {
-  return new SearchPanel(view);
+  const panel = new SearchPanel(view);
+  searchPanels.set(view, panel);
+  return panel;
 }
 
 /** Search stays outside the flow; its measured footprint keeps matches clear. */
 export const searchPanelScrollMargins = EditorView.scrollMargins.of((view) => {
-  const panel = getPanel(view, createSearchPanel);
-  return panel instanceof SearchPanel ? panel.scrollMargin() : null;
+  return searchPanels.get(view)?.scrollMargin() ?? null;
 });
