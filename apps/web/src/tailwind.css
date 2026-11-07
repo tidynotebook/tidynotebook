@@ -467,6 +467,7 @@
   --container-page: 45rem;
   --spacing-drawer: min(calc(100vw - 3.5rem), 20rem);
   --spacing-safe: env(safe-area-inset-bottom, 0px);
+  --grid-template-columns-editor-search: minmax(0, 14rem) max-content;
   --grid-template-columns-checkout: minmax(0, 1fr) 28rem;
   --grid-template-columns-sidebar-narrow: 17rem minmax(0, 1fr);
   --grid-template-columns-sidebar-medium: 19rem minmax(0, 1fr);

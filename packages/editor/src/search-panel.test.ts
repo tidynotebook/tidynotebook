@@ -6,10 +6,11 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { EditorState } from '@codemirror/state';
+import { EditorSelection, EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
 import { closeSearchPanel, gotoLine, searchKeymap } from '@codemirror/search';
 import {
+  currentSearchMatch,
   editorPhrases,
   noteSearchKeymap,
   replaceAllAnnouncement,
@@ -95,4 +96,46 @@ await test('Escape in the panel closes it, which gives the focus to the text', (
   assert.ok(escape !== undefined);
   assert.equal(escape.run, closeSearchPanel);
   assert.ok((escape.scope ?? 'editor').split(' ').includes('search-panel'));
+});
+
+await test('an ordinal requires one exact selection, including regex zero-width results', () => {
+  const make = (selection: EditorSelection) =>
+    EditorState.create({
+      doc: 'seed seed',
+      selection,
+      extensions: EditorState.allowMultipleSelections.of(true),
+    });
+  const matches = [
+    { from: 0, to: 4 },
+    { from: 5, to: 9 },
+  ];
+  assert.equal(
+    currentSearchMatch(make(EditorSelection.single(5, 9)), matches),
+    1,
+  );
+  assert.equal(
+    currentSearchMatch(make(EditorSelection.single(4)), matches),
+    -1,
+  );
+  assert.equal(
+    currentSearchMatch(make(EditorSelection.single(1, 3)), matches),
+    -1,
+  );
+  assert.equal(
+    currentSearchMatch(
+      make(
+        EditorSelection.create([
+          EditorSelection.range(0, 4),
+          EditorSelection.range(5, 9),
+        ]),
+      ),
+      matches,
+    ),
+    -1,
+  );
+  assert.equal(
+    currentSearchMatch(make(EditorSelection.single(5)), [{ from: 5, to: 5 }]),
+    0,
+  );
+  assert.equal(currentSearchMatch(make(EditorSelection.single(5)), []), -1);
 });

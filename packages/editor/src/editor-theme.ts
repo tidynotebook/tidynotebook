@@ -281,39 +281,19 @@ export function panelRules(): Record<
 > {
   const rowHeight = 'calc(var(--spacing) * 7)';
   return {
-    '.cm-panels': {
-      backgroundColor: 'var(--notes-surface)',
-      color: 'var(--notes-text)',
-      fontFamily: 'var(--font-sans)',
-      fontSize: 'var(--text-control)',
-    },
+    // CodeMirror keeps the panel lifecycle and key scope. The zero-height
+    // layer leaves all note content in its original position.
     '.cm-panels.cm-panels-top': {
-      borderBottom: '1px solid var(--notes-border-line)',
+      position: 'absolute',
+      insetInline: '0',
+      height: '0',
+      border: '0',
+      background: 'transparent',
+      pointerEvents: 'none',
+      containerType: 'inline-size',
+      zIndex: '4',
     },
-    '.cm-panels.cm-panels-bottom': {
-      borderTop: '1px solid var(--notes-border-line)',
-    },
-    '.cm-np-search': {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 'calc(var(--spacing) * 2)',
-      paddingBlock: 'calc(var(--spacing) * 2)',
-      paddingInline:
-        'max(calc(var(--spacing) * 2), calc((100% - var(--container-note)) / 2))',
-    },
-    '.cm-np-search-row': {
-      display: 'flex',
-      flexWrap: 'nowrap',
-      alignItems: 'center',
-      columnGap: 'calc(var(--spacing) * 1)',
-      rowGap: 'calc(var(--spacing) * 1)',
-    },
-    // A field takes the room that the buttons leave on its band.
-    '.cm-np-search-row[hidden]': { display: 'none' },
-    '.cm-np-search-field': {
-      width: '100%',
-      minWidth: '0',
-    },
+    '.cm-np-search [hidden]': { display: 'none' },
     // A match is a place the person looks for, so it takes the tint of a
     // selection and the current match a stronger one, in the focus colour
     // that record 0062 gives a selection. The ink fill of the action read as
@@ -325,6 +305,8 @@ export function panelRules(): Record<
     '.cm-searchMatch.cm-searchMatch-selected': {
       backgroundColor:
         'color-mix(in srgb, var(--notes-focus) 40%, transparent)',
+      boxShadow: '0 0 0 2px var(--notes-focus)',
+      boxDecorationBreak: 'clone',
     },
     '.cm-tooltip': {
       ...menuSurfaceStyle,
@@ -1054,9 +1036,6 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
     // A finger gets a larger hit area around the same grip. It reaches a
     // little way into the cell, so a tap on the text of a short header cell
     // still reaches the text.
-    '@media (max-width: 1023px) and (pointer: coarse)': {
-      '.cm-panels': { marginInline: 'calc(var(--spacing) * -4)' },
-    },
     '@media (pointer: coarse)': {
       // A finger takes the 44 px of a row in the completion list.
       '.cm-tooltip.cm-tooltip-autocomplete > ul > li': {
