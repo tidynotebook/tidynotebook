@@ -34,6 +34,7 @@ import {
   editorPhrases,
   noteSearchKeymap,
   replaceAllAnnouncement,
+  searchPanelScrollMargins,
 } from './search-panel.ts';
 import { formattingKeymap } from './keymaps.ts';
 import { orderedListNumbering } from './list-numbering.ts';
@@ -60,6 +61,7 @@ export function editorCommands(): Extension {
   return [
     // The find panel is a panel of the design system (issue 247).
     search({ top: true, createPanel: createSearchPanel }),
+    searchPanelScrollMargins,
     replaceAllAnnouncement,
     EditorState.phrases.of(editorPhrases),
     // A list at the caret, such as the slash menu, opens in the part of the
