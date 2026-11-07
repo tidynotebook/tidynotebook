@@ -38,7 +38,11 @@ await test('the production registry has the note tools of plan 022 and design 02
     assert.equal(tool.definition.outputSchema?.type, 'object');
     assert.deepEqual(tool.definition.annotations, {
       readOnlyHint: tool.scope === 'notes:read',
-      destructiveHint: tool.definition.name === 'move_note_to_trash',
+      destructiveHint: [
+        'edit_note',
+        'patch_note',
+        'move_note_to_trash',
+      ].includes(tool.definition.name),
       idempotentHint: true,
       openWorldHint: false,
     });
