@@ -46,6 +46,7 @@ const view = createEditor(host, original, () => {}, { theme });
 view.dom.style.height = '700px';
 let watch = false;
 const known = new Set<string>();
+const seen = new Set<string>();
 const firstVisits: string[] = [];
 const failures: { id: string; tracks: string; head: number; top: number }[] =
   [];
@@ -66,13 +67,10 @@ function tables() {
         failures.length < 30
       )
         failures.push({ id, tracks, head, top: view.scrollDOM.scrollTop });
-      if (
-        !known.has(id) &&
-        head === 0 &&
-        tracks.startsWith('repeat(') &&
-        !firstVisits.includes(id)
-      )
-        firstVisits.push(id);
+      if (!seen.has(id)) {
+        seen.add(id);
+        if (head === 0) firstVisits.push(id);
+      }
       if (tracks !== '' && !tracks.startsWith('repeat(')) known.add(id);
       return {
         id,
@@ -116,6 +114,14 @@ async function observe(duration: number) {
   do {
     await frame();
   } while (performance.now() < end);
+}
+/** Wait for positive layout evidence while continuing transition sampling. */
+async function until(check: () => boolean, message: string) {
+  const deadline = performance.now() + 10_000;
+  while (!check()) {
+    if (performance.now() >= deadline) throw Error(message);
+    await frame();
+  }
 }
 const ready = (async () => {
   const font = new FontFace(
@@ -161,9 +167,25 @@ const fixture = {
     await observe(650);
     return { before, after: anchor() };
   },
-  async geometry(width: number, fontSize: number) {
+  async geometry(
+    width: number,
+    fontSize: number,
+    changed?: { id: string; tracks: string },
+  ) {
     host.style.width = String(width) + 'px';
     document.documentElement.style.fontSize = String(fontSize) + 'px';
+    if (changed !== undefined)
+      await until(
+        () =>
+          tables().some(
+            (table) =>
+              table.id === changed.id &&
+              !table.tracks.startsWith('repeat(') &&
+              table.tracks !== changed.tracks,
+          ),
+        'Table tracks did not respond to geometry changes.',
+      );
+    // This interval checks that settled geometry stays stable, not readiness.
     await observe(650);
   },
   async loadHeaderFont() {
@@ -217,7 +239,19 @@ const fixture = {
       pos,
     );
     if (spec === null) throw Error('Missing table edit.');
+    const id = tables()[0]?.id;
+    const columns = (table.rows[0]?.cells.length ?? 0) + (remove ? -1 : 1);
     view.dispatch({ ...spec, userEvent: 'input.format' });
+    await until(
+      () =>
+        tables().some(
+          (table) =>
+            table.id === id &&
+            !table.tracks.startsWith('repeat(') &&
+            table.tracks.split(' ').length === columns,
+        ),
+      'Table tracks did not show the edited column count.',
+    );
     await observe(650);
     return tables();
   },

@@ -109,6 +109,12 @@ tracks. First-ever body-only visibility is checked separately. Container and
 font-size changes, passive horizontal position, edits/history and table/note
 replacement use the same editor instance.
 
+Build the packages from the repository root before starting the fixture:
+
+```sh
+pnpm build
+```
+
 Serve the fixture with the existing web Vite configuration from the repository:
 
 ```sh
