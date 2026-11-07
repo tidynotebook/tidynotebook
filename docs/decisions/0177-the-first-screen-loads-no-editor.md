@@ -44,3 +44,19 @@ This refines record 0136.
   worker still caches them after the load (record 0044).
 - A change that grows the first screen past the margin changes the budget
   line and states why.
+
+## 2026-11-07 finite margin for find and replace
+
+The unchanged base uses all 315,394 bytes of its budget. The approved floating
+find and replace candidate measured 315,422 bytes, an increase of 28 bytes.
+Asset references differ, but this alone does not prove that the eager code
+bodies are unchanged or that hashes alone caused the increase.
+
+Chief authorized 315,648 bytes for this feature. This restores a finite
+254-byte margin at the base, less than the original 256-byte small margin.
+The 650,117-byte ceiling, first-screen script set, gzip level 9, deferred
+library and action checks, and rejection above the limit stay unchanged.
+The settled implementation measures 315,403 bytes across 54 first-screen
+scripts. Its new search code stays in the deferred frame chunk, as production
+source maps show. The policy change has its own commit. Earlier failed
+checks remain failures.
