@@ -48,6 +48,12 @@ try {
         JSON.stringify(firstBody, null, 2),
       );
       assert.ok(firstBody.tables.some((t) => t.head === 0));
+      assert.ok(
+        firstBody.tables.some(
+          (t) => t.head === 0 && firstBody.firstVisits.includes(t.id),
+        ),
+        'A table must first enter the DOM without its header.',
+      );
       assert.ok(firstBody.tables.every((t) => !t.tracks.startsWith('repeat(')));
       await page
         .locator('.cm-editor')
@@ -91,7 +97,12 @@ try {
       await page.evaluate(() => window.tableViewport.first());
       const left = await page.evaluate(() => window.tableViewport.horizontal());
       assert.ok(left > 0);
-      await page.evaluate(() => window.tableViewport.geometry(540, 24));
+      const previous = before.tables[0];
+      assert.ok(previous);
+      await page.evaluate(
+        (table) => window.tableViewport.geometry(540, 24, table),
+        previous,
+      );
       const larger = await page.evaluate(() => window.tableViewport.snapshot());
       assert.notEqual(larger.tables[0]?.tracks, before.tables[0]?.tracks);
       await page.evaluate(() => window.tableViewport.geometry(900, 16));
@@ -104,10 +115,13 @@ try {
       assert.deepEqual(resized.selection, before.selection);
       await page.evaluate(() => window.tableViewport.jump(1));
       const wide = await page.evaluate(() => window.tableViewport.snapshot());
-      await page.evaluate(() => window.tableViewport.geometry(390, 16));
-      const narrow = await page.evaluate(() => window.tableViewport.snapshot());
       const wideTwo = wide.tables.find((t) => t.tracks.split(' ').length === 2);
       assert.ok(wideTwo);
+      await page.evaluate(
+        (table) => window.tableViewport.geometry(390, 16, table),
+        wideTwo,
+      );
+      const narrow = await page.evaluate(() => window.tableViewport.snapshot());
       const narrowTwo = narrow.tables.find((t) => t.id === wideTwo.id);
       assert.ok(narrowTwo);
       assert.notEqual(narrowTwo.tracks, wideTwo.tracks);
