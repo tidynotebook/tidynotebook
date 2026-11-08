@@ -123,31 +123,22 @@ export function mergeStateVectors(
  * `documentStateVector` of an update names a writer only when the update
  * holds that writer's work from clock zero, so it cannot measure work that
  * continues earlier work. This reads the structures of the update instead.
- * For each writer it walks the ranges in clock order from the clock that
- * `known` names, and moves the clock only over ranges that start at or
- * before it. A range after a gap, and a skipped range, end the walk, so a
- * clock never jumps over work that `known` lacks. A deletion carries no
- * insertion and moves nothing.
+ * An update holds the structures of each writer in clock order, and a skipped
+ * range takes the place of work that it does not hold. The clock of a writer
+ * moves only over a structure that starts at or before it, so after a gap it
+ * stays where it is and never jumps over work that `known` lacks. A deletion
+ * carries no insertion and moves nothing.
  */
 export function advanceCoverage(
   known: Uint8Array,
   update: Uint8Array,
 ): Uint8Array {
-  const covered = new Map(Y.decodeStateVector(known));
-  const ranges = new Map<number, { clock: number; end: number }[]>();
+  const covered = Y.decodeStateVector(known);
   for (const struct of Y.decodeUpdate(update).structs) {
-    if (struct instanceof Y.Skip) continue;
-    const list = ranges.get(struct.id.client) ?? [];
-    list.push({ clock: struct.id.clock, end: struct.id.clock + struct.length });
-    ranges.set(struct.id.client, list);
-  }
-  for (const [client, list] of ranges) {
-    let clock = covered.get(client) ?? 0;
-    for (const range of list.sort((one, other) => one.clock - other.clock)) {
-      if (range.clock > clock) break;
-      clock = Math.max(clock, range.end);
-    }
-    if (clock > 0) covered.set(client, clock);
+    const { client, clock } = struct.id;
+    const reached = covered.get(client) ?? 0;
+    if (!(struct instanceof Y.Skip) && clock <= reached)
+      covered.set(client, Math.max(reached, clock + struct.length));
   }
   return Y.encodeStateVector(covered);
 }

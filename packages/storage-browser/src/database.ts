@@ -182,9 +182,10 @@ export type DocumentRow = {
    * The insertions of this device that the server acknowledged and whose
    * accepted work the feed has not brought yet. It only tells a version that
    * this work is not unsent. It never moves `appliedVector` and never shapes
-   * the update of a save (record 0085). A row without it knows nothing more.
+   * the update of a save (record 0085). A row without it, or with `null`,
+   * knows nothing more.
    */
-  readonly acknowledgedVector?: Uint8Array;
+  readonly acknowledgedVector?: Uint8Array | null;
 };
 
 /**

@@ -39,18 +39,12 @@ import {
   type NoteDocument,
   type QueueEntry,
 } from '@notesapp/sync';
-import {
-  guard,
-  partitionRange,
-  type CheckpointRow,
-  type FileRow,
-} from '../database.ts';
+import { guard, type CheckpointRow, type FileRow } from '../database.ts';
 import {
   validateAcceptedFile,
   validateCheckpoint,
   validateContent,
   validateDraft,
-  validateQueueRow,
 } from '../migrations.ts';
 import {
   anchorOfDraft,
@@ -135,41 +129,17 @@ export function createVersionsSlice(ctx: LocalStoreContext): VersionsSlice {
         'corrupt',
         `the document of this note refused the work: ${applied.refusal}`,
       );
+    // The row keeps the acknowledged work of the row it replaces.
     const written = await writeDocumentRow(tables, {
+      ...row,
       ...key,
       bytes: applied.value.document,
       epoch: generationOf(row),
       // The work of this device is not accepted work, so the state the
       // server holds does not move (record 0085).
       appliedVector: row?.appliedVector ?? documentStateVector(before),
-      ...(row?.acknowledgedVector === undefined
-        ? {}
-        : { acknowledgedVector: row.acknowledgedVector }),
     });
     return { bytes: written.bytes, epoch: written.epoch };
-  };
-
-  /** The document work of one note that waits in the queue. */
-  const queuedWorkOf = async (
-    accountId: string,
-    workspaceId: string,
-    fileId: string,
-  ): Promise<Uint8Array[]> => {
-    const range = partitionRange(serverOrigin, accountId, workspaceId);
-    const rows: unknown[] = await tables.queue
-      .where('[serverOrigin+accountId+workspaceId+sequence]')
-      .between(range.lower, range.upper, true, true)
-      .toArray();
-    const work: Uint8Array[] = [];
-    for (const row of rows)
-      for (const revision of validateQueueRow(row).input.revisions)
-        if (
-          revision.fileId === fileId &&
-          revision.content.kind === 'markdown' &&
-          revision.content.document.work.kind === 'update'
-        )
-          work.push(revision.content.document.work.update);
-    return work;
   };
 
   /** One try of `checkpoint`, or `moved` when the document moved under it. */
@@ -316,11 +286,7 @@ export function createVersionsSlice(ctx: LocalStoreContext): VersionsSlice {
             // and leaves the unsent copy beside the restored text.
             (draft.deleted ||
               source === 'text' ||
-              !(await holdsUnsentWork(
-                tables,
-                key,
-                await queuedWorkOf(accountId, workspaceId, fileId),
-              )))
+              !(await holdsUnsentWork(tables, key)))
           ) {
             // A no-op still proves which version holds this work. Keep that
             // receipt on the draft, including the first draft of a clean
