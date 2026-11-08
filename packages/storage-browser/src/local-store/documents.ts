@@ -20,6 +20,7 @@
  * covers `documentUpdates` as well.
  */
 import {
+  advanceCoverage,
   applyDocumentUpdate,
   documentStateVector,
   encodeDocumentDelta,
@@ -293,6 +294,7 @@ export async function foldTextIntoDocument(
     bytes: written.value.document,
     epoch: base.epoch,
     appliedVector: base.appliedVector,
+    ...keptAcknowledgment(base.acknowledgedVector, base.appliedVector),
   };
   return { row, save: saveOfDocument(row) };
 }
@@ -315,14 +317,30 @@ function saveOfDocument(row: DocumentRow): DocumentSave {
 }
 
 /**
+ * The acknowledged work that a row keeps, or nothing once applied work holds
+ * it. The applied state is the only knowledge that shapes a save, so the
+ * acknowledged state goes as soon as it adds nothing (record 0085).
+ */
+export function keptAcknowledgment(
+  acknowledged: Uint8Array | undefined,
+  applied: Uint8Array,
+): { readonly acknowledgedVector?: Uint8Array } {
+  if (acknowledged === undefined || stateVectorCovers(applied, acknowledged))
+    return {};
+  return { acknowledgedVector: acknowledged };
+}
+
+/**
  * Whether the document of a note holds insertions that the server lacks.
  *
  * Undo and redo can write the text of the last version again with new
- * characters, so the text alone says nothing about unsent work. The work that
- * this device sent and that waits in `queued` counts as known to the server,
- * as the work it applied from the server does. A state vector names every
- * insertion, and text that is equal to the version cannot differ by a
- * deletion alone, so the vectors answer this question.
+ * characters, so the text alone says nothing about unsent work. The server
+ * holds the work that this device applied from it, the work it acknowledged
+ * and the feed has not brought yet, and the work that waits in `queued`. A
+ * state vector names every insertion, and text that is equal to the version
+ * cannot differ by a deletion alone, so the vectors answer this question.
+ * Each queued update continues from what is known, so it moves the known
+ * clocks only over ranges that join them.
  */
 export async function holdsUnsentWork(
   tables: Tables,
@@ -331,9 +349,11 @@ export async function holdsUnsentWork(
 ): Promise<boolean> {
   const row = await readDocumentRow(tables, key);
   if (row === null) return false;
-  let known = row.appliedVector;
-  for (const update of queued)
-    known = mergeStateVectors(known, documentStateVector(update));
+  let known =
+    row.acknowledgedVector === undefined
+      ? row.appliedVector
+      : mergeStateVectors(row.appliedVector, row.acknowledgedVector);
+  for (const update of queued) known = advanceCoverage(known, update);
   return !stateVectorCovers(known, documentStateVector(row.bytes));
 }
 
@@ -434,12 +454,17 @@ export async function applyServerWork(
 ): Promise<{ readonly row: DocumentRow; readonly text: string }> {
   const current = await readDocumentRow(tables, key);
   if (work.kind === 'document') {
-    // A whole document replaces what this device holds.
+    // A whole document replaces what this device holds. Acknowledged work of
+    // the same generation that it lacks is still not unsent.
+    const appliedVector = documentStateVector(work.document);
     const row: DocumentRow = {
       ...key,
       bytes: work.document,
       epoch,
-      appliedVector: documentStateVector(work.document),
+      appliedVector,
+      ...(current !== null && current.epoch === epoch
+        ? keptAcknowledgment(current.acknowledgedVector, appliedVector)
+        : {}),
     };
     return { row, text: readDocumentText(work.document) };
   }
@@ -457,16 +482,21 @@ export async function applyServerWork(
       'stale',
       `the accepted work does not fit this document: ${applied.refusal}`,
     );
+  // Only the accepted work moves the state this device believes the server
+  // has, and only over the ranges that continue what it already applied. The
+  // unsent work of this device stays unsent (record 0085). The state vector
+  // of an update names only writers whose work it holds from clock zero, so
+  // it cannot measure work that continues earlier work.
+  const appliedVector = advanceCoverage(
+    joined?.appliedVector ?? documentStateVector(empty),
+    work.update,
+  );
   const row: DocumentRow = {
     ...key,
     bytes: applied.value.document,
     epoch,
-    // Only the accepted work moves the state this device believes the server
-    // has. The unsent work of this device stays unsent (record 0085).
-    appliedVector: mergeStateVectors(
-      joined?.appliedVector ?? documentStateVector(empty),
-      documentStateVector(work.update),
-    ),
+    appliedVector,
+    ...keptAcknowledgment(joined?.acknowledgedVector, appliedVector),
   };
   return { row, text: applied.value.text };
 }

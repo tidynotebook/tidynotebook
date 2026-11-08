@@ -17,7 +17,12 @@ import {
   type ObservedSave,
   type QueueEntry,
 } from '@notesapp/sync';
-import { observeDocument, observedCovers } from '@notesapp/note-document';
+import {
+  advanceCoverage,
+  mergeStateVectors,
+  observeDocument,
+  observedCovers,
+} from '@notesapp/note-document';
 import {
   accountRange,
   guard,
@@ -30,7 +35,7 @@ import {
   validateCheckpoint,
   validateQueueRow,
 } from '../migrations.ts';
-import { readDocumentRow } from './documents.ts';
+import { readDocumentRow, readStoredDocumentRow } from './documents.ts';
 import { legacyWorkspaces } from './legacy.ts';
 import { dropSupersededSaves, moveChildrenOffParked } from './parked.ts';
 import { recordMergeReview } from './reviews.ts';
@@ -83,6 +88,45 @@ export function createQueueSlice(ctx: LocalStoreContext): QueueSlice {
       .equals([serverOrigin, accountId, mutationId])
       .first();
     return stored === undefined ? null : validateQueueRow(stored);
+  };
+
+  /**
+   * Records the insertions of an accepted save on the documents it changed.
+   *
+   * Each accepted revision names the update that this device sent, and that
+   * update continues from what the device knew. The acknowledged clocks move
+   * only over its ranges that join what is known, so work that the update
+   * did not carry, such as work typed since, stays unsent.
+   */
+  const recordAcknowledgedWork = async (
+    accountId: string,
+    entry: QueueRow,
+    result: AcceptedChangeset,
+  ): Promise<void> => {
+    const accepted = new Set(result.revisionIds);
+    for (const revision of entry.input.revisions) {
+      if (!accepted.has(revision.id)) continue;
+      if (revision.content.kind !== 'markdown') continue;
+      const save = revision.content.document;
+      if (save.work.kind !== 'update') continue;
+      const key = {
+        serverOrigin,
+        accountId,
+        workspaceId: entry.workspaceId,
+        fileId: revision.fileId,
+      };
+      const row = await readStoredDocumentRow(tables, key);
+      // A document of another generation holds none of these identities.
+      if (row === null || row.epoch !== save.epoch) continue;
+      const known =
+        row.acknowledgedVector === undefined
+          ? row.appliedVector
+          : mergeStateVectors(row.appliedVector, row.acknowledgedVector);
+      await tables.documents.put({
+        ...row,
+        acknowledgedVector: advanceCoverage(known, save.work.update),
+      });
+    }
   };
 
   return {
@@ -356,12 +400,20 @@ export function createQueueSlice(ctx: LocalStoreContext): QueueSlice {
             tables.drafts,
             tables.reviews,
             tables.recovery,
+            tables.documents,
+            tables.documentUpdates,
           ],
           async () => {
             const entry = await queueEntryOf(accountId, result.mutationId);
             // The queue entry is gone, so this answer was already applied.
             // Repeating it must change nothing.
             if (entry === null) return;
+            // The entry leaves the queue before the feed brings its work, so
+            // the document keeps what the server acknowledged. It comes from
+            // the update that the server accepted, never from the document,
+            // which can hold work typed since. It does not move the applied
+            // state, and no save is shaped by it (record 0085).
+            await recordAcknowledgedWork(accountId, entry, result);
             const workspaceId = entry.workspaceId;
             for (const revision of entry.input.revisions)
               changes.push({

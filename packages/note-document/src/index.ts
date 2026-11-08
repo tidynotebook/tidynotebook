@@ -14,6 +14,7 @@ export type {
   DocumentResult,
 } from './document.ts';
 export {
+  advanceCoverage,
   applyDocumentUpdate,
   compactDocument,
   editDocumentRanges,
