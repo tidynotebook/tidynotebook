@@ -2516,7 +2516,7 @@ await test('a document row from before the acknowledged state reads and saves', 
       fileId,
     ]);
     assert.ok(row !== undefined);
-    assert.ok(row.acknowledgedVector !== undefined);
+    assert.ok(row.acknowledgedVector instanceof Uint8Array);
     const { acknowledgedVector: _dropped, ...older } = row;
     await tables.documents.put(older);
   });
