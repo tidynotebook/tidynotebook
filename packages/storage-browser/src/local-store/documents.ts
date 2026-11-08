@@ -325,6 +325,27 @@ function saveOfDocument(row: DocumentRow): DocumentSave {
 }
 
 /**
+ * The row with the acknowledged work that its applied state does not cover.
+ *
+ * Once the feed brings that work, the row drops it, so the field never
+ * outlives the work that it records.
+ */
+export function keepAcknowledged(
+  row: DocumentRow,
+  acknowledged: Uint8Array | null | undefined,
+): DocumentRow {
+  return {
+    ...row,
+    acknowledgedVector:
+      acknowledged === undefined ||
+      acknowledged === null ||
+      stateVectorCovers(row.appliedVector, acknowledged)
+        ? null
+        : acknowledged,
+  };
+}
+
+/**
  * The insertions of a document that the server holds or will hold once the
  * document updates of `revisions` that it accepts reach it.
  *
@@ -485,13 +506,15 @@ export async function applyServerWork(
   if (work.kind === 'document') {
     // A whole document replaces what this device holds. Acknowledged work of
     // the same generation that it lacks is still not unsent.
-    const row: DocumentRow = {
-      ...joined,
-      ...key,
-      bytes: work.document,
-      epoch,
-      appliedVector: documentStateVector(work.document),
-    };
+    const row = keepAcknowledged(
+      {
+        ...key,
+        bytes: work.document,
+        epoch,
+        appliedVector: documentStateVector(work.document),
+      },
+      joined?.acknowledgedVector,
+    );
     return { row, text: readDocumentText(work.document) };
   }
   // Work of another generation cannot join what this device holds, because
@@ -513,15 +536,17 @@ export async function applyServerWork(
   // of an update names only writers whose work it holds from clock zero, so
   // it cannot measure work that continues earlier work.
   // The row keeps the acknowledged work of the same generation.
-  const row: DocumentRow = {
-    ...joined,
-    ...key,
-    bytes: applied.value.document,
-    epoch,
-    appliedVector: advanceCoverage(
-      joined?.appliedVector ?? documentStateVector(empty),
-      work.update,
-    ),
-  };
+  const row = keepAcknowledged(
+    {
+      ...key,
+      bytes: applied.value.document,
+      epoch,
+      appliedVector: advanceCoverage(
+        joined?.appliedVector ?? documentStateVector(empty),
+        work.update,
+      ),
+    },
+    joined?.acknowledgedVector,
+  );
   return { row, text: applied.value.text };
 }
