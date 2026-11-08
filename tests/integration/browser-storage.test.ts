@@ -2443,6 +2443,16 @@ await test('an acknowledged save is not unsent before the feed brings it', async
   await note.feed(first, '2');
   await note.feed(second, '3');
   assert.equal(await note.version(6), null);
+  // The feed brought all acknowledged work, so the row no longer holds it.
+  await withRawDatabase(backend, async (tables) => {
+    const row = await tables.documents.get([
+      origin,
+      account,
+      workspace,
+      fileId,
+    ]);
+    assert.equal(row?.acknowledgedVector, null);
+  });
   const read = await store.readNoteDocument(account, workspace, fileId);
   assert.equal(
     read === null ? null : readDocumentText(read.bytes),

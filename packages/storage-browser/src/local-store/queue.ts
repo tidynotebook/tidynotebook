@@ -32,6 +32,7 @@ import {
 } from '../migrations.ts';
 import {
   coverageAfter,
+  keepAcknowledged,
   readDocumentRow,
   readStoredDocumentRow,
 } from './documents.ts';
@@ -422,10 +423,9 @@ export function createQueueSlice(ctx: LocalStoreContext): QueueSlice {
                 fileId,
               });
               if (row !== null)
-                await tables.documents.put({
-                  ...row,
-                  acknowledgedVector: coverageAfter(row, sent),
-                });
+                await tables.documents.put(
+                  keepAcknowledged(row, coverageAfter(row, sent)),
+                );
             }
             const newest = new Map<string, CheckpointRow>();
             for (const row of rows) {
