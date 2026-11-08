@@ -32,10 +32,19 @@ import {
   startDocument,
   stateVectorCovers,
 } from '@notesapp/note-document';
-import type { DocumentSave } from '@notesapp/core';
+import type { DocumentSave, RevisionInput } from '@notesapp/core';
 import { LocalStorageError } from '@notesapp/sync';
-import type { DocumentRow, DocumentUpdateRow, Tables } from '../database.ts';
-import { validateDocument, validateDocumentUpdate } from '../migrations.ts';
+import {
+  partitionRange,
+  type DocumentRow,
+  type DocumentUpdateRow,
+  type Tables,
+} from '../database.ts';
+import {
+  validateDocument,
+  validateDocumentUpdate,
+  validateQueueRow,
+} from '../migrations.ts';
 
 /** The key of one document row. */
 export type DocumentKey = {
@@ -289,12 +298,11 @@ export async function foldTextIntoDocument(
       'corrupt',
       `the document of this note refused the text: ${written.refusal}`,
     );
+  // The row keeps the acknowledged work of the row it replaces.
   const row: DocumentRow = {
+    ...base,
     ...key,
     bytes: written.value.document,
-    epoch: base.epoch,
-    appliedVector: base.appliedVector,
-    ...keptAcknowledgment(base.acknowledgedVector, base.appliedVector),
   };
   return { row, save: saveOfDocument(row) };
 }
@@ -317,44 +325,64 @@ function saveOfDocument(row: DocumentRow): DocumentSave {
 }
 
 /**
- * The acknowledged work that a row keeps, or nothing once applied work holds
- * it. The applied state is the only knowledge that shapes a save, so the
- * acknowledged state goes as soon as it adds nothing (record 0085).
+ * The insertions of a document that the server holds or will hold once the
+ * document updates of `revisions` that it accepts reach it.
+ *
+ * The server holds the work that this device applied from it and the work it
+ * acknowledged that the feed has not brought yet. Each update continues from
+ * what is known, so it moves the known clocks only over ranges that join
+ * them. An update of another note or generation moves nothing.
  */
-export function keptAcknowledgment(
-  acknowledged: Uint8Array | undefined,
-  applied: Uint8Array,
-): { readonly acknowledgedVector?: Uint8Array } {
-  if (acknowledged === undefined || stateVectorCovers(applied, acknowledged))
-    return {};
-  return { acknowledgedVector: acknowledged };
+export function coverageAfter(
+  row: DocumentRow,
+  revisions: readonly RevisionInput[],
+): Uint8Array {
+  let known = mergeStateVectors(
+    row.appliedVector,
+    row.acknowledgedVector ?? row.appliedVector,
+  );
+  for (const { fileId, content } of revisions)
+    if (
+      fileId === row.fileId &&
+      content.kind === 'markdown' &&
+      content.document.epoch === row.epoch &&
+      content.document.work.kind === 'update'
+    )
+      known = advanceCoverage(known, content.document.work.update);
+  return known;
 }
 
 /**
  * Whether the document of a note holds insertions that the server lacks.
  *
  * Undo and redo can write the text of the last version again with new
- * characters, so the text alone says nothing about unsent work. The server
- * holds the work that this device applied from it, the work it acknowledged
- * and the feed has not brought yet, and the work that waits in `queued`. A
- * state vector names every insertion, and text that is equal to the version
- * cannot differ by a deletion alone, so the vectors answer this question.
- * Each queued update continues from what is known, so it moves the known
- * clocks only over ranges that join them.
+ * characters, so the text alone says nothing about unsent work. A state
+ * vector names every insertion, and text that is equal to the version cannot
+ * differ by a deletion alone, so the vectors answer this question. The work
+ * that waits in the queue is not unsent.
  */
 export async function holdsUnsentWork(
   tables: Tables,
   key: DocumentKey,
-  queued: readonly Uint8Array[],
 ): Promise<boolean> {
   const row = await readDocumentRow(tables, key);
   if (row === null) return false;
-  let known =
-    row.acknowledgedVector === undefined
-      ? row.appliedVector
-      : mergeStateVectors(row.appliedVector, row.acknowledgedVector);
-  for (const update of queued) known = advanceCoverage(known, update);
-  return !stateVectorCovers(known, documentStateVector(row.bytes));
+  const range = partitionRange(
+    key.serverOrigin,
+    key.accountId,
+    key.workspaceId,
+  );
+  const queued: unknown[] = await tables.queue
+    .where('[serverOrigin+accountId+workspaceId+sequence]')
+    .between(range.lower, range.upper, true, true)
+    .toArray();
+  return !stateVectorCovers(
+    coverageAfter(
+      row,
+      queued.flatMap((value) => validateQueueRow(value).input.revisions),
+    ),
+    documentStateVector(row.bytes),
+  );
 }
 
 /**
@@ -453,18 +481,16 @@ export async function applyServerWork(
   work: ServerDocumentWork,
 ): Promise<{ readonly row: DocumentRow; readonly text: string }> {
   const current = await readDocumentRow(tables, key);
+  const joined = current?.epoch === epoch ? current : null;
   if (work.kind === 'document') {
     // A whole document replaces what this device holds. Acknowledged work of
     // the same generation that it lacks is still not unsent.
-    const appliedVector = documentStateVector(work.document);
     const row: DocumentRow = {
+      ...joined,
       ...key,
       bytes: work.document,
       epoch,
-      appliedVector,
-      ...(current !== null && current.epoch === epoch
-        ? keptAcknowledgment(current.acknowledgedVector, appliedVector)
-        : {}),
+      appliedVector: documentStateVector(work.document),
     };
     return { row, text: readDocumentText(work.document) };
   }
@@ -474,7 +500,6 @@ export async function applyServerWork(
   // empty document. The first work of a new note starts from nothing, so it
   // applies whole. Any other work lacks what it depends on and is refused, so
   // the caller reads a snapshot instead of keeping an empty note.
-  const joined = current === null || current.epoch !== epoch ? null : current;
   const empty = startDocument('');
   const applied = applyDocumentUpdate(joined?.bytes ?? empty, work.update);
   if (!applied.ok)
@@ -487,16 +512,16 @@ export async function applyServerWork(
   // unsent work of this device stays unsent (record 0085). The state vector
   // of an update names only writers whose work it holds from clock zero, so
   // it cannot measure work that continues earlier work.
-  const appliedVector = advanceCoverage(
-    joined?.appliedVector ?? documentStateVector(empty),
-    work.update,
-  );
+  // The row keeps the acknowledged work of the same generation.
   const row: DocumentRow = {
+    ...joined,
     ...key,
     bytes: applied.value.document,
     epoch,
-    appliedVector,
-    ...keptAcknowledgment(joined?.acknowledgedVector, appliedVector),
+    appliedVector: advanceCoverage(
+      joined?.appliedVector ?? documentStateVector(empty),
+      work.update,
+    ),
   };
   return { row, text: applied.value.text };
 }

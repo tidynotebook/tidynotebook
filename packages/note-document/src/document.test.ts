@@ -358,6 +358,11 @@ await test('coverage moves over work that continues from the known clock', () =>
   // A gap: the third update starts past the clock that is known, so it moves
   // nothing until the second arrives.
   assert.equal(clockOf(advanceCoverage(known, third)), 4);
+  // A merged update holds a skipped range in the gap, and the clock stops at
+  // the gap.
+  const gapped = Y.mergeUpdates([first, third]);
+  assert.ok(Y.decodeUpdate(gapped).structs.some((s) => s instanceof Y.Skip));
+  assert.equal(clockOf(advanceCoverage(new Uint8Array([0]), gapped)), 4);
   known = advanceCoverage(known, second);
   assert.equal(clockOf(known), 8);
   known = advanceCoverage(known, third);

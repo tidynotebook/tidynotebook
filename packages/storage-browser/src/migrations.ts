@@ -336,11 +336,7 @@ export function validateDocument(value: unknown): DocumentRow {
     epoch: count(row, 'epoch', 'document'),
     appliedVector: byteString(row, 'appliedVector', 'document'),
     // A row from before this field knows no acknowledged work.
-    ...(row['acknowledgedVector'] === undefined
-      ? {}
-      : {
-          acknowledgedVector: byteString(row, 'acknowledgedVector', 'document'),
-        }),
+    acknowledgedVector: addedBytes(row, 'acknowledgedVector', 'document'),
   };
 }
 
