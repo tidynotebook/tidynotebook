@@ -11,6 +11,7 @@
  * Every test builds its own `IDBFactory`, so runs never share state.
  */
 import {
+  applyDocumentUpdate,
   documentStateVector,
   encodeDocumentDelta,
   readDocumentText,
@@ -2095,6 +2096,135 @@ await test('an appended key is on the disk at once and a checkpoint freezes it',
     assert.equal(readDocumentText(row.bytes), 'first\nsecond\n');
   });
   await reopened.close();
+  await store.close();
+});
+
+await test('a version sends document work that left the text as it was', async () => {
+  // Undo and then redo give the text of the last version again, but with
+  // new characters. A save compared only the text, so it wrote nothing and
+  // the new characters stayed on this device. A restore then removed the
+  // characters that the server held, and the unsent copy stayed beside the
+  // restored text: "fox" and "cat" became "foxcat".
+  const backend = createBackend('same-text-work');
+  const store = await openLocalStore(origin, backend.options());
+  const account = randomUUID();
+  const workspace = randomUUID();
+  const fileId = randomUUID();
+  const original = 'cat dog cat\n';
+  const replaced = 'fox dog fox\n';
+  const head = await cacheHeldNote(store, account, workspace, fileId, original);
+  const source = { kind: 'document', epoch: 1 } as const;
+  const draftAt = (sequence: number, baseRevisionId: string): Draft =>
+    draftOf(account, workspace, fileId, 'copy-1', replaced, {
+      baseRevisionId,
+      sequence,
+    });
+  /** The update that one queued version carries. */
+  const workOf = (entry: QueueEntry): Uint8Array => {
+    const content = entry.input.revisions[0]?.content;
+    assert.ok(content?.kind === 'markdown');
+    assert.ok(content.document.work.kind === 'update');
+    return content.document.work.update;
+  };
+  /** The server accepts a version and the feed brings it back. */
+  const acceptAndFeed = async (
+    entry: QueueEntry,
+    cursor: string,
+    text: string,
+    before: Uint8Array,
+    after: Uint8Array,
+  ): Promise<void> => {
+    const digest = await contentDigest(text);
+    const accepted = acceptanceOf(entry, account, cursor);
+    await store.acknowledge(account, {
+      ...accepted,
+      revisions: accepted.revisions.map((revision) => ({
+        ...revision,
+        digest,
+      })),
+    });
+    await store.applyRemoteChanges(
+      account,
+      workspace,
+      [
+        {
+          file: {
+            fileId,
+            revisionId: entry.input.revisions[0]?.id ?? '',
+            path: 'notes/one.md',
+            fileKind: 'note',
+            document: {
+              kind: 'update',
+              bytes: encodeDocumentDelta(after, documentStateVector(before)),
+              epoch: 1,
+            },
+            deleted: false,
+            digest,
+            text,
+          },
+          purgedFileId: null,
+        },
+      ],
+      cursor,
+    );
+  };
+  // Replace all, and its version, which the server accepts.
+  const replace = typeInto(head, replaced);
+  await store.appendNoteWork(
+    account,
+    workspace,
+    fileId,
+    1,
+    replace.update,
+    'copy-1',
+  );
+  const first = await store.checkpoint(draftAt(1, 'rev-1'), null, source);
+  assert.ok(first !== null);
+  const accepted = applyDocumentUpdate(head, workOf(first));
+  assert.ok(accepted.ok);
+  await acceptAndFeed(first, '2', replaced, head, accepted.value.document);
+  // A save of the same text with no new work still writes nothing.
+  const firstId = first.input.revisions[0]?.id ?? '';
+  assert.equal(await store.checkpoint(draftAt(2, firstId), null, source), null);
+  // Undo and redo: the same text with new characters.
+  const undone = typeInto(replace.document, original);
+  const redone = typeInto(undone.document, replaced);
+  for (const work of [undone.update, redone.update])
+    await store.appendNoteWork(account, workspace, fileId, 1, work, 'copy-1');
+  const second = await store.checkpoint(draftAt(3, firstId), null, source);
+  assert.ok(second !== null, 'the version must carry the unsent work');
+  // The workspace holds the work of both versions, and a restore of the
+  // first text edits that document.
+  const held = applyDocumentUpdate(accepted.value.document, workOf(second));
+  assert.ok(held.ok);
+  assert.equal(held.value.text, replaced);
+  await acceptAndFeed(
+    second,
+    '3',
+    replaced,
+    accepted.value.document,
+    held.value.document,
+  );
+  const restored = replaceDocumentText(held.value.document, original);
+  assert.ok(restored.ok);
+  await feedPage(
+    store,
+    account,
+    workspace,
+    fileId,
+    original,
+    {
+      kind: 'update',
+      bytes: encodeDocumentDelta(
+        restored.value.document,
+        documentStateVector(held.value.document),
+      ),
+    },
+    1,
+    '4',
+  );
+  const read = await store.readNoteDocument(account, workspace, fileId);
+  assert.equal(read === null ? null : readDocumentText(read.bytes), original);
   await store.close();
 });
 
