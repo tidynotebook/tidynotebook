@@ -67,8 +67,14 @@ export type Page = {
     path: string;
     animations?: 'disabled';
   }): Promise<unknown>;
-  keyboard: { press(key: string): Promise<void> };
-  mouse: { move(x: number, y: number): Promise<void> };
+  keyboard: {
+    press(key: string): Promise<void>;
+    type(text: string): Promise<void>;
+  };
+  mouse: {
+    move(x: number, y: number): Promise<void>;
+    wheel(deltaX: number, deltaY: number): Promise<void>;
+  };
 };
 type Context = {
   unrouteAll(options: { behavior: 'wait' | 'ignoreErrors' }): Promise<void>;

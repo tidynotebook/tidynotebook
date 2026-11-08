@@ -15,7 +15,8 @@ import {
  *
  * That table names both platforms in one string. `KeyHint` shows the caps of
  * this device instead, so the person reads the keys that are on the keyboard
- * in front of them.
+ * in front of them. A row with its own Apple combination shows that one on
+ * an Apple keyboard.
  *
  * The list is two columns: the description takes the free width and the caps
  * sit at the end of the row. One flex row for each shortcut states that, so
@@ -25,6 +26,7 @@ import type { ReactNode } from 'react';
 import { shortcuts } from '@notesapp/editor';
 
 import { KeyHint } from './key-hint.tsx';
+import { appleKeyboard } from './modifier-key.ts';
 
 /** The dialog that lists every shortcut. */
 export function ShortcutsDialog({
@@ -54,7 +56,14 @@ export function ShortcutsDialog({
             >
               <dt className="min-w-0 text-strong">{shortcut.description}</dt>
               <dd className="m-0 shrink-0">
-                <KeyHint keys={shortcut.keys} reference />
+                <KeyHint
+                  keys={
+                    appleKeyboard && shortcut.apple !== undefined
+                      ? shortcut.apple
+                      : shortcut.keys
+                  }
+                  reference
+                />
               </dd>
             </Inline>
           ))}

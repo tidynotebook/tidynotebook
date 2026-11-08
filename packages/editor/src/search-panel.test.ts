@@ -12,6 +12,7 @@ import { closeSearchPanel, gotoLine, searchKeymap } from '@codemirror/search';
 import {
   currentSearchMatch,
   editorPhrases,
+  matchCountWords,
   noteSearchKeymap,
   replaceAllAnnouncement,
   searchPanelKey,
@@ -75,6 +76,15 @@ await test('a replace of every match counts one match and many matches', () => {
   // Review of issue 247: one match read "Replaced 1 matches".
   assert.deepEqual(replacedWords(1), ['Replaced 1 match.']);
   assert.deepEqual(replacedWords(3), ['Replaced 3 matches.']);
+});
+
+await test('the count of matches reads one match and many matches', () => {
+  // Audit N13: one match read "1 matches". The phone keeps its short form.
+  assert.deepEqual(matchCountWords(1), { full: '1 match', short: '1 found' });
+  assert.deepEqual(matchCountWords(250), {
+    full: '250 matches',
+    short: '250 found',
+  });
 });
 
 await test('Enter finds and replaces in the fields of the panel', () => {

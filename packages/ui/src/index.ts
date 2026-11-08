@@ -298,7 +298,11 @@ export { isTouchInput } from './input-focus.ts';
 export { textRoleClasses, touchTextRoles } from './typography.ts';
 
 export { PhoneSheetHeader } from './phone-sheet.tsx';
-export { openOptionsSheet } from './open-options-sheet.ts';
+export {
+  openOptionsSheet,
+  optionsSheetPanelId,
+  type OptionsSheetEvents,
+} from './open-options-sheet.ts';
 
 export { chevronDownParts, moreParts, replaceParts } from './glyph-parts.ts';
 export { ReplaceIcon } from './icons.tsx';

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Dialog, DialogBody, DialogFooter } from './dialog.tsx';
 import { Button, Switch } from './controls.tsx';
+import type { OptionsSheetEvents } from './open-options-sheet.ts';
 
 export type SheetOption = {
   readonly label: string;
@@ -12,6 +13,7 @@ export type SheetOption = {
 export function openOptionsSheet(
   title: string,
   options: readonly SheetOption[],
+  events: OptionsSheetEvents = {},
 ): () => void {
   const host = document.createElement('div');
   document.body.append(host);
@@ -22,6 +24,7 @@ export function openOptionsSheet(
     closed = true;
     root.unmount();
     host.remove();
+    events.onClose?.();
   };
   function Choices() {
     const [, refresh] = useState(0);
@@ -33,11 +36,13 @@ export function openOptionsSheet(
         onClose={close}
         width="small"
         align="center"
+        returnFocus={events.returnFocus}
       >
         <DialogBody>
           {options.map((option) => (
             <Switch
               key={option.label}
+              inset
               label={option.label}
               checked={option.read()}
               onChange={(checked) => {

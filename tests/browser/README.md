@@ -132,3 +132,21 @@ node tests/browser/table-viewport.ts
 `TABLE_VIEWPORT_OUTPUT` selects the evidence directory. This component check
 uses no account, server write or Docker service. It is separate from production
 stack checks.
+
+`search-table-reveal.ts` checks Find in wide tables with the real editor
+component. Find keeps the focus in its own field, and the selected match, which
+Replace acts on, must still show inside its own table. The check moves to
+matches on both sides of a table, between tables and far down the note, and
+backwards across the wrap. A wheel pan must win until the next match. Every
+other table keeps its own offset, and the page never moves sideways. It also
+checks Show replace, the replace key, Replace, Undo and Redo, a zero width
+match, and a closed and opened panel. Serve the fixture as for
+`table-viewport.ts` and run:
+
+```sh
+PLAYWRIGHT_MODULE=/absolute/path/to/playwright-core/index.mjs \
+UI_AUDIT_ORIGIN=http://127.0.0.1:3019 \
+node tests/browser/search-table-reveal.ts
+```
+
+`SEARCH_TABLE_OUTPUT` selects the evidence directory.
