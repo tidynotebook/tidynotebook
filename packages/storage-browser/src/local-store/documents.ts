@@ -29,6 +29,7 @@ import {
   readDocumentText,
   replaceDocumentText,
   startDocument,
+  stateVectorCovers,
 } from '@notesapp/note-document';
 import type { DocumentSave } from '@notesapp/core';
 import { LocalStorageError } from '@notesapp/sync';
@@ -311,6 +312,29 @@ function saveOfDocument(row: DocumentRow): DocumentSave {
     epoch: row.epoch,
     observed: observeDocument(row.bytes),
   };
+}
+
+/**
+ * Whether the document of a note holds insertions that the server lacks.
+ *
+ * Undo and redo can write the text of the last version again with new
+ * characters, so the text alone says nothing about unsent work. The work that
+ * this device sent and that waits in `queued` counts as known to the server,
+ * as the work it applied from the server does. A state vector names every
+ * insertion, and text that is equal to the version cannot differ by a
+ * deletion alone, so the vectors answer this question.
+ */
+export async function holdsUnsentWork(
+  tables: Tables,
+  key: DocumentKey,
+  queued: readonly Uint8Array[],
+): Promise<boolean> {
+  const row = await readDocumentRow(tables, key);
+  if (row === null) return false;
+  let known = row.appliedVector;
+  for (const update of queued)
+    known = mergeStateVectors(known, documentStateVector(update));
+  return !stateVectorCovers(known, documentStateVector(row.bytes));
 }
 
 /**

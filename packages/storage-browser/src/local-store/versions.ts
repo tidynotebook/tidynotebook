@@ -13,6 +13,7 @@ import {
   freezeDocument,
   frozenText,
   generationOf,
+  holdsUnsentWork,
   pendingDocumentUpdates,
   pendingUpdatesPassBound,
   readDocumentRow,
@@ -38,12 +39,18 @@ import {
   type NoteDocument,
   type QueueEntry,
 } from '@notesapp/sync';
-import { guard, type CheckpointRow, type FileRow } from '../database.ts';
+import {
+  guard,
+  partitionRange,
+  type CheckpointRow,
+  type FileRow,
+} from '../database.ts';
 import {
   validateAcceptedFile,
   validateCheckpoint,
   validateContent,
   validateDraft,
+  validateQueueRow,
 } from '../migrations.ts';
 import {
   anchorOfDraft,
@@ -137,6 +144,29 @@ export function createVersionsSlice(ctx: LocalStoreContext): VersionsSlice {
       appliedVector: row?.appliedVector ?? documentStateVector(before),
     });
     return { bytes: written.bytes, epoch: written.epoch };
+  };
+
+  /** The document work of one note that waits in the queue. */
+  const queuedWorkOf = async (
+    accountId: string,
+    workspaceId: string,
+    fileId: string,
+  ): Promise<Uint8Array[]> => {
+    const range = partitionRange(serverOrigin, accountId, workspaceId);
+    const rows: unknown[] = await tables.queue
+      .where('[serverOrigin+accountId+workspaceId+sequence]')
+      .between(range.lower, range.upper, true, true)
+      .toArray();
+    const work: Uint8Array[] = [];
+    for (const row of rows)
+      for (const revision of validateQueueRow(row).input.revisions)
+        if (
+          revision.fileId === fileId &&
+          revision.content.kind === 'markdown' &&
+          revision.content.document.work.kind === 'update'
+        )
+          work.push(revision.content.document.work.update);
+    return work;
   };
 
   /** One try of `checkpoint`, or `moved` when the document moved under it. */
@@ -276,7 +306,18 @@ export function createVersionsSlice(ctx: LocalStoreContext): VersionsSlice {
               previous,
               { digest, path: draft.path, deleted: draft.deleted },
               message,
-            )
+            ) &&
+            // Undo and redo in an open editor can give the text of the
+            // version again with new characters. That work must reach the
+            // server, or a restore removes the characters the server holds
+            // and leaves the unsent copy beside the restored text.
+            (draft.deleted ||
+              source === 'text' ||
+              !(await holdsUnsentWork(
+                tables,
+                key,
+                await queuedWorkOf(accountId, workspaceId, fileId),
+              )))
           ) {
             // A no-op still proves which version holds this work. Keep that
             // receipt on the draft, including the first draft of a clean
