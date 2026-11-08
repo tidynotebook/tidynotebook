@@ -2496,14 +2496,14 @@ await test('a document row from before the acknowledged state reads and saves', 
   assert.ok(first !== null);
   await note.acknowledge(first, '2');
   await withRawDatabase(backend, async (tables) => {
-    const row: unknown = await tables.documents.get([
+    const row = await tables.documents.get([
       origin,
       account,
       workspace,
       fileId,
     ]);
-    assert.ok(typeof row === 'object' && row !== null);
-    assert.ok('acknowledgedVector' in row);
+    assert.ok(row !== undefined);
+    assert.ok(row.acknowledgedVector !== undefined);
     const { acknowledgedVector: _dropped, ...older } = row;
     await tables.documents.put(older);
   });
