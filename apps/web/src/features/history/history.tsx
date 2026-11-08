@@ -34,6 +34,7 @@ import {
  * Opening the history never changes the text on this device. Restore writes
  * one new version on top of the newest one and records where it came from;
  * it never rewinds the history and never touches a draft or a queued save.
+ * Restore brings back the text of the version and keeps the current name.
  *
  * An image file has no line comparison, so a row of an image shows the
  * picture of that version instead.
@@ -482,6 +483,9 @@ function HistoryDetail({
         clientTime: new Date().toISOString(),
         targetRevisionId,
         expectedHead: head.headRevisionId,
+        // Restore brings the text back and keeps the current name. The
+        // server keeps the name of the version only when no path is sent.
+        path: head.path,
         revisionId: generateUUID(),
         message: null,
       },
