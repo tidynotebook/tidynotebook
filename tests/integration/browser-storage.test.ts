@@ -2414,11 +2414,12 @@ await test('an acknowledged save is not unsent before the feed brings it', async
     'cat dog cat\n',
   );
   const replace = (from: string, to: string) => (text: LiveText) => {
-    const current = text.toString();
+    // Each word is replaced from the end, so the earlier positions hold.
+    const current = note.text();
     for (let at = current.lastIndexOf(from); at >= 0;) {
       text.delete(at, from.length);
       text.insert(at, to);
-      at = at === 0 ? -1 : text.toString().lastIndexOf(from, at - 1);
+      at = at === 0 ? -1 : current.lastIndexOf(from, at - 1);
     }
   };
   await note.edit(replace('cat', 'fox'));
@@ -2468,8 +2469,10 @@ await test('a queued save survives a reload and is not written twice', async () 
   // A reload, with the save still waiting for its answer.
   const reopened = await openLocalStore(origin, backend.options());
   const pending = await reopened.pending(account, workspace);
+  const [waiting] = pending;
   assert.equal(pending.length, 1);
-  assert.deepEqual(versionWork(pending[0] as QueueEntry), versionWork(first));
+  assert.ok(waiting !== undefined);
+  assert.deepEqual(versionWork(waiting), versionWork(first));
   const again = await reopened.checkpoint(
     draftOf(account, workspace, fileId, 'copy-1', 'a\nb\n', {
       baseRevisionId: 'rev-1',
