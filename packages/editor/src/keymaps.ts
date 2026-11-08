@@ -72,6 +72,8 @@ import {
 export type EditorShortcut = {
   /** The key combination, written for a reader of both platforms. */
   readonly keys: string;
+  /** The combination of an Apple keyboard, when it is not `keys`. */
+  readonly apple?: string;
   /** What the combination does, in one short sentence. */
   readonly description: string;
 };
@@ -1548,7 +1550,12 @@ export const shortcuts: readonly EditorShortcut[] = [
   { keys: 'Cmd or Ctrl + /', description: 'Show keyboard shortcuts' },
   { keys: 'Cmd or Ctrl + O', description: 'Open a note by name' },
   { keys: 'Cmd or Ctrl + F', description: 'Find in this note' },
-  { keys: 'Cmd or Ctrl + H', description: 'Find and replace in this note' },
+  {
+    keys: 'Cmd or Ctrl + H',
+    // Cmd and H hides the application on a Mac.
+    apple: 'Cmd or Ctrl + Alt + F',
+    description: 'Find and replace in this note',
+  },
   { keys: 'Escape', description: 'Close the find panel or the dialog' },
   { keys: 'Cmd or Ctrl + B', description: 'Bold' },
   { keys: 'Cmd or Ctrl + I', description: 'Italic' },

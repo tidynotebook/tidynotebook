@@ -3,6 +3,7 @@ import test from 'node:test';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import {
+  Switch,
   SettingEditRow,
   TextField,
   Form,
@@ -115,4 +116,22 @@ await test('the note side panel uses symmetric panel padding and tree disclosure
   );
   assert.match(html, /data-ui-row="tree"/);
   assert.match(html, /data-disclosure-content="outline"/);
+});
+
+await test('a switch row in a dialog that owns the inset keeps its own side inset', () => {
+  // Audit D17: in the Find options dialog the panel clips the fill that a
+  // Settings row reaches past its content, so the label and the switch
+  // touched the fill and the focus ring. Such a row keeps 8 px inside it.
+  const row = (inset: boolean) =>
+    renderToStaticMarkup(
+      createElement(Switch, {
+        label: 'Match case',
+        checked: false,
+        inset,
+        onChange: () => {},
+      }),
+    );
+  assert.match(row(true), /\bfine:px-2\b/);
+  assert.match(row(true), /\bcoarse:px-4\b/);
+  assert.doesNotMatch(row(false), /\bfine:px-2\b/);
 });

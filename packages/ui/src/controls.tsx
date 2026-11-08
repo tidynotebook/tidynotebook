@@ -745,6 +745,7 @@ export function StatusRegion({
 /** A full row switch states its value and any unavailable reason. */
 export function Switch({
   hideLabel = false,
+  inset = false,
   label,
   hint,
   checked,
@@ -752,6 +753,13 @@ export function Switch({
   onChange,
 }: {
   readonly hideLabel?: boolean;
+  /**
+   * Gives the row its own side inset at a fine pointer. A Settings row
+   * reaches its fill past the content into the padding of its region. A
+   * dialog whose panel owns the inset clips that fill at the row, so a row
+   * there keeps the space inside it.
+   */
+  readonly inset?: boolean;
   readonly label: string;
   readonly hint?: string;
   readonly checked: boolean;
@@ -782,6 +790,7 @@ export function Switch({
     <ListRow
       as="button"
       density="setting"
+      className={inset ? 'fine:px-2' : ''}
       label={label}
       help={hint ? <WrapText>{hint}</WrapText> : undefined}
       helpId={hintId}

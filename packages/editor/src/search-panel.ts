@@ -24,6 +24,7 @@
  */
 import {
   closeSearchPanel,
+  openSearchPanel,
   findNext,
   gotoLine,
   searchKeymap,
@@ -38,6 +39,7 @@ import { EditorState, type Extension } from '@codemirror/state';
 import {
   EditorView,
   runScopeHandlers,
+  type Command,
   type Panel,
   type ViewUpdate,
 } from '@codemirror/view';
@@ -47,6 +49,7 @@ import {
   moreParts,
   replaceParts,
   openOptionsSheet,
+  optionsSheetPanelId,
   closeParts,
   fieldClassName,
   bareFieldClassName,
@@ -141,6 +144,22 @@ export const editorPhrases: Readonly<Record<string, string>> = {
 export const noteSearchKeymap = searchKeymap.filter(
   (binding) => binding.run !== gotoLine,
 );
+
+/**
+ * The count of the panel when no single match is selected.
+ *
+ * One match reads `1 match`, and the short form of the phone reads
+ * `1 found` as every other count does.
+ */
+export function matchCountWords(total: number): {
+  readonly full: string;
+  readonly short: string;
+} {
+  return {
+    full: total === 1 ? '1 match' : `${String(total)} matches`,
+    short: `${String(total)} found`,
+  };
+}
 
 /** What a person hears after a replace of every match. */
 export function replaceAllWords(count: number): string {
@@ -340,38 +359,79 @@ class SearchPanel implements Panel {
       toggle.setAttribute('aria-label', option.label);
       return toggle;
     });
-    const replacementToggle = iconButton('Show replace', replaceParts, () =>
-      this.showReplace(!this.replaceVisible),
-    );
+    // Show replace puts the focus in Replace with, where the next key goes.
+    // Hiding the row while its field has the focus gives it to Find.
+    const replacementToggle = iconButton('Show replace', replaceParts, () => {
+      if (!this.replaceVisible) {
+        this.openReplace();
+        return;
+      }
+      const inReplace =
+        this.dom.ownerDocument.activeElement === this.replaceField;
+      this.showReplace(false);
+      if (inReplace) this.searchField.focus();
+    });
 
     replacementToggle.setAttribute('aria-pressed', 'false');
     replacementToggle.classList.add('aria-pressed:bg-active');
+    // The trigger states its dialog: closed, or open and which one. A second
+    // press while the sheet loads or shows opens nothing more.
+    let optionsOpen = false;
+    const optionsState = (open: boolean): void => {
+      optionsOpen = open;
+      more.setAttribute('aria-expanded', String(open));
+      if (open) more.setAttribute('aria-controls', optionsSheetPanelId);
+      else more.removeAttribute('aria-controls');
+    };
     const more = button('More', () => {
-      more.disabled = true;
-      void openOptionsSheet('Find options', [
-        ...options.map((option) => ({
-          label: option.label,
-          read: () => this.query[option.key],
-          change: (checked: boolean) => this.option(option.key, checked),
-        })),
-        ...(view.state.readOnly
-          ? []
-          : [
-              {
-                label: 'Replace',
-                read: () => this.replaceVisible,
-                change: (checked: boolean) => this.showReplace(checked),
-              },
-            ]),
-      ])
-        .then((close) => {
+      if (optionsOpen) return;
+      // A press keeps the focus in its field, and a key leaves it on this
+      // trigger. Closing the sheet gives it back there.
+      const opener = this.dom.ownerDocument.activeElement;
+      optionsState(true);
+      void openOptionsSheet(
+        'Find options',
+        [
+          ...options.map((option) => ({
+            label: option.label,
+            read: () => this.query[option.key],
+            change: (checked: boolean) => this.option(option.key, checked),
+          })),
+          ...(view.state.readOnly
+            ? []
+            : [
+                {
+                  label: 'Replace',
+                  read: () => this.replaceVisible,
+                  change: (checked: boolean) => this.showReplace(checked),
+                },
+              ]),
+        ],
+        {
+          onClose: () => {
+            this.closeOptions = undefined;
+            optionsState(false);
+          },
+          // The text takes the focus when the panel closed under the sheet.
+          returnFocus: () => {
+            if (this.destroyed) this.view.focus();
+            else if (opener instanceof HTMLElement && opener.isConnected)
+              opener.focus();
+            else more.focus();
+          },
+        },
+      ).then(
+        (close) => {
           if (this.destroyed) close();
           else this.closeOptions = close;
-        })
-        .finally(() => {
-          more.disabled = false;
-        });
+        },
+        () => {
+          optionsState(false);
+        },
+      );
     });
+    more.setAttribute('aria-haspopup', 'dialog');
+    more.setAttribute('aria-expanded', 'false');
     more.className = buttonClassName({
       variant: 'ghost',
       size: 'compact',
@@ -513,6 +573,14 @@ class SearchPanel implements Panel {
     this.view.dispatch({ effects: setSearchQuery.of(query) });
     this.refresh();
   }
+  /** Shows the replace row with the focus in Replace with. */
+  openReplace(): void {
+    if (this.view.state.readOnly) return;
+    this.showReplace(true);
+    this.replaceField.focus();
+    this.replaceField.select();
+  }
+
   private showReplace(show: boolean): void {
     this.replaceVisible = show;
     this.replacement.hidden = this.actions.hidden = !show;
@@ -546,19 +614,16 @@ class SearchPanel implements Panel {
     const current = currentSearchMatch(state, this.matches);
     const invalid = this.query.search.length > 0 && !this.query.valid;
     const total = this.matches.length;
-    const full = !this.query.search
-      ? ''
+    const ordinal = `${String(current + 1)} of ${String(total)}`;
+    const { full, short } = !this.query.search
+      ? { full: '', short: '' }
       : invalid
-        ? 'Invalid pattern'
+        ? { full: 'Invalid pattern', short: 'Invalid' }
         : total === 0
-          ? 'No matches'
+          ? { full: 'No matches', short: 'None' }
           : current < 0
-            ? `${total} matches`
-            : `${current + 1} of ${total}`;
-    const short = full
-      .replace('No matches', 'None')
-      .replace('matches', 'found')
-      .replace('Invalid pattern', 'Invalid');
+            ? matchCountWords(total)
+            : { full: ordinal, short: ordinal };
     this.longCount.textContent = full;
     this.shortCount.textContent = short;
     this.count.hidden = !this.query.search;
@@ -697,6 +762,18 @@ class SearchPanel implements Panel {
 // The search package wraps createPanel with its own panel constructor, so
 // getPanel(view, createSearchPanel) cannot retrieve our measured instance.
 const searchPanels = new WeakMap<EditorView, SearchPanel>();
+
+/**
+ * Opens the panel with the replace row shown and the focus in Replace with.
+ *
+ * The key of the shortcut table, from the text or from a field of the panel.
+ * A note that cannot change opens the find row alone.
+ */
+export const openReplacePanel: Command = (view) => {
+  openSearchPanel(view);
+  searchPanels.get(view)?.openReplace();
+  return true;
+};
 
 /** The panel of `search({ createPanel })`. */
 export function createSearchPanel(view: EditorView): Panel {

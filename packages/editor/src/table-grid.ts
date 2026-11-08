@@ -1665,11 +1665,40 @@ const tableWords = new Intl.Segmenter(undefined, {
 
 const measuredTables = StateEffect.define<ReadonlyMap<number, TableLayout>>();
 
-/** Reveal only the active table after input and its column measurement. */
+/**
+ * Whether a transaction moved the selection to one match of Find.
+ *
+ * Find keeps the focus in its own field, so the reveal below cannot wait for
+ * the focus of the text. Selecting every match and replacing every match
+ * name no single match, so neither moves a table.
+ */
+function selectsSearchMatch(transaction: Transaction): boolean {
+  return (
+    (transaction.isUserEvent('select.search') &&
+      !transaction.isUserEvent('select.search.matches')) ||
+    (transaction.isUserEvent('input.replace') &&
+      !transaction.isUserEvent('input.replace.all'))
+  );
+}
+
+/**
+ * Reveal only the active table after input and its column measurement.
+ *
+ * A match that Find selects is revealed whole in its own table, even while
+ * the focus is in the find field: the Replace button acts on that match, so
+ * a person must see it. Every other table keeps its own offset.
+ */
 class TableCaretReveal {
   private readonly view: EditorView;
   private pendingDoc: EditorState['doc'] | null = null;
+  private pendingSearch = false;
   private sequence = 0;
+  // A match of Find far down the note has no table yet when the text first
+  // scrolls to it, and a new table takes its remembered offset when it
+  // renders. The reveal tries again after the table renders, a few times at
+  // most, until the match shows or a person acts.
+  private searchRetry = -1;
+  private searchTries = 0;
 
   constructor(view: EditorView) {
     this.view = view;
@@ -1682,25 +1711,33 @@ class TableCaretReveal {
         transaction.isUserEvent('undo') ||
         transaction.isUserEvent('redo'),
     );
+    const search = update.transactions.some(selectsSearchMatch);
     if (update.docChanged) {
       this.sequence++;
       this.pendingDoc =
         local && inTableCell(update.state, update.state.selection.main.head)
           ? update.state.doc
           : null;
+      this.pendingSearch = search;
       return;
     }
     if (
       (update.focusChanged || update.selectionSet || local) &&
       this.pendingDoc !== update.state.doc
     )
-      this.schedule();
+      this.schedule(search);
   }
 
   columnsReady(): void {
-    if (this.pendingDoc !== this.view.state.doc) return;
-    this.pendingDoc = null;
-    this.schedule();
+    if (this.pendingDoc === this.view.state.doc) {
+      this.pendingDoc = null;
+      this.schedule(this.pendingSearch);
+      return;
+    }
+    if (this.searchRetry === this.sequence && this.searchTries < 4) {
+      this.searchTries++;
+      this.schedule(true, true);
+    }
   }
 
   cancel(): void {
@@ -1708,13 +1745,18 @@ class TableCaretReveal {
     this.sequence++;
   }
 
-  private schedule(): void {
+  private schedule(search = false, retry = false): void {
     const sequence = ++this.sequence;
+    if (search) {
+      this.searchRetry = sequence;
+      if (!retry) this.searchTries = 0;
+    }
     this.view.requestMeasure({
       key: this,
       read: (view) => {
-        if (sequence !== this.sequence || !view.hasFocus) return null;
-        const head = view.state.selection.main.head;
+        if (sequence !== this.sequence || (!view.hasFocus && !search))
+          return null;
+        const { head, anchor } = view.state.selection.main;
         const table = tableAt(view.state, head);
         const at = table === null ? null : cellAt(table, head);
         if (table === null || at === null) return null;
@@ -1746,9 +1788,21 @@ class TableCaretReveal {
           caret = view.coordsAtPos(head, -1);
         let left: number;
         let right: number;
+        // A match of Find is revealed from its start to its end when it
+        // stays in one cell. A match across cells reveals its head, as the
+        // caret does.
+        const start = search && anchor !== head ? cellAt(table, anchor) : null;
+        const other =
+          start !== null && start.row === at.row && start.column === at.column
+            ? view.coordsAtPos(anchor, anchor < head ? 1 : -1)
+            : null;
         if (caret !== null && caret.bottom > caret.top) {
           left = caret.left;
           right = caret.right;
+          if (other !== null && other.bottom > other.top) {
+            left = Math.min(left, other.left);
+            right = Math.max(right, other.right);
+          }
         } else {
           // Hidden syntax can have no caret rectangle. Only an empty cell
           // can use its uniquely mapped content edge as a view-only anchor.
@@ -1762,8 +1816,9 @@ class TableCaretReveal {
         }
         const bounds = wrapper.getBoundingClientRect();
         const margin = view.defaultCharacterWidth;
+        // A match wider than the table shows its start.
         const delta =
-          left < bounds.left
+          left < bounds.left || right - left > bounds.width - 2 * margin
             ? left - bounds.left - margin
             : right > bounds.right
               ? right - bounds.right + margin
@@ -1771,14 +1826,14 @@ class TableCaretReveal {
         return { wrapper, delta };
       },
       write: (result) => {
-        if (
-          sequence === this.sequence &&
-          result !== null &&
-          result.delta !== 0
-        ) {
-          result.wrapper.scrollLeft += result.delta;
-          this.view.requestMeasure();
+        if (sequence !== this.sequence || result === null) return;
+        if (result.delta === 0) {
+          // The match shows, so no later render needs to reveal it.
+          if (this.searchRetry === sequence) this.searchRetry = -1;
+          return;
         }
+        result.wrapper.scrollLeft += result.delta;
+        this.view.requestMeasure();
       },
     });
   }

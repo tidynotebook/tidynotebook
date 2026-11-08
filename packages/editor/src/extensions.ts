@@ -18,7 +18,7 @@ import {
   completionKeymap,
 } from '@codemirror/autocomplete';
 import { pasteURLAsLink } from '@codemirror/lang-markdown';
-import { openSearchPanel, search } from '@codemirror/search';
+import { search } from '@codemirror/search';
 import { EditorState, Prec, type Extension } from '@codemirror/state';
 import { EditorView, keymap, tooltips } from '@codemirror/view';
 import { readVisibleArea } from '@notesapp/ui';
@@ -33,6 +33,7 @@ import {
   createSearchPanel,
   editorPhrases,
   noteSearchKeymap,
+  openReplacePanel,
   replaceAllAnnouncement,
   searchPanelScrollMargins,
 } from './search-panel.ts';
@@ -49,7 +50,7 @@ import { caretInView } from './caret-in-view.ts';
 import { tableGridEditing } from './table-grid.ts';
 
 /** Opens the find panel with its replace field. */
-export const openFindAndReplace = openSearchPanel;
+export const openFindAndReplace = openReplacePanel;
 
 /**
  * Every command extension of the note editor.
@@ -116,7 +117,16 @@ export function editorCommands(): Extension {
     Prec.highest(keymap.of(formattingKeymap)),
     keymap.of([
       ...noteSearchKeymap,
-      { key: 'Mod-h', mac: 'Mod-Alt-f', run: openSearchPanel },
+      // The find field keeps this key too, so it opens the replace row from
+      // there. Cmd and H hides the application on a Mac, so a Mac uses Cmd,
+      // Option and F, as the shortcut table states.
+      {
+        key: 'Mod-h',
+        mac: 'Mod-Alt-f',
+        run: openReplacePanel,
+        scope: 'editor search-panel',
+        preventDefault: true,
+      },
     ]),
   ];
 }
