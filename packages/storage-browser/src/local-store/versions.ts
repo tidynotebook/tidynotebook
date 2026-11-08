@@ -142,6 +142,9 @@ export function createVersionsSlice(ctx: LocalStoreContext): VersionsSlice {
       // The work of this device is not accepted work, so the state the
       // server holds does not move (record 0085).
       appliedVector: row?.appliedVector ?? documentStateVector(before),
+      ...(row?.acknowledgedVector === undefined
+        ? {}
+        : { acknowledgedVector: row.acknowledgedVector }),
     });
     return { bytes: written.bytes, epoch: written.epoch };
   };

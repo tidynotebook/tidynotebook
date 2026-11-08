@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import * as Y from 'yjs';
 import {
+  advanceCoverage,
   applyDocumentUpdate,
   documentStateVector,
   encodeDocumentDelta,
@@ -338,4 +339,59 @@ await test('a vector covers what an older vector of the same document saw', () =
     ),
     false,
   );
+});
+
+await test('coverage moves over work that continues from the known clock', () => {
+  // One writer types three times. The second and third updates start in the
+  // middle of its clocks, so documentStateVector names no clock for them.
+  const doc = new Y.Doc();
+  const text = doc.getText(noteTextRoot);
+  const first = updateOf(doc, () => text.insert(0, 'one '));
+  const second = updateOf(doc, () => text.insert(4, 'two '));
+  const third = updateOf(doc, () => text.insert(8, 'three'));
+  const client = doc.clientID;
+  const clockOf = (vector: Uint8Array): number =>
+    Y.decodeStateVector(vector).get(client) ?? 0;
+  assert.equal(clockOf(documentStateVector(second)), 0);
+  let known = advanceCoverage(new Uint8Array([0]), first);
+  assert.equal(clockOf(known), 4);
+  // A gap: the third update starts past the clock that is known, so it moves
+  // nothing until the second arrives.
+  assert.equal(clockOf(advanceCoverage(known, third)), 4);
+  known = advanceCoverage(known, second);
+  assert.equal(clockOf(known), 8);
+  known = advanceCoverage(known, third);
+  assert.equal(clockOf(known), 13);
+  // A repeated or older update moves nothing.
+  assert.equal(clockOf(advanceCoverage(known, first)), 13);
+  assert.equal(clockOf(advanceCoverage(known, second)), 13);
+  // A deletion carries no insertion and moves nothing.
+  const removal = updateOf(doc, () => text.delete(0, 4));
+  assert.deepEqual(advanceCoverage(known, removal), known);
+  doc.destroy();
+});
+
+await test('coverage takes a new writer from clock zero and keeps others', () => {
+  const one = new Y.Doc();
+  const other = new Y.Doc();
+  const start = updateOf(one, () => one.getText(noteTextRoot).insert(0, 'a'));
+  Y.applyUpdate(other, start);
+  const joined = updateOf(other, () =>
+    other.getText(noteTextRoot).insert(1, 'b'),
+  );
+  const known = advanceCoverage(
+    advanceCoverage(new Uint8Array([0]), start),
+    joined,
+  );
+  const vector = Y.decodeStateVector(known);
+  assert.equal(vector.get(one.clientID), 1);
+  assert.equal(vector.get(other.clientID), 1);
+  // A merged update that holds both writers in clock order moves both.
+  const merged = Y.mergeUpdates([start, joined]);
+  assert.deepEqual(
+    Y.decodeStateVector(advanceCoverage(new Uint8Array([0]), merged)),
+    vector,
+  );
+  one.destroy();
+  other.destroy();
 });
