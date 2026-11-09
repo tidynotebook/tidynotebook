@@ -34,6 +34,7 @@ import {
   type Extension,
   Transaction,
   type Range,
+  type SelectionRange,
   type TransactionSpec,
 } from '@codemirror/state';
 import {
@@ -44,6 +45,7 @@ import {
   type DecorationSet,
   type ViewUpdate,
 } from '@codemirror/view';
+import { getSearchQuery } from '@codemirror/search';
 import type { SyntaxNode, Tree } from '@lezer/common';
 import { readVisibleArea } from '@notesapp/ui';
 import { diffArrays, diffChars } from 'diff';
@@ -286,6 +288,74 @@ export function cellAt(table: TableBox, pos: number): CellRef | null {
   if (row === null || row.kind === 'delimiter' || row.cells.length === 0)
     return null;
   return { row: rows.indexOf(row), column: columnAt(row, pos) };
+}
+
+/**
+ * One end of a range moved off hidden table syntax to the text beside it.
+ *
+ * A pipe, the padding around a cell and the delimiter row draw nothing that
+ * holds a caret, so the editor cannot scroll to a range that ends there. A
+ * position inside the text of a cell stays where it is. Any other position
+ * in a row moves to the end of the text before it (`backward`) or the start
+ * of the text after it, in the same row; a delimiter row moves to the row
+ * before or after it. An empty cell holds no text and is passed over. A row
+ * with no text keeps the position, and the editor keeps its own result.
+ */
+function measurableEnd(
+  table: TableBox,
+  pos: number,
+  backward: boolean,
+): number {
+  const row = rowAt(table, pos);
+  if (row === null) return pos;
+  if (row.kind === 'delimiter') {
+    const index = table.rows.indexOf(row);
+    const near = table.rows[backward ? index - 1 : index + 1];
+    const far = table.rows[backward ? index + 1 : index - 1];
+    const ends = (other: TableRowBox | undefined, last: boolean) => {
+      const texts = other?.cells.filter((cell) => cell.textTo > cell.textFrom);
+      const cell = last ? texts?.at(-1) : texts?.[0];
+      return cell === undefined ? null : last ? cell.textTo : cell.textFrom;
+    };
+    return ends(near, backward) ?? ends(far, !backward) ?? pos;
+  }
+  const texts = row.cells.filter((cell) => cell.textTo > cell.textFrom);
+  if (texts.some((cell) => pos >= cell.textFrom && pos <= cell.textTo))
+    return pos;
+  const before = texts.filter((cell) => cell.textTo <= pos).at(-1)?.textTo;
+  const after = texts.find((cell) => cell.textFrom >= pos)?.textFrom;
+  return (backward ? (before ?? after) : (after ?? before)) ?? pos;
+}
+
+/**
+ * The range to scroll to for `range`, with each end that stands on hidden
+ * table syntax moved to the cell text beside it, inward.
+ *
+ * It changes only where the editor scrolls, never a selection or the text.
+ * The direction of the range is kept, and an empty range stays empty. A
+ * range that covers hidden syntax alone becomes the caret at the end of the
+ * text before it. Each end reads the spans of its own row alone.
+ */
+export function measurableRange(
+  state: EditorState,
+  range: SelectionRange,
+): SelectionRange {
+  const from = Math.min(range.anchor, range.head);
+  const to = Math.max(range.anchor, range.head);
+  const at = (pos: number, backward: boolean): number => {
+    const table = tableAt(state, pos);
+    return table === null ? pos : measurableEnd(table, pos, backward);
+  };
+  if (from === to) {
+    const pos = at(from, true);
+    return pos === from ? range : EditorSelection.cursor(pos, range.assoc);
+  }
+  const end = at(to, true);
+  const start = Math.min(at(from, false), end);
+  if (start === from && end === to) return range;
+  return range.head >= range.anchor
+    ? EditorSelection.range(start, end)
+    : EditorSelection.range(end, start);
 }
 
 /** Whether `pos` stands in a cell a person can write in. */
@@ -1687,6 +1757,12 @@ function renderedExtent(
   readonly left: number;
   readonly right: number;
   readonly start: number;
+  readonly top: number;
+  readonly bottom: number;
+  /** The document position where the highest text of the range starts. */
+  readonly topPos: number;
+  /** The document position where the lowest text of the range ends. */
+  readonly bottomPos: number;
 } | null {
   const from = Math.min(anchor, head);
   const to = Math.max(anchor, head);
@@ -1712,22 +1788,38 @@ function renderedExtent(
   let left = Infinity;
   let right = -Infinity;
   let start = Infinity;
+  let top = Infinity;
+  let bottom = -Infinity;
+  let topPos = from;
+  let bottomPos = to;
   for (; node !== null; node = walker.nextNode()) {
     if (range.comparePoint(node, 0) > 0) break;
     if (!(node instanceof Text) || !range.intersectsNode(node)) continue;
-    part.setStart(node, node === range.startContainer ? range.startOffset : 0);
-    part.setEnd(
-      node,
-      node === range.endContainer ? range.endOffset : node.length,
-    );
+    const startOffset = node === range.startContainer ? range.startOffset : 0;
+    const endOffset =
+      node === range.endContainer ? range.endOffset : node.length;
+    part.setStart(node, startOffset);
+    part.setEnd(node, endOffset);
     for (const rect of part.getClientRects()) {
       if (rect.bottom <= rect.top) continue;
       if (start === Infinity) start = rect.left;
       left = Math.min(left, rect.left);
       right = Math.max(right, rect.right);
+      // A text node that wraps draws its first line highest and its last
+      // line lowest, so its start and its end are the positions to show.
+      if (rect.top < top) {
+        top = rect.top;
+        topPos = view.posAtDOM(node, startOffset);
+      }
+      if (rect.bottom > bottom) {
+        bottom = rect.bottom;
+        bottomPos = view.posAtDOM(node, endOffset);
+      }
     }
   }
-  return left <= right ? { left, right, start } : null;
+  return left <= right
+    ? { left, right, start, top, bottom, topPos, bottomPos }
+    : null;
 }
 
 /**
@@ -1764,9 +1856,15 @@ class TableCaretReveal {
   // times at most, and a person who acts ends the tries.
   private searchRetry = -1;
   private searchTries = 0;
+  private alive = true;
 
   constructor(view: EditorView) {
     this.view = view;
+  }
+
+  destroy(): void {
+    this.alive = false;
+    this.sequence++;
   }
 
   update(update: ViewUpdate): void {
@@ -1825,89 +1923,186 @@ class TableCaretReveal {
         const table = tableAt(view.state, head);
         const at = table === null ? null : cellAt(table, head);
         if (table === null || at === null) return null;
-        const row = table.rows.filter((row) => row.kind !== 'delimiter')[
-          at.row
-        ];
-        const cell = row?.cells[at.column];
-        if (row === undefined || cell === undefined) return null;
-        const node = view.domAtPos(row.lineFrom).node;
-        const element = node instanceof Element ? node : node.parentElement;
-        const line = element?.closest('.cm-np-table-line');
-        if (
-          !(line instanceof HTMLElement) ||
-          view.posAtDOM(line, 0) !== row.lineFrom
-        )
-          return null;
-        const cellElement = Array.from(
-          line.querySelectorAll('.cm-np-table-cell, .cm-np-table-head'),
-        ).find(
-          (element): element is HTMLElement =>
-            element instanceof HTMLElement &&
-            element.style.gridColumnStart === String(at.column + 2),
+        const vertical = search ? this.hiddenHead(view) : null;
+        const horizontal = this.horizontal(
+          view,
+          table,
+          at,
+          head,
+          anchor,
+          search,
         );
-        const wrapper = line.closest('.cm-np-table');
-        if (!(wrapper instanceof HTMLElement) || cellElement === undefined)
-          return null;
-        let caret = view.coordsAtPos(head);
-        if (caret === null || caret.bottom <= caret.top)
-          caret = view.coordsAtPos(head, -1);
-        let left: number;
-        let right: number;
-        let start: number;
-        // A match of Find is revealed by the text that it renders in this
-        // table, in one cell or across cells and rows. A match that ends in
-        // another table, or that is not rendered yet, reveals its head, as
-        // the caret does.
-        const extent =
-          search && anchor !== head
-            ? renderedExtent(view, wrapper, anchor, head)
-            : null;
-        if (extent !== null) {
-          left = extent.left;
-          right = extent.right;
-          start = extent.start;
-        } else if (caret !== null && caret.bottom > caret.top) {
-          left = caret.left;
-          right = caret.right;
-          start = left;
-        } else {
-          // Hidden syntax can have no caret rectangle. Only an empty cell
-          // can use its uniquely mapped content edge as a view-only anchor.
-          if (cell.textFrom !== cell.textTo) return null;
-          const style = getComputedStyle(cellElement);
-          left =
-            cellElement.getBoundingClientRect().left +
-            parseFloat(style.borderLeftWidth) +
-            parseFloat(style.paddingLeft);
-          right = left;
-          start = left;
-        }
-        const bounds = wrapper.getBoundingClientRect();
-        const margin = view.defaultCharacterWidth;
-        // A match that fits shows whole. A wider match shows where it
-        // starts, a margin from the left edge, so its first words read in
-        // place.
-        const delta =
-          right - left > bounds.width - 2 * margin
-            ? start - bounds.left - margin
-            : left < bounds.left
-              ? left - bounds.left - margin
-              : right > bounds.right
-                ? right - bounds.right + margin
-                : 0;
-        return { wrapper, delta };
+        return horizontal === null && vertical === null
+          ? null
+          : { horizontal, vertical };
       },
       write: (result) => {
+        if (sequence !== this.sequence || result === null) return;
         // A table that renders in this pass takes its remembered offset in
         // a later write of the grid, so a match that shows now can hide
         // then. The reveal keeps its few tries after a render, and a person
         // who acts ends them.
-        if (sequence !== this.sequence || result === null || result.delta === 0)
-          return;
-        result.wrapper.scrollLeft += result.delta;
-        this.view.requestMeasure();
+        const horizontal = result.horizontal;
+        if (horizontal !== null && horizontal.delta !== 0) {
+          horizontal.wrapper.scrollLeft += horizontal.delta;
+          this.view.requestMeasure();
+        }
+        if (result.vertical !== null && this.searchRetry === sequence)
+          this.scrollTo(sequence, result.vertical);
       },
     });
+  }
+
+  /**
+   * The scroll target of a match of Find whose head is out of view, or
+   * `null` when it shows.
+   *
+   * The grid measures its columns after the text scrolled to the match, and
+   * a row can then grow or shrink under it. The head of the match, moved off
+   * hidden syntax, is measured again here, inside the editor, the visible
+   * area and the margins of the editor, such as the floating find card.
+   */
+  private hiddenHead(view: EditorView): SelectionRange | null {
+    const selection = view.state.selection.main;
+    const target = measurableRange(view.state, selection);
+    const side = target.head > target.anchor ? -1 : 1;
+    const caret =
+      view.coordsAtPos(target.head, side) ??
+      view.coordsAtPos(target.head, side === 1 ? -1 : 1);
+    // A head that is not drawn yet is out of view: the editor draws it when
+    // it scrolls there.
+    if (caret === null) return target;
+    if (caret.bottom <= caret.top) return null;
+    let marginTop = 0;
+    let marginBottom = 0;
+    for (const source of view.state.facet(EditorView.scrollMargins)) {
+      const margins = source(view);
+      marginTop = Math.max(marginTop, margins?.top ?? 0);
+      marginBottom = Math.max(marginBottom, margins?.bottom ?? 0);
+    }
+    const scroller = view.scrollDOM.getBoundingClientRect();
+    const screen = readVisibleArea();
+    const top = Math.max(scroller.top, screen.top) + marginTop;
+    const bottom = Math.min(scroller.bottom, screen.bottom) - marginBottom;
+    // A match that fits the room shows all of its text, also the lines that
+    // wrap between its ends, which the caret of an end does not cover. A
+    // taller match keeps the rule of the editor: its head shows.
+    const extent = selection.empty
+      ? null
+      : renderedExtent(view, view.contentDOM, selection.anchor, selection.head);
+    if (extent !== null && extent.bottom - extent.top <= bottom - top)
+      return extent.top < top || extent.bottom > bottom
+        ? EditorSelection.range(extent.topPos, extent.bottomPos)
+        : null;
+    return caret.top < top || caret.bottom > bottom ? target : null;
+  }
+
+  /**
+   * Scrolls to `target` once, after the update that measured it.
+   *
+   * The editor allows no update inside a measure, so the scroll goes out in
+   * a microtask. It goes only when nothing moved since: the same try, text,
+   * selection and query, and a view that still stands. The editor then
+   * scrolls by its own rules, on both axes and in every box that scrolls.
+   * Only Find asks for this, with the nearest alignment.
+   */
+  private scrollTo(sequence: number, target: SelectionRange): void {
+    const state = this.view.state;
+    const query = getSearchQuery(state);
+    queueMicrotask(() => {
+      const now = this.view.state;
+      if (
+        !this.alive ||
+        sequence !== this.sequence ||
+        now.doc !== state.doc ||
+        !now.selection.eq(state.selection) ||
+        !getSearchQuery(now).eq(query)
+      )
+        return;
+      this.view.dispatch({
+        effects: EditorView.scrollIntoView(target, { y: 'nearest' }),
+      });
+    });
+  }
+
+  /** The horizontal reveal of the active table, or `null`. */
+  private horizontal(
+    view: EditorView,
+    table: TableBox,
+    at: CellRef,
+    head: number,
+    anchor: number,
+    search: boolean,
+  ): { readonly wrapper: HTMLElement; readonly delta: number } | null {
+    const row = table.rows.filter((row) => row.kind !== 'delimiter')[at.row];
+    const cell = row?.cells[at.column];
+    if (row === undefined || cell === undefined) return null;
+    const node = view.domAtPos(row.lineFrom).node;
+    const element = node instanceof Element ? node : node.parentElement;
+    const line = element?.closest('.cm-np-table-line');
+    if (
+      !(line instanceof HTMLElement) ||
+      view.posAtDOM(line, 0) !== row.lineFrom
+    )
+      return null;
+    const cellElement = Array.from(
+      line.querySelectorAll('.cm-np-table-cell, .cm-np-table-head'),
+    ).find(
+      (element): element is HTMLElement =>
+        element instanceof HTMLElement &&
+        element.style.gridColumnStart === String(at.column + 2),
+    );
+    const wrapper = line.closest('.cm-np-table');
+    if (!(wrapper instanceof HTMLElement) || cellElement === undefined)
+      return null;
+    let caret = view.coordsAtPos(head);
+    if (caret === null || caret.bottom <= caret.top)
+      caret = view.coordsAtPos(head, -1);
+    let left: number;
+    let right: number;
+    let start: number;
+    // A match of Find is revealed by the text that it renders in this
+    // table, in one cell or across cells and rows. A match that ends in
+    // another table, or that is not rendered yet, reveals its head, as
+    // the caret does.
+    const extent =
+      search && anchor !== head
+        ? renderedExtent(view, wrapper, anchor, head)
+        : null;
+    if (extent !== null) {
+      left = extent.left;
+      right = extent.right;
+      start = extent.start;
+    } else if (caret !== null && caret.bottom > caret.top) {
+      left = caret.left;
+      right = caret.right;
+      start = left;
+    } else {
+      // Hidden syntax can have no caret rectangle. Only an empty cell
+      // can use its uniquely mapped content edge as a view-only anchor.
+      if (cell.textFrom !== cell.textTo) return null;
+      const style = getComputedStyle(cellElement);
+      left =
+        cellElement.getBoundingClientRect().left +
+        parseFloat(style.borderLeftWidth) +
+        parseFloat(style.paddingLeft);
+      right = left;
+      start = left;
+    }
+    const bounds = wrapper.getBoundingClientRect();
+    const margin = view.defaultCharacterWidth;
+    // A match that fits shows whole. A wider match shows where it
+    // starts, a margin from the left edge, so its first words read in
+    // place.
+    const delta =
+      right - left > bounds.width - 2 * margin
+        ? start - bounds.left - margin
+        : left < bounds.left
+          ? left - bounds.left - margin
+          : right > bounds.right
+            ? right - bounds.right + margin
+            : 0;
+    return { wrapper, delta };
   }
 }
 
@@ -2265,68 +2460,9 @@ const gridView = ViewPlugin.fromClass(
   },
 );
 
-/**
- * Scrolls a range in a table whose head has no caret rectangle.
- *
- * A match of Find can end on the hidden pipe at the end of a row, and the
- * editor scrolls a range by the caret rectangle of its head. A hidden pipe
- * has none, so the editor did not scroll at all, or left the foot of a
- * wrapped row under the edge of the screen. This handler takes over only
- * for such a range. It reads the measured line blocks of the range, which
- * hold whole rows, and moves the text the least that shows them inside the
- * margins of the editor, such as the floating find card. A range taller
- * than the room shows its start. It reads geometry that the editor already
- * measured and writes one scroll offset, and it dispatches nothing.
- */
-const hiddenHeadScroll = EditorView.scrollHandler.of((view, range, options) => {
-  // The layout cannot be read during the update that scrolls, so the
-  // grammar says whether the head stands on hidden syntax: just after a
-  // pipe, or on the delimiter row.
-  const table = tableAt(view.state, range.head);
-  const row = table === null ? null : rowAt(table, range.head);
-  if (
-    row === null ||
-    (row.kind !== 'delimiter' &&
-      !row.pipes.some(
-        (pipe) => range.head > pipe.from && range.head <= pipe.to,
-      ))
-  )
-    return false;
-  const first = view.lineBlockAt(Math.min(range.anchor, range.head));
-  const last = view.lineBlockAt(Math.max(range.anchor, range.head));
-  let marginTop = 0;
-  let marginBottom = 0;
-  for (const source of view.state.facet(EditorView.scrollMargins)) {
-    const margins = source(view);
-    marginTop = Math.max(marginTop, margins?.top ?? 0);
-    marginBottom = Math.max(marginBottom, margins?.bottom ?? 0);
-  }
-  const scroller = view.scrollDOM.getBoundingClientRect();
-  const screen = readVisibleArea();
-  const top = Math.max(scroller.top, screen.top) + marginTop + options.yMargin;
-  const bottom =
-    Math.min(scroller.bottom, screen.bottom) - marginBottom - options.yMargin;
-  const targetTop = view.documentTop + first.top;
-  const targetBottom = view.documentTop + last.bottom;
-  const delta =
-    options.y === 'start' || targetBottom - targetTop > bottom - top
-      ? targetTop - top
-      : options.y === 'end'
-        ? targetBottom - bottom
-        : options.y === 'center'
-          ? (targetTop + targetBottom - top - bottom) / 2
-          : targetTop < top
-            ? targetTop - top
-            : targetBottom > bottom
-              ? targetBottom - bottom
-              : 0;
-  if (delta !== 0) view.scrollDOM.scrollTop += delta;
-  return true;
-});
-
 /** How a table looks: one scrolling grid for each table (record 0095). */
 export function tableGridView(): Extension {
-  return [gridView, tableCaretView, hiddenHeadScroll];
+  return [gridView, tableCaretView];
 }
 
 /** How a table is edited: the caret, the protected text, and the input. */

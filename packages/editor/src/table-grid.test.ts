@@ -40,6 +40,7 @@ import {
   cellText,
   pastedCells,
   gridParts,
+  measurableRange,
   tableColumnWidths,
   nextCellEdit,
   previousCellEdit,
@@ -1203,4 +1204,59 @@ await test('capped table diff fallback retains exact large changed-cell text', (
     transaction.state.selection.main.head,
     expected.cell({ row: 130, column: 1 }).to,
   );
+});
+
+await test('a scroll target moves off hidden table syntax to the text beside it', () => {
+  // Each mark stands where a range ends; the table has a leading and a
+  // trailing pipe, an empty cell, a header and a body row.
+  const doc =
+    'Intro\n\n| Head A | Head B |\n| --- | --- |\n| one | |\n| two | three |\n\nEnd';
+  const state = parsedWhole(
+    EditorState.create({
+      doc,
+      extensions: [noteMarkdownExtensions({ headless: true })],
+    }),
+  );
+  const at = (text: string, offset = 0) => doc.indexOf(text) + offset;
+  const target = (anchor: number, head: number) => {
+    const range = measurableRange(state, EditorSelection.range(anchor, head));
+    return [range.anchor, range.head];
+  };
+  const caret = (pos: number) => {
+    const range = measurableRange(state, EditorSelection.cursor(pos));
+    assert.equal(range.empty, true, 'an empty range stays empty');
+    return range.head;
+  };
+  // Text inside a cell, and text outside the table, stay.
+  assert.deepEqual(target(at('wo'), at('wo', 2)), [at('wo'), at('wo', 2)]);
+  assert.equal(caret(at('Intro', 2)), at('Intro', 2));
+  // Trailing pipe: the end of the text before it.
+  const afterThree = at('three |', 7);
+  assert.equal(caret(afterThree), at('three', 5));
+  // Internal pipe, forward and backward: each end moves inward, and the
+  // direction stays.
+  assert.deepEqual(target(at('two'), at('two |', 5)), [
+    at('two'),
+    at('two', 3),
+  ]);
+  assert.deepEqual(target(at('two |', 5), at('two')), [
+    at('two', 3),
+    at('two'),
+  ]);
+  // Leading pipe as the start of a range: the start of the text after it.
+  const rowStart = at('| two');
+  assert.deepEqual(target(rowStart, at('two', 3)), [at('two'), at('two', 3)]);
+  // A range that covers a pipe alone becomes the caret before it.
+  const pipe = at('two |', 4);
+  assert.deepEqual(target(pipe, pipe + 1), [at('two', 3), at('two', 3)]);
+  // An empty cell holds no text and is passed over: the end of "one".
+  const emptyCell = at('one | |', 7);
+  assert.equal(caret(emptyCell), at('one', 3));
+  // The delimiter row: the last text of the header before it, or the first
+  // text of the body after it.
+  const delimiter = at('| --- |', 3);
+  assert.equal(caret(delimiter), at('Head B', 6));
+  assert.deepEqual(target(delimiter, at('one', 3)), [at('one'), at('one', 3)]);
+  // A header cell keeps its text.
+  assert.equal(caret(at('Head A', 2)), at('Head A', 2));
 });

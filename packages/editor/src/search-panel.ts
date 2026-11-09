@@ -35,7 +35,11 @@ import {
   SearchQuery,
   setSearchQuery,
 } from '@codemirror/search';
-import { EditorState, type Extension } from '@codemirror/state';
+import {
+  EditorState,
+  type Extension,
+  type SelectionRange,
+} from '@codemirror/state';
 import {
   EditorView,
   runScopeHandlers,
@@ -58,6 +62,34 @@ import {
   followVisibleArea,
   glyph,
 } from '@notesapp/ui';
+import { measurableRange } from './table-grid.ts';
+
+/**
+ * Where Find scrolls for a match: the match with each end that stands on
+ * hidden table syntax moved to the cell text beside it.
+ *
+ * The editor scrolls a range by the caret of its head, and a hidden pipe
+ * has none. The target changes, never the selection or the text. A replace
+ * hands over the next match in the text after the change, which this state
+ * does not hold yet, so such a range scrolls as it is and the table reveal
+ * measures it again after the update.
+ */
+export function findScrollTarget(
+  state: EditorState,
+  range: SelectionRange,
+): SelectionRange {
+  // An empty range only becomes a caret, so it maps without the check, and
+  // the table reveal measures it again after the update.
+  if (range.empty) return measurableRange(state, range);
+  const match = getSearchQuery(state)
+    .getCursor(state, range.from, range.to)
+    .next();
+  return !match.done &&
+    match.value.from === range.from &&
+    match.value.to === range.to
+    ? measurableRange(state, range)
+    : range;
+}
 
 /** Shared search layout, also checked against the served stylesheet. */
 export const searchPanelClasses = editorSearchClasses;
@@ -735,9 +767,10 @@ class SearchPanel implements Panel {
             )
               return;
             this.view.dispatch({
-              effects: EditorView.scrollIntoView(state.selection.main, {
-                y: 'nearest',
-              }),
+              effects: EditorView.scrollIntoView(
+                measurableRange(state, state.selection.main),
+                { y: 'nearest' },
+              ),
             });
           });
         }

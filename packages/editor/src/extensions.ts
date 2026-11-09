@@ -32,6 +32,7 @@ import {
 import {
   createSearchPanel,
   editorPhrases,
+  findScrollTarget,
   noteSearchKeymap,
   openReplacePanel,
   replaceAllAnnouncement,
@@ -61,7 +62,14 @@ export const openFindAndReplace = openReplacePanel;
 export function editorCommands(): Extension {
   return [
     // The find panel is a panel of the design system (issue 247).
-    search({ top: true, createPanel: createSearchPanel }),
+    // Find scrolls to a match moved off hidden table syntax, by the rules of
+    // the editor (findScrollTarget).
+    search({
+      top: true,
+      createPanel: createSearchPanel,
+      scrollToMatch: (range, view) =>
+        EditorView.scrollIntoView(findScrollTarget(view.state, range)),
+    }),
     searchPanelScrollMargins,
     replaceAllAnnouncement,
     EditorState.phrases.of(editorPhrases),
