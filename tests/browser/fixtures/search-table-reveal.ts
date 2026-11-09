@@ -53,6 +53,17 @@ const original = [
   '## Table C',
   table('C', new Map([['3:10', 'needle in c']])),
   prose,
+  // Table D has a wide column whose second row holds a short cell, so the
+  // box of that cell is much wider than its text.
+  '## Table D',
+  table(
+    'D',
+    new Map([
+      ['0:11', prose],
+      ['1:11', 'dx'],
+    ]),
+  ),
+  prose,
 ].join('\n\n');
 const view = createEditor(host, original, () => {}, { theme });
 view.dom.style.height = '640px';
@@ -87,6 +98,7 @@ function wrappers(): HTMLElement[] {
 /** The table that holds a document position, by its heading above. */
 function tableNameAt(pos: number): string {
   const text = view.state.doc.sliceString(0, pos);
+  if (text.includes('## Table D')) return 'D';
   return text.includes('## Table C')
     ? 'C'
     : text.includes('## Table B')
@@ -124,19 +136,20 @@ const fixture = {
   settle,
   /** Scrolls one table by a person's offset, as a wheel or drag does. */
   /** The middle of one rendered table, where a wheel pans it. */
-  center(name: 'A' | 'B' | 'C') {
+  center(name: 'A' | 'B' | 'C' | 'D') {
     const box = tablesByName().get(name)?.getBoundingClientRect();
     if (box === undefined) throw Error('Missing table ' + name);
     return { x: box.left + box.width / 2, y: box.top + box.height / 2 };
   },
-  pan(name: 'A' | 'B' | 'C', left: number) {
+  pan(name: 'A' | 'B' | 'C' | 'D', left: number) {
     const wrapper = tablesByName().get(name);
     if (wrapper === undefined) throw Error('Missing table ' + name);
     wrapper.scrollLeft = left;
   },
   snapshot() {
     const { from, to, empty } = view.state.selection.main;
-    const wrapper = wrapperAt(to);
+    // A match that ends after a pipe ends outside its last cell.
+    const wrapper = wrapperAt(to) ?? wrapperAt(from);
     const start = view.coordsAtPos(from, 1);
     const end = view.coordsAtPos(to, -1);
     const box = wrapper?.getBoundingClientRect();
@@ -177,31 +190,36 @@ const fixture = {
       selected: view.state.sliceDoc(from, to),
       table: wrapper === null ? null : tableNameAt(to),
       parts,
-      match:
-        start === null || end === null || box === undefined
+      charWidth: view.defaultCharacterWidth,
+      match: (() => {
+        // The rendered parts measure the match. A zero width match has none,
+        // and its caret measures it.
+        const ends =
+          parts.length > 0
+            ? {
+                left: Math.min(...parts.map((part) => part.left)),
+                right: Math.max(...parts.map((part) => part.right)),
+                top: Math.min(...parts.map((part) => part.top)),
+                bottom: Math.max(...parts.map((part) => part.bottom)),
+              }
+            : start !== null && end !== null
+              ? {
+                  left: Math.min(start.left, end.left),
+                  right: Math.max(start.right, end.right),
+                  top: Math.min(start.top, end.top),
+                  bottom: Math.max(start.bottom, end.bottom),
+                }
+              : null;
+        return ends === null || box === undefined
           ? null
           : {
-              left:
-                parts.length > 0
-                  ? Math.min(...parts.map((part) => part.left))
-                  : Math.min(start.left, end.left),
-              right:
-                parts.length > 0
-                  ? Math.max(...parts.map((part) => part.right))
-                  : Math.max(start.right, end.right),
-              top:
-                parts.length > 0
-                  ? Math.min(...parts.map((part) => part.top))
-                  : Math.min(start.top, end.top),
-              bottom:
-                parts.length > 0
-                  ? Math.max(...parts.map((part) => part.bottom))
-                  : Math.max(start.bottom, end.bottom),
+              ...ends,
               boxLeft: box.left,
               boxRight: box.right,
               screenTop: scroller.top,
               screenBottom: scroller.bottom,
-            },
+            };
+      })(),
       tables,
       pageX: window.scrollX,
       pageWidth: document.documentElement.scrollWidth,
