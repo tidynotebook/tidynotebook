@@ -254,6 +254,15 @@ await test('the replace key, Show replace and the options trigger keep focus and
     button('Show replace')?.click();
     assert.equal(field('Replace with')?.hidden, true);
     assert.equal(document.activeElement, field('Find'));
+    // Keyboard activation starts with focus on the toggle, not in a field.
+    openReplacePanel(view);
+    button('Show replace')?.focus();
+    button('Show replace')?.click();
+    assert.equal(field('Replace with')?.hidden, true);
+    assert.ok(
+      document.activeElement === field('Find'),
+      'hiding Replace from its focused toggle must focus Find',
+    );
     // From Find, the key opens the row again; Show replace does the same.
     openReplacePanel(view);
     assert.equal(document.activeElement, field('Replace with'));
