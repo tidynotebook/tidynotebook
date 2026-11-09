@@ -141,6 +141,20 @@ const fixture = {
     const end = view.coordsAtPos(to, -1);
     const box = wrapper?.getBoundingClientRect();
     const scroller = view.scrollDOM.getBoundingClientRect();
+    // The rendered parts of the selected match, which can sit in several
+    // cells and rows. A zero width match has none and uses its caret.
+    const parts = Array.from(
+      view.contentDOM.querySelectorAll('.cm-searchMatch-selected'),
+      (mark) => Array.from(mark.getClientRects()),
+    )
+      .flat()
+      .filter((rect) => rect.width > 0 && rect.height > 0)
+      .map((rect) => ({
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+        bottom: rect.bottom,
+      }));
     const active = document.activeElement;
     const tables = Object.fromEntries(
       Array.from(tablesByName(), ([name, element]) => [
@@ -162,14 +176,27 @@ const fixture = {
       },
       selected: view.state.sliceDoc(from, to),
       table: wrapper === null ? null : tableNameAt(to),
+      parts,
       match:
         start === null || end === null || box === undefined
           ? null
           : {
-              left: Math.min(start.left, end.left),
-              right: Math.max(start.right, end.right),
-              top: Math.min(start.top, end.top),
-              bottom: Math.max(start.bottom, end.bottom),
+              left:
+                parts.length > 0
+                  ? Math.min(...parts.map((part) => part.left))
+                  : Math.min(start.left, end.left),
+              right:
+                parts.length > 0
+                  ? Math.max(...parts.map((part) => part.right))
+                  : Math.max(start.right, end.right),
+              top:
+                parts.length > 0
+                  ? Math.min(...parts.map((part) => part.top))
+                  : Math.min(start.top, end.top),
+              bottom:
+                parts.length > 0
+                  ? Math.max(...parts.map((part) => part.bottom))
+                  : Math.max(start.bottom, end.bottom),
               boxLeft: box.left,
               boxRight: box.right,
               screenTop: scroller.top,

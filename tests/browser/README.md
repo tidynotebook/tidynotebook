@@ -140,7 +140,9 @@ matches on both sides of a table, between tables and far down the note, and
 backwards across the wrap. A wheel pan must win until the next match. Every
 other table keeps its own offset, and the page never moves sideways. It also
 checks Show replace, the replace key, Replace, Undo and Redo, a zero width
-match, and a closed and opened panel. Serve the fixture as for
+match, and a closed and opened panel. A match across cells must show every
+rendered part when it fits the table, in both directions and from a far
+offset. A wider match, and one across rows, shows where it starts. Serve the fixture as for
 `table-viewport.ts` and run:
 
 ```sh

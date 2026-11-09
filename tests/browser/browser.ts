@@ -16,6 +16,7 @@ export type Locator = {
   first(): Locator;
   filter(options: { visible: boolean }): Locator;
   count(): Promise<number>;
+  getAttribute(name: string): Promise<string | null>;
   locator(selector: string): Locator;
   and(locator: Locator): Locator;
   getByRole(
