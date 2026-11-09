@@ -1701,11 +1701,12 @@ function renderedExtent(
     range.commonAncestorContainer,
     NodeFilter.SHOW_TEXT,
   );
-  walker.currentNode = range.startContainer;
-  let node: Node | null =
-    range.startContainer.nodeType === Node.TEXT_NODE
-      ? range.startContainer
-      : walker.nextNode();
+  // An element offset is a child index. Skip all preceding child subtrees.
+  const child = range.startContainer.childNodes[range.startOffset];
+  walker.currentNode = child ?? range.startContainer;
+  let node: Node | null = walker.currentNode;
+  if (node.nodeType !== Node.TEXT_NODE)
+    node = child ? walker.nextNode() : walker.nextSibling();
   const part = doc.createRange();
   let left = Infinity;
   let right = -Infinity;
