@@ -75,6 +75,11 @@ const original = [
     Array.from({ length: 60 }, () => prose).join(' ') +
     ' tailmark | E cell 0 2 |\n| E cell 1 0 | E cell 1 1 | E cell 1 2 |',
   prose,
+  // Table F has an empty header row and an empty body row, so a row holds
+  // no text at all.
+  '## Table F',
+  '|  |  |\n| --- | --- |\n| F 0 0 | F 0 1 |\n|  |  |\n| F 2 0 | F 2 1 |',
+  prose,
   '## Table D',
   table(
     'D',
@@ -119,6 +124,7 @@ function wrappers(): HTMLElement[] {
 function tableNameAt(pos: number): string {
   const text = view.state.doc.sliceString(0, pos);
   if (text.includes('## Table D')) return 'D';
+  if (text.includes('## Table F')) return 'F';
   if (text.includes('## Table E')) return 'E';
   return text.includes('## Table C')
     ? 'C'
