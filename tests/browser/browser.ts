@@ -14,9 +14,10 @@ export type Locator = {
     state?: 'attached' | 'detached' | 'visible' | 'hidden';
   }): Promise<void>;
   first(): Locator;
-  filter(options: { visible: boolean }): Locator;
+  filter(options: { visible?: boolean; hasText?: string }): Locator;
   count(): Promise<number>;
   getAttribute(name: string): Promise<string | null>;
+  isVisible(): Promise<boolean>;
   locator(selector: string): Locator;
   and(locator: Locator): Locator;
   getByRole(
@@ -62,6 +63,10 @@ export type Page = {
   setViewportSize(size: { width: number; height: number }): Promise<void>;
   on(event: 'pageerror', callback: (error: Error) => void): void;
   on(event: 'request', callback: (request: Request) => void): void;
+  on(
+    event: 'console',
+    callback: (message: { type(): string; text(): string }) => void,
+  ): void;
   evaluate<T>(run: () => T): Promise<Awaited<T>>;
   evaluate<T, A>(run: (argument: A) => T, argument: A): Promise<Awaited<T>>;
   screenshot(options: {

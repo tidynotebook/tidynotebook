@@ -152,3 +152,22 @@ node tests/browser/search-table-reveal.ts
 ```
 
 `SEARCH_TABLE_OUTPUT` selects the evidence directory.
+
+`search-vertical-reveal.ts` checks that Find scrolls the text to a match that
+ends on hidden table syntax, such as the pipe at the end of a row. Each case
+starts from where the person is, with no row placed first: a far jump with
+and without the replace row, a wrap from the end of the note, a visible end,
+a zero width match, a match across rows, Next and Previous through four
+tables, a wheel that keeps its offset, and Replace with Undo and Redo. The
+rendered text of the match must sit inside the editor and the visible area,
+inside its table and clear of the find card, at 1440, 390 and 320 px, at a
+short phone keyboard height, in light and dark. Serve the fixture as for
+`table-viewport.ts` and run:
+
+```sh
+PLAYWRIGHT_MODULE=/absolute/path/to/playwright-core/index.mjs \
+UI_AUDIT_ORIGIN=http://127.0.0.1:3019 \
+node tests/browser/search-vertical-reveal.ts
+```
+
+`SEARCH_VERTICAL_OUTPUT` selects the evidence directory.
