@@ -362,16 +362,14 @@ class SearchPanel implements Panel {
       return toggle;
     });
     // Show replace puts the focus in Replace with, where the next key goes.
-    // Hiding the row while its field has the focus gives it to Find.
+    // Hiding the row gives the focus back to Find.
     const replacementToggle = iconButton('Show replace', replaceParts, () => {
       if (!this.replaceVisible) {
         this.openReplace();
         return;
       }
-      const inReplace =
-        this.dom.ownerDocument.activeElement === this.replaceField;
       this.showReplace(false);
-      if (inReplace) this.searchField.focus();
+      this.searchField.focus();
     });
 
     replacementToggle.setAttribute('aria-pressed', 'false');
