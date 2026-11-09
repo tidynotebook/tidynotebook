@@ -103,8 +103,9 @@ const viewports = [
   { name: '1440', width: 1440, height: 900, touch: false },
   { name: '390', width: 390, height: 844, touch: false },
   { name: '320', width: 320, height: 844, touch: false },
-  // A phone keyboard leaves a short visible area.
-  { name: '390-keyboard', width: 390, height: 420, touch: false },
+  // A short browser window. It is not the visual viewport of a phone
+  // keyboard, which this check does not drive.
+  { name: '390x420-short-viewport', width: 390, height: 420, touch: false },
 ] as const;
 
 try {

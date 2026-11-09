@@ -1,10 +1,23 @@
 /** A real editor with two wide tables for checks of Find in a table. */
+import { EditorSelection } from '@codemirror/state';
+import { EditorView } from '@codemirror/view';
 import { createEditor } from '../../../packages/editor/src/create-editor.ts';
+import { measurableRange } from '../../../packages/editor/src/table-grid.ts';
 import { applyThemeToDocument, defaultThemeFor } from '@notesapp/ui';
 
+const params = new URLSearchParams(location.search);
+// `layout=nested` puts the editor, at its full height, inside an outer box
+// that scrolls on both axes, so a scroll request reaches an ancestor.
+const nested = params.get('layout') === 'nested';
+const outer = document.createElement('div');
+if (nested) {
+  outer.style.cssText =
+    'height: 500px; width: 600px; overflow: auto; position: relative';
+  document.body.append(outer);
+}
 const host = document.createElement('main');
-host.style.width = '900px';
-document.body.append(host);
+host.style.width = nested ? '1300px' : '900px';
+(nested ? outer : document.body).append(host);
 document.body.style.margin = '0';
 const theme =
   new URLSearchParams(location.search).get('theme') === 'light'
@@ -55,6 +68,13 @@ const original = [
   prose,
   // Table D has a wide column whose second row holds a short cell, so the
   // box of that cell is much wider than its text.
+  // Table E has one row taller than the editor: its middle cell wraps a
+  // long text that ends with a short word at the foot of the row.
+  '## Table E',
+  '| E head 0 | E head 1 | E head 2 |\n| --- | --- | --- |\n| E cell 0 0 | ' +
+    Array.from({ length: 60 }, () => prose).join(' ') +
+    ' tailmark | E cell 0 2 |\n| E cell 1 0 | E cell 1 1 | E cell 1 2 |',
+  prose,
   '## Table D',
   table(
     'D',
@@ -66,7 +86,7 @@ const original = [
   prose,
 ].join('\n\n');
 const view = createEditor(host, original, () => {}, { theme });
-view.dom.style.height = '640px';
+if (!nested) view.dom.style.height = '640px';
 
 const frame = () =>
   new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
@@ -99,6 +119,7 @@ function wrappers(): HTMLElement[] {
 function tableNameAt(pos: number): string {
   const text = view.state.doc.sliceString(0, pos);
   if (text.includes('## Table D')) return 'D';
+  if (text.includes('## Table E')) return 'E';
   return text.includes('## Table C')
     ? 'C'
     : text.includes('## Table B')
@@ -238,6 +259,119 @@ const fixture = {
         view.dom
           .querySelector('.cm-np-search [aria-live]')
           ?.getAttribute('aria-label') ?? null,
+    };
+  },
+  /** The document offset of the first copy of `text`. */
+  offset(text: string) {
+    return view.state.doc.toString().indexOf(text);
+  },
+  /**
+   * Asks the editor to scroll a range into view as a table-aware caller
+   * does: with the ends moved off hidden table syntax first.
+   */
+  scrollMapped(
+    anchor: number,
+    head: number,
+    y: 'nearest' | 'start' | 'end' | 'center',
+  ) {
+    view.dispatch({
+      effects: EditorView.scrollIntoView(
+        measurableRange(view.state, EditorSelection.range(anchor, head)),
+        { y },
+      ),
+    });
+  },
+  /** Asks the editor to scroll a raw range into view, as any caller may. */
+  scrollRange(
+    anchor: number,
+    head: number,
+    y: 'nearest' | 'start' | 'end' | 'center',
+    x: 'nearest' | 'start' | 'end' | 'center' = 'nearest',
+  ) {
+    view.dispatch({
+      effects: EditorView.scrollIntoView(EditorSelection.range(anchor, head), {
+        y,
+        x,
+      }),
+    });
+  },
+  /**
+   * The rendered text of a document range, measured on its text nodes
+   * alone, and the caret rectangle when the range is empty.
+   */
+  rendered(from: number, to: number) {
+    const rects: {
+      left: number;
+      right: number;
+      top: number;
+      bottom: number;
+    }[] = [];
+    if (from === to) {
+      const caret = view.coordsAtPos(from, 1) ?? view.coordsAtPos(from, -1);
+      if (caret !== null)
+        rects.push({
+          left: caret.left,
+          right: caret.right,
+          top: caret.top,
+          bottom: caret.bottom,
+        });
+      return rects;
+    }
+    const first = view.domAtPos(from, 1);
+    const last = view.domAtPos(to, -1);
+    if (
+      !view.contentDOM.contains(first.node) ||
+      !view.contentDOM.contains(last.node)
+    )
+      return rects;
+    const range = document.createRange();
+    range.setStart(first.node, first.offset);
+    range.setEnd(last.node, last.offset);
+    // A walker never returns its own root, so a range inside one text node
+    // walks from the parent of that node.
+    const common = range.commonAncestorContainer;
+    const walker = document.createTreeWalker(
+      common instanceof Text && common.parentNode !== null
+        ? common.parentNode
+        : common,
+      NodeFilter.SHOW_TEXT,
+    );
+    for (
+      let node = walker.nextNode();
+      node !== null;
+      node = walker.nextNode()
+    ) {
+      if (!(node instanceof Text) || !range.intersectsNode(node)) continue;
+      const part = document.createRange();
+      part.setStart(
+        node,
+        node === range.startContainer ? range.startOffset : 0,
+      );
+      part.setEnd(
+        node,
+        node === range.endContainer ? range.endOffset : node.length,
+      );
+      for (const rect of part.getClientRects())
+        if (rect.width > 0 && rect.height > 0)
+          rects.push({
+            left: rect.left,
+            right: rect.right,
+            top: rect.top,
+            bottom: rect.bottom,
+          });
+    }
+    return rects;
+  },
+  /** The box that the person sees text through: the editor or the outer box. */
+  frame() {
+    const box = (nested ? outer : view.scrollDOM).getBoundingClientRect();
+    return {
+      top: Math.max(box.top, 0),
+      bottom: Math.min(box.bottom, window.innerHeight),
+      left: Math.max(box.left, 0),
+      right: Math.min(box.right, window.innerWidth),
+      outerTop: nested ? outer.scrollTop : null,
+      outerLeft: nested ? outer.scrollLeft : null,
     };
   },
   /** Puts the caret at the end of the note with the focus in the text. */

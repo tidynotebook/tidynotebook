@@ -160,8 +160,8 @@ and without the replace row, a wrap from the end of the note, a visible end,
 a zero width match, a match across rows, Next and Previous through four
 tables, a wheel that keeps its offset, and Replace with Undo and Redo. The
 rendered text of the match must sit inside the editor and the visible area,
-inside its table and clear of the find card, at 1440, 390 and 320 px, at a
-short phone keyboard height, in light and dark. Serve the fixture as for
+inside its table and clear of the find card, at 1440, 390 and 320 px and in
+a short browser window, in light and dark. Serve the fixture as for
 `table-viewport.ts` and run:
 
 ```sh
@@ -171,3 +171,10 @@ node tests/browser/search-vertical-reveal.ts
 ```
 
 `SEARCH_VERTICAL_OUTPUT` selects the evidence directory.
+
+`search-vertical-cases.ts` runs the vertical cases one by one and reports each:
+a short match at the foot of a row taller than the editor, an empty match on
+hidden syntax, the head of a distant range across rows, a table-aware caller
+that asks for each alignment, a box that scrolls on both axes around the
+editor, a wheel, and an editor that goes during a reveal. Known limits print
+as `LIMIT` lines and measure warnings as `WARNINGS` lines; neither fails.
