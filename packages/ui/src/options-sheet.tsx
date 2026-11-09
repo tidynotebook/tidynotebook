@@ -2,8 +2,16 @@
 import { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Dialog, DialogBody, DialogFooter } from './dialog.tsx';
-import { Button, Switch } from './controls.tsx';
-import type { OptionsSheetEvents } from './open-options-sheet.ts';
+import { Button } from './controls.tsx';
+import { ListRow } from './layout.tsx';
+
+/** What the opener of the sheet learns, and where the focus goes back. */
+export type OptionsSheetEvents = {
+  /** Runs once when the sheet closes, by any road. */
+  readonly onClose?: () => void;
+  /** Gives the focus back on close, in place of the element that opened it. */
+  readonly returnFocus?: () => void;
+};
 
 export type SheetOption = {
   readonly label: string;
@@ -40,13 +48,21 @@ export function openOptionsSheet(
       >
         <DialogBody>
           {options.map((option) => (
-            <Switch
+            // The row of a switch, as `Switch` draws it, with its own side
+            // inset at a fine pointer. A Settings row reaches its fill past
+            // the content into the padding of its region, and this dialog,
+            // whose panel owns the inset, clips that fill at the row.
+            <ListRow
               key={option.label}
-              inset
+              as="button"
+              density="setting"
+              className="fine:px-2"
               label={option.label}
-              checked={option.read()}
-              onChange={(checked) => {
-                option.change(checked);
+              trailing={{ kind: 'switch', checked: option.read() }}
+              role="switch"
+              aria-checked={option.read()}
+              onClick={() => {
+                option.change(!option.read());
                 refresh((value) => value + 1);
               }}
             />

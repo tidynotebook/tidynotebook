@@ -283,6 +283,11 @@ await test('the replace key, Show replace and the options trigger keep focus and
       more.getAttribute('aria-controls'),
       'editor-options-title-panel',
     );
+    // Each switch row keeps its own side inset at a fine pointer (audit D17).
+    const rows = document.querySelectorAll('[role=dialog] button[role=switch]');
+    assert.equal(rows.length, 4);
+    for (const row of rows)
+      assert.ok(row.className.split(' ').includes('fine:px-2'), row.className);
     // A second press while it shows opens nothing more.
     more.click();
     assert.equal(document.querySelectorAll('[role=dialog]').length, 1);
