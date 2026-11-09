@@ -1666,6 +1666,48 @@ const tableWords = new Intl.Segmenter(undefined, {
 const measuredTables = StateEffect.define<ReadonlyMap<number, TableLayout>>();
 
 /**
+ * The horizontal extent of the text that a range renders in one table.
+ *
+ * Both ends must be rendered inside `wrapper`, so a range that leaves the
+ * table, or one that is not drawn yet, has no extent. The rectangles are
+ * those of the rendered text of the range, across cells and rows, and the
+ * count follows the rendered nodes of the match alone. `start` is the left
+ * edge of the part where the range starts.
+ */
+function renderedExtent(
+  view: EditorView,
+  wrapper: HTMLElement,
+  anchor: number,
+  head: number,
+): {
+  readonly left: number;
+  readonly right: number;
+  readonly start: number;
+} | null {
+  const from = Math.min(anchor, head);
+  const to = Math.max(anchor, head);
+  const first = view.domAtPos(from, 1);
+  const last = view.domAtPos(to, -1);
+  if (!wrapper.contains(first.node) || !wrapper.contains(last.node))
+    return null;
+  const range = view.dom.ownerDocument.createRange();
+  range.setStart(first.node, first.offset);
+  range.setEnd(last.node, last.offset);
+  let left = Infinity;
+  let right = -Infinity;
+  // The rectangles come in document order, so the first one is where the
+  // match starts, which a match across rows can draw right of its end.
+  let start = Infinity;
+  for (const rect of range.getClientRects()) {
+    if (rect.bottom <= rect.top) continue;
+    if (start === Infinity) start = rect.left;
+    left = Math.min(left, rect.left);
+    right = Math.max(right, rect.right);
+  }
+  return left <= right ? { left, right, start } : null;
+}
+
+/**
  * Whether a transaction moved the selection to one match of Find.
  *
  * Find keeps the focus in its own field, so the reveal below cannot wait for
@@ -1788,21 +1830,23 @@ class TableCaretReveal {
           caret = view.coordsAtPos(head, -1);
         let left: number;
         let right: number;
-        // A match of Find is revealed from its start to its end when it
-        // stays in one cell. A match across cells reveals its head, as the
-        // caret does.
-        const start = search && anchor !== head ? cellAt(table, anchor) : null;
-        const other =
-          start !== null && start.row === at.row && start.column === at.column
-            ? view.coordsAtPos(anchor, anchor < head ? 1 : -1)
+        let start: number;
+        // A match of Find is revealed by the text that it renders in this
+        // table, in one cell or across cells and rows. A match that ends in
+        // another table, or that is not rendered yet, reveals its head, as
+        // the caret does.
+        const extent =
+          search && anchor !== head
+            ? renderedExtent(view, wrapper, anchor, head)
             : null;
-        if (caret !== null && caret.bottom > caret.top) {
+        if (extent !== null) {
+          left = extent.left;
+          right = extent.right;
+          start = extent.start;
+        } else if (caret !== null && caret.bottom > caret.top) {
           left = caret.left;
           right = caret.right;
-          if (other !== null && other.bottom > other.top) {
-            left = Math.min(left, other.left);
-            right = Math.max(right, other.right);
-          }
+          start = left;
         } else {
           // Hidden syntax can have no caret rectangle. Only an empty cell
           // can use its uniquely mapped content edge as a view-only anchor.
@@ -1813,16 +1857,21 @@ class TableCaretReveal {
             parseFloat(style.borderLeftWidth) +
             parseFloat(style.paddingLeft);
           right = left;
+          start = left;
         }
         const bounds = wrapper.getBoundingClientRect();
         const margin = view.defaultCharacterWidth;
-        // A match wider than the table shows its start.
+        // A match that fits shows whole. A wider match shows where it
+        // starts, a margin from the left edge, so its first words read in
+        // place.
         const delta =
-          left < bounds.left || right - left > bounds.width - 2 * margin
-            ? left - bounds.left - margin
-            : right > bounds.right
-              ? right - bounds.right + margin
-              : 0;
+          right - left > bounds.width - 2 * margin
+            ? start - bounds.left - margin
+            : left < bounds.left
+              ? left - bounds.left - margin
+              : right > bounds.right
+                ? right - bounds.right + margin
+                : 0;
         return { wrapper, delta };
       },
       write: (result) => {

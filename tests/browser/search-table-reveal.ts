@@ -213,6 +213,109 @@ try {
       assert.equal(state.selected, 'needle far');
       assertShown(state, 'match after reopening the panel');
 
+      // A match across cells shows every rendered part when it fits the
+      // table, in both directions, and from a table panned far away.
+      await page.keyboard.press('Escape');
+      await page.evaluate(() => window.searchTableReveal.home());
+      await page.keyboard.press('Control+f');
+      await page.getByLabel('Find', { exact: true }).fill('');
+      if (
+        (await page
+          .getByRole('button', { name: 'Regular expression' })
+          .getAttribute('aria-pressed')) !== 'true'
+      )
+        await page.getByRole('button', { name: 'Regular expression' }).click();
+      await page
+        .getByLabel('Find', { exact: true })
+        .fill('plain words \\| A cell (2 1|3 12) ');
+      await page.evaluate(() => window.searchTableReveal.pan('A', 100000));
+      await page.keyboard.press('Enter');
+      state = await record('cross-cell-near-left');
+      assert.equal(state.count, '1 of 2');
+      assert.ok(state.parts.length >= 2, 'the match sits in two cells');
+      assertShown(state, 'cross-cell match near the left edge');
+      await page.keyboard.press('Enter');
+      state = await record('cross-cell-far-right');
+      assert.equal(state.count, '2 of 2');
+      assertShown(state, 'cross-cell match in far columns');
+      await page.keyboard.press('Shift+Enter');
+      state = await record('cross-cell-back-left');
+      assert.equal(state.count, '1 of 2');
+      assertShown(state, 'cross-cell match, backwards');
+      // A person pans away. Their offset wins until the next match.
+      const centerA = await page.evaluate(() =>
+        window.searchTableReveal.center('A'),
+      );
+      await page.mouse.move(centerA.x, centerA.y);
+      await page.mouse.wheel(5000, 0);
+      state = await record('cross-cell-manual-pan');
+      assert.ok(
+        state.match !== null && state.match.left < state.match.boxLeft,
+        'a manual pan was undone',
+      );
+      await page.keyboard.press('Enter');
+      await page.keyboard.press('Shift+Enter');
+      state = await record('cross-cell-after-pan');
+      assertShown(state, 'cross-cell match after a manual pan');
+
+      // A match wider than the table shows its start, a margin from the
+      // left edge, and does not promise the rest.
+      await page
+        .getByLabel('Find', { exact: true })
+        .fill('A cell 3 1 plain words.*A cell 3 9 plain');
+      await page.keyboard.press('Enter');
+      state = await record('cross-cell-too-wide');
+      assert.ok(state.match !== null);
+      assert.ok(
+        state.match.right - state.match.left >
+          state.match.boxRight - state.match.boxLeft,
+        'the wide match fits, so this case tests nothing',
+      );
+      const first = state.parts[0];
+      assert.ok(first !== undefined);
+      assert.ok(
+        first.left >= state.match.boxLeft - 0.5 &&
+          first.left < state.match.boxLeft + 40,
+        'the start of a wide match is not at the left edge',
+      );
+
+      // Across rows: the end of one row and the start of the next.
+      await page
+        .getByLabel('Find', { exact: true })
+        .fill('A cell 0 13 plain words \\|\\n\\| A cell 1 0');
+      await page.keyboard.press('Enter');
+      state = await record('cross-row');
+      assert.ok(state.match !== null && state.parts.length >= 2);
+      const firstRow = state.parts[0];
+      assert.ok(firstRow !== undefined);
+      assert.ok(
+        firstRow.left >= state.match.boxLeft - 0.5 &&
+          firstRow.right <= state.match.boxRight + 0.5,
+        'the start of a match across rows is hidden',
+      );
+
+      // Replace a match across cells, keeping its pipe, then Undo and Redo.
+      await page
+        .getByLabel('Find', { exact: true })
+        .fill('plain words \\| A cell 2 1 ');
+      await page.keyboard.press('Enter');
+      state = await record('cross-cell-before-replace');
+      assertShown(state, 'cross-cell match before replace');
+      const beforeReplace = state.text;
+      await page.keyboard.press('Control+h');
+      await page.keyboard.type('plain words | B cell 2 1 ');
+      await page.keyboard.press('Enter');
+      state = await record('cross-cell-after-replace');
+      assert.ok(state.text.includes('plain words | B cell 2 1 plain'));
+      const afterReplace = state.text;
+      await page.keyboard.press('Escape');
+      await page.keyboard.press('Control+z');
+      state = await record('cross-cell-undo');
+      assert.equal(state.text, beforeReplace);
+      await page.keyboard.press('Control+y');
+      state = await record('cross-cell-redo');
+      assert.equal(state.text, afterReplace);
+
       assert.deepEqual(errors, []);
       writeFileSync(
         `${output}/${theme}-steps.json`,
