@@ -294,7 +294,40 @@ try {
         'the start of a match across rows is hidden',
       );
 
+      // A match that covers a short cell whole, in a wide table. The box of
+      // that cell is wider than its text, and the reveal measures the text:
+      // the match ends one character from the edge, with no empty cell
+      // width between.
+      // The row comes into view first, with the replace row closed: a match
+      // that ends on a hidden pipe has no caret rectangle, so the vertical
+      // reveal of the text does not measure it.
+      if (
+        (await page
+          .getByRole('button', { name: 'Show replace' })
+          .getAttribute('aria-pressed')) === 'true'
+      )
+        await page.getByRole('button', { name: 'Show replace' }).click();
+      await page.getByLabel('Find', { exact: true }).fill('D cell 3 0 plain');
+      await page.keyboard.press('Enter');
+      state = await record('short-cell-rows');
+      assertShown(state, 'the rows of the short cell');
+      await page.evaluate(() => window.searchTableReveal.pan('D', 0));
+      await page
+        .getByLabel('Find', { exact: true })
+        .fill('D cell 1 10 plain words \\| dx \\|');
+      await page.keyboard.press('Enter');
+      state = await record('whole-short-cell');
+      assert.equal(state.table, 'D');
+      assertShown(state, 'match over a whole short cell');
+      assert.ok(state.match !== null);
+      assert.ok(
+        state.match.boxRight - state.match.right <= 2 * state.charWidth + 1,
+        `the reveal measured the cell box, not the text: ${String(state.match.boxRight - state.match.right)} px of empty cell`,
+      );
+
       // Replace a match across cells, keeping its pipe, then Undo and Redo.
+      // The match wraps from Table D to Table A, which renders again with
+      // the offset it had, so the reveal must still act after that render.
       await page
         .getByLabel('Find', { exact: true })
         .fill('plain words \\| A cell 2 1 ');

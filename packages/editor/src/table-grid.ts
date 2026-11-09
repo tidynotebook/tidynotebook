@@ -1669,10 +1669,13 @@ const measuredTables = StateEffect.define<ReadonlyMap<number, TableLayout>>();
  * The horizontal extent of the text that a range renders in one table.
  *
  * Both ends must be rendered inside `wrapper`, so a range that leaves the
- * table, or one that is not drawn yet, has no extent. The rectangles are
- * those of the rendered text of the range, across cells and rows, and the
- * count follows the rendered nodes of the match alone. `start` is the left
- * edge of the part where the range starts.
+ * table, or one that is not drawn yet, has no extent. Only the text nodes
+ * of the range count, each clamped to the range: the box of a cell or a
+ * row that the range covers whole is wider than its text, and the padding
+ * or the empty width of a column is not part of a match. The walk starts
+ * at the first node of the range and stops after its last, so it reads the
+ * rendered nodes of the match alone. `start` is the left edge of the first
+ * text in document order, where the match starts.
  */
 function renderedExtent(
   view: EditorView,
@@ -1690,19 +1693,37 @@ function renderedExtent(
   const last = view.domAtPos(to, -1);
   if (!wrapper.contains(first.node) || !wrapper.contains(last.node))
     return null;
-  const range = view.dom.ownerDocument.createRange();
+  const doc = view.dom.ownerDocument;
+  const range = doc.createRange();
   range.setStart(first.node, first.offset);
   range.setEnd(last.node, last.offset);
+  const walker = doc.createTreeWalker(
+    range.commonAncestorContainer,
+    NodeFilter.SHOW_TEXT,
+  );
+  walker.currentNode = range.startContainer;
+  let node: Node | null =
+    range.startContainer.nodeType === Node.TEXT_NODE
+      ? range.startContainer
+      : walker.nextNode();
+  const part = doc.createRange();
   let left = Infinity;
   let right = -Infinity;
-  // The rectangles come in document order, so the first one is where the
-  // match starts, which a match across rows can draw right of its end.
   let start = Infinity;
-  for (const rect of range.getClientRects()) {
-    if (rect.bottom <= rect.top) continue;
-    if (start === Infinity) start = rect.left;
-    left = Math.min(left, rect.left);
-    right = Math.max(right, rect.right);
+  for (; node !== null; node = walker.nextNode()) {
+    if (range.comparePoint(node, 0) > 0) break;
+    if (!(node instanceof Text) || !range.intersectsNode(node)) continue;
+    part.setStart(node, node === range.startContainer ? range.startOffset : 0);
+    part.setEnd(
+      node,
+      node === range.endContainer ? range.endOffset : node.length,
+    );
+    for (const rect of part.getClientRects()) {
+      if (rect.bottom <= rect.top) continue;
+      if (start === Infinity) start = rect.left;
+      left = Math.min(left, rect.left);
+      right = Math.max(right, rect.right);
+    }
   }
   return left <= right ? { left, right, start } : null;
 }
@@ -1737,8 +1758,8 @@ class TableCaretReveal {
   private sequence = 0;
   // A match of Find far down the note has no table yet when the text first
   // scrolls to it, and a new table takes its remembered offset when it
-  // renders. The reveal tries again after the table renders, a few times at
-  // most, until the match shows or a person acts.
+  // renders. The reveal tries again after each render of the grid, four
+  // times at most, and a person who acts ends the tries.
   private searchRetry = -1;
   private searchTries = 0;
 
@@ -1875,12 +1896,12 @@ class TableCaretReveal {
         return { wrapper, delta };
       },
       write: (result) => {
-        if (sequence !== this.sequence || result === null) return;
-        if (result.delta === 0) {
-          // The match shows, so no later render needs to reveal it.
-          if (this.searchRetry === sequence) this.searchRetry = -1;
+        // A table that renders in this pass takes its remembered offset in
+        // a later write of the grid, so a match that shows now can hide
+        // then. The reveal keeps its few tries after a render, and a person
+        // who acts ends them.
+        if (sequence !== this.sequence || result === null || result.delta === 0)
           return;
-        }
         result.wrapper.scrollLeft += result.delta;
         this.view.requestMeasure();
       },
