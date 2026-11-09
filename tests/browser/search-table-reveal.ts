@@ -298,9 +298,9 @@ try {
       // that cell is wider than its text, and the reveal measures the text:
       // the match ends one character from the edge, with no empty cell
       // width between.
-      // The row comes into view first, with the replace row closed: a match
-      // that ends on a hidden pipe has no caret rectangle, so the vertical
-      // reveal of the text does not measure it.
+      // The rows come into view first, with the replace row closed, so this
+      // step measures the horizontal reveal alone. search-vertical-reveal.ts
+      // checks the vertical reveal of such a match from far away.
       if (
         (await page
           .getByRole('button', { name: 'Show replace' })

@@ -240,6 +240,16 @@ const fixture = {
           ?.getAttribute('aria-label') ?? null,
     };
   },
+  /** Puts the caret at the end of the note with the focus in the text. */
+  end() {
+    view.focus();
+    const end = view.state.doc.length;
+    view.dispatch({ selection: { anchor: end }, scrollIntoView: true });
+  },
+  /** The scroll offset of the text, which a wheel moves. */
+  top() {
+    return view.scrollDOM.scrollTop;
+  },
   /** Puts the caret at the start of the note with the focus in the text. */
   home() {
     view.focus();

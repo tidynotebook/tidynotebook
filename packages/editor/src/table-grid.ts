@@ -45,6 +45,7 @@ import {
   type ViewUpdate,
 } from '@codemirror/view';
 import type { SyntaxNode, Tree } from '@lezer/common';
+import { readVisibleArea } from '@notesapp/ui';
 import { diffArrays, diffChars } from 'diff';
 import { TableScrollRecords } from './table-scroll.ts';
 import { fitTableColumns } from './table-widths.ts';
@@ -2264,9 +2265,68 @@ const gridView = ViewPlugin.fromClass(
   },
 );
 
+/**
+ * Scrolls a range in a table whose head has no caret rectangle.
+ *
+ * A match of Find can end on the hidden pipe at the end of a row, and the
+ * editor scrolls a range by the caret rectangle of its head. A hidden pipe
+ * has none, so the editor did not scroll at all, or left the foot of a
+ * wrapped row under the edge of the screen. This handler takes over only
+ * for such a range. It reads the measured line blocks of the range, which
+ * hold whole rows, and moves the text the least that shows them inside the
+ * margins of the editor, such as the floating find card. A range taller
+ * than the room shows its start. It reads geometry that the editor already
+ * measured and writes one scroll offset, and it dispatches nothing.
+ */
+const hiddenHeadScroll = EditorView.scrollHandler.of((view, range, options) => {
+  // The layout cannot be read during the update that scrolls, so the
+  // grammar says whether the head stands on hidden syntax: just after a
+  // pipe, or on the delimiter row.
+  const table = tableAt(view.state, range.head);
+  const row = table === null ? null : rowAt(table, range.head);
+  if (
+    row === null ||
+    (row.kind !== 'delimiter' &&
+      !row.pipes.some(
+        (pipe) => range.head > pipe.from && range.head <= pipe.to,
+      ))
+  )
+    return false;
+  const first = view.lineBlockAt(Math.min(range.anchor, range.head));
+  const last = view.lineBlockAt(Math.max(range.anchor, range.head));
+  let marginTop = 0;
+  let marginBottom = 0;
+  for (const source of view.state.facet(EditorView.scrollMargins)) {
+    const margins = source(view);
+    marginTop = Math.max(marginTop, margins?.top ?? 0);
+    marginBottom = Math.max(marginBottom, margins?.bottom ?? 0);
+  }
+  const scroller = view.scrollDOM.getBoundingClientRect();
+  const screen = readVisibleArea();
+  const top = Math.max(scroller.top, screen.top) + marginTop + options.yMargin;
+  const bottom =
+    Math.min(scroller.bottom, screen.bottom) - marginBottom - options.yMargin;
+  const targetTop = view.documentTop + first.top;
+  const targetBottom = view.documentTop + last.bottom;
+  const delta =
+    options.y === 'start' || targetBottom - targetTop > bottom - top
+      ? targetTop - top
+      : options.y === 'end'
+        ? targetBottom - bottom
+        : options.y === 'center'
+          ? (targetTop + targetBottom - top - bottom) / 2
+          : targetTop < top
+            ? targetTop - top
+            : targetBottom > bottom
+              ? targetBottom - bottom
+              : 0;
+  if (delta !== 0) view.scrollDOM.scrollTop += delta;
+  return true;
+});
+
 /** How a table looks: one scrolling grid for each table (record 0095). */
 export function tableGridView(): Extension {
-  return [gridView, tableCaretView];
+  return [gridView, tableCaretView, hiddenHeadScroll];
 }
 
 /** How a table is edited: the caret, the protected text, and the input. */
