@@ -49,7 +49,6 @@ import {
   moreParts,
   replaceParts,
   openOptionsSheet,
-  optionsSheetPanelId,
   closeParts,
   fieldClassName,
   bareFieldClassName,
@@ -223,6 +222,9 @@ export function searchPanelKey(
   if (field === 'replace') return 'replace';
   return null;
 }
+
+/** The dialog panel of the options sheet, which its title id names. */
+const optionsSheetPanelId = 'editor-options-title-panel';
 
 /** The class of the glyph inside a control: the 16 px of a control. */
 const glyphClass = 'size-4 shrink-0';

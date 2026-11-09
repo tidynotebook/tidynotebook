@@ -300,7 +300,6 @@ export { textRoleClasses, touchTextRoles } from './typography.ts';
 export { PhoneSheetHeader } from './phone-sheet.tsx';
 export {
   openOptionsSheet,
-  optionsSheetPanelId,
   type OptionsSheetEvents,
 } from './open-options-sheet.ts';
 

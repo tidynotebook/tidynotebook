@@ -26,7 +26,6 @@ import type { ReactNode } from 'react';
 import { shortcuts } from '@notesapp/editor';
 
 import { KeyHint } from './key-hint.tsx';
-import { appleKeyboard } from './modifier-key.ts';
 
 /** The dialog that lists every shortcut. */
 export function ShortcutsDialog({
@@ -57,11 +56,8 @@ export function ShortcutsDialog({
               <dt className="min-w-0 text-strong">{shortcut.description}</dt>
               <dd className="m-0 shrink-0">
                 <KeyHint
-                  keys={
-                    appleKeyboard && shortcut.apple !== undefined
-                      ? shortcut.apple
-                      : shortcut.keys
-                  }
+                  keys={shortcut.keys}
+                  apple={shortcut.apple}
                   reference
                 />
               </dd>
