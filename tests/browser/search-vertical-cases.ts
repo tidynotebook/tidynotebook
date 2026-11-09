@@ -95,6 +95,36 @@ function look(page: Page, text: string, length: number, empty = false) {
   );
 }
 
+/** Where the caret of an empty cell renders: `marker` plus `delta`. */
+function lookCaret(page: Page, marker: string, delta: number) {
+  return page.evaluate(
+    ({ marker, delta }) => {
+      const fixture = window.searchTableReveal;
+      const from = fixture.offset(marker) + delta;
+      const card = document
+        .querySelector('.cm-np-search')
+        ?.getBoundingClientRect();
+      return {
+        from,
+        rects: fixture
+          .rendered(from, from)
+          .filter((rect) => rect.bottom - rect.top > 0 && rect.left > 0),
+        frame: fixture.frame(),
+        card:
+          card === undefined
+            ? null
+            : {
+                left: card.left,
+                right: card.right,
+                top: card.top,
+                bottom: card.bottom,
+              },
+      };
+    },
+    { marker, delta },
+  );
+}
+
 function shown(view: Awaited<ReturnType<typeof look>>): string | null {
   if (view.rects.length === 0) return 'no rendered text';
   for (const rect of view.rects) {
@@ -208,6 +238,52 @@ try {
             true,
           );
           return shown(await look(page, 'E cell 1 0', 10));
+        },
+      );
+      // A match of the delimiter row of Table E: its header shows.
+      await record(`${viewport.label}: delimiter row`, async () => {
+        await find(page, '^\\| --- \\| --- \\| --- \\|$', true);
+        return shown(await look(page, 'E head 2', 8));
+      });
+      // Table F: an empty header row, its delimiter, an empty body row, and
+      // an empty match at the start of an empty row. What shows is the caret
+      // of an empty cell of that row.
+      await record(`${viewport.label}: empty header row`, async () => {
+        await find(page, '^\\|  \\|  \\|$', true);
+        return shown(await lookCaret(page, '|  |  |\n| --- | --- |', 1));
+      });
+      await record(
+        `${viewport.label}: empty body row, next match`,
+        async () => {
+          await page.getByLabel('Find', { exact: true }).press('Enter');
+          await settle(page);
+          return shown(await lookCaret(page, '|  |  |\n| F 2 0', 1));
+        },
+      );
+      await record(
+        `${viewport.label}: delimiter row after an empty header`,
+        async () => {
+          await find(page, '^\\| --- \\| --- \\|$', true);
+          return shown(await lookCaret(page, '|  |  |\n| --- | --- |', 4));
+        },
+      );
+      await record(
+        `${viewport.label}: empty match at the start of an empty row`,
+        async () => {
+          await find(page, '^(?=\\|  \\|  \\|\\n\\| F 2 0)', true);
+          return shown(await lookCaret(page, '|  |  |\n| F 2 0', 4));
+        },
+      );
+      // A far range across text the editor has not drawn: its head shows.
+      await record(
+        `${viewport.label}: far range across undrawn text shows its head`,
+        async () => {
+          await find(
+            page,
+            'A cell 0 0 plain[\\s\\S]*?D cell 1 10 plain words \\| dx \\|',
+            true,
+          );
+          return shown(await look(page, '| dx |', 6));
         },
       );
       // Control: a visible end in a table still shows.
@@ -330,6 +406,102 @@ try {
             `LIMIT ${viewport.label}: raw request ending on a hidden pipe, y end: ${raw ?? 'shown'}\n`,
           );
         }
+        // Replace grows the header of Table E, and the next match is its
+        // delimiter row: the header shows after the grid measures again.
+        await record(
+          `${viewport.label}: replace onto the delimiter row`,
+          async () => {
+            await find(page, 'E head 1|^\\| --- \\| --- \\| --- \\|$', true);
+            const before = (
+              await page.evaluate(() => window.searchTableReveal.snapshot())
+            ).text;
+            await page.keyboard.press('Control+h');
+            await page.keyboard.type(
+              'E head 1 grows with words that wrap the header over lines',
+            );
+            await page
+              .getByRole('button', { name: 'Replace', exact: true })
+              .click();
+            await settle(page);
+            const state = await page.evaluate(() =>
+              window.searchTableReveal.snapshot(),
+            );
+            const result =
+              state.selected === '| --- | --- | --- |'
+                ? shown(await look(page, 'E head 2', 8))
+                : `the next match is ${JSON.stringify(state.selected)}`;
+            await page.keyboard.press('Escape');
+            await page.keyboard.press('Control+z');
+            const undone = (
+              await page.evaluate(() => window.searchTableReveal.snapshot())
+            ).text;
+            return (
+              result ??
+              (undone === before ? null : 'undo did not restore the text')
+            );
+          },
+        );
+        // Replace far above, and the next match is the delimiter row of
+        // Table E far below. The scroll of the replace cannot move the new
+        // match off hidden syntax, so the reveal measures it after the
+        // update.
+        await record(
+          `${viewport.label}: replace far above onto a distant delimiter row`,
+          async () => {
+            await find(
+              page,
+              'needle near left|^\\| --- \\| --- \\| --- \\|$',
+              true,
+            );
+            const before = (
+              await page.evaluate(() => window.searchTableReveal.snapshot())
+            ).text;
+            await page.keyboard.press('Control+h');
+            await page.keyboard.type('needle near left grows');
+            await page
+              .getByRole('button', { name: 'Replace', exact: true })
+              .click();
+            await settle(page);
+            const state = await page.evaluate(() =>
+              window.searchTableReveal.snapshot(),
+            );
+            const result =
+              state.selected === '| --- | --- | --- |'
+                ? shown(await look(page, 'E head 2', 8))
+                : `the next match is ${JSON.stringify(state.selected)}`;
+            await page.keyboard.press('Escape');
+            await page.keyboard.press('Control+z');
+            const undone = (
+              await page.evaluate(() => window.searchTableReveal.snapshot())
+            ).text;
+            return (
+              result ??
+              (undone === before ? null : 'undo did not restore the text')
+            );
+          },
+        );
+        // A new query while a reveal may still run: nothing moves after it.
+        await record(
+          `${viewport.label}: a new query ends a pending reveal`,
+          async () => {
+            await page.evaluate(() => window.searchTableReveal.home());
+            await page.keyboard.press('Control+f');
+            await page.getByLabel('Find', { exact: true }).fill('tailmark \\|');
+            await page.getByLabel('Find', { exact: true }).press('Enter');
+            await page.getByLabel('Find', { exact: true }).fill('Synthetic');
+            await settle(page);
+            const first = await page.evaluate(() =>
+              window.searchTableReveal.top(),
+            );
+            await settle(page);
+            const second = await page.evaluate(() =>
+              window.searchTableReveal.top(),
+            );
+            return first === second
+              ? null
+              : `offset moved from ${String(first)} to ${String(second)}`;
+          },
+        );
         // 6. A wheel wins after a reveal, and the offset stays.
         await record(
           `${viewport.label}: a wheel keeps its offset after a reveal`,

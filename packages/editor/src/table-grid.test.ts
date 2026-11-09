@@ -1260,3 +1260,35 @@ await test('a scroll target moves off hidden table syntax to the text beside it'
   // A header cell keeps its text.
   assert.equal(caret(at('Head A', 2)), at('Head A', 2));
 });
+
+await test('a row with no text gives the point of an empty cell', () => {
+  const doc = '|  |  |\n| --- | --- |\n| a | b |\n|  |  |\n| c | d |';
+  const state = parsedWhole(
+    EditorState.create({
+      doc,
+      extensions: [noteMarkdownExtensions({ headless: true })],
+    }),
+  );
+  const table = tableAt(state, 0);
+  assert.ok(table !== null);
+  const [header, , , empty] = table.rows;
+  assert.ok(header !== undefined && empty !== undefined);
+  const first = (row: typeof header) => row.cells[0]?.textFrom ?? -1;
+  const last = (row: typeof header) => row.cells.at(-1)?.textFrom ?? -1;
+  const caret = (pos: number) =>
+    measurableRange(state, EditorSelection.cursor(pos)).head;
+  // The point of an empty cell stays.
+  assert.equal(caret(first(header)), first(header));
+  // The pipe at the start of an empty row: the point of its last empty cell,
+  // backward, for a caret.
+  assert.equal(caret(empty.lineFrom), last(empty));
+  // A whole empty row as a range: its first and last empty cells.
+  const range = measurableRange(
+    state,
+    EditorSelection.range(empty.lineFrom, empty.to),
+  );
+  assert.deepEqual([range.anchor, range.head], [first(empty), last(empty)]);
+  // The delimiter row after an empty header: the point of its last cell.
+  const delimiter = doc.indexOf('| --- |') + 3;
+  assert.equal(caret(delimiter), last(header));
+});

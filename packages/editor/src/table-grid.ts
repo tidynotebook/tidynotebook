@@ -45,7 +45,7 @@ import {
   type DecorationSet,
   type ViewUpdate,
 } from '@codemirror/view';
-import { getSearchQuery } from '@codemirror/search';
+import { getSearchQuery, setSearchQuery } from '@codemirror/search';
 import type { SyntaxNode, Tree } from '@lezer/common';
 import { readVisibleArea } from '@notesapp/ui';
 import { diffArrays, diffChars } from 'diff';
@@ -291,15 +291,30 @@ export function cellAt(table: TableBox, pos: number): CellRef | null {
 }
 
 /**
- * One end of a range moved off hidden table syntax to the text beside it.
+ * The position of a row that holds a caret nearest to one side: the end of
+ * its last text or the start of its first, or, in a row with no text, the
+ * point of its last or first empty cell, which draws a caret too.
+ */
+function rowAnchor(row: TableRowBox | undefined, last: boolean): number | null {
+  if (row === undefined || row.kind === 'delimiter') return null;
+  const texts = row.cells.filter((cell) => cell.textTo > cell.textFrom);
+  const text = last ? texts.at(-1) : texts[0];
+  if (text !== undefined) return last ? text.textTo : text.textFrom;
+  const empty = last ? row.cells.at(-1) : row.cells[0];
+  return empty?.textFrom ?? null;
+}
+
+/**
+ * One end of a range moved off hidden table syntax to a position beside it
+ * that draws a caret.
  *
  * A pipe, the padding around a cell and the delimiter row draw nothing that
  * holds a caret, so the editor cannot scroll to a range that ends there. A
- * position inside the text of a cell stays where it is. Any other position
- * in a row moves to the end of the text before it (`backward`) or the start
- * of the text after it, in the same row; a delimiter row moves to the row
- * before or after it. An empty cell holds no text and is passed over. A row
- * with no text keeps the position, and the editor keeps its own result.
+ * position inside the text of a cell, or the point of an empty cell, stays.
+ * Any other position in a row moves to the end of the text before it
+ * (`backward`) or the start of the text after it, in the same row; a row
+ * with no text moves to the point of an empty cell. A delimiter row moves
+ * to the row before or after it.
  */
 function measurableEnd(
   table: TableBox,
@@ -312,19 +327,24 @@ function measurableEnd(
     const index = table.rows.indexOf(row);
     const near = table.rows[backward ? index - 1 : index + 1];
     const far = table.rows[backward ? index + 1 : index - 1];
-    const ends = (other: TableRowBox | undefined, last: boolean) => {
-      const texts = other?.cells.filter((cell) => cell.textTo > cell.textFrom);
-      const cell = last ? texts?.at(-1) : texts?.[0];
-      return cell === undefined ? null : last ? cell.textTo : cell.textFrom;
-    };
-    return ends(near, backward) ?? ends(far, !backward) ?? pos;
+    return rowAnchor(near, backward) ?? rowAnchor(far, !backward) ?? pos;
   }
-  const texts = row.cells.filter((cell) => cell.textTo > cell.textFrom);
-  if (texts.some((cell) => pos >= cell.textFrom && pos <= cell.textTo))
+  if (
+    row.cells.some((cell) =>
+      cell.textTo > cell.textFrom
+        ? pos >= cell.textFrom && pos <= cell.textTo
+        : pos === cell.textFrom,
+    )
+  )
     return pos;
+  const texts = row.cells.filter((cell) => cell.textTo > cell.textFrom);
   const before = texts.filter((cell) => cell.textTo <= pos).at(-1)?.textTo;
   const after = texts.find((cell) => cell.textFrom >= pos)?.textFrom;
-  return (backward ? (before ?? after) : (after ?? before)) ?? pos;
+  return (
+    (backward ? (before ?? after) : (after ?? before)) ??
+    rowAnchor(row, backward) ??
+    pos
+  );
 }
 
 /**
@@ -1848,7 +1868,6 @@ function selectsSearchMatch(transaction: Transaction): boolean {
 class TableCaretReveal {
   private readonly view: EditorView;
   private pendingDoc: EditorState['doc'] | null = null;
-  private pendingSearch = false;
   private sequence = 0;
   // A match of Find far down the note has no table yet when the text first
   // scrolls to it, and a new table takes its remembered offset when it
@@ -1875,13 +1894,28 @@ class TableCaretReveal {
         transaction.isUserEvent('redo'),
     );
     const search = update.transactions.some(selectsSearchMatch);
+    // A new query ends what an older one asked for.
+    if (
+      update.transactions.some((transaction) =>
+        transaction.effects.some((effect) => effect.is(setSearchQuery)),
+      )
+    )
+      this.cancel();
     if (update.docChanged) {
       this.sequence++;
+      // A replace of Find hands over the next match in the new text, which
+      // the scroll of the replace could not move off hidden syntax. It is
+      // measured in this state now, and again after the grid measures the
+      // changed columns.
+      if (search) {
+        this.pendingDoc = null;
+        this.schedule(true);
+        return;
+      }
       this.pendingDoc =
         local && inTableCell(update.state, update.state.selection.main.head)
           ? update.state.doc
           : null;
-      this.pendingSearch = search;
       return;
     }
     if (
@@ -1894,7 +1928,7 @@ class TableCaretReveal {
   columnsReady(): void {
     if (this.pendingDoc === this.view.state.doc) {
       this.pendingDoc = null;
-      this.schedule(this.pendingSearch);
+      this.schedule();
       return;
     }
     if (this.searchRetry === this.sequence && this.searchTries < 4) {
@@ -1921,17 +1955,15 @@ class TableCaretReveal {
           return null;
         const { head, anchor } = view.state.selection.main;
         const table = tableAt(view.state, head);
-        const at = table === null ? null : cellAt(table, head);
-        if (table === null || at === null) return null;
+        if (table === null) return null;
+        // The vertical reveal of Find serves every row, the delimiter row
+        // included. The horizontal one needs the cell of the head.
         const vertical = search ? this.hiddenHead(view) : null;
-        const horizontal = this.horizontal(
-          view,
-          table,
-          at,
-          head,
-          anchor,
-          search,
-        );
+        const at = cellAt(table, head);
+        const horizontal =
+          at === null
+            ? null
+            : this.horizontal(view, table, at, head, anchor, search);
         return horizontal === null && vertical === null
           ? null
           : { horizontal, vertical };
@@ -1987,9 +2019,22 @@ class TableCaretReveal {
     // A match that fits the room shows all of its text, also the lines that
     // wrap between its ends, which the caret of an end does not cover. A
     // taller match keeps the rule of the editor: its head shows.
-    const extent = selection.empty
-      ? null
-      : renderedExtent(view, view.contentDOM, selection.anchor, selection.head);
+    // The whole text measures the match only when one drawn range of the
+    // editor holds all of it. A match across text the editor did not draw
+    // has parts with no rectangles, and a part that shows proves neither
+    // where it starts nor that it is whole.
+    const covered = view.visibleRanges.some(
+      (visible) => visible.from <= selection.from && visible.to >= selection.to,
+    );
+    const extent =
+      selection.empty || !covered
+        ? null
+        : renderedExtent(
+            view,
+            view.contentDOM,
+            selection.anchor,
+            selection.head,
+          );
     if (extent !== null && extent.bottom - extent.top <= bottom - top)
       return extent.top < top || extent.bottom > bottom
         ? EditorSelection.range(extent.topPos, extent.bottomPos)

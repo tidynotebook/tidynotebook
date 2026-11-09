@@ -174,7 +174,9 @@ node tests/browser/search-vertical-reveal.ts
 
 `search-vertical-cases.ts` runs the vertical cases one by one and reports each:
 a short match at the foot of a row taller than the editor, an empty match on
-hidden syntax, the head of a distant range across rows, a table-aware caller
+hidden syntax, the head of a distant range across rows, a delimiter row, rows
+with no text, a replace onto a distant delimiter row, a far range across text
+the editor has not drawn, a new query during a reveal, a table-aware caller
 that asks for each alignment, a box that scrolls on both axes around the
 editor, a wheel, and an editor that goes during a reveal. Known limits print
 as `LIMIT` lines and measure warnings as `WARNINGS` lines; neither fails.
