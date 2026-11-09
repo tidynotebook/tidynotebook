@@ -417,6 +417,8 @@ class SearchPanel implements Panel {
           // The text takes the focus when the panel closed under the sheet.
           returnFocus: () => {
             if (this.destroyed) this.view.focus();
+            else if (opener === this.replaceField && this.replaceField.hidden)
+              this.searchField.focus();
             else if (opener instanceof HTMLElement && opener.isConnected)
               opener.focus();
             else more.focus();

@@ -304,6 +304,34 @@ await test('the replace key, Show replace and the options trigger keep focus and
     assert.equal(more.getAttribute('aria-controls'), null);
     // The focus goes back where it was when the sheet opened.
     assert.equal(document.activeElement, field('Find'));
+    // If the sheet hides its opening field, return focus to Find instead.
+    field('Replace with')?.focus();
+    more.click();
+    await until(
+      () => document.getElementById('editor-options-title-panel') !== null,
+      'the options dialog did not reopen',
+    );
+    const replaceSwitch = Array.from(
+      document.querySelectorAll<HTMLButtonElement>(
+        '[role=dialog] [role=switch]',
+      ),
+    ).find((control) => control.textContent?.includes('Replace'));
+    assert.ok(replaceSwitch);
+    replaceSwitch.click();
+    assert.equal(field('Replace with')?.hidden, true);
+    const closeOptions = Array.from(
+      document.querySelectorAll<HTMLButtonElement>('[role=dialog] button'),
+    ).find((control) => control.textContent === 'Done');
+    assert.ok(closeOptions);
+    closeOptions.click();
+    await until(
+      () => document.getElementById('editor-options-title-panel') === null,
+      'the options dialog did not close after hiding Replace',
+    );
+    assert.ok(
+      document.activeElement === field('Find'),
+      'closing options after hiding Replace must focus Find',
+    );
     closeSearchPanel(view);
   } finally {
     view.destroy();
