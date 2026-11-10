@@ -20,12 +20,23 @@ import { useFiles } from '../../shell/files.tsx';
 import { MoveItemsDialog } from '../folders/folders.tsx';
 import { PublishDialog } from '../publishing/publish-dialog.tsx';
 import { useDocumentTitle } from '../../shell/document-title.ts';
-import { displayNoteName } from '../../lib/note-name.ts';
 import { noteScreenClassName } from '../../lib/note-column.ts';
 
 const NoteEditorLoader = lazy(async () => ({
   default: (await import('../editor/note-loader.tsx')).NoteEditorLoader,
 }));
+
+/** A committed route fallback owns its title until the loader is ready. */
+function NoteRouteTitle({
+  screen,
+  children,
+}: {
+  readonly screen: string;
+  readonly children: ReactNode;
+}): ReactNode {
+  useDocumentTitle(screen);
+  return children;
+}
 
 /** One note: unknown, purged, empty, and readable states stay distinct. */
 export function NoteView(): ReactNode {
@@ -47,33 +58,38 @@ export function NoteView(): ReactNode {
   );
   const notePath =
     files.notes.find((note) => note.fileId === fileId)?.path ?? null;
-  useDocumentTitle(notePath === null ? null : displayNoteName(notePath));
 
   if (workspaceId === null || fileId === null)
     return (
-      <Page>
-        <PageHeader
-          title="Note not found"
-          description="This address does not match a note. The note may be deleted, or the link may be wrong."
-        />
-      </Page>
+      <NoteRouteTitle screen="Note not found">
+        <Page>
+          <PageHeader
+            title="Note not found"
+            description="This address does not match a note. The note may be deleted, or the link may be wrong."
+          />
+        </Page>
+      </NoteRouteTitle>
     );
 
   const accountId = session.account?.accountId ?? null;
   if (accountId === null)
     return (
-      <Page>
-        <LoadingState shape="note" label="Loading note" />
-      </Page>
+      <NoteRouteTitle screen="Loading note">
+        <Page>
+          <LoadingState shape="note" label="Loading note" />
+        </Page>
+      </NoteRouteTitle>
     );
 
   return (
     <main className={noteScreenClassName()}>
       <Suspense
         fallback={
-          <PageRegion>
-            <LoadingState shape="note" label="Loading editor" />
-          </PageRegion>
+          <NoteRouteTitle screen="Loading note">
+            <PageRegion>
+              <LoadingState shape="note" label="Loading editor" />
+            </PageRegion>
+          </NoteRouteTitle>
         }
       >
         <NoteEditorLoader
@@ -81,6 +97,7 @@ export function NoteView(): ReactNode {
           accountId={accountId}
           workspaceId={workspaceId}
           fileId={fileId}
+          currentPath={notePath}
           onMoveToFolder={() => setMoveOpen(true)}
           onPublish={() => setPublishOpen(true)}
         />

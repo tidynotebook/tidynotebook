@@ -48,6 +48,7 @@ import {
   missingNoteNotice,
   resolveLinkAction,
 } from '../../lib/note-link.ts';
+import { useDocumentTitle } from '../../shell/document-title.ts';
 import { displayNoteName } from '../../lib/note-name.ts';
 import {
   openExternalLink,
@@ -117,6 +118,7 @@ export function NoteEditorLoader({
   accountId,
   workspaceId,
   fileId,
+  currentPath = null,
   onMoveToFolder,
   onPublish,
 }: {
@@ -124,6 +126,8 @@ export function NoteEditorLoader({
   readonly accountId: string;
   readonly workspaceId: string;
   readonly fileId: string;
+  /** Current list path is presentation only; it never restarts a load. */
+  readonly currentPath?: string | null;
   readonly onMoveToFolder?: (() => void) | undefined;
   readonly onPublish?: (() => void) | undefined;
 }): ReactNode {
@@ -143,6 +147,19 @@ export function NoteEditorLoader({
       ? null
       : use(deviceOpens.open(store, identity).held);
   const status = noteLoadStatusFor(loadState, identity, opened);
+  useDocumentTitle(
+    status.kind === 'ready'
+      ? displayNoteName(currentPath ?? status.path)
+      : status.kind === 'deleted'
+        ? `${displayNoteName(status.path)} is in Trash`
+        : status.kind === 'unknown'
+          ? 'Note not found'
+          : status.kind === 'purged'
+            ? 'This note was deleted'
+            : status.kind === 'unavailable'
+              ? "Can't open this note"
+              : 'Loading note',
+  );
   const setStatus = useCallback(
     (next: NoteLoadStatus): void => {
       setLoadState({

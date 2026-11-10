@@ -4,7 +4,13 @@ import { registerHooks } from 'node:module';
 import { setImmediate } from 'node:timers/promises';
 import { Window } from 'happy-dom';
 import { IDBFactory, IDBKeyRange } from 'fake-indexeddb';
-import { createElement, act, type ReactNode } from 'react';
+import {
+  createElement,
+  act,
+  Suspense,
+  startTransition,
+  type ReactNode,
+} from 'react';
 import { MemoryRouter } from 'react-router';
 import type { WorkspaceFile } from '@notesapp/api-client';
 import { contentDigest, type AcceptedChangeset } from '@notesapp/core';
@@ -55,6 +61,10 @@ for (const name of globals) {
         : value,
   });
 }
+originals.set(
+  'IS_REACT_ACT_ENVIRONMENT',
+  Object.getOwnPropertyDescriptor(globalThis, 'IS_REACT_ACT_ENVIRONMENT'),
+);
 Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', {
   configurable: true,
   value: true,
@@ -62,7 +72,8 @@ Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', {
 const { createRoot } = await import('react-dom/client');
 const { EditorView } = await import('@codemirror/view');
 const { forceParsing } = await import('@codemirror/language');
-const { setEditorReadOnly } = await import('@notesapp/editor');
+const { setEditorReadOnly, editorHistoryState } =
+  await import('@notesapp/editor');
 const { NoteEditor } =
   await import('../../apps/web/dist/features/editor/note-editor.js');
 const { DeletedNotePage } =
@@ -1776,6 +1787,127 @@ for (const missing of [
   });
 }
 
+await test('loader title rename and quiet presentation refresh keep the real editor session', async () => {
+  const titleId = crypto.randomUUID();
+  await store.checkpoint(
+    {
+      accountId,
+      workspaceId,
+      fileId: titleId,
+      workingCopyId: 'title-work',
+      baseRevisionId: null,
+      path: 'Original.md',
+      text: 'Synthetic original',
+      sequence: 1,
+      deleted: false,
+    },
+    null,
+    'text',
+  );
+  let reads = 0;
+  const counted: LocalStore = {
+    ...store,
+    readCachedNote: (...args) => {
+      reads++;
+      return store.readCachedNote(...args);
+    },
+  };
+  const screen = (currentPath: string) =>
+    createElement(NoteEditorLoader, {
+      store: counted,
+      accountId,
+      workspaceId,
+      fileId: titleId,
+      currentPath,
+    });
+  await render(screen('Original.md'));
+  await waitForEditor(container);
+  const editor = view();
+  await act(async () =>
+    editor.dispatch({
+      changes: { from: editor.state.doc.length, insert: ' unsent' },
+      selection: { anchor: 3 },
+    }),
+  );
+  const textBefore = editor.state.doc.toString(),
+    selection = editor.state.selection,
+    undo = editorHistoryState(editor.state),
+    count = reads;
+  for (const name of ['Renamed.md', 'Renamed.md']) {
+    await render(screen(name));
+    assert.equal(document.title, 'Renamed - tidy notebook');
+    assert.equal(view(), editor);
+    assert.equal(editor.state.doc.toString(), textBefore);
+    assert.ok(editor.state.selection.eq(selection));
+    assert.deepEqual(editorHistoryState(editor.state), undo);
+    assert.equal(reads, count);
+  }
+  await render(null);
+});
+
+await test('a suspended note transition keeps the committed title until the next device note is ready', async () => {
+  const a = crypto.randomUUID(),
+    b = crypto.randomUUID();
+  for (const [id, path] of [
+    [a, 'Title A.md'],
+    [b, 'Title B.md'],
+  ] as const)
+    await store.checkpoint(
+      {
+        accountId,
+        workspaceId,
+        fileId: id,
+        workingCopyId: crypto.randomUUID(),
+        baseRevisionId: null,
+        path,
+        text: 'Synthetic title transition',
+        sequence: 1,
+        deleted: false,
+      },
+      null,
+      'text',
+    );
+  const saved = await store.readCachedNote(accountId, workspaceId, b);
+  assert.ok(saved);
+  const gate = Promise.withResolvers<typeof saved>();
+  const delayed: LocalStore = {
+    ...store,
+    readCachedNote: (account, workspace, id) =>
+      id === b ? gate.promise : store.readCachedNote(account, workspace, id),
+  };
+  const screen = (id: string) =>
+    createElement(
+      Suspense,
+      { fallback: createElement('p', null, 'Pending next note') },
+      createElement(NoteEditorLoader, {
+        store: delayed,
+        accountId,
+        workspaceId,
+        fileId: id,
+      }),
+    );
+  await render(screen(a));
+  await waitForEditor(container);
+  const before = view();
+  assert.equal(document.title, 'Title A - tidy notebook');
+  await act(async () => {
+    startTransition(() => {
+      void render(screen(b));
+    });
+  });
+  assert.equal(document.title, 'Title A - tidy notebook');
+  assert.equal(view(), before);
+  await act(async () => gate.resolve(saved));
+  const deadline = Date.now() + 10000;
+  while (view() === before && Date.now() < deadline)
+    await act(async () => {
+      await setImmediate();
+    });
+  assert.equal(document.title, 'Title B - tidy notebook');
+  assert.notEqual(view(), before);
+  await render(null);
+});
+
 after(async () => {
   await act(async () => root.unmount());
   await act(finishStoreWork);
@@ -1785,6 +1917,9 @@ after(async () => {
     if (descriptor) Object.defineProperty(globalThis, name, descriptor);
     else Reflect.deleteProperty(globalThis, name);
   }
-  Reflect.deleteProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT');
+  assert.deepEqual(
+    Object.getOwnPropertyDescriptor(globalThis, 'IS_REACT_ACT_ENVIRONMENT'),
+    originals.get('IS_REACT_ACT_ENVIRONMENT'),
+  );
   hooks.deregister();
 });

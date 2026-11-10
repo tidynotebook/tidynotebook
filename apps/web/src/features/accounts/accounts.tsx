@@ -426,6 +426,12 @@ type SetupStatus =
       readonly legalDocuments: LegalDocuments | null;
     };
 
+/** Only the committed plain sign-in screen owns this title. */
+function PlainLoginTitle({ screen }: { readonly screen: string }): ReactNode {
+  useDocumentTitle(screen);
+  return null;
+}
+
 /**
  * First-run setup and email and password sign in.
  *
@@ -602,6 +608,11 @@ export function LoginPage({
         </Inline>
       }
     >
+      {oauthQuery === undefined ? (
+        <PlainLoginTitle
+          screen={status.kind === 'loading' ? 'Loading sign-in screen' : title}
+        />
+      ) : null}
       {status.kind === 'loading' ? (
         <LoadingState label="Loading sign-in screen" />
       ) : status.kind === 'unreachable' ? (

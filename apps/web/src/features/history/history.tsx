@@ -1,3 +1,4 @@
+import { useDocumentTitle } from '../../shell/document-title.ts';
 import {
   PreviewBlock,
   Stack,
@@ -157,6 +158,7 @@ type DiffState =
  * changes.
  */
 export function HistoryView(): ReactNode {
+  useDocumentTitle('Version history');
   const params = useParams();
   const workspaceId =
     typeof params.workspaceId === 'string' ? params.workspaceId : null;

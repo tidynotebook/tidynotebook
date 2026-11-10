@@ -1,3 +1,4 @@
+import { useDocumentTitle } from '../../shell/document-title.ts';
 import {
   Stack,
   Inline,
@@ -94,6 +95,7 @@ async function loadDeletedFiles(
 
 /** The trash of one workspace. */
 export function TrashView(): ReactNode {
+  useDocumentTitle('Trash');
   const params = useParams();
   const workspaceId =
     typeof params.workspaceId === 'string' ? params.workspaceId : null;
