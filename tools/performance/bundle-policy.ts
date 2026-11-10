@@ -13,9 +13,11 @@ export const firstScreenCeilingBytes = Math.floor(0.62 * 1024 * 1024);
 // This is less than the original 256-byte small margin. It does not establish
 // that asset-reference changes alone caused the observed 28-byte increase.
 // Keep the measurement, deferred checks and ceiling unchanged (decision 0177).
+// 2026-11-10: the owner approved 256 more bytes for reviewed UI fixes.
+// The 315,684-byte auth build leaves 220 bytes at the new 315,904 limit.
 export const firstScreenBudgetBytes = Math.min(
   firstScreenCeilingBytes,
-  315_648,
+  315_904,
 );
 export function withinFirstScreenBudget(bytes: number): boolean {
   return (
