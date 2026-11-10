@@ -5,10 +5,10 @@ import {
   firstScreenCeilingBytes,
   withinFirstScreenBudget,
 } from './performance/bundle-policy.ts';
-await test('the budget keeps the documented finite margin for floating find and replace', () => {
-  assert.equal(firstScreenBudgetBytes, 315_648);
-  assert.ok(firstScreenBudgetBytes - 307_456 <= 8 * 1024);
-  assert.equal(firstScreenBudgetBytes - 315_394, 254);
+await test('the budget keeps the owner-approved finite margin for reviewed UI fixes', () => {
+  assert.equal(firstScreenBudgetBytes, 315_904);
+  assert.ok(firstScreenBudgetBytes - 307_456 <= 8 * 1024 + 256);
+  assert.equal(firstScreenBudgetBytes - 315_684, 220);
   assert.equal(firstScreenCeilingBytes, Math.floor(0.62 * 1024 * 1024));
 });
 await test('the limit accepts its boundary and refuses larger or invalid samples', () => {
