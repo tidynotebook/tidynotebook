@@ -178,5 +178,16 @@ hidden syntax, the head of a distant range across rows, a delimiter row, rows
 with no text, a replace onto a distant delimiter row, a far range across text
 the editor has not drawn, a new query during a reveal, a table-aware caller
 that asks for each alignment, a box that scrolls on both axes around the
-editor, a wheel, and an editor that goes during a reveal. Known limits print
-as `LIMIT` lines and measure warnings as `WARNINGS` lines; neither fails.
+editor, a wheel, and destruction after a reveal measurement. The destruction
+check waits for the measure and its microtask queue, with a deadline. It does
+not prove cancellation during every later grid retry. Known limits and measure
+warnings print as `LIMIT` lines and are saved in `observations.json`. They are
+diagnostics, separate from the assertions in `results.json`.
+
+```sh
+PLAYWRIGHT_MODULE=/absolute/path/to/playwright-core/index.mjs \
+UI_AUDIT_ORIGIN=http://127.0.0.1:3019 \
+node tests/browser/search-vertical-cases.ts
+```
+
+`SEARCH_CASES_OUTPUT` selects the evidence directory.

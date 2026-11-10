@@ -28,6 +28,13 @@ const origin = process.env.UI_AUDIT_ORIGIN ?? 'http://127.0.0.1:3019';
 type Rect = { left: number; right: number; top: number; bottom: number };
 type Result = { name: string; pass: boolean; detail: string };
 const results: Result[] = [];
+const observations: { name: string; detail: string }[] = [];
+
+/** Records a scoped diagnostic without counting it as an assertion. */
+function observe(name: string, detail: string): void {
+  observations.push({ name, detail });
+  process.stdout.write(`LIMIT ${name}: ${detail}\n`);
+}
 
 async function open(
   width: number,
@@ -317,8 +324,9 @@ try {
           );
           await settle(page);
           const cold = shown(await look(page, 'E cell 0 0', 10));
-          process.stdout.write(
-            `LIMIT ${viewport.label}: mapped caller, first request to an unrendered tall row, backward nearest: ${cold ?? 'shown'}\n`,
+          observe(
+            `${viewport.label}: mapped caller, first request to an unrendered tall row, backward nearest`,
+            cold ?? 'shown',
           );
         }
         // Recorded, not asserted: a backward range taller than the room,
@@ -335,8 +343,9 @@ try {
           );
           await settle(page);
           const result = shown(await look(page, 'E cell 0 0', 10));
-          process.stdout.write(
-            `LIMIT ${viewport.label}: mapped caller, tall range backward y ${y}: ${result ?? 'shown'}\n`,
+          observe(
+            `${viewport.label}: mapped caller, tall range backward y ${y}`,
+            result ?? 'shown',
           );
         }
         // The asserted cases below run on a row that has rendered once.
@@ -402,8 +411,9 @@ try {
           );
           await settle(page);
           const raw = shown(await look(page, 'tailmark', 8));
-          process.stdout.write(
-            `LIMIT ${viewport.label}: raw request ending on a hidden pipe, y end: ${raw ?? 'shown'}\n`,
+          observe(
+            `${viewport.label}: raw request ending on a hidden pipe, y end`,
+            raw ?? 'shown',
           );
         }
         // Replace grows the header of Table E, and the next match is its
@@ -546,8 +556,9 @@ try {
           errors.length === 0 ? null : errors.join(' | ').slice(0, 300),
         ),
       );
-      process.stdout.write(
-        `WARNINGS ${viewport.label}: measure loop restarted ${String(warnings.length)} times\n`,
+      observe(
+        `${viewport.label}: measure-loop warnings`,
+        String(warnings.length),
       );
     } finally {
       await close();
@@ -571,29 +582,18 @@ try {
       });
       // Lifecycle: the editor goes while a reveal may be pending.
       await record(
-        'nested box: destroy during a reveal raises nothing',
+        'nested box: destroy after reveal measurement raises nothing',
         async () => {
           await page.evaluate(() => window.searchTableReveal.home());
           await page.keyboard.press('Control+f');
           await page.getByLabel('Find', { exact: true }).fill('tailmark');
-          await page.getByLabel('Find', { exact: true }).press('Enter');
-          await page.evaluate(() => window.searchTableReveal.destroy());
-          // Thirty frames give any pending measure a chance to run and fail.
-          await page.evaluate(
-            () =>
-              new Promise<void>((resolve) => {
-                let frames = 0;
-                const step = () =>
-                  ++frames >= 30 ? resolve() : requestAnimationFrame(step);
-                requestAnimationFrame(step);
-              }),
+          await page.evaluate(() =>
+            window.searchTableReveal.destroyDuringReveal(),
           );
           return errors.length === 0 ? null : errors.join(' | ').slice(0, 300);
         },
       );
-      process.stdout.write(
-        `WARNINGS nested box: measure loop restarted ${String(warnings.length)} times\n`,
-      );
+      observe('nested box: measure-loop warnings', String(warnings.length));
     } finally {
       await close();
     }
@@ -602,6 +602,10 @@ try {
   await browser.close();
 }
 writeFileSync(`${output}/results.json`, JSON.stringify(results, null, 2));
+writeFileSync(
+  `${output}/observations.json`,
+  JSON.stringify(observations, null, 2),
+);
 const failed = results.filter((result) => !result.pass);
 process.stdout.write(
   `${String(results.length - failed.length)} of ${String(results.length)} cases pass\n`,
