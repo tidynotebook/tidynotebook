@@ -58,20 +58,10 @@ Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', {
 browser.fetch = rejectNetwork;
 const fixtureUrl = new URL('./support/page-title-fixture.ts', import.meta.url)
   .href;
-const loaderModuleUrl =
-  'data:text/javascript,' +
-  encodeURIComponent(
-    'import { loaderGate } from ' +
-      JSON.stringify(fixtureUrl) +
-      '; await loaderGate.promise; export { NoteEditorLoader } from ' +
-      JSON.stringify(
-        new URL(
-          '../../apps/web/dist/features/editor/note-loader.js',
-          import.meta.url,
-        ).href,
-      ) +
-      ';',
-  );
+const loaderModuleUrl = new URL(
+  './support/page-title-loader.ts',
+  import.meta.url,
+).href;
 const hooks = registerHooks({
   resolve(specifier, context, next) {
     if (specifier.endsWith('?worker'))
@@ -364,7 +354,7 @@ await test('actual page title owners', async (t) => {
         assert.match(container.textContent ?? '', /Loading editor/);
         await act(async () => {
           fixture.loaderGate.resolve();
-          await import(loaderModuleUrl);
+          await import('./support/page-title-loader.ts');
         });
         await act(async () => r.resolve(fixture.ready('Fallback.md')));
         title('Fallback');
