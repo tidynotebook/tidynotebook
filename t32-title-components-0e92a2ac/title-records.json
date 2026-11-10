@@ -1,0 +1,166 @@
+{
+  "scope": "Synthetic source component simulation only. PNG content alone does not prove document.title. These records were captured through shared preview from actual canonical components with explicit external boundaries.",
+  "source": "0e92a2ac79e865c41ea98ce7e0e2f976dcb88ce2",
+  "records": [
+    {
+      "route": "/login",
+      "documentTitle": "Sign in - tidy notebook",
+      "time": "2026-11-10T08:46:11.070Z",
+      "visibleState": "tidy notebookSign inEnter the address and the password of your account.Email addressPasswordShow the passwordSign in Create an accounttidy notebookOpen source. Write in Markdown. Export your notes.\u00a9 2026 tidy notebookResourcesDocsMCPOpen sourceGitHubSource codeLicense (AGPL-3.0)",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "overflow": 0,
+      "fontGeist": true,
+      "image": "component-login-1440-light.png",
+      "imageSha256": "507014ac49d5d7c4378dede517030f28f16f5322ed321dd2295186f73eb0061b",
+      "label": "component simulation",
+      "source": "0e92a2ac79e865c41ea98ce7e0e2f976dcb88ce2",
+      "notProved": [
+        "deployed app",
+        "physical device",
+        "actual API or service persistence"
+      ]
+    },
+    {
+      "route": "/login",
+      "documentTitle": "Sign in - tidy notebook",
+      "time": "2026-11-10T08:46:11.520Z",
+      "visibleState": "tidy notebookSign inEnter the address and the password of your account.Email addressPasswordShow the passwordSign in Create an accounttidy notebookOpen source. Write in Markdown. Export your notes.\u00a9 2026 tidy notebookResourcesDocsMCPOpen sourceGitHubSource codeLicense (AGPL-3.0)",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "overflow": 0,
+      "fontGeist": true,
+      "image": "component-login-1440-dark.png",
+      "imageSha256": "247c1346fe012eba2402b1d96da41023cea055f4de594ecc4614ec92204e3aa0",
+      "label": "component simulation",
+      "source": "0e92a2ac79e865c41ea98ce7e0e2f976dcb88ce2",
+      "notProved": [
+        "deployed app",
+        "physical device",
+        "actual API or service persistence"
+      ]
+    },
+    {
+      "route": "/w/22222222-2222-4222-8222-222222222222/trash",
+      "documentTitle": "Trash - tidy notebook",
+      "time": "2026-11-10T08:46:12.037Z",
+      "visibleState": "TrashDeleted notesSynthetic deletedAll notes \u00b7 deleted 10 months agoRestore",
+      "theme": "light",
+      "width": 390,
+      "height": 844,
+      "overflow": 0,
+      "fontGeist": true,
+      "image": "component-trash-390-light.png",
+      "imageSha256": "eeb3f7cdd33352083e386b376a0dd87e44e7883c04cc1e244a9768ee55bc81b0",
+      "label": "component simulation",
+      "source": "0e92a2ac79e865c41ea98ce7e0e2f976dcb88ce2",
+      "notProved": [
+        "deployed app",
+        "physical device",
+        "actual API or service persistence"
+      ]
+    },
+    {
+      "route": "/w/22222222-2222-4222-8222-222222222222/trash",
+      "documentTitle": "Trash - tidy notebook",
+      "time": "2026-11-10T08:46:12.503Z",
+      "visibleState": "TrashDeleted notesSynthetic deletedAll notes \u00b7 deleted 10 months agoRestore",
+      "theme": "dark",
+      "width": 390,
+      "height": 844,
+      "overflow": 0,
+      "fontGeist": true,
+      "image": "component-trash-390-dark.png",
+      "imageSha256": "c03504572bff7920fef6b4b377aa179bc012eda880877a2fb0766051a4e0a64d",
+      "label": "component simulation",
+      "source": "0e92a2ac79e865c41ea98ce7e0e2f976dcb88ce2",
+      "notProved": [
+        "deployed app",
+        "physical device",
+        "actual API or service persistence"
+      ]
+    },
+    {
+      "route": "/w/22222222-2222-4222-8222-222222222222/notes/33333333-3333-4333-8333-333333333333/history",
+      "documentTitle": "Version history - tidy notebook",
+      "time": "2026-11-10T08:46:12.887Z",
+      "visibleState": "Version historyGroup/Same. Restore makes a version the newest. Nothing is lost.Friday, January 2Saved at 05:30 AMChanges at this save: Text changedCurrent versionThursday, January 1Saved at 05:30 AMChanges at this save: First versionRestore",
+      "theme": "light",
+      "width": 320,
+      "height": 640,
+      "overflow": 0,
+      "fontGeist": true,
+      "image": "component-history-320-light.png",
+      "imageSha256": "68b6f29f7a6f0d544974b180fdd12f21f9159dec0eb15ae70bbfe916b0d938cd",
+      "label": "component simulation",
+      "source": "0e92a2ac79e865c41ea98ce7e0e2f976dcb88ce2",
+      "notProved": [
+        "deployed app",
+        "physical device",
+        "actual API or service persistence"
+      ]
+    },
+    {
+      "route": "/w/22222222-2222-4222-8222-222222222222/notes/33333333-3333-4333-8333-333333333333/history",
+      "documentTitle": "Version history - tidy notebook",
+      "time": "2026-11-10T08:46:13.253Z",
+      "visibleState": "Version historyGroup/Same. Restore makes a version the newest. Nothing is lost.Friday, January 2Saved at 05:30 AMChanges at this save: Text changedCurrent versionThursday, January 1Saved at 05:30 AMChanges at this save: First versionRestore",
+      "theme": "dark",
+      "width": 320,
+      "height": 640,
+      "overflow": 0,
+      "fontGeist": true,
+      "image": "component-history-320-dark.png",
+      "imageSha256": "7472b81537dbfa466545675de1d29dd7eff8d344fc2facd66b26f8f54e1682f6",
+      "label": "component simulation",
+      "source": "0e92a2ac79e865c41ea98ce7e0e2f976dcb88ce2",
+      "notProved": [
+        "deployed app",
+        "physical device",
+        "actual API or service persistence"
+      ]
+    },
+    {
+      "route": "/w/22222222-2222-4222-8222-222222222222/notes/33333333-3333-4333-8333-333333333333",
+      "documentTitle": "Renamed - tidy notebook",
+      "time": "2026-11-10T08:44:16.275Z",
+      "visibleState": "Synthetic component noteOriginal text.x7 wordsOutlineSynthetic component noteLinks to this noteNo notes link here. Add a link to this note from another note.",
+      "theme": "light",
+      "width": 320,
+      "height": 640,
+      "overflow": 0,
+      "fontGeist": true,
+      "image": "component-editor-320-light.png",
+      "imageSha256": "0d4abd37fe4377a7f58fa3f9d193c9d3fba3428f727745594c589d0da9d0e9d0",
+      "label": "component simulation",
+      "source": "0e92a2ac79e865c41ea98ce7e0e2f976dcb88ce2",
+      "notProved": [
+        "deployed app",
+        "physical device",
+        "actual API or service persistence"
+      ]
+    },
+    {
+      "route": "/w/22222222-2222-4222-8222-222222222222/notes/33333333-3333-4333-8333-333333333333",
+      "documentTitle": "Renamed - tidy notebook",
+      "time": "2026-11-10T08:44:16.508Z",
+      "visibleState": "Synthetic component noteOriginal text.x7 wordsOutlineSynthetic component noteLinks to this noteNo notes link here. Add a link to this note from another note.",
+      "theme": "dark",
+      "width": 320,
+      "height": 640,
+      "overflow": 0,
+      "fontGeist": true,
+      "image": "component-editor-320-dark.png",
+      "imageSha256": "34399f0d50914514dc7ef56d05a18b8a518e00d4c0dcf043d825407bc29334d4",
+      "label": "component simulation",
+      "source": "0e92a2ac79e865c41ea98ce7e0e2f976dcb88ce2",
+      "notProved": [
+        "deployed app",
+        "physical device",
+        "actual API or service persistence"
+      ]
+    }
+  ]
+}
