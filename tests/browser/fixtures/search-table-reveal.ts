@@ -1,5 +1,5 @@
 /** A real editor with two wide tables for checks of Find in a table. */
-import { EditorSelection } from '@codemirror/state';
+import { EditorSelection, Transaction } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
 import { createEditor } from '../../../packages/editor/src/create-editor.ts';
 import { measurableRange } from '../../../packages/editor/src/table-grid.ts';
@@ -102,9 +102,11 @@ async function settle(): Promise<void> {
   let still = 0;
   for (let i = 0; i < 120 && still < 4; i++) {
     await frame();
-    const now =
-      JSON.stringify(wrappers().map((w) => w.scrollLeft)) +
-      String(view.scrollDOM.scrollTop);
+    const now = JSON.stringify([
+      wrappers().map((w) => w.scrollLeft),
+      view.scrollDOM.scrollTop,
+      nested ? [outer.scrollTop, outer.scrollLeft] : null,
+    ]);
     still = now === last ? still + 1 : 0;
     last = now;
   }
@@ -394,6 +396,43 @@ const fixture = {
   home() {
     view.focus();
     view.dispatch({ selection: { anchor: 0 }, scrollIntoView: true });
+  },
+  /**
+   * Selects an offscreen Find match, then destroys the view between its
+   * measure and the deferred reveal. Completion follows that microtask
+   * queue, not a fixed delay. This does not cover every later grid retry.
+   */
+  destroyDuringReveal() {
+    return new Promise<void>((resolve, reject) => {
+      let destroyed = false;
+      const timeout = window.setTimeout(() => {
+        if (!destroyed) view.destroy();
+        reject(Error('The reveal measure did not complete.'));
+      }, 5000);
+      const from = view.state.doc.toString().indexOf('tailmark');
+      view.dispatch({
+        selection: EditorSelection.single(from, from + 'tailmark'.length),
+        annotations: Transaction.userEvent.of('select.search'),
+      });
+      view.requestMeasure({
+        read: () => {
+          const caret = view.coordsAtPos(from);
+          const hidden =
+            caret === null || caret.top < 0 || caret.bottom > innerHeight;
+          // Reads precede writes. This callback runs before the reveal
+          // queued by a write, while completion runs after that reveal.
+          queueMicrotask(() => {
+            view.destroy();
+            destroyed = true;
+            queueMicrotask(() => {
+              window.clearTimeout(timeout);
+              if (hidden) resolve();
+              else reject(Error('The destroy case needs an offscreen match.'));
+            });
+          });
+        },
+      });
+    });
   },
   destroy() {
     view.destroy();
