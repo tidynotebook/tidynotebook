@@ -628,6 +628,7 @@ export function Checkbox({
   checked,
   onChange,
   describedBy,
+  invalid,
   disabled = false,
 }: {
   readonly id: string;
@@ -636,6 +637,8 @@ export function Checkbox({
   readonly checked: boolean;
   readonly onChange: (checked: boolean) => void;
   readonly describedBy?: string | undefined;
+  /** A caller's submitted validation error applies to this choice. */
+  readonly invalid?: boolean | undefined;
   /** The choice cannot change now, for example while the last one is saved. */
   readonly disabled?: boolean | undefined;
 }): ReactNode {
@@ -650,6 +653,7 @@ export function Checkbox({
           checked={checked}
           disabled={disabled}
           aria-describedby={describedBy}
+          aria-invalid={invalid}
           onChange={(event): void => {
             onChange(event.target.checked);
           }}

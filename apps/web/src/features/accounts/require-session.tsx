@@ -1,9 +1,10 @@
 import { lazy, Suspense, type ReactNode } from 'react';
-import { Navigate } from 'react-router';
+import { Navigate, useLocation } from 'react-router';
 import { Page, LoadingState } from '@notesapp/ui';
 import { useSession } from '../../app.tsx';
 import { waitsForConsent } from '../../lib/legal.ts';
 import { isLocked } from '../../lib/locked.ts';
+import { signInAddress } from '../../lib/sign-in-return.ts';
 const ConsentPage = lazy(async () => ({
   default: (await import('./accounts.tsx')).ConsentPage,
 }));
@@ -17,6 +18,7 @@ export function RequireSession({
   readonly children: ReactNode;
 }): ReactNode {
   const session = useSession();
+  const location = useLocation();
   if (session.status === 'loading') {
     return (
       <Page>
@@ -25,7 +27,12 @@ export function RequireSession({
     );
   }
   if (session.status === 'signed-out' || session.account === null) {
-    return <Navigate to="/login" replace />;
+    return (
+      <Navigate
+        to={signInAddress(location.pathname + location.search + location.hash)}
+        replace
+      />
+    );
   }
   // The application opens after consent to the current legal documents
   // (record 0120).

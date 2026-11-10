@@ -1,5 +1,6 @@
 import { hasEmailProblem } from '../../lib/email-problem.ts';
 import { AuthFrame } from './auth-frame.tsx';
+import { useAuthValidationFocus } from './auth-validation-focus.ts';
 import {
   Form,
   Inline,
@@ -438,6 +439,7 @@ export function LoginPage({
   oauthQuery,
 }: { readonly oauthQuery?: string } = {}): ReactNode {
   const session = useSession();
+  const focusInvalid = useAuthValidationFocus();
   const navigate = useNavigate();
   // Where sign-in goes back to: a path of this origin, or the root.
   const location = useLocation();
@@ -488,15 +490,17 @@ export function LoginPage({
 
   const setup = status.kind === 'ready' && !status.initialized;
 
-  async function submitPassword(): Promise<void> {
+  async function submitPassword(form: HTMLFormElement): Promise<void> {
     setFieldError('');
     const problem = setup ? passwordProblem(password) : null;
     if (problem !== null) {
       setFieldError(problem);
+      focusInvalid(form);
       return;
     }
     if (setup && confirmation !== password) {
       setFieldError('The two passwords are not the same.');
+      focusInvalid(form);
       return;
     }
     setBusy(true);
@@ -620,9 +624,9 @@ export function LoginPage({
               setEmailError(
                 email.trim() !== '' &&
                   (normalizeEmail(email) === null ||
-                    event.currentTarget
-                      .querySelector('input[type=email]')
-                      ?.matches(':invalid'))
+                    event.currentTarget.querySelector<HTMLInputElement>(
+                      'input[type=email]',
+                    )?.validity.valid === false)
                   ? 'Enter an email address.'
                   : '',
               );
@@ -630,7 +634,8 @@ export function LoginPage({
                 event.currentTarget.checkValidity() &&
                 normalizeEmail(email) !== null
               )
-                void submitPassword();
+                void submitPassword(event.currentTarget);
+              else focusInvalid(event.currentTarget);
             }}
           >
             <TextField
