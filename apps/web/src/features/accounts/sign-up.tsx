@@ -1,4 +1,5 @@
 import { hasEmailProblem } from '../../lib/email-problem.ts';
+import { useAuthValidationFocus } from './auth-validation-focus.ts';
 import { normalizeEmail } from '@notesapp/core';
 import {
   Form,
@@ -51,6 +52,8 @@ const invalidLink = 'This link no longer works.';
 
 /** The page that asks for an account. */
 export function SignUpPage(): ReactNode {
+  const focusInvalid = useAuthValidationFocus();
+  const [consentError, setConsentError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -77,16 +80,6 @@ export function SignUpPage(): ReactNode {
   useDocumentTitle('Create an account');
 
   const submit = async (): Promise<void> => {
-    setFieldError('');
-    const problem = passwordProblem(password);
-    if (problem !== null) {
-      setFieldError(problem);
-      return;
-    }
-    if (documents !== null && !accepted) {
-      setError('Accept the terms and the privacy notice to make an account.');
-      return;
-    }
     setBusy('checking');
     setError('');
     // The browser pays a short proof of work that this server issued, so a
@@ -178,20 +171,33 @@ export function SignUpPage(): ReactNode {
         noValidate
         onSubmit={(event): void => {
           event.preventDefault();
-          setEmailError(
+          const form = event.currentTarget;
+          const nativeValid = form.checkValidity();
+          const emailValid = normalizeEmail(email) !== null;
+          const emailProblem =
             email.trim() !== '' &&
-              (normalizeEmail(email) === null ||
-                event.currentTarget
-                  .querySelector('input[type=email]')
-                  ?.matches(':invalid'))
+            (!emailValid ||
+              form.querySelector<HTMLInputElement>('input[type=email]')
+                ?.validity.valid === false)
               ? 'Enter an email address.'
-              : '',
-          );
+              : '';
+          const passwordError =
+            password === '' ? '' : (passwordProblem(password) ?? '');
+          const consentProblem =
+            documents !== null && !accepted
+              ? 'Accept the terms and the privacy notice to make an account.'
+              : '';
+          setEmailError(emailProblem);
+          setFieldError(passwordError);
+          setConsentError(consentProblem);
           if (
-            event.currentTarget.checkValidity() &&
-            normalizeEmail(email) !== null
+            nativeValid &&
+            emailValid &&
+            passwordError === '' &&
+            consentProblem === ''
           )
             void submit();
+          else focusInvalid(form);
         }}
       >
         <TextField
@@ -226,12 +232,27 @@ export function SignUpPage(): ReactNode {
         </Inset>
         {documents === null ? null : (
           <Inset as="div">
-            <Checkbox
-              id="signup-consent"
-              label={<ConsentLabel documents={documents} />}
-              checked={accepted}
-              onChange={setAccepted}
-            />
+            <Stack gap={2}>
+              <Checkbox
+                id="signup-consent"
+                label={<ConsentLabel documents={documents} />}
+                checked={accepted}
+                onChange={setAccepted}
+                invalid={consentError !== ''}
+                describedBy={
+                  consentError === '' ? undefined : 'signup-consent-error'
+                }
+              />
+              {consentError === '' ? null : (
+                <p
+                  id="signup-consent-error"
+                  className="m-0 text-secondary text-danger"
+                  role="alert"
+                >
+                  {consentError}
+                </p>
+              )}
+            </Stack>
           </Inset>
         )}
         {error === '' ? null : <Notice tone="problem" message={error} />}
