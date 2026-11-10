@@ -395,6 +395,9 @@ function PaletteDialog({
           value={query}
           placeholder={placeholder}
           aria-label={placeholder}
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={rows.length > 0}
           aria-controls="command-palette-list"
           aria-activedescendant={activeId}
           autoComplete="off"
