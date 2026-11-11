@@ -803,11 +803,21 @@ export function SettingsModal({
   const listLevel = value === '';
   const isCurrentPage = (path: string): boolean =>
     activePage?.path === path && (!listLevel || wideLayout);
-  // A route, account or action change has a different focus owner, even
-  // when React keeps the same Settings DOM mounted.
+  // An account refresh keeps focus ownership. A different account, available
+  // Settings pages, route or action starts a new scope in the same mounted DOM.
   const focusScope = useMemo(
     () => ({}),
-    [account, workspaceId, value, activeAction, onChoose, onClose],
+    [
+      accountId,
+      account?.accountPortal,
+      account?.mcpAuthorization,
+      account?.installationRole,
+      workspaceId,
+      value,
+      activeAction,
+      onChoose,
+      onClose,
+    ],
   );
   useLayoutEffect(() => {
     const owner = focusOwner.current;
