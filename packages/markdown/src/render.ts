@@ -694,6 +694,7 @@ function drawTaskMarks() {
 /** Keep native table layout inside a separate horizontal scroll area. */
 function wrapTables() {
   return (tree: HastRoot): undefined => {
+    let tableIndex = 0;
     visit(tree, 'element', (node, index, parent) => {
       if (
         node.tagName !== 'table' ||
@@ -701,6 +702,7 @@ function wrapTables() {
         index === undefined
       )
         return;
+      tableIndex += 1;
       parent.children[index] = {
         type: 'element',
         tagName: 'div',
@@ -708,7 +710,7 @@ function wrapTables() {
           className: ['notes-table-scroll'],
           tabIndex: 0,
           role: 'region',
-          ariaLabel: 'Table',
+          ariaLabel: `Table ${tableIndex}`,
         },
         children: [node],
       };

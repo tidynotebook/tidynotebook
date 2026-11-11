@@ -635,7 +635,7 @@ await test('a second read of a published note renders nothing again', async () =
   for (const page of [first, second]) {
     assert.match(
       page.html,
-      /<div class="notes-table-scroll" tabindex="0" role="region" aria-label="Table"><table>/,
+      /<div class="notes-table-scroll" tabindex="0" role="region" aria-label="Table 1"><table>/,
     );
     assert.equal(
       page.response.headers.get('cache-control'),
