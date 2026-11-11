@@ -479,7 +479,7 @@ export default function FolderTreeView({
                         <Inset
                           padX={{ fine: 0, coarse: 6 }}
                           as="span"
-                          className="shrink-0 text-secondary text-muted pointer-coarse:basis-full"
+                          className={`shrink-0 text-secondary ${chosen ? 'text-strong' : 'text-muted group-hover/item:text-strong'} pointer-coarse:basis-full`}
                         >
                           {row.path === currentFolder
                             ? 'Current folder'

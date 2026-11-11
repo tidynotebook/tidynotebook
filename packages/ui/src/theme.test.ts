@@ -406,6 +406,34 @@ await test('overlay surfaces retain text and icon contrast in every palette', ()
   );
 });
 
+await test('hovered overlay rows keep strong text readable in every palette', () => {
+  for (const family of themeFamilies)
+    for (const theme of Object.values(family.variants)) {
+      if (!theme) continue;
+      assert.ok(
+        contrastRatio(
+          theme.tokens.textStrong,
+          derivedValue(theme.tokens, 'overlayHover'),
+        ) >= 4.5,
+        `${theme.id}: strong text on hovered overlay row`,
+      );
+    }
+});
+
+await test('selected overlay rows keep strong text readable in every palette', () => {
+  for (const family of themeFamilies)
+    for (const theme of Object.values(family.variants)) {
+      if (!theme) continue;
+      assert.ok(
+        contrastRatio(
+          theme.tokens.textStrong,
+          derivedValue(theme.tokens, 'overlaySelected'),
+        ) >= 4.5,
+        `${theme.id}: strong text on selected overlay row`,
+      );
+    }
+});
+
 await test('overlay and raised-card state fills have at least 1.2 contrast in every palette', () => {
   for (const family of themeFamilies)
     for (const theme of Object.values(family.variants)) {

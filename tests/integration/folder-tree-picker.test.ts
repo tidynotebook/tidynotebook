@@ -26,6 +26,26 @@ const globals = [
   'cancelAnimationFrame',
 ] as const;
 const originals = new Map<string, PropertyDescriptor | undefined>();
+const originalAct = Object.getOwnPropertyDescriptor(
+  globalThis,
+  'IS_REACT_ACT_ENVIRONMENT',
+);
+const originalFetch = Object.getOwnPropertyDescriptor(globalThis, 'fetch');
+const originalWindowFetch = Object.getOwnPropertyDescriptor(browser, 'fetch');
+let unexpectedNetwork = 0;
+/** Refuse a service request outside the existing controlled fixtures. */
+async function refuseNetwork(): Promise<never> {
+  unexpectedNetwork += 1;
+  throw new Error('Unexpected folder picker fixture request');
+}
+Object.defineProperty(globalThis, 'fetch', {
+  configurable: true,
+  value: refuseNetwork,
+});
+Object.defineProperty(browser, 'fetch', {
+  configurable: true,
+  value: refuseNetwork,
+});
 for (const name of globals) {
   originals.set(name, Object.getOwnPropertyDescriptor(globalThis, name));
   const value: unknown = browser[name];
@@ -341,6 +361,22 @@ await test('Move dims the moved folder and its children and moves into a chosen 
   assert.equal(row('Projects').getAttribute('aria-selected'), 'true');
   assert.ok(!names().some((name) => name === 'A new folder'));
   await act(async () => row('Research').click());
+  assert.equal(row('Projects').getAttribute('aria-selected'), 'false');
+  assert.match(row('Projects').textContent ?? '', /Current folder/);
+  assert.doesNotMatch(row('Research').textContent ?? '', /Current folder/);
+  assert.equal(launch.getAttribute('aria-disabled'), 'true');
+  assert.match(launch.textContent ?? '', /this folder/);
+  await act(async () => row('Projects').click());
+  assert.equal(row('Projects').getAttribute('aria-selected'), 'true');
+  assert.match(row('Projects').textContent ?? '', /Current folder/);
+  assert.equal(button('Move').disabled, true);
+  await act(async () => button('Move').click());
+  assert.equal(moves.length, countBefore);
+  await act(async () => row('Research').focus());
+  await press('Enter');
+  assert.equal(row('Research').getAttribute('aria-selected'), 'true');
+  assert.equal(document.activeElement === row('Research'), true);
+  assert.match(row('Projects').textContent ?? '', /Current folder/);
   assert.equal(button('Move').disabled, false);
   await act(async () => button('Move').click());
   await act(async () => {
@@ -631,7 +667,19 @@ after(async () => {
     if (original === undefined) Reflect.deleteProperty(globalThis, name);
     else Object.defineProperty(globalThis, name, original);
   }
-  Reflect.deleteProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT');
+  if (originalAct)
+    Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', originalAct);
+  else Reflect.deleteProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT');
+  if (originalFetch) Object.defineProperty(globalThis, 'fetch', originalFetch);
+  else Reflect.deleteProperty(globalThis, 'fetch');
+  if (originalWindowFetch)
+    Object.defineProperty(browser, 'fetch', originalWindowFetch);
+  else Reflect.deleteProperty(browser, 'fetch');
   await store.close();
   await browser.happyDOM.close();
+  assert.deepEqual(
+    Object.getOwnPropertyDescriptor(globalThis, 'IS_REACT_ACT_ENVIRONMENT'),
+    originalAct,
+  );
+  assert.equal(unexpectedNetwork, 0);
 });
