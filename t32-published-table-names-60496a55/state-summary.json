@@ -1,0 +1,136 @@
+{
+  "scope": "Generated reader COMPONENT simulation. Actual compiled renderer and published document builder, canonical CSS/font, explicit registry theme root initialization. No app, account, stored publication or server reply.",
+  "cases": [
+    {
+      "id": "1440-light",
+      "checks": {
+        "viewport": true,
+        "theme": true,
+        "fonts": true,
+        "twoNamedRegions": true,
+        "native": true,
+        "localOverflow": true,
+        "noDocumentOverflow": true,
+        "firstFocus": true,
+        "firstArrow": true,
+        "secondFocus": true,
+        "secondArrow": true,
+        "back": true,
+        "ax": true,
+        "trusted": true,
+        "genericTitle": true,
+        "zeroErrors": true
+      }
+    },
+    {
+      "id": "390-light",
+      "checks": {
+        "viewport": true,
+        "theme": true,
+        "fonts": true,
+        "twoNamedRegions": true,
+        "native": true,
+        "localOverflow": true,
+        "noDocumentOverflow": true,
+        "firstFocus": true,
+        "firstArrow": true,
+        "secondFocus": true,
+        "secondArrow": true,
+        "back": true,
+        "ax": true,
+        "trusted": true,
+        "genericTitle": true,
+        "zeroErrors": true
+      }
+    },
+    {
+      "id": "320-light",
+      "checks": {
+        "viewport": true,
+        "theme": true,
+        "fonts": true,
+        "twoNamedRegions": true,
+        "native": true,
+        "localOverflow": true,
+        "noDocumentOverflow": true,
+        "firstFocus": true,
+        "firstArrow": true,
+        "secondFocus": true,
+        "secondArrow": true,
+        "back": true,
+        "ax": true,
+        "trusted": true,
+        "genericTitle": true,
+        "zeroErrors": true
+      }
+    },
+    {
+      "id": "1440-dark",
+      "checks": {
+        "viewport": true,
+        "theme": true,
+        "fonts": true,
+        "twoNamedRegions": true,
+        "native": true,
+        "localOverflow": true,
+        "noDocumentOverflow": true,
+        "firstFocus": true,
+        "firstArrow": true,
+        "secondFocus": true,
+        "secondArrow": true,
+        "back": true,
+        "ax": true,
+        "trusted": true,
+        "genericTitle": true,
+        "zeroErrors": true
+      }
+    },
+    {
+      "id": "390-dark",
+      "checks": {
+        "viewport": true,
+        "theme": true,
+        "fonts": true,
+        "twoNamedRegions": true,
+        "native": true,
+        "localOverflow": true,
+        "noDocumentOverflow": true,
+        "firstFocus": true,
+        "firstArrow": true,
+        "secondFocus": true,
+        "secondArrow": true,
+        "back": true,
+        "ax": true,
+        "trusted": true,
+        "genericTitle": true,
+        "zeroErrors": true
+      }
+    },
+    {
+      "id": "320-dark",
+      "checks": {
+        "viewport": true,
+        "theme": true,
+        "fonts": true,
+        "twoNamedRegions": true,
+        "native": true,
+        "localOverflow": true,
+        "noDocumentOverflow": true,
+        "firstFocus": true,
+        "firstArrow": true,
+        "secondFocus": true,
+        "secondArrow": true,
+        "back": true,
+        "ax": true,
+        "trusted": true,
+        "genericTitle": true,
+        "zeroErrors": true
+      }
+    }
+  ],
+  "compoundChecks": 96,
+  "pass": true,
+  "source": "60496a559688fe84413bb7091452716cccd074af",
+  "actualAX": "Only the two separate actual-ax.txt files are published actual AX observations. Screenshot files do not prove AX or document titles.",
+  "gates": "No exact Docker image produced. Actual anonymous publication HTTP/reload, app, AT speech and physical/coarse input remain NOT RUN."
+}

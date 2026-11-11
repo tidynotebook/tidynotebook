@@ -1,0 +1,101 @@
+- generic [ref=t3-ed7589e7-3b-f1e3] [box=208,0,1024,695]:
+  - main [ref=t3-ed7589e7-3b-f1e4] [box=400,0,640,506]:
+    - article [ref=t3-ed7589e7-3b-f1e5] [box=400,64,640,394]:
+      - heading "N10 generated reader COMPONENT simulation" [level=1] [ref=t3-ed7589e7-3b-f1e6] [box=400,64,640,34]
+      - paragraph [ref=t3-ed7589e7-3b-f1e7] [box=400,114,640,26]: Synthetic Markdown table.
+      - region "Table" [active] [ref=t3-ed7589e7-3b-f1e8] [box=400,156,640,122]:
+        - table [ref=t3-ed7589e7-3b-f1e9] [box=400,156,1226,122]:
+          - rowgroup [ref=t3-ed7589e7-3b-f1e10] [box=401,156,1225,37]:
+            - row [ref=t3-ed7589e7-3b-f1e11] [box=401,156,1225,37]:
+              - columnheader "Field 01" [ref=t3-ed7589e7-3b-f1e12] [box=401,156,88,37]
+              - columnheader "Field 02" [ref=t3-ed7589e7-3b-f1e13] [box=488,156,88,37]
+              - columnheader "Field 03" [ref=t3-ed7589e7-3b-f1e14] [box=576,156,88,37]
+              - columnheader "Field 04" [ref=t3-ed7589e7-3b-f1e15] [box=663,156,88,37]
+              - columnheader "Field 05" [ref=t3-ed7589e7-3b-f1e16] [box=751,156,88,37]
+              - columnheader "Field 06" [ref=t3-ed7589e7-3b-f1e17] [box=838,156,88,37]
+              - columnheader "Field 07" [ref=t3-ed7589e7-3b-f1e18] [box=926,156,88,37]
+              - columnheader "Field 08" [ref=t3-ed7589e7-3b-f1e19] [box=1013,156,88,37]
+              - columnheader "Field 09" [ref=t3-ed7589e7-3b-f1e20] [box=1101,156,88,37]
+              - columnheader "Field 10" [ref=t3-ed7589e7-3b-f1e21] [box=1188,156,88,37]
+              - columnheader "Field 11" [ref=t3-ed7589e7-3b-f1e22] [box=1276,156,88,37]
+              - columnheader "Field 12" [ref=t3-ed7589e7-3b-f1e23] [box=1363,156,88,37]
+              - columnheader "Field 13" [ref=t3-ed7589e7-3b-f1e24] [box=1451,156,88,37]
+              - columnheader "Field 14" [ref=t3-ed7589e7-3b-f1e25] [box=1538,156,88,37]
+          - rowgroup [ref=t3-ed7589e7-3b-f1e26] [box=401,193,1225,84]:
+            - row [ref=t3-ed7589e7-3b-f1e27] [box=401,193,1225,84]:
+              - cell "Synthetic content 1" [ref=t3-ed7589e7-3b-f1e28] [box=401,193,88,84]
+              - cell "Synthetic content 2" [ref=t3-ed7589e7-3b-f1e29] [box=488,193,88,84]
+              - cell "Synthetic content 3" [ref=t3-ed7589e7-3b-f1e30] [box=576,193,88,84]
+              - cell "Synthetic content 4" [ref=t3-ed7589e7-3b-f1e31] [box=663,193,88,84]
+              - cell "Synthetic content 5" [ref=t3-ed7589e7-3b-f1e32] [box=751,193,88,84]
+              - cell "Synthetic content 6" [ref=t3-ed7589e7-3b-f1e33] [box=838,193,88,84]
+              - cell "Synthetic content 7" [ref=t3-ed7589e7-3b-f1e34] [box=926,193,88,84]
+              - cell "Synthetic content 8" [ref=t3-ed7589e7-3b-f1e35] [box=1013,193,88,84]
+              - cell "Synthetic content 9" [ref=t3-ed7589e7-3b-f1e36] [box=1101,193,88,84]
+              - cell "Synthetic content 10" [ref=t3-ed7589e7-3b-f1e37] [box=1188,193,88,84]
+              - cell "Synthetic content 11" [ref=t3-ed7589e7-3b-f1e38] [box=1276,193,88,84]
+              - cell "Synthetic content 12" [ref=t3-ed7589e7-3b-f1e39] [box=1363,193,88,84]
+              - cell "Synthetic content 13" [ref=t3-ed7589e7-3b-f1e40] [box=1451,193,88,84]
+              - cell "Synthetic content 14" [ref=t3-ed7589e7-3b-f1e41] [box=1538,193,88,84]
+      - paragraph [ref=t3-ed7589e7-3b-f1e42] [box=400,294,640,26]: Synthetic author table.
+      - region "Table" [ref=t3-ed7589e7-3b-f1e43] [box=400,336,640,122]:
+        - table [ref=t3-ed7589e7-3b-f1e44] [box=400,336,1171,122]:
+          - rowgroup [ref=t3-ed7589e7-3b-f1e45] [box=401,337,1170,37]:
+            - row [ref=t3-ed7589e7-3b-f1e46] [box=401,337,1170,37]:
+              - columnheader "Field 01" [ref=t3-ed7589e7-3b-f1e47] [box=401,337,84,37]
+              - columnheader "Field 02" [ref=t3-ed7589e7-3b-f1e48] [box=484,337,84,37]
+              - columnheader "Field 03" [ref=t3-ed7589e7-3b-f1e49] [box=568,337,84,37]
+              - columnheader "Field 04" [ref=t3-ed7589e7-3b-f1e50] [box=651,337,84,37]
+              - columnheader "Field 05" [ref=t3-ed7589e7-3b-f1e51] [box=735,337,84,37]
+              - columnheader "Field 06" [ref=t3-ed7589e7-3b-f1e52] [box=818,337,84,37]
+              - columnheader "Field 07" [ref=t3-ed7589e7-3b-f1e53] [box=902,337,84,37]
+              - columnheader "Field 08" [ref=t3-ed7589e7-3b-f1e54] [box=986,337,84,37]
+              - columnheader "Field 09" [ref=t3-ed7589e7-3b-f1e55] [box=1069,337,84,37]
+              - columnheader "Field 10" [ref=t3-ed7589e7-3b-f1e56] [box=1153,337,84,37]
+              - columnheader "Field 11" [ref=t3-ed7589e7-3b-f1e57] [box=1236,337,84,37]
+              - columnheader "Field 12" [ref=t3-ed7589e7-3b-f1e58] [box=1320,337,84,37]
+              - columnheader "Field 13" [ref=t3-ed7589e7-3b-f1e59] [box=1404,337,84,37]
+              - columnheader "Field 14" [ref=t3-ed7589e7-3b-f1e60] [box=1487,337,84,37]
+          - rowgroup [ref=t3-ed7589e7-3b-f1e61] [box=401,374,1170,84]:
+            - row [ref=t3-ed7589e7-3b-f1e62] [box=401,374,1170,84]:
+              - cell "Safe sample 1" [ref=t3-ed7589e7-3b-f1e63] [box=401,374,84,84]
+              - cell "Safe sample 2" [ref=t3-ed7589e7-3b-f1e64] [box=484,374,84,84]
+              - cell "Safe sample 3" [ref=t3-ed7589e7-3b-f1e65] [box=568,374,84,84]
+              - cell "Safe sample 4" [ref=t3-ed7589e7-3b-f1e66] [box=651,374,84,84]
+              - cell "Safe sample 5" [ref=t3-ed7589e7-3b-f1e67] [box=735,374,84,84]
+              - cell "Safe sample 6" [ref=t3-ed7589e7-3b-f1e68] [box=818,374,84,84]
+              - cell "Safe sample 7" [ref=t3-ed7589e7-3b-f1e69] [box=902,374,84,84]
+              - cell "Safe sample 8" [ref=t3-ed7589e7-3b-f1e70] [box=986,374,84,84]
+              - cell "Safe sample 9" [ref=t3-ed7589e7-3b-f1e71] [box=1069,374,84,84]
+              - cell "Safe sample 10" [ref=t3-ed7589e7-3b-f1e72] [box=1153,374,84,84]
+              - cell "Safe sample 11" [ref=t3-ed7589e7-3b-f1e73] [box=1236,374,84,84]
+              - cell "Safe sample 12" [ref=t3-ed7589e7-3b-f1e74] [box=1320,374,84,84]
+              - cell "Safe sample 13" [ref=t3-ed7589e7-3b-f1e75] [box=1404,374,84,84]
+              - cell "Safe sample 14" [ref=t3-ed7589e7-3b-f1e76] [box=1487,374,84,84]
+  - contentinfo [ref=t3-ed7589e7-3b-f1e78] [box=400,506,640,189]:
+    - generic [ref=t3-ed7589e7-3b-f1e79] [box=424,531,592,140]:
+      - generic [ref=t3-ed7589e7-3b-f1e80] [box=424,531,181,140]:
+        - link "tidy notebook" [ref=t3-ed7589e7-3b-f1e81] [cursor=pointer] [box=424,531,181,20]:
+          - /url: /
+        - paragraph [ref=t3-ed7589e7-3b-f1e82] [box=424,563,181,32]: Open source. Write in Markdown. Export your notes.
+        - paragraph [ref=t3-ed7589e7-3b-f1e83] [box=424,607,181,16]: © 2026 tidy notebook
+      - navigation [ref=t3-ed7589e7-3b-f1e84] [box=629,531,79,140]:
+        - heading "Product" [level=2] [ref=t3-ed7589e7-3b-f1e85] [box=629,531,79,16]
+        - link "Sign in" [ref=t3-ed7589e7-3b-f1e87] [cursor=pointer] [box=629,559,79,28]:
+          - /url: /login
+      - navigation [ref=t3-ed7589e7-3b-f1e88] [box=732,531,79,140]:
+        - heading "Resources" [level=2] [ref=t3-ed7589e7-3b-f1e89] [box=732,531,79,16]
+        - generic [ref=t3-ed7589e7-3b-f1e90] [box=732,559,79,60]:
+          - link "Docs" [ref=t3-ed7589e7-3b-f1e91] [cursor=pointer] [box=732,559,79,28]:
+            - /url: https://docs.tidynotebook.com
+          - link "MCP" [ref=t3-ed7589e7-3b-f1e92] [cursor=pointer] [box=732,591,79,28]:
+            - /url: https://docs.tidynotebook.com/mcp/
+      - navigation [ref=t3-ed7589e7-3b-f1e93] [box=835,531,79,140]:
+        - heading "Open source" [level=2] [ref=t3-ed7589e7-3b-f1e94] [box=835,531,79,16]
+        - generic [ref=t3-ed7589e7-3b-f1e95] [box=835,559,79,112]:
+          - link "GitHub" [ref=t3-ed7589e7-3b-f1e96] [cursor=pointer] [box=835,559,79,28]:
+            - /url: https://github.com/tidynotebook/tidynotebook
+          - link "Source code" [ref=t3-ed7589e7-3b-f1e97] [cursor=pointer] [box=835,591,79,28]:
+            - /url: https://github.com/tidynotebook/tidynotebook/tree/main
+          - link "License (AGPL-3.0)" [ref=t3-ed7589e7-3b-f1e98] [cursor=pointer] [box=835,623,79,48]:
+            - /url: https://github.com/tidynotebook/tidynotebook/blob/main/LICENSE
