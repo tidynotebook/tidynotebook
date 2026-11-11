@@ -34,6 +34,8 @@ import {
   sessionWrites,
   resetApiKeys,
   refuseApiKeyCreation,
+  replaceSessionAccount,
+  useSession as readSession,
 } from './support/settings-modal-fixture.ts';
 
 const browser = new Window({ url: 'http://localhost/' });
@@ -142,6 +144,8 @@ const { AdministrationRedirect } =
 const { useSignOut } = await import('../../apps/web/dist/shell/sign-out.js');
 const { useNavigationDrawer } =
   await import('../../apps/web/dist/shell/use-navigation-drawer.js');
+const { RequireSession } =
+  await import('../../apps/web/dist/features/accounts/require-session.js');
 
 const container = document.createElement('div');
 document.body.append(container);
@@ -258,10 +262,14 @@ function Frame(): ReactNode {
     createElement(Route, {
       path: '/w/:workspaceId/*',
       element: createElement(
-        'div',
+        RequireSession,
         null,
-        createElement(NotePage),
-        createElement(SettingsModalHost, { workspaceId: 'one' }),
+        createElement(
+          'div',
+          null,
+          createElement(NotePage),
+          createElement(SettingsModalHost, { workspaceId: 'one' }),
+        ),
       ),
     }),
   );
@@ -724,6 +732,246 @@ await test('Settings keeps focus repair through a drawer parent render', async (
         }
       },
     );
+});
+
+await test('equal account refresh preserves Settings crossing repair and its draft', async (t) => {
+  for (const blurFirst of [true, false])
+    await t.test(
+      blurFirst ? 'blur before refresh' : 'blur after refresh',
+      async () => {
+        const media = settingsMedia(1440, false);
+        const restoreBoxes = responsiveFocusBoxes();
+        let restoreAccount = () => {};
+        try {
+          await show('/w/one/notes/n1?settings=', true);
+          const title = dialog()?.querySelector<HTMLElement>(
+            '.ui-settings-header-title',
+          );
+          const draft =
+            container.querySelector<HTMLTextAreaElement>('#note-text');
+          assert.ok(title);
+          assert.ok(draft);
+          draft.setSelectionRange(2, 6);
+          const key = locationKey;
+          const previousAccount = readSession().account;
+          assertElement(document.activeElement, title);
+          await media.change(390, false, () => {
+            if (blurFirst) title.blur();
+            restoreAccount = replaceSessionAccount({});
+          });
+          assert.notEqual(readSession().account, previousAccount);
+          assert.deepEqual(readSession().account, previousAccount);
+          if (!blurFirst) title.blur();
+          const listTitle = dialog()?.querySelector<HTMLElement>(
+            '.ui-settings-root-heading [tabindex="-1"]',
+          );
+          assert.ok(listTitle);
+          assertElement(document.activeElement, listTitle);
+          await media.change(1440, false, () => listTitle.blur());
+          assertElement(document.activeElement, title);
+          assert.equal(locationKey, key);
+          assert.equal(address, '/w/one/notes/n1?settings=');
+          assertElement(container.querySelector('#note-text'), draft);
+          assert.equal(mounts, 1);
+          assert.equal(draft.value, 'Unsaved draft');
+          assert.deepEqual([draft.selectionStart, draft.selectionEnd], [2, 6]);
+        } finally {
+          restoreAccount();
+          await show('/w/one/notes/n1');
+          restoreBoxes();
+          media.restore();
+        }
+      },
+    );
+});
+
+await test('new account and each Settings capability invalidate pending crossing focus', async (t) => {
+  const cases = [
+    {
+      name: 'different account',
+      before: {},
+      after: { accountId: 'account-2' },
+    },
+    { name: 'portal enabled', before: {}, after: { accountPortal: true } },
+    {
+      name: 'portal disabled',
+      before: { accountPortal: true },
+      after: { accountPortal: false },
+    },
+    {
+      name: 'connected apps enabled',
+      before: {},
+      after: { mcpAuthorization: true },
+    },
+    {
+      name: 'connected apps disabled',
+      before: { mcpAuthorization: true },
+      after: { mcpAuthorization: false },
+    },
+    {
+      name: 'administrator enabled',
+      before: {},
+      after: { installationRole: 'administrator' },
+    },
+    {
+      name: 'administrator disabled',
+      before: { installationRole: 'administrator' },
+      after: { installationRole: 'member' },
+    },
+  ];
+  for (const item of cases)
+    await t.test(item.name, async () => {
+      const media = settingsMedia(1440, false);
+      const restoreBoxes = responsiveFocusBoxes();
+      const restoreInitial = replaceSessionAccount(item.before);
+      let restoreAccount = () => {};
+      try {
+        await show('/w/one/notes/n1?settings=', true);
+        const title = dialog()?.querySelector<HTMLElement>(
+          '.ui-settings-header-title',
+        );
+        const draft =
+          container.querySelector<HTMLTextAreaElement>('#note-text');
+        assert.ok(title);
+        assert.ok(draft);
+        draft.setSelectionRange(2, 6);
+        const key = locationKey;
+        assertElement(document.activeElement, title);
+        await media.change(390, false, () => {
+          title.blur();
+          restoreAccount = replaceSessionAccount(item.after);
+        });
+        assertElement(document.activeElement, document.body);
+        assert.equal(locationKey, key);
+        assert.equal(address, '/w/one/notes/n1?settings=');
+        assertElement(container.querySelector('#note-text'), draft);
+        assert.equal(mounts, 1);
+        assert.equal(draft.value, 'Unsaved draft');
+        assert.deepEqual([draft.selectionStart, draft.selectionEnd], [2, 6]);
+      } finally {
+        restoreAccount();
+        restoreInitial();
+        await show('/w/one/notes/n1');
+        restoreBoxes();
+        media.restore();
+      }
+    });
+});
+
+await test('an administrator downgrade removes the current page without old focus repair', async () => {
+  const media = settingsMedia(1440, false);
+  const restoreBoxes = responsiveFocusBoxes();
+  const restoreInitial = replaceSessionAccount({
+    installationRole: 'administrator',
+  });
+  let restoreAccount = () => {};
+  try {
+    await show('/w/one/notes/n1?settings=mail', true);
+    const title = dialog()?.querySelector<HTMLElement>(
+      '.ui-settings-header-title',
+    );
+    const draft = container.querySelector<HTMLTextAreaElement>('#note-text');
+    assert.ok(title);
+    assert.ok(draft);
+    assert.equal(title.textContent, 'Mail');
+    await media.change(390, false, () => {
+      title.blur();
+      restoreAccount = replaceSessionAccount({ installationRole: 'member' });
+    });
+    await settle();
+    assert.equal(address, '/w/one/notes/n1?settings=appearance');
+    assert.deepEqual(currentSettingsRows(), ['appearance']);
+    assertElement(dialog()?.querySelector('[data-settings-page="mail"]'), null);
+    const current = dialog()?.querySelector<HTMLElement>(
+      '.ui-settings-header-title',
+    );
+    assert.ok(current);
+    assert.equal(current.textContent, 'Appearance and editor');
+    assertElement(document.activeElement, current);
+    assertElement(container.querySelector('#note-text'), draft);
+    assert.equal(mounts, 1);
+  } finally {
+    restoreAccount();
+    restoreInitial();
+    await show('/w/one/notes/n1');
+    restoreBoxes();
+    media.restore();
+  }
+});
+
+await test('null account and sign-out unmount old Settings through RequireSession', async (t) => {
+  for (const status of ['signed-in', 'signed-out'] as const)
+    await t.test(
+      status === 'signed-in' ? 'null account' : 'signed out',
+      async () => {
+        const media = settingsMedia(1440, false);
+        const restoreBoxes = responsiveFocusBoxes();
+        let restoreAccount = () => {};
+        try {
+          await show('/w/one/notes/n1?settings=', true);
+          const title = dialog()?.querySelector<HTMLElement>(
+            '.ui-settings-header-title',
+          );
+          const draft = container.querySelector('#note-text');
+          assert.ok(title);
+          assert.ok(draft);
+          await media.change(390, false, () => {
+            title.blur();
+            restoreAccount = replaceSessionAccount(null, status);
+          });
+          await settle();
+          const redirected = new URL(address, 'http://localhost');
+          assert.equal(redirected.pathname, '/login');
+          assert.equal(
+            redirected.searchParams.get('next'),
+            '/w/one/notes/n1?settings=',
+          );
+          assertElement(dialog(), null);
+          assert.equal(title.isConnected, false);
+          assert.equal(draft.isConnected, false);
+          assert.equal(media.subscriptions, 0);
+          await media.change(1440);
+          assertElement(dialog(), null);
+          assertElement(container.querySelector('#note-text'), null);
+        } finally {
+          restoreAccount();
+          await show('/w/one/notes/n1');
+          restoreBoxes();
+          media.restore();
+        }
+      },
+    );
+});
+
+await test('an active Settings action keeps its own field across a width change', async () => {
+  const media = settingsMedia(1440, false);
+  const restoreBoxes = responsiveFocusBoxes();
+  try {
+    await show('/w/one/notes/n1?settings=daily-notes', true);
+    const draft = container.querySelector<HTMLTextAreaElement>('#note-text');
+    assert.ok(draft);
+    const key = locationKey;
+    await click(button('Name format'));
+    const field = container.querySelector<HTMLInputElement>('#daily-format');
+    assert.ok(field);
+    field.focus();
+    field.setSelectionRange(1, 3);
+    for (const width of [390, 1024, 320, 1440]) {
+      await media.change(width);
+      assertElement(document.activeElement, field);
+      assert.deepEqual([field.selectionStart, field.selectionEnd], [1, 3]);
+      assert.equal(locationKey, key);
+      assertElement(container.querySelector('#note-text'), draft);
+      assert.equal(mounts, 1);
+    }
+    await escape();
+    assertElement(container.querySelector('#daily-format'), null);
+    assertElement(document.activeElement, button('Name format'));
+  } finally {
+    await show('/w/one/notes/n1');
+    restoreBoxes();
+    media.restore();
+  }
 });
 
 await test('responsive Settings rejects stale focus and restores instance listeners', async (t) => {

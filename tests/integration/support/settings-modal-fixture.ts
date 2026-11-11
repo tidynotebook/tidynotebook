@@ -47,9 +47,31 @@ const account = {
 export function setAdministrator(enabled: boolean): void {
   account.installationRole = enabled ? 'administrator' : 'member';
 }
+let currentAccount: typeof account | null = account;
+let currentStatus: 'signed-in' | 'signed-out' = 'signed-in';
+
+/** Replace only the controlled session read, and return its exact restoration. */
+export function replaceSessionAccount(
+  changes: Partial<typeof account> | null,
+  status: 'signed-in' | 'signed-out' = 'signed-in',
+): () => void {
+  const previous = currentAccount;
+  const previousStatus = currentStatus;
+  currentAccount =
+    changes === null ? null : { ...(currentAccount ?? account), ...changes };
+  currentStatus = status;
+  return () => {
+    currentAccount = previous;
+    currentStatus = previousStatus;
+  };
+}
 const session = {
-  status: 'signed-in',
-  account,
+  get status() {
+    return currentStatus;
+  },
+  get account() {
+    return currentAccount;
+  },
   error: null,
   refresh: () => {},
   recheck: () => {},
