@@ -478,8 +478,11 @@ export function DialogBody({
  */
 export function DialogFooter({
   children,
+  column,
 }: {
   readonly children: ReactNode;
+  /** Keep the automatic form column, or opt into the full content width. */
+  readonly column?: boolean;
 }): ReactNode {
   const settings = useSettingsSurface();
   const phone = useContext(PhoneSheetContext);
@@ -551,7 +554,11 @@ export function DialogFooter({
         justify="end"
         wrap
         className={
-          sectionForm || ownsInset ? 'w-full fine:max-w-lg' : undefined
+          (column ?? (sectionForm || ownsInset))
+            ? 'w-full fine:max-w-lg'
+            : column === false
+              ? 'w-full'
+              : undefined
         }
       >
         {children}

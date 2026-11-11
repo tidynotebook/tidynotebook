@@ -188,6 +188,11 @@ function saveIn(): HTMLButtonElement {
 async function submit(): Promise<void> {
   const form = document.body.querySelector('[role="dialog"] form');
   assert.ok(form);
+  assert.equal(form.hasAttribute('column'), false);
+  assert.equal(
+    form.querySelector('.ui-dialog-footer')?.hasAttribute('column'),
+    false,
+  );
   await act(async () =>
     form.dispatchEvent(
       new window.Event('submit', { bubbles: true, cancelable: true }),

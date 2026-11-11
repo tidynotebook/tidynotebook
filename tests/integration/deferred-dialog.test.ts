@@ -29,6 +29,10 @@ await test('an action preloads only on intent, keeps one loading frame, and retu
           : value,
     });
   }
+  const originalAct = Object.getOwnPropertyDescriptor(
+    globalThis,
+    'IS_REACT_ACT_ENVIRONMENT',
+  );
   Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', {
     configurable: true,
     value: true,
@@ -137,6 +141,16 @@ await test('an action preloads only on intent, keeps one loading frame, and retu
       if (descriptor) Object.defineProperty(globalThis, name, descriptor);
       else Reflect.deleteProperty(globalThis, name);
     }
-    Reflect.deleteProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT');
+    if (originalAct)
+      Object.defineProperty(
+        globalThis,
+        'IS_REACT_ACT_ENVIRONMENT',
+        originalAct,
+      );
+    else Reflect.deleteProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT');
+    assert.deepEqual(
+      Object.getOwnPropertyDescriptor(globalThis, 'IS_REACT_ACT_ENVIRONMENT'),
+      originalAct,
+    );
   }
 });

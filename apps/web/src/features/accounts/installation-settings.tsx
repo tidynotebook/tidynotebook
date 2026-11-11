@@ -141,7 +141,7 @@ function formOf(mail: MailSettings): MailForm {
   };
 }
 
-/** The fields of the mail server, its Save, its test and its removal. */
+/** Fill the fixed Mail section so only its body scrolls above the actions. */
 function MailSettingsForm({
   mail,
   onSaved,
@@ -257,6 +257,7 @@ function MailSettingsForm({
     <Form
       regions
       section
+      fill
       noValidate
       className="ui-dialog-form"
       onSubmit={(event): void => {

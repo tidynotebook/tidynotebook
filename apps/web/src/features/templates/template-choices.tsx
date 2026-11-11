@@ -602,7 +602,8 @@ export default function TemplateChoices({
         </Grid>
       </Inset>
       <div className={details ? 'shrink-0' : 'hidden shrink-0 lg:block'}>
-        <DialogFooter>
+        {/* The actions share the preview's full width. */}
+        <DialogFooter column={false}>
           {selected === null ? null : (
             <Inset
               as="p"

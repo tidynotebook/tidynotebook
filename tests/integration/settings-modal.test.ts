@@ -1457,6 +1457,9 @@ await test('Mail is a section form whose Save stays disabled until a value chang
       ),
       false,
     );
+    const form = container.querySelector('#mail-host')?.closest('form');
+    assert.ok(form);
+    assert.equal(form.hasAttribute('fill'), false);
     const save = button('Save');
     assert.equal(save.hasAttribute('disabled'), true);
     await act(async () => {

@@ -36,6 +36,10 @@ for (const name of globals) {
     value: browser[name],
   });
 }
+const originalAct = Object.getOwnPropertyDescriptor(
+  globalThis,
+  'IS_REACT_ACT_ENVIRONMENT',
+);
 Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', {
   configurable: true,
   value: true,
@@ -144,5 +148,11 @@ test.after(async () => {
     if (descriptor === undefined) Reflect.deleteProperty(globalThis, name);
     else Object.defineProperty(globalThis, name, descriptor);
   }
-  Reflect.deleteProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT');
+  if (originalAct)
+    Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', originalAct);
+  else Reflect.deleteProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT');
+  assert.deepEqual(
+    Object.getOwnPropertyDescriptor(globalThis, 'IS_REACT_ACT_ENVIRONMENT'),
+    originalAct,
+  );
 });

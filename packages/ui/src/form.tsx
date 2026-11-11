@@ -18,6 +18,7 @@ export function Form({
   regions = false,
   section = false,
   column,
+  fill,
   className = '',
   gap = regions ? 0 : 3,
   children,
@@ -26,6 +27,8 @@ export function Form({
   readonly regions?: boolean;
   readonly section?: boolean;
   readonly column?: boolean;
+  /** Fill a fixed frame, including a section form with a scrolling body. */
+  readonly fill?: boolean;
   readonly gap?: SpaceValue;
 }): ReactNode {
   const [submitted, setSubmitted] = useState(false);
@@ -37,7 +40,7 @@ export function Form({
       <FormSubmittedContext.Provider value={submitted}>
         <Stack
           {...props}
-          className={`${bounded && !section ? 'w-full fine:max-w-lg fine:self-start' : ''} ${section ? 'fine:flex-none' : ''} ${className}`}
+          className={`${bounded && !section ? 'w-full fine:max-w-lg fine:self-start' : ''} ${section && fill !== true ? 'fine:flex-none' : ''} ${className}`}
           as="form"
           noValidate
           onSubmit={(event) => {
@@ -52,7 +55,7 @@ export function Form({
             onSubmit?.(event);
           }}
           gap={regions && dialogInset ? 6 : gap}
-          fill={regions}
+          fill={fill ?? regions}
         >
           {children}
         </Stack>

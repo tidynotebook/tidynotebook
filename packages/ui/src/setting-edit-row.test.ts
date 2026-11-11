@@ -16,6 +16,7 @@ import {
 } from '../dist/index.js';
 import { fixedRegionClasses } from './scroll-classes.ts';
 import { DialogInsetContext } from '../dist/dialog-layout-context.js';
+import { PhoneSheetContext } from '../dist/dialog.js';
 await test('an inline value edit has no dialog inset or internal scroll line and Cancel precedes Save', () => {
   const html = renderToStaticMarkup(
     createElement(SettingEditRow, {
@@ -115,4 +116,51 @@ await test('the note side panel uses symmetric panel padding and tree disclosure
   );
   assert.match(html, /data-ui-row="tree"/);
   assert.match(html, /data-disclosure-content="outline"/);
+});
+
+await test('form layout options stay out of native DOM and preserve phone action selection', () => {
+  for (const phone of [false, true]) {
+    for (const fill of [undefined, false, true]) {
+      for (const column of [undefined, false, true]) {
+        const render = (explicit: boolean) =>
+          renderToStaticMarkup(
+            createElement(PhoneSheetContext.Provider, {
+              value: phone,
+              children: createElement(Form, {
+                regions: true,
+                section: true,
+                ...(explicit && fill !== undefined ? { fill } : {}),
+                children: createElement(DialogFooter, {
+                  ...(explicit && column !== undefined ? { column } : {}),
+                  children: [
+                    createElement(Button, {
+                      key: 'cancel',
+                      variant: 'ghost',
+                      children: 'Cancel',
+                    }),
+                    createElement(Button, {
+                      key: 'save',
+                      type: 'submit',
+                      children: 'Save',
+                    }),
+                  ],
+                }),
+              }),
+            }),
+          );
+        const html = render(true);
+        assert.doesNotMatch(html, /\s(?:fill|column)=/);
+        assert.equal((html.match(/<form\b/g) ?? []).length, 1);
+        assert.equal((html.match(/type="submit"/g) ?? []).length, 1);
+        assert.equal(html.includes('Cancel'), !phone);
+        if (!phone) assert.ok(html.indexOf('Cancel') < html.indexOf('Save'));
+        if (fill === undefined && column === undefined)
+          assert.equal(
+            html,
+            render(false),
+            'Undefined options retain the default consumer output',
+          );
+      }
+    }
+  }
 });
