@@ -1,0 +1,32 @@
+- generic [ref=t3-ed7589e7-px-e1] [box=0,0,390,640]:
+  - main [ref=t3-ed7589e7-px-e390] [box=0,0,390,640]:
+    - heading "Footer forms COMPONENT simulation" [level=1] [ref=t3-ed7589e7-px-e391] [box=24,24,342,26]
+    - paragraph [ref=t3-ed7589e7-px-e392] [box=24,50,342,40]: Actual Settings host. Synthetic account, reads and textarea.
+    - button "Open templates" [ref=t3-ed7589e7-px-e393] [box=24,90,118,24]
+    - button "Open Settings" [ref=t3-ed7589e7-px-e394] [box=142,90,105,24]
+    - textbox "Synthetic unsaved draft" [ref=t3-ed7589e7-px-e395] [box=24,114,205,48]: Synthetic unsaved draft. Selection and identity stay here.
+  - dialog [ref=t3-ed7589e7-px-e396] [box=24,24,342,592]:
+    - heading "New note from template" [level=2] [ref=t3-ed7589e7-px-e397] [box=48,48,1,1]
+    - generic [ref=t3-ed7589e7-px-e398] [box=49,49,292,542]:
+      - banner [ref=t3-ed7589e7-px-e400] [box=49,49,292,24]:
+        - button "Back to templates" [ref=t3-ed7589e7-px-e402] [cursor=pointer] [box=59,47,28,28]
+        - heading "Meeting" [active] [level=2] [ref=t3-ed7589e7-px-e407] [box=89,51,212,20]
+        - button "Close template dialog" [ref=t3-ed7589e7-px-e411] [cursor=pointer] [box=303,47,28,28]
+      - generic [ref=t3-ed7589e7-px-e419] [box=49,97,292,438]:
+        - generic [ref=t3-ed7589e7-px-e420] [box=49,97,292,132]:
+          - generic [ref=t3-ed7589e7-px-e421] [box=49,97,292,60]:
+            - generic [ref=t3-ed7589e7-px-e422] [box=49,97,292,20]: Name
+            - textbox "Name" [ref=t3-ed7589e7-px-e424] [box=49,125,292,32]: Meeting 2026-11-11
+          - generic [ref=t3-ed7589e7-px-e425] [box=49,169,292,60]:
+            - generic [ref=t3-ed7589e7-px-e426] [box=49,169,292,20]: Save in
+            - button "Save in All notes" [ref=t3-ed7589e7-px-e428] [cursor=pointer] [box=49,197,292,32]:
+              - generic [ref=t3-ed7589e7-px-e432] [box=86,203,218,20]: All notes
+        - region "Preview of Meeting" [ref=t3-ed7589e7-px-e436] [box=49,253,292,282]:
+          - paragraph [ref=t3-ed7589e7-px-e437] [box=49,253,292,16]: Preview
+          - region "The new note" [ref=t3-ed7589e7-px-e439] [box=49,277,292,258]:
+            - heading "Synthetic meeting" [level=1] [ref=t3-ed7589e7-px-e440] [box=66,294,258,20]
+            - paragraph [ref=t3-ed7589e7-px-e441] [box=66,322,258,20]:
+              - text: Hello
+              - mark [ref=t3-ed7589e7-px-e442] [box=101,324,114,17]: Meeting 2026-11-11
+              - text: .
+      - button "Create note" [ref=t3-ed7589e7-px-e446] [cursor=pointer] [box=49,559,292,32]

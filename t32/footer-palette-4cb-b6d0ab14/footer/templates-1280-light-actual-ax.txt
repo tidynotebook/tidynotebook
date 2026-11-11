@@ -1,0 +1,42 @@
+- generic [ref=t3-ed7589e7-pt-e1] [box=0,0,1280,900]:
+  - main [ref=t3-ed7589e7-pt-e318] [box=0,0,1280,900]:
+    - heading "Footer forms COMPONENT simulation" [level=1] [ref=t3-ed7589e7-pt-e319] [box=24,24,1232,26]
+    - paragraph [ref=t3-ed7589e7-pt-e320] [box=24,50,1232,20]: Actual Settings host. Synthetic account, reads and textarea.
+    - button "Open templates" [ref=t3-ed7589e7-pt-e321] [box=24,101,118,24]
+    - button "Open Settings" [ref=t3-ed7589e7-pt-e322] [box=142,101,105,24]
+    - textbox "Synthetic unsaved draft" [ref=t3-ed7589e7-pt-e323] [box=247,70,205,48]: Synthetic unsaved draft. Selection and identity stay here.
+  - dialog [ref=t3-ed7589e7-pt-e324] [box=256,170,768,560]:
+    - heading "New note from template" [level=2] [ref=t3-ed7589e7-pt-e325] [box=280,194,1,1]
+    - generic [ref=t3-ed7589e7-pt-e326] [box=281,195,718,510]:
+      - banner [ref=t3-ed7589e7-pt-e327] [box=281,195,718,28]:
+        - heading "New note from template" [level=3] [ref=t3-ed7589e7-pt-e328] [box=281,199,519,20]
+        - button "Manage templates" [ref=t3-ed7589e7-pt-e330] [cursor=pointer] [box=808,195,156,28]
+        - button "Close template dialog" [ref=t3-ed7589e7-pt-e336] [cursor=pointer] [box=971,195,28,28]
+      - generic [ref=t3-ed7589e7-pt-e342] [box=281,247,718,402]:
+        - generic [ref=t3-ed7589e7-pt-e344] [box=281,247,229,402]:
+          - generic [ref=t3-ed7589e7-pt-e345] [box=281,247,229,60]:
+            - generic [ref=t3-ed7589e7-pt-e346] [box=281,247,229,20]: Search templates
+            - textbox "Search templates" [active] [ref=t3-ed7589e7-pt-e348] [box=281,275,229,32]
+          - group "Templates" [ref=t3-ed7589e7-pt-e349] [box=281,319,229,330]:
+            - button "Meeting" [pressed] [ref=t3-ed7589e7-pt-e350] [cursor=pointer] [box=281,319,229,28]
+        - generic [ref=t3-ed7589e7-pt-e357] [box=526,247,473,402]:
+          - generic [ref=t3-ed7589e7-pt-e358] [box=526,247,473,60]:
+            - generic [ref=t3-ed7589e7-pt-e359] [box=526,247,231,60]:
+              - generic [ref=t3-ed7589e7-pt-e360] [box=526,247,231,20]: Name
+              - textbox "Name" [ref=t3-ed7589e7-pt-e362] [box=526,275,231,32]: Meeting 2026-11-11
+            - generic [ref=t3-ed7589e7-pt-e363] [box=768,247,231,60]:
+              - generic [ref=t3-ed7589e7-pt-e364] [box=768,247,231,20]: Save in
+              - button "Save in All notes" [ref=t3-ed7589e7-pt-e366] [cursor=pointer] [box=768,275,231,32]:
+                - generic [ref=t3-ed7589e7-pt-e370] [box=805,281,157,20]: All notes
+          - region "Preview of Meeting" [ref=t3-ed7589e7-pt-e374] [box=526,331,473,318]:
+            - paragraph [ref=t3-ed7589e7-pt-e375] [box=526,331,473,16]: Preview
+            - region "The new note" [ref=t3-ed7589e7-pt-e377] [box=526,355,473,294]:
+              - heading "Synthetic meeting" [level=1] [ref=t3-ed7589e7-pt-e378] [box=543,372,439,20]
+              - paragraph [ref=t3-ed7589e7-pt-e379] [box=543,400,439,20]:
+                - text: Hello
+                - mark [ref=t3-ed7589e7-pt-e380] [box=578,402,114,17]: Meeting 2026-11-11
+                - text: .
+      - generic [ref=t3-ed7589e7-pt-e383] [box=281,673,718,32]:
+        - paragraph [ref=t3-ed7589e7-pt-e384] [box=560,681,261,16]: Date and time are set when you create the note.
+        - button "Cancel" [ref=t3-ed7589e7-pt-e386] [cursor=pointer] [box=828,673,67,32]
+        - button "Create note" [ref=t3-ed7589e7-pt-e388] [cursor=pointer] [box=903,673,96,32]

@@ -1,0 +1,15 @@
+- generic [ref=t3-ed7589e7-to-e1] [box=0,0,320,640]:
+  - main [ref=t3-ed7589e7-to-e553] [box=0,0,320,127]:
+    - heading "D12 component simulation" [level=1] [ref=t3-ed7589e7-to-e554] [box=0,0,320,24]
+    - button "Open actual palette" [ref=t3-ed7589e7-to-e555] [box=0,24,145,24]
+    - textbox "Synthetic action target" [ref=t3-ed7589e7-to-e556] [box=0,48,221,24]
+    - textbox "Retained synthetic draft" [ref=t3-ed7589e7-to-e557] [box=0,72,205,48]: Synthetic unsaved draft
+  - dialog [ref=t3-ed7589e7-to-e558] [box=24,237,272,166]:
+    - heading "Search notes and run actions" [level=2] [ref=t3-ed7589e7-to-e559] [box=24,237,1,1]
+    - generic [ref=t3-ed7589e7-to-e560] [box=25,238,270,164]:
+      - combobox "Find a synthetic template" [expanded] [active] [ref=t3-ed7589e7-to-e566] [box=73,262,198,20]
+      - paragraph [ref=t3-ed7589e7-to-e567] [box=24,261,1,1]: Choose template. 2 results.
+      - listbox "Choose template" [ref=t3-ed7589e7-to-e569] [box=25,306,270,72]:
+        - text: Choose template
+        - option "First synthetic template" [selected] [ref=t3-ed7589e7-to-e570] [cursor=pointer] [box=49,322,222,28]
+        - option "Second synthetic template" [ref=t3-ed7589e7-to-e576] [cursor=pointer] [box=49,350,222,28]

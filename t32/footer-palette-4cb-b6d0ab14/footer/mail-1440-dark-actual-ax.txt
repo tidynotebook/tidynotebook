@@ -1,0 +1,120 @@
+- generic [ref=t3-ed7589e7-pp-e2] [box=0,0,1440,900]:
+  - main [ref=t3-ed7589e7-pp-e110] [box=0,0,1440,900]:
+    - heading "Footer forms COMPONENT simulation" [level=1] [ref=t3-ed7589e7-pp-e111] [box=24,24,1392,26]
+    - paragraph [ref=t3-ed7589e7-pp-e112] [box=24,50,1392,20]: Actual Settings host. Synthetic account, reads and textarea.
+    - button "Open templates" [ref=t3-ed7589e7-pp-e113] [box=24,101,118,24]
+    - button "Open Settings" [ref=t3-ed7589e7-pp-e114] [box=142,101,105,24]
+    - textbox "Synthetic unsaved draft" [ref=t3-ed7589e7-pp-e115] [box=247,70,205,48]: Synthetic unsaved draft. Selection and identity stay here.
+  - dialog [ref=t3-ed7589e7-pp-e116] [box=250,140,940,620]:
+    - heading "Settings" [level=2] [ref=t3-ed7589e7-pp-e117] [box=250,140,1,1]
+    - generic [ref=t3-ed7589e7-pp-e118] [box=251,141,938,618]:
+      - generic [ref=t3-ed7589e7-pp-e121] [box=259,149,223,602]:
+        - button "Profile, Synthetic Reviewer, reviewer@example.invalid" [ref=t3-ed7589e7-pp-e122] [cursor=pointer] [box=259,149,223,52]:
+          - generic [aria-hidden] [ref=t3-ed7589e7-pp-e123] [box=267,163,24,24]: S
+          - generic [ref=t3-ed7589e7-pp-e124] [box=303,157,171,36]:
+            - generic [ref=t3-ed7589e7-pp-e125] [box=303,157,171,20]: Synthetic Reviewer
+            - generic [ref=t3-ed7589e7-pp-e126] [box=303,177,171,16]: reviewer@example.invalid
+        - separator [ref=t3-ed7589e7-pp-e127] [box=259,209,223,1]
+        - navigation "Settings sections" [ref=t3-ed7589e7-pp-e128] [box=259,218,223,452]:
+          - region "Security" [ref=t3-ed7589e7-pp-e129] [box=259,218,223,86]:
+            - heading "Security" [level=3] [ref=t3-ed7589e7-pp-e130] [box=259,218,223,28]
+            - list [ref=t3-ed7589e7-pp-e132] [box=259,248,223,56]:
+              - listitem [ref=t3-ed7589e7-pp-e133] [box=259,248,223,28]:
+                - button "Devices" [ref=t3-ed7589e7-pp-e134] [cursor=pointer] [box=259,248,223,28]
+              - listitem [ref=t3-ed7589e7-pp-e139] [box=259,276,223,28]:
+                - button "API keys" [ref=t3-ed7589e7-pp-e140] [cursor=pointer] [box=259,276,223,28]
+          - region "Preferences" [ref=t3-ed7589e7-pp-e146] [box=259,312,223,86]:
+            - heading "Preferences" [level=3] [ref=t3-ed7589e7-pp-e147] [box=259,312,223,28]
+            - list [ref=t3-ed7589e7-pp-e149] [box=259,342,223,56]:
+              - listitem [ref=t3-ed7589e7-pp-e150] [box=259,342,223,28]:
+                - button "Appearance and editor" [ref=t3-ed7589e7-pp-e151] [cursor=pointer] [box=259,342,223,28]
+              - listitem [ref=t3-ed7589e7-pp-e160] [box=259,370,223,28]:
+                - button "Offline" [ref=t3-ed7589e7-pp-e161] [cursor=pointer] [box=259,370,223,28]
+          - region "Workspace Synthetic workspace" [ref=t3-ed7589e7-pp-e167] [box=259,406,223,114]:
+            - heading "Workspace Synthetic workspace" [level=3] [ref=t3-ed7589e7-pp-e168] [box=259,406,223,28]:
+              - generic [ref=t3-ed7589e7-pp-e169] [box=267,410,194,20]:
+                - text: Workspace
+                - generic [ref=t3-ed7589e7-pp-e170] [box=340,410,122,20]: Synthetic workspace
+            - list [ref=t3-ed7589e7-pp-e171] [box=259,436,223,84]:
+              - listitem [ref=t3-ed7589e7-pp-e172] [box=259,436,223,28]:
+                - button "Daily notes" [ref=t3-ed7589e7-pp-e173] [cursor=pointer] [box=259,436,223,28]
+              - listitem [ref=t3-ed7589e7-pp-e178] [box=259,464,223,28]:
+                - button "Templates" [ref=t3-ed7589e7-pp-e179] [cursor=pointer] [box=259,464,223,28]
+              - listitem [ref=t3-ed7589e7-pp-e186] [box=259,492,223,28]:
+                - button "Export and import" [ref=t3-ed7589e7-pp-e187] [cursor=pointer] [box=259,492,223,28]
+          - region "Administration" [ref=t3-ed7589e7-pp-e193] [box=259,528,223,142]:
+            - heading "Administration" [level=3] [ref=t3-ed7589e7-pp-e194] [box=259,528,223,28]
+            - list [ref=t3-ed7589e7-pp-e196] [box=259,558,223,112]:
+              - listitem [ref=t3-ed7589e7-pp-e197] [box=259,558,223,28]:
+                - button "Users" [ref=t3-ed7589e7-pp-e198] [cursor=pointer] [box=259,558,223,28]
+              - listitem [ref=t3-ed7589e7-pp-e206] [box=259,586,223,28]:
+                - button "Mail" [ref=t3-ed7589e7-pp-e207] [cursor=pointer] [box=259,586,223,28]
+              - listitem [ref=t3-ed7589e7-pp-e213] [box=259,614,223,28]:
+                - button "Legal documents" [ref=t3-ed7589e7-pp-e214] [cursor=pointer] [box=259,614,223,28]
+              - listitem [ref=t3-ed7589e7-pp-e220] [box=259,642,223,28]:
+                - button "Reports" [ref=t3-ed7589e7-pp-e221] [cursor=pointer] [box=259,642,223,28]
+      - region [ref=t3-ed7589e7-pp-e226] [box=491,141,698,618]:
+        - generic [ref=t3-ed7589e7-pp-e228] [box=515,165,650,58]:
+          - generic [ref=t3-ed7589e7-pp-e229] [box=515,165,650,24]:
+            - heading "Mail" [level=2] [ref=t3-ed7589e7-pp-e231] [box=515,167,626,20]
+            - button "Close Settings" [ref=t3-ed7589e7-pp-e235] [cursor=pointer] [box=1143,163,28,28]
+          - paragraph [ref=t3-ed7589e7-pp-e240] [box=515,191,650,32]: Mail delivery for this installation. Without a mail server, an invitation shows its link once and nobody can reset a password.
+        - generic [ref=t3-ed7589e7-pp-e244] [box=491,247,698,512]:
+          - generic [ref=t3-ed7589e7-pp-e247] [box=515,163,512,516]:
+            - generic [ref=t3-ed7589e7-pp-e248] [box=515,163,512,180]:
+              - heading "Server" [level=3] [ref=t3-ed7589e7-pp-e252] [box=515,163,512,16]
+              - generic [ref=t3-ed7589e7-pp-e253] [box=515,191,512,60]:
+                - generic [ref=t3-ed7589e7-pp-e255] [box=515,191,388,60]:
+                  - generic [ref=t3-ed7589e7-pp-e256] [box=515,191,388,20]: Server
+                  - textbox "Server" [ref=t3-ed7589e7-pp-e258] [box=515,219,388,32]:
+                    - /placeholder: smtp.example.com
+                    - text: smtp.synthetic.invalid
+                - generic [ref=t3-ed7589e7-pp-e260] [box=915,191,112,60]:
+                  - generic [ref=t3-ed7589e7-pp-e261] [box=915,191,112,20]: Port
+                  - textbox "Port" [ref=t3-ed7589e7-pp-e263] [box=915,219,112,32]: "587"
+              - generic [ref=t3-ed7589e7-pp-e264] [box=515,263,512,80]:
+                - generic [ref=t3-ed7589e7-pp-e265] [box=515,263,512,20]: Security
+                - generic [ref=t3-ed7589e7-pp-e266] [box=515,291,512,52]:
+                  - combobox "Security" [ref=t3-ed7589e7-pp-e268] [box=528,292,462,30]:
+                    - option "STARTTLS" [selected] [box=0,0,0,0]
+                    - option "TLS" [box=0,0,0,0]
+                    - option "None" [box=0,0,0,0]
+                  - paragraph [ref=t3-ed7589e7-pp-e269] [box=515,327,512,16]:
+                    - generic [ref=t3-ed7589e7-pp-e270] [box=515,327,20,16]: TLS
+                    - generic [ref=t3-ed7589e7-pp-e271] [box=538,327,21,16]: and
+                    - generic [ref=t3-ed7589e7-pp-e272] [box=562,327,55,16]: STARTTLS
+                    - generic [ref=t3-ed7589e7-pp-e273] [box=620,327,39,16]: protect
+                    - generic [ref=t3-ed7589e7-pp-e274] [box=662,327,18,16]: the
+                    - generic [ref=t3-ed7589e7-pp-e275] [box=683,327,64,16]: connection.
+            - generic [ref=t3-ed7589e7-pp-e276] [box=515,367,512,180]:
+              - heading "Sign-in" [level=3] [ref=t3-ed7589e7-pp-e280] [box=515,367,512,16]
+              - group [ref=t3-ed7589e7-pp-e281] [box=515,395,512,152]:
+                - generic [ref=t3-ed7589e7-pp-e282] [box=515,395,512,132]:
+                  - generic [ref=t3-ed7589e7-pp-e283] [box=515,395,512,60]:
+                    - generic [ref=t3-ed7589e7-pp-e284] [box=515,395,512,20]: User name
+                    - textbox "User name" [ref=t3-ed7589e7-pp-e286] [box=515,423,512,32]
+                  - generic [ref=t3-ed7589e7-pp-e287] [box=515,467,512,60]:
+                    - generic [ref=t3-ed7589e7-pp-e288] [box=515,467,512,20]: Password
+                    - textbox "Password" [ref=t3-ed7589e7-pp-e290] [box=515,495,512,32]
+                - paragraph [ref=t3-ed7589e7-pp-e291] [box=515,531,512,16]: Leave both fields empty for a server that takes mail with no sign-in.
+            - generic [ref=t3-ed7589e7-pp-e292] [box=515,571,512,108]:
+              - heading "Sending" [level=3] [ref=t3-ed7589e7-pp-e296] [box=515,571,512,16]
+              - generic [ref=t3-ed7589e7-pp-e297] [box=515,599,512,80]:
+                - generic [ref=t3-ed7589e7-pp-e298] [box=515,599,512,20]: Sender
+                - generic [ref=t3-ed7589e7-pp-e299] [box=515,627,512,52]:
+                  - textbox "Sender" [ref=t3-ed7589e7-pp-e300] [box=515,627,512,32]:
+                    - /placeholder: tidy notebook <no-reply@notes.example.com>
+                  - paragraph [ref=t3-ed7589e7-pp-e301] [box=515,663,512,16]:
+                    - generic [ref=t3-ed7589e7-pp-e302] [box=515,663,15,16]: An
+                    - generic [ref=t3-ed7589e7-pp-e303] [box=533,663,43,16]: address
+                    - generic [ref=t3-ed7589e7-pp-e304] [box=579,663,22,16]: that
+                    - generic [ref=t3-ed7589e7-pp-e305] [box=604,663,18,16]: the
+                    - generic [ref=t3-ed7589e7-pp-e306] [box=625,663,23,16]: mail
+                    - generic [ref=t3-ed7589e7-pp-e307] [box=651,663,34,16]: server
+                    - generic [ref=t3-ed7589e7-pp-e308] [box=688,663,20,16]: lets
+                    - generic [ref=t3-ed7589e7-pp-e309] [box=710,663,20,16]: you
+                    - generic [ref=t3-ed7589e7-pp-e310] [box=733,663,27,16]: send
+                    - generic [ref=t3-ed7589e7-pp-e311] [box=763,663,28,16]: from.
+          - generic [ref=t3-ed7589e7-pp-e313] [box=515,703,512,32]:
+            - button "Cancel" [ref=t3-ed7589e7-pp-e314] [cursor=pointer] [box=898,703,67,32]
+            - button "Save" [active] [ref=t3-ed7589e7-pp-e316] [cursor=pointer] [box=973,703,54,32]

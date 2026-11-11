@@ -1,0 +1,24 @@
+- generic [ref=t3-ed7589e7-q2-e1] [box=0,0,1440,900]:
+  - main [ref=t3-ed7589e7-q2-e3] [box=0,0,1440,79]:
+    - heading "D12 component simulation" [level=1] [ref=t3-ed7589e7-q2-e4] [box=0,0,1440,24]
+    - button "Open actual palette" [ref=t3-ed7589e7-q2-e5] [box=0,55,145,24]
+    - textbox "Synthetic action target" [ref=t3-ed7589e7-q2-e6] [box=145,55,221,24]
+    - textbox "Retained synthetic draft" [ref=t3-ed7589e7-q2-e7] [box=366,24,205,48]: Synthetic unsaved draft
+  - dialog [ref=t3-ed7589e7-q2-e8] [box=432,304,576,293]:
+    - heading "Search notes and run actions" [level=2] [ref=t3-ed7589e7-q2-e9] [box=432,304,1,1]
+    - generic [ref=t3-ed7589e7-q2-e10] [box=433,305,574,291]:
+      - generic [ref=t3-ed7589e7-q2-e11] [box=433,329,574,27]:
+        - combobox "Search notes, or type an action" [expanded] [active] [ref=t3-ed7589e7-q2-e16] [box=481,332,457,20]
+        - generic [ref=t3-ed7589e7-q2-e19] [box=946,329,38,26]:
+          - generic [aria-hidden] [ref=t3-ed7589e7-q2-e20] [box=955,334,20,16]: Esc
+          - generic [ref=t3-ed7589e7-q2-e21] [box=954,342,1,1]: Escape
+      - paragraph [ref=t3-ed7589e7-q2-e22] [box=432,328,1,1]
+      - generic [ref=t3-ed7589e7-q2-e23] [box=433,379,574,192]:
+        - paragraph [ref=t3-ed7589e7-q2-e24] [box=433,379,574,16]: In Synthetic workspace
+        - listbox "Results" [ref=t3-ed7589e7-q2-e25] [box=433,419,574,152]:
+          - text: Notes
+          - option "Synthetic Alpha" [selected] [ref=t3-ed7589e7-q2-e26] [cursor=pointer] [box=457,435,526,28]
+          - option "Synthetic Beta" [ref=t3-ed7589e7-q2-e33] [cursor=pointer] [box=457,463,526,28]
+          - text: Actions
+          - option "Focus synthetic target" [ref=t3-ed7589e7-q2-e40] [cursor=pointer] [box=457,515,526,28]
+          - option "Choose template" [ref=t3-ed7589e7-q2-e46] [cursor=pointer] [box=457,543,526,28]

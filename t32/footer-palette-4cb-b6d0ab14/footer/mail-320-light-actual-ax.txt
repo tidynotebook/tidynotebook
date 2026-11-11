@@ -1,0 +1,75 @@
+- generic [ref=t3-ed7589e7-pk-e2] [box=0,0,320,640]:
+  - main [ref=t3-ed7589e7-pk-e3] [box=0,0,320,640]:
+    - heading "Footer forms COMPONENT simulation" [level=1] [ref=t3-ed7589e7-pk-e4] [box=24,24,272,52]
+    - paragraph [ref=t3-ed7589e7-pk-e5] [box=24,76,272,40]: Actual Settings host. Synthetic account, reads and textarea.
+    - button "Open templates" [ref=t3-ed7589e7-pk-e6] [box=24,116,118,24]
+    - button "Open Settings" [ref=t3-ed7589e7-pk-e7] [box=142,116,105,24]
+    - textbox "Synthetic unsaved draft" [ref=t3-ed7589e7-pk-e8] [box=24,140,205,48]: Synthetic unsaved draft. Selection and identity stay here.
+  - dialog [ref=t3-ed7589e7-pk-e9] [box=0,0,320,640]:
+    - heading "Settings" [level=2] [ref=t3-ed7589e7-pk-e10] [box=-1,-1,1,1]
+    - region [ref=t3-ed7589e7-pk-e12] [box=0,0,320,640]:
+      - generic [ref=t3-ed7589e7-pk-e14] [box=24,24,272,74]:
+        - generic [ref=t3-ed7589e7-pk-e15] [box=24,24,272,24]:
+          - button "Back to Settings" [ref=t3-ed7589e7-pk-e18] [cursor=pointer] [box=18,22,28,28]
+          - heading "Mail" [level=2] [ref=t3-ed7589e7-pk-e23] [box=48,26,224,20]
+          - button "Close Settings" [ref=t3-ed7589e7-pk-e27] [cursor=pointer] [box=274,22,28,28]
+        - paragraph [ref=t3-ed7589e7-pk-e32] [box=24,50,272,48]: Mail delivery for this installation. Without a mail server, an invitation shows its link once and nobody can reset a password.
+      - generic [ref=t3-ed7589e7-pk-e36] [box=0,122,320,518]:
+        - generic [ref=t3-ed7589e7-pk-e39] [box=24,12,272,548]:
+          - generic [ref=t3-ed7589e7-pk-e40] [box=24,12,272,180]:
+            - heading "Server" [level=3] [ref=t3-ed7589e7-pk-e44] [box=24,12,272,16]
+            - generic [ref=t3-ed7589e7-pk-e45] [box=24,40,272,60]:
+              - generic [ref=t3-ed7589e7-pk-e47] [box=24,40,148,60]:
+                - generic [ref=t3-ed7589e7-pk-e48] [box=24,40,148,20]: Server
+                - textbox "Server" [ref=t3-ed7589e7-pk-e50] [box=24,68,148,32]:
+                  - /placeholder: smtp.example.com
+                  - text: smtp.synthetic.invalid
+              - generic [ref=t3-ed7589e7-pk-e52] [box=184,40,112,60]:
+                - generic [ref=t3-ed7589e7-pk-e53] [box=184,40,112,20]: Port
+                - textbox "Port" [ref=t3-ed7589e7-pk-e55] [box=184,68,112,32]: "587"
+            - generic [ref=t3-ed7589e7-pk-e56] [box=24,112,272,80]:
+              - generic [ref=t3-ed7589e7-pk-e57] [box=24,112,272,20]: Security
+              - generic [ref=t3-ed7589e7-pk-e58] [box=24,140,272,52]:
+                - combobox "Security" [ref=t3-ed7589e7-pk-e60] [box=37,141,222,30]:
+                  - option "STARTTLS" [selected] [box=0,0,0,0]
+                  - option "TLS" [box=0,0,0,0]
+                  - option "None" [box=0,0,0,0]
+                - paragraph [ref=t3-ed7589e7-pk-e61] [box=24,176,272,16]:
+                  - generic [ref=t3-ed7589e7-pk-e62] [box=24,176,20,16]: TLS
+                  - generic [ref=t3-ed7589e7-pk-e63] [box=47,176,21,16]: and
+                  - generic [ref=t3-ed7589e7-pk-e64] [box=71,176,55,16]: STARTTLS
+                  - generic [ref=t3-ed7589e7-pk-e65] [box=129,176,39,16]: protect
+                  - generic [ref=t3-ed7589e7-pk-e66] [box=171,176,18,16]: the
+                  - generic [ref=t3-ed7589e7-pk-e67] [box=192,176,64,16]: connection.
+          - generic [ref=t3-ed7589e7-pk-e68] [box=24,216,272,196]:
+            - heading "Sign-in" [level=3] [ref=t3-ed7589e7-pk-e72] [box=24,216,272,16]
+            - group [ref=t3-ed7589e7-pk-e73] [box=24,244,272,168]:
+              - generic [ref=t3-ed7589e7-pk-e74] [box=24,244,272,132]:
+                - generic [ref=t3-ed7589e7-pk-e75] [box=24,244,272,60]:
+                  - generic [ref=t3-ed7589e7-pk-e76] [box=24,244,272,20]: User name
+                  - textbox "User name" [ref=t3-ed7589e7-pk-e78] [box=24,272,272,32]
+                - generic [ref=t3-ed7589e7-pk-e79] [box=24,316,272,60]:
+                  - generic [ref=t3-ed7589e7-pk-e80] [box=24,316,272,20]: Password
+                  - textbox "Password" [ref=t3-ed7589e7-pk-e82] [box=24,344,272,32]
+              - paragraph [ref=t3-ed7589e7-pk-e83] [box=24,380,272,32]: Leave both fields empty for a server that takes mail with no sign-in.
+          - generic [ref=t3-ed7589e7-pk-e84] [box=24,436,272,124]:
+            - heading "Sending" [level=3] [ref=t3-ed7589e7-pk-e88] [box=24,436,272,16]
+            - generic [ref=t3-ed7589e7-pk-e89] [box=24,464,272,96]:
+              - generic [ref=t3-ed7589e7-pk-e90] [box=24,464,272,20]: Sender
+              - generic [ref=t3-ed7589e7-pk-e91] [box=24,492,272,68]:
+                - textbox "Sender" [ref=t3-ed7589e7-pk-e92] [box=24,492,272,32]:
+                  - /placeholder: tidy notebook <no-reply@notes.example.com>
+                - paragraph [ref=t3-ed7589e7-pk-e93] [box=24,528,272,32]:
+                  - generic [ref=t3-ed7589e7-pk-e94] [box=24,528,15,16]: An
+                  - generic [ref=t3-ed7589e7-pk-e95] [box=42,528,43,16]: address
+                  - generic [ref=t3-ed7589e7-pk-e96] [box=88,528,22,16]: that
+                  - generic [ref=t3-ed7589e7-pk-e97] [box=113,528,18,16]: the
+                  - generic [ref=t3-ed7589e7-pk-e98] [box=134,528,23,16]: mail
+                  - generic [ref=t3-ed7589e7-pk-e99] [box=160,528,34,16]: server
+                  - generic [ref=t3-ed7589e7-pk-e100] [box=197,528,20,16]: lets
+                  - generic [ref=t3-ed7589e7-pk-e101] [box=219,528,20,16]: you
+                  - generic [ref=t3-ed7589e7-pk-e102] [box=242,528,27,16]: send
+                  - generic [ref=t3-ed7589e7-pk-e103] [box=24,544,28,16]: from.
+        - generic [ref=t3-ed7589e7-pk-e105] [box=24,584,272,32]:
+          - button "Cancel" [ref=t3-ed7589e7-pk-e106] [cursor=pointer] [box=167,584,67,32]
+          - button "Save" [active] [ref=t3-ed7589e7-pk-e108] [cursor=pointer] [box=242,584,54,32]

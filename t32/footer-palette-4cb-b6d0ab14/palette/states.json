@@ -1,0 +1,6792 @@
+{
+  "head": "b6d0ab1447ce4b5394e0e46c737fa2592e9132f9",
+  "scope": "Canonical component simulation, synthetic own-origin host and generated READ boundaries. Fine browser automation only.",
+  "checks": [
+    {
+      "name": "Present list",
+      "pass": true,
+      "time": "2026-11-11T16:54:33.508Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-11111111-1111-4111-8111-111111111111",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 433,
+          "y": 419.25,
+          "width": 574,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "true"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Arrow down selects Beta",
+      "pass": true,
+      "time": "2026-11-11T16:54:34.025Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-22222222-2222-4222-8222-222222222222",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 433,
+          "y": 419.25,
+          "width": 574,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "false"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "true"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Arrow up selects Alpha",
+      "pass": true,
+      "time": "2026-11-11T16:54:34.159Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-11111111-1111-4111-8111-111111111111",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 433,
+          "y": 419.25,
+          "width": 574,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "true"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "End selects last action",
+      "pass": true,
+      "time": "2026-11-11T16:54:34.292Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-action-pick",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 433,
+          "y": 419.25,
+          "width": 574,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "false"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Home selects first note",
+      "pass": true,
+      "time": "2026-11-11T16:54:34.425Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-11111111-1111-4111-8111-111111111111",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 433,
+          "y": 419.25,
+          "width": 574,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "true"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Typing filters rows",
+      "pass": true,
+      "time": "2026-11-11T16:54:34.559Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-22222222-2222-4222-8222-222222222222",
+        "value": "Synthetic Beta",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 433,
+          "y": 453.25,
+          "width": 574,
+          "height": 44
+        },
+        "options": [
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Escape restores opener",
+      "pass": true,
+      "time": "2026-11-11T16:54:34.692Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "field": null,
+      "list": null,
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Reopen resets query",
+      "pass": true,
+      "time": "2026-11-11T16:54:34.875Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-11111111-1111-4111-8111-111111111111",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 433,
+          "y": 419.25,
+          "width": 574,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "true"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Action after close owns focus",
+      "pass": true,
+      "time": "2026-11-11T16:54:35.394Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "field": null,
+      "list": null,
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Note navigation after close",
+      "pass": true,
+      "time": "2026-11-11T16:54:36.058Z",
+      "route": "/w/synthetic/notes/11111111-1111-4111-8111-111111111111",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "field": null,
+      "list": null,
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Empty list collapsed",
+      "pass": true,
+      "time": "2026-11-11T16:54:36.542Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Empty Enter and arrow do nothing",
+      "pass": true,
+      "time": "2026-11-11T16:54:36.692Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Old query pending",
+      "pass": true,
+      "time": "2026-11-11T16:54:37.075Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "zz-old",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "New query pending",
+      "pass": true,
+      "time": "2026-11-11T16:54:37.458Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "zz-new",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Late old query excluded",
+      "pass": true,
+      "time": "2026-11-11T16:54:37.592Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "zz-new",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Current read adds a visible selected result",
+      "pass": true,
+      "time": "2026-11-11T16:54:37.725Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-44444444-4444-4444-8444-444444444444",
+        "value": "zz-new",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 433,
+          "y": 473.25,
+          "width": 574,
+          "height": 44
+        },
+        "options": [
+          {
+            "id": "palette-note-44444444-4444-4444-8444-444444444444",
+            "text": "Synthetic content result",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Controlled search error has no stale option",
+      "pass": true,
+      "time": "2026-11-11T16:54:38.125Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "zz-error",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice loading has no visible list",
+      "pass": true,
+      "time": "2026-11-11T16:54:38.642Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice error collapsed",
+      "pass": true,
+      "time": "2026-11-11T16:54:38.775Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice empty collapsed",
+      "pass": true,
+      "time": "2026-11-11T16:54:38.892Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choices ready expanded",
+      "pass": true,
+      "time": "2026-11-11T16:54:39.025Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-choice-first",
+        "value": "",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 433,
+          "y": 439.25,
+          "width": 574,
+          "height": 72
+        },
+        "options": [
+          {
+            "id": "palette-choice-first",
+            "text": "First synthetic template",
+            "selected": "true"
+          },
+          {
+            "id": "palette-choice-second",
+            "text": "Second synthetic template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice End selects second",
+      "pass": true,
+      "time": "2026-11-11T16:54:39.542Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-choice-second",
+        "value": "",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 433,
+          "y": 439.25,
+          "width": 574,
+          "height": 72
+        },
+        "options": [
+          {
+            "id": "palette-choice-first",
+            "text": "First synthetic template",
+            "selected": "false"
+          },
+          {
+            "id": "palette-choice-second",
+            "text": "Second synthetic template",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice query keeps selected present option",
+      "pass": true,
+      "time": "2026-11-11T16:54:39.675Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-choice-second",
+        "value": "Second",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 433,
+          "y": 453.25,
+          "width": 574,
+          "height": 44
+        },
+        "options": [
+          {
+            "id": "palette-choice-second",
+            "text": "Second synthetic template",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice no match collapsed",
+      "pass": true,
+      "time": "2026-11-11T16:54:39.808Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "no-such-choice",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Backspace returns to root actions",
+      "pass": true,
+      "time": "2026-11-11T16:54:39.958Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-action-pick",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 433,
+          "y": 473.25,
+          "width": 574,
+          "height": 44
+        },
+        "options": [
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice executes once after cleanup",
+      "pass": true,
+      "time": "2026-11-11T16:54:40.258Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "field": null,
+      "list": null,
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Late closed read cannot reopen dialog",
+      "pass": true,
+      "time": "2026-11-11T16:54:41.058Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "field": null,
+      "list": null,
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "New empty open has no old result",
+      "pass": true,
+      "time": "2026-11-11T16:54:41.242Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Present list",
+      "pass": true,
+      "time": "2026-11-11T16:54:20.643Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-11111111-1111-4111-8111-111111111111",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 433,
+          "y": 419.25,
+          "width": 574,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "true"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Arrow down selects Beta",
+      "pass": true,
+      "time": "2026-11-11T16:54:21.159Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-22222222-2222-4222-8222-222222222222",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 433,
+          "y": 419.25,
+          "width": 574,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "false"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "true"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Arrow up selects Alpha",
+      "pass": true,
+      "time": "2026-11-11T16:54:21.292Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-11111111-1111-4111-8111-111111111111",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 433,
+          "y": 419.25,
+          "width": 574,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "true"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "End selects last action",
+      "pass": true,
+      "time": "2026-11-11T16:54:21.426Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-action-pick",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 433,
+          "y": 419.25,
+          "width": 574,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "false"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Home selects first note",
+      "pass": true,
+      "time": "2026-11-11T16:54:21.609Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-11111111-1111-4111-8111-111111111111",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 433,
+          "y": 419.25,
+          "width": 574,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "true"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Typing filters rows",
+      "pass": true,
+      "time": "2026-11-11T16:54:21.742Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-22222222-2222-4222-8222-222222222222",
+        "value": "Synthetic Beta",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 433,
+          "y": 453.25,
+          "width": 574,
+          "height": 44
+        },
+        "options": [
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Escape restores opener",
+      "pass": true,
+      "time": "2026-11-11T16:54:21.876Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "field": null,
+      "list": null,
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Reopen resets query",
+      "pass": true,
+      "time": "2026-11-11T16:54:22.059Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-11111111-1111-4111-8111-111111111111",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 433,
+          "y": 419.25,
+          "width": 574,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "true"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Action after close owns focus",
+      "pass": true,
+      "time": "2026-11-11T16:54:22.626Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "field": null,
+      "list": null,
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Note navigation after close",
+      "pass": true,
+      "time": "2026-11-11T16:54:23.126Z",
+      "route": "/w/synthetic/notes/11111111-1111-4111-8111-111111111111",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "field": null,
+      "list": null,
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Empty list collapsed",
+      "pass": true,
+      "time": "2026-11-11T16:54:23.609Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Empty Enter and arrow do nothing",
+      "pass": true,
+      "time": "2026-11-11T16:54:23.759Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Old query pending",
+      "pass": true,
+      "time": "2026-11-11T16:54:24.142Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "zz-old",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "New query pending",
+      "pass": true,
+      "time": "2026-11-11T16:54:24.525Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "zz-new",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Late old query excluded",
+      "pass": true,
+      "time": "2026-11-11T16:54:24.659Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "zz-new",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Current read adds a visible selected result",
+      "pass": true,
+      "time": "2026-11-11T16:54:24.792Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-44444444-4444-4444-8444-444444444444",
+        "value": "zz-new",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 433,
+          "y": 473.25,
+          "width": 574,
+          "height": 44
+        },
+        "options": [
+          {
+            "id": "palette-note-44444444-4444-4444-8444-444444444444",
+            "text": "Synthetic content result",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Controlled search error has no stale option",
+      "pass": true,
+      "time": "2026-11-11T16:54:25.192Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "zz-error",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice loading has no visible list",
+      "pass": true,
+      "time": "2026-11-11T16:54:25.876Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice error collapsed",
+      "pass": true,
+      "time": "2026-11-11T16:54:26.009Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice empty collapsed",
+      "pass": true,
+      "time": "2026-11-11T16:54:26.209Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choices ready expanded",
+      "pass": true,
+      "time": "2026-11-11T16:54:26.342Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-choice-first",
+        "value": "",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 433,
+          "y": 439.25,
+          "width": 574,
+          "height": 72
+        },
+        "options": [
+          {
+            "id": "palette-choice-first",
+            "text": "First synthetic template",
+            "selected": "true"
+          },
+          {
+            "id": "palette-choice-second",
+            "text": "Second synthetic template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice End selects second",
+      "pass": true,
+      "time": "2026-11-11T16:54:26.876Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-choice-second",
+        "value": "",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 433,
+          "y": 439.25,
+          "width": 574,
+          "height": 72
+        },
+        "options": [
+          {
+            "id": "palette-choice-first",
+            "text": "First synthetic template",
+            "selected": "false"
+          },
+          {
+            "id": "palette-choice-second",
+            "text": "Second synthetic template",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice query keeps selected present option",
+      "pass": true,
+      "time": "2026-11-11T16:54:27.009Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-choice-second",
+        "value": "Second",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 433,
+          "y": 453.25,
+          "width": 574,
+          "height": 44
+        },
+        "options": [
+          {
+            "id": "palette-choice-second",
+            "text": "Second synthetic template",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice no match collapsed",
+      "pass": true,
+      "time": "2026-11-11T16:54:27.142Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "no-such-choice",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Backspace returns to root actions",
+      "pass": true,
+      "time": "2026-11-11T16:54:27.292Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-action-pick",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 433,
+          "y": 473.25,
+          "width": 574,
+          "height": 44
+        },
+        "options": [
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice executes once after cleanup",
+      "pass": true,
+      "time": "2026-11-11T16:54:27.475Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "field": null,
+      "list": null,
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Late closed read cannot reopen dialog",
+      "pass": true,
+      "time": "2026-11-11T16:54:28.292Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "field": null,
+      "list": null,
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "New empty open has no old result",
+      "pass": true,
+      "time": "2026-11-11T16:54:28.475Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Present list",
+      "pass": true,
+      "time": "2026-11-11T16:55:19.257Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-11111111-1111-4111-8111-111111111111",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 286,
+          "width": 270,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "true"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Arrow down selects Beta",
+      "pass": true,
+      "time": "2026-11-11T16:55:19.640Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-22222222-2222-4222-8222-222222222222",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 286,
+          "width": 270,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "false"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "true"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Arrow up selects Alpha",
+      "pass": true,
+      "time": "2026-11-11T16:55:19.773Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-11111111-1111-4111-8111-111111111111",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 286,
+          "width": 270,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "true"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "End selects last action",
+      "pass": true,
+      "time": "2026-11-11T16:55:19.907Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-action-pick",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 286,
+          "width": 270,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "false"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Home selects first note",
+      "pass": true,
+      "time": "2026-11-11T16:55:20.040Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-11111111-1111-4111-8111-111111111111",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 286,
+          "width": 270,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "true"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Typing filters rows",
+      "pass": true,
+      "time": "2026-11-11T16:55:20.173Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-22222222-2222-4222-8222-222222222222",
+        "value": "Synthetic Beta",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 320,
+          "width": 270,
+          "height": 44
+        },
+        "options": [
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Escape restores opener",
+      "pass": true,
+      "time": "2026-11-11T16:55:20.307Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 320,
+      "height": 640,
+      "field": null,
+      "list": null,
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Reopen resets query",
+      "pass": true,
+      "time": "2026-11-11T16:55:20.490Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-11111111-1111-4111-8111-111111111111",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 286,
+          "width": 270,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "true"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Action after close owns focus",
+      "pass": true,
+      "time": "2026-11-11T16:55:20.940Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 320,
+      "height": 640,
+      "field": null,
+      "list": null,
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Note navigation after close",
+      "pass": true,
+      "time": "2026-11-11T16:55:21.373Z",
+      "route": "/w/synthetic/notes/11111111-1111-4111-8111-111111111111",
+      "theme": "dark",
+      "width": 320,
+      "height": 640,
+      "field": null,
+      "list": null,
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Empty list collapsed",
+      "pass": true,
+      "time": "2026-11-11T16:55:21.823Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Empty Enter and arrow do nothing",
+      "pass": true,
+      "time": "2026-11-11T16:55:21.973Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Old query pending",
+      "pass": true,
+      "time": "2026-11-11T16:55:22.356Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "zz-old",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "New query pending",
+      "pass": true,
+      "time": "2026-11-11T16:55:22.740Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "zz-new",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Late old query excluded",
+      "pass": true,
+      "time": "2026-11-11T16:55:22.873Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "zz-new",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Current read adds a visible selected result",
+      "pass": true,
+      "time": "2026-11-11T16:55:23.006Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-44444444-4444-4444-8444-444444444444",
+        "value": "zz-new",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 340,
+          "width": 270,
+          "height": 44
+        },
+        "options": [
+          {
+            "id": "palette-note-44444444-4444-4444-8444-444444444444",
+            "text": "Synthetic content result",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Controlled search error has no stale option",
+      "pass": true,
+      "time": "2026-11-11T16:55:23.473Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "zz-error",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice loading has no visible list",
+      "pass": true,
+      "time": "2026-11-11T16:55:23.940Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice error collapsed",
+      "pass": true,
+      "time": "2026-11-11T16:55:24.073Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice empty collapsed",
+      "pass": true,
+      "time": "2026-11-11T16:55:24.190Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choices ready expanded",
+      "pass": true,
+      "time": "2026-11-11T16:55:24.323Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-choice-first",
+        "value": "",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 306,
+          "width": 270,
+          "height": 72
+        },
+        "options": [
+          {
+            "id": "palette-choice-first",
+            "text": "First synthetic template",
+            "selected": "true"
+          },
+          {
+            "id": "palette-choice-second",
+            "text": "Second synthetic template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice End selects second",
+      "pass": true,
+      "time": "2026-11-11T16:55:24.706Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-choice-second",
+        "value": "",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 306,
+          "width": 270,
+          "height": 72
+        },
+        "options": [
+          {
+            "id": "palette-choice-first",
+            "text": "First synthetic template",
+            "selected": "false"
+          },
+          {
+            "id": "palette-choice-second",
+            "text": "Second synthetic template",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice query keeps selected present option",
+      "pass": true,
+      "time": "2026-11-11T16:55:24.840Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-choice-second",
+        "value": "Second",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 320,
+          "width": 270,
+          "height": 44
+        },
+        "options": [
+          {
+            "id": "palette-choice-second",
+            "text": "Second synthetic template",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice no match collapsed",
+      "pass": true,
+      "time": "2026-11-11T16:55:25.006Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "no-such-choice",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Backspace returns to root actions",
+      "pass": true,
+      "time": "2026-11-11T16:55:25.156Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-action-pick",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 340,
+          "width": 270,
+          "height": 44
+        },
+        "options": [
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice executes once after cleanup",
+      "pass": true,
+      "time": "2026-11-11T16:55:25.323Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 320,
+      "height": 640,
+      "field": null,
+      "list": null,
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Late closed read cannot reopen dialog",
+      "pass": true,
+      "time": "2026-11-11T16:55:26.090Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 320,
+      "height": 640,
+      "field": null,
+      "list": null,
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "New empty open has no old result",
+      "pass": true,
+      "time": "2026-11-11T16:55:26.273Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Present list",
+      "pass": true,
+      "time": "2026-11-11T16:55:06.724Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-11111111-1111-4111-8111-111111111111",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 286,
+          "width": 270,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "true"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Arrow down selects Beta",
+      "pass": true,
+      "time": "2026-11-11T16:55:07.107Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-22222222-2222-4222-8222-222222222222",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 286,
+          "width": 270,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "false"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "true"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Arrow up selects Alpha",
+      "pass": true,
+      "time": "2026-11-11T16:55:07.240Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-11111111-1111-4111-8111-111111111111",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 286,
+          "width": 270,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "true"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "End selects last action",
+      "pass": true,
+      "time": "2026-11-11T16:55:07.374Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-action-pick",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 286,
+          "width": 270,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "false"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Home selects first note",
+      "pass": true,
+      "time": "2026-11-11T16:55:07.507Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-11111111-1111-4111-8111-111111111111",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 286,
+          "width": 270,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "true"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Typing filters rows",
+      "pass": true,
+      "time": "2026-11-11T16:55:07.707Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-22222222-2222-4222-8222-222222222222",
+        "value": "Synthetic Beta",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 320,
+          "width": 270,
+          "height": 44
+        },
+        "options": [
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Escape restores opener",
+      "pass": true,
+      "time": "2026-11-11T16:55:07.824Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 320,
+      "height": 640,
+      "field": null,
+      "list": null,
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Reopen resets query",
+      "pass": true,
+      "time": "2026-11-11T16:55:08.007Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-11111111-1111-4111-8111-111111111111",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 286,
+          "width": 270,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "true"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Action after close owns focus",
+      "pass": true,
+      "time": "2026-11-11T16:55:08.507Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 320,
+      "height": 640,
+      "field": null,
+      "list": null,
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Note navigation after close",
+      "pass": true,
+      "time": "2026-11-11T16:55:08.940Z",
+      "route": "/w/synthetic/notes/11111111-1111-4111-8111-111111111111",
+      "theme": "light",
+      "width": 320,
+      "height": 640,
+      "field": null,
+      "list": null,
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Empty list collapsed",
+      "pass": true,
+      "time": "2026-11-11T16:55:09.390Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Empty Enter and arrow do nothing",
+      "pass": true,
+      "time": "2026-11-11T16:55:09.540Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Old query pending",
+      "pass": true,
+      "time": "2026-11-11T16:55:09.924Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "zz-old",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "New query pending",
+      "pass": true,
+      "time": "2026-11-11T16:55:10.307Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "zz-new",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Late old query excluded",
+      "pass": true,
+      "time": "2026-11-11T16:55:10.440Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "zz-new",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Current read adds a visible selected result",
+      "pass": true,
+      "time": "2026-11-11T16:55:10.574Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-44444444-4444-4444-8444-444444444444",
+        "value": "zz-new",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 340,
+          "width": 270,
+          "height": 44
+        },
+        "options": [
+          {
+            "id": "palette-note-44444444-4444-4444-8444-444444444444",
+            "text": "Synthetic content result",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Controlled search error has no stale option",
+      "pass": true,
+      "time": "2026-11-11T16:55:10.974Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "zz-error",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice loading has no visible list",
+      "pass": true,
+      "time": "2026-11-11T16:55:11.407Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice error collapsed",
+      "pass": true,
+      "time": "2026-11-11T16:55:11.540Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice empty collapsed",
+      "pass": true,
+      "time": "2026-11-11T16:55:11.657Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choices ready expanded",
+      "pass": true,
+      "time": "2026-11-11T16:55:11.790Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-choice-first",
+        "value": "",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 306,
+          "width": 270,
+          "height": 72
+        },
+        "options": [
+          {
+            "id": "palette-choice-first",
+            "text": "First synthetic template",
+            "selected": "true"
+          },
+          {
+            "id": "palette-choice-second",
+            "text": "Second synthetic template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice End selects second",
+      "pass": true,
+      "time": "2026-11-11T16:55:12.174Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-choice-second",
+        "value": "",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 306,
+          "width": 270,
+          "height": 72
+        },
+        "options": [
+          {
+            "id": "palette-choice-first",
+            "text": "First synthetic template",
+            "selected": "false"
+          },
+          {
+            "id": "palette-choice-second",
+            "text": "Second synthetic template",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice query keeps selected present option",
+      "pass": true,
+      "time": "2026-11-11T16:55:12.307Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-choice-second",
+        "value": "Second",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 320,
+          "width": 270,
+          "height": 44
+        },
+        "options": [
+          {
+            "id": "palette-choice-second",
+            "text": "Second synthetic template",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice no match collapsed",
+      "pass": true,
+      "time": "2026-11-11T16:55:12.440Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "no-such-choice",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Backspace returns to root actions",
+      "pass": true,
+      "time": "2026-11-11T16:55:12.590Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-action-pick",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 340,
+          "width": 270,
+          "height": 44
+        },
+        "options": [
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice executes once after cleanup",
+      "pass": true,
+      "time": "2026-11-11T16:55:12.757Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 320,
+      "height": 640,
+      "field": null,
+      "list": null,
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Late closed read cannot reopen dialog",
+      "pass": true,
+      "time": "2026-11-11T16:55:13.524Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 320,
+      "height": 640,
+      "field": null,
+      "list": null,
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "New empty open has no old result",
+      "pass": true,
+      "time": "2026-11-11T16:55:13.707Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 320,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Present list",
+      "pass": true,
+      "time": "2026-11-11T16:54:55.291Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-11111111-1111-4111-8111-111111111111",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 286,
+          "width": 340,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "true"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Arrow down selects Beta",
+      "pass": true,
+      "time": "2026-11-11T16:54:55.674Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-22222222-2222-4222-8222-222222222222",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 286,
+          "width": 340,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "false"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "true"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Arrow up selects Alpha",
+      "pass": true,
+      "time": "2026-11-11T16:54:55.808Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-11111111-1111-4111-8111-111111111111",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 286,
+          "width": 340,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "true"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "End selects last action",
+      "pass": true,
+      "time": "2026-11-11T16:54:55.941Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-action-pick",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 286,
+          "width": 340,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "false"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Home selects first note",
+      "pass": true,
+      "time": "2026-11-11T16:54:56.074Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-11111111-1111-4111-8111-111111111111",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 286,
+          "width": 340,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "true"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Typing filters rows",
+      "pass": true,
+      "time": "2026-11-11T16:54:56.208Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-22222222-2222-4222-8222-222222222222",
+        "value": "Synthetic Beta",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 320,
+          "width": 340,
+          "height": 44
+        },
+        "options": [
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Escape restores opener",
+      "pass": true,
+      "time": "2026-11-11T16:54:56.341Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 390,
+      "height": 640,
+      "field": null,
+      "list": null,
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Reopen resets query",
+      "pass": true,
+      "time": "2026-11-11T16:54:56.524Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-11111111-1111-4111-8111-111111111111",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 286,
+          "width": 340,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "true"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Action after close owns focus",
+      "pass": true,
+      "time": "2026-11-11T16:54:57.007Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 390,
+      "height": 640,
+      "field": null,
+      "list": null,
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Note navigation after close",
+      "pass": true,
+      "time": "2026-11-11T16:54:57.474Z",
+      "route": "/w/synthetic/notes/11111111-1111-4111-8111-111111111111",
+      "theme": "dark",
+      "width": 390,
+      "height": 640,
+      "field": null,
+      "list": null,
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Empty list collapsed",
+      "pass": true,
+      "time": "2026-11-11T16:54:57.924Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Empty Enter and arrow do nothing",
+      "pass": true,
+      "time": "2026-11-11T16:54:58.108Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Old query pending",
+      "pass": true,
+      "time": "2026-11-11T16:54:58.491Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "zz-old",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "New query pending",
+      "pass": true,
+      "time": "2026-11-11T16:54:58.874Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "zz-new",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Late old query excluded",
+      "pass": true,
+      "time": "2026-11-11T16:54:59.008Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "zz-new",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Current read adds a visible selected result",
+      "pass": true,
+      "time": "2026-11-11T16:54:59.141Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-44444444-4444-4444-8444-444444444444",
+        "value": "zz-new",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 340,
+          "width": 340,
+          "height": 44
+        },
+        "options": [
+          {
+            "id": "palette-note-44444444-4444-4444-8444-444444444444",
+            "text": "Synthetic content result",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Controlled search error has no stale option",
+      "pass": true,
+      "time": "2026-11-11T16:54:59.541Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "zz-error",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice loading has no visible list",
+      "pass": true,
+      "time": "2026-11-11T16:55:00.007Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice error collapsed",
+      "pass": true,
+      "time": "2026-11-11T16:55:00.141Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice empty collapsed",
+      "pass": true,
+      "time": "2026-11-11T16:55:00.257Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choices ready expanded",
+      "pass": true,
+      "time": "2026-11-11T16:55:00.391Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-choice-first",
+        "value": "",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 306,
+          "width": 340,
+          "height": 72
+        },
+        "options": [
+          {
+            "id": "palette-choice-first",
+            "text": "First synthetic template",
+            "selected": "true"
+          },
+          {
+            "id": "palette-choice-second",
+            "text": "Second synthetic template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice End selects second",
+      "pass": true,
+      "time": "2026-11-11T16:55:00.774Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-choice-second",
+        "value": "",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 306,
+          "width": 340,
+          "height": 72
+        },
+        "options": [
+          {
+            "id": "palette-choice-first",
+            "text": "First synthetic template",
+            "selected": "false"
+          },
+          {
+            "id": "palette-choice-second",
+            "text": "Second synthetic template",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice query keeps selected present option",
+      "pass": true,
+      "time": "2026-11-11T16:55:00.908Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-choice-second",
+        "value": "Second",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 320,
+          "width": 340,
+          "height": 44
+        },
+        "options": [
+          {
+            "id": "palette-choice-second",
+            "text": "Second synthetic template",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice no match collapsed",
+      "pass": true,
+      "time": "2026-11-11T16:55:01.041Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "no-such-choice",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Backspace returns to root actions",
+      "pass": true,
+      "time": "2026-11-11T16:55:01.191Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-action-pick",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 340,
+          "width": 340,
+          "height": 44
+        },
+        "options": [
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice executes once after cleanup",
+      "pass": true,
+      "time": "2026-11-11T16:55:01.357Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 390,
+      "height": 640,
+      "field": null,
+      "list": null,
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Late closed read cannot reopen dialog",
+      "pass": true,
+      "time": "2026-11-11T16:55:02.124Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 390,
+      "height": 640,
+      "field": null,
+      "list": null,
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "New empty open has no old result",
+      "pass": true,
+      "time": "2026-11-11T16:55:02.307Z",
+      "route": "/component-palette",
+      "theme": "dark",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Present list",
+      "pass": true,
+      "time": "2026-11-11T16:54:44.658Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-11111111-1111-4111-8111-111111111111",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 286,
+          "width": 340,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "true"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Arrow down selects Beta",
+      "pass": true,
+      "time": "2026-11-11T16:54:45.041Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-22222222-2222-4222-8222-222222222222",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 286,
+          "width": 340,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "false"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "true"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Arrow up selects Alpha",
+      "pass": true,
+      "time": "2026-11-11T16:54:45.175Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-11111111-1111-4111-8111-111111111111",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 286,
+          "width": 340,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "true"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "End selects last action",
+      "pass": true,
+      "time": "2026-11-11T16:54:45.308Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-action-pick",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 286,
+          "width": 340,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "false"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Home selects first note",
+      "pass": true,
+      "time": "2026-11-11T16:54:45.441Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-11111111-1111-4111-8111-111111111111",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 286,
+          "width": 340,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "true"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Typing filters rows",
+      "pass": true,
+      "time": "2026-11-11T16:54:45.575Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-22222222-2222-4222-8222-222222222222",
+        "value": "Synthetic Beta",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 320,
+          "width": 340,
+          "height": 44
+        },
+        "options": [
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Escape restores opener",
+      "pass": true,
+      "time": "2026-11-11T16:54:45.708Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 390,
+      "height": 640,
+      "field": null,
+      "list": null,
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Reopen resets query",
+      "pass": true,
+      "time": "2026-11-11T16:54:45.891Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-11111111-1111-4111-8111-111111111111",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 286,
+          "width": 340,
+          "height": 152
+        },
+        "options": [
+          {
+            "id": "palette-note-11111111-1111-4111-8111-111111111111",
+            "text": "Synthetic Alpha",
+            "selected": "true"
+          },
+          {
+            "id": "palette-note-22222222-2222-4222-8222-222222222222",
+            "text": "Synthetic Beta",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-run",
+            "text": "Focus synthetic target",
+            "selected": "false"
+          },
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Action after close owns focus",
+      "pass": true,
+      "time": "2026-11-11T16:54:46.375Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 390,
+      "height": 640,
+      "field": null,
+      "list": null,
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Note navigation after close",
+      "pass": true,
+      "time": "2026-11-11T16:54:46.808Z",
+      "route": "/w/synthetic/notes/11111111-1111-4111-8111-111111111111",
+      "theme": "light",
+      "width": 390,
+      "height": 640,
+      "field": null,
+      "list": null,
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Empty list collapsed",
+      "pass": true,
+      "time": "2026-11-11T16:54:47.225Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Empty Enter and arrow do nothing",
+      "pass": true,
+      "time": "2026-11-11T16:54:47.375Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Old query pending",
+      "pass": true,
+      "time": "2026-11-11T16:54:47.758Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "zz-old",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "New query pending",
+      "pass": true,
+      "time": "2026-11-11T16:54:48.141Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "zz-new",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Late old query excluded",
+      "pass": true,
+      "time": "2026-11-11T16:54:48.275Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "zz-new",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Current read adds a visible selected result",
+      "pass": true,
+      "time": "2026-11-11T16:54:48.408Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-note-44444444-4444-4444-8444-444444444444",
+        "value": "zz-new",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 340,
+          "width": 340,
+          "height": 44
+        },
+        "options": [
+          {
+            "id": "palette-note-44444444-4444-4444-8444-444444444444",
+            "text": "Synthetic content result",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Controlled search error has no stale option",
+      "pass": true,
+      "time": "2026-11-11T16:54:48.808Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "zz-error",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice loading has no visible list",
+      "pass": true,
+      "time": "2026-11-11T16:54:49.275Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice error collapsed",
+      "pass": true,
+      "time": "2026-11-11T16:54:49.458Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice empty collapsed",
+      "pass": true,
+      "time": "2026-11-11T16:54:49.575Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choices ready expanded",
+      "pass": true,
+      "time": "2026-11-11T16:54:49.691Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-choice-first",
+        "value": "",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 306,
+          "width": 340,
+          "height": 72
+        },
+        "options": [
+          {
+            "id": "palette-choice-first",
+            "text": "First synthetic template",
+            "selected": "true"
+          },
+          {
+            "id": "palette-choice-second",
+            "text": "Second synthetic template",
+            "selected": "false"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice End selects second",
+      "pass": true,
+      "time": "2026-11-11T16:54:50.075Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-choice-second",
+        "value": "",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 306,
+          "width": 340,
+          "height": 72
+        },
+        "options": [
+          {
+            "id": "palette-choice-first",
+            "text": "First synthetic template",
+            "selected": "false"
+          },
+          {
+            "id": "palette-choice-second",
+            "text": "Second synthetic template",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice query keeps selected present option",
+      "pass": true,
+      "time": "2026-11-11T16:54:50.208Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-choice-second",
+        "value": "Second",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 320,
+          "width": 340,
+          "height": 44
+        },
+        "options": [
+          {
+            "id": "palette-choice-second",
+            "text": "Second synthetic template",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice no match collapsed",
+      "pass": true,
+      "time": "2026-11-11T16:54:50.341Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "no-such-choice",
+        "label": "Find a synthetic template",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Backspace returns to root actions",
+      "pass": true,
+      "time": "2026-11-11T16:54:50.491Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "true",
+        "controls": "command-palette-list",
+        "activeDescendant": "palette-action-pick",
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": true,
+        "rect": {
+          "x": 25,
+          "y": 340,
+          "width": 340,
+          "height": 44
+        },
+        "options": [
+          {
+            "id": "palette-action-pick",
+            "text": "Choose template",
+            "selected": "true"
+          }
+        ],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Choice executes once after cleanup",
+      "pass": true,
+      "time": "2026-11-11T16:54:50.658Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 390,
+      "height": 640,
+      "field": null,
+      "list": null,
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "Late closed read cannot reopen dialog",
+      "pass": true,
+      "time": "2026-11-11T16:54:51.424Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 390,
+      "height": 640,
+      "field": null,
+      "list": null,
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    },
+    {
+      "name": "New empty open has no old result",
+      "pass": true,
+      "time": "2026-11-11T16:54:51.608Z",
+      "route": "/component-palette",
+      "theme": "light",
+      "width": 390,
+      "height": 640,
+      "field": {
+        "role": "combobox",
+        "autocomplete": "list",
+        "expanded": "false",
+        "controls": "command-palette-list",
+        "activeDescendant": null,
+        "value": "",
+        "label": "Search notes, or type an action",
+        "focused": true
+      },
+      "list": {
+        "id": "command-palette-list",
+        "role": "listbox",
+        "visible": false,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "options": [],
+        "activeValid": true
+      },
+      "draft": {
+        "same": true,
+        "count": 1,
+        "value": "Synthetic unsaved draft"
+      },
+      "overflow": 0
+    }
+  ]
+}
