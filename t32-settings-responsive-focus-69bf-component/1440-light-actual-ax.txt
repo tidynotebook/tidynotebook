@@ -1,0 +1,143 @@
+- generic [ref=t3-ed7589e7-on-e2] [box=0,0,1440,640]:
+  - main [ref=t3-ed7589e7-on-e175] [box=0,0,1440,640]:
+    - heading "N21 Settings COMPONENT simulation" [level=1] [ref=t3-ed7589e7-on-e176] [box=24,24,1392,26]
+    - paragraph [ref=t3-ed7589e7-on-e177] [box=24,50,1392,20]: Actual Settings host. Synthetic account, reads and textarea.
+    - button "Open Settings" [ref=t3-ed7589e7-on-e178] [box=24,101,105,24]
+    - textbox "Synthetic unsaved draft" [ref=t3-ed7589e7-on-e179] [box=129,70,205,48]: Synthetic unsaved draft. Selection and identity stay here.
+  - dialog [ref=t3-ed7589e7-on-e180] [box=250,24,940,592]:
+    - heading "Settings" [level=2] [ref=t3-ed7589e7-on-e181] [box=250,24,1,1]
+    - generic [ref=t3-ed7589e7-on-e182] [box=251,25,938,590]:
+      - generic [ref=t3-ed7589e7-on-e185] [box=259,33,223,574]:
+        - button "Profile, Synthetic Reviewer, reviewer@example.invalid" [ref=t3-ed7589e7-on-e186] [cursor=pointer] [box=259,33,223,52]:
+          - generic [aria-hidden] [ref=t3-ed7589e7-on-e187] [box=267,47,24,24]: S
+          - generic [ref=t3-ed7589e7-on-e188] [box=303,41,171,36]:
+            - generic [ref=t3-ed7589e7-on-e189] [box=303,41,171,20]: Synthetic Reviewer
+            - generic [ref=t3-ed7589e7-on-e190] [box=303,61,171,16]: reviewer@example.invalid
+        - separator [ref=t3-ed7589e7-on-e191] [box=259,93,223,1]
+        - navigation "Settings sections" [ref=t3-ed7589e7-on-e192] [box=259,102,223,302]:
+          - region "Security" [ref=t3-ed7589e7-on-e193] [box=259,102,223,86]:
+            - heading "Security" [level=3] [ref=t3-ed7589e7-on-e194] [box=259,102,223,28]
+            - list [ref=t3-ed7589e7-on-e196] [box=259,132,223,56]:
+              - listitem [ref=t3-ed7589e7-on-e197] [box=259,132,223,28]:
+                - button "Devices" [ref=t3-ed7589e7-on-e198] [cursor=pointer] [box=259,132,223,28]
+              - listitem [ref=t3-ed7589e7-on-e203] [box=259,160,223,28]:
+                - button "API keys" [ref=t3-ed7589e7-on-e204] [cursor=pointer] [box=259,160,223,28]
+          - region "Preferences" [ref=t3-ed7589e7-on-e210] [box=259,196,223,86]:
+            - heading "Preferences" [level=3] [ref=t3-ed7589e7-on-e211] [box=259,196,223,28]
+            - list [ref=t3-ed7589e7-on-e213] [box=259,226,223,56]:
+              - listitem [ref=t3-ed7589e7-on-e214] [box=259,226,223,28]:
+                - button "Appearance and editor" [ref=t3-ed7589e7-on-e215] [cursor=pointer] [box=259,226,223,28]
+              - listitem [ref=t3-ed7589e7-on-e224] [box=259,254,223,28]:
+                - button "Offline" [ref=t3-ed7589e7-on-e225] [cursor=pointer] [box=259,254,223,28]
+          - region "Workspace Synthetic workspace" [ref=t3-ed7589e7-on-e231] [box=259,290,223,114]:
+            - heading "Workspace Synthetic workspace" [level=3] [ref=t3-ed7589e7-on-e232] [box=259,290,223,28]:
+              - generic [ref=t3-ed7589e7-on-e233] [box=267,294,194,20]:
+                - text: Workspace
+                - generic [ref=t3-ed7589e7-on-e234] [box=340,294,122,20]: Synthetic workspace
+            - list [ref=t3-ed7589e7-on-e235] [box=259,320,223,84]:
+              - listitem [ref=t3-ed7589e7-on-e236] [box=259,320,223,28]:
+                - button "Daily notes" [ref=t3-ed7589e7-on-e237] [cursor=pointer] [box=259,320,223,28]
+              - listitem [ref=t3-ed7589e7-on-e242] [box=259,348,223,28]:
+                - button "Templates" [ref=t3-ed7589e7-on-e243] [cursor=pointer] [box=259,348,223,28]
+              - listitem [ref=t3-ed7589e7-on-e250] [box=259,376,223,28]:
+                - button "Export and import" [ref=t3-ed7589e7-on-e251] [cursor=pointer] [box=259,376,223,28]
+      - region [ref=t3-ed7589e7-on-e257] [box=491,25,698,590]:
+        - generic [ref=t3-ed7589e7-on-e259] [box=515,49,650,42]:
+          - generic [ref=t3-ed7589e7-on-e260] [box=515,49,650,24]:
+            - heading "Appearance and editor" [active] [level=2] [ref=t3-ed7589e7-on-e262] [box=515,51,626,20]
+            - button "Close Settings" [ref=t3-ed7589e7-on-e266] [cursor=pointer] [box=1143,47,28,28]
+          - paragraph [ref=t3-ed7589e7-on-e271] [box=515,75,650,16]: Follows your account to every device. Changes apply at once.
+        - generic [ref=t3-ed7589e7-on-e278] [box=491,139,698,621]:
+          - region "Appearance" [ref=t3-ed7589e7-on-e280] [box=515,139,650,502]:
+            - generic [ref=t3-ed7589e7-on-e281] [box=515,139,650,502]:
+              - generic [ref=t3-ed7589e7-on-e282] [box=515,139,650,502]:
+                - generic [ref=t3-ed7589e7-on-e283] [box=515,139,650,127]:
+                  - generic [ref=t3-ed7589e7-on-e284] [box=514,138,1,1]: Mode
+                  - generic [ref=t3-ed7589e7-on-e285] [box=515,139,650,25]:
+                    - heading "Mode" [level=3] [ref=t3-ed7589e7-on-e288] [box=515,139,650,16]
+                    - separator [ref=t3-ed7589e7-on-e290] [box=515,163,650,1]
+                  - generic [ref=t3-ed7589e7-on-e291] [box=515,172,650,94]:
+                    - generic [ref=t3-ed7589e7-on-e292] [cursor=pointer] [box=515,172,211,94]:
+                      - radio "System" [ref=t3-ed7589e7-on-e293] [box=515,172,1,1]
+                      - generic [ref=t3-ed7589e7-on-e316] [box=516,229,209,36]: System
+                    - generic [ref=t3-ed7589e7-on-e321] [cursor=pointer] [box=734,172,211,94]:
+                      - radio "Light" [checked] [ref=t3-ed7589e7-on-e322] [box=734,172,1,1]
+                      - generic [ref=t3-ed7589e7-on-e337] [box=735,229,209,36]: Light
+                    - generic [ref=t3-ed7589e7-on-e346] [cursor=pointer] [box=954,172,211,94]:
+                      - radio "Dark" [ref=t3-ed7589e7-on-e347] [box=954,172,1,1]
+                      - generic [ref=t3-ed7589e7-on-e359] [box=955,229,209,36]: Dark
+                - generic [ref=t3-ed7589e7-on-e364] [box=515,290,650,351]:
+                  - generic [ref=t3-ed7589e7-on-e365] [box=514,289,1,1]: Theme
+                  - generic [ref=t3-ed7589e7-on-e366] [box=515,290,650,37]:
+                    - generic [ref=t3-ed7589e7-on-e368] [box=515,290,650,28]:
+                      - heading "Theme" [level=3] [ref=t3-ed7589e7-on-e369] [box=515,296,344,16]
+                      - button "Import theme file" [ref=t3-ed7589e7-on-e370] [cursor=pointer] [box=867,290,145,28]
+                      - button "Export the Default theme file" [ref=t3-ed7589e7-on-e376] [cursor=pointer] [box=1020,290,145,28]:
+                        - generic [ref=t3-ed7589e7-on-e381] [box=1052,294,105,20]: Export theme file
+                    - separator [ref=t3-ed7589e7-on-e383] [box=515,326,650,1]
+                  - list [ref=t3-ed7589e7-on-e384] [box=515,335,650,306]:
+                    - listitem [ref=t3-ed7589e7-on-e385] [box=515,339,157,94]:
+                      - generic [ref=t3-ed7589e7-on-e386] [cursor=pointer] [box=515,339,157,94]:
+                        - radio "Default" [checked] [ref=t3-ed7589e7-on-e387] [box=515,339,1,1]
+                        - generic [ref=t3-ed7589e7-on-e398] [box=516,396,155,36]: Default
+                    - listitem [ref=t3-ed7589e7-on-e403] [box=680,339,157,94]:
+                      - generic [ref=t3-ed7589e7-on-e404] [cursor=pointer] [box=680,339,157,94]:
+                        - radio "Ink" [ref=t3-ed7589e7-on-e405] [box=680,339,1,1]
+                        - generic [ref=t3-ed7589e7-on-e416] [box=681,396,155,36]: Ink
+                    - listitem [ref=t3-ed7589e7-on-e418] [box=844,339,157,94]:
+                      - generic [ref=t3-ed7589e7-on-e419] [cursor=pointer] [box=844,339,157,94]:
+                        - radio "Tokyo Night" [ref=t3-ed7589e7-on-e420] [box=844,339,1,1]
+                        - generic [ref=t3-ed7589e7-on-e431] [box=845,396,155,36]: Tokyo Night
+                    - listitem [ref=t3-ed7589e7-on-e433] [box=1009,339,157,94]:
+                      - generic [ref=t3-ed7589e7-on-e434] [cursor=pointer] [box=1009,339,157,94]:
+                        - radio "Catppuccin" [ref=t3-ed7589e7-on-e435] [box=1009,339,1,1]
+                        - generic [ref=t3-ed7589e7-on-e446] [box=1010,396,155,36]: Catppuccin
+                    - listitem [ref=t3-ed7589e7-on-e448] [box=515,441,157,94]:
+                      - generic [ref=t3-ed7589e7-on-e449] [cursor=pointer] [box=515,441,157,94]:
+                        - radio "Dracula dark only" [ref=t3-ed7589e7-on-e450] [box=515,441,1,1]
+                        - generic [ref=t3-ed7589e7-on-e461] [box=516,498,155,36]:
+                          - generic [ref=t3-ed7589e7-on-e462] [box=524,506,84,20]: Dracula
+                          - generic [ref=t3-ed7589e7-on-e463] [box=612,508,51,16]: dark only
+                    - listitem [ref=t3-ed7589e7-on-e464] [box=680,441,157,94]:
+                      - generic [ref=t3-ed7589e7-on-e465] [cursor=pointer] [box=680,441,157,94]:
+                        - radio "GitHub" [ref=t3-ed7589e7-on-e466] [box=680,441,1,1]
+                        - generic [ref=t3-ed7589e7-on-e477] [box=681,498,155,36]: GitHub
+                    - listitem [ref=t3-ed7589e7-on-e479] [box=844,441,157,94]:
+                      - generic [ref=t3-ed7589e7-on-e480] [cursor=pointer] [box=844,441,157,94]:
+                        - radio "Gruvbox" [ref=t3-ed7589e7-on-e481] [box=844,441,1,1]
+                        - generic [ref=t3-ed7589e7-on-e492] [box=845,498,155,36]: Gruvbox
+                    - listitem [ref=t3-ed7589e7-on-e494] [box=1009,441,157,94]:
+                      - generic [ref=t3-ed7589e7-on-e495] [cursor=pointer] [box=1009,441,157,94]:
+                        - radio "Nord dark only" [ref=t3-ed7589e7-on-e496] [box=1009,441,1,1]
+                        - generic [ref=t3-ed7589e7-on-e507] [box=1010,498,155,36]:
+                          - generic [ref=t3-ed7589e7-on-e508] [box=1018,506,84,20]: Nord
+                          - generic [ref=t3-ed7589e7-on-e509] [box=1106,508,51,16]: dark only
+                    - listitem [ref=t3-ed7589e7-on-e510] [box=515,543,157,94]:
+                      - generic [ref=t3-ed7589e7-on-e511] [cursor=pointer] [box=515,543,157,94]:
+                        - radio "One" [ref=t3-ed7589e7-on-e512] [box=515,543,1,1]
+                        - generic [ref=t3-ed7589e7-on-e523] [box=516,600,155,36]: One
+                    - listitem [ref=t3-ed7589e7-on-e525] [box=680,543,157,94]:
+                      - generic [ref=t3-ed7589e7-on-e526] [cursor=pointer] [box=680,543,157,94]:
+                        - radio "Rosé Pine" [ref=t3-ed7589e7-on-e527] [box=680,543,1,1]
+                        - generic [ref=t3-ed7589e7-on-e538] [box=681,600,155,36]: Rosé Pine
+                    - listitem [ref=t3-ed7589e7-on-e540] [box=844,543,157,94]:
+                      - generic [ref=t3-ed7589e7-on-e541] [cursor=pointer] [box=844,543,157,94]:
+                        - radio "Solarized" [ref=t3-ed7589e7-on-e542] [box=844,543,1,1]
+                        - generic [ref=t3-ed7589e7-on-e553] [box=845,600,155,36]: Solarized
+              - button "Choose a theme file" [ref=t3-ed7589e7-on-e555] [box=514,138,1,1]
+          - region "Spelling" [ref=t3-ed7589e7-on-e557] [box=515,665,650,95]:
+            - generic [ref=t3-ed7589e7-on-e558] [box=515,665,650,25]:
+              - heading "Editor" [level=3] [ref=t3-ed7589e7-on-e561] [box=515,665,650,16]
+              - separator [ref=t3-ed7589e7-on-e563] [box=515,689,650,1]
+            - switch "Check spelling" [checked] [ref=t3-ed7589e7-on-e565] [cursor=pointer] [box=515,698,650,62]:
+              - generic [ref=t3-ed7589e7-on-e566] [box=515,710,594,38]:
+                - generic [ref=t3-ed7589e7-on-e567] [box=515,710,594,20]: Check spelling
+                - generic [ref=t3-ed7589e7-on-e568] [box=515,732,594,16]:
+                  - generic [ref=t3-ed7589e7-on-e569] [box=515,732,53,16]: Underline
+                  - generic [ref=t3-ed7589e7-on-e570] [box=571,732,34,16]: words
+                  - generic [ref=t3-ed7589e7-on-e571] [box=607,732,22,16]: that
+                  - generic [ref=t3-ed7589e7-on-e572] [box=632,732,18,16]: the
+                  - generic [ref=t3-ed7589e7-on-e573] [box=653,732,44,16]: browser
+                  - generic [ref=t3-ed7589e7-on-e574] [box=700,732,27,16]: does
+                  - generic [ref=t3-ed7589e7-on-e575] [box=730,732,18,16]: not
+                  - generic [ref=t3-ed7589e7-on-e576] [box=751,732,32,16]: know.

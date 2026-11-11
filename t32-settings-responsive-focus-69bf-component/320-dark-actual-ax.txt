@@ -1,0 +1,46 @@
+- generic [ref=t3-ed7589e7-os-e2] [box=0,0,320,640]:
+  - main [ref=t3-ed7589e7-os-e580] [box=0,0,320,640]:
+    - heading "N21 Settings COMPONENT simulation" [level=1] [ref=t3-ed7589e7-os-e581] [box=24,24,272,52]
+    - paragraph [ref=t3-ed7589e7-os-e582] [box=24,76,272,40]: Actual Settings host. Synthetic account, reads and textarea.
+    - button "Open Settings" [ref=t3-ed7589e7-os-e583] [box=24,116,105,24]
+    - textbox "Synthetic unsaved draft" [ref=t3-ed7589e7-os-e584] [box=24,140,205,48]: Synthetic unsaved draft. Selection and identity stay here.
+  - dialog [ref=t3-ed7589e7-os-e585] [box=0,0,320,640]:
+    - heading "Settings" [level=2] [ref=t3-ed7589e7-os-e586] [box=-1,-1,1,1]
+    - generic [ref=t3-ed7589e7-os-e588] [box=0,0,320,640]:
+      - banner [ref=t3-ed7589e7-os-e589] [box=0,0,320,56]:
+        - generic [active] [ref=t3-ed7589e7-os-e591] [box=40,18,240,20]: Settings
+        - button "Close Settings" [ref=t3-ed7589e7-os-e594] [cursor=pointer] [box=282,14,28,28]
+      - generic [ref=t3-ed7589e7-os-e600] [box=8,64,304,568]:
+        - button "Profile, Synthetic Reviewer, reviewer@example.invalid" [ref=t3-ed7589e7-os-e601] [cursor=pointer] [box=8,64,304,52]:
+          - generic [aria-hidden] [ref=t3-ed7589e7-os-e602] [box=16,78,24,24]: S
+          - generic [ref=t3-ed7589e7-os-e603] [box=52,72,224,36]:
+            - generic [ref=t3-ed7589e7-os-e604] [box=52,72,224,20]: Synthetic Reviewer
+            - generic [ref=t3-ed7589e7-os-e605] [box=52,92,224,16]: reviewer@example.invalid
+        - separator [ref=t3-ed7589e7-os-e609] [box=8,124,304,1]
+        - navigation "Settings sections" [ref=t3-ed7589e7-os-e610] [box=8,133,304,302]:
+          - region "Security" [ref=t3-ed7589e7-os-e611] [box=8,133,304,86]:
+            - heading "Security" [level=3] [ref=t3-ed7589e7-os-e612] [box=8,133,304,28]
+            - list [ref=t3-ed7589e7-os-e614] [box=8,163,304,56]:
+              - listitem [ref=t3-ed7589e7-os-e615] [box=8,163,304,28]:
+                - button "Devices" [ref=t3-ed7589e7-os-e616] [cursor=pointer] [box=8,163,304,28]
+              - listitem [ref=t3-ed7589e7-os-e624] [box=8,191,304,28]:
+                - button "API keys" [ref=t3-ed7589e7-os-e625] [cursor=pointer] [box=8,191,304,28]
+          - region "Preferences" [ref=t3-ed7589e7-os-e634] [box=8,227,304,86]:
+            - heading "Preferences" [level=3] [ref=t3-ed7589e7-os-e635] [box=8,227,304,28]
+            - list [ref=t3-ed7589e7-os-e637] [box=8,257,304,56]:
+              - listitem [ref=t3-ed7589e7-os-e638] [box=8,257,304,28]:
+                - button "Appearance and editor" [ref=t3-ed7589e7-os-e639] [cursor=pointer] [box=8,257,304,28]
+              - listitem [ref=t3-ed7589e7-os-e651] [box=8,285,304,28]:
+                - button "Offline" [ref=t3-ed7589e7-os-e652] [cursor=pointer] [box=8,285,304,28]
+          - region "Workspace Synthetic workspace" [ref=t3-ed7589e7-os-e661] [box=8,321,304,114]:
+            - heading "Workspace Synthetic workspace" [level=3] [ref=t3-ed7589e7-os-e662] [box=8,321,304,28]:
+              - generic [ref=t3-ed7589e7-os-e663] [box=16,325,194,20]:
+                - text: Workspace
+                - generic [ref=t3-ed7589e7-os-e664] [box=89,325,122,20]: Synthetic workspace
+            - list [ref=t3-ed7589e7-os-e665] [box=8,351,304,84]:
+              - listitem [ref=t3-ed7589e7-os-e666] [box=8,351,304,28]:
+                - button "Daily notes" [ref=t3-ed7589e7-os-e667] [cursor=pointer] [box=8,351,304,28]
+              - listitem [ref=t3-ed7589e7-os-e675] [box=8,379,304,28]:
+                - button "Templates" [ref=t3-ed7589e7-os-e676] [cursor=pointer] [box=8,379,304,28]
+              - listitem [ref=t3-ed7589e7-os-e686] [box=8,407,304,28]:
+                - button "Export and import" [ref=t3-ed7589e7-os-e687] [cursor=pointer] [box=8,407,304,28]

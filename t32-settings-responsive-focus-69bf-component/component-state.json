@@ -1,0 +1,54 @@
+[
+  {
+    "label": "N21 canonical source COMPONENT simulation. Actual Settings host, synthetic context/READs and textarea.",
+    "source": "69bfd2c79228b5b8a8580109fb7431f0abab5ce8",
+    "time": "2026-11-11T14:32:22.017Z",
+    "route": "/w/fixture/notes/draft?filter=synthetic&settings=#draft",
+    "width": 1440,
+    "height": 640,
+    "theme": "light",
+    "active": {
+      "id": "_r_a1_",
+      "tag": "H2",
+      "role": null,
+      "label": null,
+      "text": "Appearance and editor",
+      "visible": true
+    },
+    "exposedCurrent": [
+      "appearance"
+    ],
+    "DOMCurrent": [
+      "appearance"
+    ],
+    "fontLoaded": true,
+    "pointerFine": true,
+    "pointerCoarse": false,
+    "draftKind": "Synthetic textarea, not CodeMirror",
+    "draftCount": 1
+  },
+  {
+    "label": "N21 canonical source COMPONENT simulation. Actual Settings host, synthetic context/READs and textarea.",
+    "source": "69bfd2c79228b5b8a8580109fb7431f0abab5ce8",
+    "time": "2026-11-11T14:32:22.802Z",
+    "route": "/w/fixture/notes/draft?filter=synthetic&settings=#draft",
+    "width": 320,
+    "height": 640,
+    "theme": "dark",
+    "active": {
+      "id": "",
+      "tag": "DIV",
+      "role": null,
+      "label": null,
+      "text": "Settings",
+      "visible": true
+    },
+    "exposedCurrent": [],
+    "DOMCurrent": [],
+    "fontLoaded": true,
+    "pointerFine": true,
+    "pointerCoarse": false,
+    "draftKind": "Synthetic textarea, not CodeMirror",
+    "draftCount": 1
+  }
+]

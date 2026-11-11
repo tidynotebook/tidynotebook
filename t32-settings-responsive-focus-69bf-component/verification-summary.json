@@ -1,0 +1,36 @@
+{
+  "source": "69bfd2c79228b5b8a8580109fb7431f0abab5ce8",
+  "tree": "d932ffc2c5fe8c6dbc0ec07fa078595aa7727d8e",
+  "focusedDefault": 49,
+  "focusedPreloaded": 49,
+  "fullVerify": {
+    "exitCode": 0,
+    "unit": 3839,
+    "integration": 1259,
+    "web": 17,
+    "gzipBytes": 315680,
+    "limit": 315904,
+    "initialScripts": 54
+  },
+  "component": {
+    "retainedFiniteCases": 116,
+    "uniqueLoadedPaths": 53,
+    "boundaries": "Actual canonical Settings/host/UI bodies with disclosed synthetic context/READs and textarea. Fine CSS widths only.",
+    "screenshotsPublished": 2,
+    "actualAXStringsPublished": 2
+  },
+  "first69ImageAttempt": {
+    "result": "SKIPPED BY OWNER",
+    "exitCode": 130,
+    "provedRequestMs": 52241,
+    "capMs": 45000,
+    "imageProduced": false,
+    "runtime": "NOT RUN",
+    "lateWarningNotExactDeadlineAbort": true
+  },
+  "limits": [
+    "No installed app, CodeMirror/full Shell, physical/coarse input, native phone keyboard or AT speech proof.",
+    "No all-races claim.",
+    "Earlier18745 and90 image SKIPs remain separate."
+  ]
+}
