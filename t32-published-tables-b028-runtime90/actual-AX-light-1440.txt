@@ -1,0 +1,103 @@
+- generic [ref=t3-ed7589e7-ae-f2e3] [box=208,0,1024,833]:
+  - main [ref=t3-ed7589e7-ae-f2e4] [box=400,0,640,644]:
+    - article [ref=t3-ed7589e7-ae-f2e5] [box=400,64,640,484]:
+      - heading "T32 N10 retry90 tables" [level=1] [ref=t3-ed7589e7-ae-f2e6] [box=400,64,640,34]
+      - paragraph [ref=t3-ed7589e7-ae-f2e7] [box=400,114,640,26]: Owned table A.
+      - region "Table" [ref=t3-ed7589e7-ae-f2e8] [box=400,156,640,146]:
+        - table [ref=t3-ed7589e7-ae-f2e9] [box=360,156,1306,146]:
+          - rowgroup [ref=t3-ed7589e7-ae-f2e10] [box=361,156,1305,37]:
+            - row [ref=t3-ed7589e7-ae-f2e11] [box=361,156,1305,37]:
+              - columnheader "Header01" [ref=t3-ed7589e7-ae-f2e12] [box=361,156,92,37]
+              - columnheader "Header02" [ref=t3-ed7589e7-ae-f2e13] [box=453,156,95,37]
+              - columnheader "Header03" [ref=t3-ed7589e7-ae-f2e14] [box=548,156,95,37]
+              - columnheader "Header04" [ref=t3-ed7589e7-ae-f2e15] [box=643,156,96,37]
+              - columnheader "Header05" [ref=t3-ed7589e7-ae-f2e16] [box=738,156,96,37]
+              - columnheader "Header06" [ref=t3-ed7589e7-ae-f2e17] [box=834,156,95,37]
+              - columnheader "Header07" [ref=t3-ed7589e7-ae-f2e18] [box=929,156,94,37]
+              - columnheader "Header08" [ref=t3-ed7589e7-ae-f2e19] [box=1022,156,96,37]
+              - columnheader "Header09" [ref=t3-ed7589e7-ae-f2e20] [box=1118,156,95,37]
+              - columnheader "Header10" [ref=t3-ed7589e7-ae-f2e21] [box=1213,156,92,37]
+              - columnheader "Header11" [ref=t3-ed7589e7-ae-f2e22] [box=1305,156,88,37]
+              - columnheader "Header12" [ref=t3-ed7589e7-ae-f2e23] [box=1392,156,91,37]
+              - columnheader "Header13" [ref=t3-ed7589e7-ae-f2e24] [box=1483,156,91,37]
+              - columnheader "Header14" [ref=t3-ed7589e7-ae-f2e25] [box=1574,156,91,37]
+          - rowgroup [ref=t3-ed7589e7-ae-f2e26] [box=361,193,1305,108]:
+            - row [ref=t3-ed7589e7-ae-f2e27] [box=361,193,1305,108]:
+              - cell "owned-column-1-long-value" [ref=t3-ed7589e7-ae-f2e28] [box=361,193,92,108]
+              - cell "owned-column-2-long-value" [ref=t3-ed7589e7-ae-f2e29] [box=453,193,95,108]
+              - cell "owned-column-3-long-value" [ref=t3-ed7589e7-ae-f2e30] [box=548,193,95,108]
+              - cell "owned-column-4-long-value" [ref=t3-ed7589e7-ae-f2e31] [box=643,193,96,108]
+              - cell "owned-column-5-long-value" [ref=t3-ed7589e7-ae-f2e32] [box=738,193,96,108]
+              - cell "owned-column-6-long-value" [ref=t3-ed7589e7-ae-f2e33] [box=834,193,95,108]
+              - cell "owned-column-7-long-value" [ref=t3-ed7589e7-ae-f2e34] [box=929,193,94,108]
+              - cell "owned-column-8-long-value" [ref=t3-ed7589e7-ae-f2e35] [box=1022,193,96,108]
+              - cell "owned-column-9-long-value" [ref=t3-ed7589e7-ae-f2e36] [box=1118,193,95,108]
+              - cell "owned-column-10-long-value" [ref=t3-ed7589e7-ae-f2e37] [box=1213,193,92,108]
+              - cell "owned-column-11-long-value" [ref=t3-ed7589e7-ae-f2e38] [box=1305,193,88,108]
+              - cell "owned-column-12-long-value" [ref=t3-ed7589e7-ae-f2e39] [box=1392,193,91,108]
+              - cell "owned-column-13-long-value" [ref=t3-ed7589e7-ae-f2e40] [box=1483,193,91,108]
+              - cell "owned-column-14-long-value" [ref=t3-ed7589e7-ae-f2e41] [box=1574,193,91,108]
+      - paragraph [ref=t3-ed7589e7-ae-f2e42] [box=400,318,640,26]: Owned author table B.
+      - region "Table" [active] [ref=t3-ed7589e7-ae-f2e43] [box=400,360,640,146]:
+        - table [ref=t3-ed7589e7-ae-f2e44] [box=400,360,1306,146]:
+          - rowgroup [ref=t3-ed7589e7-ae-f2e45] [box=401,361,1305,145]:
+            - row [ref=t3-ed7589e7-ae-f2e46] [box=401,361,1305,37]:
+              - columnheader "Header01" [ref=t3-ed7589e7-ae-f2e47] [box=401,361,92,37]
+              - columnheader "Header02" [ref=t3-ed7589e7-ae-f2e48] [box=493,361,95,37]
+              - columnheader "Header03" [ref=t3-ed7589e7-ae-f2e49] [box=588,361,95,37]
+              - columnheader "Header04" [ref=t3-ed7589e7-ae-f2e50] [box=683,361,96,37]
+              - columnheader "Header05" [ref=t3-ed7589e7-ae-f2e51] [box=778,361,96,37]
+              - columnheader "Header06" [ref=t3-ed7589e7-ae-f2e52] [box=874,361,95,37]
+              - columnheader "Header07" [ref=t3-ed7589e7-ae-f2e53] [box=969,361,94,37]
+              - columnheader "Header08" [ref=t3-ed7589e7-ae-f2e54] [box=1062,361,96,37]
+              - columnheader "Header09" [ref=t3-ed7589e7-ae-f2e55] [box=1158,361,95,37]
+              - columnheader "Header10" [ref=t3-ed7589e7-ae-f2e56] [box=1253,361,92,37]
+              - columnheader "Header11" [ref=t3-ed7589e7-ae-f2e57] [box=1345,361,88,37]
+              - columnheader "Header12" [ref=t3-ed7589e7-ae-f2e58] [box=1432,361,91,37]
+              - columnheader "Header13" [ref=t3-ed7589e7-ae-f2e59] [box=1523,361,91,37]
+              - columnheader "Header14" [ref=t3-ed7589e7-ae-f2e60] [box=1614,361,91,37]
+            - row [ref=t3-ed7589e7-ae-f2e61] [box=401,397,1305,108]:
+              - cell "owned-column-1-long-value" [ref=t3-ed7589e7-ae-f2e62] [box=401,397,92,108]
+              - cell "owned-column-2-long-value" [ref=t3-ed7589e7-ae-f2e63] [box=493,397,95,108]
+              - cell "owned-column-3-long-value" [ref=t3-ed7589e7-ae-f2e64] [box=588,397,95,108]
+              - cell "owned-column-4-long-value" [ref=t3-ed7589e7-ae-f2e65] [box=683,397,96,108]
+              - cell "owned-column-5-long-value" [ref=t3-ed7589e7-ae-f2e66] [box=778,397,96,108]
+              - cell "owned-column-6-long-value" [ref=t3-ed7589e7-ae-f2e67] [box=874,397,95,108]
+              - cell "owned-column-7-long-value" [ref=t3-ed7589e7-ae-f2e68] [box=969,397,94,108]
+              - cell "owned-column-8-long-value" [ref=t3-ed7589e7-ae-f2e69] [box=1062,397,96,108]
+              - cell "owned-column-9-long-value" [ref=t3-ed7589e7-ae-f2e70] [box=1158,397,95,108]
+              - cell "owned-column-10-long-value" [ref=t3-ed7589e7-ae-f2e71] [box=1253,397,92,108]
+              - cell "owned-column-11-long-value" [ref=t3-ed7589e7-ae-f2e72] [box=1345,397,88,108]
+              - cell "owned-column-12-long-value" [ref=t3-ed7589e7-ae-f2e73] [box=1432,397,91,108]
+              - cell "owned-column-13-long-value" [ref=t3-ed7589e7-ae-f2e74] [box=1523,397,91,108]
+              - cell "owned-column-14-long-value" [ref=t3-ed7589e7-ae-f2e75] [box=1614,397,91,108]
+      - paragraph [ref=t3-ed7589e7-ae-f2e76] [box=400,522,640,26]: Only synthetic local publication content.
+    - link "Report this page" [ref=t3-ed7589e7-ae-f2e78] [cursor=pointer] [box=400,596,91,16]:
+      - /url: /published/OWNED-LINK/report
+  - contentinfo [ref=t3-ed7589e7-ae-f2e80] [box=400,644,640,189]:
+    - generic [ref=t3-ed7589e7-ae-f2e81] [box=424,669,592,140]:
+      - generic [ref=t3-ed7589e7-ae-f2e82] [box=424,669,181,140]:
+        - link "tidy notebook" [ref=t3-ed7589e7-ae-f2e83] [cursor=pointer] [box=424,669,181,20]:
+          - /url: http://10.20.30.30:3000
+        - paragraph [ref=t3-ed7589e7-ae-f2e84] [box=424,701,181,32]: Open source. Write in Markdown. Export your notes.
+        - paragraph [ref=t3-ed7589e7-ae-f2e85] [box=424,745,181,16]: © 2026 tidy notebook
+      - navigation [ref=t3-ed7589e7-ae-f2e86] [box=629,669,79,140]:
+        - heading "Product" [level=2] [ref=t3-ed7589e7-ae-f2e87] [box=629,669,79,16]
+        - link "Sign in" [ref=t3-ed7589e7-ae-f2e89] [cursor=pointer] [box=629,697,79,28]:
+          - /url: http://10.20.30.30:3000/login
+      - navigation [ref=t3-ed7589e7-ae-f2e90] [box=732,669,79,140]:
+        - heading "Resources" [level=2] [ref=t3-ed7589e7-ae-f2e91] [box=732,669,79,16]
+        - generic [ref=t3-ed7589e7-ae-f2e92] [box=732,697,79,60]:
+          - link "Docs" [ref=t3-ed7589e7-ae-f2e93] [cursor=pointer] [box=732,697,79,28]:
+            - /url: https://docs.tidynotebook.com
+          - link "MCP" [ref=t3-ed7589e7-ae-f2e94] [cursor=pointer] [box=732,729,79,28]:
+            - /url: https://docs.tidynotebook.com/mcp/
+      - navigation [ref=t3-ed7589e7-ae-f2e95] [box=835,669,79,140]:
+        - heading "Open source" [level=2] [ref=t3-ed7589e7-ae-f2e96] [box=835,669,79,16]
+        - generic [ref=t3-ed7589e7-ae-f2e97] [box=835,697,79,112]:
+          - link "GitHub" [ref=t3-ed7589e7-ae-f2e98] [cursor=pointer] [box=835,697,79,28]:
+            - /url: https://github.com/tidynotebook/tidynotebook
+          - link "Source code" [ref=t3-ed7589e7-ae-f2e99] [cursor=pointer] [box=835,729,79,28]:
+            - /url: https://github.com/tidynotebook/tidynotebook/tree/main
+          - link "License (AGPL-3.0)" [ref=t3-ed7589e7-ae-f2e100] [cursor=pointer] [box=835,761,79,48]:
+            - /url: https://github.com/tidynotebook/tidynotebook/blob/main/LICENSE

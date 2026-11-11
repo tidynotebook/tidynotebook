@@ -1,0 +1,2197 @@
+{
+  "head": "b028d5d566bec44b70217471340e3b7063ebe4c1",
+  "cases": [
+    {
+      "theme": "light",
+      "width": 1440,
+      "first": {
+        "time": "2026-11-11T10:59:22.983Z",
+        "title": "tidy notebook",
+        "width": 1440,
+        "height": 900,
+        "mediaDark": false,
+        "pointerCoarse": false,
+        "fontStatus": "loaded",
+        "fontLoaded": true,
+        "bodyBackground": "rgb(255, 255, 255)",
+        "pageOverflow": 0,
+        "regions": [
+          {
+            "index": 0,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": true,
+            "focusVisible": true,
+            "outlineWidth": "2px",
+            "outlineStyle": "solid",
+            "outlineColor": "rgb(37, 99, 201)",
+            "outlineOffset": "-2px",
+            "scrollLeft": 0,
+            "clientWidth": 640,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 400,
+              "y": 155.9921875,
+              "width": 640,
+              "height": 145.75,
+              "top": 155.9921875,
+              "right": 1040,
+              "bottom": 301.7421875,
+              "left": 400
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          },
+          {
+            "index": 1,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": false,
+            "focusVisible": false,
+            "outlineWidth": "3px",
+            "outlineStyle": "none",
+            "outlineColor": "rgb(25, 25, 23)",
+            "outlineOffset": "0px",
+            "scrollLeft": 0,
+            "clientWidth": 640,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 400,
+              "y": 360.140625,
+              "width": 640,
+              "height": 145.75,
+              "top": 360.140625,
+              "right": 1040,
+              "bottom": 505.890625,
+              "left": 400
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          }
+        ],
+        "events": [
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": -1,
+            "time": 104.5
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 0,
+            "time": 104.69999999925494
+          }
+        ],
+        "errors": []
+      },
+      "second": {
+        "time": "2026-11-11T10:59:23.196Z",
+        "title": "tidy notebook",
+        "width": 1440,
+        "height": 900,
+        "mediaDark": false,
+        "pointerCoarse": false,
+        "fontStatus": "loaded",
+        "fontLoaded": true,
+        "bodyBackground": "rgb(255, 255, 255)",
+        "pageOverflow": 0,
+        "regions": [
+          {
+            "index": 0,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": false,
+            "focusVisible": false,
+            "outlineWidth": "3px",
+            "outlineStyle": "none",
+            "outlineColor": "rgb(25, 25, 23)",
+            "outlineOffset": "0px",
+            "scrollLeft": 19.5,
+            "clientWidth": 640,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 400,
+              "y": 155.9921875,
+              "width": 640,
+              "height": 145.75,
+              "top": 155.9921875,
+              "right": 1040,
+              "bottom": 301.7421875,
+              "left": 400
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          },
+          {
+            "index": 1,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": true,
+            "focusVisible": true,
+            "outlineWidth": "2px",
+            "outlineStyle": "solid",
+            "outlineColor": "rgb(37, 99, 201)",
+            "outlineOffset": "-2px",
+            "scrollLeft": 0,
+            "clientWidth": 640,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 400,
+              "y": 360.140625,
+              "width": 640,
+              "height": 145.75,
+              "top": 360.140625,
+              "right": 1040,
+              "bottom": 505.890625,
+              "left": 400
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          }
+        ],
+        "events": [
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": -1,
+            "time": 104.5
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 0,
+            "time": 104.69999999925494
+          },
+          {
+            "type": "keydown",
+            "key": "ArrowRight",
+            "trusted": true,
+            "region": 0,
+            "time": 260.19999999925494
+          },
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": 0,
+            "time": 305.5
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 1,
+            "time": 305.80000000074506
+          }
+        ],
+        "errors": []
+      },
+      "back": {
+        "time": "2026-11-11T10:59:23.628Z",
+        "title": "tidy notebook",
+        "width": 1440,
+        "height": 900,
+        "mediaDark": false,
+        "pointerCoarse": false,
+        "fontStatus": "loaded",
+        "fontLoaded": true,
+        "bodyBackground": "rgb(255, 255, 255)",
+        "pageOverflow": 0,
+        "regions": [
+          {
+            "index": 0,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": true,
+            "focusVisible": true,
+            "outlineWidth": "2px",
+            "outlineStyle": "solid",
+            "outlineColor": "rgb(37, 99, 201)",
+            "outlineOffset": "-2px",
+            "scrollLeft": 40,
+            "clientWidth": 640,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 400,
+              "y": 155.9921875,
+              "width": 640,
+              "height": 145.75,
+              "top": 155.9921875,
+              "right": 1040,
+              "bottom": 301.7421875,
+              "left": 400
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          },
+          {
+            "index": 1,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": false,
+            "focusVisible": false,
+            "outlineWidth": "3px",
+            "outlineStyle": "none",
+            "outlineColor": "rgb(25, 25, 23)",
+            "outlineOffset": "0px",
+            "scrollLeft": 23.5,
+            "clientWidth": 640,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 400,
+              "y": 360.140625,
+              "width": 640,
+              "height": 145.75,
+              "top": 360.140625,
+              "right": 1040,
+              "bottom": 505.890625,
+              "left": 400
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          }
+        ],
+        "events": [
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": -1,
+            "time": 104.5
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 0,
+            "time": 104.69999999925494
+          },
+          {
+            "type": "keydown",
+            "key": "ArrowRight",
+            "trusted": true,
+            "region": 0,
+            "time": 260.19999999925494
+          },
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": 0,
+            "time": 305.5
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 1,
+            "time": 305.80000000074506
+          },
+          {
+            "type": "keydown",
+            "key": "ArrowRight",
+            "trusted": true,
+            "region": 1,
+            "time": 684.6999999992549
+          },
+          {
+            "type": "keydown",
+            "key": "Shift",
+            "trusted": true,
+            "region": 1,
+            "time": 730.1999999992549
+          },
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": 1,
+            "time": 740.8000000007451
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 0,
+            "time": 741
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "first": {
+        "time": "2026-11-11T10:59:23.828Z",
+        "title": "tidy notebook",
+        "width": 390,
+        "height": 900,
+        "mediaDark": false,
+        "pointerCoarse": false,
+        "fontStatus": "loaded",
+        "fontLoaded": true,
+        "bodyBackground": "rgb(255, 255, 255)",
+        "pageOverflow": 0,
+        "regions": [
+          {
+            "index": 0,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": true,
+            "focusVisible": true,
+            "outlineWidth": "2px",
+            "outlineStyle": "solid",
+            "outlineColor": "rgb(37, 99, 201)",
+            "outlineOffset": "-2px",
+            "scrollLeft": 0,
+            "clientWidth": 342,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 24,
+              "y": 155.9921875,
+              "width": 342,
+              "height": 145.75,
+              "top": 155.9921875,
+              "right": 366,
+              "bottom": 301.7421875,
+              "left": 24
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          },
+          {
+            "index": 1,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": false,
+            "focusVisible": false,
+            "outlineWidth": "3px",
+            "outlineStyle": "none",
+            "outlineColor": "rgb(25, 25, 23)",
+            "outlineOffset": "0px",
+            "scrollLeft": 0,
+            "clientWidth": 342,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 24,
+              "y": 360.140625,
+              "width": 342,
+              "height": 145.75,
+              "top": 360.140625,
+              "right": 366,
+              "bottom": 505.890625,
+              "left": 24
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          }
+        ],
+        "events": [
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": -1,
+            "time": 82.10000000149012
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 0,
+            "time": 82.39999999850988
+          }
+        ],
+        "errors": []
+      },
+      "second": {
+        "time": "2026-11-11T10:59:23.949Z",
+        "title": "tidy notebook",
+        "width": 390,
+        "height": 900,
+        "mediaDark": false,
+        "pointerCoarse": false,
+        "fontStatus": "loaded",
+        "fontLoaded": true,
+        "bodyBackground": "rgb(255, 255, 255)",
+        "pageOverflow": 0,
+        "regions": [
+          {
+            "index": 0,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": false,
+            "focusVisible": false,
+            "outlineWidth": "3px",
+            "outlineStyle": "none",
+            "outlineColor": "rgb(25, 25, 23)",
+            "outlineOffset": "0px",
+            "scrollLeft": 11,
+            "clientWidth": 342,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 24,
+              "y": 155.9921875,
+              "width": 342,
+              "height": 145.75,
+              "top": 155.9921875,
+              "right": 366,
+              "bottom": 301.7421875,
+              "left": 24
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          },
+          {
+            "index": 1,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": true,
+            "focusVisible": true,
+            "outlineWidth": "2px",
+            "outlineStyle": "solid",
+            "outlineColor": "rgb(37, 99, 201)",
+            "outlineOffset": "-2px",
+            "scrollLeft": 0,
+            "clientWidth": 342,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 24,
+              "y": 360.140625,
+              "width": 342,
+              "height": 145.75,
+              "top": 360.140625,
+              "right": 366,
+              "bottom": 505.890625,
+              "left": 24
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          }
+        ],
+        "events": [
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": -1,
+            "time": 82.10000000149012
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 0,
+            "time": 82.39999999850988
+          },
+          {
+            "type": "keydown",
+            "key": "ArrowRight",
+            "trusted": true,
+            "region": 0,
+            "time": 164.5
+          },
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": 0,
+            "time": 202.30000000074506
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 1,
+            "time": 202.5
+          }
+        ],
+        "errors": []
+      },
+      "back": {
+        "time": "2026-11-11T10:59:24.133Z",
+        "title": "tidy notebook",
+        "width": 390,
+        "height": 900,
+        "mediaDark": false,
+        "pointerCoarse": false,
+        "fontStatus": "loaded",
+        "fontLoaded": true,
+        "bodyBackground": "rgb(255, 255, 255)",
+        "pageOverflow": 0,
+        "regions": [
+          {
+            "index": 0,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": true,
+            "focusVisible": true,
+            "outlineWidth": "2px",
+            "outlineStyle": "solid",
+            "outlineColor": "rgb(37, 99, 201)",
+            "outlineOffset": "-2px",
+            "scrollLeft": 40,
+            "clientWidth": 342,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 24,
+              "y": 155.9921875,
+              "width": 342,
+              "height": 145.75,
+              "top": 155.9921875,
+              "right": 366,
+              "bottom": 301.7421875,
+              "left": 24
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          },
+          {
+            "index": 1,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": false,
+            "focusVisible": false,
+            "outlineWidth": "3px",
+            "outlineStyle": "none",
+            "outlineColor": "rgb(25, 25, 23)",
+            "outlineOffset": "0px",
+            "scrollLeft": 10.5,
+            "clientWidth": 342,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 24,
+              "y": 360.140625,
+              "width": 342,
+              "height": 145.75,
+              "top": 360.140625,
+              "right": 366,
+              "bottom": 505.890625,
+              "left": 24
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          }
+        ],
+        "events": [
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": -1,
+            "time": 82.10000000149012
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 0,
+            "time": 82.39999999850988
+          },
+          {
+            "type": "keydown",
+            "key": "ArrowRight",
+            "trusted": true,
+            "region": 0,
+            "time": 164.5
+          },
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": 0,
+            "time": 202.30000000074506
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 1,
+            "time": 202.5
+          },
+          {
+            "type": "keydown",
+            "key": "ArrowRight",
+            "trusted": true,
+            "region": 1,
+            "time": 348.8999999985099
+          },
+          {
+            "type": "keydown",
+            "key": "Shift",
+            "trusted": true,
+            "region": 1,
+            "time": 386.80000000074506
+          },
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": 1,
+            "time": 387.1000000014901
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 0,
+            "time": 387.19999999925494
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "theme": "light",
+      "width": 320,
+      "first": {
+        "time": "2026-11-11T10:59:24.332Z",
+        "title": "tidy notebook",
+        "width": 320,
+        "height": 900,
+        "mediaDark": false,
+        "pointerCoarse": false,
+        "fontStatus": "loaded",
+        "fontLoaded": true,
+        "bodyBackground": "rgb(255, 255, 255)",
+        "pageOverflow": 0,
+        "regions": [
+          {
+            "index": 0,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": true,
+            "focusVisible": true,
+            "outlineWidth": "2px",
+            "outlineStyle": "solid",
+            "outlineColor": "rgb(37, 99, 201)",
+            "outlineOffset": "-2px",
+            "scrollLeft": 0,
+            "clientWidth": 272,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 24,
+              "y": 189.5859375,
+              "width": 272,
+              "height": 145.75,
+              "top": 189.5859375,
+              "right": 296,
+              "bottom": 335.3359375,
+              "left": 24
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          },
+          {
+            "index": 1,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": false,
+            "focusVisible": false,
+            "outlineWidth": "3px",
+            "outlineStyle": "none",
+            "outlineColor": "rgb(25, 25, 23)",
+            "outlineOffset": "0px",
+            "scrollLeft": 0,
+            "clientWidth": 272,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 24,
+              "y": 393.734375,
+              "width": 272,
+              "height": 145.75,
+              "top": 393.734375,
+              "right": 296,
+              "bottom": 539.484375,
+              "left": 24
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          }
+        ],
+        "events": [
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": -1,
+            "time": 76.80000000074506
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 0,
+            "time": 77.09999999776483
+          }
+        ],
+        "errors": []
+      },
+      "second": {
+        "time": "2026-11-11T10:59:24.480Z",
+        "title": "tidy notebook",
+        "width": 320,
+        "height": 900,
+        "mediaDark": false,
+        "pointerCoarse": false,
+        "fontStatus": "loaded",
+        "fontLoaded": true,
+        "bodyBackground": "rgb(255, 255, 255)",
+        "pageOverflow": 0,
+        "regions": [
+          {
+            "index": 0,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": false,
+            "focusVisible": false,
+            "outlineWidth": "3px",
+            "outlineStyle": "none",
+            "outlineColor": "rgb(25, 25, 23)",
+            "outlineOffset": "0px",
+            "scrollLeft": 20.5,
+            "clientWidth": 272,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 24,
+              "y": 189.5859375,
+              "width": 272,
+              "height": 145.75,
+              "top": 189.5859375,
+              "right": 296,
+              "bottom": 335.3359375,
+              "left": 24
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          },
+          {
+            "index": 1,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": true,
+            "focusVisible": true,
+            "outlineWidth": "2px",
+            "outlineStyle": "solid",
+            "outlineColor": "rgb(37, 99, 201)",
+            "outlineOffset": "-2px",
+            "scrollLeft": 0,
+            "clientWidth": 272,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 24,
+              "y": 393.734375,
+              "width": 272,
+              "height": 145.75,
+              "top": 393.734375,
+              "right": 296,
+              "bottom": 539.484375,
+              "left": 24
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          }
+        ],
+        "events": [
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": -1,
+            "time": 76.80000000074506
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 0,
+            "time": 77.09999999776483
+          },
+          {
+            "type": "keydown",
+            "key": "ArrowRight",
+            "trusted": true,
+            "region": 0,
+            "time": 166.09999999776483
+          },
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": 0,
+            "time": 212.09999999776483
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 1,
+            "time": 212.30000000074506
+          }
+        ],
+        "errors": []
+      },
+      "back": {
+        "time": "2026-11-11T10:59:24.667Z",
+        "title": "tidy notebook",
+        "width": 320,
+        "height": 900,
+        "mediaDark": false,
+        "pointerCoarse": false,
+        "fontStatus": "loaded",
+        "fontLoaded": true,
+        "bodyBackground": "rgb(255, 255, 255)",
+        "pageOverflow": 0,
+        "regions": [
+          {
+            "index": 0,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": true,
+            "focusVisible": true,
+            "outlineWidth": "2px",
+            "outlineStyle": "solid",
+            "outlineColor": "rgb(37, 99, 201)",
+            "outlineOffset": "-2px",
+            "scrollLeft": 40,
+            "clientWidth": 272,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 24,
+              "y": 189.5859375,
+              "width": 272,
+              "height": 145.75,
+              "top": 189.5859375,
+              "right": 296,
+              "bottom": 335.3359375,
+              "left": 24
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          },
+          {
+            "index": 1,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": false,
+            "focusVisible": false,
+            "outlineWidth": "3px",
+            "outlineStyle": "none",
+            "outlineColor": "rgb(25, 25, 23)",
+            "outlineOffset": "0px",
+            "scrollLeft": 13,
+            "clientWidth": 272,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 24,
+              "y": 393.734375,
+              "width": 272,
+              "height": 145.75,
+              "top": 393.734375,
+              "right": 296,
+              "bottom": 539.484375,
+              "left": 24
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          }
+        ],
+        "events": [
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": -1,
+            "time": 76.80000000074506
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 0,
+            "time": 77.09999999776483
+          },
+          {
+            "type": "keydown",
+            "key": "ArrowRight",
+            "trusted": true,
+            "region": 0,
+            "time": 166.09999999776483
+          },
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": 0,
+            "time": 212.09999999776483
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 1,
+            "time": 212.30000000074506
+          },
+          {
+            "type": "keydown",
+            "key": "ArrowRight",
+            "trusted": true,
+            "region": 1,
+            "time": 365.3999999985099
+          },
+          {
+            "type": "keydown",
+            "key": "Shift",
+            "trusted": true,
+            "region": 1,
+            "time": 408.5
+          },
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": 1,
+            "time": 409
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 0,
+            "time": 409.0999999977648
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "theme": "dark",
+      "width": 1440,
+      "first": {
+        "time": "2026-11-11T10:59:24.900Z",
+        "title": "tidy notebook",
+        "width": 1440,
+        "height": 900,
+        "mediaDark": true,
+        "pointerCoarse": false,
+        "fontStatus": "loaded",
+        "fontLoaded": true,
+        "bodyBackground": "rgb(25, 25, 25)",
+        "pageOverflow": 0,
+        "regions": [
+          {
+            "index": 0,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": true,
+            "focusVisible": true,
+            "outlineWidth": "2px",
+            "outlineStyle": "solid",
+            "outlineColor": "rgb(74, 144, 240)",
+            "outlineOffset": "-2px",
+            "scrollLeft": 0,
+            "clientWidth": 640,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 400,
+              "y": 155.9921875,
+              "width": 640,
+              "height": 145.75,
+              "top": 155.9921875,
+              "right": 1040,
+              "bottom": 301.7421875,
+              "left": 400
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          },
+          {
+            "index": 1,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": false,
+            "focusVisible": false,
+            "outlineWidth": "3px",
+            "outlineStyle": "none",
+            "outlineColor": "rgb(245, 244, 242)",
+            "outlineOffset": "0px",
+            "scrollLeft": 0,
+            "clientWidth": 640,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 400,
+              "y": 360.140625,
+              "width": 640,
+              "height": 145.75,
+              "top": 360.140625,
+              "right": 1040,
+              "bottom": 505.890625,
+              "left": 400
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          }
+        ],
+        "events": [
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": -1,
+            "time": 88.69999999925494
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 0,
+            "time": 89
+          }
+        ],
+        "errors": []
+      },
+      "second": {
+        "time": "2026-11-11T10:59:25.107Z",
+        "title": "tidy notebook",
+        "width": 1440,
+        "height": 900,
+        "mediaDark": true,
+        "pointerCoarse": false,
+        "fontStatus": "loaded",
+        "fontLoaded": true,
+        "bodyBackground": "rgb(25, 25, 25)",
+        "pageOverflow": 0,
+        "regions": [
+          {
+            "index": 0,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": false,
+            "focusVisible": false,
+            "outlineWidth": "3px",
+            "outlineStyle": "none",
+            "outlineColor": "rgb(245, 244, 242)",
+            "outlineOffset": "0px",
+            "scrollLeft": 9.5,
+            "clientWidth": 640,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 400,
+              "y": 155.9921875,
+              "width": 640,
+              "height": 145.75,
+              "top": 155.9921875,
+              "right": 1040,
+              "bottom": 301.7421875,
+              "left": 400
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          },
+          {
+            "index": 1,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": true,
+            "focusVisible": true,
+            "outlineWidth": "2px",
+            "outlineStyle": "solid",
+            "outlineColor": "rgb(74, 144, 240)",
+            "outlineOffset": "-2px",
+            "scrollLeft": 0,
+            "clientWidth": 640,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 400,
+              "y": 360.140625,
+              "width": 640,
+              "height": 145.75,
+              "top": 360.140625,
+              "right": 1040,
+              "bottom": 505.890625,
+              "left": 400
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          }
+        ],
+        "events": [
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": -1,
+            "time": 88.69999999925494
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 0,
+            "time": 89
+          },
+          {
+            "type": "keydown",
+            "key": "ArrowRight",
+            "trusted": true,
+            "region": 0,
+            "time": 253.10000000149012
+          },
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": 0,
+            "time": 295.1000000014901
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 1,
+            "time": 295.19999999925494
+          }
+        ],
+        "errors": []
+      },
+      "back": {
+        "time": "2026-11-11T10:59:25.444Z",
+        "title": "tidy notebook",
+        "width": 1440,
+        "height": 900,
+        "mediaDark": true,
+        "pointerCoarse": false,
+        "fontStatus": "loaded",
+        "fontLoaded": true,
+        "bodyBackground": "rgb(25, 25, 25)",
+        "pageOverflow": 0,
+        "regions": [
+          {
+            "index": 0,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": true,
+            "focusVisible": true,
+            "outlineWidth": "2px",
+            "outlineStyle": "solid",
+            "outlineColor": "rgb(74, 144, 240)",
+            "outlineOffset": "-2px",
+            "scrollLeft": 40,
+            "clientWidth": 640,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 400,
+              "y": 155.9921875,
+              "width": 640,
+              "height": 145.75,
+              "top": 155.9921875,
+              "right": 1040,
+              "bottom": 301.7421875,
+              "left": 400
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          },
+          {
+            "index": 1,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": false,
+            "focusVisible": false,
+            "outlineWidth": "3px",
+            "outlineStyle": "none",
+            "outlineColor": "rgb(245, 244, 242)",
+            "outlineOffset": "0px",
+            "scrollLeft": 6.5,
+            "clientWidth": 640,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 400,
+              "y": 360.140625,
+              "width": 640,
+              "height": 145.75,
+              "top": 360.140625,
+              "right": 1040,
+              "bottom": 505.890625,
+              "left": 400
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          }
+        ],
+        "events": [
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": -1,
+            "time": 88.69999999925494
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 0,
+            "time": 89
+          },
+          {
+            "type": "keydown",
+            "key": "ArrowRight",
+            "trusted": true,
+            "region": 0,
+            "time": 253.10000000149012
+          },
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": 0,
+            "time": 295.1000000014901
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 1,
+            "time": 295.19999999925494
+          },
+          {
+            "type": "keydown",
+            "key": "ArrowRight",
+            "trusted": true,
+            "region": 1,
+            "time": 594.4000000022352
+          },
+          {
+            "type": "keydown",
+            "key": "Shift",
+            "trusted": true,
+            "region": 1,
+            "time": 634.3000000007451
+          },
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": 1,
+            "time": 634.6000000014901
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 0,
+            "time": 634.6999999992549
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "first": {
+        "time": "2026-11-11T10:59:25.671Z",
+        "title": "tidy notebook",
+        "width": 390,
+        "height": 900,
+        "mediaDark": true,
+        "pointerCoarse": false,
+        "fontStatus": "loaded",
+        "fontLoaded": true,
+        "bodyBackground": "rgb(25, 25, 25)",
+        "pageOverflow": 0,
+        "regions": [
+          {
+            "index": 0,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": true,
+            "focusVisible": true,
+            "outlineWidth": "2px",
+            "outlineStyle": "solid",
+            "outlineColor": "rgb(74, 144, 240)",
+            "outlineOffset": "-2px",
+            "scrollLeft": 0,
+            "clientWidth": 342,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 24,
+              "y": 155.9921875,
+              "width": 342,
+              "height": 145.75,
+              "top": 155.9921875,
+              "right": 366,
+              "bottom": 301.7421875,
+              "left": 24
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          },
+          {
+            "index": 1,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": false,
+            "focusVisible": false,
+            "outlineWidth": "3px",
+            "outlineStyle": "none",
+            "outlineColor": "rgb(245, 244, 242)",
+            "outlineOffset": "0px",
+            "scrollLeft": 0,
+            "clientWidth": 342,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 24,
+              "y": 360.140625,
+              "width": 342,
+              "height": 145.75,
+              "top": 360.140625,
+              "right": 366,
+              "bottom": 505.890625,
+              "left": 24
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          }
+        ],
+        "events": [
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": -1,
+            "time": 97.60000000149012
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 0,
+            "time": 97.89999999850988
+          }
+        ],
+        "errors": []
+      },
+      "second": {
+        "time": "2026-11-11T10:59:25.803Z",
+        "title": "tidy notebook",
+        "width": 390,
+        "height": 900,
+        "mediaDark": true,
+        "pointerCoarse": false,
+        "fontStatus": "loaded",
+        "fontLoaded": true,
+        "bodyBackground": "rgb(25, 25, 25)",
+        "pageOverflow": 0,
+        "regions": [
+          {
+            "index": 0,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": false,
+            "focusVisible": false,
+            "outlineWidth": "3px",
+            "outlineStyle": "none",
+            "outlineColor": "rgb(245, 244, 242)",
+            "outlineOffset": "0px",
+            "scrollLeft": 11,
+            "clientWidth": 342,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 24,
+              "y": 155.9921875,
+              "width": 342,
+              "height": 145.75,
+              "top": 155.9921875,
+              "right": 366,
+              "bottom": 301.7421875,
+              "left": 24
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          },
+          {
+            "index": 1,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": true,
+            "focusVisible": true,
+            "outlineWidth": "2px",
+            "outlineStyle": "solid",
+            "outlineColor": "rgb(74, 144, 240)",
+            "outlineOffset": "-2px",
+            "scrollLeft": 0,
+            "clientWidth": 342,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 24,
+              "y": 360.140625,
+              "width": 342,
+              "height": 145.75,
+              "top": 360.140625,
+              "right": 366,
+              "bottom": 505.890625,
+              "left": 24
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          }
+        ],
+        "events": [
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": -1,
+            "time": 97.60000000149012
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 0,
+            "time": 97.89999999850988
+          },
+          {
+            "type": "keydown",
+            "key": "ArrowRight",
+            "trusted": true,
+            "region": 0,
+            "time": 187.10000000149012
+          },
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": 0,
+            "time": 227.39999999850988
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 1,
+            "time": 227.60000000149012
+          }
+        ],
+        "errors": []
+      },
+      "back": {
+        "time": "2026-11-11T10:59:26.041Z",
+        "title": "tidy notebook",
+        "width": 390,
+        "height": 900,
+        "mediaDark": true,
+        "pointerCoarse": false,
+        "fontStatus": "loaded",
+        "fontLoaded": true,
+        "bodyBackground": "rgb(25, 25, 25)",
+        "pageOverflow": 0,
+        "regions": [
+          {
+            "index": 0,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": true,
+            "focusVisible": true,
+            "outlineWidth": "2px",
+            "outlineStyle": "solid",
+            "outlineColor": "rgb(74, 144, 240)",
+            "outlineOffset": "-2px",
+            "scrollLeft": 40,
+            "clientWidth": 342,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 24,
+              "y": 155.9921875,
+              "width": 342,
+              "height": 145.75,
+              "top": 155.9921875,
+              "right": 366,
+              "bottom": 301.7421875,
+              "left": 24
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          },
+          {
+            "index": 1,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": false,
+            "focusVisible": false,
+            "outlineWidth": "3px",
+            "outlineStyle": "none",
+            "outlineColor": "rgb(245, 244, 242)",
+            "outlineOffset": "0px",
+            "scrollLeft": 33.5,
+            "clientWidth": 342,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 24,
+              "y": 360.140625,
+              "width": 342,
+              "height": 145.75,
+              "top": 360.140625,
+              "right": 366,
+              "bottom": 505.890625,
+              "left": 24
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          }
+        ],
+        "events": [
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": -1,
+            "time": 97.60000000149012
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 0,
+            "time": 97.89999999850988
+          },
+          {
+            "type": "keydown",
+            "key": "ArrowRight",
+            "trusted": true,
+            "region": 0,
+            "time": 187.10000000149012
+          },
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": 0,
+            "time": 227.39999999850988
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 1,
+            "time": 227.60000000149012
+          },
+          {
+            "type": "keydown",
+            "key": "ArrowRight",
+            "trusted": true,
+            "region": 1,
+            "time": 367.30000000074506
+          },
+          {
+            "type": "keydown",
+            "key": "Shift",
+            "trusted": true,
+            "region": 1,
+            "time": 411.19999999925494
+          },
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": 1,
+            "time": 411.5
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 0,
+            "time": 411.6000000014901
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "theme": "dark",
+      "width": 320,
+      "first": {
+        "time": "2026-11-11T10:59:26.253Z",
+        "title": "tidy notebook",
+        "width": 320,
+        "height": 900,
+        "mediaDark": true,
+        "pointerCoarse": false,
+        "fontStatus": "loaded",
+        "fontLoaded": true,
+        "bodyBackground": "rgb(25, 25, 25)",
+        "pageOverflow": 0,
+        "regions": [
+          {
+            "index": 0,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": true,
+            "focusVisible": true,
+            "outlineWidth": "2px",
+            "outlineStyle": "solid",
+            "outlineColor": "rgb(74, 144, 240)",
+            "outlineOffset": "-2px",
+            "scrollLeft": 0,
+            "clientWidth": 272,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 24,
+              "y": 189.5859375,
+              "width": 272,
+              "height": 145.75,
+              "top": 189.5859375,
+              "right": 296,
+              "bottom": 335.3359375,
+              "left": 24
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          },
+          {
+            "index": 1,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": false,
+            "focusVisible": false,
+            "outlineWidth": "3px",
+            "outlineStyle": "none",
+            "outlineColor": "rgb(245, 244, 242)",
+            "outlineOffset": "0px",
+            "scrollLeft": 0,
+            "clientWidth": 272,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 24,
+              "y": 393.734375,
+              "width": 272,
+              "height": 145.75,
+              "top": 393.734375,
+              "right": 296,
+              "bottom": 539.484375,
+              "left": 24
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          }
+        ],
+        "events": [
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": -1,
+            "time": 90.60000000149012
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 0,
+            "time": 90.80000000074506
+          }
+        ],
+        "errors": []
+      },
+      "second": {
+        "time": "2026-11-11T10:59:26.432Z",
+        "title": "tidy notebook",
+        "width": 320,
+        "height": 900,
+        "mediaDark": true,
+        "pointerCoarse": false,
+        "fontStatus": "loaded",
+        "fontLoaded": true,
+        "bodyBackground": "rgb(25, 25, 25)",
+        "pageOverflow": 0,
+        "regions": [
+          {
+            "index": 0,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": false,
+            "focusVisible": false,
+            "outlineWidth": "3px",
+            "outlineStyle": "none",
+            "outlineColor": "rgb(245, 244, 242)",
+            "outlineOffset": "0px",
+            "scrollLeft": 10.5,
+            "clientWidth": 272,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 24,
+              "y": 189.5859375,
+              "width": 272,
+              "height": 145.75,
+              "top": 189.5859375,
+              "right": 296,
+              "bottom": 335.3359375,
+              "left": 24
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          },
+          {
+            "index": 1,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": true,
+            "focusVisible": true,
+            "outlineWidth": "2px",
+            "outlineStyle": "solid",
+            "outlineColor": "rgb(74, 144, 240)",
+            "outlineOffset": "-2px",
+            "scrollLeft": 0,
+            "clientWidth": 272,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 24,
+              "y": 393.734375,
+              "width": 272,
+              "height": 145.75,
+              "top": 393.734375,
+              "right": 296,
+              "bottom": 539.484375,
+              "left": 24
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          }
+        ],
+        "events": [
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": -1,
+            "time": 90.60000000149012
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 0,
+            "time": 90.80000000074506
+          },
+          {
+            "type": "keydown",
+            "key": "ArrowRight",
+            "trusted": true,
+            "region": 0,
+            "time": 230.89999999850988
+          },
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": 0,
+            "time": 270.19999999925494
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 1,
+            "time": 270.3999999985099
+          }
+        ],
+        "errors": []
+      },
+      "back": {
+        "time": "2026-11-11T10:59:26.622Z",
+        "title": "tidy notebook",
+        "width": 320,
+        "height": 900,
+        "mediaDark": true,
+        "pointerCoarse": false,
+        "fontStatus": "loaded",
+        "fontLoaded": true,
+        "bodyBackground": "rgb(25, 25, 25)",
+        "pageOverflow": 0,
+        "regions": [
+          {
+            "index": 0,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": true,
+            "focusVisible": true,
+            "outlineWidth": "2px",
+            "outlineStyle": "solid",
+            "outlineColor": "rgb(74, 144, 240)",
+            "outlineOffset": "-2px",
+            "scrollLeft": 40,
+            "clientWidth": 272,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 24,
+              "y": 189.5859375,
+              "width": 272,
+              "height": 145.75,
+              "top": 189.5859375,
+              "right": 296,
+              "bottom": 335.3359375,
+              "left": 24
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          },
+          {
+            "index": 1,
+            "role": "region",
+            "name": "Table",
+            "tabindex": 0,
+            "focused": false,
+            "focusVisible": false,
+            "outlineWidth": "3px",
+            "outlineStyle": "none",
+            "outlineColor": "rgb(245, 244, 242)",
+            "outlineOffset": "0px",
+            "scrollLeft": 12.5,
+            "clientWidth": 272,
+            "scrollWidth": 1306,
+            "rect": {
+              "x": 24,
+              "y": 393.734375,
+              "width": 272,
+              "height": 145.75,
+              "top": 393.734375,
+              "right": 296,
+              "bottom": 539.484375,
+              "left": 24
+            },
+            "tables": 1,
+            "headers": 14,
+            "cells": 14,
+            "tableRole": null,
+            "tableAriaLabel": null
+          }
+        ],
+        "events": [
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": -1,
+            "time": 90.60000000149012
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 0,
+            "time": 90.80000000074506
+          },
+          {
+            "type": "keydown",
+            "key": "ArrowRight",
+            "trusted": true,
+            "region": 0,
+            "time": 230.89999999850988
+          },
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": 0,
+            "time": 270.19999999925494
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 1,
+            "time": 270.3999999985099
+          },
+          {
+            "type": "keydown",
+            "key": "ArrowRight",
+            "trusted": true,
+            "region": 1,
+            "time": 409.1000000014901
+          },
+          {
+            "type": "keydown",
+            "key": "Shift",
+            "trusted": true,
+            "region": 1,
+            "time": 457.6000000014901
+          },
+          {
+            "type": "keydown",
+            "key": "Tab",
+            "trusted": true,
+            "region": 1,
+            "time": 457.8999999985099
+          },
+          {
+            "type": "focusin",
+            "key": null,
+            "trusted": true,
+            "region": 0,
+            "time": 458
+          }
+        ],
+        "errors": []
+      }
+    }
+  ],
+  "settledKeys": [
+    {
+      "theme": "light",
+      "width": 1440,
+      "time": "2026-11-11T11:00:59.748Z",
+      "firstRight": [
+        40,
+        0
+      ],
+      "secondRight": [
+        40,
+        40
+      ],
+      "firstLeft": [
+        0,
+        40
+      ],
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "time": "2026-11-11T11:01:01.115Z",
+      "firstRight": [
+        40,
+        0
+      ],
+      "secondRight": [
+        40,
+        40
+      ],
+      "firstLeft": [
+        0,
+        40
+      ],
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 320,
+      "time": "2026-11-11T11:01:02.281Z",
+      "firstRight": [
+        40,
+        0
+      ],
+      "secondRight": [
+        40,
+        40
+      ],
+      "firstLeft": [
+        0,
+        40
+      ],
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 1440,
+      "time": "2026-11-11T11:01:03.480Z",
+      "firstRight": [
+        40,
+        0
+      ],
+      "secondRight": [
+        40,
+        40
+      ],
+      "firstLeft": [
+        0,
+        40
+      ],
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "time": "2026-11-11T11:01:04.731Z",
+      "firstRight": [
+        40,
+        0
+      ],
+      "secondRight": [
+        40,
+        40
+      ],
+      "firstLeft": [
+        0,
+        40
+      ],
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 320,
+      "time": "2026-11-11T11:01:06.064Z",
+      "firstRight": [
+        40,
+        0
+      ],
+      "secondRight": [
+        40,
+        40
+      ],
+      "firstLeft": [
+        0,
+        40
+      ],
+      "pass": true
+    }
+  ]
+}
