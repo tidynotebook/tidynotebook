@@ -1,0 +1,29 @@
+- generic [ref=t3-ed7589e7-1h-f6e1] [box=0,0,320,640]:
+  - main [ref=t3-ed7589e7-1h-f6e3] [box=0,0,320,640]:
+    - heading "N9 COMPONENT simulation" [level=1] [ref=t3-ed7589e7-1h-f6e4] [box=16,16,288,26]
+    - paragraph [ref=t3-ed7589e7-1h-f6e5] [box=16,42,288,40]: Synthetic Move dialog. No application or stored note.
+    - paragraph [ref=t3-ed7589e7-1h-f6e6] [box=16,82,288,16]: candidate | Solarized Dark
+    - button "Open synthetic Move dialog" [ref=t3-ed7589e7-1h-f6e7] [box=16,98,204,24]
+  - dialog [ref=t3-ed7589e7-1h-f6e8] [box=24,134,272,372]:
+    - heading "Move Launch to" [level=2] [ref=t3-ed7589e7-1h-f6e10] [box=49,159,222,20]
+    - generic [ref=t3-ed7589e7-1h-f6e11] [box=49,203,222,278]:
+      - generic [ref=t3-ed7589e7-1h-f6e15] [box=49,203,222,222]:
+        - tree "Move Launch to" [ref=t3-ed7589e7-1h-f6e16] [box=49,203,222,178]:
+          - treeitem "All notes, at the top" [level=1] [ref=t3-ed7589e7-1h-f6e17] [box=49,203,222,28]
+          - treeitem "Daily" [level=1] [ref=t3-ed7589e7-1h-f6e26] [box=49,233,222,28]
+          - treeitem "Close Projects Projects Current folder" [expanded] [level=1] [ref=t3-ed7589e7-1h-f6e35] [box=49,263,222,28]:
+            - generic [ref=t3-ed7589e7-1h-f6e37] [cursor=pointer] [box=57,267,206,20]:
+              - button "Close Projects" [ref=t3-ed7589e7-1h-f6e39] [box=51,263,28,28]
+              - generic [ref=t3-ed7589e7-1h-f6e44] [box=77,267,186,20]:
+                - generic [ref=t3-ed7589e7-1h-f6e48] [box=101,267,78,20]: Projects
+                - generic [ref=t3-ed7589e7-1h-f6e49] [box=187,269,76,16]: Current folder
+          - treeitem "Launch this folder" [disabled] [level=2] [ref=t3-ed7589e7-1h-f6e53] [box=49,293,222,28]:
+            - generic [ref=t3-ed7589e7-1h-f6e59] [cursor=pointer] [box=97,297,166,20]:
+              - generic [ref=t3-ed7589e7-1h-f6e63] [box=121,297,79,20]: Launch
+              - generic [ref=t3-ed7589e7-1h-f6e64] [box=208,299,56,16]: this folder
+          - treeitem "Research" [active] [level=2] [selected] [ref=t3-ed7589e7-1h-f6e65] [box=49,323,222,28]
+          - treeitem "Templates" [level=1] [ref=t3-ed7589e7-1h-f6e76] [box=49,353,222,28]
+        - button "New folder in Research" [ref=t3-ed7589e7-1h-f6e100] [cursor=pointer] [box=49,389,222,32]
+      - generic [ref=t3-ed7589e7-1h-f6e92] [box=49,449,222,32]:
+        - button "Cancel" [ref=t3-ed7589e7-1h-f6e93] [cursor=pointer] [box=139,449,67,32]
+        - button "Move" [ref=t3-ed7589e7-1h-f6e95] [cursor=pointer] [box=214,449,57,32]

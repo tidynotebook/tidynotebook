@@ -1,0 +1,367 @@
+{
+  "cases": [
+    {
+      "case": "baseline-default-dark-1440",
+      "expectedStateChecks": 15,
+      "baselineProductHoverDefect": false,
+      "width": 1440,
+      "theme": "default-dark",
+      "selectedLabel": 9.580577617716562,
+      "hoverLabel": 4.58254966576613,
+      "hoverRowName": 10.50700572518809,
+      "disabledHoverLabel": 4.58254966576613,
+      "hoverForeground": "rgb(165, 163, 158)",
+      "effectiveHoverBackground": [
+        57,
+        57,
+        57,
+        1
+      ],
+      "intents": 0,
+      "errors": 0
+    },
+    {
+      "case": "baseline-default-dark-320",
+      "expectedStateChecks": 15,
+      "baselineProductHoverDefect": false,
+      "width": 320,
+      "theme": "default-dark",
+      "selectedLabel": 9.580577617716562,
+      "hoverLabel": 4.58254966576613,
+      "hoverRowName": 10.50700572518809,
+      "disabledHoverLabel": 4.58254966576613,
+      "hoverForeground": "rgb(165, 163, 158)",
+      "effectiveHoverBackground": [
+        57,
+        57,
+        57,
+        1
+      ],
+      "intents": 0,
+      "errors": 0
+    },
+    {
+      "case": "baseline-default-dark-390",
+      "expectedStateChecks": 15,
+      "baselineProductHoverDefect": false,
+      "width": 390,
+      "theme": "default-dark",
+      "selectedLabel": 9.580577617716562,
+      "hoverLabel": 4.58254966576613,
+      "hoverRowName": 10.50700572518809,
+      "disabledHoverLabel": 4.58254966576613,
+      "hoverForeground": "rgb(165, 163, 158)",
+      "effectiveHoverBackground": [
+        57,
+        57,
+        57,
+        1
+      ],
+      "intents": 0,
+      "errors": 0
+    },
+    {
+      "case": "baseline-default-light-1440",
+      "expectedStateChecks": 15,
+      "baselineProductHoverDefect": false,
+      "width": 1440,
+      "theme": "default-light",
+      "selectedLabel": 12.716325772429633,
+      "hoverLabel": 4.756314482180726,
+      "hoverRowName": 14.369240644127165,
+      "disabledHoverLabel": 4.756314482180726,
+      "hoverForeground": "rgb(103, 101, 95)",
+      "effectiveHoverBackground": [
+        232,
+        232,
+        232,
+        1
+      ],
+      "intents": 0,
+      "errors": 0
+    },
+    {
+      "case": "baseline-default-light-320",
+      "expectedStateChecks": 15,
+      "baselineProductHoverDefect": false,
+      "width": 320,
+      "theme": "default-light",
+      "selectedLabel": 12.716325772429633,
+      "hoverLabel": 4.756314482180726,
+      "hoverRowName": 14.369240644127165,
+      "disabledHoverLabel": 4.756314482180726,
+      "hoverForeground": "rgb(103, 101, 95)",
+      "effectiveHoverBackground": [
+        232,
+        232,
+        232,
+        1
+      ],
+      "intents": 0,
+      "errors": 0
+    },
+    {
+      "case": "baseline-default-light-390",
+      "expectedStateChecks": 15,
+      "baselineProductHoverDefect": false,
+      "width": 390,
+      "theme": "default-light",
+      "selectedLabel": 12.716325772429633,
+      "hoverLabel": 4.756314482180726,
+      "hoverRowName": 14.369240644127165,
+      "disabledHoverLabel": 4.756314482180726,
+      "hoverForeground": "rgb(103, 101, 95)",
+      "effectiveHoverBackground": [
+        232,
+        232,
+        232,
+        1
+      ],
+      "intents": 0,
+      "errors": 0
+    },
+    {
+      "case": "baseline-solarized-dark-1440",
+      "expectedStateChecks": 15,
+      "baselineProductHoverDefect": true,
+      "width": 1440,
+      "theme": "solarized-dark",
+      "selectedLabel": 4.539204606532101,
+      "hoverLabel": 3.7224941225601125,
+      "hoverRowName": 5.145795518686239,
+      "disabledHoverLabel": 3.7224941225601125,
+      "hoverForeground": "rgb(134, 156, 164)",
+      "effectiveHoverBackground": [
+        30,
+        67,
+        76,
+        1
+      ],
+      "intents": 0,
+      "errors": 0
+    },
+    {
+      "case": "baseline-solarized-dark-320",
+      "expectedStateChecks": 15,
+      "baselineProductHoverDefect": true,
+      "width": 320,
+      "theme": "solarized-dark",
+      "selectedLabel": 4.539204606532101,
+      "hoverLabel": 3.7224941225601125,
+      "hoverRowName": 5.145795518686239,
+      "disabledHoverLabel": 3.7224941225601125,
+      "hoverForeground": "rgb(134, 156, 164)",
+      "effectiveHoverBackground": [
+        30,
+        67,
+        76,
+        1
+      ],
+      "intents": 0,
+      "errors": 0
+    },
+    {
+      "case": "baseline-solarized-dark-390",
+      "expectedStateChecks": 15,
+      "baselineProductHoverDefect": true,
+      "width": 390,
+      "theme": "solarized-dark",
+      "selectedLabel": 4.539204606532101,
+      "hoverLabel": 3.7224941225601125,
+      "hoverRowName": 5.145795518686239,
+      "disabledHoverLabel": 3.7224941225601125,
+      "hoverForeground": "rgb(134, 156, 164)",
+      "effectiveHoverBackground": [
+        30,
+        67,
+        76,
+        1
+      ],
+      "intents": 0,
+      "errors": 0
+    },
+    {
+      "case": "candidate-default-dark-1440",
+      "expectedStateChecks": 15,
+      "baselineProductHoverDefect": false,
+      "width": 1440,
+      "theme": "default-dark",
+      "selectedLabel": 9.580577617716562,
+      "hoverLabel": 10.50700572518809,
+      "hoverRowName": 10.50700572518809,
+      "disabledHoverLabel": 10.50700572518809,
+      "hoverForeground": "rgb(245, 244, 242)",
+      "effectiveHoverBackground": [
+        57,
+        57,
+        57,
+        1
+      ],
+      "intents": 0,
+      "errors": 0
+    },
+    {
+      "case": "candidate-default-dark-320",
+      "expectedStateChecks": 15,
+      "baselineProductHoverDefect": false,
+      "width": 320,
+      "theme": "default-dark",
+      "selectedLabel": 9.580577617716562,
+      "hoverLabel": 10.50700572518809,
+      "hoverRowName": 10.50700572518809,
+      "disabledHoverLabel": 10.50700572518809,
+      "hoverForeground": "rgb(245, 244, 242)",
+      "effectiveHoverBackground": [
+        57,
+        57,
+        57,
+        1
+      ],
+      "intents": 0,
+      "errors": 0
+    },
+    {
+      "case": "candidate-default-dark-390",
+      "expectedStateChecks": 15,
+      "baselineProductHoverDefect": false,
+      "width": 390,
+      "theme": "default-dark",
+      "selectedLabel": 9.580577617716562,
+      "hoverLabel": 10.50700572518809,
+      "hoverRowName": 10.50700572518809,
+      "disabledHoverLabel": 10.50700572518809,
+      "hoverForeground": "rgb(245, 244, 242)",
+      "effectiveHoverBackground": [
+        57,
+        57,
+        57,
+        1
+      ],
+      "intents": 0,
+      "errors": 0
+    },
+    {
+      "case": "candidate-default-light-1440",
+      "expectedStateChecks": 15,
+      "baselineProductHoverDefect": false,
+      "width": 1440,
+      "theme": "default-light",
+      "selectedLabel": 12.716325772429633,
+      "hoverLabel": 14.369240644127165,
+      "hoverRowName": 14.369240644127165,
+      "disabledHoverLabel": 14.369240644127165,
+      "hoverForeground": "rgb(25, 25, 23)",
+      "effectiveHoverBackground": [
+        232,
+        232,
+        232,
+        1
+      ],
+      "intents": 0,
+      "errors": 0
+    },
+    {
+      "case": "candidate-default-light-320",
+      "expectedStateChecks": 15,
+      "baselineProductHoverDefect": false,
+      "width": 320,
+      "theme": "default-light",
+      "selectedLabel": 12.716325772429633,
+      "hoverLabel": 14.369240644127165,
+      "hoverRowName": 14.369240644127165,
+      "disabledHoverLabel": 14.369240644127165,
+      "hoverForeground": "rgb(25, 25, 23)",
+      "effectiveHoverBackground": [
+        232,
+        232,
+        232,
+        1
+      ],
+      "intents": 0,
+      "errors": 0
+    },
+    {
+      "case": "candidate-default-light-390",
+      "expectedStateChecks": 15,
+      "baselineProductHoverDefect": false,
+      "width": 390,
+      "theme": "default-light",
+      "selectedLabel": 12.716325772429633,
+      "hoverLabel": 14.369240644127165,
+      "hoverRowName": 14.369240644127165,
+      "disabledHoverLabel": 14.369240644127165,
+      "hoverForeground": "rgb(25, 25, 23)",
+      "effectiveHoverBackground": [
+        232,
+        232,
+        232,
+        1
+      ],
+      "intents": 0,
+      "errors": 0
+    },
+    {
+      "case": "candidate-solarized-dark-1440",
+      "expectedStateChecks": 15,
+      "baselineProductHoverDefect": false,
+      "width": 1440,
+      "theme": "solarized-dark",
+      "selectedLabel": 4.539204606532101,
+      "hoverLabel": 5.145795518686239,
+      "hoverRowName": 5.145795518686239,
+      "disabledHoverLabel": 5.145795518686239,
+      "hoverForeground": "rgb(171, 182, 182)",
+      "effectiveHoverBackground": [
+        30,
+        67,
+        76,
+        1
+      ],
+      "intents": 0,
+      "errors": 0
+    },
+    {
+      "case": "candidate-solarized-dark-320",
+      "expectedStateChecks": 15,
+      "baselineProductHoverDefect": false,
+      "width": 320,
+      "theme": "solarized-dark",
+      "selectedLabel": 4.539204606532101,
+      "hoverLabel": 5.145795518686239,
+      "hoverRowName": 5.145795518686239,
+      "disabledHoverLabel": 5.145795518686239,
+      "hoverForeground": "rgb(171, 182, 182)",
+      "effectiveHoverBackground": [
+        30,
+        67,
+        76,
+        1
+      ],
+      "intents": 0,
+      "errors": 0
+    },
+    {
+      "case": "candidate-solarized-dark-390",
+      "expectedStateChecks": 15,
+      "baselineProductHoverDefect": false,
+      "width": 390,
+      "theme": "solarized-dark",
+      "selectedLabel": 4.539204606532101,
+      "hoverLabel": 5.145795518686239,
+      "hoverRowName": 5.145795518686239,
+      "disabledHoverLabel": 5.145795518686239,
+      "hoverForeground": "rgb(171, 182, 182)",
+      "effectiveHoverBackground": [
+        30,
+        67,
+        76,
+        1
+      ],
+      "intents": 0,
+      "errors": 0
+    }
+  ],
+  "expectedStateChecks": 270,
+  "candidateMinimumMeasuredLabelContrast": 4.539204606532101,
+  "scope": "All9candidate cases meet4.5. Known baseline Solarized hover failures are retained, not product PASS."
+}
