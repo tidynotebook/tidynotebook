@@ -87,6 +87,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from 'react';
 import {
@@ -695,6 +696,23 @@ function chosenPage<T extends { readonly path: string }>(
   );
 }
 
+const wideSettingsQuery = '(min-width: 1024px)';
+
+/** Observe the width that shows the Settings detail beside its list. */
+function subscribeSettingsWidth(change: () => void): () => void {
+  const query = window.matchMedia(wideSettingsQuery);
+  query.addEventListener('change', change);
+  return () => query.removeEventListener('change', change);
+}
+
+function settingsWide(): boolean {
+  return window.matchMedia(wideSettingsQuery).matches;
+}
+
+function serverSettingsWide(): boolean {
+  return false;
+}
+
 /** The Settings modal over the current page. */
 export function SettingsModal({
   workspaceId,
@@ -715,6 +733,11 @@ export function SettingsModal({
   readonly returnFocus: (() => void) | undefined;
 }): ReactNode {
   const phoneLayout = usePhoneSettings();
+  const wideLayout = useSyncExternalStore(
+    subscribeSettingsWidth,
+    settingsWide,
+    serverSettingsWide,
+  );
   const session = useSession();
   const store = useLocalStore();
   const [exporting, setExporting] = useState(false);
@@ -760,6 +783,8 @@ export function SettingsModal({
   const pages = visibleSettingsPages(account ?? { accountPortal: false });
   const activePage = chosenPage(pages, value);
   const listLevel = value === '';
+  const isCurrentPage = (path: string): boolean =>
+    activePage?.path === path && (!listLevel || wideLayout);
   useLayoutEffect(() => {
     const title =
       listLevel && !window.matchMedia('(min-width: 1024px)').matches
@@ -1012,7 +1037,7 @@ export function SettingsModal({
               <ContentHeader
                 data-sheet-drag=""
                 data-scroll-edge="above"
-                pad={{ fine: 0, coarse: 4 }}
+                pad={4}
                 className="ui-settings-root-heading touch-pan-x touch-pinch-zoom lg:hidden"
               >
                 <HeaderSlot side="leading" aria-hidden="true" />
@@ -1043,9 +1068,7 @@ export function SettingsModal({
                   type="button"
                   data-settings-page="account"
                   aria-label={`Profile, ${profileName ? `${profileName}, ` : ''}${account.email ?? ''}`}
-                  aria-current={
-                    activePage?.path === 'account' ? 'page' : undefined
-                  }
+                  aria-current={isCurrentPage('account') ? 'page' : undefined}
                   onClick={() => onChoose('account')}
                   gap={3}
                   pad={{ fine: 2, coarse: 4 }}
@@ -1105,8 +1128,7 @@ export function SettingsModal({
                                 page.group === group && page.path !== 'account',
                             )
                             .map((page) => {
-                              const current =
-                                !listLevel && activePage?.path === page.path;
+                              const current = isCurrentPage(page.path);
                               const desktopCurrent =
                                 activePage?.path === page.path;
                               return (

@@ -12,6 +12,7 @@ import { Window } from 'happy-dom';
 import {
   act,
   createElement,
+  StrictMode,
   useEffect,
   useRef,
   useState,
@@ -51,6 +52,30 @@ const globals = [
   'localStorage',
 ] as const;
 const originals = new Map<string, PropertyDescriptor | undefined>();
+const originalAct = Object.getOwnPropertyDescriptor(
+  globalThis,
+  'IS_REACT_ACT_ENVIRONMENT',
+);
+const originalMatchMedia = Object.getOwnPropertyDescriptor(
+  browser,
+  'matchMedia',
+);
+const originalFetch = Object.getOwnPropertyDescriptor(globalThis, 'fetch');
+const originalWindowFetch = Object.getOwnPropertyDescriptor(browser, 'fetch');
+let unexpectedNetwork = 0;
+/** Refuse a service call that escapes the controlled operation fixtures. */
+async function refuseNetwork(): Promise<never> {
+  unexpectedNetwork += 1;
+  throw new Error('Unexpected Settings fixture network request');
+}
+Object.defineProperty(globalThis, 'fetch', {
+  configurable: true,
+  value: refuseNetwork,
+});
+Object.defineProperty(browser, 'fetch', {
+  configurable: true,
+  value: refuseNetwork,
+});
 for (const name of globals) {
   originals.set(name, Object.getOwnPropertyDescriptor(globalThis, name));
   const value: unknown = browser[name];
@@ -88,6 +113,7 @@ const hooks = registerHooks({
         return { url: adminFixture, shortCircuit: true };
       if (
         (parent.endsWith('/api-keys.js') ||
+          parent.endsWith('/legal-links.js') ||
           parent.endsWith('/account-settings.js')) &&
         specifier === '@notesapp/api-client'
       )
@@ -118,19 +144,43 @@ const { useSignOut } = await import('../../apps/web/dist/shell/sign-out.js');
 const container = document.createElement('div');
 document.body.append(container);
 const root = createRoot(container);
+/** Restore the own descriptor, including an inherited matchMedia method. */
+function restoreMatchMedia(descriptor: PropertyDescriptor | undefined): void {
+  if (descriptor) Object.defineProperty(window, 'matchMedia', descriptor);
+  else Reflect.deleteProperty(window, 'matchMedia');
+}
 /** Releases the DOM and the module hooks after the last test. */
 async function release(): Promise<void> {
   await act(async () => root.unmount());
   hooks.deregister();
+  restoreMatchMedia(originalMatchMedia);
+  if (originalAct)
+    Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', originalAct);
+  else Reflect.deleteProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT');
+  if (originalFetch) Object.defineProperty(globalThis, 'fetch', originalFetch);
+  else Reflect.deleteProperty(globalThis, 'fetch');
+  if (originalWindowFetch)
+    Object.defineProperty(browser, 'fetch', originalWindowFetch);
+  else Reflect.deleteProperty(browser, 'fetch');
   for (const [name, descriptor] of originals) {
     if (descriptor) Object.defineProperty(globalThis, name, descriptor);
     else Reflect.deleteProperty(globalThis, name);
   }
   await browser.happyDOM.close();
+  assert.deepEqual(
+    Object.getOwnPropertyDescriptor(globalThis, 'IS_REACT_ACT_ENVIRONMENT'),
+    originalAct,
+  );
+  assert.deepEqual(
+    Object.getOwnPropertyDescriptor(browser, 'matchMedia'),
+    originalMatchMedia,
+  );
+  assert.equal(unexpectedNetwork, 0);
 }
 
 /** The address that the router shows now. */
 let address = '';
+let locationKey = '';
 /** How often the page under the modal mounted. */
 let mounts = 0;
 
@@ -138,6 +188,7 @@ let mounts = 0;
 function LocationProbe(): ReactNode {
   const location = useLocation();
   address = `${location.pathname}${location.search}`;
+  locationKey = location.key;
   return null;
 }
 
@@ -214,20 +265,19 @@ function Frame(): ReactNode {
 
 let renders = 0;
 /** Mounts the frame at one address, with nothing left from a previous test. */
-async function show(entry: string): Promise<void> {
+async function show(entry: string, strict = false): Promise<void> {
   renders += 1;
   mounts = 0;
-  await act(async () =>
-    root.render(
-      createElement(
-        MemoryRouter,
-        { key: String(renders), initialEntries: [entry] },
-        createElement(LocationProbe),
-        createElement(Navigator),
-        createElement(Frame),
-      ),
-    ),
-  );
+  await act(async () => {
+    const frame = createElement(
+      MemoryRouter,
+      { key: String(renders), initialEntries: [entry] },
+      createElement(LocationProbe),
+      createElement(Navigator),
+      createElement(Frame),
+    );
+    root.render(strict ? createElement(StrictMode, null, frame) : frame);
+  });
   await settle();
 }
 
@@ -288,6 +338,239 @@ function assertElement(
 ): void {
   assert.ok(actual === expected, 'The expected DOM element does not match.');
 }
+
+/** Control width and pointer separately, with real change-event delivery. */
+function settingsMedia(initialWidth: number, initialCoarse: boolean) {
+  const descriptor = Object.getOwnPropertyDescriptor(window, 'matchMedia');
+  const original = window.matchMedia.bind(window);
+  const queries = new Map<string, MediaQueryList>();
+  const listeners = new Set<EventListenerOrEventListenerObject>();
+  let width = initialWidth;
+  let coarse = initialCoarse;
+  const matches = (query: string, fallback: boolean): boolean => {
+    const min = /min-width:\s*(\d+)px/.exec(query)?.[1];
+    const max = /max-width:\s*(\d+)px/.exec(query)?.[1];
+    if (min === undefined && max === undefined && !query.includes('pointer:'))
+      return fallback;
+    return (
+      (min === undefined || width >= Number(min)) &&
+      (max === undefined || width <= Number(max)) &&
+      (!query.includes('pointer: coarse') || coarse) &&
+      (!query.includes('pointer: fine') || !coarse)
+    );
+  };
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    value: (query: string): MediaQueryList => {
+      const cached = queries.get(query);
+      if (cached) return cached;
+      const result = original(query);
+      const fallback = result.matches;
+      Object.defineProperty(result, 'matches', {
+        configurable: true,
+        get: () => matches(query, fallback),
+      });
+      if (query === '(min-width: 1024px)') {
+        const add = result.addEventListener.bind(result);
+        const remove = result.removeEventListener.bind(result);
+        Object.defineProperty(result, 'addEventListener', {
+          configurable: true,
+          value: (
+            type: string,
+            listener: EventListenerOrEventListenerObject | null,
+            options?: boolean | AddEventListenerOptions,
+          ): void => {
+            if (type === 'change' && listener) listeners.add(listener);
+            if (listener) add(type, listener, options);
+          },
+        });
+        Object.defineProperty(result, 'removeEventListener', {
+          configurable: true,
+          value: (
+            type: string,
+            listener: EventListenerOrEventListenerObject | null,
+            options?: boolean | EventListenerOptions,
+          ): void => {
+            if (type === 'change' && listener) listeners.delete(listener);
+            if (listener) remove(type, listener, options);
+          },
+        });
+      }
+      queries.set(query, result);
+      return result;
+    },
+  });
+  return {
+    async change(nextWidth: number, nextCoarse = coarse): Promise<void> {
+      const before = new Map(
+        [...queries].map(([query, result]) => [query, result.matches]),
+      );
+      await act(async () => {
+        width = nextWidth;
+        coarse = nextCoarse;
+        for (const [query, result] of queries)
+          if (before.get(query) !== result.matches)
+            result.dispatchEvent(new window.Event('change'));
+      });
+    },
+    get subscriptions(): number {
+      return listeners.size;
+    },
+    restore(): void {
+      restoreMatchMedia(descriptor);
+      assert.equal(listeners.size, 0, 'Settings releases its width listener');
+      assert.deepEqual(
+        Object.getOwnPropertyDescriptor(window, 'matchMedia'),
+        descriptor,
+      );
+    },
+  };
+}
+
+/** Read the current section from the actual navigation, including Profile. */
+function currentSettingsRows(): string[] {
+  const nav = dialog()?.querySelector('nav[aria-label="Settings sections"]');
+  assert.ok(nav);
+  const list = nav.closest('.ui-settings-navigation');
+  assert.ok(list);
+  return [...list.querySelectorAll('[aria-current="page"]')].map((row) => {
+    if (row.getAttribute('aria-label')?.startsWith('Profile,'))
+      return 'account';
+    const path = row.getAttribute('data-settings-page');
+    assert.ok(path, 'The current row names a Settings page');
+    return path;
+  });
+}
+
+await test('wide empty Settings names the displayed Appearance section as current', async () => {
+  const media = settingsMedia(1024, false);
+  try {
+    await show('/w/one/notes/n1?settings=');
+    assert.equal(address, '/w/one/notes/n1?settings=');
+    assert.deepEqual(currentSettingsRows(), ['appearance']);
+  } finally {
+    await show('/w/one/notes/n1');
+    media.restore();
+  }
+});
+
+await test('Settings current state follows resolved pages and capabilities in both layouts and pointer modes', async (t) => {
+  for (const width of [1023, 1024])
+    for (const coarse of [false, true])
+      await t.test(`${width}px, coarse=${String(coarse)}`, async () => {
+        const media = settingsMedia(width, coarse);
+        try {
+          await show('/w/one/notes/n1?settings=');
+          assert.deepEqual(
+            currentSettingsRows(),
+            width >= 1024 ? ['appearance'] : [],
+          );
+          for (const [value, resolved] of [
+            ['appearance', 'appearance'],
+            ['account', 'account'],
+            ['devices', 'devices'],
+            ['profile', 'account'],
+            ['spelling', 'appearance'],
+            ['unknown', 'appearance'],
+            ['billing', 'appearance'],
+            ['mail', 'appearance'],
+          ]) {
+            await act(async () => go(`/w/one/notes/n1?settings=${value}`));
+            await settle();
+            assert.equal(address, `/w/one/notes/n1?settings=${resolved}`);
+            assert.deepEqual(currentSettingsRows(), [resolved]);
+            assert.equal(
+              dialog()?.querySelector('[data-settings-page="mail"]'),
+              null,
+            );
+          }
+          setAdministrator(true);
+          for (const page of ['accounts', 'mail', 'legal', 'reports']) {
+            await show(`/w/one/notes/n1?settings=${page}`);
+            assert.deepEqual(currentSettingsRows(), [page]);
+          }
+          await click(
+            button(
+              'Back to Settings',
+              dialog()?.querySelector('.ui-settings-column') ?? container,
+            ),
+          );
+          assert.equal(address, '/w/one/notes/n1?settings=');
+          assert.deepEqual(
+            currentSettingsRows(),
+            width >= 1024 ? ['appearance'] : [],
+          );
+          assertElement(document.activeElement, sectionButton('reports'));
+          await escape();
+          assertElement(dialog(), null);
+          await click(button('Settings', container));
+          assert.deepEqual(
+            currentSettingsRows(),
+            width >= 1024 ? ['appearance'] : [],
+          );
+        } finally {
+          setAdministrator(false);
+          await show('/w/one/notes/n1');
+          media.restore();
+        }
+      });
+});
+
+await test('Settings width changes preserve focus, address and the open note, and release listeners in Strict Mode', async (t) => {
+  for (const coarse of [false, true])
+    await t.test(`coarse=${String(coarse)}`, async () => {
+      const media = settingsMedia(1023, coarse);
+      try {
+        await show('/w/one/notes/n1?settings=', true);
+        assert.deepEqual(currentSettingsRows(), []);
+        assert.equal(media.subscriptions, 1);
+        const field =
+          container.querySelector<HTMLTextAreaElement>('#note-text');
+        assert.ok(field);
+        field.setSelectionRange(2, 6);
+        const held = sectionButton('devices');
+        held.focus();
+        const key = locationKey;
+        const count = mounts;
+        for (const width of [1024, 1023, 1024, 1023]) {
+          await media.change(width);
+          assert.deepEqual(
+            currentSettingsRows(),
+            width >= 1024 ? ['appearance'] : [],
+          );
+          assertElement(document.activeElement, held);
+          assert.equal(address, '/w/one/notes/n1?settings=');
+          assert.equal(locationKey, key);
+          assert.equal(mounts, count);
+          assertElement(container.querySelector('#note-text'), field);
+          assert.equal(field.value, 'Unsaved draft');
+          assert.deepEqual([field.selectionStart, field.selectionEnd], [2, 6]);
+          assert.equal(media.subscriptions, 1);
+        }
+        await click(held);
+        const explicitFocus = document.activeElement;
+        const explicitKey = locationKey;
+        for (const width of [1024, 1023]) {
+          await media.change(width);
+          assert.deepEqual(currentSettingsRows(), ['devices']);
+          assertElement(document.activeElement, explicitFocus);
+          assert.equal(locationKey, explicitKey);
+          assert.equal(address, '/w/one/notes/n1?settings=devices');
+          assert.equal(mounts, count);
+        }
+        await escape();
+        assert.equal(media.subscriptions, 0);
+        await media.change(1024, !coarse);
+        assertElement(dialog(), null);
+        await click(button('Settings', container));
+        assert.deepEqual(currentSettingsRows(), ['appearance']);
+        assert.equal(media.subscriptions, 1);
+      } finally {
+        await show('/w/one/notes/n1');
+        media.restore();
+      }
+    });
+});
 
 await test('a failed DOM identity check has a bounded diagnostic', () => {
   const oldButton = document.createElement('button');
@@ -804,6 +1087,7 @@ await test('Settings folder choices and name format do not open another modal', 
 });
 
 await test('phone Settings uses navigation and action rows with one edit level', async () => {
+  const descriptor = Object.getOwnPropertyDescriptor(window, 'matchMedia');
   const original = window.matchMedia.bind(window);
   window.matchMedia = (query) => {
     const result = original(query);
@@ -851,7 +1135,7 @@ await test('phone Settings uses navigation and action rows with one edit level',
     await escape();
     assertElement(container.querySelector('#remove-own-password'), null);
   } finally {
-    window.matchMedia = original;
+    restoreMatchMedia(descriptor);
     await show('/w/one/notes/n1?settings=account');
   }
 });
@@ -946,6 +1230,7 @@ await test('Mail is a section form whose Save stays disabled until a value chang
 });
 
 await test('phone Mail has one pinned Save and the Close control is in its trailing header slot', async () => {
+  const descriptor = Object.getOwnPropertyDescriptor(window, 'matchMedia');
   const original = window.matchMedia.bind(window);
   window.matchMedia = (query) => {
     const result = original(query);
@@ -985,12 +1270,13 @@ await test('phone Mail has one pinned Save and the Close control is in its trail
       }
     }
   } finally {
-    window.matchMedia = original;
+    restoreMatchMedia(descriptor);
     setAdministrator(false);
   }
 });
 
 await test('phone admin draft forms keep one frame and return focus without a save', async () => {
+  const descriptor = Object.getOwnPropertyDescriptor(window, 'matchMedia');
   const original = window.matchMedia.bind(window);
   window.matchMedia = (query) => {
     const result = original(query);
@@ -1079,7 +1365,7 @@ await test('phone admin draft forms keep one frame and return focus without a sa
   } finally {
     setLastAdministrator(false);
     setAdministrator(false);
-    window.matchMedia = original;
+    restoreMatchMedia(descriptor);
   }
 });
 

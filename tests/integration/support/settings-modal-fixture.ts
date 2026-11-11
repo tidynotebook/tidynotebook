@@ -12,6 +12,11 @@ export const calls: {
   families: string[];
 } = { signOut: 0, choices: [], families: [] };
 
+/** Settings needs no legal documents in this isolated installation. */
+export async function getSetupStatus() {
+  return { data: { legalDocuments: null } };
+}
+
 /** The saves that wait on this device, or a read that fails. */
 let waiting: readonly unknown[] | Error = [];
 
