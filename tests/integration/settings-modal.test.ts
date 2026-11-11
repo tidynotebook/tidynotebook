@@ -401,13 +401,18 @@ function settingsMedia(initialWidth: number, initialCoarse: boolean) {
     },
   });
   return {
-    async change(nextWidth: number, nextCoarse = coarse): Promise<void> {
+    async change(
+      nextWidth: number,
+      nextCoarse = coarse,
+      beforeNotify?: () => void,
+    ): Promise<void> {
       const before = new Map(
         [...queries].map(([query, result]) => [query, result.matches]),
       );
       await act(async () => {
         width = nextWidth;
         coarse = nextCoarse;
+        beforeNotify?.();
         for (const [query, result] of queries)
           if (before.get(query) !== result.matches)
             result.dispatchEvent(new window.Event('change'));
@@ -570,6 +575,253 @@ await test('Settings width changes preserve focus, address and the open note, an
         media.restore();
       }
     });
+});
+
+/** Controlled CSS-box and focused-window boundaries, not browser paint proof. */
+function responsiveFocusBoxes(): () => void {
+  const proto = window.HTMLElement.prototype;
+  const originals = new Map<PropertyKey, PropertyDescriptor | undefined>([
+    [
+      'checkVisibility',
+      Object.getOwnPropertyDescriptor(proto, 'checkVisibility'),
+    ],
+    [
+      'getClientRects',
+      Object.getOwnPropertyDescriptor(proto, 'getClientRects'),
+    ],
+  ]);
+  const focused = Object.getOwnPropertyDescriptor(document, 'hasFocus');
+  const shown = (element: HTMLElement): boolean => {
+    const wide = window.matchMedia('(min-width: 1024px)').matches;
+    if (element.closest('[hidden]')) return false;
+    if (wide && element.closest('.ui-settings-root-heading')) return false;
+    if (wide && element.getAttribute('aria-label') === 'Back to Settings')
+      return false;
+    const column = element.closest('.ui-settings-column');
+    return !(column?.classList.contains('hidden') && !wide);
+  };
+  Object.defineProperty(proto, 'checkVisibility', {
+    configurable: true,
+    value: function (this: HTMLElement): boolean {
+      return shown(this);
+    },
+  });
+  Object.defineProperty(proto, 'getClientRects', {
+    configurable: true,
+    value: function (this: HTMLElement): DOMRectList {
+      const boxes = shown(this) ? [new window.DOMRect(0, 0, 100, 20)] : [];
+      return Object.assign(boxes, {
+        item: (index: number) => boxes[index] ?? null,
+      });
+    },
+  });
+  Object.defineProperty(document, 'hasFocus', {
+    configurable: true,
+    value: () => true,
+  });
+  return () => {
+    for (const [key, descriptor] of originals) {
+      if (descriptor) Object.defineProperty(proto, key, descriptor);
+      else Reflect.deleteProperty(proto, key);
+    }
+    if (focused) Object.defineProperty(document, 'hasFocus', focused);
+    else Reflect.deleteProperty(document, 'hasFocus');
+  };
+}
+
+await test('responsive Settings repairs only actual focus hidden by a crossing', async () => {
+  const media = settingsMedia(1440, false);
+  const restore = responsiveFocusBoxes();
+  try {
+    await show('/w/one/notes/n1?settings=', true);
+    const draft = container.querySelector<HTMLTextAreaElement>('#note-text');
+    assert.ok(draft);
+    draft.setSelectionRange(2, 6);
+    const key = locationKey;
+    const title = dialog()?.querySelector<HTMLElement>(
+      '.ui-settings-header-title',
+    );
+    assert.ok(title);
+    assertElement(document.activeElement, title);
+    await media.change(390, false, () => title.blur());
+    const listTitle = dialog()?.querySelector<HTMLElement>(
+      '.ui-settings-root-heading [tabindex="-1"]',
+    );
+    assert.ok(listTitle);
+    assertElement(document.activeElement, listTitle);
+    await media.change(1024, false, () => listTitle.blur());
+    assertElement(document.activeElement, title);
+    const devices = sectionButton('devices');
+    devices.focus();
+    for (const width of [1440, 1023, 390, 320, 1024]) {
+      await media.change(width);
+      assertElement(document.activeElement, devices);
+    }
+    assert.equal(locationKey, key);
+    assertElement(container.querySelector('#note-text'), draft);
+    assert.equal(mounts, 1);
+    assert.equal(draft.value, 'Unsaved draft');
+    assert.deepEqual([draft.selectionStart, draft.selectionEnd], [2, 6]);
+    assert.equal(calls.signOut, 0);
+    assert.deepEqual(calls.choices, []);
+    assert.deepEqual(calls.families, []);
+  } finally {
+    await show('/w/one/notes/n1');
+    restore();
+    media.restore();
+  }
+});
+
+await test('responsive Settings rejects stale focus and restores instance listeners', async (t) => {
+  for (const intent of [
+    'visible-blur',
+    'outside-blur',
+    'nested-blur',
+    'pointer',
+    'window-blur',
+    'close',
+    'scope',
+  ] as const)
+    await t.test(intent, async () => {
+      const media = settingsMedia(1440, false);
+      const restore = responsiveFocusBoxes();
+      let probe: HTMLElement | undefined;
+      try {
+        await show('/w/one/notes/n1?settings=', true);
+        const title = dialog()?.querySelector<HTMLElement>(
+          '.ui-settings-header-title',
+        );
+        assert.ok(title);
+        if (intent === 'visible-blur') title.blur();
+        if (intent === 'outside-blur' || intent === 'nested-blur') {
+          // Explicit controlled probe after inert setup, not a native modal escape.
+          probe = document.createElement('button');
+          if (intent === 'nested-blur') {
+            const owner = document.createElement('div');
+            owner.setAttribute('data-notes-dialog-root', '');
+            dialog()?.append(owner);
+            owner.append(probe);
+          } else document.body.append(probe);
+        }
+        await media.change(390, false, () => {
+          title.blur();
+          if (probe) {
+            probe.focus();
+            probe.blur();
+          }
+          if (intent === 'pointer')
+            document.body.dispatchEvent(
+              new window.MouseEvent('pointerdown', { bubbles: true }),
+            );
+          if (intent === 'window-blur')
+            window.dispatchEvent(new window.Event('blur'));
+          if (intent === 'close') button('Close Settings').click();
+          if (intent === 'scope') go('/w/one/notes/n1?settings=devices');
+        });
+        if (intent === 'close') assertElement(dialog(), null);
+        else if (intent === 'scope')
+          assert.equal(address, '/w/one/notes/n1?settings=devices');
+        else assertElement(document.activeElement, document.body);
+        await show('/w/one/notes/n1');
+        // No stale handler may refocus a detached title after unmount.
+        const outside = document.createElement('button');
+        document.body.append(outside);
+        outside.focus();
+        await media.change(1440);
+        assertElement(document.activeElement, outside);
+        outside.remove();
+      } finally {
+        if (probe?.parentElement?.matches('[data-notes-dialog-root]'))
+          probe.parentElement.remove();
+        else probe?.remove();
+        await show('/w/one/notes/n1');
+        restore();
+        media.restore();
+      }
+    });
+});
+
+await test('responsive Settings removes the same document and window handlers in Strict Mode', async () => {
+  const media = settingsMedia(1440, false);
+  const restoreBoxes = responsiveFocusBoxes();
+  const restore: (() => void)[] = [];
+  const live = new Map<EventListenerOrEventListenerObject, number>();
+  let added = 0;
+  let removed = 0;
+  for (const [target, names] of [
+    [document, ['focusin', 'pointerdown']],
+    [window, ['blur']],
+  ] as const) {
+    const addDescriptor = Object.getOwnPropertyDescriptor(
+      target,
+      'addEventListener',
+    );
+    const removeDescriptor = Object.getOwnPropertyDescriptor(
+      target,
+      'removeEventListener',
+    );
+    const add = target.addEventListener.bind(target);
+    const remove = target.removeEventListener.bind(target);
+    Object.defineProperty(target, 'addEventListener', {
+      configurable: true,
+      value: (
+        name: string,
+        listener: EventListenerOrEventListenerObject,
+        options?: boolean | AddEventListenerOptions,
+      ): void => {
+        if (names.some((type) => type === name)) {
+          live.set(listener, (live.get(listener) ?? 0) + 1);
+          added++;
+        }
+        add(name, listener, options);
+      },
+    });
+    Object.defineProperty(target, 'removeEventListener', {
+      configurable: true,
+      value: (
+        name: string,
+        listener: EventListenerOrEventListenerObject,
+        options?: boolean | EventListenerOptions,
+      ): void => {
+        if (names.some((type) => type === name)) {
+          const count = live.get(listener);
+          assert.ok(count);
+          if (count === 1) live.delete(listener);
+          else live.set(listener, count - 1);
+          removed++;
+        }
+        remove(name, listener, options);
+      },
+    });
+    restore.push(() => {
+      if (addDescriptor)
+        Object.defineProperty(target, 'addEventListener', addDescriptor);
+      else Reflect.deleteProperty(target, 'addEventListener');
+      if (removeDescriptor)
+        Object.defineProperty(target, 'removeEventListener', removeDescriptor);
+      else Reflect.deleteProperty(target, 'removeEventListener');
+    });
+  }
+  try {
+    for (let round = 0; round < 2; round++) {
+      await show('/w/one/notes/n1?settings=', true);
+      // pointerdown and window blur intentionally share one invalidator.
+      assert.equal(live.size, 2);
+      const count = added;
+      sectionButton('devices').focus();
+      await media.change(390);
+      await media.change(1440);
+      assert.equal(added, count, 'Width changes do not reinstall listeners');
+      await escape();
+      assert.equal(live.size, 0);
+      assert.equal(added, removed);
+    }
+  } finally {
+    await show('/w/one/notes/n1');
+    for (const undo of restore) undo();
+    restoreBoxes();
+    media.restore();
+  }
 });
 
 await test('a failed DOM identity check has a bounded diagnostic', () => {

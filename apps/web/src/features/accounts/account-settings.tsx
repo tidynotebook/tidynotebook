@@ -713,6 +713,17 @@ function serverSettingsWide(): boolean {
   return false;
 }
 
+/** A rendered Settings box, including a box outside the scroll viewport. */
+function settingsFocusShown(element: HTMLElement): boolean {
+  return (
+    typeof element.checkVisibility === 'function' &&
+    element.checkVisibility({ visibilityProperty: true }) &&
+    Array.from(element.getClientRects()).some(
+      (box) => box.width > 0 && box.height > 0,
+    )
+  );
+}
+
 /** The Settings modal over the current page. */
 export function SettingsModal({
   workspaceId,
@@ -762,6 +773,13 @@ export function SettingsModal({
   const pageTitleId = useId();
   const sectionTitle = useRef<HTMLHeadingElement | null>(null);
   const listTitle = useRef<HTMLDivElement | null>(null);
+  const focusOwner = useRef<HTMLDivElement | null>(null);
+  const lastFocus = useRef<{
+    element: HTMLElement;
+    scope: object;
+    wide: boolean;
+  } | null>(null);
+  const previousLayout = useRef<{ scope: object; wide: boolean } | null>(null);
   const account = session.account;
   const accountId = account?.accountId ?? null;
   const documents = useLegalDocuments();
@@ -785,6 +803,43 @@ export function SettingsModal({
   const listLevel = value === '';
   const isCurrentPage = (path: string): boolean =>
     activePage?.path === path && (!listLevel || wideLayout);
+  // A route, account or action change has a different focus owner, even
+  // when React keeps the same Settings DOM mounted.
+  const focusScope = useMemo(
+    () => ({}),
+    [account, workspaceId, value, activeAction, onChoose, onClose],
+  );
+  useLayoutEffect(() => {
+    const owner = focusOwner.current;
+    if (owner === null) return;
+    const document = owner.ownerDocument;
+    const window = document.defaultView;
+    const dialog = owner.closest('[data-notes-dialog-root]');
+    const record = (target: EventTarget | null): void => {
+      lastFocus.current =
+        target instanceof HTMLElement &&
+        owner.contains(target) &&
+        target.closest('[data-notes-dialog-root]') === dialog
+          ? { element: target, scope: focusScope, wide: settingsWide() }
+          : null;
+    };
+    const focus = (event: FocusEvent): void => record(event.target);
+    const invalidate = (): void => {
+      lastFocus.current = null;
+    };
+    document.addEventListener('focusin', focus, true);
+    document.addEventListener('pointerdown', invalidate, true);
+    window?.addEventListener('blur', invalidate);
+    // Strict Mode can repeat setup with the same actually focused node.
+    record(document.activeElement);
+    return () => {
+      document.removeEventListener('focusin', focus, true);
+      document.removeEventListener('pointerdown', invalidate, true);
+      window?.removeEventListener('blur', invalidate);
+      lastFocus.current = null;
+      previousLayout.current = null;
+    };
+  }, [focusScope]);
   useLayoutEffect(() => {
     const title =
       listLevel && !window.matchMedia('(min-width: 1024px)').matches
@@ -792,6 +847,54 @@ export function SettingsModal({
         : sectionTitle.current;
     title?.focus({ preventScroll: true });
   }, [listLevel, activePage?.path]);
+  useLayoutEffect(() => {
+    const previous = previousLayout.current;
+    previousLayout.current = { scope: focusScope, wide: wideLayout };
+    const saved = lastFocus.current;
+    const owner = focusOwner.current;
+    if (
+      previous === null ||
+      previous.scope !== focusScope ||
+      previous.wide === wideLayout ||
+      saved === null ||
+      saved.scope !== focusScope ||
+      saved.wide !== previous.wide ||
+      owner === null
+    )
+      return;
+    // Consume before any focus call. BODY alone does not establish loss.
+    lastFocus.current = null;
+    const document = owner.ownerDocument;
+    const source = saved.element;
+    const active = document.activeElement;
+    const dialog = owner.closest('[data-notes-dialog-root]');
+    if (
+      !document.hasFocus() ||
+      !source.isConnected ||
+      !owner.contains(source) ||
+      owner.closest('[inert]') !== null ||
+      source.closest('[data-notes-dialog-root]') !== dialog ||
+      settingsFocusShown(source) ||
+      (active !== source &&
+        active !== document.body &&
+        active !== document.documentElement)
+    )
+      return;
+    const title =
+      listLevel && !wideLayout ? listTitle.current : sectionTitle.current;
+    if (
+      title?.isConnected &&
+      owner.contains(title) &&
+      title.closest('[data-notes-dialog-root]') === dialog &&
+      title.closest('[inert]') === null &&
+      settingsFocusShown(title)
+    )
+      title.focus({ preventScroll: true });
+  }, [focusScope, wideLayout, listLevel]);
+  const closeSettings = (): void => {
+    lastFocus.current = null;
+    onClose();
+  };
   const settingsList = useSettingsListFocus(
     workspaceId,
     listLevel ? undefined : activePage?.path,
@@ -1019,7 +1122,7 @@ export function SettingsModal({
   return (
     <Dialog
       open
-      onClose={onClose}
+      onClose={closeSettings}
       title={settingsTitle}
       titleId={titleId}
       hideTitle
@@ -1029,7 +1132,21 @@ export function SettingsModal({
     >
       <SettingsSurface>
         <SettingsActionContext.Provider value={actionHost}>
-          <div className="flex flex-1 overflow-hidden flex-col lg:flex-row">
+          <div
+            ref={focusOwner}
+            onBlurCapture={(event) => {
+              const saved = lastFocus.current;
+              if (
+                saved === null ||
+                event.target !== saved.element ||
+                event.relatedTarget !== null ||
+                saved.wide === settingsWide() ||
+                settingsFocusShown(saved.element)
+              )
+                lastFocus.current = null;
+            }}
+            className="flex flex-1 overflow-hidden flex-col lg:flex-row"
+          >
             <div
               data-scroll-frame=""
               className={`${listLevel ? 'flex' : 'hidden'} ui-settings-navigation bg-card overflow-hidden flex-1 flex-col lg:flex lg:w-60 lg:flex-none lg:border-r lg:border-edge-subtle`}
@@ -1053,7 +1170,7 @@ export function SettingsModal({
                     size="header"
                     glyph={<CloseIcon />}
                     label="Close Settings"
-                    onClick={onClose}
+                    onClick={closeSettings}
                   />
                 </HeaderSlot>
               </ContentHeader>
@@ -1239,7 +1356,7 @@ export function SettingsModal({
                           size="header"
                           glyph={<CloseIcon />}
                           label="Close Settings"
-                          onClick={onClose}
+                          onClick={closeSettings}
                         />
                       </HeaderSlot>
                     </Inline>
