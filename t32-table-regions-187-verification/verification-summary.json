@@ -1,0 +1,28 @@
+{
+  "head": "187bb7a36d58f1768a5604f6ec92e990046db96d",
+  "tree": "097cba2faffa7f4334b6cc5b51192a3d6032b6f9",
+  "sourceScope": "Three-file numbered region correction. No runtime proof.",
+  "canonical": {
+    "exitCode": 0,
+    "unit": 3839,
+    "integration": 1240,
+    "web": 17,
+    "gzip": 315700,
+    "budget": 315904,
+    "initialScripts": 54
+  },
+  "image": {
+    "classification": "SKIPPED BY OWNER",
+    "provedRequestMs": 45152,
+    "exitCode": 130,
+    "imageProduced": false,
+    "retarget": false
+  },
+  "actualBrowser": "NOT RUN",
+  "preservedCounts": {
+    "files": 96,
+    "publications": 50,
+    "sessions": 47
+  },
+  "screenshots": "None for this candidate"
+}
