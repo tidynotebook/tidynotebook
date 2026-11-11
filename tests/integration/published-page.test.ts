@@ -632,6 +632,16 @@ await test('a second read of a published note renders nothing again', async () =
   const second = await readPage(link.token);
   assert.equal(renders.length - before, 1);
   assert.equal(second.html, first.html);
+  for (const page of [first, second]) {
+    assert.match(
+      page.html,
+      /<div class="notes-table-scroll" tabindex="0" role="region" aria-label="Table"><table>/,
+    );
+    assert.equal(
+      page.response.headers.get('cache-control'),
+      'private, no-store',
+    );
+  }
   // Another link of the same note writes other addresses, so it renders.
   const other = await publish({ kind: 'note', fileId: elementsId });
   await readPage(other.token);
