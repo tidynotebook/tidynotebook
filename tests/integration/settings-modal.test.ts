@@ -140,6 +140,8 @@ const { LegacySettingsRedirect } =
 const { AdministrationRedirect } =
   await import('../../apps/web/dist/features/accounts/administration-redirect.js');
 const { useSignOut } = await import('../../apps/web/dist/shell/sign-out.js');
+const { useNavigationDrawer } =
+  await import('../../apps/web/dist/shell/use-navigation-drawer.js');
 
 const container = document.createElement('div');
 document.body.append(container);
@@ -240,6 +242,8 @@ function Navigator(): ReactNode {
 
 /** The frame: the routes of a workspace, the host, and the old route. */
 function Frame(): ReactNode {
+  const [, setDrawerOpen] = useState(false);
+  useNavigationDrawer(false, setDrawerOpen);
   return createElement(
     Routes,
     null,
@@ -348,6 +352,7 @@ function settingsMedia(initialWidth: number, initialCoarse: boolean) {
   let width = initialWidth;
   let coarse = initialCoarse;
   const matches = (query: string, fallback: boolean): boolean => {
+    if (query === '(width < 48rem)') return width < 768;
     const min = /min-width:\s*(\d+)px/.exec(query)?.[1];
     const max = /max-width:\s*(\d+)px/.exec(query)?.[1];
     if (min === undefined && max === undefined && !query.includes('pointer:'))
@@ -670,6 +675,55 @@ await test('responsive Settings repairs only actual focus hidden by a crossing',
     restore();
     media.restore();
   }
+});
+
+await test('Settings keeps focus repair through a drawer parent render', async (t) => {
+  for (const blurFirst of [true, false])
+    await t.test(
+      blurFirst ? 'blur before render' : 'blur after render',
+      async () => {
+        const media = settingsMedia(1440, false);
+        const restore = responsiveFocusBoxes();
+        try {
+          await show('/w/one/notes/n1?settings=', true);
+          const draft =
+            container.querySelector<HTMLTextAreaElement>('#note-text');
+          const title = dialog()?.querySelector<HTMLElement>(
+            '.ui-settings-header-title',
+          );
+          assert.ok(draft);
+          assert.ok(title);
+          draft.setSelectionRange(2, 6);
+          const key = locationKey;
+          assertElement(document.activeElement, title);
+          await media.change(
+            390,
+            false,
+            blurFirst ? () => title.blur() : undefined,
+          );
+          if (!blurFirst) title.blur();
+          const listTitle = dialog()?.querySelector<HTMLElement>(
+            '.ui-settings-root-heading [tabindex="-1"]',
+          );
+          assert.ok(listTitle);
+          assertElement(document.activeElement, listTitle);
+          await media.change(1440, false, () => listTitle.blur());
+          assertElement(document.activeElement, title);
+          assert.equal(locationKey, key);
+          assertElement(container.querySelector('#note-text'), draft);
+          assert.equal(mounts, 1);
+          assert.equal(draft.value, 'Unsaved draft');
+          assert.deepEqual([draft.selectionStart, draft.selectionEnd], [2, 6]);
+          await click(button('Close Settings'));
+          assertElement(dialog(), null);
+          assert.equal(address, '/w/one/notes/n1');
+        } finally {
+          await show('/w/one/notes/n1');
+          restore();
+          media.restore();
+        }
+      },
+    );
 });
 
 await test('responsive Settings rejects stale focus and restores instance listeners', async (t) => {

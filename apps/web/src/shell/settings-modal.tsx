@@ -143,6 +143,10 @@ export function SettingsModalHost({
     [navigate, location, state],
   );
 
+  const close = useCallback((): void => {
+    show(null);
+  }, [show]);
+
   // A modal that this tab opened gives the focus back to its opener. An old
   // link or a reload has none, and the dialog keeps the focus it found.
   const returnFocus = useCallback((): void => {
@@ -155,11 +159,7 @@ export function SettingsModalHost({
   return (
     <Suspense
       fallback={
-        <DialogLoading
-          title="Settings"
-          width="settings"
-          onClose={() => show(null)}
-        />
+        <DialogLoading title="Settings" width="settings" onClose={close} />
       }
     >
       <SettingsModal
@@ -167,9 +167,7 @@ export function SettingsModalHost({
         initial={initialOf(account?.name ?? account?.email ?? '')}
         value={value}
         onChoose={show}
-        onClose={() => {
-          show(null);
-        }}
+        onClose={close}
         returnFocus={opener?.isConnected === true ? returnFocus : undefined}
       />
     </Suspense>
