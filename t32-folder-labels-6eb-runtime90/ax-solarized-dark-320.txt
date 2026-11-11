@@ -1,0 +1,15 @@
+- dialog [ref=t3-ed7589e7-9v-f3e45] [box=24,249,272,402]:
+  - heading "Move T32 N9 retry90 contrast to" [level=2] [ref=t3-ed7589e7-9v-f3e47] [box=49,274,222,20]
+  - generic [ref=t3-ed7589e7-9v-f3e48] [box=49,318,222,308]:
+    - generic [ref=t3-ed7589e7-9v-f3e52] [box=49,318,222,252]:
+      - tree "Move T32 N9 retry90 contrast to" [ref=t3-ed7589e7-9v-f3e53] [box=49,318,222,208]:
+        - treeitem "All notes, at the top" [active] [level=1] [selected] [ref=t3-ed7589e7-9v-f3e54] [box=49,318,222,28]
+        - treeitem "T32 N9 retry90 target Current folder" [level=1] [ref=t3-ed7589e7-9v-f3e66] [box=49,438,222,28]:
+          - generic [ref=t3-ed7589e7-9v-f3e70] [cursor=pointer] [box=77,442,186,20]:
+            - generic [ref=t3-ed7589e7-9v-f3e74] [box=101,442,78,20]: T32 N9 retry90 target
+            - generic [ref=t3-ed7589e7-9v-f3e75] [box=187,444,76,16]: Current folder
+      - button "New folder here" [ref=t3-ed7589e7-9v-f3e77] [cursor=pointer] [box=49,534,222,32]
+    - generic [ref=t3-ed7589e7-9v-f3e83] [box=49,594,222,32]:
+      - button "Cancel" [ref=t3-ed7589e7-9v-f3e84] [cursor=pointer] [box=139,594,67,32]
+      - button "Move" [ref=t3-ed7589e7-9v-f3e86] [cursor=pointer] [box=214,594,57,32]
+

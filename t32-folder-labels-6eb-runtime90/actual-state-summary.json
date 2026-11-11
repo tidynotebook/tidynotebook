@@ -1,0 +1,3090 @@
+[
+  {
+    "time": "2026-11-11T10:00:58.701Z",
+    "theme": "default-light",
+    "width": 1440,
+    "height": 900,
+    "case": "selected-rest",
+    "selected": "true",
+    "disabled": null,
+    "hover": false,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        219,
+        219,
+        219,
+        1
+      ],
+      "contrast": 12.716325772429633,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 803,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 879,
+        "bottom": 460,
+        "left": 803
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        219,
+        219,
+        219,
+        1
+      ],
+      "contrast": 12.716325772429633
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:00:58.884Z",
+    "theme": "default-light",
+    "width": 1440,
+    "height": 900,
+    "case": "selected-hover",
+    "selected": "true",
+    "disabled": null,
+    "hover": true,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        219,
+        219,
+        219,
+        1
+      ],
+      "contrast": 12.716325772429633,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 803,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 879,
+        "bottom": 460,
+        "left": 803
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        219,
+        219,
+        219,
+        1
+      ],
+      "contrast": 12.716325772429633
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:00:59.384Z",
+    "theme": "default-light",
+    "width": 1440,
+    "height": 900,
+    "case": "unselected-rest",
+    "selected": "false",
+    "disabled": null,
+    "hover": false,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(103, 101, 95)",
+      "effectiveBackground": [
+        255,
+        255,
+        255,
+        1
+      ],
+      "contrast": 5.82778114135886,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 835,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 911,
+        "bottom": 460,
+        "left": 835
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        255,
+        255,
+        255,
+        1
+      ],
+      "contrast": 17.606234817992345
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": false,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:00:59.668Z",
+    "theme": "default-light",
+    "width": 1440,
+    "height": 900,
+    "case": "unselected-hover",
+    "selected": "false",
+    "disabled": null,
+    "hover": true,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        232,
+        232,
+        232,
+        1
+      ],
+      "contrast": 14.369240644127165,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 835,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 911,
+        "bottom": 460,
+        "left": 835
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        232,
+        232,
+        232,
+        1
+      ],
+      "contrast": 14.369240644127165
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": false,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:00:59.951Z",
+    "theme": "default-light",
+    "width": 1440,
+    "height": 900,
+    "case": "back",
+    "selected": "true",
+    "disabled": null,
+    "hover": false,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        219,
+        219,
+        219,
+        1
+      ],
+      "contrast": 12.716325772429633,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 803,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 879,
+        "bottom": 460,
+        "left": 803
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        219,
+        219,
+        219,
+        1
+      ],
+      "contrast": 12.716325772429633
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:01:00.168Z",
+    "theme": "default-light",
+    "width": 390,
+    "height": 900,
+    "case": "selected-rest",
+    "selected": "true",
+    "disabled": null,
+    "hover": false,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        219,
+        219,
+        219,
+        1
+      ],
+      "contrast": 12.716325772429633,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 225,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 301,
+        "bottom": 460,
+        "left": 225
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        219,
+        219,
+        219,
+        1
+      ],
+      "contrast": 12.716325772429633
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:01:00.351Z",
+    "theme": "default-light",
+    "width": 390,
+    "height": 900,
+    "case": "selected-hover",
+    "selected": "true",
+    "disabled": null,
+    "hover": true,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        219,
+        219,
+        219,
+        1
+      ],
+      "contrast": 12.716325772429633,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 225,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 301,
+        "bottom": 460,
+        "left": 225
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        219,
+        219,
+        219,
+        1
+      ],
+      "contrast": 12.716325772429633
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:01:00.634Z",
+    "theme": "default-light",
+    "width": 390,
+    "height": 900,
+    "case": "unselected-rest",
+    "selected": "false",
+    "disabled": null,
+    "hover": false,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(103, 101, 95)",
+      "effectiveBackground": [
+        255,
+        255,
+        255,
+        1
+      ],
+      "contrast": 5.82778114135886,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 257,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 333,
+        "bottom": 460,
+        "left": 257
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        255,
+        255,
+        255,
+        1
+      ],
+      "contrast": 17.606234817992345
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": false,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:01:00.918Z",
+    "theme": "default-light",
+    "width": 390,
+    "height": 900,
+    "case": "unselected-hover",
+    "selected": "false",
+    "disabled": null,
+    "hover": true,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        232,
+        232,
+        232,
+        1
+      ],
+      "contrast": 14.369240644127165,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 257,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 333,
+        "bottom": 460,
+        "left": 257
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        232,
+        232,
+        232,
+        1
+      ],
+      "contrast": 14.369240644127165
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": false,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:01:01.201Z",
+    "theme": "default-light",
+    "width": 390,
+    "height": 900,
+    "case": "back",
+    "selected": "true",
+    "disabled": null,
+    "hover": false,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        219,
+        219,
+        219,
+        1
+      ],
+      "contrast": 12.716325772429633,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 225,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 301,
+        "bottom": 460,
+        "left": 225
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        219,
+        219,
+        219,
+        1
+      ],
+      "contrast": 12.716325772429633
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:01:01.468Z",
+    "theme": "default-light",
+    "width": 320,
+    "height": 900,
+    "case": "selected-rest",
+    "selected": "true",
+    "disabled": null,
+    "hover": false,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        219,
+        219,
+        219,
+        1
+      ],
+      "contrast": 12.716325772429633,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 155,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 231,
+        "bottom": 460,
+        "left": 155
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        219,
+        219,
+        219,
+        1
+      ],
+      "contrast": 12.716325772429633
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:01:01.651Z",
+    "theme": "default-light",
+    "width": 320,
+    "height": 900,
+    "case": "selected-hover",
+    "selected": "true",
+    "disabled": null,
+    "hover": true,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        219,
+        219,
+        219,
+        1
+      ],
+      "contrast": 12.716325772429633,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 155,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 231,
+        "bottom": 460,
+        "left": 155
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        219,
+        219,
+        219,
+        1
+      ],
+      "contrast": 12.716325772429633
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:01:01.934Z",
+    "theme": "default-light",
+    "width": 320,
+    "height": 900,
+    "case": "unselected-rest",
+    "selected": "false",
+    "disabled": null,
+    "hover": false,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(103, 101, 95)",
+      "effectiveBackground": [
+        255,
+        255,
+        255,
+        1
+      ],
+      "contrast": 5.82778114135886,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 187,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 263,
+        "bottom": 460,
+        "left": 187
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        255,
+        255,
+        255,
+        1
+      ],
+      "contrast": 17.606234817992345
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": false,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:01:02.218Z",
+    "theme": "default-light",
+    "width": 320,
+    "height": 900,
+    "case": "unselected-hover",
+    "selected": "false",
+    "disabled": null,
+    "hover": true,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        232,
+        232,
+        232,
+        1
+      ],
+      "contrast": 14.369240644127165,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 187,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 263,
+        "bottom": 460,
+        "left": 187
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        232,
+        232,
+        232,
+        1
+      ],
+      "contrast": 14.369240644127165
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": false,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:01:02.518Z",
+    "theme": "default-light",
+    "width": 320,
+    "height": 900,
+    "case": "back",
+    "selected": "true",
+    "disabled": null,
+    "hover": false,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        219,
+        219,
+        219,
+        1
+      ],
+      "contrast": 12.716325772429633,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 155,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 231,
+        "bottom": 460,
+        "left": 155
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        219,
+        219,
+        219,
+        1
+      ],
+      "contrast": 12.716325772429633
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:01:43.266Z",
+    "theme": "default-light",
+    "width": 1440,
+    "height": 900,
+    "case": "disabled-rest",
+    "selected": "false",
+    "disabled": "true",
+    "hover": false,
+    "label": {
+      "text": "this folder",
+      "foreground": "rgb(103, 101, 95)",
+      "effectiveBackground": [
+        255,
+        255,
+        255,
+        1
+      ],
+      "contrast": 5.82778114135886,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 855.5,
+        "y": 444,
+        "width": 55.5,
+        "height": 16,
+        "top": 444,
+        "right": 911,
+        "bottom": 460,
+        "left": 855.5
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        255,
+        255,
+        255,
+        1
+      ],
+      "contrast": 17.606234817992345
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:01:43.549Z",
+    "theme": "default-light",
+    "width": 1440,
+    "height": 900,
+    "case": "disabled-hover",
+    "selected": "false",
+    "disabled": "true",
+    "hover": true,
+    "label": {
+      "text": "this folder",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        232,
+        232,
+        232,
+        1
+      ],
+      "contrast": 14.369240644127165,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 855.5,
+        "y": 444,
+        "width": 55.5,
+        "height": 16,
+        "top": 444,
+        "right": 911,
+        "bottom": 460,
+        "left": 855.5
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        232,
+        232,
+        232,
+        1
+      ],
+      "contrast": 14.369240644127165
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:01:44.099Z",
+    "theme": "default-light",
+    "width": 390,
+    "height": 900,
+    "case": "disabled-rest",
+    "selected": "false",
+    "disabled": "true",
+    "hover": false,
+    "label": {
+      "text": "this folder",
+      "foreground": "rgb(103, 101, 95)",
+      "effectiveBackground": [
+        255,
+        255,
+        255,
+        1
+      ],
+      "contrast": 5.82778114135886,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 277.5,
+        "y": 444,
+        "width": 55.5,
+        "height": 16,
+        "top": 444,
+        "right": 333,
+        "bottom": 460,
+        "left": 277.5
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        255,
+        255,
+        255,
+        1
+      ],
+      "contrast": 17.606234817992345
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:01:44.383Z",
+    "theme": "default-light",
+    "width": 390,
+    "height": 900,
+    "case": "disabled-hover",
+    "selected": "false",
+    "disabled": "true",
+    "hover": true,
+    "label": {
+      "text": "this folder",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        232,
+        232,
+        232,
+        1
+      ],
+      "contrast": 14.369240644127165,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 277.5,
+        "y": 444,
+        "width": 55.5,
+        "height": 16,
+        "top": 444,
+        "right": 333,
+        "bottom": 460,
+        "left": 277.5
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        232,
+        232,
+        232,
+        1
+      ],
+      "contrast": 14.369240644127165
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:01:44.783Z",
+    "theme": "default-light",
+    "width": 320,
+    "height": 900,
+    "case": "disabled-rest",
+    "selected": "false",
+    "disabled": "true",
+    "hover": false,
+    "label": {
+      "text": "this folder",
+      "foreground": "rgb(103, 101, 95)",
+      "effectiveBackground": [
+        255,
+        255,
+        255,
+        1
+      ],
+      "contrast": 5.82778114135886,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 207.5,
+        "y": 444,
+        "width": 55.5,
+        "height": 16,
+        "top": 444,
+        "right": 263,
+        "bottom": 460,
+        "left": 207.5
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        255,
+        255,
+        255,
+        1
+      ],
+      "contrast": 17.606234817992345
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:01:45.066Z",
+    "theme": "default-light",
+    "width": 320,
+    "height": 900,
+    "case": "disabled-hover",
+    "selected": "false",
+    "disabled": "true",
+    "hover": true,
+    "label": {
+      "text": "this folder",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        232,
+        232,
+        232,
+        1
+      ],
+      "contrast": 14.369240644127165,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 207.5,
+        "y": 444,
+        "width": 55.5,
+        "height": 16,
+        "top": 444,
+        "right": 263,
+        "bottom": 460,
+        "left": 207.5
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(25, 25, 23)",
+      "effectiveBackground": [
+        232,
+        232,
+        232,
+        1
+      ],
+      "contrast": 14.369240644127165
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:19.446Z",
+    "theme": "default-dark",
+    "width": 1440,
+    "height": 900,
+    "case": "selected-rest",
+    "selected": "true",
+    "disabled": null,
+    "hover": false,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        63,
+        63,
+        63,
+        1
+      ],
+      "contrast": 9.580577617716562,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 803,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 879,
+        "bottom": 460,
+        "left": 803
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        63,
+        63,
+        63,
+        1
+      ],
+      "contrast": 9.580577617716562
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:19.629Z",
+    "theme": "default-dark",
+    "width": 1440,
+    "height": 900,
+    "case": "selected-hover",
+    "selected": "true",
+    "disabled": null,
+    "hover": true,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        63,
+        63,
+        63,
+        1
+      ],
+      "contrast": 9.580577617716562,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 803,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 879,
+        "bottom": 460,
+        "left": 803
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        63,
+        63,
+        63,
+        1
+      ],
+      "contrast": 9.580577617716562
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:19.912Z",
+    "theme": "default-dark",
+    "width": 1440,
+    "height": 900,
+    "case": "unselected-rest",
+    "selected": "false",
+    "disabled": null,
+    "hover": false,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(165, 163, 158)",
+      "effectiveBackground": [
+        34,
+        34,
+        34,
+        1
+      ],
+      "contrast": 6.312830372020467,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 835,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 911,
+        "bottom": 460,
+        "left": 835
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        34,
+        34,
+        34,
+        1
+      ],
+      "contrast": 14.474244623352302
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": false,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:20.195Z",
+    "theme": "default-dark",
+    "width": 1440,
+    "height": 900,
+    "case": "unselected-hover",
+    "selected": "false",
+    "disabled": null,
+    "hover": true,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        57,
+        57,
+        57,
+        1
+      ],
+      "contrast": 10.50700572518809,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 835,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 911,
+        "bottom": 460,
+        "left": 835
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        57,
+        57,
+        57,
+        1
+      ],
+      "contrast": 10.50700572518809
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": false,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:20.679Z",
+    "theme": "default-dark",
+    "width": 1440,
+    "height": 900,
+    "case": "back",
+    "selected": "true",
+    "disabled": null,
+    "hover": false,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        63,
+        63,
+        63,
+        1
+      ],
+      "contrast": 9.580577617716562,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 803,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 879,
+        "bottom": 460,
+        "left": 803
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        63,
+        63,
+        63,
+        1
+      ],
+      "contrast": 9.580577617716562
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:20.895Z",
+    "theme": "default-dark",
+    "width": 390,
+    "height": 900,
+    "case": "selected-rest",
+    "selected": "true",
+    "disabled": null,
+    "hover": false,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        63,
+        63,
+        63,
+        1
+      ],
+      "contrast": 9.580577617716562,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 225,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 301,
+        "bottom": 460,
+        "left": 225
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        63,
+        63,
+        63,
+        1
+      ],
+      "contrast": 9.580577617716562
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:21.079Z",
+    "theme": "default-dark",
+    "width": 390,
+    "height": 900,
+    "case": "selected-hover",
+    "selected": "true",
+    "disabled": null,
+    "hover": true,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        63,
+        63,
+        63,
+        1
+      ],
+      "contrast": 9.580577617716562,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 225,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 301,
+        "bottom": 460,
+        "left": 225
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        63,
+        63,
+        63,
+        1
+      ],
+      "contrast": 9.580577617716562
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:21.445Z",
+    "theme": "default-dark",
+    "width": 390,
+    "height": 900,
+    "case": "unselected-rest",
+    "selected": "false",
+    "disabled": null,
+    "hover": false,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(165, 163, 158)",
+      "effectiveBackground": [
+        34,
+        34,
+        34,
+        1
+      ],
+      "contrast": 6.312830372020467,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 257,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 333,
+        "bottom": 460,
+        "left": 257
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        34,
+        34,
+        34,
+        1
+      ],
+      "contrast": 14.474244623352302
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": false,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:21.729Z",
+    "theme": "default-dark",
+    "width": 390,
+    "height": 900,
+    "case": "unselected-hover",
+    "selected": "false",
+    "disabled": null,
+    "hover": true,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        57,
+        57,
+        57,
+        1
+      ],
+      "contrast": 10.50700572518809,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 257,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 333,
+        "bottom": 460,
+        "left": 257
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        57,
+        57,
+        57,
+        1
+      ],
+      "contrast": 10.50700572518809
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": false,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:22.079Z",
+    "theme": "default-dark",
+    "width": 390,
+    "height": 900,
+    "case": "back",
+    "selected": "true",
+    "disabled": null,
+    "hover": false,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        63,
+        63,
+        63,
+        1
+      ],
+      "contrast": 9.580577617716562,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 225,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 301,
+        "bottom": 460,
+        "left": 225
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        63,
+        63,
+        63,
+        1
+      ],
+      "contrast": 9.580577617716562
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:22.279Z",
+    "theme": "default-dark",
+    "width": 320,
+    "height": 900,
+    "case": "selected-rest",
+    "selected": "true",
+    "disabled": null,
+    "hover": false,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        63,
+        63,
+        63,
+        1
+      ],
+      "contrast": 9.580577617716562,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 155,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 231,
+        "bottom": 460,
+        "left": 155
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        63,
+        63,
+        63,
+        1
+      ],
+      "contrast": 9.580577617716562
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:22.462Z",
+    "theme": "default-dark",
+    "width": 320,
+    "height": 900,
+    "case": "selected-hover",
+    "selected": "true",
+    "disabled": null,
+    "hover": true,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        63,
+        63,
+        63,
+        1
+      ],
+      "contrast": 9.580577617716562,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 155,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 231,
+        "bottom": 460,
+        "left": 155
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        63,
+        63,
+        63,
+        1
+      ],
+      "contrast": 9.580577617716562
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:22.745Z",
+    "theme": "default-dark",
+    "width": 320,
+    "height": 900,
+    "case": "unselected-rest",
+    "selected": "false",
+    "disabled": null,
+    "hover": false,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(165, 163, 158)",
+      "effectiveBackground": [
+        34,
+        34,
+        34,
+        1
+      ],
+      "contrast": 6.312830372020467,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 187,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 263,
+        "bottom": 460,
+        "left": 187
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        34,
+        34,
+        34,
+        1
+      ],
+      "contrast": 14.474244623352302
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": false,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:23.029Z",
+    "theme": "default-dark",
+    "width": 320,
+    "height": 900,
+    "case": "unselected-hover",
+    "selected": "false",
+    "disabled": null,
+    "hover": true,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        57,
+        57,
+        57,
+        1
+      ],
+      "contrast": 10.50700572518809,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 187,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 263,
+        "bottom": 460,
+        "left": 187
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        57,
+        57,
+        57,
+        1
+      ],
+      "contrast": 10.50700572518809
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": false,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:23.379Z",
+    "theme": "default-dark",
+    "width": 320,
+    "height": 900,
+    "case": "back",
+    "selected": "true",
+    "disabled": null,
+    "hover": false,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        63,
+        63,
+        63,
+        1
+      ],
+      "contrast": 9.580577617716562,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 155,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 231,
+        "bottom": 460,
+        "left": 155
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        63,
+        63,
+        63,
+        1
+      ],
+      "contrast": 9.580577617716562
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:37.595Z",
+    "theme": "default-dark",
+    "width": 1440,
+    "height": 900,
+    "case": "disabled-rest",
+    "selected": "false",
+    "disabled": "true",
+    "hover": false,
+    "label": {
+      "text": "this folder",
+      "foreground": "rgb(165, 163, 158)",
+      "effectiveBackground": [
+        34,
+        34,
+        34,
+        1
+      ],
+      "contrast": 6.312830372020467,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 855.5,
+        "y": 444,
+        "width": 55.5,
+        "height": 16,
+        "top": 444,
+        "right": 911,
+        "bottom": 460,
+        "left": 855.5
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        34,
+        34,
+        34,
+        1
+      ],
+      "contrast": 14.474244623352302
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:37.878Z",
+    "theme": "default-dark",
+    "width": 1440,
+    "height": 900,
+    "case": "disabled-hover",
+    "selected": "false",
+    "disabled": "true",
+    "hover": true,
+    "label": {
+      "text": "this folder",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        57,
+        57,
+        57,
+        1
+      ],
+      "contrast": 10.50700572518809,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 855.5,
+        "y": 444,
+        "width": 55.5,
+        "height": 16,
+        "top": 444,
+        "right": 911,
+        "bottom": 460,
+        "left": 855.5
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        57,
+        57,
+        57,
+        1
+      ],
+      "contrast": 10.50700572518809
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:38.145Z",
+    "theme": "default-dark",
+    "width": 390,
+    "height": 900,
+    "case": "disabled-rest",
+    "selected": "false",
+    "disabled": "true",
+    "hover": false,
+    "label": {
+      "text": "this folder",
+      "foreground": "rgb(165, 163, 158)",
+      "effectiveBackground": [
+        34,
+        34,
+        34,
+        1
+      ],
+      "contrast": 6.312830372020467,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 277.5,
+        "y": 444,
+        "width": 55.5,
+        "height": 16,
+        "top": 444,
+        "right": 333,
+        "bottom": 460,
+        "left": 277.5
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        34,
+        34,
+        34,
+        1
+      ],
+      "contrast": 14.474244623352302
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:38.428Z",
+    "theme": "default-dark",
+    "width": 390,
+    "height": 900,
+    "case": "disabled-hover",
+    "selected": "false",
+    "disabled": "true",
+    "hover": true,
+    "label": {
+      "text": "this folder",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        57,
+        57,
+        57,
+        1
+      ],
+      "contrast": 10.50700572518809,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 277.5,
+        "y": 444,
+        "width": 55.5,
+        "height": 16,
+        "top": 444,
+        "right": 333,
+        "bottom": 460,
+        "left": 277.5
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        57,
+        57,
+        57,
+        1
+      ],
+      "contrast": 10.50700572518809
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:38.745Z",
+    "theme": "default-dark",
+    "width": 320,
+    "height": 900,
+    "case": "disabled-rest",
+    "selected": "false",
+    "disabled": "true",
+    "hover": false,
+    "label": {
+      "text": "this folder",
+      "foreground": "rgb(165, 163, 158)",
+      "effectiveBackground": [
+        34,
+        34,
+        34,
+        1
+      ],
+      "contrast": 6.312830372020467,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 207.5,
+        "y": 444,
+        "width": 55.5,
+        "height": 16,
+        "top": 444,
+        "right": 263,
+        "bottom": 460,
+        "left": 207.5
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        34,
+        34,
+        34,
+        1
+      ],
+      "contrast": 14.474244623352302
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:39.028Z",
+    "theme": "default-dark",
+    "width": 320,
+    "height": 900,
+    "case": "disabled-hover",
+    "selected": "false",
+    "disabled": "true",
+    "hover": true,
+    "label": {
+      "text": "this folder",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        57,
+        57,
+        57,
+        1
+      ],
+      "contrast": 10.50700572518809,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 207.5,
+        "y": 444,
+        "width": 55.5,
+        "height": 16,
+        "top": 444,
+        "right": 263,
+        "bottom": 460,
+        "left": 207.5
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(245, 244, 242)",
+      "effectiveBackground": [
+        57,
+        57,
+        57,
+        1
+      ],
+      "contrast": 10.50700572518809
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:55.027Z",
+    "theme": "solarized-dark",
+    "width": 1440,
+    "height": 900,
+    "case": "selected-rest",
+    "selected": "true",
+    "disabled": null,
+    "hover": false,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        40,
+        75,
+        84,
+        1
+      ],
+      "contrast": 4.539204606532101,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 803,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 879,
+        "bottom": 460,
+        "left": 803
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        40,
+        75,
+        84,
+        1
+      ],
+      "contrast": 4.539204606532101
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:55.211Z",
+    "theme": "solarized-dark",
+    "width": 1440,
+    "height": 900,
+    "case": "selected-hover",
+    "selected": "true",
+    "disabled": null,
+    "hover": true,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        40,
+        75,
+        84,
+        1
+      ],
+      "contrast": 4.539204606532101,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 803,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 879,
+        "bottom": 460,
+        "left": 803
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        40,
+        75,
+        84,
+        1
+      ],
+      "contrast": 4.539204606532101
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:55.494Z",
+    "theme": "solarized-dark",
+    "width": 1440,
+    "height": 900,
+    "case": "unselected-rest",
+    "selected": "false",
+    "disabled": null,
+    "hover": false,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(134, 156, 164)",
+      "effectiveBackground": [
+        6,
+        48,
+        58,
+        1
+      ],
+      "contrast": 4.8974334026486614,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 835,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 911,
+        "bottom": 460,
+        "left": 835
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        6,
+        48,
+        58,
+        1
+      ],
+      "contrast": 6.769974653198885
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": false,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:55.827Z",
+    "theme": "solarized-dark",
+    "width": 1440,
+    "height": 900,
+    "case": "unselected-hover",
+    "selected": "false",
+    "disabled": null,
+    "hover": true,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        30,
+        67,
+        76,
+        1
+      ],
+      "contrast": 5.145795518686239,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 835,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 911,
+        "bottom": 460,
+        "left": 835
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        30,
+        67,
+        76,
+        1
+      ],
+      "contrast": 5.145795518686239
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": false,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:56.294Z",
+    "theme": "solarized-dark",
+    "width": 1440,
+    "height": 900,
+    "case": "back",
+    "selected": "true",
+    "disabled": null,
+    "hover": false,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        40,
+        75,
+        84,
+        1
+      ],
+      "contrast": 4.539204606532101,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 803,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 879,
+        "bottom": 460,
+        "left": 803
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        40,
+        75,
+        84,
+        1
+      ],
+      "contrast": 4.539204606532101
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:56.511Z",
+    "theme": "solarized-dark",
+    "width": 390,
+    "height": 900,
+    "case": "selected-rest",
+    "selected": "true",
+    "disabled": null,
+    "hover": false,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        40,
+        75,
+        84,
+        1
+      ],
+      "contrast": 4.539204606532101,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 225,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 301,
+        "bottom": 460,
+        "left": 225
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        40,
+        75,
+        84,
+        1
+      ],
+      "contrast": 4.539204606532101
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:56.694Z",
+    "theme": "solarized-dark",
+    "width": 390,
+    "height": 900,
+    "case": "selected-hover",
+    "selected": "true",
+    "disabled": null,
+    "hover": true,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        40,
+        75,
+        84,
+        1
+      ],
+      "contrast": 4.539204606532101,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 225,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 301,
+        "bottom": 460,
+        "left": 225
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        40,
+        75,
+        84,
+        1
+      ],
+      "contrast": 4.539204606532101
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:56.977Z",
+    "theme": "solarized-dark",
+    "width": 390,
+    "height": 900,
+    "case": "unselected-rest",
+    "selected": "false",
+    "disabled": null,
+    "hover": false,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(134, 156, 164)",
+      "effectiveBackground": [
+        6,
+        48,
+        58,
+        1
+      ],
+      "contrast": 4.8974334026486614,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 257,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 333,
+        "bottom": 460,
+        "left": 257
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        6,
+        48,
+        58,
+        1
+      ],
+      "contrast": 6.769974653198885
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": false,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:57.261Z",
+    "theme": "solarized-dark",
+    "width": 390,
+    "height": 900,
+    "case": "unselected-hover",
+    "selected": "false",
+    "disabled": null,
+    "hover": true,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        30,
+        67,
+        76,
+        1
+      ],
+      "contrast": 5.145795518686239,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 257,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 333,
+        "bottom": 460,
+        "left": 257
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        30,
+        67,
+        76,
+        1
+      ],
+      "contrast": 5.145795518686239
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": false,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:57.627Z",
+    "theme": "solarized-dark",
+    "width": 390,
+    "height": 900,
+    "case": "back",
+    "selected": "true",
+    "disabled": null,
+    "hover": false,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        40,
+        75,
+        84,
+        1
+      ],
+      "contrast": 4.539204606532101,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 225,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 301,
+        "bottom": 460,
+        "left": 225
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        40,
+        75,
+        84,
+        1
+      ],
+      "contrast": 4.539204606532101
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:57.827Z",
+    "theme": "solarized-dark",
+    "width": 320,
+    "height": 900,
+    "case": "selected-rest",
+    "selected": "true",
+    "disabled": null,
+    "hover": false,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        40,
+        75,
+        84,
+        1
+      ],
+      "contrast": 4.539204606532101,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 155,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 231,
+        "bottom": 460,
+        "left": 155
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        40,
+        75,
+        84,
+        1
+      ],
+      "contrast": 4.539204606532101
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:58.011Z",
+    "theme": "solarized-dark",
+    "width": 320,
+    "height": 900,
+    "case": "selected-hover",
+    "selected": "true",
+    "disabled": null,
+    "hover": true,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        40,
+        75,
+        84,
+        1
+      ],
+      "contrast": 4.539204606532101,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 155,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 231,
+        "bottom": 460,
+        "left": 155
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        40,
+        75,
+        84,
+        1
+      ],
+      "contrast": 4.539204606532101
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:58.294Z",
+    "theme": "solarized-dark",
+    "width": 320,
+    "height": 900,
+    "case": "unselected-rest",
+    "selected": "false",
+    "disabled": null,
+    "hover": false,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(134, 156, 164)",
+      "effectiveBackground": [
+        6,
+        48,
+        58,
+        1
+      ],
+      "contrast": 4.8974334026486614,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 187,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 263,
+        "bottom": 460,
+        "left": 187
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        6,
+        48,
+        58,
+        1
+      ],
+      "contrast": 6.769974653198885
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": false,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:58.577Z",
+    "theme": "solarized-dark",
+    "width": 320,
+    "height": 900,
+    "case": "unselected-hover",
+    "selected": "false",
+    "disabled": null,
+    "hover": true,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        30,
+        67,
+        76,
+        1
+      ],
+      "contrast": 5.145795518686239,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 187,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 263,
+        "bottom": 460,
+        "left": 187
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        30,
+        67,
+        76,
+        1
+      ],
+      "contrast": 5.145795518686239
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": false,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:03:58.927Z",
+    "theme": "solarized-dark",
+    "width": 320,
+    "height": 900,
+    "case": "back",
+    "selected": "true",
+    "disabled": null,
+    "hover": false,
+    "label": {
+      "text": "Current folder",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        40,
+        75,
+        84,
+        1
+      ],
+      "contrast": 4.539204606532101,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 155,
+        "y": 444,
+        "width": 76,
+        "height": 16,
+        "top": 444,
+        "right": 231,
+        "bottom": 460,
+        "left": 155
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        40,
+        75,
+        84,
+        1
+      ],
+      "contrast": 4.539204606532101
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:04:22.543Z",
+    "theme": "solarized-dark",
+    "width": 1440,
+    "height": 900,
+    "case": "disabled-rest",
+    "selected": "false",
+    "disabled": "true",
+    "hover": false,
+    "label": {
+      "text": "this folder",
+      "foreground": "rgb(134, 156, 164)",
+      "effectiveBackground": [
+        6,
+        48,
+        58,
+        1
+      ],
+      "contrast": 4.8974334026486614,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 855.5,
+        "y": 444,
+        "width": 55.5,
+        "height": 16,
+        "top": 444,
+        "right": 911,
+        "bottom": 460,
+        "left": 855.5
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        6,
+        48,
+        58,
+        1
+      ],
+      "contrast": 6.769974653198885
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:04:22.826Z",
+    "theme": "solarized-dark",
+    "width": 1440,
+    "height": 900,
+    "case": "disabled-hover",
+    "selected": "false",
+    "disabled": "true",
+    "hover": true,
+    "label": {
+      "text": "this folder",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        30,
+        67,
+        76,
+        1
+      ],
+      "contrast": 5.145795518686239,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 855.5,
+        "y": 444,
+        "width": 55.5,
+        "height": 16,
+        "top": 444,
+        "right": 911,
+        "bottom": 460,
+        "left": 855.5
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        30,
+        67,
+        76,
+        1
+      ],
+      "contrast": 5.145795518686239
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:04:23.093Z",
+    "theme": "solarized-dark",
+    "width": 390,
+    "height": 900,
+    "case": "disabled-rest",
+    "selected": "false",
+    "disabled": "true",
+    "hover": false,
+    "label": {
+      "text": "this folder",
+      "foreground": "rgb(134, 156, 164)",
+      "effectiveBackground": [
+        6,
+        48,
+        58,
+        1
+      ],
+      "contrast": 4.8974334026486614,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 277.5,
+        "y": 444,
+        "width": 55.5,
+        "height": 16,
+        "top": 444,
+        "right": 333,
+        "bottom": 460,
+        "left": 277.5
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        6,
+        48,
+        58,
+        1
+      ],
+      "contrast": 6.769974653198885
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:04:23.376Z",
+    "theme": "solarized-dark",
+    "width": 390,
+    "height": 900,
+    "case": "disabled-hover",
+    "selected": "false",
+    "disabled": "true",
+    "hover": true,
+    "label": {
+      "text": "this folder",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        30,
+        67,
+        76,
+        1
+      ],
+      "contrast": 5.145795518686239,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 277.5,
+        "y": 444,
+        "width": 55.5,
+        "height": 16,
+        "top": 444,
+        "right": 333,
+        "bottom": 460,
+        "left": 277.5
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        30,
+        67,
+        76,
+        1
+      ],
+      "contrast": 5.145795518686239
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:04:23.660Z",
+    "theme": "solarized-dark",
+    "width": 320,
+    "height": 900,
+    "case": "disabled-rest",
+    "selected": "false",
+    "disabled": "true",
+    "hover": false,
+    "label": {
+      "text": "this folder",
+      "foreground": "rgb(134, 156, 164)",
+      "effectiveBackground": [
+        6,
+        48,
+        58,
+        1
+      ],
+      "contrast": 4.8974334026486614,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 207.5,
+        "y": 444,
+        "width": 55.5,
+        "height": 16,
+        "top": 444,
+        "right": 263,
+        "bottom": 460,
+        "left": 207.5
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        6,
+        48,
+        58,
+        1
+      ],
+      "contrast": 6.769974653198885
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  },
+  {
+    "time": "2026-11-11T10:04:23.943Z",
+    "theme": "solarized-dark",
+    "width": 320,
+    "height": 900,
+    "case": "disabled-hover",
+    "selected": "false",
+    "disabled": "true",
+    "hover": true,
+    "label": {
+      "text": "this folder",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        30,
+        67,
+        76,
+        1
+      ],
+      "contrast": 5.145795518686239,
+      "font": "Geist, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "size": "12px",
+      "rect": {
+        "x": 207.5,
+        "y": 444,
+        "width": 55.5,
+        "height": 16,
+        "top": 444,
+        "right": 263,
+        "bottom": 460,
+        "left": 207.5
+      }
+    },
+    "rowName": {
+      "text": "T32 N9 retry90 target",
+      "foreground": "rgb(171, 182, 182)",
+      "effectiveBackground": [
+        30,
+        67,
+        76,
+        1
+      ],
+      "contrast": 5.145795518686239
+    },
+    "fontStatus": "loaded",
+    "moveDisabled": true,
+    "pageOverflow": 0,
+    "dialogOverflow": 0,
+    "pointerCoarse": false
+  }
+]
+
