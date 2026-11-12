@@ -15,9 +15,12 @@ export const firstScreenCeilingBytes = Math.floor(0.62 * 1024 * 1024);
 // Keep the measurement, deferred checks and ceiling unchanged (decision 0177).
 // 2026-11-10: the owner approved 256 more bytes for reviewed UI fixes.
 // The 315,684-byte auth build leaves 220 bytes at the new 315,904 limit.
+// 2026-11-12: allow 1024 bytes for reviewed workspace refresh, folder
+// creation reveal and Trash focus fixes. Combined source measures 316743
+// bytes, leaving 185 bytes at 316928. Measurement and ceiling stay unchanged.
 export const firstScreenBudgetBytes = Math.min(
   firstScreenCeilingBytes,
-  315_904,
+  316_928,
 );
 export function withinFirstScreenBudget(bytes: number): boolean {
   return (
