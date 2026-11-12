@@ -377,6 +377,7 @@ export { Form } from './form.tsx';
 export { SettingEditRow } from './setting-edit-row.tsx';
 
 export { deferredDialog, DialogLoading } from './deferred-dialog.tsx';
+export { SettingsLoading } from './settings-loading.tsx';
 
 export { observeElementScrollEdges } from './native-scroll-edges.ts';
 

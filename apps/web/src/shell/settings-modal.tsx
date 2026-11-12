@@ -1,4 +1,4 @@
-import { DialogLoading } from '@notesapp/ui';
+import { SettingsLoading } from '@notesapp/ui';
 /**
  * Settings as a modal over the current page (issue 517, item 5).
  *
@@ -159,7 +159,11 @@ export function SettingsModalHost({
   return (
     <Suspense
       fallback={
-        <DialogLoading title="Settings" width="settings" onClose={close} />
+        <SettingsLoading
+          listLevel={value === ''}
+          onBack={() => show('')}
+          onClose={close}
+        />
       }
     >
       <SettingsModal

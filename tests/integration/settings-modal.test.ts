@@ -26,6 +26,7 @@ import {
   useNavigate,
 } from 'react-router';
 import { setLastAdministrator } from './support/administration-settings-fixture.ts';
+import { finishSettingsLoad } from './support/settings-load-gate.ts';
 import {
   calls,
   setAdministrator,
@@ -106,6 +107,15 @@ const folderFixture = new URL(
 const hooks = registerHooks({
   resolve(specifier, context, next) {
     const parent = context.parentURL ?? '';
+    if (
+      parent.endsWith('/shell/settings-modal.js') &&
+      specifier.endsWith('/accounts/account-settings.js')
+    )
+      return {
+        url: new URL('./support/settings-loading-fixture.ts', import.meta.url)
+          .href,
+        shortCircuit: true,
+      };
     if (parent.includes('/apps/web/dist/')) {
       if (
         (parent.endsWith('/administration.js') ||
@@ -465,6 +475,39 @@ function currentSettingsRows(): string[] {
     return path;
   });
 }
+
+await test('pending Settings keeps the note and route controls through loading and completion', async () => {
+  await show('/w/one/notes/n1');
+  const note = container.querySelector('textarea');
+  await act(async () => button('Manage templates', container).click());
+  assert.ok(dialog());
+  assert.equal(
+    [...(dialog()?.querySelectorAll('[role="status"]') ?? [])].filter(
+      (status) => !status.closest('[aria-hidden="true"]'),
+    ).length,
+    1,
+  );
+  assert.ok(dialog()?.textContent?.includes('Loading settings'));
+  await act(async () => button('Back to Settings').click());
+  assert.equal(address, '/w/one/notes/n1?settings=');
+  assert.equal(document.activeElement?.textContent, 'Settings');
+  assert.ok(dialog()?.contains(document.activeElement));
+  await act(async () => button('Close Settings').click());
+  assert.equal(dialog(), null);
+  assert.equal(address, '/w/one/notes/n1');
+  assertElement(container.querySelector('textarea'), note);
+  await act(async () => button('Manage templates', container).click());
+  await act(async () => {
+    finishSettingsLoad();
+    await import('./support/settings-loading-fixture.ts');
+  });
+  assert.ok(dialog()?.querySelector('[data-settings-page="templates"]'));
+  assert.ok(!dialog()?.textContent?.includes('Loading settings'));
+  assertElement(container.querySelector('textarea'), note);
+  assert.equal(note?.value, 'Unsaved draft');
+  assert.equal(mounts, 1);
+  await act(async () => button('Close Settings').click());
+});
 
 await test('Settings follows the CSS breakpoint with a larger browser initial font', async () => {
   const media = settingsMedia(1280, false, 20);
