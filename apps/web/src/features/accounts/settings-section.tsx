@@ -83,6 +83,7 @@ export function SettingActionRow({
     <ListRow
       as="button"
       density="setting"
+      leading={icon}
       label={label}
       labelTone={danger ? 'danger' : 'accent'}
       help={help?.trim() ? <WrapText>{help}</WrapText> : undefined}
@@ -183,10 +184,12 @@ export function SettingRow({
   label,
   help,
   children,
+  value,
 }: {
   readonly label: ReactNode;
   readonly help?: string | undefined;
   readonly children?: ReactNode;
+  readonly value?: ReactNode;
 }): ReactNode {
   return (
     <ListRow
@@ -195,6 +198,8 @@ export function SettingRow({
       label={label}
       help={help?.trim() ? <WrapText>{help}</WrapText> : undefined}
       control={children}
+      value={value}
+      {...(value === undefined ? {} : { trailing: { kind: 'value' as const } })}
     />
   );
 }

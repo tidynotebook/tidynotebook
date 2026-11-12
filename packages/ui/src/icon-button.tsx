@@ -38,14 +38,15 @@ export function IconButton({
       : `absolute top-1/2 -translate-y-1/2 ${disclosure ? '-left-2 coarse:-left-3' : 'left-1/2 -translate-x-1/2'}`;
   const control = render ? (
     render({
-      className:
+      className: `${
         size === 'rail'
           ? sidebarViewClassName({ current })
           : buttonClassName({
               variant: 'ghost',
               iconOnly: true,
               iconSize: size,
-            }),
+            })
+      } ${position} ${className}`,
       'aria-label': label,
       'aria-current': current ? 'page' : undefined,
       title: label,

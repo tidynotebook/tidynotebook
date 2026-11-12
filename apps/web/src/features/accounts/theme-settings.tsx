@@ -1,11 +1,11 @@
 import {
-  TileSelectedBadge,
   Stack,
   Grid,
   Inline,
   SectionHeading,
   Card,
   ThemePreview,
+  ThemeFamilyGrid,
   Button,
   CheckIcon,
   ComputerIcon,
@@ -248,15 +248,10 @@ export function ThemeSettings(): ReactNode {
                         theme={choice.value === 'light' ? light : dark}
                       />
                     )}
-                    {chosen ? (
-                      <TileSelectedBadge>
-                        <CheckIcon />
-                      </TileSelectedBadge>
-                    ) : null}
                   </span>
-                  <Inline padY={2} gap={2} padX={2} align="center" as="span">
+                  <Inline padY={2} gap={1} padX={2} align="center" as="span">
                     <span
-                      className="inline-flex items-center"
+                      className="hidden sm:inline-flex items-center"
                       aria-hidden="true"
                     >
                       {choice.icon}
@@ -267,6 +262,15 @@ export function ThemeSettings(): ReactNode {
                     >
                       {choice.label}
                     </span>
+                    {chosen ? (
+                      <span
+                        data-mode-check=""
+                        aria-hidden="true"
+                        className="inline-flex shrink-0 items-center"
+                      >
+                        <CheckIcon />
+                      </span>
+                    ) : null}
                   </Inline>
                 </label>
               );
@@ -312,24 +316,13 @@ export function ThemeSettings(): ReactNode {
               </>
             }
           />
-          <Inline
-            gap={2}
-            pad={0}
-            padY={1}
-            as="ul"
-            className="ui-theme-tiles list-none overflow-x-auto md:grid md:grid-cols-4 md:overflow-visible lg:grid-cols-4"
-          >
+          <ThemeFamilyGrid>
             {theme.families.map((option) => {
               const chosen = theme.familyId === option.id;
               const only = onlyModeOf(option);
               const importedTheme = isImportedFamilyId(option.id);
               return (
-                <Stack
-                  gap={1}
-                  as="li"
-                  className="w-28 shrink-0 md:w-auto"
-                  key={option.id}
-                >
+                <Stack gap={1} as="li" className="min-w-0" key={option.id}>
                   <label className={cardClassName(chosen)}>
                     <input
                       className="sr-only"
@@ -381,7 +374,7 @@ export function ThemeSettings(): ReactNode {
                 </Stack>
               );
             })}
-          </Inline>
+          </ThemeFamilyGrid>
           {phone ? (
             <Card responsive>
               <SettingActionRow

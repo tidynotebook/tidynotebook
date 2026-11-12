@@ -319,6 +319,7 @@ export {
 
 export {
   SettingsSurface,
+  settingsContentClassName,
   SettingsRowActions,
   useSettingsSurface,
 } from './settings-layout.tsx';
@@ -371,7 +372,7 @@ export { NavigationHeading } from './navigation-heading.tsx';
 export { FieldPopover as Popover } from './field-popover.tsx';
 export { Viewport, CanvasImage } from './primitives.tsx';
 export { FieldButton } from './controls.tsx';
-export { ThemePreview } from './theme-preview.tsx';
+export { ThemePreview, ThemeFamilyGrid } from './theme-preview.tsx';
 export { FieldGroup } from './controls.tsx';
 export { Form } from './form.tsx';
 export { SettingEditRow } from './setting-edit-row.tsx';

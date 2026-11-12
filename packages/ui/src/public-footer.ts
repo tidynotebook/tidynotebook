@@ -154,7 +154,7 @@ export function publicFooterTree({
                 {
                   href: footerAddress(home),
                   className:
-                    'public-footer-wordmark inline-flex items-center gap-2 text-title-header text-strong no-underline hover:underline focus-visible:outline-2 focus-visible:outline-focus',
+                    'public-footer-wordmark inline-flex items-center gap-2 coarse:py-3 text-title-header text-strong no-underline hover:underline focus-visible:outline-2 focus-visible:outline-focus',
                 },
                 [
                   node('img', {
@@ -199,7 +199,7 @@ export function publicFooterTree({
                       {
                         href: footerAddress(link.href),
                         className:
-                          'block py-1 text-body text-muted no-underline hover:underline focus-visible:outline-2 focus-visible:outline-focus',
+                          'block py-1 coarse:py-3 text-body text-muted no-underline hover:underline focus-visible:outline-2 focus-visible:outline-focus',
                       },
                       [link.label],
                     ),

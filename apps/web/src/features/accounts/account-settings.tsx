@@ -8,6 +8,7 @@ import {
   Stack,
   Card,
   Divider,
+  Inset,
   RowCopy,
   ContentHeader,
   FixedDialogLayout,
@@ -17,6 +18,7 @@ import {
   avatarClassName,
   Button,
   SettingsSurface,
+  settingsContentClassName,
   Region,
   ScrollCueRegion,
   CalendarIcon,
@@ -369,10 +371,14 @@ function SessionsSettings(): ReactNode {
                 </>
               }
             />
-            {others.length === 0 ? (
-              <p className="m-0 text-secondary text-muted">No other devices.</p>
-            ) : null}
             <Card as="ul" responsive>
+              {others.length === 0 ? (
+                <ListRow>
+                  <p className="m-0 text-secondary text-muted">
+                    No other devices.
+                  </p>
+                </ListRow>
+              ) : null}
               {others.map((session) => {
                 const name = deviceName(session.userAgent);
                 return (
@@ -670,11 +676,11 @@ function ProfileSettings({
       {saved ? (
         <Notice tone="info" message="Your new name appears in your account." />
       ) : null}
-      <SettingRow label="Email" help="Use this address to sign in.">
-        <span className="min-w-0 truncate text-value text-muted">
-          {email ?? 'No address linked'}
-        </span>
-      </SettingRow>
+      <SettingRow
+        label="Email"
+        help="Use this address to sign in."
+        value={email ?? 'No address linked'}
+      />
     </SettingsSection>
   );
 }
@@ -947,6 +953,7 @@ export function SettingsModal({
     export: (
       <SettingsSection
         section={settingsSection('export')}
+        grouped
         rows
         description="A zip of every note and image, with their folders."
       >
@@ -975,6 +982,7 @@ export function SettingsModal({
     import: (
       <SettingsSection
         section={settingsSection('import')}
+        grouped
         rows
         description="A zip of Markdown files and images. Paths and links are kept."
       >
@@ -1162,8 +1170,8 @@ export function SettingsModal({
               <ContentHeader
                 data-sheet-drag=""
                 data-scroll-edge="above"
-                pad={4}
-                className="ui-settings-root-heading touch-pan-x touch-pinch-zoom lg:hidden"
+                padX={4}
+                className="ui-settings-root-heading fine:h-8 touch-pan-x touch-pinch-zoom lg:hidden"
               >
                 <HeaderSlot side="leading" aria-hidden="true" />
                 <HeaderTitle
@@ -1188,35 +1196,36 @@ export function SettingsModal({
                 className="ui-settings-list flex-1"
                 elementRef={settingsList}
               >
-                <Inline
-                  as="button"
-                  type="button"
-                  data-settings-page="account"
-                  aria-label={`Profile, ${profileName ? `${profileName}, ` : ''}${account.email ?? ''}`}
-                  aria-current={isCurrentPage('account') ? 'page' : undefined}
-                  onClick={() => onChoose('account')}
-                  gap={3}
-                  pad={{ fine: 2, coarse: 4 }}
-                  className={`${rowClassName({ layout: false, current: activePage?.path === 'account' })} ui-account-card w-full text-left rounded-md`}
-                >
-                  <span className={avatarClassName()} aria-hidden="true">
-                    {initial}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-title-header text-strong">
-                      {profileName ?? account.email ?? ''}
+                <Card responsive>
+                  <Inline
+                    as="button"
+                    type="button"
+                    data-settings-page="account"
+                    aria-label={`Profile, ${profileName ? `${profileName}, ` : ''}${account.email ?? ''}`}
+                    aria-current={isCurrentPage('account') ? 'page' : undefined}
+                    onClick={() => onChoose('account')}
+                    gap={3}
+                    pad={2}
+                    className={`${rowClassName({ layout: false, current: activePage?.path === 'account' })} ui-account-card w-full text-left rounded-md`}
+                  >
+                    <span className={avatarClassName()} aria-hidden="true">
+                      {initial}
                     </span>
-                    {!profileName || !account.email ? null : (
-                      <span className="block truncate text-secondary text-muted">
-                        {account.email}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-title-header text-strong">
+                        {profileName ?? account.email ?? ''}
                       </span>
-                    )}
-                  </span>
-                  <span className="lg:hidden">
-                    <ChevronRightIcon />
-                  </span>
-                </Inline>
-                <Divider />
+                      {!profileName || !account.email ? null : (
+                        <span className="block truncate text-secondary text-muted">
+                          {account.email}
+                        </span>
+                      )}
+                    </span>
+                    <span className="lg:hidden">
+                      <ChevronRightIcon />
+                    </span>
+                  </Inline>
+                </Card>
                 <Stack
                   aria-label="Settings sections"
                   gap={{ fine: 2, coarse: 4 }}
@@ -1316,33 +1325,33 @@ export function SettingsModal({
               <ContentHeader
                 data-sheet-drag=""
                 data-scroll-edge="above"
-                pad={{ fine: 6, coarse: 4 }}
+                padX={{ fine: 6, coarse: 1 }}
+                padY={{ fine: 6, coarse: 4 }}
                 className="touch-pan-x touch-pinch-zoom"
               >
-                <Stack gap={0.5} className="min-w-0 flex-1">
+                <HeaderSlot
+                  side="leading"
+                  targetWidth
+                  className={`self-start ${activeAction === null ? 'lg:hidden' : ''}`}
+                >
+                  <IconButton
+                    size="header"
+                    className={activeAction === null ? 'lg:hidden' : undefined}
+                    glyph={<ChevronLeftIcon />}
+                    label={
+                      activeAction === null
+                        ? 'Back to Settings'
+                        : 'Back to section'
+                    }
+                    onClick={() => {
+                      if (activeAction === null) onChoose('');
+                      else activeAction.close();
+                    }}
+                  />
+                </HeaderSlot>
+                <Stack gap={1} className="min-w-0 flex-1">
                   <Inline gap={2} justify="between" className="min-w-0 w-full">
-                    <HeaderSlot
-                      side="leading"
-                      className={activeAction === null ? 'lg:hidden' : ''}
-                    >
-                      <IconButton
-                        size="header"
-                        className={
-                          activeAction === null ? 'lg:hidden' : undefined
-                        }
-                        glyph={<ChevronLeftIcon />}
-                        label={
-                          activeAction === null
-                            ? 'Back to Settings'
-                            : 'Back to section'
-                        }
-                        onClick={() => {
-                          if (activeAction === null) onChoose('');
-                          else activeAction.close();
-                        }}
-                      />
-                    </HeaderSlot>
-                    <HeaderTitle className="min-w-0 flex-1">
+                    <HeaderTitle align="start" className="min-w-0 flex-1">
                       <h2
                         id={pageTitleId}
                         ref={sectionTitle}
@@ -1354,20 +1363,6 @@ export function SettingsModal({
                           settingsTitle}
                       </h2>
                     </HeaderTitle>
-                    <Inline gap={8} justify="end" className="shrink-0">
-                      <div
-                        ref={setActionHeaderTarget}
-                        className="flex shrink-0 items-center empty:hidden"
-                      />
-                      <HeaderSlot side="trailing">
-                        <IconButton
-                          size="header"
-                          glyph={<CloseIcon />}
-                          label="Close Settings"
-                          onClick={closeSettings}
-                        />
-                      </HeaderSlot>
-                    </Inline>
                   </Inline>
                   {scope === undefined ||
                   activeAction?.hideScope === true ? null : (
@@ -1376,6 +1371,20 @@ export function SettingsModal({
                     </p>
                   )}
                 </Stack>
+                <Inline gap={8} justify="end" className="shrink-0 self-start">
+                  <div
+                    ref={setActionHeaderTarget}
+                    className="flex shrink-0 items-center empty:hidden"
+                  />
+                  <HeaderSlot side="trailing" targetWidth>
+                    <IconButton
+                      size="header"
+                      glyph={<CloseIcon />}
+                      label="Close Settings"
+                      onClick={closeSettings}
+                    />
+                  </HeaderSlot>
+                </Inline>
               </ContentHeader>
               <div className="ui-settings-content overflow-hidden flex-1 flex flex-col">
                 <DialogHeaderActionsContext.Provider value={actionHeaderTarget}>
@@ -1403,7 +1412,7 @@ export function SettingsModal({
                     </FixedDialogLayout>
                   ) : (
                     <Stack fill hidden={activeAction !== null}>
-                      <Stack fill padY={{ fine: 6, coarse: 4 }}>
+                      <Stack fill className={settingsContentClassName()}>
                         <ScrollCueRegion data-settings-scroll="">
                           <Stack
                             gap={{ fine: 6, coarse: 4 }}
@@ -1423,8 +1432,13 @@ export function SettingsModal({
                                     inset={{ fine: 0, coarse: 4 }}
                                   />
                                   <Card responsive>
-                                    {activePage.sections.map((key) => (
-                                      <Stack key={key} gap={2}>
+                                    {activePage.sections.map((key, index) => (
+                                      <Stack key={key}>
+                                        {index === 0 ? null : (
+                                          <Inset padX={{ fine: 0, coarse: 4 }}>
+                                            <Divider />
+                                          </Inset>
+                                        )}
                                         {sectionBodies[key]}
                                       </Stack>
                                     ))}

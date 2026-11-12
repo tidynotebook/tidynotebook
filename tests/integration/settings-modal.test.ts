@@ -1423,9 +1423,14 @@ await test('Appearance and editor: preview cards apply at once, and spelling is 
     const label = tile.querySelector('[data-mode-label]');
     assert.ok(label);
     assert.equal(label.classList.contains('truncate'), false);
-    assert.equal(label.parentElement?.querySelector('[data-mode-check]'), null);
-    if (mode.checked)
-      assert.ok(tile.querySelector('[data-mode-preview] [data-mode-check]'));
+    assert.equal(
+      label.parentElement?.querySelectorAll('[data-mode-check]').length,
+      mode.checked ? 1 : 0,
+    );
+    assert.equal(
+      tile.querySelectorAll('[data-mode-check]').length,
+      mode.checked ? 1 : 0,
+    );
   }
   await act(async () => modes[2]?.click());
   assert.deepEqual(calls.choices, ['dark']);
@@ -1818,7 +1823,7 @@ await test('Mail is a section form whose Save stays disabled until a value chang
       [...container.querySelectorAll('.ui-settings-column h3')].map(
         (e) => e.textContent,
       ),
-      ['Server', 'Sign-in', 'Sending'],
+      ['Connection', 'Sign-in', 'Sending'],
     );
     const pair = container.querySelector('[data-field-pair]');
     assert.ok(pair?.querySelector('#mail-host'));
@@ -1928,7 +1933,7 @@ await test('phone admin draft forms keep one frame and return focus without a sa
   try {
     for (const [page, opener, field] of [
       ['legal', 'Terms', '#legal-kind'],
-      ['accounts', '+ Invite a person', '#invite-email'],
+      ['accounts', 'Invite a person', '#invite-email'],
     ] as const) {
       await show(`/w/one?settings=${page}`);
       const start = button(opener);

@@ -414,7 +414,7 @@ function AccountsPage({
                 <Stack gap={0} pad={0} as="ul">
                   {state.invitations.length === 0 ? (
                     <Inset
-                      padY={3}
+                      padY={{ fine: 3, coarse: 4 }}
                       padX={{ fine: 0, coarse: 4 }}
                       as="li"
                       className="text-secondary text-muted"
@@ -457,7 +457,8 @@ function AccountsPage({
                   {phone ? (
                     <li>
                       <SettingActionRow
-                        label="+ Invite a person"
+                        label="Invite a person"
+                        icon={<PlusIcon />}
                         actionLabel="Invite a person"
                         onClick={() => setDialog({ kind: 'invite' })}
                       />

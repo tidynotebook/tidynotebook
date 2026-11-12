@@ -186,6 +186,7 @@ export function Button({
   const hasChildren = children !== undefined && children !== null;
   const classes = buttonClassName({
     variant,
+    settingsRow,
     size: settingsRow ? 'compact' : size,
     tone,
     iconOnly: !hasChildren,
@@ -218,7 +219,7 @@ export function Button({
       {...nativeProps}
       ref={buttonRef ?? nativeRef}
       type={type ?? 'button'}
-      className={`${full ? 'w-full' : ''} ${classes} ${optical ? 'absolute inset-x-1 top-0 coarse:inset-x-0' : ''} ${settingsRow ? 'ds-row-button absolute left-0 top-1/2 -translate-y-1/2 h-7 w-full px-2 coarse:h-11 coarse:border-0 coarse:bg-transparent coarse:px-0 ' : ''}`}
+      className={`${full ? 'w-full' : ''} ${classes} ${optical ? 'absolute inset-x-1 top-0 coarse:inset-x-0' : ''} ${settingsRow ? 'ds-row-button absolute left-0 top-1/2 -translate-y-1/2 h-7 w-full px-2 coarse:h-11 coarse:border-0 coarse:bg-transparent coarse:px-0 ' : ''} ${settingsRow && variant === 'secondary' && tone !== 'danger' ? 'coarse:text-accent' : ''}`}
       disabled={disabled ?? false}
       onClick={onClick}
       aria-label={name.ariaLabel}
@@ -766,7 +767,7 @@ export function Switch({
     classes = switchClassNames(checked);
   if (hideLabel)
     return (
-      <span className="relative inline-flex h-7 w-10 shrink-0 items-center justify-center coarse:h-5">
+      <span className="relative inline-flex h-7 w-8 shrink-0 items-center justify-center coarse:h-5">
         <button
           type="button"
           role="switch"

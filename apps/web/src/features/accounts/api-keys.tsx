@@ -12,6 +12,7 @@ import {
   MetaFacts,
   LoadingState,
   Notice,
+  PlusIcon,
   ReadOnlyField,
   SelectField,
   TextField,
@@ -106,18 +107,19 @@ export function ApiKeySettings(): ReactNode {
                   variant="secondary"
                   size="compact"
                   label="Create API key"
+                  icon={<PlusIcon />}
                   buttonRef={createButton}
                   disabled={keys.length >= maxApiKeys}
                   onClick={() => setCreating(true)}
                 >
-                  + Create API key
+                  Create API key
                 </Button>
               }
             />
           )}
           {keys.length === 0 ? (
             <Inset
-              padY={3}
+              padY={{ fine: 3, coarse: 4 }}
               padX={{ fine: 0, coarse: 4 }}
               as="p"
               className="text-secondary text-muted"
@@ -180,7 +182,8 @@ export function ApiKeySettings(): ReactNode {
               aria-label="Create API key"
               className="text-left"
               labelTone="accent"
-              label="+ Create API key"
+              label="Create API key"
+              leading={<PlusIcon />}
               disabled={keys.length >= maxApiKeys}
               onClick={() => setCreating(true)}
             ></ListRow>

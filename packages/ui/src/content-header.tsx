@@ -32,14 +32,17 @@ export function ContentHeader({
 }
 export function HeaderTitle({
   children,
+  align = 'center',
   className = '',
   ...props
-}: ComponentPropsWithRef<'div'>): ReactNode {
+}: ComponentPropsWithRef<'div'> & {
+  readonly align?: 'start' | 'center';
+}): ReactNode {
   return (
     <Stack
       {...props}
       gap={0.5}
-      className={`min-w-0 flex-1 coarse:pointer-events-none coarse:absolute coarse:inset-x-16 coarse:text-center ${className}`}
+      className={`min-w-0 flex-1 ${align === 'center' ? 'coarse:pointer-events-none coarse:absolute coarse:inset-x-16 coarse:text-center' : ''} ${className}`}
     >
       {children}
     </Stack>
@@ -49,15 +52,18 @@ export function HeaderSlot({
   children,
   className = '',
   side,
+  targetWidth = false,
   ...props
 }: ComponentPropsWithRef<'span'> & {
   readonly side?: 'leading' | 'trailing';
+  /** Reserve the target width when text must not share its horizontal space. */
+  readonly targetWidth?: boolean;
 }): ReactNode {
   return (
     <span
       {...props}
       data-header-slot={side}
-      className={`relative inline-flex h-6 w-4 shrink-0 items-center justify-center ${className}`}
+      className={`relative inline-flex h-6 ${targetWidth ? 'w-7 coarse:w-11' : 'w-4'} shrink-0 items-center justify-center ${className}`}
     >
       {children}
     </span>

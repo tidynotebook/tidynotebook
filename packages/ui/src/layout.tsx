@@ -83,7 +83,7 @@ export function Page({
 }): ReactNode {
   return (
     <main
-      className={`${pageRowClassName()} ${pageGutter} min-h-full py-6 coarse:py-4`}
+      className={`${pageRowClassName()} ${pageGutter} min-h-full shrink-0 py-6 coarse:py-4`}
     >
       <Stack gap={{ fine: 4, coarse: 3 }} className={pageColumnClassName()}>
         {children}
@@ -177,23 +177,27 @@ export function PageHeader({
             : 'min-w-0 grow basis-full sm:basis-0 flex flex-col gap-1'
         }
       >
-        <Inline gap={1} align="center" className="min-w-0">
-          {back}
-          <Inline gap={1} align="baseline" className="min-w-0">
-            <h1
-              className="m-0 min-w-0 text-title-page tracking-heading text-strong"
-              id={id}
-            >
-              {title}
-            </h1>
-            {count === undefined ? null : (
-              <span className="text-value text-muted">{count}</span>
+        <Inline gap={2} align="start" className="min-w-0">
+          <span className="relative inline-flex h-7 w-7 coarse:h-6 coarse:w-11 shrink-0 items-center justify-center empty:hidden">
+            {back}
+          </span>
+          <Stack gap={1} className="min-w-0 flex-1">
+            <Inline gap={1} align="baseline" className="min-w-0">
+              <h1
+                className="m-0 min-w-0 text-title-page tracking-heading text-strong"
+                id={id}
+              >
+                {title}
+              </h1>
+              {count === undefined ? null : (
+                <span className="text-value text-muted">{count}</span>
+              )}
+            </Inline>
+            {description === undefined || description === '' ? null : (
+              <p className="text-secondary text-muted">{description}</p>
             )}
-          </Inline>
+          </Stack>
         </Inline>
-        {description === undefined || description === '' ? null : (
-          <p className="text-secondary text-muted">{description}</p>
-        )}
       </div>
       {actions === undefined ? null : (
         <div className={pageHeaderActionsClassName(actionLayout)}>
@@ -324,7 +328,7 @@ export function listRowClasses(
 ): string {
   return density === 'setting'
     ? 'ui-settings-row ui-setting-fill fine:isolate fine:before:pointer-events-auto fine:before:absolute fine:before:inset-y-0 fine:before:-inset-x-2 fine:before:-z-10 fine:before:rounded-md fine:before:bg-inherit text-left relative flex min-w-0 w-full items-center gap-4 py-3 px-0 coarse:px-4 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:border-b after:border-edge-subtle coarse:after:left-4 last:after:hidden'
-    : `flex min-w-0 w-full items-center gap-2 rounded-md text-left py-1 coarse:rounded-lg coarse:py-2 ${contentEdge ? 'px-0 ' + contentEdgeRowClassName : 'px-2 coarse:px-3'}`;
+    : `flex min-w-0 w-full items-center gap-2 rounded-md text-left py-1 coarse:rounded-lg coarse:py-3 ${contentEdge ? 'px-0 ' + contentEdgeRowClassName : 'px-2 coarse:px-3'}`;
 }
 export function ListRow({
   children,
@@ -376,6 +380,8 @@ export function ListRow({
     customControl ??
     (trailing?.kind === 'chevron' ? (
       <ChevronRightIcon />
+    ) : trailing?.kind === 'value' ? (
+      <span className="inline-block w-4 shrink-0" aria-hidden="true" />
     ) : trailing?.kind === 'switch' ? (
       <span
         className={switchClassNames(trailing.checked).track}
@@ -431,9 +437,18 @@ export function ListRow({
       {value !== undefined || control ? (
         <span
           data-setting-control={rowDensity === 'setting' ? '' : undefined}
-          className={`ui-settings-control inline-flex shrink-0 items-center justify-end gap-2 text-value text-muted ${rowDensity === 'setting' ? 'h-7 coarse:h-5' : ''}`}
+          className={`ui-settings-control inline-flex shrink-0 items-center justify-end gap-2 text-value text-muted ${rowDensity === 'setting' ? 'h-7 coarse:h-5' : ''} ${trailing?.kind === 'value' ? 'max-w-1/2' : ''}`}
         >
-          {value}
+          {trailing?.kind === 'value' ? (
+            <span
+              className="min-w-0 truncate"
+              title={typeof value === 'string' ? value : undefined}
+            >
+              {value}
+            </span>
+          ) : (
+            value
+          )}
           {control}
         </span>
       ) : null}

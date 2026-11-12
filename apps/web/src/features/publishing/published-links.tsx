@@ -5,6 +5,7 @@ import {
   EmptyState,
   LinkIcon,
   ListRow,
+  MetaFacts,
   LoadingState,
   Notice,
   Page,
@@ -228,17 +229,7 @@ function PublishedLinksList({
                       <p className="m-0 truncate text-body text-strong">
                         {name}
                       </p>
-                      <Inline
-                        gap={2}
-                        wrap
-                        as="p"
-                        className="text-secondary text-muted"
-                        title={facts.join(', ')}
-                      >
-                        {facts.slice(0, shownLinkFacts).map((fact) => (
-                          <span key={fact}>{fact}</span>
-                        ))}
-                      </Inline>
+                      <MetaFacts facts={facts.slice(0, shownLinkFacts)} />
                     </div>
                     {link.takenDown ? null : (
                       <Inline

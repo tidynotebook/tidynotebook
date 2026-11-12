@@ -6,6 +6,7 @@ import { IconButton } from './icon-button.tsx';
 import { ChevronLeftIcon, CloseIcon } from './icons.tsx';
 import { LoadingState } from './loading.tsx';
 import { Inline, Stack } from './primitives.tsx';
+import { settingsContentClassName } from './settings-layout.tsx';
 
 export function SettingsLoading({
   listLevel,
@@ -40,7 +41,7 @@ export function SettingsLoading({
         <div
           className={`${listLevel ? 'flex' : 'hidden'} bg-card overflow-hidden flex-1 flex-col lg:flex lg:w-60 lg:flex-none lg:border-r lg:border-edge-subtle`}
         >
-          <ContentHeader pad={4} className="lg:hidden">
+          <ContentHeader padX={4} className="fine:h-8 lg:hidden">
             <HeaderSlot side="leading" aria-hidden="true" />
             <HeaderTitle
               ref={listTitle}
@@ -66,36 +67,50 @@ export function SettingsLoading({
           gap={0}
           className={`${listLevel ? 'hidden' : 'flex'} min-w-0 flex-1 overflow-hidden lg:flex`}
         >
-          <ContentHeader pad={{ fine: 6, coarse: 4 }}>
-            <Stack gap={0.5} className="min-w-0 flex-1">
+          <ContentHeader
+            padX={{ fine: 6, coarse: 1 }}
+            padY={{ fine: 6, coarse: 4 }}
+          >
+            <HeaderSlot
+              side="leading"
+              targetWidth
+              className="self-start lg:hidden"
+            >
+              <IconButton
+                size="header"
+                glyph={<ChevronLeftIcon />}
+                label="Back to Settings"
+                onClick={onBack}
+              />
+            </HeaderSlot>
+            <Stack gap={1} className="min-w-0 flex-1">
               <Inline gap={2} justify="between">
-                <HeaderSlot side="leading" className="lg:hidden">
-                  <IconButton
-                    size="header"
-                    glyph={<ChevronLeftIcon />}
-                    label="Back to Settings"
-                    onClick={onBack}
-                  />
-                </HeaderSlot>
-                <HeaderTitle className="text-title-header text-strong">
+                <HeaderTitle
+                  align="start"
+                  className="text-title-header text-strong"
+                >
                   Settings
                 </HeaderTitle>
-                <HeaderSlot side="trailing">
-                  <IconButton
-                    size="header"
-                    glyph={<CloseIcon />}
-                    label="Close Settings"
-                    onClick={onClose}
-                  />
-                </HeaderSlot>
               </Inline>
               <div
                 aria-hidden="true"
                 className="h-5 w-1/2 rounded-md bg-hover motion-safe:animate-pulse"
               />
             </Stack>
+            <HeaderSlot side="trailing" targetWidth className="self-start">
+              <IconButton
+                size="header"
+                glyph={<CloseIcon />}
+                label="Close Settings"
+                onClick={onClose}
+              />
+            </HeaderSlot>
           </ContentHeader>
-          <Stack pad={{ fine: 6, coarse: 4 }} aria-hidden="true">
+          <Stack
+            padX={{ fine: 6, coarse: 4 }}
+            className={settingsContentClassName()}
+            aria-hidden="true"
+          >
             <LoadingState label="" rows={4} />
           </Stack>
         </Stack>

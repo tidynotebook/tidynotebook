@@ -273,7 +273,7 @@ function MailSettingsForm({
           />
         ) : null}
         <Stack gap={3}>
-          <SectionHeading label="Server" />
+          <SectionHeading label="Connection" />
           <Inline gap={3} align="start" className="w-full" data-field-pair="">
             <div className="min-w-0 flex-1">
               <TextField
@@ -350,8 +350,8 @@ function MailSettingsForm({
               className="ui-field-help text-secondary text-muted"
             >
               {keepsPassword
-                ? 'Leave the password empty to keep the saved one. Leave both fields empty for a server that takes mail with no sign-in.'
-                : 'Leave both fields empty for a server that takes mail with no sign-in.'}
+                ? 'Leave the password empty to keep the saved one. Leave both fields empty if the server does not need an account.'
+                : 'Leave both fields empty if the server does not need an account.'}
             </p>
           </Stack>
         </Stack>

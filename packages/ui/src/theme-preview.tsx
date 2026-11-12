@@ -1,7 +1,23 @@
 /** A miniature theme uses the same variables as the page. */
 import { useLayoutEffect, useRef, type ReactNode } from 'react';
 import { applyTheme, type Theme } from './theme.ts';
-import { Stack } from './primitives.tsx';
+import { Grid, Stack } from './primitives.tsx';
+/** Keep every family visible, including on a narrow phone. */
+export function ThemeFamilyGrid({
+  children,
+}: {
+  readonly children: ReactNode;
+}): ReactNode {
+  return (
+    <Grid
+      as="ul"
+      gap={2}
+      className="ui-theme-tiles list-none grid-cols-2 sm:grid-cols-3 md:grid-cols-4"
+    >
+      {children}
+    </Grid>
+  );
+}
 export function ThemePreview({
   theme,
   className = '',

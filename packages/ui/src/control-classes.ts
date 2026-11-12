@@ -122,12 +122,19 @@ function buttonVariantClassName(
   variant: ButtonVariant,
   tone: ButtonTone | undefined,
   interaction: 'button' | 'group',
+  settingsRow = false,
 ): string {
   const colours = buttonColours[interaction];
-  if (tone === 'danger' && variant === 'secondary')
-    return colours['secondary-danger'];
-  if (tone === 'danger' && variant === 'ghost') return colours['ghost-danger'];
-  return colours[variant];
+  const key =
+    tone === 'danger' && variant === 'secondary'
+      ? 'secondary-danger'
+      : tone === 'danger' && variant === 'ghost'
+        ? 'ghost-danger'
+        : variant;
+  // Phone Settings actions have no raised surface. Their desktop depth stays.
+  return settingsRow
+    ? colours[key].replace(' shadow-raised ', ' fine:shadow-raised ')
+    : colours[key];
 }
 
 /**
@@ -176,6 +183,7 @@ export function buttonClassName(
     readonly iconOnly?: boolean | undefined;
     readonly iconSize?: IconSize | undefined;
     readonly compact?: boolean | undefined;
+    readonly settingsRow?: boolean;
     readonly className?: string | undefined;
   } = {},
 ): string {
@@ -184,7 +192,12 @@ export function buttonClassName(
   const compact = options.compact === true;
   const variantClass = compact
     ? 'group bg-transparent'
-    : buttonVariantClassName(variant, options.tone, 'button');
+    : buttonVariantClassName(
+        variant,
+        options.tone,
+        'button',
+        options.settingsRow,
+      );
 
   const compactSize = compact || size === 'compact';
   const iconSizes = {
@@ -383,7 +396,7 @@ export function rowClassName(
       : 'disabled:cursor-not-allowed disabled:text-muted disabled:hover:bg-transparent disabled:hover:text-muted'
     : '';
   return [
-    `${options.layout === false ? '' : 'ui-tree-row flex items-center gap-2 rounded-md py-1 coarse:py-2 coarse:rounded-lg ' + (options.flush === true || options.contentEdge ? 'px-0' : 'px-2 coarse:px-3')} text-body ${colour} no-underline ${transitionSurface}`,
+    `${options.layout === false ? '' : 'ui-tree-row flex items-center gap-2 rounded-md py-1 coarse:py-3 coarse:rounded-lg ' + (options.flush === true || options.contentEdge ? 'px-0' : 'px-2 coarse:px-3')} text-body ${colour} no-underline ${transitionSurface}`,
     options.contentEdge ? contentEdgeRowClassName : '',
     interactive ? 'cursor-pointer' : '',
     disabled,
@@ -853,8 +866,8 @@ export function switchClassNames(checked: boolean): {
       flush: true,
       className: 'w-full text-left py-3 px-0 coarse:px-4',
     }),
-    track: `inline-flex h-6 w-10 shrink-0 items-center rounded-full border border-edge p-1 ${checked ? 'justify-end bg-accent-fill' : 'justify-start bg-hover'}`,
-    thumb: `size-4 rounded-full ${checked ? 'bg-on-accent' : 'bg-muted'}`,
+    track: `inline-flex h-5 w-8 shrink-0 items-center rounded-full border border-edge p-0.5 ${checked ? 'justify-end bg-accent-fill' : 'justify-start bg-hover'}`,
+    thumb: `size-3 rounded-full ${checked ? 'bg-on-accent' : 'bg-muted'}`,
   };
 }
 
