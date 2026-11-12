@@ -38,10 +38,16 @@ export function formatToolbarFrameClassName(): string {
   return `flex justify-center shrink-0 px-2 ${fixedRegionClasses('bottom')}`;
 }
 export function formatToolbarColumnClassName(): string {
-  return 'w-full max-w-note';
+  return 'flex min-w-0 w-full max-w-note';
 }
 export function formatToolbarClassName(): string {
-  return `${controlStripClassName()} gap-1 md:gap-4`;
+  return `${controlStripClassName()} min-w-0 flex-1 gap-1 md:gap-4`;
+}
+/** Passive cues have their own space and never cover a tool. */
+export function formatToolbarCueClassName(visible: boolean): string {
+  const base =
+    'pointer-events-none flex w-4 shrink-0 items-center justify-center text-muted';
+  return visible ? base : `${base} invisible`;
 }
 export function formatToolGroupClassName(): string {
   return 'flex shrink-0 items-center gap-1';

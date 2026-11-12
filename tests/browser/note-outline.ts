@@ -114,7 +114,7 @@ try {
         await replaceText(page, source);
         await rows(page, 42);
         await page
-          .getByText('7183 words', { exact: true })
+          .getByText('7141 words', { exact: true })
           .waitFor({ state: 'attached' });
         await checkpoint(page);
         const elapsed = performance.now() - start;

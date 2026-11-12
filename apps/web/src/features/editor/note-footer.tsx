@@ -1,4 +1,5 @@
 import { observeElementScrollEdges } from '@notesapp/ui';
+import { MarkdownLimitError, markdownWordCount } from '@notesapp/markdown';
 /**
  * The quiet footer of the note screen.
  *
@@ -25,9 +26,13 @@ import {
 } from '../../lib/note-column.ts';
 
 /** Counts the words of a Markdown buffer. */
-export function wordCount(text: string): number {
-  const words = text.trim().match(/\S+/gu);
-  return words === null ? 0 : words.length;
+export function wordCount(text: string): number | null {
+  try {
+    return markdownWordCount(text);
+  } catch (error) {
+    if (error instanceof MarkdownLimitError) return null;
+    throw error;
+  }
 }
 
 /**
@@ -72,7 +77,9 @@ export function NoteFooter({
     <footer data-scroll-edge="below" className={noteFooterClassName(typing)}>
       <div className={noteColumnClassName()}>
         <span>
-          {count} {count === 1 ? 'word' : 'words'}
+          {count === null
+            ? 'Word count unavailable'
+            : `${String(count)} ${count === 1 ? 'word' : 'words'}`}
         </span>
       </div>
     </footer>

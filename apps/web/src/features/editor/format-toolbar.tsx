@@ -1,4 +1,10 @@
-import { IconButton, HistoryButton } from '@notesapp/ui';
+import {
+  IconButton,
+  HistoryButton,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  formatToolbarCueClassName,
+} from '@notesapp/ui';
 /**
  * The row of formatting tools above the note text (record 0094).
  *
@@ -14,9 +20,9 @@ import { IconButton, HistoryButton } from '@notesapp/ui';
  * Tab leave the row from the tool a person is on. When the focus leaves, the
  * stop goes back to the first tool that applies. Every tool is a button of
  * the row, and a row wider than the screen scrolls sideways, so no menu covers
- * the text. The row shows no arrow at an end, because a person swipes a row of
- * tools, and an arrow takes room from the tools. The row stands above the
- * text at every width.
+ * the text. Passive edge cues show where tools are hidden. They have their
+ * own space, no action and no tab stop. The row stands above the text at
+ * every width.
  *
  * Where the caret stands decides which tools apply. In a table a block tool
  * is disabled, because a table line is a row. A table carries its own
@@ -93,6 +99,43 @@ export function FormatToolbar({
   readonly onFormat: (id: FormatActionId) => void;
 }): ReactNode {
   const rowRef = useRef<HTMLDivElement | null>(null);
+  const frameRef = useRef<HTMLDivElement | null>(null);
+  const [edges, setEdges] = useState({
+    overflow: false,
+    start: false,
+    end: false,
+  });
+  useEffect(() => {
+    const row = rowRef.current;
+    const frame = frameRef.current;
+    if (!row || !frame) return;
+    const update = (): void => {
+      const next = {
+        // Compare with the full frame so the cue space cannot keep itself open.
+        overflow: row.scrollWidth > frame.clientWidth + 1,
+        start: row.scrollLeft > 1,
+        end: row.scrollLeft + row.clientWidth < row.scrollWidth - 1,
+      };
+      setEdges((previous) =>
+        previous.overflow === next.overflow &&
+        previous.start === next.start &&
+        previous.end === next.end
+          ? previous
+          : next,
+      );
+    };
+    row.addEventListener('scroll', update, { passive: true });
+    const observer =
+      typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update);
+    observer?.observe(frame);
+    observer?.observe(row);
+    for (const group of row.children) observer?.observe(group);
+    update();
+    return () => {
+      row.removeEventListener('scroll', update);
+      observer?.disconnect();
+    };
+  }, []);
   const groups = formatToolbar;
   const enabled = [
     true,
@@ -148,6 +191,7 @@ export function FormatToolbar({
   return (
     <div data-scroll-edge="above" className={formatToolbarFrameClassName()}>
       <div
+        ref={frameRef}
         className={formatToolbarColumnClassName()}
         onPointerDown={(event): void => {
           const press = pressOf(event.target, event.pointerType);
@@ -162,6 +206,15 @@ export function FormatToolbar({
             event.preventDefault();
         }}
       >
+        {edges.overflow && (
+          <span
+            aria-hidden="true"
+            data-toolbar-cue="start"
+            className={formatToolbarCueClassName(edges.start)}
+          >
+            <ChevronLeftIcon size={16} />
+          </span>
+        )}
         <div
           ref={rowRef}
           role="toolbar"
@@ -236,6 +289,15 @@ export function FormatToolbar({
             </div>
           ))}
         </div>
+        {edges.overflow && (
+          <span
+            aria-hidden="true"
+            data-toolbar-cue="end"
+            className={formatToolbarCueClassName(edges.end)}
+          >
+            <ChevronRightIcon size={16} />
+          </span>
+        )}
       </div>
     </div>
   );

@@ -10,8 +10,45 @@ import test from 'node:test';
 import type { Root } from 'mdast';
 import { extractLinks, indexNote } from './links.ts';
 import { MarkdownLimitError, markdownLimits } from './limits.ts';
-import { blockSeparator, readableText, readableTextOf } from './plain-text.ts';
+import {
+  blockSeparator,
+  readableText,
+  readableTextOf,
+  markdownWordCount,
+} from './plain-text.ts';
 import { renderMarkdown } from './render.ts';
+
+await test('word count reads content without generated separators or syntax', () => {
+  const cases: readonly (readonly [string, number])[] = [
+    ['', 0],
+    ['   \n\t', 0],
+    [
+      '# T32 D24 Restore focus\n\nOnly synthetic audit text. Restore must keep these bytes.\n',
+      13,
+    ],
+    ['# Title\n\n- one item\n- two\n\n> a quote\n\n---\n\nend', 7],
+    ['**one** _two_ ~~three~~ `four five`', 5],
+    [
+      '[two words](https://hidden.example/a) ![two more](image.png)\n\n[x]: https://hidden.example',
+      4,
+    ],
+    ['```sh\nls notes\n```\n\n$one two$', 4],
+    ['| a | b |\n| - | - |\n| c | d |', 4],
+    ['---\ntitle: hidden\n---\n\nA <b>bold</b> word<br>here', 4],
+    ['A · B\n\nC', 4],
+    ['one**two**three', 1],
+    ['# Title\n\nTitle', 2],
+    ['[unfinished words', 2],
+  ];
+  for (const [source, expected] of cases)
+    assert.equal(markdownWordCount(source), expected, source);
+  // Excerpts keep their existing block punctuation.
+  assert.equal(readableText('# Title\n\nText'), 'Title · Text');
+  assert.throws(
+    () => markdownWordCount('x'.repeat(markdownLimits.maxInputBytes + 1)),
+    MarkdownLimitError,
+  );
+});
 
 await test('emphasis marks go and their words stay', () => {
   // The defect this covers: a palette result showed `**` marks and whole

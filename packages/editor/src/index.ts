@@ -66,7 +66,7 @@ export { plainTextContext } from './format-context.ts';
 export { htmlToMarkdown } from './paste.ts';
 export { takeMarginTaps } from './list-marker.ts';
 export type { EditorState } from '@codemirror/state';
-export type { EditorView } from '@codemirror/view';
+export { EditorView } from '@codemirror/view';
 export {
   findTaskBox,
   insertText,

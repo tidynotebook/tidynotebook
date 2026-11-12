@@ -85,7 +85,11 @@ export {
   renderMath,
 } from './math.ts';
 export type { ReadableTextOptions } from './plain-text.ts';
-export { blockSeparator, readableText } from './plain-text.ts';
+export {
+  blockSeparator,
+  readableText,
+  markdownWordCount,
+} from './plain-text.ts';
 export type { CodeLanguage } from './code-languages.ts';
 export {
   codeBlockLabel,
