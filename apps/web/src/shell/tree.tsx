@@ -55,7 +55,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
 } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import type { PublicationScope } from '@notesapp/core';
 
 import { useLocalStore, useRequestSync, useSession } from '../app.tsx';
@@ -70,6 +70,12 @@ import { duplicateNote } from '../features/notes/duplicate-note.ts';
 import { actionIcon } from './action-icons.tsx';
 import { useFiles, type OpenFoldersControl } from './files.tsx';
 import { useContentRowWindow } from './content-row-window.ts';
+import { scrollerOf } from './row-window.ts';
+import type { CreatedFolderReveal } from '../features/folders/created-folder-reveal.ts';
+export type {
+  CreatedFolderReveal,
+  CreatedFolderRevealOwner,
+} from '../features/folders/created-folder-reveal.ts';
 import type { TreeDrag } from './tree-drag.ts';
 import type { DragItem } from '../lib/folder-moves.ts';
 import type { TreeNode } from '../lib/note-list.ts';
@@ -129,6 +135,13 @@ import {
 } from '../lib/tree-selection.ts';
 import { trashPlan } from '../lib/tree-trash.ts';
 
+type FolderRevealControl = {
+  readonly request: CreatedFolderReveal | null;
+  readonly isCurrent: (request: CreatedFolderReveal) => boolean;
+  readonly finish: (request: CreatedFolderReveal) => void;
+  readonly cancel: (event?: Event) => void;
+};
+
 /** What the tree asks the frame to do, and what it reads from it. */
 export type NoteTreeProps = {
   readonly workspaceId: string;
@@ -139,6 +152,7 @@ export type NoteTreeProps = {
   readonly activeFileId: string | null;
   /** The folder that a create action uses as its parent (record 0029). */
   readonly selectedFolder: string;
+  readonly folderReveal?: FolderRevealControl | undefined;
   readonly folders: OpenFoldersControl;
   readonly drag: TreeDrag;
   /** Makes a folder the create parent without changing the open page. */
@@ -215,6 +229,7 @@ export function NoteTree({
   knownFolders,
   activeFileId,
   selectedFolder,
+  folderReveal,
   folders,
   drag,
   onSelectFolder,
@@ -225,6 +240,7 @@ export function NoteTree({
   onMove,
 }: NoteTreeProps): ReactNode {
   const navigate = useNavigate();
+  const location = useLocation();
   const files = useFiles();
   const store = useLocalStore();
   const session = useSession();
@@ -280,6 +296,56 @@ export function NoteTree({
     focusKey === null ? null : (indexByKey.get(focusKey) ?? null);
   const rowKeys = useMemo(() => rows.map((row) => row.key), [rows]);
   const rowsInView = useContentRowWindow(rowKeys, focusIndex);
+  const listElement = useRef<HTMLElement | null>(null);
+  const attachList = useCallback(
+    (element: HTMLElement | null): void => {
+      listElement.current = element;
+      rowsInView.listRef(element);
+    },
+    [rowsInView.listRef],
+  );
+  const revealControl = useRef(folderReveal);
+  revealControl.current = folderReveal;
+  const hasRevealControl = folderReveal !== undefined;
+  useEffect(() => {
+    const list = listElement.current;
+    if (!list || !hasRevealControl) return;
+    const scroller = scrollerOf(list) ?? list;
+    // The parent reads its latest request even before new props commit.
+    const manual = (event: Event): void => revealControl.current?.cancel(event);
+    const events = ['wheel', 'pointerdown', 'touchstart', 'keydown'] as const;
+    for (const event of events)
+      scroller.addEventListener(event, manual, {
+        capture: true,
+        passive: true,
+      });
+    return () => {
+      for (const event of events)
+        scroller.removeEventListener(event, manual, true);
+      // Strict Mode replays effects with connected DOM. A real removal does not.
+      if (!list.isConnected) revealControl.current?.cancel();
+    };
+  }, [hasRevealControl]);
+  useLayoutEffect(() => () => revealControl.current?.request?.pause(), []);
+
+  // The action is already loaded by the dialog. No hook or import is deferred.
+  useLayoutEffect(() => {
+    const request = folderReveal?.request;
+    request?.update({
+      accountId,
+      workspaceId,
+      routeKey: location.key,
+      list: listElement.current,
+      index: indexByKey.get(folderRowKey(request.path)),
+      row: () => elements.current.get(folderRowKey(request.path)),
+      reveal: rowsInView.reveal,
+      isCurrent: (candidate) =>
+        revealControl.current?.isCurrent(candidate) === true,
+      claim: () => {
+        revealedFor.current = activeKey;
+      },
+    });
+  });
   const selecting = selection.keys.size > 0;
 
   // A row that left the screen leaves the selection.
@@ -835,7 +901,7 @@ export function NoteTree({
       <Stack
         gap={0.5}
         pad={0}
-        ref={rowsInView.listRef}
+        ref={attachList}
         className={treeItemsClassName}
         role="tree"
         aria-label={treeLabel}

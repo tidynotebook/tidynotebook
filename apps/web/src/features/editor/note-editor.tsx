@@ -170,6 +170,8 @@ export type NoteEditorProps = {
   readonly initialSequence?: number | undefined;
   /** A new note: the caret goes into its text (record 0163). */
   readonly focusText?: boolean | undefined;
+  /** Selects a new name on first focus; by default it follows focusText. */
+  readonly selectNameOnFirstFocus?: boolean | undefined;
   readonly onOpenLink?: ((target: LinkTarget) => void) | undefined;
   readonly onQueued?: ((entry: QueueEntry | null) => void) | undefined;
   /** Opens the Move to folder dialog that the note screen owns. */
@@ -263,6 +265,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
   initialWorkingCopyId,
   initialSequence = 0,
   focusText = false,
+  selectNameOnFirstFocus = focusText,
   onOpenLink,
   onQueued,
   onMoveToFolder,
@@ -1421,7 +1424,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
         name={name}
         nameError={pathError}
         nameInputRef={nameInputRef}
-        selectOnFirstFocus={focusText}
+        selectOnFirstFocus={selectNameOnFirstFocus}
         onNameChange={typeName}
         onNameCommit={commitName}
         onNameRevert={revertName}

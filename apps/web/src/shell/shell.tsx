@@ -86,6 +86,7 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -183,6 +184,11 @@ import {
 } from './sidebar-size.ts';
 import { useTreeDrag } from './tree-drag.ts';
 import { NoteTree } from './tree.tsx';
+import type {
+  CreatedFolderReveal,
+  CreatedFolderRevealOwner,
+  CreateFolderReveal,
+} from '../features/folders/created-folder-reveal.ts';
 import {
   rowSpacerClassName,
   treeListClassName,
@@ -393,6 +399,72 @@ function Breadcrumb({
   );
 }
 
+/** Owns the one creation intent until this tree finishes or cancels it. */
+function useFolderCreation(
+  owner: CreatedFolderRevealOwner,
+  addEmptyFolder: (folder: string) => void,
+  openFolder: (folder: string) => void,
+  selectFolder: (folder: string) => void,
+) {
+  const currentOwner = useRef(owner);
+  currentOwner.current = owner;
+  const latest = useRef<CreatedFolderReveal | null>(null);
+  const [request, setRequest] = useState<CreatedFolderReveal | null>(null);
+  const clear = useCallback((done: CreatedFolderReveal): void => {
+    if (latest.current !== done) return;
+    latest.current = null;
+    done.cancel();
+    setRequest((current) => (current === done ? null : current));
+  }, []);
+  useLayoutEffect(() => {
+    const previous = latest.current;
+    if (previous !== null && previous.owner !== owner) clear(previous);
+  }, [owner, clear]);
+  const isCurrent = useCallback(
+    (candidate: CreatedFolderReveal): boolean =>
+      currentOwner.current === owner &&
+      candidate.owner === owner &&
+      latest.current === candidate,
+    [owner],
+  );
+  const finish = useCallback(
+    (done: CreatedFolderReveal): void => {
+      if (done.owner === owner) clear(done);
+    },
+    [owner, clear],
+  );
+  const cancel = useCallback(
+    (event?: Event): void => {
+      const pending = latest.current;
+      if (pending?.owner !== owner) return;
+      if (event) pending.manual(event);
+      else clear(pending);
+    },
+    [owner, clear],
+  );
+  const onCreated = useCallback(
+    (folder: string, createReveal: CreateFolderReveal): void => {
+      addEmptyFolder(folder);
+      for (const above of ancestorFolders(folder)) openFolder(above);
+      selectFolder(folder);
+      openFolder(folder);
+      if (currentOwner.current !== owner || owner.accountId === null) return;
+      latest.current?.cancel();
+      const next = createReveal(owner, folder, finish);
+      latest.current = next;
+      setRequest(next);
+    },
+    [owner, addEmptyFolder, openFolder, selectFolder, finish],
+  );
+  return {
+    request: request?.owner === owner ? request : null,
+    isCurrent,
+    finish,
+    cancel,
+    onCreated,
+  };
+}
+
 /**
  * The sidebar: a column of rows on the chrome plane.
  *
@@ -404,6 +476,7 @@ function Sidebar({
   workspaceId,
   view,
   selectedFolder,
+  folderCreation,
   folders,
   knownFolders,
   newNoteProblem,
@@ -423,6 +496,7 @@ function Sidebar({
   /** What the panel shows, which the view bar chose (record 0105). */
   readonly view: SidebarView;
   readonly selectedFolder: string;
+  readonly folderCreation: ReturnType<typeof useFolderCreation>;
   readonly folders: OpenFoldersControl;
   /** Every folder the tree shows, which Expand all folders opens. */
   readonly knownFolders: readonly string[];
@@ -789,6 +863,7 @@ function Sidebar({
                     knownFolders={knownFolders}
                     activeFileId={fileId}
                     selectedFolder={selectedFolder}
+                    folderReveal={folderCreation}
                     folders={folders}
                     drag={drag}
                     onSelectFolder={onSelectFolder}
@@ -1162,6 +1237,21 @@ function ShellFrame({
   const files = useFiles();
   const workspace = useWorkspace();
   const accountId = session.account?.accountId ?? null;
+  const folderRevealOwner = useMemo(
+    () => ({
+      accountId,
+      workspaceId,
+      routeKey: location.key,
+      view: sidebarView,
+    }),
+    [accountId, workspaceId, location.key, sidebarView],
+  );
+  const folderCreation = useFolderCreation(
+    folderRevealOwner,
+    files.addEmptyFolder,
+    folders.openFolder,
+    setSelectedFolder,
+  );
   const sync = useWorkspaceSync(store.store, accountId, workspaceId);
   const syncSession = useSyncSession();
   const flushNoteDraft = useFlushNoteDraft();
@@ -1790,6 +1880,7 @@ function ShellFrame({
                 workspaceId={workspaceId}
                 view={sidebarView}
                 selectedFolder={selectedFolder}
+                folderCreation={folderCreation}
                 folders={folders}
                 knownFolders={allFolders}
                 newNoteProblem={newNote.error}
@@ -1966,16 +2057,7 @@ function ShellFrame({
             onClose={() => setNewFolderParent(null)}
             folders={allFolders}
             parent={newFolderParent ?? ''}
-            onCreated={(folder) => {
-              files.addEmptyFolder(folder);
-              // The new folder must be on the screen. Its parent can be
-              // closed, because the row menu makes a folder inside a folder
-              // that nobody opened, so every folder above it opens here.
-              for (const above of ancestorFolders(folder))
-                folders.openFolder(above);
-              setSelectedFolder(folder);
-              folders.openFolder(folder);
-            }}
+            onCreated={folderCreation.onCreated}
           />
           {publishScope === null ? null : (
             <Suspense fallback={null}>
