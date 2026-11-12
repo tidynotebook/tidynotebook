@@ -1439,9 +1439,10 @@ const NoteEditorBody = memo(function NoteEditorBody({
         onPublish={onPublish}
         onDelete={deleteNoteAndLeave}
       />
+      {/* The visible side region owns the right edge. Narrow notes keep both gutters. */}
       <div
         ref={marginRef}
-        className={`flex overflow-hidden flex-1 flex-col ${pageGutter}`}
+        className={`flex overflow-hidden flex-1 flex-col ${pageGutter} xl:pr-0 coarse:xl:pr-0`}
       >
         {/*
           The name field is in the frame header, which is one row of 44 px and

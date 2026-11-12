@@ -8,6 +8,8 @@ lint or enforcement test. Keep the current type steps and theme tokens.
 - Private workspace list routes use `Page`: one centred `45 rem` column.
   The note editor keeps its own document measure and outline. Keep account themes.
 - Use `pageGutter` from `packages/ui/src/layout.tsx` for edge space.
+  When the note side region is visible, its outside edge meets the viewport.
+  The note stays centred within its remaining frame.
 
 ## Public pages
 
