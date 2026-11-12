@@ -777,12 +777,34 @@ function useWorkspaceLoader(
           },
     );
 
-    /** Keep completion numbers across loading, failures and repeated reads. */
-    const settle = (
-      workspaces: readonly Workspace[] | null,
-      failure: string | null,
-      allowPrevious = false,
-    ): void => {
+    async function load(): Promise<void> {
+      const result = await listWorkspaces();
+      if (cancelled) return;
+      if (mutation.current !== requestedMutation) {
+        // An adopt or forget completed after this read started. Ask again
+        // instead of replacing that newer server fact with an older list.
+        setRetryGeneration((current) => current + 1);
+        return;
+      }
+      let workspaces: readonly Workspace[] | null;
+      let failure: string | null = null;
+      let allowPrevious = false;
+      if (result.error !== undefined || result.data === undefined) {
+        const cached = parseCachedWorkspaces(
+          readStored(workspaceListKey(activeAccount)),
+        );
+        const responseStatus = result.response?.status ?? 0;
+        allowPrevious = responseStatus === 0 || responseStatus >= 500;
+        workspaces = allowPrevious && cached.length > 0 ? cached : null;
+        failure = problemMessage(result.error);
+      } else {
+        workspaces = result.data.workspaces;
+        writeStored(
+          workspaceListKey(activeAccount),
+          JSON.stringify(workspaces),
+        );
+      }
+      // Keep completion numbers across loading, failures and repeated reads.
       setSnapshot((current) => {
         if (current.accountId !== activeAccount) return current;
         const previous =
@@ -797,33 +819,6 @@ function useWorkspaceLoader(
           failure === null ? 'server' : 'fallback',
         );
       });
-    };
-
-    async function load(): Promise<void> {
-      const result = await listWorkspaces();
-      if (cancelled) return;
-      if (mutation.current !== requestedMutation) {
-        // An adopt or forget completed after this read started. Ask again
-        // instead of replacing that newer server fact with an older list.
-        setRetryGeneration((current) => current + 1);
-        return;
-      }
-      if (result.error !== undefined || result.data === undefined) {
-        const cached = parseCachedWorkspaces(
-          readStored(workspaceListKey(activeAccount)),
-        );
-        const responseStatus = result.response?.status ?? 0;
-        const offline = responseStatus === 0 || responseStatus >= 500;
-        settle(
-          offline && cached.length > 0 ? cached : null,
-          problemMessage(result.error),
-          offline,
-        );
-        return;
-      }
-      const workspaces = result.data.workspaces;
-      writeStored(workspaceListKey(activeAccount), JSON.stringify(workspaces));
-      settle(workspaces, null);
     }
     void load();
     return () => {

@@ -315,6 +315,114 @@ await test('workspace membership reload and route lifecycle', async (t) => {
       },
     );
     await t.test(
+      'Strict Mode reads failed-refresh cache once and keeps ready memory over invalid disk',
+      async () => {
+        await start('/w/personal', true);
+        await answer(1);
+        const child = container.querySelector('[data-create]');
+        const serverRevision = ready().serverRevision;
+        const storage = browser.localStorage;
+        storage.setItem('notesapp.workspaces:account-a', 'invalid JSON');
+        const original = Object.getOwnPropertyDescriptor(storage, 'getItem');
+        const getItem = storage.getItem.bind(storage);
+        const reads: string[] = [];
+        Object.defineProperty(storage, 'getItem', {
+          configurable: true,
+          value(key: string) {
+            reads.push(key);
+            return getItem(key);
+          },
+        });
+        try {
+          await act(async () => value.reload());
+          await fail(2, 503);
+          assert.deepEqual(
+            reads.filter((key) => key === 'notesapp.workspaces:account-a'),
+            ['notesapp.workspaces:account-a'],
+          );
+          assert.deepEqual(ready().workspaces, [personal]);
+          assert.equal(ready().serverRevision, serverRevision);
+          assert.ok(ready().failure);
+          assert.equal(container.querySelector('[data-create]'), child);
+          assert.equal(address, '/w/personal');
+        } finally {
+          if (original) Object.defineProperty(storage, 'getItem', original);
+          else Reflect.deleteProperty(storage, 'getItem');
+          assert.deepEqual(
+            Object.getOwnPropertyDescriptor(storage, 'getItem'),
+            original,
+          );
+        }
+      },
+    );
+    await t.test(
+      'a permission refusal cannot retain ready membership or use its disk cache',
+      async () => {
+        await start('/w/personal');
+        await answer(0);
+        const revision = ready().revision;
+        const cached = browser.localStorage.getItem(
+          'notesapp.workspaces:account-a',
+        );
+        await act(async () => value.reload());
+        await fail(1, 403);
+        assert.equal(value.state.status, 'error');
+        noProtectedChild();
+        assert.equal(address, '/w/personal');
+        assert.equal(
+          browser.localStorage.getItem('notesapp.workspaces:account-a'),
+          cached,
+        );
+        await act(async () => value.reload());
+        await answer(2);
+        assert.ok(ready().revision > revision);
+        assert.ok(ready().serverRevision > revision);
+        assert.equal(mounts, 2);
+      },
+    );
+    await t.test(
+      'storage refusal does not block server success, ready fallback or local membership',
+      async () => {
+        await start('/w/personal');
+        const original = Object.getOwnPropertyDescriptor(
+          browser,
+          'localStorage',
+        );
+        Object.defineProperty(browser, 'localStorage', {
+          configurable: true,
+          get() {
+            throw Error('Controlled storage refusal');
+          },
+        });
+        try {
+          await answer(0);
+          const child = container.querySelector('[data-create]');
+          const serverRevision = ready().serverRevision;
+          await act(async () => value.reload());
+          await fail(1, 503);
+          const failure = ready().failure;
+          assert.ok(failure);
+          await act(async () => value.adopt(added));
+          assert.deepEqual(ready().workspaces, [personal, added]);
+          await act(async () => value.forget('added'));
+          assert.deepEqual(ready().workspaces, [personal]);
+          assert.equal(ready().failure, failure);
+          assert.equal(ready().serverRevision, serverRevision);
+          assert.equal(container.querySelector('[data-create]'), child);
+          assert.equal(mounts, 1);
+          assert.equal(address, '/w/personal');
+        } finally {
+          if (original)
+            Object.defineProperty(browser, 'localStorage', original);
+          else Reflect.deleteProperty(browser, 'localStorage');
+          assert.deepEqual(
+            Object.getOwnPropertyDescriptor(browser, 'localStorage'),
+            original,
+          );
+        }
+      },
+    );
+    await t.test(
       'local membership changes retain the failed refresh and last server revision',
       async () => {
         await start('/w/personal');
