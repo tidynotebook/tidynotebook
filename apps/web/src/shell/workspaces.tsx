@@ -60,22 +60,37 @@ export function WorkspaceHome(): ReactNode {
       });
   }, [state, navigate, location]);
 
-  if (state.status === 'error')
-    return (
-      <Page>
-        <PageHeader title="Your notes did not open" />
-        <p className="text-secondary text-danger" role="alert">
-          {state.message}
-        </p>
-        <Button variant="secondary" onClick={() => reload()}>
-          Try again
-        </Button>
-      </Page>
-    );
+  return (
+    <WorkspaceStatus
+      message={state.status === 'error' ? state.message : null}
+      onRetry={reload}
+    />
+  );
+}
 
+/** The loading or retry screen, with no workspace or navigation state. */
+function WorkspaceStatus({
+  message,
+  onRetry,
+}: {
+  readonly message: string | null;
+  readonly onRetry: () => void;
+}): ReactNode {
   return (
     <Page>
-      <LoadingState label="Your notes are opening." />
+      {message !== null ? (
+        <>
+          <PageHeader title="Your notes did not open" />
+          <p className="text-secondary text-danger" role="alert">
+            {message}
+          </p>
+          <Button variant="secondary" onClick={() => onRetry()}>
+            Try again
+          </Button>
+        </>
+      ) : (
+        <LoadingState label="Your notes are opening." />
+      )}
     </Page>
   );
 }
@@ -115,7 +130,10 @@ export function RequireCurrentWorkspace({
 
   useEffect(() => {
     if (!ready || member) {
-      if (member) remember(workspaceId);
+      if (member) {
+        remember(workspaceId);
+        if (asked !== null) setAsked(null);
+      }
       return;
     }
     if (asked?.workspaceId === workspaceId) return;
@@ -123,12 +141,18 @@ export function RequireCurrentWorkspace({
     reload();
   }, [ready, member, workspaceId, revision, asked, remember, reload]);
 
-  if (!ready) return children;
   if (member) return children;
-  // The question is still out. Nothing is decided, so nothing moves.
-  if (asked?.workspaceId !== workspaceId || revision <= asked.revision)
-    return children;
-  return <Navigate to={`/w/${state.workspaceId}`} replace />;
+  if (state.status === 'error')
+    return <WorkspaceStatus message={state.message} onRetry={reload} />;
+  if (state.status === 'ready' && asked?.workspaceId === workspaceId) {
+    // Only a completed server list can exclude a workspace. A failed read
+    // may still let a known workspace open from this device's cache.
+    if (state.serverRevision > asked.revision)
+      return <Navigate to={`/w/${state.workspaceId}`} replace />;
+    if (state.failure !== null)
+      return <WorkspaceStatus message={state.failure} onRetry={reload} />;
+  }
+  return <WorkspaceStatus message={null} onRetry={reload} />;
 }
 
 import {
