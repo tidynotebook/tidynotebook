@@ -440,7 +440,9 @@ export function NoteEditorLoader({
           title="Note not found"
           description="Check the link, or find the note in All notes."
         />
-        <AllNotesAction workspaceId={workspaceId} />
+        <Inline as="div">
+          <AllNotesAction workspaceId={workspaceId} />
+        </Inline>
       </PageRegion>
     );
   if (status.kind === 'purged')
