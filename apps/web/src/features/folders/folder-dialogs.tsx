@@ -40,6 +40,10 @@ import type { LocalStore } from '@notesapp/sync';
 import { FolderField, FolderTreePicker } from './folder-tree-picker.tsx';
 import { applyMoves } from './apply-moves.ts';
 import {
+  createFolderReveal,
+  type CreateFolderReveal,
+} from './created-folder-reveal.ts';
+import {
   planMove,
   type DragItem,
   type MoveArea,
@@ -79,7 +83,11 @@ export function NewFolderDialog({
   readonly folders: readonly string[];
   /** The selected folder, or an empty string for the root. */
   readonly parent: string;
-  readonly onCreated: (folder: string) => void;
+  /** The already-loaded creation action needs no extra request after submit. */
+  readonly onCreated: (
+    folder: string,
+    createReveal: CreateFolderReveal,
+  ) => void;
 }): ReactNode {
   const [name, setName] = useState('');
   const [inside, setInside] = useState(parent);
@@ -117,7 +125,7 @@ export function NewFolderDialog({
       return;
     }
     onClose();
-    onCreated(folder);
+    onCreated(folder, createFolderReveal);
   };
 
   return (
