@@ -3,6 +3,7 @@ import { fixedRegionClasses } from './scroll-classes.ts';
 import { pageRowClassName, pageSideClassName } from './layout-classes.ts';
 import { controlStripClassName, focusOutline } from './control-classes.ts';
 import { transitionSurface } from './motion.ts';
+import { pageGutter } from './public-layout.ts';
 export function noteColumnClassName(): string {
   return 'self-center flex w-full max-w-note flex-col gap-1';
 }
@@ -15,6 +16,10 @@ export function noteFrameClassName(): string {
 /** Keep the editor bounded when phone find controls need visible overflow. */
 export function noteEditorHostClassName(): string {
   return 'min-h-0 flex-1 overflow-hidden max-lg:pointer-coarse:overflow-visible';
+}
+/** The visible note side region owns the right edge of the frame. */
+export function noteEditorGutterClassName(): string {
+  return `${pageGutter} xl:pr-0 coarse:xl:pr-0`;
 }
 export function noteRowClassName(): string {
   return `${pageRowClassName()} overflow-hidden flex-1`;

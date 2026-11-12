@@ -2,7 +2,7 @@ import {
   Inset,
   Button,
   Notice,
-  pageGutter,
+  noteEditorGutterClassName,
   noteEditorHostClassName,
 } from '@notesapp/ui';
 /**
@@ -1442,7 +1442,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
       {/* The visible side region owns the right edge. Narrow notes keep both gutters. */}
       <div
         ref={marginRef}
-        className={`flex overflow-hidden flex-1 flex-col ${pageGutter} xl:pr-0 coarse:xl:pr-0`}
+        className={`flex overflow-hidden flex-1 flex-col ${noteEditorGutterClassName()}`}
       >
         {/*
           The name field is in the frame header, which is one row of 44 px and
