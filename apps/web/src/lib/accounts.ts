@@ -19,7 +19,7 @@ import type { OpenRegistrationPart } from '@notesapp/core';
 import { relativeTime } from './relative-time.ts';
 
 /** The title of the accounts page, which is also its breadcrumb part. */
-export const accountsTitle = 'Accounts';
+export const accountsTitle = 'Users';
 
 /**
  * The path of the page that accepts an invitation. The server writes the

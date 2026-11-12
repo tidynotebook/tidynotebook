@@ -283,6 +283,7 @@ export default function TemplateChoices({
           leading={
             details ? (
               <IconButton
+                size="header"
                 variant="ghost"
                 glyph={<ChevronLeftIcon />}
                 label="Back to templates"
@@ -293,6 +294,7 @@ export default function TemplateChoices({
           trailing={
             details ? null : (
               <IconButton
+                size="header"
                 variant="ghost"
                 glyph={<SettingsIcon />}
                 label="Manage templates"

@@ -174,17 +174,21 @@ function ReviewDetail({
     );
   if (opened.status === 'none' || opened.status === 'failed')
     return (
-      <Page>
+      <Page
+        emptyState={
+          opened.status === 'none' ? (
+            <EmptyState
+              icon={<CheckIcon size={20} />}
+              title={noReviewTitle}
+              description={noReviewDescription}
+            />
+          ) : null
+        }
+      >
         <PageHeader title="Review" />
         {opened.status === 'failed' ? (
           <Notice tone="problem" message={reviewReadFailed} />
-        ) : (
-          <EmptyState
-            icon={<CheckIcon size={20} />}
-            title={noReviewTitle}
-            description={noReviewDescription}
-          />
-        )}
+        ) : null}
       </Page>
     );
 

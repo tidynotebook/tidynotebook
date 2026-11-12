@@ -516,7 +516,12 @@ export default function FolderTreeView({
         <Inset padY={1} as="div" className="border-0">
           <Button
             variant="ghost"
-            icon={<FolderPlusIcon />}
+            icon={
+              <>
+                <IconSlot aria-hidden="true" />
+                <FolderPlusIcon />
+              </>
+            }
             buttonRef={createButton}
             className="w-full justify-start"
             onClick={() => {

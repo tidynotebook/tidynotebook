@@ -201,7 +201,18 @@ export function publicFooterTree({
                         className:
                           'block py-1 coarse:py-3 text-body text-muted no-underline hover:underline focus-visible:outline-2 focus-visible:outline-focus',
                       },
-                      [link.label],
+                      link.label.split(/(\([^()]+\))/).map((part) =>
+                        part.startsWith('(')
+                          ? node(
+                              'span',
+                              {
+                                className:
+                                  'inline-block max-w-full wrap-anywhere',
+                              },
+                              [part],
+                            )
+                          : part,
+                      ),
                     ),
                   ),
                 ),

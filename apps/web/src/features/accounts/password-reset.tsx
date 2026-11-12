@@ -205,7 +205,7 @@ export function ResetPasswordPage(): ReactNode {
         <Stack gap={3} as="div">
           <Notice tone="problem" message={invalidLink} />
           <Link
-            className={buttonClassName({ variant: 'secondary' })}
+            className={buttonClassName({ variant: 'primary' })}
             to={forgotPasswordRoute}
           >
             Ask for a new link

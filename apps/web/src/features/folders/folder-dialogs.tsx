@@ -3,6 +3,7 @@ import {
   Button,
   Dialog,
   DialogBody,
+  WrapText,
   DialogFooter,
   Notice,
   TextField,
@@ -297,7 +298,7 @@ export function MoveItemsDialog({
     <Dialog
       open={open}
       onClose={onClose}
-      title={`Move ${moveSubject(items)} to`}
+      title="Move to folder"
       titleId="move-items-title"
       fillSheet
       headerActions
@@ -312,6 +313,9 @@ export function MoveItemsDialog({
         }}
       >
         <DialogBody>
+          <p className="text-secondary text-muted">
+            <WrapText>{moveSubject(items)}</WrapText>
+          </p>
           <FolderTreePicker
             folders={folders}
             searchPlacement="header"

@@ -279,7 +279,7 @@ function CreateKeyDialog({
         }}
       >
         <DialogBody>
-          <Inset as="p" className="text-body text-strong">
+          <Inset as="p" className="text-secondary text-muted">
             This key can read, change, and delete your notes. Use a separate key
             for each program.
           </Inset>

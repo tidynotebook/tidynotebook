@@ -18,6 +18,9 @@ await test('static and React footers use one structure and the approved links', 
   // React adds an image preload. The footer itself is identical.
   const react = renderToStaticMarkup(createElement(PublicFooter, options));
   assert.equal(react.slice(react.indexOf('<footer')), html);
+  const linkText = [...html.matchAll(/<a\b[^>]*>([\s\S]*?)<\/a>/g)].map(
+    (match) => match[1]?.replaceAll(/<[^>]+>/g, ''),
+  );
   for (const label of [
     'Features',
     'Pricing',
@@ -33,7 +36,7 @@ await test('static and React footers use one structure and the approved links', 
     'Refunds',
     'Fair use',
   ])
-    assert.ok(html.includes(`>${label}</`), label);
+    assert.ok(linkText.includes(label), label);
   assert.equal((html.match(/<footer/g) ?? []).length, 1);
   assert.ok(
     html.includes('Open source. Write in Markdown. Export your notes.'),

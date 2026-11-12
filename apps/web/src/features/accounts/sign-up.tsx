@@ -155,14 +155,6 @@ export function SignUpPage(): ReactNode {
     <AuthFrame
       title="Create an account"
       description="Enter your address and choose a password. A link goes to the address to prove that it is yours."
-      footer={
-        <div className="text-center">
-          {' '}
-          <Link className="text-secondary text-accent underline" to="/login">
-            I have an account
-          </Link>
-        </div>
-      }
     >
       {trialOffer(trialSeconds) === null ? null : (
         <Notice message={trialOffer(trialSeconds) ?? ''} />
@@ -263,6 +255,9 @@ export function SignUpPage(): ReactNode {
               ? 'Sending the link'
               : 'Create account'}
         </Button>
+        <Link className={buttonClassName({ variant: 'ghost' })} to="/login">
+          I have an account
+        </Link>
       </Form>
     </AuthFrame>
   );
@@ -338,7 +333,18 @@ export function VerifyPage(): ReactNode {
       : { path: '/login', label: 'Continue to sign in' };
 
   return (
-    <AuthFrame title={title}>
+    <AuthFrame
+      title={title}
+      description={
+        state.kind === 'invalid'
+          ? state.reason === 'registration_closed'
+            ? 'Ask the owner of this server for an invitation.'
+            : 'Links work once and for a short time.'
+          : state.kind === 'verified'
+            ? state.email
+            : undefined
+      }
+    >
       {state.kind === 'loading' ? (
         <LoadingState label="Loading link" />
       ) : state.kind === 'unreachable' ? (
@@ -354,20 +360,9 @@ export function VerifyPage(): ReactNode {
         </Stack>
       ) : (
         <Stack gap={3} as="div">
-          {state.kind === 'invalid' ? (
-            <p className="text-secondary text-muted">
-              {state.reason === 'registration_closed'
-                ? 'Ask the owner of this server for an invitation.'
-                : 'Links work once and for a short time.'}
-            </p>
-          ) : (
-            <Inset as="p" className="text-secondary text-muted">
-              {state.email}
-            </Inset>
-          )}
           <Link
             className={buttonClassName({
-              variant: state.kind === 'verified' ? 'primary' : 'secondary',
+              variant: 'primary',
             })}
             to={recovery.path}
             state={

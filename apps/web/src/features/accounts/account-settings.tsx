@@ -599,7 +599,7 @@ function ProfileSettings({
         phone ? (
           <SettingsDialog
             open
-            title="Name"
+            title="Edit name"
             titleId="profile-edit-title"
             hideScope
             returnFocus={() => nameButton.current?.focus()}

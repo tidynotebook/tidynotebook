@@ -671,7 +671,6 @@ function HistoryDetail({
                                 {label}
                               </span>
                               <span className="line-clamp-2 text-secondary text-muted lg:line-clamp-1">
-                                Changes at this save:{' '}
                                 {rowReading(change, item.merged)}
                               </span>
                             </span>

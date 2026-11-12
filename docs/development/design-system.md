@@ -93,6 +93,8 @@ doubled-class selectors or inline spacing styles. Runtime overlay and viewport c
   The phone handle and safe area are sheet chrome outside the content inset. Footers align inline actions to the end.
 - `Menu` and `Popover` own equal padding, the overlay surface and menu rows.
 
+Command result rows keep their content at the dialog inset. Their optical fills extend into the gutter, to 4 px from the phone sheet edge. Coarse list rows have 44 px targets.
+
 ## Sidebar
 
 A panel contains fixed top, scrolling tree and fixed status regions. Padding

@@ -5,16 +5,16 @@ import {
   Stack,
   calendarDayClassName,
   calendarNoteMarkClassName,
-  CalendarDayIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  rowClassName,
+  Button,
+  HeaderSlot,
 } from '@notesapp/ui';
 
 /**
  * The calendar view of the sidebar (records 0099, 0100 and 0105).
  *
- * The first row is the month title and three compact icon actions: Open today's note, Previous month and Next month. The
+ * The month title opens today's note. Previous month and Next month stay beside it. The
  * month is a date grid in the WAI-ARIA pattern: a table with the grid role,
  * one button for each day, and one day in the tab order at a time. The arrow
  * keys, Home, End, Page Up and Page Down move that day, and a press or Enter
@@ -95,44 +95,42 @@ export function SidebarCalendar({
 
   return (
     <Stack gap={1} as="section" aria-label="Calendar">
-      {/*
-        The title keeps a base width for a short month name. When the
-        sidebar is too narrow for it and the three touch targets, the actions
-        take a line of their own instead of cutting the month.
-      */}
-      <div className="flex flex-wrap items-center">
+      <div className="flex min-w-0 items-center">
         <h2
-          className={rowClassName({
-            interactive: false,
-            className: 'm-0 min-w-0 flex-1 basis-24 text-label',
-          })}
+          className="m-0 min-w-0 flex-1 text-label"
+          aria-label={monthTitle(month)}
         >
-          <span className="truncate" aria-live="polite">
-            {monthTitle(month, undefined, 'short')}
-          </span>
+          <Button
+            variant="ghost"
+            size="compact"
+            label="Open today's note"
+            onClick={() => openDay(today)}
+            className="max-w-full"
+          >
+            <span className="truncate" aria-live="polite">
+              {monthTitle(month, undefined, 'short')}
+            </span>
+          </Button>
         </h2>
         <Inline align="center" as="div">
-          <IconButton
-            variant="ghost"
-            compact
-            label="Open today's note"
-            glyph={<CalendarDayIcon />}
-            onClick={() => openDay(today)}
-          />
-          <IconButton
-            variant="ghost"
-            compact
-            label="Previous month"
-            glyph={<ChevronLeftIcon />}
-            onClick={() => setSelected((date) => addMonths(date, -1))}
-          />
-          <IconButton
-            variant="ghost"
-            compact
-            label="Next month"
-            glyph={<ChevronRightIcon />}
-            onClick={() => setSelected((date) => addMonths(date, 1))}
-          />
+          <HeaderSlot targetWidth>
+            <IconButton
+              size="header"
+              variant="ghost"
+              label="Previous month"
+              glyph={<ChevronLeftIcon />}
+              onClick={() => setSelected((date) => addMonths(date, -1))}
+            />
+          </HeaderSlot>
+          <HeaderSlot targetWidth>
+            <IconButton
+              size="header"
+              variant="ghost"
+              label="Next month"
+              glyph={<ChevronRightIcon />}
+              onClick={() => setSelected((date) => addMonths(date, 1))}
+            />
+          </HeaderSlot>
         </Inline>
       </div>
       <Inset

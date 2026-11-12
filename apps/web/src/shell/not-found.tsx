@@ -6,7 +6,8 @@
  * sentence, and the back control of every page to the notes (record 0138).
  */
 import type { ReactNode } from 'react';
-import { Page, PageHeader } from '@notesapp/ui';
+import { Page, PageHeader, buttonClassName } from '@notesapp/ui';
+import { Link, useParams } from 'react-router';
 import { useDocumentTitle } from './document-title.ts';
 
 /** The title of the page, which is also the last part of the breadcrumb. */
@@ -14,6 +15,7 @@ export const notFoundTitle = 'Page not found';
 
 /** Shown for an address under a workspace that names no route. */
 export function NotFoundView(): ReactNode {
+  const { workspaceId } = useParams();
   useDocumentTitle(notFoundTitle);
   return (
     <Page>
@@ -21,6 +23,14 @@ export function NotFoundView(): ReactNode {
         title={notFoundTitle}
         description="The address names no page of this application."
       />
+      <div>
+        <Link
+          className={buttonClassName({ variant: 'secondary' })}
+          to={workspaceId === undefined ? '/' : `/w/${workspaceId}`}
+        >
+          Go to All notes
+        </Link>
+      </div>
     </Page>
   );
 }

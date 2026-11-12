@@ -4,16 +4,14 @@
  * The name is the last part of the breadcrumb, so the field stands where the
  * word of the route stands and reads exactly like it: the body step of the
  * chrome, the medium weight and the strong ink (decision 0069). It is a name
- * a person writes, not a form field, so it carries no box and no line at
- * rest, under the pointer, or while a person types. The pointer gets the
- * hover fill of the palette, which says the words can be changed and moves
- * nothing on the screen, and the keyboard gets the one focus treatment of the
- * product (record 0065).
+ * a person writes. Its border is transparent at rest and takes the focus
+ * colour while the name is edited. The pointer gets the hover fill. Keyboard
+ * focus also gets the shared outline. Neither treatment moves the name.
  *
  * The field is as wide as the name and no wider. A field that took the free
  * width of the header drew its hover fill across a thousand pixels of empty
  * row, which reads as a control and not as a name. A hidden text span sets
- * the width from the same font and text as the input, plus 1 px for the caret.
+ * the width from the same font and text as the input, with the same border as the input.
  * This works without native content sizing in older browsers. `max-w-full`
  * holds the field inside the room that the breadcrumb leaves it. An empty
  * field follows its placeholder.

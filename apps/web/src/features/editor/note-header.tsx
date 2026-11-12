@@ -87,6 +87,7 @@ export function NoteHeader({
             if (!selectOnFocus.current) return;
             selectOnFocus.current = false;
             event.currentTarget.select();
+            event.currentTarget.scrollLeft = 0;
           }}
           onBlur={(): void => {
             onNameCommit();

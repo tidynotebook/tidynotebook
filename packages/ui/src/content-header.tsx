@@ -63,7 +63,7 @@ export function HeaderSlot({
     <span
       {...props}
       data-header-slot={side}
-      className={`relative inline-flex h-6 ${targetWidth ? 'w-7 coarse:w-11' : 'w-4'} shrink-0 items-center justify-center ${className}`}
+      className={`relative inline-flex h-6 ${targetWidth ? 'min-w-7 coarse:min-w-11' : 'w-4'} shrink-0 items-center justify-center ${className}`}
     >
       {children}
     </span>

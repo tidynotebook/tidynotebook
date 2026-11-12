@@ -49,9 +49,10 @@ export function AuthFrame({
     <Viewport
       as="div"
       gap={6}
-      pad={{ fine: 6, coarse: 4 }}
+      padX={{ fine: 6, coarse: 4 }}
+      padY={{ fine: 6, coarse: 12 }}
       align="center"
-      className="justify-center bg-surface"
+      className="fine:justify-center coarse:justify-start bg-surface"
     >
       <Inline
         gap={3}
@@ -74,7 +75,9 @@ export function AuthFrame({
               {title}
             </Inset>
             {description === undefined ? null : (
-              <p className="text-secondary text-muted">{description}</p>
+              <p className="text-secondary text-muted wrap-anywhere">
+                {description}
+              </p>
             )}
           </Stack>
           {children}

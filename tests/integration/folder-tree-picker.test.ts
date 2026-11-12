@@ -342,7 +342,11 @@ await test('Move dims the moved folder and its children and moves into a chosen 
   );
   assert.equal(
     document.body.querySelector('[role="dialog"] h2')?.textContent,
-    'Move Launch to',
+    'Move to folder',
+  );
+  assert.equal(
+    document.body.querySelector('[role="dialog"] p')?.textContent,
+    'Launch',
   );
   assert.equal(
     row('All notes, at the top').getAttribute('aria-disabled'),

@@ -15,7 +15,7 @@ await test('the rendered text sets the width and leaves room for the caret', () 
   assert.ok(noteNameFieldMeasure.includes(noteNameFieldText));
   const measure = noteNameFieldMeasure.split(' ');
   assert.ok(measure.includes('whitespace-pre'));
-  assert.ok(measure.includes('border-r'));
+  assert.ok(measure.includes('border'));
   assert.ok(measure.includes('invisible'));
   // The input fills the span without contributing its native preferred width.
   assert.ok(input.split(' ').includes('absolute'));
@@ -47,16 +47,14 @@ await test('the name field reads as the last part of the breadcrumb', () => {
   assert.ok(!classes.includes('tracking-display'));
 });
 
-await test('the name field carries no box and no line in any state', () => {
+await test('the name stays quiet at rest and shows its field edge while editing', () => {
   const classes = noteNameFieldClassName().split(' ');
-  // A name, not a form field: nothing frames it at rest, under the pointer
-  // or while a person types. The pointer gets the hover fill and the keyboard
-  // gets the one focus treatment of the product.
-  assert.ok(classes.includes('border-0'));
-  assert.ok(!classes.some((name) => name.startsWith('border-b')));
+  // The transparent border preserves the text position when editing starts.
+  assert.ok(classes.includes('border'));
+  assert.ok(classes.includes('border-transparent'));
+  assert.ok(classes.includes('focus:border-focus'));
   assert.ok(classes.includes('bg-transparent'));
   assert.ok(classes.includes('hover:bg-hover'));
-  assert.ok(!classes.some((name) => name.startsWith('focus:')));
   assert.ok(classes.includes('focus-visible:outline-2'));
   assert.ok(classes.includes('focus-visible:outline-focus'));
 });

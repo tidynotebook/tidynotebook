@@ -1344,6 +1344,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
   const renameNote = useCallback((): void => {
     nameInputRef.current?.focus();
     nameInputRef.current?.select();
+    if (nameInputRef.current !== null) nameInputRef.current.scrollLeft = 0;
   }, []);
 
   /**

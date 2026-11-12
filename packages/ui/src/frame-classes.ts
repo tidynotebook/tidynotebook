@@ -53,11 +53,12 @@ export function formatToolGroupClassName(): string {
   return 'flex shrink-0 items-center gap-1';
 }
 export function noteNameFieldClassName(): string {
-  return `absolute inset-0 w-full min-w-0 max-w-full truncate rounded-md border-0 bg-transparent ${noteNameFieldText} text-strong outline-none ${transitionSurface} hover:bg-hover ${focusOutline}`;
+  return `absolute inset-0 w-full min-w-0 max-w-full truncate rounded-md border border-transparent focus:border-focus bg-transparent ${noteNameFieldText} text-strong outline-none ${transitionSurface} hover:bg-hover ${focusOutline}`;
 }
 export const noteNameFieldText = `px-1 py-1 text-body`;
-export const noteNameFieldContainer = 'relative inline-grid min-w-0 max-w-full';
-export const noteNameFieldMeasure = `invisible overflow-hidden whitespace-pre border-r border-transparent ${noteNameFieldText}`;
+export const noteNameFieldContainer =
+  'relative inline-grid min-w-0 max-w-full coarse:h-11';
+export const noteNameFieldMeasure = `invisible overflow-hidden whitespace-pre border border-transparent ${noteNameFieldText}`;
 export function frameContentClassName(): string {
   return 'flex overflow-hidden flex-1 flex-col overflow-y-auto';
 }

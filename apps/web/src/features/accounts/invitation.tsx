@@ -113,10 +113,7 @@ export function InvitationPage(): ReactNode {
       ) : state.kind === 'invalid' ? (
         <Stack gap={3} as="div">
           <Notice tone="problem" message={invalidInvitation} />
-          <Link
-            className={buttonClassName({ variant: 'secondary' })}
-            to="/login"
-          >
+          <Link className={buttonClassName({ variant: 'primary' })} to="/login">
             Go to sign in
           </Link>
         </Stack>
