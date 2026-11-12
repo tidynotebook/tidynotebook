@@ -252,7 +252,9 @@ function TrashList({
         return;
       }
       requestSync();
-      void navigate(`/w/${workspaceId}/notes/${item.fileId}`);
+      void navigate(`/w/${workspaceId}/notes/${item.fileId}`, {
+        state: { focusNoteText: true, selectNoteName: false },
+      });
     })();
   };
 

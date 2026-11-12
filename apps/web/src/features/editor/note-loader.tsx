@@ -194,10 +194,13 @@ export function NoteEditorLoader({
   statusKind.current = status.kind;
   const [linkNotice, setLinkNotice] = useState('');
   const routeState: unknown = location.state;
-  const focusText =
-    routeState !== null &&
-    typeof routeState === 'object' &&
-    Object.fromEntries(Object.entries(routeState))['focusNoteText'] === true;
+  const routeFields =
+    routeState !== null && typeof routeState === 'object'
+      ? Object.fromEntries(Object.entries(routeState))
+      : {};
+  const focusText = routeFields['focusNoteText'] === true;
+  const selectNameOnFirstFocus =
+    focusText && routeFields['selectNoteName'] !== false;
 
   const cancelLoad = useRef<() => void>(() => {});
   // A purge also blocks a reload queued before React commits its state.
@@ -527,6 +530,7 @@ export function NoteEditorLoader({
         initialWorkingCopyId={status.workingCopyId}
         initialSequence={status.sequence}
         focusText={focusText}
+        selectNameOnFirstFocus={selectNameOnFirstFocus}
         onMoveToFolder={onMoveToFolder}
         onPublish={onPublish}
         onHeadReplaced={reopen}
