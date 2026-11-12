@@ -41,7 +41,7 @@ export function formatToolbarColumnClassName(): string {
   return 'flex min-w-0 w-full max-w-note';
 }
 export function formatToolbarClassName(): string {
-  return `${controlStripClassName()} min-w-0 flex-1 gap-1 md:gap-4`;
+  return `${controlStripClassName()} min-w-0 flex-1 gap-1`;
 }
 /** Passive cues have their own space and never cover a tool. */
 export function formatToolbarCueClassName(visible: boolean): string {

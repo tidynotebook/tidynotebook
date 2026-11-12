@@ -21,6 +21,7 @@ edge in each container. Nesting adds the shared indent step. A leaf keeps an
 empty disclosure slot. Calendar cells keep control height in equal columns. The shared checkout frame recipe uses `min-h-checkout-frame` to reserve the initial vendor frame height.
 
 Keep items closer than groups. The group gap equals the container padding.
+The note formatting toolbar uses the same item gap between all tools.
 The app header and sidebar keep their hairlines at rest. Other fixed regions show a hairline
 only if adjacent content overflows. Shadows show only under hidden content.
 Hairlines and shadows stay outside the layout. They must not add a flex or

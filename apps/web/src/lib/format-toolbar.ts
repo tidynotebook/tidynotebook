@@ -12,7 +12,7 @@
  * tool that joins or leaves the row therefore joins or leaves the palette in
  * the same change, and no second list can drift from the first.
  *
- * The row holds five groups that space separates: the headings, the marks of
+ * The row holds five groups: the headings, the marks of
  * a word, the shapes of a block, the table, and the move of a list item
  * (record 0106). Every tool is a button of the
  * row at every width. A row wider than the screen scrolls sideways, so a new
@@ -287,10 +287,8 @@ export { formatToolbarColumnClassName } from '@notesapp/ui';
  *
  * The row is a strip that scrolls sideways when it holds more tools than the
  * width of the screen (`controlStripClassName`), so a phone reaches every tool
- * in the row and a new tool never needs a menu. Under the medium width the
- * touch target of a control separates two tools and the row adds one small
- * step between groups. From the medium width up a control is as small as its
- * mark, so the row spaces the groups by the named step of a group.
+ * in the row and a new tool never needs a menu. Every pair of tools has the
+ * same item gap, including the pairs at group boundaries, at every width.
  */
 export { formatToolbarClassName } from '@notesapp/ui';
 
