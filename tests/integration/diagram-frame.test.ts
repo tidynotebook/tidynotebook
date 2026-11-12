@@ -8,7 +8,7 @@ await test('a frame accepts its own current response and releases its resources'
     url: 'http://localhost/',
     settings: { disableIframePageLoading: true },
   });
-  const names = ['window', 'document'] as const;
+  const names = ['window', 'document', 'Event'] as const;
   const originals = new Map(
     names.map((name) => [
       name,
@@ -30,7 +30,7 @@ await test('a frame accepts its own current response and releases its resources'
     onSize: (size) => sizes.push(size),
   });
   try {
-    browser.document.body.append(handle.element);
+    document.body.append(handle.element);
     const frame = handle.element.querySelector('iframe');
     assert.ok(frame);
     // Happy DOM does not load opaque frames. Supply a controlled message peer.
@@ -46,7 +46,7 @@ await test('a frame accepts its own current response and releases its resources'
       configurable: true,
       value: (value: unknown) => sent.push(value),
     });
-    frame.dispatchEvent(new browser.Event('load'));
+    frame.dispatchEvent(new Event('load'));
     const request = sent[0];
     assert.ok(request && typeof request === 'object' && 'requestId' in request);
     const requestId = request.requestId;
