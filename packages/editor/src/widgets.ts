@@ -710,7 +710,9 @@ class RichWidgetType extends WidgetType {
     const target = event.target;
     return (
       target instanceof Element &&
-      target.closest(`.${imageOpenClassName}`) !== null
+      target.closest(
+        `.${imageOpenClassName}, [data-diagram-action], [data-diagram-scroll]`,
+      ) !== null
     );
   }
 

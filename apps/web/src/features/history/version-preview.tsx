@@ -39,7 +39,7 @@ import {
 } from '../../lib/open-external-link.ts';
 import { useFlushNoteDraftForHandoff } from '../editor/save-status.tsx';
 import { useTheme } from '../../app.tsx';
-import { createDiagramFrame, diagramFramePath } from '../../diagram/frame.ts';
+import { createDiagramWidget, diagramFramePath } from '../../diagram/widget.ts';
 import { useAttachmentUrls } from '../editor/note-editor-attachments.ts';
 
 /** No attachment that this screen uploaded itself. */
@@ -116,7 +116,7 @@ export default function VersionPreview({
           : (attachmentUrlsRef.current.get(key) ?? null);
       },
       createDiagram: (source: string): DiagramHandle =>
-        createDiagramFrame({
+        createDiagramWidget({
           source,
           theme: themeRef.current,
           framePath: diagramFramePath,

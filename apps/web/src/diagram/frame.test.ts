@@ -18,6 +18,10 @@ import {
   diagramFrameStyle,
   diagramLimits,
   isDiagramRequest,
+  isDiagramResponse,
+  isDiagramScaleRequest,
+  inlineDiagramScale,
+  diagramSourceAllowed,
   longHexColour,
   paletteNames,
 } from './frame.ts';
@@ -169,4 +173,77 @@ await test('the frame reports the whole body that it drew, rounded up', () => {
   const body = { getBoundingClientRect: () => ({ height: 347.39 }) };
   assert.equal(drawnHeight(body), 348);
   assert.equal(clampDiagramHeight(drawnHeight(body)), 348);
+});
+
+await test('inline diagrams keep readable text and reserve measured frame padding', () => {
+  const size = { width: 1000, height: 600, paddingX: 8, paddingY: 8 };
+  assert.equal(inlineDiagramScale(size, 1016), 1);
+  assert.equal(inlineDiagramScale(size, 816), 0.8);
+  assert.equal(inlineDiagramScale(size, 320), 0.75);
+  assert.equal(inlineDiagramScale({ ...size, paddingX: 16 }, 832), 0.8);
+  assert.equal(inlineDiagramScale(size, Number.NaN), 0.75);
+});
+
+await test('sandbox zoom accepts finite bounded scales only', () => {
+  for (const scale of [0.001, 0.625, 0.75, 1, 4])
+    assert.equal(
+      isDiagramScaleRequest({ kind: 'scale', requestId: 'r', scale }),
+      true,
+    );
+  for (const scale of [0, -1, 0.0001, 4.01, Infinity, NaN, '1', null])
+    assert.equal(
+      isDiagramScaleRequest({ kind: 'scale', requestId: 'r', scale }),
+      false,
+    );
+  assert.equal(
+    isDiagramScaleRequest({ kind: 'scale', requestId: '', scale: 1 }),
+    false,
+  );
+  assert.equal(
+    isDiagramScaleRequest({ kind: 'render', requestId: 'r', scale: 1 }),
+    false,
+  );
+});
+
+await test('sandbox geometry rejects partial or unbounded natural dimensions', () => {
+  const answer = { requestId: 'r', ok: true, height: 400 };
+  const natural = {
+    ...answer,
+    width: 300,
+    naturalWidth: 1000,
+    naturalHeight: 800,
+    paddingX: 8,
+    paddingY: 8,
+  };
+  assert.equal(isDiagramResponse(answer), true);
+  assert.equal(isDiagramResponse(natural), true);
+  assert.equal(isDiagramResponse({ ...answer, naturalWidth: 1000 }), false);
+  for (const value of [0, -1, NaN, Infinity, 32769]) {
+    assert.equal(isDiagramResponse({ ...natural, naturalWidth: value }), false);
+    assert.equal(
+      isDiagramResponse({ ...natural, naturalHeight: value }),
+      false,
+    );
+  }
+  for (const value of [-1, NaN, Infinity, 257])
+    assert.equal(isDiagramResponse({ ...natural, paddingX: value }), false);
+});
+
+await test('diagram source cannot replace the fixed sandbox configuration', () => {
+  assert.equal(diagramSourceAllowed('graph LR; A-->B'), true);
+  assert.equal(diagramSourceAllowed('%% a comment\ngraph TD; A-->B'), true);
+  assert.equal(
+    diagramSourceAllowed(
+      '%%{init: {"securityLevel":"loose"}}%%\ngraph TD; A-->B',
+    ),
+    false,
+  );
+  assert.equal(
+    diagramSourceAllowed('---\nconfig: {}\n---\ngraph TD; A-->B'),
+    false,
+  );
+  assert.equal(
+    diagramSourceAllowed('x'.repeat(diagramLimits.maxSourceChars + 1)),
+    false,
+  );
 });

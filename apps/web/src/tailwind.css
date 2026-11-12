@@ -250,6 +250,7 @@
   --height-template: 35rem;
   --height-checkout-frame: 36.25rem;
   --spacing-sheet: 92dvh;
+  --spacing-diagram-inline: min(800px, 60dvh);
   --spacing-note-block: calc(var(--spacing) * 2);
   --text-note-mono: 0.9em;
   /*

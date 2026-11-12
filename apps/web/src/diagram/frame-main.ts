@@ -12,17 +12,19 @@
  * does, and the build writes it into the frame document with its faces, so
  * the frame sets its text in the face of the page (record 0061).
  *
- * The frame answers exactly one request. A second message is ignored, and
- * every answer carries the request identifier back, so a stray frame cannot
- * answer for this one.
+ * The frame renders one source request. Later numeric scale messages resize
+ * that drawing. Every message carries its request identifier.
  */
 import mermaid from 'mermaid';
+import { diagramBlockClasses } from '@notesapp/ui';
 import '../tailwind.css';
 import {
   diagramFontVariable,
   diagramLimits,
   diagramThemeOptions,
   drawnHeight,
+  diagramSourceAllowed,
+  isDiagramScaleRequest,
   isParentMessage,
   isDiagramRequest,
   paletteNames,
@@ -45,6 +47,10 @@ function paint(request: DiagramRequest): void {
   // The page plane paints only once the palette is in place, so a frame
   // that waits for its request shows the page behind it.
   document.body.classList.add('bg-app');
+  document.body.classList.toggle(
+    diagramBlockClasses.framePadding,
+    request.expanded !== true,
+  );
 }
 
 /**
@@ -65,15 +71,44 @@ async function pageFace(source: string): Promise<string> {
   return family;
 }
 
-/** Renders one validated request and answers with its height. */
-async function render(request: DiagramRequest): Promise<void> {
+type Drawing = {
+  readonly requestId: string;
+  readonly svg: SVGSVGElement;
+  readonly width: number;
+  readonly height: number;
+};
+
+function scaleDrawing(drawing: Drawing, scale: number): void {
+  drawing.svg.style.maxWidth = 'none';
+  drawing.svg.style.display = 'block';
+  drawing.svg.setAttribute('width', String(drawing.width * scale));
+  drawing.svg.setAttribute('height', String(drawing.height * scale));
+}
+
+function answer(drawing: Drawing): void {
+  const response: DiagramResponse = {
+    requestId: drawing.requestId,
+    ok: true,
+    height: Math.min(diagramLimits.maxHeightPx * 2, drawnHeight(document.body)),
+    width: Math.ceil(document.body.getBoundingClientRect().width),
+    naturalWidth: drawing.width,
+    naturalHeight: drawing.height,
+    paddingX: Number.parseFloat(getComputedStyle(document.body).paddingLeft),
+    paddingY: Number.parseFloat(getComputedStyle(document.body).paddingTop),
+  };
+  window.parent.postMessage(response, '*');
+}
+
+/** Render once. Later zoom messages resize the SVG without parsing it again. */
+async function render(request: DiagramRequest): Promise<Drawing> {
+  if (!diagramSourceAllowed(request.source))
+    throw Error('Diagram configuration is fixed.');
   paint(request);
-  // The colours come from the palette of the request, in light and in dark,
-  // so a diagram takes the theme of the page and never one of Mermaid.
   const themed = diagramThemeOptions(request, await pageFace(request.source));
   mermaid.initialize({
     startOnLoad: false,
     securityLevel: 'strict',
+    maxTextSize: diagramLimits.maxSourceChars,
     theme: themed.theme,
     look: themed.look,
     darkMode: themed.darkMode,
@@ -83,14 +118,31 @@ async function render(request: DiagramRequest): Promise<void> {
   const id = `notes-diagram-${request.requestId.replace(/[^a-zA-Z0-9-]/g, '')}`;
   const outcome = await mermaid.render(id, request.source);
   const host = document.getElementById('notes-diagram-host');
-  if (host === null) throw new Error('The diagram host is missing.');
+  if (!host) throw Error('The diagram host is missing.');
   host.innerHTML = outcome.svg;
-  const response: DiagramResponse = {
-    requestId: request.requestId,
-    ok: true,
-    height: drawnHeight(document.body),
-  };
-  window.parent.postMessage(response, '*');
+  const svg = host.querySelector('svg');
+  if (!svg) throw Error('The diagram has no drawing.');
+  const box =
+    svg.viewBox.baseVal.width > 0 ? svg.viewBox.baseVal : svg.getBBox();
+  const width = box.width,
+    height = box.height;
+  if (
+    !Number.isFinite(width) ||
+    !Number.isFinite(height) ||
+    width <= 0 ||
+    height <= 0 ||
+    width > diagramLimits.maxNaturalPx ||
+    height > diagramLimits.maxNaturalPx
+  )
+    throw Error('The diagram dimensions are not supported.');
+  const drawing: Drawing = { requestId: request.requestId, svg, width, height };
+  const padding =
+    Number.parseFloat(getComputedStyle(document.body).paddingLeft) * 2;
+  scaleDrawing(
+    drawing,
+    Math.min(1, Math.max(1, window.innerWidth - padding) / width),
+  );
+  return drawing;
 }
 
 /** Shows the source in the frame and answers that rendering failed. */
@@ -124,6 +176,20 @@ function fail(requestId: string, message: string, source: string): void {
  * none.
  */
 export function startDiagramFrame(): void {
+  let drawing: Drawing | null = null;
+  let expired = false;
+  window.addEventListener('message', (event: MessageEvent): void => {
+    if (
+      expired ||
+      !drawing ||
+      !isParentMessage(window, event.source) ||
+      !isDiagramScaleRequest(event.data) ||
+      event.data.requestId !== drawing.requestId
+    )
+      return;
+    scaleDrawing(drawing, event.data.scale);
+    answer(drawing);
+  });
   const onMessage = (event: MessageEvent): void => {
     if (
       !isParentMessage(window, event.source) ||
@@ -134,19 +200,25 @@ export function startDiagramFrame(): void {
     }
     const request = event.data;
     const timer = window.setTimeout(() => {
+      expired = true;
       fail(request.requestId, 'Diagram rendering timed out.', request.source);
     }, diagramLimits.maxRenderMs);
     void render(request)
+      .then((result) => {
+        if (expired) return;
+        drawing = result;
+        answer(result);
+      })
       .catch(() => {
+        if (expired) return;
+        expired = true;
         fail(
           request.requestId,
           'This diagram cannot be rendered.',
           request.source,
         );
       })
-      .finally(() => {
-        window.clearTimeout(timer);
-      });
+      .finally(() => window.clearTimeout(timer));
   };
   window.addEventListener('message', onMessage, { once: true });
 }

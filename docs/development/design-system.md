@@ -151,3 +151,21 @@ only scale steps. The CSS check refuses layout utilities, screen descendant sele
 `tools/design-system-allow.json` records cases with a reason and can only shrink. New exceptions require a component variant and a contract update. Run `node tools/check-design-rules.mjs --prune` to remove entries that no longer match.
 
 `tests/browser/symmetry.ts` checks content edges and visual parity in both themes and pointer densities. Remove or explain changes beyond the tolerance.
+
+### Diagrams
+
+Keep inline diagram text readable. Fit to the note column down to a scale of
+0.75, then use horizontal scrolling. Show an edge fade while more content is
+outside the column. Keep vertical note scrolling available over a diagram.
+Cap an inline diagram at 800 px, or 60 percent of the dynamic viewport on a
+coarse pointer. Put one Expand action above the drawing, outside its content.
+
+The expanded diagram uses the image viewer controls on an opaque page surface.
+Open at Fit when the scale is at least 0.625. Otherwise show the start at 100
+percent. The percent button resets to 100 percent. Fit, zoom, pan, pinch and
+Close remain available. Close returns focus to Expand without moving the note.
+Render the vector in a second opaque-origin sandbox. Exchange bounded geometry
+only. Note source cannot set renderer configuration. Older diagrams with inline
+configuration or YAML configuration show source instead of applying that
+configuration. Diagrams that exceed the fixed source, time or size limits also
+show source with a retry action.

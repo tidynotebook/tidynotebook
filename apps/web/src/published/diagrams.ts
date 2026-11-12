@@ -13,7 +13,7 @@
  * leaves, and the code block comes back. A change of the preference of the
  * device draws every diagram again in the new palette.
  */
-import { createDiagramFrame, diagramFramePath } from '../diagram/frame.ts';
+import { createDiagramWidget, diagramFramePath } from '../diagram/widget.ts';
 import {
   darkPreferenceQuery,
   diagramThemeOf,
@@ -43,7 +43,7 @@ function drawDiagrams(prefersDark: boolean): void {
   )) {
     const text = source.textContent ?? '';
     if (!drawsDiagram(text)) continue;
-    const frame = createDiagramFrame({
+    const frame = createDiagramWidget({
       source: text,
       theme,
       framePath: diagramFramePath,

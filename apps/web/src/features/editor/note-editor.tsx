@@ -99,7 +99,7 @@ import { useHeadingName } from './heading-name.ts';
 import { duplicateNote as makeCopy } from '../notes/duplicate-note.ts';
 import { NoteSide } from './note-side.tsx';
 import { useDeleteNotice } from '../trash/trash.tsx';
-import { createDiagramFrame, diagramFramePath } from '../../diagram/frame.ts';
+import { createDiagramWidget, diagramFramePath } from '../../diagram/widget.ts';
 import { useRegisterNoteDraftFlush } from './save-status.tsx';
 import { createDocumentWorkQueue } from './document-work.ts';
 import { createWriteSchedule } from './write-schedule.ts';
@@ -934,7 +934,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
           : (attachmentUrlsRef.current.get(key) ?? null);
       },
       createDiagram: (source: string): DiagramHandle =>
-        createDiagramFrame({
+        createDiagramWidget({
           source,
           theme: themeRef.current,
           framePath: diagramFramePath,

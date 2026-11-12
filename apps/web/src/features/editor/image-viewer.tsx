@@ -35,6 +35,7 @@ import {
  */
 import {
   useEffect,
+  useLayoutEffect,
   useId,
   useRef,
   useState,
@@ -94,7 +95,7 @@ export function ImageViewer({
       {image === null ? null : (
         <ImageViewerBody
           key={image.url}
-          image={image}
+          media={{ kind: 'image', image }}
           onClose={onClose}
           onRemoved={onRemoved}
         />
@@ -103,9 +104,50 @@ export function ImageViewer({
   );
 }
 
+/** A vector renderer shares the image viewer without returning markup from its frame. */
+export type VectorViewContent = {
+  readonly title: string;
+  readonly render: (options: {
+    readonly scale: number;
+    readonly onSize: (size: ImageSize) => void;
+    readonly onError: () => void;
+  }) => ReactNode;
+};
+
+/** A vector drawing uses the same dialog, tools and input handling as images. */
+export function VectorViewer({
+  content,
+  onClose,
+  returnFocus,
+}: {
+  readonly content: VectorViewContent;
+  readonly onClose: () => void;
+  readonly returnFocus: () => void;
+}): ReactNode {
+  const titleId = useId();
+  return (
+    <Dialog
+      open
+      title={content.title}
+      titleId={titleId}
+      width="screen"
+      onClose={onClose}
+      returnFocus={returnFocus}
+    >
+      <ImageViewerBody media={{ kind: 'vector', content }} onClose={onClose} />
+    </Dialog>
+  );
+}
+
+type ViewerMedia =
+  | { readonly kind: 'image'; readonly image: ImageOpenRequest }
+  | { readonly kind: 'vector'; readonly content: VectorViewContent };
+
 /** The zoom a person chose: the fit of the screen, or one fixed scale. */
 type Zoom =
-  { readonly kind: 'fit' } | { readonly kind: 'scale'; readonly value: number };
+  | { readonly kind: 'initial' }
+  | { readonly kind: 'fit' }
+  | { readonly kind: 'scale'; readonly value: number };
 
 const fit: Zoom = { kind: 'fit' };
 
@@ -177,25 +219,54 @@ function contentBox(element: HTMLElement): ImageSize {
 
 /** The tools and the picture of one open viewer. */
 function ImageViewerBody({
-  image,
+  media,
   onClose,
   onRemoved,
 }: {
   readonly onRemoved?: (() => void) | undefined;
-  readonly image: ImageOpenRequest;
+  readonly media: ViewerMedia;
   readonly onClose: () => void;
 }): ReactNode {
+  const image = media.kind === 'image' ? media.image : null;
+  const title =
+    media.kind === 'image' ? imageTitle(media.image.alt) : media.content.title;
+  const maximum = media.kind === 'vector' ? 4 : zoomLimits.max;
   const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const controlsRef = useRef<HTMLDivElement | null>(null);
+  const canvasRef = useRef<HTMLDivElement | null>(null);
+  const anchorRef = useRef<{
+    x: number;
+    y: number;
+    u: number;
+    v: number;
+  } | null>(null);
+  const touches = useRef(new Map<number, { x: number; y: number }>());
+  const pinch = useRef<{
+    distance: number;
+    scale: number;
+    u: number;
+    v: number;
+  } | null>(null);
+  const touched = useRef(false);
   const pictureRef = useRef<HTMLImageElement | null>(null);
   const pressRef = useRef<PressStart | null>(null);
   const [natural, setNatural] = useState<ImageSize | null>(null);
   const [room, setRoom] = useState<ImageSize>({ width: 0, height: 0 });
-  const [zoom, setZoom] = useState<Zoom>(fit);
+  const [zoom, setZoom] = useState<Zoom>(
+    media.kind === 'vector' ? { kind: 'initial' } : fit,
+  );
   const [failed, setFailed] = useState(false);
   const [message, setMessage] = useState('');
 
   const fitted = natural === null ? 1 : fitZoom(natural, room);
-  const scale = zoom.kind === 'fit' ? fitted : zoom.value;
+  const scale =
+    zoom.kind === 'scale'
+      ? zoom.value
+      : zoom.kind === 'initial' && fitted < 0.625
+        ? 1
+        : fitted;
+  const atFit =
+    zoom.kind === 'fit' || (zoom.kind === 'initial' && fitted >= 0.625);
   // The fit of a very large picture can be below the smallest step, and the
   // zoom out reaches it there.
   const lowest = lowestZoom(fitted);
@@ -206,6 +277,37 @@ function ImageViewerBody({
   const size = natural === null ? null : zoomedSize(natural, scale);
   const overflows =
     size !== null && (size.width > room.width || size.height > room.height);
+
+  // The floating tools reserve their measured height, so they do not cover content.
+  useLayoutEffect(() => {
+    const scroller = scrollerRef.current;
+    const controls = controlsRef.current?.firstElementChild;
+    if (!scroller || !(controls instanceof HTMLElement)) return;
+    const previous = scroller.style.paddingBlock;
+    const base = Number.parseFloat(getComputedStyle(scroller).paddingTop);
+    const measure = (): void => {
+      scroller.style.paddingBlock = `${Math.max(base, controls.getBoundingClientRect().bottom - scroller.getBoundingClientRect().top + base / 2)}px`;
+      setRoom(contentBox(scroller));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(controls);
+    return () => {
+      observer.disconnect();
+      scroller.style.paddingBlock = previous;
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    const anchor = anchorRef.current;
+    const scroller = scrollerRef.current;
+    const canvas = canvasRef.current;
+    if (!anchor || !scroller || !canvas) return;
+    const box = canvas.getBoundingClientRect();
+    scroller.scrollLeft += box.left + anchor.u * scale - anchor.x;
+    scroller.scrollTop += box.top + anchor.v * scale - anchor.y;
+    anchorRef.current = null;
+  }, [scale, zoom]);
 
   // The room of the picture follows the screen, so the fit follows a turn of
   // a phone and a resize of the window.
@@ -232,19 +334,49 @@ function ImageViewerBody({
     const onWheel = (event: WheelEvent): void => {
       if (!event.ctrlKey && !event.metaKey) return;
       event.preventDefault();
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const box = canvas.getBoundingClientRect();
+        anchorRef.current = {
+          x: event.clientX,
+          y: event.clientY,
+          u: (event.clientX - box.left) / scaleRef.current,
+          v: (event.clientY - box.top) / scaleRef.current,
+        };
+      }
       setZoom({
         kind: 'scale',
-        value: wheelZoom(scaleRef.current, event.deltaY, lowestRef.current),
+        value: Math.min(
+          maximum,
+          wheelZoom(scaleRef.current, event.deltaY, lowestRef.current),
+        ),
       });
     };
     scroller.addEventListener('wheel', onWheel, { passive: false });
     return () => {
       scroller.removeEventListener('wheel', onWheel);
     };
-  }, []);
+  }, [maximum]);
 
-  const zoomTo = (value: number): void => {
-    setZoom({ kind: 'scale', value });
+  const zoomTo = (value: number, point?: { x: number; y: number }): void => {
+    const canvas = canvasRef.current;
+    const scroller = scrollerRef.current;
+    if (canvas && scroller) {
+      const bounds = scroller.getBoundingClientRect();
+      const x = point?.x ?? bounds.left + bounds.width / 2;
+      const y = point?.y ?? bounds.top + bounds.height / 2;
+      const box = canvas.getBoundingClientRect();
+      anchorRef.current = {
+        x,
+        y,
+        u: (x - box.left) / scaleRef.current,
+        v: (y - box.top) / scaleRef.current,
+      };
+    }
+    setZoom({
+      kind: 'scale',
+      value: Math.min(maximum, Math.max(lowestRef.current, value)),
+    });
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
@@ -253,15 +385,40 @@ function ImageViewerBody({
     if (step === null) return;
     event.preventDefault();
     if (step === 'fit') setZoom(fit);
+    else if (step === 'actual') zoomTo(1);
     else zoomTo(step === 'in' ? zoomIn(scale) : zoomOut(scale, lowest));
   };
 
-  // A press with the mouse drags a zoomed picture. A press on the scrim that
-  // does not travel is a tap, and a tap on the scrim closes the viewer.
+  // Only the expanded viewer owns touch gestures. Inline diagrams retain
+  // native note scrolling. A second contact starts a pinch around its midpoint.
   const onPointerDown = (event: PointerEvent<HTMLDivElement>): void => {
     const scroller = scrollerRef.current;
-    if (scroller === null || event.button !== 0) return;
-    const pan = overflows && event.pointerType !== 'touch';
+    if (!scroller || event.button !== 0) return;
+    if (event.pointerType === 'touch') {
+      touches.current.set(event.pointerId, {
+        x: event.clientX,
+        y: event.clientY,
+      });
+      scroller.setPointerCapture(event.pointerId);
+      if (touches.current.size >= 2) {
+        const [a, b] = [...touches.current.values()];
+        const canvas = canvasRef.current;
+        if (a && b && canvas) {
+          const box = canvas.getBoundingClientRect();
+          pinch.current = {
+            distance: Math.max(1, Math.hypot(b.x - a.x, b.y - a.y)),
+            scale: scaleRef.current,
+            u: ((a.x + b.x) / 2 - box.left) / scaleRef.current,
+            v: ((a.y + b.y) / 2 - box.top) / scaleRef.current,
+          };
+          touched.current = true;
+          pressRef.current = null;
+        }
+        event.preventDefault();
+        return;
+      }
+    }
+    const pan = overflows;
     if (pan) {
       event.preventDefault();
       scroller.setPointerCapture(event.pointerId);
@@ -279,14 +436,65 @@ function ImageViewerBody({
 
   const onPointerMove = (event: PointerEvent<HTMLDivElement>): void => {
     const scroller = scrollerRef.current;
+    if (!scroller) return;
+    if (touches.current.has(event.pointerId)) {
+      touches.current.set(event.pointerId, {
+        x: event.clientX,
+        y: event.clientY,
+      });
+      const initial = pinch.current;
+      const [a, b] = [...touches.current.values()];
+      if (initial && a && b) {
+        event.preventDefault();
+        anchorRef.current = {
+          x: (a.x + b.x) / 2,
+          y: (a.y + b.y) / 2,
+          u: initial.u,
+          v: initial.v,
+        };
+        setZoom({
+          kind: 'scale',
+          value: Math.min(
+            maximum,
+            Math.max(
+              lowestRef.current,
+              (initial.scale * Math.hypot(b.x - a.x, b.y - a.y)) /
+                initial.distance,
+            ),
+          ),
+        });
+        return;
+      }
+    }
     const start = pressRef.current;
-    if (scroller === null || start?.pointerId !== event.pointerId) return;
-    if (!start.pan) return;
+    if (start?.pointerId !== event.pointerId || !start.pan) return;
     scroller.scrollLeft = start.left - (event.clientX - start.x);
     scroller.scrollTop = start.top - (event.clientY - start.y);
   };
 
   const onPointerUp = (event: PointerEvent<HTMLDivElement>): void => {
+    const scroller = scrollerRef.current;
+    touches.current.delete(event.pointerId);
+    pinch.current = null;
+    if (touched.current) {
+      const remaining = [...touches.current.entries()][0];
+      if (remaining && scroller) {
+        const [id, point] = remaining;
+        pressRef.current = {
+          pointerId: id,
+          x: point.x,
+          y: point.y,
+          left: scroller.scrollLeft,
+          top: scroller.scrollTop,
+          pan: true,
+          onScrim: false,
+        };
+      } else {
+        pressRef.current = null;
+        touched.current = false;
+      }
+      return;
+    }
     const start = pressRef.current;
     pressRef.current = null;
     if (start?.pointerId !== event.pointerId) return;
@@ -302,9 +510,13 @@ function ImageViewerBody({
 
   const endPress = (): void => {
     pressRef.current = null;
+    touches.current.clear();
+    pinch.current = null;
+    touched.current = false;
   };
 
   const run = (action: ImageAction): void => {
+    if (image === null) return;
     if (action === 'download') {
       saveAs(image.url, imageDownloadName(image.destination, image.alt));
       return;
@@ -337,147 +549,183 @@ function ImageViewerBody({
     });
   };
 
-  const status = viewerStatus({ failed, message });
+  const status =
+    media.kind === 'vector'
+      ? failed
+        ? 'The diagram did not load.'
+        : natural === null
+          ? 'Loading diagram'
+          : ''
+      : viewerStatus({ failed, message });
   // The zoom means nothing until the picture states its size, so the tools
   // wait for it and no percentage shows that the picture does not have.
   const idle = failed || natural === null;
 
   return (
-    <div className="relative h-full w-full" onKeyDown={onKeyDown}>
+    <div
+      className={`relative h-full w-full ${media.kind === 'vector' ? 'bg-app' : ''}`}
+      onKeyDown={onKeyDown}
+    >
       <Inline
         as="div"
-        pad={6}
+        pad={media.kind === 'vector' ? 4 : 6}
         ref={scrollerRef}
-        align="safe-center"
-        justify="safe-center"
-        className={`flex h-full w-full overflow-auto overscroll-contain ${overflows ? 'cursor-grab active:cursor-grabbing' : ''}`}
+        align={media.kind === 'vector' && !atFit ? 'start' : 'safe-center'}
+        justify={media.kind === 'vector' && !atFit ? 'start' : 'safe-center'}
+        className={`flex h-full w-full touch-none overflow-auto overscroll-contain ${overflows ? 'cursor-grab active:cursor-grabbing' : ''}`}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={endPress}
       >
-        {failed ? null : (
-          <CanvasImage
-            ref={pictureRef}
-            className={`max-w-none shrink-0 select-none ${size === null ? 'invisible' : ''}`}
-            src={image.url}
-            alt={image.alt}
-            width={size?.width}
-            height={size?.height}
-            draggable={false}
-            referrerPolicy={image.external ? 'no-referrer' : undefined}
-            onLoad={(event): void => {
-              const picture = event.currentTarget;
-              setNatural({
-                width: picture.naturalWidth,
-                height: picture.naturalHeight,
-              });
-            }}
-            onError={(): void => {
-              setFailed(true);
-            }}
-          />
-        )}
+        <div ref={canvasRef} className="shrink-0">
+          {failed ? null : media.kind === 'vector' ? (
+            media.content.render({
+              scale,
+              onSize: setNatural,
+              onError: () => setFailed(true),
+            })
+          ) : (
+            <CanvasImage
+              ref={pictureRef}
+              className={`max-w-none shrink-0 select-none ${size === null ? 'invisible' : ''}`}
+              src={media.image.url}
+              alt={media.image.alt}
+              width={size?.width}
+              height={size?.height}
+              draggable={false}
+              referrerPolicy={media.image.external ? 'no-referrer' : undefined}
+              onLoad={(event): void => {
+                const picture = event.currentTarget;
+                setNatural({
+                  width: picture.naturalWidth,
+                  height: picture.naturalHeight,
+                });
+              }}
+              onError={(): void => {
+                setFailed(true);
+              }}
+            />
+          )}
+        </div>
       </Inline>
       {/*
         The one bar of tools floats over the picture. It is a raised surface,
         so it reads on a light picture and on a dark one alike.
       */}
-      <Toolbar
-        floating
-        trailing={
+      <div ref={controlsRef}>
+        <Toolbar
+          floating
+          trailing={
+            <IconButton
+              variant="ghost"
+              label="Close"
+              glyph={<CloseIcon />}
+              onClick={onClose}
+            />
+          }
+        >
+          <Inset
+            padX={2}
+            as="p"
+            className="hidden max-w-xs truncate text-label md:block"
+          >
+            {title}
+          </Inset>
           <IconButton
             variant="ghost"
-            label="Close"
-            glyph={<CloseIcon />}
-            onClick={onClose}
+            label="Zoom out"
+            glyph={<ZoomOutIcon />}
+            disabled={idle || scale <= lowest}
+            onClick={() => {
+              zoomTo(zoomOut(scale, lowest));
+            }}
           />
-        }
-      >
-        <Inset
-          padX={2}
-          as="p"
-          className="hidden max-w-xs truncate text-label md:block"
-        >
-          {imageTitle(image.alt)}
-        </Inset>
-        <IconButton
-          variant="ghost"
-          label="Zoom out"
-          glyph={<ZoomOutIcon />}
-          disabled={idle || scale <= lowest}
-          onClick={() => {
-            zoomTo(zoomOut(scale, lowest));
-          }}
-        />
-        <span className="w-12 text-center text-secondary tabular-nums text-muted">
-          {idle ? '' : zoomPercent(scale)}
-        </span>
-        <IconButton
-          variant="ghost"
-          label="Zoom in"
-          glyph={<ZoomInIcon />}
-          disabled={idle || scale >= zoomLimits.max}
-          onClick={() => {
-            zoomTo(zoomIn(scale));
-          }}
-        />
-        <Button
-          variant="ghost"
-          size="compact"
-          disabled={idle || zoom.kind === 'fit'}
-          onClick={() => {
-            setZoom(fit);
-          }}
-        >
-          Fit
-        </Button>
-        {imageActions(image.external).map((action) =>
-          action === 'open' ? (
-            <a
-              key={action}
-              className={buttonClassName({
-                variant: 'ghost',
-                size: 'compact',
-                iconOnly: true,
-              })}
-              href={image.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              referrerPolicy="no-referrer"
-              aria-label={imageActionLabels[action]}
-              title={imageActionLabels[action]}
-            >
-              {actionIcon(action)}
-            </a>
-          ) : (
-            <IconButton
-              key={action}
-              variant="ghost"
-              label={imageActionLabels[action]}
-              glyph={actionIcon(action)}
-              disabled={actionNeedsPicture(action) && idle}
-              onClick={() => {
-                run(action);
-              }}
-            />
-          ),
-        )}
-        {image.remove === undefined ? null : (
           <Button
             variant="ghost"
             size="compact"
+            className="w-14 tabular-nums aria-disabled:text-muted"
+            disabled={idle}
+            aria-disabled={scale === 1}
+            label={`${zoomPercent(scale)}, reset zoom to 100%`}
+            title="Reset zoom to 100%"
             onClick={() => {
-              if (image.remove?.() === true) {
-                onRemoved?.();
-                onClose();
-              } else setMessage('This image changed. Open it again.');
+              if (scale !== 1) zoomTo(1);
             }}
           >
-            Remove
+            {idle ? '' : zoomPercent(scale)}
           </Button>
-        )}
-      </Toolbar>
+          <span className="sr-only" aria-live="polite">
+            {idle ? '' : `Zoom ${zoomPercent(scale)}`}
+          </span>
+          <IconButton
+            variant="ghost"
+            label="Zoom in"
+            glyph={<ZoomInIcon />}
+            disabled={idle || scale >= maximum}
+            onClick={() => {
+              zoomTo(zoomIn(scale));
+            }}
+          />
+          <Button
+            variant="ghost"
+            size="compact"
+            disabled={idle || atFit}
+            onClick={() => {
+              setZoom(fit);
+            }}
+          >
+            Fit
+          </Button>
+          {image === null
+            ? null
+            : imageActions(image.external).map((action) =>
+                action === 'open' ? (
+                  <a
+                    key={action}
+                    className={buttonClassName({
+                      variant: 'ghost',
+                      size: 'compact',
+                      iconOnly: true,
+                    })}
+                    href={image.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    referrerPolicy="no-referrer"
+                    aria-label={imageActionLabels[action]}
+                    title={imageActionLabels[action]}
+                  >
+                    {actionIcon(action)}
+                  </a>
+                ) : (
+                  <IconButton
+                    key={action}
+                    variant="ghost"
+                    label={imageActionLabels[action]}
+                    glyph={actionIcon(action)}
+                    disabled={actionNeedsPicture(action) && idle}
+                    onClick={() => {
+                      run(action);
+                    }}
+                  />
+                ),
+              )}
+          {image?.remove === undefined ? null : (
+            <Button
+              variant="ghost"
+              size="compact"
+              onClick={() => {
+                if (image.remove?.() === true) {
+                  onRemoved?.();
+                  onClose();
+                } else setMessage('This image changed. Open it again.');
+              }}
+            >
+              Remove
+            </Button>
+          )}
+        </Toolbar>
+      </div>
       {status === '' ? null : <Toast message={status} />}
     </div>
   );

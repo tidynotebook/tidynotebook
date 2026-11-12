@@ -387,3 +387,5 @@ export {
   editorSearchClasses,
   countedFieldClassName,
 } from './editor-search-classes.ts';
+
+export { diagramBlockClasses } from './diagram-classes.ts';
