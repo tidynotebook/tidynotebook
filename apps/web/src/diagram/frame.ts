@@ -3,7 +3,7 @@
  *
  * Diagrams render inside a sandboxed frame (`frame.html`) rather than in the
  * note itself. The parent keeps the Markdown source; the frame keeps the
- * diagram library. The two sides exchange only two fixed message shapes, so
+ * diagram library. The two sides exchange only fixed message shapes, so
  * no arbitrary HTML ever travels back to the parent.
  *
  * What this module never does:
@@ -19,10 +19,8 @@
  *   time, and the frame height are all bounded, and a failure replaces the
  *   frame with editable source in the same pane.
  *
- * Mermaid itself loads through a dynamic import inside `startDiagramFrame`,
- * so the main bundle keeps it deferred and the service worker can precache
- * the diagram chunk later. The parent side of this module holds no diagram
- * library at all.
+ * The built frame document contains the diagram engine. The parent side of
+ * this module holds no diagram library.
  */
 import { generateUUID } from '@notesapp/core';
 
@@ -40,7 +38,7 @@ export type DiagramTheme = 'light' | 'dark';
 export const diagramFramePath = '/src/diagram/frame.html';
 
 /**
- * The only message the parent sends to the frame.
+ * The source request that the parent sends to the frame.
  *
  * `requestId` matches one render; `source` is the raw Mermaid source without
  * the fence; `theme` is the appearance Mermaid renders with; `palette` holds

@@ -6,7 +6,7 @@ export const diagramBlockClasses = {
   caption: 'text-secondary text-muted',
   body: 'relative min-w-0 w-full',
   viewport:
-    'min-w-0 w-full overflow-x-auto overflow-y-hidden overscroll-x-contain touch-auto coarse:max-h-diagram-inline',
+    'min-w-0 w-full bg-app overflow-x-auto overflow-y-hidden overscroll-x-contain touch-auto coarse:max-h-diagram-inline',
   horizontalCue:
     'pointer-events-none absolute inset-y-0 right-0 w-8 bg-linear-to-l from-app to-transparent',
   verticalCue:

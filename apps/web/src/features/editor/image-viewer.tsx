@@ -570,8 +570,8 @@ function ImageViewerBody({
         as="div"
         pad={media.kind === 'vector' ? 4 : 6}
         ref={scrollerRef}
-        align={media.kind === 'vector' && !atFit ? 'start' : 'safe-center'}
-        justify={media.kind === 'vector' && !atFit ? 'start' : 'safe-center'}
+        align="safe-center"
+        justify="safe-center"
         className={`flex h-full w-full touch-none overflow-auto overscroll-contain ${overflows ? 'cursor-grab active:cursor-grabbing' : ''}`}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
