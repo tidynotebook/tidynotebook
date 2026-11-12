@@ -18,9 +18,11 @@ export const firstScreenCeilingBytes = Math.floor(0.62 * 1024 * 1024);
 // 2026-11-12: allow 1024 bytes for reviewed workspace refresh, folder
 // creation reveal and Trash focus fixes. Combined source measures 316743
 // bytes, leaving 185 bytes at 316928. Measurement and ceiling stay unchanged.
+// 2026-11-12: the owner approved 1024 bytes for the Settings loading layout.
+// It measures 317433 bytes, leaving 519 bytes at 317952.
 export const firstScreenBudgetBytes = Math.min(
   firstScreenCeilingBytes,
-  316_928,
+  317_952,
 );
 export function withinFirstScreenBudget(bytes: number): boolean {
   return (
