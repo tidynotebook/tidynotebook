@@ -113,8 +113,10 @@ export function PageRegion({
   readonly children: ReactNode;
 }): ReactNode {
   return (
-    <div className={`${pageRowClassName()} ${pageGutter}`}>
-      <div className={pageColumnClassName()}>{children}</div>
+    <div className={`${pageRowClassName()} ${pageGutter} py-6 coarse:py-4`}>
+      <Stack gap={{ fine: 4, coarse: 3 }} className={pageColumnClassName()}>
+        {children}
+      </Stack>
     </div>
   );
 }
