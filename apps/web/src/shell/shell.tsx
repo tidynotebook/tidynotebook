@@ -1751,6 +1751,7 @@ function ShellFrame({
           <Inline
             as="header"
             data-scroll-edge="above"
+            data-edge-always=""
             gap={{ fine: 2, coarse: 1 }}
             className={`z-30 flex h-header shrink-0 items-center ${fixedRegionClasses('bottom')} bg-surface  ${pageGutter}`}
           >
