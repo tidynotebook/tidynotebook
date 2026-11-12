@@ -222,16 +222,14 @@ await test('the actual command palette exposes its list and keeps its interactio
     return input;
   }
   async function key(value: string, shiftKey = false) {
-    await act(async () =>
-      field().dispatchEvent(
-        new KeyboardEvent('keydown', {
-          key: value,
-          shiftKey,
-          bubbles: true,
-          cancelable: true,
-        }),
-      ),
-    );
+    const event = new KeyboardEvent('keydown', {
+      key: value,
+      shiftKey,
+      bubbles: true,
+      cancelable: true,
+    });
+    await act(async () => field().dispatchEvent(event));
+    return event;
   }
   async function type(value: string) {
     const input = field();
@@ -480,9 +478,11 @@ await test('the actual command palette exposes its list and keeps its interactio
           field().getAttribute('aria-activedescendant'),
           'palette-note-alpha',
         );
-        await key('Tab', true);
+        const backward = await key('Tab', true);
+        assert.equal(backward.defaultPrevented, true);
         assert.equal(document.activeElement, field());
-        await key('Tab');
+        const forward = await key('Tab');
+        assert.equal(forward.defaultPrevented, true);
         assert.equal(document.activeElement, field());
       },
     );

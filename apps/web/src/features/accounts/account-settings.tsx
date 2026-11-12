@@ -696,7 +696,7 @@ function chosenPage<T extends { readonly path: string }>(
   );
 }
 
-const wideSettingsQuery = '(min-width: 1024px)';
+const wideSettingsQuery = '(min-width: 64rem)';
 
 /** Observe the width that shows the Settings detail beside its list. */
 function subscribeSettingsWidth(change: () => void): () => void {
@@ -852,9 +852,7 @@ export function SettingsModal({
   }, [focusScope]);
   useLayoutEffect(() => {
     const title =
-      listLevel && !window.matchMedia('(min-width: 1024px)').matches
-        ? listTitle.current
-        : sectionTitle.current;
+      listLevel && !settingsWide() ? listTitle.current : sectionTitle.current;
     title?.focus({ preventScroll: true });
   }, [listLevel, activePage?.path]);
   useLayoutEffect(() => {

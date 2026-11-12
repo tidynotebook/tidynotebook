@@ -352,7 +352,11 @@ function assertElement(
 }
 
 /** Control width and pointer separately, with real change-event delivery. */
-function settingsMedia(initialWidth: number, initialCoarse: boolean) {
+function settingsMedia(
+  initialWidth: number,
+  initialCoarse: boolean,
+  initialFontSize = 16,
+) {
   const descriptor = Object.getOwnPropertyDescriptor(window, 'matchMedia');
   const original = window.matchMedia.bind(window);
   const queries = new Map<string, MediaQueryList>();
@@ -360,14 +364,16 @@ function settingsMedia(initialWidth: number, initialCoarse: boolean) {
   let width = initialWidth;
   let coarse = initialCoarse;
   const matches = (query: string, fallback: boolean): boolean => {
-    if (query === '(width < 48rem)') return width < 768;
-    const min = /min-width:\s*(\d+)px/.exec(query)?.[1];
-    const max = /max-width:\s*(\d+)px/.exec(query)?.[1];
-    if (min === undefined && max === undefined && !query.includes('pointer:'))
+    if (query === '(width < 48rem)') return width < 48 * initialFontSize;
+    const min = /min-width:\s*(\d+)(px|rem)/.exec(query);
+    const max = /max-width:\s*(\d+)(px|rem)/.exec(query);
+    const pixels = (match: RegExpExecArray): number =>
+      Number(match[1]) * (match[2] === 'rem' ? initialFontSize : 1);
+    if (min === null && max === null && !query.includes('pointer:'))
       return fallback;
     return (
-      (min === undefined || width >= Number(min)) &&
-      (max === undefined || width <= Number(max)) &&
+      (min === null || width >= pixels(min)) &&
+      (max === null || width <= pixels(max)) &&
       (!query.includes('pointer: coarse') || coarse) &&
       (!query.includes('pointer: fine') || !coarse)
     );
@@ -383,7 +389,7 @@ function settingsMedia(initialWidth: number, initialCoarse: boolean) {
         configurable: true,
         get: () => matches(query, fallback),
       });
-      if (query === '(min-width: 1024px)') {
+      if (query === '(min-width: 64rem)') {
         const add = result.addEventListener.bind(result);
         const remove = result.removeEventListener.bind(result);
         Object.defineProperty(result, 'addEventListener', {
@@ -460,6 +466,39 @@ function currentSettingsRows(): string[] {
   });
 }
 
+await test('Settings follows the CSS breakpoint with a larger browser initial font', async () => {
+  const media = settingsMedia(1280, false, 20);
+  const restore = responsiveFocusBoxes();
+  try {
+    await show('/w/one/notes/n1?settings=');
+    const title = dialog()?.querySelector<HTMLElement>(
+      '.ui-settings-header-title',
+    );
+    assert.ok(title);
+    assert.deepEqual(currentSettingsRows(), ['appearance']);
+    assertElement(document.activeElement, title);
+    await media.change(1279, false, () => title.blur());
+    assert.deepEqual(currentSettingsRows(), []);
+    const listTitle = dialog()?.querySelector<HTMLElement>(
+      '.ui-settings-root-heading [tabindex="-1"]',
+    );
+    assert.ok(listTitle);
+    assertElement(document.activeElement, listTitle);
+    await media.change(1280, false, () => listTitle.blur());
+    assert.deepEqual(currentSettingsRows(), ['appearance']);
+    assertElement(document.activeElement, title);
+    await show('/w/one/notes/n1?settings=');
+    await media.change(1100);
+    await show('/w/one/notes/n1?settings=');
+    assert.deepEqual(currentSettingsRows(), []);
+    assert.equal(document.activeElement?.textContent, 'Settings');
+  } finally {
+    await show('/w/one/notes/n1');
+    restore();
+    media.restore();
+  }
+});
+
 await test('wide empty Settings names the displayed Appearance section as current', async () => {
   const media = settingsMedia(1024, false);
   try {
@@ -494,7 +533,6 @@ await test('Settings current state follows resolved pages and capabilities in bo
             ['mail', 'appearance'],
           ]) {
             await act(async () => go(`/w/one/notes/n1?settings=${value}`));
-            await settle();
             assert.equal(address, `/w/one/notes/n1?settings=${resolved}`);
             assert.deepEqual(currentSettingsRows(), [resolved]);
             assert.equal(
@@ -605,7 +643,7 @@ function responsiveFocusBoxes(): () => void {
   ]);
   const focused = Object.getOwnPropertyDescriptor(document, 'hasFocus');
   const shown = (element: HTMLElement): boolean => {
-    const wide = window.matchMedia('(min-width: 1024px)').matches;
+    const wide = window.matchMedia('(min-width: 64rem)').matches;
     if (element.closest('[hidden]')) return false;
     if (wide && element.closest('.ui-settings-root-heading')) return false;
     if (wide && element.getAttribute('aria-label') === 'Back to Settings')
@@ -878,7 +916,6 @@ await test('an administrator downgrade removes the current page without old focu
       title.blur();
       restoreAccount = replaceSessionAccount({ installationRole: 'member' });
     });
-    await settle();
     assert.equal(address, '/w/one/notes/n1?settings=appearance');
     assert.deepEqual(currentSettingsRows(), ['appearance']);
     assertElement(dialog()?.querySelector('[data-settings-page="mail"]'), null);
