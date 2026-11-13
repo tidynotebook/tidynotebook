@@ -27,16 +27,22 @@ export async function auditSettings(page: Page) {
       ...document.querySelectorAll('.ui-settings-heading'),
     ].filter(visible)) {
       const style = getComputedStyle(header);
+      const root = header.classList.contains('ui-settings-root-heading');
       if (
         header.closest('.ui-settings-column') ||
         header.classList.contains('ui-settings-root-heading')
       ) {
-        eq('header top padding', parseFloat(style.paddingTop), phone ? 16 : 24);
+        eq(
+          'header top padding',
+          parseFloat(style.paddingTop),
+          root ? 0 : phone ? 16 : 24,
+        );
         eq(
           'header bottom padding',
           parseFloat(style.paddingBottom),
-          phone ? 16 : 24,
+          root ? 0 : phone ? 16 : 24,
         );
+        if (root && phone) eq('root header height', box(header).height, 44);
         const close = header.querySelector('[aria-label="Close Settings"]');
         if (close && visible(close)) {
           if (
@@ -45,13 +51,20 @@ export async function auditSettings(page: Page) {
               ?.getAttribute('data-header-slot') !== 'trailing'
           )
             errors.push('Close must be in the right header slot');
+          const slot = close.closest('[data-header-slot]');
           const glyph = close.querySelector('svg');
-          if (glyph)
+          if (slot && glyph) {
             eq(
-              'close glyph on right content edge',
-              box(glyph).right,
+              'close slot on right content edge',
+              box(slot).right,
               box(header).right - parseFloat(style.paddingRight),
             );
+            eq(
+              'close glyph centered in slot',
+              box(glyph).left + box(glyph).width / 2,
+              box(slot).left + box(slot).width / 2,
+            );
+          }
         }
       }
     }
@@ -60,10 +73,17 @@ export async function auditSettings(page: Page) {
       const header = sections
         .closest('.ui-settings-column')
         ?.querySelector('header');
+      let scrollOffset = 0;
+      for (
+        let parent = sections.parentElement;
+        parent && !parent.classList.contains('ui-settings-column');
+        parent = parent.parentElement
+      )
+        scrollOffset += parent.scrollTop;
       if (header && visible(header))
         eq(
           'header to sections group gap',
-          box(sections).top - box(header).bottom,
+          box(sections).top + scrollOffset - box(header).bottom,
           matchMedia('(pointer: coarse)').matches ? 16 : 24,
         );
       const edge =
@@ -94,8 +114,20 @@ export async function auditSettings(page: Page) {
       const text = range.getBoundingClientRect();
       if (text.width > box(label).width + 1)
         errors.push(`Mode label is cut: ${label.textContent}`);
-      if (label.parentElement?.querySelector('[data-mode-check]'))
-        errors.push('Mode check must not take label width');
+      const check = label.parentElement?.querySelector('[data-mode-check]');
+      if (check && visible(check)) {
+        if (box(check).left < box(label).right)
+          errors.push('Mode check overlaps the label');
+        const line = label.parentElement;
+        if (
+          line &&
+          box(check).right >
+            box(line).right -
+              parseFloat(getComputedStyle(line).paddingRight) +
+              1
+        )
+          errors.push('Mode check exceeds the content edge');
+      }
     }
     for (const el of document.querySelectorAll(
       '.ui-settings-row,.ui-settings-nav-row,.ui-account-card,.ui-settings-form-body,.ui-settings-footer',
@@ -257,16 +289,51 @@ export async function auditSettings(page: Page) {
         if (parts.length) {
           const first = Math.min(...parts.map((item) => box(item).top));
           const last = Math.max(...parts.map((item) => box(item).bottom));
-          eq('header content top inset', first - box(h).top, 16);
-          eq('header content bottom inset', box(h).bottom - last, 16);
+          if (h.classList.contains('coarse:h-11')) {
+            eq('fixed header height', box(h).height, 44);
+            eq(
+              'fixed header top padding',
+              parseFloat(getComputedStyle(h).paddingTop),
+              0,
+            );
+            eq(
+              'fixed header bottom padding',
+              parseFloat(getComputedStyle(h).paddingBottom),
+              0,
+            );
+            eq(
+              'fixed header content centered',
+              first - box(h).top,
+              box(h).bottom - last,
+            );
+          } else {
+            eq('header content top inset', first - box(h).top, 16);
+            eq('header content bottom inset', box(h).bottom - last, 16);
+          }
         }
-        const title = h.querySelector('h2,p');
+        const title =
+          h.querySelector('h2,p') ??
+          (h.classList.contains('ui-settings-root-heading')
+            ? h.querySelector('[tabindex="-1"]')
+            : null);
         if (title) {
-          eq(
-            'header title horizontal center',
-            box(title).left + box(title).width / 2,
-            box(h).left + box(h).width / 2,
-          );
+          if (
+            h.closest('.ui-settings-column') ||
+            h.classList.contains('ui-settings-root-heading')
+          ) {
+            eq(
+              'header title horizontal center',
+              box(title).left + box(title).width / 2,
+              box(h).left + box(h).width / 2,
+            );
+          } else {
+            // A confirmation has no Back slot. Its title starts at the inset.
+            eq(
+              'sheet title content edge',
+              box(title).left,
+              box(h).left + parseFloat(getComputedStyle(h).paddingLeft),
+            );
+          }
           const line =
             title.parentElement?.closest('[data-ui-layout="inline"]') ?? h;
           eq(
