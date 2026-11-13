@@ -7,6 +7,29 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## Unreleased
 
+## 0.24.0 - 2026-11-13
+
+### Added
+
+- Use a compact Find and Replace panel in the editor. Keep the selected match visible, including matches in wide tables.
+- Open diagrams in a vector viewer. Diagram text and surfaces follow the selected theme.
+
+### Fixed
+
+- Keep table layouts stable during vertical scrolling and show Find matches at hidden table delimiters.
+- Keep accepted document changes until the sync feed confirms them. Send pending changes when a saved version has the same text.
+- Keep the current note name when History restores an older version.
+- Preserve Settings focus during layout changes and account refreshes. Match loading layouts to their content.
+- Keep Settings heading spacing and header dividers consistent. Give the command search field equal inner padding and the correct touch target height. ([PR 594](https://github.com/tidynotebook/tidynotebook/pull/594))
+- Correct mobile dialogs, account pages, folder selection, workspace navigation and focus after restore.
+- Preserve sign-in return paths, validate form fields together and set page titles for the current screen.
+- Keep note counts, outline actions, toolbar spacing and published table regions clear and consistent.
+
+### Changed
+
+- Keep documentation checks focused on integrity, including decisions in nested folders.
+- Add local native worker boundary diagnostics. These diagnostics do not establish production worker isolation.
+
 ## 0.23.6 - 2026-11-06
 
 ### Changed
