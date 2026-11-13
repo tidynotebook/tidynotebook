@@ -90,6 +90,7 @@ doubled-class selectors or inline spacing styles. Runtime overlay and viewport c
   glyphs align with the body inset. Its footer has one full-width primary
   button and adds the safe area at the bottom.
 - `Dialog` owns equal desktop padding and title, body and footer gaps. The command frame owns block insets and gaps; regions own equal side insets (desktop 6, phone 4) for row fills.
+  The bare query field owns its 32 px fine or 44 px coarse target height and equal inner block padding (4 px fine, 8 px coarse). A row divider stays outside layout at the field edge. Frame gaps after the divider do not replace inner field padding.
   The phone handle and safe area are sheet chrome outside the content inset. Footers align inline actions to the end.
 - `Menu` and `Popover` own equal padding, the overlay surface and menu rows.
 

@@ -642,10 +642,11 @@ export function textAreaClassName(
  *
  * The query of the command palette is a field inside a surface that already
  * frames it, so it takes no edge, no fill and no radius, and it takes the
- * body step of the chrome and the touch step of every field.
+ * body step of the chrome and the target height of every field. It owns
+ * equal inner block padding, including the space above a containing row edge.
  */
 export function bareFieldClassName(): string {
-  return `ui-field ui-bare-field min-w-0 flex-1 border-0 bg-transparent text-body text-strong outline-none placeholder:text-muted`;
+  return `ui-field ui-bare-field h-8 coarse:h-11 py-1 coarse:py-2 min-w-0 flex-1 border-0 bg-transparent text-body text-strong outline-none placeholder:text-muted`;
 }
 
 /**

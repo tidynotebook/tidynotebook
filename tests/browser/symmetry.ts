@@ -167,6 +167,75 @@ export function compareSurface(before: string, after: string) {
   return changes;
 }
 
+/** The query field owns space inside its row edge, separate from list gaps. */
+export async function auditSearchInput(page: Page) {
+  return page.evaluate(() => {
+    const issues: {
+      kind: string;
+      actual: number;
+      expected: number;
+      text: string;
+    }[] = [];
+    const input = document.querySelector(
+      'input[role="combobox"][aria-controls="command-palette-list"]',
+    );
+    if (!(input instanceof HTMLInputElement) || !input.checkVisibility())
+      return { issues, geometry: null };
+    const row = input.closest('[data-scroll-edge="above"]');
+    if (!row) throw Error('The search input needs its row edge');
+    const coarse = matchMedia('(pointer:coarse)').matches;
+    const field = input.getBoundingClientRect();
+    const frame = row.getBoundingClientRect();
+    const style = getComputedStyle(input);
+    const edge = getComputedStyle(row, '::before');
+    const check = (kind: string, actual: number, expected: number) => {
+      if (!Number.isFinite(actual) || Math.abs(actual - expected) > 0.1)
+        issues.push({ kind, actual, expected, text: 'Search query' });
+    };
+    const top = parseFloat(style.paddingTop);
+    const bottom = parseFloat(style.paddingBottom);
+    check('query field target height', field.height, coarse ? 44 : 32);
+    check('query inner top padding', top, coarse ? 8 : 4);
+    check('query inner bottom padding', bottom, coarse ? 8 : 4);
+    check('query inner padding symmetry', top, bottom);
+    check('query row top', field.top, frame.top);
+    check('query row bottom at divider', field.bottom, frame.bottom);
+    check('query divider bottom', parseFloat(edge.bottom), 0);
+    check('query divider width', parseFloat(edge.borderBottomWidth), 1);
+    if (edge.position !== 'absolute')
+      issues.push({
+        kind: 'query divider outside layout',
+        actual: 0,
+        expected: 1,
+        text: 'Search query',
+      });
+    const lineHeight = parseFloat(style.lineHeight);
+    const lineInset = (field.height - lineHeight) / 2;
+    if (!Number.isFinite(lineInset) || lineInset < bottom)
+      issues.push({
+        kind: 'query text line to divider inset',
+        actual: lineInset,
+        expected: bottom,
+        text: 'Search query',
+      });
+    return {
+      issues,
+      geometry: {
+        coarse,
+        fieldHeight: field.height,
+        rowHeight: frame.height,
+        paddingTop: top,
+        paddingBottom: bottom,
+        lineHeight,
+        lineInset,
+        dividerBottom: parseFloat(edge.bottom),
+        dividerOpacity: Number(edge.opacity),
+        focused: document.activeElement === input,
+      },
+    };
+  });
+}
+
 /** Every composed surface uses the same measured contract. */
 export async function auditComposition(page: Page) {
   const result = await page.evaluate(() => {
@@ -411,8 +480,11 @@ export async function auditComposition(page: Page) {
         searchGroup,
         'search scope group gap',
         searchGroup.getBoundingClientRect().top -
-          searchScope.getBoundingClientRect().bottom,
-        coarse ? 16 : 24,
+          searchScope.getBoundingClientRect().bottom +
+          (searchGroup.closest('#command-palette-list')?.scrollTop ?? 0),
+        matchMedia('(max-width: 1023px) and (pointer: coarse)').matches
+          ? 16
+          : 24,
       );
     const rows = [...document.querySelectorAll('[data-ui-row]')].filter(
         visible,
@@ -593,6 +665,7 @@ export async function auditComposition(page: Page) {
     return { issues, counts: { layouts: layouts.length, rows: rows.length } };
   });
   result.issues.push(...(await auditContentParity(page)).issues);
+  result.issues.push(...(await auditSearchInput(page)).issues);
   return result;
 }
 

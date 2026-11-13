@@ -499,6 +499,8 @@ await test('a bare field is a field with no box of its own', () => {
   for (const part of ['border-0', 'bg-transparent', 'outline-none'])
     assert.ok(parts.includes(part), part);
   assert.ok(parts.includes('text-body'), 'the body step of the chrome');
+  for (const part of ['h-8', 'coarse:h-11', 'py-1', 'coarse:py-2'])
+    assert.ok(parts.includes(part), `inner field space: ${part}`);
   assert.ok(!parts.some((part) => part.startsWith('rounded')), 'no radius');
 });
 
