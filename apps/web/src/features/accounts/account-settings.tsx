@@ -324,11 +324,7 @@ function SessionsSettings(): ReactNode {
         <Stack gap={{ fine: 6, coarse: 4 }}>
           {current === undefined ? null : (
             <Stack gap={2}>
-              <SectionHeading
-                label={<>This device</>}
-                divider
-                inset={{ fine: 0, coarse: 4 }}
-              />
+              <SectionHeading label={<>This device</>} divider />
               <Card as="ul" responsive aria-label="This device">
                 <ListRow>
                   <span
@@ -353,7 +349,6 @@ function SessionsSettings(): ReactNode {
             <SectionHeading
               label={<>Other devices</>}
               divider
-              inset={{ fine: 0, coarse: 4 }}
               action={
                 <>
                   {others.length === 0 || phone ? null : (
@@ -1429,7 +1424,6 @@ export function SettingsModal({
                                   <SectionHeading
                                     label={<>Workspace</>}
                                     divider
-                                    inset={{ fine: 0, coarse: 4 }}
                                   />
                                   <Card responsive>
                                     {activePage.sections.map((key, index) => (

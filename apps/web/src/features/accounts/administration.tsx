@@ -153,7 +153,6 @@ function AdminGroup({
           action={toolbar}
           danger={danger}
           divider
-          inset={{ fine: 0, coarse: 4 }}
         />
       )}
       <Card responsive>{children}</Card>

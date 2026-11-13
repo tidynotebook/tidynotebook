@@ -138,7 +138,6 @@ export function SettingsSection({
           label={heading ?? section.title}
           danger={danger}
           divider
-          inset={{ fine: 0, coarse: 4 }}
         />
       ) : (
         <Stack gap={1}>

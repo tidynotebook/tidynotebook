@@ -55,6 +55,37 @@ export async function auditSettings(page: Page) {
         }
       }
     }
+    for (const sections of document.querySelectorAll('.ui-settings-sections')) {
+      if (!visible(sections)) continue;
+      const header = sections
+        .closest('.ui-settings-column')
+        ?.querySelector('header');
+      if (header && visible(header))
+        eq(
+          'header to sections group gap',
+          box(sections).top - box(header).bottom,
+          matchMedia('(pointer: coarse)').matches ? 16 : 24,
+        );
+      const edge =
+        box(sections).left + parseFloat(getComputedStyle(sections).paddingLeft);
+      for (const heading of sections.querySelectorAll('h3')) {
+        if (visible(heading))
+          eq('section heading content edge', box(heading).left, edge);
+      }
+    }
+    for (const heading of document.querySelectorAll(
+      '.ui-settings-nav-heading',
+    )) {
+      if (!visible(heading)) continue;
+      const card = heading.nextElementSibling;
+      const label = heading.firstElementChild;
+      if (card && label && visible(card))
+        eq(
+          'navigation heading content edge',
+          box(label).left,
+          box(card).left + (phone ? 0 : 8),
+        );
+    }
     for (const label of [
       ...document.querySelectorAll('[data-mode-label]'),
     ].filter(visible)) {
@@ -151,9 +182,9 @@ export async function auditSettings(page: Page) {
         eq('heading to card', box(card).top - box(heading).bottom, 8);
       if (phone && card?.classList.contains('ui-settings-card'))
         eq(
-          'heading inner edge',
+          'heading outer edge',
           box(heading).left + parseFloat(getComputedStyle(heading).paddingLeft),
-          box(card).left + 16,
+          box(card).left,
         );
     }
     for (const heading of document.querySelectorAll(

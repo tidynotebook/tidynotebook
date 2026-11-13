@@ -10,7 +10,7 @@ export function NavigationHeading({
     <Inline
       as="h3"
       gap={2}
-      padX={{ fine: 2, coarse: 4 }}
+      padX={{ fine: 2, coarse: 0 }}
       padY={{ fine: 1, coarse: 0 }}
       className="ui-settings-nav-heading text-group text-muted"
     >

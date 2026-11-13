@@ -2,9 +2,9 @@
 import { createContext, useContext, type ReactNode } from 'react';
 const Surface = createContext(false),
   Row = createContext(false);
-/** The header owns the top inset; the body keeps its bottom inset. */
+/** The body keeps one group gap below the header and above its bottom edge. */
 export function settingsContentClassName(): string {
-  return 'pb-6 coarse:pb-4';
+  return 'py-6 coarse:py-4';
 }
 export function SettingsSurface({
   children,

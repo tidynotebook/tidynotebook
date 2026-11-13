@@ -451,7 +451,7 @@ export function DialogBody({
                 : 0
       }
       padX={sectionForm ? { fine: 6, coarse: 4 } : undefined}
-      padY={sectionForm ? 0 : undefined}
+      padY={sectionForm ? { fine: 6, coarse: 4 } : undefined}
       gap={3}
       className={fixed || phone ? 'flex-1' : ''}
     >
