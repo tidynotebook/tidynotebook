@@ -41,7 +41,11 @@ export function SettingsLoading({
         <div
           className={`${listLevel ? 'flex' : 'hidden'} bg-card overflow-hidden flex-1 flex-col lg:flex lg:w-60 lg:flex-none lg:border-r lg:border-edge-subtle`}
         >
-          <ContentHeader padX={4} className="fine:h-8 lg:hidden">
+          <ContentHeader
+            divider="always"
+            padX={4}
+            className="fine:h-8 lg:hidden"
+          >
             <HeaderSlot side="leading" aria-hidden="true" />
             <HeaderTitle
               ref={listTitle}
@@ -68,6 +72,7 @@ export function SettingsLoading({
           className={`${listLevel ? 'hidden' : 'flex'} min-w-0 flex-1 overflow-hidden lg:flex`}
         >
           <ContentHeader
+            divider="always"
             padX={{ fine: 6, coarse: 1 }}
             padY={{ fine: 6, coarse: 4 }}
           >

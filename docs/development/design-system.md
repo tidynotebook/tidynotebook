@@ -22,8 +22,8 @@ empty disclosure slot. Calendar cells keep control height in equal columns. The 
 
 Keep items closer than groups. The group gap equals the container padding.
 The note formatting toolbar uses the same item gap between all tools.
-The app header and sidebar keep their hairlines at rest. Other fixed regions show a hairline
-only if adjacent content overflows. Shadows show only under hidden content.
+The app header, sidebar and Settings headers keep their hairlines at rest.
+Other fixed regions show a hairline only if adjacent content overflows. Shadows show only under hidden content.
 Hairlines and shadows stay outside the layout. They must not add a flex or
 grid item. Sheet headers keep Back on the left and Close in the right slot.
 
@@ -132,6 +132,10 @@ groups and full-width dividers. Phone groups use cards. Their headings align
 with the outer card edge. Headings above tiles align with the tiles.
 Section headings have no separate inset. Desktop navigation headings keep the row content edge.
 Keep vertical padding outside the Settings scroller and side padding inside; rows and tiles use inset focus outlines, with the phone safe area below the bottom inset.
+
+Every visible Settings header has a horizontal divider, including the root,
+loading, topic, form, picker and confirmation headers. The shared edge token
+paints it outside layout, even when content fits. Only hidden content adds a shadow.
 
 Title blocks have one group gap after them. Rows center their content and align text left. Phone action rows have no second filled or outlined button.
 

@@ -23,6 +23,45 @@ export async function auditSettings(page: Page) {
       if (Math.abs(a - b) > 1) errors.push(`${name}: ${a} != ${b}`);
     };
     const box = (e: Element) => e.getBoundingClientRect();
+    const headerEdges: unknown[] = [];
+    for (const header of document.querySelectorAll(
+      '.ui-settings-heading,.ui-settings-dialog-heading',
+    )) {
+      if (!visible(header) || header.classList.contains('sr-only')) continue;
+      const edge = getComputedStyle(header, '::before');
+      const hidden = header.hasAttribute('data-edge-bottom');
+      if (Number(edge.opacity) < 0.99)
+        errors.push('Settings header line must remain visible');
+      if (Math.abs(parseFloat(edge.borderBottomWidth) - 1) > 0.01)
+        errors.push('Settings header line must have one CSS pixel width');
+      if (edge.borderBottomStyle !== 'solid')
+        errors.push('Settings header line must be solid');
+      if (edge.position !== 'absolute')
+        errors.push('Settings header line must stay outside layout');
+      eq('Settings header line bottom', parseFloat(edge.bottom), 0);
+      const token = document.createElement('span');
+      token.hidden = true;
+      token.className = 'border-edge-subtle';
+      header.append(token);
+      const color = getComputedStyle(token).borderBottomColor;
+      token.remove();
+      if (edge.borderBottomColor !== color || color === 'rgba(0, 0, 0, 0)')
+        errors.push(
+          'Settings header line must use the visible theme edge token',
+        );
+      if (hidden === (edge.boxShadow === 'none'))
+        errors.push('Settings header shadow must follow hidden content only');
+      headerEdges.push({
+        title: header.textContent,
+        overflow: header.hasAttribute('data-scroll-overflow'),
+        hidden,
+        opacity: edge.opacity,
+        borderWidth: edge.borderBottomWidth,
+        borderColor: edge.borderBottomColor,
+        shadow: edge.boxShadow,
+        box: box(header).toJSON(),
+      });
+    }
     for (const header of [
       ...document.querySelectorAll('.ui-settings-heading'),
     ].filter(visible)) {
@@ -344,7 +383,7 @@ export async function auditSettings(page: Page) {
         }
       }
     }
-    return { errors, rows };
+    return { errors, rows, headerEdges };
   });
 }
 

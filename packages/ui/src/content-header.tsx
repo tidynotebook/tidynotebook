@@ -7,17 +7,26 @@ import {
   type SpaceValue,
 } from './primitives.tsx';
 import { fixedRegionClasses } from './scroll-region.tsx';
+import { useSettingsSurface } from './settings-layout.tsx';
 export function ContentHeader({
   children,
   className = '',
   pad,
   padX,
   padY,
+  divider,
   ...props
-}: ComponentPropsWithRef<'header'> & InsetProps): ReactNode {
+}: ComponentPropsWithRef<'header'> &
+  InsetProps & {
+    readonly divider?: 'always' | 'overflow';
+  }): ReactNode {
+  const settings = useSettingsSurface();
+  const persistent =
+    divider === 'always' || (divider === undefined && settings);
   return (
     <Inline
       as="header"
+      data-edge-always={persistent ? '' : undefined}
       {...props}
       pad={pad}
       padX={padX}

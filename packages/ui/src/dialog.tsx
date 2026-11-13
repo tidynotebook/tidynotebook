@@ -348,6 +348,7 @@ export function Dialog({
         ) : (actions === undefined && !headerActions) || hideTitle || screen ? (
           <h2
             data-scroll-edge="above"
+            data-edge-always={settings ? '' : undefined}
             className={`${dialogTitleClassName(hideTitle || screen)} ${settings ? 'ui-settings-dialog-heading' : ''}`}
             id={titleId}
           >
@@ -356,6 +357,7 @@ export function Dialog({
         ) : (
           <div
             data-scroll-edge="above"
+            data-edge-always={settings ? '' : undefined}
             className={`${dialogHeaderClassName()} ${settings ? 'ui-settings-dialog-heading' : ''}`}
           >
             <h2 className={dialogHeaderTitleClassName()} id={titleId}>
