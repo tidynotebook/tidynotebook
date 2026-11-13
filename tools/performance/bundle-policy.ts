@@ -20,9 +20,11 @@ export const firstScreenCeilingBytes = Math.floor(0.62 * 1024 * 1024);
 // bytes, leaving 185 bytes at 316928. Measurement and ceiling stay unchanged.
 // 2026-11-12: the owner approved 1024 bytes for the Settings loading layout.
 // It measures 317433 bytes, leaving 519 bytes at 317952.
+// 2026-11-13: the owner approved 1024 bytes for the mobile and diagram fixes.
+// Local and CI builds measure 318360 bytes, leaving 616 bytes at 318976.
 export const firstScreenBudgetBytes = Math.min(
   firstScreenCeilingBytes,
-  317_952,
+  318_976,
 );
 export function withinFirstScreenBudget(bytes: number): boolean {
   return (
