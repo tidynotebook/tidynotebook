@@ -20,12 +20,14 @@ await test('a frame accepts its own current response and releases its resources'
       configurable: true,
       value: browser[name],
     });
-  const { createDiagramFrame } =
+  const { createDiagramFrame, isDiagramRequest, paletteNames } =
     await import('../../apps/web/dist/diagram/frame.js');
+  for (const name of paletteNames)
+    document.documentElement.style.setProperty(name, '#ffffff');
   const sizes: unknown[] = [];
   const handle = createDiagramFrame({
     source: 'graph LR; A-->B',
-    theme: 'light',
+    theme: 'dark',
     framePath: '/frame.html',
     onSize: (size) => sizes.push(size),
   });
@@ -46,9 +48,26 @@ await test('a frame accepts its own current response and releases its resources'
       configurable: true,
       value: (value: unknown) => sent.push(value),
     });
+    // The editor can build the frame before the app applies its new theme.
+    // The request must use the page colours in force when the frame loads.
+    const currentPalette = [
+      '#191919',
+      '#141414',
+      '#d0cfcc',
+      '#6fa8f5',
+      '#807e79',
+    ];
+    paletteNames.forEach((name, index) =>
+      document.documentElement.style.setProperty(
+        name,
+        currentPalette[index] ?? '',
+      ),
+    );
     frame.dispatchEvent(new Event('load'));
     const request = sent[0];
-    assert.ok(request && typeof request === 'object' && 'requestId' in request);
+    assert.ok(isDiagramRequest(request));
+    assert.equal(request.theme, 'dark');
+    assert.deepEqual(request.palette, currentPalette);
     const requestId = request.requestId;
     const response = {
       requestId,

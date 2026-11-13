@@ -652,16 +652,18 @@ export function createDiagramFrame(options: DiagramFrameOptions): {
     wrapper.appendChild(iframe);
     frame = iframe;
 
-    const request: DiagramRequest = {
-      requestId,
-      source: options.source,
-      theme: options.theme,
-      palette: activePalette(),
-      expanded: options.expanded ?? false,
-    };
     iframe.addEventListener('load', (): void => {
       if (frame !== iframe || disposed) return;
       stopClock();
+      // The editor can build this frame before the app applies new colours.
+      // Read the palette when the loaded frame is ready to draw.
+      const request: DiagramRequest = {
+        requestId,
+        source: options.source,
+        theme: options.theme,
+        palette: activePalette(),
+        expanded: options.expanded ?? false,
+      };
       // The frame runs with an opaque origin (`sandbox` without
       // `allow-same-origin`), so the target origin is `*` by necessity. The
       // message itself carries the request ID, and the response is accepted
