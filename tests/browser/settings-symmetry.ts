@@ -59,7 +59,12 @@ export async function auditSettings(page: Page) {
         borderWidth: edge.borderBottomWidth,
         borderColor: edge.borderBottomColor,
         shadow: edge.boxShadow,
-        box: box(header).toJSON(),
+        box: {
+          left: box(header).left,
+          top: box(header).top,
+          width: box(header).width,
+          height: box(header).height,
+        },
       });
     }
     for (const header of [
