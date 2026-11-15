@@ -23,11 +23,15 @@ Use [verification](docs/development/verification.md) for focused test commands.
 
 ## Review and merge
 
-A repository admin or a user with push access can comment `ff-merge` on a PR
-to fast forward `main` to its head. `/ff-merge` also works. The merge workflows
-do not require CodeRabbit approval, CI results, or resolved review threads.
-GitHub still enforces the rules configured on `main`.
-See [fast forward merge](docs/development/fast-forward-merge.md).
+The owner merges PRs with GitHub's **Create a merge commit** option after
+`Check` passes and all review threads are resolved. Merge commits keep the
+branch commits and record the PR merge in `main`. Squash and rebase merges
+are disabled. Main does not require linear history. Force pushes and branch
+deletion remain blocked, and no actor can bypass the rules.
+
+The fast-forward workflows and the `ff-merge` and `/ff-merge` comment commands
+are retired. Use the GitHub merge action, or `gh pr merge --merge`, instead.
+A merge to `main` starts the normal push CI and main image workflow.
 
 ## License
 
