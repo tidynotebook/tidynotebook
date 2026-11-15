@@ -207,12 +207,7 @@ jobs:
           echo 'd185f726bdaf92df78273217dfdd24ebcd6b0ef48cf3ce776ff5762b6e138c99  '"$RUNNER_TEMP/zizmor.tar.gz" | sha256sum --check
           tar -xzf "$RUNNER_TEMP/zizmor.tar.gz" -C "$RUNNER_TEMP" zizmor
       - name: Check workflow syntax
-        # actionlint 1.7.12 does not know GitHub's queue key. Keep the exception
-        # limited to the two merge workflows and this exact schema error.
-        # https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency
-        run: |
-          "$RUNNER_TEMP/actionlint" .github/workflows/ci.yml .github/workflows/release.yml
-          "$RUNNER_TEMP/actionlint" -ignore '^unexpected key "queue" for "concurrency" section\. expected one of "cancel-in-progress", "group"$' .github/workflows/ff-only-merge.yml .github/workflows/ff-merge-comment.yml
+        run: '"$RUNNER_TEMP/actionlint" .github/workflows/ci.yml .github/workflows/release.yml'
       - run: '"$RUNNER_TEMP/zizmor" --no-online-audits --strict-collection .github/workflows .github/actions'
 
   check:

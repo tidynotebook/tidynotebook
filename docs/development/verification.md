@@ -62,9 +62,9 @@ short path. It checks changed document formatting and the full document tree.
 Guide and development docs, plus the root README, require source checks. Image
 inputs also run image smoke tests. Workflow changes run actionlint and zizmor.
 Local Docker testing uses the production image and entry point. There is no
-local proof receipt or test-file gate. A manual workflow can move `main` to a
-reviewed head without a new test run. See [Fast forward
-merge](fast-forward-merge.md).
+local proof receipt or test-file gate. The owner uses a merge commit after
+the required `Check` passes and review threads are resolved. Main push CI checks the new merge commit. See
+[review and merge](../../CONTRIBUTING.md#review-and-merge).
 
 The service performance budget and coverage report run nightly or on a manual
 main run. They do not block the push aggregate. The bundle budget runs with
