@@ -8,10 +8,44 @@ generated output comparison, types, lint, format, build, typed lint, unit
 tests, and integration tests. The build comes before typed lint because it
 supplies package declarations.
 
-`tools/run-tests.mjs` discovers unit tests beside the source and tool files.
-It discovers integration tests under `tests/integration/`. The tests use
-PostgreSQL and MinIO from `compose.test.yaml`. Each integration test creates
-its own database or bucket.
+Unit commands use Node file patterns beside package source and at the tools
+root. `pnpm test:unit` builds its required packages first.
+`pnpm test:unit:run` runs the same files after a build. Package commands use
+`pnpm --filter <package> test:unit` to select that package only.
+`tools/run-tests.mjs` selects integration files and keeps the slow files on
+separate CI shards. `node-test.config.json` holds the shared coverage settings.
+For a direct Node command, put `--no-experimental-test-coverage` before the
+file paths to hide its report.
+Integration commands also accept `NOTESAPP_COVERAGE=off`.
+
+`pnpm test:services` starts the named PostgreSQL and MinIO services from
+`compose.test.yaml`, waits for their health checks, then runs the mandatory
+test-profile migration. `pnpm verify` and `pnpm test:integration` include this
+setup. Each integration test creates its own database or bucket.
+
+Test setup requires Docker Compose. It uses the named disposable services in
+`compose.test.yaml`. Stop any external service on the test ports before you run
+the commands. Setup clears inherited test database and role password overrides
+before migration. Integration helpers and diagnostic commands use the fixed
+Compose connection values. `NOTESAPP_TEST_DATABASE_URL` and
+`NOTESAPP_TEST_S3_ENDPOINT` do not select test services. This also applies to
+focused integration checks.
+
+For a focused check, use an explicit file path with the Node runner. Build and
+start the test services first for an integration test:
+
+```sh
+pnpm exec node --config-file=node-test.config.json packages/api-client/src/configure.test.ts
+pnpm build
+pnpm test:services
+pnpm exec node --config-file=node-test.config.json tests/integration/mcp-endpoint.test.ts
+```
+
+Use Node's `--test-name-pattern` before the file path to select a test case.
+
+The documentation build test also needs Linux `strace` with syscall delay
+injection. It delays a real search-index write to check that the build waits
+for the file to finish before it stops the search service.
 
 Node cannot strip JSX. Logic that needs a unit test can live in a plain
 TypeScript module beside the component. Integration tests can check built
@@ -28,13 +62,17 @@ short path. It checks changed document formatting and the full document tree.
 Guide and development docs, plus the root README, require source checks. Image
 inputs also run image smoke tests. Workflow changes run actionlint and zizmor.
 Local Docker testing uses the production image and entry point. There is no
-local proof receipt or test-file gate. A manual workflow can move `main` to a
-reviewed head without a new test run. See [Fast forward
-merge](fast-forward-merge.md).
+local proof receipt or test-file gate. The owner uses a merge commit after
+the required `Check` passes and review threads are resolved. Main push CI checks the new merge commit. See
+[review and merge](../../CONTRIBUTING.md#review-and-merge).
 
 The service performance budget and coverage report run nightly or on a manual
 main run. They do not block the push aggregate. The bundle budget runs with
-source checks. Browser measurements use a local Playwright install in
+source checks. Its policy is in `tools/performance/bundle-policy.ts`. The
+production-build integration test in `pnpm verify` uses the same limit and
+checks that Settings, calendar and action forms remain deferred. The DS1
+allowance follows the owner-approved remainder after those splits.
+Browser measurements use a local Playwright install in
 `.local-app/` when needed.
 
 On duplicate same-repo pull request events, GitHub leaves the skipped

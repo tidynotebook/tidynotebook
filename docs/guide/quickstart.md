@@ -26,7 +26,7 @@ Use the public stable tag. The clone provides Compose files and operator
 scripts that match the image.
 
 ```bash
-git clone --branch v0.21.0 --depth 1 \
+git clone --branch v0.23.6 --depth 1 \
   https://github.com/tidynotebook/tidynotebook.git notesapp
 cd notesapp
 ```
@@ -80,6 +80,11 @@ not serve the host name `localhost`.
 
 Create the first account with an email address and a password. This account
 is the administrator. Later visits show the sign-in page.
+
+To write and save a note, continue with
+[Write your first note](getting-started.md#write-your-first-note). To invite
+people, see [Accounts and invitations](accounts.md). For password recovery,
+see [Forgot your password](joining.md#forgot-your-password).
 
 ## Stop and remove
 

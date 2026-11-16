@@ -1,20 +1,25 @@
+import {
+  Inset,
+  Stack,
+  RowCopy,
+  Button,
+  DialogBody,
+  DialogFooter,
+  ListRow,
+  SectionHeading,
+  LoadingState,
+  Notice,
+  focusOutline,
+} from '@notesapp/ui';
+
+import { SettingsDialog } from './settings-dialog.tsx';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   listConnectedApps,
   revokeConnectedApp,
   type ConnectedApp,
 } from '@notesapp/api-client';
-import {
-  Button,
-  Dialog,
-  DialogBody,
-  DialogFooter,
-  ListRow,
-  LoadingState,
-  Notice,
-  focusOutline,
-  pageListClassName,
-} from '@notesapp/ui';
+
 import { problemMessage } from '../../app.tsx';
 import {
   connectedAppFacts,
@@ -26,9 +31,10 @@ import {
 import { problemCode } from '../../lib/problem-text.ts';
 import { sectionOf, settingsSections } from '../../lib/page-sections.ts';
 import { useNow } from '../../shell/now.ts';
-import { SettingsSection } from './settings-section.tsx';
+import { usePhoneSettings, SettingsSection } from './settings-section.tsx';
 
 export function ConnectedAppSettings(): ReactNode {
+  const phone = usePhoneSettings();
   const [apps, setApps] = useState<readonly ConnectedApp[] | null>(null);
   const [error, setError] = useState('');
   const [load, setLoad] = useState(0);
@@ -64,37 +70,55 @@ export function ConnectedAppSettings(): ReactNode {
         aria-label="Connected apps"
         className={focusOutline}
       >
+        {phone ? null : <SectionHeading label="Connected apps" divider />}
         {error === '' ? null : <Notice tone="problem" message={error} />}
         {apps === null ? (
           error === '' ? (
-            <LoadingState label="Reading connected apps" />
+            <LoadingState label="Loading connected apps" />
           ) : (
             <Button variant="secondary" onClick={() => setLoad(load + 1)}>
               Try again
             </Button>
           )
         ) : apps.length === 0 ? (
-          <p className="m-0 text-control text-muted">
+          <Inset
+            padY={3}
+            padX={{ fine: 0, coarse: 4 }}
+            as="p"
+            className="text-secondary text-muted"
+          >
             No connected apps. Connect an app from its settings.
-          </p>
+          </Inset>
         ) : (
-          <ul className={pageListClassName()}>
+          <Stack gap={0} pad={0} as="ul">
             {apps.map((app) => (
               <ListRow
                 key={app.grantId}
-                className="flex items-center justify-between gap-4"
+                className="flex items-center justify-between"
               >
-                <div className="min-w-0">
-                  <p className="m-0 break-words text-ui text-strong">
+                <RowCopy>
+                  <p className="m-0 break-words text-body text-strong">
                     Name claimed by app: {connectedAppName(app)}
                   </p>
-                  <p className="mb-0 mt-1 break-words text-control text-muted">
-                    {connectedAppIdentity(app)}
-                  </p>
-                  <p className="mb-0 mt-1 text-control text-muted">
-                    {connectedAppFacts(app, now)}
-                  </p>
-                </div>
+                  {phone ? (
+                    <p className="ui-settings-meta m-0 text-secondary text-muted">
+                      {connectedAppIdentity(app)} ·{' '}
+                      {connectedAppFacts(app, now)}
+                    </p>
+                  ) : (
+                    <>
+                      <Inset
+                        as="p"
+                        className="break-words text-secondary text-muted"
+                      >
+                        {connectedAppIdentity(app)}
+                      </Inset>
+                      <Inset as="p" className="text-secondary text-muted">
+                        {connectedAppFacts(app, now)}
+                      </Inset>
+                    </>
+                  )}
+                </RowCopy>
                 <Button
                   variant="secondary"
                   tone="danger"
@@ -110,7 +134,7 @@ export function ConnectedAppSettings(): ReactNode {
                 </Button>
               </ListRow>
             ))}
-          </ul>
+          </Stack>
         )}
       </div>
       {revoking === null ? null : (
@@ -179,7 +203,7 @@ function RevokeAppDialog({
     }
   }
   return (
-    <Dialog
+    <SettingsDialog
       open
       title="Revoke connected app?"
       titleId="revoke-connected-app-title"
@@ -188,12 +212,10 @@ function RevokeAppDialog({
       returnFocus={returnFocus}
     >
       <DialogBody>
-        <p className="m-0 text-ui text-strong">
+        <p className="m-0 text-body text-strong">
           {connectedAppRevokeText(connectedAppName(app))}
         </p>
-        {error === '' ? null : (
-          <Notice className="mt-3" tone="problem" message={error} />
-        )}
+        {error === '' ? null : <Notice tone="problem" message={error} />}
       </DialogBody>
       <DialogFooter>
         <Button variant="ghost" onClick={onClose}>
@@ -206,9 +228,9 @@ function RevokeAppDialog({
             void submit();
           }}
         >
-          {busy ? 'Revoking app' : 'Revoke app'}
+          {busy ? 'Revoking access' : 'Revoke access'}
         </Button>
       </DialogFooter>
-    </Dialog>
+    </SettingsDialog>
   );
 }

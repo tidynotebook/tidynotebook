@@ -156,3 +156,7 @@ await test('an open sign-up makes, replaces or notifies, and never keeps a stran
   assert.equal(openSignUpAction({ linked: false }), 'replace');
   assert.equal(openSignUpAction({ linked: true }), 'notify');
 });
+
+await test('the default limit is five decimal gigabytes', () => {
+  assert.equal(defaultAccountLimitBytes, 5_000_000_000n);
+});

@@ -175,7 +175,11 @@ function repeatedTitle(tree: Root, title: string | undefined): Nodes | null {
 }
 
 /** The readable text of a tree, leaving out the node `skip`. */
-function textOf(tree: Root, skip: Nodes | null): string {
+function textOf(
+  tree: Root,
+  skip: Nodes | null,
+  separator: string = blockSeparator,
+): string {
   const output: string[] = [];
   // White space waits for the next word, so a block can replace it without
   // reading or trimming the text that is already written.
@@ -195,7 +199,7 @@ function textOf(tree: Root, skip: Nodes | null): string {
     }
     if (output.length !== 0) {
       if (blockEnded)
-        output.push(sentenceEnd.test(lastCharacter) ? ' ' : blockSeparator);
+        output.push(sentenceEnd.test(lastCharacter) ? ' ' : separator);
       else if (spacePending || normalized.startsWith(' ')) output.push(' ');
     }
     output.push(words);
@@ -273,4 +277,10 @@ export function readableText(
   options: ReadableTextOptions = {},
 ): string {
   return readableTextOf(parseMarkdown(source), options);
+}
+
+/** Count content words without counting generated block separators or syntax. */
+export function markdownWordCount(source: string): number {
+  const text = textOf(parseMarkdown(source), null, ' ');
+  return text.match(/\S+/gu)?.length ?? 0;
 }

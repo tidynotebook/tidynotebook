@@ -11,7 +11,9 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { spacingSpec } from './spacing.ts';
 import {
+  requiredFieldMessage,
   avatarClassName,
   badgeClassName,
   bareFieldClassName,
@@ -33,15 +35,15 @@ import {
   menuSurfaceValues,
   meterAlmostFull,
   meterClassNames,
-  meterWidthClassName,
+  meterFillPercent,
   rowClassName,
+  switchClassNames,
   selectClassName,
   inlineFieldClassName,
   sidebarViewClassName,
   tabClassName,
   taskBoxClassName,
   textAreaClassName,
-  touchFieldText,
   type ButtonSize,
   type ButtonVariant,
   type EdgeMark,
@@ -59,38 +61,22 @@ const variants: readonly ButtonVariant[] = [
   'danger',
 ];
 
-for (const [value, width, almostFull] of [
-  [0, 'w-0', false],
-  [1, 'w-1/12', false],
-  [89, 'w-11/12', false],
-  [90, 'w-11/12', true],
-  [100, 'w-full', true],
-  [125, 'w-full', true],
-] as const)
-  await test(`a meter at ${String(value)} of 100 has the correct width and warning`, () => {
-    assert.equal(meterWidthClassName(value, 100), width);
-    assert.equal(meterAlmostFull(value, 100), almostFull);
+for (const value of [0, 0.24, 1, 4, 5, 50, 89, 90, 99, 100, 125])
+  await test(`a meter at ${String(value)} of 100 has its real percentage`, () => {
+    assert.equal(meterFillPercent(value, 100), Math.min(value, 100));
+    assert.equal(meterAlmostFull(value, 100), value >= 90 && value < 100);
     const classes = meterClassNames(value, 100);
-    assert.ok(classes.fill.split(' ').includes(width));
     assert.ok(
-      classes.fill.includes(almostFull ? 'bg-danger-fill' : 'bg-accent-fill'),
+      classes.fill.includes(
+        value >= 100 ? 'fill-danger-fill' : 'fill-accent-fill',
+      ),
     );
-    assert.ok(
-      !classes.fill.includes(almostFull ? 'bg-accent-fill' : 'bg-danger-fill'),
+    assert.equal(
+      classes.settingsValue,
+      `text-value ${value >= 100 ? 'text-danger' : 'text-muted'}`,
     );
-    for (const part of [classes.track, classes.fill]) {
-      assert.ok(part.includes('h-1.5'));
-      assert.ok(part.includes('rounded-sm'));
-      assert.ok(!part.includes('rounded-full'));
-    }
-    assert.ok(classes.track.includes('bg-hover'));
+    assert.ok(classes.track.includes('overflow-hidden'));
   });
-
-await test('a meter keeps the last incomplete step below its maximum', () => {
-  assert.equal(meterWidthClassName(99, 100), 'w-11/12');
-  for (let step = 1; step < 12; step += 1)
-    assert.equal(meterWidthClassName(step, 12), `w-${String(step)}/12`);
-});
 
 await test('a meter refuses numbers that cannot state a value against a maximum', () => {
   for (const [value, max] of [
@@ -102,11 +88,11 @@ await test('a meter refuses numbers that cannot state a value against a maximum'
     [0, NaN],
     [0, Infinity],
   ])
-    assert.throws(() => meterWidthClassName(value ?? 0, max ?? 0), RangeError);
+    assert.throws(() => meterFillPercent(value ?? 0, max ?? 0), RangeError);
 });
 
 /** Every button size. */
-const sizes: readonly ButtonSize[] = ['sm', 'md'];
+const sizes: readonly ButtonSize[] = ['compact', 'default'];
 
 /** Every recipe of the module, with the name a failure message reads. */
 const recipes: readonly (readonly [string, string])[] = [
@@ -120,7 +106,7 @@ const recipes: readonly (readonly [string, string])[] = [
     'compact danger icon',
     compactButtonVisualClassName({
       variant: 'danger',
-      size: 'sm',
+      size: 'compact',
       iconOnly: true,
     }),
   ],
@@ -209,21 +195,15 @@ await test('no recipe draws a ring except the focus ring of a field', () => {
   }
 });
 
-await test('every recipe takes one radius of the named scale', () => {
-  // The avatar is the one exception the design guide names: a circle of an
-  // initial, and `rounded-full` is what draws a circle.
+await test('each pointer uses one radius from the scale', () => {
   for (const [name, classes] of recipes) {
-    const found = classes
-      .split(' ')
-      .filter((part) => /(?:^|:)rounded(?:-|$)/.test(part));
-    assert.equal(found.length, 1, `${name} names ${String(found.length)}`);
-    assert.ok(
-      (name === 'avatar'
-        ? ['rounded-full']
-        : ['rounded-sm', 'rounded-md', 'rounded-lg', 'rounded-xl']
-      ).includes(found[0] ?? ''),
-      `${found[0] ?? ''} of the ${name}`,
-    );
+    const parts = classes.split(' '),
+      base = parts.filter((p) => /^rounded(?:-|$)/.test(p)),
+      coarse = parts.filter((p) => /^coarse:rounded(?:-|$)/.test(p));
+    assert.equal(base.length, 1, name);
+    assert.ok(coarse.length <= 1, name);
+    for (const p of [...base, ...coarse])
+      assert.match(p, /^(coarse:)?rounded-(sm|md|lg|xl|full)$/);
   }
 });
 
@@ -397,72 +377,62 @@ await test('a button names one appearance and one size', () => {
   assert.ok(buttonClassName({ className: 'mt-2' }).endsWith('mt-2'));
 });
 
-await test('a button is 32 px on a desktop and 28 px when it is small', () => {
-  const medium = buttonClassName({ size: 'md' }).split(' ');
-  assert.ok(medium.includes('min-h-11'), 'the touch minimum');
-  assert.ok(medium.includes('md:min-h-8'), 'the desktop control height');
-  const small = buttonClassName({ size: 'sm' }).split(' ');
-  assert.ok(small.includes('min-h-11'), 'the touch minimum');
-  assert.ok(small.includes('md:min-h-7'), 'the small desktop height');
+await test('text buttons use the default and compact size roles', () => {
+  for (const size of ['default', 'compact'] as const) {
+    const parts = buttonClassName({ size }).split(' ');
+    assert.ok(parts.includes(size === 'default' ? 'h-8' : 'h-7'));
+    assert.ok(parts.includes(size === 'default' ? 'px-3' : 'px-2'));
+    assert.ok(parts.includes('coarse:h-11'));
+    assert.ok(parts.includes('coarse:px-4'));
+  }
+  assert.equal(spacingSpec.fine.button, 32);
+  assert.equal(spacingSpec.coarse.button, 44);
 });
 
-await test('a compact icon keeps its touch target and reduces its visible surface', () => {
-  const button = buttonClassName({
-    variant: 'danger',
-    size: 'sm',
-    iconOnly: true,
-    compact: true,
-  });
-  const visual = compactButtonVisualClassName({
-    variant: 'danger',
-    size: 'sm',
-    iconOnly: true,
-  });
-
-  assert.ok(button.includes('size-11'), 'the square touch target');
-  assert.ok(button.includes('px-0'), 'the icon has no text inset');
-  assert.ok(!button.includes('px-2.5'), 'the text inset does not squeeze it');
-  assert.ok(button.includes('group'), 'the visual state owner');
-  assert.ok(
-    button.includes('focus-visible:outline-none'),
-    'the outer target has no second outline',
-  );
-  assert.ok(!button.includes('bg-danger-fill'), 'the outer target has no fill');
-  assert.ok(visual.includes('size-8'), 'the visible touch surface');
-  assert.ok(visual.includes('md:size-7'), 'the small desktop surface');
-  assert.ok(visual.includes('bg-danger-fill'), 'the confirmation fill');
-  assert.ok(
-    visual.includes('group-focus-visible:outline-focus'),
-    'the visible focus surface',
-  );
+await test('icon targets have one focus outline and no text inset', () => {
+  for (const size of ['row', 'toolbar', 'header', 'rail'] as const) {
+    const parts = buttonClassName({
+      variant: 'ghost',
+      iconOnly: true,
+      iconSize: size,
+    }).split(' ');
+    assert.ok(parts.includes('p-0'));
+    assert.ok(parts.includes('h-7'));
+    assert.ok(
+      parts.includes(
+        size === 'row'
+          ? 'coarse:h-9'
+          : size === 'toolbar'
+            ? 'coarse:h-10'
+            : 'coarse:h-11',
+      ),
+    );
+    assert.ok(parts.includes('focus-visible:-outline-offset-2'));
+    assert.ok(!parts.includes('focus-visible:outline-none'));
+  }
 });
 
-await test('a compact text button has a quiet surface inside its touch target', () => {
-  const button = buttonClassName({
+await test('compact secondary actions keep their surface and padding', () => {
+  const parts = buttonClassName({
     variant: 'secondary',
-    size: 'sm',
-    compact: true,
-  });
-  const visual = compactButtonVisualClassName({
-    variant: 'secondary',
-    size: 'sm',
-    iconOnly: false,
-  });
-
-  assert.ok(button.includes('min-h-11'), 'the touch target height');
-  assert.ok(button.includes('px-0'), 'the outer target has no text inset');
-  assert.ok(button.includes('group'), 'the visual state owner');
-  assert.ok(!button.includes('bg-card'), 'the outer target has no fill');
-  assert.ok(visual.includes('min-h-8'), 'the visible touch surface');
-  assert.ok(visual.includes('md:min-h-7'), 'the small desktop surface');
-  assert.ok(visual.includes('px-2.5'), 'the visible text inset');
-  assert.ok(visual.includes('bg-card'), 'the secondary surface fill');
+    size: 'compact',
+  }).split(' ');
+  for (const part of [
+    'h-7',
+    'px-2',
+    'coarse:h-11',
+    'coarse:px-4',
+    'bg-card',
+    'border-edge-line',
+  ])
+    assert.ok(parts.includes(part), part);
 });
 
-await test('a row is 28 px on a desktop and 44 px under touch', () => {
+await test('a row has the line height plus equal padding', () => {
   const parts = rowClassName().split(' ');
-  assert.ok(parts.includes('min-h-11'), 'the touch minimum');
-  assert.ok(parts.includes('md:min-h-7'), 'the desktop row height');
+  assert.ok(parts.includes('ui-tree-row'), 'the shared tree row role');
+  assert.equal(spacingSpec.fine.tree, 28);
+  assert.equal(spacingSpec.coarse.tree, 36);
   assert.ok(parts.includes('rounded-md'), 'the row radius');
   assert.ok(parts.includes('px-2'), 'the row inset');
 });
@@ -483,7 +453,7 @@ await test('a marked row states one mark for a choice and for a route', () => {
   const selected = rowClassName({ selected: true });
   const current = rowClassName({ current: true });
   assert.equal(selected, current);
-  assert.ok(selected.includes('bg-active text-strong font-medium'));
+  assert.ok(selected.includes('bg-active text-strong text-label'));
   // A marked row has nothing left to say on hover, so it states no hover.
   assert.ok(!selected.includes('hover:'), 'a marked row repeats its own mark');
   assert.ok(rowClassName().includes('hover:bg-hover hover:text-strong'));
@@ -494,7 +464,7 @@ await test('a row that only holds actions promises none of its own', () => {
   assert.ok(!container.includes('cursor-pointer'), 'the pointer');
   assert.ok(!container.includes('hover:'), 'the hover fill');
   assert.ok(!container.includes('focus-visible:'), 'the focus outline');
-  assert.ok(container.includes('min-h-11'), 'the size of a row');
+  assert.ok(container.includes('ui-tree-row'), 'the shared size of a row');
 });
 
 await test('a field rests on the divider and answers focus on it', () => {
@@ -504,14 +474,14 @@ await test('a field rests on the divider and answers focus on it', () => {
   assert.ok(field.includes('focus-visible:ring-2'), 'the focus ring');
   assert.ok(field.includes('focus-visible:ring-focus/25'), 'the ring strength');
   assert.ok(field.includes('bg-app'), 'the field fill');
-  assert.ok(field.includes('min-h-11'), 'the touch minimum');
-  assert.ok(field.includes('md:min-h-8'), 'the desktop field height');
+  assert.ok(field.includes('ui-field'), 'the shared field geometry');
+  assert.equal(spacingSpec.fine.field, 32);
+  assert.equal(spacingSpec.coarse.field, 44);
 });
 
-await test('every field sets its text at 16 px under touch', () => {
-  // The defect this covers: Safari on iOS zoomed the page into every field
-  // of the product on a tap, because the text of each field was under
-  // 16 px, and the zoom hid what the person had on the screen.
+await test('every field uses the shared body role; iOS focus zoom is handled by the viewport', () => {
+  // Fields and labels use the body scale. The inline iOS viewport rule
+  // prevents focus zoom without a separate font size for fields.
   for (const [name, classes] of [
     ['field', fieldClassName()],
     ['invalid field', fieldClassName({ invalid: true })],
@@ -520,16 +490,17 @@ await test('every field sets its text at 16 px under touch', () => {
     ['bare field', bareFieldClassName()],
   ] as const) {
     const parts = classes.split(' ');
-    assert.ok(parts.includes(touchFieldText), `${name} under touch`);
+    assert.ok(parts.includes('text-body'), `${name} under touch`);
   }
-  assert.equal(touchFieldText, 'pointer-coarse:text-base');
 });
 
 await test('a bare field is a field with no box of its own', () => {
   const parts = bareFieldClassName().split(' ');
   for (const part of ['border-0', 'bg-transparent', 'outline-none'])
     assert.ok(parts.includes(part), part);
-  assert.ok(parts.includes('text-ui'), 'the body step of the chrome');
+  assert.ok(parts.includes('text-body'), 'the body step of the chrome');
+  for (const part of ['h-8', 'coarse:h-11', 'py-1', 'coarse:py-2'])
+    assert.ok(parts.includes(part), `inner field space: ${part}`);
   assert.ok(!parts.some((part) => part.startsWith('rounded')), 'no radius');
 });
 
@@ -558,14 +529,14 @@ await test('an invalid field states the error on its edge alone', () => {
 
 await test('a key cap is the quietest step in the code face', () => {
   const cap = kbdClassName();
-  assert.ok(cap.includes('text-kbd'), 'the keyboard step');
+  assert.ok(cap.includes('text-small'), 'the keyboard step');
   assert.ok(cap.includes('font-mono'), 'the code face');
   assert.ok(cap.includes('border-edge-line'), 'the resting edge');
   assert.ok(cap.includes('rounded-sm'), 'the smallest radius');
 });
 
 await test('a badge sits on a surface the contrast test holds', () => {
-  assert.ok(badgeClassName().includes('bg-hover'));
+  assert.ok(badgeClassName().includes('bg-active'));
   assert.ok(badgeClassName().includes('text-muted'));
 });
 
@@ -617,13 +588,13 @@ await test('a row that destroys something reads in the danger tone', () => {
   // A marked danger row keeps its fill and its weight.
   const marked = rowClassName({ danger: true, current: true }).split(' ');
   assert.ok(marked.includes('bg-active'), 'the mark of the open route');
-  assert.ok(marked.includes('font-medium'), 'the weight of a marked row');
+  assert.ok(marked.includes('text-label'), 'the weight of a marked row');
   assert.ok(marked.includes('text-danger'), 'the tone of the row');
 });
 
 await test('a row with no tone reads in the ink and marks in the strong text', () => {
   const quiet = rowClassName().split(' ');
-  assert.ok(quiet.includes('text-ink'), 'the resting colour');
+  assert.ok(quiet.includes('text-strong'), 'the resting colour');
   assert.ok(quiet.includes('hover:text-strong'), 'the hover colour');
   const marked = rowClassName({ selected: true }).split(' ');
   assert.ok(marked.includes('text-strong'), 'the colour of a marked row');
@@ -654,22 +625,14 @@ const edges: readonly FrameEdge[] = ['start', 'end'];
 /** Every mark that a control at a frame edge draws. */
 const marks: readonly EdgeMark[] = ['icon', 'avatar'];
 
-/** The utility that pulls a control by one distance, on one side. */
-function pullUtility(edge: FrameEdge, pixels: number, wide: boolean): string {
-  const side = edge === 'start' ? 'ms' : 'me';
-  const steps = pixels / spacingStep;
-  return `${wide ? 'md:' : ''}-${side}-${String(steps)}`;
-}
-
 for (const edge of edges)
   for (const mark of marks)
-    await test(`the ${mark} at the ${edge} edge lands on the gutter line`, () => {
-      const touch = (smallControlBox.touch - markWidth[mark]) / 2;
-      const wide = (smallControlBox.wide - markWidth[mark]) / 2;
-      assert.equal(
-        edgeControlClassName({ edge, mark }),
-        `${pullUtility(edge, touch, false)} ${pullUtility(edge, wide, true)}`,
-      );
+    await test(`the ${mark} slot at the ${edge} edge keeps its optical size`, () => {
+      const parts = edgeControlClassName({ edge, mark }).split(' ');
+      const step = markWidth[mark] / spacingStep;
+      assert.ok(parts.includes(`h-${step}`));
+      assert.ok(parts.includes(`w-${step}`));
+      assert.ok(!parts.some((p) => p.startsWith('-m')));
     });
 
 await test('the pull answers the box of the control it corrects', () => {
@@ -678,18 +641,13 @@ await test('the pull answers the box of the control it corrects', () => {
   // assertions fail when it does not.
   const box = buttonClassName({
     variant: 'ghost',
-    size: 'sm',
+    size: 'compact',
     iconOnly: true,
     compact: true,
   }).split(' ');
-  assert.ok(
-    box.includes(`size-${String(smallControlBox.touch / spacingStep)}`),
-    'the touch box of a small compact control',
-  );
-  assert.ok(
-    box.includes(`md:size-${String(smallControlBox.wide / spacingStep)}`),
-    'the wide box of a small compact control',
-  );
+  assert.ok(box.includes('ui-icon-button'));
+  assert.equal(spacingSpec.coarse.compact, smallControlBox.touch);
+  assert.equal(spacingSpec.fine.compact, smallControlBox.wide);
   assert.ok(
     avatarClassName()
       .split(' ')
@@ -698,38 +656,11 @@ await test('the pull answers the box of the control it corrects', () => {
   );
 });
 
-await test('a strip of controls that scrolls takes the pull of its edges', () => {
-  // The focus outline is two pixels drawn two pixels out from the surface.
-  const outline = 4;
-  // Under touch the surface of a small compact control is 32 px inside its
-  // 44 px box, so the box holds the outline and the strip adds nothing.
-  const touchSurface = 32;
-  assert.ok(
-    compactButtonVisualClassName({
-      variant: 'ghost',
-      size: 'sm',
-      iconOnly: true,
-    })
-      .split(' ')
-      .includes(`size-${String(touchSurface / spacingStep)}`),
-    'the touch surface of a small compact control',
-  );
-  assert.ok((smallControlBox.touch - touchSurface) / 2 >= outline);
-  const touchPull = (smallControlBox.touch - markWidth.icon) / 2;
-  // From the medium width the surface is the box, so the strip pads the
-  // outline and grows by it as well, which keeps the mark on the line.
-  const widePull = (smallControlBox.wide - markWidth.icon) / 2 + outline;
-  const strip = controlStripClassName().split(' ');
-  assert.ok(strip.includes(`-mx-${String(touchPull / spacingStep)}`));
-  assert.ok(strip.includes(`md:-mx-${String(widePull / spacingStep)}`));
-  assert.ok(strip.includes(`md:px-${String(outline / spacingStep)}`));
-  assert.ok(strip.includes(`py-${String(outline / spacingStep)}`));
-  assert.ok(strip.includes('overflow-x-auto'));
-  // The two pulls are the ones of a control at the edge of a frame.
-  assert.equal(
-    edgeControlClassName({ edge: 'start', mark: 'icon' }),
-    `-ms-${String(touchPull / spacingStep)} md:-ms-${String((widePull - outline) / spacingStep)}`,
-  );
+await test('a control strip owns equal vertical padding and scrolls', () => {
+  const parts = controlStripClassName().split(' ');
+  assert.ok(parts.includes('overflow-x-auto'));
+  assert.ok(parts.includes('py-1'));
+  assert.ok(!parts.some((p) => /^(-?m|space-)/.test(p)));
 });
 
 await test('a day of the calendar keeps one size in every state', () => {
@@ -745,8 +676,10 @@ await test('a day of the calendar keeps one size in every state', () => {
     // and one edge width, so a day that becomes today or selected moves no
     // neighbour.
     assert.ok(parts.includes('w-full'));
-    assert.ok(parts.includes('h-8'));
-    assert.ok(parts.includes('md:h-7'));
+    assert.ok(parts.includes('ui-calendar-day'));
+    assert.ok(parts.includes('h-7'));
+    assert.ok(parts.includes('coarse:h-11'));
+    assert.equal(spacingSpec.fine.compact, 28);
     assert.ok(parts.includes('border'));
     assert.ok(parts.includes('rounded-md'));
     // One colour utility for one element.
@@ -799,7 +732,8 @@ await test('a select is a field with the native appearance removed', () => {
   for (const part of fieldClassName().split(' '))
     assert.ok(select.includes(part), `the field class ${part}`);
   assert.ok(select.includes('appearance-none'), 'no native shape');
-  assert.ok(select.includes('pr-9'), 'room for the chevron');
+  assert.ok(select.includes('ui-select'), 'the shared chevron inset');
+  assert.equal(spacingSpec.selectRight, 36);
 });
 
 await test('the view that shows takes the mark of a current row', () => {
@@ -808,7 +742,7 @@ await test('the view that shows takes the mark of a current row', () => {
   for (const current of [true, false]) {
     const view = sidebarViewClassName({ current });
     assert.ok(view.includes(focusOutline), 'the one focus treatment');
-    assert.ok(view.includes('size-11'), 'the touch target');
+    assert.ok(view.includes('ui-icon-button'), 'the shared icon target');
   }
 });
 
@@ -821,21 +755,20 @@ await test('the open tab takes the fill of a chosen row and the others rest', ()
   assert.ok(!rest.includes('bg-active'));
   assert.ok(rest.includes('hover:bg-hover'));
   for (const tab of [open, rest]) {
-    assert.ok(tab.includes('min-h-11'));
-    assert.ok(tab.includes('md:min-h-7'));
+    assert.ok(tab.includes('ui-button'));
+    assert.ok(tab.includes('ui-compact'));
     assert.ok(tab.includes('rounded-md'));
     assert.ok(!tab.includes('border-b'));
   }
 });
 
-await test('a field inside a row keeps the height of the row', () => {
-  // Record 0164: the name of a tree row turns into this field, and the rows
-  // below it must not move.
+await test('a field inside a row keeps the shared field geometry', () => {
+  // An edited tree row grows to fit the same field as every form.
   const field = inlineFieldClassName();
-  assert.ok(!/(?:^| )(?:md:)?min-h-/u.test(field));
+  assert.ok(field.split(' ').includes('ui-field'));
   assert.ok(field.includes('border-edge-line'));
   assert.ok(field.includes('focus-visible:border-focus'));
-  assert.ok(field.includes(touchFieldText));
+  assert.ok(field.includes('text-body'));
 });
 
 await test('a task box takes the component edge, a task radius and the page fill', () => {
@@ -858,7 +791,7 @@ await test('a checkbox draws its box from the theme and its mark from its state'
   assert.ok(box.includes('rounded-sm'));
   assert.ok(classes.box.includes(focusOutline));
   assert.ok(classes.mark.split(' ').includes('peer-checked:block'));
-  assert.ok(classes.label.includes('text-control'));
+  assert.ok(classes.label.includes('text-body'));
   assert.ok(
     checkboxClassNames({ disabled: true }).label.includes('text-muted'),
   );
@@ -868,8 +801,8 @@ await test('a menu is a raised card with the menu radius and the overlay step', 
   const surface = menuSurfaceClassName().split(' ');
   for (const part of [
     'rounded-lg',
-    'border-edge-subtle',
-    'bg-card',
+    'border-overlay-edge',
+    'bg-overlay',
     'shadow-overlay',
   ])
     assert.ok(surface.includes(part), part);
@@ -892,4 +825,120 @@ await test('the style of a menu that no class reaches is the style of its classe
     'boxShadow',
     'padding',
   ]);
+});
+
+await test('history controls draw the surface of every other format tool', async () => {
+  const {
+    compactButtonVisualClassName,
+    historyButtonClassName,
+    historyButtonVisualClassName,
+  } = await import('./control-classes.ts');
+  const tool = compactButtonVisualClassName({
+    variant: 'ghost',
+    size: 'compact',
+    iconOnly: true,
+  }).split(' ');
+  const on = historyButtonVisualClassName(false).split(' ');
+  // The same surface size, focus ring and colours as a small ghost tool, so
+  // the 16 px glyph sits at the same size, colour and height in the row.
+  for (const token of [
+    'h-7',
+    'w-7',
+    'items-center',
+    'justify-center',
+    'rounded-md',
+    'bg-transparent',
+    'text-strong',
+    'group-hover:bg-hover',
+    'group-focus-visible:outline-2',
+    'group-focus-visible:outline-offset-2',
+    'group-focus-visible:outline-focus',
+  ]) {
+    assert.ok(tool.includes(token), `${token} left the format tool`);
+    assert.ok(on.includes(token), `${token} is missing on a history tool`);
+  }
+  // The disabled colour of a format tool, without an opacity on top.
+  assert.ok(tool.includes('group-disabled:text-muted'));
+  assert.ok(
+    historyButtonVisualClassName(true).split(' ').includes('text-muted'),
+  );
+  // The surface carries the look, and the target only carries the group.
+  assert.ok(historyButtonClassName().split(' ').includes('group'));
+  for (const colour of ['text-strong', 'text-muted'])
+    assert.ok(!historyButtonClassName().includes(colour));
+});
+
+await test('history controls take the tool size of every format tool', async () => {
+  const { buttonClassName, historyButtonClassName } =
+    await import('./control-classes.ts');
+  // The format row draws each tool as a small, compact, icon-only ghost
+  // button: 44 px under touch and 28 px on a desktop. Undo and Redo take the
+  // same target, so the row keeps one width and one gap.
+  const tool = buttonClassName({
+    variant: 'ghost',
+    size: 'compact',
+    iconOnly: true,
+    compact: true,
+  }).split(' ');
+  const history = historyButtonClassName().split(' ');
+  for (const token of ['ui-button', 'ui-icon-button', 'group'])
+    assert.ok(tool.includes(token), `${token} left the format tool`);
+  for (const token of tool)
+    assert.ok(history.includes(token), `${token} is missing on a history tool`);
+});
+
+await test('history controls retain their size and focus when unavailable', async () => {
+  const {
+    historyButtonClassName,
+    historyButtonName,
+    historyButtonVisualClassName,
+  } = await import('./control-classes.ts');
+  const off = historyButtonClassName();
+  assert.ok(off.split(' ').includes('ui-icon-button'));
+  assert.ok(off.split(' ').includes('aria-disabled:cursor-not-allowed'));
+  assert.ok(!off.includes('opacity'));
+  assert.ok(!off.includes('hover:'));
+  const offSurface = historyButtonVisualClassName(true);
+  assert.ok(offSurface.includes('text-muted'));
+  assert.ok(offSurface.includes('group-focus-visible:outline-2'));
+  assert.ok(!offSurface.includes('opacity'));
+  assert.ok(!offSurface.includes('hover:'));
+  assert.deepEqual(historyButtonName('undo', false), {
+    label: 'Undo',
+    tooltip: 'Undo (Ctrl+Z)',
+  });
+  assert.deepEqual(historyButtonName('redo', true), {
+    label: 'Redo',
+    tooltip: 'Redo (Cmd+Shift+Z)',
+  });
+});
+
+await test('the touch button recipe uses the shared icon target on each pointer', () => {
+  const classes = buttonClassName({ size: 'default', iconOnly: true });
+  assert.ok(classes.split(' ').includes('ui-icon-button'));
+  assert.equal(spacingSpec.coarse.compact, 44);
+  assert.ok(!/md:size-[78]/.test(classes));
+  assert.ok(!/md:min-h-[78]/.test(buttonClassName({ size: 'default' })));
+});
+
+await test('Settings switches share the content edge in both states', () => {
+  for (const checked of [false, true]) {
+    const row = switchClassNames(checked).row.split(' ');
+    assert.ok(row.includes('px-0'));
+    assert.ok(!row.includes('px-2'));
+    assert.ok(row.includes('w-full'));
+  }
+  assert.ok(
+    rowClassName().split(' ').includes('px-2'),
+    'other rows keep their inset',
+  );
+});
+
+await test('required field copy preserves names and initial abbreviations', () => {
+  assert.equal(
+    requiredFieldMessage('Email address'),
+    'Enter the email address.',
+  );
+  assert.equal(requiredFieldMessage('API key name'), 'Enter the API key name.');
+  assert.equal(requiredFieldMessage('New API key'), 'Enter the new API key.');
 });

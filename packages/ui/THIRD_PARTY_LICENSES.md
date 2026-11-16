@@ -156,3 +156,6 @@ theme that fails a rule cannot ship.
   no label reached AA on both the published red and the hover state that
   record 0057 derives from it, so the fill lightens and the label takes the
   dark value that the accent fill of the same variant already uses.
+  Strong text in Dark moves from `#93a1a1` to `#abb6b6` along its lightness,
+  so selected overlay labels reach 4.5 to 1 after the derived fills are
+  computed.

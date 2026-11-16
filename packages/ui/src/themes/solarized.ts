@@ -66,7 +66,7 @@ const variants: readonly Theme[] = [
       surfaceHover: '#0a333d',
       surfaceActive: '#0e3640',
       text: '#849597',
-      textStrong: '#93a1a1',
+      textStrong: '#abb6b6',
       textMuted: '#869ca4',
       accentText: '#49a0d9',
       accentFill: '#268bd2',

@@ -1,3 +1,4 @@
+import { publicLayout } from './public-layout.ts';
 /**
  * The document that a published link answers, in every state.
  *
@@ -356,7 +357,7 @@ await test('published notes and lists use one footer outside the reading column'
       },
     });
     assert.equal((html.match(/<footer/g) ?? []).length, 1);
-    assert.ok(html.indexOf('class="public-footer"') > html.indexOf('</main>'));
+    assert.ok(html.indexOf('<footer') > html.indexOf('</main>'));
     assert.ok(html.includes('href="/published/demo/report"'));
     assert.ok(html.includes('href="https://operator.example/terms"'));
     assert.doesNotMatch(html, /tidynotebook.com\/terms/);
@@ -376,7 +377,7 @@ await test('the published fallback uses only installation links and the reading 
   });
   assert.ok(
     html.includes(
-      '<div class="mx-auto w-full min-w-0 max-w-note"><footer class="public-footer">',
+      `<div class="${publicLayout.reading}"><footer class="public-footer `,
     ),
   );
   assert.ok(html.includes('href="/"'));

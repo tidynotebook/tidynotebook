@@ -1,3 +1,18 @@
+import {
+  Stack,
+  Inline,
+  Button,
+  EmptyState,
+  LinkIcon,
+  ListRow,
+  MetaFacts,
+  LoadingState,
+  Notice,
+  Page,
+  pageGroupLabelClassName,
+  PageHeader,
+  pageListClassName,
+} from '@notesapp/ui';
 /**
  * Published links: every read-only link of one workspace, with Revoke.
  *
@@ -36,18 +51,7 @@ import {
   revokePublishedLink,
   type PublishedLink,
 } from '@notesapp/api-client';
-import {
-  Button,
-  EmptyState,
-  LinkIcon,
-  ListRow,
-  LoadingState,
-  Notice,
-  Page,
-  pageGroupLabelClassName,
-  PageHeader,
-  pageListClassName,
-} from '@notesapp/ui';
+
 import { problemMessage } from '../../app.tsx';
 import { useDocumentTitle } from '../../shell/document-title.ts';
 import { useNow } from '../../shell/now.ts';
@@ -60,10 +64,6 @@ import {
   shownLinkFacts,
   sortLinks,
 } from './publishing.ts';
-
-/** What the screen says under its title. */
-const publishedLinksDescription =
-  'A published link opens a note or a folder for a person who has no account. The person reads the note and cannot change it.';
 
 /** How far the read of the list got. */
 type ListState =
@@ -165,33 +165,39 @@ function PublishedLinksList({
   };
 
   return (
-    <Page>
-      <PageHeader
-        title={publishedLinksTitle}
-        description={publishedLinksDescription}
-      />
-      <div className="space-y-4">
-        {notice === '' ? null : <Notice tone="success" message={notice} />}
-        {failure === '' ? null : <Notice tone="problem" message={failure} />}
-        {state.kind === 'loading' ? (
-          <LoadingState
-            shape="list"
-            rows={3}
-            label="Your published links are loading."
-          />
-        ) : state.kind === 'failed' ? (
-          <Notice tone="problem" message={state.message}>
-            <Button variant="secondary" size="sm" onClick={reload}>
-              Try again
-            </Button>
-          </Notice>
-        ) : rows.length === 0 ? (
+    <Page
+      emptyState={
+        state.kind === 'ready' && rows.length === 0 ? (
           <EmptyState
             icon={<LinkIcon size={20} />}
             title="No published links"
             description="Open a note or a folder and select Publish. You get one link that opens it for a person who has no account."
           />
-        ) : (
+        ) : null
+      }
+    >
+      <PageHeader title={publishedLinksTitle} />
+      <Stack
+        gap={4}
+        as="div"
+        hidden={
+          state.kind === 'ready' &&
+          rows.length === 0 &&
+          notice === '' &&
+          failure === ''
+        }
+      >
+        {notice === '' ? null : <Notice tone="success" message={notice} />}
+        {failure === '' ? null : <Notice tone="problem" message={failure} />}
+        {state.kind === 'loading' ? (
+          <LoadingState shape="list" rows={3} label="Loading published links" />
+        ) : state.kind === 'failed' ? (
+          <Notice tone="problem" message={state.message}>
+            <Button variant="secondary" size="compact" onClick={reload}>
+              Try again
+            </Button>
+          </Notice>
+        ) : rows.length === 0 ? null : (
           <section aria-labelledby="published-links-heading">
             <h2
               className={pageGroupLabelClassName()}
@@ -208,7 +214,11 @@ function PublishedLinksList({
                   now,
                 );
                 return (
-                  <ListRow key={link.publicationId} className="flex-wrap">
+                  <ListRow
+                    contentEdge
+                    key={link.publicationId}
+                    className="flex-wrap"
+                  >
                     <span
                       className="inline-flex shrink-0 items-center text-muted"
                       aria-hidden="true"
@@ -216,28 +226,28 @@ function PublishedLinksList({
                       <LinkIcon />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="m-0 truncate text-ui text-strong">{name}</p>
-                      <p
-                        className="m-0 flex flex-wrap gap-cluster text-control text-muted"
-                        title={facts.join(', ')}
-                      >
-                        {facts.slice(0, shownLinkFacts).map((fact) => (
-                          <span key={fact}>{fact}</span>
-                        ))}
+                      <p className="m-0 truncate text-body text-strong">
+                        {name}
                       </p>
+                      <MetaFacts facts={facts.slice(0, shownLinkFacts)} />
                     </div>
                     {link.takenDown ? null : (
-                      <div className="flex shrink-0 items-center gap-cluster">
+                      <Inline
+                        gap={2}
+                        align="center"
+                        as="div"
+                        className="shrink-0"
+                      >
                         <Button
                           variant="secondary"
-                          size="sm"
+                          size="compact"
                           disabled={busy !== null}
                           label={`Revoke the link to ${name}`}
                           onClick={() => revoke(link, name)}
                         >
                           Revoke
                         </Button>
-                      </div>
+                      </Inline>
                     )}
                   </ListRow>
                 );
@@ -245,7 +255,7 @@ function PublishedLinksList({
             </ul>
           </section>
         )}
-      </div>
+      </Stack>
     </Page>
   );
 }

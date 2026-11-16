@@ -594,7 +594,58 @@ export type WorkspaceState =
        * number is exact, where comparing the contents is a guess.
        */
       readonly revision: number;
+      /** The revision of the last successful server list, not a cache read. */
+      readonly serverRevision: number;
+      /** A failed refresh can keep known workspaces usable. */
+      readonly failure: string | null;
     };
+
+type WorkspaceSnapshot = {
+  readonly accountId: string | null;
+  readonly revision: number;
+  readonly state: WorkspaceState;
+};
+
+/** Refreshes and local membership changes use the same choice and revision. */
+function settleWorkspaceList(
+  current: WorkspaceSnapshot,
+  accountId: string,
+  workspaces: readonly Workspace[],
+  failure: string | null,
+  source: 'server' | 'fallback' | 'mutation',
+): WorkspaceSnapshot {
+  const previous = current.state.status === 'ready' ? current.state : null;
+  const chosen = chooseWorkspace(
+    workspaces,
+    readStored(workspaceChoiceKey(accountId)),
+  );
+  const revision = current.revision + 1;
+  if (chosen === null)
+    return {
+      ...current,
+      revision,
+      state: {
+        status: 'error',
+        message: failure ?? 'Your notes did not open. Try again.',
+      },
+    };
+  if (source === 'mutation')
+    writeStored(workspaceListKey(accountId), JSON.stringify(workspaces));
+  writeStored(workspaceChoiceKey(accountId), chosen.workspaceId);
+  return {
+    ...current,
+    revision,
+    state: {
+      status: 'ready',
+      workspaceId: chosen.workspaceId,
+      workspaces,
+      revision,
+      serverRevision:
+        source === 'server' ? revision : (previous?.serverRevision ?? 0),
+      failure: source === 'mutation' ? (previous?.failure ?? null) : failure,
+    },
+  };
+}
 
 /** The workspaces of the account and the ways the list changes. */
 export type WorkspaceValue = {
@@ -679,83 +730,116 @@ function useWorkspaceLoader(
   accountId: string | null,
   generation: number,
 ): Omit<WorkspaceValue, 'reload'> {
-  const [state, setState] = useState<WorkspaceState>({ status: 'loading' });
+  const [snapshot, setSnapshot] = useState<WorkspaceSnapshot>({
+    accountId: null,
+    revision: 0,
+    state: { status: 'loading' },
+  });
+  const [retryGeneration, setRetryGeneration] = useState(0);
+  // A local server-confirmed mutation makes an earlier list request stale.
+  const mutation = useRef<{ readonly accountId: string | null }>({
+    accountId: null,
+  });
+  const state: WorkspaceState =
+    status === 'signed-in' && snapshot.accountId === accountId
+      ? snapshot.state
+      : { status: 'loading' };
 
   useEffect(() => {
     if (status !== 'signed-in' || accountId === null) {
-      setState({ status: 'loading' });
+      mutation.current = { accountId: null };
+      setSnapshot({
+        accountId: null,
+        revision: 0,
+        state: { status: 'loading' },
+      });
       return;
     }
     const activeAccount = accountId;
     let cancelled = false;
 
-    /** Settles on one list, whether it came from the server or the cache. */
-    const settle = (workspaces: readonly Workspace[]): void => {
-      const chosen = chooseWorkspace(
-        workspaces,
-        readStored(workspaceChoiceKey(activeAccount)),
-      );
-      if (chosen === null) {
-        setState({
-          status: 'error',
-          message: 'Your notes did not open. Try again.',
-        });
-        return;
-      }
-      writeStored(workspaceChoiceKey(activeAccount), chosen.workspaceId);
-      setState((current) => ({
-        status: 'ready',
-        workspaceId: chosen.workspaceId,
-        workspaces,
-        revision: (current.status === 'ready' ? current.revision : 0) + 1,
-      }));
-    };
+    if (mutation.current.accountId !== activeAccount)
+      mutation.current = { accountId: activeAccount };
+    const requestedMutation = mutation.current;
+    setSnapshot((current) =>
+      current.accountId === activeAccount
+        ? {
+            ...current,
+            state:
+              current.state.status === 'ready'
+                ? { ...current.state, failure: null }
+                : { status: 'loading' },
+          }
+        : {
+            accountId: activeAccount,
+            revision: 0,
+            state: { status: 'loading' },
+          },
+    );
 
     async function load(): Promise<void> {
-      setState({ status: 'loading' });
       const result = await listWorkspaces();
       if (cancelled) return;
+      if (mutation.current !== requestedMutation) {
+        // An adopt or forget completed after this read started. Ask again
+        // instead of replacing that newer server fact with an older list.
+        setRetryGeneration((current) => current + 1);
+        return;
+      }
+      let workspaces: readonly Workspace[] | null;
+      let failure: string | null = null;
+      let allowPrevious = false;
       if (result.error !== undefined || result.data === undefined) {
         const cached = parseCachedWorkspaces(
           readStored(workspaceListKey(activeAccount)),
         );
         const responseStatus = result.response?.status ?? 0;
-        if (
-          cached.length > 0 &&
-          (responseStatus === 0 || responseStatus >= 500)
-        )
-          settle(cached);
-        else
-          setState({ status: 'error', message: problemMessage(result.error) });
-        return;
+        allowPrevious = responseStatus === 0 || responseStatus >= 500;
+        workspaces = allowPrevious && cached.length > 0 ? cached : null;
+        failure = problemMessage(result.error);
+      } else {
+        workspaces = result.data.workspaces;
+        writeStored(
+          workspaceListKey(activeAccount),
+          JSON.stringify(workspaces),
+        );
       }
-      const workspaces = result.data.workspaces;
-      writeStored(workspaceListKey(activeAccount), JSON.stringify(workspaces));
-      settle(workspaces);
+      // Keep completion numbers across loading, failures and repeated reads.
+      setSnapshot((current) => {
+        if (current.accountId !== activeAccount) return current;
+        const previous =
+          current.state.status === 'ready' ? current.state : null;
+        const list =
+          (allowPrevious ? previous?.workspaces : null) ?? workspaces ?? [];
+        return settleWorkspaceList(
+          current,
+          activeAccount,
+          list,
+          failure,
+          failure === null ? 'server' : 'fallback',
+        );
+      });
     }
     void load();
     return () => {
       cancelled = true;
     };
-  }, [status, accountId, generation]);
+  }, [status, accountId, generation, retryGeneration]);
 
   const remember = useCallback(
     (workspaceId: string): void => {
       if (accountId === null) return;
-      setState((current) => {
-        // A workspace the account does not hold never becomes the choice, so
-        // one check answers both the switcher and a stale address.
+      setSnapshot((current) => {
+        if (current.accountId !== accountId || current.state.status !== 'ready')
+          return current;
+        const ready = current.state;
         if (
-          current.status !== 'ready' ||
-          !isMemberOf(current.workspaces, workspaceId)
+          !isMemberOf(ready.workspaces, workspaceId) ||
+          ready.workspaceId === workspaceId
         )
           return current;
-        // The same choice answers the same state. A new object here would be
-        // a new value for every consumer, and a caller that records the
-        // address on each render would never settle.
-        if (current.workspaceId === workspaceId) return current;
         writeStored(workspaceChoiceKey(accountId), workspaceId);
-        return { ...current, workspaceId };
+        return { ...current, state: { ...ready, workspaceId } };
       });
     },
     [accountId],
@@ -766,29 +850,22 @@ function useWorkspaceLoader(
     (
       change: (workspaces: readonly Workspace[]) => readonly Workspace[],
     ): void => {
-      if (accountId === null) return;
-      setState((current) => {
-        if (current.status !== 'ready') return current;
-        const workspaces = change(current.workspaces);
-        if (workspaces === current.workspaces) return current;
-        const chosen = chooseWorkspace(
+      if (accountId === null || mutation.current.accountId !== accountId)
+        return;
+      mutation.current = { accountId };
+      setSnapshot((current) => {
+        if (current.accountId !== accountId || current.state.status !== 'ready')
+          return current;
+        const ready = current.state;
+        const workspaces = change(ready.workspaces);
+        if (workspaces === ready.workspaces) return current;
+        return settleWorkspaceList(
+          current,
+          accountId,
           workspaces,
-          readStored(workspaceChoiceKey(accountId)),
+          null,
+          'mutation',
         );
-        if (chosen === null)
-          return {
-            status: 'error',
-            message: 'Your notes did not open. Try again.',
-          };
-        writeStored(workspaceListKey(accountId), JSON.stringify(workspaces));
-        writeStored(workspaceChoiceKey(accountId), chosen.workspaceId);
-        return {
-          status: 'ready',
-          workspaceId: chosen.workspaceId,
-          workspaces,
-          // The list changed, so a caller waiting on an answer has one.
-          revision: current.revision + 1,
-        };
       });
     },
     [accountId],

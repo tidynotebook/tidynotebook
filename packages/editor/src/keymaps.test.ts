@@ -578,6 +578,21 @@ await test('every documented shortcut has a binding or a window handler', () => 
   }
 });
 
+await test('the replace key names its own Apple combination', () => {
+  // Cmd and H hides the application on a Mac, so the key there is Cmd,
+  // Option and F, and the dialog says so on an Apple keyboard.
+  assert.deepEqual(
+    shortcuts.find(
+      (row) => row.description === 'Find and replace in this note',
+    ),
+    {
+      keys: 'Cmd or Ctrl + H',
+      apple: 'Cmd or Ctrl + Alt + F',
+      description: 'Find and replace in this note',
+    },
+  );
+});
+
 await test('the link and command palette use separate shortcuts', () => {
   assert.deepEqual(
     shortcuts.filter(

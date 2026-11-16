@@ -30,7 +30,12 @@ import {
   validateCheckpoint,
   validateQueueRow,
 } from '../migrations.ts';
-import { readDocumentRow } from './documents.ts';
+import {
+  coverageAfter,
+  keepAcknowledged,
+  readDocumentRow,
+  readStoredDocumentRow,
+} from './documents.ts';
 import { legacyWorkspaces } from './legacy.ts';
 import { dropSupersededSaves, moveChildrenOffParked } from './parked.ts';
 import { recordMergeReview } from './reviews.ts';
@@ -356,6 +361,8 @@ export function createQueueSlice(ctx: LocalStoreContext): QueueSlice {
             tables.drafts,
             tables.reviews,
             tables.recovery,
+            tables.documents,
+            tables.documentUpdates,
           ],
           async () => {
             const entry = await queueEntryOf(accountId, result.mutationId);
@@ -400,6 +407,26 @@ export function createQueueSlice(ctx: LocalStoreContext): QueueSlice {
               .filter((row) => row.sequence > entry.sequence);
             const rebasedQueue = new Map<string, QueueRow>();
             const accepted = new Set(result.revisionIds);
+            // The entry leaves the queue before the feed brings its work, so
+            // the document keeps what the server acknowledged. It comes from
+            // the updates that the server accepted, never from the document,
+            // which can hold work typed since. It does not move the applied
+            // state, and no save is shaped by it (record 0085).
+            const sent = entry.input.revisions.filter((revision) =>
+              accepted.has(revision.id),
+            );
+            for (const { fileId } of sent) {
+              const row = await readStoredDocumentRow(tables, {
+                serverOrigin,
+                accountId,
+                workspaceId,
+                fileId,
+              });
+              if (row !== null)
+                await tables.documents.put(
+                  keepAcknowledged(row, coverageAfter(row, sent)),
+                );
+            }
             const newest = new Map<string, CheckpointRow>();
             for (const row of rows) {
               const checkpoint = validateCheckpoint(row);

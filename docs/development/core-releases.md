@@ -2,17 +2,16 @@
 
 `release.yml` is the only core image publication path. Each main push builds
 and proves native amd64 and arm64 images, then publishes
-`ghcr.io/tidynotebook/tidynotebook:main`. Fast forward merges use `GITHUB_TOKEN`, which
-does not trigger push workflows. Both merge workflows therefore dispatch this
-workflow on main after a successful merge. A manual run on main can recover a
-failed dispatch. Late runs stop if main has moved. Each ref has its own
+`ghcr.io/tidynotebook/tidynotebook:main`. A GitHub merge commit starts push CI
+and main image publication. Publication waits for the required `Check` on the
+new merge commit. Late runs stop if main has moved. Each ref has its own
 concurrency group, so publication on one ref cannot block another.
 
 An existing stable tag `vMAJOR.MINOR.PATCH` selects a version. Push the tag or
 run the workflow manually on that tag. The source must be on main. The latest
 same-repository push CI must have a successful `Check` on that exact SHA from
-GitHub Actions app `15368`. A PR branch push supplies this proof after a fast
-forward merge. Fork runs and checks from other apps cannot supply it.
+GitHub Actions app `15368`. A main push supplies this proof for a merge
+commit. Fork runs and checks from other apps cannot supply it.
 
 Both native images pass the distribution source and notice proofs before
 publication. Builds restore the Actions API v2 caches `core-amd64` and

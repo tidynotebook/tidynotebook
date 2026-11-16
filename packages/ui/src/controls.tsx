@@ -1,3 +1,22 @@
+import {
+  useContext,
+  useEffect,
+  useRef,
+  useId,
+  type ReactNode,
+  type Ref,
+  type ComponentProps,
+  type MouseEventHandler,
+} from 'react';
+import { FormSubmittedContext } from './form-context.ts';
+import { Stack, Inline, Inset } from './primitives.tsx';
+import { ListRow } from './layout.tsx';
+import { Pill } from './section-heading.tsx';
+import {
+  useSettingsSurface,
+  useSettingsRowActions,
+} from './settings-layout.tsx';
+import { WrapText } from './inline-text.tsx';
 /**
  * Accessible application controls.
  *
@@ -7,56 +26,89 @@
  * control (decision 0065). No control here writes a class of its own except
  * the distances inside itself.
  */
-import { useEffect, useRef, type ReactNode, type Ref } from 'react';
+import { isTouchInput } from './input-focus.ts';
+
 import {
-  badgeClassName,
   buttonClassName,
+  compactButtonVisualClassName,
   buttonName,
   checkboxClassNames,
-  compactButtonVisualClassName,
   fieldClassName,
   meterAlmostFull,
+  meterFillPercent,
   meterClassNames,
-  selectClassName,
+  switchClassNames,
   textAreaClassName,
+  requiredFieldMessage,
   type ButtonSize,
+  type IconSize,
   type ButtonTone,
   type ButtonVariant,
 } from './control-classes.ts';
 import { CheckIcon, ChevronDownIcon, ChevronRightIcon } from './icons.tsx';
 
 /** The label above a field, and the label beside a checkbox. */
-const fieldLabelClassName = 'mb-1.5 block text-control font-medium text-strong';
+const fieldLabelClassName = 'block text-label text-strong';
 
 /** A named value against a maximum, with no state or callback. */
 export function Meter({
+  kind = 'capacity',
   label,
   value,
   max,
   text,
 }: {
+  readonly kind?: 'capacity' | 'progress' | undefined;
   readonly label: string;
   readonly value: number;
   readonly max: number;
   readonly text: string;
 }): ReactNode {
-  const classes = meterClassNames(value, max);
-  const words = meterAlmostFull(value, max) ? `${text}. Almost full` : text;
+  const settings = useSettingsSurface();
+  const classes = meterClassNames(value, max, kind);
+  const percent = meterFillPercent(value, max);
+  const words =
+    kind === 'progress'
+      ? text
+      : value >= max
+        ? `${text}. Limit reached`
+        : meterAlmostFull(value, max)
+          ? `${text}. Almost full`
+          : text;
   return (
-    <div>
-      <p className={classes.text}>{words}</p>
+    <Stack
+      gap={2}
+      padY={settings ? 3 : 0}
+      padX={settings ? { fine: 0, coarse: 4 } : 0}
+    >
+      {settings ? (
+        <Inline gap={4} justify="between">
+          <span className="text-body text-strong">{label}</span>
+          <span className={classes.settingsValue}>{words}</span>
+        </Inline>
+      ) : (
+        <p className={classes.text}>{words}</p>
+      )}
       <div
         className={classes.track}
-        role="meter"
+        role={kind === 'progress' ? 'progressbar' : 'meter'}
         aria-label={label}
         aria-valuemin={0}
         aria-valuemax={max}
         aria-valuenow={Math.min(value, max)}
         aria-valuetext={words}
       >
-        <div className={classes.fill} />
+        <svg
+          className={classes.fill}
+          aria-hidden="true"
+          width="100%"
+          height="100%"
+        >
+          <rect width={`${String(percent)}%`} height="100%" />
+          {value > 0 ? <rect width="2" height="100%" /> : null}
+        </svg>
       </div>
-    </div>
+    </Stack>
   );
 }
 
@@ -70,7 +122,7 @@ export function Meter({
 export function Button({
   type,
   variant = 'primary',
-  size = 'md',
+  size = 'default',
   tone,
   disabled,
   onClick,
@@ -82,15 +134,33 @@ export function Button({
   buttonRef,
   ariaControls,
   ariaExpanded,
+  ariaHasPopup,
+  ariaPressed,
   tabIndex,
+  full = false,
   compact = false,
-}: {
+  optical = false,
+  hideTextOnPhone = false,
+  iconSize,
+  ref: nativeRef,
+  ...nativeProps
+}: Omit<
+  ComponentProps<'button'>,
+  | 'onClick'
+  | 'children'
+  | 'className'
+  | 'title'
+  | 'type'
+  | 'disabled'
+  | 'tabIndex'
+> & {
+  readonly iconSize?: IconSize | undefined;
   readonly type?: 'button' | 'submit' | undefined;
   readonly variant?: ButtonVariant | undefined;
   readonly size?: ButtonSize | undefined;
   readonly tone?: ButtonTone | undefined;
   readonly disabled?: boolean | undefined;
-  readonly onClick?: (() => void) | undefined;
+  readonly onClick?: MouseEventHandler<HTMLButtonElement> | undefined;
   readonly children?: ReactNode | undefined;
   readonly label?: string | undefined;
   readonly icon?: ReactNode | undefined;
@@ -99,20 +169,28 @@ export function Button({
   readonly buttonRef?: Ref<HTMLButtonElement> | undefined;
   readonly ariaControls?: string | undefined;
   readonly ariaExpanded?: boolean | undefined;
+  readonly ariaHasPopup?: 'dialog' | 'menu' | undefined;
+  readonly ariaPressed?: boolean | undefined;
   /**
    * The place of the button in the tab order. A group with one tab stop,
    * such as a toolbar, passes -1 to every button but the one in reach.
    */
   readonly tabIndex?: number | undefined;
   /** Keeps the touch target and draws a smaller surface inside it. */
+  readonly full?: boolean;
   readonly compact?: boolean | undefined;
+  readonly optical?: boolean;
+  readonly hideTextOnPhone?: boolean;
 }): ReactNode {
+  const settingsRow = useSettingsRowActions();
   const hasChildren = children !== undefined && children !== null;
   const classes = buttonClassName({
     variant,
-    size,
+    settingsRow,
+    size: settingsRow ? 'compact' : size,
     tone,
     iconOnly: !hasChildren,
+    iconSize,
     compact,
     className: extraClassName,
   });
@@ -128,20 +206,27 @@ export function Button({
           {icon}
         </span>
       ) : null}
-      {hasChildren ? <span>{children}</span> : null}
+      {hasChildren ? (
+        <span className={hideTextOnPhone ? 'max-md:hidden' : undefined}>
+          {children}
+        </span>
+      ) : null}
     </>
   );
 
-  return (
+  const button = (
     <button
-      ref={buttonRef}
+      {...nativeProps}
+      ref={buttonRef ?? nativeRef}
       type={type ?? 'button'}
-      className={classes}
+      className={`${full ? 'w-full' : ''} ${classes} ${optical ? 'absolute inset-x-1 top-0 coarse:inset-x-0' : ''} ${settingsRow ? 'ds-row-button absolute left-0 top-1/2 -translate-y-1/2 h-7 w-full px-2 coarse:h-11 coarse:border-0 coarse:bg-transparent coarse:px-0 ' : ''} ${settingsRow && variant === 'secondary' && tone !== 'danger' ? 'coarse:text-accent' : ''}`}
       disabled={disabled ?? false}
       onClick={onClick}
       aria-label={name.ariaLabel}
       aria-controls={ariaControls}
       aria-expanded={ariaExpanded}
+      aria-haspopup={ariaHasPopup}
+      aria-pressed={ariaPressed}
       tabIndex={tabIndex}
       title={name.title}
     >
@@ -152,6 +237,7 @@ export function Button({
             size,
             tone,
             iconOnly: !hasChildren,
+            iconSize,
           })}
         >
           {content}
@@ -160,6 +246,31 @@ export function Button({
         content
       )}
     </button>
+  );
+  if (optical)
+    return (
+      <span className="relative inline-flex h-7 shrink-0 coarse:h-11">
+        <span
+          aria-hidden="true"
+          className="invisible inline-flex items-center gap-2 px-3 text-label coarse:px-4"
+        >
+          {content}
+        </span>
+        {button}
+      </span>
+    );
+  return settingsRow ? (
+    <span className="ui-settings-button-slot relative inline-flex h-7 shrink-0 items-center coarse:h-5">
+      <span
+        aria-hidden="true"
+        className="ui-settings-button-measure invisible inline-flex items-center gap-2 px-2 text-label coarse:px-0"
+      >
+        {content}
+      </span>
+      {button}
+    </span>
+  ) : (
+    button
   );
 }
 
@@ -174,7 +285,7 @@ export function Badge({
 }: {
   readonly children: ReactNode;
 }): ReactNode {
-  return <span className={badgeClassName()}>{children}</span>;
+  return <Pill>{children}</Pill>;
 }
 
 /**
@@ -191,18 +302,27 @@ export function Badge({
  * reports it here.
  */
 export function TextField({
+  listSearch = false,
+  describedBy,
+  inputRef,
+  onKeyDown,
   id,
   label,
   value,
   onChange,
-  error,
+  error: suppliedError,
   hint,
   inputType,
   autoComplete,
   placeholder,
   required,
   autoFocus,
+  hideLabel = false,
 }: {
+  readonly describedBy?: string | undefined;
+  readonly inputRef?: React.Ref<HTMLInputElement> | undefined;
+  readonly onKeyDown?: React.KeyboardEventHandler<HTMLInputElement> | undefined;
+  readonly listSearch?: boolean | undefined;
   readonly id: string;
   readonly label: string;
   readonly value: string;
@@ -215,44 +335,70 @@ export function TextField({
   readonly placeholder?: string | undefined;
   readonly required?: boolean | undefined;
   readonly autoFocus?: boolean | undefined;
+  /** Keeps a visible placeholder with an accessible label. */
+  readonly hideLabel?: boolean | undefined;
 }): ReactNode {
+  const submitted = useContext(FormSubmittedContext);
+  const error =
+    suppliedError ||
+    (submitted && required && value.trim() === ''
+      ? requiredFieldMessage(typeof label === 'string' ? label : 'value')
+      : '');
   const errorId = `${id}-error`;
   const hintId = `${id}-hint`;
   const hasError = error !== undefined && error !== '';
   const hasHint = hint !== undefined && hint !== '';
-  const described = [hasHint ? hintId : '', hasError ? errorId : '']
+  const described = [
+    describedBy ?? '',
+    hasHint ? hintId : '',
+    hasError ? errorId : '',
+  ]
     .filter(Boolean)
     .join(' ');
   return (
-    <div className="mb-3.5">
-      <label className={fieldLabelClassName} htmlFor={id}>
+    <div className="ui-field-group flex flex-col gap-2">
+      <label
+        className={hideLabel ? 'sr-only' : fieldLabelClassName}
+        htmlFor={id}
+      >
         {label}
       </label>
-      <input
-        id={id}
-        className={fieldClassName({ invalid: hasError })}
-        type={inputType ?? 'text'}
-        value={value}
-        autoComplete={autoComplete}
-        placeholder={placeholder}
-        required={required ?? false}
-        autoFocus={autoFocus ?? false}
-        aria-invalid={hasError}
-        aria-describedby={described === '' ? undefined : described}
-        onChange={(event): void => {
-          onChange(event.target.value);
-        }}
-      />
-      {hasHint ? (
-        <p className="mb-0 mt-1 text-control text-muted" id={hintId}>
-          {hint}
-        </p>
-      ) : null}
-      {hasError ? (
-        <p className="mt-1 text-control text-danger" id={errorId} role="alert">
-          {error}
-        </p>
-      ) : null}
+      <div className="flex flex-col gap-1">
+        <input
+          ref={inputRef}
+          onKeyDown={onKeyDown}
+          id={id}
+          className={fieldClassName({ invalid: hasError })}
+          type={inputType ?? 'text'}
+          value={value}
+          autoComplete={autoComplete}
+          placeholder={placeholder}
+          required={required ?? false}
+          aria-required={required ?? false}
+          data-list-search={listSearch ? '' : undefined}
+          autoFocus={(autoFocus ?? false) && (!listSearch || !isTouchInput())}
+          aria-invalid={hasError}
+          aria-describedby={described === '' ? undefined : described}
+          onChange={(event): void => {
+            onChange(event.target.value);
+          }}
+        />
+        {hasHint ? (
+          <p className="m-0 text-secondary text-muted" id={hintId}>
+            <WrapText>{hint}</WrapText>
+          </p>
+        ) : null}
+        {hasError ? (
+          <p
+            className="m-0 text-secondary text-danger"
+            id={errorId}
+            role={hasError ? 'alert' : undefined}
+            aria-hidden={hasError ? undefined : true}
+          >
+            {hasError ? error : null}
+          </p>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -270,7 +416,7 @@ export function TextAreaField({
   label,
   value,
   onChange,
-  error,
+  error: suppliedError,
   hint,
   required,
 }: {
@@ -283,6 +429,12 @@ export function TextAreaField({
   readonly hint?: string | undefined;
   readonly required?: boolean | undefined;
 }): ReactNode {
+  const submitted = useContext(FormSubmittedContext);
+  const error =
+    suppliedError ||
+    (submitted && required && value.trim() === ''
+      ? requiredFieldMessage(typeof label === 'string' ? label : 'value')
+      : '');
   const errorId = `${id}-error`;
   const hintId = `${id}-hint`;
   const hasError = error !== undefined && error !== '';
@@ -291,32 +443,39 @@ export function TextAreaField({
     .filter(Boolean)
     .join(' ');
   return (
-    <div className="mb-3.5">
+    <div className="ui-field-group flex flex-col gap-2">
       <label className={fieldLabelClassName} htmlFor={id}>
         {label}
       </label>
-      <textarea
-        id={id}
-        className={textAreaClassName({ invalid: hasError })}
-        value={value}
-        required={required ?? false}
-        spellCheck={false}
-        aria-invalid={hasError}
-        aria-describedby={described === '' ? undefined : described}
-        onChange={(event): void => {
-          onChange(event.target.value);
-        }}
-      />
-      {hasHint ? (
-        <p className="mb-0 mt-1 text-control text-muted" id={hintId}>
-          {hint}
-        </p>
-      ) : null}
-      {hasError ? (
-        <p className="mt-1 text-control text-danger" id={errorId} role="alert">
-          {error}
-        </p>
-      ) : null}
+      <div className="flex flex-col gap-1">
+        <textarea
+          id={id}
+          className={textAreaClassName({ invalid: hasError })}
+          value={value}
+          required={required ?? false}
+          aria-required={required ?? false}
+          spellCheck={false}
+          aria-invalid={hasError}
+          aria-describedby={described === '' ? undefined : described}
+          onChange={(event): void => {
+            onChange(event.target.value);
+          }}
+        />
+        {hasHint ? (
+          <p className="m-0 text-secondary text-muted" id={hintId}>
+            <WrapText>{hint}</WrapText>
+          </p>
+        ) : null}
+        {hasError ? (
+          <p
+            className="m-0 text-secondary text-danger"
+            id={errorId}
+            role="alert"
+          >
+            {error}
+          </p>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -359,22 +518,24 @@ export function ReadOnlyField({
     inputRef.current?.focus();
   }, [takeFocus]);
   return (
-    <div className="mb-3.5">
+    <div className="ui-field-group flex flex-col gap-2">
       <label className={fieldLabelClassName} htmlFor={id}>
         {label}
       </label>
-      <input
-        ref={inputRef}
-        id={id}
-        className={fieldClassName({ className: 'font-mono' })}
-        type="text"
-        value={value}
-        readOnly
-        aria-describedby={describedBy}
-        onFocus={(event): void => {
-          event.currentTarget.select();
-        }}
-      />
+      <div className="flex flex-col gap-1">
+        <input
+          ref={inputRef}
+          id={id}
+          className={fieldClassName({ className: 'font-mono' })}
+          type="text"
+          value={value}
+          readOnly
+          aria-describedby={describedBy}
+          onFocus={(event): void => {
+            event.currentTarget.select();
+          }}
+        />
+      </div>
     </div>
   );
 }
@@ -412,33 +573,39 @@ export function SelectField({
 }): ReactNode {
   const hintId = `${id}-hint`;
   return (
-    <div className="mb-3.5">
+    <div className="ui-field-group flex flex-col gap-2">
       <label className={fieldLabelClassName} htmlFor={id}>
         {label}
       </label>
-      <div className="relative">
-        <select
-          id={id}
-          className={selectClassName()}
-          value={value}
-          aria-describedby={hint === undefined ? undefined : hintId}
-          onChange={(event): void => {
-            onChange(event.target.value);
-          }}
+      <div className="flex flex-col gap-1">
+        <div
+          className={`${fieldClassName().replaceAll('focus:', 'focus-within:')} flex items-center gap-2`}
         >
-          {options.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted" />
+          <select
+            id={id}
+            className="h-full min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 text-body text-strong outline-none"
+            value={value}
+            aria-describedby={
+              hint === undefined || hint.trim() === '' ? undefined : hintId
+            }
+            onChange={(event): void => {
+              onChange(event.target.value);
+            }}
+          >
+            {options.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <ChevronDownIcon className="pointer-events-none shrink-0 text-muted" />
+        </div>
+        {hint === undefined || hint.trim() === '' ? null : (
+          <p className="m-0 text-secondary text-muted" id={hintId}>
+            <WrapText>{hint}</WrapText>
+          </p>
+        )}
       </div>
-      {hint === undefined ? null : (
-        <p className="mb-0 mt-1 text-control text-muted" id={hintId}>
-          {hint}
-        </p>
-      )}
     </div>
   );
 }
@@ -462,6 +629,7 @@ export function Checkbox({
   checked,
   onChange,
   describedBy,
+  invalid,
   disabled = false,
 }: {
   readonly id: string;
@@ -470,6 +638,8 @@ export function Checkbox({
   readonly checked: boolean;
   readonly onChange: (checked: boolean) => void;
   readonly describedBy?: string | undefined;
+  /** A caller's submitted validation error applies to this choice. */
+  readonly invalid?: boolean | undefined;
   /** The choice cannot change now, for example while the last one is saved. */
   readonly disabled?: boolean | undefined;
 }): ReactNode {
@@ -484,6 +654,7 @@ export function Checkbox({
           checked={checked}
           disabled={disabled}
           aria-describedby={describedBy}
+          aria-invalid={invalid}
           onChange={(event): void => {
             onChange(event.target.checked);
           }}
@@ -516,36 +687,39 @@ export function CollapsibleSection({
 }): ReactNode {
   const panelId = `${id}-panel`;
   return (
-    <section className="mt-2" aria-labelledby={id}>
-      <button
+    <Stack as="section" gap={2} aria-labelledby={id}>
+      <ListRow
+        as="button"
+        density="tree"
         id={id}
-        type="button"
-        className={buttonClassName({
-          variant: 'ghost',
-          size: 'sm',
-          className: 'w-full justify-start text-muted',
-        })}
         aria-expanded={open}
         aria-controls={panelId}
-        onClick={(): void => {
-          onToggle(!open);
-        }}
+        onClick={() => onToggle(!open)}
       >
-        <span className="inline-flex items-center" aria-hidden="true">
+        <span
+          className="inline-flex w-4 shrink-0 items-center"
+          aria-hidden="true"
+        >
           {open ? <ChevronDownIcon /> : <ChevronRightIcon />}
         </span>
-        <span className="flex-1 text-left">{title}</span>
-      </button>
+        <span className="flex-1 text-left text-muted">{title}</span>
+      </ListRow>
       {open ? (
         // The `section` above is already the named region of this group, so
         // the panel carries the identifier that `aria-controls` names and no
         // role of its own. It used to carry both, which put two regions with
-        // one name in the list a person moves through.
-        <div id={panelId} className="py-2 pl-2">
-          {children}
-        </div>
+        // one name in the list a person moves through. The content keeps the
+        // header's disclosure slot. Child rows add only deeper indent levels.
+        <Inset id={panelId} padX={{ fine: 2, coarse: 3 }} padY={2}>
+          <Inline gap={2} align="start">
+            <span className="w-4 shrink-0" aria-hidden="true" />
+            <div data-disclosure-content={id} className="min-w-0 flex-1">
+              {children}
+            </div>
+          </Inline>
+        </Inset>
       ) : null}
-    </section>
+    </Stack>
   );
 }
 
@@ -561,12 +735,105 @@ export function StatusRegion({
   readonly message: string;
 }): ReactNode {
   return (
-    <p
-      className="my-1 text-control text-muted"
+    <Inset
+      as="p"
+      padY={1}
+      className="text-secondary text-muted"
       role="status"
       aria-live="polite"
     >
       {message}
-    </p>
+    </Inset>
+  );
+}
+
+/** A full row switch states its value and any unavailable reason. */
+export function Switch({
+  hideLabel = false,
+  label,
+  hint,
+  checked,
+  disabled = false,
+  onChange,
+}: {
+  readonly hideLabel?: boolean;
+  readonly label: string;
+  readonly hint?: string;
+  readonly checked: boolean;
+  readonly disabled?: boolean;
+  readonly onChange: (checked: boolean) => void;
+}): ReactNode {
+  const hintId = useId(),
+    classes = switchClassNames(checked);
+  if (hideLabel)
+    return (
+      <span className="relative inline-flex h-7 w-8 shrink-0 items-center justify-center coarse:h-5">
+        <button
+          type="button"
+          role="switch"
+          aria-label={label}
+          aria-checked={checked}
+          disabled={disabled}
+          className="absolute left-1/2 top-1/2 inline-flex h-7 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center bg-transparent p-0 coarse:h-11"
+          onClick={() => onChange(!checked)}
+        >
+          <span className={classes.track}>
+            <span className={classes.thumb} />
+          </span>
+        </button>
+      </span>
+    );
+  return (
+    <ListRow
+      as="button"
+      density="setting"
+      label={label}
+      help={hint ? <WrapText>{hint}</WrapText> : undefined}
+      helpId={hintId}
+      trailing={{ kind: 'switch', checked }}
+      role="switch"
+      aria-checked={checked}
+      aria-describedby={hint ? hintId : undefined}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+    />
+  );
+}
+export const SwitchRow = Switch;
+export const Field = TextField;
+/** A field whose value opens a choice instead of text entry. */
+export function FieldButton({
+  invalid = false,
+  className = '',
+  ...props
+}: ComponentProps<'button'> & { readonly invalid?: boolean }): ReactNode {
+  return (
+    <button
+      {...props}
+      className={`${fieldClassName({ invalid })} flex cursor-pointer items-center gap-2 text-left ${className}`}
+    />
+  );
+}
+/** A custom field has the same label and help distances as a text field. */
+export function FieldGroup({
+  id,
+  label,
+  children,
+  ...props
+}: Omit<ComponentProps<'div'>, 'id'> & {
+  readonly id: string;
+  readonly label: string;
+}): ReactNode {
+  return (
+    <Stack
+      {...props}
+      gap={2}
+      className={`ui-field-group ${props.className ?? ''}`}
+    >
+      <label id={`${id}-label`} htmlFor={id} className={fieldLabelClassName}>
+        {label}
+      </label>
+      <Stack gap={1}>{children}</Stack>
+    </Stack>
   );
 }

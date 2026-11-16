@@ -92,7 +92,11 @@ await test('a table row carries no margin, so none decides its column', () => {
   // The regression this holds: the table was the one construct that a
   // centring margin could not move, so it sat a hundred pixels left of every
   // other block of the note.
-  assert.equal(rule('.cm-np-table-line').display, 'table-row');
+  assert.equal(rule('.cm-np-table-line').display, 'grid');
+  assert.equal(
+    rule('.cm-np-table-line').gridTemplateColumns,
+    'max-content var(--notes-table-columns)',
+  );
   assert.equal(rule('.cm-np-table-line').marginInline, undefined);
   assert.equal(rule('.cm-np-table-line').marginLeft, undefined);
 });
@@ -235,12 +239,15 @@ await test('a footnote label is raised and quiet, and a definition reads as a fo
   // accent of a link (record 0062).
   assert.equal(rule('.cm-np-footnote').color, 'var(--notes-text-muted)');
   assert.equal(rule('.cm-np-footnote').verticalAlign, 'super');
-  assert.equal(rule('.cm-np-footnote').fontSize, 'var(--text-control)');
+  assert.equal(rule('.cm-np-footnote').fontSize, 'var(--text-note-reference)');
   assert.equal(
     rule('.cm-np-footnote-definition').color,
     'var(--notes-text-muted)',
   );
-  assert.equal(rule('.cm-np-footnote-definition').fontSize, 'var(--text-ui)');
+  assert.equal(
+    rule('.cm-np-footnote-definition').fontSize,
+    'var(--text-note-definition)',
+  );
 });
 
 await test('a list marker is quiet and never the accent', () => {
@@ -282,7 +289,11 @@ await test('every cell of a line is a mark that no other mark splits', () => {
   // names one of them, and each of them is a cell.
   const cells = new Set<string>();
   for (const [selector, declarations] of Object.entries(noteSurfaceStyle())) {
-    if (declarations.display !== 'table-cell') continue;
+    if (
+      declarations.display !== 'table-cell' &&
+      !layoutClasses.has(selector.slice(1))
+    )
+      continue;
     for (const part of selector.split(',')) {
       const name = /^\.([\w-]+)$/.exec(part.trim())?.[1];
       assert.ok(name !== undefined, `${part} is a cell of no one class`);
@@ -355,30 +366,21 @@ await test('a table is a grid of outlined cells that scrolls on its own', () => 
   // A hidden separator is a real cell that draws nothing, so a row holds no
   // loose node that the browser wraps in an anonymous cell of its own.
   const gap = rule('.cm-np-table-gap');
-  assert.equal(gap.display, 'table-cell');
-  assert.equal(gap.width, '0');
-  assert.equal(gap.padding, '0');
+  assert.equal(gap.display, 'none');
   assert.equal(gap.border, undefined);
   const head = rule('.cm-np-table-head');
   const cell = rule('.cm-np-table-cell');
   for (const box of [head, cell]) {
     // The outline is the one divider of the palette (record 0063).
     assert.equal(box.border, '1px solid var(--notes-border-line)');
-    // A cell wraps at a word and never inside one, so a column takes the
-    // width of its text up to the note column (record 0147). Regression: a
-    // cell inherited the break anywhere of the content, and the browser sized
-    // a column by single letters and cut its words in two.
+    // Source widths are stable estimates. A wide glyph must wrap inside
+    // its track instead of painting over the next cell.
     assert.equal(box.whiteSpace, 'pre-wrap');
-    assert.equal(box.overflowWrap, 'normal');
+    assert.equal(box.overflowWrap, 'anywhere');
     assert.equal(box.wordBreak, 'normal');
-    // A browser ignores a minimum width on a table cell, so a block of no
-    // height inside the cell holds the width of an empty one.
-    assert.equal(box.minWidth, undefined);
+    // Empty and populated grid cells share the readable editing floor.
+    assert.equal(box.minWidth, 'var(--container-table-cell-min)');
   }
-  const floor = rule('.cm-np-table-cell::before, .cm-np-table-head::before');
-  assert.equal(floor.display, 'block');
-  assert.equal(floor.height, '0');
-  assert.ok(floor.width !== undefined, 'an empty cell keeps a width');
   // The head differs by fill before it differs by a line.
   assert.equal(head.backgroundColor, 'var(--notes-surface-hover)');
   // The active cell takes the one focus treatment, inside its own edge.
@@ -400,22 +402,18 @@ await test('the language of a fence is a value and not a label', () => {
   assert.equal(info.fontFamily, 'var(--font-mono)');
 });
 
-await test('the code line of the caret has a focus outline only while the text has the focus', () => {
-  // The outline marks the caret. While the find panel held the focus, it
-  // drew a box around the line of the current match, which the tint of the
-  // match already states (issue 247, record 0062).
-  const activeCodeLine = rule(
-    '&.cm-focused .cm-activeLine.cm-np-code-block-line',
-  );
-  assert.equal(activeCodeLine.outline, '1px solid var(--notes-focus)');
-  assert.equal(activeCodeLine.outlineOffset, '-1px');
+await test('the focus ring goes round the whole code card and never one line', () => {
+  // An outline around the line of the caret drew a second box inside the
+  // card, which read as a block of its own (issue 517). The ring is the edge
+  // colour of every line of the card while the text has the focus.
   const style = noteSurfaceStyle();
   for (const [selector, declarations] of Object.entries(style))
-    if (
-      selector.includes('cm-activeLine') &&
-      JSON.stringify(declarations).includes('outline')
-    )
-      assert.ok(selector.startsWith('&.cm-focused'), selector);
+    if (selector.includes('cm-activeLine') || selector.includes('code-block'))
+      assert.ok(!JSON.stringify(declarations).includes('outline'), selector);
+  assert.equal(
+    rule('&.cm-focused .cm-np-code-block-active').borderColor,
+    'var(--notes-focus)',
+  );
   // A match reads by its tint and draws no edge of its own.
   for (const selector of [
     '.cm-searchMatch',
@@ -522,8 +520,8 @@ await test('the completion list is a menu of the design and its rows are rows', 
   assert.equal(list.padding, 'var(--spacing)');
   assert.equal(list.borderRadius, 'var(--radius-lg)');
   assert.equal(list.boxShadow, 'var(--shadow-overlay)');
-  assert.equal(list.backgroundColor, 'var(--notes-surface-card)');
-  assert.equal(list.border, '1px solid var(--notes-border-subtle)');
+  assert.equal(list.backgroundColor, 'var(--notes-surface-overlay)');
+  assert.equal(list.border, '1px solid var(--notes-border-overlay)');
   const row = rule('.cm-tooltip.cm-tooltip-autocomplete > ul > li');
   assert.equal(row.borderRadius, 'var(--radius-md)');
   assert.equal(row.minHeight, 'calc(var(--spacing) * 7)');
@@ -573,11 +571,25 @@ await test('a match of the find panel takes the tint of a selection', () => {
   }
 });
 
-await test('a code card keeps the room of the bar of its language', () => {
-  // Record 0174. The bar of the language and the copy action stands over the
-  // first line of the card, so that line keeps the height of the bar.
+await test('a code card keeps even room and no empty band', () => {
+  // Record 0174. The bar of a fence stands on the opening fence line, so the
+  // card keeps the same room above its first line and below its last. Only
+  // an indented block, which has no fence, keeps the room of the bar.
   assert.equal(
     rule('.cm-np-code-block-open').paddingBlockStart,
+    rule('.cm-np-code-block-close').paddingBlockEnd,
+  );
+  assert.equal(
+    rule('.cm-np-code-block-bar').paddingBlockStart,
     rule('.cm-np-code-bar').height,
   );
+});
+
+await test('a fence line is quiet and its language is a small label', () => {
+  const fence = rule('.cm-np-code-fence');
+  assert.equal(fence.fontSize, 'var(--text-note-reference)');
+  assert.equal(fence.color, 'var(--notes-text-muted)');
+  const info = rule('.cm-np-code-info');
+  assert.equal(info.backgroundColor, 'var(--notes-surface-hover)');
+  assert.equal(info.borderRadius, 'var(--radius-sm)');
 });

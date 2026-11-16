@@ -21,7 +21,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import type { EditorView } from '@notesapp/editor';
+import { EditorView } from '@notesapp/editor';
 import {
   activeNoteAnchor,
   emptyActiveNote,
@@ -86,11 +86,12 @@ export function useActiveNoteControl(): ActiveNoteControl {
   return control;
 }
 
-/** Moves the caret of one note to `position` and shows it. */
+/** The Outline puts its heading at the top, within the editor scroll margins. */
 export function revealInNote(view: EditorView, position: number): void {
+  const anchor = activeNoteAnchor(position, view.state.doc.length);
   view.dispatch({
-    selection: { anchor: activeNoteAnchor(position, view.state.doc.length) },
-    scrollIntoView: true,
+    selection: { anchor },
+    effects: EditorView.scrollIntoView(anchor, { y: 'start' }),
   });
   view.focus();
 }

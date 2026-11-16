@@ -1,3 +1,13 @@
+import {
+  Stack,
+  buttonClassName,
+  CheckIcon,
+  EmptyState,
+  LoadingState,
+  Notice,
+  Page,
+  PageHeader,
+} from '@notesapp/ui';
 /**
  * The Review of one note: the text that caused it, beside the note now.
  *
@@ -18,15 +28,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
 import type { DiffHunk } from '@notesapp/editor';
 import type { LocalStore, ReviewRecord } from '@notesapp/sync';
-import {
-  buttonClassName,
-  CheckIcon,
-  EmptyState,
-  LoadingState,
-  Notice,
-  Page,
-  PageHeader,
-} from '@notesapp/ui';
+
 import { useLocalStore, useSession } from '../../app.tsx';
 import { attentionTitle } from '../attention/attention-link.tsx';
 import { requestDiff } from '../history/diff-worker.ts';
@@ -75,7 +77,7 @@ export function ReviewView(): ReactNode {
     return (
       <Page>
         <PageHeader title="Review" />
-        <LoadingState label="The review is loading." />
+        <LoadingState label="Loading review" />
       </Page>
     );
   return (
@@ -166,23 +168,27 @@ function ReviewDetail({
         <LoadingState
           shape="list"
           rows={4}
-          label="The review of this note is loading."
+          label="Loading review of this note"
         />
       </Page>
     );
   if (opened.status === 'none' || opened.status === 'failed')
     return (
-      <Page>
+      <Page
+        emptyState={
+          opened.status === 'none' ? (
+            <EmptyState
+              icon={<CheckIcon size={20} />}
+              title={noReviewTitle}
+              description={noReviewDescription}
+            />
+          ) : null
+        }
+      >
         <PageHeader title="Review" />
         {opened.status === 'failed' ? (
           <Notice tone="problem" message={reviewReadFailed} />
-        ) : (
-          <EmptyState
-            icon={<CheckIcon size={20} />}
-            title={noReviewTitle}
-            description={noReviewDescription}
-          />
-        )}
+        ) : null}
       </Page>
     );
 
@@ -190,11 +196,14 @@ function ReviewDetail({
   return (
     <Page>
       <PageHeader title={page.title} description={page.description} />
-      <div className="space-y-4">
+      <Stack gap={4} as="div">
         {page.opensAttention ? (
           <div>
             <Link
-              className={buttonClassName({ variant: 'primary', size: 'sm' })}
+              className={buttonClassName({
+                variant: 'primary',
+                size: 'compact',
+              })}
               to={`/w/${workspaceId}/attention`}
             >
               {`Open ${attentionTitle}`}
@@ -202,13 +211,9 @@ function ReviewDetail({
           </div>
         ) : null}
         {page.missing !== null ? (
-          <p className="m-0 text-control text-muted">{page.missing}</p>
+          <p className="m-0 text-secondary text-muted">{page.missing}</p>
         ) : comparison.status === 'loading' ? (
-          <LoadingState
-            shape="list"
-            rows={4}
-            label="The comparison is loading."
-          />
+          <LoadingState shape="list" rows={4} label="Loading comparison" />
         ) : comparison.status === 'ready' ? (
           <InlineDiff
             hunks={comparison.hunks}
@@ -218,11 +223,11 @@ function ReviewDetail({
             sameText={page.sameText}
           />
         ) : comparison.status === 'limit' ? (
-          <p className="m-0 text-control text-muted">{reviewTooFarApart}</p>
+          <p className="m-0 text-secondary text-muted">{reviewTooFarApart}</p>
         ) : (
           <Notice tone="problem" message="The comparison did not finish." />
         )}
-      </div>
+      </Stack>
     </Page>
   );
 }

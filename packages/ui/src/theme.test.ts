@@ -373,3 +373,96 @@ await test('every theme states its appearance as the colour scheme', () => {
     );
   }
 });
+
+await test('overlay surfaces retain text and icon contrast in every palette', () => {
+  for (const family of themeFamilies) {
+    for (const theme of Object.values(family.variants)) {
+      if (!theme) continue;
+      const overlay = derivedValue(theme.tokens, 'surfaceOverlay');
+      for (const colour of [theme.tokens.textStrong, theme.tokens.textMuted]) {
+        assert.ok(
+          contrastRatio(colour, derivedValue(theme.tokens, 'cardRaised')) >=
+            4.5,
+        );
+        assert.ok(
+          contrastRatio(colour, overlay) >= 4.5,
+          `${theme.id}: overlay contrast`,
+        );
+      }
+      assert.ok(parseHexColor(derivedValue(theme.tokens, 'borderOverlay')));
+    }
+  }
+  assert.equal(
+    derivedValue(defaultThemeFor('dark').tokens, 'surfaceOverlay'),
+    '#2a2a2a',
+  );
+  assert.equal(
+    derivedValue(defaultThemeFor('dark').tokens, 'borderOverlay'),
+    '#3a3a39',
+  );
+  assert.equal(
+    derivedValue(defaultThemeFor('light').tokens, 'surfaceOverlay'),
+    '#ffffff',
+  );
+});
+
+await test('hovered overlay rows keep strong text readable in every palette', () => {
+  for (const family of themeFamilies)
+    for (const theme of Object.values(family.variants)) {
+      if (!theme) continue;
+      assert.ok(
+        contrastRatio(
+          theme.tokens.textStrong,
+          derivedValue(theme.tokens, 'overlayHover'),
+        ) >= 4.5,
+        `${theme.id}: strong text on hovered overlay row`,
+      );
+    }
+});
+
+await test('selected overlay rows keep strong text readable in every palette', () => {
+  for (const family of themeFamilies)
+    for (const theme of Object.values(family.variants)) {
+      if (!theme) continue;
+      assert.ok(
+        contrastRatio(
+          theme.tokens.textStrong,
+          derivedValue(theme.tokens, 'overlaySelected'),
+        ) >= 4.5,
+        `${theme.id}: strong text on selected overlay row`,
+      );
+    }
+});
+
+await test('overlay and raised-card state fills have at least 1.2 contrast in every palette', () => {
+  for (const family of themeFamilies)
+    for (const theme of Object.values(family.variants)) {
+      if (!theme) continue;
+      for (const [surface, states] of [
+        ['surfaceOverlay', ['overlayHover', 'overlaySelected']],
+        ['cardRaised', ['cardRaisedHover', 'cardRaisedSelected']],
+      ] as const)
+        for (const state of states) {
+          assert.ok(
+            contrastRatio(
+              derivedValue(theme.tokens, surface),
+              derivedValue(theme.tokens, state),
+            ) >= 1.2,
+            `${theme.id}: ${state}`,
+          );
+        }
+    }
+});
+
+await test('raised cards keep a visible fill or edge against page and panel', () => {
+  for (const theme of themes)
+    for (const background of [theme.tokens.background, theme.tokens.surface]) {
+      assert.ok(
+        Math.max(
+          contrastRatio(background, derivedValue(theme.tokens, 'cardRaised')),
+          contrastRatio(background, theme.tokens.borderSubtle),
+        ) >= 1.1,
+        theme.id,
+      );
+    }
+});

@@ -1,3 +1,11 @@
+import {
+  Inset,
+  Inline,
+  Button,
+  buttonClassName,
+  Page,
+  PageHeader,
+} from '@notesapp/ui';
 /**
  * The screen of a route boundary (record 0161).
  *
@@ -12,7 +20,7 @@
  */
 import { useEffect, type ReactNode } from 'react';
 import { Link, useLocation, useParams, useRouteError } from 'react-router';
-import { Button, buttonClassName, Page, PageHeader } from '@notesapp/ui';
+
 import {
   openNotesLabel,
   reloadLabel,
@@ -20,7 +28,7 @@ import {
   routeErrorScreen,
   type RouteErrorScope,
 } from '../lib/route-error.ts';
-import { AuthFrame } from '../features/accounts/accounts.tsx';
+import { AuthFrame } from '../features/accounts/auth-frame.tsx';
 import { webLogger } from '../logging.ts';
 import { useDocumentTitle } from './document-title.ts';
 
@@ -68,8 +76,12 @@ export function RouteError({
   );
   return scope === 'application' ? (
     <AuthFrame title={screen.title}>
-      <p className="mb-5 mt-0 text-control text-muted">{screen.description}</p>
-      <div className="flex flex-wrap gap-cluster">{actions}</div>
+      <Inset as="p" className="text-secondary text-muted">
+        {screen.description}
+      </Inset>
+      <Inline gap={2} wrap as="div">
+        {actions}
+      </Inline>
     </AuthFrame>
   ) : (
     <Page>

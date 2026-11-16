@@ -7,8 +7,12 @@
  * reads references only, so a call from the first render stays right, and an
  * unchanged value writes nothing to the page.
  */
-import { useRef, useState, type RefObject } from 'react';
-import type { FileSaveSnapshot, LocalStorageErrorKind } from '@notesapp/sync';
+import { useLayoutEffect, useRef, useState, type RefObject } from 'react';
+import type {
+  FileSaveSnapshot,
+  LocalStorageErrorKind,
+  LocalStore,
+} from '@notesapp/sync';
 import {
   noteSaveReport,
   resolveSaveState,
@@ -18,10 +22,24 @@ import {
 
 /** The save facts of one open note and the call that states them. */
 export type NoteSaveFacts = {
-  readonly saveSnapshotRef: { current: FileSaveSnapshot | null };
-  readonly lastSavedAtRef: { current: string | null };
+  /** Reads durable save facts with the checkpoint sequence at read start. */
+  readonly readSnapshot: (source: {
+    readonly store: LocalStore;
+    readonly accountId: string;
+    readonly workspaceId: string;
+    readonly fileId: string;
+  }) => Promise<FileSaveSnapshot | null>;
   /** The sequence that the store holds, to tell text that no write took. */
   readonly writtenSequenceRef: { current: number };
+  /** Records the sequence that this editor put in a checkpoint. */
+  readonly checkpointTaken: (sequence: number) => void;
+  /** Starts one recovery checkpoint; failed attempts wait for the next poll. */
+  readonly recoverDraft: (
+    snapshot: FileSaveSnapshot,
+    checkpoint: () => Promise<boolean>,
+  ) => void;
+  /** Lets the next status poll retry a failed recovery checkpoint. */
+  readonly retryRecoveredDraft: () => void;
   /** The cause of a failed local write, which the note states. */
   readonly storageError: LocalStorageErrorKind | null;
   readonly setStorageError: (kind: LocalStorageErrorKind | null) => void;
@@ -34,10 +52,24 @@ export type NoteSaveFacts = {
 export function useNoteSaveFacts(
   sequenceRef: { readonly current: number },
   initialSequence: number,
+  openedDraft = false,
 ): NoteSaveFacts {
   const saveSnapshotRef = useRef<FileSaveSnapshot | null>(null);
   const lastSavedAtRef = useRef<string | null>(null);
   const writtenSequenceRef = useRef(initialSequence);
+  const checkpointedSequenceRef = useRef(initialSequence);
+  const snapshotSequenceRef = useRef(initialSequence);
+  const snapshotReadGenerationRef = useRef(0);
+  const recoveryClaimRef = useRef<{ failed: boolean } | null>(null);
+  const mountedRef = useRef(false);
+  useLayoutEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      snapshotReadGenerationRef.current += 1;
+      recoveryClaimRef.current = null;
+      mountedRef.current = false;
+    };
+  }, []);
   const [storageError, setStorageErrorState] =
     useState<LocalStorageErrorKind | null>(null);
   const storageErrorRef = useRef<LocalStorageErrorKind | null>(null);
@@ -60,6 +92,11 @@ export function useNoteSaveFacts(
       root.dataset.saveState = state;
     publishSave(
       noteSaveReport({
+        pendingSave:
+          sequenceRef.current !== writtenSequenceRef.current ||
+          sequenceRef.current !== snapshotSequenceRef.current ||
+          state !== 'saved-server',
+        localWritePending: sequenceRef.current !== writtenSequenceRef.current,
         storageError: storageErrorRef.current,
         lastSavedAt: lastSavedAtRef.current,
       }),
@@ -81,9 +118,59 @@ export function useNoteSaveFacts(
   }).current;
 
   return {
-    saveSnapshotRef,
-    lastSavedAtRef,
+    readSnapshot: async ({ store, accountId, workspaceId, fileId }) => {
+      const generation = ++snapshotReadGenerationRef.current;
+      // An older snapshot read cannot prove that a later checkpoint reached
+      // the server, even if its promise completes after that checkpoint.
+      const sequence = checkpointedSequenceRef.current;
+      const [snapshot, checkpoints] = await Promise.all([
+        store.readFileSaveSnapshot(accountId, workspaceId, fileId),
+        store.listCheckpoints(accountId, workspaceId, fileId),
+      ]);
+      if (generation !== snapshotReadGenerationRef.current) return null;
+      saveSnapshotRef.current = snapshot;
+      snapshotSequenceRef.current = sequence;
+      lastSavedAtRef.current =
+        checkpoints
+          .filter((entry) => !entry.deleted)
+          .map((entry) => entry.clientTime)
+          .sort()
+          .at(-1) ?? null;
+      return snapshot;
+    },
     writtenSequenceRef,
+    checkpointTaken: (sequence) => {
+      checkpointedSequenceRef.current = Math.max(
+        checkpointedSequenceRef.current,
+        sequence,
+      );
+    },
+    recoverDraft: (snapshot, checkpoint) => {
+      if (
+        !openedDraft ||
+        !mountedRef.current ||
+        recoveryClaimRef.current !== null ||
+        snapshot.deleted ||
+        !snapshot.hasUncheckpointedDraft ||
+        sequenceRef.current !== initialSequence
+      )
+        return;
+      const claim = { failed: false };
+      recoveryClaimRef.current = claim;
+      const failed = (): void => {
+        if (recoveryClaimRef.current === claim) claim.failed = true;
+      };
+      void Promise.resolve()
+        .then(() => (recoveryClaimRef.current === claim ? checkpoint() : false))
+        .then((succeeded) => {
+          if (!succeeded) failed();
+        }, failed);
+    },
+    retryRecoveredDraft: () => {
+      // Store events from a failed write must not start a tight retry loop.
+      // A poll retries only a settled failure, never work still in flight.
+      if (recoveryClaimRef.current?.failed) recoveryClaimRef.current = null;
+    },
     storageError,
     setStorageError,
     rootRef,

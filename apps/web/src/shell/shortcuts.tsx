@@ -1,3 +1,11 @@
+import {
+  Stack,
+  Inline,
+  Button,
+  Dialog,
+  DialogBody,
+  DialogFooter,
+} from '@notesapp/ui';
 /**
  * The keyboard shortcuts dialog.
  *
@@ -7,7 +15,8 @@
  *
  * That table names both platforms in one string. `KeyHint` shows the caps of
  * this device instead, so the person reads the keys that are on the keyboard
- * in front of them.
+ * in front of them. A row with its own Apple combination shows that one on
+ * an Apple keyboard.
  *
  * The list is two columns: the description takes the free width and the caps
  * sit at the end of the row. One flex row for each shortcut states that, so
@@ -15,7 +24,7 @@
  */
 import type { ReactNode } from 'react';
 import { shortcuts } from '@notesapp/editor';
-import { Button, Dialog, DialogBody, DialogFooter } from '@notesapp/ui';
+
 import { KeyHint } from './key-hint.tsx';
 
 /** The dialog that lists every shortcut. */
@@ -35,19 +44,26 @@ export function ShortcutsDialog({
       width="medium"
     >
       <DialogBody>
-        <dl className="m-0 flex flex-col gap-2 text-ui">
+        <Stack gap={2} as="dl" className="text-body">
           {shortcuts.map((shortcut) => (
-            <div
-              className="flex items-center justify-between gap-group"
+            <Inline
+              gap={4}
+              align="center"
+              justify="between"
+              as="div"
               key={shortcut.keys}
             >
-              <dt className="min-w-0 text-ink">{shortcut.description}</dt>
+              <dt className="min-w-0 text-strong">{shortcut.description}</dt>
               <dd className="m-0 shrink-0">
-                <KeyHint keys={shortcut.keys} />
+                <KeyHint
+                  keys={shortcut.keys}
+                  apple={shortcut.apple}
+                  reference
+                />
               </dd>
-            </div>
+            </Inline>
           ))}
-        </dl>
+        </Stack>
       </DialogBody>
       <DialogFooter>
         <Button variant="secondary" onClick={onClose}>

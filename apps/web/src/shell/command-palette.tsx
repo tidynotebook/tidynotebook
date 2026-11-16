@@ -1,3 +1,23 @@
+import {
+  fixedRegionClasses,
+  observeElementScrollEdges,
+  Inline,
+  Inset,
+  bareFieldClassName,
+  Button,
+  Dialog,
+  useDialogListInset,
+  DialogList,
+  DialogListGroup,
+  Stack,
+  EmptyState,
+  FileTextIcon,
+  LoadingState,
+  Notice,
+  rowClassName,
+  SearchIcon,
+} from '@notesapp/ui';
+
 /**
  * The one command palette of the application.
  *
@@ -36,17 +56,7 @@ import {
 import { useNavigate } from 'react-router';
 import { searchFiles as searchRemote } from '@notesapp/api-client';
 import type { LocalStore } from '@notesapp/sync';
-import {
-  bareFieldClassName,
-  Button,
-  Dialog,
-  EmptyState,
-  FileTextIcon,
-  LoadingState,
-  Notice,
-  rowClassName,
-  SearchIcon,
-} from '@notesapp/ui';
+
 import { actionIcon, emptyStateIcon } from './action-icons.tsx';
 import { KeyHint } from './key-hint.tsx';
 import {
@@ -63,6 +73,12 @@ import {
   type PaletteHit,
   type PaletteNote,
 } from '../lib/palette-items.ts';
+
+import {
+  currentContentSearch,
+  startContentSearch,
+  type ContentSearchAnswer,
+} from '../lib/content-search-state.ts';
 
 /**
  * The search of the device reads the plain text of each note through the
@@ -96,8 +112,6 @@ type Row =
     };
 
 /** The class of the quiet label above a group of rows. */
-const groupLabelClassName =
-  'px-2 pb-1 pt-2 text-control font-medium text-muted first:pt-1';
 
 /** Reads the content matches of one query from this device and the server. */
 function useContentHits(
@@ -105,57 +119,68 @@ function useContentHits(
   store: LocalStore | null,
   accountId: string | null,
   workspaceId: string,
-): { readonly hits: readonly PaletteHit[]; readonly offline: boolean } {
-  const [hits, setHits] = useState<readonly PaletteHit[]>([]);
-  const [offline, setOffline] = useState(false);
+): {
+  readonly hits: readonly PaletteHit[];
+  readonly offline: boolean;
+  readonly pending: boolean;
+} {
+  const request = useMemo(
+    () => ({ query, store, accountId, workspaceId }),
+    [query, store, accountId, workspaceId],
+  );
+  const [answer, setAnswer] = useState<ContentSearchAnswer | null>(null);
 
   useEffect(() => {
     const needle = query.trim();
-    if (needle === '') {
-      setHits([]);
-      setOffline(false);
-      return;
-    }
-    let cancelled = false;
+    if (needle === '') return;
+    let cancel = (): void => {};
     const timer = window.setTimeout(() => {
-      void (async (): Promise<void> => {
-        const found = await searchContent(
-          async () =>
-            store === null || accountId === null
-              ? []
-              : (await loadDeviceSearch())(
-                  needle,
-                  await store.listSearchFiles(accountId, workspaceId),
-                ),
-          navigator.onLine
-            ? async () => {
-                const result = await searchRemote({
-                  path: { workspaceId },
-                  query: { query: needle, limit: 50 },
-                });
-                return result.error !== undefined || result.data === undefined
-                  ? []
-                  : result.data.hits;
-              }
-            : null,
-        );
-        if (cancelled) return;
-        setOffline(found.offline);
-        setHits(found.hits);
-      })();
+      const search = startContentSearch(
+        request,
+        () =>
+          searchContent(
+            async () =>
+              store === null || accountId === null
+                ? []
+                : (await loadDeviceSearch())(
+                    needle,
+                    await store.listSearchFiles(accountId, workspaceId),
+                  ),
+            navigator.onLine
+              ? async () => {
+                  const result = await searchRemote({
+                    path: { workspaceId },
+                    query: { query: needle, limit: 50 },
+                  });
+                  return result.error !== undefined || result.data === undefined
+                    ? []
+                    : result.data.hits;
+                }
+              : null,
+          ),
+        setAnswer,
+      );
+      cancel = search.cancel;
+      void search.done;
     }, searchDelayMs);
     return () => {
-      cancelled = true;
+      cancel();
       window.clearTimeout(timer);
     };
-  }, [query, store, accountId, workspaceId]);
+  }, [query, store, accountId, workspaceId, request]);
 
-  return { hits, offline };
+  const current = currentContentSearch(request, answer);
+  return {
+    hits: current?.hits ?? [],
+    offline: current?.offline ?? false,
+    pending: query.trim() !== '' && current === null,
+  };
 }
 
 /** What the palette passes to the body of its open dialog. */
 type PaletteProps = {
   readonly workspaceId: string;
+  readonly workspaceName: string;
   readonly notes: readonly PaletteNote[];
   readonly store: LocalStore | null;
   readonly accountId: string | null;
@@ -201,31 +226,40 @@ export function CommandPalette({
 
   if (!open) return null;
   return (
-    <PaletteDialog
-      {...props}
+    <Dialog
+      open
       onClose={() => onOpenChange(false)}
-      closeThen={(work) => {
-        setChosen({ run: work });
-        onOpenChange(false);
-      }}
-    />
+      title="Search notes and run actions"
+      titleId="command-palette-title"
+      hideTitle
+      width="command"
+    >
+      <PaletteDialog
+        {...props}
+        closeThen={(work) => {
+          setChosen({ run: work });
+          onOpenChange(false);
+        }}
+      />
+    </Dialog>
   );
 }
 
 /** The open palette: its field, its one list and its keys. */
 function PaletteDialog({
   workspaceId,
+  workspaceName,
   notes,
   store,
   accountId,
   actions: readActions,
-  onClose,
   closeThen,
 }: PaletteProps & {
-  readonly onClose: () => void;
   /** Closes the palette, then runs one piece of work. */
   readonly closeThen: (work: () => void) => void;
 }): ReactNode {
+  // The content frame and its regions share one outer inset.
+  const contentInset = useDialogListInset();
   const navigate = useNavigate();
   const actions = useMemo(() => readActions(), [readActions]);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -336,16 +370,21 @@ function PaletteDialog({
       ? ''
       : pickAnnouncement(stepAction.label, step, stepChoices, rows.length);
 
+  useEffect(
+    () =>
+      listRef.current ? observeElementScrollEdges(listRef.current) : undefined,
+    [rows.length],
+  );
   return (
-    <Dialog
-      open
-      onClose={onClose}
-      title="Search notes and run actions"
-      titleId="command-palette-title"
-      hideTitle
-      width="medium"
-    >
-      <div className="flex items-center gap-cluster border-b border-edge-line px-gutter">
+    <DialogListGroup>
+      <Inline
+        gap={2}
+        padX={contentInset}
+        align="center"
+        as="div"
+        data-scroll-edge="above"
+        className={fixedRegionClasses('bottom')}
+      >
         <span className="shrink-0 text-muted" aria-hidden="true">
           <SearchIcon />
         </span>
@@ -356,6 +395,9 @@ function PaletteDialog({
           value={query}
           placeholder={placeholder}
           aria-label={placeholder}
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={rows.length > 0}
           aria-controls="command-palette-list"
           aria-activedescendant={activeId}
           autoComplete="off"
@@ -393,138 +435,185 @@ function PaletteDialog({
         <span className="hidden shrink-0 sm:inline">
           <KeyHint keys="Escape" />
         </span>
-      </div>
+      </Inline>
       <p className="sr-only" aria-live="polite">
         {announcement}
       </p>
       {stepChoices?.status === 'ready' && stepChoices.notice !== null ? (
-        <p className="m-0 border-b border-edge-line px-gutter py-2 text-control text-muted">
+        <Inset padX={contentInset} as="p" className="text-secondary text-muted">
           {stepChoices.notice}
-        </p>
+        </Inset>
       ) : null}
-      {content.offline ? (
-        <p className="m-0 border-b border-edge-line px-gutter py-2 text-control text-muted">
-          No connection. These results come from this device.
-        </p>
-      ) : null}
-      <ul
-        ref={listRef}
-        id="command-palette-list"
-        className="m-0 max-h-80 list-none overflow-y-auto p-2 empty:hidden"
-        role="listbox"
-        aria-label={stepAction?.label ?? 'Results'}
+      <Stack
+        gap={contentInset}
+        className={
+          step !== null && rows.length === 0 ? 'hidden' : 'overflow-hidden'
+        }
       >
-        {rows.map((row, index) => (
-          <Fragment key={row.id}>
-            {index === firstNote ? (
-              <li role="presentation" className={groupLabelClassName}>
-                Notes
-              </li>
-            ) : null}
-            {index === firstAction ? (
-              <li role="presentation" className={groupLabelClassName}>
-                Actions
-              </li>
-            ) : null}
-            {index === firstChoice ? (
-              <li role="presentation" className={groupLabelClassName}>
-                {stepAction?.label}
-              </li>
-            ) : null}
-            <li
-              id={row.id}
-              role="option"
-              aria-selected={index === active}
-              className={rowClassName({
-                selected: index === active,
-                className: 'md:min-h-8',
-              })}
-              onMouseEnter={() => setSelected(index)}
-              onMouseDown={(event): void => {
-                event.preventDefault();
-                run(row);
-              }}
-            >
-              <span
-                className="inline-flex shrink-0 items-center text-muted"
-                aria-hidden="true"
+        {step === null ? (
+          <Inset
+            data-search-scope=""
+            padX={contentInset}
+            as="p"
+            className="text-secondary text-muted"
+          >
+            In {workspaceName}
+            {content.offline ? ' · Offline, results from this device' : ''}
+          </Inset>
+        ) : null}
+        <DialogList
+          ref={listRef}
+          id="command-palette-list"
+          className="ui-content-list max-h-80 list-none overflow-y-auto empty:hidden"
+          role="listbox"
+          aria-label={stepAction?.label ?? 'Results'}
+        >
+          {rows.map((row, index) => (
+            <Fragment key={row.id}>
+              {index === firstNote ? (
+                <Inset
+                  as="li"
+                  padX={0}
+                  padY={index === 0 ? 0 : 1}
+                  role="presentation"
+                  className="text-group text-muted"
+                >
+                  Notes
+                </Inset>
+              ) : null}
+              {index === firstAction ? (
+                <Inset
+                  as="li"
+                  padX={0}
+                  padY={index === 0 ? 0 : 1}
+                  role="presentation"
+                  className="text-group text-muted"
+                >
+                  Actions
+                </Inset>
+              ) : null}
+              {index === firstChoice ? (
+                <Inset
+                  as="li"
+                  padX={0}
+                  padY={index === 0 ? 0 : 1}
+                  role="presentation"
+                  className="text-group text-muted"
+                >
+                  {stepAction?.label}
+                </Inset>
+              ) : null}
+              <li
+                id={row.id}
+                role="option"
+                aria-selected={index === active}
+                className={rowClassName({
+                  selected: index === active,
+                  contentEdge: true,
+                  className: '',
+                })}
+                onMouseEnter={() => setSelected(index)}
+                onMouseDown={(event): void => {
+                  event.preventDefault();
+                  run(row);
+                }}
               >
-                {row.kind === 'action' ? (
-                  actionIcon(row.action.icon)
-                ) : (
-                  <FileTextIcon />
-                )}
-              </span>
-              {row.kind === 'choice' ? (
-                <>
-                  <span className="min-w-0 flex-1 truncate">
-                    {row.choice.label}
-                  </span>
-                  {row.choice.detail === null ? null : (
-                    <span className="shrink-0 truncate text-muted">
-                      {row.choice.detail}
-                    </span>
+                <span
+                  className="inline-flex shrink-0 items-center text-muted"
+                  aria-hidden="true"
+                >
+                  {row.kind === 'action' ? (
+                    actionIcon(row.action.icon)
+                  ) : (
+                    <FileTextIcon />
                   )}
-                </>
-              ) : row.kind === 'note' ? (
-                <>
-                  <span className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate">
-                      {paletteNoteLabel(row.match.path).name}
+                </span>
+                {row.kind === 'choice' ? (
+                  <>
+                    <span className="min-w-0 flex-1 truncate">
+                      {row.choice.label}
                     </span>
-                    {row.match.excerpt === null ? null : (
-                      <span className="truncate text-muted">
-                        {row.match.excerpt.map((part, at) =>
-                          part.marked ? (
-                            <mark
-                              key={at}
-                              className="bg-transparent font-medium text-accent"
-                            >
-                              {part.text}
-                            </mark>
-                          ) : (
-                            <span key={at}>{part.text}</span>
-                          ),
-                        )}
+                    {row.choice.detail === null ? null : (
+                      <span className="shrink-0 truncate text-muted">
+                        {row.choice.detail}
                       </span>
                     )}
-                  </span>
-                  {paletteNoteLabel(row.match.path).folder === null ? null : (
-                    <span className="max-w-1/3 shrink-0 truncate text-muted">
-                      {paletteNoteLabel(row.match.path).folder}
+                  </>
+                ) : row.kind === 'note' ? (
+                  <>
+                    <span className="flex min-w-0 flex-1 flex-col">
+                      <span className="truncate">
+                        {paletteNoteLabel(row.match.path).name}
+                      </span>
+                      {row.match.excerpt === null ? null : (
+                        <span className="truncate text-muted">
+                          {row.match.excerpt.map((part, at) =>
+                            part.marked ? (
+                              <mark
+                                key={at}
+                                className="bg-transparent text-label text-accent"
+                              >
+                                {part.text}
+                              </mark>
+                            ) : (
+                              <span key={at}>{part.text}</span>
+                            ),
+                          )}
+                        </span>
+                      )}
                     </span>
-                  )}
-                </>
-              ) : (
-                <>
-                  <span className="min-w-0 flex-1 truncate">
-                    {row.action.label}
-                  </span>
-                  {row.action.keys === undefined ? null : (
-                    <span className="shrink-0">
-                      <KeyHint keys={row.action.keys} />
+                    {paletteNoteLabel(row.match.path).folder === null ? null : (
+                      <span className="max-w-1/3 shrink-0 truncate text-muted">
+                        {paletteNoteLabel(row.match.path).folder}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <span className="min-w-0 flex-1 truncate">
+                      {row.action.label}
                     </span>
-                  )}
-                </>
-              )}
-            </li>
-          </Fragment>
-        ))}
-      </ul>
+                    {row.action.keys === undefined ? null : (
+                      <span className="shrink-0">
+                        <KeyHint keys={row.action.keys} />
+                      </span>
+                    )}
+                  </>
+                )}
+              </li>
+            </Fragment>
+          ))}
+        </DialogList>
+      </Stack>
       {step === null || stepChoices === null ? (
-        rows.length === 0 ? (
-          <p className="m-4 text-control text-muted">
+        content.pending ? (
+          <Inset
+            padX={contentInset}
+            as="p"
+            className="text-secondary text-muted"
+            role="status"
+          >
+            Searching...
+          </Inset>
+        ) : rows.length === 0 ? (
+          <Inset
+            padX={contentInset}
+            as="p"
+            className="text-secondary text-muted"
+            role="status"
+          >
             No note and no action matches that.
-          </p>
+          </Inset>
         ) : null
-      ) : stepChoices.status === 'loading' ? (
-        <div className="px-2 pb-2">
-          <LoadingState shape="list" rows={3} label={stepChoices.label} />
-        </div>
-      ) : stepChoices.status === 'unavailable' ? (
-        <div className="px-2 pb-2">
-          <Notice tone="info" message={stepChoices.message} />
-        </div>
+      ) : stepChoices.status === 'loading' ||
+        stepChoices.status === 'unavailable' ? (
+        <Inset padX={contentInset} as="div">
+          {stepChoices.status === 'loading' ? (
+            <LoadingState shape="list" rows={3} label={stepChoices.label} />
+          ) : (
+            <Notice tone="info" message={stepChoices.message} />
+          )}
+        </Inset>
       ) : stepChoices.choices.length === 0 ? (
         // A list that is not complete states so above and claims no empty
         // folder.
@@ -539,7 +628,7 @@ function PaletteDialog({
               step.empty.action === null ? undefined : (
                 <Button
                   variant="secondary"
-                  size="sm"
+                  size="compact"
                   onClick={() => {
                     const fill = step.empty.action;
                     if (fill !== null) closeThen(fill.run);
@@ -552,8 +641,10 @@ function PaletteDialog({
           />
         )
       ) : rows.length === 0 ? (
-        <p className="m-4 text-control text-muted">{step.noMatch}</p>
+        <Inset padX={contentInset} as="p" className="text-secondary text-muted">
+          {step.noMatch}
+        </Inset>
       ) : null}
-    </Dialog>
+    </DialogListGroup>
   );
 }

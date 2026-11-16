@@ -93,10 +93,11 @@ export function wheelZoom(
 }
 
 /** What a key does in the viewer, or null for a key it leaves alone. */
-export function zoomKey(key: string): 'in' | 'out' | 'fit' | null {
+export function zoomKey(key: string): 'in' | 'out' | 'fit' | 'actual' | null {
   if (key === '+' || key === '=') return 'in';
   if (key === '-' || key === '_') return 'out';
   if (key === '0') return 'fit';
+  if (key === '1') return 'actual';
   return null;
 }
 

@@ -3,7 +3,7 @@
  *
  * Diagrams render inside a sandboxed frame (`frame.html`) rather than in the
  * note itself. The parent keeps the Markdown source; the frame keeps the
- * diagram library. The two sides exchange only two fixed message shapes, so
+ * diagram library. The two sides exchange only fixed message shapes, so
  * no arbitrary HTML ever travels back to the parent.
  *
  * What this module never does:
@@ -19,10 +19,8 @@
  *   time, and the frame height are all bounded, and a failure replaces the
  *   frame with editable source in the same pane.
  *
- * Mermaid itself loads through a dynamic import inside `startDiagramFrame`,
- * so the main bundle keeps it deferred and the service worker can precache
- * the diagram chunk later. The parent side of this module holds no diagram
- * library at all.
+ * The built frame document contains the diagram engine. The parent side of
+ * this module holds no diagram library.
  */
 import { generateUUID } from '@notesapp/core';
 
@@ -40,7 +38,7 @@ export type DiagramTheme = 'light' | 'dark';
 export const diagramFramePath = '/src/diagram/frame.html';
 
 /**
- * The only message the parent sends to the frame.
+ * The source request that the parent sends to the frame.
  *
  * `requestId` matches one render; `source` is the raw Mermaid source without
  * the fence; `theme` is the appearance Mermaid renders with; `palette` holds
@@ -56,6 +54,7 @@ export type DiagramRequest = {
   readonly source: string;
   readonly theme: DiagramTheme;
   readonly palette: readonly string[];
+  readonly expanded?: boolean;
 };
 
 /** The custom properties the frame paints itself with, in a fixed order. */
@@ -213,7 +212,39 @@ export type DiagramResponse = {
   readonly requestId: string;
   readonly ok: boolean;
   readonly height: number;
+  readonly width?: number;
+  readonly naturalWidth?: number;
+  readonly naturalHeight?: number;
+  readonly paddingX?: number;
+  readonly paddingY?: number;
 };
+
+export type DiagramSize = {
+  readonly width: number;
+  readonly height: number;
+  readonly paddingX: number;
+  readonly paddingY: number;
+};
+export type DiagramScaleRequest = {
+  readonly kind: 'scale';
+  readonly requestId: string;
+  readonly scale: number;
+};
+
+/** Only bounded numeric geometry can cross the sandbox boundary. */
+export function isDiagramScaleRequest(
+  value: unknown,
+): value is DiagramScaleRequest {
+  const scale = readProperty(value, 'scale');
+  return (
+    readProperty(value, 'kind') === 'scale' &&
+    isBoundedString(readProperty(value, 'requestId'), 128) &&
+    typeof scale === 'number' &&
+    Number.isFinite(scale) &&
+    scale >= 0.001 &&
+    scale <= 4
+  );
+}
 
 /**
  * The fixed resource limits of diagram rendering.
@@ -241,7 +272,29 @@ export const diagramLimits = {
   minHeightPx: 40,
   /** Largest applied frame height, in pixels. */
   maxHeightPx: 800,
+  /** Largest natural SVG dimension accepted from the sandbox. */
+  maxNaturalPx: 32768,
 } as const;
+
+/** Inline text stays readable; a wide drawing scrolls instead of shrinking further. */
+export function inlineDiagramScale(
+  size: DiagramSize,
+  availableWidth: number,
+): number {
+  const room = Number.isFinite(availableWidth)
+    ? availableWidth - size.paddingX * 2
+    : 0;
+  return Math.max(0.75, Math.min(1, room / size.width));
+}
+
+/** The frame keeps its fixed configuration instead of taking note directives. */
+export function diagramSourceAllowed(source: string): boolean {
+  return (
+    source.length <= diagramLimits.maxSourceChars &&
+    !/%%\s*\{/.test(source) &&
+    !/^\s*---(?:\r?\n|$)/.test(source)
+  );
+}
 
 /** Reports whether a value is a non empty string inside a length cap. */
 function isBoundedString(value: unknown, max: number): value is string {
@@ -268,12 +321,14 @@ export function isDiagramRequest(value: unknown): value is DiagramRequest {
   const source = readProperty(value, 'source');
   const theme = readProperty(value, 'theme');
   const palette = readProperty(value, 'palette');
+  const expanded = readProperty(value, 'expanded');
   return (
     isBoundedString(requestId, 128) &&
     typeof source === 'string' &&
     source.length <= diagramLimits.maxSourceChars &&
     (theme === 'light' || theme === 'dark') &&
-    isPalette(palette)
+    isPalette(palette) &&
+    (expanded === undefined || typeof expanded === 'boolean')
   );
 }
 
@@ -288,13 +343,32 @@ export function isDiagramResponse(value: unknown): value is DiagramResponse {
   const requestId = readProperty(value, 'requestId');
   const ok = readProperty(value, 'ok');
   const height = readProperty(value, 'height');
+  const width = readProperty(value, 'width');
+  const naturalWidth = readProperty(value, 'naturalWidth');
+  const naturalHeight = readProperty(value, 'naturalHeight');
+  const paddingX = readProperty(value, 'paddingX');
+  const paddingY = readProperty(value, 'paddingY');
+  const padding = (v: unknown): boolean =>
+    typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 256;
+  const dimension = (v: unknown, max: number): boolean =>
+    typeof v === 'number' && Number.isFinite(v) && v > 0 && v <= max;
   return (
     isBoundedString(requestId, 128) &&
     typeof ok === 'boolean' &&
     typeof height === 'number' &&
     Number.isFinite(height) &&
     height >= 0 &&
-    height <= diagramLimits.maxHeightPx * 2
+    height <= diagramLimits.maxHeightPx * 2 &&
+    (width === undefined ||
+      dimension(width, diagramLimits.maxNaturalPx * 4 + 32)) &&
+    ((naturalWidth === undefined &&
+      naturalHeight === undefined &&
+      paddingX === undefined &&
+      paddingY === undefined) ||
+      (dimension(naturalWidth, diagramLimits.maxNaturalPx) &&
+        dimension(naturalHeight, diagramLimits.maxNaturalPx) &&
+        padding(paddingX) &&
+        padding(paddingY)))
   );
 }
 
@@ -359,6 +433,9 @@ function activePalette(): readonly string[] {
 export type DiagramFrameOptions = {
   /** The Mermaid source without the fence. */
   readonly source: string;
+  readonly expanded?: boolean;
+  readonly onSize?: (size: DiagramSize) => void;
+  readonly onStatus?: (status: 'pending' | 'ready' | 'source') => void;
   /** The palette the frame renders with. */
   readonly theme: DiagramTheme;
   /**
@@ -424,6 +501,7 @@ export const diagramFrameStyle: Readonly<Record<string, string>> = {
 export function createDiagramFrame(options: DiagramFrameOptions): {
   readonly element: HTMLDivElement;
   readonly dispose: () => void;
+  readonly setScale: (scale: number) => void;
 } {
   const wrapper = document.createElement('div');
   wrapper.className = 'notes-diagram';
@@ -436,6 +514,34 @@ export function createDiagramFrame(options: DiagramFrameOptions): {
   let settled = false;
   let timer = 0;
   let disposed = false;
+  let natural: DiagramSize | null = null;
+  let requestedScale: number | null = null;
+  const status = (next: 'pending' | 'ready' | 'source'): void => {
+    wrapper.setAttribute('data-notesapp-diagram', next);
+    options.onStatus?.(next);
+  };
+  const applyScale = (): void => {
+    if (!frame || !natural || requestedScale === null || disposed || !settled)
+      return;
+    const width =
+      Math.ceil(natural.width * requestedScale) + natural.paddingX * 2;
+    const height =
+      Math.ceil(natural.height * requestedScale) + natural.paddingY * 2;
+    wrapper.style.width = `${width}px`;
+    frame.style.width = `${width}px`;
+    frame.style.height = `${options.expanded ? height : clampDiagramHeight(height)}px`;
+    const message: DiagramScaleRequest = {
+      kind: 'scale',
+      requestId,
+      scale: requestedScale,
+    };
+    frame.contentWindow?.postMessage(message, '*');
+  };
+  const setScale = (scale: number): void => {
+    if (!Number.isFinite(scale) || scale < 0.001 || scale > 4) return;
+    requestedScale = scale;
+    applyScale();
+  };
 
   const stopClock = (): void => {
     window.clearTimeout(timer);
@@ -454,12 +560,12 @@ export function createDiagramFrame(options: DiagramFrameOptions): {
     stopClock();
     frame = null;
     if (options.onFailure !== undefined) {
-      wrapper.setAttribute('data-notesapp-diagram', 'source');
+      status('source');
       wrapper.textContent = '';
       options.onFailure();
       return;
     }
-    wrapper.setAttribute('data-notesapp-diagram', 'source');
+    status('source');
     wrapper.textContent = '';
     // The element sits inside the widget of `packages/editor`, so it reads
     // the classes of that widget: a note, an action and a source. The editor
@@ -503,22 +609,38 @@ export function createDiagramFrame(options: DiagramFrameOptions): {
       return;
     }
     settled = true;
-    wrapper.setAttribute('data-notesapp-diagram', 'ready');
+    status('ready');
     current.style.height = `${String(clampDiagramHeight(event.data.height))}px`;
+    if (
+      event.data.naturalWidth !== undefined &&
+      event.data.naturalHeight !== undefined
+    ) {
+      natural = {
+        width: event.data.naturalWidth,
+        height: event.data.naturalHeight,
+        paddingX: event.data.paddingX ?? 0,
+        paddingY: event.data.paddingY ?? 0,
+      };
+      applyScale();
+      options.onSize?.(natural);
+    }
   };
 
   /** Builds the frame, posts the request, and starts the two clocks. */
   function start(): void {
     if (disposed) return;
     settled = false;
+    natural = null;
+    wrapper.style.width = '';
     stopClock();
     requestId = generateUUID();
     wrapper.textContent = '';
-    wrapper.setAttribute('data-notesapp-diagram', 'pending');
+    status('pending');
 
     const iframe = document.createElement('iframe');
     iframe.className = 'notes-diagram-frame';
     iframe.setAttribute('title', 'Diagram preview');
+    iframe.setAttribute('tabindex', '-1');
     iframe.setAttribute('sandbox', 'allow-scripts');
     iframe.setAttribute('referrerpolicy', 'no-referrer');
     // No `loading="lazy"`. The widget itself exists only while the editor
@@ -530,15 +652,18 @@ export function createDiagramFrame(options: DiagramFrameOptions): {
     wrapper.appendChild(iframe);
     frame = iframe;
 
-    const request: DiagramRequest = {
-      requestId,
-      source: options.source,
-      theme: options.theme,
-      palette: activePalette(),
-    };
     iframe.addEventListener('load', (): void => {
       if (frame !== iframe || disposed) return;
       stopClock();
+      // The editor can build this frame before the app applies new colours.
+      // Read the palette when the loaded frame is ready to draw.
+      const request: DiagramRequest = {
+        requestId,
+        source: options.source,
+        theme: options.theme,
+        palette: activePalette(),
+        expanded: options.expanded ?? false,
+      };
       // The frame runs with an opaque origin (`sandbox` without
       // `allow-same-origin`), so the target origin is `*` by necessity. The
       // message itself carries the request ID, and the response is accepted
@@ -560,6 +685,7 @@ export function createDiagramFrame(options: DiagramFrameOptions): {
 
   return {
     element: wrapper,
+    setScale,
     dispose: (): void => {
       disposed = true;
       stopClock();

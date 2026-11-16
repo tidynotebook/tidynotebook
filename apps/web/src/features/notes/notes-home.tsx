@@ -1,3 +1,19 @@
+import {
+  Stack,
+  Inline,
+  Button,
+  EmptyState,
+  FileTextIcon,
+  LoadingState,
+  Notice,
+  Page,
+  PageHeader,
+  SectionHeading,
+  pageListClassName,
+  PlusIcon,
+  rowClassName,
+} from '@notesapp/ui';
+
 /**
  * The note list of one open area.
  *
@@ -33,23 +49,12 @@ import {
   type ReactNode,
 } from 'react';
 import { Link, useParams } from 'react-router';
-import {
-  Button,
-  EmptyState,
-  FileTextIcon,
-  LoadingState,
-  Notice,
-  Page,
-  pageGroupLabelClassName,
-  PageHeader,
-  pageListClassName,
-  PlusIcon,
-  rowClassName,
-} from '@notesapp/ui';
+
 import { useLocalStore, useSession } from '../../app.tsx';
 import { useDocumentTitle } from '../../shell/document-title.ts';
 import { useNow } from '../../shell/now.ts';
 import { useFiles } from '../../shell/files.tsx';
+import { NewFromTemplate } from '../templates/new-from-template.tsx';
 import { useCreateNote } from './new-note.tsx';
 import { groupNotesByRecency } from '../../lib/note-groups.ts';
 import {
@@ -60,10 +65,10 @@ import { noteRowMeta } from '../../lib/note-row.ts';
 import { showNewNoteInHeader } from '../../lib/notes-home-action.ts';
 import type { NoteSummary } from '../../lib/note-list.ts';
 import { pinnedIndex } from '../../lib/row-window.ts';
-import { scrollerOf, useRowWindow } from '../../shell/row-window.ts';
+import { scrollerOf } from '../../shell/row-window.ts';
+import { useContentRowWindow } from '../../shell/content-row-window.ts';
 
 /** The quiet heading of one time band of the list. */
-const groupLabelClassName = `${pageGroupLabelClassName()} pt-4`;
 
 /**
  * Where the list of each workspace was scrolled to, for this session.
@@ -76,7 +81,7 @@ const keptOffsets = new Map<string, number>();
 
 /** Keeps the scroll offset of the list of one workspace while it mounts. */
 function useKeptOffset(
-  workspaceId: string,
+  scopeKey: string,
   ready: boolean,
 ): (element: HTMLElement | null) => void {
   const elementRef = useRef<HTMLElement | null>(null);
@@ -85,16 +90,17 @@ function useKeptOffset(
     if (!ready || element === null) return;
     const scroller = scrollerOf(element);
     if (scroller === null) return;
-    const kept = keptOffsets.get(workspaceId);
-    if (kept !== undefined) scroller.scrollTop = kept;
+    const kept = keptOffsets.get(scopeKey);
+    scroller.scrollTop = kept ?? 0;
+    /** Keep the list scroll offset for this scope so a return restores it. */
     const remember = (): void => {
-      keptOffsets.set(workspaceId, scroller.scrollTop);
+      keptOffsets.set(scopeKey, scroller.scrollTop);
     };
     scroller.addEventListener('scroll', remember, { passive: true });
     return () => {
       scroller.removeEventListener('scroll', remember);
     };
-  }, [workspaceId, ready]);
+  }, [scopeKey, ready]);
   return (element) => {
     elementRef.current = element;
   };
@@ -122,11 +128,7 @@ function NoteGroupList({
 }): ReactNode {
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const keys = useMemo(() => notes.map((note) => note.fileId), [notes]);
-  const rows = useRowWindow(
-    notes.length,
-    'note-list',
-    pinnedIndex(keys, focusedId),
-  );
+  const rows = useContentRowWindow(keys, pinnedIndex(keys, focusedId));
   return (
     <ul className={pageListClassName()} ref={rows.listRef}>
       {rows.indexes.map((index) => {
@@ -153,7 +155,8 @@ function NoteGroupList({
             <Link
               className={rowClassName({
                 inset: false,
-                className: 'min-w-0 flex-1',
+                contentEdge: true,
+                className: 'ui-list-row min-w-0 flex-1',
               })}
               to={`/w/${workspaceId}/notes/${note.fileId}`}
               aria-label={
@@ -168,11 +171,14 @@ function NoteGroupList({
               >
                 <FileTextIcon />
               </span>
-              <span className="min-w-0 flex-1 truncate text-ui text-strong">
+              <span className="min-w-0 flex-1 truncate text-body text-strong">
                 {meta.name}
-              </span>
-              <span className="shrink-0 text-control text-muted">
-                {meta.when}
+                {meta.folder === null ? null : (
+                  <span className="text-secondary text-muted">
+                    {' '}
+                    · {meta.folder}
+                  </span>
+                )}
               </span>
             </Link>
           </li>
@@ -193,78 +199,84 @@ export function NotesHomeView(): ReactNode {
   const accountId = session.account?.accountId ?? null;
   const newNote = useCreateNote(store.store, accountId, workspaceId);
   useDocumentTitle('All notes');
-
   const now = useNow();
   const groups = useMemo(
     () => groupNotesByRecency(files.notes, now),
     [files.notes, now],
   );
   const total = files.notes.length;
-  const keepOffset = useKeptOffset(workspaceId, !files.loading && total > 0);
+  const actions = (
+    <Inline
+      gap={2}
+      wrap
+      align="center"
+      justify="center"
+      as="div"
+      className="lg:flex-row-reverse"
+    >
+      <Button
+        icon={<PlusIcon />}
+        disabled={store.store === null}
+        onClick={() => newNote.create('')}
+      >
+        New note
+      </Button>
+      <NewFromTemplate key={workspaceId} workspaceId={workspaceId} folder="" />
+    </Inline>
+  );
+  const keepOffset = useKeptOffset(workspaceId, !files.loading);
 
   return (
     <Page
+      emptyState={
+        !files.loading && total === 0 ? (
+          <EmptyState
+            icon={<FileTextIcon size={20} />}
+            title="No notes yet"
+            description="Write your first note."
+            action={actions}
+          />
+        ) : null
+      }
       sections={
         files.loading || total === 0 ? undefined : noteGroupSections(groups)
       }
     >
-      <PageHeader
-        title="All notes"
-        description={`${String(total)} ${total === 1 ? 'note' : 'notes'}`}
-        actions={
-          showNewNoteInHeader(files.loading, total) ? (
-            <Button
-              icon={<PlusIcon />}
-              disabled={store.store === null}
-              onClick={() => newNote.create()}
-            >
-              New note
-            </Button>
-          ) : undefined
-        }
-      />
-      {newNote.error === null ? null : (
-        <Notice className="mb-4" tone="problem" message={newNote.error} />
-      )}
-      {files.loading ? (
-        <LoadingState shape="list" rows={6} label="Your notes are loading." />
-      ) : total === 0 ? (
-        <EmptyState
-          icon={<FileTextIcon size={20} />}
-          title="No notes yet"
-          description="Write your first note to fill this space."
-          action={
-            <Button
-              icon={<PlusIcon />}
-              disabled={store.store === null}
-              onClick={() => newNote.create()}
-            >
-              New note
-            </Button>
-          }
+      <Stack gap={4} as="div" ref={keepOffset}>
+        <PageHeader
+          title="All notes"
+          count={files.loading ? undefined : total}
+          actions={showNewNoteInHeader(files.loading, total) ? actions : null}
         />
-      ) : (
-        <div ref={keepOffset}>
-          {groups.map((group) => (
-            <section
-              key={group.label}
-              aria-labelledby={noteGroupHeadingId(group.label)}
-            >
-              <h2
-                className={groupLabelClassName}
-                id={noteGroupHeadingId(group.label)}
+        {newNote.error === null ? null : (
+          <Notice tone="problem" message={newNote.error} />
+        )}
+        {files.loading ? (
+          <LoadingState shape="list" rows={6} label="Loading notes" />
+        ) : total === 0 ? null : (
+          <Stack gap={{ fine: 6, coarse: 4 }}>
+            {groups.map((group) => (
+              <Stack
+                as="section"
+                gap={2}
+                className="ui-section"
+                key={group.label}
+                aria-labelledby={noteGroupHeadingId(group.label)}
               >
-                {group.label}
-              </h2>
-              <NoteGroupList
-                notes={group.notes}
-                workspaceId={workspaceId}
-                now={now}
-              />
-            </section>
-          ))}
-        </div>
-      )}
+                <SectionHeading
+                  id={noteGroupHeadingId(group.label)}
+                  label={group.label}
+                />
+                <NoteGroupList
+                  notes={group.notes}
+                  workspaceId={workspaceId}
+                  now={now}
+                />
+              </Stack>
+            ))}
+          </Stack>
+        )}
+      </Stack>
     </Page>
   );
 }

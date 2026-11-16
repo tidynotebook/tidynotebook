@@ -162,7 +162,7 @@ async function seedBatch(
 }
 
 const profile = await resourceProfile();
-const serverUrl = process.env['NOTESAPP_TEST_DATABASE_URL'] ?? testDatabaseUrl;
+const serverUrl = testDatabaseUrl;
 if (!isTestDatabaseName(databaseName(serverUrl)))
   throw new Error('The performance database server must use notesapp_test.');
 const databaseNameValue = `notesapp_test_perf_${randomUUID().replaceAll('-', '').slice(0, 16)}`;
@@ -173,15 +173,13 @@ try {
   await runMigrations({
     documents: createDocumentService(),
     databaseUrl: migrationUrl,
-    runtimePassword:
-      process.env['NOTESAPP_RUNTIME_PASSWORD'] ?? testRuntimePassword,
-    authPassword:
-      process.env['NOTESAPP_AUTH_DATABASE_PASSWORD'] ?? testAuthPassword,
+    runtimePassword: testRuntimePassword,
+    authPassword: testAuthPassword,
   });
   const runtimeUrl = withCredentials(
     migrationUrl,
     runtimeRole,
-    process.env['NOTESAPP_RUNTIME_PASSWORD'] ?? testRuntimePassword,
+    testRuntimePassword,
   );
   // The measured closures below run after the assignment, so they read this
   // constant. The outer `store` stays for the `finally` that closes it.

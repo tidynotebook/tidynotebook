@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { touchFieldText } from '@notesapp/ui';
 import {
   noteNameFieldClassName,
   noteNameFieldContainer,
@@ -16,7 +15,7 @@ await test('the rendered text sets the width and leaves room for the caret', () 
   assert.ok(noteNameFieldMeasure.includes(noteNameFieldText));
   const measure = noteNameFieldMeasure.split(' ');
   assert.ok(measure.includes('whitespace-pre'));
-  assert.ok(measure.includes('border-r'));
+  assert.ok(measure.includes('border'));
   assert.ok(measure.includes('invisible'));
   // The input fills the span without contributing its native preferred width.
   assert.ok(input.split(' ').includes('absolute'));
@@ -37,10 +36,10 @@ await test('a long name stops at the width the header can hold', () => {
 await test('the name field reads as the last part of the breadcrumb', () => {
   const classes = noteNameFieldClassName().split(' ');
   // Decision 0069. The breadcrumb draws the part a route names in the body
-  // step of the chrome, the medium weight and the strong ink, so the field
+  // step of the chrome and the strong ink. The editable field uses body weight, so it
   // that replaces that part takes the same three.
-  assert.ok(classes.includes('text-ui'));
-  assert.ok(classes.includes('font-medium'));
+  assert.ok(classes.includes('text-body'));
+  assert.ok(!classes.includes('font-medium'));
   assert.ok(classes.includes('text-strong'));
   // It is no longer the largest text of the note screen, so it takes no
   // title step and no display tracking.
@@ -48,16 +47,14 @@ await test('the name field reads as the last part of the breadcrumb', () => {
   assert.ok(!classes.includes('tracking-display'));
 });
 
-await test('the name field carries no box and no line in any state', () => {
+await test('the name stays quiet at rest and shows its field edge while editing', () => {
   const classes = noteNameFieldClassName().split(' ');
-  // A name, not a form field: nothing frames it at rest, under the pointer
-  // or while a person types. The pointer gets the hover fill and the keyboard
-  // gets the one focus treatment of the product.
-  assert.ok(classes.includes('border-0'));
-  assert.ok(!classes.some((name) => name.startsWith('border-b')));
+  // The transparent border preserves the text position when editing starts.
+  assert.ok(classes.includes('border'));
+  assert.ok(classes.includes('border-transparent'));
+  assert.ok(classes.includes('focus:border-focus'));
   assert.ok(classes.includes('bg-transparent'));
   assert.ok(classes.includes('hover:bg-hover'));
-  assert.ok(!classes.some((name) => name.startsWith('focus:')));
   assert.ok(classes.includes('focus-visible:outline-2'));
   assert.ok(classes.includes('focus-visible:outline-focus'));
 });
@@ -72,5 +69,5 @@ await test('the name field has equal padding on both sides', () => {
 await test('the name field sets its text at 16 px under touch', () => {
   // Safari on iOS zoomed the page into the name field on a tap, because its
   // text was under 16 px, and the zoom hid the rest of the header.
-  assert.ok(noteNameFieldClassName().split(' ').includes(touchFieldText));
+  assert.ok(noteNameFieldClassName().split(' ').includes('text-body'));
 });

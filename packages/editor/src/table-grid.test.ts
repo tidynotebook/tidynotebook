@@ -9,18 +9,30 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   EditorSelection,
+  StateEffect,
   EditorState,
   type TransactionSpec,
 } from '@codemirror/state';
+import {
+  history,
+  undoDepth,
+  redoDepth,
+  undo,
+  redo,
+} from '@codemirror/commands';
+import { BlockWrapper } from '@codemirror/view';
 import { formatContextOf } from './format-context.ts';
 import { noteMarkdownExtensions, parsedWhole } from './language.ts';
 import {
+  type TableData,
+  type TableEdit,
   moveColumnEdit,
   moveRowEdit,
   alignColumnEdit,
   insertColumnLeftEdit,
   insertRowAboveEdit,
   addColumnEdit,
+  addRowEdit,
   appendColumnEdit,
   appendRowEdit,
   cellAboveEdit,
@@ -28,11 +40,14 @@ import {
   cellText,
   pastedCells,
   gridParts,
+  measurableRange,
+  tableColumnWidths,
   nextCellEdit,
   previousCellEdit,
   removeColumnEdit,
   removeRowEdit,
   tableAt,
+  tablesIn,
   tableData,
   tableEditSpec,
   tableGridEditing,
@@ -203,11 +218,15 @@ await test('the header row and the last column cannot be removed', () => {
   assert.equal(tableEditSpec(one, removeColumnEdit), null);
 });
 
-await test('a command writes a messy table aligned', () => {
+await test('navigation keeps source and a table edit aligns it', () => {
   const state = stateOf('|a|bb|\n|-|-|\n|1‸|2|');
   assert.equal(
     applied(state, tableEditSpec(state, cellAboveEdit)),
-    '| a‸   | bb  |\n| --- | --- |\n| 1   | 2   |',
+    '|a‸|bb|\n|-|-|\n|1|2|',
+  );
+  assert.equal(
+    applied(state, tableEditSpec(state, alignColumnEdit('right'))),
+    '| a   | bb  |\n| --: | --- |\n| 1‸   | 2   |',
   );
 });
 
@@ -752,4 +771,524 @@ await test('an add bar adds a row or a column at the end, from any cell', () => 
     applied(inBody, tableEditSpec(inBody, appendColumnEdit)),
     '| a   | b   | ‸    |\n| --- | --- | --- |\n| 1   | 2   |     |',
   );
+});
+
+await test('empty cells without padding keep their column in the table model', () => {
+  const state = stateOf('| a | b | c |\n| --- | --- | --- |\n|x||z|‸');
+  const table = tableAt(state, 1);
+  assert.ok(table);
+  assert.deepEqual(tableData(state, table).body, [['x', '', 'z']]);
+});
+
+await test('column tracks include the full large table and change only with text', () => {
+  const source =
+    '| Date | Value |\n| --- | --- |\n' +
+    '| short | 1 |\n'.repeat(2000) +
+    '| longestwordinthetable | 2 |';
+  const state = stateOf(source + '‸');
+  const table = tableAt(state, 1);
+  assert.ok(table);
+  const tracks = tableColumnWidths(state, table, (text) => text.length);
+  const offscreen = tableAt(state, source.length - 2);
+  assert.ok(offscreen);
+  assert.deepEqual(
+    tableColumnWidths(state, offscreen, (text) => text.length),
+    tracks,
+  );
+  assert.deepEqual(tracks, [21, 5]);
+  // This model check needs the edited table, independent of the view parse budget.
+  const edited = parsedWhole(
+    state.update({
+      changes: {
+        from: source.indexOf('longestwordinthetable'),
+        to: source.indexOf('longestwordinthetable') + 21,
+        insert: 'x',
+      },
+    }).state,
+  );
+  const changed = tableAt(edited, 1);
+  assert.ok(changed);
+  assert.notDeepEqual(
+    tableColumnWidths(edited, changed, (text) => text.length),
+    tracks,
+  );
+});
+
+await test('the first viewport sizes a table from its last row before background parsing', () => {
+  const doc =
+    '| Date | Value |\n| --- | --- |\n' +
+    '| short | 1 |\n'.repeat(2000) +
+    '| longestwordinthetable | 2 |\n\nAfter';
+  const state = EditorState.create({
+    doc,
+    extensions: noteMarkdownExtensions({ headless: true }),
+  });
+  const table = tablesIn(state, 0, 100)[0];
+  assert.ok(table);
+  assert.equal(table.rows.length, 2003);
+  assert.deepEqual(
+    tableColumnWidths(state, table, (text) => text.length),
+    [21, 5],
+  );
+});
+
+await test('measurement excludes source padding and preserves interior spaces', () => {
+  const state = stateOf('| H | Count |\n| --- | --- |\n| a  b | 1 |‸');
+  const table = tableAt(state, 1);
+  assert.ok(table);
+  const measured: string[] = [];
+  assert.deepEqual(
+    tableColumnWidths(state, table, (text) => {
+      measured.push(text);
+      return text.length;
+    }),
+    [4, 5],
+  );
+  assert.ok(measured.includes('a  b'));
+  assert.ok(!measured.includes(' a  b '));
+});
+
+await test('new and inserted columns have fallback tracks before measurement', () => {
+  for (const edit of [insertColumnLeftEdit, addColumnEdit, appendColumnEdit]) {
+    const state = stateOf('| A | B |\n| --- | --- |\n| x | y |‸');
+    const spec = tableEditSpec(state, edit, 2);
+    assert.ok(spec);
+    const updated = state.update(spec).state;
+    const table = tablesIn(updated, 0, updated.doc.length)[0];
+    assert.ok(table);
+    const parts = gridParts(
+      updated,
+      [{ from: 0, to: updated.doc.length }],
+      new Map([[table.from, { columns: 2, tracks: '1px 1px', rules: 'none' }]]),
+    );
+    const wrappers = parts.wrappers.iter();
+    assert.ok(wrappers.value);
+    assert.ok(
+      wrappers.value.eq(
+        BlockWrapper.create({
+          tagName: 'div',
+          attributes: {
+            class: 'cm-np-table',
+            style:
+              '--notes-table-columns: repeat(3, var(--container-table-cell-min)); --notes-table-rules: none',
+          },
+        }),
+      ),
+    );
+  }
+});
+
+await test('cell navigation preserves unformatted long table source', () => {
+  const doc =
+    '| A | B |\n| --- | --- |\n' +
+    '| short | x |\n'.repeat(300) +
+    '| ' +
+    'token'.repeat(100) +
+    ' | y |';
+  const state = stateOf(doc + '‸');
+  const table = tablesIn(state, 0, state.doc.length)[0];
+  assert.ok(table);
+  const first = table.rows[0]?.cells[0];
+  assert.ok(first);
+  const spec = tableEditSpec(state, nextCellEdit, first.textFrom);
+  assert.ok(spec);
+  const transaction = state.update(spec);
+  assert.equal(transaction.docChanged, false);
+  assert.equal(transaction.state.doc.toString(), doc);
+  assert.equal(
+    transaction.state.sliceDoc(
+      transaction.state.selection.main.from,
+      transaction.state.selection.main.to,
+    ),
+    'B',
+  );
+  let moved = transaction.state;
+  for (const edit of [
+    ...Array.from({ length: 100 }, () => nextCellEdit),
+    ...Array.from({ length: 100 }, () => previousCellEdit),
+  ]) {
+    const step = tableEditSpec(moved, edit);
+    assert.ok(step);
+    const next = moved.update(step);
+    assert.equal(next.docChanged, false);
+    moved = next.state;
+  }
+  assert.equal(moved.doc.toString(), doc);
+  assert.equal(
+    moved.sliceDoc(moved.selection.main.from, moved.selection.main.to),
+    'B',
+  );
+});
+
+await test('navigation preserves recent input and its document undo history', () => {
+  let state = stateOf(
+    '| A | B |\n| --- | --- |\n| one‸ | two |\n| three | four |',
+    true,
+  );
+  state = state.update({
+    effects: StateEffect.appendConfig.of(history()),
+  }).state;
+  const original = state.doc.toString();
+  state = state.update({
+    changes: { from: state.selection.main.head, insert: ' typed' },
+    userEvent: 'input.type',
+  }).state;
+  state = state.update({
+    changes: { from: state.selection.main.head, insert: ' pasted' },
+    userEvent: 'input.paste',
+  }).state;
+  const bytes = state.doc.toString();
+  const depth = undoDepth(state);
+  const redo = redoDepth(state);
+  assert.ok(depth > 0);
+  for (const edit of [
+    nextCellEdit,
+    nextCellEdit,
+    previousCellEdit,
+    cellAboveEdit,
+    cellBelowEdit,
+  ]) {
+    const spec = tableEditSpec(state, edit);
+    assert.ok(spec);
+    const transaction = state.update(spec);
+    assert.equal(transaction.docChanged, false);
+    state = transaction.state;
+    assert.equal(state.doc.toString(), bytes);
+    assert.equal(undoDepth(state), depth);
+    assert.equal(redoDepth(state), redo);
+  }
+  while (undoDepth(state) > 0)
+    assert.ok(
+      undo({
+        state,
+        dispatch: (transaction) => {
+          state = transaction.state;
+        },
+      }),
+    );
+  assert.equal(state.doc.toString(), original);
+});
+
+await test('navigation selects source across row boundaries and inline syntax', () => {
+  const values = [
+    'a\\|b',
+    '`code`',
+    '**bold**',
+    '日本語 👩🏽‍🚀',
+    '',
+    '[link](https://example.test)',
+  ];
+  let state = stateOf(
+    '| A‸ | B | C |\n| --- | --- | --- |\n| ' +
+      values.slice(0, 3).join(' | ') +
+      ' |\n| ' +
+      values.slice(3).join(' | ') +
+      ' |',
+  );
+  const bytes = state.doc.toString();
+  const selected = [];
+  for (let i = 0; i < 8; i++) {
+    const spec = tableEditSpec(state, nextCellEdit);
+    assert.ok(spec);
+    const transaction = state.update(spec);
+    assert.equal(transaction.docChanged, false);
+    state = transaction.state;
+    selected.push(
+      state.sliceDoc(state.selection.main.from, state.selection.main.to),
+    );
+    assert.equal(state.doc.toString(), bytes);
+  }
+  assert.deepEqual(selected, ['B', 'C', ...values]);
+  for (let i = 0; i < 8; i++) {
+    const spec = tableEditSpec(state, previousCellEdit);
+    assert.ok(spec);
+    const transaction = state.update(spec);
+    assert.equal(transaction.docChanged, false);
+    state = transaction.state;
+  }
+  assert.equal(
+    state.sliceDoc(state.selection.main.from, state.selection.main.to),
+    'A',
+  );
+  assert.equal(state.doc.toString(), bytes);
+});
+
+await test('navigation materializes missing and zero-length cells with the writer', () => {
+  for (const row of ['| x |', '| x ||']) {
+    const state = stateOf(
+      '| A | B |\n| --- | --- |\n' + row.replace('x', 'x‸'),
+    );
+    const spec = tableEditSpec(state, nextCellEdit);
+    assert.ok(spec);
+    const transaction = state.update(spec);
+    assert.equal(transaction.docChanged, true);
+    const table = tablesIn(
+      transaction.state,
+      0,
+      transaction.state.doc.length,
+    )[0];
+    assert.ok(table);
+    const cell = table.rows[2]?.cells[1];
+    assert.ok(cell && cell.to > cell.from);
+    assert.equal(transaction.state.selection.main.head, cell.textTo);
+  }
+});
+
+await test('a one-space empty cell keeps its caret inside its text mark', () => {
+  const state = stateOf('| A | B |\n| --- | --- |\n| x‸ | |');
+  const spec = tableEditSpec(state, nextCellEdit);
+  assert.ok(spec);
+  const transaction = state.update(spec);
+  assert.equal(transaction.docChanged, false);
+  const table = tablesIn(transaction.state, 0, transaction.state.doc.length)[0];
+  const cell = table?.rows[2]?.cells[1];
+  assert.ok(cell);
+  assert.equal(transaction.state.selection.main.head, cell.from);
+  assert.ok(cell.textFrom < cell.to);
+});
+
+await test('long-table last-row creation preserves cells and exact serializer output', () => {
+  const source =
+    'Before\n\n| Text | Value | Empty |\n| --- | --- | --- |\n' +
+    Array.from(
+      { length: 300 },
+      (_, row) =>
+        '| ' +
+        (row === 299 ? 'token'.repeat(100) : 'same prose') +
+        ' | ' +
+        row +
+        ' | |',
+    ).join('\n') +
+    '\n\nAfter';
+  let state = stateOf(source + '‸');
+  state = state.update({
+    effects: StateEffect.appendConfig.of(history()),
+  }).state;
+  const table = tablesIn(state, 0, state.doc.length)[0];
+  assert.ok(table);
+  const cell = table.rows.at(-1)?.cells[2];
+  assert.ok(cell);
+  const data = tableData(state, table);
+  const expected = writeTable({
+    ...data,
+    body: [...data.body, data.alignments.map(() => '')],
+  });
+  const spec = tableEditSpec(state, nextCellEdit, cell.textFrom);
+  assert.ok(spec);
+  const transaction = state.update({ ...spec, userEvent: 'input.format' });
+  const output =
+    source.slice(0, table.from) + expected.text + source.slice(table.to);
+  assert.equal(transaction.state.doc.toString(), output);
+  assert.equal(
+    transaction.state.selection.main.head,
+    table.from + expected.cell({ row: 301, column: 0 }).to,
+  );
+  transaction.changes.iterChangedRanges((from, to) => {
+    assert.ok(from >= table.from && to <= table.to);
+    for (const row of table.rows.filter((row) => row.kind !== 'delimiter'))
+      for (const cell of row.cells)
+        if (cell.textFrom < cell.textTo)
+          assert.ok(
+            to <= cell.textFrom || from >= cell.textTo,
+            'Kept cell text must not be replaced.',
+          );
+  });
+  state = transaction.state;
+  assert.ok(
+    undo({
+      state,
+      dispatch: (transaction) => {
+        state = transaction.state;
+      },
+    }),
+  );
+  assert.equal(state.doc.toString(), source);
+  assert.ok(
+    redo({
+      state,
+      dispatch: (transaction) => {
+        state = transaction.state;
+      },
+    }),
+  );
+  assert.equal(state.doc.toString(), output);
+});
+
+await test('structural table edits match serialization with repeated and inline content', () => {
+  const values = [
+    'same',
+    'same',
+    '',
+    ' a  b ',
+    'a\\|b',
+    '**bold** `code`',
+    '日本語 👩🏽‍🚀',
+    '[link](https://example.test)',
+  ];
+  const edits: readonly TableEdit[] = [
+    addRowEdit,
+    insertRowAboveEdit,
+    removeRowEdit,
+    addColumnEdit,
+    insertColumnLeftEdit,
+    removeColumnEdit,
+    moveRowEdit(0),
+    moveColumnEdit(0),
+    alignColumnEdit('right'),
+  ];
+  for (const count of [1, 3, 130])
+    for (const columns of [2, 7]) {
+      const data: TableData = {
+        lead: '',
+        alignments: Array.from({ length: columns }, () => null),
+        header: Array.from(
+          { length: columns },
+          (_, index) => values[index % values.length] ?? '',
+        ),
+        body: Array.from({ length: count }, (_, row) =>
+          Array.from(
+            { length: columns },
+            (_, column) => values[(row + column) % values.length] ?? '',
+          ),
+        ),
+      };
+      const original = writeTable(data).text;
+      const state = stateOf('Before\n\n' + original + '\n\nAfter‸');
+      const table = tablesIn(state, 0, state.doc.length)[0];
+      assert.ok(table);
+      const parsed = tableData(state, table);
+      const at = { row: Math.min(2, count), column: 1 };
+      const cell = table.rows[at.row + 1]?.cells[at.column];
+      assert.ok(cell);
+      for (const edit of edits) {
+        const result = edit(parsed, at);
+        if (result === null) continue;
+        const spec = tableEditSpec(state, edit, cell.textFrom);
+        assert.ok(spec);
+        const transaction = state.update(spec);
+        const expected = writeTable(result.data);
+        assert.equal(
+          transaction.state.doc.toString(),
+          'Before\n\n' + expected.text + '\n\nAfter',
+        );
+        assert.equal(
+          transaction.state.selection.main.head,
+          table.from + expected.cell(result.target).to,
+        );
+      }
+    }
+});
+
+await test('capped table diff fallback retains exact large changed-cell text', () => {
+  const before: TableData = {
+    lead: '',
+    alignments: [null, null],
+    header: ['A', 'B'],
+    body: Array.from({ length: 130 }, () => ['a'.repeat(300), '👩🏽‍🚀'.repeat(60)]),
+  };
+  const after: TableData = {
+    ...before,
+    body: Array.from({ length: 130 }, () => ['b'.repeat(300), '👨🏽‍🚀'.repeat(60)]),
+  };
+  const state = stateOf(writeTable(before).text + '‸');
+  const spec = tableEditSpec(
+    state,
+    () => ({ data: after, target: { row: 130, column: 1 }, select: 'end' }),
+    2,
+  );
+  assert.ok(spec);
+  const transaction = state.update(spec);
+  const expected = writeTable(after);
+  assert.equal(transaction.state.doc.toString(), expected.text);
+  assert.equal(
+    transaction.state.selection.main.head,
+    expected.cell({ row: 130, column: 1 }).to,
+  );
+});
+
+await test('a scroll target moves off hidden table syntax to the text beside it', () => {
+  // Each mark stands where a range ends; the table has a leading and a
+  // trailing pipe, an empty cell, a header and a body row.
+  const doc =
+    'Intro\n\n| Head A | Head B |\n| --- | --- |\n| one | |\n| two | three |\n\nEnd';
+  const state = parsedWhole(
+    EditorState.create({
+      doc,
+      extensions: [noteMarkdownExtensions({ headless: true })],
+    }),
+  );
+  const at = (text: string, offset = 0) => doc.indexOf(text) + offset;
+  const target = (anchor: number, head: number) => {
+    const range = measurableRange(state, EditorSelection.range(anchor, head));
+    return [range.anchor, range.head];
+  };
+  const caret = (pos: number) => {
+    const range = measurableRange(state, EditorSelection.cursor(pos));
+    assert.equal(range.empty, true, 'an empty range stays empty');
+    return range.head;
+  };
+  // Text inside a cell, and text outside the table, stay.
+  assert.deepEqual(target(at('wo'), at('wo', 2)), [at('wo'), at('wo', 2)]);
+  assert.equal(caret(at('Intro', 2)), at('Intro', 2));
+  // Trailing pipe: the end of the text before it.
+  const afterThree = at('three |', 7);
+  assert.equal(caret(afterThree), at('three', 5));
+  // Internal pipe, forward and backward: each end moves inward, and the
+  // direction stays.
+  assert.deepEqual(target(at('two'), at('two |', 5)), [
+    at('two'),
+    at('two', 3),
+  ]);
+  assert.deepEqual(target(at('two |', 5), at('two')), [
+    at('two', 3),
+    at('two'),
+  ]);
+  // Leading pipe as the start of a range: the start of the text after it.
+  const rowStart = at('| two');
+  assert.deepEqual(target(rowStart, at('two', 3)), [at('two'), at('two', 3)]);
+  // A range that covers a pipe alone becomes the caret before it.
+  const pipe = at('two |', 4);
+  assert.deepEqual(target(pipe, pipe + 1), [at('two', 3), at('two', 3)]);
+  // An empty cell holds no text and is passed over: the end of "one".
+  const emptyCell = at('one | |', 7);
+  assert.equal(caret(emptyCell), at('one', 3));
+  // The delimiter row: the last text of the header before it, or the first
+  // text of the body after it.
+  const delimiter = at('| --- |', 3);
+  assert.equal(caret(delimiter), at('Head B', 6));
+  assert.deepEqual(target(delimiter, at('one', 3)), [at('one'), at('one', 3)]);
+  // A header cell keeps its text.
+  assert.equal(caret(at('Head A', 2)), at('Head A', 2));
+});
+
+await test('a row with no text gives the point of an empty cell', () => {
+  const doc = '|  |  |\n| --- | --- |\n| a | b |\n|  |  |\n| c | d |';
+  const state = parsedWhole(
+    EditorState.create({
+      doc,
+      extensions: [noteMarkdownExtensions({ headless: true })],
+    }),
+  );
+  const table = tableAt(state, 0);
+  assert.ok(table !== null);
+  const [header, , , empty] = table.rows;
+  assert.ok(header !== undefined && empty !== undefined);
+  const first = (row: typeof header) => row.cells[0]?.textFrom ?? -1;
+  const last = (row: typeof header) => row.cells.at(-1)?.textFrom ?? -1;
+  const caret = (pos: number) =>
+    measurableRange(state, EditorSelection.cursor(pos)).head;
+  // The point of an empty cell stays.
+  assert.equal(caret(first(header)), first(header));
+  // The pipe at the start of an empty row: the point of its last empty cell,
+  // backward, for a caret.
+  assert.equal(caret(empty.lineFrom), last(empty));
+  // A whole empty row as a range: its first and last empty cells.
+  const range = measurableRange(
+    state,
+    EditorSelection.range(empty.lineFrom, empty.to),
+  );
+  assert.deepEqual([range.anchor, range.head], [first(empty), last(empty)]);
+  // The delimiter row after an empty header: the point of its last cell.
+  const delimiter = doc.indexOf('| --- |') + 3;
+  assert.equal(caret(delimiter), last(header));
 });

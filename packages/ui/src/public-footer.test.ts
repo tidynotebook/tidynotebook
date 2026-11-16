@@ -18,6 +18,9 @@ await test('static and React footers use one structure and the approved links', 
   // React adds an image preload. The footer itself is identical.
   const react = renderToStaticMarkup(createElement(PublicFooter, options));
   assert.equal(react.slice(react.indexOf('<footer')), html);
+  const linkText = [...html.matchAll(/<a\b[^>]*>([\s\S]*?)<\/a>/g)].map(
+    (match) => match[1]?.replaceAll(/<[^>]+>/g, ''),
+  );
   for (const label of [
     'Features',
     'Pricing',
@@ -33,7 +36,7 @@ await test('static and React footers use one structure and the approved links', 
     'Refunds',
     'Fair use',
   ])
-    assert.ok(html.includes(`>${label}</`), label);
+    assert.ok(linkText.includes(label), label);
   assert.equal((html.match(/<footer/g) ?? []).length, 1);
   assert.ok(
     html.includes('Open source. Write in Markdown. Export your notes.'),
@@ -138,9 +141,9 @@ await test('the default and operator footers have no cloud product or support de
 await test('every column takes its accessible name from its heading', () => {
   const html = renderPublicFooter();
   assert.doesNotMatch(html, /aria-label=/);
-  const labels = [...html.matchAll(/<nav aria-labelledby="([^"]+)">/g)];
+  const labels = [...html.matchAll(/<nav aria-labelledby="([^"]+)"[^>]*>/g)];
   assert.equal(labels.length, 3);
-  for (const label of labels) assert.ok(html.includes(`<h2 id="${label[1]}">`));
+  for (const label of labels) assert.ok(html.includes(`<h2 id="${label[1]}"`));
 });
 
 await test('both renderers reject unsafe URL schemes in links, the brand, and the icon', () => {
@@ -183,4 +186,11 @@ await test('both renderers reject unsafe URL schemes in links, the brand, and th
         columns: [{ title: 'Legal', links: [{ label: 'Terms', href }] }],
       }).includes(`href="${href}"`),
     );
+});
+
+await test('the sign-in page can omit its own route without an empty column', () => {
+  const columns = installationFooterColumns([], { signIn: null });
+  assert.ok(!columns.some((column) => column.title === 'Product'));
+  assert.ok(columns.every((column) => column.links.length > 0));
+  assert.ok(!renderPublicFooter({ columns }).includes('>Sign in</a>'));
 });

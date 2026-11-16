@@ -267,22 +267,24 @@ await test('a page under the note list adds no part of its own', () => {
 await test('every page but All notes names the page above it', () => {
   // Record 0138. One back control on every page, and none on the top.
   for (const page of framePages)
-    assert.equal(pageParents[page] === null, page === 'notes', page);
+    assert.equal(
+      pageParents[page] === null,
+      ['notes', 'trash', 'published'].includes(page),
+      page,
+    );
   assert.equal(backTarget('notes', 'w1', null), null);
   assert.equal(backTarget(null, 'w1', null), null);
 });
 
 await test('a page goes back to the page above it', () => {
-  assert.deepEqual(backTarget('trash', 'w1', null), {
-    to: '/w/w1',
-    label: 'Back to your notes',
-  });
+  assert.equal(backTarget('trash', 'w1', null), null);
+  assert.equal(backTarget('published', 'w1', null), null);
   assert.deepEqual(backTarget('settings', 'w1', null), {
     to: '/w/w1',
     label: 'Back to your notes',
   });
   assert.deepEqual(backTarget('accounts', 'w1', null), {
-    to: '/w/w1/settings',
+    to: '/w/w1?settings=account',
     label: 'Back to Settings',
   });
   assert.deepEqual(backTarget('history', 'w1', 'f1'), {
@@ -304,12 +306,15 @@ await test('a page under a note with no note goes back to the note list', () => 
 
 await test('Accounts reads as a part of Settings in the breadcrumb', () => {
   const parent = parentPartOf('accounts', context());
-  assert.deepEqual(parent, { label: 'Settings', to: '/w/w1/settings' });
+  assert.deepEqual(parent, {
+    label: 'Settings',
+    to: '/w/w1?settings=account',
+  });
   assert.deepEqual(
     breadcrumbParts(route({ leaf: leafOf('accounts', null), parent })),
     [
       { label: 'Personal', to: '/w/w1', folder: '' },
-      { label: 'Settings', to: '/w/w1/settings', folder: null },
+      { label: 'Settings', to: '/w/w1?settings=account', folder: null },
     ],
   );
 });

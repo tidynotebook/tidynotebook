@@ -331,6 +331,13 @@ export function shiftAwayFrom(
  */
 export const derivedPropertyNames = [
   'borderLine',
+  'surfaceOverlay',
+  'cardRaised',
+  'borderOverlay',
+  'overlayHover',
+  'overlaySelected',
+  'cardRaisedHover',
+  'cardRaisedSelected',
   'accentFillHover',
   'dangerFillHover',
   'accentSurface',
@@ -396,6 +403,13 @@ export function syntaxPropertyName(name: SyntaxPropertyName): string {
 /** The stylesheet custom property of each derived name. */
 const derivedProperties: Readonly<Record<DerivedPropertyName, string>> = {
   borderLine: '--notes-border-line',
+  surfaceOverlay: '--notes-surface-overlay',
+  cardRaised: '--notes-card-raised',
+  borderOverlay: '--notes-border-overlay',
+  overlayHover: '--notes-overlay-hover',
+  overlaySelected: '--notes-overlay-selected',
+  cardRaisedHover: '--notes-card-raised-hover',
+  cardRaisedSelected: '--notes-card-raised-selected',
   accentFillHover: '--notes-accent-fill-hover',
   dangerFillHover: '--notes-danger-fill-hover',
   accentSurface: '--notes-accent-surface',
@@ -458,6 +472,19 @@ export function mixHexColors(
 const derivedValues: Readonly<
   Record<DerivedPropertyName, (tokens: ThemeTokens) => string>
 > = {
+  overlayHover: (tokens) => surfaceState(tokens, overlaySurface(tokens), 1.22),
+  overlaySelected: (tokens) =>
+    surfaceState(tokens, overlaySurface(tokens), 1.35),
+  cardRaisedHover: (tokens) =>
+    surfaceState(tokens, raisedSurface(tokens), 1.22),
+  cardRaisedSelected: (tokens) =>
+    surfaceState(tokens, raisedSurface(tokens), 1.35),
+  surfaceOverlay: overlaySurface,
+  cardRaised: raisedSurface,
+  borderOverlay: (tokens) =>
+    relativeLuminance(tokens.surfaceCard) < relativeLuminance(tokens.textStrong)
+      ? (mixHexColors(tokens.border, tokens.surfaceCard, 0.26) ?? tokens.border)
+      : tokens.borderSubtle,
   borderLine: (tokens) =>
     mixHexColors(tokens.border, tokens.background, dividerBlend) ??
     tokens.borderSubtle,
@@ -478,6 +505,54 @@ const derivedValues: Readonly<
     tokens.background,
 };
 
+/** State fills are computed from their own surface for every palette. */
+function raisedSurface(tokens: ThemeTokens): string {
+  return (
+    mixHexColors(tokens.textStrong, tokens.surfaceCard, 0.03) ??
+    tokens.surfaceCard
+  );
+}
+function surfaceState(
+  tokens: ThemeTokens,
+  surface: string,
+  minimum: number,
+): string {
+  const extreme = relativeLuminance(surface) < 0.5 ? 1 : 0;
+  const target = `#${channelHex(extreme).repeat(3)}`;
+  for (let step = 1; step <= 100; step += 1) {
+    const fill = mixHexColors(target, surface, step / 100) ?? surface;
+    if (contrastRatio(fill, surface) >= minimum) return fill;
+  }
+  return tokens.surfaceActive;
+}
+
+/** Raise a dark overlay while retaining readable text in imported palettes. */
+function overlaySurface(tokens: ThemeTokens): string {
+  if (
+    relativeLuminance(tokens.surfaceCard) >=
+    relativeLuminance(tokens.textStrong)
+  )
+    return tokens.surfaceCard;
+  for (let fraction = 0.04; fraction > 0; fraction -= 0.005) {
+    const surface = mixHexColors(
+      tokens.textStrong,
+      tokens.surfaceCard,
+      fraction,
+    );
+    if (
+      surface &&
+      [
+        tokens.textStrong,
+        tokens.textMuted,
+        tokens.accentText,
+        tokens.dangerText,
+      ].every((text) => contrastRatio(text, surface) >= 4.5)
+    )
+      return surface;
+  }
+  return tokens.surfaceCard;
+}
+
 /** Computes one derived value from the tokens of a palette. */
 export function derivedValue(
   tokens: ThemeTokens,
@@ -494,9 +569,17 @@ export function themeProperties(
   for (const name of themePropertyNames)
     pairs.push([themePropertyName(name), theme.tokens[name]]);
   for (const name of derivedPropertyNames)
-    pairs.push([derivedPropertyName(name), derivedValue(theme.tokens, name)]);
+    if (
+      name !== 'surfaceOverlay' &&
+      name !== 'cardRaised' &&
+      name !== 'borderOverlay'
+    )
+      pairs.push([derivedPropertyName(name), derivedValue(theme.tokens, name)]);
   for (const name of syntaxPropertyNames)
     pairs.push([syntaxPropertyName(name), theme.syntax[name]]);
+  // Append new values so a cached imported palette keeps its existing order.
+  for (const name of ['surfaceOverlay', 'cardRaised', 'borderOverlay'] as const)
+    pairs.push([derivedPropertyName(name), derivedValue(theme.tokens, name)]);
   return pairs;
 }
 

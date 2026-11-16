@@ -1,3 +1,5 @@
+import { PublishDialog } from '../publishing/publish-dialog-entry.tsx';
+import { MoveItemsDialog } from '../folders/folders.tsx';
 /**
  * The actions of the note route, in the frame header.
  *
@@ -20,6 +22,7 @@
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import { buttonClassName, Menu, MoreIcon, type MenuItem } from '@notesapp/ui';
+import { SaveProblemControl } from './save-problem.tsx';
 import { actionIcon } from '../../shell/action-icons.tsx';
 import { HeaderActions } from '../../shell/header-slot.tsx';
 import {
@@ -31,6 +34,7 @@ import {
 /** What the open note can do, as the header offers it. */
 export type NoteHeaderActionsProps = {
   readonly workspaceId: string;
+  readonly onCopyText: () => void;
   readonly fileId: string;
   /** Moves the caret into the note name, so the person can write a new one. */
   readonly onRename: () => void;
@@ -50,7 +54,7 @@ export type NoteHeaderActionsProps = {
  */
 const noteMenuTriggerClassName = buttonClassName({
   variant: 'ghost',
-  size: 'sm',
+  size: 'compact',
   iconOnly: true,
   compact: true,
   className: 'shrink-0',
@@ -61,6 +65,7 @@ export function NoteHeaderActions({
   workspaceId,
   fileId,
   onRename,
+  onCopyText,
   onMoveToFolder,
   onDuplicate,
   onAttachImage,
@@ -100,6 +105,12 @@ export function NoteHeaderActions({
             id: row.id,
             label: row.label,
             icon: actionIcon(row.icon),
+            onIntent: () => {
+              if (row.id === 'publish') void PublishDialog.preload();
+              if (row.id === 'move') void MoveItemsDialog.preload();
+              if (row.id === 'history')
+                void import('../history/history.tsx').catch(() => {});
+            },
             onSelect,
           },
         ];
@@ -107,6 +118,7 @@ export function NoteHeaderActions({
 
   return (
     <HeaderActions>
+      <SaveProblemControl workspaceId={workspaceId} onCopyText={onCopyText} />
       {/*
         Move to Trash is the one row that destroys something, so it takes the
         danger tone of the row recipe and stands in the pinned region under

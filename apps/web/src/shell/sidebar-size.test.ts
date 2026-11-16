@@ -50,7 +50,7 @@ await test('an arrow key moves one step and stops at each end', () => {
 await test('a collapsed sidebar leaves the content the whole frame', () => {
   assert.equal(
     sidebarInsetClass({ step: 'widest', collapsed: true }),
-    'md:pl-0',
+    'md:grid-cols-1',
   );
 });
 

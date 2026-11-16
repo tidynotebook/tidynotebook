@@ -3,11 +3,11 @@
  *
  * The note screen publishes what the frame shows about the open note through
  * `NoteSaveScope`: a failed local write and the time of the last version. The
- * note saves itself, so no control reports the result; the note states a
+ * note also publishes whether its current work is pending. The note states a
  * failed local write itself (`lib/local-write.ts`). The scope holds one
  * store, so the context never changes and a reader renders only when the
- * fact it selects changes. A key changes no such fact (record 0175). The note
- * screen keeps `data-save-state` on its root, so automation reads the note
+ * fact it selects changes. Only the first key marks pending work (record
+ * 0175). The note screen keeps `data-save-state` on its root, so automation reads the note
  * state without reading copy and only one element carries it.
  */
 import {

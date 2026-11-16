@@ -20,14 +20,14 @@ and **Sign out**.
 To choose one setting directly:
 
 1. Open the account menu and select **Settings**.
-2. In the **Appearance** section, select **System**, **Light** or **Dark**.
-   **System** follows your device.
+2. In **Appearance and editor**, under **Mode**, select the **System**,
+   **Light** or **Dark** card. **System** follows your device.
 
 ## Change the theme
 
 1. Open the account menu and select **Settings**.
-2. In the **Appearance** section, select a theme under **Theme**. Each theme
-   has a swatch that shows how it looks in your current light or dark choice.
+2. In **Appearance and editor**, select a theme card under **Theme**. Each
+   card shows how the theme looks in your current light or dark choice.
 
 A theme can have a light version and a dark version. Your light or dark choice
 keeps the same theme.
@@ -40,19 +40,22 @@ To use colours of your own, import a theme file. See
 
 ## Choose what to keep on the device
 
-The **Available offline** section of **Settings** decides what the application
-keeps on this device besides the note text, which it always keeps. Two check
-boxes control images and older versions. Both use more space, so turn them off
-on a device with little room. See [Settings](settings.md#available-offline).
+The **Offline** page of **Settings** decides what the application
+keeps on this device besides the note text, which it always keeps. The **Images** and **Older versions** switches control these choices. Both use more space, so turn them off
+on a device with little room. See [Settings](settings.md#offline).
 
 ## Use keyboard shortcuts
 
 To see every shortcut:
 
-1. Open the account menu and select **Keyboard shortcuts**. You can also open
-   the command palette and select **Show keyboard shortcuts**.
+1. Press **Cmd + /** on Mac, or **Ctrl + /** on Windows and Linux. You can also
+   select **Keyboard shortcuts** in the account menu, or **Show keyboard
+   shortcuts** in the command palette.
 2. Read the list. It shows every key combination and what it does, for Windows
    and for Mac keyboards.
+
+Press **Escape** to close the list and return to your work. The shortcut
+does not open another modal while a modal is open.
 
 The list comes from the same table that the application uses for its keys, so
 it is always current.

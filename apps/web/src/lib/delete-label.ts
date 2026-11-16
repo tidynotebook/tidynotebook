@@ -19,3 +19,9 @@ export const deleteGlyph: ActionIconName = 'delete';
 
 /** The glyph of the Trash page, where a person restores and deletes notes. */
 export const trashPageGlyph: ActionIconName = 'trash';
+
+/** A folder is removed while its notes go to Trash. */
+export const deleteFolderLabel = 'Delete folder';
+
+/** The permanent Trash action. */
+export const deleteTrashLabel = 'Delete for good';

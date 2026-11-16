@@ -1,3 +1,33 @@
+import {
+  Form,
+  ListRow,
+  Inline,
+  Inset,
+  SectionHeading,
+  Stack,
+  Card,
+  RowCopy,
+  Button,
+  Badge,
+  ChevronRightIcon,
+  MetaFacts,
+  WrapText,
+  buttonClassName,
+  CopyIcon,
+  Dialog,
+  DialogBody,
+  DialogFooter,
+  LoadingState,
+  Menu,
+  MoreIcon,
+  Notice,
+  PlusIcon,
+  ReadOnlyField,
+  SelectField,
+  TextField,
+  UsersIcon,
+} from '@notesapp/ui';
+
 /**
  * The accounts page of an administrator (records 0108 to 0112).
  *
@@ -17,7 +47,15 @@
  * Every rule of a row lives in `lib/accounts.ts` with its unit test, and
  * every server call is a generated operation.
  */
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import {
+  Children,
+  useCallback,
+  useRef,
+  useEffect,
+  useState,
+  type ComponentProps,
+  type ReactNode,
+} from 'react';
 import {
   createInvitation,
   dismissReport,
@@ -36,54 +74,30 @@ import {
   type Invitation,
   type LinkReport,
 } from '@notesapp/api-client';
-import {
-  Button,
-  Checkbox,
-  buttonClassName,
-  CopyIcon,
-  Dialog,
-  DialogBody,
-  DialogFooter,
-  EmptyState,
-  LinkIcon,
-  ListRow,
-  LoadingState,
-  Menu,
-  MoreIcon,
-  Notice,
-  Page,
-  PageHeader,
-  pageListClassName,
-  PlusIcon,
-  ReadOnlyField,
-  SelectField,
-  TextField,
-  UsersIcon,
-} from '@notesapp/ui';
+
 import { problemMessage, useSession } from '../../app.tsx';
 import { problemCode } from '../../lib/problem-text.ts';
-import { useDocumentTitle } from '../../shell/document-title.ts';
-import { SettingsSection } from './settings-section.tsx';
+import {
+  SettingRow,
+  SettingChoiceRow,
+  SettingActionRow,
+  SettingSwitchRow,
+  usePhoneSettings,
+} from './settings-section.tsx';
+import { SettingsDialog } from './settings-dialog.tsx';
+import { relativeTime } from '../../lib/relative-time.ts';
 import {
   LegalDocumentsBody,
   MailSettingsBody,
 } from './installation-settings.tsx';
-import {
-  legalDescription,
-  mailDescription,
-} from '../../lib/installation-settings.ts';
-import {
-  administrationSections,
-  type AdministrationSectionKey,
-} from '../../lib/page-sections.ts';
 import { useNow } from '../../shell/now.ts';
 import {
   accountActionLabel,
   accountActionNotice,
   accountActions,
-  accountFacts,
   accountName,
-  accountsTitle,
+  roleWord,
+  storageLine,
   enabledAdministrators,
   invitationFacts,
   missingPartsOf,
@@ -105,9 +119,46 @@ import {
   reportReasonWord,
 } from '../../lib/reports.ts';
 
-/** What the page says under its title. */
-const accountsDescription =
-  'Invite people, manage their accounts, and set up the mail server and the legal documents of this installation.';
+export type AdministrationPage = 'accounts' | 'mail' | 'legal' | 'reports';
+
+function AdminDialog(props: ComponentProps<typeof Dialog>): ReactNode {
+  const phone = usePhoneSettings();
+  return phone ? (
+    <SettingsDialog {...props} hideScope />
+  ) : (
+    <Dialog {...props} />
+  );
+}
+
+function AdminGroup({
+  title,
+  count,
+  danger = false,
+  toolbar,
+  children,
+}: {
+  readonly title?: string;
+  readonly count?: string;
+  readonly danger?: boolean;
+  readonly toolbar?: ReactNode;
+  readonly children: ReactNode;
+}): ReactNode {
+  if (Children.toArray(children).length === 0) return null;
+  return (
+    <Stack gap={2} as="section">
+      {title === undefined ? null : (
+        <SectionHeading
+          label={title}
+          count={count}
+          action={toolbar}
+          danger={danger}
+          divider
+        />
+      )}
+      <Card responsive>{children}</Card>
+    </Stack>
+  );
+}
 
 /** How far the read of the page got. */
 type PageState =
@@ -126,28 +177,35 @@ type OpenDialog =
   | { readonly kind: 'none' }
   | { readonly kind: 'invite' }
   | { readonly kind: 'controls'; readonly account: AccountSummary }
-  | { readonly kind: 'remove'; readonly account: AccountSummary };
+  | { readonly kind: 'remove'; readonly account: AccountSummary }
+  | { readonly kind: 'role'; readonly account: AccountSummary }
+  | {
+      readonly kind: 'state';
+      readonly account: AccountSummary;
+      readonly action: 'disable' | 'enable';
+    };
 
-/** The accounts page. Only an administrator opens it. */
-export function AccountsView(): ReactNode {
+/** Administration is available only inside an administrator's Settings. */
+export function AdministrationSettings({
+  page,
+}: {
+  readonly page: AdministrationPage;
+}): ReactNode {
   const session = useSession();
-  useDocumentTitle(accountsTitle);
-  if (session.account?.installationRole !== 'administrator')
-    return (
-      <Page>
-        <PageHeader title={accountsTitle} />
-        <EmptyState
-          icon={<UsersIcon size={20} />}
-          title="Only an administrator opens this page"
-          description="Ask an administrator of this installation to invite a person or to change an account."
-        />
-      </Page>
-    );
-  return <AccountsPage />;
+  return session.account?.installationRole === 'administrator' ? (
+    <AccountsPage page={page} />
+  ) : null;
 }
 
 /** The three sections of the page and their dialogs. */
-function AccountsPage(): ReactNode {
+function AccountsPage({
+  page,
+}: {
+  readonly page: AdministrationPage;
+}): ReactNode {
+  const phone = usePhoneSettings();
+  const detailOpener = useRef<HTMLButtonElement | null>(null);
+  const [detail, setDetail] = useState<AccountSummary | null>(null);
   const now = useNow();
   const [state, setState] = useState<PageState>({ kind: 'loading' });
   const [generation, setGeneration] = useState(0);
@@ -219,6 +277,7 @@ function AccountsPage(): ReactNode {
         return;
       }
       setDialog({ kind: 'none' });
+      if (dialog.kind === 'remove') setDetail(null);
       setNotice(success);
       reload();
     });
@@ -279,317 +338,397 @@ function AccountsPage(): ReactNode {
     );
   };
 
+  const selected =
+    state.kind === 'ready' && detail !== null
+      ? (state.accounts.find(
+          (account) => account.accountId === detail.accountId,
+        ) ?? detail)
+      : detail;
+  const closeDialog = (): void => {
+    setDialog({ kind: 'none' });
+  };
   return (
-    <Page
-      sections={state.kind === 'ready' ? administrationSections : undefined}
+    <Stack
+      gap={{ fine: 6, coarse: 4 }}
+      fill={page === 'mail'}
+      className={page === 'mail' ? 'overflow-hidden' : undefined}
     >
-      <PageHeader title={accountsTitle} description={accountsDescription} />
-      <div className="space-y-6">
-        {notice === '' ? null : <Notice tone="success" message={notice} />}
-        {failure === '' ? null : <Notice tone="problem" message={failure} />}
-        {state.kind === 'loading' ? (
-          <LoadingState
-            shape="list"
-            rows={3}
-            label="The accounts are loading."
-          />
-        ) : state.kind === 'failed' ? (
-          <Notice tone="problem" message={state.message}>
-            <Button variant="secondary" size="sm" onClick={reload}>
-              Try again
-            </Button>
-          </Notice>
-        ) : (
-          <AdministrationSections
-            sections={{
-              registration: {
-                description: registrationPolicyText(
-                  state.installation.registrationPolicy,
-                  state.installation.registrationPolicySource,
-                ),
-                body: (
-                  // The choice applies at once, as every setting does. A
-                  // policy that the environment names is locked (0206).
-                  <Checkbox
-                    id="registration-open"
-                    label="Let anybody sign up"
-                    checked={state.installation.registrationPolicy === 'open'}
-                    disabled={
-                      busy ||
-                      registrationPolicyLocked(
-                        state.installation.registrationPolicySource,
-                      )
-                    }
-                    onChange={(open) => {
-                      changePolicy(open ? 'open' : 'invitation');
-                    }}
-                  />
-                ),
-              },
-              mail: {
-                description: mailDescription(state.installation.mail),
-                body: (
-                  <MailSettingsBody
-                    mail={state.installation.mail}
-                    onSaved={reload}
-                  />
-                ),
-              },
-              legal: {
-                description: legalDescription(
-                  state.installation.legalDocuments,
-                ),
-                body: (
-                  <LegalDocumentsBody
-                    legal={state.installation.legalDocuments}
-                    onSaved={reload}
-                  />
-                ),
-              },
-              reports: {
-                description:
-                  'A reader reports a published page from the link at its foot. You can take the link down.',
-                body: (
-                  <>
-                    {state.reports.length === 0 ? (
-                      <p className="m-0 text-control text-muted">
-                        No report waits.
-                      </p>
-                    ) : (
-                      <ul className={pageListClassName()}>
-                        {state.reports.map((report) => {
-                          const reason = reportReasonWord(report.reason);
-                          return (
-                            <ListRow
-                              key={report.reportId}
-                              className="flex-wrap"
-                            >
-                              <span
-                                className="inline-flex shrink-0 items-center text-muted"
-                                aria-hidden="true"
-                              >
-                                <LinkIcon />
-                              </span>
-                              <div className="min-w-0 flex-1">
-                                <p className="m-0 truncate text-ui text-strong">
-                                  {reason}
-                                </p>
-                                <p className="m-0 flex flex-wrap gap-cluster text-control text-muted">
-                                  {reportFacts(report, now).map((fact) => (
-                                    <span key={fact}>{fact}</span>
-                                  ))}
-                                </p>
-                                {report.note === null ? null : (
-                                  <p
-                                    className="m-0 truncate text-control text-muted"
-                                    title={report.note}
-                                  >
-                                    {report.note}
-                                  </p>
-                                )}
-                              </div>
-                              <div className="flex shrink-0 items-center gap-cluster">
-                                {report.address === null ? null : (
-                                  <a
-                                    className={buttonClassName({
-                                      variant: 'secondary',
-                                      size: 'sm',
-                                    })}
-                                    href={report.address}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                  >
-                                    Open link
-                                  </a>
-                                )}
-                                {canTakeDown(report) ? (
-                                  <Button
-                                    variant="secondary"
-                                    tone="danger"
-                                    size="sm"
-                                    disabled={busy}
-                                    label={`Take down the link of the report: ${reason}`}
-                                    onClick={() => {
-                                      change(
-                                        () =>
-                                          takeDownReportedLink({
-                                            path: { reportId: report.reportId },
-                                          }),
-                                        reportNotice('take-down'),
-                                      );
-                                    }}
-                                  >
-                                    Take down
-                                  </Button>
-                                ) : null}
-                                <Button
-                                  variant="secondary"
-                                  size="sm"
-                                  disabled={busy}
-                                  label={`Close the report: ${reason}`}
-                                  onClick={() => {
-                                    change(
-                                      () =>
-                                        dismissReport({
-                                          path: { reportId: report.reportId },
-                                        }),
-                                      reportNotice('close'),
-                                    );
-                                  }}
-                                >
-                                  Close
-                                </Button>
-                              </div>
-                            </ListRow>
-                          );
-                        })}
-                      </ul>
-                    )}
-                  </>
-                ),
-              },
-              invitations: {
-                description:
-                  'An invitation lets one person make an account with the address you enter.',
-                body: (
-                  <>
-                    {state.invitations.length === 0 ? (
-                      <p className="m-0 text-control text-muted">
-                        No invitation waits.
-                      </p>
-                    ) : (
-                      <ul className={pageListClassName()}>
-                        {state.invitations.map((invitation) => {
-                          const facts = invitationFacts(invitation, now);
-                          return (
-                            <ListRow
-                              key={invitation.invitationId}
-                              className="flex-wrap"
-                            >
-                              <div className="min-w-0 flex-1">
-                                <p className="m-0 truncate text-ui text-strong">
-                                  {invitation.email}
-                                </p>
-                                <p className="m-0 flex flex-wrap gap-cluster text-control text-muted">
-                                  {facts.map((fact) => (
-                                    <span key={fact}>{fact}</span>
-                                  ))}
-                                </p>
-                              </div>
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                disabled={busy}
-                                label={`Revoke the invitation of ${invitation.email}`}
-                                onClick={() => {
-                                  change(
-                                    () =>
-                                      revokeInvitation({
-                                        path: {
-                                          invitationId: invitation.invitationId,
-                                        },
-                                      }),
-                                    `The invitation of ${invitation.email} is revoked. Its link opens nothing now.`,
-                                  );
-                                }}
-                              >
-                                Revoke
-                              </Button>
-                            </ListRow>
-                          );
-                        })}
-                      </ul>
-                    )}
-                    {/*
-                    The one filled action of the page, under the list it
-                    adds to, as Sign out every other device stands under the
-                    sessions it ends.
-                  */}
+      {notice === '' ? null : <Notice tone="success" message={notice} />}
+      {failure === '' ? null : <Notice tone="problem" message={failure} />}
+      {state.kind === 'loading' ? (
+        <LoadingState
+          shape="list"
+          rows={3}
+          label="Loading administration settings"
+        />
+      ) : state.kind === 'failed' ? (
+        <Notice tone="problem" message={state.message}>
+          <Button variant="secondary" onClick={reload}>
+            Try again
+          </Button>
+        </Notice>
+      ) : (
+        <>
+          {page === 'accounts' ? (
+            <>
+              <AdminGroup title="Sign-up">
+                <SettingSwitchRow
+                  label="Let anybody sign up"
+                  help={
+                    registrationPolicyLocked(
+                      state.installation.registrationPolicySource,
+                    )
+                      ? 'Set by the server configuration.'
+                      : registrationPolicyText(
+                          state.installation.registrationPolicy,
+                          state.installation.registrationPolicySource,
+                        )
+                  }
+                  checked={state.installation.registrationPolicy === 'open'}
+                  disabled={
+                    busy ||
+                    registrationPolicyLocked(
+                      state.installation.registrationPolicySource,
+                    )
+                  }
+                  onChange={(open) =>
+                    changePolicy(open ? 'open' : 'invitation')
+                  }
+                />
+              </AdminGroup>
+              <AdminGroup
+                title="Invitations"
+                toolbar={
+                  phone ? null : (
                     <Button
-                      className="mt-3"
+                      variant="secondary"
                       icon={<PlusIcon />}
-                      onClick={() => {
-                        setNotice('');
-                        setFailure('');
-                        setDialog({ kind: 'invite' });
-                      }}
+                      onClick={() => setDialog({ kind: 'invite' })}
                     >
                       Invite a person
                     </Button>
-                  </>
-                ),
-              },
-              accounts: {
-                description:
-                  'You see the address, the state and the storage of each account, and never its notes.',
-                body: (
-                  <>
-                    <ul className={pageListClassName()}>
-                      {state.accounts.map((account) => {
-                        const name = accountName(account);
-                        const facts = accountFacts(account, now);
-                        const actions = accountActions(
-                          account,
-                          enabledAdministrators(state.accounts),
-                        );
-                        return (
-                          <ListRow
-                            key={account.accountId}
-                            className="flex-wrap"
+                  )
+                }
+              >
+                <Stack gap={0} pad={0} as="ul">
+                  {state.invitations.length === 0 ? (
+                    <Inset
+                      padY={{ fine: 3, coarse: 4 }}
+                      padX={{ fine: 0, coarse: 4 }}
+                      as="li"
+                      className="text-secondary text-muted"
+                    >
+                      No invitation waits.
+                    </Inset>
+                  ) : (
+                    state.invitations.map((invitation) => (
+                      <ListRow key={invitation.invitationId}>
+                        <RowCopy>
+                          <p className="m-0 break-words text-body text-strong">
+                            {invitation.email}
+                          </p>
+                          <MetaFacts
+                            className="ui-settings-meta"
+                            facts={invitationFacts(invitation, now)}
+                          />
+                        </RowCopy>
+                        <Button
+                          variant="secondary"
+                          label={`Revoke the invitation of ${invitation.email}`}
+                          disabled={busy}
+                          onClick={() =>
+                            change(
+                              () =>
+                                revokeInvitation({
+                                  path: {
+                                    invitationId: invitation.invitationId,
+                                  },
+                                }),
+                              `The invitation of ${invitation.email} is revoked.`,
+                            )
+                          }
+                        >
+                          Revoke
+                        </Button>
+                      </ListRow>
+                    ))
+                  )}
+                  {phone ? (
+                    <li>
+                      <SettingActionRow
+                        label="Invite a person"
+                        icon={<PlusIcon />}
+                        actionLabel="Invite a person"
+                        onClick={() => setDialog({ kind: 'invite' })}
+                      />
+                    </li>
+                  ) : null}
+                </Stack>
+              </AdminGroup>
+              <AdminGroup title="Users" count={String(state.accounts.length)}>
+                <Stack gap={0} pad={0} as="ul">
+                  {state.accounts.map((account) => {
+                    const name = accountName(account),
+                      actions = accountActions(
+                        account,
+                        enabledAdministrators(state.accounts),
+                      );
+                    const content = (
+                      <>
+                        <span
+                          className="inline-flex shrink-0 text-muted"
+                          aria-hidden="true"
+                        >
+                          <UsersIcon />
+                        </span>
+                        <RowCopy>
+                          <Inline
+                            gap={2}
+                            wrap
+                            align="center"
+                            as="p"
+                            className="text-body text-strong"
                           >
-                            <span
-                              className="inline-flex shrink-0 items-center text-muted"
-                              aria-hidden="true"
-                            >
-                              <UsersIcon />
-                            </span>
-                            <div className="min-w-0 flex-1">
-                              <p className="m-0 truncate text-ui text-strong">
-                                {name}
-                              </p>
-                              <p
-                                className="m-0 flex flex-wrap gap-cluster text-control text-muted"
-                                title={facts.join(', ')}
-                              >
-                                {facts.slice(0, 3).map((fact) => (
-                                  <span key={fact}>{fact}</span>
-                                ))}
-                              </p>
-                            </div>
-                            <Menu
-                              label={`Change the account of ${name}`}
-                              icon={<MoreIcon />}
-                              compact
-                              items={actions.map((action) => ({
-                                id: action,
-                                label: accountActionLabel(action),
-                                // Only the removal destroys anything. A disabled
-                                // account comes back with Enable.
-                                danger: action === 'remove',
-                                disabled: busy,
-                                onSelect: () => {
-                                  runAction(account, action);
-                                },
-                              }))}
-                            />
-                          </ListRow>
-                        );
-                      })}
-                    </ul>
-                  </>
-                ),
-              },
-            }}
-          />
-        )}
-      </div>
+                            <span>{name}</span>
+                            {account.installationRole === 'administrator' ? (
+                              <Badge>Administrator</Badge>
+                            ) : null}
+                            {account.state === 'disabled' ? (
+                              <Badge>Disabled</Badge>
+                            ) : null}
+                          </Inline>
+                          <MetaFacts
+                            className="ui-settings-meta"
+                            facts={[
+                              ...(account.email && account.email !== name
+                                ? [account.email]
+                                : []),
+                              storageLine(account.storage),
+                              account.lastActiveAt === null
+                                ? 'Not signed in'
+                                : `Active ${relativeTime(account.lastActiveAt, now)}`,
+                            ].filter(Boolean)}
+                          />
+                        </RowCopy>
+                      </>
+                    );
+                    return phone ? (
+                      <li key={account.accountId}>
+                        <ListRow
+                          as="button"
+                          density="setting"
 
+                          className="ui-settings-row flex w-full text-left text-body text-strong"
+                          aria-label={`Account: ${name}`}
+                          onClick={(event) => {
+                            if (
+                              event.currentTarget instanceof
+                              window.HTMLButtonElement
+                            )
+                              detailOpener.current = event.currentTarget;
+                            setDetail(account);
+                            setFailure('');
+                          }}
+                        >
+                          {content}
+                          <ChevronRightIcon />
+                        </ListRow>
+                      </li>
+                    ) : (
+                      <ListRow key={account.accountId}>
+                        {content}
+                        <Menu
+                          label={`Change the account of ${name}`}
+                          icon={<MoreIcon />}
+                          compact
+                          items={actions.map((action) => ({
+                            id: action,
+                            label: accountActionLabel(action),
+                            danger: action === 'remove',
+                            disabled: busy,
+                            onSelect: () => runAction(account, action),
+                          }))}
+                        />
+                      </ListRow>
+                    );
+                  })}
+                </Stack>
+              </AdminGroup>
+            </>
+          ) : null}
+          {page === 'mail' ? (
+            <MailSettingsBody mail={state.installation.mail} onSaved={reload} />
+          ) : null}
+          {page === 'legal' ? (
+            <LegalDocumentsBody
+              legal={state.installation.legalDocuments}
+              onSaved={reload}
+            />
+          ) : null}
+          {page === 'reports' ? (
+            <AdminGroup>
+              <Stack gap={0} pad={0} as="ul">
+                {state.reports.length === 0 ? (
+                  <Inset
+                    padY={3}
+                    padX={{ fine: 0, coarse: 4 }}
+                    as="li"
+                    className="text-secondary text-muted"
+                  >
+                    No report waits.
+                  </Inset>
+                ) : (
+                  state.reports.map((report) => (
+                    <ListRow key={report.reportId} className="flex-wrap">
+                      <RowCopy>
+                        <p className="m-0 text-body text-strong">
+                          {reportReasonWord(report.reason)}
+                        </p>
+                        <MetaFacts
+                          className="ui-settings-meta"
+                          facts={reportFacts(report, now)}
+                        />
+                        {report.note === null ? null : (
+                          <p className="m-0 text-secondary text-muted">
+                            <WrapText>{report.note}</WrapText>
+                          </p>
+                        )}
+                      </RowCopy>
+                      <Inline gap={2} wrap as="div">
+                        {report.address === null ? null : (
+                          <a
+                            className={buttonClassName({
+                              variant: phone ? 'ghost' : 'secondary',
+                            })}
+                            href={report.address}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Open link
+                          </a>
+                        )}
+                        {canTakeDown(report) ? (
+                          <Button
+                            variant="secondary"
+                            tone="danger"
+                            disabled={busy}
+                            onClick={() =>
+                              change(
+                                () =>
+                                  takeDownReportedLink({
+                                    path: { reportId: report.reportId },
+                                  }),
+                                reportNotice('take-down'),
+                              )
+                            }
+                          >
+                            Take down
+                          </Button>
+                        ) : null}
+                        <Button
+                          variant="secondary"
+                          disabled={busy}
+                          onClick={() =>
+                            change(
+                              () =>
+                                dismissReport({
+                                  path: { reportId: report.reportId },
+                                }),
+                              reportNotice('close'),
+                            )
+                          }
+                        >
+                          Close
+                        </Button>
+                      </Inline>
+                    </ListRow>
+                  ))
+                )}
+              </Stack>
+            </AdminGroup>
+          ) : null}
+        </>
+      )}
+      {selected !== null && dialog.kind === 'none' && state.kind === 'ready' ? (
+        <SettingsDialog
+          open
+          title={accountName(selected)}
+          titleId="account-detail-title"
+          returnFocus={() => detailOpener.current?.focus()}
+          hideScope
+          onClose={() => setDetail(null)}
+        >
+          <DialogBody>
+            <Stack gap={{ fine: 6, coarse: 4 }}>
+              <AdminGroup title="Account">
+                <SettingRow label="Email">
+                  <span className="text-value text-muted">
+                    {selected.email ?? 'No address linked'}
+                  </span>
+                </SettingRow>
+                <SettingChoiceRow
+                  label="Role"
+                  help=""
+                  value={roleWord(selected.installationRole)}
+                  onClick={() => setDialog({ kind: 'role', account: selected })}
+                />
+                <SettingChoiceRow
+                  label="Limits and access"
+                  help={`${storageLine(selected.storage)} · Teams ${selected.controls.features.teams ? 'on' : 'off'}`}
+                  value=""
+                  onClick={() =>
+                    setDialog({ kind: 'controls', account: selected })
+                  }
+                />
+                <SettingRow label="Last active">
+                  <span className="text-value text-muted">
+                    {selected.lastActiveAt === null
+                      ? 'Not signed in'
+                      : relativeTime(selected.lastActiveAt, now)}
+                  </span>
+                </SettingRow>
+              </AdminGroup>
+              <AdminGroup title="Danger zone" danger>
+                {accountActions(selected, enabledAdministrators(state.accounts))
+                  .filter(
+                    (action) =>
+                      action === 'disable' ||
+                      action === 'enable' ||
+                      action === 'remove',
+                  )
+                  .map((action) => (
+                    <SettingActionRow
+                      key={action}
+                      danger
+                      label={`${action === 'remove' ? 'Delete account' : action === 'disable' ? 'Disable account' : 'Enable account'}…`}
+                      actionLabel={accountActionLabel(action)}
+                      help={
+                        action === 'remove'
+                          ? `Deletes every workspace and note of ${accountName(selected)} for good.`
+                          : action === 'disable'
+                            ? 'The person cannot sign in. You can enable the account again.'
+                            : undefined
+                      }
+                      onClick={() =>
+                        setDialog(
+                          action === 'remove'
+                            ? { kind: 'remove', account: selected }
+                            : { kind: 'state', account: selected, action },
+                        )
+                      }
+                    />
+                  ))}
+              </AdminGroup>
+            </Stack>
+          </DialogBody>
+        </SettingsDialog>
+      ) : null}
       {dialog.kind === 'invite' && state.kind === 'ready' ? (
         <InviteDialog
           mailConfigured={state.installation.mailConfigured}
           lifetimeHours={state.installation.invitationLifetimeHours}
           onClose={() => {
-            setDialog({ kind: 'none' });
+            closeDialog();
             reload();
           }}
         />
@@ -600,10 +739,8 @@ function AccountsPage(): ReactNode {
           now={now}
           busy={busy}
           failure={failure}
-          onClose={() => {
-            setDialog({ kind: 'none' });
-          }}
-          onSave={(controls) => {
+          onClose={closeDialog}
+          onSave={(controls) =>
             change(
               () =>
                 updateAccount({
@@ -611,54 +748,95 @@ function AccountsPage(): ReactNode {
                   body: { controls },
                 }),
               `The limits and access of ${accountName(dialog.account)} are changed.`,
-            );
-          }}
+            )
+          }
         />
       ) : null}
+      {dialog.kind === 'role' && state.kind === 'ready' ? (
+        <RoleDialog
+          account={dialog.account}
+          administrators={enabledAdministrators(state.accounts)}
+          busy={busy}
+          failure={failure}
+          onClose={closeDialog}
+          onSave={(role) =>
+            change(
+              () =>
+                updateAccount({
+                  path: { accountId: dialog.account.accountId },
+                  body: { installationRole: role },
+                }),
+              'The role is changed.',
+            )
+          }
+        />
+      ) : null}
+      {dialog.kind === 'state' ? (
+        <AdminDialog
+          open
+          title={`${dialog.action === 'disable' ? 'Disable' : 'Enable'} ${accountName(dialog.account)}?`}
+          titleId="account-state-title"
+          onClose={closeDialog}
+        >
+          <DialogBody>
+            <p className="m-0 text-body text-strong">
+              {dialog.action === 'disable'
+                ? 'The person is signed out and cannot sign in. You can enable the account again.'
+                : 'The person can sign in again.'}
+            </p>
+          </DialogBody>
+          <DialogFooter>
+            <Button variant="ghost" onClick={closeDialog}>
+              Cancel
+            </Button>
+            <Button
+              tone="danger"
+              disabled={busy}
+              onClick={() => runAction(dialog.account, dialog.action)}
+            >
+              {dialog.action === 'disable'
+                ? 'Disable account'
+                : 'Enable account'}
+            </Button>
+          </DialogFooter>
+        </AdminDialog>
+      ) : null}
       {dialog.kind === 'remove' ? (
-        <Dialog
+        <AdminDialog
           open
           title={`Delete ${accountName(dialog.account)}?`}
           titleId="remove-account-title"
-          width="small"
-          onClose={() => {
-            setDialog({ kind: 'none' });
-          }}
+          onClose={closeDialog}
         >
           <DialogBody>
-            <p className="m-0 text-ui text-strong">
+            <p className="m-0 text-body text-strong">
               This deletes the account and every note in its workspaces for
               good. The person is signed out on every device.
             </p>
           </DialogBody>
           <DialogFooter>
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setDialog({ kind: 'none' });
-              }}
-            >
+            <Button variant="ghost" onClick={closeDialog}>
               Cancel
             </Button>
             <Button
               variant="danger"
               disabled={busy}
-              onClick={() => {
+              onClick={() =>
                 change(
                   () =>
                     removeAccount({
                       path: { accountId: dialog.account.accountId },
                     }),
                   `${accountName(dialog.account)} is deleted.`,
-                );
-              }}
+                )
+              }
             >
-              {busy ? 'Deleting the account' : 'Delete account'}
+              Delete account
             </Button>
           </DialogFooter>
-        </Dialog>
+        </AdminDialog>
       ) : null}
-    </Page>
+    </Stack>
   );
 }
 
@@ -707,7 +885,7 @@ function InviteDialog({
   };
 
   return (
-    <Dialog
+    <AdminDialog
       open
       title="Invite a person"
       titleId="invite-title"
@@ -715,18 +893,20 @@ function InviteDialog({
       onClose={onClose}
     >
       {made === null ? (
-        <form
+        <Form
+          regions
+          className="ui-dialog-form"
           onSubmit={(event): void => {
             event.preventDefault();
             submit();
           }}
         >
           <DialogBody>
-            <p className="mb-4 mt-0 text-control text-muted">
+            <Inset as="p" className="text-secondary text-muted">
               {mailConfigured
                 ? `The link goes to this address by mail. It works for ${lifetime}.`
                 : `This installation sends no mail, so you get the link here and send it yourself. It works for ${lifetime}.`}
-            </p>
+            </Inset>
             <TextField
               id="invite-email"
               label="Email address"
@@ -734,7 +914,6 @@ function InviteDialog({
               inputType="email"
               autoComplete="off"
               required
-              autoFocus
               error={error}
               onChange={setEmail}
             />
@@ -747,19 +926,19 @@ function InviteDialog({
               {busy ? 'Inviting' : 'Invite'}
             </Button>
           </DialogFooter>
-        </form>
+        </Form>
       ) : (
         <>
           <DialogBody>
             {made.link === null ? (
-              <p className="m-0 text-ui text-strong">
+              <p className="m-0 text-body text-strong">
                 The link went to {made.email} by mail.
               </p>
             ) : (
               <>
-                <p className="mb-4 mt-0 text-ui text-strong">
+                <Inset as="p" className="text-body text-strong">
                   Send this link to {made.email}. It appears here once.
-                </p>
+                </Inset>
                 <ReadOnlyField
                   id="invite-link"
                   label="Invitation link"
@@ -793,7 +972,7 @@ function InviteDialog({
           </DialogFooter>
         </>
       )}
-    </Dialog>
+    </AdminDialog>
   );
 }
 
@@ -832,14 +1011,16 @@ function ControlsDialog({
   };
   const administrator = account.installationRole === 'administrator';
   return (
-    <Dialog
+    <AdminDialog
       open
       title="Change limits and access"
       titleId="controls-title"
       width="small"
       onClose={onClose}
     >
-      <form
+      <Form
+        regions
+        className="ui-dialog-form"
         onSubmit={(event): void => {
           event.preventDefault();
           const read = controlsChangeOf(form, account.controls, now);
@@ -852,13 +1033,11 @@ function ControlsDialog({
         }}
       >
         <DialogBody>
-          <p className="mb-4 mt-0 text-control text-muted">
+          <Inset as="p" className="text-secondary text-muted">
             The limits count every workspace that {accountName(account)} owns.
             An empty limit is no limit.
-          </p>
-          {failure === '' ? null : (
-            <Notice className="mb-4" tone="problem" message={failure} />
-          )}
+          </Inset>
+          {failure === '' ? null : <Notice tone="problem" message={failure} />}
           <SelectField
             id="controls-standing"
             label="Access"
@@ -890,7 +1069,8 @@ function ControlsDialog({
           ) : null}
           <TextField
             id="controls-storage"
-            label="Storage limit in gigabytes"
+            label="Storage limit in GB"
+            hint="One GB is 1,000,000,000 bytes. Existing byte limits stay unchanged."
             value={form.storageGigabytes}
             required
             error={errorOf('storageGigabytes')}
@@ -900,7 +1080,7 @@ function ControlsDialog({
           />
           <TextField
             id="controls-text"
-            label="Text and history limit in gigabytes"
+            label="Text and history limit in GB"
             value={form.textGigabytes}
             error={errorOf('textGigabytes')}
             onChange={(value) => {
@@ -909,7 +1089,7 @@ function ControlsDialog({
           />
           <TextField
             id="controls-transfer"
-            label="Published pages each month, in gigabytes"
+            label="Published pages each month, in GB"
             value={form.transferGigabytes}
             error={errorOf('transferGigabytes')}
             onChange={(value) => {
@@ -918,31 +1098,31 @@ function ControlsDialog({
           />
           <TextField
             id="controls-download"
-            label="Downloads each month, in gigabytes"
+            label="Downloads each month, in GB"
             value={form.downloadGigabytes}
             error={errorOf('downloadGigabytes')}
             onChange={(value) => {
               set({ downloadGigabytes: value });
             }}
           />
-          <div className="flex flex-wrap gap-cluster">
-            <Checkbox
-              id="controls-teams"
-              label="Teams"
-              checked={form.teams}
-              onChange={(checked) => {
-                set({ teams: checked });
-              }}
-            />
-            <Checkbox
-              id="controls-collaboration"
-              label="Collaboration"
-              checked={form.collaboration}
-              onChange={(checked) => {
-                set({ collaboration: checked });
-              }}
-            />
-          </div>
+          <Stack gap={{ fine: 6, coarse: 4 }}>
+            <AdminGroup title="Features">
+              <SettingSwitchRow
+                label="Teams"
+                help=""
+                checked={form.teams}
+                disabled={busy}
+                onChange={(teams) => set({ teams })}
+              />
+              <SettingSwitchRow
+                label="Collaboration"
+                help=""
+                checked={form.collaboration}
+                disabled={busy}
+                onChange={(collaboration) => set({ collaboration })}
+              />
+            </AdminGroup>
+          </Stack>
         </DialogBody>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>
@@ -952,37 +1132,80 @@ function ControlsDialog({
             {busy ? 'Saving' : 'Save'}
           </Button>
         </DialogFooter>
-      </form>
-    </Dialog>
+      </Form>
+    </AdminDialog>
   );
 }
 
-/**
- * The sections of the page, in the order of the list that the side region
- * reads. Each section takes its heading from that list and the layout of a
- * section of Settings, because Accounts is a part of Settings (record 0138).
- * The type holds one sentence and one body for each name of the list, so the
- * page and its list cannot disagree (decision 0137).
- */
-function AdministrationSections({
-  sections,
+function RoleDialog({
+  account,
+  administrators,
+  busy,
+  failure,
+  onClose,
+  onSave,
 }: {
-  readonly sections: Record<
-    AdministrationSectionKey,
-    { readonly description: string; readonly body: ReactNode }
-  >;
+  readonly account: AccountSummary;
+  readonly administrators: number;
+  readonly busy: boolean;
+  readonly failure: string;
+  readonly onClose: () => void;
+  readonly onSave: (role: 'administrator' | 'member') => void;
 }): ReactNode {
+  const [role, setRole] = useState(account.installationRole);
+  const actions = accountActions(account, administrators);
   return (
-    <div>
-      {administrationSections.map((section) => (
-        <SettingsSection
-          key={section.key}
-          section={section}
-          description={sections[section.key].description}
-        >
-          {sections[section.key].body}
-        </SettingsSection>
-      ))}
-    </div>
+    <AdminDialog
+      open
+      title="Role"
+      titleId="account-role-title"
+      onClose={onClose}
+    >
+      <Form
+        regions
+        className="ui-dialog-form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          onSave(role);
+        }}
+      >
+        <DialogBody>
+          <SelectField
+            id="account-role"
+            label="Role"
+            value={role}
+            options={[
+              {
+                value: account.installationRole,
+                label: roleWord(account.installationRole),
+              },
+              ...(account.installationRole === 'member' &&
+              actions.includes('make-administrator')
+                ? [{ value: 'administrator', label: 'Administrator' }]
+                : []),
+              ...(account.installationRole === 'administrator' &&
+              actions.includes('make-member')
+                ? [{ value: 'member', label: 'Member' }]
+                : []),
+            ]}
+            onChange={(value) =>
+              setRole(value === 'administrator' ? 'administrator' : 'member')
+            }
+          />
+          {failure === '' ? null : <Notice tone="problem" message={failure} />}
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            disabled={busy || role === account.installationRole}
+          >
+            Save
+          </Button>
+        </DialogFooter>
+      </Form>
+    </AdminDialog>
   );
 }

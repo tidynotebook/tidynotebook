@@ -3,9 +3,11 @@
 This page is for anyone who uses tidy notebook or runs it on their own server.
 Pick the group that fits your task.
 
-tidy notebook is a self-hosted Markdown notes application for you and the
-people you invite. Each account has its own notes. Write in Markdown and
-organize notes in folders. Export your notes as ordinary Markdown files. Live
+Use tidy notebook cloud, or run tidy notebook on your own server. Start with
+[Getting started](getting-started.md) to choose your path and save a first note.
+
+tidy notebook is a Markdown notes application. Each account has its own notes.
+Write in Markdown and organize notes in folders. Export your notes as ordinary Markdown files. Live
 notes and history are stored in PostgreSQL. Images use local or object storage.
 When you type, the application writes a draft on your device. A pause in typing
 or a manual save queues a version, and synchronization sends it to your server.
@@ -43,15 +45,14 @@ For the person who writes the notes.
 - [API keys and programs](api.md) - connect a program to your account.
 - [Connect an AI assistant](mcp.md) - choose its access to your notes, and end
   that access.
-- [Settings](settings.md) - each section of the Settings page, and where each
+- [Settings](settings.md) - each section of Settings, and where each
   choice is kept.
 
 ## Hosting a server
 
 For the person who runs the server. If you are new, do the pages in this order.
 
-- [Quick start](quickstart.md) - try tidy notebook on your own machine in three
-  commands.
+- [Quick start](quickstart.md) - set up a local test installation.
 - [Self-hosting](self-hosting.md) - install a server for real use, step by
   step.
 - [Server operations](operations.md) - set up a reverse proxy, mail, open

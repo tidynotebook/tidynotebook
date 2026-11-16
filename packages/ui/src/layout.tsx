@@ -1,17 +1,25 @@
+import {
+  switchClassNames,
+  rowClassName,
+  buttonClassName,
+  contentEdgeRowClassName,
+} from './control-classes.ts';
+import { pageGutter } from './public-layout.ts';
+import { Stack, Inline } from './primitives.tsx';
+import { useSettingsSurface, SettingsRowActions } from './settings-layout.tsx';
 /**
  * Layout primitives of the application.
  *
  * Every screen frames itself with `Page` and titles itself with `PageHeader`,
  * so spacing, measure, and the heading ramp are decided once. The heading ramp
- * of the chrome is: a page title is `text-xl`, a card or section title is
- * `text-base`, a list row title is `text-ui`, and a quiet group label is
- * `text-control`. There is no smaller size than `text-kbd`, which is a
- * keyboard hint and nothing else.
+ * of the chrome uses the roles of `typography.ts`: page and header titles,
+ * body rows, labels, values, secondary text, and quiet group headings.
+ * Keyboard hints and avatar letters alone use the small step.
  *
  * Distance is decided once as well. `pageGutter` below is the one distance
  * from the edge of the screen to the content of a page, and every frame that
  * is not a `Page`, such as the application header and the note column, reads
- * the same constant. `gap-cluster` and `gap-group` separate controls inside
+ * the same constant. `gap-2` and `gap-4` separate controls inside
  * a row. The four values live in the central theme of
  * `apps/web/src/tailwind.css`.
  *
@@ -26,24 +34,22 @@
  * [decision 0065](../../../docs/decisions/0065-one-recipe-for-a-control-and-one-grid-for-an-icon.md).
  */
 import {
+  createElement,
+  type ElementType,
+  type ComponentPropsWithRef,
   createContext,
   useContext,
-  useEffect,
-  useRef,
-  useState,
   type ReactNode,
+  type HTMLAttributes,
+  type Ref,
+  type MouseEventHandler,
 } from 'react';
-import { rowClassName } from './control-classes.ts';
-import { CollapsibleSection } from './controls.tsx';
+
+import { ChevronRightIcon, MoreIcon } from './icons.tsx';
 import {
-  currentPageSection,
   pageColumnClassName,
   pageHeaderActionsClassName,
   pageRowClassName,
-  pageSectionsShown,
-  pageSideClassName,
-  sectionScrollTop,
-  type ChosenPageSection,
   type PageHeaderActionLayout,
   type PageSection,
 } from './layout-classes.ts';
@@ -55,7 +61,7 @@ import {
  * or a column that owns its own scrolling, still lines its content up with
  * every page of the application.
  */
-export const pageGutter = 'px-gutter sm:px-gutter-wide';
+export { pageGutter } from './public-layout.ts';
 
 /**
  * The frame of one route.
@@ -63,24 +69,33 @@ export const pageGutter = 'px-gutter sm:px-gutter-wide';
  * The page owns the `main` landmark, so a route renders exactly one of them
  * and a child state returns a section instead of a second landmark.
  *
- * Every page is the one row of decision 0137: the column of the note measure
- * and the side region to its right. The page takes no width of its own, so
- * the column stays where it is when a person moves from one page to another.
- * A page of two or more sections passes them in `sections`, in page order,
- * and the side region lists them. The page renders its sections from the same
- * list, so the two cannot disagree.
+ * Every page uses one centred 720 px column. Sections stay inside that
+ * column. The note editor retains its own document measure and outline.
+ * The optional sections prop remains compatible with existing callers.
  */
 export function Page({
   children,
-  sections = [],
+  emptyState,
 }: {
   readonly children: ReactNode;
+  readonly emptyState?: ReactNode;
   readonly sections?: readonly PageSection[] | undefined;
 }): ReactNode {
   return (
-    <main className={`${pageRowClassName()} ${pageGutter}`}>
-      <div className={`${pageColumnClassName()} py-6`}>{children}</div>
-      <PageSide sections={sections} />
+    <main
+      className={`${pageRowClassName()} ${pageGutter} min-h-full shrink-0 py-6 coarse:py-4`}
+    >
+      <Stack gap={{ fine: 4, coarse: 3 }} className={pageColumnClassName()}>
+        {children}
+        {emptyState ? (
+          <div
+            data-page-empty=""
+            className="flex flex-1 items-center justify-center"
+          >
+            {emptyState}
+          </div>
+        ) : null}
+      </Stack>
     </main>
   );
 }
@@ -98,153 +113,11 @@ export function PageRegion({
   readonly children: ReactNode;
 }): ReactNode {
   return (
-    <div className={`${pageRowClassName()} ${pageGutter}`}>
-      <div className={`${pageColumnClassName()} py-6`}>{children}</div>
-      <div className={pageSideClassName()} />
+    <div className={`${pageRowClassName()} ${pageGutter} py-6 coarse:py-4`}>
+      <Stack gap={{ fine: 4, coarse: 3 }} className={pageColumnClassName()}>
+        {children}
+      </Stack>
     </div>
-  );
-}
-
-/**
- * The side region of a page.
- *
- * It keeps its width when it lists nothing, so the column does not move. It
- * stays in view while the page scrolls, and its first row lines up with the
- * page title.
- */
-function PageSide({
-  sections,
-}: {
-  readonly sections: readonly PageSection[];
-}): ReactNode {
-  if (!pageSectionsShown(sections))
-    return <div className={pageSideClassName()} />;
-  return (
-    <aside
-      className={`${pageSideClassName()} sticky top-0 self-start pb-6 pt-4`}
-      aria-label="Sections of this page"
-    >
-      <PageSections sections={sections} />
-    </aside>
-  );
-}
-
-/** The element that a row of the list brings into view. */
-function sectionTarget(id: string): HTMLElement | null {
-  const heading = document.getElementById(id);
-  if (heading === null) return null;
-  return heading.closest('section') ?? heading;
-}
-
-/** The nearest ancestor that scrolls, where the page sits. */
-function scrollerOf(element: HTMLElement): HTMLElement | null {
-  for (
-    let parent = element.parentElement;
-    parent !== null;
-    parent = parent.parentElement
-  ) {
-    const overflow = getComputedStyle(parent).overflowY;
-    if (overflow === 'auto' || overflow === 'scroll') return parent;
-  }
-  return null;
-}
-
-/**
- * The list of the sections of a page, with the section in view marked.
- *
- * It is the outline of a page, so it takes the section and the rows of the
- * note outline. A row brings its section to the top of the scroller of the
- * page and marks it, and the next scroll of the person moves the mark again,
- * from the rule of `currentPageSection`.
- */
-function PageSections({
-  sections,
-}: {
-  readonly sections: readonly PageSection[];
-}): ReactNode {
-  const [open, setOpen] = useState(true);
-  const [current, setCurrent] = useState<string | null>(null);
-  const chosen = useRef<ChosenPageSection | null>(null);
-  // The effect reads the sections again only when the list itself changes,
-  // and not for each new array with the same rows.
-  const ids = sections.map((section) => section.id).join('\n');
-  useEffect(() => {
-    const order = ids.split('\n');
-    const first = sectionTarget(order[0] ?? '');
-    const scroller = first === null ? null : scrollerOf(first);
-    if (scroller === null) return;
-    const read = (): void => {
-      const origin = scroller.getBoundingClientRect().top;
-      const tops = order.flatMap((id) => {
-        const target = sectionTarget(id);
-        return target === null
-          ? []
-          : [{ id, top: target.getBoundingClientRect().top - origin }];
-      });
-      const atEnd =
-        scroller.scrollTop > 0 &&
-        scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1;
-      const next = currentPageSection(
-        tops,
-        atEnd,
-        chosen.current,
-        scroller.scrollTop,
-      );
-      if (next !== chosen.current?.id) chosen.current = null;
-      setCurrent(next);
-    };
-    read();
-    scroller.addEventListener('scroll', read, { passive: true });
-    return () => {
-      scroller.removeEventListener('scroll', read);
-    };
-  }, [ids]);
-  return (
-    <CollapsibleSection
-      id="page-sections"
-      title="On this page"
-      open={open}
-      onToggle={setOpen}
-    >
-      <ol className="m-0 list-none p-0">
-        {sections.map((section) => {
-          const marked = section.id === current;
-          return (
-            <li key={section.id}>
-              <button
-                type="button"
-                className={rowClassName({
-                  current: marked,
-                  className: 'w-full text-left',
-                })}
-                aria-current={marked ? 'location' : undefined}
-                onClick={(): void => {
-                  const target = sectionTarget(section.id);
-                  const scroller = target === null ? null : scrollerOf(target);
-                  if (target === null || scroller === null) return;
-                  scroller.scrollTo({
-                    top: sectionScrollTop(
-                      scroller.scrollTop,
-                      target.getBoundingClientRect().top,
-                      scroller.getBoundingClientRect().top,
-                    ),
-                  });
-                  // The scroller clamps the offset at its end, so the mark
-                  // holds at the offset it reached and not the one it asked.
-                  chosen.current = {
-                    id: section.id,
-                    scrollTop: scroller.scrollTop,
-                  };
-                  setCurrent(section.id);
-                }}
-              >
-                <span className="min-w-0 flex-1 truncate">{section.title}</span>
-              </button>
-            </li>
-          );
-        })}
-      </ol>
-    </CollapsibleSection>
   );
 }
 
@@ -275,12 +148,14 @@ export const PageBackProvider = PageBackContext.Provider;
  */
 export function PageHeader({
   title,
+  count,
   description,
   actions,
   actionLayout = 'cluster',
   id,
 }: {
   readonly title: string;
+  readonly count?: number | undefined;
   readonly description?: string | undefined;
   readonly actions?: ReactNode | undefined;
   readonly actionLayout?: PageHeaderActionLayout | undefined;
@@ -288,62 +163,84 @@ export function PageHeader({
 }): ReactNode {
   const back = useContext(PageBackContext);
   return (
-    <div className="mb-6 flex flex-wrap items-start justify-between gap-group">
-      <div className="min-w-0 grow basis-full sm:basis-0">
-        <div className="flex min-w-0 items-center gap-1">
-          {back}
-          <h1
-            className="m-0 min-w-0 text-xl font-semibold tracking-heading text-strong"
-            id={id}
-          >
-            {title}
-          </h1>
-        </div>
-        {description === undefined || description === '' ? null : (
-          <p className="mb-0 mt-1 text-control text-muted">{description}</p>
-        )}
+    <Inline
+      gap={4}
+      align="start"
+      justify="between"
+      wrap
+      className="ui-page-header"
+    >
+      <div
+        className={
+          actionLayout === 'inline'
+            ? 'min-w-0 grow basis-0 flex flex-col gap-1'
+            : 'min-w-0 grow basis-full sm:basis-0 flex flex-col gap-1'
+        }
+      >
+        <Inline gap={2} align="start" className="min-w-0">
+          <span className="relative inline-flex h-7 w-7 coarse:h-6 coarse:w-11 shrink-0 items-center justify-center empty:hidden">
+            {back}
+          </span>
+          <Stack gap={1} className="min-w-0 flex-1">
+            <Inline gap={1} align="baseline" className="min-w-0">
+              <h1
+                className="m-0 min-w-0 text-title-page tracking-heading text-strong"
+                id={id}
+              >
+                {title}
+              </h1>
+              {count === undefined ? null : (
+                <span className="text-value text-muted">{count}</span>
+              )}
+            </Inline>
+            {description === undefined || description === '' ? null : (
+              <p className="text-secondary text-muted">{description}</p>
+            )}
+          </Stack>
+        </Inline>
       </div>
       {actions === undefined ? null : (
         <div className={pageHeaderActionsClassName(actionLayout)}>
           {actions}
         </div>
       )}
-    </div>
+    </Inline>
   );
 }
 
 /** A raised surface that groups related content. */
-export function Card({
+export function Card<T extends ElementType = 'div'>({
+  as,
   children,
   title,
   titleId,
-  className,
+  className = '',
+  responsive = false,
+  ...props
 }: {
+  readonly as?: T;
   readonly children: ReactNode;
   readonly title?: string | undefined;
   readonly titleId?: string | undefined;
   readonly className?: string | undefined;
-}): ReactNode {
-  const body = (
-    <>
-      {title === undefined ? null : (
-        <h2
-          className="mb-3 mt-0 text-base font-semibold text-strong"
-          id={titleId}
-        >
-          {title}
-        </h2>
-      )}
-      {children}
-    </>
-  );
-  const classes = `rounded-lg border border-edge-subtle bg-card p-4 shadow-raised ${className ?? ''}`;
-  if (title === undefined || titleId === undefined)
-    return <div className={classes}>{body}</div>;
-  return (
-    <section className={classes} aria-labelledby={titleId}>
-      {body}
-    </section>
+  readonly responsive?: boolean;
+} & Omit<
+  ComponentPropsWithRef<T>,
+  'as' | 'children' | 'className'
+>): ReactNode {
+  return createElement(
+    as ?? 'div',
+    {
+      ...props,
+      'data-ui-card': '',
+      className: `flex min-w-0 flex-col gap-0 rounded-xl ${responsive ? 'bg-transparent coarse:bg-card-raised coarse:shadow-raised coarse:outline coarse:outline-1 coarse:-outline-offset-1 coarse:outline-edge-subtle ' + 'coarse:state-raised' : 'bg-card-raised shadow-raised outline outline-1 -outline-offset-1 outline-edge-subtle ' + 'state-raised'} ${className}`,
+    },
+    title === undefined ? null : (
+      <h2 id={titleId} className="text-title-header text-strong">
+        {title}
+      </h2>
+    ),
+    children,
   );
 }
 
@@ -375,22 +272,23 @@ export function EmptyState({
   readonly action?: ReactNode | undefined;
 }): ReactNode {
   return (
-    <div className="py-10 text-center">
+    <Stack
+      pad={{ fine: 3, coarse: 4 }}
+      gap={3}
+      align="center"
+      className="text-center"
+    >
       {icon === undefined ? null : (
-        <p className="m-0 flex justify-center text-muted" aria-hidden="true">
+        <span className="text-muted" aria-hidden="true">
           {icon}
-        </p>
+        </span>
       )}
-      <h2 className="mb-0 mt-3 text-ui font-semibold text-strong">{title}</h2>
+      <h2 className="text-title-header text-strong">{title}</h2>
       {description === undefined || description === '' ? null : (
-        <p className="mx-auto mb-0 mt-1 max-w-sm text-control text-muted">
-          {description}
-        </p>
+        <p className="max-w-sm text-secondary text-muted">{description}</p>
       )}
-      {action === undefined ? null : (
-        <div className="mt-4 flex justify-center">{action}</div>
-      )}
-    </div>
+      {action}
+    </Stack>
   );
 }
 
@@ -408,63 +306,221 @@ export function EmptyState({
  * `selected` is a choice a person made and `current` is the route that is
  * open; both read as one mark.
  */
+export type RowDensity = 'tree' | 'setting' | 'menu';
+export type RowTrailing =
+  | { readonly kind: 'chevron' }
+  | { readonly kind: 'value' }
+  | { readonly kind: 'switch'; readonly checked: boolean }
+  | {
+      readonly kind: 'action';
+      readonly label: string;
+      readonly onClick: () => void;
+      readonly danger?: boolean;
+    }
+  | {
+      readonly kind: 'menu';
+      readonly label: string;
+      readonly onClick: () => void;
+    };
+export function listRowClasses(
+  density: RowDensity,
+  contentEdge = false,
+): string {
+  return density === 'setting'
+    ? 'ui-settings-row ui-setting-fill fine:isolate fine:before:pointer-events-auto fine:before:absolute fine:before:inset-y-0 fine:before:-inset-x-2 fine:before:-z-10 fine:before:rounded-md fine:before:bg-inherit text-left relative flex min-w-0 w-full items-center gap-4 py-3 px-0 coarse:px-4 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:border-b after:border-edge-subtle coarse:after:left-4 last:after:hidden'
+    : `flex min-w-0 w-full items-center gap-2 rounded-md text-left py-1 coarse:rounded-lg coarse:py-3 ${contentEdge ? 'px-0 ' + contentEdgeRowClassName : 'px-2 coarse:px-3'}`;
+}
 export function ListRow({
   children,
-  className,
+  className = '',
   selected,
   current,
   href,
   onClick,
   label,
-}: {
-  readonly children: ReactNode;
+  leading,
+  help,
+  helpId,
+  value,
+  trailing,
+  control: customControl,
+  labelTone,
+  density,
+  indent = 0,
+  contentEdge = false,
+  as,
+  buttonRef,
+  ...nativeProps
+}: Omit<HTMLAttributes<HTMLElement>, 'onClick'> & {
+  readonly children?: ReactNode;
   readonly className?: string | undefined;
   readonly selected?: boolean | undefined;
   readonly current?: boolean | undefined;
-  /** Makes the whole row a link to this address. */
   readonly href?: string | undefined;
-  /** Makes the whole row a button that runs this. */
-  readonly onClick?: (() => void) | undefined;
-  /** The accessible name of the row, when its text is not the whole name. */
-  readonly label?: string | undefined;
+  readonly onClick?: MouseEventHandler<HTMLElement> | undefined;
+  readonly label?: ReactNode;
+  readonly leading?: ReactNode;
+  readonly help?: ReactNode;
+  readonly helpId?: string;
+  readonly value?: ReactNode;
+  readonly trailing?: RowTrailing;
+  readonly density?: RowDensity;
+  readonly control?: ReactNode;
+  readonly labelTone?: 'accent' | 'danger';
+  readonly indent?: number;
+  readonly contentEdge?: boolean;
+  readonly as?: 'li' | 'div' | 'button' | 'a';
+  readonly buttonRef?: Ref<HTMLButtonElement> | undefined;
+  readonly disabled?: boolean | undefined;
 }): ReactNode {
-  const interactive = href !== undefined || onClick !== undefined;
-  const classes = rowClassName({
+  const settings = useSettingsSurface(),
+    rowDensity = density ?? (settings ? 'setting' : 'tree');
+  const structured = children === undefined;
+  const control =
+    customControl ??
+    (trailing?.kind === 'chevron' ? (
+      <ChevronRightIcon />
+    ) : trailing?.kind === 'value' ? (
+      <span className="inline-block w-4 shrink-0" aria-hidden="true" />
+    ) : trailing?.kind === 'switch' ? (
+      <span
+        className={switchClassNames(trailing.checked).track}
+        aria-hidden="true"
+      >
+        <span className={switchClassNames(trailing.checked).thumb} />
+      </span>
+    ) : trailing?.kind === 'action' ? (
+      <button
+        type="button"
+        className={buttonClassName({
+          variant: 'ghost',
+          size: 'compact',
+          tone: trailing.danger ? 'danger' : undefined,
+        })}
+        onClick={trailing.onClick}
+      >
+        {trailing.label}
+      </button>
+    ) : trailing?.kind === 'menu' ? (
+      <button
+        type="button"
+        aria-label={trailing.label}
+        className={buttonClassName({ variant: 'ghost', iconOnly: true })}
+        onClick={trailing.onClick}
+      >
+        <MoreIcon />
+      </button>
+    ) : null);
+  const body = structured ? (
+    <>
+      {leading}
+      <span
+        data-setting-text={rowDensity === 'setting' ? '' : undefined}
+        className="ui-settings-copy text-left flex min-w-0 flex-1 flex-col gap-0.5"
+      >
+        <span
+          data-setting-label={rowDensity === 'setting' ? '' : undefined}
+          className={`${selected || current ? 'text-label' : 'text-body'} ${labelTone === 'danger' ? 'text-danger' : labelTone === 'accent' ? 'text-accent' : 'text-strong'} ${rowDensity === 'tree' ? 'truncate' : ''}`}
+        >
+          {label}
+        </span>
+        {help ? (
+          <span
+            data-setting-help={rowDensity === 'setting' ? '' : undefined}
+            id={helpId}
+            className="text-secondary text-muted"
+          >
+            {help}
+          </span>
+        ) : null}
+      </span>
+      {value !== undefined || control ? (
+        <span
+          data-setting-control={rowDensity === 'setting' ? '' : undefined}
+          className={`ui-settings-control inline-flex shrink-0 items-center justify-end gap-2 text-value text-muted ${rowDensity === 'setting' ? 'h-7 coarse:h-5' : ''} ${trailing?.kind === 'value' ? 'max-w-1/2' : ''}`}
+        >
+          {trailing?.kind === 'value' ? (
+            <span
+              className="min-w-0 truncate"
+              title={typeof value === 'string' ? value : undefined}
+            >
+              {value}
+            </span>
+          ) : (
+            value
+          )}
+          {control}
+        </span>
+      ) : null}
+    </>
+  ) : (
+    children
+  );
+  const content =
+    rowDensity === 'setting' ? (
+      <SettingsRowActions>{body}</SettingsRowActions>
+    ) : (
+      body
+    );
+  const classes = `${listRowClasses(rowDensity, contentEdge)} ${rowClassName({
+    layout: false,
     selected,
     current,
-    interactive,
-    className,
-  });
-  // The list item stays a list item, and the control inside it takes the whole
-  // row. `display: contents` would have done the same with one element fewer,
-  // and it drops the item out of the list that assistive software counts.
-  const filling = `${classes} min-w-0 flex-1`;
-  if (href !== undefined)
-    return (
-      <li className="flex">
-        <a
-          className={filling}
-          href={href}
-          aria-current={current === true ? 'page' : undefined}
-          aria-label={label}
-        >
-          {children}
-        </a>
+    interactive: href !== undefined || onClick !== undefined,
+  })
+    .replace('ui-tree-row', '')
+    .replace('px-2', '')
+    .replace('gap-2', '')} ${className}`;
+  const ariaLabel =
+    nativeProps['aria-label'] ??
+    (typeof label === 'string' ? label : undefined);
+  const row =
+    href !== undefined ? (
+      <a
+        {...nativeProps}
+        data-ui-row={rowDensity}
+        className={classes}
+        href={href}
+        aria-current={current ? 'page' : undefined}
+        aria-label={ariaLabel}
+      >
+        {content}
+      </a>
+    ) : onClick !== undefined || as === 'button' ? (
+      <button
+        {...nativeProps}
+        data-ui-row={rowDensity}
+        ref={buttonRef}
+        type="button"
+        className={classes}
+        onClick={onClick}
+        aria-label={ariaLabel}
+      >
+        {content}
+      </button>
+    ) : as === 'div' ? (
+      <div {...nativeProps} data-ui-row={rowDensity} className={classes}>
+        {content}
+      </div>
+    ) : (
+      <li {...nativeProps} data-ui-row={rowDensity} className={classes}>
+        {content}
       </li>
     );
-  if (onClick !== undefined)
-    return (
-      <li className="flex">
-        <button
-          type="button"
-          className={filling}
-          aria-current={current === true ? 'page' : undefined}
-          aria-label={label}
-          onClick={onClick}
-        >
-          {children}
-        </button>
-      </li>
+  const wrapped =
+    indent > 0 ? (
+      <div className="flex w-full items-stretch">
+        {Array.from({ length: indent }, (_, index) => (
+          <span key={index} className="w-5 shrink-0" aria-hidden="true" />
+        ))}
+        {row}
+      </div>
+    ) : (
+      row
     );
-  return <li className={classes}>{children}</li>;
+  return (href !== undefined || onClick !== undefined) && as === undefined ? (
+    <li className="flex">{wrapped}</li>
+  ) : (
+    wrapped
+  );
 }

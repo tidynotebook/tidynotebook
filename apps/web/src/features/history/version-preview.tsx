@@ -1,3 +1,5 @@
+import { PreviewBlock, Notice } from '@notesapp/ui';
+
 /**
  * One version of a note, as the note surface draws it.
  *
@@ -29,7 +31,7 @@ import {
   type RichWidgetResolvers,
 } from '@notesapp/editor';
 import type { LocalStore } from '@notesapp/sync';
-import { Notice } from '@notesapp/ui';
+
 import { blockedLinkNotice } from '../../lib/note-link.ts';
 import {
   openExternalLink,
@@ -37,7 +39,7 @@ import {
 } from '../../lib/open-external-link.ts';
 import { useFlushNoteDraftForHandoff } from '../editor/save-status.tsx';
 import { useTheme } from '../../app.tsx';
-import { createDiagramFrame, diagramFramePath } from '../../diagram/frame.ts';
+import { createDiagramWidget, diagramFramePath } from '../../diagram/widget.ts';
 import { useAttachmentUrls } from '../editor/note-editor-attachments.ts';
 
 /** No attachment that this screen uploaded itself. */
@@ -114,7 +116,7 @@ export default function VersionPreview({
           : (attachmentUrlsRef.current.get(key) ?? null);
       },
       createDiagram: (source: string): DiagramHandle =>
-        createDiagramFrame({
+        createDiagramWidget({
           source,
           theme: themeRef.current,
           framePath: diagramFramePath,
@@ -175,11 +177,12 @@ export default function VersionPreview({
       {linkNotice === '' ? null : (
         <Notice message={linkNotice} onDismiss={() => setLinkNotice('')} />
       )}
-      <div
+      <PreviewBlock
         ref={containerRef}
         role="region"
         aria-label={label}
-        className="max-h-96 overflow-y-auto rounded-lg border border-edge-subtle bg-app px-4 py-2"
+        as="div"
+        className="max-h-96"
       />
     </div>
   );

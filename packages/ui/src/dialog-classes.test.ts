@@ -22,8 +22,8 @@ await test('a panel is never taller than the screen and scrolls inside', () => {
   for (const width of panels) {
     const parts = dialogPanelClassName(width).split(' ');
     assert.ok(parts.includes('max-h-full'), width);
-    assert.ok(parts.includes('overflow-y-auto'), width);
-    assert.ok(!parts.includes('overflow-hidden'), width);
+    assert.ok(parts.includes('flex-col'), width);
+    assert.ok(parts.includes('overflow-hidden'), width);
     assert.ok(parts.includes('rounded-xl'), width);
   }
 });
@@ -33,6 +33,14 @@ await test('the scrim does not scroll, so the title cannot leave the screen', ()
     for (const align of ['top', 'center'] as const) {
       const parts = dialogRootClassName(width, align).split(' ');
       assert.ok(!parts.some((part) => part.startsWith('overflow')), width);
+      assert.ok(
+        parts.includes('items-center'),
+        'Desktop dialogs stay centered',
+      );
+      assert.ok(
+        parts.includes('bg-scrim/40'),
+        'Desktop dialogs keep their scrim',
+      );
       // The space the scrim keeps above and below the panel bounds it.
       assert.ok(
         parts.some((part) => /^(?:pb|py)-/.test(part)),
@@ -43,12 +51,12 @@ await test('the scrim does not scroll, so the title cannot leave the screen', ()
 
 await test('the title and the action row stay in view on the card fill', () => {
   const title = dialogTitleClassName(false).split(' ');
-  assert.ok(title.includes('sticky'));
-  assert.ok(title.includes('top-0'));
+  assert.ok(title.includes('shrink-0'));
+  assert.ok(title.includes('relative'));
   assert.ok(title.includes('bg-card'));
   const footer = dialogFooterClassName().split(' ');
-  assert.ok(footer.includes('sticky'));
-  assert.ok(footer.includes('bottom-0'));
+  assert.ok(footer.includes('shrink-0'));
+  assert.ok(footer.includes('relative'));
   assert.ok(footer.includes('bg-card'));
   // No rule separates the parts of a dialog (decision 0063).
   for (const parts of [title, footer])
@@ -59,7 +67,47 @@ await test('a hidden title is for assistive technology only', () => {
   assert.equal(dialogTitleClassName(true), 'sr-only');
 });
 
+await test('the Settings modal is a phone sheet and a fixed panel from the large width', () => {
+  const panel = dialogPanelClassName('settings').split(' ');
+  for (const part of ['h-full', 'w-full', 'overflow-hidden', 'lg:h-settings'])
+    assert.ok(panel.includes(part), part);
+  assert.ok(panel.includes('lg:max-w-settings'));
+  assert.ok(!panel.includes('rounded-xl'));
+  assert.ok(panel.includes('lg:rounded-xl'));
+  const root = dialogRootClassName('settings', 'center').split(' ');
+  assert.ok(root.includes('items-stretch'));
+  assert.ok(root.includes('lg:items-center'));
+  assert.ok(!root.some((part) => part.startsWith('overflow')));
+});
+
 await test('a picture on the scrim keeps the whole screen', () => {
   assert.equal(dialogRootClassName('screen', 'top'), 'bg-scrim/80');
   assert.ok(dialogPanelClassName('screen').includes('h-full w-full'));
+});
+
+await test('phone forms share a bottom sheet with a bounded scroll area', () => {
+  for (const width of [
+    'small',
+    'medium',
+    'large',
+    'template',
+    'settings',
+  ] as const) {
+    const root = dialogRootClassName(width, 'center', true).split(' ');
+    assert.ok(root.includes('items-end'));
+    assert.ok(root.includes('h-viewport'));
+    const panel = dialogPanelClassName(width, true).split(' ');
+    assert.ok(panel.includes('w-full'));
+    assert.ok(panel.includes('max-h-sheet'));
+    assert.ok(panel.includes('overflow-hidden'));
+    assert.ok(!panel.includes('max-w-md'));
+  }
+});
+await test('a phone folder tree uses its sheet bounds instead of a second height cap', () => {
+  assert.ok(
+    dialogPanelClassName('small', true, true).includes('phone-sheet-fill'),
+  );
+  assert.ok(
+    !dialogPanelClassName('small', false, true).includes('phone-sheet'),
+  );
 });

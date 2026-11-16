@@ -17,9 +17,10 @@
  * change of its note drops it, so no open mounts the editor on an answer that
  * a later write replaced (record 0085).
  */
-import type { LocalChange, LocalStore } from '@notesapp/sync';
+import type { LocalCachedNote, LocalChange, LocalStore } from '@notesapp/sync';
 import {
   opensFromDevice,
+  noteRecoveryFor,
   type DeviceOpen,
   type NoteLoadIdentity,
   type NoteLoadStatus,
@@ -60,6 +61,7 @@ export async function readDeviceNote(
     );
     if (!opensFromDevice(document?.bytes ?? null, held.acceptedHeadRevisionId))
       return null;
+    const recovery = noteRecoveryFor(cached);
     return {
       kind: 'ready',
       path: cached.path,
@@ -67,6 +69,7 @@ export async function readDeviceNote(
       headRevisionId: cached.baseRevisionId,
       workingCopyId: cached.workingCopyId,
       sequence: cached.sequence,
+      ...(recovery === null ? {} : { recovery }),
       document,
     };
   } catch {
@@ -174,5 +177,51 @@ export function createDeviceOpens<Store extends WatchedStore>(
       for (const kept of reads.get(store)?.values() ?? []) kept.stop();
       reads.delete(store);
     },
+  };
+}
+
+/**
+ * Watches the cached note and also reads it after subscribing. This closes
+ * the gap between the loader read and the arrival of a restore. Only the
+ * newest read can update the screen.
+ */
+export function watchDeviceNote(
+  store: Pick<LocalStore, 'subscribe' | 'readCachedNote'>,
+  identity: NoteLoadIdentity,
+  onRead: (
+    note: Awaited<ReturnType<LocalStore['readCachedNote']>>,
+    fromChange: boolean,
+  ) => void,
+  onPurge: () => void,
+): () => void {
+  let sequence = 0;
+  let stopped = false;
+  /** Read the device note again and report it. Only the latest recheck reports its result. */
+  const recheck = async (fromChange: boolean): Promise<void> => {
+    const current = ++sequence;
+    let note: LocalCachedNote | null = null;
+    try {
+      note = await store.readCachedNote(
+        identity.accountId,
+        identity.workspaceId,
+        identity.fileId,
+      );
+    } catch {
+      // A deleted note can retry through the loader when this read fails.
+      // A ready editor keeps its buffer when no cached answer is available.
+    }
+    if (!stopped && current === sequence) onRead(note, fromChange);
+  };
+  const unsubscribe = store.subscribe((change) => {
+    if (!touchesNote(change, identity)) return;
+    if (change.kind === 'purge') {
+      sequence += 1;
+      onPurge();
+    } else if (change.kind === 'file') void recheck(true);
+  });
+  void recheck(false);
+  return () => {
+    stopped = true;
+    unsubscribe();
   };
 }

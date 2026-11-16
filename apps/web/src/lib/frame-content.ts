@@ -11,14 +11,9 @@
  *
  * The rules live here, outside JSX, so a unit test can read them.
  */
-import { pageRowClassName } from '@notesapp/ui';
 
 /** The classes of the area, after the inset of the sidebar. */
-export function frameContentClassName(): string {
-  return 'flex min-h-0 flex-1 flex-col overflow-y-auto';
-}
+export { frameContentClassName } from '@notesapp/ui';
 
 /** The classes of the row of the frame notices, which keeps its height. */
-export function frameNoticeRowClassName(): string {
-  return `${pageRowClassName()} shrink-0`;
-}
+export { frameNoticeRowClassName } from '@notesapp/ui';

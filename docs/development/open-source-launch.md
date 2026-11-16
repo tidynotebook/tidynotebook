@@ -79,10 +79,10 @@ gh api -X PATCH repos/tidynotebook/tidynotebook -f visibility=public
 gh api repos/tidynotebook/tidynotebook
 ```
 
-Read the existing rulesets first. Main requires PRs, resolved threads, Check,
-linear history and the merge queue. Deletion and force push are
-refused. No actor bypasses protection. See
-[record 0228](../decisions/0228-hosted-proof-and-release.md).
+Read the existing rulesets first. Main requires PRs, resolved threads, and
+Check. Only merge commits are allowed. Main does not require linear history or a merge queue. Deletion
+and force push are refused. No actor bypasses protection. See
+[review and merge](../../CONTRIBUTING.md#review-and-merge).
 
 ```sh
 gh api repos/tidynotebook/tidynotebook/rulesets

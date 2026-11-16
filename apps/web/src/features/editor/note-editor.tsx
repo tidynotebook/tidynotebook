@@ -1,3 +1,10 @@
+import {
+  Inset,
+  Button,
+  Notice,
+  noteEditorGutterClassName,
+  noteEditorHostClassName,
+} from '@notesapp/ui';
 /**
  * The one-pane note editor screen.
  *
@@ -26,6 +33,7 @@ import {
 import { useNavigate } from 'react-router';
 import { generateUUID } from '@notesapp/core';
 import { classifyUrl } from '@notesapp/markdown';
+import { useEditorHistory } from './editor-history.ts';
 import { useNoteDraftFlush } from './note-draft-flush.ts';
 import {
   isLocalStorageError,
@@ -53,7 +61,7 @@ import {
   type RichWidgetResolvers,
   type TableMenuRequest,
 } from '@notesapp/editor';
-import { Button, CollapsibleSection, Notice, pageGutter } from '@notesapp/ui';
+
 import { useSpellCheck, useTheme } from '../../app.tsx';
 import { ActiveNoteScope, useActiveNoteControl } from './active-note.tsx';
 import { downloadNote, transferFailureMessage } from '../export/export.ts';
@@ -63,12 +71,7 @@ import {
   useRegisterNoteActions,
   type NoteScreenActions,
 } from './note-actions.tsx';
-import {
-  noteFrameClassName,
-  noteOutlineScrollClassName,
-  noteRowClassName,
-  noteSideRegionClassName,
-} from '../../lib/note-column.ts';
+import { noteFrameClassName, noteRowClassName } from '../../lib/note-column.ts';
 import { localWriteFailureMessage } from '../../lib/local-write.ts';
 import { FormatToolbar, toolSlashCommands } from './format-toolbar.tsx';
 import { TableMenu } from './table-menu.tsx';
@@ -79,6 +82,7 @@ import { useInsertTemplate } from './insert-template.ts';
 import { useImageUpload } from './image-upload.ts';
 import { useNoteLinkSource } from './note-link-source.ts';
 import { useNoteSaveFacts } from './note-save-facts.ts';
+import { useImageUndo } from './image-undo.tsx';
 import { useCopyNote } from './copy-note.tsx';
 import {
   baseNameOf,
@@ -93,9 +97,9 @@ import {
 import { shouldFocusNewNoteOnOpen } from '../../lib/note-name-input.ts';
 import { useHeadingName } from './heading-name.ts';
 import { duplicateNote as makeCopy } from '../notes/duplicate-note.ts';
-import { OutlinePanel } from './outline.tsx';
+import { NoteSide } from './note-side.tsx';
 import { useDeleteNotice } from '../trash/trash.tsx';
-import { createDiagramFrame, diagramFramePath } from '../../diagram/frame.ts';
+import { createDiagramWidget, diagramFramePath } from '../../diagram/widget.ts';
 import { useRegisterNoteDraftFlush } from './save-status.tsx';
 import { createDocumentWorkQueue } from './document-work.ts';
 import { createWriteSchedule } from './write-schedule.ts';
@@ -109,7 +113,6 @@ import {
   remoteChangeWritesDraft,
   storedDocumentStep,
 } from './head-replaced.ts';
-import { Backlinks } from './backlinks.tsx';
 import { ReviewNoticeBar } from '../review/review-notice.tsx';
 import { ImageViewer } from './image-viewer.tsx';
 import { recordTiming } from './timing.ts';
@@ -167,6 +170,8 @@ export type NoteEditorProps = {
   readonly initialSequence?: number | undefined;
   /** A new note: the caret goes into its text (record 0163). */
   readonly focusText?: boolean | undefined;
+  /** Selects a new name on first focus; by default it follows focusText. */
+  readonly selectNameOnFirstFocus?: boolean | undefined;
   readonly onOpenLink?: ((target: LinkTarget) => void) | undefined;
   readonly onQueued?: ((entry: QueueEntry | null) => void) | undefined;
   /** Opens the Move to folder dialog that the note screen owns. */
@@ -260,6 +265,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
   initialWorkingCopyId,
   initialSequence = 0,
   focusText = false,
+  selectNameOnFirstFocus = focusText,
   onOpenLink,
   onQueued,
   onMoveToFolder,
@@ -331,8 +337,8 @@ const NoteEditorBody = memo(function NoteEditorBody({
   // vector of a closed document.
   const releasedRef = useRef(false);
   const sequenceRef = useRef(initialSequence);
-  // The live document of this note (`screen-note.ts`).
-  const { noteRef: sessionRef, mountNote: mountSession } = useScreenNote(
+  // The live document of this note. Each effect holds it (`screen-note.ts`).
+  const { noteRef: sessionRef, holdNote: holdSession } = useScreenNote(
     initialDocument,
     initialText,
   );
@@ -340,14 +346,20 @@ const NoteEditorBody = memo(function NoteEditorBody({
   const [pathError, setPathError] = useState('');
   // The save facts of the note change no render (record 0175).
   const {
-    saveSnapshotRef,
-    lastSavedAtRef,
+    readSnapshot,
     writtenSequenceRef,
+    checkpointTaken,
+    recoverDraft,
+    retryRecoveredDraft,
     storageError,
     setStorageError,
     rootRef,
     showSaveFacts,
-  } = useNoteSaveFacts(sequenceRef, initialSequence);
+  } = useNoteSaveFacts(
+    sequenceRef,
+    initialSequence,
+    initialWorkingCopyId !== undefined,
+  );
   // Where the caret stands, which decides the tools of the formatting row.
   const [formatContext, setFormatContext] =
     useState<FormatContext>(plainTextContext);
@@ -355,7 +367,11 @@ const NoteEditorBody = memo(function NoteEditorBody({
   formatContextRef.current = formatContext;
   // The menu of a row or a column that a handle of a table asked for.
   const [tableMenu, setTableMenu] = useState<TableMenuRequest | null>(null);
+  const history = useEditorHistory(viewRef);
+  const watchHistory = history.watch;
   // The picture that a press on an image of the note opened (record 0145).
+  const imageUndo = useImageUndo(viewRef);
+  const clearImageUndo = imageUndo.clear;
   const [openImage, setOpenImage] = useState<ImageOpenRequest | null>(null);
   const [outlineOpen, setOutlineOpen] = useState(true);
   const [backlinksOpen, setBacklinksOpen] = useState(true);
@@ -628,19 +644,8 @@ const NoteEditorBody = memo(function NoteEditorBody({
     const current = live.current;
     if (join) await joinStoredWork.current();
     try {
-      const [snapshot, checkpoints] = await Promise.all([
-        current.store.readFileSaveSnapshot(
-          current.accountId,
-          current.workspaceId,
-          current.fileId,
-        ),
-        current.store.listCheckpoints(
-          current.accountId,
-          current.workspaceId,
-          current.fileId,
-        ),
-      ]);
-      saveSnapshotRef.current = snapshot;
+      const snapshot = await readSnapshot(current);
+      if (snapshot === null) return;
       // The note may have moved or reached the trash from the sidebar, from
       // another tab, or from another device. The editor takes both facts from
       // the store, so no later save writes either one back.
@@ -658,13 +663,9 @@ const NoteEditorBody = memo(function NoteEditorBody({
         });
         if (adopted !== null) baseRef.current = adopted;
       }
-      const latest = checkpoints
-        .filter((entry) => !entry.deleted)
-        .map((entry) => entry.clientTime)
-        .sort()
-        .at(-1);
-      lastSavedAtRef.current = latest ?? null;
       showSaveFacts.current();
+      // Recovery work needs a version even when this open has no new key.
+      recoverDraft(snapshot, () => checkpointNow.current());
     } catch {
       // Queue reads are feedback only. A failure here must not disturb the
       // buffer, the draft, or the draft timer.
@@ -816,6 +817,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
       const outcome = await noteWork.version();
       if (outcome.kind === 'written') {
         const { entry, draft } = outcome;
+        checkpointTaken(draft.sequence);
         if (entry !== null) draftTaken.current(draft);
         // The new checkpoint is the parent of the next one. Holding it here
         // keeps the editor right even when its draft row is removed, so a
@@ -880,6 +882,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
       if (read !== 'none') askQueue(read === 'join');
     });
     const polling = window.setInterval(() => {
+      retryRecoveredDraft();
       askQueue(true);
     }, saveStateFallbackMs);
     return () => {
@@ -931,7 +934,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
           : (attachmentUrlsRef.current.get(key) ?? null);
       },
       createDiagram: (source: string): DiagramHandle =>
-        createDiagramFrame({
+        createDiagramWidget({
           source,
           theme: themeRef.current,
           framePath: diagramFramePath,
@@ -957,7 +960,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
   useLayoutEffect(() => {
     const container = containerRef.current;
     if (container === null) return;
-    const bound = mountSession();
+    const { note: bound, release: releaseNote } = holdSession();
     const view = createEditor(
       container,
       bufferRef.current,
@@ -966,6 +969,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
         // the change and moves the timers. Its work goes to the store on the
         // next frame (record 0175).
         const startedAt = performance.now();
+        clearImageUndo();
         textReaderRef.current = readText;
         documentWork.schedule(readText);
         const first = sequenceRef.current === writtenSequenceRef.current;
@@ -1009,6 +1013,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
         // Work of another device is not input of this device: the screen
         // shows it and schedules no save of its own (record 0085).
         onRemoteChange: (readText) => {
+          clearImageUndo();
           textReaderRef.current = readText;
           documentWork.schedule(readText);
           // A draft is recovery data of local work, so remote work writes
@@ -1018,6 +1023,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
         },
       },
     );
+    const stopHistory = watchHistory(view);
     viewRef.current = view;
     viewRichRef.current = richResolvers;
     activeNote.current.register(view);
@@ -1025,13 +1031,15 @@ const NoteEditorBody = memo(function NoteEditorBody({
     const stopMarginTaps =
       margin === null ? null : takeMarginTaps(view, margin);
     return () => {
+      stopHistory();
       stopMarginTaps?.();
       viewRef.current = null;
       viewRichRef.current = null;
       activeNote.current.register(null);
       view.destroy();
+      releaseNote();
     };
-  }, [workingCopyId, documentWork, localWrite]);
+  }, [workingCopyId, documentWork, localWrite, watchHistory]);
 
   // The local changes of the open document reach this device one frame
   // after they reach the editor, so a reload, a closed tab and a second tab
@@ -1039,7 +1047,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
   // the one source of the text, so the save path that follows sends exactly
   // the work this device added.
   useEffect(() => {
-    const bound = mountSession();
+    const { note: bound, release: releaseNote } = holdSession();
     releasedRef.current = false;
     const start = bound.startWork;
     if (start !== null) {
@@ -1071,7 +1079,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
       localWrite.flush();
       flushVersion.current();
       releasedRef.current = true;
-      bound.release();
+      releaseNote();
     };
   }, [workingCopyId, localWrite, noteWork]);
 
@@ -1336,6 +1344,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
   const renameNote = useCallback((): void => {
     nameInputRef.current?.focus();
     nameInputRef.current?.select();
+    if (nameInputRef.current !== null) nameInputRef.current.scrollLeft = 0;
   }, []);
 
   /**
@@ -1410,13 +1419,13 @@ const NoteEditorBody = memo(function NoteEditorBody({
   useRegisterNoteActions(noteScreenActions);
 
   return (
-    <div className="flex h-full min-h-0 min-w-0 flex-col" ref={rootRef}>
+    <Inset as="div" className="flex h-full min-w-0 flex-col" ref={rootRef}>
       <NoteHeader
         fileId={fileId}
         name={name}
         nameError={pathError}
         nameInputRef={nameInputRef}
-        selectOnFirstFocus={focusText}
+        selectOnFirstFocus={selectNameOnFirstFocus}
         onNameChange={typeName}
         onNameCommit={commitName}
         onNameRevert={revertName}
@@ -1426,6 +1435,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
         workspaceId={workspaceId}
         fileId={fileId}
         onRename={renameNote}
+        onCopyText={copyNote.run}
         onMoveToFolder={onMoveToFolder}
         onDuplicate={duplicateNote}
         onAttachImage={attachImage}
@@ -1433,9 +1443,10 @@ const NoteEditorBody = memo(function NoteEditorBody({
         onPublish={onPublish}
         onDelete={deleteNoteAndLeave}
       />
+      {/* The visible side region owns the right edge. Narrow notes keep both gutters. */}
       <div
         ref={marginRef}
-        className={`flex min-h-0 flex-1 flex-col ${pageGutter}`}
+        className={`flex overflow-hidden flex-1 flex-col ${noteEditorGutterClassName()}`}
       >
         {/*
           The name field is in the frame header, which is one row of 44 px and
@@ -1444,19 +1455,19 @@ const NoteEditorBody = memo(function NoteEditorBody({
           points at this message with `aria-describedby`.
         */}
         {pathError === '' ? null : (
-          <div className="mt-4" id={noteNameErrorId(fileId)}>
+          <Inset as="div" id={noteNameErrorId(fileId)}>
             <Notice tone="problem" message={pathError} />
-          </div>
+          </Inset>
         )}
         {writeFailure === null ? null : (
-          <div className="mt-4">
+          <Inset as="div">
             <Notice tone="problem" message={writeFailure} />
-          </div>
+          </Inset>
         )}
         {editorNotice === '' ? null : (
-          <div className="mt-4">
+          <Inset as="div">
             <Notice tone="problem" message={editorNotice} />
-          </div>
+          </Inset>
         )}
         {/*
           A save of this device that joined work of another device offers
@@ -1483,16 +1494,16 @@ const NoteEditorBody = memo(function NoteEditorBody({
           }}
         />
         {attachState.kind === 'uploading' ? (
-          <p className="m-0 mt-4 text-control text-muted" role="status">
+          <Inset as="p" className="text-secondary text-muted" role="status">
             {`Uploading ${attachState.name}.`}
-          </p>
+          </Inset>
         ) : null}
         {attachState.kind === 'failed' ? (
-          <div className="mt-4">
+          <Inset as="div">
             <Notice tone="problem" message={attachState.message}>
               <Button
                 variant="secondary"
-                size="sm"
+                size="compact"
                 onClick={() => {
                   retryUpload();
                 }}
@@ -1500,7 +1511,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
                 Try again
               </Button>
             </Notice>
-          </div>
+          </Inset>
         ) : null}
 
         {/*
@@ -1513,11 +1524,13 @@ const NoteEditorBody = memo(function NoteEditorBody({
         */}
         <div className={noteRowClassName()}>
           <div className={noteFrameClassName()}>
-            {/*
-              The row of formatting tools is the one band above the text
-              (decision 0094). It holds no name and no note action.
-            */}
-            <FormatToolbar context={formatContext} onFormat={runFormat} />
+            {/* The tools use the one editor and its local history. */}
+            <FormatToolbar
+              context={formatContext}
+              onFormat={runFormat}
+              history={history.state}
+              onHistory={history.run}
+            />
             {tableMenu === null ? null : (
               <TableMenu
                 request={tableMenu}
@@ -1525,9 +1538,10 @@ const NoteEditorBody = memo(function NoteEditorBody({
                 onClose={closeTableMenu}
               />
             )}
-            <div
+            <Inset
               ref={containerRef}
-              className="min-h-0 flex-1 overflow-hidden"
+              as="div"
+              className={noteEditorHostClassName()}
               onPaste={(event): void => {
                 const dropped = Array.from(event.clipboardData?.files ?? []);
                 if (dropped.some((file) => file.type.startsWith('image/'))) {
@@ -1546,9 +1560,9 @@ const NoteEditorBody = memo(function NoteEditorBody({
             <NoteFooter initialText={initialText} />
             <ImageViewer
               image={openImage}
-              onClose={() => {
-                setOpenImage(null);
-              }}
+              onRemoved={imageUndo.removed}
+              onClose={() => setOpenImage(null)}
+              returnFocus={() => currentView()?.focus()}
             />
           </div>
           {/*
@@ -1557,36 +1571,20 @@ const NoteEditorBody = memo(function NoteEditorBody({
             region both fit, so a note on a laptop keeps its full measure
             (decision 0055).
           */}
-          <aside
-            className={noteSideRegionClassName()}
-            aria-label="Note outline and inbound links"
-          >
-            <div className={noteOutlineScrollClassName()}>
-              <OutlinePanel
-                text={initialText}
-                open={outlineOpen}
-                onToggle={setOutlineOpen}
-              />
-            </div>
-            <div className="min-h-0 max-h-1/2 shrink-0 overflow-y-auto overscroll-contain">
-              <CollapsibleSection
-                id="notes-backlinks"
-                title="Links to this note"
-                open={backlinksOpen}
-                onToggle={setBacklinksOpen}
-              >
-                <Backlinks
-                  store={store}
-                  accountId={accountId}
-                  workspaceId={workspaceId}
-                  fileId={fileId}
-                />
-              </CollapsibleSection>
-            </div>
-          </aside>
+          <NoteSide
+            store={store}
+            accountId={accountId}
+            workspaceId={workspaceId}
+            fileId={fileId}
+            text={initialText}
+            outlineOpen={outlineOpen}
+            onOutlineChange={setOutlineOpen}
+            backlinksOpen={backlinksOpen}
+            onBacklinksChange={setBacklinksOpen}
+          />
         </div>
       </div>
-      {copyNote.toast}
-    </div>
+      {imageUndo.toast ?? copyNote.toast}
+    </Inset>
   );
 });

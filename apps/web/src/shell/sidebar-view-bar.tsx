@@ -1,3 +1,12 @@
+import { preloadCalendar } from '../features/daily-notes/calendar-entry.tsx';
+import {
+  IconButton,
+  Rail,
+  Stack,
+  CalendarIcon,
+  FolderIcon,
+  LinkIcon,
+} from '@notesapp/ui';
 /**
  * The view bar of the sidebar (record 0105).
  *
@@ -7,7 +16,10 @@
  * names and the stored choice, and `sidebarViewClassName` draws a button.
  */
 import { useCallback, useState, type ReactNode } from 'react';
-import { CalendarIcon, FolderIcon, sidebarViewClassName } from '@notesapp/ui';
+
+import { Link, useLocation } from 'react-router';
+import { actionIcon } from './action-icons.tsx';
+import { trashPageGlyph } from '../lib/delete-label.ts';
 import {
   parseSidebarView,
   sidebarViewLabels,
@@ -51,30 +63,79 @@ export function useSidebarView(): readonly [
 export function SidebarViewBar({
   view,
   onChoose,
+  workspaceId,
+  onNavigate,
 }: {
+  readonly workspaceId: string;
+  readonly onNavigate: () => void;
   readonly view: SidebarView;
   readonly onChoose: (view: SidebarView) => void;
 }): ReactNode {
+  const location = useLocation();
   return (
-    <nav
+    <Rail
       aria-label="Sidebar views"
-      className="flex w-12 shrink-0 flex-col items-center gap-1 border-r border-edge-subtle py-2"
+      className="ui-sidebar-rail border-r border-edge-subtle"
     >
-      {sidebarViews.map((candidate) => (
-        <button
-          key={candidate}
-          type="button"
-          className={sidebarViewClassName({ current: candidate === view })}
-          aria-label={sidebarViewLabels[candidate]}
-          title={sidebarViewLabels[candidate]}
-          aria-pressed={candidate === view}
-          onClick={() => onChoose(candidate)}
-        >
-          <span className="inline-flex" aria-hidden="true">
-            {viewIcons[candidate]}
-          </span>
-        </button>
-      ))}
-    </nav>
+      <Stack gap={0.5} align="center" className="ui-sidebar-rail-group">
+        {sidebarViews.map((candidate) => (
+          <IconButton
+            key={candidate}
+            size="rail"
+            glyph={viewIcons[candidate]}
+            label={sidebarViewLabels[candidate]}
+            current={
+              candidate === view &&
+              !/\/(trash|published)$/.test(location.pathname)
+            }
+            ariaPressed={candidate === view}
+            onPointerEnter={
+              candidate === 'calendar'
+                ? () => {
+                    void preloadCalendar().catch(() => {});
+                  }
+                : undefined
+            }
+            onFocus={
+              candidate === 'calendar'
+                ? () => {
+                    void preloadCalendar().catch(() => {});
+                  }
+                : undefined
+            }
+            onClick={() => onChoose(candidate)}
+            className="ui-sidebar-rail-button"
+          />
+        ))}
+      </Stack>
+      <div aria-hidden="true" />
+      <Stack gap={0.5} align="center" className="ui-sidebar-rail-group">
+        {[
+          { name: 'Published links', path: 'published', icon: <LinkIcon /> },
+          { name: 'Trash', path: 'trash', icon: actionIcon(trashPageGlyph) },
+        ].map((item) => {
+          const to = `/w/${workspaceId}/${item.path}`,
+            current = location.pathname === to;
+          return (
+            <IconButton
+              key={item.path}
+              size="rail"
+              glyph={item.icon}
+              label={item.name}
+              current={current}
+              render={(props) => (
+                <Link
+                  {...props}
+                  className={`${props.className} ui-rail-link ui-sidebar-rail-button`}
+                  to={to}
+                  aria-current={current ? 'page' : undefined}
+                  onClick={onNavigate}
+                />
+              )}
+            />
+          );
+        })}
+      </Stack>
+    </Rail>
   );
 }

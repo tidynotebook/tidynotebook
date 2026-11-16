@@ -1,7 +1,20 @@
+import {
+  IconButton,
+  Inline,
+  Inset,
+  Stack,
+  calendarDayClassName,
+  calendarNoteMarkClassName,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  Button,
+  HeaderSlot,
+} from '@notesapp/ui';
+
 /**
  * The calendar view of the sidebar (records 0099, 0100 and 0105).
  *
- * The first row is the month title and three compact icon actions: Open today's note, Previous month and Next month. The
+ * The month title opens today's note. Previous month and Next month stay beside it. The
  * month is a date grid in the WAI-ARIA pattern: a table with the grid role,
  * one button for each day, and one day in the tab order at a time. The arrow
  * keys, Home, End, Page Up and Page Down move that day, and a press or Enter
@@ -13,15 +26,7 @@
  */
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { addMonths, sameCalendarDate, type CalendarDate } from '@notesapp/core';
-import {
-  Button,
-  calendarDayClassName,
-  calendarNoteMarkClassName,
-  CalendarDayIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  rowClassName,
-} from '@notesapp/ui';
+
 import {
   dateAfterKey,
   dayName,
@@ -89,68 +94,66 @@ export function SidebarCalendar({
   };
 
   return (
-    <section aria-label="Calendar">
-      {/*
-        The title keeps a base width for a short month name. When the
-        sidebar is too narrow for it and the three touch targets, the actions
-        take a line of their own instead of cutting the month.
-      */}
-      <div className="flex flex-wrap items-center">
+    <Stack gap={1} as="section" aria-label="Calendar">
+      <div className="flex min-w-0 items-center">
         <h2
-          className={rowClassName({
-            interactive: false,
-            className: 'm-0 min-w-0 flex-1 basis-24 font-medium',
-          })}
+          className="m-0 min-w-0 flex-1 text-label"
+          aria-label={monthTitle(month)}
         >
-          <span className="truncate" aria-live="polite">
-            {monthTitle(month, undefined, 'short')}
-          </span>
-        </h2>
-        <div className="ml-auto flex items-center">
           <Button
             variant="ghost"
-            size="sm"
-            compact
+            size="compact"
             label="Open today's note"
-            icon={<CalendarDayIcon />}
             onClick={() => openDay(today)}
-          />
-          <Button
-            variant="ghost"
-            size="sm"
-            compact
-            label="Previous month"
-            icon={<ChevronLeftIcon />}
-            onClick={() => setSelected((date) => addMonths(date, -1))}
-          />
-          <Button
-            variant="ghost"
-            size="sm"
-            compact
-            label="Next month"
-            icon={<ChevronRightIcon />}
-            onClick={() => setSelected((date) => addMonths(date, 1))}
-          />
-        </div>
+            className="max-w-full"
+          >
+            <span className="truncate" aria-live="polite">
+              {monthTitle(month, undefined, 'short')}
+            </span>
+          </Button>
+        </h2>
+        <Inline align="center" as="div">
+          <HeaderSlot targetWidth>
+            <IconButton
+              size="header"
+              variant="ghost"
+              label="Previous month"
+              glyph={<ChevronLeftIcon />}
+              onClick={() => setSelected((date) => addMonths(date, -1))}
+            />
+          </HeaderSlot>
+          <HeaderSlot targetWidth>
+            <IconButton
+              size="header"
+              variant="ghost"
+              label="Next month"
+              glyph={<ChevronRightIcon />}
+              onClick={() => setSelected((date) => addMonths(date, 1))}
+            />
+          </HeaderSlot>
+        </Inline>
       </div>
-      <table
+      <Inset
         role="grid"
         aria-label={monthTitle(month)}
-        className="mt-1 w-full table-fixed border-collapse"
+        as="table"
+        className="w-full table-fixed border-collapse"
       >
         <thead>
           <tr>
             {weekdayOrder(firstDay).map((weekday) => {
               const names = weekdayNames(weekday);
               return (
-                <th
+                <Inset
                   key={weekday}
                   scope="col"
                   abbr={names.long}
-                  className="pb-0.5 text-center text-kbd font-medium text-muted"
+                  padY={1}
+                  as="th"
+                  className="text-center text-group text-muted"
                 >
                   {names.narrow}
-                </th>
+                </Inset>
               );
             })}
           </tr>
@@ -166,7 +169,7 @@ export function SidebarCalendar({
                 return (
                   <td
                     key={dayKey(cell.date)}
-                    className="p-px text-center"
+                    className="text-center"
                     aria-selected={isSelected}
                   >
                     <button
@@ -210,7 +213,7 @@ export function SidebarCalendar({
             </tr>
           ))}
         </tbody>
-      </table>
-    </section>
+      </Inset>
+    </Stack>
   );
 }

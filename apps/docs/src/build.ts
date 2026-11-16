@@ -81,7 +81,10 @@ export type BuildResult = {
 };
 
 /** Writes one file, with the folders above it. */
-async function write(path: string, content: string): Promise<void> {
+async function write(
+  path: string,
+  content: string | Uint8Array,
+): Promise<void> {
   await mkdir(dirname(path), { recursive: true });
   await writeFile(path, content);
 }
@@ -231,11 +234,16 @@ export async function buildSite(input: BuildInput): Promise<BuildResult> {
         );
       indexed += 1;
     }
-    const written = await search.writeFiles({
-      outputPath: join(input.output, 'pagefind'),
-    });
-    if (written.errors.length > 0)
-      throw new Error(`Pagefind did not write: ${written.errors.join(' ')}`);
+    // Pagefind 1.5.2 can return from writeFiles before its buffered writes
+    // finish. Closing its service can then leave empty or partial files.
+    // Read the bytes instead and await Node's file writes before closing.
+    const searchFiles = await search.getFiles();
+    if (searchFiles.errors.length > 0)
+      throw new Error(
+        `Pagefind did not write: ${searchFiles.errors.join(' ')}`,
+      );
+    for (const file of searchFiles.files)
+      await write(join(input.output, 'pagefind', file.path), file.content);
   } finally {
     await pagefind.close();
   }

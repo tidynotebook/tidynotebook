@@ -1,3 +1,25 @@
+import { useDocumentTitle } from '../../shell/document-title.ts';
+import {
+  PreviewBlock,
+  Stack,
+  Inset,
+  Inline,
+  Badge,
+  Button,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  EmptyState,
+  HistoryIcon,
+  ListRow,
+  LoadingState,
+  Notice,
+  Page,
+  pageGroupLabelClassName,
+  PageHeader,
+  pageListClassName,
+  rowClassName,
+  tabClassName,
+} from '@notesapp/ui';
 /**
  * The history of one note: a timeline of versions, with one way back.
  *
@@ -13,6 +35,7 @@
  * Opening the history never changes the text on this device. Restore writes
  * one new version on top of the newest one and records where it came from;
  * it never rewinds the history and never touches a draft or a queued save.
+ * Restore brings back the text of the version and keeps the current name.
  *
  * An image file has no line comparison, so a row of an image shows the
  * picture of that version instead.
@@ -42,23 +65,7 @@ import {
 import { generateUUID } from '@notesapp/core';
 import type { DiffHunk, LineChangeCount } from '@notesapp/editor';
 import type { LocalStore } from '@notesapp/sync';
-import {
-  Badge,
-  Button,
-  ChevronDownIcon,
-  ChevronRightIcon,
-  EmptyState,
-  HistoryIcon,
-  ListRow,
-  LoadingState,
-  Notice,
-  Page,
-  pageGroupLabelClassName,
-  PageHeader,
-  pageListClassName,
-  rowClassName,
-  tabClassName,
-} from '@notesapp/ui';
+
 import {
   problemMessage,
   useLocalStore,
@@ -151,6 +158,7 @@ type DiffState =
  * changes.
  */
 export function HistoryView(): ReactNode {
+  useDocumentTitle('Version history');
   const params = useParams();
   const workspaceId =
     typeof params.workspaceId === 'string' ? params.workspaceId : null;
@@ -169,8 +177,8 @@ export function HistoryView(): ReactNode {
   if (accountId === null)
     return (
       <Page>
-        <PageHeader title="History" />
-        <LoadingState shape="list" rows={5} label="The history is loading." />
+        <PageHeader title="Version history" />
+        <LoadingState shape="list" rows={5} label="Loading history" />
       </Page>
     );
   return (
@@ -193,7 +201,7 @@ function HistoryNotice({
 }): ReactNode {
   return (
     <Page>
-      <PageHeader title="History" />
+      <PageHeader title="Version history" />
       <EmptyState
         icon={<HistoryIcon size={20} />}
         title={title}
@@ -477,6 +485,9 @@ function HistoryDetail({
         clientTime: new Date().toISOString(),
         targetRevisionId,
         expectedHead: head.headRevisionId,
+        // Restore brings the text back and keeps the current name. The
+        // server keeps the name of the version only when no path is sent.
+        path: head.path,
         revisionId: generateUUID(),
         message: null,
       },
@@ -513,11 +524,11 @@ function HistoryDetail({
   if (head.status === 'loading')
     return (
       <Page>
-        <PageHeader title="History" />
+        <PageHeader title="Version history" />
         <LoadingState
           shape="list"
           rows={5}
-          label="The history of this note is loading."
+          label="Loading history of this note"
         />
       </Page>
     );
@@ -554,16 +565,38 @@ function HistoryDetail({
   );
   return (
     <Page
+      emptyState={
+        items.length === 0 && historyError === null ? (
+          <EmptyState
+            icon={<HistoryIcon size={20} />}
+            title="No version yet"
+            description="Save this note once and its first version appears here."
+          />
+        ) : null
+      }
       sections={days.map((day) => ({
         id: dayHeadingId(day.key),
         title: day.label,
       }))}
     >
       <PageHeader
-        title={`History of ${name}`}
-        description="Open a version to see what changed and how it looked. Restore brings it back as the newest version, and nothing is lost."
+        title="Version history"
+        description={
+          head.status === 'ready' && head.kind === 'attachment'
+            ? `${name}. Open a version to preview the image. Restore makes it the newest version.`
+            : `${name}. Restore makes a version the newest. Nothing is lost.`
+        }
       />
-      <div className="space-y-4">
+      <Stack
+        gap={4}
+        as="div"
+        hidden={
+          items.length === 0 &&
+          historyError === null &&
+          actionError === null &&
+          actionMessage === ''
+        }
+      >
         {actionMessage === '' ? null : (
           <Notice tone="success" message={actionMessage} />
         )}
@@ -573,14 +606,8 @@ function HistoryDetail({
         {historyError === null ? null : (
           <Notice tone="problem" message={historyError} />
         )}
-        {items.length === 0 && historyError === null ? (
-          <EmptyState
-            icon={<HistoryIcon size={20} />}
-            title="No version yet"
-            description="Save this note once and its first version appears here."
-          />
-        ) : (
-          <div className="space-y-6">
+        {items.length === 0 && historyError === null ? null : (
+          <Stack gap={6} as="div">
             {days.map((day) => (
               <section key={day.key} aria-labelledby={dayHeadingId(day.key)}>
                 <h2
@@ -606,13 +633,18 @@ function HistoryDetail({
                     const label = savedAtLabel(row.time);
                     return (
                       <Fragment key={item.revisionId}>
-                        <ListRow className="flex-wrap">
+                        <ListRow
+                          selected={selected}
+                          contentEdge
+                          className="flex-wrap"
+                        >
                           <button
                             type="button"
                             className={rowClassName({
                               selected,
+                              contentEdge: true,
                               inset: false,
-                              className: 'min-w-0 flex-1 py-1',
+                              className: 'min-w-0 flex-1',
                             })}
                             aria-expanded={selected}
                             aria-controls={controlsWhenShown(panelId, selected)}
@@ -635,34 +667,34 @@ function HistoryDetail({
                               )}
                             </span>
                             <span className="flex min-w-0 flex-1 flex-col text-left">
-                              <span className="truncate text-ui text-strong">
+                              <span className="truncate text-body text-strong">
                                 {label}
                               </span>
-                              <span className="truncate text-control text-muted">
+                              <span className="line-clamp-2 text-secondary text-muted lg:line-clamp-1">
                                 {rowReading(change, item.merged)}
                               </span>
                             </span>
                           </button>
-                          {current ? (
-                            <span className="shrink-0 px-2">
+                          <Inset padX={2} as="span" className="shrink-0">
+                            {current ? (
                               <Badge>Current version</Badge>
-                            </span>
-                          ) : (
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              disabled={busy || !restorable}
-                              label={`Restore the version ${label.toLowerCase()}`}
-                              onClick={() => {
-                                void restore(item.revisionId);
-                              }}
-                            >
-                              Restore
-                            </Button>
-                          )}
+                            ) : (
+                              <Button
+                                variant="secondary"
+                                size="compact"
+                                disabled={busy || !restorable}
+                                label={`Restore the version ${label.toLowerCase()}`}
+                                onClick={() => {
+                                  void restore(item.revisionId);
+                                }}
+                              >
+                                Restore
+                              </Button>
+                            )}
+                          </Inset>
                         </ListRow>
                         {selected ? (
-                          <li className="px-2 pb-4 pt-1" id={panelId}>
+                          <Inset padX={2} padY={1} as="li" id={panelId}>
                             <RevisionPanel
                               key={item.revisionId}
                               detail={detail}
@@ -683,7 +715,7 @@ function HistoryDetail({
                                     }
                               }
                             />
-                          </li>
+                          </Inset>
                         ) : null}
                       </Fragment>
                     );
@@ -695,7 +727,7 @@ function HistoryDetail({
               <div>
                 <Button
                   variant="secondary"
-                  size="sm"
+                  size="compact"
                   disabled={loadingMore}
                   onClick={() => {
                     void loadMore();
@@ -707,9 +739,9 @@ function HistoryDetail({
                 </Button>
               </div>
             )}
-          </div>
+          </Stack>
         )}
-      </div>
+      </Stack>
     </Page>
   );
 }
@@ -763,22 +795,24 @@ function RevisionPanel({
   const tabRefs = useRef<Partial<Record<RevisionView, HTMLButtonElement>>>({});
 
   if (detail === null || detail.status === 'loading')
-    return <LoadingState label="This version is loading." />;
+    return <LoadingState label="Loading version" />;
   if (detail.status === 'error')
     return <Notice tone="problem" message={detail.message} />;
   if (kind === 'attachment') {
     const picture = attachmentPreviewView(preview, detail.item.revisionId);
     if (picture.kind === 'picture')
       return (
-        <img
-          className="max-h-96 rounded-lg border border-edge-line"
-          src={picture.url}
-          alt={`${name} as it was in this version`}
-        />
+        <PreviewBlock as="div">
+          <img
+            className="max-h-96"
+            src={picture.url}
+            alt={`${name} as it was in this version`}
+          />
+        </PreviewBlock>
       );
     if (picture.kind === 'failed')
       return <Notice tone="problem" message={attachmentPreviewFailedMessage} />;
-    return <LoadingState label="The picture of this version is loading." />;
+    return <LoadingState label="Loading picture of this version" />;
   }
 
   /** Moves between the tabs with the arrow keys, as a tab list does. */
@@ -794,10 +828,12 @@ function RevisionPanel({
   };
 
   return (
-    <div className="space-y-3">
+    <Stack gap={3} as="div">
       {views.length > 1 ? (
-        <div
-          className="flex items-center gap-1"
+        <Inline
+          gap={1}
+          align="center"
+          as="div"
           role="tablist"
           aria-label="Views of this version"
         >
@@ -824,13 +860,13 @@ function RevisionPanel({
               {revisionViewLabels[entry]}
             </button>
           ))}
-        </div>
+        </Inline>
       ) : (
-        <h3 className="m-0 text-control font-medium text-muted">
-          {currentVersionText}
-        </h3>
+        <h3 className="m-0 text-secondary text-muted">{currentVersionText}</h3>
       )}
-      <div
+      <Stack
+        gap={2}
+        as="div"
         role={views.length > 1 ? 'tabpanel' : undefined}
         id={`${panelId}-${view}`}
         aria-labelledby={
@@ -838,16 +874,21 @@ function RevisionPanel({
         }
       >
         {view === 'changes' ? (
-          <RevisionChanges diff={diff} revisionId={detail.item.revisionId} />
+          <>
+            <Inset as="p" className="text-secondary text-muted">
+              Compared with current
+            </Inset>
+            <RevisionChanges diff={diff} revisionId={detail.item.revisionId} />
+          </>
         ) : note === null ? (
-          <pre
-            className="m-0 max-h-96 overflow-auto whitespace-pre-wrap rounded-lg border border-edge-subtle bg-app p-3 font-mono text-control text-strong"
+          <PreviewBlock
+            className="max-h-96"
             aria-label={`${name} in this version`}
           >
             {detail.text}
-          </pre>
+          </PreviewBlock>
         ) : (
-          <Suspense fallback={<LoadingState label="The preview is loading." />}>
+          <Suspense fallback={<LoadingState label="Loading preview" />}>
             <VersionPreview
               key={detail.item.revisionId}
               store={note.store}
@@ -859,8 +900,8 @@ function RevisionPanel({
             />
           </Suspense>
         )}
-      </div>
-    </div>
+      </Stack>
+    </Stack>
   );
 }
 
@@ -874,7 +915,7 @@ function RevisionChanges({
 }): ReactNode {
   if (diff.status === 'idle')
     return (
-      <p className="m-0 text-control text-muted">
+      <p className="m-0 text-secondary text-muted">
         No comparison is available for this version. Open Preview to read it.
       </p>
     );
@@ -883,7 +924,7 @@ function RevisionChanges({
       <LoadingState
         shape="list"
         rows={4}
-        label="The comparison of the two versions is loading."
+        label="Loading comparison of the two versions"
       />
     );
   if (diff.status === 'ready')
@@ -898,7 +939,7 @@ function RevisionChanges({
     );
   if (diff.status === 'limit')
     return (
-      <p className="m-0 text-control text-muted">
+      <p className="m-0 text-secondary text-muted">
         The two versions are too far apart to compare line by line. Open Preview
         to read this version, or restore it.
       </p>

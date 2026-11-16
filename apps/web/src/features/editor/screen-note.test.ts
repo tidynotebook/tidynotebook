@@ -43,16 +43,46 @@ await test('a render opens no note, and each mount releases the one note it took
   assert.equal(count.opens(), 0, 'a render opens nothing');
 
   // React mounts the effects, cleans up and mounts again in development.
-  const first = screen.mountNote();
-  assert.equal(screen.mountNote(), first, 'a second effect takes the note');
+  // The view effect and the work effect each hold the note.
+  const view = screen.holdNote();
+  const work = screen.holdNote();
+  const first = view.note;
+  assert.equal(work.note, first, 'a second effect takes the note');
   assert.equal(screen.noteRef.current, first);
-  first.release();
-  const second = screen.mountNote();
-  assert.notEqual(second, first);
-  assert.equal(screen.noteRef.current, second);
+  view.release();
+  work.release();
+  assert.equal(first.released(), true);
+  const second = screen.holdNote();
+  assert.notEqual(second.note, first);
+  assert.equal(screen.noteRef.current, second.note);
   second.release();
   assert.equal(count.opens(), 2);
   assert.equal(count.releases(), 2);
+});
+
+await test('a released note never stays under a live view', () => {
+  // Issue 517: React runs the set up of the view effect before the clean up
+  // of the work effect. The view took the open note, and the clean up then
+  // released it, so the undo of the live view was gone.
+  const count = counter();
+  const screen = createScreenNote(count.open);
+  const firstView = screen.holdNote();
+  const firstWork = screen.holdNote();
+  // Both effects run again in one commit: the view effect first.
+  firstView.release();
+  const view = screen.holdNote();
+  firstWork.release();
+  const work = screen.holdNote();
+  assert.equal(view.note.released(), false, 'the view keeps an open note');
+  assert.equal(work.note, view.note, 'both effects share one note');
+  assert.equal(count.opens(), 1);
+  // Leaving the screen ends the note after its last hold.
+  view.release();
+  assert.equal(view.note.released(), false);
+  work.release();
+  work.release();
+  assert.equal(view.note.released(), true);
+  assert.equal(count.releases(), 1);
 });
 
 await test('a screen that React renders and throws away opens nothing', () => {
@@ -61,8 +91,9 @@ await test('a screen that React renders and throws away opens nothing', () => {
   createScreenNote(count.open);
   const kept = createScreenNote(count.open);
   const note = kept.noteRef.current;
-  assert.equal(kept.mountNote(), note, 'the mount takes the note it read');
-  note.release();
+  const hold = kept.holdNote();
+  assert.equal(hold.note, note, 'the mount takes the note it read');
+  hold.release();
   assert.equal(count.opens(), 1);
   assert.equal(count.releases(), 1);
 });

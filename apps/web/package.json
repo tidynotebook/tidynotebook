@@ -13,7 +13,7 @@
   "scripts": {
     "typecheck": "tsc -b tsconfig.build.json && tsc -p tsconfig.json",
     "build": "tsc -b tsconfig.build.json && vite build && node ../../tools/precompress-assets.mjs dist/web",
-    "test:unit": "node ../../tools/run-tests.mjs unit",
+    "test:unit": "node --config-file=../../node-test.config.json \"src/**/*.test.{ts,mjs}\"",
     "dev": "vite"
   },
   "dependencies": {
@@ -39,6 +39,6 @@
     "tailwindcss": "4.3.3",
     "type-fest": "5.10.0",
     "typescript": "catalog:toolchain",
-    "vite": "8.3.4"
+    "vite": "8.3.5"
   }
 }

@@ -68,7 +68,8 @@ holds the built page, the editor and the stylesheet fallbacks to one registry.
   or `text-sm`, no off-scale radius, no bare `rounded`, no `uppercase`, no
   `tracking-wide` or wider, no `font-bold` or heavier, no `border-dashed`, no
   opacity that fades a control, and nothing scales on press.
-- No icon `size` other than 16 or 20 (0065). No `border-edge` or `ring-edge`
+- No icon `size` other than 16 or 20 (0065), except the owner-approved
+  22 px Undo and Redo icons in the frozen UI redesign. No `border-edge` or `ring-edge`
   except a checkbox, a task box and a drop target (0063). No `focus:` where
   `focus-visible:` is meant. No built in shadow utility (0052), no duration,
   easing or transition outside `src/motion.ts` (0054), no colour filter (0057).
@@ -95,4 +96,5 @@ holds the built page, the editor and the stylesheet fallbacks to one registry.
 | `THIRD_PARTY_LICENSES.md` | The source and licence of every palette                 |
 
 `src/public-footer.ts` is the React-free public footer entry for static HTML.
-The server imports only this entry from UI. The React adapter uses the same tree.
+The server imports this entry and the React-free `src/static.ts` recipes.
+The React adapter uses the same footer tree.

@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { compareLines } from '@notesapp/editor';
+import { countDiffRows, diffBlocks } from './diff-rows.ts';
 import {
   changeCountText,
   controlsWhenShown,
@@ -121,4 +123,26 @@ await test('a row and a tab name a panel only while it is in the page', () => {
   // an id that no element held.
   assert.equal(controlsWhenShown('history-panel-2', true), 'history-panel-2');
   assert.equal(controlsWhenShown('history-panel-2', false), undefined);
+});
+
+await test('an unchanged save and a later checkbox edit have different comparison baselines', () => {
+  const previous = '- [ ] Pack bags\n';
+  const selected = previous;
+  const current = '- [x] Pack bags\n';
+  const atSave = compareLines(previous, selected);
+  const withCurrent = compareLines(selected, current);
+  assert.equal(atSave.kind, 'complete');
+  assert.equal(withCurrent.kind, 'complete');
+  if (atSave.kind !== 'complete' || withCurrent.kind !== 'complete') return;
+  assert.equal(
+    rowReading(
+      { kind: 'edited', count: countDiffRows(diffBlocks(atSave.hunks)) },
+      false,
+    ),
+    'No line changed',
+  );
+  assert.deepEqual(countDiffRows(diffBlocks(withCurrent.hunks)), {
+    added: 1,
+    removed: 1,
+  });
 });

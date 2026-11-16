@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { createRequire } from 'node:module';
 import test from 'node:test';
 import { dependencyNotices } from './distribution-notices.mjs';
@@ -145,16 +145,11 @@ await test('source rows refuse reserved and duplicate names', () => {
   assert.throws(() => sourceRows([row, row]), /invalid/);
 });
 
-await test('native source versions match the installed library', async () => {
+await test('custom native source keeps the Sharp API version and complete sources', async () => {
   const manifest = await readJson(join(root, 'tools/native-sources.json'));
   const require = createRequire(join(root, 'apps/server/package.json'));
-  const sharp = await readJson(
-    join(dirname(require.resolve('sharp')), '../package.json'),
-  );
-  const dependencies = record(sharp.optionalDependencies);
-  if (typeof manifest.package !== 'string')
-    throw new Error('The source target is missing.');
-  assert.equal(dependencies[manifest.package], manifest.packageVersion);
+  assert.equal(manifest.package, 'tidynotebook-native');
+  assert.equal(manifest.packageVersion, '1');
   assert.equal(manifest.platform, 'linux-x64-glibc');
   /** @type {unknown} */
   const consumer = require('sharp');

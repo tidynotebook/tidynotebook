@@ -1,3 +1,6 @@
+import { rowActionVisibility } from './icon-button.tsx';
+import { Stack, Inset, Divider } from './primitives.tsx';
+import { listRowClasses } from './layout.tsx';
 /**
  * A menu button with full keyboard support.
  *
@@ -45,6 +48,7 @@ import {
   menuSurfaceClassName,
   rowClassName,
 } from './control-classes.ts';
+import { CheckIcon } from './icons.tsx';
 import { startsGroup } from './menu-groups.ts';
 import { placeOverlay } from './overlay-position.ts';
 import { followVisibleArea, readVisibleArea } from './visible-area.ts';
@@ -55,7 +59,7 @@ export type MenuItem = {
   readonly id: string;
   readonly label: string;
   /** A short value shown on the right, such as the current theme. */
-  readonly hint?: string | undefined;
+  readonly hint?: ReactNode | undefined;
   readonly icon?: ReactNode | undefined;
   readonly disabled?: boolean | undefined;
   /** Draws the row with the danger token. */
@@ -75,13 +79,14 @@ export type MenuItem = {
    */
   readonly group?: string | undefined;
   readonly onSelect: () => void;
+  /** Load an action when a pointer or keyboard shows intent. */
+  readonly onIntent?: () => void;
 };
 
 /**
  * The one hairline inside a menu: between two groups of rows, and above the
  * pinned rows. It is the subtle edge of a raised surface (decision 0063).
  */
-const menuDividerClassName = 'border-t border-edge-subtle';
 
 /** Where the menu opens relative to its trigger. */
 export type MenuAlign = 'start' | 'end';
@@ -91,8 +96,10 @@ function MenuRow({
   item,
   choosing,
   onRun,
+  showFocus,
 }: {
   readonly item: MenuItem;
+  readonly showFocus: boolean;
   /** True when any row of this menu states a selection. */
   readonly choosing: boolean;
   readonly onRun: (item: MenuItem) => void;
@@ -103,12 +110,14 @@ function MenuRow({
       role={choosing ? 'menuitemradio' : 'menuitem'}
       aria-checked={choosing ? item.selected === true : undefined}
       tabIndex={-1}
+      data-menu-input={showFocus ? 'keyboard' : 'pointer'}
       className={rowClassName({
-        selected: item.selected,
         danger: item.danger,
-        className: 'w-full text-left md:min-h-8',
+        className: `w-full text-left  ${showFocus ? '' : 'focus-visible:outline-none'}`,
       })}
       disabled={item.disabled ?? false}
+      onPointerEnter={item.onIntent}
+      onFocus={item.onIntent}
       onClick={() => onRun(item)}
     >
       {item.icon === undefined ? null : (
@@ -117,8 +126,17 @@ function MenuRow({
         </span>
       )}
       <span className="flex-1 truncate">{item.label}</span>
+      {choosing ? (
+        <span
+          data-menu-check
+          className="inline-flex size-4 shrink-0"
+          aria-hidden="true"
+        >
+          {item.selected ? <CheckIcon /> : null}
+        </span>
+      ) : null}
       {item.hint === undefined ? null : (
-        <span className="shrink-0 text-control text-muted">{item.hint}</span>
+        <span className="shrink-0 text-secondary text-muted">{item.hint}</span>
       )}
     </button>
   );
@@ -143,16 +161,19 @@ function MenuList({
   id,
   label,
   items,
+  header,
   pinned,
   anchor,
   align,
   matchWidth,
   initialIndex,
+  keyboard = false,
   onClose,
   isInside,
 }: {
   readonly id: string;
   readonly label: string;
+  readonly header?: ReactNode;
   readonly items: readonly MenuItem[];
   readonly pinned: readonly MenuItem[];
   /** Reads the place the list opens beside, at the time it is placed. */
@@ -160,12 +181,14 @@ function MenuList({
   readonly align: MenuAlign;
   readonly matchWidth: boolean;
   readonly initialIndex: number;
+  readonly keyboard?: boolean;
   /** Closes the list. `restoreFocus` is true after a key or a chosen row. */
   readonly onClose: (restoreFocus: boolean) => void;
   /** A press here does not count as a press outside, such as the trigger. */
   readonly isInside?: ((target: Node) => boolean) | undefined;
 }): ReactNode {
   const [activeIndex, setActiveIndex] = useState(initialIndex);
+  const [showFocus, setShowFocus] = useState(keyboard);
   const listRef = useRef<HTMLDivElement | null>(null);
 
   // The arrow keys run over both regions in the order they are on the screen,
@@ -280,11 +303,14 @@ function MenuList({
   };
 
   return createPortal(
-    <div
+    <Stack
+      gap={1}
       ref={listRef}
       id={id}
       className={`fixed z-50 ${menuSurfaceClassName()} ${matchWidth ? '' : 'min-w-56'}`}
       role="menu"
+      onPointerDownCapture={() => setShowFocus(false)}
+      onKeyDownCapture={() => setShowFocus(true)}
       aria-label={label}
       onKeyDown={(event): void => {
         if (event.key === 'ArrowDown') {
@@ -305,32 +331,47 @@ function MenuList({
         }
       }}
     >
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      {header === undefined ? null : (
+        <Inset
+          pad={2}
+          role="presentation"
+          className="border-b border-edge-subtle"
+        >
+          {header}
+        </Inset>
+      )}
+      <div className="overflow-hidden flex-1 overflow-y-auto">
         {items.map((item, index) => (
           <Fragment key={item.id}>
             {startsGroup(items, index) ? (
-              <div
-                role="separator"
-                className={`my-1 ${menuDividerClassName}`}
-              />
+              <Inset padY={1}>
+                <Divider />
+              </Inset>
             ) : null}
-            <MenuRow item={item} choosing={choosing} onRun={run} />
+            <MenuRow
+              item={item}
+              choosing={choosing}
+              onRun={run}
+              showFocus={showFocus}
+            />
           </Fragment>
         ))}
       </div>
       {pinned.length === 0 ? null : (
-        <div className={`mt-1 shrink-0 pt-1 ${menuDividerClassName}`}>
+        <Stack gap={1} className="shrink-0">
+          <Divider />
           {pinned.map((item) => (
             <MenuRow
               key={item.id}
               item={item}
               choosing={choosing}
               onRun={run}
+              showFocus={showFocus}
             />
           ))}
-        </div>
+        </Stack>
       )}
-    </div>,
+    </Stack>,
     document.body,
   );
 }
@@ -345,16 +386,19 @@ export function Menu({
   label,
   icon,
   items,
+  header,
   pinned = [],
   matchTrigger = false,
   align = 'end',
   triggerClassName,
+  trigger = 'default',
   compact = false,
   children,
 }: {
   /** The accessible name of the trigger. */
   readonly label: string;
   readonly icon?: ReactNode | undefined;
+  readonly header?: ReactNode;
   readonly items: readonly MenuItem[];
   /**
    * Rows that stay in view while `items` scrolls.
@@ -374,6 +418,7 @@ export function Menu({
    */
   readonly matchTrigger?: boolean | undefined;
   readonly align?: MenuAlign | undefined;
+  readonly trigger?: 'row' | 'row-action' | 'toolbar' | 'avatar' | 'default';
   readonly triggerClassName?: string | undefined;
   /**
    * Keeps the touch target of the trigger and draws a smaller surface inside
@@ -390,6 +435,7 @@ export function Menu({
 }): ReactNode {
   const [open, setOpen] = useState(false);
   const [startIndex, setStartIndex] = useState(0);
+  const [keyboard, setKeyboard] = useState(false);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
@@ -430,7 +476,7 @@ export function Menu({
         // often shows more than text: an icon, a label that has to take the
         // free width, and a chevron at the far edge. A plain span made those
         // three one inline box, so the parts could not be laid out at all.
-        <span className="flex min-w-0 flex-1 items-center gap-cluster">
+        <span className="flex min-w-0 flex-1 items-center gap-2">
           {children}
         </span>
       )}
@@ -438,67 +484,72 @@ export function Menu({
   );
 
   return (
-    <div className="relative" ref={rootRef}>
-      <button
-        ref={triggerRef}
-        type="button"
+    <div className="relative flex items-center" ref={rootRef}>
+      <span
         className={
-          triggerClassName ??
-          buttonClassName({
-            variant: 'ghost',
-            size: compact ? 'sm' : 'md',
-            iconOnly: children === undefined,
-            compact,
-          })
+          trigger === 'avatar'
+            ? 'relative inline-flex h-6 w-6 shrink-0 items-center justify-center'
+            : 'contents'
         }
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-controls={open ? menuId : undefined}
-        // `label` names the trigger whether or not it also shows text, because
-        // visible text says what the menu is about and not what the control
-        // does. A trigger reading `Personal` is a workspace name; its name has
-        // to say that it opens the workspace menu. The visible text stays
-        // inside the name, so speech input still reaches it.
-        aria-label={label}
-        // A trigger with visible text needs no tooltip. An icon-only one does,
-        // because nothing else on the screen states its purpose.
-        title={children === undefined ? label : undefined}
-        onClick={() => {
-          setStartIndex(0);
-          setOpen((value) => !value);
-        }}
-        onKeyDown={(event): void => {
-          if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-            event.preventDefault();
-            setStartIndex(event.key === 'ArrowDown' ? 0 : enabledCount - 1);
-            setOpen(true);
-          }
-        }}
       >
-        {compact ? (
-          <span
-            className={compactButtonVisualClassName({
-              variant: 'ghost',
-              size: 'sm',
-              iconOnly: children === undefined,
-            })}
-          >
-            {triggerContent}
-          </span>
-        ) : (
-          triggerContent
-        )}
-      </button>
+        <button
+          ref={triggerRef}
+          type="button"
+          className={`${trigger === 'row' ? listRowClasses('tree') : buttonClassName({ variant: 'ghost', size: compact ? 'compact' : 'default', iconOnly: children === undefined, iconSize: trigger === 'toolbar' ? 'toolbar' : trigger === 'row-action' ? 'row' : 'header', compact })} ${trigger === 'row-action' || trigger === 'avatar' ? `absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 ${trigger === 'row-action' ? rowActionVisibility : ''}` : ''} ${triggerClassName ?? ''}`}
+
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-controls={open ? menuId : undefined}
+          // `label` names the trigger whether or not it also shows text, because
+          // visible text says what the menu is about and not what the control
+          // does. A trigger reading `Personal` is a workspace name; its name has
+          // to say that it opens the workspace menu. The visible text stays
+          // inside the name, so speech input still reaches it.
+          aria-label={label}
+          // A trigger with visible text needs no tooltip. An icon-only one does,
+          // because nothing else on the screen states its purpose.
+          title={children === undefined ? label : undefined}
+          onClick={(event) => {
+            setKeyboard(event.detail === 0);
+            setStartIndex(0);
+            setOpen((value) => !value);
+          }}
+          onKeyDown={(event): void => {
+            if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+              setKeyboard(true);
+              event.preventDefault();
+              setStartIndex(event.key === 'ArrowDown' ? 0 : enabledCount - 1);
+              setOpen(true);
+            }
+          }}
+        >
+          {compact ? (
+            <span
+              className={compactButtonVisualClassName({
+                variant: 'ghost',
+                size: 'compact',
+                iconOnly: children === undefined,
+              })}
+            >
+              {triggerContent}
+            </span>
+          ) : (
+            triggerContent
+          )}
+        </button>
+      </span>
       {open ? (
         <MenuList
           id={menuId}
           label={label}
+          header={header}
           items={items}
           pinned={pinned}
           anchor={anchor}
           align={align}
           matchWidth={matchTrigger}
           initialIndex={Math.max(0, startIndex)}
+          keyboard={keyboard}
           onClose={close}
           isInside={isInside}
         />
@@ -521,12 +572,15 @@ export function Menu({
 export function AnchoredMenu({
   label,
   items,
+  header,
   pinned = [],
   anchor,
   align = 'start',
+  keyboard = false,
   onClose,
 }: {
   readonly label: string;
+  readonly header?: ReactNode;
   readonly items: readonly MenuItem[];
   /**
    * Rows under the separator, as `Menu` takes them. The context menu of a
@@ -534,6 +588,7 @@ export function AnchoredMenu({
    */
   readonly pinned?: readonly MenuItem[] | undefined;
   readonly anchor: MenuAnchor;
+  readonly keyboard?: boolean;
   readonly align?: MenuAlign | undefined;
   readonly onClose: (restoreFocus: boolean) => void;
 }): ReactNode {
@@ -542,12 +597,14 @@ export function AnchoredMenu({
     <MenuList
       id={menuIdOf(label)}
       label={label}
+      header={header}
       items={items}
       pinned={pinned}
       anchor={place}
       align={align}
       matchWidth={false}
       initialIndex={0}
+      keyboard={keyboard}
       onClose={onClose}
     />
   );

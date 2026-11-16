@@ -46,12 +46,16 @@ export const editorThemeVariables: readonly string[] = [
   '--text-ui',
   '--text-ui--line-height',
   '--text-control',
-  '--text-base',
+  '--text-help',
+  '--text-note-reference',
+  '--text-note-definition',
   '--text-note',
   '--text-note--line-height',
   '--container-note',
   '--spacing-note-block',
   '--text-note-mono',
+  '--container-table-cell',
+  '--container-table-cell-min',
   '--text-note-script',
   '--text-note-script--line-height',
   '--text-note-small',
@@ -85,19 +89,6 @@ export const editorThemeVariables: readonly string[] = [
  * every note on a phone.
  */
 export const gripPointerQuery = '(hover: hover) and (pointer: fine)';
-
-/**
- * Where a field takes the touch step: a coarse pointer, which is a finger.
- *
- * Safari on iOS zooms the page into a field under 16 px on focus, so every
- * field of the product sets its text at 16 px under touch (`touchFieldText`
- * of `@notesapp/ui`). The find panel takes that class with the field recipe,
- * and the rules of the adapter that follow a finger, such as the row of the
- * completion list, read this query, which
- * `tests/integration/theme-variables.test.ts` holds to the query that
- * Tailwind writes for the class of a field.
- */
-export const touchFieldQuery = '(pointer: coarse)';
 
 /**
  * The height of the bar of a code block: one small control on a desktop, and
@@ -290,39 +281,19 @@ export function panelRules(): Record<
 > {
   const rowHeight = 'calc(var(--spacing) * 7)';
   return {
-    '.cm-panels': {
-      backgroundColor: 'var(--notes-surface)',
-      color: 'var(--notes-text)',
-      fontFamily: 'var(--font-sans)',
-      fontSize: 'var(--text-control)',
-    },
+    // CodeMirror keeps the panel lifecycle and key scope. The zero-height
+    // layer leaves all note content in its original position.
     '.cm-panels.cm-panels-top': {
-      borderBottom: '1px solid var(--notes-border-line)',
+      position: 'absolute',
+      insetInline: '0',
+      height: '0',
+      border: '0',
+      background: 'transparent',
+      pointerEvents: 'none',
+      containerType: 'inline-size',
+      zIndex: '4',
     },
-    '.cm-panels.cm-panels-bottom': {
-      borderTop: '1px solid var(--notes-border-line)',
-    },
-    '.cm-np-search': {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 'calc(var(--spacing) * 2)',
-      paddingBlock: 'calc(var(--spacing) * 2)',
-      paddingInline:
-        'max(calc(var(--spacing) * 2), calc((100% - var(--container-note)) / 2))',
-    },
-    '.cm-np-search-row': {
-      display: 'flex',
-      flexWrap: 'wrap',
-      alignItems: 'center',
-      columnGap: 'calc(var(--spacing) * 2)',
-      rowGap: 'calc(var(--spacing) * 1)',
-    },
-    // A field takes the room that the buttons leave on its band.
-    '.cm-np-search-field': {
-      flex: '1 1 calc(var(--spacing) * 48)',
-      width: 'auto',
-      minWidth: '0',
-    },
+    '.cm-np-search [hidden]': { display: 'none' },
     // A match is a place the person looks for, so it takes the tint of a
     // selection and the current match a stronger one, in the focus colour
     // that record 0062 gives a selection. The ink fill of the action read as
@@ -334,6 +305,8 @@ export function panelRules(): Record<
     '.cm-searchMatch.cm-searchMatch-selected': {
       backgroundColor:
         'color-mix(in srgb, var(--notes-focus) 40%, transparent)',
+      boxShadow: '0 0 0 2px var(--notes-focus)',
+      boxDecorationBreak: 'clone',
     },
     '.cm-tooltip': {
       ...menuSurfaceStyle,
@@ -381,6 +354,7 @@ export function panelRules(): Record<
     },
     '.cm-completionDetail': {
       color: 'var(--notes-text-muted)',
+      fontSize: 'var(--text-help)',
       fontStyle: 'normal',
       fontWeight: 'normal',
       marginInlineStart: 'auto',
@@ -559,14 +533,31 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
       borderInline: '1px solid var(--notes-border-subtle)',
       paddingInline: 'calc(var(--spacing) * 4)',
     },
-    // The first line of the card keeps the room of the bar that carries the
-    // language and the copy action of the block (record 0174), one control
-    // high, so the bar never covers a letter of the code.
+    // The card keeps the same room above its first line and below its last.
     '.cm-np-code-block-open': {
       borderTop: '1px solid var(--notes-border-subtle)',
       borderStartStartRadius: 'var(--radius-lg)',
       borderStartEndRadius: 'var(--radius-lg)',
+      paddingBlockStart: 'calc(var(--spacing) * 2)',
+    },
+    // An indented block has no fence line to carry its bar (record 0174), so
+    // its first line keeps the room of the bar, one control high, and the bar
+    // never covers a letter of the code.
+    '.cm-np-code-block-bar': {
       paddingBlockStart: codeBarHeight,
+    },
+    // A fence line stays on the screen, so editing and a copy read the source,
+    // but it is quiet: smaller and dim while the caret is not on it.
+    '.cm-np-code-fence': {
+      fontSize: 'var(--text-note-reference)',
+      color: 'var(--notes-text-muted)',
+    },
+    // While the text has the focus and the selection is in a block, the edges
+    // of the whole card take the focus colour, which record 0062 lets mark
+    // the place of the caret. One ring goes round the card, never round one
+    // line of it.
+    '&.cm-focused .cm-np-code-block-active': {
+      borderColor: 'var(--notes-focus)',
     },
     // The bar of a code block (record 0174) stands in one layer over the text,
     // as the controls of a table do, at the top of the card of its block: the
@@ -595,29 +586,26 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
     '.cm-np-code-bar button': { pointerEvents: 'auto' },
     '.cm-np-code-label': {
       fontFamily: 'var(--font-mono)',
-      fontSize: 'var(--text-control)',
+      fontSize: 'var(--text-help)',
       color: 'var(--notes-text-muted)',
     },
     '.cm-np-code-block-close': {
       borderBottom: '1px solid var(--notes-border-subtle)',
       borderEndStartRadius: 'var(--radius-lg)',
       borderEndEndRadius: 'var(--radius-lg)',
-      paddingBlockEnd: 'calc(var(--spacing) * 3)',
+      paddingBlockEnd: 'calc(var(--spacing) * 2)',
     },
-    // The outline marks the line of the caret, which record 0062 lets the
-    // focus colour mark, so it shows only while the text has the focus and
-    // the caret shows. While the find panel holds the focus, the current
-    // match reads by its tint alone and no box crosses the card.
-    '&.cm-focused .cm-activeLine.cm-np-code-block-line': {
-      outline: '1px solid var(--notes-focus)',
-      outlineOffset: '-1px',
-    },
-    // The language of a fence is a value and not a label, so it keeps the
-    // code face and the quiet color and takes no capitals and no tracking.
+    // The language of a fence is a value, so it keeps the code face and the
+    // quiet color and takes no capitals and no tracking. It reads as a small
+    // label on the fence line: the tint and the radius of a code span.
     '.cm-np-code-info': {
       fontFamily: 'var(--font-mono)',
-      fontSize: 'var(--text-control)',
+      fontSize: 'var(--text-note-reference)',
       color: 'var(--notes-text-muted)',
+      backgroundColor: 'var(--notes-surface-hover)',
+      borderRadius: 'var(--radius-sm)',
+      paddingInline: 'calc(var(--spacing) * 1.5)',
+      marginInlineStart: 'calc(var(--spacing) * 1)',
     },
     '.cm-np-front-matter': {
       fontFamily: 'var(--font-mono)',
@@ -801,12 +789,12 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
     // step of the chrome and the quiet text colour (record 0156).
     '.cm-np-footnote': {
       color: 'var(--notes-text-muted)',
-      fontSize: 'var(--text-control)',
+      fontSize: 'var(--text-note-reference)',
       verticalAlign: 'super',
     },
     '.cm-np-footnote-definition': {
       color: 'var(--notes-text-muted)',
-      fontSize: 'var(--text-ui)',
+      fontSize: 'var(--text-note-definition)',
     },
     '.cm-np-link-definition': {
       color: 'var(--notes-text-muted)',
@@ -823,15 +811,8 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
     },
 
     // A table is a grid over its text (record 0095). A block wrapper of
-    // `table-grid.ts` puts one element around the lines of each table. The
-    // element scrolls sideways on its own, so a wide table moves inside its
-    // outline and never moves the rest of the note, and its collapsed
-    // borders pass to the anonymous table the rows form inside it. The rows
-    // are lines of the editor, so the source stays editable text and no
-    // widget replaces the table.
-    //
-    // The table starts where every other line starts. Its grips straddle its
-    // edge (record 0147), so it keeps no room beside it or above it.
+    // Each table scrolls inside the note. Its shared column tracks come
+    // from all source rows, so viewport changes cannot resize the columns.
     '.cm-np-table': {
       display: 'block',
       overflowX: 'auto',
@@ -843,46 +824,37 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
       paddingBlock: 'var(--spacing-note-block)',
     },
     '.cm-np-table-line': {
-      display: 'table-row',
+      display: 'grid',
+      gridTemplateColumns: 'max-content var(--notes-table-columns)',
+      backgroundImage: 'var(--notes-table-rules)',
+      width: 'max-content',
+      maxWidth: 'none',
       fontSize: 'var(--text-note-mono)',
       paddingBlock: '0',
     },
-    // Every cell draws its outline in the one divider of the palette, so the
-    // table reads as a grid of cells a person writes into. A cell wraps at a
-    // word, as a cell of Notion and of Obsidian does, so the browser sizes
-    // each column from its text up to the note column, and the table scrolls
-    // sideways only when its columns cannot fit (record 0147). `pre-wrap` and
-    // not `normal`, because the spaces inside a cell belong to the source.
-    //
-    // A word never breaks. `.cm-content` lets a long word break anywhere, and
-    // a table cell that inherits that counts every letter as a place to
-    // break when it sizes its column, so a column shrank to a few letters and
-    // cut its words in two. A word longer than the note column scrolls the
-    // table instead.
+    // Fixed tracks keep rows aligned while text wraps at word boundaries.
     '.cm-np-table-cell': {
-      display: 'table-cell',
+      display: 'block',
+      boxSizing: 'border-box',
+      minWidth: 'var(--container-table-cell-min)',
+      maxWidth: 'calc(var(--container-table-cell) + var(--spacing) * 6 + 2px)',
+      minHeight: 'calc(1lh + var(--spacing) * 3 + 2px)',
       paddingInline: 'calc(var(--spacing) * 3)',
       paddingBlock: 'calc(var(--spacing) * 1.5)',
       verticalAlign: 'top',
       border: '1px solid var(--notes-border-line)',
       whiteSpace: 'pre-wrap',
-      overflowWrap: 'normal',
+      overflowWrap: 'anywhere',
       wordBreak: 'normal',
-    },
-    // An empty cell keeps a width a pointer can reach. A browser ignores
-    // `min-width` on a table cell, so a block of no height inside the cell
-    // holds the width instead: it is the narrowest the column can be, and it
-    // never caps how wide the text makes it.
-    '.cm-np-table-cell::before, .cm-np-table-head::before': {
-      content: "''",
-      display: 'block',
-      width: 'calc(var(--spacing) * 12)',
-      height: '0',
     },
     // The header row takes the hover fill and the heading weight, so the head
     // of the table differs by fill before it differs by a line.
     '.cm-np-table-head': {
-      display: 'table-cell',
+      display: 'block',
+      boxSizing: 'border-box',
+      minWidth: 'var(--container-table-cell-min)',
+      maxWidth: 'calc(var(--container-table-cell) + var(--spacing) * 6 + 2px)',
+      minHeight: 'calc(1lh + var(--spacing) * 3 + 2px)',
       paddingInline: 'calc(var(--spacing) * 3)',
       paddingBlock: 'calc(var(--spacing) * 1.5)',
       verticalAlign: 'top',
@@ -891,7 +863,7 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
       fontWeight: 'var(--font-weight-note-heading)',
       color: 'var(--notes-text-strong)',
       whiteSpace: 'pre-wrap',
-      overflowWrap: 'normal',
+      overflowWrap: 'anywhere',
       wordBreak: 'normal',
     },
     // The cell that holds the caret carries the one focus treatment, drawn
@@ -906,8 +878,21 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
     // inset of a nested table lives. `live-preview.ts` marks the range.
     // The hidden separator between two cells: a real cell that draws
     // nothing and takes no width (`live-preview.ts`).
-    '.cm-np-table-gap': { display: 'table-cell', padding: '0', width: '0' },
-    '.cm-np-table-lead': { display: 'table-cell', padding: '0' },
+    '.cm-np-table-gap': { display: 'none' },
+    '.cm-np-table-lead': {
+      display: 'block',
+      gridColumn: '1',
+      gridRow: '1',
+      padding: '0',
+    },
+    '.cm-np-table-line > br': { display: 'none' },
+    '.cm-np-table-line::after': {
+      content: 'var(--notes-table-tail-content, none)',
+      gridColumn: 'var(--notes-table-tail, 1) / -1',
+      gridRow: '1',
+      border: '1px solid var(--notes-border-line)',
+      display: 'block',
+    },
     '.cm-np-table-quoted-1': {
       paddingInlineStart: `calc(var(--spacing) * ${String(quoteBarStep)})`,
     },
@@ -921,7 +906,7 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
       paddingInlineStart: `calc(var(--spacing) * ${String(quoteBarStep * 4)})`,
     },
     // The delimiter row keeps no height of its own.
-    '.cm-np-table-closed': { fontSize: '0', lineHeight: '0' },
+    '.cm-np-table-closed': { display: 'none' },
     // The controls of a table (records 0097, 0098 and 0147) stand in one
     // layer over the text, which lets every press but a press on a control
     // reach the text below.
@@ -1059,7 +1044,7 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
       // A finger takes the 44 px target of a control, so the bar and the room
       // that the card keeps for it grow to that.
       '.cm-np-code-bar': { height: 'calc(var(--spacing) * 12)' },
-      '.cm-np-code-block-open': {
+      '.cm-np-code-block-bar': {
         paddingBlockStart: 'calc(var(--spacing) * 12)',
       },
       '.cm-np-table-handle-row': {
@@ -1198,7 +1183,7 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
       display: 'block',
       margin: '0',
       color: 'var(--notes-text-muted)',
-      fontSize: 'var(--text-ui)',
+      fontSize: 'var(--text-note-definition)',
     },
     '.cm-np-widget-error': { color: 'var(--notes-danger-text)' },
     '.cm-np-widget-source': {

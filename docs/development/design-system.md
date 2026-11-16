@@ -1,0 +1,177 @@
+# Design system
+
+This page owns the UI composition, spacing, density and depth contract for every surface.
+
+## Rules
+
+Use Tailwind in `packages/ui` components. Features compose them without spacing, size or depth rules.
+Use one spacing scale and the named size roles. `apps/web/src/tailwind.css` owns all tokens in `@theme`. The `coarse:` and `fine:` variants select pointer density. Width selects layout. Pointer type selects density only. A component defines both densities with one rule set.
+
+Parents own padding and gaps; children have no outer margins. Keep padding symmetric,
+with `pad`, or symmetric `padX` and `padY`.
+
+Every control with a fill has equal space between its content and each side
+of the fill, including on hover. Content must not touch a fill edge. An
+optical slot can extend the fill without moving its content.
+
+Rows get height from a line box and equal vertical padding. Do not use a
+minimum height to add blank space. Keep glyphs on the padding line. Extend a
+pointer target outward without moving its glyph. Keep one leading content
+edge in each container. Nesting adds the shared indent step. A leaf keeps an
+empty disclosure slot. Calendar cells keep control height in equal columns. The shared checkout frame recipe uses `min-h-checkout-frame` to reserve the initial vendor frame height.
+
+Keep items closer than groups. The group gap equals the container padding.
+The note formatting toolbar uses the same item gap between all tools.
+The app header, sidebar and Settings headers keep their hairlines at rest.
+Other fixed regions show a hairline only if adjacent content overflows. Shadows show only under hidden content.
+Hairlines and shadows stay outside the layout. They must not add a flex or
+grid item. Sheet headers keep Back on the left and Close in the right slot.
+
+Overlay and raised-card state tokens keep at least 1.2:1 surface contrast.
+
+## Tokens and CSS
+
+`apps/web/src/tailwind.css` owns spacing, sizes, radius, shadows, surfaces and type roles. Use Tailwind tokens, not spacing variables or arbitrary values.
+
+Typed spacing steps are `0`, `0.5`, `1`, `2`, `3`, `4`, `6`, `8` and `12`,
+or a `fine` and `coarse` pair. Shared size roles distinguish glyphs, controls,
+row actions, toolbars, headers and rails. Code owns their values.
+
+Use `text-title-page`, `text-title-header`, `text-body`, `text-label`,
+`text-value`, `text-secondary`, `text-group` and `text-small`.
+Each role sets size, line height and weight. Note text keeps its own rendering scale.
+`PreviewBlock` uses `text-code` with the mono font and secondary size.
+
+Use the page, panel, card, raised card and overlay surfaces. Menus and popovers
+use the overlay surface, edge and shadow. Scroll edges use
+`shadow-edge-top` and `shadow-edge-bottom`. Theme overrides keep these roles
+valid for custom themes.
+
+`state-overlay` and `state-raised` set only inherited hover and selected tokens.
+Named content variants style markup that React does not render, such as rendered Markdown. Only the shared content surfaces use them.
+CSS can hold only theme tokens, named content and pointer variants, the base reset and
+the iOS viewport rule. Do not add layout utilities, screen selectors,
+doubled-class selectors or inline spacing styles. Runtime overlay and viewport coordinates and virtual list offsets are browser geometry, not spacing choices.
+
+## Components
+
+- `Stack` owns a vertical gap and alignment.
+- `Inline` owns a horizontal gap, alignment, justification and wrapping.
+- `Inset` owns symmetric padding.
+- `Region` separates fixed and scrolling areas. Scroll sentinels set
+  `data-edge-top` and `data-edge-bottom` on adjacent fixed regions. Hairlines
+  use `border-edge-subtle` when content overflows, or `data-edge-always` marks
+  a sidebar edge. `shadow-edge-top` and `shadow-edge-bottom` follow sentinels and
+  change with `duration-120`. Reduced motion removes the transition.
+- `Divider` has no margin. Its parent owns the space.
+- `ListRow` owns leading and trailing slots, label, help and value. It centers
+  content vertically. Densities are `tree`, `setting` and `menu`; `indent` adds
+  empty disclosure slots. Trailing types are `chevron`, `value`, `switch`,
+  `action`, `menu` or none.
+- `IconButton` uses `row`, `toolbar`, `header` or `rail` size. Its target grows
+  around a fixed glyph box.
+- `Button` uses `compact` or `default` size and a semantic variant.
+- `SectionHeading` holds a label, optional count and optional action. Its
+  parent owns the gap to the group.
+- `Card` is a raised, rounded container without padding. Its rows own their
+  padding. Dividers between rows align with the inner row edge.
+- `Panel` owns equal padding and a stack whose group gap equals that padding.
+- `Toolbar` is an inline group of icon buttons with the item gap. Its floating variant owns the overlay surface and position.
+- `PreviewBlock` owns the preview surface, subtle edge, radius and equal inset.
+- `Field`, `TextField`, `SelectField` and `TextAreaField` share label, control,
+  help and error spacing. A form is a stack of fields.
+- `SwitchRow` is a setting row whose whole surface toggles its switch.
+- `Pill` states a fact in small type. Neutral uses the quiet surface; accent, success and danger use their tone surface, a tone dot and strong text.
+  A toned pill states its tone with its dot and its words. Its surface is decoration and has no surface contrast rule, also on a raised card.
+- `Meter` uses accent fill and says "Almost full" from 90 percent. At the limit it says "Limit reached" with danger fill and text.
+  Meter kind progress shows a task that advances, such as a bounded wait. It keeps the accent fill and its supplied words at every value.
+- `Notice`, `EmptyState`, `Toast` and `Tooltip` use equal padding.
+- `Sheet` owns the phone header, scrolling body and pinned footer. Header
+  glyphs align with the body inset. Its footer has one full-width primary
+  button and adds the safe area at the bottom.
+- `Dialog` owns equal desktop padding and title, body and footer gaps. The command frame owns block insets and gaps; regions own equal side insets (desktop 6, phone 4) for row fills.
+  The bare query field owns its 32 px fine or 44 px coarse target height and equal inner block padding (4 px fine, 8 px coarse). A row divider stays outside layout at the field edge. Frame gaps after the divider do not replace inner field padding.
+  The phone handle and safe area are sheet chrome outside the content inset. Footers align inline actions to the end.
+- `Menu` and `Popover` own equal padding, the overlay surface and menu rows.
+
+Command result rows keep their content at the dialog inset. Their optical fills extend into the gutter, to 4 px from the phone sheet edge. Coarse list rows have 44 px targets.
+
+## Sidebar
+
+A panel contains fixed top, scrolling tree and fixed status regions. Padding
+belongs inside each region. The top holds the phone header, workspace switcher
+and toolbar. Only the tree scrolls. The status footer has no extra panel
+padding below it. Phone safe area belongs below the status line.
+
+Sidebar disclosures keep targets in the row and fills inside its focus outline,
+clear of folder icons. Leaf slots align icons. Names use ellipses and full
+accessible names. Desktop tooltips show full names. Phone menus stay visible;
+fine pointer menus show on hover and focus. Other views keep an empty menu slot.
+
+Rail buttons share one size role. The rail owns padding and item gap; the
+status line uses the panel inset and its own line height.
+
+## Page lists
+
+Pages reached from the rail have no back control before the title. A list
+page has one content edge for its title and rows. Keep the title on its own.
+When the list is empty, use the `Page` empty-state slot. It centers the shared
+`EmptyState` in the free area under the title, with an icon, title and one help
+line. Put the explanation there instead of repeating it below the page title.
+
+## Settings
+
+Order settings by scope: the Profile card, Security, Preferences, Workspace,
+then Administration (administrators only). Its account list is Users, with
+the `accounts` deep link. Profile has no second entry in a group. Keep the
+workspace name with its group and Appearance and editor as the default.
+Deep links name their section regardless of group order.
+
+Desktop navigation uses the sidebar density. Its account card has equal
+padding. Desktop content is a scrolling region with a stack of flat row
+groups and full-width dividers. Phone groups use cards. Their headings align
+with the outer card edge. Headings above tiles align with the tiles.
+Section headings have no separate inset. Desktop navigation headings keep the row content edge.
+Keep vertical padding outside the Settings scroller and side padding inside; rows and tiles use inset focus outlines, with the phone safe area below the bottom inset.
+
+Every visible Settings header has a horizontal divider, including the root,
+loading, topic, form, picker and confirmation headers. The shared edge token
+paints it outside layout, even when content fits. Only hidden content adds a shadow.
+
+Title blocks have one group gap after them. Rows center their content and align text left. Phone action rows have no second filled or outlined button.
+
+Keep short edits and forms on the section. Long pickers, editors and confirms can use a sub-level.
+
+Forms use one edge and `fine:max-w-lg`, with full phone width. Only a fixed
+`w-28` short field can sit beside its long field. Other fields share both edges. Use `SectionHeading` groups, `gap-6`, and fields `gap-3`.
+All levels use the container header and footer roles. Back, Close and Cancel discard drafts. Primary actions retain their
+verb or value-edit label. Focus stays in the modal and returns to its trigger.
+
+## Checks
+
+`tools/check-design-rules.mjs` runs in `pnpm lint`. It refuses feature
+margins except `m-0`, child space utilities, padding and gap utilities,
+minimum heights, arbitrary values and inline spacing. Shared UI code can use
+only scale steps. The CSS check refuses layout utilities, screen descendant selectors and doubled-class selectors.
+
+`tools/design-system-allow.json` records cases with a reason and can only shrink. New exceptions require a component variant and a contract update. Run `node tools/check-design-rules.mjs --prune` to remove entries that no longer match.
+
+`tests/browser/symmetry.ts` checks content edges and visual parity in both themes and pointer densities. Remove or explain changes beyond the tolerance.
+
+### Diagrams
+
+Keep inline diagram text readable. Fit to the note column down to a scale of
+0.75, then use horizontal scrolling. Show an edge fade while more content is
+outside the column. Keep vertical note scrolling available over a diagram.
+Cap an inline diagram at 800 px, or 60 percent of the dynamic viewport on a
+coarse pointer. Put one Expand action above the drawing, outside its content.
+
+The expanded diagram uses the image viewer controls on an opaque page surface.
+Open at Fit when the scale is at least 0.625. Otherwise show the start at 100
+percent. The percent button resets to 100 percent. Fit, zoom, pan, pinch and
+Close remain available. Close returns focus to Expand without moving the note.
+Render the vector in a second opaque-origin sandbox. Exchange bounded geometry
+only. Note source cannot set renderer configuration. Older diagrams with inline
+configuration or YAML configuration show source instead of applying that
+configuration. Diagrams that exceed the fixed source, time or size limits also
+show source with a retry action.

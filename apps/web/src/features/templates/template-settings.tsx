@@ -1,12 +1,9 @@
+import { SettingsDialog } from '../accounts/settings-dialog.tsx';
 /**
  * The template folder of the member, as a field of the Settings page (record
  * 0149).
  *
- * The folder is text, so it applies when the person leaves the field,
- * presses Enter, or leaves the page, as the daily note folder does: a half
- * typed folder would change the list of the palette at every keystroke. The
- * line under the field counts the templates of the typed folder, and
- * `templateFolderToStore` decides what is stored.
+ * The tree selects a folder. Done applies it; Back cancels the draft.
  */
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
@@ -14,18 +11,26 @@ import {
   templateFolderProblem,
   type TemplateSettings,
 } from '@notesapp/core';
-import { LoadingState, Notice, TextField } from '@notesapp/ui';
+import {
+  Button,
+  DialogBody,
+  FolderIcon,
+  DialogFooter,
+  LoadingState,
+  Notice,
+} from '@notesapp/ui';
+import { FolderTreePicker } from '../folders/folder-tree-picker.tsx';
+import { knownFolderPaths } from '../../lib/folder-selection.ts';
 import { useFiles } from '../../shell/files.tsx';
-import { useStoreOnLeave } from '../../shell/store-on-leave.ts';
 import {
   templateChoices,
   templateCountLine,
-  templateFolderSentences,
   templateFolderToStore,
 } from '../../lib/templates.ts';
+import { SettingChoiceRow } from '../accounts/settings-section.tsx';
 import { useTemplates } from './templates.tsx';
 
-/** The folder field, stored when the person leaves it. */
+/** The folder choice, applied with Done. */
 function FolderField({
   settings,
   onSave,
@@ -35,6 +40,7 @@ function FolderField({
 }): ReactNode {
   const files = useFiles();
   const [folder, setFolder] = useState(settings.folder);
+  const [changing, setChanging] = useState(false);
   // A stored folder that changes, from this section or from another device,
   // is what the field shows next.
   useEffect(() => {
@@ -44,29 +50,76 @@ function FolderField({
   const cleaned = cleanFolderPath(folder);
   const problem = templateFolderProblem(cleaned);
   const count = useMemo(
-    () => templateChoices(files.notes, cleaned, null).length,
-    [files.notes, cleaned],
+    () => templateChoices(files.notes, settings.folder, null).length,
+    [files.notes, settings.folder],
   );
-  const leave = useStoreOnLeave((): void => {
-    const next = templateFolderToStore(folder, settings);
-    if (next !== null) onSave({ folder: next });
-  });
-
   return (
-    <div onBlur={leave.onBlur} onKeyDown={leave.onKeyDown}>
-      <TextField
-        id="template-folder"
-        label="Folder"
-        value={folder}
-        onChange={setFolder}
-        hint="Insert from template in the command palette lists the notes in this folder and in its subfolders."
-        error={problem === null ? undefined : templateFolderSentences[problem]}
+    <div>
+      <SettingChoiceRow
+        label="Templates folder"
+        valueIcon={<FolderIcon />}
+        value={settings.folder}
+        help={
+          files.loading
+            ? 'Loading templates'
+            : templateCountLine(count, files.limitNotice === null)
+        }
+        onClick={() => setChanging(true)}
       />
-      <p className="mb-3 mt-0 text-control text-muted" aria-live="polite">
-        {problem !== null || files.loading
-          ? ''
-          : templateCountLine(count, files.limitNotice === null)}
-      </p>
+      <SettingsDialog
+        open={changing}
+        onClose={() => {
+          setFolder(settings.folder);
+          setChanging(false);
+        }}
+        title="Save in"
+        titleId="template-folder-title"
+        headerActions
+        width="small"
+        align="sheet"
+      >
+        <DialogBody>
+          <FolderTreePicker
+            includeRoot={false}
+            label="Folders"
+            searchPlacement="header"
+            folders={Array.from(
+              new Set([
+                settings.folder,
+                ...knownFolderPaths(
+                  files.notes.map((note) => note.path),
+                  files.emptyFolders,
+                ),
+              ]),
+            )}
+            selected={folder}
+            onSelect={setFolder}
+            autoFocus
+          />
+        </DialogBody>
+        <DialogFooter>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setFolder(settings.folder);
+              setChanging(false);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              if (problem === null) {
+                const next = templateFolderToStore(folder, settings);
+                if (next !== null) onSave({ folder: next });
+                setChanging(false);
+              }
+            }}
+          >
+            Done
+          </Button>
+        </DialogFooter>
+      </SettingsDialog>
     </div>
   );
 }
@@ -78,11 +131,7 @@ export function TemplateSettingsFields(): ReactNode {
 
   if (state.status === 'loading')
     return (
-      <LoadingState
-        shape="list"
-        rows={1}
-        label="The template settings are loading."
-      />
+      <LoadingState shape="list" rows={1} label="Loading template settings" />
     );
   if (state.status === 'unavailable')
     return (
@@ -95,11 +144,7 @@ export function TemplateSettingsFields(): ReactNode {
     <>
       <FolderField settings={state.settings} onSave={templates.save} />
       {templates.saveProblem === null ? null : (
-        <Notice
-          className="mt-3"
-          tone="problem"
-          message={templates.saveProblem}
-        />
+        <Notice tone="problem" message={templates.saveProblem} />
       )}
     </>
   );

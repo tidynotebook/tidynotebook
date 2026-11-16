@@ -13,6 +13,22 @@ fills in each placeholder.
 The template folder is **Templates** by default. Every note in that folder is a
 template, and so is every note in a subfolder of it.
 
+## Create a note from a template
+
+1. Check **Create in** beside the sidebar creation controls.
+2. Select **From template**.
+3. Select a template to read its text preview.
+4. Select **Create note**. Date, time and title fields fill at creation.
+
+You can also use **From template** on **All notes**. New notes from that
+screen go in the workspace root. **Cancel** closes the preview without
+creating a note. A template keeps its own heading text unless a placeholder
+changes it. The new note name can differ from that heading.
+
+If there are no templates, select **New template**. Write the text you want
+to reuse, then return to **From template**. The dialog states the template
+folder. No starter content is added automatically.
+
 ## Insert a template
 
 1. Open the note that gets the text. Put the cursor where the text must go.

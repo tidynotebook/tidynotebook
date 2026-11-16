@@ -1,0 +1,1164 @@
+import {
+  auditComposition,
+  auditHoverPadding,
+  captureSurface,
+} from './symmetry.ts';
+import { auditText, type Problem } from './text-audit.ts';
+import assert from 'node:assert/strict';
+import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { resolve, extname } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { auditSpacing } from './spacing-audit.ts';
+import { auditBorderSpacing } from './border-spacing.ts';
+import {
+  touchTextRoles,
+  fineTextRoles,
+} from '../../packages/ui/src/typography.ts';
+import { hasChromium, isRecord } from './browser.ts';
+const loaded: unknown = await import(
+  pathToFileURL(
+    process.env.PLAYWRIGHT_MODULE ??
+      '.local-app/node_modules/playwright-core/index.mjs',
+  ).href
+);
+assert.ok(hasChromium(loaded), 'The external module must provide Chromium.');
+const { chromium } = loaded;
+const base = process.env.UI_AUDIT_ORIGIN ?? 'http://localhost:3517',
+  statePath = process.env.UI_AUDIT_STATE ?? '.local-app/review-session.json',
+  fixture = readFixture(
+    process.env.UI_AUDIT_FIXTURE ?? '.local-app/review-fixture.json',
+  ),
+  { workspaceId } = fixture,
+  home = `${base}/w/${workspaceId}`;
+mkdirSync('.local-app/screenshots', { recursive: true });
+const spacing = process.env.SPACING_AUDIT === '1';
+const borders = process.env.BORDER_AUDIT === '1';
+const screenshotPrefix = borders
+  ? 'borders'
+  : spacing
+    ? 'spacing'
+    : 'text-roles';
+const resultsFile =
+  process.env.UI_AUDIT_RESULTS ??
+  (borders
+    ? '.local-app/border-results.json'
+    : spacing
+      ? '.local-app/spacing-results.json'
+      : '.local-app/text-roles-results.json');
+const browser = await chromium.launch(),
+  results: Result[] = [],
+  errors: { variant: string; error: string }[] = [],
+  writes: { method: string; url: string }[] = [];
+try {
+  if (spacing || borders || process.env.DS1_CAPTURE) {
+    const contract = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      hasTouch: true,
+      isMobile: true,
+      colorScheme: 'light',
+    });
+    const page = await contract.newPage();
+    const fixture = (pad: number) =>
+      `<style>body{margin:16px;font:16px/20px sans-serif}p{margin:0}h3{font:inherit;margin:0;padding-bottom:${pad}px;border-bottom:1px solid}button{height:32px;border:1px solid;padding:0 12px}section{margin-bottom:24px}.help{margin-top:${pad}px}.card{height:24px;border-bottom:1px solid;margin-bottom:${pad}px}.toolbar{border-bottom:1px solid;padding-bottom:${pad}px}</style><section><div class="card"></div><p>After divider</p></section><section><button>Delete account</button><p class="help">Delete help</p></section><section><h3>Usage</h3></section><section class="toolbar"><button>Sign out</button></section>`;
+    await page.goto(`data:text/html,${encodeURIComponent(fixture(0))}`);
+    const defects = await auditBorderSpacing(page);
+    for (const label of ['After divider', 'Delete help', 'Usage', 'Sign out'])
+      assert.ok(
+        defects.some((issue) => issue.text.startsWith(label)),
+        `The border audit must detect ${label}`,
+      );
+    await page.goto(`data:text/html,${encodeURIComponent(fixture(8))}`);
+    assert.deepEqual(await auditBorderSpacing(page), []);
+    if (process.env.DS1_AUDIT) {
+      const compositionFixture = (pad: number) =>
+        `<div data-ui-layout="stack" data-ui-pad="2" style="display:flex;flex-direction:column;padding:${pad}px">Content</div>`;
+      await page.goto(
+        `data:text/html,${encodeURIComponent(compositionFixture(4))}`,
+      );
+      assert.ok(
+        (await auditComposition(page)).issues.some(
+          (issue) => issue.kind === 'horizontal inset',
+        ),
+      );
+      await page.goto(
+        `data:text/html,${encodeURIComponent(compositionFixture(8))}`,
+      );
+      assert.deepEqual((await auditComposition(page)).issues, []);
+      const headerFixture = (inFlow: boolean) =>
+        `<style>body{margin:0}header{display:flex;justify-content:space-between;position:relative;padding:16px}header::after{content:"";${inFlow ? '' : 'position:absolute;'}}button{border:0;padding:0;display:flex}svg{width:16px;height:16px}</style><header class="ui-sheet-header"><span data-header-slot="leading"></span><span data-header-slot="trailing"><button aria-label="Close dialog"><svg></svg></button></span></header>`;
+      await page.goto(
+        `data:text/html,${encodeURIComponent(headerFixture(true))}`,
+      );
+      assert.ok(
+        (await auditComposition(page)).issues.some(
+          (issue) => issue.kind === 'right Close glyph edge',
+        ),
+        'An in-flow scroll edge must fail the header-slot check',
+      );
+      await page.goto(
+        `data:text/html,${encodeURIComponent(headerFixture(false))}`,
+      );
+      assert.deepEqual((await auditComposition(page)).issues, []);
+    }
+    await contract.close();
+  }
+  for (const width of process.env.TOUCH_WIDTHS?.split(',').map(Number) ??
+    (spacing || borders ? [320, 390, 1440] : [320, 390]))
+    for (const scheme of process.env.TOUCH_SCHEMES?.split(',') ?? [
+      'light',
+      'dark',
+    ]) {
+      assert.ok(scheme === 'light' || scheme === 'dark');
+      const phone = width < 1024;
+      const variant = `${width}-${scheme}`,
+        c = await browser.newContext({
+          storageState: statePath,
+          viewport: { width, height: phone ? 844 : 900 },
+          hasTouch: phone,
+          isMobile: phone,
+          colorScheme: scheme,
+        });
+
+      await c.addInitScript(
+        (s) => localStorage.setItem('notesapp.theme', s),
+        scheme,
+      );
+      // A local asset build can be checked before the single Docker build.
+      // The final run omits this variable and reads the deployed image.
+      await routeAssets(c);
+      const now = new Date().toISOString();
+      await c.route('**/api/account', async (r) => {
+        const response = await r.fetch(),
+          a = await response.json();
+        assert.ok(isRecord(a));
+        await r.fulfill({
+          response,
+          json: { ...a, accountPortal: true, mcpAuthorization: true },
+        });
+      });
+      await c.route('**/api/account/keys', (r) =>
+        r.fulfill({
+          json: {
+            keys: [
+              {
+                keyId: 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa',
+                name: 'Design key',
+                createdAt: now,
+                expiresAt: null,
+                lastUsedAt: null,
+              },
+            ],
+          },
+        }),
+      );
+      await c.route('**/api/account/connected-apps', (r) =>
+        r.fulfill({
+          json: {
+            apps: [
+              {
+                grantId: 'design-touch-grant',
+                clientId: 'https://example.com/design',
+                clientName: 'Design app',
+                scopes: ['notes:read'],
+                lastUsedAt: null,
+              },
+            ],
+          },
+        }),
+      );
+      await c.route('**/api/workspaces/*/trash*', (r) =>
+        r.fulfill({
+          json: {
+            files: [
+              {
+                fileId: 'bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb',
+                path: 'Personal/Reading/Reading list.md',
+                kind: 'markdown',
+                headRevisionId: 'cccccccc-cccc-4ccc-cccc-cccccccccccc',
+                createdAt: now,
+                deletedAt: now,
+              },
+            ],
+            nextCursor: null,
+          },
+        }),
+      );
+      await c.route('**/api/workspaces/*/publications', (r) =>
+        r.fulfill({
+          json: {
+            links: [
+              {
+                publicationId: 'dddddddd-dddd-4ddd-dddd-dddddddddddd',
+                scope: { kind: 'folder', path: 'Personal' },
+                createdAt: now,
+                expiresAt: null,
+                passwordProtected: false,
+                takenDown: false,
+              },
+            ],
+          },
+        }),
+      );
+      const p = await c.newPage();
+      p.setDefaultTimeout(30000);
+      p.on('pageerror', (e) => errors.push({ variant, error: e.message }));
+      p.on('request', (r) => {
+        if (
+          !['GET', 'HEAD', 'OPTIONS'].includes(r.method()) &&
+          /\/api\//.test(r.url()) &&
+          !r.url().endsWith('/sync/snapshots')
+        )
+          writes.push({ method: r.method(), url: r.url() });
+      });
+      const settle = () =>
+        p.evaluate(() =>
+          Promise.all(
+            document
+              .getAnimations()
+              .filter(
+                (a) => a.effect?.getComputedTiming().iterations !== Infinity,
+              )
+              .map((a) => a.finished.catch(() => {})),
+          ),
+        );
+      async function shot(name: string) {
+        if (await p.locator('.phone-sheet').count())
+          await p.locator('.phone-sheet[data-sheet-ready]').waitFor();
+        await settle();
+        const typography = await auditText(
+          p,
+          phone ? touchTextRoles : fineTextRoles,
+        );
+        const measured = spacing ? await auditSpacing(p) : null;
+        const issues = await p.evaluate((phone) => {
+          const visible = (e: Element) =>
+            e.checkVisibility({
+              visibilityProperty: true,
+              opacityProperty: true,
+            }) && e.getBoundingClientRect().width > 0;
+          const inScroller = (e: Element) => {
+            for (let a = e.parentElement; a; a = a.parentElement) {
+              const s = getComputedStyle(a);
+              if (
+                ['auto', 'scroll'].includes(s.overflowX) &&
+                a.scrollWidth > a.clientWidth + 1
+              )
+                return true;
+            }
+            return false;
+          };
+          const controls = [
+              ...document.querySelectorAll(
+                'button,[role="menuitem"],[role="treeitem"],input:not([type="checkbox"]),select,textarea',
+              ),
+            ].filter(visible),
+            problems: Problem[] = [];
+          for (const e of controls) {
+            const b = e.getBoundingClientRect(),
+              label =
+                e.getAttribute('aria-label') || e.textContent?.trim() || e.id;
+            if ((b.left < -1 || b.right > innerWidth + 1) && !inScroller(e))
+              problems.push({
+                kind: 'outside',
+                label,
+                left: b.left,
+                right: b.right,
+              });
+            if (
+              phone &&
+              e.matches('button,[role="menuitem"]') &&
+              !e.classList.contains('ui-sidebar-status') &&
+              b.height <
+                (e.closest('.ui-sidebar-row') ||
+                e.classList.contains('ui-sidebar-switcher')
+                  ? 35.5
+                  : e.classList.contains('ui-sidebar-action')
+                    ? 39.5
+                    : e.closest(
+                          '[data-ui-row=tree],[data-ui-row=menu],.ui-tree-row,.ui-list-row',
+                        ) || e.matches('[role^=menuitem]')
+                      ? 35.5
+                      : 43.5)
+            )
+              problems.push({ kind: 'height', label, height: b.height });
+            if (
+              e.matches('button') &&
+              e.scrollWidth > e.clientWidth + 1 &&
+              !e.querySelector('.truncate') &&
+              !inScroller(e)
+            ) {
+              // Hover surfaces can extend out of a row without overflowing
+              // its text. A Range measures content, without pseudo elements.
+              const range = document.createRange();
+              range.selectNodeContents(e);
+              const content = range.getBoundingClientRect();
+              if (content.left < b.left - 1 || content.right > b.right + 1)
+                problems.push({
+                  kind: 'button-overflow',
+                  label,
+                  width: b.width,
+                  scroll: e.scrollWidth,
+                });
+            }
+          }
+          for (const e of [
+            ...document.querySelectorAll(
+              '.ui-setting-row .line-clamp-2.text-secondary',
+            ),
+          ].filter(visible)) {
+            const b = e.getBoundingClientRect(),
+              clone = e.cloneNode(true);
+            if (!(clone instanceof HTMLElement))
+              throw new Error('Expected a help element.');
+            clone.style.cssText = `position:absolute;visibility:hidden;width:${b.width}px;display:block;-webkit-line-clamp:unset;max-height:none;height:auto;`;
+            document.body.append(clone);
+            const full = clone.getBoundingClientRect().height;
+            clone.remove();
+            if (full > b.height + 1)
+              problems.push({
+                kind: 'help-cut',
+                text: e.textContent,
+                width: b.width,
+                height: b.height,
+                full,
+              });
+          }
+          if (document.documentElement.scrollWidth > innerWidth + 1)
+            problems.push({ kind: 'page-overflow' });
+          return problems;
+        }, phone);
+        issues.push(
+          ...typography.problems,
+          ...(process.env.DS1_AUDIT ? (await auditComposition(p)).issues : []),
+          ...(process.env.HOVER_AUDIT ? await auditHoverPadding(p) : []),
+          ...(measured?.issues ?? []),
+          ...(borders ? await auditBorderSpacing(p) : []),
+        );
+        results.push({
+          variant,
+          screen: name,
+          issues,
+          combinations: typography.combinations,
+          measurements: measured?.measurements,
+        });
+        if (process.env.DS1_CAPTURE)
+          await captureSurface(
+            p,
+            `${name}-${variant}`,
+            process.env.DS1_CAPTURE,
+          );
+        await p.screenshot({
+          path: `.local-app/screenshots/${screenshotPrefix}-${name}-${variant}.png`,
+          animations: 'disabled',
+        });
+        process.stdout.write(`${variant} ${name} ${JSON.stringify(issues)}\n`);
+      }
+      const d = p.getByRole('dialog', { name: 'Settings', exact: true }),
+        go = async (path: string) => {
+          await p.goto(path.startsWith('http') ? path : `${home}${path}`);
+          await p
+            .getByRole('button', { name: 'Account: UI review', exact: true })
+            .first()
+            .waitFor();
+        },
+        settings = async (page: string) => {
+          await go(`?settings=${page}`);
+          await d.waitFor();
+        };
+      async function closeSettingsAction() {
+        await p
+          .getByRole('button', {
+            name: phone ? 'Back to section' : 'Cancel',
+            exact: true,
+          })
+          .click();
+      }
+      await go('');
+      await p
+        .getByRole('heading', { name: 'All notes', exact: true })
+        .waitFor();
+      await p.locator('.ui-list-row').first().waitFor();
+      await shot('all-notes');
+      await p
+        .getByRole('button', { name: 'Account: UI review', exact: true })
+        .click();
+      await p.getByRole('menuitem', { name: 'Settings' }).waitFor();
+      await shot('account-menu');
+      await p.keyboard.press('Escape');
+      if (phone)
+        await p
+          .getByRole('button', { name: 'Open navigation', exact: true })
+          .click();
+      if (phone)
+        await p
+          .getByRole('button', { name: 'Close navigation', exact: true })
+          .waitFor();
+      async function runFolderExpansion(name: string) {
+        const more = p
+          .getByRole('button', { name: 'More drawer actions', exact: true })
+          .filter({ visible: true });
+        if (await more.count()) {
+          await more.click();
+          await p.getByRole('menuitem', { name, exact: true }).click();
+        } else await p.getByRole('button', { name, exact: true }).click();
+      }
+      await shot('drawer');
+      async function checkChoiceMenu(name: string) {
+        const state = await p.evaluate(() => {
+          const menu = document.querySelector('[role="menu"]');
+          if (!menu) throw new Error('Choice menu missing');
+          const current = menu.querySelector('[aria-checked="true"]');
+          if (!current)
+            throw new Error('Choice menu must state the current item');
+          const style = getComputedStyle(menu);
+          return {
+            checked: menu.querySelectorAll('[aria-checked="true"]').length,
+            check: current.querySelector('[data-menu-check] svg') !== null,
+            filled: current.classList.contains('bg-active'),
+            surface: style.backgroundColor,
+            border: style.borderBottomColor,
+            shadow: style.boxShadow,
+          };
+        });
+        assert.equal(state.checked, 1);
+        assert.equal(state.check, true);
+        assert.equal(state.filled, false);
+        if (scheme === 'dark') {
+          assert.equal(state.surface, 'rgb(42, 42, 42)');
+          assert.equal(state.border, 'rgb(58, 58, 57)');
+          assert.ok(
+            state.shadow.includes('0.4') && state.shadow.includes('0.55'),
+            state.shadow,
+          );
+        } else assert.equal(state.surface, 'rgb(255, 255, 255)');
+        await shot(name);
+        await p.keyboard.press('Escape');
+      }
+      await p
+        .getByRole('button', { name: 'Workspace: Personal', exact: true })
+        .click();
+      await checkChoiceMenu('workspace-menu');
+      const moreActions = p
+        .getByRole('button', { name: 'More drawer actions', exact: true })
+        .filter({ visible: true });
+      if (await moreActions.count()) {
+        await moreActions.click();
+        await p
+          .getByRole('menuitem', { name: 'Sort notes', exact: true })
+          .click();
+      } else
+        await p
+          .getByRole('button', { name: 'Sort notes', exact: true })
+          .filter({ visible: true })
+          .click();
+      await p.getByRole('menu', { name: 'Sort notes', exact: true }).waitFor();
+      await checkChoiceMenu('sort-menu');
+
+      if (spacing || borders || process.env.DS1_CAPTURE) {
+        await p
+          .getByRole('button', { name: 'Calendar', exact: true })
+          .filter({ visible: true })
+          .click();
+        await p.locator('.ui-calendar-day').first().waitFor();
+        await shot('calendar');
+        await p
+          .getByRole('button', { name: 'Notes', exact: true })
+          .filter({ visible: true })
+          .click();
+      }
+      await runFolderExpansion('Expand all folders');
+      await p
+        .getByRole('button', {
+          name: 'Actions for the note Home page',
+          exact: true,
+        })
+        .waitFor();
+      await shot('drawer-expanded');
+      if (spacing || borders || process.env.DS1_CAPTURE) {
+        const drift = await p.evaluate(async () => {
+          const tree = document.querySelector(
+            '[role="tree"][aria-multiselectable="true"]',
+          );
+          if (!(tree instanceof HTMLElement))
+            throw new Error('The drawer tree must be open.');
+          let scroller = tree.parentElement;
+          while (
+            scroller &&
+            !['auto', 'scroll'].includes(getComputedStyle(scroller).overflowY)
+          )
+            scroller = scroller.parentElement;
+          if (!scroller)
+            throw new Error('The drawer tree must have a scroller.');
+          const settle = () =>
+            new Promise<void>((resolve) =>
+              requestAnimationFrame(() =>
+                requestAnimationFrame(() =>
+                  requestAnimationFrame(() => resolve()),
+                ),
+              ),
+            );
+          const original = scroller.scrollTop;
+          const names = () => [...tree.querySelectorAll('[data-tree-name]')];
+          const bounds = scroller.getBoundingClientRect();
+          const anchor = names().find(
+            (name) =>
+              name.getBoundingClientRect().top >= bounds.top &&
+              name.getBoundingClientRect().bottom <= bounds.bottom,
+          );
+          if (!anchor) throw new Error('The tree must have a visible name.');
+          const name = anchor.textContent;
+          const before = anchor.getBoundingClientRect().top;
+          scroller.scrollTop = scroller.scrollHeight;
+          await settle();
+          scroller.scrollTop = original;
+          await settle();
+          const restored = names().find(
+            (element) => element.textContent === name,
+          );
+          if (!restored)
+            throw new Error('The visible row must return after scrolling.');
+          return Math.abs(restored.getBoundingClientRect().top - before);
+        });
+        assert.ok(
+          drift <= 1,
+          `Drawer scroll changed the starting position by ${drift} px.`,
+        );
+      }
+
+      if (process.env.UI_AUDIT_SURFACE === 'sidebar') {
+        await c.close();
+        continue;
+      }
+      if (spacing || borders || process.env.DS1_CAPTURE) {
+        await p
+          .getByRole('treeitem', { name: 'Home page', exact: true })
+          .focus();
+        await p
+          .getByRole('button', {
+            name: 'Actions for the note Home page',
+            exact: true,
+          })
+          .click();
+        await p.getByRole('menuitem', { name: 'Rename', exact: true }).click();
+        await p
+          .getByRole('textbox', { name: 'Name of the note', exact: true })
+          .waitFor();
+        await shot('drawer-rename');
+        await p.keyboard.press('Escape');
+      }
+      await runFolderExpansion('Collapse all folders');
+      await p.getByRole('button', { name: 'New folder', exact: true }).click();
+      await p
+        .getByRole('dialog', { name: 'New folder', exact: true })
+        .waitFor();
+      await shot('new-folder');
+      await p
+        .getByRole('dialog', { name: 'New folder', exact: true })
+        .locator('#new-folder-inside')
+        .click();
+      await p
+        .getByRole('dialog', { name: 'New folder', exact: true })
+        .getByRole('treeitem')
+        .first()
+        .waitFor();
+      await shot('new-folder-tree');
+      await p.keyboard.press('Escape');
+      await p.keyboard.press('Escape');
+      await p
+        .getByRole('button', {
+          name: 'Actions for the folder Personal',
+          exact: true,
+        })
+        .evaluate((e) => {
+          const item = e.closest('[role="treeitem"]');
+          if (item instanceof HTMLElement) item.focus({ preventScroll: true });
+        });
+      await p
+        .getByRole('button', {
+          name: 'Actions for the folder Personal',
+          exact: true,
+        })
+        .click();
+      const move = p.getByRole('menuitem', {
+        name: 'Move to folder',
+        exact: true,
+      });
+      await move.click();
+      await p
+        .getByRole('dialog', { name: 'Move Personal to', exact: true })
+        .getByRole('treeitem')
+        .first()
+        .waitFor();
+      const rootText = p
+        .getByRole('dialog', { name: 'Move Personal to', exact: true })
+        .getByRole('treeitem')
+        .first()
+        .locator('span.min-w-0.flex-1');
+      assert.equal(
+        await rootText.evaluate(
+          (e) =>
+            e.scrollWidth <= e.clientWidth + 1 &&
+            e.scrollHeight <= e.clientHeight + 1,
+        ),
+        true,
+      );
+      await shot('move');
+      const folderSearch = p
+        .getByRole('dialog', { name: 'Move Personal to', exact: true })
+        .getByRole('button', { name: 'Search folders', exact: true });
+      if (await folderSearch.count()) {
+        await folderSearch.click();
+        await shot('move-filter');
+        await p.keyboard.press('Escape');
+        await p
+          .locator('input[placeholder="Filter folders"]')
+          .waitFor({ state: 'hidden' });
+      }
+      await p
+        .getByRole('dialog', { name: 'Move Personal to', exact: true })
+        .getByRole('button', {
+          name: phone ? 'Close dialog' : 'Cancel',
+          exact: true,
+        })
+        .click();
+      if (phone)
+        await p
+          .getByRole('button', { name: 'Close navigation', exact: true })
+          .click();
+      await p.keyboard.press('Control+/');
+      await p
+        .getByRole('dialog', { name: 'Keyboard shortcuts', exact: true })
+        .waitFor();
+      await shot('shortcuts');
+      await p.keyboard.press('Escape');
+      if (spacing || borders || process.env.DS1_CAPTURE) {
+        await p.keyboard.press('Control+p');
+        await p
+          .getByRole('dialog', {
+            name: 'Search notes and run actions',
+            exact: true,
+          })
+          .waitFor();
+        await shot('search');
+        await p.keyboard.press('Escape');
+      }
+      await p
+        .getByRole('button', { name: 'Use template', exact: true })
+        .click();
+      const td = p.getByRole('dialog', {
+        name: 'New note from template',
+        exact: true,
+      });
+      await td.getByRole('button', { name: 'Meeting', exact: true }).waitFor();
+      await shot('template-list');
+      await td.getByRole('button', { name: 'Meeting', exact: true }).click();
+      await td
+        .getByRole('region', { name: 'The new note', exact: true })
+        .and(p.locator('[aria-busy="false"]'))
+        .waitFor();
+      await shot('template-details');
+      await td.locator('#template-note-folder').click();
+      await td.getByRole('treeitem').first().waitFor();
+      await shot('template-folder');
+      await p.keyboard.press('Escape');
+      await td
+        .getByRole('button', { name: 'Close template dialog', exact: true })
+        .filter({ visible: true })
+        .click();
+      await settings('');
+      await shot('settings-list');
+      for (const section of [
+        'appearance',
+        'offline',
+        'daily-notes',
+        'templates',
+        'export-import',
+        'account',
+        'billing',
+        'devices',
+        'api-keys-apps',
+      ]) {
+        await settings(section);
+        const titles: Record<string, string> = {
+          account: 'Profile',
+          appearance: 'Appearance and editor',
+          'api-keys-apps': 'API keys and apps',
+          'daily-notes': 'Daily notes',
+          'export-import': 'Export and import',
+          billing: 'Plan and billing',
+        };
+        await d
+          .getByRole('heading', {
+            name:
+              titles[section] ??
+              section.charAt(0).toUpperCase() + section.slice(1),
+            exact: true,
+            level: 2,
+          })
+          .waitFor();
+        if (section === 'daily-notes')
+          await d
+            .getByRole('button', { name: 'Name format', exact: true })
+            .waitFor();
+        if (section === 'devices')
+          await d
+            .getByRole('list', { name: 'This device', exact: true })
+            .waitFor();
+        if (section === 'api-keys-apps')
+          await d
+            .getByRole('button', { name: 'Revoke Design app', exact: true })
+            .waitFor();
+        await shot(`settings-${section}`);
+        if ((spacing || borders) && section === 'appearance') {
+          await d
+            .getByRole('switch', { name: 'Check spelling', exact: true })
+            .scrollIntoViewIfNeeded();
+          await shot('settings-editor');
+        }
+        if (section === 'daily-notes')
+          for (const field of ['Folder', 'Name format', 'Template']) {
+            await d.getByRole('button', { name: field, exact: true }).click();
+            if (field === 'Name format')
+              await d.locator('#daily-format').waitFor();
+            else
+              await d
+                .getByRole('heading', {
+                  name:
+                    field === 'Folder'
+                      ? 'Save in'
+                      : field === 'Template'
+                        ? 'Choose template'
+                        : 'Name format',
+                  exact: true,
+                })
+                .waitFor();
+            if (field === 'Folder')
+              await d.getByRole('treeitem').first().waitFor();
+            if (field === 'Template')
+              await d
+                .getByRole('group', { name: 'Templates', exact: true })
+                .getByRole('button', { name: 'Meeting', exact: true })
+                .waitFor();
+            await shot(`daily-${field.toLowerCase().replaceAll(' ', '-')}`);
+            if (field === 'Name format') {
+              await d
+                .getByRole('textbox', { name: 'Name format', exact: true })
+                .fill('/');
+              await d.locator('[aria-invalid=true]').waitFor();
+              await shot('daily-format-error');
+            }
+            if (field === 'Template') {
+              await d
+                .getByRole('group', { name: 'Templates', exact: true })
+                .getByRole('button', { name: 'Meeting', exact: true })
+                .click();
+              await d
+                .getByRole('region', {
+                  name: 'Daily note preview',
+                  exact: true,
+                })
+                .and(p.locator('[aria-busy="false"]'))
+                .waitFor();
+              const fixedFooter = await d
+                .getByRole('button', { name: 'Done', exact: true })
+                .boundingBox();
+              await shot('daily-template-preview');
+              await d
+                .getByRole('region', {
+                  name: 'Daily note preview',
+                  exact: true,
+                })
+                .scrollIntoViewIfNeeded();
+              assert.deepEqual(
+                await d
+                  .getByRole('button', { name: 'Done', exact: true })
+                  .boundingBox(),
+                fixedFooter,
+              );
+              await shot('daily-template-preview-scrolled');
+            }
+            if (field === 'Name format')
+              await d
+                .getByRole('button', { name: 'Cancel', exact: true })
+                .click();
+            else await closeSettingsAction();
+          }
+        if (section === 'templates') {
+          await d
+            .getByRole('button', { name: 'Templates folder', exact: true })
+            .click();
+          await d
+            .getByRole('heading', { name: 'Save in', exact: true })
+            .waitFor();
+          await d.getByRole('treeitem').first().waitFor();
+          await shot('templates-folder');
+          await closeSettingsAction();
+        }
+        if (section === 'account') {
+          await d
+            .getByRole('button', {
+              name: phone ? 'Name' : 'Edit name',
+              exact: true,
+            })
+            .click();
+          await d.getByRole('textbox', { name: 'Name', exact: true }).waitFor();
+          await shot('account-name');
+          await d
+            .getByRole('button', {
+              name: phone ? 'Back to section' : 'Cancel',
+              exact: true,
+            })
+            .click();
+          await d
+            .getByRole('button', {
+              name: phone ? 'Delete account…' : 'Delete account',
+              exact: true,
+            })
+            .click();
+          await p
+            .getByRole('heading', { name: 'Delete your account?', exact: true })
+            .waitFor();
+          await shot('delete-account');
+          await closeSettingsAction();
+        }
+        if (section === 'api-keys-apps') {
+          for (const [trigger, name] of [
+            ['Create API key', 'create-key'],
+            ['Revoke Design key', 'revoke-key'],
+            ['Revoke Design app', 'revoke-app'],
+          ] as const) {
+            await d.getByRole('button', { name: trigger, exact: true }).click();
+            await p
+              .getByRole('heading', {
+                name:
+                  name === 'create-key'
+                    ? 'Create API key'
+                    : name === 'revoke-key'
+                      ? 'Revoke API key?'
+                      : 'Revoke connected app?',
+                exact: true,
+              })
+              .waitFor();
+            await shot(name);
+            await closeSettingsAction();
+          }
+        }
+      }
+      await go('/accounts');
+      await p.waitForURL('**?settings=accounts');
+      await d
+        .getByRole('switch', { name: 'Let anybody sign up', exact: true })
+        .waitFor();
+      await shot('admin-accounts');
+      await d
+        .getByRole('button', {
+          name: phone ? '+ Invite a person' : 'Invite a person',
+          exact: true,
+        })
+        .click();
+      await p.locator('#invite-email').waitFor();
+      await shot('admin-invite');
+      await closeSettingsAction();
+      if (phone) {
+        await d
+          .getByRole('button', { name: 'Account: UI review', exact: true })
+          .click();
+        await d.getByRole('button', { name: 'Role', exact: true }).waitFor();
+        await shot('admin-account-detail');
+        for (const [name, field] of [
+          ['Role', '#account-role'],
+          ['Limits and access', '#controls-standing'],
+        ] as const) {
+          await d.getByRole('button', { name, exact: true }).click();
+          await p.locator(field).waitFor();
+          await shot(name === 'Role' ? 'admin-role' : 'admin-limits');
+          await closeSettingsAction();
+        }
+        await closeSettingsAction();
+      } else {
+        await d
+          .getByRole('button', {
+            name: 'Change the account of UI review',
+            exact: true,
+          })
+          .click();
+        await p
+          .getByRole('menuitem', {
+            name: 'Change limits and access',
+            exact: true,
+          })
+          .click();
+        await p.locator('#controls-standing').waitFor();
+        await shot('admin-limits');
+        await closeSettingsAction();
+      }
+      for (const section of ['mail', 'legal', 'reports']) {
+        await settings(section);
+        await shot(`admin-${section}`);
+        for (const name of section === 'mail'
+          ? []
+          : section === 'legal'
+            ? ['Terms', 'Privacy notice']
+            : []) {
+          await d.getByRole('button', { name, exact: true }).click();
+          await p
+            .locator(section === 'mail' ? '#mail-host' : '#legal-kind')
+            .waitFor();
+          await shot(
+            `admin-${section}-${name.toLowerCase().replaceAll(' ', '-')}`,
+          );
+          await closeSettingsAction();
+        }
+      }
+      await go('/trash');
+      await p
+        .getByRole('button', {
+          name: 'Restore Personal/Reading/Reading list',
+          exact: true,
+        })
+        .waitFor();
+      await shot('trash');
+      if (spacing || borders || process.env.DS1_CAPTURE) {
+        await p
+          .getByRole('button', {
+            name: 'Actions for Personal/Reading/Reading list',
+            exact: true,
+          })
+          .click();
+        await p
+          .getByRole('menuitem', { name: 'Delete for good', exact: true })
+          .waitFor();
+        await shot('trash-menu');
+        await p.keyboard.press('Escape');
+      }
+      await go('/published');
+      await p
+        .getByRole('button', {
+          name: 'Revoke the link to Personal',
+          exact: true,
+        })
+        .waitFor();
+      await shot('published');
+      const note = fixture.files[0];
+      assert.ok(note);
+      await go(`/notes/${note.fileId}`);
+      await p.locator('.cm-editor').waitFor();
+      await shot('note-editor');
+      await p
+        .getByRole('button', { name: 'Account: UI review', exact: true })
+        .click();
+      await p.getByRole('menuitem', { name: 'Settings' }).waitFor();
+      await shot('note-account-menu');
+      await p.keyboard.press('Escape');
+      for (const trigger of ['Note actions', 'Row actions', 'Column actions']) {
+        const button = p.getByRole('button', { name: trigger, exact: true });
+        if (await button.count()) {
+          await button.scrollIntoViewIfNeeded();
+          await button.click();
+          await shot(`editor-${trigger.toLowerCase().replaceAll(' ', '-')}`);
+          await p.keyboard.press('Escape');
+        }
+      }
+      if (spacing || borders || process.env.DS1_CAPTURE) {
+        await p
+          .getByRole('button', { name: 'Note actions', exact: true })
+          .click();
+        await p.getByRole('menuitem', { name: 'Publish' }).click();
+        await p
+          .getByRole('dialog')
+          .getByLabel('Password', { exact: true })
+          .waitFor();
+        await shot('publish');
+        await p.keyboard.press('Escape');
+        await p
+          .getByRole('button', { name: 'Note actions', exact: true })
+          .click();
+        await p
+          .getByRole('menuitem', { name: 'Version history', exact: true })
+          .click();
+        await p
+          .getByRole('heading', { name: 'Version history', exact: true })
+          .waitFor();
+        await shot('version-history');
+      }
+      await c.close();
+      const guest = await browser.newContext({
+        viewport: { width, height: phone ? 844 : 900 },
+        hasTouch: phone,
+        isMobile: phone,
+        colorScheme: scheme,
+      });
+
+      await routeAssets(guest);
+      await guest.addInitScript(
+        (s) => localStorage.setItem('notesapp.theme', s),
+        scheme,
+      );
+      const auth = await guest.newPage();
+      for (const path of ['login', 'signup']) {
+        await auth.goto(`${base}/${path}`);
+        await auth.locator('input[type="email"]').waitFor();
+        if (process.env.DS1_CAPTURE)
+          await captureSurface(
+            auth,
+            `${path}-${variant}`,
+            process.env.DS1_CAPTURE,
+          );
+        await auth.screenshot({
+          path: `.local-app/screenshots/${screenshotPrefix}-${path}-${variant}.png`,
+          animations: 'disabled',
+        });
+        assert.equal(
+          await auth.evaluate(
+            () => document.documentElement.scrollWidth > innerWidth,
+          ),
+          false,
+        );
+        const typography = await auditText(
+          auth,
+          phone ? touchTextRoles : fineTextRoles,
+        );
+        const measured = spacing ? await auditSpacing(auth) : null;
+        results.push({
+          variant,
+          screen: path,
+          issues: [
+            ...typography.problems,
+            ...(process.env.DS1_AUDIT
+              ? (await auditComposition(auth)).issues
+              : []),
+            ...(measured?.issues ?? []),
+            ...(borders ? await auditBorderSpacing(auth) : []),
+          ],
+          combinations: typography.combinations,
+        });
+      }
+      await auth
+        .getByRole('textbox', { name: 'Email address', exact: true })
+        .fill('type-check@example.com');
+      await auth.locator('#signup-password').fill('short');
+      await auth
+        .getByRole('button', { name: 'Create account', exact: true })
+        .click();
+      await auth.locator('[aria-invalid=true]').waitFor();
+      if (phone)
+        assert.equal(
+          await auth
+            .locator('[role=alert]')
+            .evaluate((e) => getComputedStyle(e).fontSize),
+          '12px',
+        );
+      await auth.screenshot({
+        path: `.local-app/screenshots/${screenshotPrefix}-signup-error-${variant}.png`,
+        animations: 'disabled',
+      });
+      const typography = await auditText(
+        auth,
+        phone ? touchTextRoles : fineTextRoles,
+      );
+      const measured = spacing ? await auditSpacing(auth) : null;
+      results.push({
+        variant,
+        screen: 'signup-error',
+        issues: [
+          ...typography.problems,
+          ...(process.env.DS1_AUDIT
+            ? (await auditComposition(auth)).issues
+            : []),
+          ...(measured?.issues ?? []),
+          ...(borders ? await auditBorderSpacing(auth) : []),
+        ],
+        combinations: typography.combinations,
+      });
+      await guest.close();
+      await browser
+        .contexts()
+        .find((c) => c === guest)
+        ?.close();
+    }
+  assert.deepEqual(writes, []);
+  assert.deepEqual(errors, []);
+  assert.deepEqual(
+    results.flatMap((r) => r.issues),
+    [],
+  );
+  writeFileSync(
+    resultsFile,
+    JSON.stringify({ results, errors, writes }, null, 2),
+  );
+  process.stdout.write(
+    `${results.length} screens, ${results.flatMap((r) => r.issues).length} issues\n`,
+  );
+} finally {
+  writeFileSync(
+    resultsFile,
+    JSON.stringify({ results, errors, writes }, null, 2),
+  );
+  await Promise.allSettled(
+    browser
+      .contexts()
+      .map((context) => context.unrouteAll({ behavior: 'ignoreErrors' })),
+  );
+  await browser.close();
+}
+
+type Result = {
+  variant: string;
+  screen: string;
+  issues: Problem[];
+  combinations: Record<string, string[]>;
+  measurements?: Record<string, number[]> | undefined;
+};
+function readFixture(path: string): {
+  workspaceId: string;
+  files: { fileId: string }[];
+} {
+  const data: unknown = JSON.parse(readFileSync(path, 'utf8'));
+  assert.ok(
+    isRecord(data) &&
+      typeof data.workspaceId === 'string' &&
+      Array.isArray(data.files),
+  );
+  return {
+    workspaceId: data.workspaceId,
+    files: data.files.map((file: unknown) => {
+      assert.ok(isRecord(file) && typeof file.fileId === 'string');
+      return { fileId: file.fileId };
+    }),
+  };
+}
+
+async function routeAssets(
+  context: ReturnType<typeof browser.contexts>[number],
+): Promise<void> {
+  const assets = process.env.UI_AUDIT_ASSETS;
+  if (assets)
+    await context.route(`${base}/**`, async (route) => {
+      const request = route.request(),
+        url = new URL(request.url());
+      if (url.pathname.startsWith('/api/'))
+        return route.fulfill({ response: await route.fetch() });
+      const path = resolve(
+        assets,
+        request.isNavigationRequest() ? 'index.html' : `.${url.pathname}`,
+      );
+      if (
+        request.method() !== 'GET' ||
+        !path.startsWith(resolve(assets) + '/') ||
+        !existsSync(path)
+      )
+        return route.continue();
+      const types: Record<string, string> = {
+        '.html': 'text/html',
+        '.js': 'text/javascript',
+        '.css': 'text/css',
+        '.woff2': 'font/woff2',
+        '.png': 'image/png',
+        '.svg': 'image/svg+xml',
+      };
+      return route.fulfill({
+        body: readFileSync(path),
+        contentType: types[extname(path)] ?? 'application/octet-stream',
+      });
+    });
+}

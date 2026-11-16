@@ -202,7 +202,7 @@ await test('an unsafe neighbour of a safe element leaves', async () => {
     ['<form action="https://example.com"><button>Send</button></form>', 'Send'],
     [
       '<table><tr><td colspan="0" rowspan="2" align="justify" style="x">c</td></tr></table>',
-      '<table><tbody><tr><td rowspan="2">c</td></tr></tbody></table>',
+      '<div class="notes-table-scroll" tabindex="0" role="region" aria-label="Table 1"><table><tbody><tr><td rowspan="2">c</td></tr></tbody></table></div>',
     ],
     [
       '<ol start="3" type="a"><li>three</li></ol>',
@@ -597,5 +597,60 @@ await test('the final URL check rejects unsafe resolver output after sanitize', 
       noteHref: () => '/published/token?note=one',
     }),
     '<p><a href="/published/token?note=one">Note</a></p>',
+  );
+});
+
+await test('a reader table keeps one native table inside its scroll area', async () => {
+  const html = await renderMarkdown(
+    '| Date | Bhushan | Mayuri |\n| :--- | ---: | :---: |\n| 2026-09-23 | 98.50 | 81.50 |\n| next || value |\n| short |',
+  );
+  assert.equal((html.match(/class="notes-table-scroll"/g) ?? []).length, 1);
+  assert.ok(
+    html.startsWith(
+      '<div class="notes-table-scroll" tabindex="0" role="region" aria-label="Table 1"><table>',
+    ),
+  );
+  assert.ok(html.endsWith('</table></div>'));
+  assert.ok(html.includes('<th align="left">Date</th>'));
+  assert.ok(html.includes('<th align="right">Bhushan</th>'));
+  assert.ok(html.includes('<td align="center">81.50</td>'));
+  assert.ok(html.includes('<td align="right"></td>'));
+});
+
+await test('each author table has a named scroll region without author roles', async () => {
+  const html = await renderMarkdown(
+    '<div role="region" aria-label="Private"><table role="presentation" aria-label="Private" onclick="bad()"><tr><th align="left">H &amp; &lt;x&gt;</th><td><a href="javascript:bad()">Value</a></td></tr></table><table></table></div>',
+  );
+  assert.equal(
+    html,
+    '<div><div class="notes-table-scroll" tabindex="0" role="region" aria-label="Table 1"><table><tbody><tr><th align="left">H &#x26; &#x3C;x></th><td>Value</td></tr></tbody></table></div><div class="notes-table-scroll" tabindex="0" role="region" aria-label="Table 2"><table></table></div></div>',
+  );
+});
+
+await test('a large table keeps its native headers and cells in one named region', async () => {
+  const cells = Array.from({ length: 80 }, (_, index) => `Column ${index}`);
+  const html = await renderMarkdown(
+    `<table><tr>${cells.map((cell) => `<th>${cell}</th>`).join('')}</tr><tr>${cells.map((cell) => `<td>${cell}</td>`).join('')}</tr></table>`,
+  );
+  assert.equal(
+    html,
+    `<div class="notes-table-scroll" tabindex="0" role="region" aria-label="Table 1"><table><tbody><tr>${cells.map((cell) => `<th>${cell}</th>`).join('')}</tr><tr>${cells.map((cell) => `<td>${cell}</td>`).join('')}</tr></tbody></table></div>`,
+  );
+});
+
+await test('table region names restart for each render without using note text', async () => {
+  const source =
+    '<table aria-label="Private name"><tr><td>Private value</td></tr></table><table></table>';
+  const expected =
+    '<div class="notes-table-scroll" tabindex="0" role="region" aria-label="Table 1"><table><tbody><tr><td>Private value</td></tr></tbody></table></div><div class="notes-table-scroll" tabindex="0" role="region" aria-label="Table 2"><table></table></div>';
+  const empty =
+    '<div class="notes-table-scroll" tabindex="0" role="region" aria-label="Table 1"><table></table></div>';
+  assert.deepEqual(
+    await Promise.all([
+      renderMarkdown(source),
+      renderMarkdown('<table></table>'),
+      renderMarkdown(source),
+    ]),
+    [expected, empty, expected],
   );
 });

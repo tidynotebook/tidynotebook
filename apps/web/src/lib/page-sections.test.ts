@@ -6,6 +6,7 @@ import {
   noteGroupSections,
   sectionOf,
   settingsSections,
+  settingsGroups,
   visibleSettingsSections,
 } from './page-sections.ts';
 import { groupNotesByRecency } from './note-groups.ts';
@@ -27,7 +28,7 @@ await test('each fixed list names each section and each heading once', () => {
 await test('a section of a fixed list reads its title and its heading', () => {
   assert.deepEqual(sectionOf(settingsSections, 'offline'), {
     id: 'offline-heading',
-    title: 'Available offline',
+    title: 'Offline',
   });
   assert.deepEqual(sectionOf(administrationSections, 'reports'), {
     id: 'reports-heading',
@@ -37,9 +38,11 @@ await test('a section of a fixed list reads its title and its heading', () => {
 
 await test('Settings shows Billing only when the installation names a portal', () => {
   const keys = (accountPortal: boolean): string[] =>
-    visibleSettingsSections({ accountPortal, mcpAuthorization: true }).map(
-      (section) => section.key,
-    );
+    visibleSettingsSections({
+      accountPortal,
+      mcpAuthorization: true,
+      installationRole: 'administrator',
+    }).map((section) => section.key);
   // Billing opens the portal, so with no portal it would be a dead section.
   assert.ok(!keys(false).includes('billing'));
   assert.deepEqual(
@@ -114,4 +117,15 @@ await test('Settings shows connected apps only with MCP authorization', () => {
       mcpAuthorization: true,
     }).some((section) => section.key === 'connected-apps'),
   );
+});
+
+await test('Settings groups cover each section once in page order and separate deletion', () => {
+  assert.deepEqual(
+    settingsGroups.flatMap((group) => group.keys),
+    settingsSections.map((section) => section.key),
+  );
+  assert.deepEqual(settingsGroups.at(-1), {
+    title: 'Administration',
+    keys: ['admin-accounts', 'admin-mail', 'admin-legal', 'admin-reports'],
+  });
 });

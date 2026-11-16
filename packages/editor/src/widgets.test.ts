@@ -163,28 +163,22 @@ await test('a setext underline is hidden together with the break above it', () =
   assert.equal(count, 0);
 });
 
-await test('a fenced code block hides its opening and closing fence lines', () => {
-  const doc = '```js\nconst a = 1;\n```\n\ntail\n';
-  const away = buildRichWidgets(stateOf(doc, doc.indexOf('tail')), {});
-  const hidden: Array<[number, number]> = [];
-  away.hides.between(0, doc.length, (from, to) => {
-    hidden.push([from, to]);
-  });
-  // The opening line with its trailing break, and the closing line with the
-  // break before it.
-  assert.deepEqual(hidden, [
-    [0, 6],
-    [18, 22],
-  ]);
-  // The code stays between the hidden fences.
-  assert.equal(doc.slice(6, 18), 'const a = 1;');
-  // A cursor inside the block brings the fences back.
-  const inside = buildRichWidgets(stateOf(doc, 8), {});
-  let count = 0;
-  inside.widgets.between(0, doc.length, () => {
-    count += 1;
-  });
-  assert.equal(count, 0);
+await test('a fenced code block keeps its fence lines on the screen', () => {
+  // Hidden fences joined the first and the last line of code to them, so a
+  // copy and the caret met source that the screen did not show. The preview
+  // draws the fence lines quiet instead (issue 517).
+  for (const doc of [
+    '```js\nconst a = 1;\n```\n\ntail\n',
+    'intro\n\n```js\nconst x = 1;\n',
+    'intro\n\n``` lone words',
+  ]) {
+    const away = buildRichWidgets(stateOf(doc, 0), {});
+    let hides = 0;
+    away.hides.between(0, doc.length, () => {
+      hides += 1;
+    });
+    assert.equal(hides, 0, doc);
+  }
 });
 
 await test('a mermaid fence renders as a diagram and keeps no fence-line hide', () => {
@@ -201,16 +195,6 @@ await test('a mermaid fence renders as a diagram and keeps no fence-line hide', 
   // Only the diagram widget, and no separate fence-line hides.
   assert.equal(widgets, 1);
   assert.equal(hides, 0);
-});
-
-await test('an unclosed fence hides only its opening line', () => {
-  const doc = 'intro\n\n```js\nconst x = 1;\n';
-  const away = buildRichWidgets(stateOf(doc, 0), {});
-  const hidden: Array<[number, number]> = [];
-  away.hides.between(0, doc.length, (from, to) => {
-    hidden.push([from, to]);
-  });
-  assert.deepEqual(hidden, [[7, 13]]);
 });
 
 await test('the attachment reader accepts only the attachment path', () => {

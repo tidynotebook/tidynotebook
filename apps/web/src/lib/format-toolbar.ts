@@ -12,7 +12,7 @@
  * tool that joins or leaves the row therefore joins or leaves the palette in
  * the same change, and no second list can drift from the first.
  *
- * The row holds five groups that space separates: the headings, the marks of
+ * The row holds five groups: the headings, the marks of
  * a word, the shapes of a block, the table, and the move of a list item
  * (record 0106). Every tool is a button of the
  * row at every width. A row wider than the screen scrolls sideways, so a new
@@ -28,7 +28,7 @@ import {
   type FormatContext,
   type SlashCommand,
 } from '@notesapp/editor';
-import { controlStripClassName } from '@notesapp/ui';
+
 import type { ActionIconName } from './palette-items.ts';
 import { tableActionRows } from './table-menu.ts';
 
@@ -242,6 +242,8 @@ export type ToolbarPress = {
   readonly pointerType: string;
   /** Whether the text holds an IME composition. */
   readonly composing: boolean;
+  /** Whether the press is on Undo or Redo. */
+  readonly history?: boolean;
 };
 
 /**
@@ -254,9 +256,12 @@ export type ToolbarPress = {
  * While the text composes, a tool takes the focus as a mouse tool does,
  * because that ends the composition, and a format action never runs inside
  * one. The action then gives the focus back to the text.
+ * Undo and Redo keep the focus in the text for a mouse too, so the caret
+ * stays where the step put it (issue 517).
  */
 export function pressKeepsTextFocus(press: ToolbarPress): boolean {
-  return press.pointerType !== 'mouse' && !press.composing;
+  if (press.composing) return false;
+  return press.pointerType !== 'mouse' || press.history === true;
 }
 
 /**
@@ -272,30 +277,20 @@ export function pressKeepsTextFocus(press: ToolbarPress): boolean {
  * of the system, so a finger that scrolled the row left the application, and
  * with the keyboard closed the row was out of reach.
  */
-export function formatToolbarFrameClassName(): string {
-  return 'shrink-0 border-b border-edge-line px-2';
-}
+export { formatToolbarFrameClassName } from '@notesapp/ui';
 
 /** The classes of the column that holds the row, on the note measure (0055). */
-export function formatToolbarColumnClassName(): string {
-  return 'mx-auto w-full max-w-note';
-}
+export { formatToolbarColumnClassName } from '@notesapp/ui';
 
 /**
  * The classes of the row itself.
  *
  * The row is a strip that scrolls sideways when it holds more tools than the
  * width of the screen (`controlStripClassName`), so a phone reaches every tool
- * in the row and a new tool never needs a menu. Under the medium width the
- * touch target of a control separates two tools and the row adds one small
- * step between groups. From the medium width up a control is as small as its
- * mark, so the row spaces the groups by the named step of a group.
+ * in the row and a new tool never needs a menu. Every pair of tools has the
+ * same item gap, including the pairs at group boundaries, at every width.
  */
-export function formatToolbarClassName(): string {
-  return `${controlStripClassName()} gap-1 md:gap-group`;
-}
+export { formatToolbarClassName } from '@notesapp/ui';
 
 /** The classes of one group of the row, which never shrinks in the strip. */
-export function formatToolGroupClassName(): string {
-  return 'flex shrink-0 items-center md:gap-1';
-}
+export { formatToolGroupClassName } from '@notesapp/ui';

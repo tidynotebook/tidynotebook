@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { setImmediate } from 'node:timers/promises';
 import {
   repository,
   requireEnvironment,
   requireProof,
   versionFromRef,
+  waitForProof,
 } from './release-workflow.mjs';
 
 const sha = 'a'.repeat(40);
@@ -154,3 +156,187 @@ await test('version protection keeps the environment name, bypass and branch-pol
   ])
     assert.throws(() => requireEnvironment({ ...environment, ...change }));
 });
+
+const proofBudget = 40 * 60 * 1000;
+
+/** @param {import('node:test').TestContext} t
+ * @param {(path: string, signal: AbortSignal) => Promise<Response>} respond */
+function proofClock(t, respond) {
+  let now = 0;
+  let calls = 0;
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  t.mock.method(performance, 'now', () => now);
+  /** @type {typeof fetch} */
+  const fetchProof = async (input, options) => {
+    calls++;
+    assert.ok(options?.signal);
+    assert.ok(typeof input === 'string');
+    return respond(input, options.signal);
+  };
+  t.mock.method(globalThis, 'fetch', fetchProof);
+  return {
+    calls: () => calls,
+    /** Advance elapsed time without running callbacks to model a late response.
+     * @param {number} milliseconds */
+    elapse(milliseconds) {
+      now += milliseconds;
+    },
+    /** @param {number} milliseconds */
+    async advance(milliseconds) {
+      now += milliseconds;
+      t.mock.timers.tick(milliseconds);
+      await setImmediate();
+    },
+  };
+}
+
+await test('proof wait keeps the ten second cadence and accepts timely exact-source proof', async (t) => {
+  let checks = 0;
+  const clock = proofClock(t, async (path) =>
+    Response.json(
+      path.includes('/actions/')
+        ? { workflow_runs: [run] }
+        : { check_runs: ++checks === 1 ? [] : [check] },
+    ),
+  );
+  const result = waitForProof(sha);
+  await setImmediate();
+  assert.equal(clock.calls(), 2);
+  await clock.advance(9999);
+  assert.equal(clock.calls(), 2);
+  await clock.advance(1);
+  await result;
+  assert.equal(clock.calls(), 4);
+});
+
+await test('slow proof requests consume the budget and cap the last sleep', async (t) => {
+  const clock = proofClock(t, async (path) => {
+    if (path.includes('/actions/')) {
+      clock.elapse(proofBudget - 1000);
+      return Response.json({ workflow_runs: [run] });
+    }
+    return Response.json({ check_runs: [] });
+  });
+  let finished = false;
+  const result = waitForProof(sha).catch((error) => {
+    finished = true;
+    return error;
+  });
+  await setImmediate();
+  await clock.advance(999);
+  assert.equal(finished, false);
+  await clock.advance(1);
+  assert.match((await result).message, /latest push CI Check must pass/);
+  assert.equal(clock.calls(), 2);
+});
+
+for (const stage of ['request', 'body']) {
+  await test(`proof deadline cancels a hung ${stage} and makes no extra request`, async (t) => {
+    /** @type {AbortSignal | undefined} */
+    let signal;
+    const clock = proofClock(t, async (_path, requestSignal) => {
+      signal = requestSignal;
+      /** @returns {Promise<never>} */
+      const hang = () =>
+        new Promise((_resolve, reject) =>
+          requestSignal.addEventListener(
+            'abort',
+            () => reject(requestSignal.reason),
+            { once: true },
+          ),
+        );
+      if (stage === 'request') return hang();
+      const response = Response.json({});
+      t.mock.method(response, 'json', hang);
+      return response;
+    });
+    const result = waitForProof(sha).catch((error) => error);
+    await setImmediate();
+    await clock.advance(proofBudget);
+    assert.match((await result).message, /latest push CI Check must pass/);
+    assert.equal(signal?.aborted, true);
+    assert.equal(clock.calls(), 1);
+  });
+}
+
+for (const stage of ['runs', 'checks', 'body']) {
+  await test(`proof wait rejects a late ${stage} response even before its timer callback`, async (t) => {
+    const clock = proofClock(t, async (path) => {
+      const runs = path.includes('/actions/');
+      const response = Response.json(
+        runs ? { workflow_runs: [run] } : { check_runs: [check] },
+      );
+      if ((stage === 'runs' && runs) || (stage === 'checks' && !runs))
+        clock.elapse(proofBudget);
+      if (stage === 'body' && !runs) {
+        t.mock.method(response, 'json', async () => {
+          clock.elapse(proofBudget);
+          return { check_runs: [check] };
+        });
+      }
+      return response;
+    });
+    await assert.rejects(waitForProof(sha), /latest push CI Check must pass/);
+    assert.equal(clock.calls(), stage === 'runs' ? 1 : 2);
+  });
+}
+
+await test('proof API errors fail immediately without a sleep or retry', async (t) => {
+  const clock = proofClock(t, async () => new Response('', { status: 503 }));
+  await assert.rejects(waitForProof(sha), /Cannot read release proof:.*503/);
+  assert.equal(clock.calls(), 1);
+  await clock.advance(proofBudget);
+  assert.equal(clock.calls(), 1);
+});
+
+for (const stage of ['fetch', 'body']) {
+  await test(`a late ${stage} rejection reports the prior proof timeout before the timer callback`, async (t) => {
+    let calls = 0;
+    const failure = new Error('late API failure');
+    const clock = proofClock(t, async (path, signal) => {
+      calls++;
+      if (calls <= 2)
+        return Response.json(
+          path.includes('/actions/')
+            ? { workflow_runs: [] }
+            : { check_runs: [] },
+        );
+      const rejectLate = async () => {
+        clock.elapse(proofBudget - 10000);
+        assert.equal(signal.aborted, false);
+        throw failure;
+      };
+      if (stage === 'fetch') return rejectLate();
+      const response = Response.json({ workflow_runs: [run] });
+      t.mock.method(response, 'json', rejectLate);
+      return response;
+    });
+    const result = waitForProof(sha).catch((error) => error);
+    await setImmediate();
+    await clock.advance(10000);
+    /** @type {unknown} */
+    const error = await result;
+    assert.ok(error instanceof assert.AssertionError);
+    assert.match(error.message, /source has no push CI run/);
+    assert.notEqual(error, failure);
+    assert.equal(clock.calls(), 3);
+  });
+
+  await test(`a pre-deadline ${stage} rejection preserves the original error immediately`, async (t) => {
+    const failure = new Error('ordinary API failure');
+    const clock = proofClock(t, async () => {
+      const rejectEarly = async () => {
+        clock.elapse(1000);
+        throw failure;
+      };
+      if (stage === 'fetch') return rejectEarly();
+      const response = Response.json({});
+      t.mock.method(response, 'json', rejectEarly);
+      return response;
+    });
+    await assert.rejects(waitForProof(sha), (error) => error === failure);
+    assert.equal(clock.calls(), 1);
+    await clock.advance(proofBudget);
+    assert.equal(clock.calls(), 1);
+  });
+}

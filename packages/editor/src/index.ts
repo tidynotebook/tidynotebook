@@ -66,7 +66,7 @@ export { plainTextContext } from './format-context.ts';
 export { htmlToMarkdown } from './paste.ts';
 export { takeMarginTaps } from './list-marker.ts';
 export type { EditorState } from '@codemirror/state';
-export type { EditorView } from '@codemirror/view';
+export { EditorView } from '@codemirror/view';
 export {
   findTaskBox,
   insertText,
@@ -78,7 +78,6 @@ export {
   editorTheme,
   editorThemeVariables,
   noteSurfaceStyle,
-  touchFieldQuery,
 } from './editor-theme.ts';
 export {
   codeLanguages,
@@ -131,3 +130,12 @@ export {
   type DocumentBinding,
   type RemoteWorkGate,
 } from './document-binding.ts';
+
+export {
+  editorHistoryState,
+  runHistoryAction,
+  watchEditorHistory,
+} from './history-controls.ts';
+export type { EditorHistoryState, HistoryAction } from './history-controls.ts';
+
+export { searchPanelClasses } from './search-panel.ts';

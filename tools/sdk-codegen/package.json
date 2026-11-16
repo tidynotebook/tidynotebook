@@ -10,14 +10,14 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "build": "tsc -p tsconfig.json",
-    "test:unit": "node ../../tools/run-tests.mjs unit",
+    "test:unit": "node --config-file=../../node-test.config.json \"src/**/*.test.{ts,mjs}\"",
     "contract:lint": "redocly lint --config ../../packages/api-contract/redocly.yaml ../../packages/api-contract/openapi.yaml ../../packages/api-contract/asyncapi.yaml",
     "generate": "node src/generate.ts",
     "generated:check": "node src/check-generated.ts"
   },
   "devDependencies": {
     "@hey-api/openapi-ts": "0.99.0",
-    "@redocly/cli": "2.64.1",
+    "@redocly/cli": "2.72.1",
     "@types/node": "catalog:",
     "typescript": "catalog:codegen",
     "@notesapp/api-contract": "workspace:*"

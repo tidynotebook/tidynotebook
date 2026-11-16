@@ -65,6 +65,7 @@ import {
   taskMarkPoints,
   type AlertTone,
 } from '@notesapp/markdown';
+import { codeBlockDrawn, codeSelected } from './code-block-shape.ts';
 import { taskToggleAt } from './commands.ts';
 import {
   drawnAtEveryCaret,
@@ -232,12 +233,16 @@ export function tableAlignments(row: string): readonly ColumnAlign[] {
  * hidden padding of a table cell took the width of a column, and the hidden
  * marks of the bold word that ends an item stood beside the body.
  */
-function cellMark(classes: readonly string[]): Decoration {
+function cellMark(
+  classes: readonly string[],
+  attributes?: Record<string, string>,
+): Decoration {
   const [cell] = classes;
   if (cell === undefined || !layoutClasses.has(cell))
     throw new Error(`Not a cell class: ${String(cell)}`);
   return Decoration.mark({
     class: classes.filter((part) => part !== '').join(' '),
+    ...(attributes === undefined ? {} : { attributes }),
     inclusive: true,
   });
 }
@@ -517,6 +522,7 @@ export function contentText(
   state: EditorState,
   from: number,
   to: number,
+  preserveSpace = false,
 ): string {
   let text = '';
   let at = from;
@@ -535,7 +541,7 @@ export function contentText(
     },
   });
   text += state.doc.sliceString(Math.max(at, from), to);
-  return text.replace(/\s+/g, ' ').trim();
+  return preserveSpace ? text.trim() : text.replace(/\s+/g, ' ').trim();
 }
 
 /** The label of a footnote reference or definition node, or null. */
@@ -696,41 +702,40 @@ export function buildPreview(
    * line the bottom of it. The syntax tree states where the block starts and
    * ends, so no rule reads the text to find out.
    *
-   * The edges go on the lines that a person sees. A fence of `./widgets.ts`
-   * hides its two fence lines while the selection is away from the block: the
-   * opening line joins the first line of code, so its edge stays on the line
-   * that the card starts with, and the closing line joins the last line of
-   * code, so the bottom edge goes on that last line of code. The class names
-   * once missed the theme, so a code block drew no top, no bottom and no
-   * radius in the editor while the published page drew the card.
+   * The fence lines stay on the screen, so editing and a copy read the source
+   * as it is. A fence line is quiet, `cm-np-code-fence`, smaller and dim,
+   * except while the caret is on it. While the selection is in the block,
+   * every line takes `cm-np-code-block-active`, so the focus ring goes round
+   * the whole card and never round one line. An indented block has no fence
+   * to carry its copy action, so its first line keeps the room of the bar,
+   * `cm-np-code-block-bar`. A fence that is still being typed is not a card
+   * at all (`./code-block-shape.ts`).
    */
   const codeBlockLines = (code: SyntaxNode): void => {
+    if (!codeBlockDrawn(doc, code, selection)) return;
     lineClass(code.from, code.to, 'cm-np-code-block-line');
     lineClass(code.from, code.from, 'cm-np-code-block-open');
     // A block that ends on the first offset of a line ends on the line above
     // it, so the bottom of the card never lands on the empty line after the
     // block.
-    let last =
+    const last =
       code.to > code.from && doc.lineAt(code.to).from === code.to
         ? code.to - 1
         : code.to;
-    const marks = code.getChildren('CodeMark');
-    const open = marks[0];
-    const close = marks.length > 1 ? marks[marks.length - 1] : undefined;
-    if (
-      open !== undefined &&
-      close !== undefined &&
-      !touches(code.from, code.to) &&
-      doc.lineAt(close.from).number > doc.lineAt(open.from).number + 1
-    ) {
-      const openLine = doc.lineAt(open.from);
-      const lastCode = doc.lineAt(doc.lineAt(close.from).from - 1);
-      // A block of one line of code is one visual line: the hidden opening
-      // fence starts it, so that line carries the bottom edge as well.
-      last =
-        lastCode.number === openLine.number + 1 ? openLine.from : lastCode.from;
-    }
     lineClass(last, last, 'cm-np-code-block-close');
+    if (codeSelected(code, selection))
+      lineClass(code.from, last, 'cm-np-code-block-active');
+    if (code.name === 'CodeBlock') {
+      lineClass(code.from, code.from, 'cm-np-code-block-bar');
+      return;
+    }
+    const marks = code.getChildren('CodeMark');
+    const fences = new Set<number>();
+    for (const fence of [marks[0], marks.length > 1 ? marks.at(-1) : undefined])
+      if (fence !== undefined) fences.add(doc.lineAt(fence.from).from);
+    for (const start of fences)
+      if (!touches(start, doc.lineAt(start).to))
+        lineClass(start, start, 'cm-np-code-fence');
   };
 
   /** The range that the walk reads now, one visible range at a time. */
@@ -875,11 +880,14 @@ export function buildPreview(
     // and at its end lands inside it.
     if (to > from)
       cells.push(
-        cellMark([
-          header ? 'cm-np-table-head' : 'cm-np-table-cell',
-          align === null ? '' : `cm-np-align-${align}`,
-          active ? 'cm-np-table-active' : '',
-        ]).range(from, to),
+        cellMark(
+          [
+            header ? 'cm-np-table-head' : 'cm-np-table-cell',
+            align === null ? '' : `cm-np-align-${align}`,
+            active ? 'cm-np-table-active' : '',
+          ],
+          { style: `grid-column: ${String(column + 2)}; grid-row: 1` },
+        ).range(from, to),
       );
     tablePaddingHide(from, to);
   };
@@ -1349,21 +1357,39 @@ export function buildPreview(
       ) {
         if (child.name !== 'TableDelimiter') continue;
         if (child.from > at) {
-          tableCellMark(at, child.from, header, column);
+          if (column < alignments.length)
+            tableCellMark(at, child.from, header, column);
+          else hide(at, child.from);
           column += 1;
+        } else if (at > node.from) {
+          // A cell with no source text still needs a box. Its closing pipe
+          // supplies the range, while the pipe itself stays hidden.
+          if (column < alignments.length)
+            tableCellMark(child.from, child.to, header, column);
+          hide(child.from, child.to);
+          column += 1;
+          at = child.to;
+          continue;
         }
-        // The hidden separator still leaves a node in the row, and a node
-        // between two cells becomes an anonymous cell of the browser. After
-        // an edit that replaces some rows, a browser can split those
-        // anonymous cells, so the rows stop lining up. The gap makes each
-        // separator one real cell of no width, so every row holds the same
-        // cells. The mark is inclusive, so it opens before the hidden range
-        // and wraps it.
         cells.push(tableGap.range(child.from, child.to));
         hide(child.from, child.to);
         at = child.to;
       }
-      if (node.to > at) tableCellMark(at, node.to, header, column);
+      if (node.to > at) {
+        if (column < alignments.length)
+          tableCellMark(at, node.to, header, column);
+        else hide(at, node.to);
+        column += 1;
+      }
+      // Missing trailing cells keep the remaining area of the row outlined.
+      if (column < alignments.length)
+        items.push(
+          Decoration.line({
+            attributes: {
+              style: `--notes-table-tail-content: ''; --notes-table-tail: ${String(column + 2)}`,
+            },
+          }).range(doc.lineAt(node.from).from),
+        );
       return true;
     }
 

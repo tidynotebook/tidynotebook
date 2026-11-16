@@ -65,7 +65,7 @@ export function installationFooterColumns(
     signIn = '/login',
   }: {
     readonly contact?: FooterLink;
-    readonly signIn?: string;
+    readonly signIn?: string | null;
   } = {},
 ): readonly FooterColumn[] {
   return hostedFooterColumns
@@ -75,7 +75,8 @@ export function installationFooterColumns(
         : column.title === 'Product'
           ? {
               ...column,
-              links: [{ label: 'Sign in', href: signIn }],
+              links:
+                signIn === null ? [] : [{ label: 'Sign in', href: signIn }],
             }
           : column.title === 'Resources'
             ? {
@@ -131,35 +132,97 @@ export function publicFooterTree({
   icon = '/favicon.svg',
   columns = installationFooterColumns(),
 }: PublicFooterOptions = {}): FooterNode {
-  return node('footer', { className: 'public-footer' }, [
-    node('div', { className: 'public-footer-grid' }, [
-      node('div', { className: 'public-footer-brand' }, [
-        node(
-          'a',
-          { href: footerAddress(home), className: 'public-footer-wordmark' },
-          [
-            node('img', {
-              src: footerAddress(icon),
-              width: '16',
-              height: '16',
-              alt: '',
-            }),
-            'tidy notebook',
-          ],
-        ),
-        node('p', {}, ['Open source. Write in Markdown. Export your notes.']),
-        node('p', {}, ['© 2026 tidy notebook']),
-      ]),
-      ...columns.map((column, index) =>
-        node('nav', { 'aria-labelledby': `public-footer-column-${index}` }, [
-          node('h2', { id: `public-footer-column-${index}` }, [column.title]),
-          ...column.links.map((link) =>
-            node('a', { href: footerAddress(link.href) }, [link.label]),
+  return node(
+    'footer',
+    {
+      className:
+        'public-footer flex flex-col gap-6 border-t border-edge-subtle p-6 coarse:p-4',
+    },
+    [
+      node(
+        'div',
+        {
+          className: 'public-footer-grid grid grid-cols-2 md:grid-cols-6 gap-6',
+        },
+        [
+          node(
+            'div',
+            { className: 'public-footer-brand col-span-2 flex flex-col gap-3' },
+            [
+              node(
+                'a',
+                {
+                  href: footerAddress(home),
+                  className:
+                    'public-footer-wordmark inline-flex items-center gap-2 coarse:py-3 text-title-header text-strong no-underline hover:underline focus-visible:outline-2 focus-visible:outline-focus',
+                },
+                [
+                  node('img', {
+                    src: footerAddress(icon),
+                    width: '16',
+                    height: '16',
+                    alt: '',
+                  }),
+                  'tidy notebook',
+                ],
+              ),
+              node('p', { className: 'text-secondary text-muted' }, [
+                'Open source. Write in Markdown. Export your notes.',
+              ]),
+              node('p', { className: 'text-secondary text-muted' }, [
+                '© 2026 tidy notebook',
+              ]),
+            ],
           ),
-        ]),
+          ...columns.map((column, index) =>
+            node(
+              'nav',
+              {
+                'aria-labelledby': `public-footer-column-${index}`,
+                className: 'flex flex-col gap-3',
+              },
+              [
+                node(
+                  'h2',
+                  {
+                    id: `public-footer-column-${index}`,
+                    className: 'text-group text-muted',
+                  },
+                  [column.title],
+                ),
+                node(
+                  'div',
+                  { className: 'flex flex-col gap-1' },
+                  column.links.map((link) =>
+                    node(
+                      'a',
+                      {
+                        href: footerAddress(link.href),
+                        className:
+                          'block py-1 coarse:py-3 text-body text-muted no-underline hover:underline focus-visible:outline-2 focus-visible:outline-focus',
+                      },
+                      link.label.split(/(\([^()]+\))/).map((part) =>
+                        part.startsWith('(')
+                          ? node(
+                              'span',
+                              {
+                                className:
+                                  'inline-block max-w-full wrap-anywhere',
+                              },
+                              [part],
+                            )
+                          : part,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
-    ]),
-  ]);
+    ],
+  );
 }
 function escape(value: string): string {
   return value

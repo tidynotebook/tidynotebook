@@ -7,14 +7,15 @@ installation.
 
 ## Open the accounts page
 
-You do every task on this page on the accounts page. Only an administrator
-sees it.
+These controls are inside **Settings**. Only an administrator sees the
+**Administration** group.
 
 1. Open **Settings**.
-2. In the **Account** section, select **Manage accounts**.
-3. To go back, select **Back to Settings**.
+2. Under **Administration**, select **Accounts**, **Mail**, **Legal documents**
+   or **Reports**.
+3. On a phone, select **Back** to return to the section list.
 
-You can also open the command palette and select **Go to Accounts**.
+The old accounts address opens the **Accounts** section in Settings.
 
 ## Who is an administrator
 

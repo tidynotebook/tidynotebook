@@ -107,9 +107,8 @@ export {
   menuSurfaceValues,
   meterAlmostFull,
   meterClassNames,
-  meterWidthClassName,
+  meterFillPercent,
   rowClassName,
-  touchFieldText,
 } from './control-classes.ts';
 export { defaultIconSize, iconAttributes, iconGrid } from './icon-grid.ts';
 export type { GlyphPart } from './glyph-parts.ts';
@@ -153,6 +152,7 @@ export {
 } from './layout.tsx';
 export type { PageSection } from './layout-classes.ts';
 export {
+  checkoutFrameClassName,
   pageColumnClassName,
   pageGroupLabelClassName,
   pageListClassName,
@@ -166,8 +166,20 @@ export {
   transitionRaise,
   transitionSurface,
 } from './motion.ts';
+export {
+  DialogList,
+  DialogListGroup,
+  useDialogListInset,
+} from './dialog-list.tsx';
 export type { DialogWidth } from './dialog.tsx';
-export { Dialog, DialogBody, DialogFooter } from './dialog.tsx';
+export {
+  Dialog,
+  DialogBody,
+  DialogFooter,
+  FixedDialogLayout,
+  DialogHeaderActionsContext,
+  DialogHeaderAction,
+} from './dialog.tsx';
 export type { MenuAlign, MenuAnchor, MenuItem } from './menu.tsx';
 export type { ScreenArea, VisualViewportBox } from './visible-area.ts';
 export {
@@ -208,6 +220,8 @@ export {
   DownloadIcon,
   ExpandAllIcon,
   ExternalLinkIcon,
+  MailIcon,
+  FlagIcon,
   FileTextIcon,
   FolderIcon,
   FolderOpenIcon,
@@ -246,6 +260,9 @@ export {
   TrashIcon,
   UploadIcon,
   UsersIcon,
+  PaletteIcon,
+  PersonIcon,
+  KeyIcon,
   WorkspaceIcon,
   ZoomInIcon,
   ZoomOutIcon,
@@ -264,3 +281,111 @@ export type {
   FooterLink,
   PublicFooterOptions,
 } from './public-footer.ts';
+
+export { HistoryButton } from './history-button.tsx';
+export {
+  historyButtonClassName,
+  historyButtonName,
+  historyButtonVisualClassName,
+} from './control-classes.ts';
+export { UndoIcon, RedoIcon } from './icons.tsx';
+export { Switch } from './controls.tsx';
+
+export { FieldPopover } from './field-popover.tsx';
+
+export { isTouchInput } from './input-focus.ts';
+
+export { textRoleClasses, touchTextRoles } from './typography.ts';
+
+export { PhoneSheetHeader } from './phone-sheet.tsx';
+export {
+  openOptionsSheet,
+  type OptionsSheetEvents,
+} from './open-options-sheet.ts';
+
+export { chevronDownParts, moreParts, replaceParts } from './glyph-parts.ts';
+export { ReplaceIcon } from './icons.tsx';
+
+export { phoneSheetMotion } from './motion.ts';
+
+export { WrapText, MetaFacts } from './inline-text.tsx';
+
+export {
+  Region,
+  fixedRegionClasses,
+  observeScrollEdges,
+  type ScrollEdges,
+} from './scroll-region.tsx';
+
+export {
+  SettingsSurface,
+  settingsContentClassName,
+  SettingsRowActions,
+  useSettingsSurface,
+} from './settings-layout.tsx';
+export {
+  Stack,
+  Inline,
+  Inset,
+  Grid,
+  Divider,
+  Panel,
+  Toolbar,
+  spaceClasses,
+  insetClasses,
+  type Space,
+  type SpaceValue,
+  type DensityValue,
+} from './primitives.tsx';
+export { IconButton, type IconButtonSize } from './icon-button.tsx';
+export { IconSlot, Rail, StatusLine } from './primitives.tsx';
+export {
+  listRowClasses,
+  type RowDensity,
+  type RowTrailing,
+} from './layout.tsx';
+export { useToolbarOverflow } from './toolbar-overflow.ts';
+export { PanelHeader } from './primitives.tsx';
+export { SectionHeading, Pill } from './section-heading.tsx';
+
+export { Field, SwitchRow } from './controls.tsx';
+export {
+  ContentHeader,
+  HeaderTitle,
+  HeaderSlot,
+  RowCopy,
+  RowControl,
+  ContentGroups,
+} from './content-header.tsx';
+export { IdentityMark, TileSelectedBadge } from './identity.tsx';
+export { PreviewBlock } from './preview-block.tsx';
+export { PreviewSurface } from './preview-surface.tsx';
+export { Dialog as Sheet } from './dialog.tsx';
+
+export * from './frame-classes.ts';
+export {
+  ApplicationContent,
+  sidebarInsetClassName,
+  type SidebarWidth,
+} from './application-content.tsx';
+export { NavigationHeading } from './navigation-heading.tsx';
+export { FieldPopover as Popover } from './field-popover.tsx';
+export { Viewport, CanvasImage } from './primitives.tsx';
+export { FieldButton } from './controls.tsx';
+export { ThemePreview, ThemeFamilyGrid } from './theme-preview.tsx';
+export { FieldGroup } from './controls.tsx';
+export { Form } from './form.tsx';
+export { SettingEditRow } from './setting-edit-row.tsx';
+
+export { deferredDialog, DialogLoading } from './deferred-dialog.tsx';
+export { SettingsLoading } from './settings-loading.tsx';
+
+export { observeElementScrollEdges } from './native-scroll-edges.ts';
+
+export { ScrollCueRegion } from './scroll-cue-region.tsx';
+export {
+  editorSearchClasses,
+  countedFieldClassName,
+} from './editor-search-classes.ts';
+
+export { diagramBlockClasses } from './diagram-classes.ts';

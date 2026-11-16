@@ -27,7 +27,7 @@ export const defaultInvitationLifetimeHours = 7 * 24;
 export const maxInvitationLifetimeHours = 365 * 24;
 
 /** The byte limit of a new account when the configuration names nothing. */
-export const defaultAccountLimitBytes = 5n * 1024n * 1024n * 1024n;
+export const defaultAccountLimitBytes = 5n * 1000n * 1000n * 1000n;
 
 export { maxAccountLimitBytes } from './controls.ts';
 

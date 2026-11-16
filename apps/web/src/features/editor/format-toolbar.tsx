@@ -1,3 +1,10 @@
+import {
+  IconButton,
+  HistoryButton,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  formatToolbarCueClassName,
+} from '@notesapp/ui';
 /**
  * The row of formatting tools above the note text (record 0094).
  *
@@ -13,9 +20,9 @@
  * Tab leave the row from the tool a person is on. When the focus leaves, the
  * stop goes back to the first tool that applies. Every tool is a button of
  * the row, and a row wider than the screen scrolls sideways, so no menu covers
- * the text. The row shows no arrow at an end, because a person swipes a row of
- * tools, and an arrow takes room from the tools. The row stands above the
- * text at every width.
+ * the text. Passive edge cues show where tools are hidden. They have their
+ * own space, no action and no tab stop. The row stands above the text at
+ * every width.
  *
  * Where the caret stands decides which tools apply. In a table a block tool
  * is disabled, because a table line is a row. A table carries its own
@@ -24,15 +31,18 @@
  * A press of a mouse gives a tool the focus. That ends an IME composition in
  * the editor before the action runs, and the action then gives the focus back
  * to the editor. A finger on a phone keeps the focus in the text, so the
- * keyboard stays open (`pressKeepsTextFocus`).
+ * keyboard stays open, and so does any press on Undo or Redo
+ * (`pressKeepsTextFocus`).
  */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   formatActionOf,
   type FormatActionId,
+  type EditorHistoryState,
+  type HistoryAction,
   type FormatContext,
 } from '@notesapp/editor';
-import { Button } from '@notesapp/ui';
+
 import {
   formatToolbarClassName,
   formatToolbarColumnClassName,
@@ -78,18 +88,63 @@ export const toolSlashCommands = slashMenuCommands((keys) =>
 export function FormatToolbar({
   context,
   onFormat,
+  history,
+  onHistory,
 }: {
   /** Where the caret stands, which decides the tools that apply. */
   readonly context: FormatContext;
+  readonly history: EditorHistoryState;
+  readonly onHistory: (action: HistoryAction) => void;
   /** Runs one format action on the editor of the open note. */
   readonly onFormat: (id: FormatActionId) => void;
 }): ReactNode {
   const rowRef = useRef<HTMLDivElement | null>(null);
+  const frameRef = useRef<HTMLDivElement | null>(null);
+  const [edges, setEdges] = useState({
+    overflow: false,
+    start: false,
+    end: false,
+  });
+  useEffect(() => {
+    const row = rowRef.current;
+    const frame = frameRef.current;
+    if (!row || !frame) return;
+    const update = (): void => {
+      const next = {
+        // Compare with the full frame so the cue space cannot keep itself open.
+        overflow: row.scrollWidth > frame.clientWidth + 1,
+        start: row.scrollLeft > 1,
+        end: row.scrollLeft + row.clientWidth < row.scrollWidth - 1,
+      };
+      setEdges((previous) =>
+        previous.overflow === next.overflow &&
+        previous.start === next.start &&
+        previous.end === next.end
+          ? previous
+          : next,
+      );
+    };
+    row.addEventListener('scroll', update, { passive: true });
+    const observer =
+      typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update);
+    observer?.observe(frame);
+    observer?.observe(row);
+    for (const group of row.children) observer?.observe(group);
+    update();
+    return () => {
+      row.removeEventListener('scroll', update);
+      observer?.disconnect();
+    };
+  }, []);
   const groups = formatToolbar;
-  const enabled = groups.flat().map((tool) => toolApplies(tool, context));
+  const enabled = [
+    true,
+    true,
+    ...groups.flat().map((tool) => toolApplies(tool, context)),
+  ];
   // The place, in the order of the row, of the one tool in the tab order. A
-  // disabled tool takes no focus, so the stop falls to the first tool that
-  // applies, and the row stays one press of Tab away.
+  // unavailable format tool takes no focus. History controls keep focus
+  // through aria-disabled, so Undo stays the first stop.
   const [stop, setStop] = useState(0);
   const firstEnabled = Math.max(0, enabled.indexOf(true));
   const tabStop = enabled[stop] === true ? stop : firstEnabled;
@@ -117,23 +172,49 @@ export function FormatToolbar({
     };
   }, []);
 
-  let place = 0;
+  const historyRef = useRef<HTMLDivElement | null>(null);
+  /** The press on a tool of the row, or `null` off the tools. */
+  const pressOf = (
+    target: EventTarget | null,
+    pointerType: string,
+  ): ToolbarPress | null => {
+    const control = target instanceof Element ? target.closest('button') : null;
+    if (control === null) return null;
+    return {
+      pointerType,
+      composing: composing.current,
+      history: historyRef.current?.contains(control) === true,
+    };
+  };
+
+  let place = 2;
   return (
-    <div className={formatToolbarFrameClassName()}>
+    <div data-scroll-edge="above" className={formatToolbarFrameClassName()}>
       <div
+        ref={frameRef}
         className={formatToolbarColumnClassName()}
         onPointerDown={(event): void => {
-          const target = event.target;
-          const control =
-            target instanceof Element ? target.closest('button') : null;
-          if (control === null) return;
-          const press: ToolbarPress = {
-            pointerType: event.pointerType,
-            composing: composing.current,
-          };
-          if (pressKeepsTextFocus(press)) event.preventDefault();
+          const press = pressOf(event.target, event.pointerType);
+          if (press !== null && pressKeepsTextFocus(press))
+            event.preventDefault();
+        }}
+        // A browser moves the focus on the mouse down, which the default of
+        // a pointer down does not hold back.
+        onMouseDown={(event): void => {
+          const press = pressOf(event.target, 'mouse');
+          if (press !== null && pressKeepsTextFocus(press))
+            event.preventDefault();
         }}
       >
+        {edges.overflow && (
+          <span
+            aria-hidden="true"
+            data-toolbar-cue="start"
+            className={formatToolbarCueClassName(edges.start)}
+          >
+            <ChevronLeftIcon size={16} />
+          </span>
+        )}
         <div
           ref={rowRef}
           role="toolbar"
@@ -171,6 +252,18 @@ export function FormatToolbar({
             next?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
           }}
         >
+          <div ref={historyRef} className={formatToolGroupClassName()}>
+            {(['undo', 'redo'] as const).map((action, at) => (
+              <HistoryButton
+                key={action}
+                action={action}
+                available={history[action]}
+                apple={appleKeyboard}
+                tabIndex={at === tabStop ? 0 : -1}
+                onClick={() => onHistory(action)}
+              />
+            ))}
+          </div>
           {groups.map((group) => (
             <div
               key={group.map((tool) => tool.id).join(' ')}
@@ -180,14 +273,13 @@ export function FormatToolbar({
                 const at = place;
                 place += 1;
                 return (
-                  <Button
+                  <IconButton
                     key={tool.id}
                     variant="ghost"
-                    size="sm"
                     compact
                     label={formatActionOf(tool.id).label}
                     title={titleOf(tool.id)}
-                    icon={actionIcon(tool.icon)}
+                    glyph={actionIcon(tool.icon)}
                     tabIndex={at === tabStop ? 0 : -1}
                     disabled={enabled[at] !== true}
                     onClick={() => onFormat(tool.id)}
@@ -197,6 +289,15 @@ export function FormatToolbar({
             </div>
           ))}
         </div>
+        {edges.overflow && (
+          <span
+            aria-hidden="true"
+            data-toolbar-cue="end"
+            className={formatToolbarCueClassName(edges.end)}
+          >
+            <ChevronRightIcon size={16} />
+          </span>
+        )}
       </div>
     </div>
   );

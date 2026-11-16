@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+  readFileSync,
+  existsSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import test from 'node:test';
@@ -70,12 +77,15 @@ const fixtureStylesheet = `@theme inline {
 
 /**
  * @param {Record<string, string>} files
- * @param {{ stylesheet?: boolean }} [options]
- * @returns {{ status: number; output: string }}
+ * @param {{ stylesheet?: boolean; prune?: boolean; allowDirectory?: boolean }} [options]
+ * @returns {{ status: number; output: string; allow: string | null }}
  */
 function check(files, options) {
   const directory = mkdtempSync(join(tmpdir(), 'notesapp-design-'));
   try {
+    mkdirSync(join(directory, 'tools'), { recursive: true });
+    if (options?.allowDirectory)
+      mkdirSync(join(directory, 'tools/design-system-allow.json'));
     mkdirSync(join(directory, 'apps/web/src'), { recursive: true });
     mkdirSync(join(directory, 'packages/ui/src'), { recursive: true });
     if (options?.stylesheet !== false)
@@ -85,10 +95,22 @@ function check(files, options) {
       mkdirSync(dirname(file), { recursive: true });
       writeFileSync(file, content);
     }
-    const result = spawnSync(process.execPath, [checker, '--root', directory], {
-      encoding: 'utf8',
-    });
+    const result = spawnSync(
+      process.execPath,
+      [checker, '--root', directory, ...(options?.prune ? ['--prune'] : [])],
+      {
+        encoding: 'utf8',
+      },
+    );
     return {
+      allow:
+        !options?.allowDirectory &&
+        existsSync(join(directory, 'tools/design-system-allow.json'))
+          ? readFileSync(
+              join(directory, 'tools/design-system-allow.json'),
+              'utf8',
+            )
+          : null,
       status: result.status ?? 1,
       output: `${result.stdout ?? ''}${result.stderr ?? ''}`,
     };
@@ -282,7 +304,7 @@ await test('the task box takes the edge through its one recipe', () => {
   );
   assert.equal(
     textRules['stateful-edge'](
-      '[&_.task-list-item_input]:border [&_.task-list-item_input]:border-edge [&_.task-list-item_input]:bg-app',
+      'content-task-list-item-input:border content-task-list-item-input:border-edge content-task-list-item-input:bg-app',
       'apps/server/src/routes/published-document.ts',
     ),
     null,
@@ -546,7 +568,7 @@ await test('a clean tree passes the command', () => {
       'export function Screen() {\n  return <p className="text-control">Open today</p>;\n}\n',
   });
   assert.equal(result.status, 0, result.output);
-  assert.match(result.output, /1 files checked/);
+  assert.match(result.output, /2 files checked/);
 });
 
 await test('a broken rule fails the command and names the file', () => {
@@ -560,7 +582,7 @@ await test('a broken rule fails the command and names the file', () => {
 
 await test('an allowlist entry accepts one file and one rule only', () => {
   const source =
-    'export function Screen() {\n  return <p className="text-xs">Open today</p>;\n}\n';
+    'export function Screen() {\n  return <p className="uppercase">Open today</p>;\n}\n';
   const allow = JSON.stringify({
     allow: [
       {
@@ -645,12 +667,12 @@ await test('a screen that follows every new rule passes the command', () => {
   assert.equal(result.status, 0, result.output);
 });
 
-await test('a test file is not checked', () => {
+await test('general rules exclude a TSX test file', () => {
   const result = check({
-    'apps/web/src/screen.test.tsx': 'export const classes = "text-xs";\n',
+    'apps/web/src/screen.test.tsx': 'export const classes = "uppercase";\n',
   });
   assert.equal(result.status, 0, result.output);
-  assert.match(result.output, /0 files checked/);
+  assert.match(result.output, /2 files checked/);
 });
 
 await test('a Delete label for the move to Trash fails in the web application', () => {
@@ -900,5 +922,240 @@ await test('the normalised repository root runs the icon generation check', asyn
     assert.match(result.stderr, /ICO header differs/);
   } finally {
     await rm(directory, { recursive: true, force: true });
+  }
+});
+
+await test('only the history recipe can dim its unavailable control', () => {
+  const classes = 'cursor-not-allowed text-muted opacity-40';
+  assert.equal(textRules['faded-control'](classes, controlRecipeModule), null);
+  assert.notEqual(
+    textRules['faded-control'](classes, 'apps/web/src/screen.tsx'),
+    null,
+  );
+  assert.notEqual(
+    textRules['faded-control']('opacity-50', controlRecipeModule),
+    null,
+  );
+});
+
+await test('only approved history icons can use 22 px', () => {
+  for (const name of ['UndoIcon', 'RedoIcon'])
+    assert.deepEqual(
+      fileRules['icon-size'](`<${name} size={22} />`, 'a/b.tsx'),
+      [],
+    );
+  assert.equal(
+    fileRules['icon-size']('<TrashIcon size={22} />', 'a/b.tsx').length,
+    1,
+  );
+});
+
+await test('spacing and type roles keep their source scopes', () => {
+  for (const suffix of ['ts', 'tsx', 'css', 'test.tsx']) {
+    for (const folder of ['apps/web/src', 'packages/ui/src']) {
+      const path = `${folder}/example.${suffix}`;
+      const result = check({
+        [path]: suffix === 'css' ? '/* text-sm */' : 'const x="p-5 text-sm";',
+      });
+      assert.equal(result.status, 1, path);
+      assert.match(result.output, /raw-type-role/);
+    }
+  }
+  for (const path of [
+    'apps/web/src/example.test.ts',
+    'packages/ui/src/example.test.ts',
+    'apps/docs/src/example.test.tsx',
+    'packages/editor/src/example.test.tsx',
+  ]) {
+    assert.equal(check({ [path]: 'const x="p-5 text-sm";' }).status, 0, path);
+  }
+  for (const path of [
+    'apps/docs/src/example.ts',
+    'packages/editor/src/example.ts',
+    'apps/server/src/routes/legal-document.ts',
+  ]) {
+    assert.equal(check({ [path]: 'const x="p-5 text-base";' }).status, 0, path);
+  }
+});
+
+await test('general exceptions cannot permit spacing or raw type roles', () => {
+  const allow = JSON.stringify({
+    allow: [
+      {
+        file: 'apps/web/src/shell/tree.tsx',
+        rule: 'inline-style',
+        reason: 'Tree indentation.',
+      },
+    ],
+  });
+  const accepted = check({
+    'apps/web/src/shell/tree.tsx': 'const x=<div style={{"--depth":2}}/>;',
+    'tools/design-rules-allow.json': allow,
+  });
+  assert.equal(accepted.status, 0, accepted.output);
+  const refused = check({
+    'apps/web/src/shell/tree.tsx':
+      'const x=<div style={{"--depth":2,padding:12}}/>;',
+    'tools/design-rules-allow.json': allow,
+  });
+  assert.equal(refused.status, 1);
+  assert.match(refused.output, /inline-spacing/);
+  const raw = check({
+    'apps/web/src/screen.ts': '// text-base',
+    'tools/design-rules-allow.json': JSON.stringify({
+      allow: [
+        {
+          file: 'apps/web/src/screen.ts',
+          rule: 'raw-type-role',
+          reason: 'Cannot bypass raw roles.',
+        },
+      ],
+    }),
+  });
+  assert.equal(raw.status, 1);
+});
+
+await test('spacing exceptions keep exact identities and prune only stale entries', () => {
+  const entry = {
+    file: 'packages/ui/src/layout-classes.ts',
+    rule: 'minimum-height',
+    match: 'min-h-checkout-frame',
+    reason: 'Reserve the frame.',
+  };
+  const stale = { ...entry, match: 'min-h-old' };
+  const files = {
+    'packages/ui/src/layout-classes.ts': 'const x="min-h-checkout-frame";',
+    'tools/design-system-allow.json': JSON.stringify({
+      comment: 'Keep this comment.',
+      allow: [entry, stale],
+    }),
+  };
+  const result = check(files, { prune: true });
+  assert.equal(result.status, 0, result.output);
+  assert.deepEqual(JSON.parse(result.allow ?? '{}'), {
+    comment: 'Keep this comment.',
+    allow: [entry],
+  });
+  for (const source of [
+    'const x="min-h-other";',
+    'const x="min-h-checkout-frame p-5";',
+  ]) {
+    const refused = check({
+      ...files,
+      'packages/ui/src/layout-classes.ts': source,
+    });
+    assert.equal(refused.status, 1);
+    assert.match(refused.output, /minimum-height|spacing-scale/);
+  }
+  assert.equal(
+    check({
+      ...files,
+      'packages/ui/src/other.ts': 'const x="min-h-checkout-frame";',
+    }).status,
+    1,
+  );
+  const invalid = check({
+    'tools/design-system-allow.json': JSON.stringify({
+      allow: [{ ...entry, reason: null }],
+    }),
+  });
+  assert.equal(invalid.status, 1);
+  assert.match(
+    invalid.output,
+    /Every exception needs a file, rule, match and reason/,
+  );
+});
+
+await test('malformed source refuses the command', () => {
+  const result = check({ 'apps/web/src/broken.ts': 'const value = ;' });
+  assert.equal(result.status, 1);
+  assert.match(result.output, /broken\.ts:1: parse:/);
+});
+
+await test('the current tree passes the integrated design command', () => {
+  const result = spawnSync(process.execPath, [checker], { encoding: 'utf8' });
+  assert.equal(result.status, 0, `${result.stdout}${result.stderr}`);
+  assert.match(result.stdout, /recorded spacing cases/);
+});
+
+await test('a general exception cannot accept a second rule in the same file', () => {
+  const result = check({
+    'apps/web/src/screen.ts': 'const x="uppercase #abc";',
+    'tools/design-rules-allow.json': JSON.stringify({
+      allow: [
+        {
+          file: 'apps/web/src/screen.ts',
+          rule: 'banned-class',
+          reason: 'Fixture.',
+        },
+      ],
+    }),
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.output, /colour-literal/);
+});
+
+await test('a separate root can omit spacing exceptions without creating a file', () => {
+  for (const prune of [false, true]) {
+    const clean = check(
+      { 'apps/web/src/screen.ts': 'export const name = "Open";' },
+      { prune },
+    );
+    assert.equal(clean.status, 0, clean.output);
+    assert.equal(clean.allow, null);
+    const refused = check(
+      { 'apps/web/src/screen.ts': 'const x = "p-5";' },
+      { prune },
+    );
+    assert.equal(refused.status, 1, refused.output);
+    assert.match(refused.output, /feature-spacing/);
+    assert.equal(refused.allow, null);
+  }
+});
+
+await test('prune leaves an unchanged spacing file untouched', () => {
+  const entry = {
+    file: 'packages/ui/src/layout-classes.ts',
+    rule: 'minimum-height',
+    match: 'min-h-checkout-frame',
+    reason: 'Reserve the frame.',
+  };
+  for (const allow of [[], [entry]]) {
+    const text =
+      JSON.stringify({ comment: 'Keep format and metadata.', allow }, null, 4) +
+      '\n\n';
+    const result = check(
+      {
+        'packages/ui/src/layout-classes.ts': allow.length
+          ? 'const x = "min-h-checkout-frame";'
+          : '',
+        'tools/design-system-allow.json': text,
+      },
+      { prune: true },
+    );
+    assert.equal(result.status, 0, result.output);
+    assert.equal(result.allow, text);
+  }
+});
+
+await test('spacing allowlist read, parse and schema errors remain fatal', () => {
+  for (const prune of [false, true]) {
+    const unreadable = check({}, { prune, allowDirectory: true });
+    assert.equal(unreadable.status, 1);
+    assert.match(unreadable.output, /EISDIR/);
+    for (const { text, diagnostic } of [
+      { text: '{', diagnostic: /SyntaxError/ },
+      { text: '{"allow":{}}', diagnostic: /allow array/ },
+      { text: 'null', diagnostic: /allow array/ },
+      { text: '{"allow":[{}]}', diagnostic: /Every exception needs/ },
+    ]) {
+      const result = check(
+        { 'tools/design-system-allow.json': text },
+        { prune },
+      );
+      assert.equal(result.status, 1, result.output);
+      assert.match(result.output, diagnostic);
+      if (prune) assert.equal(result.allow, text);
+    }
   }
 });

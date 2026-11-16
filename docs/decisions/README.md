@@ -264,6 +264,10 @@ the development process. Old process records remain as history.
 | [0236](0236-versioned-releases-publish-without-manual-approval.md)                    | Versioned releases publish without manual approval                              |
 | [0237](0237-new-images-use-the-public-tidynotebook-package.md)                        | New images use the public tidy notebook package                                 |
 | [0238](0238-new-accounts-can-have-fixed-timed-access.md)                              | New accounts can have fixed timed access                                        |
+| [0239](0239-registration-can-continue-on-the-signup-browser-once.md)                  | Registration can continue on the signup browser once                            |
+| [0240](0240-a-code-block-shows-quiet-fences-and-one-ring.md)                          | A code block shows quiet fences and one ring                                    |
+| [0241](0241-linux-images-build-fixed-native-libraries.md)                             | Linux images build fixed native libraries                                       |
+| [0242](0242-tables-keep-readable-column-widths.md)                                    | Tables keep readable column widths                                              |
 
 Records 0001 to 0015 record the decisions D1 to D15 of
 [the v0.1 revamp plan](../plans/003-v0.1-revamp.md). Record 0016 records the

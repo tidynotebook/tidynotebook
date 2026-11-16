@@ -1,3 +1,5 @@
+import { Inline, kbdClassName } from '@notesapp/ui';
+
 /**
  * The one key hint of the application.
  *
@@ -18,8 +20,8 @@
  * once.
  */
 import { Fragment, type ReactNode } from 'react';
-import { kbdClassName } from '@notesapp/ui';
-import { keyHintParts, type KeyCap } from './modifier-key.ts';
+
+import { appleKeyboard, keyHintParts, type KeyCap } from './modifier-key.ts';
 
 /** One key cap of a hint. */
 function KeyCapHint({ cap }: { readonly cap: KeyCap }): ReactNode {
@@ -34,18 +36,34 @@ function KeyCapHint({ cap }: { readonly cap: KeyCap }): ReactNode {
 }
 
 /** One key line, with the caps of this device. */
-export function KeyHint({ keys }: { readonly keys: string }): ReactNode {
+export function KeyHint({
+  keys,
+  apple,
+  reference = false,
+}: {
+  readonly keys: string;
+  /** The key line of an Apple keyboard, when it is not `keys`. */
+  readonly apple?: string | undefined;
+  /** The keyboard reference shows its keys for every input type. */
+  readonly reference?: boolean;
+}): ReactNode {
   return (
-    <kbd className="inline-flex items-center gap-1">
-      {keyHintParts(keys).map((part, index) => (
-        <Fragment key={`${String(index)}:${part.kind}`}>
-          {part.kind === 'or' ? (
-            <span className="text-kbd text-muted">or</span>
-          ) : (
-            <KeyCapHint cap={part.cap} />
-          )}
-        </Fragment>
-      ))}
-    </kbd>
+    <Inline
+      gap={1}
+      as="kbd"
+      className={`inline-flex items-center${reference ? '' : ' coarse:hidden'}`}
+    >
+      {keyHintParts(appleKeyboard && apple !== undefined ? apple : keys).map(
+        (part, index) => (
+          <Fragment key={`${String(index)}:${part.kind}`}>
+            {part.kind === 'or' ? (
+              <span className="text-small text-muted">or</span>
+            ) : (
+              <KeyCapHint cap={part.cap} />
+            )}
+          </Fragment>
+        ),
+      )}
+    </Inline>
   );
 }

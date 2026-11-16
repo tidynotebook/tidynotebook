@@ -1,22 +1,10 @@
-/**
- * The pages of open registration (record 0114).
- *
- * The sign-up page asks for an address and a password, and then says to
- * open the link in the message. It says the same for every address, because
- * the server answers the same, so the page never tells a stranger whether an
- * address has an account. The verification page opens the link: it makes the
- * account and offers sign in. The token travels in the fragment, so no server
- * log holds it.
- */
-import { useEffect, useState, type ReactNode } from 'react';
-import { Link, useLocation } from 'react-router';
+import { hasEmailProblem } from '../../lib/email-problem.ts';
+import { useAuthValidationFocus } from './auth-validation-focus.ts';
+import { normalizeEmail } from '@notesapp/core';
 import {
-  getSignUpChallenge,
-  getSetupStatus,
-  signUpAccount,
-  verifyAddress,
-} from '@notesapp/api-client';
-import {
+  Form,
+  Inset,
+  Stack,
   Button,
   buttonClassName,
   Checkbox,
@@ -24,8 +12,32 @@ import {
   Notice,
   TextField,
 } from '@notesapp/ui';
-import { problemMessage } from '../../app.tsx';
-import { verificationTokenOf } from '../../lib/accounts.ts';
+
+/**
+ * The pages of open registration (record 0114).
+ *
+ * The sign-up page asks for an address and a password, and then says to
+ * open the link in the message. It says the same for every address, because
+ * the server answers the same, so the page never tells a stranger whether an
+ * address has an account. The verification page opens the link: it makes the
+ * account. A matching browser proof continues once; other browsers offer
+ * sign in. The token travels in the fragment, so no server log holds it.
+ */
+import { useEffect, useState, type ReactNode } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router';
+import {
+  getSignUpChallenge,
+  getSetupStatus,
+  signUpAccount,
+  verifyAddress,
+} from '@notesapp/api-client';
+
+import { problemMessage, useSession } from '../../app.tsx';
+import {
+  verificationTokenOf,
+  verificationRecoveryOf,
+  verificationTitleOf,
+} from '../../lib/accounts.ts';
 import { problemCode } from '../../lib/problem-text.ts';
 import { passwordProblem, passwordRule } from '../../lib/password-policy.ts';
 import { solveChallenge } from '../../lib/proof-of-work.ts';
@@ -36,11 +48,13 @@ import { AuthFrame } from './accounts.tsx';
 import { ConsentLabel, useLegalDocuments } from './legal-links.tsx';
 
 /** The one sentence of a verification link that opens nothing. */
-const invalidLink =
-  'This link is not valid any more. Sign up again to get a new link.';
+const invalidLink = 'This link no longer works.';
 
 /** The page that asks for an account. */
 export function SignUpPage(): ReactNode {
+  const focusInvalid = useAuthValidationFocus();
+  const [consentError, setConsentError] = useState('');
+  const [emailError, setEmailError] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [reveal, setReveal] = useState(false);
@@ -66,16 +80,6 @@ export function SignUpPage(): ReactNode {
   useDocumentTitle('Create an account');
 
   const submit = async (): Promise<void> => {
-    setFieldError('');
-    const problem = passwordProblem(password);
-    if (problem !== null) {
-      setFieldError(problem);
-      return;
-    }
-    if (documents !== null && !accepted) {
-      setError('Accept the terms and the privacy notice to make an account.');
-      return;
-    }
     setBusy('checking');
     setError('');
     // The browser pays a short proof of work that this server issued, so a
@@ -101,6 +105,10 @@ export function SignUpPage(): ReactNode {
     });
     setBusy(null);
     if (result.data === undefined) {
+      if (hasEmailProblem(result.error)) {
+        setEmailError('Enter an email address.');
+        return;
+      }
       setError(problemMessage(result.error));
       return;
     }
@@ -109,34 +117,84 @@ export function SignUpPage(): ReactNode {
 
   if (sentTo !== null)
     return (
-      <AuthFrame title="Open the link in your mail">
-        <p className="mb-5 mt-0 text-control text-muted">
-          A message goes to {sentTo}. Open the link in it to finish your
-          account. Then sign in with your address and your password.
-        </p>
-        <Link className={buttonClassName({ variant: 'secondary' })} to="/login">
+      <AuthFrame
+        title="Open the link in your mail"
+        description={
+          <>
+            {' '}
+            A message goes to {sentTo}. Open the link in it to finish your
+            account. This browser can sign you in after verification. On another
+            device, enter your password to sign in.{' '}
+          </>
+        }
+      >
+        <Inset as="p" className="text-secondary text-muted">
+          Check your spam folder if the message does not arrive. To send another
+          link or use a different address, return to the form. Email limits can
+          delay another message.
+        </Inset>
+        <Button
+          variant="secondary"
+          onClick={() => {
+            setSentTo(null);
+          }}
+        >
+          Change address or send another link
+        </Button>
+        <Link
+          className={buttonClassName({ variant: 'ghost' })}
+          to="/login"
+          state={{ email: sentTo }}
+        >
           Go to sign in
         </Link>
       </AuthFrame>
     );
 
   return (
-    <AuthFrame title="Create an account">
+    <AuthFrame
+      title="Create an account"
+      description="Enter your address and choose a password. A link goes to the address to prove that it is yours."
+    >
       {trialOffer(trialSeconds) === null ? null : (
-        <Notice className="mb-4" message={trialOffer(trialSeconds) ?? ''} />
+        <Notice message={trialOffer(trialSeconds) ?? ''} />
       )}
-      <p className="mb-5 mt-0 text-control text-muted">
-        Enter your address and choose a password. A link goes to the address to
-        prove that it is yours.
-      </p>
-      <form
+      <Form
+        noValidate
         onSubmit={(event): void => {
           event.preventDefault();
-          void submit();
+          const form = event.currentTarget;
+          const nativeValid = form.checkValidity();
+          const emailValid = normalizeEmail(email) !== null;
+          const emailProblem =
+            email.trim() !== '' &&
+            (!emailValid ||
+              form.querySelector<HTMLInputElement>('input[type=email]')
+                ?.validity.valid === false)
+              ? 'Enter an email address.'
+              : '';
+          const passwordError =
+            password === '' ? '' : (passwordProblem(password) ?? '');
+          const consentProblem =
+            documents !== null && !accepted
+              ? 'Accept the terms and the privacy notice to make an account.'
+              : '';
+          setEmailError(emailProblem);
+          setFieldError(passwordError);
+          setConsentError(consentProblem);
+          if (
+            nativeValid &&
+            emailValid &&
+            passwordError === '' &&
+            consentProblem === ''
+          )
+            void submit();
+          else focusInvalid(form);
         }}
       >
         <TextField
           id="signup-email"
+          error={emailError}
           label="Email address"
           value={email}
           inputType="email"
@@ -156,27 +214,40 @@ export function SignUpPage(): ReactNode {
           error={fieldError}
           onChange={setPassword}
         />
-        <div className="mb-4">
+        <Inset as="div">
           <Checkbox
             id="signup-reveal"
             label="Show the password"
             checked={reveal}
             onChange={setReveal}
           />
-        </div>
+        </Inset>
         {documents === null ? null : (
-          <div className="mb-4">
-            <Checkbox
-              id="signup-consent"
-              label={<ConsentLabel documents={documents} />}
-              checked={accepted}
-              onChange={setAccepted}
-            />
-          </div>
+          <Inset as="div">
+            <Stack gap={2}>
+              <Checkbox
+                id="signup-consent"
+                label={<ConsentLabel documents={documents} />}
+                checked={accepted}
+                onChange={setAccepted}
+                invalid={consentError !== ''}
+                describedBy={
+                  consentError === '' ? undefined : 'signup-consent-error'
+                }
+              />
+              {consentError === '' ? null : (
+                <p
+                  id="signup-consent-error"
+                  className="m-0 text-secondary text-danger"
+                  role="alert"
+                >
+                  {consentError}
+                </p>
+              )}
+            </Stack>
+          </Inset>
         )}
-        {error === '' ? null : (
-          <Notice className="mb-4" tone="problem" message={error} />
-        )}
+        {error === '' ? null : <Notice tone="problem" message={error} />}
         <Button type="submit" disabled={busy !== null} className="w-full">
           {busy === 'checking'
             ? 'Checking this browser'
@@ -184,13 +255,10 @@ export function SignUpPage(): ReactNode {
               ? 'Sending the link'
               : 'Create account'}
         </Button>
-      </form>
-      <Link
-        className={`mt-3 w-full ${buttonClassName({ variant: 'ghost' })}`}
-        to="/login"
-      >
-        I have an account
-      </Link>
+        <Link className={buttonClassName({ variant: 'ghost' })} to="/login">
+          I have an account
+        </Link>
+      </Form>
     </AuthFrame>
   );
 }
@@ -198,21 +266,35 @@ export function SignUpPage(): ReactNode {
 /** How far the verification got. */
 type VerifyState =
   | { readonly kind: 'loading' }
-  | { readonly kind: 'invalid'; readonly message: string }
+  | {
+      readonly kind: 'invalid';
+      readonly message: string;
+      readonly reason: 'registration_closed' | 'verification_invalid';
+    }
   | { readonly kind: 'unreachable'; readonly message: string }
   | { readonly kind: 'verified'; readonly email: string };
 
 /** The page that a verification link opens. */
 export function VerifyPage(): ReactNode {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { refresh } = useSession();
   const [state, setState] = useState<VerifyState>({ kind: 'loading' });
   const [attempt, setAttempt] = useState(0);
-  useDocumentTitle('Finish your account');
+  const title = verificationTitleOf(
+    state.kind,
+    state.kind === 'invalid' ? state.reason : undefined,
+  );
+  useDocumentTitle(title);
 
   useEffect(() => {
     const token = verificationTokenOf(location.hash);
     if (token === null) {
-      setState({ kind: 'invalid', message: invalidLink });
+      setState({
+        kind: 'invalid',
+        message: invalidLink,
+        reason: 'verification_invalid',
+      });
       return;
     }
     let cancelled = false;
@@ -220,18 +302,22 @@ export function VerifyPage(): ReactNode {
     void verifyAddress({ body: { token } }).then((result) => {
       if (cancelled) return;
       if (result.data !== undefined) {
+        if (result.data.signedIn === true) {
+          refresh();
+          void navigate('/', { replace: true });
+          return;
+        }
         setState({ kind: 'verified', email: result.data.email });
         return;
       }
       const status = result.response?.status ?? 0;
+      const closed = problemCode(result.error) === 'registration_closed';
       setState(
         status === 403
           ? {
               kind: 'invalid',
-              message:
-                problemCode(result.error) === 'registration_closed'
-                  ? problemMessage(result.error)
-                  : invalidLink,
+              reason: closed ? 'registration_closed' : 'verification_invalid',
+              message: closed ? problemMessage(result.error) : invalidLink,
             }
           : { kind: 'unreachable', message: problemMessage(result.error) },
       );
@@ -239,20 +325,30 @@ export function VerifyPage(): ReactNode {
     return () => {
       cancelled = true;
     };
-  }, [location.hash, attempt]);
+  }, [location.hash, attempt, navigate, refresh]);
+
+  const recovery =
+    state.kind === 'invalid'
+      ? verificationRecoveryOf(state.reason)
+      : { path: '/login', label: 'Continue to sign in' };
 
   return (
     <AuthFrame
-      title={
-        state.kind === 'verified'
-          ? 'Your account is ready'
-          : 'Finish your account'
+      title={title}
+      description={
+        state.kind === 'invalid'
+          ? state.reason === 'registration_closed'
+            ? 'Ask the owner of this server for an invitation.'
+            : 'Links work once and for a short time.'
+          : state.kind === 'verified'
+            ? state.email
+            : undefined
       }
     >
       {state.kind === 'loading' ? (
-        <LoadingState label="The link is loading." />
+        <LoadingState label="Loading link" />
       ) : state.kind === 'unreachable' ? (
-        <div className="mt-4 space-y-3">
+        <Stack gap={3} as="div">
           <Notice tone="problem" message={state.message} />
           <Button
             onClick={() => {
@@ -261,26 +357,21 @@ export function VerifyPage(): ReactNode {
           >
             Try again
           </Button>
-        </div>
+        </Stack>
       ) : (
-        <div className="mt-4 space-y-3">
-          {state.kind === 'invalid' ? (
-            <Notice tone="problem" message={state.message} />
-          ) : (
-            <p className="mb-5 mt-0 text-control text-muted">
-              The address {state.email} is proved. Sign in with it and your
-              password.
-            </p>
-          )}
+        <Stack gap={3} as="div">
           <Link
             className={buttonClassName({
-              variant: state.kind === 'verified' ? 'primary' : 'secondary',
+              variant: 'primary',
             })}
-            to="/login"
+            to={recovery.path}
+            state={
+              state.kind === 'verified' ? { email: state.email } : undefined
+            }
           >
-            Go to sign in
+            {state.kind === 'verified' ? 'Continue' : recovery.label}
           </Link>
-        </div>
+        </Stack>
       )}
     </AuthFrame>
   );

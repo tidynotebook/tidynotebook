@@ -64,10 +64,15 @@
  * `tools/design-rules-allow.json` lists the accepted exceptions with a
  * reason. An entry names one file and one rule.
  *
+ * Spacing and raw type roles also cover CSS in web and shared UI sources.
+ * These rules exclude `.test.ts`, but include `.test.tsx`. Spacing exceptions
+ * in `tools/design-system-allow.json` name a file, rule and exact match.
+ * `--prune` removes stale spacing exceptions.
+ *
  * A separate root permits a disposable negative check without application
  * fixtures, in the same shape as `tools/check-boundaries.mjs`.
  */
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { relative, resolve, sep } from 'node:path';
 import { parseSync } from 'oxc-parser';
 import { filesIn, root } from './workspace.mjs';
@@ -165,7 +170,7 @@ const statefulEdge = /(?:^|[\s:])(?:border|ring)-edge(?![\w-])/;
 export const controlRecipeModule = 'packages/ui/src/control-classes.ts';
 
 /** The edge of the task box recipe, under the variant of a published task. */
-const publishedTaskBoxEdge = '[&_.task-list-item_input]:border-edge ';
+const publishedTaskBoxEdge = 'content-task-list-item-input:border-edge ';
 
 /** A `focus:` variant, and the two utilities a field may put behind one. */
 const pointerFocus = /(?:^|[\s:])focus:([a-z][\w-]*)/g;
@@ -215,7 +220,13 @@ export function colourTokens(css) {
 /** The one module that may name a duration, an easing, or a transition. */
 export const motionModule = 'packages/ui/src/motion.ts';
 /** The three named elevation steps of the central theme. */
-export const elevationSteps = ['raised', 'overlay', 'modal'];
+export const elevationSteps = [
+  'raised',
+  'overlay',
+  'modal',
+  'edge-top',
+  'edge-bottom',
+];
 // A utility starts a class string, follows a space, or follows the colon of a
 // variant. It never follows a letter, so `transition-shadow` is not a shadow
 // utility and `lease-held` is not an easing.
@@ -284,6 +295,7 @@ export const textRules = {
    * @returns {string | null}
    */
   'colour-token'(text, _path, context) {
+    text = text.replace(/shadow-edge-(?:top|bottom)/g, '');
     const tokens = context?.colourTokens;
     if (tokens === undefined) return null;
     for (const match of text.matchAll(colourClass)) {
@@ -358,7 +370,12 @@ export const textRules = {
   /** @param {string} text @param {string} path @returns {string | null} */
   'faded-control'(text, path) {
     if (path === motionModule) return null;
-    const found = fadedOpacity.exec(text);
+    // The approved history controls alone use 40 percent opacity.
+    const checked =
+      path === controlRecipeModule
+        ? text.replace('cursor-not-allowed text-muted opacity-40', '')
+        : text;
+    const found = fadedOpacity.exec(checked);
     return found
       ? `Opacity utility ${found[1]} makes a colour that no contrast rule holds. A disabled control takes text-muted.`
       : null;
@@ -490,6 +507,9 @@ export const fileRules = {
     for (const match of text.matchAll(iconSize)) {
       const size = Number(match[2]);
       if (iconSizes.includes(size)) continue;
+      // The frozen redesign specifies 22 px for these two history icons.
+      if (size === 22 && ['UndoIcon', 'RedoIcon'].includes(match[1] ?? ''))
+        continue;
       found.push({
         message: `${match[1] ?? 'An icon'} renders at ${String(size)} px. An icon is ${iconSizes.join(' px in a control and ')} px in an empty state.`,
         offset: match.index,
@@ -530,6 +550,128 @@ function attributeName(node) {
   return typeof name.name === 'string' ? name.name : '';
 }
 
+const steps = new Set(['0', '0.5', '1', '2', '3', '4', '6', '8', '12']);
+/** @param {string} token */
+function baseCandidate(token) {
+  let depth = 0,
+    start = 0;
+  for (let index = 0; index < token.length; index++) {
+    const c = token[index];
+    if (c === '[') depth++;
+    if (c === ']') depth--;
+    if (c === ':' && depth === 0) start = index + 1;
+  }
+  return token.slice(start);
+}
+/** @typedef {{file:string,rule:string,match:string}} DesignProblem */
+/** @param {DesignProblem} item */
+function problemKey(item) {
+  return `${item.file}:${item.rule}:${item.match}`;
+}
+/** @param {string} path */
+export function spacingScope(path) {
+  return (
+    /^(?:apps\/web|packages\/ui)\/src\//.test(path) &&
+    /\.(?:tsx?|css)$/.test(path) &&
+    !path.endsWith('.test.ts')
+  );
+}
+/** @param {string} path @param {string} source */
+export function rawTypeRole(path, source) {
+  return (
+    spacingScope(path) &&
+    path !== stylesheet &&
+    /\btext-(?:xs|sm|base|lg|xl|[2-9]xl)\b|\btext-\[[^\]]+\]|\bfontSize\s*[:=]|font-size\s*:/.test(
+      source,
+    )
+  );
+}
+/** @param {string} source
+ * @param {(rule:string, match:string)=>void} add */
+function spacingCss(source, add) {
+  const states = {
+    'state-overlay': ['--notes-overlay-hover', '--notes-overlay-selected'],
+    'state-raised': [
+      '--notes-card-raised-hover',
+      '--notes-card-raised-selected',
+    ],
+  };
+  for (const match of source.matchAll(/@utility\s+([\w-]+)\s*\{([^}]*)\}/g)) {
+    const name = match[1] ?? '';
+    const values = Object.entries(states).find(([key]) => key === name)?.[1];
+    const expected = values
+      ? `--notes-surface-hover: var(${values[0]}); --notes-surface-active: var(${values[1]});`
+      : '';
+    if (!expected || (match[2] ?? '').replace(/\s+/g, ' ').trim() !== expected)
+      add('component-css', name);
+  }
+  for (const match of source.matchAll(/--(ui-[\w-]+)\s*:/g))
+    add('role-alias', match[1] ?? '');
+  for (const match of source.matchAll(/([^{};]+)\{/g)) {
+    const selector = (match[1] ?? '').trim();
+    if (/^\.[\w-]+.*\s[.\w[]/.test(selector)) add('screen-selector', selector);
+    if (/(\.[\w-]+)\1/.test(selector)) add('specificity', selector);
+    if (/^[.#]/.test(selector)) add('component-selector', selector);
+  }
+}
+/** @param {string} path @param {string} source
+ * @param {Record<string,unknown>} node
+ * @param {(rule:string, match:string)=>void} add */
+function spacingNode(path, source, node, add) {
+  const app = path.startsWith('apps/web/src/');
+  if (node.type === 'JSXAttribute' && record(node.name).name === 'style') {
+    const raw = source.slice(Number(node.start), Number(node.end));
+    if (/\b(?:padding\w*|margin\w*|gap|rowGap|columnGap)\s*:/.test(raw))
+      add('inline-spacing', raw);
+  }
+  const text =
+    node.type === 'Literal' && typeof node.value === 'string'
+      ? node.value
+      : node.type === 'TemplateElement'
+        ? record(node.value).raw
+        : undefined;
+  if (typeof text === 'string')
+    for (let token of text.split(/\s+/).filter(Boolean)) {
+      if (/\[[^\]]+\]:(?!not\()/.test(token) || /(?:^|:)\[--/.test(token))
+        add('arbitrary-value', token);
+      if (
+        /(?:^|:)content-[\w-]+:/.test(token) &&
+        ![
+          'packages/ui/src/static.ts',
+          'packages/ui/src/preview-surface.tsx',
+          'packages/ui/src/code-figure.ts',
+          'packages/ui/src/dialog-classes.ts',
+          'apps/docs/src/page.ts',
+        ].includes(path)
+      )
+        add('content-boundary', token);
+      const candidate = baseCandidate(token);
+      token = candidate;
+      if (/^-?(?:p[xytrblse]?|gap(?:-[xy])?)-/.test(token)) {
+        if (app) add('feature-spacing', token);
+        else {
+          const step = token.replace(/^-?(?:p[xytrblse]?|gap(?:-[xy])?)-/, '');
+          if (!steps.has(step)) add('spacing-scale', token);
+        }
+      }
+      if (/^-?m[xytrblse]?-/.test(token) && token !== 'm-0') {
+        if (app) add('feature-margin', token);
+        else {
+          const step = token.replace(/^-?m[xytrblse]?-/, '');
+          if (step !== 'auto' && !steps.has(step)) add('spacing-scale', token);
+        }
+      }
+      if (/^space-[xy]-/.test(token)) add('child-spacing', token);
+      if (
+        /^min-h-/.test(token) &&
+        (app ||
+          !['min-h-0', 'min-h-full', 'min-h-dvh', 'min-h-64'].includes(token))
+      )
+        add('minimum-height', token);
+      if (/^[\w-]+-\[[^\]]+\]$/.test(token)) add('arbitrary-value', token);
+    }
+}
+
 /**
  * Reports every rule that one source file breaks.
  *
@@ -539,6 +681,19 @@ function attributeName(node) {
  * @returns {{ path: string; line: number; rule: string; message: string }[]}
  */
 export function scanSource(path, text, context) {
+  return scanFile(path, text, context).rules;
+}
+/** @param {string} path @param {string} text @param {RuleContext} [context] */
+export function scanFile(path, text, context) {
+  /** @type {DesignProblem[]} */
+  const spacing = [];
+  const scoped = spacingScope(path);
+  /** @param {string} rule @param {string} match */
+  const add = (rule, match) => spacing.push({ file: path, rule, match });
+  if (path.endsWith('.css')) {
+    if (scoped) spacingCss(text, add);
+    return { rules: [], spacing };
+  }
   /** @type {{ path: string; line: number; rule: string; message: string }[]} */
   const found = [];
   const lineStarts = [0];
@@ -569,6 +724,7 @@ export function scanSource(path, text, context) {
     report('parse', String(error.message ?? error), 0);
 
   walk(parsed.program, (node, parent) => {
+    if (scoped) spacingNode(path, text, node, add);
     const type = String(node.type);
     if (type === 'JSXAttribute') {
       const name = attributeName(node);
@@ -632,7 +788,10 @@ export function scanSource(path, text, context) {
       if (message !== null) report('jsx-text', message, node.start);
     }
   });
-  return found;
+  return {
+    rules: found,
+    spacing: [...new Map(spacing.map((i) => [problemKey(i), i])).values()],
+  };
 }
 
 /**
@@ -712,7 +871,7 @@ export async function readAllowlist(directory) {
  * @param {string} directory
  * @returns {Promise<number>} The process status.
  */
-export async function main(directory) {
+export async function main(directory, prune = false) {
   if (resolve(directory) === resolve(root)) {
     const { generateIcons } = await import('./generate-icons.mjs');
     await generateIcons(true);
@@ -747,15 +906,29 @@ export async function main(directory) {
     .concat(named)
     .flat()
     .filter(
-      (file) => /\.(?:tsx?|html)$/.test(file) && !/\.test\.tsx?$/.test(file),
+      (file) =>
+        (/\.(?:tsx?|html)$/.test(file) && !/\.test\.tsx?$/.test(file)) ||
+        spacingScope(relative(directory, file).split(sep).join('/')),
     );
   /** @type {{ path: string; line: number; rule: string; message: string }[]} */
   const failures = [];
+  /** @type {DesignProblem[]} */
+  const spacing = [];
   for (const file of files) {
     const path = relative(directory, file).split(sep).join('/');
-    const text = await readFile(file, 'utf8');
-    const scan = path.endsWith('.html') ? scanDocument : scanSource;
-    for (const issue of scan(path, text, context)) {
+    const text = path === stylesheet ? css : await readFile(file, 'utf8');
+    const result = path.endsWith('.html')
+      ? { rules: scanDocument(path, text, context), spacing: [] }
+      : scanFile(path, text, context);
+    spacing.push(...result.spacing);
+    if (rawTypeRole(path, text))
+      failures.push({
+        path,
+        line: 1,
+        rule: 'raw-type-role',
+        message: 'Use shared type roles instead of raw sizes.',
+      });
+    for (const issue of /\.test\.tsx$/.test(path) ? [] : result.rules) {
       if (
         allowed.some(
           (entry) => entry.file === issue.path && entry.rule === issue.rule,
@@ -765,6 +938,48 @@ export async function main(directory) {
       failures.push(issue);
     }
   }
+  const allowPath = resolve(directory, 'tools/design-system-allow.json');
+  const allowText = await readFile(allowPath, 'utf8').catch((error) => {
+    if (record(error).code === 'ENOENT') return '{"allow":[]}';
+    throw error;
+  });
+  const data = record(JSON.parse(allowText));
+  if (!Array.isArray(data.allow))
+    throw Error('Spacing exceptions need an allow array.');
+  const entries = data.allow.map(record);
+  const allow = entries.map((entry) => {
+    if (
+      typeof entry.file !== 'string' ||
+      typeof entry.rule !== 'string' ||
+      typeof entry.match !== 'string' ||
+      typeof entry.reason !== 'string'
+    )
+      throw Error('Every exception needs a file, rule, match and reason.');
+    return {
+      file: entry.file,
+      rule: entry.rule,
+      match: entry.match,
+      reason: entry.reason,
+    };
+  });
+  const active = new Set(spacing.map(problemKey));
+  if (prune) {
+    const kept = allow.filter((i) => active.has(problemKey(i)));
+    if (kept.length !== allow.length) {
+      data.allow = kept;
+      await writeFile(allowPath, JSON.stringify(data, null, 2) + '\n');
+    }
+  }
+  const exact = new Set(allow.map(problemKey));
+  const spacingFailures = spacing.filter((i) => !exact.has(problemKey(i)));
+  if (spacingFailures.length)
+    process.stderr.write(
+      'Design system check failed:\n' +
+        spacingFailures
+          .map((i) => `  ${i.file}: ${i.rule}: ${i.match}`)
+          .join('\n') +
+        '\n',
+    );
   if (failures.length > 0) {
     process.stderr.write(
       [
@@ -779,20 +994,22 @@ export async function main(directory) {
     return 1;
   }
   process.stdout.write(
-    `Design rules: ${files.length} files checked, ${allowed.length} accepted exceptions.\n`,
+    `Design rules: ${files.length} files checked, ${allowed.length} accepted exceptions, ${spacing.length} recorded spacing cases.\n`,
   );
-  return 0;
+  return spacingFailures.length ? 1 : 0;
 }
 
 // The rule functions above are imported by the unit test, so the check itself
 // runs only when this file is the program.
 if (import.meta.main) {
-  const args = process.argv.slice(2);
+  const args = process.argv.slice(2).filter((arg) => arg !== '--prune');
   if (args.length && (args.length !== 2 || args[0] !== '--root')) {
     process.stderr.write(
-      'Usage: node tools/check-design-rules.mjs [--root <directory>]\n',
+      'Usage: node tools/check-design-rules.mjs [--root <directory>] [--prune]\n',
     );
     process.exit(1);
   }
-  process.exit(await main(resolve(args[1] ?? root)));
+  process.exit(
+    await main(resolve(args[1] ?? root), process.argv.includes('--prune')),
+  );
 }

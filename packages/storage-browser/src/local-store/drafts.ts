@@ -15,17 +15,25 @@ import {
   stateVectorCovers,
 } from '@notesapp/note-document';
 import {
+  LocalStorageError,
   type Draft,
   type LocalCachedNote,
   type LocalStore,
   type NoteDocument,
 } from '@notesapp/sync';
-import { guard, type DraftRow, type FileRow } from '../database.ts';
+import {
+  guard,
+  partitionRange,
+  type DraftRow,
+  type FileRow,
+} from '../database.ts';
 import { readDocumentRow } from './documents.ts';
 import {
   validateAcceptedFile,
   validateCheckpoint,
   validateDraft,
+  validateQueueRow,
+  validateRecovery,
 } from '../migrations.ts';
 import {
   bodyOfDigest,
@@ -441,6 +449,7 @@ export function createDraftsSlice(ctx: LocalStoreContext): DraftsSlice {
         sequence: draft.sequence,
         baseRevisionId: draftBase,
         stale,
+        ...(stale ? { draftText: draft.text } : {}),
         acceptedText: stale ? accepted.text : null,
         acceptedPath: accepted.path,
         acceptedRevisionId: accepted.revisionId,
@@ -499,12 +508,13 @@ export function createDraftsSlice(ctx: LocalStoreContext): DraftsSlice {
       accountId: string,
       workspaceId: string,
       workingCopyId: string,
+      recovery?: Parameters<LocalStore['dropDraft']>[3],
     ): Promise<void> {
       const removed = await guard('removing a draft', () =>
         db.transaction(
           'rw',
-          tables.drafts,
-          async (): Promise<string | null> => {
+          [tables.drafts, tables.acceptedFiles, tables.queue, tables.recovery],
+          async (): Promise<{ fileId: string; handedOff: boolean } | null> => {
             const stored: unknown = await tables.drafts.get([
               serverOrigin,
               accountId,
@@ -513,18 +523,132 @@ export function createDraftsSlice(ctx: LocalStoreContext): DraftsSlice {
             ]);
             if (stored === undefined) return null;
             const draft = validateDraft(stored);
+            if (recovery !== undefined) {
+              const expected = recovery.expected;
+              const expectedVector = expected.documentVector ?? null;
+              const currentVector = draft.documentVector ?? null;
+              const vectorChanged =
+                expectedVector === null
+                  ? currentVector !== null
+                  : currentVector === null ||
+                    expectedVector.length !== currentVector.length ||
+                    expectedVector.some(
+                      (byte, index) => currentVector[index] !== byte,
+                    );
+              if (
+                expected.accountId !== accountId ||
+                expected.workspaceId !== workspaceId ||
+                expected.workingCopyId !== workingCopyId ||
+                expected.fileId !== draft.fileId ||
+                expected.sequence !== draft.sequence ||
+                expected.text !== draft.text ||
+                expected.path !== draft.path ||
+                expected.baseRevisionId !== draft.baseRevisionId ||
+                expected.deleted !== draft.deleted ||
+                vectorChanged
+              )
+                throw new LocalStorageError(
+                  'stale',
+                  'the draft changed before recovery completed',
+                );
+              await tables.recovery.put(
+                validateRecovery({
+                  serverOrigin,
+                  accountId,
+                  workspaceId,
+                  recoveryId: recovery.recoveryId,
+                  fileId: draft.fileId,
+                  path: draft.path,
+                  text: recovery.text ?? draft.text,
+                  reason: 'stale_draft',
+                  code: null,
+                  noteRefusal: null,
+                  mutationId: null,
+                  createdAt: nowIso(),
+                }),
+              );
+            }
+            let handedOff = false;
             await tables.drafts.delete([
               serverOrigin,
               accountId,
               workspaceId,
               workingCopyId,
             ]);
-            return draft.fileId;
+            // A stale draft kept the old local head while the feed moved
+            // the accepted head. Once its owner discards the last working
+            // copy, with no queued version left, the accepted head owns the
+            // next open. Otherwise a clean editor would save over the old
+            // local head and create a new version for already accepted text.
+            const remaining = await draftsOfFile(
+              ctx,
+              accountId,
+              workspaceId,
+              draft.fileId,
+            );
+            const queued: unknown[] = await tables.queue
+              .where('[serverOrigin+accountId+workspaceId+sequence]')
+              .between(
+                partitionRange(serverOrigin, accountId, workspaceId).lower,
+                partitionRange(serverOrigin, accountId, workspaceId).upper,
+                true,
+                true,
+              )
+              .toArray();
+            const pending = queued.some((row) =>
+              validateQueueRow(row).input.revisions.some(
+                (revision) => revision.fileId === draft.fileId,
+              ),
+            );
+            const held: unknown = await tables.acceptedFiles.get([
+              serverOrigin,
+              accountId,
+              workspaceId,
+              draft.fileId,
+            ]);
+            if (remaining.length === 0 && !pending && held !== undefined) {
+              const file = validateAcceptedFile(held);
+              if (
+                file.acceptedHeadRevisionId !== null &&
+                file.acceptedPath !== null &&
+                !file.deleted &&
+                (file.localHeadRevisionId !== file.acceptedHeadRevisionId ||
+                  file.path !== file.acceptedPath)
+              ) {
+                await tables.acceptedFiles.put({
+                  ...file,
+                  path: file.acceptedPath,
+                  localHeadRevisionId: file.acceptedHeadRevisionId,
+                  updatedAt: nowIso(),
+                });
+                handedOff = true;
+              }
+            }
+            return { fileId: draft.fileId, handedOff };
           },
         ),
       );
       if (removed === null) return;
-      publish({ accountId, workspaceId, fileId: removed, kind: 'draft' });
+      publish({
+        accountId,
+        workspaceId,
+        fileId: removed.fileId,
+        kind: 'draft',
+      });
+      if (recovery !== undefined)
+        publish({
+          accountId,
+          workspaceId,
+          fileId: removed.fileId,
+          kind: 'conflict',
+        });
+      if (removed.handedOff)
+        publish({
+          accountId,
+          workspaceId,
+          fileId: removed.fileId,
+          kind: 'file',
+        });
     },
   };
 }

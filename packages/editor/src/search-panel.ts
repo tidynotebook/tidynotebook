@@ -4,9 +4,9 @@
  * `@codemirror/search` draws a panel of its own, with lowercase words, grey
  * native buttons and a raw close mark. Its documented `createPanel` option
  * takes a panel of ours instead, so this module builds the panel from the
- * recipes of `packages/ui`: two fields, the buttons, three checkboxes and a
- * close action with the close glyph of the icon set. The words are sentence
- * case and say what each control does.
+ * recipes of `packages/ui`: a compact find bar, match count, icon controls,
+ * option toggles, and a replace row shown on request. Phone options use the
+ * shared application sheet. Removing a visible action does not remove its key.
  *
  * The keys stay the keys of the search package. Enter in the find field finds
  * the next match and Shift and Enter the one before it, Enter in the replace
@@ -24,6 +24,7 @@
  */
 import {
   closeSearchPanel,
+  openSearchPanel,
   findNext,
   gotoLine,
   searchKeymap,
@@ -32,25 +33,108 @@ import {
   replaceAll,
   replaceNext,
   SearchQuery,
-  selectMatches,
   setSearchQuery,
 } from '@codemirror/search';
-import { EditorState, type Extension } from '@codemirror/state';
+import {
+  EditorState,
+  type Extension,
+  type SelectionRange,
+} from '@codemirror/state';
 import {
   EditorView,
   runScopeHandlers,
+  type Command,
   type Panel,
   type ViewUpdate,
 } from '@codemirror/view';
 import {
   buttonClassName,
-  checkboxClassNames,
-  checkParts,
+  chevronDownParts,
+  moreParts,
+  replaceParts,
+  openOptionsSheet,
   closeParts,
-  compactButtonVisualClassName,
   fieldClassName,
+  bareFieldClassName,
+  countedFieldClassName,
+  editorSearchClasses,
+  readVisibleArea,
+  followVisibleArea,
   glyph,
 } from '@notesapp/ui';
+import { measurableRange } from './table-grid.ts';
+
+/**
+ * Where Find scrolls for a match: the match with each end that stands on
+ * hidden table syntax moved to the cell text beside it.
+ *
+ * The editor scrolls a range by the caret of its head, and a hidden pipe
+ * has none. The target changes, never the selection or the text. A replace
+ * hands over the next match in the text after the change, which this state
+ * does not hold yet, so such a range scrolls as it is and the table reveal
+ * measures it again after the update.
+ */
+export function findScrollTarget(
+  state: EditorState,
+  range: SelectionRange,
+): SelectionRange {
+  // An empty range only becomes a caret, so it maps without the check, and
+  // the table reveal measures it again after the update.
+  if (range.empty) return measurableRange(state, range);
+  const match = getSearchQuery(state)
+    .getCursor(state, range.from, range.to)
+    .next();
+  return !match.done &&
+    match.value.from === range.from &&
+    match.value.to === range.to
+    ? measurableRange(state, range)
+    : range;
+}
+
+/** Shared search layout, also checked against the served stylesheet. */
+export const searchPanelClasses = editorSearchClasses;
+
+/** An ordinal names an exact, single selection, never the next candidate. */
+export function currentSearchMatch(
+  state: EditorState,
+  matches: readonly { from: number; to: number }[],
+): number {
+  if (state.selection.ranges.length !== 1) return -1;
+  return matches.findIndex(
+    (match) =>
+      match.from === state.selection.main.from &&
+      match.to === state.selection.main.to,
+  );
+}
+
+/** Rectangles of the match that CodeMirror has actually rendered. */
+function renderedMatchRects(
+  view: EditorView,
+  match: { readonly from: number; readonly to: number },
+): readonly Pick<DOMRect, 'left' | 'right' | 'top' | 'bottom'>[] {
+  if (match.from === match.to) {
+    const caret = view.coordsAtPos(match.from);
+    return caret ? [caret] : [];
+  }
+  const rects: DOMRect[] = [];
+  for (const visible of view.visibleRanges) {
+    const from = Math.max(match.from, visible.from);
+    const to = Math.min(match.to, visible.to);
+    if (from >= to) continue;
+    const start = view.domAtPos(from, 1);
+    const end = view.domAtPos(to, -1);
+    if (
+      !view.contentDOM.contains(start.node) ||
+      !view.contentDOM.contains(end.node)
+    )
+      continue;
+    const range = view.dom.ownerDocument.createRange();
+    range.setStart(start.node, start.offset);
+    range.setEnd(end.node, end.offset);
+    rects.push(...range.getClientRects());
+  }
+  return rects;
+}
 
 /** The words of the panel, which a person reads and hears. */
 export const searchPanelWords = {
@@ -91,6 +175,22 @@ export const editorPhrases: Readonly<Record<string, string>> = {
 export const noteSearchKeymap = searchKeymap.filter(
   (binding) => binding.run !== gotoLine,
 );
+
+/**
+ * The count of the panel when no single match is selected.
+ *
+ * One match reads `1 match`, and the short form of the phone reads
+ * `1 found` as every other count does.
+ */
+export function matchCountWords(total: number): {
+  readonly full: string;
+  readonly short: string;
+} {
+  return {
+    full: total === 1 ? '1 match' : `${String(total)} matches`,
+    short: `${String(total)} found`,
+  };
+}
 
 /** What a person hears after a replace of every match. */
 export function replaceAllWords(count: number): string {
@@ -155,6 +255,9 @@ export function searchPanelKey(
   return null;
 }
 
+/** The dialog panel of the options sheet, which its title id names. */
+const optionsSheetPanelId = 'editor-options-title-panel';
+
 /** The class of the glyph inside a control: the 16 px of a control. */
 const glyphClass = 'size-4 shrink-0';
 
@@ -175,39 +278,41 @@ function field(label: string, value: string): HTMLInputElement {
 function button(label: string, run: () => void): HTMLButtonElement {
   const control = document.createElement('button');
   control.type = 'button';
-  control.className = buttonClassName({ variant: 'secondary', size: 'sm' });
+  control.className = buttonClassName({
+    variant: 'secondary',
+    size: 'compact',
+  });
   control.textContent = label;
+  // Keep the current field and phone keyboard while using panel actions.
+  control.addEventListener('pointerdown', (event) => event.preventDefault());
   control.addEventListener('click', run);
   return control;
 }
 
-/** A checkbox of the panel with its label beside it. */
-function checkbox(
+/** An icon button has the same target and focus treatment as app controls. */
+function iconButton(
   label: string,
-  checked: boolean,
-  change: () => void,
-): { readonly element: HTMLLabelElement; readonly input: HTMLInputElement } {
-  const classes = checkboxClassNames();
-  const element = document.createElement('label');
-  element.className = classes.label;
-  const frame = document.createElement('span');
-  frame.className = classes.frame;
-  const input = document.createElement('input');
-  input.type = 'checkbox';
-  input.className = classes.box;
-  input.checked = checked;
-  input.addEventListener('change', change);
-  frame.append(input, glyph(classes.mark, checkParts));
-  const words = document.createElement('span');
-  words.textContent = label;
-  element.append(frame, words);
-  return { element, input };
+  parts: Parameters<typeof glyph>[1],
+  run: () => void,
+): HTMLButtonElement {
+  const control = button(label, run);
+  control.className = buttonClassName({
+    variant: 'ghost',
+    size: 'compact',
+    iconOnly: true,
+  });
+  control.setAttribute('aria-label', label);
+  control.title = label;
+  control.replaceChildren(glyph(glyphClass, parts));
+  return control;
 }
-
-/** One band of the panel. */
-function band(...children: readonly HTMLElement[]): HTMLElement {
+/** A group owns item spacing and stretches its controls equally. */
+function group(
+  className: string,
+  ...children: readonly HTMLElement[]
+): HTMLElement {
   const row = document.createElement('div');
-  row.className = 'cm-np-search-row';
+  row.className = className;
   row.append(...children);
   return row;
 }
@@ -220,9 +325,27 @@ class SearchPanel implements Panel {
   private query: SearchQuery;
   private readonly searchField: HTMLInputElement;
   private readonly replaceField: HTMLInputElement;
-  private readonly caseField: HTMLInputElement;
-  private readonly regexpField: HTMLInputElement;
-  private readonly wordField: HTMLInputElement;
+  private readonly count: HTMLSpanElement;
+  private readonly longCount = document.createElement('span');
+  private readonly shortCount = document.createElement('span');
+  private readonly toggles: readonly HTMLButtonElement[];
+  private readonly replacement: HTMLElement;
+  private readonly actions: HTMLElement;
+  private readonly mainActions: HTMLElement;
+  private readonly tail: HTMLElement;
+  private readonly search: HTMLElement;
+  private readonly previous: HTMLButtonElement;
+  private readonly next: HTMLButtonElement;
+  private observer: ResizeObserver | undefined;
+  private stopViewport: (() => void) | undefined;
+  private margin = { top: 0, bottom: 0 };
+  private reveal = false;
+  private replaceVisible = false;
+  private closeOptions: (() => void) | undefined;
+  private destroyed = false;
+  private matches: { from: number; to: number }[] = [];
+  private countedQuery: SearchQuery | null = null;
+  private countedDoc: EditorState['doc'] | null = null;
 
   constructor(view: EditorView) {
     this.view = view;
@@ -233,84 +356,183 @@ class SearchPanel implements Panel {
     this.searchField = field(searchPanelWords.find, this.query.search);
     // `openSearchPanel` of the package selects the field with this mark.
     this.searchField.setAttribute('main-field', 'true');
-    this.searchField.classList.add('cm-np-search-field');
+    this.searchField.className = bareFieldClassName();
     this.replaceField = field(searchPanelWords.replace, this.query.replace);
-    this.replaceField.classList.add('cm-np-search-field');
+    this.replaceField.className = fieldClassName({
+      className: editorSearchClasses.replacement,
+    });
     for (const input of [this.searchField, this.replaceField]) {
       input.addEventListener('input', commit);
       input.addEventListener('change', commit);
     }
-    const matchCase = checkbox(
-      searchPanelWords.matchCase,
-      this.query.caseSensitive,
-      commit,
-    );
-    const regexp = checkbox(searchPanelWords.regexp, this.query.regexp, commit);
-    const wholeWord = checkbox(
-      searchPanelWords.wholeWord,
-      this.query.wholeWord,
-      commit,
-    );
-    this.caseField = matchCase.input;
-    this.regexpField = regexp.input;
-    this.wordField = wholeWord.input;
-
-    const close = document.createElement('button');
-    close.type = 'button';
-    close.className = buttonClassName({
-      variant: 'ghost',
-      size: 'sm',
-      iconOnly: true,
-      compact: true,
-    });
-    close.setAttribute('aria-label', searchPanelWords.close);
-    close.title = searchPanelWords.close;
-    const closeSurface = document.createElement('span');
-    closeSurface.className = compactButtonVisualClassName({
-      variant: 'ghost',
-      size: 'sm',
-      iconOnly: true,
-    });
-    closeSurface.append(glyph(glyphClass, closeParts));
-    close.append(closeSurface);
-    close.addEventListener('click', () => {
-      closeSearchPanel(view);
-    });
-
-    const rows = [
-      band(
-        this.searchField,
-        button(searchPanelWords.previous, () => {
-          findPrevious(view);
-        }),
-        button(searchPanelWords.next, () => {
-          findNext(view);
-        }),
-        button(searchPanelWords.selectAll, () => {
-          selectMatches(view);
-        }),
-        close,
-      ),
-    ];
-    if (!view.state.readOnly)
-      rows.push(
-        band(
-          this.replaceField,
-          button(searchPanelWords.replaceOne, () => {
-            replaceNext(view);
-          }),
-          button(searchPanelWords.replaceAll, () => {
-            replaceAll(view);
-          }),
-        ),
+    this.count = document.createElement('span');
+    this.count.className = searchPanelClasses.count;
+    this.count.setAttribute('aria-live', 'polite');
+    this.longCount.className = editorSearchClasses.desktop;
+    this.shortCount.className = editorSearchClasses.phone;
+    this.count.append(this.longCount, this.shortCount);
+    const search = document.createElement('div');
+    this.search = search;
+    search.className = countedFieldClassName();
+    search.append(this.searchField, this.count);
+    const options = [
+      { label: searchPanelWords.matchCase, text: 'Aa', key: 'caseSensitive' },
+      { label: searchPanelWords.regexp, text: '.*', key: 'regexp' },
+      { label: searchPanelWords.wholeWord, text: 'W', key: 'wholeWord' },
+    ] as const;
+    this.toggles = options.map((option) => {
+      const toggle = button(option.text, () =>
+        this.option(option.key, !this.query[option.key]),
       );
-    rows.push(band(matchCase.element, regexp.element, wholeWord.element));
+      toggle.className = buttonClassName({
+        variant: 'secondary',
+        size: 'compact',
+        className: 'aria-pressed:bg-active',
+      });
+      toggle.title = option.label;
+      toggle.setAttribute('aria-label', option.label);
+      return toggle;
+    });
+    // Show replace puts the focus in Replace with, where the next key goes.
+    // Hiding the row gives the focus back to Find.
+    const replacementToggle = iconButton('Show replace', replaceParts, () => {
+      if (!this.replaceVisible) {
+        this.openReplace();
+        return;
+      }
+      this.showReplace(false);
+      this.searchField.focus();
+    });
 
+    replacementToggle.setAttribute('aria-pressed', 'false');
+    replacementToggle.classList.add('aria-pressed:bg-active');
+    // The trigger states its dialog: closed, or open and which one. A second
+    // press while the sheet loads or shows opens nothing more.
+    let optionsOpen = false;
+    const optionsState = (open: boolean): void => {
+      optionsOpen = open;
+      more.setAttribute('aria-expanded', String(open));
+      if (open) more.setAttribute('aria-controls', optionsSheetPanelId);
+      else more.removeAttribute('aria-controls');
+    };
+    const more = button('More', () => {
+      if (optionsOpen) return;
+      // A press keeps the focus in its field, and a key leaves it on this
+      // trigger. Closing the sheet gives it back there.
+      const opener = this.dom.ownerDocument.activeElement;
+      optionsState(true);
+      void openOptionsSheet(
+        'Find options',
+        [
+          ...options.map((option) => ({
+            label: option.label,
+            read: () => this.query[option.key],
+            change: (checked: boolean) => this.option(option.key, checked),
+          })),
+          ...(view.state.readOnly
+            ? []
+            : [
+                {
+                  label: 'Replace',
+                  read: () => this.replaceVisible,
+                  change: (checked: boolean) => this.showReplace(checked),
+                },
+              ]),
+        ],
+        {
+          onClose: () => {
+            this.closeOptions = undefined;
+            optionsState(false);
+          },
+          // The text takes the focus when the panel closed under the sheet.
+          returnFocus: () => {
+            if (this.destroyed) this.view.focus();
+            else if (opener === this.replaceField && this.replaceField.hidden)
+              this.searchField.focus();
+            else if (opener instanceof HTMLElement && opener.isConnected)
+              opener.focus();
+            else more.focus();
+          },
+        },
+      ).then(
+        (close) => {
+          if (this.destroyed) close();
+          else this.closeOptions = close;
+        },
+        () => {
+          optionsState(false);
+        },
+      );
+    });
+    more.setAttribute('aria-haspopup', 'dialog');
+    more.setAttribute('aria-expanded', 'false');
+    more.className = buttonClassName({
+      variant: 'ghost',
+      size: 'compact',
+      iconOnly: true,
+    });
+    more.setAttribute('aria-label', 'More find options');
+    more.title = 'More find options';
+    more.replaceChildren(glyph(glyphClass, moreParts));
+    const close = iconButton(searchPanelWords.close, closeParts, () =>
+      closeSearchPanel(view),
+    );
+    const previous = iconButton(
+      searchPanelWords.previous,
+      chevronDownParts,
+      () => {
+        findPrevious(view);
+      },
+    );
+    previous.querySelector('svg')?.classList.add('rotate-180');
+    this.previous = previous;
+    this.next = iconButton(searchPanelWords.next, chevronDownParts, () =>
+      findNext(view),
+    );
+    const navigation = group(
+      editorSearchClasses.navigation,
+      previous,
+      this.next,
+    );
+    const desktop = group(editorSearchClasses.desktop, ...this.toggles);
+    const phone = group(editorSearchClasses.phone, more);
+    this.tail = group(
+      editorSearchClasses.tail,
+      phone,
+      ...(view.state.readOnly
+        ? []
+        : [group(editorSearchClasses.desktop, replacementToggle)]),
+      close,
+    );
+    this.mainActions = group(
+      editorSearchClasses.main,
+      navigation,
+      desktop,
+      this.tail,
+    );
+    this.replacement = this.replaceField;
+    const one = button(searchPanelWords.replaceOne, () => {
+      replaceNext(view);
+    });
+    const all = button(searchPanelWords.replaceAll, () => {
+      replaceAll(view);
+    });
+    for (const control of [one, all])
+      control.className = buttonClassName({
+        variant: 'secondary',
+        className: editorSearchClasses.grow,
+      });
+    this.actions = group(editorSearchClasses.actions, one, all);
+    this.replacement.hidden = this.actions.hidden = true;
     this.dom = document.createElement('div');
-    this.dom.className = 'cm-np-search';
+    this.dom.className = `cm-np-search ${editorSearchClasses.card}`;
     this.dom.setAttribute('role', 'search');
     this.dom.setAttribute('aria-label', searchPanelWords.panel);
-    this.dom.append(...rows);
+    const grid = group(editorSearchClasses.grid, search, this.mainActions);
+    if (!view.state.readOnly) grid.append(this.replacement);
+    this.dom.append(grid);
+    if (!view.state.readOnly) this.dom.append(this.actions);
+    this.refresh();
     this.dom.addEventListener('keydown', (event) => {
       this.keydown(event);
     });
@@ -320,9 +542,9 @@ class SearchPanel implements Panel {
   private commit(): void {
     const query = new SearchQuery({
       search: this.searchField.value,
-      caseSensitive: this.caseField.checked,
-      regexp: this.regexpField.checked,
-      wholeWord: this.wordField.checked,
+      caseSensitive: this.query.caseSensitive,
+      regexp: this.query.regexp,
+      wholeWord: this.query.wholeWord,
       replace: this.replaceField.value,
     });
     if (query.eq(this.query)) return;
@@ -356,6 +578,9 @@ class SearchPanel implements Panel {
       for (const effect of transaction.effects)
         if (effect.is(setSearchQuery) && !effect.value.eq(this.query))
           this.setQuery(effect.value);
+    this.refresh();
+    this.reveal ||= update.selectionSet || update.docChanged;
+    this.measure();
   }
 
   /** Shows a query that the editor set, for example from the selection. */
@@ -363,17 +588,236 @@ class SearchPanel implements Panel {
     this.query = query;
     this.searchField.value = query.search;
     this.replaceField.value = query.replace;
-    this.caseField.checked = query.caseSensitive;
-    this.regexpField.checked = query.regexp;
-    this.wordField.checked = query.wholeWord;
+    this.refresh();
+  }
+
+  private option(
+    key: 'caseSensitive' | 'regexp' | 'wholeWord',
+    checked: boolean,
+  ): void {
+    const query = new SearchQuery({
+      search: this.query.search,
+      replace: this.query.replace,
+      caseSensitive: this.query.caseSensitive,
+      regexp: this.query.regexp,
+      wholeWord: this.query.wholeWord,
+      [key]: checked,
+    });
+    this.query = query;
+    this.view.dispatch({ effects: setSearchQuery.of(query) });
+    this.refresh();
+  }
+  /** Shows the replace row with the focus in Replace with. */
+  openReplace(): void {
+    if (this.view.state.readOnly) return;
+    this.showReplace(true);
+    this.replaceField.focus();
+    this.replaceField.select();
+  }
+
+  private showReplace(show: boolean): void {
+    this.replaceVisible = show;
+    this.replacement.hidden = this.actions.hidden = !show;
+    this.mainActions.className = show
+      ? editorSearchClasses.expandedMain
+      : editorSearchClasses.main;
+    this.tail.className = show
+      ? editorSearchClasses.expandedTail
+      : editorSearchClasses.tail;
+    this.reveal = true;
+    this.measure();
+    this.dom
+      .querySelector('[aria-label="Show replace"]')
+      ?.setAttribute('aria-pressed', String(show));
+  }
+  private refresh(): void {
+    const state = this.view.state;
+    if (this.countedDoc !== state.doc || this.countedQuery !== this.query) {
+      this.matches = [];
+      if (this.query.valid) {
+        const cursor = this.query.getCursor(state.doc);
+        for (;;) {
+          const match = cursor.next();
+          if (match.done) break;
+          this.matches.push({ from: match.value.from, to: match.value.to });
+        }
+      }
+      this.countedDoc = state.doc;
+      this.countedQuery = this.query;
+    }
+    const current = currentSearchMatch(state, this.matches);
+    const invalid = this.query.search.length > 0 && !this.query.valid;
+    const total = this.matches.length;
+    const ordinal = `${String(current + 1)} of ${String(total)}`;
+    const { full, short } = !this.query.search
+      ? { full: '', short: '' }
+      : invalid
+        ? { full: 'Invalid pattern', short: 'Invalid' }
+        : total === 0
+          ? { full: 'No matches', short: 'None' }
+          : current < 0
+            ? matchCountWords(total)
+            : { full: ordinal, short: ordinal };
+    this.longCount.textContent = full;
+    this.shortCount.textContent = short;
+    this.count.hidden = !this.query.search;
+    this.count.setAttribute('aria-label', full);
+    this.count.className = invalid
+      ? editorSearchClasses.errorCount
+      : editorSearchClasses.count;
+    this.search.className = countedFieldClassName(invalid);
+    this.searchField.setAttribute('aria-invalid', String(invalid));
+    this.previous.disabled = this.next.disabled = total === 0;
+    for (const control of this.actions.querySelectorAll('button'))
+      control.disabled = total === 0 || state.readOnly;
+    [this.query.caseSensitive, this.query.regexp, this.query.wholeWord].forEach(
+      (pressed, index) =>
+        this.toggles[index]?.setAttribute('aria-pressed', String(pressed)),
+    );
+  }
+
+  destroy(): void {
+    this.destroyed = true;
+    if (searchPanels.get(this.view) === this) searchPanels.delete(this.view);
+    this.closeOptions?.();
+    this.observer?.disconnect();
+    this.stopViewport?.();
+    this.view.scrollDOM.removeEventListener('scroll', this.measure);
+  }
+
+  private readonly resized = (): void => {
+    this.reveal = true;
+    this.measure();
+  };
+
+  /** Only browser geometry is written here; recipes own all visual steps. */
+  private readonly measure = (): void => {
+    if (this.destroyed) return;
+    this.view.requestMeasure({
+      key: this,
+      read: () => {
+        const editor = this.view.dom.getBoundingClientRect();
+        const scroller = this.view.scrollDOM.getBoundingClientRect();
+        const screen = readVisibleArea();
+        const top = Math.max(scroller.top, screen.top) + 8;
+        const bottom = Math.min(scroller.bottom, screen.bottom) - 8;
+        const right = Math.min(editor.right, screen.right) - 8;
+        const left = Math.max(editor.left, screen.left) + 8;
+        const height = Math.min(
+          this.dom.offsetHeight,
+          Math.max(0, bottom - top),
+        );
+        const width = Math.min(this.dom.offsetWidth, Math.max(0, right - left));
+        const current = currentSearchMatch(this.view.state, this.matches);
+        const match = current < 0 ? undefined : this.matches[current];
+        const overlap =
+          match &&
+          renderedMatchRects(this.view, match).some((rect) => {
+            // DOM ranges can include buffered lines outside the physical viewport.
+            const clipped = {
+              top: Math.max(rect.top, scroller.top, screen.top),
+              bottom: Math.min(rect.bottom, scroller.bottom, screen.bottom),
+              left: Math.max(rect.left, scroller.left, screen.left),
+              right: Math.min(rect.right, scroller.right, screen.right),
+            };
+            return (
+              clipped.bottom > clipped.top &&
+              clipped.right >= clipped.left &&
+              clipped.top < top + height + 8 &&
+              clipped.bottom > top - 8 &&
+              clipped.right >= right - width - 8 &&
+              clipped.left <= right + 8
+            );
+          });
+        // Retain the lower position while a small reveal scroll clears its foot.
+        const below = Boolean(
+          overlap &&
+          (this.view.scrollDOM.scrollTop < 1 || this.margin.bottom > 0),
+        );
+        return {
+          top: (below ? Math.max(top, bottom - height) : top) - editor.top,
+          right: editor.right - right,
+          maxHeight: Math.max(0, bottom - top),
+          maxWidth: Math.max(0, right - left),
+          margin: height + 16,
+          below,
+          match,
+        };
+      },
+      write: (box) => {
+        if (this.destroyed) return;
+        this.dom.style.top = `${box.top}px`;
+        this.dom.style.right = `${box.right}px`;
+        this.dom.style.maxHeight = `${box.maxHeight}px`;
+        this.dom.style.maxWidth = `${box.maxWidth}px`;
+        this.margin = box.below
+          ? { top: 0, bottom: box.margin }
+          : { top: box.margin, bottom: 0 };
+        if (this.reveal && box.match) {
+          this.reveal = false;
+          const state = this.view.state;
+          const query = this.query;
+          // A measure write runs inside a view update. Dispatch after it ends.
+          queueMicrotask(() => {
+            if (
+              this.destroyed ||
+              this.view.state.doc !== state.doc ||
+              !this.view.state.selection.eq(state.selection) ||
+              this.query !== query
+            )
+              return;
+            this.view.dispatch({
+              effects: EditorView.scrollIntoView(
+                measurableRange(state, state.selection.main),
+                { y: 'nearest' },
+              ),
+            });
+          });
+        }
+      },
+    });
+  };
+
+  scrollMargin(): { top: number; bottom: number } {
+    return this.margin;
   }
 
   mount(): void {
     this.searchField.select();
+    this.observer = new ResizeObserver(this.resized);
+    this.observer.observe(this.dom);
+    this.observer.observe(this.view.dom);
+    this.stopViewport = followVisibleArea(this.resized);
+    this.view.scrollDOM.addEventListener('scroll', this.measure);
+    this.reveal = true;
+    this.measure();
   }
 }
 
+// The search package wraps createPanel with its own panel constructor, so
+// getPanel(view, createSearchPanel) cannot retrieve our measured instance.
+const searchPanels = new WeakMap<EditorView, SearchPanel>();
+
+/**
+ * Opens the panel with the replace row shown and the focus in Replace with.
+ *
+ * The key of the shortcut table, from the text or from a field of the panel.
+ * A note that cannot change opens the find row alone.
+ */
+export const openReplacePanel: Command = (view) => {
+  openSearchPanel(view);
+  searchPanels.get(view)?.openReplace();
+  return true;
+};
+
 /** The panel of `search({ createPanel })`. */
 export function createSearchPanel(view: EditorView): Panel {
-  return new SearchPanel(view);
+  const panel = new SearchPanel(view);
+  searchPanels.set(view, panel);
+  return panel;
 }
+
+/** Search stays outside the flow; its measured footprint keeps matches clear. */
+export const searchPanelScrollMargins = EditorView.scrollMargins.of((view) => {
+  return searchPanels.get(view)?.scrollMargin() ?? null;
+});

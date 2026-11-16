@@ -63,3 +63,18 @@ export const transitionRaise =
  */
 export const transitionAction =
   'motion-safe:transition motion-safe:duration-150 motion-safe:ease-soft motion-safe:starting:translate-x-2 motion-safe:starting:opacity-0';
+
+/** Direct sheet release motion, with a fade for reduced motion. */
+export const phoneSheetMotion = {
+  duration: 200,
+  fadeDuration: 80,
+  easing: 'ease-out',
+} as const;
+
+/** Scroll shadows change while content passes under a fixed region. */
+export const transitionScrollEdge =
+  'before:transition-shadow before:duration-120 motion-reduce:before:transition-none after:transition-shadow after:duration-120 motion-reduce:after:transition-none';
+
+/** A scroll cue follows hidden content with the region edge timing. */
+export const transitionScrollCue =
+  'transition-opacity duration-120 motion-reduce:transition-none';

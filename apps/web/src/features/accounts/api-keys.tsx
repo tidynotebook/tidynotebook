@@ -1,3 +1,24 @@
+import {
+  Form,
+  ListRow,
+  Inset,
+  Stack,
+  Inline,
+  RowCopy,
+  SectionHeading,
+  Button,
+  DialogBody,
+  DialogFooter,
+  MetaFacts,
+  LoadingState,
+  Notice,
+  PlusIcon,
+  ReadOnlyField,
+  SelectField,
+  TextField,
+} from '@notesapp/ui';
+
+import { SettingsDialog } from './settings-dialog.tsx';
 /** Personal API keys are account controls, shared by every API client (0208). */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
@@ -8,35 +29,22 @@ import {
   type ApiKeyCreated,
 } from '@notesapp/api-client';
 import { apiKeyNameProblem, maxApiKeys } from '@notesapp/core';
-import {
-  Button,
-  Dialog,
-  DialogBody,
-  DialogFooter,
-  ListRow,
-  LoadingState,
-  Notice,
-  ReadOnlyField,
-  SelectField,
-  TextField,
-  pageListClassName,
-} from '@notesapp/ui';
+
 import { problemMessage } from '../../app.tsx';
-import {
-  apiKeyExpiryChoices,
-  apiKeyFacts,
-  apiKeyRevokeText,
-} from '../../lib/api-keys.ts';
+import { apiKeyExpiryChoices, apiKeyRevokeText } from '../../lib/api-keys.ts';
 import { problemCode } from '../../lib/problem-text.ts';
 import { sectionOf, settingsSections } from '../../lib/page-sections.ts';
 import { useNow } from '../../shell/now.ts';
-import { SettingsSection } from './settings-section.tsx';
+import { relativeTime } from '../../lib/relative-time.ts';
+import { usePhoneSettings, SettingsSection } from './settings-section.tsx';
 
 export function ApiKeySettings(): ReactNode {
+  const phone = usePhoneSettings();
   const [keys, setKeys] = useState<readonly ApiKey[] | null>(null);
   const [error, setError] = useState('');
   const [load, setLoad] = useState(0);
   const [creating, setCreating] = useState(false);
+  const [newKey, setNewKey] = useState<ApiKeyCreated | null>(null);
   const [revoking, setRevoking] = useState<ApiKey | null>(null);
   const createButton = useRef<HTMLButtonElement | null>(null);
   const firstRevokeButton = useRef<HTMLButtonElement | null>(null);
@@ -69,10 +77,20 @@ export function ApiKeySettings(): ReactNode {
       section={sectionOf(settingsSections, 'api-keys')}
       description="Let a program read and change your account and notes. Each key has all your current access. Keep it as safe as your password."
     >
+      {newKey === null ? null : (
+        <CreatedKey
+          key={newKey.key.keyId}
+          created={newKey}
+          onClose={() => {
+            setNewKey(null);
+            returnFocus();
+          }}
+        />
+      )}
       {error === '' ? null : <Notice tone="problem" message={error} />}
       {keys === null ? (
         error === '' ? (
-          <LoadingState label="Reading API keys" />
+          <LoadingState label="Loading API keys" />
         ) : (
           <Button variant="secondary" onClick={() => setLoad(load + 1)}>
             Try again
@@ -80,25 +98,57 @@ export function ApiKeySettings(): ReactNode {
         )
       ) : (
         <>
+          {phone ? null : (
+            <SectionHeading
+              label="Keys"
+              divider
+              action={
+                <Button
+                  variant="secondary"
+                  size="compact"
+                  label="Create API key"
+                  icon={<PlusIcon />}
+                  buttonRef={createButton}
+                  disabled={keys.length >= maxApiKeys}
+                  onClick={() => setCreating(true)}
+                >
+                  Create API key
+                </Button>
+              }
+            />
+          )}
           {keys.length === 0 ? (
-            <p className="mb-3 mt-0 text-control text-muted">
-              No API keys. Create a key for your program.
-            </p>
+            <Inset
+              padY={{ fine: 3, coarse: 4 }}
+              padX={{ fine: 0, coarse: 4 }}
+              as="p"
+              className="text-secondary text-muted"
+            >
+              {phone
+                ? 'No API keys. Create a key for your program.'
+                : 'No API keys yet.'}
+            </Inset>
           ) : (
-            <ul className={`${pageListClassName()} mb-3`}>
+            <Stack gap={0} pad={0} as="ul">
               {keys.map((key) => (
                 <ListRow
                   key={key.keyId}
-                  className="flex items-center justify-between gap-4"
+                  className="flex items-center justify-between"
                 >
-                  <div className="min-w-0">
-                    <p className="m-0 break-words text-ui text-strong">
+                  <RowCopy>
+                    <p className="m-0 break-words text-body text-strong">
                       {key.name}
                     </p>
-                    <p className="mb-0 mt-1 text-control text-muted">
-                      {apiKeyFacts(key, now)}
-                    </p>
-                  </div>
+                    <MetaFacts
+                      className="ui-settings-meta"
+                      facts={[
+                        `Created ${relativeTime(key.createdAt, now)}`,
+                        key.lastUsedAt === null
+                          ? 'Not used yet'
+                          : `Last used ${relativeTime(key.lastUsedAt, now)}`,
+                      ]}
+                    />
+                  </RowCopy>
                   <Button
                     variant="secondary"
                     tone="danger"
@@ -110,29 +160,45 @@ export function ApiKeySettings(): ReactNode {
                   </Button>
                 </ListRow>
               ))}
-            </ul>
+            </Stack>
           )}
           {keys.length >= maxApiKeys ? (
-            <p className="mb-3 mt-0 text-control text-muted">
+            <Inset
+              padY={3}
+              padX={{ fine: 0, coarse: 4 }}
+              as="p"
+              className="text-secondary text-muted"
+            >
               Your account has 25 API keys. Revoke a key before you create
               another.
-            </p>
+            </Inset>
           ) : null}
-          <Button
-            variant="secondary"
-            buttonRef={createButton}
-            disabled={keys.length >= maxApiKeys}
-            onClick={() => setCreating(true)}
-          >
-            Create API key
-          </Button>
+          {phone ? (
+            <ListRow
+              as="button"
+              density="setting"
+
+              buttonRef={createButton}
+              aria-label="Create API key"
+              className="text-left"
+              labelTone="accent"
+              label="Create API key"
+              leading={<PlusIcon />}
+              disabled={keys.length >= maxApiKeys}
+              onClick={() => setCreating(true)}
+            ></ListRow>
+          ) : null}
         </>
       )}
       {creating ? (
         <CreateKeyDialog
           onClose={() => setCreating(false)}
           returnFocus={returnFocus}
-          onCreated={(key) => setKeys((held) => [key, ...(held ?? [])])}
+          onCreated={(created) => {
+            setKeys((held) => [created.key, ...(held ?? [])]);
+            setNewKey(created);
+            setCreating(false);
+          }}
         />
       ) : null}
       {revoking === null ? null : (
@@ -158,15 +224,13 @@ function CreateKeyDialog({
   returnFocus,
 }: {
   readonly onClose: () => void;
-  readonly onCreated: (key: ApiKey) => void;
+  readonly onCreated: (created: ApiKeyCreated) => void;
   readonly returnFocus: () => void;
 }): ReactNode {
   const [name, setName] = useState('');
   const [days, setDays] = useState('90');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [created, setCreated] = useState<ApiKeyCreated | null>(null);
-  const [copied, setCopied] = useState(false);
   const pending = useRef(false);
   const close = (): void => {
     if (!pending.current) onClose();
@@ -187,8 +251,7 @@ function CreateKeyDialog({
       });
       if (result.data === undefined) setError(problemMessage(result.error));
       else {
-        setCreated(result.data);
-        onCreated(result.data.key);
+        onCreated(result.data);
       }
     } catch {
       setError('The key could not be created. Try again.');
@@ -198,96 +261,117 @@ function CreateKeyDialog({
     }
   }
   return (
-    <Dialog
+    <SettingsDialog
       open
-      title={created === null ? 'Create API key' : 'Copy your API key'}
+      title="Create API key"
       titleId="create-api-key-title"
       width="small"
       onClose={close}
       returnFocus={returnFocus}
     >
-      {created === null ? (
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            void submit();
+      <Form
+        regions
+
+        className="flex overflow-hidden flex-1 flex-col"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void submit();
+        }}
+      >
+        <DialogBody>
+          <Inset as="p" className="text-secondary text-muted">
+            This key can read, change, and delete your notes. Use a separate key
+            for each program.
+          </Inset>
+          <TextField
+            id="api-key-name"
+            label="Program name"
+            value={name}
+            onChange={(value) => {
+              setName(value);
+              setError('');
+            }}
+            required
+            autoFocus
+            error={error}
+          />
+          <SelectField
+            id="api-key-expiry"
+            label="Expires after"
+            value={days}
+            options={apiKeyExpiryChoices}
+            onChange={setDays}
+            hint="The program loses access when the key expires."
+          />
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="ghost" onClick={close} disabled={busy}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={busy}>
+            {busy ? 'Creating key' : 'Create key'}
+          </Button>
+        </DialogFooter>
+      </Form>
+    </SettingsDialog>
+  );
+}
+
+/** Show the one-time secret in the section after key creation. */
+function CreatedKey({
+  created,
+  onClose,
+}: {
+  readonly created: ApiKeyCreated;
+  readonly onClose: () => void;
+}): ReactNode {
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState('');
+  async function copy(): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(created.token);
+      setCopied(true);
+      setError('');
+    } catch {
+      setError('The key could not be copied. Select it and copy it.');
+      document.getElementById('api-key-secret')?.focus();
+    }
+  }
+
+  return (
+    <Stack
+      aria-label="Copy your API key"
+      pad={3}
+      gap={3}
+      as="section"
+      className="rounded-lg border border-edge-subtle"
+    >
+      <Inset as="h3" className="text-title-header text-strong">
+        Copy your API key
+      </Inset>
+      <Inset id="api-key-secret-help" as="p" className="text-body text-strong">
+        Copy this key now. You cannot read it again after you leave this
+        section. Store it in a safe place. Do not put it in a web address.
+      </Inset>
+      <ReadOnlyField
+        id="api-key-secret"
+        label="API key"
+        value={created.token}
+        describedBy="api-key-secret-help"
+      />
+      {error === '' ? null : <Notice tone="problem" message={error} />}
+      <Inline gap={2} justify="end" as="div">
+        <Button
+          variant="secondary"
+          onClick={() => {
+            void copy();
           }}
         >
-          <DialogBody>
-            <p className="mb-4 mt-0 text-ui text-strong">
-              This key can read, change, and delete your notes. Use a separate
-              key for each program.
-            </p>
-            <TextField
-              id="api-key-name"
-              label="Program name"
-              value={name}
-              onChange={setName}
-              required
-              autoFocus
-              error={error}
-            />
-            <SelectField
-              id="api-key-expiry"
-              label="Expires after"
-              value={days}
-              options={apiKeyExpiryChoices}
-              onChange={setDays}
-              hint="The program loses access when the key expires."
-            />
-          </DialogBody>
-          <DialogFooter>
-            <Button variant="ghost" onClick={close} disabled={busy}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={busy}>
-              {busy ? 'Creating key' : 'Create key'}
-            </Button>
-          </DialogFooter>
-        </form>
-      ) : (
-        <>
-          <DialogBody>
-            <p
-              id="api-key-secret-help"
-              className="mb-4 mt-0 text-ui text-strong"
-            >
-              Copy this key now. You cannot read it again after you close this
-              dialog. Store it in a safe place. Do not put it in a web address.
-            </p>
-            <ReadOnlyField
-              id="api-key-secret"
-              label="API key"
-              value={created.token}
-              takeFocus
-              describedBy="api-key-secret-help"
-            />
-            {error === '' ? null : <Notice tone="problem" message={error} />}
-          </DialogBody>
-          <DialogFooter>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                void navigator.clipboard
-                  .writeText(created.token)
-                  .then(() => {
-                    setCopied(true);
-                    setError('');
-                  })
-                  .catch(() =>
-                    setError(
-                      'The key could not be copied. Select it and copy it.',
-                    ),
-                  );
-              }}
-            >
-              {copied ? 'Copied' : 'Copy key'}
-            </Button>
-            <Button onClick={close}>Done</Button>
-          </DialogFooter>
-        </>
-      )}
-    </Dialog>
+          {copied ? 'Copied' : 'Copy key'}
+        </Button>
+        <Button onClick={onClose}>Done</Button>
+      </Inline>
+    </Stack>
   );
 }
 
@@ -326,7 +410,7 @@ function RevokeKeyDialog({
     }
   }
   return (
-    <Dialog
+    <SettingsDialog
       open
       title="Revoke API key?"
       titleId="revoke-api-key-title"
@@ -335,12 +419,10 @@ function RevokeKeyDialog({
       returnFocus={returnFocus}
     >
       <DialogBody>
-        <p className="m-0 text-ui text-strong">
+        <p className="m-0 text-body text-strong">
           {apiKeyRevokeText(apiKey.name)}
         </p>
-        {error === '' ? null : (
-          <Notice className="mt-3" tone="problem" message={error} />
-        )}
+        {error === '' ? null : <Notice tone="problem" message={error} />}
       </DialogBody>
       <DialogFooter>
         <Button variant="ghost" onClick={onClose}>
@@ -356,6 +438,6 @@ function RevokeKeyDialog({
           {busy ? 'Revoking key' : 'Revoke key'}
         </Button>
       </DialogFooter>
-    </Dialog>
+    </SettingsDialog>
   );
 }

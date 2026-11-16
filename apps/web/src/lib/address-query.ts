@@ -2,9 +2,9 @@
  * One member of the query of an address of the application.
  *
  * A screen of the application builds no URL object (the boundary check
- * keeps URL construction in generated output), so the two routes that take
- * a value from the address bar, sign-in and the account portal, read and
- * write their one member here. The text follows the form encoding that a
+ * keeps URL construction in generated output), so the routes that take a
+ * value from the address bar, sign-in, the account portal and the Settings
+ * modal, read and write their one member here. The text follows the form encoding that a
  * browser writes: `&` separates the members, `=` a name from its value, and
  * `+` is a space.
  */
@@ -62,4 +62,24 @@ export function queryAddress(
   value: string,
 ): string {
   return `${path}?${encodeURIComponent(name)}=${encodeURIComponent(value)}`;
+}
+
+/**
+ * A query with every member `name` replaced by one member of `value`, at the
+ * end, or with none when `value` is `null`. The other members keep their
+ * text. The answer has its `?`, or is empty when no member is left.
+ */
+export function queryWith(
+  search: string,
+  name: string,
+  value: string | null,
+): string {
+  const query = search.startsWith('?') ? search.slice(1) : search;
+  const members = (query === '' ? [] : query.split('&')).filter((member) => {
+    const at = member.indexOf('=');
+    return decodePart(at === -1 ? member : member.slice(0, at)) !== name;
+  });
+  if (value !== null)
+    members.push(`${encodeURIComponent(name)}=${encodeURIComponent(value)}`);
+  return members.length === 0 ? '' : `?${members.join('&')}`;
 }

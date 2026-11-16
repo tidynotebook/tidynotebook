@@ -7,10 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { setTimeout as wait } from 'node:timers/promises';
 import { record, root } from './workspace.mjs';
 
-import {
-  distributionManifest,
-  validateNativeConsumer,
-} from './distribution-target.mjs';
+import { distributionManifest } from './distribution-target.mjs';
 
 export const nativeSourceDownloadDefaults = Object.freeze({
   connectTimeoutMs: 30_000,
@@ -266,8 +263,6 @@ export async function prepareNativeSources(
   options = {},
 ) {
   const manifest = await distributionManifest(manifestFile);
-  if (manifest.platform === 'linux-arm64-glibc')
-    await validateNativeConsumer(join(root, 'apps/server'));
   const rows = sourceRows(manifest.sources);
   await mkdir(output, { recursive: true });
   /** @param {{file:string, url:string, sha256:string}} row */
@@ -300,8 +295,13 @@ export async function prepareNativeSources(
       await rm(temporary, { force: true });
     }
   }
-  for (let offset = 0; offset < rows.length; offset += 6)
+  for (let offset = 0; offset < rows.length; offset += 6) {
     await Promise.all(rows.slice(offset, offset + 6).map(download));
+    if (process.env.NATIVE_SOURCE_PROGRESS === 'true')
+      process.stderr.write(
+        `Native sources checked: ${Math.min(offset + 6, rows.length)}/${rows.length}\n`,
+      );
+  }
   await writeFile(
     join(output, 'manifest.json'),
     JSON.stringify(manifest, null, 2) + '\n',

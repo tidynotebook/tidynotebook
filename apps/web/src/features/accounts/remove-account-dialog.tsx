@@ -1,3 +1,13 @@
+import {
+  Form,
+  Inset,
+  Button,
+  DialogBody,
+  DialogFooter,
+  TextField,
+} from '@notesapp/ui';
+
+import { SettingsDialog } from './settings-dialog.tsx';
 /**
  * The dialog that removes the account of the person, which Settings and the
  * consent page both open (record 0111). It is a module of its own, so the
@@ -7,13 +17,6 @@ import { useState, type ReactNode } from 'react';
 
 import { removeOwnAccount } from '@notesapp/api-client';
 import type { LocalStore } from '@notesapp/sync';
-import {
-  Button,
-  Dialog,
-  DialogBody,
-  DialogFooter,
-  TextField,
-} from '@notesapp/ui';
 
 import { problemMessage } from '../../app.tsx';
 import { problemCode } from '../../lib/problem-text.ts';
@@ -65,24 +68,27 @@ export function RemoveOwnAccountDialog({
   };
 
   return (
-    <Dialog
+    <SettingsDialog
       open
       title="Delete your account?"
       titleId="remove-own-account-title"
       width="small"
       onClose={onClose}
     >
-      <form
+      <Form
+        regions
+
+        className="flex overflow-hidden flex-1 flex-col"
         onSubmit={(event): void => {
           event.preventDefault();
           void submit();
         }}
       >
         <DialogBody>
-          <p className="mb-4 mt-0 text-ui text-strong">
+          <Inset as="p" className="text-body text-strong">
             Your account and every note in your workspaces go for good. You are
             signed out on every device.
-          </p>
+          </Inset>
           <TextField
             id="remove-own-password"
             label="Password"
@@ -92,7 +98,10 @@ export function RemoveOwnAccountDialog({
             required
             autoFocus
             error={error}
-            onChange={setPassword}
+            onChange={(value) => {
+              setPassword(value);
+              setError('');
+            }}
           />
         </DialogBody>
         <DialogFooter>
@@ -107,7 +116,7 @@ export function RemoveOwnAccountDialog({
             {busy ? 'Deleting your account' : 'Delete account'}
           </Button>
         </DialogFooter>
-      </form>
-    </Dialog>
+      </Form>
+    </SettingsDialog>
   );
 }

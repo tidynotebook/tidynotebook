@@ -29,10 +29,12 @@ import {
   ChangeSet,
   EditorSelection,
   EditorState,
+  StateEffect,
   type ChangeSpec,
   type Extension,
   Transaction,
   type Range,
+  type SelectionRange,
   type TransactionSpec,
 } from '@codemirror/state';
 import {
@@ -43,11 +45,16 @@ import {
   type DecorationSet,
   type ViewUpdate,
 } from '@codemirror/view';
+import { getSearchQuery, setSearchQuery } from '@codemirror/search';
 import type { SyntaxNode, Tree } from '@lezer/common';
-import { diffChars } from 'diff';
+import { readVisibleArea } from '@notesapp/ui';
+import { diffArrays, diffChars } from 'diff';
+import { TableScrollRecords } from './table-scroll.ts';
+import { fitTableColumns } from './table-widths.ts';
 import { isEditOfAPerson } from './commands.ts';
 import {
   delimiterRowParts,
+  contentText,
   tableAlignments,
   type ColumnAlign,
 } from './live-preview.ts';
@@ -107,7 +114,9 @@ function cellBox(state: EditorState, from: number, to: number): TableCellBox {
   const text = state.doc.sliceString(from, to);
   const trimmed = text.trim();
   if (trimmed === '') {
-    const at = from + Math.min(1, to - from);
+    // Keep the caret before a visible space, inside the cell mark. At the
+    // end of a one-space cell it would land on the hidden pipe instead.
+    const at = from + Math.min(1, Math.max(0, to - from - 1));
     return { from, to, textFrom: at, textTo: at };
   }
   const lead = text.length - text.trimStart().length;
@@ -129,7 +138,7 @@ function cellsBetween(
   const cells: TableCellBox[] = [];
   let at = from;
   for (const pipe of pipes) {
-    if (pipe.from > at) cells.push(cellBox(state, at, pipe.from));
+    if (pipe.from > at || at > from) cells.push(cellBox(state, at, pipe.from));
     at = pipe.to;
   }
   if (to > at) cells.push(cellBox(state, at, to));
@@ -192,6 +201,48 @@ export function tableAt(state: EditorState, pos: number): TableBox | null {
   return null;
 }
 
+/** Finish a table that crosses the current parser boundary. */
+function tableTree(state: EditorState, from: number, to: number): Tree {
+  let tree = ensureSyntaxTree(state, to, 250) ?? syntaxTree(state);
+  for (;;) {
+    let end = to;
+    let found = false;
+    tree.iterate({
+      from,
+      to,
+      enter(node) {
+        if (node.name !== 'Table') return true;
+        found = true;
+        end = Math.max(end, node.to);
+        return false;
+      },
+    });
+    if (!found || end >= state.doc.length) return tree;
+    // Parsing a little beyond the table proves its end. A partial table
+    // grows until the parser reaches its last row. No source scan is used.
+    const next = ensureSyntaxTree(
+      state,
+      Math.min(state.doc.length, end + 4096),
+      // A table can have up to 10,000 cells. Finish this bounded block
+      // before sizing it, including when other tests or views use the CPU.
+      250,
+    );
+    if (next === null || next === tree) return tree;
+    let nextEnd = to;
+    next.iterate({
+      from,
+      to,
+      enter(node) {
+        if (node.name !== 'Table') return true;
+        nextEnd = Math.max(nextEnd, node.to);
+        return false;
+      },
+    });
+    tree = next;
+    if (nextEnd <= end) return tree;
+  }
+}
+
 /** Every table that meets the range from `from` to `to`. */
 export function tablesIn(
   state: EditorState,
@@ -199,7 +250,7 @@ export function tablesIn(
   to: number,
 ): readonly TableBox[] {
   const tables: TableBox[] = [];
-  treeOf(state, to).iterate({
+  tableTree(state, from, to).iterate({
     from,
     to,
     enter: (node) => {
@@ -237,6 +288,94 @@ export function cellAt(table: TableBox, pos: number): CellRef | null {
   if (row === null || row.kind === 'delimiter' || row.cells.length === 0)
     return null;
   return { row: rows.indexOf(row), column: columnAt(row, pos) };
+}
+
+/**
+ * The position of a row that holds a caret nearest to one side: the end of
+ * its last text or the start of its first, or, in a row with no text, the
+ * point of its last or first empty cell, which draws a caret too.
+ */
+function rowAnchor(row: TableRowBox | undefined, last: boolean): number | null {
+  if (row === undefined || row.kind === 'delimiter') return null;
+  const texts = row.cells.filter((cell) => cell.textTo > cell.textFrom);
+  const text = last ? texts.at(-1) : texts[0];
+  if (text !== undefined) return last ? text.textTo : text.textFrom;
+  const empty = last ? row.cells.at(-1) : row.cells[0];
+  return empty?.textFrom ?? null;
+}
+
+/**
+ * One end of a range moved off hidden table syntax to a position beside it
+ * that draws a caret.
+ *
+ * A pipe, the padding around a cell and the delimiter row draw nothing that
+ * holds a caret, so the editor cannot scroll to a range that ends there. A
+ * position inside the text of a cell, or the point of an empty cell, stays.
+ * Any other position in a row moves to the end of the text before it
+ * (`backward`) or the start of the text after it, in the same row; a row
+ * with no text moves to the point of an empty cell. A delimiter row moves
+ * to the row before or after it.
+ */
+function measurableEnd(
+  table: TableBox,
+  pos: number,
+  backward: boolean,
+): number {
+  const row = rowAt(table, pos);
+  if (row === null) return pos;
+  if (row.kind === 'delimiter') {
+    const index = table.rows.indexOf(row);
+    const near = table.rows[backward ? index - 1 : index + 1];
+    const far = table.rows[backward ? index + 1 : index - 1];
+    return rowAnchor(near, backward) ?? rowAnchor(far, !backward) ?? pos;
+  }
+  if (
+    row.cells.some((cell) =>
+      cell.textTo > cell.textFrom
+        ? pos >= cell.textFrom && pos <= cell.textTo
+        : pos === cell.textFrom,
+    )
+  )
+    return pos;
+  const texts = row.cells.filter((cell) => cell.textTo > cell.textFrom);
+  const before = texts.filter((cell) => cell.textTo <= pos).at(-1)?.textTo;
+  const after = texts.find((cell) => cell.textFrom >= pos)?.textFrom;
+  return (
+    (backward ? (before ?? after) : (after ?? before)) ??
+    rowAnchor(row, backward) ??
+    pos
+  );
+}
+
+/**
+ * The range to scroll to for `range`, with each end that stands on hidden
+ * table syntax moved to the cell text beside it, inward.
+ *
+ * It changes only where the editor scrolls, never a selection or the text.
+ * The direction of the range is kept, and an empty range stays empty. A
+ * range that covers hidden syntax alone becomes the caret at the end of the
+ * text before it. Each end reads the spans of its own row alone.
+ */
+export function measurableRange(
+  state: EditorState,
+  range: SelectionRange,
+): SelectionRange {
+  const from = Math.min(range.anchor, range.head);
+  const to = Math.max(range.anchor, range.head);
+  const at = (pos: number, backward: boolean): number => {
+    const table = tableAt(state, pos);
+    return table === null ? pos : measurableEnd(table, pos, backward);
+  };
+  if (from === to) {
+    const pos = at(from, true);
+    return pos === from ? range : EditorSelection.cursor(pos, range.assoc);
+  }
+  const end = at(to, true);
+  const start = Math.min(at(from, false), end);
+  if (start === from && end === to) return range;
+  return range.head >= range.anchor
+    ? EditorSelection.range(start, end)
+    : EditorSelection.range(end, start);
 }
 
 /** Whether `pos` stands in a cell a person can write in. */
@@ -296,9 +435,15 @@ export function tableData(state: EditorState, table: TableBox): TableData {
   };
 }
 
+type TableTextPart = Span & { readonly key: string };
+type TableTextRow = TableTextPart & {
+  readonly cells: readonly TableTextPart[];
+};
+
 /** One table written as text, and where each cell lands in it. */
 export type WrittenTable = {
   readonly text: string;
+  readonly rows: readonly TableTextRow[];
   /** The text range of one cell, as offsets into `text`. */
   readonly cell: (ref: CellRef) => Span;
 };
@@ -329,20 +474,42 @@ export function writeTable(data: TableData): WrittenTable {
     `|${widths
       .map((width, column) => ` ${(cells[column] ?? '').padEnd(width)} `)
       .join('|')}|`;
-  const delimiter = `|${widths
-    .map(
-      (width, column) =>
-        ` ${delimiterCell(data.alignments[column] ?? null, width)} `,
-    )
-    .join('|')}|`;
+  const delimiterCells = widths.map((width, column) =>
+    delimiterCell(data.alignments[column] ?? null, width),
+  );
+  const delimiter = `|${delimiterCells.map((text) => ` ${text} `).join('|')}|`;
   const lines = [line(data.header), delimiter, ...data.body.map(line)];
   const separator = `\n${data.lead}`;
+  let offset = 0;
+  const writtenRows = lines.map((text, index): TableTextRow => {
+    const values =
+      index === 1 ? delimiterCells : (rows[index === 0 ? 0 : index - 1] ?? []);
+    const from = offset;
+    let cellFrom = from + 2;
+    const cells = widths.map((width, column): TableTextPart => {
+      const value = values[column] ?? '';
+      const part = { from: cellFrom, to: cellFrom + value.length, key: value };
+      cellFrom += width + 3;
+      return part;
+    });
+    offset += text.length + separator.length;
+    return {
+      from,
+      to: from + text.length,
+      key:
+        index === 0
+          ? 'header'
+          : index === 1
+            ? 'delimiter'
+            : JSON.stringify(cells.map((cell) => cell.key)),
+      cells,
+    };
+  });
   const lineStart = (index: number): number =>
-    lines
-      .slice(0, index)
-      .reduce((sum, text) => sum + text.length + separator.length, 0);
+    writtenRows[index]?.from ?? offset;
   return {
     text: lines.join(separator),
+    rows: writtenRows,
     cell: ({ row, column }): Span => {
       const from =
         lineStart(row === 0 ? 0 : row + 1) +
@@ -354,30 +521,180 @@ export function writeTable(data: TableData): WrittenTable {
   };
 }
 
-/**
- * The smallest character changes that turn one table into its new text.
- *
- * A command writes the whole table again, and most of it is the same. The
- * changes keep every unchanged character where it is, so the text of a cell
- * that the command did not touch is never replaced.
- */
-function tableChanges(
-  state: EditorState,
-  table: TableBox,
-  text: string,
-): readonly ChangeSpec[] {
-  const changes: ChangeSpec[] = [];
-  let at = table.from;
-  for (const part of diffChars(
-    state.doc.sliceString(table.from, table.to),
-    text,
-  )) {
-    if (part.added === true) changes.push({ from: at, insert: part.value });
-    else if (part.removed === true) {
+// Bound each structural search. When many parts change, pair that unmatched
+// region in source order. Character searches run only inside those parts.
+const tableDiffDistance = 128;
+
+function pairedTableParts<T extends TableTextPart>(
+  before: readonly T[],
+  after: readonly T[],
+): readonly [T, T][] {
+  const plan = diffArrays([...before], [...after], {
+    comparator: (left, right) => left.key === right.key,
+    maxEditLength: tableDiffDistance,
+  });
+  const pairs: [T, T][] = [];
+  const pair = (
+    fromA: number,
+    toA: number,
+    fromB: number,
+    toB: number,
+  ): void => {
+    for (let index = 0; index < Math.min(toA - fromA, toB - fromB); index++) {
+      const left = before[fromA + index],
+        right = after[fromB + index];
+      if (left !== undefined && right !== undefined) pairs.push([left, right]);
+    }
+  };
+  if (plan === undefined) {
+    pair(0, before.length, 0, after.length);
+    return pairs;
+  }
+  let oldAt = 0,
+    newAt = 0,
+    oldPending = 0,
+    newPending = 0;
+  for (const part of plan) {
+    const length = part.value.length;
+    if (part.added) newAt += length;
+    else if (part.removed) oldAt += length;
+    else {
+      pair(oldPending, oldAt, newPending, newAt);
+      pair(oldAt, oldAt + length, newAt, newAt + length);
+      oldAt += length;
+      newAt += length;
+      oldPending = oldAt;
+      newPending = newAt;
+    }
+  }
+  pair(oldPending, before.length, newPending, after.length);
+  return pairs;
+}
+
+/** Exact changes within one gap or changed cell, never across kept cells. */
+function tablePartChanges(
+  changes: ChangeSpec[],
+  from: number,
+  before: string,
+  after: string,
+): void {
+  if (before === after) return;
+  let prefix = 0;
+  while (
+    prefix < before.length &&
+    prefix < after.length &&
+    before.charCodeAt(prefix) === after.charCodeAt(prefix)
+  )
+    prefix++;
+  // Keep UTF-16 pairs together when only one half matches.
+  if (
+    prefix > 0 &&
+    before.charCodeAt(prefix - 1) >= 0xd800 &&
+    before.charCodeAt(prefix - 1) <= 0xdbff &&
+    before.charCodeAt(prefix) >= 0xdc00 &&
+    before.charCodeAt(prefix) <= 0xdfff
+  )
+    prefix--;
+  let suffix = 0;
+  while (
+    suffix < before.length - prefix &&
+    suffix < after.length - prefix &&
+    before.charCodeAt(before.length - suffix - 1) ===
+      after.charCodeAt(after.length - suffix - 1)
+  )
+    suffix++;
+  if (
+    suffix > 0 &&
+    before.charCodeAt(before.length - suffix) >= 0xdc00 &&
+    before.charCodeAt(before.length - suffix) <= 0xdfff &&
+    before.charCodeAt(before.length - suffix - 1) >= 0xd800 &&
+    before.charCodeAt(before.length - suffix - 1) <= 0xdbff
+  )
+    suffix--;
+  const oldText = before.slice(prefix, before.length - suffix);
+  const newText = after.slice(prefix, after.length - suffix);
+  const start = from + prefix;
+  if (oldText === '' || newText === '') {
+    changes.push({ from: start, to: start + oldText.length, insert: newText });
+    return;
+  }
+  const parts = diffChars(oldText, newText, {
+    maxEditLength: tableDiffDistance,
+  });
+  if (parts === undefined) {
+    changes.push({ from: start, to: start + oldText.length, insert: newText });
+    return;
+  }
+  let at = start;
+  for (const part of parts) {
+    if (part.added) changes.push({ from: at, insert: part.value });
+    else if (part.removed) {
       changes.push({ from: at, to: at + part.value.length });
       at += part.value.length;
     } else at += part.value.length;
   }
+}
+
+/** Diff grammar rows and cells before their padding, preserving exact output. */
+function tableChanges(
+  state: EditorState,
+  table: TableBox,
+  written: WrittenTable,
+): readonly ChangeSpec[] {
+  const before = state.doc.sliceString(table.from, table.to),
+    after = written.text;
+  const columns = Math.max(0, ...table.rows.map((row) => row.cells.length));
+  const oldRows = table.rows.map((row): TableTextRow => {
+    const cells = row.cells.map((cell): TableTextPart => ({
+      from: cell.textFrom - table.from,
+      to: cell.textTo - table.from,
+      key: state.doc.sliceString(cell.textFrom, cell.textTo),
+    }));
+    return {
+      from: row.from - table.from,
+      to: row.to - table.from,
+      cells,
+      key:
+        row.kind === 'header'
+          ? 'header'
+          : row.kind === 'delimiter'
+            ? 'delimiter'
+            : JSON.stringify(
+                Array.from(
+                  { length: columns },
+                  (_, column) => cells[column]?.key ?? '',
+                ),
+              ),
+    };
+  });
+  const changes: ChangeSpec[] = [];
+  const gap = (fromA: number, toA: number, fromB: number, toB: number): void =>
+    tablePartChanges(
+      changes,
+      table.from + fromA,
+      before.slice(fromA, toA),
+      after.slice(fromB, toB),
+    );
+  let oldAt = 0,
+    newAt = 0;
+  for (const [oldRow, newRow] of pairedTableParts(oldRows, written.rows)) {
+    gap(oldAt, oldRow.from, newAt, newRow.from);
+    let oldCellAt = oldRow.from,
+      newCellAt = newRow.from;
+    for (const [oldCell, newCell] of pairedTableParts(
+      oldRow.cells,
+      newRow.cells,
+    )) {
+      gap(oldCellAt, oldCell.from, newCellAt, newCell.from);
+      gap(oldCell.from, oldCell.to, newCell.from, newCell.to);
+      oldCellAt = oldCell.to;
+      newCellAt = newCell.to;
+    }
+    gap(oldCellAt, oldRow.to, newCellAt, newRow.to);
+    oldAt = oldRow.to;
+    newAt = newRow.to;
+  }
+  gap(oldAt, before.length, newAt, after.length);
   return changes;
 }
 
@@ -410,14 +727,31 @@ function tableCommandSpec(
   if (table === null) return null;
   const at = cellAt(table, pos) ?? { row: 0, column: 0 };
   if (at === null) return null;
-  const result = edit(tableData(state, table), at);
+  const data = tableData(state, table);
+  const result = edit(data, at);
   if (result === null) return null;
+  // Moving within existing cells changes selection only. Reformatting here
+  // can turn a long table into a large padding diff on every Tab press.
+  if (result.data === data) {
+    const row = table.rows.filter((row) => row.kind !== 'delimiter')[
+      result.target.row
+    ];
+    const cell = row?.cells[result.target.column];
+    if (cell !== undefined && cell.to > cell.from)
+      return {
+        selection:
+          result.select === 'text'
+            ? EditorSelection.range(cell.textFrom, cell.textTo)
+            : EditorSelection.cursor(cell.textTo),
+        filter: false,
+      };
+  }
   const written = writeTable(result.data);
   const cell = written.cell(result.target);
   const from = table.from + cell.from;
   const to = table.from + cell.to;
   return {
-    changes: tableChanges(state, table, written.text),
+    changes: tableChanges(state, table, written),
     selection:
       result.select === 'text'
         ? EditorSelection.range(from, to)
@@ -1220,12 +1554,12 @@ function tableEditFilter(
     if (grid !== null && owner !== null) {
       const pasted = pasteIntoTable(rewrite.data, owner.ref, grid);
       const written = writeTable(pasted.data);
-      specs.push(...tableChanges(start, table, written.text));
+      specs.push(...tableChanges(start, table, written));
       caret = { tableFrom: table.from, offset: written.cell(pasted.target).to };
       continue;
     }
     const written = writeTable(rewrite.data);
-    specs.push(...tableChanges(start, table, written.text));
+    specs.push(...tableChanges(start, table, written));
     if (rewrite.caret !== null)
       caret = {
         tableFrom: table.from,
@@ -1312,11 +1646,50 @@ type GridParts = {
   readonly atomic: DecorationSet;
 };
 
-/** The element that wraps the lines of one table. */
-const tableWrapper = BlockWrapper.create({
-  tagName: 'div',
-  attributes: { class: 'cm-np-table' },
-});
+type TableLayout = {
+  readonly columns: number;
+  readonly tracks: string;
+  readonly rules: string;
+};
+
+/** Read all source rows with an injected text measurement. */
+export function tableColumnWidths(
+  state: EditorState,
+  table: TableBox,
+  measure: (text: string, header: boolean) => number,
+): readonly number[] {
+  const columns =
+    table.rows.find((row) => row.kind === 'delimiter')?.cells.length ?? 0;
+  const widths = Array.from({ length: columns }, () => 0);
+  for (const row of table.rows) {
+    if (row.kind === 'delimiter') continue;
+    row.cells.slice(0, columns).forEach((cell, column) => {
+      const text = contentText(state, cell.textFrom, cell.textTo, true);
+      widths[column] = Math.max(
+        widths[column] ?? 0,
+        measure(text, row.kind === 'header'),
+      );
+    });
+  }
+  return widths;
+}
+
+/** Fixed pixel tracks and the borders of omitted trailing cells. */
+function tableLayout(widths: readonly number[]): TableLayout {
+  let total = 0;
+  return {
+    columns: widths.length,
+    tracks: widths.map((width) => `${String(width)}px`).join(' '),
+    rules:
+      widths
+        .slice(0, -1)
+        .map((width) => {
+          total += width;
+          return `linear-gradient(to right, transparent ${String(total - 1)}px, var(--notes-border-line) ${String(total - 1)}px, var(--notes-border-line) ${String(total)}px, transparent ${String(total)}px)`;
+        })
+        .join(', ') || 'none',
+  };
+}
 
 /** The ranges that a caret and a deletion treat as one unit. */
 const atomicMark = Decoration.mark({});
@@ -1331,6 +1704,8 @@ const atomicMark = Decoration.mark({});
 export function gridParts(
   state: EditorState,
   ranges: readonly Span[],
+  layouts: ReadonlyMap<number, TableLayout> = new Map(),
+  identity?: (table: TableBox) => string,
 ): GridParts {
   const wrappers: Range<BlockWrapper>[] = [];
   const atomic: Range<Decoration>[] = [];
@@ -1340,7 +1715,25 @@ export function gridParts(
       if (seen.has(table.from)) continue;
       seen.add(table.from);
       const start = table.rows[0]?.lineFrom ?? table.from;
-      wrappers.push(tableWrapper.range(start, table.to));
+      const measured = layouts.get(table.from);
+      const columns =
+        table.rows.find((row) => row.kind === 'delimiter')?.cells.length ?? 0;
+      const layout = measured?.columns === columns ? measured : undefined;
+      wrappers.push(
+        BlockWrapper.create({
+          tagName: 'div',
+          attributes: {
+            class: 'cm-np-table',
+            ...(identity === undefined
+              ? {}
+              : { 'data-notes-table': identity(table) }),
+            style:
+              layout === undefined
+                ? `--notes-table-columns: repeat(${String(columns)}, var(--container-table-cell-min)); --notes-table-rules: none`
+                : `--notes-table-columns: ${layout.tracks}; --notes-table-rules: ${layout.rules}`,
+          },
+        }).range(start, table.to),
+      );
       for (const row of table.rows) {
         if (row.kind === 'delimiter') {
           if (row.to > row.from)
@@ -1357,23 +1750,747 @@ export function gridParts(
   };
 }
 
-/** Builds the grid parts of the view and keeps them current. */
+const tableWords = new Intl.Segmenter(undefined, {
+  granularity: 'word',
+});
+
+const measuredTables = StateEffect.define<ReadonlyMap<number, TableLayout>>();
+
+/**
+ * The horizontal extent of the text that a range renders in one table.
+ *
+ * Both ends must be rendered inside `wrapper`, so a range that leaves the
+ * table, or one that is not drawn yet, has no extent. Only the text nodes
+ * of the range count, each clamped to the range: the box of a cell or a
+ * row that the range covers whole is wider than its text, and the padding
+ * or the empty width of a column is not part of a match. The walk starts
+ * at the first node of the range and stops after its last, so it reads the
+ * rendered nodes of the match alone. `start` is the left edge of the first
+ * text in document order, where the match starts.
+ */
+function renderedExtent(
+  view: EditorView,
+  wrapper: HTMLElement,
+  anchor: number,
+  head: number,
+): {
+  readonly left: number;
+  readonly right: number;
+  readonly start: number;
+  readonly top: number;
+  readonly bottom: number;
+  /** The document position where the highest text of the range starts. */
+  readonly topPos: number;
+  /** The document position where the lowest text of the range ends. */
+  readonly bottomPos: number;
+} | null {
+  const from = Math.min(anchor, head);
+  const to = Math.max(anchor, head);
+  const first = view.domAtPos(from, 1);
+  const last = view.domAtPos(to, -1);
+  if (!wrapper.contains(first.node) || !wrapper.contains(last.node))
+    return null;
+  const doc = view.dom.ownerDocument;
+  const range = doc.createRange();
+  range.setStart(first.node, first.offset);
+  range.setEnd(last.node, last.offset);
+  const walker = doc.createTreeWalker(
+    range.commonAncestorContainer,
+    NodeFilter.SHOW_TEXT,
+  );
+  // An element offset is a child index. Skip all preceding child subtrees.
+  const child = range.startContainer.childNodes[range.startOffset];
+  walker.currentNode = child ?? range.startContainer;
+  let node: Node | null = walker.currentNode;
+  if (node.nodeType !== Node.TEXT_NODE)
+    node = child ? walker.nextNode() : walker.nextSibling();
+  const part = doc.createRange();
+  let left = Infinity;
+  let right = -Infinity;
+  let start = Infinity;
+  let top = Infinity;
+  let bottom = -Infinity;
+  let topPos = from;
+  let bottomPos = to;
+  for (; node !== null; node = walker.nextNode()) {
+    if (range.comparePoint(node, 0) > 0) break;
+    if (!(node instanceof Text) || !range.intersectsNode(node)) continue;
+    const startOffset = node === range.startContainer ? range.startOffset : 0;
+    const endOffset =
+      node === range.endContainer ? range.endOffset : node.length;
+    part.setStart(node, startOffset);
+    part.setEnd(node, endOffset);
+    for (const rect of part.getClientRects()) {
+      if (rect.bottom <= rect.top) continue;
+      if (start === Infinity) start = rect.left;
+      left = Math.min(left, rect.left);
+      right = Math.max(right, rect.right);
+      // A text node that wraps draws its first line highest and its last
+      // line lowest, so its start and its end are the positions to show.
+      if (rect.top < top) {
+        top = rect.top;
+        topPos = view.posAtDOM(node, startOffset);
+      }
+      if (rect.bottom > bottom) {
+        bottom = rect.bottom;
+        bottomPos = view.posAtDOM(node, endOffset);
+      }
+    }
+  }
+  return left <= right
+    ? { left, right, start, top, bottom, topPos, bottomPos }
+    : null;
+}
+
+/**
+ * Whether a transaction moved the selection to one match of Find.
+ *
+ * Find keeps the focus in its own field, so the reveal below cannot wait for
+ * the focus of the text. Selecting every match and replacing every match
+ * name no single match, so neither moves a table.
+ */
+function selectsSearchMatch(transaction: Transaction): boolean {
+  return (
+    (transaction.isUserEvent('select.search') &&
+      !transaction.isUserEvent('select.search.matches')) ||
+    (transaction.isUserEvent('input.replace') &&
+      !transaction.isUserEvent('input.replace.all'))
+  );
+}
+
+/**
+ * Reveal only the active table after input and its column measurement.
+ *
+ * A match that Find selects is revealed whole in its own table, even while
+ * the focus is in the find field: the Replace button acts on that match, so
+ * a person must see it. Every other table keeps its own offset.
+ */
+class TableCaretReveal {
+  private readonly view: EditorView;
+  private pendingDoc: EditorState['doc'] | null = null;
+  private sequence = 0;
+  // A match of Find far down the note has no table yet when the text first
+  // scrolls to it, and a new table takes its remembered offset when it
+  // renders. The reveal tries again after each render of the grid, four
+  // times at most, and a person who acts ends the tries.
+  private searchRetry = -1;
+  private searchTries = 0;
+  private alive = true;
+
+  constructor(view: EditorView) {
+    this.view = view;
+  }
+
+  destroy(): void {
+    this.alive = false;
+    this.sequence++;
+  }
+
+  update(update: ViewUpdate): void {
+    const local = update.transactions.some(
+      (transaction) =>
+        transaction.isUserEvent('input') ||
+        transaction.isUserEvent('undo') ||
+        transaction.isUserEvent('redo'),
+    );
+    const search = update.transactions.some(selectsSearchMatch);
+    // A new query ends what an older one asked for.
+    if (
+      update.transactions.some((transaction) =>
+        transaction.effects.some((effect) => effect.is(setSearchQuery)),
+      )
+    )
+      this.cancel();
+    if (update.docChanged) {
+      this.sequence++;
+      // A replace of Find hands over the next match in the new text, which
+      // the scroll of the replace could not move off hidden syntax. It is
+      // measured in this state now, and again after the grid measures the
+      // changed columns.
+      if (search) {
+        this.pendingDoc = null;
+        this.schedule(true);
+        return;
+      }
+      this.pendingDoc =
+        local && inTableCell(update.state, update.state.selection.main.head)
+          ? update.state.doc
+          : null;
+      return;
+    }
+    if (
+      (update.focusChanged || update.selectionSet || local) &&
+      this.pendingDoc !== update.state.doc
+    )
+      this.schedule(search);
+  }
+
+  columnsReady(): void {
+    if (this.pendingDoc === this.view.state.doc) {
+      this.pendingDoc = null;
+      this.schedule();
+      return;
+    }
+    if (this.searchRetry === this.sequence && this.searchTries < 4) {
+      this.searchTries++;
+      this.schedule(true, true);
+    }
+  }
+
+  cancel(): void {
+    this.pendingDoc = null;
+    this.sequence++;
+  }
+
+  private schedule(search = false, retry = false): void {
+    const sequence = ++this.sequence;
+    if (search) {
+      this.searchRetry = sequence;
+      if (!retry) this.searchTries = 0;
+    }
+    this.view.requestMeasure({
+      key: this,
+      read: (view) => {
+        if (sequence !== this.sequence || (!view.hasFocus && !search))
+          return null;
+        const { head, anchor } = view.state.selection.main;
+        const table = tableAt(view.state, head);
+        if (table === null) return null;
+        // The vertical reveal of Find serves every row, the delimiter row
+        // included. The horizontal one needs the cell of the head.
+        const vertical = search ? this.hiddenHead(view) : null;
+        const at = cellAt(table, head);
+        const horizontal =
+          at === null
+            ? null
+            : this.horizontal(view, table, at, head, anchor, search);
+        return horizontal === null && vertical === null
+          ? null
+          : { horizontal, vertical };
+      },
+      write: (result) => {
+        if (sequence !== this.sequence || result === null) return;
+        // A table that renders in this pass takes its remembered offset in
+        // a later write of the grid, so a match that shows now can hide
+        // then. The reveal keeps its few tries after a render, and a person
+        // who acts ends them.
+        const horizontal = result.horizontal;
+        if (horizontal !== null && horizontal.delta !== 0) {
+          horizontal.wrapper.scrollLeft += horizontal.delta;
+          this.view.requestMeasure();
+        }
+        if (result.vertical !== null && this.searchRetry === sequence)
+          this.scrollTo(sequence, result.vertical);
+      },
+    });
+  }
+
+  /**
+   * The scroll target of a match of Find whose head is out of view, or
+   * `null` when it shows.
+   *
+   * The grid measures its columns after the text scrolled to the match, and
+   * a row can then grow or shrink under it. The head of the match, moved off
+   * hidden syntax, is measured again here, inside the editor, the visible
+   * area and the margins of the editor, such as the floating find card.
+   */
+  private hiddenHead(view: EditorView): SelectionRange | null {
+    const selection = view.state.selection.main;
+    const target = measurableRange(view.state, selection);
+    const side = target.head > target.anchor ? -1 : 1;
+    const caret =
+      view.coordsAtPos(target.head, side) ??
+      view.coordsAtPos(target.head, side === 1 ? -1 : 1);
+    // A head that is not drawn yet is out of view: the editor draws it when
+    // it scrolls there.
+    if (caret === null) return target;
+    if (caret.bottom <= caret.top) return null;
+    let marginTop = 0;
+    let marginBottom = 0;
+    for (const source of view.state.facet(EditorView.scrollMargins)) {
+      const margins = source(view);
+      marginTop = Math.max(marginTop, margins?.top ?? 0);
+      marginBottom = Math.max(marginBottom, margins?.bottom ?? 0);
+    }
+    const scroller = view.scrollDOM.getBoundingClientRect();
+    const screen = readVisibleArea();
+    const top = Math.max(scroller.top, screen.top) + marginTop;
+    const bottom = Math.min(scroller.bottom, screen.bottom) - marginBottom;
+    // A match that fits the room shows all of its text, also the lines that
+    // wrap between its ends, which the caret of an end does not cover. A
+    // taller match keeps the rule of the editor: its head shows.
+    // The whole text measures the match only when one drawn range of the
+    // editor holds all of it. A match across text the editor did not draw
+    // has parts with no rectangles, and a part that shows proves neither
+    // where it starts nor that it is whole.
+    const covered = view.visibleRanges.some(
+      (visible) => visible.from <= selection.from && visible.to >= selection.to,
+    );
+    const extent =
+      selection.empty || !covered
+        ? null
+        : renderedExtent(
+            view,
+            view.contentDOM,
+            selection.anchor,
+            selection.head,
+          );
+    if (extent !== null && extent.bottom - extent.top <= bottom - top)
+      return extent.top < top || extent.bottom > bottom
+        ? EditorSelection.range(extent.topPos, extent.bottomPos)
+        : null;
+    return caret.top < top || caret.bottom > bottom ? target : null;
+  }
+
+  /**
+   * Scrolls to `target` once, after the update that measured it.
+   *
+   * The editor allows no update inside a measure, so the scroll goes out in
+   * a microtask. It goes only when nothing moved since: the same try, text,
+   * selection and query, and a view that still stands. The editor then
+   * scrolls by its own rules, on both axes and in every box that scrolls.
+   * Only Find asks for this, with the nearest alignment.
+   */
+  private scrollTo(sequence: number, target: SelectionRange): void {
+    const state = this.view.state;
+    const query = getSearchQuery(state);
+    queueMicrotask(() => {
+      const now = this.view.state;
+      if (
+        !this.alive ||
+        sequence !== this.sequence ||
+        now.doc !== state.doc ||
+        !now.selection.eq(state.selection) ||
+        !getSearchQuery(now).eq(query)
+      )
+        return;
+      this.view.dispatch({
+        effects: EditorView.scrollIntoView(target, { y: 'nearest' }),
+      });
+    });
+  }
+
+  /** The horizontal reveal of the active table, or `null`. */
+  private horizontal(
+    view: EditorView,
+    table: TableBox,
+    at: CellRef,
+    head: number,
+    anchor: number,
+    search: boolean,
+  ): { readonly wrapper: HTMLElement; readonly delta: number } | null {
+    const row = table.rows.filter((row) => row.kind !== 'delimiter')[at.row];
+    const cell = row?.cells[at.column];
+    if (row === undefined || cell === undefined) return null;
+    const node = view.domAtPos(row.lineFrom).node;
+    const element = node instanceof Element ? node : node.parentElement;
+    const line = element?.closest('.cm-np-table-line');
+    if (
+      !(line instanceof HTMLElement) ||
+      view.posAtDOM(line, 0) !== row.lineFrom
+    )
+      return null;
+    const cellElement = Array.from(
+      line.querySelectorAll('.cm-np-table-cell, .cm-np-table-head'),
+    ).find(
+      (element): element is HTMLElement =>
+        element instanceof HTMLElement &&
+        element.style.gridColumnStart === String(at.column + 2),
+    );
+    const wrapper = line.closest('.cm-np-table');
+    if (!(wrapper instanceof HTMLElement) || cellElement === undefined)
+      return null;
+    let caret = view.coordsAtPos(head);
+    if (caret === null || caret.bottom <= caret.top)
+      caret = view.coordsAtPos(head, -1);
+    let left: number;
+    let right: number;
+    let start: number;
+    // A match of Find is revealed by the text that it renders in this
+    // table, in one cell or across cells and rows. A match that ends in
+    // another table, or that is not rendered yet, reveals its head, as
+    // the caret does.
+    const extent =
+      search && anchor !== head
+        ? renderedExtent(view, wrapper, anchor, head)
+        : null;
+    if (extent !== null) {
+      left = extent.left;
+      right = extent.right;
+      start = extent.start;
+    } else if (caret !== null && caret.bottom > caret.top) {
+      left = caret.left;
+      right = caret.right;
+      start = left;
+    } else {
+      // Hidden syntax can have no caret rectangle. Only an empty cell
+      // can use its uniquely mapped content edge as a view-only anchor.
+      if (cell.textFrom !== cell.textTo) return null;
+      const style = getComputedStyle(cellElement);
+      left =
+        cellElement.getBoundingClientRect().left +
+        parseFloat(style.borderLeftWidth) +
+        parseFloat(style.paddingLeft);
+      right = left;
+      start = left;
+    }
+    const bounds = wrapper.getBoundingClientRect();
+    const margin = view.defaultCharacterWidth;
+    // A match that fits shows whole. A wider match shows where it
+    // starts, a margin from the left edge, so its first words read in
+    // place.
+    const delta =
+      right - left > bounds.width - 2 * margin
+        ? start - bounds.left - margin
+        : left < bounds.left
+          ? left - bounds.left - margin
+          : right > bounds.right
+            ? right - bounds.right + margin
+            : 0;
+    return { wrapper, delta };
+  }
+}
+
+const tableCaretView = ViewPlugin.fromClass(TableCaretReveal, {
+  eventHandlers: {
+    pointerdown() {
+      this.cancel();
+      return false;
+    },
+    wheel() {
+      this.cancel();
+      return false;
+    },
+    touchmove() {
+      this.cancel();
+      return false;
+    },
+  },
+});
+
+/** Measures text with the loaded editor fonts, independently of visible rows. */
 const gridView = ViewPlugin.fromClass(
   class {
     parts: GridParts;
+    private layouts: ReadonlyMap<number, TableLayout> = new Map();
+    private readonly tables = new TableScrollRecords();
+    private readonly scrollKey = {};
+    private readonly rememberScroll = (event: Event): void => {
+      const element = event.target;
+      if (!(element instanceof HTMLElement) || !element.matches('.cm-np-table'))
+        return;
+      const record = this.tables.get(
+        element.getAttribute('data-notes-table') ?? '',
+      );
+      if (record?.element === element && !record.needsRestore)
+        record.left = element.scrollLeft;
+    };
+    private readonly manualScroll = (event: Event): void => {
+      const element =
+        event.target instanceof Element
+          ? event.target.closest('.cm-np-table')
+          : null;
+      if (!(element instanceof HTMLElement)) return;
+      const record = this.tables.get(
+        element.getAttribute('data-notes-table') ?? '',
+      );
+      if (record === undefined) return;
+      record.element = element;
+      record.left = element.scrollLeft;
+      record.needsRestore = false;
+    };
+    private readonly widths = new Map<string, number>();
+    private readonly context: CanvasRenderingContext2D | null;
+    private alive = true;
+    private readonly fontsChanged = (): void => {
+      this.widths.clear();
+      if (this.alive) this.schedule();
+    };
+
+    private readonly view: EditorView;
 
     constructor(view: EditorView) {
-      this.parts = gridParts(view.state, view.visibleRanges);
+      this.view = view;
+      this.context = view.dom.ownerDocument
+        .createElement('canvas')
+        .getContext('2d');
+      this.parts = gridParts(
+        view.state,
+        view.visibleRanges,
+        this.layouts,
+        (table) => this.tables.register(table),
+      );
+      view.contentDOM.addEventListener('scroll', this.rememberScroll, true);
+      for (const name of ['pointerdown', 'wheel', 'touchmove'])
+        view.contentDOM.addEventListener(name, this.manualScroll, {
+          capture: true,
+          passive: true,
+        });
+      view.dom.ownerDocument.fonts.addEventListener(
+        'loadingdone',
+        this.fontsChanged,
+      );
+      void view.dom.ownerDocument.fonts.ready.then(this.fontsChanged);
+      this.schedule();
     }
 
     update(update: ViewUpdate): void {
+      if (update.docChanged) {
+        for (const element of update.view.contentDOM.querySelectorAll(
+          '.cm-np-table',
+        )) {
+          if (!(element instanceof HTMLElement)) continue;
+          const record = this.tables.get(
+            element.getAttribute('data-notes-table') ?? '',
+          );
+          if (record === undefined) continue;
+          if (record.element === element && !record.needsRestore)
+            record.left = element.scrollLeft;
+          record.needsRestore = true;
+        }
+        const ids = new Map(
+          Array.from(this.tables.values(), (record) => [
+            record.from,
+            record.id,
+          ]),
+        );
+        const tree = syntaxTree(update.state);
+        this.tables.map(update.changes, (from) => {
+          const line = update.state.doc.lineAt(from);
+          const delimiterEnd = update.state.doc.line(
+            Math.min(line.number + 1, update.state.doc.lines),
+          ).to;
+          if (delimiterEnd > tree.length) return undefined;
+          let node: SyntaxNode | null = tree.resolveInner(from, 1);
+          while (node !== null && node.name !== 'Table') node = node.parent;
+          const header = node?.getChild('TableHeader');
+          return node !== null &&
+            header !== null &&
+            header !== undefined &&
+            from >= header.from &&
+            from <= header.to
+            ? { from: node.from, to: node.to }
+            : null;
+        });
+        const layouts = new Map<number, TableLayout>();
+        for (const [from, layout] of this.layouts) {
+          const id = ids.get(from);
+          const record = id === undefined ? undefined : this.tables.get(id);
+          if (record !== undefined) layouts.set(record.from, layout);
+        }
+        this.layouts = layouts;
+      }
+      let measured = false;
+      for (const effect of update.transactions.flatMap(
+        (transaction) => transaction.effects,
+      )) {
+        if (!effect.is(measuredTables)) continue;
+        this.layouts = effect.value;
+        measured = true;
+      }
       if (
-        !update.docChanged &&
-        !update.viewportChanged &&
-        syntaxTree(update.startState) === syntaxTree(update.state)
+        measured ||
+        update.docChanged ||
+        update.viewportChanged ||
+        syntaxTree(update.startState) !== syntaxTree(update.state)
       )
-        return;
-      this.parts = gridParts(update.view.state, update.view.visibleRanges);
+        this.parts = gridParts(
+          update.state,
+          update.view.visibleRanges,
+          this.layouts,
+          (table) => this.tables.register(table),
+        );
+      if (
+        !measured &&
+        (update.docChanged ||
+          update.viewportChanged ||
+          update.geometryChanged ||
+          syntaxTree(update.startState) !== syntaxTree(update.state))
+      )
+        this.schedule();
+    }
+
+    destroy(): void {
+      this.alive = false;
+      this.view.contentDOM.removeEventListener(
+        'scroll',
+        this.rememberScroll,
+        true,
+      );
+      for (const name of ['pointerdown', 'wheel', 'touchmove'])
+        this.view.contentDOM.removeEventListener(name, this.manualScroll, true);
+      this.tables.clear();
+      this.layouts = new Map();
+      this.widths.clear();
+      this.view.dom.ownerDocument.fonts.removeEventListener(
+        'loadingdone',
+        this.fontsChanged,
+      );
+    }
+
+    private restoreScroll(): void {
+      this.view.requestMeasure({
+        key: this.scrollKey,
+        read: (view) => {
+          if (!this.alive) return null;
+          const visible = [];
+          for (const element of view.contentDOM.querySelectorAll(
+            '.cm-np-table',
+          )) {
+            if (!(element instanceof HTMLElement)) continue;
+            const record = this.tables.get(
+              element.getAttribute('data-notes-table') ?? '',
+            );
+            if (record !== undefined)
+              visible.push({
+                element,
+                record,
+                left: Math.min(
+                  record.left,
+                  Math.max(0, element.scrollWidth - element.clientWidth),
+                ),
+              });
+          }
+          return visible;
+        },
+        write: (visible, view) => {
+          if (!this.alive || visible === null) return;
+          const seen = new Set(visible.map(({ record }) => record.id));
+          for (const record of this.tables.values())
+            if (!seen.has(record.id)) record.element = null;
+          for (const { element, record, left } of visible) {
+            if (
+              this.tables.get(record.id) !== record ||
+              !view.contentDOM.contains(element)
+            )
+              continue;
+            // A new wrapper's default zero is not reader intent. Real input
+            // binds its current element and clears needsRestore before here.
+            if (record.element !== element || record.needsRestore)
+              element.scrollLeft = left;
+            record.element = element;
+            record.left = element.scrollLeft;
+            record.needsRestore = false;
+          }
+          view.plugin(tableCaretView)?.columnsReady();
+        },
+      });
+    }
+
+    private schedule(): void {
+      this.view.requestMeasure({
+        key: this,
+        read: (view) => {
+          const context = this.context;
+          const head = view.contentDOM.querySelector('.cm-np-table-head');
+          const bodyCell = view.contentDOM.querySelector('.cm-np-table-cell');
+          const body = bodyCell ?? head;
+          if (
+            context === null ||
+            body === null ||
+            view.dom.ownerDocument.fonts.status === 'loading'
+          )
+            return null;
+          const bodyStyle = getComputedStyle(body);
+          const headStyle = head === null ? bodyStyle : getComputedStyle(head);
+          const bodyWeight =
+            bodyCell === null
+              ? getComputedStyle(view.contentDOM).fontWeight
+              : bodyStyle.fontWeight;
+          const font = (style: CSSStyleDeclaration): string =>
+            `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+          const measure = (text: string, header: boolean): number => {
+            const style = header ? headStyle : bodyStyle;
+            const actualFont = header
+              ? head === null
+                ? `${style.fontStyle} ${style.getPropertyValue('--font-weight-note-heading')} ${style.fontSize} ${style.fontFamily}`
+                : font(style)
+              : `${style.fontStyle} ${bodyWeight} ${style.fontSize} ${style.fontFamily}`;
+            const key = `${actualFont}:${style.letterSpacing}:${text}`;
+            const cached = this.widths.get(key);
+            if (cached !== undefined) return cached;
+            context.font = actualFont;
+            context.letterSpacing =
+              style.letterSpacing === 'normal' ? '0px' : style.letterSpacing;
+            const width = context.measureText(text).width;
+            if (this.widths.size >= 50_000) this.widths.clear();
+            this.widths.set(key, width);
+            return width;
+          };
+          const padding =
+            parseFloat(bodyStyle.paddingLeft) +
+            parseFloat(bodyStyle.paddingRight) +
+            parseFloat(bodyStyle.borderLeftWidth) +
+            parseFloat(bodyStyle.borderRightWidth);
+          const maximum = parseFloat(bodyStyle.maxWidth);
+          const floor = parseFloat(bodyStyle.minWidth);
+          const layouts = new Map<number, TableLayout>();
+          for (const range of view.visibleRanges)
+            for (const table of tablesIn(view.state, range.from, range.to)) {
+              if (layouts.has(table.from)) continue;
+              const natural = tableColumnWidths(view.state, table, measure).map(
+                (width) =>
+                  Math.max(
+                    floor,
+                    Math.min(Math.ceil(width) + padding, maximum),
+                  ),
+              );
+              const minimum = tableColumnWidths(
+                view.state,
+                table,
+                (text, header) => {
+                  let width = 0;
+                  for (const part of tableWords.segment(text))
+                    width = Math.max(width, measure(part.segment, header));
+                  return width;
+                },
+              ).map((width, column) =>
+                Math.max(
+                  floor,
+                  Math.min(
+                    natural[column] ?? floor,
+                    Math.ceil(width) + padding,
+                  ),
+                ),
+              );
+              const wrapper = view.contentDOM.querySelector('.cm-np-table');
+              const available =
+                wrapper instanceof HTMLElement
+                  ? wrapper.clientWidth
+                  : view.contentDOM.clientWidth;
+              layouts.set(
+                table.from,
+                tableLayout(fitTableColumns(natural, minimum, available)),
+              );
+            }
+          return { doc: view.state.doc, layouts };
+        },
+        write: (result, view) => {
+          if (result === null || result.doc !== view.state.doc) return;
+          const changed = [...result.layouts].filter(([from, layout]) => {
+            const previous = this.layouts.get(from);
+            return (
+              previous?.columns !== layout.columns ||
+              previous.tracks !== layout.tracks ||
+              previous.rules !== layout.rules
+            );
+          });
+          if (changed.length === 0) {
+            this.restoreScroll();
+            return;
+          }
+          queueMicrotask(() => {
+            if (this.alive && result.doc === view.state.doc) {
+              // A viewport measurement updates only the tables it saw. Keep
+              // surviving tables ready for body-only reentry after scrolling.
+              const layouts = new Map(this.layouts);
+              for (const [from, layout] of changed) layouts.set(from, layout);
+              view.dispatch({ effects: measuredTables.of(layouts) });
+              this.restoreScroll();
+            }
+          });
+        },
+      });
     }
   },
   {
@@ -1390,7 +2507,7 @@ const gridView = ViewPlugin.fromClass(
 
 /** How a table looks: one scrolling grid for each table (record 0095). */
 export function tableGridView(): Extension {
-  return gridView;
+  return [gridView, tableCaretView];
 }
 
 /** How a table is edited: the caret, the protected text, and the input. */

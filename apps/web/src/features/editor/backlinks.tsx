@@ -1,3 +1,4 @@
+import { Stack, Inset, Button, rowClassName } from '@notesapp/ui';
 /**
  * The notes that link to the open note.
  *
@@ -16,7 +17,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { listBacklinks } from '@notesapp/api-client';
 import { localBacklinks, type LocalStore } from '@notesapp/sync';
-import { Button, rowClassName } from '@notesapp/ui';
+
 import { Link } from 'react-router';
 import { displayNoteName } from '../../lib/note-name.ts';
 import { useFiles } from '../../shell/files.tsx';
@@ -113,39 +114,39 @@ export function Backlinks({
   if (state.kind === 'loading') return null;
   if (state.kind === 'failed')
     return (
-      <div className="space-y-2">
-        <p className="m-0 text-control text-muted">
+      <Stack gap={2} as="div">
+        <p className="m-0 text-secondary text-muted">
           The links to this note did not load.
         </p>
         <Button
           variant="secondary"
-          size="sm"
+          size="compact"
           onClick={(): void => {
             setAttempt((value) => value + 1);
           }}
         >
           Try again
         </Button>
-      </div>
+      </Stack>
     );
   if (state.rows.length === 0)
     return (
-      <p className="m-0 text-control text-muted">
+      <p className="m-0 text-secondary text-muted">
         {backlinksEmptyMessage(state.partial, online)}
       </p>
     );
   return (
-    <div className="space-y-2">
+    <Stack gap={2} as="div">
       {state.partial ? (
-        <p className="m-0 text-control text-muted">
+        <p className="m-0 text-secondary text-muted">
           These links come from this device.
         </p>
       ) : null}
-      <ul className="m-0 list-none p-0">
+      <Inset pad={0} as="ul" className="list-none">
         {state.rows.map((item) => (
           <li key={item.fileId}>
             <Link
-              className={rowClassName()}
+              className={rowClassName({ contentEdge: true })}
               to={`/w/${workspaceId}/notes/${item.fileId}`}
             >
               <span className="min-w-0 flex-1 truncate">
@@ -154,7 +155,7 @@ export function Backlinks({
             </Link>
           </li>
         ))}
-      </ul>
-    </div>
+      </Inset>
+    </Stack>
   );
 }

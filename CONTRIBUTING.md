@@ -16,18 +16,22 @@ pnpm install --frozen-lockfile
 
 The optional `test-application` skill gives the fresh local Docker setup.
 Unit tests sit beside the code. Integration tests use the services in
-`compose.test.yaml`. `pnpm verify` starts those services as needed.
+`compose.test.yaml`. `pnpm verify` starts these named services, waits for their
+health checks, and runs the test-profile migration. Externally managed test
+services on the same ports are no longer used. Stop them before running checks.
+Use [verification](docs/development/verification.md) for focused test commands.
 
 ## Review and merge
 
-The author may run `@coderabbitai approve` only after a clean CodeRabbit full
-review and a clean independent review on the exact current head. A clean
-review has no open findings. A new head requires both reviews again.
-The merge workflow does not verify the independent review. The author must
-confirm that it is clean before requesting approval.
-The owner merges through the unchanged
-[fast forward merge gate](docs/development/fast-forward-merge.md).
-See [decision 0235](docs/decisions/0235-authors-may-request-approval-after-clean-reviews.md).
+The owner merges PRs with GitHub's **Create a merge commit** option after
+`Check` passes and all review threads are resolved. Merge commits keep the
+branch commits and record the PR merge in `main`. Squash and rebase merges
+are disabled. Main does not require linear history. Force pushes and branch
+deletion remain blocked, and no actor can bypass the rules.
+
+The fast-forward workflows and the `ff-merge` and `/ff-merge` comment commands
+are retired. Use the GitHub merge action, or `gh pr merge --merge`, instead.
+A merge to `main` starts the normal push CI and main image workflow.
 
 ## License
 

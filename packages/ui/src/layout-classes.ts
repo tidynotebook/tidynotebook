@@ -1,15 +1,21 @@
 /** Pure layout choices shared by the page primitives. */
 
+/** Reserve the initial vendor frame height in every checkout state. */
+export function checkoutFrameClassName(): string {
+  return 'relative min-h-checkout-frame';
+}
+
 /** How the actions below a page title use their row. */
-export type PageHeaderActionLayout = 'cluster' | 'split';
+export type PageHeaderActionLayout = 'cluster' | 'split' | 'inline';
 
 /** The layout of the action area of a page header. */
 export function pageHeaderActionsClassName(
   layout: PageHeaderActionLayout,
 ): string {
+  if (layout === 'inline') return 'flex shrink-0 items-center gap-2';
   return layout === 'split'
-    ? 'flex w-full items-center justify-between gap-group'
-    : 'flex shrink-0 items-center gap-cluster';
+    ? 'flex w-full items-center justify-between gap-4'
+    : 'flex shrink-0 items-center gap-2';
 }
 
 /**
@@ -21,17 +27,17 @@ export function pageHeaderActionsClassName(
  * [decision 0137](../../../docs/decisions/0137-every-page-shares-the-note-column-and-its-side-region.md).
  */
 export function pageRowClassName(): string {
-  return 'flex min-w-0 gap-6';
+  return 'flex min-w-0 justify-center gap-6';
 }
 
 /**
  * The column of a page: the note measure, centred in the space it owns.
  *
- * The column grows to the measure and the auto margins take the rest, so the
- * column of a page and the column of the note share one centre (0055).
+ * The parent centers the column, so the page and the note share one centre
+ * (0055).
  */
 export function pageColumnClassName(): string {
-  return 'mx-auto min-w-0 max-w-note flex-1';
+  return 'ui-page-column w-full min-w-0 max-w-page flex-1';
 }
 
 /**
@@ -131,7 +137,7 @@ export function sectionScrollTop(
  * shorter, so a step of the numeric scale keeps two fills apart.
  */
 export function pageListClassName(): string {
-  return '-mx-2 my-0 flex list-none flex-col gap-cluster p-0 md:gap-1';
+  return 'ui-content-list flex list-none flex-col gap-1 p-0';
 }
 
 /**
@@ -140,5 +146,5 @@ export function pageListClassName(): string {
  * It has no inset, because the list below it already lines up with the page.
  */
 export function pageGroupLabelClassName(): string {
-  return 'mb-1 mt-0 text-control font-medium text-muted';
+  return 'ui-group-heading text-group text-muted';
 }

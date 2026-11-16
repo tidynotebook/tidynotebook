@@ -1,0 +1,206 @@
+{
+  "status": "LOCAL_ONLY",
+  "pixelLimit": 40000000,
+  "generator": "fixed base sharp",
+  "versions": {
+    "vips": "8.18.7",
+    "sharp": "0.35.5"
+  },
+  "fixtures": [
+    {
+      "name": "small.png",
+      "width": 8,
+      "height": 8,
+      "format": "png",
+      "alpha": true,
+      "metadata": false,
+      "bytes": 96,
+      "sha256": "0b37b956cbe5742bd19fbddb1df087145a7e23a1aa03245545a6a7c1ed201241",
+      "expected": {
+        "name": "small.png",
+        "format": "png",
+        "width": 8,
+        "height": 8,
+        "hasAlpha": true
+      }
+    },
+    {
+      "name": "small.jpeg",
+      "width": 8,
+      "height": 8,
+      "format": "jpeg",
+      "alpha": false,
+      "metadata": false,
+      "bytes": 269,
+      "sha256": "73528763162def27647f0d09d2d8a6b95776b71e61618cff662cda04ec87f80a",
+      "expected": {
+        "name": "small.jpeg",
+        "format": "jpeg",
+        "width": 8,
+        "height": 8,
+        "hasAlpha": false
+      }
+    },
+    {
+      "name": "small.gif",
+      "width": 8,
+      "height": 8,
+      "format": "gif",
+      "alpha": false,
+      "metadata": false,
+      "bytes": 48,
+      "sha256": "436adc25edefb3de09db1edd710678baeff3189628e83227e270d1f574b5936c",
+      "expected": {
+        "name": "small.gif",
+        "format": "gif",
+        "width": 8,
+        "height": 8,
+        "pages": 1,
+        "hasAlpha": true
+      }
+    },
+    {
+      "name": "small.webp",
+      "width": 8,
+      "height": 8,
+      "format": "webp",
+      "alpha": true,
+      "metadata": false,
+      "bytes": 96,
+      "sha256": "7a498c27b31795a3da97ff118f17b446292977ca4e62eaa488a29e87585afaef",
+      "expected": {
+        "name": "small.webp",
+        "format": "webp",
+        "width": 8,
+        "height": 8,
+        "hasAlpha": true
+      }
+    },
+    {
+      "name": "wide.png",
+      "width": 32767,
+      "height": 1,
+      "format": "png",
+      "alpha": false,
+      "metadata": false,
+      "bytes": 534,
+      "sha256": "0ff8c76628655a0fffc74a0eca31ea49f95431aeee5e90fa0ef3b46f06de7511",
+      "expected": {
+        "name": "wide.png",
+        "format": "png",
+        "width": 32767,
+        "height": 1,
+        "hasAlpha": false
+      }
+    },
+    {
+      "name": "tall.png",
+      "width": 1,
+      "height": 32767,
+      "format": "png",
+      "alpha": false,
+      "metadata": false,
+      "bytes": 786,
+      "sha256": "a12e9aa1d315ca0b2965d11ec78e99f58b992d15dc4afb89dd30d16c0125cf3f",
+      "expected": {
+        "name": "tall.png",
+        "format": "png",
+        "width": 1,
+        "height": 32767,
+        "hasAlpha": false
+      }
+    },
+    {
+      "name": "limit.png",
+      "width": 8000,
+      "height": 5000,
+      "format": "png",
+      "alpha": false,
+      "metadata": false,
+      "bytes": 547740,
+      "sha256": "edd70f7dea4d51cd54e555f74255e5f51de1745ea40cf465df10f3a15d5a2b41",
+      "expected": {
+        "name": "limit.png",
+        "format": "png",
+        "width": 8000,
+        "height": 5000,
+        "hasAlpha": false
+      }
+    },
+    {
+      "name": "limit.jpeg",
+      "width": 8000,
+      "height": 5000,
+      "format": "jpeg",
+      "alpha": false,
+      "metadata": false,
+      "bytes": 235019,
+      "sha256": "a148142942e4a746c8bd1f16b0c83333dc308f5c4296bb98de2f345e779b50d7",
+      "expected": {
+        "name": "limit.jpeg",
+        "format": "jpeg",
+        "width": 8000,
+        "height": 5000,
+        "hasAlpha": false
+      }
+    },
+    {
+      "name": "limit.webp",
+      "width": 8000,
+      "height": 5000,
+      "format": "webp",
+      "alpha": true,
+      "metadata": false,
+      "bytes": 72898,
+      "sha256": "8d779d0752d0f5fac1af7d0d58c0527ea56a1934af9ee39f2476b77697cf7b83",
+      "expected": {
+        "name": "limit.webp",
+        "format": "webp",
+        "width": 8000,
+        "height": 5000,
+        "hasAlpha": true
+      }
+    },
+    {
+      "name": "metadata.jpeg",
+      "width": 8,
+      "height": 8,
+      "format": "jpeg",
+      "alpha": false,
+      "metadata": true,
+      "bytes": 957,
+      "sha256": "43775dc1b64d59f0c2eda786a6f867eb668092de965deb432488a8ef7c84ce23",
+      "expected": {
+        "name": "metadata.jpeg",
+        "format": "jpeg",
+        "width": 8,
+        "height": 8,
+        "orientation": 6,
+        "hasAlpha": false
+      }
+    },
+    {
+      "name": "animated-limit.gif",
+      "width": 8000,
+      "height": 5000,
+      "pageHeight": 2500,
+      "pages": 2,
+      "format": "gif",
+      "alpha": false,
+      "metadata": false,
+      "bytes": 29366,
+      "sha256": "3c1dd693758148bc3afa60621e89dce9b7b4e4da30bf8c542312a97caf80e0ae",
+      "expected": {
+        "name": "animated-limit.gif",
+        "format": "gif",
+        "width": 8000,
+        "height": 5000,
+        "pages": 2,
+        "pageHeight": 2500,
+        "hasAlpha": true
+      }
+    }
+  ],
+  "publication": false,
+  "boundaryProved": false
+}

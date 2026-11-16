@@ -3,7 +3,7 @@
  *
  * Every icon is drawn on the 24 by 24 grid of `./icon-grid.ts` at a stroke of
  * 1.5, and renders at 16 px in a control, a row or a label, and at 20 px in an
- * empty state. No other size exists. One frame component spreads the shared
+ * empty state. One frame component spreads the shared
  * attributes, so no icon states a stroke, a viewport or a line join of its
  * own, and `icons.test.ts` proves that none of them does.
  *
@@ -843,6 +843,87 @@ export function WorkspaceIcon(props: IconProps): ReactNode {
       <rect x="14" y="3" width="7" height="7" rx="1.5" />
       <rect x="14" y="14" width="7" height="7" rx="1.5" />
       <rect x="3" y="14" width="7" height="7" rx="1.5" />
+    </IconFrame>
+  );
+}
+
+/** A curved arrow for the local history of the open note. */
+export function UndoIcon(props: IconProps): ReactNode {
+  return (
+    <IconFrame {...props}>
+      <path d="M9 14 4 9l5-5" />
+      <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
+    </IconFrame>
+  );
+}
+
+/** The forward action of the same local history. */
+export function RedoIcon(props: IconProps): ReactNode {
+  return (
+    <IconFrame {...props}>
+      <path d="m15 14 5-5-5-5" />
+      <path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13" />
+    </IconFrame>
+  );
+}
+
+/** A paint palette for appearance. */
+export function PaletteIcon(props: IconProps): ReactNode {
+  return (
+    <IconFrame {...props}>
+      <path d="M12 3a9 9 0 1 0 0 18h1a2 2 0 0 0 1.5-3.3 1.5 1.5 0 0 1 1.2-2.5H18A3 3 0 0 0 21 12a9 9 0 0 0-9-9Z" />
+      <circle cx="7.5" cy="10" r=".5" />
+      <circle cx="10" cy="6.5" r=".5" />
+      <circle cx="14.5" cy="7" r=".5" />
+      <circle cx="17.5" cy="10.5" r=".5" />
+    </IconFrame>
+  );
+}
+
+/** One person for an account. */
+export function PersonIcon(props: IconProps): ReactNode {
+  return (
+    <IconFrame {...props}>
+      <circle cx="12" cy="7" r="4" />
+      <path d="M4 21v-2a8 8 0 0 1 16 0v2" />
+    </IconFrame>
+  );
+}
+
+/** A key for program access. */
+export function KeyIcon(props: IconProps): ReactNode {
+  return (
+    <IconFrame {...props}>
+      <circle cx="16" cy="8" r="5" />
+      <path d="m12.5 11.5-9.5 9.5v-5l3-3h3v-3" />
+    </IconFrame>
+  );
+}
+
+/** Two arrows show the replace controls. */
+export function ReplaceIcon(props: IconProps): ReactNode {
+  return (
+    <IconFrame {...props}>
+      <path d="M4 7h12l-3-3" />
+      <path d="M20 17H8l3 3" />
+    </IconFrame>
+  );
+}
+
+/** Mail delivery settings. */
+export function MailIcon(props: IconProps): ReactNode {
+  return (
+    <IconFrame {...props}>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="m3 6 9 7 9-7" />
+    </IconFrame>
+  );
+}
+/** A report that needs attention. */
+export function FlagIcon(props: IconProps): ReactNode {
+  return (
+    <IconFrame {...props}>
+      <path d="M5 22V3m0 1c5-4 9 4 15 0v11c-6 4-10-4-15 0" />
     </IconFrame>
   );
 }

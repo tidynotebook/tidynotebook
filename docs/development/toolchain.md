@@ -63,14 +63,14 @@ An error class avoids a TypeScript parameter property for the same reason.
 | `oxlint`                       | The source rules that need no type information, with no warning.   |
 | `tools/check-boundaries.mjs`   | The package graph, the browser rule, and the transport rule.       |
 | `tools/check-casts.mjs`        | No JavaScript file asserts a type with a JSDoc cast (record 0019). |
-| `tools/check-docs.mjs`         | The documentation rules of `docs/README.md`.                       |
-| `tools/check-design-rules.mjs` | The styling and user-facing text rules of the interface code.      |
+| `tools/check-docs.mjs`         | Document integrity and safe guide action names.                    |
+| `tools/check-design-rules.mjs` | The styling, spacing and type-role rules, and interface text.      |
 
 `pnpm lint` reads the sources only, so it passes in a fresh checkout with no
 build output. `pnpm lint:types` runs `oxlint --type-aware`, which needs the
-emitted declaration of every workspace package, so it runs after `pnpm build`
-and `pnpm verify` keeps that order. `tools/check-declarations.mjs` runs first
-inside it and names that one cause when the build output is absent.
+emitted declarations of workspace packages. It runs the workspace typecheck command to
+create these files in package dependency order before lint runs. A failed build stops the command.
+`pnpm verify` and CI run typed lint directly after their full build.
 
 `tools/check-boundaries.mjs` holds the rules that
 [Architecture](architecture.md) states. It parses every source file rather than

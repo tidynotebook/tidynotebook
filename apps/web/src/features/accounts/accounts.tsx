@@ -1,3 +1,20 @@
+import { hasEmailProblem } from '../../lib/email-problem.ts';
+import { AuthFrame } from './auth-frame.tsx';
+import { useAuthValidationFocus } from './auth-validation-focus.ts';
+import {
+  Form,
+  Inline,
+  Inset,
+  Stack,
+  Button,
+  Checkbox,
+  DownloadIcon,
+  LoadingState,
+  Notice,
+  SignOutIcon,
+  TextField,
+} from '@notesapp/ui';
+
 /**
  * Account screens: first-run setup, login, and settings.
  *
@@ -28,33 +45,14 @@ import {
   signInWithPassword,
 } from '@notesapp/api-client';
 import { RemoveOwnAccountDialog } from './remove-account-dialog.tsx';
-import {
-  AppMarkIcon,
-  PublicFooter,
-  installationFooterColumns,
-  Button,
-  buttonClassName,
-  Card,
-  Checkbox,
-  DownloadIcon,
-  LoadingState,
-  Notice,
-  Page,
-  pageGutter,
-  SignOutIcon,
-  TextField,
-} from '@notesapp/ui';
+
 import { actionIcon } from '../../shell/action-icons.tsx';
 import { deleteGlyph } from '../../lib/delete-label.ts';
 import { problemMessage, useLocalStore, useSession } from '../../app.tsx';
 import { problemCode, problemStatus } from '../../lib/problem-text.ts';
 import { forgotPasswordRoute, signUpRoute } from '../../lib/accounts.ts';
-import { consentTo, waitsForConsent } from '../../lib/legal.ts';
-import {
-  isLocked,
-  lockedSentences,
-  signedInSentence,
-} from '../../lib/locked.ts';
+import { consentTo } from '../../lib/legal.ts';
+import { lockedSentences, signedInSentence } from '../../lib/locked.ts';
 import { portalHome } from '../../lib/portal.ts';
 import { returnOf } from '../../lib/sign-in-return.ts';
 import {
@@ -64,42 +62,19 @@ import {
 } from '../../lib/oauth-consent.ts';
 import { useOpenPortal } from './open-portal.ts';
 import { useNow } from '../../shell/now.ts';
-import { LegalLinks, useLegalDocuments } from './legal-links.tsx';
+import { LegalLinks } from './legal-links.tsx';
 
 import { passwordProblem, passwordRule } from '../../lib/password-policy.ts';
 
 import { downloadAll, transferFailureMessage } from '../export/export.ts';
 
 import { useDocumentTitle } from '../../shell/document-title.ts';
-import { productName } from '@notesapp/core';
+import { productName, normalizeEmail } from '@notesapp/core';
 
 /** The title of the settings page, which is also its breadcrumb part. */
-export const settingsTitle = 'Settings';
+export { settingsTitle } from '../../lib/settings-address.ts';
 
-/** Redirects to login when no session exists. */
-export function RequireSession({
-  children,
-}: {
-  readonly children: ReactNode;
-}): ReactNode {
-  const session = useSession();
-  if (session.status === 'loading') {
-    return (
-      <Page>
-        <LoadingState label="Your account is loading." />
-      </Page>
-    );
-  }
-  if (session.status === 'signed-out' || session.account === null) {
-    return <Navigate to="/login" replace />;
-  }
-  // The application opens after consent to the current legal documents
-  // (record 0120).
-  if (waitsForConsent(session.account)) return <ConsentPage />;
-  // A locked account signs in to one screen (record 0201).
-  if (isLocked(session.account)) return <LockedPage />;
-  return children;
-}
+export { RequireSession } from './require-session.tsx';
 
 /**
  * Downloads the archive of each workspace that the account owns.
@@ -132,23 +107,23 @@ function SignedInFooter({
 }): ReactNode {
   const sentence = signedInSentence(email);
   return (
-    <div className="flex items-center justify-between gap-cluster">
+    <Inline gap={2} align="center" justify="between" as="div">
       <p
-        className="m-0 min-w-0 truncate text-control text-muted"
+        className="m-0 min-w-0 truncate text-secondary text-muted"
         title={sentence}
       >
         {sentence}
       </p>
       <Button
         variant="secondary"
-        size="sm"
+        size="compact"
         icon={<SignOutIcon />}
         disabled={disabled}
         onClick={onSignOut}
       >
         Sign out
       </Button>
-    </div>
+    </Inline>
   );
 }
 
@@ -161,7 +136,7 @@ function SignedInFooter({
  * when it changes, and the screen reads it again then and when the person
  * comes back to the tab, so an unlock opens the application with no reload.
  */
-function LockedPage(): ReactNode {
+export function LockedPage(): ReactNode {
   const session = useSession();
   const store = useLocalStore();
   const now = useNow();
@@ -218,20 +193,18 @@ function LockedPage(): ReactNode {
       }
     >
       {lockedSentences(account, now).map((sentence) => (
-        <p key={sentence} className="mb-3 mt-0 text-control text-muted">
+        <Inset key={sentence} as="p" className="text-secondary text-muted">
           {sentence}
-        </p>
+        </Inset>
       ))}
-      {error === '' ? null : (
-        <Notice className="mb-4" tone="problem" message={error} />
-      )}
+      {error === '' ? null : <Notice tone="problem" message={error} />}
       {account.accountPortal ? (
         <Button
-          className="mt-2 w-full"
+          className="w-full"
           disabled={busy}
           onClick={() => {
             setExportError('');
-            void portal.open(portalHome);
+            void portal.open(portalHome, true);
           }}
         >
           {account.controls.trialState === 'expired'
@@ -239,10 +212,10 @@ function LockedPage(): ReactNode {
             : 'Open billing'}
         </Button>
       ) : null}
-      <p className="mb-2 mt-5 text-control text-muted">
+      <Inset as="p" className="text-secondary text-muted">
         You can export your notes or delete your account.
-      </p>
-      <div className="flex flex-wrap gap-cluster">
+      </Inset>
+      <Inline gap={2} wrap as="div">
         <Button
           variant="secondary"
           icon={<DownloadIcon />}
@@ -264,7 +237,7 @@ function LockedPage(): ReactNode {
         >
           Delete my account
         </Button>
-      </div>
+      </Inline>
       {removing ? (
         <RemoveOwnAccountDialog
           store={store.store}
@@ -295,7 +268,7 @@ type DocumentsState =
  * their notes, delete their account, or sign out, and the application stays
  * closed until they accept.
  */
-function ConsentPage(): ReactNode {
+export function ConsentPage(): ReactNode {
   const session = useSession();
   const store = useLocalStore();
   const [state, setState] = useState<DocumentsState>({ kind: 'loading' });
@@ -363,9 +336,9 @@ function ConsentPage(): ReactNode {
       }
     >
       {state.kind === 'loading' ? (
-        <LoadingState label="The terms are loading." />
+        <LoadingState label="Loading terms" />
       ) : state.kind === 'failed' ? (
-        <div className="mt-4 space-y-3">
+        <Stack gap={3} as="div">
           <Notice tone="problem" message={state.message} />
           <Button
             onClick={() => {
@@ -374,19 +347,15 @@ function ConsentPage(): ReactNode {
           >
             Try again
           </Button>
-        </div>
+        </Stack>
       ) : (
         <>
-          <p className="mb-3 mt-0 text-control text-muted">
+          <Inset as="p" className="text-secondary text-muted">
             Read the terms and the privacy notice of this service, then accept
             them to open your notes. A new version asks you again.
-          </p>
-          {documents === null ? null : (
-            <LegalLinks className="mb-5" documents={documents} />
-          )}
-          {error === '' ? null : (
-            <Notice className="mb-4" tone="problem" message={error} />
-          )}
+          </Inset>
+          {documents === null ? null : <LegalLinks documents={documents} />}
+          {error === '' ? null : <Notice tone="problem" message={error} />}
           <Button
             className="w-full"
             disabled={busy || documents === null}
@@ -396,11 +365,11 @@ function ConsentPage(): ReactNode {
           >
             {busy ? 'Saving your answer' : 'Accept and continue'}
           </Button>
-          <p className="mb-2 mt-5 text-control text-muted">
+          <Inset as="p" className="text-secondary text-muted">
             If you do not accept them, you can export your notes and delete your
             account.
-          </p>
-          <div className="flex flex-wrap gap-cluster">
+          </Inset>
+          <Inline gap={2} wrap as="div">
             <Button
               variant="secondary"
               icon={<DownloadIcon />}
@@ -422,7 +391,7 @@ function ConsentPage(): ReactNode {
             >
               Delete my account
             </Button>
-          </div>
+          </Inline>
         </>
       )}
       {removing ? (
@@ -457,6 +426,12 @@ type SetupStatus =
       readonly legalDocuments: LegalDocuments | null;
     };
 
+/** Only the committed plain sign-in screen owns this title. */
+function PlainLoginTitle({ screen }: { readonly screen: string }): ReactNode {
+  useDocumentTitle(screen);
+  return null;
+}
+
 /**
  * First-run setup and email and password sign in.
  *
@@ -470,10 +445,21 @@ export function LoginPage({
   oauthQuery,
 }: { readonly oauthQuery?: string } = {}): ReactNode {
   const session = useSession();
+  const focusInvalid = useAuthValidationFocus();
   const navigate = useNavigate();
   // Where sign-in goes back to: a path of this origin, or the root.
-  const back = returnOf(useLocation().search);
-  const [email, setEmail] = useState('');
+  const location = useLocation();
+  const back = returnOf(location.search);
+  const signInState: unknown = location.state;
+  const [email, setEmail] = useState(
+    signInState !== null &&
+      typeof signInState === 'object' &&
+      'email' in signInState &&
+      typeof signInState.email === 'string'
+      ? signInState.email
+      : '',
+  );
+  const [emailError, setEmailError] = useState('');
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [reveal, setReveal] = useState(false);
@@ -510,15 +496,17 @@ export function LoginPage({
 
   const setup = status.kind === 'ready' && !status.initialized;
 
-  async function submitPassword(): Promise<void> {
+  async function submitPassword(form: HTMLFormElement): Promise<void> {
     setFieldError('');
     const problem = setup ? passwordProblem(password) : null;
     if (problem !== null) {
       setFieldError(problem);
+      focusInvalid(form);
       return;
     }
     if (setup && confirmation !== password) {
       setFieldError('The two passwords are not the same.');
+      focusInvalid(form);
       return;
     }
     setBusy(true);
@@ -534,6 +522,10 @@ export function LoginPage({
         });
     setBusy(false);
     if (result.error !== undefined || result.data === undefined) {
+      if (hasEmailProblem(result.error)) {
+        setEmailError('Enter an email address.');
+        return;
+      }
       const code = problemCode(result.error);
       const httpStatus = result.response?.status ?? problemStatus(result.error);
       if (code === 'oauth_request_invalid') {
@@ -578,12 +570,53 @@ export function LoginPage({
   return (
     <AuthFrame
       title={status.kind === 'loading' ? productName : title}
+      showSignIn={false}
       documents={documents}
+      description={
+        setup
+          ? 'This installation has no account yet. What you enter here becomes the first account. It administers the installation and invites other people.'
+          : oauthQuery === undefined
+            ? 'Enter the address and the password of your account.'
+            : oauthSignInDescription
+      }
+      footer={
+        <Inline gap={4} wrap justify="center">
+          {' '}
+          {status.kind === 'ready' && !setup && status.passwordReset ? (
+            <>
+              <Link
+                className="text-secondary text-accent underline"
+                to={forgotPasswordRoute}
+              >
+                Forgot password
+              </Link>
+              {oauthQuery === undefined ? null : (
+                <Inset as="p" className="text-secondary text-muted">
+                  {oauthResetSentence}
+                </Inset>
+              )}
+            </>
+          ) : null}
+          {status.kind === 'ready' && !setup && status.openRegistration ? (
+            <Link
+              className="text-secondary text-accent underline"
+              to={signUpRoute}
+            >
+              Create an account
+            </Link>
+          ) : null}
+        </Inline>
+      }
     >
+      {oauthQuery === undefined ? (
+        <PlainLoginTitle
+          screen={status.kind === 'loading' ? 'Loading sign-in screen' : title}
+        />
+      ) : null}
       {status.kind === 'loading' ? (
-        <LoadingState label="The sign-in screen is loading." />
+        <LoadingState label="Loading sign-in screen" />
       ) : status.kind === 'unreachable' ? (
-        <div className="mt-4 space-y-3">
+        <Stack gap={3} as="div">
           <Notice tone="problem" message={status.message} />
           <Button
             onClick={() => {
@@ -592,24 +625,33 @@ export function LoginPage({
           >
             Try again
           </Button>
-        </div>
+        </Stack>
       ) : (
         <>
-          <p className="mb-5 mt-0 text-control text-muted">
-            {setup
-              ? 'This installation has no account yet. What you enter here becomes the first account. It administers the installation and invites other people.'
-              : oauthQuery === undefined
-                ? 'Enter the address and the password of your account.'
-                : oauthSignInDescription}
-          </p>
-          <form
+          <Form
+            noValidate
             onSubmit={(event): void => {
               event.preventDefault();
-              void submitPassword();
+              setEmailError(
+                email.trim() !== '' &&
+                  (normalizeEmail(email) === null ||
+                    event.currentTarget.querySelector<HTMLInputElement>(
+                      'input[type=email]',
+                    )?.validity.valid === false)
+                  ? 'Enter an email address.'
+                  : '',
+              );
+              if (
+                event.currentTarget.checkValidity() &&
+                normalizeEmail(email) !== null
+              )
+                void submitPassword(event.currentTarget);
+              else focusInvalid(event.currentTarget);
             }}
           >
             <TextField
               id="login-email"
+              error={emailError}
               label="Email address"
               value={email}
               inputType="email"
@@ -640,17 +682,15 @@ export function LoginPage({
                 onChange={setConfirmation}
               />
             ) : null}
-            <div className="mb-4">
+            <Inset as="div">
               <Checkbox
                 id="login-reveal"
                 label="Show the password"
                 checked={reveal}
                 onChange={setReveal}
               />
-            </div>
-            {error === '' ? null : (
-              <Notice className="mb-4" tone="problem" message={error} />
-            )}
+            </Inset>
+            {error === '' ? null : <Notice tone="problem" message={error} />}
             <Button type="submit" disabled={busy} className="w-full">
               {busy
                 ? setup
@@ -660,87 +700,11 @@ export function LoginPage({
                   ? 'Create account'
                   : 'Sign in'}
             </Button>
-          </form>
-          {status.kind === 'ready' && !setup && status.passwordReset ? (
-            <>
-              <Link
-                className={`mt-3 w-full ${buttonClassName({ variant: 'ghost' })}`}
-                to={forgotPasswordRoute}
-              >
-                Forgot password
-              </Link>
-              {oauthQuery === undefined ? null : (
-                <p className="mt-2 text-control text-muted">
-                  {oauthResetSentence}
-                </p>
-              )}
-            </>
-          ) : null}
-          {status.kind === 'ready' && !setup && status.openRegistration ? (
-            <Link
-              className={`mt-1 w-full ${buttonClassName({ variant: 'ghost' })}`}
-              to={signUpRoute}
-            >
-              Create an account
-            </Link>
-          ) : null}
+          </Form>
         </>
       )}
     </AuthFrame>
   );
 }
 
-/**
- * The frame of a screen before a session: the wordmark over one raised panel
- * on the chrome plane (decisions 0062 and 0064). Sign in, first-run setup,
- * the acceptance of an invitation and the reset of a password use it. The
- * public footer sits outside the panel and uses the installation legal URLs.
- */
-export function AuthFrame({
-  documents: suppliedDocuments,
-  title,
-  children,
-  footer,
-}: {
-  readonly title: string;
-  readonly children: ReactNode;
-  readonly footer?: ReactNode;
-  readonly documents?: LegalDocuments | null;
-}): ReactNode {
-  const documents = useLegalDocuments(suppliedDocuments);
-  const columns = installationFooterColumns(
-    documents === null
-      ? []
-      : [
-          { label: 'Terms', href: documents.terms.url },
-          { label: 'Privacy', href: documents.privacy.url },
-        ],
-  );
-  return (
-    <div
-      className={`flex min-h-dvh flex-col items-center justify-center bg-surface ${pageGutter} py-10`}
-    >
-      <div className="mb-5 flex items-center gap-2.5 text-ui font-semibold text-strong">
-        <span
-          className="inline-flex size-7 items-center justify-center rounded-md bg-active text-strong"
-          aria-hidden="true"
-        >
-          <AppMarkIcon />
-        </span>
-        <span>{productName}</span>
-      </div>
-      <Card className="w-full max-w-sm sm:p-6">
-        <h1 className="mb-2 mt-0 text-xl font-semibold tracking-heading text-strong">
-          {title}
-        </h1>
-        {children}
-      </Card>
-      {footer === undefined || footer === null ? null : (
-        <div className="mt-5 w-full max-w-sm">{footer}</div>
-      )}
-      <div className="w-full max-w-5xl">
-        <PublicFooter home="/" columns={columns} />
-      </div>
-    </div>
-  );
-}
+export { AuthFrame } from './auth-frame.tsx';

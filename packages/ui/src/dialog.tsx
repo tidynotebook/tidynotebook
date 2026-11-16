@@ -1,3 +1,9 @@
+import {
+  DialogInsetContext,
+  SectionFormContext,
+  DeferredDialogOpener,
+} from './dialog-layout-context.ts';
+import { Inline, Inset } from './primitives.tsx';
 /**
  * The one modal dialog of the application.
  *
@@ -20,22 +26,49 @@
  * and
  * [decision 0065](../../../docs/decisions/0065-one-recipe-for-a-control-and-one-grid-for-an-icon.md).
  */
-import { useEffect, useRef, type ReactNode } from 'react';
 import {
-  dialogFooterClassName,
+  Children,
+  cloneElement,
+  isValidElement,
+  createContext,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+  type ComponentProps,
+} from 'react';
+import {
   dialogPanelClassName,
   dialogRootClassName,
+  dialogHeaderClassName,
+  dialogHeaderTitleClassName,
   dialogTitleClassName,
   type DialogAlign,
   type DialogWidth,
 } from './dialog-classes.ts';
+import { createPortal } from 'react-dom';
+import { isTouchInput } from './input-focus.ts';
 import { giveFocusBack } from './dialog-focus.ts';
+import { PhoneSheetHeader } from './phone-sheet.tsx';
+import { followPhoneSheetViewport } from './phone-sheet-viewport.ts';
+import { Button } from './controls.tsx';
+import { Region } from './scroll-region.tsx';
+import { useSettingsSurface } from './settings-layout.tsx';
 import { transitionRaise } from './motion.ts';
 
 export type { DialogWidth } from './dialog-classes.ts';
 
 const focusableSelector =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/** Whether an element is on the screen, where the browser can tell. */
+function shown(element: HTMLElement): boolean {
+  const check: unknown = Reflect.get(element, 'checkVisibility');
+  return typeof check !== 'function' || element.checkVisibility();
+}
 
 /** Marks the page behind the dialog inert where the browser supports it. */
 function setPageInert(panel: HTMLElement | null, inert: boolean): () => void {
@@ -72,11 +105,20 @@ export function Dialog({
   titleId,
   hideTitle = false,
   width = 'medium',
-  align = 'top',
+  align = 'center',
   children,
   describedBy,
   returnFocus,
+  actions,
+  headerActions = false,
+  fillSheet = false,
 }: {
+  readonly fillSheet?: boolean;
+  readonly anchor?: HTMLElement | null;
+  /** Controls at the end of the title row, such as a link to settings. */
+  readonly actions?: ReactNode;
+  /** Allows a child picker to place a control beside the title. */
+  readonly headerActions?: boolean | undefined;
   readonly open: boolean;
   readonly onClose: () => void;
   readonly title: string;
@@ -90,8 +132,31 @@ export function Dialog({
   /** Gives the focus back on close, in place of the element that opened it. */
   readonly returnFocus?: (() => void) | undefined;
 }): ReactNode {
+  const settings = useSettingsSurface();
+  const [phone, setPhone] = useState(
+    () =>
+      typeof window !== 'undefined' &&
+      window.matchMedia('(max-width: 1023px) and (pointer: coarse)').matches,
+  );
+  useEffect(() => {
+    const media = window.matchMedia(
+      '(max-width: 1023px) and (pointer: coarse)',
+    );
+    const change = (): void => setPhone(media.matches);
+    media.addEventListener('change', change);
+    return () => media.removeEventListener('change', change);
+  }, []);
   const panelRef = useRef<HTMLDivElement | null>(null);
-  const openerRef = useRef<HTMLElement | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const [headerTarget, setHeaderTarget] = useState<HTMLDivElement | null>(null);
+  // Capture before a child's autoFocus runs during the commit.
+  const deferredOpener = useContext(DeferredDialogOpener);
+  const opener = useMemo(() => {
+    const active =
+      deferredOpener ??
+      (typeof document === 'undefined' ? null : document.activeElement);
+    return open && active && active instanceof HTMLElement ? active : null;
+  }, [open, deferredOpener]);
   // The latest close handler, which the effect below reads when a key or a
   // pointer asks for it. A screen passes a new function on every render, and
   // the effect must not run again for that: it moves focus when it starts and
@@ -108,23 +173,48 @@ export function Dialog({
 
   useEffect(() => {
     if (!open) return;
-    const active = document.activeElement;
-    openerRef.current = active instanceof HTMLElement ? active : null;
     const panel = panelRef.current;
     const releaseInert = setPageInert(panel, true);
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    // A control that a responsive class hides takes no focus, so the trap
+    // and the first focus skip it. A browser with no visibility check keeps
+    // every control.
     const focusables = (): HTMLElement[] =>
       panel === null
         ? []
-        : Array.from(panel.querySelectorAll<HTMLElement>(focusableSelector));
+        : Array.from(
+            panel.querySelectorAll<HTMLElement>(focusableSelector),
+          ).filter((element) => shown(element));
+    const root = panel?.closest('[data-notes-dialog-root]') ?? null;
     window.requestAnimationFrame(() => {
       const targets = focusables();
       if (panel !== null && !panel.contains(document.activeElement))
-        (targets[0] ?? panel).focus();
+        (
+          (isTouchInput()
+            ? targets.find(
+                (target) => !target.matches('input[data-list-search]'),
+              )
+            : targets[0]) ?? panel
+        ).focus();
     });
     const onKeyDown = (event: KeyboardEvent): void => {
+      // A dialog that this one opened, such as a confirmation inside
+      // Settings, owns the keys while it is open.
+      if (
+        event.target instanceof Element &&
+        root !== null &&
+        event.target.closest('[data-notes-dialog-root]') !== root
+      )
+        return;
       if (event.key === 'Escape') {
+        // A popup inside the dialog, such as a folder tree under a field,
+        // closes itself first, and the dialog stays open.
+        if (
+          event.target instanceof Element &&
+          event.target.closest('[data-dialog-escape="local"]') !== null
+        )
+          return;
         event.preventDefault();
         event.stopImmediatePropagation();
         closeRef.current();
@@ -154,18 +244,55 @@ export function Dialog({
       window.removeEventListener('keydown', onKeyDown, true);
       releaseInert();
       document.body.style.overflow = previousOverflow;
-      giveFocusBack(openerRef.current, returnRef.current);
+      giveFocusBack(opener, returnRef.current);
     };
-  }, [open]);
+  }, [open, opener]);
+
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    const panel = panelRef.current;
+    if (!open || !phone || width === 'screen' || !root || !panel) return;
+    return followPhoneSheetViewport(
+      root,
+      panel,
+      width === 'settings' || width === 'template',
+    );
+  }, [open, phone, width]);
+
+  useLayoutEffect(() => {
+    if (
+      !open ||
+      !phone ||
+      width === 'screen' ||
+      !rootRef.current ||
+      !panelRef.current
+    )
+      return;
+    const root = rootRef.current;
+    const panel = panelRef.current;
+    let disposed = false;
+    let stop: (() => void) | undefined;
+    void import('./phone-sheet-drag.ts').then(({ followPhoneSheetDrag }) => {
+      if (!disposed)
+        stop = followPhoneSheetDrag(root, panel, () => closeRef.current());
+    });
+    return () => {
+      disposed = true;
+      stop?.();
+    };
+  }, [open, phone, width]);
 
   if (!open) return null;
 
   const screen = width === 'screen';
-  const root = dialogRootClassName(width, align);
-  const panel = dialogPanelClassName(width);
+  const ownsInset =
+    !phone && !screen && width !== 'settings' && width !== 'command';
+  const root = dialogRootClassName(width, align, phone);
+  const panel = dialogPanelClassName(width, phone, fillSheet);
 
-  return (
+  const rendered = (
     <div
+      ref={rootRef}
       className={`fixed inset-0 z-50 flex justify-center ${root} ${transitionRaise}`}
       data-notes-dialog-root=""
       role="presentation"
@@ -173,21 +300,131 @@ export function Dialog({
         if (event.target === event.currentTarget) onClose();
       }}
     >
+      {phone && !screen ? (
+        <div
+          data-sheet-scrim=""
+          className="absolute inset-0 bg-scrim/40 opacity-0"
+          onMouseDown={onClose}
+        />
+      ) : null}
       <div
         ref={panelRef}
+        id={`${titleId}-panel`}
         className={`${panel} ${transitionRaise}`}
+        data-scroll-frame=""
+        data-dialog-inset={ownsInset ? '' : undefined}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={describedBy}
         tabIndex={-1}
       >
-        <h2 className={dialogTitleClassName(hideTitle || screen)} id={titleId}>
-          {title}
-        </h2>
-        {children}
+        {phone && !screen ? (
+          <div
+            data-sheet-drag=""
+            className={`flex ${width === 'settings' ? 'h-6' : 'h-11'} shrink-0 touch-pan-x touch-pinch-zoom items-center justify-center`}
+            aria-hidden="true"
+          >
+            <span className="h-1 w-9 rounded-full bg-edge-line" />
+          </div>
+        ) : null}
+        {phone && !hideTitle && !screen ? (
+          <PhoneSheetHeader
+            title={title}
+            titleId={titleId}
+            onClose={onClose}
+            trailing={
+              <>
+                {actions}
+                {headerActions ? (
+                  <div
+                    ref={setHeaderTarget}
+                    className="flex shrink-0 items-center"
+                  />
+                ) : null}
+              </>
+            }
+          />
+        ) : (actions === undefined && !headerActions) || hideTitle || screen ? (
+          <h2
+            data-scroll-edge="above"
+            data-edge-always={settings ? '' : undefined}
+            className={`${dialogTitleClassName(hideTitle || screen)} ${settings ? 'ui-settings-dialog-heading' : ''}`}
+            id={titleId}
+          >
+            {title}
+          </h2>
+        ) : (
+          <div
+            data-scroll-edge="above"
+            data-edge-always={settings ? '' : undefined}
+            className={`${dialogHeaderClassName()} ${settings ? 'ui-settings-dialog-heading' : ''}`}
+          >
+            <h2 className={dialogHeaderTitleClassName()} id={titleId}>
+              {title}
+            </h2>
+            {actions}
+            {headerActions ? (
+              <div
+                ref={setHeaderTarget}
+                className="flex shrink-0 items-center empty:hidden"
+              />
+            ) : null}
+          </div>
+        )}
+        <PhoneSheetContext.Provider
+          value={phone && !screen && width !== 'settings'}
+        >
+          <DialogInsetContext value={ownsInset}>
+            <DeferredDialogOpener value={null}>
+              <SectionFormContext value={false}>
+                <DialogHeaderActionsContext value={headerTarget}>
+                  {children}
+                </DialogHeaderActionsContext>
+              </SectionFormContext>
+            </DeferredDialogOpener>
+          </DialogInsetContext>
+        </PhoneSheetContext.Provider>
       </div>
     </div>
+  );
+  return width === 'settings' || width === 'screen'
+    ? rendered
+    : createPortal(rendered, document.body);
+}
+
+/** A body control can share its dialog's title row without another header. */
+export const DialogHeaderActionsContext = createContext<HTMLElement | null>(
+  null,
+);
+
+export function DialogHeaderAction({
+  children,
+}: {
+  readonly children: ReactNode;
+}): ReactNode {
+  const target = useContext(DialogHeaderActionsContext);
+  return target === null ? null : createPortal(children, target);
+}
+
+export const PhoneSheetContext = createContext(false);
+
+const FixedDialogContext = createContext(false);
+
+/** Keeps the body scrollable and the footer fixed inside a fixed-height view. */
+export function FixedDialogLayout({
+  children,
+  phone = false,
+}: {
+  readonly children: ReactNode;
+  readonly phone?: boolean;
+}): ReactNode {
+  return (
+    <FixedDialogContext.Provider value>
+      <PhoneSheetContext.Provider value={phone}>
+        {children}
+      </PhoneSheetContext.Provider>
+    </FixedDialogContext.Provider>
   );
 }
 
@@ -197,7 +434,41 @@ export function DialogBody({
 }: {
   readonly children: ReactNode;
 }): ReactNode {
-  return <div className="px-5 py-3">{children}</div>;
+  const fixed = useContext(FixedDialogContext);
+  const phone = useContext(PhoneSheetContext);
+  const settings = useSettingsSurface();
+  const ownsInset = useContext(DialogInsetContext);
+  const sectionForm = useContext(SectionFormContext);
+  return (
+    <Region
+      pad={
+        sectionForm
+          ? undefined
+          : ownsInset
+            ? 0
+            : settings
+              ? { fine: 6, coarse: 4 }
+              : phone
+                ? 4
+                : 0
+      }
+      padX={sectionForm ? { fine: 6, coarse: 4 } : undefined}
+      padY={sectionForm ? { fine: 6, coarse: 4 } : undefined}
+      gap={3}
+      className={fixed || phone ? 'flex-1' : ''}
+    >
+      <div
+        data-form-column=""
+        className={
+          sectionForm
+            ? 'flex w-full flex-col gap-6 fine:max-w-lg'
+            : 'flex w-full flex-col gap-3 fine:max-w-lg'
+        }
+      >
+        {children}
+      </div>
+    </Region>
+  );
 }
 
 /**
@@ -209,8 +480,91 @@ export function DialogBody({
  */
 export function DialogFooter({
   children,
+  column,
 }: {
   readonly children: ReactNode;
+  /** Keep the automatic form column, or opt into the full content width. */
+  readonly column?: boolean;
 }): ReactNode {
-  return <div className={dialogFooterClassName()}>{children}</div>;
+  const settings = useSettingsSurface();
+  const phone = useContext(PhoneSheetContext);
+  const ownsInset = useContext(DialogInsetContext);
+  const sectionForm = useContext(SectionFormContext);
+  const all = Children.toArray(children);
+  const isCancel = (node: ReactNode) =>
+    isValidElement<{ children?: ReactNode }>(node) &&
+    node.props.children === 'Cancel';
+  children = [
+    ...all.filter(isCancel),
+    ...all.filter((node) => !isCancel(node)),
+  ];
+  if (phone) {
+    const nodes = Children.toArray(children);
+    const buttons = nodes.filter(
+      (node) => isValidElement(node) && node.type === Button,
+    );
+    const primary =
+      buttons.findLast(
+        (node) =>
+          isValidElement<{ variant?: string }>(node) &&
+          (node.props.variant === undefined ||
+            node.props.variant === 'primary' ||
+            node.props.variant === 'danger'),
+      ) ?? buttons.at(-1);
+    const action = isValidElement<ComponentProps<typeof Button>>(primary)
+      ? cloneElement(primary, {
+          variant: primary.props.variant === 'danger' ? 'danger' : 'primary',
+          full: true,
+        })
+      : primary;
+    const extra = nodes.filter(
+      (node) =>
+        node !== primary &&
+        (!isValidElement<{ children?: ReactNode; variant?: string }>(node) ||
+          node.type !== Button ||
+          (node.props.children !== 'Cancel' && node.props.variant !== 'ghost')),
+    );
+    return (
+      <>
+        {extra.length === 0 ? null : (
+          <Inset pad={4} className="shrink-0">
+            {extra}
+          </Inset>
+        )}
+        <Region
+          scroll="none"
+          edge="top"
+          padX={4}
+          padY={3}
+          safeArea
+          className="ui-dialog-footer bg-card"
+        >
+          {action}
+        </Region>
+      </>
+    );
+  }
+  return (
+    <Region
+      scroll="none"
+      edge="top"
+      pad={!ownsInset && settings ? 6 : 0}
+      className="ui-dialog-footer"
+    >
+      <Inline
+        gap={2}
+        justify="end"
+        wrap
+        className={
+          (column ?? (sectionForm || ownsInset))
+            ? 'w-full fine:max-w-lg'
+            : column === false
+              ? 'w-full'
+              : undefined
+        }
+      >
+        {children}
+      </Inline>
+    </Region>
+  );
 }

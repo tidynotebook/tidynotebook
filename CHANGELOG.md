@@ -7,6 +7,166 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## Unreleased
 
+## 0.24.0 - 2026-11-13
+
+### Added
+
+- Use a compact Find and Replace panel in the editor. Keep the selected match visible, including matches in wide tables.
+- Open diagrams in a vector viewer. Diagram text and surfaces follow the selected theme.
+
+### Fixed
+
+- Keep table layouts stable during vertical scrolling and show Find matches at hidden table delimiters.
+- Keep accepted document changes until the sync feed confirms them. Send pending changes when a saved version has the same text.
+- Keep the current note name when History restores an older version.
+- Preserve Settings focus during layout changes and account refreshes. Match loading layouts to their content.
+- Keep Settings heading spacing and header dividers consistent. Give the command search field equal inner padding and the correct touch target height. ([PR 594](https://github.com/tidynotebook/tidynotebook/pull/594))
+- Correct mobile dialogs, account pages, folder selection, workspace navigation and focus after restore.
+- Preserve sign-in return paths, validate form fields together and set page titles for the current screen.
+- Keep note counts, outline actions, toolbar spacing and published table regions clear and consistent.
+
+### Changed
+
+- Keep documentation checks focused on integrity, including decisions in nested folders.
+- Add local native worker boundary diagnostics. These diagnostics do not establish production worker isolation.
+
+## 0.23.6 - 2026-11-06
+
+### Changed
+
+- Simplify contributor test commands, build prerequisites in dependency order, and use disposable Compose test services. Consolidate design checks, including checks in separate source roots.
+- Focus the README on users and contributors and clarify guide source and build references.
+- Update the CI Buildx setup action to 4.4.1.
+
+### Fixed
+
+- Keep Markdown table columns readable, including empty and new columns. Wide tables scroll inside the table without widening the note or page. Normal words wrap, and long tokens stay within cell bounds. ([PR 566](https://github.com/tidynotebook/tidynotebook/pull/566))
+- Keep empty-cell carets visible after column insertion. Move between existing cells without rewriting Markdown or adding undo history. ([PR 566](https://github.com/tidynotebook/tidynotebook/pull/566))
+- Prevent long-table row creation stalls, preserve each table's horizontal reading position after edits, and keep table grids available on plain HTTP origins. ([PR 566](https://github.com/tidynotebook/tidynotebook/pull/566))
+
+## 0.23.5 - 2026-11-04
+
+### Security
+
+- Build libheif 1.23.7, libpng 1.6.59 and Expat 2.10.0 from pinned sources with libvips 8.18.7 in Linux images. Remove prebuilt Sharp fallbacks and update the runtime ip-address dependency to 10.7.5. Native worker memory and access boundaries remain unproved. ([PR 552](https://github.com/tidynotebook/tidynotebook/pull/552))
+
+### Changed
+
+- Add the shared checkout minimum-height token and `checkoutFrameClassName()` recipe. The token is 36.25rem, or 580 px at a 16 px root. Cloud adoption and real Paddle checks remain pending. ([PR 556](https://github.com/tidynotebook/tidynotebook/pull/556))
+
+### Fixed
+
+- Include headings from the full note in the outline. ([PR 555](https://github.com/tidynotebook/tidynotebook/pull/555))
+- Use one search-dialog inset and keep bottom spacing for touch input. ([PR 553](https://github.com/tidynotebook/tidynotebook/pull/553))
+- Keep folder disclosure surfaces within their rows and reserve the disclosure target width. ([PR 554](https://github.com/tidynotebook/tidynotebook/pull/554))
+
+## 0.23.4 - 2026-11-03
+
+### Security
+
+- Update DOMPurify to 3.4.17, fast-uri to 3.1.9 and 4.2.3, undici to 7.30.1, and qs to 6.17.1. These changes fix 17 dependency alerts. The affected DOMPurify and fast-uri versions ship in v0.23.3. ([PR 548](https://github.com/tidynotebook/tidynotebook/pull/548))
+- Update the test-only happy-dom dependency to 21.0.4. ([PR 538](https://github.com/tidynotebook/tidynotebook/pull/538))
+
+### Changed
+
+- Use Node 26.13.0 with matching Docker, local runtime, performance image and source records. Contributors must use this Node version. ([PR 541](https://github.com/tidynotebook/tidynotebook/pull/541))
+- Update six runtime dependencies and use one CodeMirror autocomplete version. ([PR 542](https://github.com/tidynotebook/tidynotebook/pull/542))
+- Update the build and test toolchain. ([PR 539](https://github.com/tidynotebook/tidynotebook/pull/539))
+- Update the pinned MinIO test-service image. ([PR 526](https://github.com/tidynotebook/tidynotebook/pull/526))
+
+### Fixed
+
+- Finish documentation search-index writes before the build stops the search service. This prevents empty or partial search files on slow filesystems.
+- Hide inline keyboard hints for touch input. Keep desktop hints and the Keyboard shortcuts reference. ([PR 546](https://github.com/tidynotebook/tidynotebook/pull/546))
+
+## 0.23.3 - 2026-11-02
+
+### Changed
+
+- Plan badges support accent, success and danger tones. Their dots and words state the status on page and card surfaces.
+- Usage meters show Almost full from 90 percent and Limit reached at capacity. Task progress keeps its normal fill and supplied text at every value.
+
+## 0.23.2 - 2026-11-02
+
+### Fixed
+
+- Tables use consistent column widths in the editor, published notes and guide. Wide tables scroll with keyboard focus, and long text wraps within each column.
+- Account forms, Settings, notes and shared controls use the design system spacing, type and surfaces. Scroll edges remain visible in light and dark modes.
+
+## 0.23.1 - 2026-10-31
+
+### Fixed
+
+- Open notes scroll on phones. Long notes stay within the screen, with the formatting tools and word count visible.
+
+## 0.23.0 - 2026-10-30
+
+### Added
+
+- Administrators can use Users, Mail, Legal documents and Reports inside Settings. Other accounts do not see these sections.
+
+### Changed
+
+- Shared controls use one type, spacing and surface system on desktop and touch devices. Note text keeps its own scale. Menus and their hover states remain distinct in light and dark modes.
+- Settings opens over the current note or page. The profile card opens Profile, followed by Security, Preferences, Workspace and Administration groups. Existing Settings links keep working, and the old administrator page opens the Users section.
+- Phone dialogs use a sheet with direct drag feedback, a scrolling body and a pinned primary action. Fields and actions stay above the on-screen keyboard. Back, Close and Cancel discard edits and return focus to the control that opened the view.
+- The phone drawer keeps part of the note visible. Tree names use one line, and a More menu keeps the action row on one line when space is limited. Published links and Trash are at the bottom of the icon rail, with Trash last.
+- Save status uses one short line. Waiting and problem states keep their colours, live messages and details. The status counts waiting saves from the latest edit.
+- Every folder choice uses the same tree, arrow keys and filter. New folder is an editable row under the chosen folder. Enter or the check creates and selects it; Escape or an outside press cancels it.
+- New note from template shows template names and a filled preview, with the note name and destination in the same dialog. Phone lists and previews use separate levels. Daily notes uses the same folder and template pickers, and short name edits stay on the section.
+- Find and replace uses a compact bar with a match count, navigation icons and a Replace row shown on request. Phone options open in a sheet. Existing keyboard shortcuts remain.
+- Trash uses Restore and a row menu, with confirmations for permanent deletion. Empty Trash is in the page menu. Trash and Published links show a centered empty state when there are no items. Version history has a short title and readable phone summaries.
+- Mail uses one form column with Server, Sign-in and Sending groups. Required fields are marked, Save is enabled when a value changes, and validation appears at the field when saved.
+- Storage use and administrator limits use decimal GB. New accounts have a default limit of 5,000,000,000 bytes. Existing byte limits stay unchanged.
+- Settings, calendar and action forms load when needed. Triggers preload their code on hover or keyboard focus.
+
+### Fixed
+
+- Undo and Redo keep one live working-copy session and preserve editor focus.
+- Code blocks show quiet fences and one focus ring.
+- Scroll-edge lines and shadows take no layout space. Close stays in the right header slot on every phone sheet.
+- The storage meter shows use in proportion to the limit. A small use shows a thin line.
+- Smaller fields do not trigger focus zoom on iOS. Pinch zoom remains available.
+
+### Removed
+
+- The writing tips card on All notes. A stored dismissal on the device is ignored.
+
+## 0.22.1 - 2026-10-27
+
+### Changed
+
+- The notes, folder, template, editor, Settings, Trash and recovery screens use the approved redesign on phone and desktop.
+- Undo and Redo are icon buttons with accessible names. Their tooltips stay open when the pointer moves onto them, and Escape closes them without moving focus.
+- Each Settings topic has its own page. Old Settings links open the matching topic.
+- Note creation shows a simpler destination choice, including No folder.
+
+### Fixed
+
+- The navigation drawer traps focus and locks scrolling only on phone screens. Desktop Tab and scrolling stay free, and Escape returns focus to a visible control.
+- A link to a deleted note finds the note in Trash, also when Trash has more than one page. Restored device text has priority over a failed Trash lookup.
+- Folder actions are not available until the folder list loads, so a folder cannot be removed from an incomplete list.
+
+## 0.22.0 - 2026-10-26
+
+### Added
+
+- Notes have Undo and Redo controls. Image removal affects one reference and supports Undo.
+- Note creation offers template previews and a visible destination. Today and recent notes are easier to find.
+
+### Changed
+
+- Search and export actions show their workspace scope. History shows the comparison baseline.
+- Signup, account settings, trial information, and offline settings use clearer actions and status messages.
+
+### Fixed
+
+- Restored notes recover their editor without a page reload. Purged notes keep their terminal state during navigation.
+- Search shows pending work and keeps results tied to the current query.
+- Template reads, errors, and creation navigation stay tied to the active workspace and request.
+- Save status includes open editor work before a checkpoint. Recovered drafts keep their save proof and require a choice when the accepted head changes.
+- The Use saved version action archives and removes the same draft in one transaction. A concurrent draft change keeps the newer text and shows a fresh choice.
+
 ## 0.21.0 - 2026-10-24
 
 ### Added

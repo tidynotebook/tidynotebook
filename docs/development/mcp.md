@@ -140,5 +140,7 @@ Our integration tests cover the modern protocol and authorization. The full
 authorization proof is in `tests/integration/oauth-authorization.test.ts`.
 
 ```sh
-pnpm test:integration -- mcp-endpoint mcp-conformance oauth-authorization
+pnpm build
+pnpm test:services
+pnpm exec node --config-file=node-test.config.json tests/integration/mcp-endpoint.test.ts tests/integration/mcp-conformance.test.ts tests/integration/oauth-authorization.test.ts
 ```

@@ -46,7 +46,8 @@ export const focusOutlineInset =
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
 /** How large a button is. */
-export type ButtonSize = 'sm' | 'md';
+export type ButtonSize = 'compact' | 'default';
+export type IconSize = 'row' | 'toolbar' | 'header' | 'rail';
 
 /**
  * The tone of a quiet button.
@@ -121,12 +122,19 @@ function buttonVariantClassName(
   variant: ButtonVariant,
   tone: ButtonTone | undefined,
   interaction: 'button' | 'group',
+  settingsRow = false,
 ): string {
   const colours = buttonColours[interaction];
-  if (tone === 'danger' && variant === 'secondary')
-    return colours['secondary-danger'];
-  if (tone === 'danger' && variant === 'ghost') return colours['ghost-danger'];
-  return colours[variant];
+  const key =
+    tone === 'danger' && variant === 'secondary'
+      ? 'secondary-danger'
+      : tone === 'danger' && variant === 'ghost'
+        ? 'ghost-danger'
+        : variant;
+  // Phone Settings actions have no raised surface. Their desktop depth stays.
+  return settingsRow
+    ? colours[key].replace(' shadow-raised ', ' fine:shadow-raised ')
+    : colours[key];
 }
 
 /**
@@ -173,33 +181,39 @@ export function buttonClassName(
     readonly size?: ButtonSize | undefined;
     readonly tone?: ButtonTone | undefined;
     readonly iconOnly?: boolean | undefined;
+    readonly iconSize?: IconSize | undefined;
     readonly compact?: boolean | undefined;
+    readonly settingsRow?: boolean;
     readonly className?: string | undefined;
   } = {},
 ): string {
   const variant = options.variant ?? 'primary';
-  const size = options.size ?? 'md';
+  const size = options.size ?? 'default';
   const compact = options.compact === true;
   const variantClass = compact
     ? 'group bg-transparent'
-    : buttonVariantClassName(variant, options.tone, 'button');
+    : buttonVariantClassName(
+        variant,
+        options.tone,
+        'button',
+        options.settingsRow,
+      );
 
-  // Touch pointers get the 44 px minimum. A mouse pointer keeps the compact
-  // control scale, so the chrome stays quiet on a desktop screen: 32 px for a
-  // button and 28 px for a small one.
+  const compactSize = compact || size === 'compact';
+  const iconSizes = {
+    // The target uses leading row padding; the glyph keeps its original slot.
+    row: compact
+      ? 'h-7 w-7 pl-1 coarse:h-9 coarse:w-8 coarse:pl-2'
+      : 'h-7 w-7 coarse:h-9 coarse:w-10',
+    toolbar: 'h-7 w-7 coarse:h-10 coarse:w-10',
+    header: 'h-7 w-7 coarse:h-11 coarse:w-11',
+    rail: 'h-7 w-7 coarse:h-11 coarse:w-11',
+  } as const;
   const sizeClass = options.iconOnly
-    ? size === 'sm'
-      ? 'size-11 px-0 md:size-7'
-      : 'size-11 px-0 md:size-8'
-    : compact
-      ? size === 'sm'
-        ? 'min-h-11 px-0 md:min-h-7'
-        : 'min-h-11 px-0 md:min-h-8'
-      : size === 'sm'
-        ? 'min-h-11 px-2.5 md:min-h-7'
-        : 'min-h-11 px-3 md:min-h-8';
+    ? `ui-icon-button ${iconSizes[options.iconSize ?? 'header']} p-0`
+    : `${compactSize ? 'h-7' : 'h-8'} ${size === 'compact' ? 'px-2' : 'px-3'} coarse:h-11 coarse:px-4`;
   return [
-    `inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-control font-medium no-underline ${transitionSurface} ${compact ? 'focus-visible:outline-none' : focusOutline} disabled:cursor-not-allowed`,
+    `ui-button inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-md text-label no-underline ${transitionSurface} ${compact ? 'focus-visible:outline-none' : options.iconOnly ? focusOutlineInset : focusOutline} disabled:cursor-not-allowed`,
     variantClass,
     sizeClass,
     options.className ?? '',
@@ -213,25 +227,25 @@ export function buttonClassName(
  *
  * The button keeps its 44 px touch target. A small surface is 32 px under
  * touch and 28 px on a desktop. It takes the focus treatment, fill, and hover
- * state that a person sees. An icon-only surface stays square.
+ * state that a person sees. An icon-only surface stays square. A disclosure
+ * uses glyph padding to keep its fill inside the row focus outline.
  */
 export function compactButtonVisualClassName(options: {
   readonly variant?: ButtonVariant | undefined;
   readonly size?: ButtonSize | undefined;
   readonly tone?: ButtonTone | undefined;
   readonly iconOnly: boolean;
+  readonly iconSize?: IconSize | undefined;
 }): string {
   const variant = options.variant ?? 'primary';
-  const size = options.size ?? 'md';
-  const sizeClass = options.iconOnly
-    ? size === 'sm'
-      ? 'size-8 md:size-7'
-      : 'size-9 md:size-8'
-    : size === 'sm'
-      ? 'min-h-8 px-2.5 md:min-h-7'
-      : 'min-h-9 px-3 md:min-h-8';
+  const sizeClass =
+    options.iconSize === 'row'
+      ? 'p-0.5'
+      : options.iconOnly
+        ? 'h-7 w-7'
+        : 'h-7 px-2';
   return [
-    `inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md ${transitionSurface}`,
+    `inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md ${transitionSurface}`,
     'group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-focus',
     buttonVariantClassName(variant, options.tone, 'group'),
     sizeClass,
@@ -248,7 +262,7 @@ export function compactButtonVisualClassName(options: {
  * width, so the two facts stay one fact.
  */
 export function avatarClassName(): string {
-  return 'inline-flex size-6 items-center justify-center rounded-full bg-active text-kbd font-semibold text-strong';
+  return 'inline-flex size-6 items-center justify-center rounded-full bg-active text-avatar text-strong';
 }
 
 /** The mark that a control at the edge of a frame draws inside its box. */
@@ -275,17 +289,14 @@ export type FrameEdge = 'start' | 'end';
  * 14 px and then 6 px, and the avatar takes 10 px and then 2 px.
  * `control-classes.test.ts` holds each string below to that arithmetic.
  */
+/** The same optical slot works at either edge. Targets grow around it. */
 export function edgeControlClassName(options: {
   readonly edge: FrameEdge;
   readonly mark: EdgeMark;
 }): string {
-  return options.edge === 'start'
-    ? options.mark === 'avatar'
-      ? '-ms-2.5 md:-ms-0.5'
-      : '-ms-3.5 md:-ms-1.5'
-    : options.mark === 'avatar'
-      ? '-me-2.5 md:-me-0.5'
-      : '-me-3.5 md:-me-1.5';
+  return options.mark === 'avatar'
+    ? 'relative inline-flex h-6 w-6'
+    : 'relative inline-flex h-4 w-4';
 }
 
 /**
@@ -307,7 +318,7 @@ export function edgeControlClassName(options: {
  * `control-classes.test.ts` holds the strings to that arithmetic.
  */
 export function controlStripClassName(): string {
-  return 'flex items-center overflow-x-auto py-1 -mx-3.5 md:-mx-2.5 md:px-1';
+  return 'flex items-center overflow-x-auto py-1';
 }
 
 /**
@@ -340,9 +351,17 @@ export function controlStripClassName(): string {
  * the recipe itself, so every Delete row of the product was the colour of
  * every other row.
  */
+/** Row content stays on the parent edge; its painted hit surface grows into the gutter. */
+export const contentEdgeRowClassName =
+  'ui-content-row relative isolate before:absolute before:inset-y-0 before:-inset-x-2 coarse:before:-inset-x-3 before:-z-10 before:rounded-md coarse:before:rounded-lg before:bg-inherit before:pointer-events-auto';
+
 export function rowClassName(
   options: {
+    readonly layout?: boolean;
+    readonly contentEdge?: boolean;
     readonly selected?: boolean | undefined;
+    /** Aligns a Settings control with the content column. */
+    readonly flush?: boolean | undefined;
     readonly current?: boolean | undefined;
     readonly inset?: boolean | undefined;
     readonly interactive?: boolean | undefined;
@@ -357,11 +376,11 @@ export function rowClassName(
   // element, because two of them are decided by the order of the stylesheet
   // and not by the order of the string.
   const toned = options.danger === true;
-  const colour = toned ? 'text-danger' : 'text-ink';
+  const colour = toned ? 'text-danger' : 'text-strong';
   const state = marked
     ? toned
-      ? 'bg-active font-medium'
-      : 'bg-active text-strong font-medium'
+      ? 'bg-active text-label'
+      : 'bg-active text-strong text-label'
     : interactive
       ? toned
         ? 'hover:bg-hover'
@@ -377,7 +396,8 @@ export function rowClassName(
       : 'disabled:cursor-not-allowed disabled:text-muted disabled:hover:bg-transparent disabled:hover:text-muted'
     : '';
   return [
-    `flex min-h-11 items-center gap-2 rounded-md px-2 text-control ${colour} no-underline ${transitionSurface} md:min-h-7`,
+    `${options.layout === false ? '' : 'ui-tree-row flex items-center gap-2 rounded-md py-1 coarse:py-3 coarse:rounded-lg ' + (options.flush === true || options.contentEdge ? 'px-0' : 'px-2 coarse:px-3')} text-body ${colour} no-underline ${transitionSurface}`,
+    options.contentEdge ? contentEdgeRowClassName : '',
     interactive ? 'cursor-pointer' : '',
     disabled,
     interactive
@@ -404,7 +424,7 @@ export function sidebarViewClassName(options: {
   readonly current: boolean;
 }): string {
   return [
-    `inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-md ${transitionSurface} ${focusOutline} md:size-8`,
+    `ui-button ui-icon-button h-7 w-7 p-0 coarse:h-11 coarse:w-11 inline-flex shrink-0 cursor-pointer items-center justify-center rounded-md ${transitionSurface} ${focusOutline}`,
     options.current
       ? 'bg-active text-strong'
       : 'text-muted hover:bg-hover hover:text-strong',
@@ -438,7 +458,7 @@ export function taskBoxClassName(): string {
  */
 export function tabClassName(options: { readonly selected: boolean }): string {
   return [
-    `inline-flex min-h-11 shrink-0 cursor-pointer items-center rounded-md px-2.5 text-control font-medium ${transitionSurface} ${focusOutline} md:min-h-7`,
+    `ui-button ui-compact h-7 px-3 coarse:h-11 coarse:px-4 inline-flex shrink-0 cursor-pointer items-center rounded-md text-label ${transitionSurface} ${focusOutline}`,
     options.selected
       ? 'bg-active text-strong'
       : 'text-muted hover:bg-hover hover:text-strong',
@@ -455,7 +475,7 @@ export function tabClassName(options: { readonly selected: boolean }): string {
  * field.
  */
 export function inlineFieldClassName(): string {
-  return `min-w-0 flex-1 rounded-sm border bg-app px-1 text-control ${touchFieldText} text-strong outline-none ${transitionField} border-edge-line focus-visible:border-focus`;
+  return `ui-field h-8 px-3 coarse:h-11 min-w-0 flex-1 rounded-md border bg-app text-body text-strong outline-none ${transitionField} border-edge-line focus-visible:border-focus`;
 }
 
 /** The classes of the parts of one checkbox and its label. */
@@ -488,7 +508,7 @@ export function checkboxClassNames(
   options: { readonly disabled?: boolean | undefined } = {},
 ): CheckboxClassNames {
   return {
-    label: `inline-flex min-h-11 items-center gap-2 text-control md:min-h-8 ${options.disabled === true ? 'cursor-not-allowed text-muted' : 'cursor-pointer text-strong'}`,
+    label: `inline-flex py-3 items-center gap-2 text-body fine:py-2 ${options.disabled === true ? 'cursor-not-allowed text-muted' : 'cursor-pointer text-strong'}`,
     frame: 'relative inline-flex size-4 shrink-0 items-center justify-center',
     box: `peer size-4 cursor-pointer appearance-none rounded-sm border border-edge bg-app ${transitionSurface} checked:border-accent-fill checked:bg-accent-fill disabled:cursor-not-allowed disabled:checked:border-edge disabled:checked:bg-hover ${focusOutline}`,
     mark: 'pointer-events-none absolute inset-0 hidden text-on-accent peer-checked:block peer-disabled:text-muted',
@@ -509,14 +529,14 @@ const menuSurfaceParts = [
     value: 'var(--radius-lg)',
   },
   {
-    classes: 'border border-edge-subtle',
+    classes: 'border border-overlay-edge',
     property: 'border',
-    value: '1px solid var(--notes-border-subtle)',
+    value: '1px solid var(--notes-border-overlay)',
   },
   {
-    classes: 'bg-card',
+    classes: `bg-overlay state-overlay`,
     property: 'backgroundColor',
-    value: 'var(--notes-surface-card)',
+    value: 'var(--notes-surface-overlay)',
   },
   { classes: 'p-1', property: 'padding', value: 'var(--spacing)' },
   {
@@ -553,23 +573,7 @@ export const menuSurfaceValues: readonly {
   readonly value: string;
 }[] = menuSurfaceParts;
 
-/**
- * The text step of a field under touch.
- *
- * Safari on iOS zooms the page into a field whose text is under 16 px when
- * the field takes focus, and the page stays zoomed after the keyboard
- * closes, so the zoom hides what the person had on the screen. Every field
- * a person types into therefore sets its text at `text-base`, 16 px, under a
- * coarse pointer, and keeps its compact step under a mouse. The viewport
- * does not forbid the zoom instead: a limit on the scale also stops the pinch
- * of a person on Android who needs larger text.
- *
- * The editor adapter states the same rule for the search field that
- * CodeMirror builds, which no class reaches, through `touchFieldQuery` of
- * `@notesapp/editor`. `tests/integration/theme-variables.test.ts` holds that
- * query to the one Tailwind writes for this variant.
- */
-export const touchFieldText = 'pointer-coarse:text-base';
+/** Fields use the body role. The iOS-only viewport rule prevents focus zoom. */
 
 /**
  * The appearance of a field, as classes.
@@ -596,7 +600,7 @@ export function fieldClassName(
   } = {},
 ): string {
   return [
-    `w-full min-h-11 ${fieldSurface} text-ui ${touchFieldText} md:min-h-8`,
+    `ui-field h-8 px-3 coarse:h-11 w-full ${fieldSurface} text-body`,
     fieldEdge(options.invalid === true),
     options.className ?? '',
   ]
@@ -622,10 +626,13 @@ function fieldEdge(invalid: boolean): string {
  * code face at the control step, as a source text is.
  */
 export function textAreaClassName(
-  options: { readonly invalid?: boolean | undefined } = {},
+  options: {
+    readonly invalid?: boolean | undefined;
+    readonly size?: 'document' | 'short';
+  } = {},
 ): string {
   return [
-    `block w-full min-h-64 resize-y py-2 font-mono text-control ${touchFieldText} leading-relaxed ${fieldSurface}`,
+    `block w-full ${options.size === 'short' ? '' : 'min-h-64 font-mono'} resize-y py-2 text-body ${fieldSurface}`,
     fieldEdge(options.invalid === true),
   ].join(' ');
 }
@@ -635,10 +642,11 @@ export function textAreaClassName(
  *
  * The query of the command palette is a field inside a surface that already
  * frames it, so it takes no edge, no fill and no radius, and it takes the
- * body step of the chrome and the touch step of every field.
+ * body step of the chrome and the target height of every field. It owns
+ * equal inner block padding, including the space above a containing row edge.
  */
 export function bareFieldClassName(): string {
-  return `min-w-0 flex-1 border-0 bg-transparent py-3 text-ui ${touchFieldText} text-strong outline-none placeholder:text-muted`;
+  return `ui-field ui-bare-field h-8 coarse:h-11 py-1 coarse:py-2 min-w-0 flex-1 border-0 bg-transparent text-body text-strong outline-none placeholder:text-muted`;
 }
 
 /**
@@ -650,7 +658,9 @@ export function bareFieldClassName(): string {
  * draws the box, and `SelectField` draws the chevron in the space at the end.
  */
 export function selectClassName(): string {
-  return fieldClassName({ className: 'cursor-pointer appearance-none pr-9' });
+  return fieldClassName({
+    className: 'ui-select cursor-pointer appearance-none pr-3',
+  });
 }
 
 /**
@@ -662,7 +672,7 @@ export function selectClassName(): string {
  * each key.
  */
 export function kbdClassName(): string {
-  return 'inline-flex items-center rounded-sm border border-edge-line bg-surface px-1.5 font-mono text-kbd text-muted';
+  return 'inline-flex items-center rounded-sm border border-edge-line bg-surface px-2 py-1 font-mono text-small text-muted';
 }
 
 /**
@@ -676,59 +686,40 @@ export function kbdClassName(): string {
  * states its meaning in its word.
  */
 export function badgeClassName(): string {
-  return 'inline-flex items-center rounded-sm bg-hover px-1.5 text-kbd font-medium text-muted';
+  return 'inline-flex items-center rounded-sm bg-active px-2 text-secondary text-muted';
 }
 
-/** Whole classes that Tailwind can read, from empty to full. */
-const meterWidths = [
-  'w-0',
-  'w-1/12',
-  'w-2/12',
-  'w-3/12',
-  'w-4/12',
-  'w-5/12',
-  'w-6/12',
-  'w-7/12',
-  'w-8/12',
-  'w-9/12',
-  'w-10/12',
-  'w-11/12',
-  'w-full',
-] as const;
-
-/**
- * The nearest twelfth of a meter. A positive value shows at least one step.
- * Only a value at or above the maximum shows the full track.
- */
-export function meterWidthClassName(value: number, max: number): string {
+/** The real fill percentage, clamped to the track. */
+export function meterFillPercent(value: number, max: number): number {
   if (!Number.isFinite(value) || value < 0 || !Number.isFinite(max) || max <= 0)
     throw new RangeError(
       'A meter needs a nonnegative value and a positive maximum.',
     );
-  if (value === 0) return meterWidths[0];
-  if (value >= max) return meterWidths[12];
-  const step = Math.max(1, Math.min(11, Math.round((value / max) * 12)));
-  return meterWidths[step] ?? meterWidths[0];
+  return Math.min(value / max, 1) * 100;
 }
 
-/** Whether the meter needs its warning in words and in its fill. */
+/** Whether use is near the limit but has not reached it. */
 export function meterAlmostFull(value: number, max: number): boolean {
-  return value / max >= 0.9;
+  return value / max >= 0.9 && value < max;
 }
 
-/** The one recipe of a static meter, including its text and warning. */
+/** The one recipe of a static meter, including its limit state. */
 export function meterClassNames(
   value: number,
   max: number,
+  kind: 'capacity' | 'progress' = 'capacity',
 ): {
   readonly text: string;
+  readonly settingsValue: string;
   readonly track: string;
   readonly fill: string;
 } {
+  const reached = kind === 'capacity' && value >= max;
   return {
-    text: 'mb-1 mt-0 text-control text-muted',
-    track: 'h-1.5 w-full rounded-sm bg-hover',
-    fill: `h-1.5 rounded-sm ${meterWidthClassName(value, max)} ${meterAlmostFull(value, max) ? 'bg-danger-fill' : 'bg-accent-fill'}`,
+    text: `text-secondary ${reached ? 'text-danger' : 'text-muted'}`,
+    settingsValue: `text-value ${reached ? 'text-danger' : 'text-muted'}`,
+    track: 'h-1.5 w-full overflow-hidden rounded-sm bg-hover',
+    fill: `block h-1.5 w-full rounded-sm ${reached ? 'fill-danger-fill' : 'fill-accent-fill'}`,
   };
 }
 
@@ -764,10 +755,10 @@ export function calendarDayClassName(options: {
         ? 'text-ink'
         : 'text-muted';
   return [
-    `relative inline-flex h-8 w-full cursor-pointer items-center justify-center rounded-md border text-control tabular-nums ${transitionSurface} ${focusOutlineInset} md:h-7`,
-    options.today ? 'border-edge-line font-semibold' : 'border-transparent',
+    `ui-calendar-day h-7 coarse:h-11 p-0 relative inline-flex w-full cursor-pointer items-center justify-center rounded-md border text-body tabular-nums ${transitionSurface} ${focusOutlineInset}`,
+    options.today ? 'border-edge-line text-label' : 'border-transparent',
     options.selected
-      ? 'bg-active font-medium'
+      ? 'bg-active text-label'
       : 'hover:bg-hover hover:text-strong',
     text,
   ].join(' ');
@@ -815,4 +806,73 @@ export function buttonName(options: {
     ariaLabel: options.label,
     title: options.title ?? (options.hasText ? undefined : options.label),
   };
+}
+
+/**
+ * The approved history controls are tools of the format row.
+ *
+ * The button is the target of a small compact tool: 44 px under touch and the
+ * 28 px of every other tool on a desktop, so the row keeps one width and one
+ * gap. The surface inside it carries the look, so Undo and Redo show the same
+ * 16 px glyph, fill and colours as every other tool of the row. A history
+ * control is unavailable through `aria-disabled` and not `disabled`, so it
+ * keeps the focus, and its muted colour is written here and not read from a
+ * `group-disabled` state that never applies to it.
+ */
+export function historyButtonClassName(): string {
+  return buttonClassName({
+    variant: 'ghost',
+    size: 'compact',
+    iconOnly: true,
+    compact: true,
+    className: 'shrink-0 aria-disabled:cursor-not-allowed',
+  });
+}
+
+/** The visible surface of a history control, as a small compact tool. */
+export function historyButtonVisualClassName(disabled: boolean): string {
+  return [
+    `inline-flex items-center justify-center rounded-md ${transitionSurface}`,
+    'group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-focus',
+    disabled
+      ? 'bg-transparent text-muted'
+      : 'bg-transparent text-strong group-hover:bg-hover',
+    'h-7 w-7',
+  ].join(' ');
+}
+
+/** A history shortcut uses words that also work in a screen reader. */
+export function historyButtonName(
+  action: 'undo' | 'redo',
+  apple: boolean,
+): {
+  readonly label: string;
+  readonly tooltip: string;
+} {
+  const label = action === 'undo' ? 'Undo' : 'Redo';
+  return {
+    label,
+    tooltip: `${label} (${apple ? 'Cmd' : 'Ctrl'}+${action === 'redo' ? 'Shift+' : ''}Z)`,
+  };
+}
+
+/** The parts of an offline choice. The full row is the control. */
+export function switchClassNames(checked: boolean): {
+  readonly row: string;
+  readonly track: string;
+  readonly thumb: string;
+} {
+  return {
+    row: rowClassName({
+      flush: true,
+      className: 'w-full text-left py-3 px-0 coarse:px-4',
+    }),
+    track: `inline-flex h-5 w-8 shrink-0 items-center rounded-full border border-edge p-0.5 ${checked ? 'justify-end bg-accent-fill' : 'justify-start bg-hover'}`,
+    thumb: `size-3 rounded-full ${checked ? 'bg-on-accent' : 'bg-muted'}`,
+  };
+}
+
+/** Name the missing field and keep initial abbreviations intact. */
+export function requiredFieldMessage(label: string): string {
+  return `Enter the ${label.replace(/^[A-Z](?![A-Z])/, (initial) => initial.toLowerCase())}.`;
 }

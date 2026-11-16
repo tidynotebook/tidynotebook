@@ -1,0 +1,454 @@
+/** Run against a local build. Draft folder choices must not write review data. */
+import assert from 'node:assert/strict';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
+import {
+  routeAuditAssets,
+  hasChromium,
+  isRecord,
+  type Locator,
+  type Page,
+} from './browser.ts';
+
+const loaded: unknown = await import(
+  pathToFileURL(
+    process.env.PLAYWRIGHT_MODULE ??
+      '.local-app/node_modules/playwright-core/index.mjs',
+  ).href
+);
+assert.ok(hasChromium(loaded));
+const base = process.env.UI_AUDIT_ORIGIN ?? 'http://localhost:3517';
+const statePath =
+  process.env.UI_AUDIT_STATE ?? '.local-app/review-session.json';
+const fixture: unknown = JSON.parse(
+  readFileSync(
+    process.env.UI_AUDIT_FIXTURE ?? '.local-app/review-fixture.json',
+    'utf8',
+  ),
+);
+assert.ok(isRecord(fixture) && typeof fixture.workspaceId === 'string');
+const workspaceId = fixture.workspaceId;
+const home = `${base}/w/${workspaceId}`;
+const browser = await loaded.chromium.launch();
+const results: { variant: string; screen: string }[] = [];
+const errors: string[] = [];
+const writes: string[] = [];
+mkdirSync('.local-app/screenshots', { recursive: true });
+async function settle(page: Page) {
+  if (await page.locator('.phone-sheet').count())
+    await page.locator('.phone-sheet[data-sheet-ready]').waitFor();
+  await page.evaluate(async () => {
+    await Promise.all(
+      document
+        .getAnimations()
+        .filter(
+          (animation) =>
+            animation.effect?.getComputedTiming().iterations !== Infinity,
+        )
+        .map((animation) => animation.finished.catch(() => {})),
+    );
+    await new Promise<void>((done) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => done())),
+    );
+  });
+}
+
+/** Assert both the viewport and every scrolling ancestor, not only the screen. */
+async function visibleFieldAndFooter(
+  page: Page,
+  field: Locator,
+  footer: Locator,
+) {
+  await settle(page);
+  assert.equal(await field.evaluate((e) => e === document.activeElement), true);
+  for (const [name, control] of [
+    ['field', field],
+    ['footer', footer],
+  ] as const) {
+    const clipped = await control.evaluate((e) => {
+      const r = e.getBoundingClientRect(),
+        v = window.visualViewport;
+      const top = v?.offsetTop ?? 0,
+        bottom = top + (v?.height ?? innerHeight);
+      const problems: string[] = [];
+      if (r.top < top - 1 || r.bottom > bottom + 1)
+        problems.push('visual viewport');
+      for (let a = e.parentElement; a; a = a.parentElement) {
+        if (a.hasAttribute('data-notes-dialog-root')) break;
+        if (
+          !['auto', 'scroll', 'hidden', 'clip'].includes(
+            getComputedStyle(a).overflowY,
+          )
+        )
+          continue;
+        const b = a.getBoundingClientRect();
+        if (r.top < b.top - 1 || r.bottom > b.bottom + 1)
+          problems.push(a.className);
+      }
+      return problems;
+    });
+    assert.deepEqual(clipped, [], `${name} must be fully visible`);
+  }
+}
+try {
+  for (const width of process.env.CHECK_WIDTHS?.split(',').map(Number) ?? [
+    320, 390, 1440,
+  ])
+    for (const scheme of ['light', 'dark'] as const) {
+      const phone = width < 1024,
+        height = phone ? 844 : 900;
+      const variant = `${width}-${scheme}`;
+      const context = await browser.newContext({
+        storageState: statePath,
+        viewport: { width, height },
+        hasTouch: phone,
+        isMobile: phone,
+        colorScheme: scheme,
+      });
+      await routeAuditAssets(context);
+
+      await context.addInitScript(
+        (value) => localStorage.setItem('notesapp.theme', value),
+        scheme,
+      );
+      const page = await context.newPage();
+      page.setDefaultTimeout(15000);
+      page.on('pageerror', (e) => errors.push(e.message));
+      page.on('request', (r) => {
+        if (
+          !['GET', 'HEAD', 'OPTIONS'].includes(r.method()) &&
+          /\/api\//.test(r.url()) &&
+          !r.url().endsWith('/sync/snapshots')
+        )
+          writes.push(`${r.method()} ${r.url()}`);
+      });
+      const dialog = () => page.getByRole('dialog').filter({ visible: true });
+      async function shot(screen: string) {
+        await settle(page);
+        assert.equal(
+          await page.evaluate(
+            () => document.documentElement.scrollWidth > innerWidth,
+          ),
+          false,
+        );
+        await page.screenshot({
+          path: `.local-app/screenshots/round6-${screen}-${variant}.png`,
+          animations: 'disabled',
+        });
+        results.push({ variant, screen });
+        process.stdout.write(`PASS ${variant} ${screen}\n`);
+      }
+      async function openFolderSetting(
+        section = 'daily-notes',
+        label = 'Folder',
+      ) {
+        await page.goto(`${home}?settings=${section}`);
+        await dialog()
+          .getByRole('button', { name: label, exact: true })
+          .click();
+        await dialog().getByRole('treeitem').first().waitFor();
+      }
+      async function startDraft() {
+        // The chosen folder can be the root, or any stored review folder.
+        await dialog()
+          .getByText(/^New folder (in |here)/)
+          .click();
+        const field = dialog().getByRole('textbox', {
+          name: 'Folder name',
+          exact: true,
+        });
+        await field.waitFor();
+        assert.equal(
+          await dialog()
+            .getByRole('button', { name: 'Add folder', exact: true })
+            .count(),
+          0,
+        );
+        assert.equal(
+          await field.evaluate((e) => e.closest('[role="tree"]') !== null),
+          true,
+        );
+        return field;
+      }
+      await openFolderSetting();
+      await dialog()
+        .getByRole('treeitem')
+        .getByText('Personal', { exact: true })
+        .click();
+      let field = await startDraft();
+      const draft = dialog().getByRole('treeitem', {
+        name: 'New folder',
+        exact: true,
+      });
+      assert.equal(
+        await draft.evaluate((e) =>
+          e.previousElementSibling?.getAttribute('aria-selected'),
+        ),
+        'true',
+      );
+      assert.equal(
+        await dialog()
+          .getByRole('button', { name: 'Cancel', exact: true })
+          .count(),
+        phone ? 0 : 1,
+      );
+      assert.equal(
+        await dialog()
+          .getByRole('button', { name: 'Done', exact: true })
+          .count(),
+        1,
+      );
+      if (phone) {
+        await page.setViewportSize({ width, height: 420 });
+        await visibleFieldAndFooter(
+          page,
+          field,
+          dialog().getByRole('button', { name: 'Done', exact: true }),
+        );
+        await shot('keyboard-inline');
+      }
+      await field.fill('Invalid/name');
+      await field.press('Enter');
+      await dialog().getByRole('alert').waitFor();
+      await field.fill('Reading');
+      await field.press('Enter');
+      await dialog().getByRole('alert').waitFor();
+      await shot('duplicate-name');
+      await field.fill('Journal review draft');
+      await field.press('Enter');
+      await dialog()
+        .getByRole('treeitem')
+        .getByText('Journal review draft', { exact: true })
+        .waitFor();
+      assert.equal(
+        await dialog()
+          .getByRole('treeitem')
+          .getByText('Journal review draft', { exact: true })
+          .evaluate((e) =>
+            e.closest('[role="treeitem"]')?.getAttribute('aria-selected'),
+          ),
+        'true',
+      );
+      await shot('created-draft');
+      field = await startDraft();
+      await field.press('Escape');
+      assert.equal(
+        await dialog()
+          .getByRole('textbox', { name: 'Folder name', exact: true })
+          .count(),
+        0,
+      );
+      field = await startDraft();
+      await dialog()
+        .locator('.ui-settings-heading')
+        .filter({ visible: true })
+        .click();
+      assert.equal(await field.count(), 0);
+      await dialog()
+        .getByRole('button', {
+          name: phone ? 'Back to section' : 'Cancel',
+          exact: true,
+        })
+        .click();
+      await page.setViewportSize({ width, height });
+      if (phone) {
+        // iOS can shrink and move only visualViewport while layout height stays 844.
+        await openFolderSetting();
+        field = await startDraft();
+        await page.evaluate(() => {
+          const viewport = window.visualViewport;
+          if (!viewport)
+            throw new Error('The browser must provide visualViewport.');
+          Object.defineProperties(viewport, {
+            height: { configurable: true, value: 420 },
+            offsetTop: { configurable: true, value: 70 },
+          });
+          viewport.dispatchEvent(new Event('resize'));
+          Object.defineProperty(viewport, 'offsetTop', {
+            configurable: true,
+            value: 90,
+          });
+          viewport.dispatchEvent(new Event('scroll'));
+        });
+        await visibleFieldAndFooter(
+          page,
+          field,
+          dialog().getByRole('button', { name: 'Done', exact: true }),
+        );
+        await shot('visual-viewport-offset');
+        await field.press('Escape');
+      }
+      await openFolderSetting('templates', 'Templates folder');
+      field = await startDraft();
+      await field.fill('Picker check draft');
+      await dialog()
+        .getByRole('button', { name: 'Create folder', exact: true })
+        .click();
+      await dialog()
+        .getByRole('treeitem')
+        .getByText('Picker check draft', { exact: true })
+        .waitFor();
+      await shot('template-folder-draft');
+      await page.goto(home);
+      await page
+        .getByRole('button', { name: 'Use template', exact: true })
+        .waitFor();
+      if (phone)
+        await page
+          .getByRole('button', { name: 'Open navigation', exact: true })
+          .click();
+      const drawer = page.locator('#notes-sidebar');
+      await settle(page);
+      if (phone) {
+        const box = await drawer.boundingBox();
+        assert.equal(box?.x, 0);
+        assert.equal(box?.width, Math.min(width - 56, 320));
+        const welcome = drawer.getByText('Welcome to tidy notebook', {
+          exact: true,
+        });
+        await welcome.waitFor();
+        assert.deepEqual(
+          await welcome.evaluate((e) => ({
+            name: e.textContent,
+            height: e.getBoundingClientRect().height,
+            overflow: getComputedStyle(e).textOverflow,
+            whiteSpace: getComputedStyle(e).whiteSpace,
+          })),
+          {
+            name: 'Welcome to tidy notebook',
+            height: 20,
+            overflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          },
+          'A phone tree name keeps one line and its complete accessible text',
+        );
+      }
+      await shot('drawer');
+      await drawer
+        .getByRole('button', { name: 'New folder', exact: true })
+        .click();
+      const name = dialog().getByRole('textbox', { name: 'Name', exact: true });
+      await name.waitFor();
+      if (phone) {
+        await page.setViewportSize({ width, height: 420 });
+        await visibleFieldAndFooter(
+          page,
+          name,
+          dialog().getByRole('button', { name: 'Create folder', exact: true }),
+        );
+        await shot('new-folder-keyboard');
+      }
+      await dialog().locator('#new-folder-inside').click();
+      field = await startDraft();
+      await field.fill('Inside review draft');
+      await field.press('Enter');
+      await shot('inside-draft');
+      await page.keyboard.press('Escape');
+      await page.setViewportSize({ width, height });
+      await page.goto(home);
+      if (phone)
+        await page
+          .getByRole('button', { name: 'Open navigation', exact: true })
+          .click();
+      if (!phone)
+        await page
+          .getByRole('button', {
+            name: 'Actions for the folder Personal',
+            exact: true,
+          })
+          .evaluate((e) =>
+            e.closest<HTMLElement>('[role="treeitem"]')?.focus(),
+          );
+      await page
+        .getByRole('button', {
+          name: 'Actions for the folder Personal',
+          exact: true,
+        })
+        .filter({ visible: true })
+        .click();
+      await page
+        .getByRole('menuitem', { name: 'Move to folder', exact: true })
+        .click();
+      field = await startDraft();
+      await field.fill('Move review draft');
+      await field.press('Enter');
+      await shot('move-draft');
+      await page.keyboard.press('Escape');
+      await page.goto(home);
+      await page
+        .getByRole('button', { name: 'Use template', exact: true })
+        .click();
+      await dialog()
+        .getByRole('button', { name: 'Meeting', exact: true })
+        .filter({ visible: true })
+        .click();
+      await dialog().locator('#template-note-folder').click();
+      field = await startDraft();
+      await field.fill('Template destination draft');
+      await field.press('Enter');
+      await shot('template-destination');
+      if (phone) {
+        await page.goto(`${home}?settings=daily-notes`);
+        await dialog()
+          .getByRole('button', { name: 'Name format', exact: true })
+          .click();
+        field = dialog().getByRole('textbox', {
+          name: 'Name format',
+          exact: true,
+        });
+        await field.click();
+        await page.setViewportSize({ width, height: 420 });
+        await visibleFieldAndFooter(
+          page,
+          field,
+          dialog().getByRole('button', { name: 'Save', exact: true }),
+        );
+        await shot('name-format-keyboard');
+        await page.setViewportSize({ width, height });
+        await page.goto(`${home}?settings=api-keys-apps`);
+        await dialog()
+          .getByRole('button', { name: 'Create API key', exact: true })
+          .click();
+        field = dialog().getByRole('textbox', {
+          name: 'Program name',
+          exact: true,
+        });
+        await field.click();
+        await page.setViewportSize({ width, height: 420 });
+        await visibleFieldAndFooter(
+          page,
+          field,
+          dialog().getByRole('button', { name: 'Create key', exact: true }),
+        );
+        await shot('api-key-keyboard');
+        await page.setViewportSize({ width, height });
+        assert.ok(Array.isArray(fixture.files));
+        const firstFile: unknown = fixture.files[0];
+        assert.ok(isRecord(firstFile) && typeof firstFile.fileId === 'string');
+        const fileId = firstFile.fileId;
+        await page.goto(`${home}/notes/${fileId}`);
+        await page
+          .getByRole('button', { name: 'Note actions', exact: true })
+          .click();
+        await page.getByRole('menuitem', { name: 'Publish' }).click();
+        field = dialog().getByLabel('Password', { exact: true });
+        await field.click();
+        await page.setViewportSize({ width, height: 420 });
+        await visibleFieldAndFooter(
+          page,
+          field,
+          dialog().getByRole('button', { name: 'Publish', exact: true }),
+        );
+        await shot('publish-keyboard');
+      }
+      await context.close();
+    }
+  assert.deepEqual(errors, []);
+  assert.deepEqual(writes, []);
+} finally {
+  await browser.close();
+  writeFileSync(
+    '.local-app/round6-results.json',
+    JSON.stringify({ results, errors, writes }, null, 2),
+  );
+}

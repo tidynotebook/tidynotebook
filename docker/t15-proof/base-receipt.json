@@ -1,0 +1,10 @@
+{
+  "source": "129892d134dce6b6cf8329f25f272a502b6cfd8b",
+  "tag": "v0.23.5",
+  "image": "ghcr.io/tidynotebook/tidynotebook@sha256:8c899a0188642f686a1f3c95a11caa45c0ef3ae01902975b6f5b8d7ffa07d642",
+  "native_children": {
+    "amd64": "sha256:a04a7504c4760657f9b6d766a6b9087dfc2063fd7b8bcd52ed8518dc466eebde",
+    "arm64": "sha256:3441803676685933dc0bfe65e73729a095ca2ce86bb8afe4d6db25e405403af4"
+  },
+  "release_receipt_sha256": "e0efc2274f111b9f1b99c95336003e868b193a9f404a5db71a5b99be84a9b3c4"
+}

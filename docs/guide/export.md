@@ -27,10 +27,13 @@ saved yet. It does not need a connection. A browser that has no clipboard, such
 as one that opens the application over plain HTTP, cannot copy the note. Use
 **Export as Markdown** there.
 
-## Export every note
+## Export this workspace
+
+The export includes only the active workspace. Switch workspaces before
+exporting another one.
 
 1. Select your avatar at the right end of the header, then select **Settings**.
-2. In the **Export** section, select **Export all notes**.
+2. In the **Export** section, select **Export this workspace**.
 
 Your browser downloads one zip file to its downloads folder, as with any other
 download. A large workspace does not need the memory of the device. The zip file
@@ -93,7 +96,7 @@ You can import an Obsidian vault as a zip file.
 
 ### Size limit
 
-One zip file holds up to 65534 files and 4 GiB. **Export all notes** and
+One zip file holds up to 65534 files and 4 GiB. **Export this workspace** and
 **Import workspace** both keep to that limit, so every zip file that an export
 writes comes back through an import.
 

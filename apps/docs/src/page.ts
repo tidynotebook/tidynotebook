@@ -127,7 +127,7 @@ export const bodyClasses =
 
 /** The header: the chrome plane, the height of the frame header. */
 export const headerClasses =
-  'flex h-header shrink-0 items-center gap-cluster border-b border-edge-subtle bg-surface px-2 md:px-3';
+  'flex h-header shrink-0 items-center gap-2 border-b border-edge-subtle bg-surface px-2 md:px-3';
 
 /** The product mark and the name of the site, the link to the home page. */
 export const homeLinkClasses =
@@ -151,10 +151,10 @@ export const mainClasses = 'min-w-0 flex-1 overflow-y-auto';
 
 /** The line above the title: the group of the page and its two actions. */
 export const toolbarClasses =
-  'mb-2 flex min-h-8 flex-wrap items-center justify-between gap-cluster';
+  'mb-2 flex min-h-8 flex-wrap items-center justify-between gap-2';
 
 /** The group of the page above its title. */
-export const groupClasses = 'm-0 text-control font-medium text-muted';
+export const groupClasses = 'm-0 text-help font-medium text-muted';
 
 /**
  * The typography of the text of a page.
@@ -191,14 +191,14 @@ export const articleClasses = [
   codeFigureClassName,
   '[&_:not(pre)>code]:rounded-sm [&_:not(pre)>code]:bg-surface [&_:not(pre)>code]:px-1 [&_:not(pre)>code]:py-0.5 [&_:not(pre)>code]:text-strong',
   '[&_hr]:my-8 [&_hr]:border-edge-line',
-  '[&_table]:my-4 [&_table]:block [&_table]:w-full [&_table]:overflow-x-auto [&_table]:border-collapse [&_table]:text-ui',
+  'content-table-scroll:my-4 content-table-scroll:w-fit content-table-scroll:max-w-full content-table-scroll:overflow-x-auto content-table-focus:outline-2 content-table-focus:-outline-offset-2 content-table-focus:outline-focus [&_table]:w-full content-table-cell:max-w-table-cell content-table-cell:min-w-table-cell-min content-table-cell:wrap-break-word [&_table]:border-collapse [&_table]:text-ui',
   '[&_th]:border [&_th]:border-edge-line [&_th]:bg-surface [&_th]:p-2 [&_th]:text-left [&_th]:align-top [&_th]:font-medium [&_th]:text-strong',
   '[&_td]:border [&_td]:border-edge-line [&_td]:p-2 [&_td]:align-top',
 ].join(' ');
 
 /** The links to the previous and the next page under the text. */
 export const pagerClasses =
-  'mt-12 grid grid-cols-1 gap-cluster border-t border-edge-line pt-6 sm:grid-cols-2';
+  'mt-12 grid grid-cols-1 gap-2 border-t border-edge-line pt-6 sm:grid-cols-2';
 
 /** One link of the pager, a row of the recipe that holds two lines. */
 const pagerLinkClasses = rowClassName({
@@ -210,7 +210,7 @@ export const pagerHintClasses = 'text-control text-muted';
 
 /** The foot of a page, which names the source and the licence. */
 export const footClasses =
-  'mt-8 flex flex-wrap gap-x-group gap-y-1 pb-10 text-control text-muted';
+  'mt-8 flex flex-wrap gap-x-3 gap-y-1 pb-10 text-control text-muted';
 
 /** A link of the foot. */
 export const footLinkClasses =
@@ -229,7 +229,7 @@ export const searchPanelClasses =
 
 /** The field row at the top of the search panel. */
 export const searchFieldRowClasses =
-  'flex items-center gap-cluster border-b border-edge-line pl-gutter pr-2';
+  'flex items-center gap-2 border-b border-edge-line pl-4 pr-2';
 
 /** The field of the search, as the command palette of the application draws it. */
 export const searchFieldClasses =
@@ -257,13 +257,13 @@ export const codeBlockClasses = 'relative';
 /** The copy button of a code block, at the top right of the block. */
 const codeCopyClasses = buttonClassName({
   variant: 'secondary',
-  size: 'sm',
+  size: 'compact',
   className: 'absolute right-2 top-2',
 });
 
 /** The shell of the page that answers an address with no page. */
 export const emptyStateClasses =
-  'mx-auto flex max-w-sm flex-col items-center gap-2 px-gutter py-20 text-center';
+  'mx-auto flex max-w-sm flex-col items-center gap-2 px-4 py-20 text-center';
 
 /** The keyboard hint of the search button. */
 const searchHint = `<kbd class="${kbdClassName()}">/</kbd>`;
@@ -355,21 +355,21 @@ function header(settings: SiteSettings): string {
   const menu = buttonClassName({
     variant: 'ghost',
     iconOnly: true,
-    size: 'sm',
+    size: 'compact',
     className: 'md:hidden',
   });
   const search = buttonClassName({
     variant: 'secondary',
-    size: 'sm',
+    size: 'compact',
     className: 'justify-between gap-6 max-sm:hidden',
   });
   const searchIconOnly = buttonClassName({
     variant: 'ghost',
     iconOnly: true,
-    size: 'sm',
+    size: 'compact',
     className: 'sm:hidden',
   });
-  const source = buttonClassName({ variant: 'ghost', size: 'sm' });
+  const source = buttonClassName({ variant: 'ghost', size: 'compact' });
   return `<header class="${headerClasses}">
       <button type="button" class="${menu}" data-docs-menu data-docs-close-label="${words.closeContents}" aria-controls="docs-contents" aria-expanded="false" aria-label="${words.openContents}" title="${words.openContents}">${icon(MenuIcon)}</button>
       <a class="${homeLinkClasses}" href="${escapeAttribute(settings.base)}">${icon(AppMarkIcon)}<span class="truncate">${productName}</span><span class="font-medium text-muted">Docs</span></a>
@@ -439,7 +439,7 @@ function searchDialog(): string {
   const close = buttonClassName({
     variant: 'ghost',
     iconOnly: true,
-    size: 'sm',
+    size: 'compact',
   });
   return `<dialog id="docs-search" class="${searchDialogClasses}" aria-label="${words.searchLabel}" data-docs-search-dialog>
       <div class="${pageGutter} h-full">
@@ -477,8 +477,8 @@ export function pageDocument(view: PageView): string {
       : [
           `<link rel="canonical" href="${escapeAttribute(absoluteAddress(settings, pageHref(settings, page.slug)))}">`,
         ];
-  const secondary = buttonClassName({ variant: 'secondary', size: 'sm' });
-  const ghost = buttonClassName({ variant: 'ghost', size: 'sm' });
+  const secondary = buttonClassName({ variant: 'secondary', size: 'compact' });
+  const ghost = buttonClassName({ variant: 'ghost', size: 'compact' });
   return `<!doctype html>
 <html lang="en">
   <head>
@@ -504,7 +504,7 @@ ${head(
           <div class="${pageColumnClassName()} py-6">
             <div class="${toolbarClasses}">
               <p class="${groupClasses}">${escapeText(view.group ?? productName)}</p>
-              <div class="flex items-center gap-cluster">
+              <div class="flex items-center gap-2">
                 <button type="button" class="${secondary}" data-docs-copy-page data-docs-copied="${words.copied}">${icon(CopyIcon)}<span data-docs-copy-label>${words.copyPage}</span></button>
                 <a class="${ghost}" href="${escapeAttribute(markdown)}">${icon(FileTextIcon)}${words.viewMarkdown}</a>
               </div>

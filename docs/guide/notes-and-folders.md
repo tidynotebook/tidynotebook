@@ -54,9 +54,12 @@ Rules for a name:
 1. Select **All notes** or a folder name. This chooses the parent.
 2. Select **New folder**, the folder button next to **New note**. You can also
    use **New folder** in the command palette.
-3. Type one name for the new folder, and select **Make folder**.
+3. Type one name for the new folder, and select **Create folder**.
 
-Select the arrow next to a folder to open or close it. **Expand all folders**,
+Select a folder name or its arrow to open or close it in the sidebar. The
+current note or page stays open. A new folder also stays in the sidebar.
+**All notes** opens the full note list. Old folder links open **All notes**.
+**Expand all folders**,
 the last button above the tree, opens every folder. When a folder is open, the
 same button is **Collapse all folders**, and it closes every folder.
 
@@ -227,7 +230,7 @@ The tree takes one stop of **Tab**. Then use these keys:
 - **Up** and **Down** move between rows.
 - **Home** and **End** go to the first row and the last row.
 - **Right** opens a folder. **Left** closes it, or goes to the folder above.
-- **Enter** opens a note or selects a folder.
+- **Enter** opens a note, or selects and opens or closes a folder in the sidebar.
 - **Delete** moves the selection to Trash.
 - **Shift + Down** and **Shift + Up** extend the selection.
 - **Space** adds the row that has the focus to the selection.

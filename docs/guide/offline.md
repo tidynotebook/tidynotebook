@@ -71,9 +71,9 @@ store its text, the update stops and every tab stays as it was.
 
 ## Sign out with saves that did not reach the server
 
-If saves have not reached your server yet, the **Sign out** section of
-**Settings** offers two buttons:
+If saves have not reached your server yet, **Sign out** in the avatar menu
+asks what to do:
 
 - **Sign out and keep them** leaves the saves on this device for your next
   sign-in.
-- **Sign out and remove them** removes the saves from this device.
+- **Remove and sign out** removes the saves from this device.

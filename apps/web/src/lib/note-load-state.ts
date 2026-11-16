@@ -1,4 +1,33 @@
-import type { NoteDocument } from '@notesapp/sync';
+import type { LocalCachedNote, NoteDocument } from '@notesapp/sync';
+
+/** The saved version against which an older draft needs a choice. */
+export type NoteRecovery = {
+  readonly workingCopyId: string;
+  readonly draftText: string;
+  readonly acceptedText: string;
+  readonly acceptedRevisionId: string;
+};
+
+/** Keeps recovery choices bound to a readable saved version and local draft. */
+export function noteRecoveryFor(
+  note: LocalCachedNote | null,
+): NoteRecovery | null {
+  if (
+    note === null ||
+    !note.stale ||
+    note.deleted ||
+    note.workingCopyId === undefined ||
+    note.acceptedText === null ||
+    note.acceptedRevisionId === null
+  )
+    return null;
+  return {
+    workingCopyId: note.workingCopyId,
+    draftText: note.draftText ?? note.text,
+    acceptedText: note.acceptedText,
+    acceptedRevisionId: note.acceptedRevisionId,
+  };
+}
 
 /** The identity of the note that one loader result describes. */
 export type NoteLoadIdentity = {
@@ -21,6 +50,8 @@ export type NoteLoadStatus =
       readonly headRevisionId: string | null;
       readonly workingCopyId?: string | undefined;
       readonly sequence: number;
+      /** An older local draft needs a choice before an editor can save it. */
+      readonly recovery?: NoteRecovery | undefined;
       /**
        * The document of the note on this device with its generation, or
        * `null` when this device holds none yet (record 0081). The editor

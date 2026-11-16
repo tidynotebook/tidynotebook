@@ -63,7 +63,7 @@ await test('legal content keeps its utility row and uses operator footer links',
     },
   });
   assert.equal((page.match(/<footer/g) ?? []).length, 1);
-  assert.ok(page.indexOf('class="public-footer"') > page.indexOf('</main>'));
+  assert.ok(page.indexOf('<footer') > page.indexOf('</main>'));
   assert.ok(page.includes('href="https://operator.example/terms"'));
   assert.doesNotMatch(page, /tidynotebook.com\/terms/);
 });

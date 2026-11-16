@@ -20754,6 +20754,11 @@ export const operations: readonly OperationEntry[] = [
               ],
               "readOnly": true,
               "description": "The address of the new account, which signs in now."
+            },
+            "signedIn": {
+              "type": "boolean",
+              "readOnly": true,
+              "description": "True only when this response starts a session using an unexpired, once-only continuation proof from the browser that signed up. Missing or false means that password sign-in is still required."
             }
           }
         }

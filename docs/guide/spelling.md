@@ -24,7 +24,7 @@ same marks when you turn that on in the browser.
 
 ## Turn the spell check off
 
-1. Open **Settings** and go to **Spelling**.
-2. Clear **Check spelling**.
+1. Open **Settings** and go to **Appearance and editor**.
+2. Under **Editor**, turn off **Check spelling**.
 
 The choice goes to your account, so your other devices follow it.

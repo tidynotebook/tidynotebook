@@ -101,6 +101,41 @@ await test('a refused copy selects the code of its block and no fence', () => {
   assert.equal(codeBlockSelection(state, 1), null);
 });
 
+await test('a fence bar stands on the opening fence and steps aside for an edit there', () => {
+  // The opening fence names the language, so the bar of a fence carries the
+  // copy action alone and keeps no room above the code.
+  const doc = 'Text\n\n```ts\nconst a = 1;\n```\n\nAfter\n';
+  const at = (offset: number): EditorState =>
+    stateOf(doc).update({ selection: { anchor: offset } }).state;
+  assert.deepEqual(codeBlockBars(at(0)), [
+    {
+      from: doc.indexOf('```ts'),
+      to: doc.lastIndexOf('```') + 3,
+      label: 'TypeScript',
+      fenced: true,
+    },
+  ]);
+  assert.equal(codeBlockBars(at(doc.indexOf('const'))).length, 1);
+  assert.equal(codeBlockBars(at(doc.lastIndexOf('```') + 3)).length, 1);
+  // The caret on the opening fence: the bar would cover the text there.
+  assert.deepEqual(codeBlockBars(at(doc.indexOf('```ts') + 5)), []);
+  // An indented block has no fence, so its bar keeps its own room.
+  assert.deepEqual(
+    codeBlockBars(stateOf('text\n\n    indented\n')).map((bar) => bar.fenced),
+    [false],
+  );
+});
+
+await test('a fence that is still being typed carries no bar', () => {
+  const typed = 'Text\n\n```ts';
+  const state = stateOf(typed).update({
+    selection: { anchor: typed.length },
+  }).state;
+  assert.deepEqual(codeBlockBars(state), []);
+  const lone = stateOf('Text\n\n``` lone words');
+  assert.deepEqual(codeBlockBars(lone), []);
+});
+
 await test('a screen with no code block reads no limit of the whole note', () => {
   // The bars read the limits of the parse, which convert the whole note to a
   // string, on each key, even with no code block on the screen.

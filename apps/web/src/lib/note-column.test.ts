@@ -14,9 +14,12 @@ await test('the text and the footer share one centred column', () => {
   const column = noteColumnClassName().split(' ');
   // Decision 0055. The measure is the one in the central theme, and the
   // editor centres its own lines on the same value.
-  assert.ok(column.includes('mx-auto'));
+  assert.ok(column.includes('self-center'));
   assert.ok(column.includes('w-full'));
   assert.ok(column.includes('max-w-note'));
+  const footer = noteFooterClassName(false).split(' ');
+  assert.ok(footer.includes('flex'));
+  assert.ok(footer.includes('flex-col'));
 });
 
 await test('the column holds no name of its own', () => {
@@ -39,18 +42,20 @@ await test('the frame of the note draws no space above the text', () => {
 
 await test('the footer draws the one divider above itself', () => {
   // The note text is a region a person scrolls, so the design guide draws a
-  // line there. It is `edge-line`, the one divider of the product.
+  // line only when the content overflows. The edge stays outside the layout.
   for (const typing of [false, true]) {
     const footer = noteFooterClassName(typing).split(' ');
-    assert.ok(footer.includes('border-t'));
-    assert.ok(footer.includes('border-edge-line'));
+    assert.ok(footer.includes('before:top-0'));
+    assert.ok(footer.includes('data-scroll-overflow:before:opacity-100'));
+    assert.ok(!footer.includes('border-t'));
+    assert.ok(footer.includes('before:border-edge-subtle'));
   }
 });
 
 await test('the footer gives its row to the text while a person types on a phone', () => {
   // The count took a row of a phone screen that the keyboard already halves.
   const typing = noteFooterClassName(true).split(' ');
-  assert.ok(typing.includes('max-md:pointer-coarse:hidden'));
+  assert.ok(typing.includes('coarse:max-md:hidden'));
   // Only a narrow screen under a finger hides it, so a desktop keeps it.
   assert.ok(!typing.includes('hidden'));
   const resting = noteFooterClassName(false).split(' ');
@@ -62,7 +67,7 @@ await test('the outline scrolls inside the note side region', () => {
   const outline = noteOutlineScrollClassName().split(' ');
   assert.ok(side.includes('overflow-hidden'));
   assert.ok(side.includes('flex-col'));
-  assert.ok(outline.includes('min-h-0'));
+  assert.ok(outline.includes('overflow-hidden'));
   assert.ok(outline.includes('overflow-y-auto'));
   assert.ok(outline.includes('overscroll-contain'));
 });

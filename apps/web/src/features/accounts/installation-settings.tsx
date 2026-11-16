@@ -1,19 +1,24 @@
-/**
- * The mail server and the legal documents of the installation, as two
- * sections of the accounts page (record 0148).
- *
- * Both are settings of the page itself, as the profile is a setting of
- * Settings: the fields stand in the section and Save stores them, with no
- * dialog. A group that the server environment sets is locked, so its section
- * states what applies and offers no change. The mail section sends a test
- * message to the address of the administrator. A legal document opens its
- * editor in place of the list: each blank of the template is a field, and
- * what a person types there fills the text below at once.
- *
- * The one filled action of the page stays Invite a person, so every action
- * here is a secondary button. Every word and every rule lives in
- * `lib/installation-settings.ts` with its unit test, and every server call is
- * a generated operation.
+import {
+  Form,
+  Card,
+  Inline,
+  SectionHeading,
+  Stack,
+  Button,
+  Dialog,
+  DialogBody,
+  DialogFooter,
+  LoadingState,
+  Notice,
+  SelectField,
+  TextAreaField,
+  TextField,
+} from '@notesapp/ui';
+
+import { SettingsDialog } from './settings-dialog.tsx';
+import { SettingChoiceRow, SettingActionRow } from './settings-section.tsx';
+/** Administration settings use rows and draft forms in the Settings frame.
+ * A save uses the generated API. Cancel leaves the stored settings unchanged.
  */
 import { useEffect, useState, type ReactNode } from 'react';
 import {
@@ -23,38 +28,19 @@ import {
   sendTestMessage,
   updateLegalDocument,
   updateMailSettings,
-  type LegalDocumentSummary,
   type LegalSettings,
   type MailSecurity,
   type MailSettings,
 } from '@notesapp/api-client';
-import {
-  Button,
-  buttonClassName,
-  Dialog,
-  DialogBody,
-  DialogFooter,
-  ExternalLinkIcon,
-  FileTextIcon,
-  ListRow,
-  LoadingState,
-  Notice,
-  pageListClassName,
-  SelectField,
-  TextAreaField,
-  TextField,
-} from '@notesapp/ui';
+
 import { problemMessage } from '../../app.tsx';
 import { problemCode } from '../../lib/problem-text.ts';
 import {
   blankFields,
   blanksOf,
   defaultMailPort,
-  legalDocumentFact,
   legalDocumentRows,
   legalRemovedText,
-  legalSavedText,
-  mailFacts,
   mailFailureReasonOf,
   mailFailureText,
   mailFormChanged,
@@ -82,7 +68,6 @@ function OutcomeNotice({ outcome }: { readonly outcome: Outcome }): ReactNode {
   if (outcome.kind === 'none') return null;
   return (
     <Notice
-      className="mb-3"
       tone={outcome.kind === 'done' ? 'success' : 'problem'}
       message={outcome.message}
     />
@@ -115,28 +100,20 @@ export function MailSettingsBody({
   /** Reads the page again after a change. */
   readonly onSaved: () => void;
 }): ReactNode {
-  if (mail.source === 'environment') return <EnvironmentMail mail={mail} />;
+  if (mail.source === 'environment') return <EnvironmentMail />;
   return <MailSettingsForm mail={mail} onSaved={onSaved} />;
 }
 
 /** The mail server that the server environment sets, with its test. */
-function EnvironmentMail({ mail }: { readonly mail: MailSettings }): ReactNode {
+function EnvironmentMail(): ReactNode {
   const [outcome, setOutcome] = useState<Outcome>(noOutcome);
   const [busy, setBusy] = useState(false);
-  const facts = mailFacts(mail);
   return (
     <>
-      {facts.length === 0 ? null : (
-        <p className="mb-3 mt-0 flex flex-wrap gap-cluster text-control text-muted">
-          {facts.map((fact) => (
-            <span key={fact}>{fact}</span>
-          ))}
-        </p>
-      )}
       <OutcomeNotice outcome={outcome} />
-      <Button
-        variant="secondary"
-        size="sm"
+      <SettingActionRow
+        label="Send a test message"
+        actionLabel="Send a test message"
         disabled={busy}
         onClick={() => {
           setBusy(true);
@@ -146,9 +123,7 @@ function EnvironmentMail({ mail }: { readonly mail: MailSettings }): ReactNode {
             setOutcome(next);
           });
         }}
-      >
-        {busy ? 'Sending' : 'Send a test message'}
-      </Button>
+      />
     </>
   );
 }
@@ -166,7 +141,7 @@ function formOf(mail: MailSettings): MailForm {
   };
 }
 
-/** The fields of the mail server, its Save, its test and its removal. */
+/** Fill the fixed Mail section so only its body scrolls above the actions. */
 function MailSettingsForm({
   mail,
   onSaved,
@@ -177,7 +152,12 @@ function MailSettingsForm({
   const saved = formOf(mail);
   const [form, setForm] = useState<MailForm>(saved);
   const [fieldErrors, setFieldErrors] = useState<
-    Readonly<{ port?: string; password?: string }>
+    Readonly<{
+      host?: string;
+      sender?: string;
+      port?: string;
+      password?: string;
+    }>
   >({});
   const [outcome, setOutcome] = useState<Outcome>(noOutcome);
   const [working, setWorking] = useState<'save' | 'test' | 'remove' | null>(
@@ -224,13 +204,17 @@ function MailSettingsForm({
     // A new user name needs its password. A saved one is kept when the field
     // stays empty.
     const needsPassword = name !== '' && form.password === '' && !keepsPassword;
+    const hostMissing = form.host.trim() === '';
+    const senderMissing = form.sender.trim() === '';
     setFieldErrors({
+      ...(hostMissing ? { host: 'Enter the mail server name.' } : {}),
+      ...(senderMissing ? { sender: 'Enter the sender address.' } : {}),
       ...(port === null ? { port: 'Enter a port from 1 to 65535.' } : {}),
       ...(needsPassword
         ? { password: 'Enter the password of the user name.' }
         : {}),
     });
-    if (port === null || needsPassword) return;
+    if (port === null || needsPassword || hostMissing || senderMissing) return;
     run('save', async () => {
       const result = await updateMailSettings({
         body: {
@@ -270,145 +254,157 @@ function MailSettingsForm({
   };
 
   return (
-    <form
+    <Form
+      regions
+      section
+      fill
+      noValidate
+      className="ui-dialog-form"
       onSubmit={(event): void => {
         event.preventDefault();
         save();
       }}
     >
-      {lostPassword ? (
-        <Notice
-          className="mb-3"
-          tone="problem"
-          message="The server can no longer read the saved password. Enter it again and save."
-        />
-      ) : null}
-      <div className="md:grid md:grid-cols-3 md:gap-x-group">
-        <div className="md:col-span-2">
+      <DialogBody>
+        {lostPassword ? (
+          <Notice
+            tone="problem"
+            message="The server can no longer read the saved password. Enter it again and save."
+          />
+        ) : null}
+        <Stack gap={3}>
+          <SectionHeading label="Connection" />
+          <Inline gap={3} align="start" className="w-full" data-field-pair="">
+            <div className="min-w-0 flex-1">
+              <TextField
+                id="mail-host"
+                label="Server"
+                error={fieldErrors.host}
+                value={form.host}
+                placeholder="smtp.example.com"
+                autoComplete="off"
+                required
+                onChange={(host) => {
+                  update({ host });
+                }}
+              />
+            </div>
+            <div className="w-28 shrink-0" data-short-field="">
+              <TextField
+                id="mail-port"
+                label="Port"
+                value={form.port}
+                required
+                error={fieldErrors.port}
+                onChange={(port) => {
+                  update({ port });
+                }}
+              />
+            </div>
+          </Inline>
+          <SelectField
+            id="mail-security"
+            label="Security"
+            value={form.security}
+            options={mailSecurityOptions}
+            hint="TLS and STARTTLS protect the connection."
+            onChange={(value) => {
+              const next = mailSecurityOf(value);
+              if (next === null) return;
+              update({
+                security: next,
+                port: portAfterSecurity(form.port, form.security, next),
+              });
+            }}
+          />
+        </Stack>
+        <Stack gap={3}>
+          <SectionHeading label="Sign-in" />
+          <Stack gap={1} pad={0} as="fieldset" className="min-w-0 border-0">
+            <Stack gap={3}>
+              <TextField
+                id="mail-username"
+                label="User name"
+                describedBy="mail-signin-hint"
+                value={form.username}
+                autoComplete="off"
+                onChange={(username) => {
+                  update({ username });
+                }}
+              />
+              <TextField
+                id="mail-password"
+                label="Password"
+                describedBy="mail-signin-hint"
+                value={form.password}
+                inputType="password"
+                autoComplete="new-password"
+                error={fieldErrors.password}
+                onChange={(password) => {
+                  update({ password });
+                }}
+              />
+            </Stack>
+            <p
+              id="mail-signin-hint"
+              className="ui-field-help text-secondary text-muted"
+            >
+              {keepsPassword
+                ? 'Leave the password empty to keep the saved one. Leave both fields empty if the server does not need an account.'
+                : 'Leave both fields empty if the server does not need an account.'}
+            </p>
+          </Stack>
+        </Stack>
+        <Stack gap={3}>
+          <SectionHeading label="Sending" />
           <TextField
-            id="mail-host"
-            label="Server"
-            value={form.host}
-            placeholder="smtp.example.com"
+            id="mail-sender"
+            label="Sender"
+            error={fieldErrors.sender}
+            value={form.sender}
+            placeholder={`${productName} <no-reply@notes.example.com>`}
             autoComplete="off"
             required
-            onChange={(host) => {
-              update({ host });
+            hint="An address that the mail server lets you send from."
+            onChange={(sender) => {
+              update({ sender });
             }}
           />
-        </div>
-        <TextField
-          id="mail-port"
-          label="Port"
-          value={form.port}
-          required
-          error={fieldErrors.port}
-          onChange={(port) => {
-            update({ port });
-          }}
-        />
-      </div>
-      <SelectField
-        id="mail-security"
-        label="Security"
-        value={form.security}
-        options={mailSecurityOptions}
-        hint="TLS and STARTTLS protect the connection."
-        onChange={(value) => {
-          const next = mailSecurityOf(value);
-          if (next === null) return;
-          update({
-            security: next,
-            port: portAfterSecurity(form.port, form.security, next),
-          });
-        }}
-      />
-      <fieldset className="m-0 min-w-0 border-0 p-0">
-        <legend className="mb-1 p-0 text-control font-medium text-strong">
-          Sign-in
-        </legend>
-        <p className="mb-3 mt-0 text-control text-muted">
-          {keepsPassword
-            ? 'Leave the password empty to keep the saved one. Leave both fields empty for a server that takes mail with no sign-in.'
-            : 'Leave both fields empty for a server that takes mail with no sign-in.'}
-        </p>
-        <div className="md:grid md:grid-cols-2 md:gap-x-group">
-          <TextField
-            id="mail-username"
-            label="User name"
-            value={form.username}
-            autoComplete="off"
-            onChange={(username) => {
-              update({ username });
-            }}
-          />
-          <TextField
-            id="mail-password"
-            label="Password"
-            value={form.password}
-            inputType="password"
-            autoComplete="new-password"
-            error={fieldErrors.password}
-            onChange={(password) => {
-              update({ password });
-            }}
-          />
-        </div>
-      </fieldset>
-      <TextField
-        id="mail-sender"
-        label="Sender"
-        value={form.sender}
-        placeholder={`${productName} <no-reply@notes.example.com>`}
-        autoComplete="off"
-        required
-        hint="An address that the mail server lets you send from."
-        onChange={(sender) => {
-          update({ sender });
-        }}
-      />
-      <OutcomeNotice outcome={outcome} />
-      <div className="flex flex-wrap gap-cluster">
+        </Stack>
+        {stored ? (
+          <Card responsive>
+            <SettingActionRow
+              label="Send a test message"
+              actionLabel="Send a test message"
+              disabled={busy || changed}
+              onClick={() => run('test', testOutcome)}
+            />
+            <SettingActionRow
+              label="Remove mail server…"
+              actionLabel="Remove mail server"
+              danger
+              disabled={busy}
+              onClick={() => setConfirming(true)}
+            />
+          </Card>
+        ) : null}
+        <OutcomeNotice outcome={outcome} />
+      </DialogBody>
+      <DialogFooter>
         <Button
-          type="submit"
-          variant="secondary"
-          size="sm"
-          disabled={
-            busy ||
-            !changed ||
-            form.host.trim() === '' ||
-            form.sender.trim() === ''
-          }
+          variant="ghost"
+          onClick={() => {
+            setForm(formOf(mail));
+            setFieldErrors({});
+            setOutcome(noOutcome);
+          }}
         >
+          Cancel
+        </Button>
+        <Button type="submit" disabled={busy || !changed}>
           {working === 'save' ? 'Saving' : 'Save'}
         </Button>
-        {stored ? (
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={busy || changed}
-            title={changed ? 'Save the changes first.' : undefined}
-            onClick={() => {
-              run('test', testOutcome);
-            }}
-          >
-            {working === 'test' ? 'Sending' : 'Send a test message'}
-          </Button>
-        ) : null}
-        {stored ? (
-          <Button
-            variant="secondary"
-            tone="danger"
-            size="sm"
-            disabled={busy}
-            onClick={() => {
-              setConfirming(true);
-            }}
-          >
-            {working === 'remove' ? 'Removing' : 'Remove'}
-          </Button>
-        ) : null}
-      </div>
+      </DialogFooter>
       {confirming ? (
         <ConfirmRemoval
           title="Remove the mail server?"
@@ -420,7 +416,7 @@ function MailSettingsForm({
           onConfirm={remove}
         />
       ) : null}
-    </form>
+    </Form>
   );
 }
 
@@ -447,7 +443,7 @@ function ConfirmRemoval({
       onClose={onCancel}
     >
       <DialogBody>
-        <p className="m-0 text-ui text-strong">{message}</p>
+        <p className="m-0 text-body text-strong">{message}</p>
       </DialogBody>
       <DialogFooter>
         <Button variant="ghost" onClick={onCancel}>
@@ -467,141 +463,45 @@ export function LegalDocumentsBody({
   onSaved,
 }: {
   readonly legal: LegalSettings;
-  /** Reads the page again after a change. */
   readonly onSaved: () => void;
 }): ReactNode {
   const [editing, setEditing] = useState<LegalDocumentRowName | null>(null);
-  const [outcome, setOutcome] = useState<Outcome>(noOutcome);
-  const [busy, setBusy] = useState(false);
-  const [confirming, setConfirming] = useState<{
-    readonly name: LegalDocumentRowName;
-    readonly title: string;
-  } | null>(null);
   const locked = legal.source === 'environment';
-
-  if (editing !== null)
-    return (
-      <LegalDocumentEditor
-        name={editing}
-        onClose={() => {
-          setEditing(null);
-        }}
-        onSaved={(title) => {
-          setEditing(null);
-          setOutcome({ kind: 'done', message: legalSavedText(title) });
-          onSaved();
-        }}
-      />
-    );
-
-  const remove = (name: LegalDocumentRowName, title: string): void => {
-    setConfirming(null);
-    if (busy) return;
-    setBusy(true);
-    setOutcome(noOutcome);
-    void removeLegalDocument({ path: { document: name } }).then((result) => {
-      setBusy(false);
-      if (result.error !== undefined) {
-        setOutcome({ kind: 'failed', message: problemMessage(result.error) });
-        return;
-      }
-      setOutcome({
-        kind: 'done',
-        message: legalRemovedText(title),
-      });
-      onSaved();
-    });
-  };
-
   return (
-    <>
-      <OutcomeNotice outcome={outcome} />
-      <ul className={pageListClassName()}>
-        {legalDocumentRows.map((row) => {
-          const document: LegalDocumentSummary | null = legal[row.name];
-          const name = row.title.toLowerCase();
-          return (
-            <ListRow key={row.name}>
-              <span
-                className="inline-flex shrink-0 items-center text-muted"
-                aria-hidden="true"
-              >
-                <FileTextIcon />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="m-0 truncate text-ui text-strong">{row.title}</p>
-                <p className="m-0 text-control text-muted">
-                  {legalDocumentFact(document)}
-                </p>
-              </div>
-              <div className="flex shrink-0 items-center gap-cluster">
-                {document === null ? null : (
-                  <a
-                    className={buttonClassName({
-                      variant: 'secondary',
-                      size: 'sm',
-                      iconOnly: true,
-                    })}
-                    href={document.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={`Open the ${name}`}
-                    title={`Open the ${name}`}
-                  >
-                    <ExternalLinkIcon />
-                  </a>
-                )}
-                {locked ? null : (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    disabled={busy}
-                    label={
-                      document === null
-                        ? `Add the ${name}`
-                        : `Change the ${name}`
-                    }
-                    onClick={() => {
-                      setOutcome(noOutcome);
-                      setEditing(row.name);
-                    }}
-                  >
-                    {document === null ? 'Add' : 'Change'}
-                  </Button>
-                )}
-                {locked || document === null ? null : (
-                  <Button
-                    variant="secondary"
-                    tone="danger"
-                    size="sm"
-                    disabled={busy}
-                    label={`Remove the ${name}`}
-                    onClick={() => {
-                      setConfirming({ name: row.name, title: name });
-                    }}
-                  >
-                    Remove
-                  </Button>
-                )}
-              </div>
-            </ListRow>
-          );
-        })}
-      </ul>
-      {confirming === null ? null : (
-        <ConfirmRemoval
-          title={`Remove the ${confirming.title}?`}
-          message={`This removes the text of the ${confirming.title} for good. Nobody accepts the documents until both exist again.`}
-          action={`Remove ${confirming.title}`}
-          onCancel={() => {
-            setConfirming(null);
-          }}
-          onConfirm={() => {
-            remove(confirming.name, confirming.title);
-          }}
+    <Card responsive>
+      {legalDocumentRows.map((row) => (
+        <SettingChoiceRow
+          key={row.name}
+          label={row.title}
+          help={locked ? 'Set by the server configuration.' : ''}
+          value={legal[row.name] == null ? 'Not added' : 'Added'}
+          disabled={locked}
+          onClick={() => setEditing(row.name)}
         />
+      ))}
+      {editing === null ? null : (
+        <SettingsDialog
+          open
+          title={
+            legalDocumentRows.find((row) => row.name === editing)?.title ??
+            'Document'
+          }
+          titleId="legal-document-title"
+          level
+          hideScope
+          onClose={() => setEditing(null)}
+        >
+          <LegalDocumentEditor
+            name={editing}
+            onClose={() => setEditing(null)}
+            onSaved={() => {
+              setEditing(null);
+              onSaved();
+            }}
+          />
+        </SettingsDialog>
       )}
-    </>
+    </Card>
   );
 }
 
@@ -636,6 +536,8 @@ function LegalDocumentEditor({
   const [loadFailure, setLoadFailure] = useState('');
   const [values, setValues] = useState<Readonly<Record<string, string>>>({});
   const [failure, setFailure] = useState('');
+  const [existing, setExisting] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -648,6 +550,7 @@ function LegalDocumentEditor({
           return;
         }
         const stored = result.data.document;
+        setExisting(stored !== null);
         setForm({
           template: result.data.template,
           kind: stored?.kind ?? 'text',
@@ -666,10 +569,10 @@ function LegalDocumentEditor({
 
   if (form === null)
     return loadFailure === '' ? (
-      <LoadingState shape="list" rows={3} label="The document is loading." />
+      <LoadingState shape="list" rows={3} label="Loading document" />
     ) : (
       <Notice tone="problem" message={loadFailure}>
-        <Button variant="secondary" size="sm" onClick={onClose}>
+        <Button variant="secondary" size="compact" onClick={onClose}>
           Back
         </Button>
       </Notice>
@@ -716,135 +619,156 @@ function LegalDocumentEditor({
   };
 
   return (
-    <form
-      aria-labelledby="legal-editor-title"
+    <Form
+      regions
+      className="ui-dialog-form"
+      aria-label={title}
       onSubmit={(event): void => {
         event.preventDefault();
         save();
       }}
     >
-      <h3
-        className="mb-3 mt-0 text-ui font-semibold text-strong"
-        id="legal-editor-title"
-      >
-        {title}
-      </h3>
-      <SelectField
-        id="legal-kind"
-        label="Source"
-        value={form.kind}
-        options={[
-          { value: 'text', label: 'Text on this server' },
-          { value: 'address', label: 'Page on another site' },
-        ]}
-        onChange={(value) => {
-          update({ kind: value === 'address' ? 'address' : 'text' });
-        }}
-      />
-      {form.kind === 'address' ? (
-        <TextField
-          id="legal-url"
-          label="Address"
-          value={form.url}
-          placeholder="https://example.com/terms"
-          autoComplete="off"
-          required
-          onChange={(url) => {
-            update({ url });
+      <DialogBody>
+        <SelectField
+          id="legal-kind"
+          label="Source"
+          value={form.kind}
+          options={[
+            { value: 'text', label: 'Text on this server' },
+            { value: 'address', label: 'Page on another site' },
+          ]}
+          onChange={(value) => {
+            update({ kind: value === 'address' ? 'address' : 'text' });
           }}
         />
-      ) : (
-        <>
-          {fields.length === 0 ? null : (
-            <fieldset className="m-0 mb-1 min-w-0 border-0 p-0">
-              <legend className="mb-1 p-0 text-control font-medium text-strong">
-                Facts of your service
-              </legend>
-              <p className="mb-3 mt-0 text-control text-muted">
-                Each fact fills its place in the text below.
-              </p>
-              <div className="md:grid md:grid-cols-2 md:gap-x-group">
-                {fields.map((field, index) => (
-                  <div
-                    key={field.blank}
-                    className={field.wide ? 'md:col-span-2' : undefined}
-                  >
-                    <TextField
-                      id={`legal-blank-${String(index)}`}
-                      label={field.label}
-                      value={values[field.blank] ?? ''}
-                      autoComplete="off"
-                      onChange={(value) => {
-                        setValues((current) => ({
-                          ...current,
-                          [field.blank]: value,
-                        }));
-                        setFailure('');
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-            </fieldset>
-          )}
-          <TextAreaField
-            id="legal-text"
-            label="Text in Markdown"
-            value={text}
+        {form.kind === 'address' ? (
+          <TextField
+            id="legal-url"
+            label="Address"
+            value={form.url}
+            placeholder="https://example.com/terms"
+            autoComplete="off"
             required
-            hint={`The template states what ${productName} keeps and where it sends data. It is not legal advice. Ask a person who knows the law of your country to read the document.`}
-            onChange={(next) => {
-              // An edit of the text keeps what the fields filled, and the
-              // blanks that remain stay fields.
-              update({ text: next });
+            onChange={(url) => {
+              update({ url });
+            }}
+          />
+        ) : (
+          <>
+            {fields.length === 0 ? null : (
+              <Stack gap={1} pad={0} as="fieldset" className="min-w-0 border-0">
+                <legend className="ui-settings-form-legend text-label text-strong">
+                  Facts of your service
+                </legend>
+                <Stack gap={3}>
+                  <p className="m-0 text-secondary text-muted">
+                    Each fact fills its place in the text below.
+                  </p>
+                  <Stack gap={3}>
+                    {fields.map((field, index) => (
+                      <div key={field.blank}>
+                        <TextField
+                          id={`legal-blank-${String(index)}`}
+                          label={field.label}
+                          value={values[field.blank] ?? ''}
+                          autoComplete="off"
+                          onChange={(value) => {
+                            setValues((current) => ({
+                              ...current,
+                              [field.blank]: value,
+                            }));
+                            setFailure('');
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </Stack>
+                </Stack>
+              </Stack>
+            )}
+            <TextAreaField
+              id="legal-text"
+              label="Text in Markdown"
+              value={text}
+              required
+              hint={`The template states what ${productName} keeps and where it sends data. It is not legal advice. Ask a person who knows the law of your country to read the document.`}
+              onChange={(next) => {
+                // An edit of the text keeps what the fields filled, and the
+                // blanks that remain stay fields.
+                update({ text: next });
+                setValues({});
+              }}
+            />
+          </>
+        )}
+        <TextField
+          id="legal-version"
+          label="Version"
+          value={form.version}
+          required
+          hint="The page of the document states its version. A new version asks every person to accept the document again. Keep the version for a fixed typo."
+          onChange={(next) => {
+            update({ version: next });
+          }}
+        />
+        <Card responsive>
+          <SettingActionRow
+            label="Start again from template"
+            actionLabel="Start again from template"
+            onClick={() => {
+              update({ kind: 'text', text: form.template });
               setValues({});
             }}
           />
-        </>
-      )}
-      <TextField
-        id="legal-version"
-        label="Version"
-        value={form.version}
-        required
-        hint="The page of the document states its version. A new version asks every person to accept the document again. Keep the version for a fixed typo."
-        onChange={(next) => {
-          update({ version: next });
-        }}
-      />
-      {failure === '' ? null : (
-        <Notice className="mb-3" tone="problem" message={failure} />
-      )}
-      <div className="flex flex-wrap gap-cluster">
+          {existing ? (
+            <SettingActionRow
+              label={`Remove ${title.toLowerCase()}…`}
+              actionLabel={`Remove ${title.toLowerCase()}`}
+              danger
+              disabled={busy}
+              onClick={() => setConfirming(true)}
+            />
+          ) : null}
+        </Card>
+        {failure === '' ? null : <Notice tone="problem" message={failure} />}
+      </DialogBody>
+      <DialogFooter>
+        <Button variant="ghost" onClick={onClose}>
+          Cancel
+        </Button>
         <Button
           type="submit"
-          variant="secondary"
-          size="sm"
           disabled={
             busy ||
             version === '' ||
             (form.kind === 'text' ? text.trim() === '' : form.url.trim() === '')
           }
         >
-          {busy ? 'Saving' : 'Save'}
+          {busy ? 'Saving' : 'Done'}
         </Button>
-        <Button variant="ghost" size="sm" onClick={onClose}>
-          Cancel
-        </Button>
-        {form.kind === 'text' && form.text !== form.template ? (
-          <Button
-            variant="secondary"
-            size="sm"
-            className="ml-auto"
-            onClick={() => {
-              update({ text: form.template });
-              setValues({});
-            }}
-          >
-            Start again from the template
-          </Button>
-        ) : null}
-      </div>
-    </form>
+      </DialogFooter>
+      {confirming ? (
+        <ConfirmRemoval
+          title={`Remove ${title.toLowerCase()}?`}
+          message="This document is removed from this server."
+          action={`Remove ${title.toLowerCase()}`}
+          onCancel={() => setConfirming(false)}
+          onConfirm={() => {
+            setConfirming(false);
+            setBusy(true);
+            void removeLegalDocument({ path: { document: name } }).then(
+              (result) => {
+                setBusy(false);
+                if (result.error !== undefined) {
+                  setFailure(problemMessage(result.error));
+                  return;
+                }
+                onSaved(legalRemovedText(title.toLowerCase()));
+              },
+            );
+          }}
+        />
+      ) : null}
+    </Form>
   );
 }

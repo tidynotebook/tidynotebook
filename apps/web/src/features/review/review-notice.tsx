@@ -1,3 +1,4 @@
+import { Inset, Button, Notice } from '@notesapp/ui';
 /**
  * The notice that one open note shows while a Review waits (record 0087).
  *
@@ -10,7 +11,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import type { LocalStore, ReviewRecord } from '@notesapp/sync';
-import { Button, Notice } from '@notesapp/ui';
+
 import { reviewDismissFailed, reviewNotice } from '../../lib/review.ts';
 
 /** The Reviews that wait for one note, and a way to read them again. */
@@ -96,14 +97,14 @@ export function ReviewNoticeBar({
 
   if (notice === null) return null;
   return (
-    <div className="mt-4">
+    <Inset as="div">
       <Notice
         tone="info"
         message={failed ? reviewDismissFailed : notice.message}
       >
         <Button
           variant="secondary"
-          size="sm"
+          size="compact"
           onClick={() => {
             void navigate(`/w/${workspaceId}/notes/${fileId}/review`);
           }}
@@ -112,7 +113,7 @@ export function ReviewNoticeBar({
         </Button>
         <Button
           variant="ghost"
-          size="sm"
+          size="compact"
           onClick={() => {
             dismiss(notice.reviewId);
           }}
@@ -120,6 +121,6 @@ export function ReviewNoticeBar({
           Dismiss
         </Button>
       </Notice>
-    </div>
+    </Inset>
   );
 }

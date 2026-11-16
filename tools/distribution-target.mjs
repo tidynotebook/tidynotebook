@@ -29,12 +29,11 @@ export async function distributionManifest(file, architecture) {
   const arch = distributionArchitecture(architecture);
   if (basename(file) === 'native-sources.json') {
     if (
-      manifest.package !== '@img/sharp-libvips-linux-x64' ||
+      manifest.package !== 'tidynotebook-native' ||
       manifest.platform !== 'linux-x64-glibc'
     )
       throw new Error('The reviewed native source target differs.');
     if (arch === 'arm64') {
-      manifest.package = '@img/sharp-libvips-linux-arm64';
       manifest.platform = 'linux-arm64-glibc';
     }
   }
@@ -54,23 +53,25 @@ export async function distributionManifest(file, architecture) {
 }
 
 /** Refuse stale source records before downloading archives.
- * @param {string} entry @param {string} [architecture] */
-export async function validateNativeConsumer(entry, architecture) {
+ * @param {string} entry @param {string} [architecture] @param {string} [buildFile] */
+export async function validateNativeConsumer(
+  entry,
+  architecture,
+  buildFile = '/opt/notesapp-native/build.json',
+) {
   const manifest = await distributionManifest(
     join(root, 'tools/native-sources.json'),
     architecture,
   );
-  if (typeof manifest.package !== 'string')
-    throw new Error('The native package is missing.');
+  const build = await readJson(buildFile);
   const require = createRequire(join(entry, 'package.json'));
-  const sharpRequire = createRequire(require.resolve('sharp'));
-  const pkg = record(sharpRequire(`${manifest.package}/package`));
-  /** @type {unknown} */
-  const versions = sharpRequire(`${manifest.package}/versions`);
+  const versions = record(require('sharp').versions);
   if (
-    pkg.name !== manifest.package ||
-    pkg.version !== manifest.packageVersion ||
-    !isDeepStrictEqual(versions, manifest.versions)
+    build.package !== manifest.package ||
+    build.packageVersion !== manifest.packageVersion ||
+    build.platform !== manifest.platform ||
+    !isDeepStrictEqual(build.versions, manifest.versions) ||
+    versions.vips !== record(manifest.versions).vips
   )
     throw new Error('The native source does not match the installed library.');
 }

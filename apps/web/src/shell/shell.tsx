@@ -1,3 +1,42 @@
+import {
+  Inline,
+  ApplicationContent,
+  Panel,
+  PanelHeader,
+  useToolbarOverflow,
+  Stack,
+  Region,
+  fixedRegionClasses,
+  IconSlot,
+  Toolbar,
+  IconButton,
+  ListRow,
+  StatusLine,
+  AnchoredMenu,
+  avatarClassName,
+  Button,
+  buttonClassName,
+  CloseIcon,
+  FolderIcon,
+  LoadingState,
+  Menu,
+  MenuIcon,
+  MoreIcon,
+  type MenuItem,
+  type MenuAnchor,
+  focusOutline,
+  focusOutlineInset,
+  Notice,
+  PageBackProvider,
+  pageColumnClassName,
+  pageGutter,
+  pageSideClassName,
+  PanelLeftIcon,
+  SearchIcon,
+  transitionSurface,
+} from '@notesapp/ui';
+
+import { useNavigationDrawer } from './use-navigation-drawer.ts';
 import { TrialNotice } from '../features/accounts/trial-notice.tsx';
 /**
  * The application shell: one frame for every signed in screen.
@@ -19,8 +58,8 @@ import { TrialNotice } from '../features/accounts/trial-notice.tsx';
  * medium width, which is what leaves the name its room.
  *
  * The sidebar is a column of rows: the workspace switcher, one row of icon
- * actions for the tree (New note, New folder, Sort notes, and Expand or
- * Collapse all folders), the tree and the footer (decision 0093). Search is
+ * actions for the tree (New note, New folder, New note from template, Sort
+ * notes, and Expand or Collapse all folders), the tree and the footer (decision 0093). Search is
  * not one of them: the header carries it at every width and `Cmd or Ctrl + P`
  * opens it from the keyboard, so the row it held is space the tree has now
  * (decision 0069). No row of it is a filled button, because the one
@@ -43,8 +82,11 @@ import { TrialNotice } from '../features/accounts/trial-notice.tsx';
  * there.
  */
 import {
+  lazy,
+  Suspense,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -58,47 +100,21 @@ import {
   useNavigate,
   useParams,
 } from 'react-router';
-import {
-  avatarClassName,
-  Button,
-  buttonClassName,
-  CloseIcon,
-  compactButtonVisualClassName,
-  edgeControlClassName,
-  FolderIcon,
-  LoadingState,
-  Menu,
-  MenuIcon,
-  type MenuItem,
-  focusOutline,
-  focusOutlineInset,
-  Notice,
-  PageBackProvider,
-  pageColumnClassName,
-  pageGutter,
-  pageSideClassName,
-  PanelLeftIcon,
-  rowClassName,
-  SearchIcon,
-  transitionSurface,
-} from '@notesapp/ui';
+
 import { trashPageGlyph } from '../lib/delete-label.ts';
 import {
   SyncProvider,
   useLocalStore,
   useSession,
   useSyncSession,
-  useSyncState,
   useTheme,
   useWorkspace,
   useWorkspaceSync,
 } from '../app.tsx';
-import {
-  attentionTitle,
-  AttentionLink,
-  useAttentionCount,
-} from '../features/attention/attention-link.tsx';
-import { CommandPalette } from './command-palette.tsx';
+import { attentionTitle } from '../features/attention/attention-link.tsx';
+import { NewFromTemplateDialog } from '../features/templates/new-from-template.tsx';
+import { useWorkspaceProblem } from '../features/templates/workspace-problem.ts';
+import type { CommandPalette } from './command-palette.tsx';
 import type { ShortcutsDialog } from './shortcuts.tsx';
 import { createModuleLoad } from '../lib/module-load.ts';
 import {
@@ -119,10 +135,7 @@ import {
   folderExpansionLabels,
 } from '../lib/folder-expansion.ts';
 import { noteOrderLabel, noteOrders } from '../lib/note-order.ts';
-import {
-  frameContentClassName,
-  frameNoticeRowClassName,
-} from '../lib/frame-content.ts';
+import { frameNoticeRowClassName } from '../lib/frame-content.ts';
 import {
   MoveItemsDialog,
   NewFolderDialog,
@@ -133,15 +146,20 @@ import {
   today,
   useDailyNotes,
 } from '../features/daily-notes/daily-notes.tsx';
+
 import { daysWithNotes } from '../lib/daily-note.ts';
 import {
   TemplatesProvider,
   useTemplates,
 } from '../features/templates/templates.tsx';
-import { templatePalettePick } from '../lib/templates.ts';
-import { SidebarCalendar } from '../features/daily-notes/calendar.tsx';
+import {
+  templatePalettePick,
+  templateDestinationFor,
+  type TemplateDestination,
+} from '../lib/templates.ts';
+import { SidebarCalendar } from '../features/daily-notes/calendar-entry.tsx';
 import { dailyNoteDate, type PublicationScope } from '@notesapp/core';
-import { PublishDialog } from '../features/publishing/publish-dialog.tsx';
+import { PublishDialog } from '../features/publishing/publish-dialog-entry.tsx';
 import { publishedLinksTitle } from '../features/publishing/publishing.ts';
 import { accountsTitle } from '../lib/accounts.ts';
 import {
@@ -153,13 +171,11 @@ import type { DragItem } from '../lib/folder-moves.ts';
 import {
   drawerCalendarClassName,
   drawerClassName,
-  drawerPanelClassName,
   drawerTreeClassName,
 } from './drawer.ts';
 import {
   formatSidebarSize,
   parseSidebarSize,
-  sidebarInsetClass,
   sidebarSizeStorageKey,
   sidebarWidthPx,
   stepAfterKey,
@@ -167,12 +183,17 @@ import {
   type SidebarSize,
 } from './sidebar-size.ts';
 import { useTreeDrag } from './tree-drag.ts';
-import { NoteTree, rowSpacerClassName } from './tree.tsx';
+import { NoteTree } from './tree.tsx';
+import type {
+  CreatedFolderReveal,
+  CreatedFolderRevealOwner,
+  CreateFolderReveal,
+} from '../features/folders/created-folder-reveal.ts';
 import {
+  rowSpacerClassName,
   treeListClassName,
   treeMessageClassName,
   treeRowClassName,
-  treeRowLeadingClassName,
   treeRowNameClassName,
 } from '../lib/tree-row.ts';
 import { moveNoteToTrashPaletteLabel, noteTrashRow } from '../lib/note-menu.ts';
@@ -200,11 +221,12 @@ import {
 } from './header-slot.tsx';
 import { KeyHint } from './key-hint.tsx';
 import {
-  syncDotClassName,
-  syncFooter,
-  syncStateIsQuiet,
-  syncStatusClassNames,
-} from '../lib/sync-state.ts';
+  SettingsModalHost,
+  useOpenSettings,
+  preloadSettings,
+} from './settings-modal.tsx';
+import { useSignOut } from './sign-out.tsx';
+import { syncStateIsQuiet } from '../lib/sync-state.ts';
 import type { CalendarMonth } from '../lib/calendar-month.ts';
 import {
   breadcrumbKey,
@@ -215,7 +237,7 @@ import {
   type BreadcrumbPart,
   type PageTitles,
 } from '../lib/breadcrumb.ts';
-import { settingsTitle } from '../features/accounts/accounts.tsx';
+import { settingsTitle } from '../lib/settings-address.ts';
 import { BackLink } from './back-link.tsx';
 import { notFoundTitle } from './not-found.tsx';
 import {
@@ -240,6 +262,10 @@ import { sidebarViewLabels, type SidebarView } from '../lib/sidebar-view.ts';
  * no editor code (record 0177). A dialog that does not arrive is stated in
  * place, and the screen stays.
  */
+const loadCommandPalette = createModuleLoad(
+  async () => (await import('./command-palette.tsx')).CommandPalette,
+);
+
 const loadShortcutsDialog = createModuleLoad(
   async () => (await import('./shortcuts.tsx')).ShortcutsDialog,
 );
@@ -251,6 +277,9 @@ const shortcutsLoadFailure =
 const allNotesTitle = 'All notes';
 
 /** The name of the screen that holds the notes a person deleted. */
+const SidebarStatus = lazy(async () => ({
+  default: (await import('./sidebar-status.tsx')).SidebarStatus,
+}));
 const trashTitle = 'Trash';
 
 /**
@@ -274,6 +303,9 @@ const sidebarKeys = 'Cmd or Ctrl + \\';
 
 /** The key line that opens the command palette. */
 const paletteKeys = 'Cmd or Ctrl + P';
+
+/** The key line that opens the shortcut list. */
+const shortcutsKeys = 'Cmd or Ctrl + /';
 
 /**
  * Where the person is, as one line of the header.
@@ -301,11 +333,20 @@ function Breadcrumb({
   const { leafFilled } = useHeaderSlot();
   return (
     <nav className="min-w-0 flex-1" aria-label="Where you are">
-      <ol className="m-0 flex min-w-0 list-none items-center gap-1 p-0 text-ui">
+      <Inline
+        gap={1}
+        pad={0}
+        align="center"
+        as="ol"
+        className="min-w-0 list-none text-body"
+      >
         {parts.map((part, index) =>
           part.to === null ? (
-            <li
-              className="flex min-w-0 flex-1 items-center gap-1"
+            <Inline
+              gap={1}
+              align="center"
+              as="li"
+              className="min-w-0 flex-1"
               key={breadcrumbKey(part, index)}
             >
               {index === 0 ? null : (
@@ -314,27 +355,35 @@ function Breadcrumb({
                 </span>
               )}
               {leafFilled ? null : (
-                <span className="truncate font-medium text-strong">
+                <span className="truncate text-label text-strong">
                   {part.label}
                 </span>
               )}
               <HeaderLeafSlot className="flex min-w-0 flex-1 items-center empty:hidden" />
-            </li>
+            </Inline>
           ) : (
             // A separator stands between two parts and never after the
             // last one, which a page that is not the note ends on
             // (record 0139).
-            <li
-              className="flex shrink-0 items-center gap-1 max-md:hidden"
+            <Inline
+              gap={1}
+              align="center"
+              as="li"
+              className={
+                index === parts.length - 1
+                  ? 'min-w-0 flex-1'
+                  : 'shrink-0 max-md:hidden'
+              }
               key={breadcrumbKey(part, index)}
             >
               {index === 0 ? null : (
-                <span className="text-muted" aria-hidden="true">
+                <span className="text-muted max-md:hidden" aria-hidden="true">
                   /
                 </span>
               )}
               <Link
-                className={`max-w-32 truncate rounded-md text-muted no-underline hover:text-strong ${transitionSurface} ${focusOutline}`}
+                title={part.label}
+                className={`${index === parts.length - 1 ? 'max-w-full' : 'max-w-32'} truncate rounded-md text-muted no-underline hover:text-strong ${transitionSurface} ${focusOutline}`}
                 to={part.to}
                 onClick={() => {
                   if (part.folder !== null) onSelectFolder(part.folder);
@@ -342,12 +391,78 @@ function Breadcrumb({
               >
                 {part.label}
               </Link>
-            </li>
+            </Inline>
           ),
         )}
-      </ol>
+      </Inline>
     </nav>
   );
+}
+
+/** Owns the one creation intent until this tree finishes or cancels it. */
+function useFolderCreation(
+  owner: CreatedFolderRevealOwner,
+  addEmptyFolder: (folder: string) => void,
+  openFolder: (folder: string) => void,
+  selectFolder: (folder: string) => void,
+) {
+  const currentOwner = useRef(owner);
+  currentOwner.current = owner;
+  const latest = useRef<CreatedFolderReveal | null>(null);
+  const [request, setRequest] = useState<CreatedFolderReveal | null>(null);
+  const clear = useCallback((done: CreatedFolderReveal): void => {
+    if (latest.current !== done) return;
+    latest.current = null;
+    done.cancel();
+    setRequest((current) => (current === done ? null : current));
+  }, []);
+  useLayoutEffect(() => {
+    const previous = latest.current;
+    if (previous !== null && previous.owner !== owner) clear(previous);
+  }, [owner, clear]);
+  const isCurrent = useCallback(
+    (candidate: CreatedFolderReveal): boolean =>
+      currentOwner.current === owner &&
+      candidate.owner === owner &&
+      latest.current === candidate,
+    [owner],
+  );
+  const finish = useCallback(
+    (done: CreatedFolderReveal): void => {
+      if (done.owner === owner) clear(done);
+    },
+    [owner, clear],
+  );
+  const cancel = useCallback(
+    (event?: Event): void => {
+      const pending = latest.current;
+      if (pending?.owner !== owner) return;
+      if (event) pending.manual(event);
+      else clear(pending);
+    },
+    [owner, clear],
+  );
+  const onCreated = useCallback(
+    (folder: string, createReveal: CreateFolderReveal): void => {
+      addEmptyFolder(folder);
+      for (const above of ancestorFolders(folder)) openFolder(above);
+      selectFolder(folder);
+      openFolder(folder);
+      if (currentOwner.current !== owner || owner.accountId === null) return;
+      latest.current?.cancel();
+      const next = createReveal(owner, folder, finish);
+      latest.current = next;
+      setRequest(next);
+    },
+    [owner, addEmptyFolder, openFolder, selectFolder, finish],
+  );
+  return {
+    request: request?.owner === owner ? request : null,
+    isCurrent,
+    finish,
+    cancel,
+    onCreated,
+  };
 }
 
 /**
@@ -361,6 +476,7 @@ function Sidebar({
   workspaceId,
   view,
   selectedFolder,
+  folderCreation,
   folders,
   knownFolders,
   newNoteProblem,
@@ -370,6 +486,7 @@ function Sidebar({
   onPublish,
   onMove,
   onNewNoteIn,
+  onFromTemplate,
   onNewWorkspace,
   onRenameWorkspace,
   onDeleteWorkspace,
@@ -379,6 +496,7 @@ function Sidebar({
   /** What the panel shows, which the view bar chose (record 0105). */
   readonly view: SidebarView;
   readonly selectedFolder: string;
+  readonly folderCreation: ReturnType<typeof useFolderCreation>;
   readonly folders: OpenFoldersControl;
   /** Every folder the tree shows, which Expand all folders opens. */
   readonly knownFolders: readonly string[];
@@ -395,6 +513,7 @@ function Sidebar({
     returnFocus: () => void,
   ) => void;
   readonly onNewNoteIn: (folder: string) => void;
+  readonly onFromTemplate: (folder: string) => void;
   readonly onNewWorkspace: () => void;
   readonly onRenameWorkspace: () => void;
   readonly onDeleteWorkspace: () => void;
@@ -405,9 +524,7 @@ function Sidebar({
   const fileId = typeof params.fileId === 'string' ? params.fileId : null;
   const session = useSession();
   const store = useLocalStore();
-  const sync = useSyncState();
   const files = useFiles();
-  const online = useOnline();
   const { openFolders, openFolder, setOpenFolders } = folders;
   const noteOrder = useNoteOrder();
   const expansion = folderExpansion(openFolders, knownFolders);
@@ -420,11 +537,6 @@ function Sidebar({
     moveEmptyFolders: files.moveEmptyFolders,
     openFolder,
   });
-  const attentionCount = useAttentionCount(
-    store.store,
-    session.account?.accountId ?? null,
-    workspaceId,
-  );
   const tree = useMemo(
     () => buildNoteTree(files.notes, files.emptyFolders, noteOrder.order),
     [files.notes, files.emptyFolders, noteOrder.order],
@@ -452,41 +564,46 @@ function Sidebar({
     for (const folder of ancestorFolders(openNotePath)) openFolder(folder);
   }, [openNotePath, openFolder]);
   const notesPath = `/w/${workspaceId}`;
-  const trashPath = `/w/${workspaceId}/trash`;
-  const publishedPath = `/w/${workspaceId}/published`;
-  const attentionPath = `/w/${workspaceId}/attention`;
-  // One short sentence for the state of the work, beside the dot that states
-  // the same thing without a word. A failed local write of the open note
-  // takes both, because sync never saw that text.
-  const openNoteWriteFailed = useNoteSaveFact(
-    (report) => report?.localWriteFailed ?? false,
-  );
-  const footer = syncFooter({
-    state: sync.state,
-    online,
-    noteName: sync.noteName,
-    openNoteWriteFailed,
-  });
-  const syncLine = footer.line;
+  const overflowActions = useRef<HTMLDivElement | null>(null);
+  const [sortAnchor, setSortAnchor] = useState<MenuAnchor | null>(null);
+  const sortItems = noteOrders.map((order) => ({
+    id: order,
+    ...noteOrderLabel(order),
+    selected: order === noteOrder.order,
+    onSelect: () => noteOrder.setOrder(order),
+  }));
+  const expand = () => setOpenFolders(expandedFolders(expansion, knownFolders));
 
+  const actionLayout = useToolbarOverflow(5);
+  const fixedTop = useRef<HTMLDivElement>(null),
+    fixedBottom = useRef<HTMLDivElement>(null);
   return (
-    <>
-      <div className="flex h-header shrink-0 items-center justify-between gap-cluster border-b border-edge-subtle px-2 md:hidden">
-        <span className="text-ui font-semibold text-strong">
-          {sidebarViewLabels[view]}
-        </span>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="size-11"
-          label="Close navigation"
-          title="Close navigation"
-          icon={<CloseIcon />}
-          onClick={onClose}
-        />
-      </div>
-
-      <div className={drawerPanelClassName}>
+    <Panel regions pad={0} className="ui-sidebar-panel">
+      <Region
+        scroll="none"
+        data-edge-always=""
+        edge="bottom"
+        pad={{ fine: 2, coarse: 3 }}
+        gap={{ fine: 2, coarse: 3 }}
+        elementRef={fixedTop}
+        data-scroll-edge="above"
+        className="ui-sidebar-top"
+      >
+        <PanelHeader className="ui-sidebar-header md:hidden">
+          <span className="text-title-header text-strong">
+            {sidebarViewLabels[view]}
+          </span>
+          <IconSlot className="ui-sidebar-slot">
+            <IconButton
+              size="header"
+              className="ui-sidebar-header-close"
+              label="Close navigation"
+              title="Close navigation"
+              glyph={<CloseIcon />}
+              onClick={onClose}
+            />
+          </IconSlot>
+        </PanelHeader>
         <WorkspaceSwitcher
           workspaceId={workspaceId}
           onNavigate={onClose}
@@ -494,91 +611,182 @@ function Sidebar({
           onRename={onRenameWorkspace}
           onDelete={onDeleteWorkspace}
         />
-
         {view === 'notes' ? (
           <>
-            {/*
-        The actions of the tree are one row of icons (decision 0093). Each one
-        is a compact ghost control with a name and a title, so the row stays
-        quiet and every action stays in the tab order.
-      */}
-            <div className="px-2 pt-1">
-              <div className="flex items-center gap-1">
-                <Button
+            <div ref={actionLayout.ref} className="ui-drawer-actions">
+              <Toolbar className="ui-drawer-actions-row ui-sidebar-actions">
+                <IconButton
+                  size="toolbar"
                   variant="ghost"
-                  size="sm"
-                  compact
-                  label="New note"
+
+                  className="ui-sidebar-action"
+                  label={
+                    selectedFolder === ''
+                      ? 'New note'
+                      : `New note in ${selectedFolder}`
+                  }
                   title="New note"
-                  icon={actionIcon('new-note')}
+                  glyph={actionIcon('new-note')}
                   onClick={() => onNewNoteIn(selectedFolder)}
                 />
-                <Button
+                <IconButton
+                  size="toolbar"
                   variant="ghost"
-                  size="sm"
-                  compact
+
+                  className="ui-sidebar-action"
+                  onPointerEnter={() => {
+                    void NewFolderDialog.preload();
+                  }}
+                  onFocus={() => {
+                    void NewFolderDialog.preload();
+                  }}
                   label="New folder"
                   title="New folder"
-                  icon={actionIcon('new-folder')}
-                  onClick={() => onNewFolderIn(selectedFolder)}
+                  glyph={actionIcon('new-folder')}
+                  onClick={() => onNewFolderIn('')}
                 />
-                <Menu
-                  label="Sort notes"
-                  icon={actionIcon('sort')}
-                  compact
-                  align="start"
-                  items={noteOrders.map((order) => ({
-                    id: order,
-                    ...noteOrderLabel(order),
-                    selected: order === noteOrder.order,
-                    onSelect: () => noteOrder.setOrder(order),
-                  }))}
-                />
-                <Button
+                <IconButton
+                  size="toolbar"
                   variant="ghost"
-                  size="sm"
-                  compact
-                  label={folderExpansionLabels[expansion]}
-                  title={folderExpansionLabels[expansion]}
-                  icon={actionIcon(
-                    expansion === 'expand' ? 'expand-all' : 'collapse-all',
-                  )}
-                  disabled={knownFolders.length === 0}
-                  onClick={() =>
-                    setOpenFolders(expandedFolders(expansion, knownFolders))
-                  }
+
+                  className="ui-sidebar-action"
+                  onPointerEnter={() => {
+                    void NewFromTemplateDialog.preload();
+                  }}
+                  onFocus={() => {
+                    void NewFromTemplateDialog.preload();
+                  }}
+                  label="New note from template"
+                  title="New note from template"
+                  glyph={actionIcon('template')}
+                  onClick={() => onFromTemplate(selectedFolder)}
                 />
-              </div>
+                <div className={actionLayout.compact ? 'hidden' : 'contents'}>
+                  <Menu
+                    label="Sort notes"
+                    trigger="toolbar"
+                    icon={actionIcon('sort')}
+                    triggerClassName="ui-sidebar-action"
+                    align="start"
+                    items={sortItems}
+                  />
+                  <IconButton
+                    size="toolbar"
+                    variant="ghost"
+
+                    className="ui-sidebar-action"
+                    label={folderExpansionLabels[expansion]}
+                    title={folderExpansionLabels[expansion]}
+                    glyph={actionIcon(
+                      expansion === 'expand' ? 'expand-all' : 'collapse-all',
+                    )}
+                    disabled={knownFolders.length === 0}
+                    onClick={expand}
+                  />
+                </div>
+                <div
+                  ref={overflowActions}
+                  className={actionLayout.compact ? 'contents' : 'hidden'}
+                >
+                  <Menu
+                    label="More drawer actions"
+                    trigger="toolbar"
+                    icon={<MoreIcon />}
+                    triggerClassName="ui-sidebar-action"
+                    items={[
+                      {
+                        id: 'sort',
+                        label: 'Sort notes',
+                        icon: actionIcon('sort'),
+                        onSelect: () => {
+                          const trigger =
+                            overflowActions.current?.querySelector('button');
+                          if (trigger)
+                            setSortAnchor(trigger.getBoundingClientRect());
+                        },
+                      },
+                      {
+                        id: 'expansion',
+                        label: folderExpansionLabels[expansion],
+                        icon: actionIcon(
+                          expansion === 'expand'
+                            ? 'expand-all'
+                            : 'collapse-all',
+                        ),
+                        disabled: knownFolders.length === 0,
+                        onSelect: expand,
+                      },
+                    ]}
+                  />
+                </div>
+                {sortAnchor === null ? null : (
+                  <AnchoredMenu
+                    label="Sort notes"
+                    items={sortItems}
+                    anchor={sortAnchor}
+                    onClose={(restore) => {
+                      setSortAnchor(null);
+                      if (restore)
+                        overflowActions.current
+                          ?.querySelector('button')
+                          ?.focus();
+                    }}
+                  />
+                )}
+              </Toolbar>
               {newNoteProblem === null ? null : (
-                <p className="my-1 px-2 text-control text-danger" role="alert">
+                <p
+                  className="ui-sidebar-message text-secondary text-danger"
+                  role="alert"
+                >
                   {newNoteProblem}
                 </p>
               )}
             </div>
-
-            <div className={drawerTreeClassName}>
-              <section className="pt-1" aria-label="Folders">
-                <div
-                  className={treeRowClassName({
-                    open: location.pathname === notesPath,
-                    selected: selectedFolder === '',
-                    dropTarget: drag.over === '',
-                  })}
-                  onDragOver={(event) => {
-                    if (!drag.accepts('')) return;
-                    event.preventDefault();
-                    event.dataTransfer.dropEffect = 'move';
-                    drag.hover('');
-                  }}
-                  onDragLeave={() => {
-                    if (drag.over === '') drag.hover(null);
-                  }}
-                  onDrop={(event) => {
-                    event.preventDefault();
-                    drag.drop('');
-                  }}
-                >
-                  {/*
+          </>
+        ) : null}
+      </Region>
+      <Region
+        scroll="y"
+        edge="both"
+        pad={{ fine: 2, coarse: 3 }}
+        className={drawerTreeClassName}
+        above={fixedTop}
+        below={fixedBottom}
+      >
+        {view === 'notes' ? (
+          <>
+            <Stack
+              as="section"
+              gap={0.5}
+              pad={0}
+              className="ui-sidebar-tree-items"
+              aria-label="Folders"
+            >
+              <ListRow
+                as="div"
+                density="tree"
+                className={treeRowClassName({
+                  wrapOnPhone: true,
+                  open: location.pathname === notesPath,
+                  selected: location.pathname === notesPath,
+                  dropTarget: drag.over === '',
+                })}
+                onDragOver={(event) => {
+                  if (!drag.accepts('')) return;
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = 'move';
+                  drag.hover('');
+                }}
+                onDragLeave={() => {
+                  if (drag.over === '') drag.hover(null);
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  drag.drop('');
+                }}
+              >
+                {/*
               The root of the tree is a link and not a button, because the
               workspace screen is the list of all notes and this row names it.
               It looked inert before: it set the parent of the next create
@@ -587,171 +795,148 @@ function Sidebar({
               `All notes`. It still does both of those, and the selection
               follows the note that opens, by record 0034.
             */}
-                  <div className={treeRowLeadingClassName}>
-                    <span className={rowSpacerClassName} aria-hidden="true" />
-                    <Link
-                      className={treeRowNameClassName}
-                      to={notesPath}
-                      aria-current={
-                        location.pathname === notesPath ? 'page' : undefined
-                      }
-                      onClick={() => {
-                        onSelectFolder('');
-                        onNavigate();
-                      }}
-                    >
-                      <span
-                        className="inline-flex shrink-0 items-center"
-                        aria-hidden="true"
-                      >
-                        <FolderIcon />
-                      </span>
-                      <span className="min-w-0 flex-1 truncate">
-                        {allNotesTitle}
-                      </span>
-                    </Link>
-                  </div>
-                </div>
-                {files.loading ? (
-                  <div className="px-2 py-2">
-                    <LoadingState
-                      shape="list"
-                      rows={4}
-                      label="Your notes are loading."
-                    />
-                  </div>
-                ) : tree.length === 0 ? (
-                  <p className="my-1 px-2 text-control text-muted">
-                    No notes yet.
-                  </p>
-                ) : (
-                  <div className={treeListClassName}>
-                    <NoteTree
-                      workspaceId={workspaceId}
-                      nodes={tree}
-                      knownFolders={knownFolders}
-                      activeFileId={fileId}
-                      selectedFolder={selectedFolder}
-                      folders={folders}
-                      drag={drag}
-                      onSelectFolder={(folder) => {
-                        openFolder(folder);
-                        onSelectFolder(folder);
-                      }}
-                      onNavigate={onNavigate}
-                      onNewNoteIn={onNewNoteIn}
-                      onNewFolderIn={onNewFolderIn}
-                      onPublish={onPublish}
-                      onMove={onMove}
-                    />
-                  </div>
-                )}
-                {files.limitNotice === null ? null : (
-                  <p
-                    className="my-1 px-2 text-control text-muted"
-                    role="status"
-                    aria-live="polite"
+                <Inline gap={1} className="ui-sidebar-leading min-w-0 flex-1">
+                  <IconSlot className={rowSpacerClassName} aria-hidden="true" />
+                  <Inline
+                    as={Link}
+                    gap={2}
+                    className={`${treeRowNameClassName} min-w-0 flex-1`}
+                    to={notesPath}
+                    aria-current={
+                      location.pathname === notesPath ? 'page' : undefined
+                    }
+                    onClick={() => {
+                      onSelectFolder('');
+                      onNavigate();
+                    }}
                   >
-                    {files.limitNotice}
-                  </p>
-                )}
-              </section>
-              {drag.problem === null ? null : (
-                <p className={treeMessageClassName('problem')} role="alert">
-                  {drag.problem}
+                    <span
+                      className="inline-flex shrink-0 items-center"
+                      aria-hidden="true"
+                    >
+                      <FolderIcon />
+                    </span>
+                    <span data-tree-name className="min-w-0 flex-1 truncate">
+                      {allNotesTitle}
+                    </span>
+                  </Inline>
+                </Inline>
+                <IconSlot className="ui-sidebar-slot">
+                  <Menu
+                    label="Actions for All notes"
+                    icon={<MoreIcon />}
+                    trigger="row-action"
+                    triggerClassName="ui-sidebar-row-action ui-sidebar-row-menu"
+                    items={[
+                      {
+                        id: 'new-note',
+                        label: 'New note',
+                        onSelect: () => onNewNoteIn(''),
+                      },
+                      {
+                        id: 'new-folder',
+                        label: 'New folder',
+                        onSelect: () => onNewFolderIn(''),
+                      },
+                      {
+                        id: 'template',
+                        label: 'New note from template',
+                        onSelect: () => onFromTemplate(''),
+                      },
+                    ]}
+                  />
+                </IconSlot>
+              </ListRow>
+              {files.loading ? (
+                <div className="ui-sidebar-message">
+                  <LoadingState shape="list" rows={4} label="Loading notes" />
+                </div>
+              ) : tree.length === 0 ? (
+                <p className="ui-sidebar-message text-secondary text-muted">
+                  No notes yet.
+                </p>
+              ) : (
+                <Stack gap={0.5} pad={0} className={treeListClassName}>
+                  <NoteTree
+                    workspaceId={workspaceId}
+                    nodes={tree}
+                    knownFolders={knownFolders}
+                    activeFileId={fileId}
+                    selectedFolder={selectedFolder}
+                    folderReveal={folderCreation}
+                    folders={folders}
+                    drag={drag}
+                    onSelectFolder={onSelectFolder}
+                    onNavigate={onNavigate}
+                    onNewNoteIn={onNewNoteIn}
+                    onNewFolderIn={onNewFolderIn}
+                    onPublish={onPublish}
+                    onMove={onMove}
+                  />
+                </Stack>
+              )}
+              {files.limitNotice === null ? null : (
+                <p
+                  className="ui-sidebar-message text-secondary text-muted"
+                  role="status"
+                  aria-live="polite"
+                >
+                  {files.limitNotice}
                 </p>
               )}
-            </div>
+            </Stack>
+            {drag.problem === null ? null : (
+              <p className={treeMessageClassName('problem')} role="alert">
+                {drag.problem}
+              </p>
+            )}
           </>
         ) : (
-          // The calendar has the view of its own (record 0105), so the month
-          // always shows and the panel scrolls when a short screen needs it.
           <div className={drawerCalendarClassName}>
-            <SidebarCalendar
-              today={today()}
-              openNoteDate={
-                openNotePath === null || layout === null
-                  ? null
-                  : dailyNoteDate(openNotePath, layout)
+            <Suspense
+              fallback={
+                <LoadingState shape="list" rows={3} label="Loading calendar" />
               }
-              daysWithNotes={markedDays}
-              onOpen={daily.open}
-            />
+            >
+              <SidebarCalendar
+                today={today()}
+                openNoteDate={
+                  openNotePath === null || layout === null
+                    ? null
+                    : dailyNoteDate(openNotePath, layout)
+                }
+                daysWithNotes={markedDays}
+                onOpen={daily.open}
+              />
+            </Suspense>
             {daily.openProblem === null ? null : (
-              <p className="my-1 px-2 text-control text-danger" role="alert">
+              <p
+                className="ui-sidebar-message text-secondary text-danger"
+                role="alert"
+              >
                 {daily.openProblem}
               </p>
             )}
           </div>
         )}
-
-        <div className="border-t border-edge-subtle p-2">
-          <div className={rowClassName({ interactive: false })}>
-            <span className={syncStatusClassNames.status}>
-              <span className={syncStatusClassNames.dotFrame}>
-                <span
-                  className={syncDotClassName(footer.dot)}
-                  aria-hidden="true"
-                />
-              </span>
-              <span className={syncStatusClassNames.line}>{syncLine}</span>
-            </span>
-          </div>
-          <Link
-            className={rowClassName({
-              current: location.pathname === trashPath,
-              inset: false,
-            })}
-            to={trashPath}
-            onClick={onNavigate}
-            aria-current={location.pathname === trashPath ? 'page' : undefined}
-          >
-            <span
-              className="inline-flex shrink-0 items-center"
-              aria-hidden="true"
-            >
-              {actionIcon(trashPageGlyph)}
-            </span>
-            <span className="min-w-0 flex-1 truncate">{trashTitle}</span>
-          </Link>
-          <Link
-            className={rowClassName({
-              current: location.pathname === publishedPath,
-              inset: false,
-            })}
-            to={publishedPath}
-            onClick={onNavigate}
-            aria-current={
-              location.pathname === publishedPath ? 'page' : undefined
-            }
-          >
-            <span
-              className="inline-flex shrink-0 items-center"
-              aria-hidden="true"
-            >
-              {actionIcon('published-links')}
-            </span>
-            <span className="min-w-0 flex-1 truncate">
-              {publishedLinksTitle}
-            </span>
-          </Link>
-          <AttentionLink
-            workspaceId={workspaceId}
-            count={attentionCount}
-            className={rowClassName({
-              current: location.pathname === attentionPath,
-              inset: false,
-              danger: true,
-            })}
-          />
-          {store.error !== null ? (
-            <p className="my-1 px-2 text-control text-danger" role="alert">
-              {store.error}
-            </p>
-          ) : null}
-        </div>
-      </div>
-    </>
+      </Region>
+      <Region
+        scroll="none"
+        data-edge-always=""
+        edge="top"
+        safeArea
+        elementRef={fixedBottom}
+        data-scroll-edge="below"
+        className="ui-sidebar-footer"
+      >
+        {' '}
+        <Suspense
+          fallback={<StatusLine className="ui-sidebar-status shrink-0" />}
+        >
+          <SidebarStatus workspaceId={workspaceId} />
+        </Suspense>
+      </Region>
+    </Panel>
   );
 }
 
@@ -900,6 +1085,9 @@ function SidebarResizer({
   );
 }
 
+/** The old Settings routes load through the frame chunk (issue 517). */
+export { loadLegacySettings } from './settings-modal.tsx';
+
 /** The application frame. */
 export function Shell(): ReactNode {
   const params = useParams();
@@ -941,7 +1129,35 @@ function ShellFrame({
   const params = useParams();
   const matches = useMatches();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const openSettings = useOpenSettings();
+  const signOut = useSignOut(workspaceId);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [paletteView, setPaletteView] = useState<{
+    readonly view: typeof CommandPalette;
+  } | null>(null);
+  const [paletteFailed, setPaletteFailed] = useState(false);
+  const paletteOwner = useRef<object | null>(null);
+  useEffect(() => {
+    const owner = {};
+    paletteOwner.current = owner;
+    return () => {
+      paletteOwner.current = null;
+    };
+  }, [workspaceId]);
+  /** Load the palette on demand and open it only if the same shell still owns the request. */
+  const openPalette = useCallback((): void => {
+    const owner = paletteOwner.current;
+    setPaletteFailed(false);
+    void loadCommandPalette().then((loaded) => {
+      if (owner === null || paletteOwner.current !== owner) return;
+      if (!loaded.ok) {
+        setPaletteFailed(true);
+        return;
+      }
+      setPaletteView({ view: loaded.value });
+      setPaletteOpen(true);
+    });
+  }, []);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [shortcutsDialog, setShortcutsDialog] = useState<{
     readonly view: typeof ShortcutsDialog;
@@ -980,8 +1196,34 @@ function ShellFrame({
   const [workspaceDialog, setWorkspaceDialog] = useState<
     'create' | 'rename' | 'delete' | null
   >(null);
+  const [templateDestination, setTemplateDestination] =
+    useState<TemplateDestination | null>(null);
+  const { problem: templateProblem, begin: beginTemplateCreation } =
+    useWorkspaceProblem(workspaceId);
+  const templateFolder = templateDestinationFor(
+    workspaceId,
+    templateDestination,
+  );
+  useEffect(() => {
+    setTemplateDestination(null);
+  }, [workspaceId]);
   const [selectedFolder, setSelectedFolder] = useState('');
+  useEffect(() => {
+    setSelectedFolder('');
+  }, [workspaceId]);
+  const framePage = framePageOf(matches.map((match) => match.handle));
   const sidebar = useSidebarSize();
+  const displayedSidebar = sidebar.size;
+  const {
+    phoneButton: menuButtonRef,
+    desktopButton: desktopMenuButtonRef,
+    panel: sidebarRef,
+    scrim: drawerScrimRef,
+    rememberOpener,
+    modal: navigationModal,
+  } = useNavigationDrawer(drawerOpen, setDrawerOpen);
+  /** Collapses or shows the sidebar. Settings is a modal, so no page hides it. */
+  const toggleSidebar = sidebar.toggleCollapsed;
   const [sidebarView, setSidebarView] = useSidebarView();
   // The frame is the visible part of the screen, so iOS cannot scroll it
   // away under an open keyboard.
@@ -989,15 +1231,27 @@ function ShellFrame({
   // The frame owns the open folders of the tree, because the New folder
   // dialog sits here and has to show the folder it made.
   const folders = useOpenFolders(workspaceId);
-  const menuButtonRef = useRef<HTMLButtonElement | null>(null);
-  const sidebarRef = useRef<HTMLElement | null>(null);
-  const drawerWasOpenRef = useRef(false);
   const session = useSession();
   const store = useLocalStore();
   const theme = useTheme();
   const files = useFiles();
   const workspace = useWorkspace();
   const accountId = session.account?.accountId ?? null;
+  const folderRevealOwner = useMemo(
+    () => ({
+      accountId,
+      workspaceId,
+      routeKey: location.key,
+      view: sidebarView,
+    }),
+    [accountId, workspaceId, location.key, sidebarView],
+  );
+  const folderCreation = useFolderCreation(
+    folderRevealOwner,
+    files.addEmptyFolder,
+    folders.openFolder,
+    setSelectedFolder,
+  );
   const sync = useWorkspaceSync(store.store, accountId, workspaceId);
   const syncSession = useSyncSession();
   const flushNoteDraft = useFlushNoteDraft();
@@ -1059,67 +1313,46 @@ function ShellFrame({
   }, [location.pathname]);
 
   useEffect(() => {
+    /** Open the palette with Ctrl or Cmd P or O, and collapse the sidebar with Ctrl or Cmd backslash. */
     const onKeyDown = (event: KeyboardEvent): void => {
       const key = event.key.toLowerCase();
       if (!event.metaKey && !event.ctrlKey) return;
       if (key === 'p' || key === 'o') {
         event.preventDefault();
-        setPaletteOpen(true);
+        openPalette();
         return;
       }
       if (key === '\\') {
         event.preventDefault();
-        sidebar.toggleCollapsed();
+        toggleSidebar();
+        return;
+      }
+      if (key === ',') {
+        event.preventDefault();
+        openSettings();
       }
     };
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [sidebar.toggleCollapsed]);
-
-  useEffect(() => {
-    if (!drawerOpen) {
-      if (drawerWasOpenRef.current) menuButtonRef.current?.focus();
-      drawerWasOpenRef.current = false;
-      return;
-    }
-    drawerWasOpenRef.current = true;
-    const sidebar = sidebarRef.current;
-    const focusable = (): HTMLElement[] =>
-      sidebar === null
-        ? []
-        : Array.from(
-            sidebar.querySelectorAll<HTMLElement>(
-              'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
-            ),
-          );
-    window.requestAnimationFrame(() => focusable()[0]?.focus());
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const onKey = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        setDrawerOpen(false);
+    // Capture this key before the editor can use it to change a code block.
+    const onShortcutsKeyDown = (event: KeyboardEvent): void => {
+      if (
+        event.key !== '/' ||
+        (!event.metaKey && !event.ctrlKey) ||
+        event.altKey ||
+        event.isComposing ||
+        document.querySelector('[role="dialog"], dialog[open]') !== null
+      )
         return;
-      }
-      if (event.key !== 'Tab') return;
-      const targets = focusable();
-      const first = targets[0];
-      const last = targets.at(-1);
-      if (first === undefined || last === undefined) return;
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
+      event.preventDefault();
+      event.stopPropagation();
+      if (!event.repeat) openShortcuts();
     };
-    window.addEventListener('keydown', onKey);
+    window.addEventListener('keydown', onShortcutsKeyDown, true);
     return () => {
-      window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keydown', onShortcutsKeyDown, true);
     };
-  }, [drawerOpen]);
+  }, [toggleSidebar, openPalette, openSettings, openShortcuts]);
 
   const cycleTheme = useCallback((): void => {
     const order = ['system', 'light', 'dark'] as const;
@@ -1154,14 +1387,19 @@ function ShellFrame({
     {
       id: 'settings',
       label: 'Settings',
+      onIntent: () => {
+        void preloadSettings().catch(() => {});
+      },
+      hint: <KeyHint keys="Cmd or Ctrl + ," />,
       icon: actionIcon('settings'),
       onSelect: () => {
-        void navigate(`/w/${workspaceId}/settings`);
+        openSettings();
       },
     },
     {
       id: 'shortcuts',
       label: 'Keyboard shortcuts',
+      hint: <KeyHint keys={shortcutsKeys} />,
       icon: actionIcon('keyboard'),
       onSelect: openShortcuts,
     },
@@ -1174,7 +1412,7 @@ function ShellFrame({
       id: 'sign-out',
       label: 'Sign out',
       icon: actionIcon('sign-out'),
-      onSelect: () => session.signOut(),
+      onSelect: signOut.start,
     },
   ];
 
@@ -1205,7 +1443,6 @@ function ShellFrame({
   // own when the workspace part does not already name it.
   const noteName =
     openNotePath === null ? null : displayNoteName(baseNameOf(openNotePath));
-  const framePage = framePageOf(matches.map((match) => match.handle));
   const routeName = leafOf(framePage, noteName);
   const routeParent = parentPartOf(framePage, {
     workspaceId,
@@ -1225,18 +1462,23 @@ function ShellFrame({
   // The palette reads its actions when it opens, so the rows of the
   // formatting tools follow the caret of the note at that moment. A list
   // that a render built kept the tools of an earlier caret.
+  /** Build the palette actions when the palette opens. */
   const paletteActions = useCallback(
     (): readonly PaletteAction[] => [
       {
         id: 'new-note',
-        label: 'New note',
+        label:
+          selectedFolder === '' ? 'New note' : `New note in ${selectedFolder}`,
         keywords: 'create add',
         icon: 'new-note' as const,
         run: () => newNote.create(selectedFolder),
       },
       {
         id: 'new-folder',
-        label: 'New folder',
+        label:
+          selectedFolder === ''
+            ? 'New folder'
+            : `New folder in ${selectedFolder}`,
         keywords: 'create add group',
         icon: 'new-folder' as const,
         run: () => setNewFolderParent(selectedFolder),
@@ -1254,7 +1496,7 @@ function ShellFrame({
         keywords: 'sidebar panel collapse expand navigation tree',
         icon: 'sidebar' as const,
         keys: sidebarKeys,
-        run: sidebar.toggleCollapsed,
+        run: toggleSidebar,
       },
       {
         id: 'toggle-theme',
@@ -1267,6 +1509,7 @@ function ShellFrame({
         id: 'shortcuts',
         label: 'Show keyboard shortcuts',
         keywords: 'keys help',
+        keys: shortcutsKeys,
         icon: 'keyboard' as const,
         run: openShortcuts,
       },
@@ -1442,11 +1685,11 @@ function ShellFrame({
       })),
       {
         id: 'settings',
-        label: 'Go to Settings',
-        keywords: 'account theme sign out',
+        label: 'Open Settings',
+        keywords: 'account theme appearance preferences',
         icon: 'settings' as const,
         run: () => {
-          void navigate(`/w/${workspaceId}/settings`);
+          openSettings();
         },
       },
     ],
@@ -1459,9 +1702,10 @@ function ShellFrame({
       navigate,
       newNote.create,
       noteActions,
+      openSettings,
       otherWorkspaces,
       selectedFolder,
-      sidebar.toggleCollapsed,
+      toggleSidebar,
       templates.settings,
       themeIconName,
       workspaceId,
@@ -1469,15 +1713,19 @@ function ShellFrame({
   );
 
   const ShortcutsView = shortcutsDialog?.view ?? null;
+  const PaletteView = paletteView?.view ?? null;
 
   return (
     <SyncProvider value={sync}>
       <DeleteNoticeProvider>
-        <div className="flex h-viewport flex-col bg-app text-ink">
+        <div
+          data-scroll-frame=""
+          className="flex h-viewport flex-col bg-app text-strong"
+        >
           <a
             className={buttonClassName({
               variant: 'primary',
-              size: 'sm',
+              size: 'compact',
               className:
                 'fixed left-2 top-2 z-50 -translate-y-20 focus-visible:translate-y-0',
             })}
@@ -1500,39 +1748,47 @@ function ShellFrame({
             toggle stood 14 px inside the gutter on a phone and the avatar
             stood 10 px inside it, so one bar showed three different edges.
           */}
-          <header
-            className={`z-30 flex h-header shrink-0 items-center gap-1 border-b border-edge-subtle bg-surface md:gap-cluster ${pageGutter}`}
+          <Inline
+            as="header"
+            data-scroll-edge="above"
+            data-edge-always=""
+            gap={{ fine: 2, coarse: 1 }}
+            className={`z-30 flex h-header shrink-0 items-center ${fixedRegionClasses('bottom')} bg-surface  ${pageGutter}`}
           >
-            <Button
+            <IconButton
+              size="header"
               buttonRef={menuButtonRef}
               variant="ghost"
-              size="sm"
-              compact
-              className={`shrink-0 md:hidden ${edgeControlClassName({ edge: 'start', mark: 'icon' })}`}
+              slotClassName="md:hidden"
               label="Open navigation"
               title="Open navigation"
-              icon={<MenuIcon />}
+              glyph={<MenuIcon />}
               ariaControls="notes-sidebar"
               ariaExpanded={drawerOpen}
               onClick={() => {
+                if (!drawerOpen) rememberOpener(menuButtonRef.current);
                 setDrawerOpen((open) => !open);
               }}
             />
-            <Button
+            <IconButton
+              size="header"
+              buttonRef={desktopMenuButtonRef}
               variant="ghost"
-              size="sm"
-              compact
-              className={`shrink-0 max-md:hidden ${edgeControlClassName({ edge: 'start', mark: 'icon' })}`}
+              slotClassName="max-md:hidden"
               label={
-                sidebar.size.collapsed ? 'Show the sidebar' : 'Hide the sidebar'
+                displayedSidebar.collapsed
+                  ? 'Show the sidebar'
+                  : 'Hide the sidebar'
               }
               title={
-                sidebar.size.collapsed ? 'Show the sidebar' : 'Hide the sidebar'
+                displayedSidebar.collapsed
+                  ? 'Show the sidebar'
+                  : 'Hide the sidebar'
               }
-              icon={<PanelLeftIcon />}
+              glyph={<PanelLeftIcon />}
               ariaControls="notes-sidebar"
-              ariaExpanded={!sidebar.size.collapsed}
-              onClick={sidebar.toggleCollapsed}
+              ariaExpanded={!displayedSidebar.collapsed}
+              onClick={toggleSidebar}
             />
 
             <Breadcrumb
@@ -1549,7 +1805,7 @@ function ShellFrame({
               }}
             />
 
-            <HeaderSlot className="flex shrink-0 items-center gap-cluster empty:hidden" />
+            <HeaderSlot className="flex shrink-0 items-center empty:hidden" />
 
             {/*
               A hand written button and not a `Button`, because the word and
@@ -1558,55 +1814,47 @@ function ShellFrame({
               0065): the compact outer box keeps the touch target and the
               surface inside it is what a person sees.
             */}
-            <button
-              type="button"
-              className={buttonClassName({
-                variant: 'ghost',
-                size: 'sm',
-                compact: true,
-                className: 'shrink-0',
-              })}
-              aria-label="Search"
+            <Button
+              variant="ghost"
+              size="compact"
+              optical
+              hideTextOnPhone
+              icon={<SearchIcon />}
+              label="Search"
               title="Search"
-              onClick={() => setPaletteOpen(true)}
+              onClick={openPalette}
             >
-              <span
-                className={compactButtonVisualClassName({
-                  variant: 'ghost',
-                  size: 'sm',
-                  iconOnly: false,
-                })}
-              >
-                <span
-                  className="inline-flex shrink-0 items-center"
-                  aria-hidden="true"
-                >
-                  <SearchIcon />
-                </span>
+              <Inline gap={2}>
                 <span className="max-md:hidden">Search</span>
                 <span className="max-lg:hidden">
                   <KeyHint keys={paletteKeys} />
                 </span>
-              </span>
-            </button>
+              </Inline>
+            </Button>
 
             <Menu
               label={accountLabel}
               icon={<span className={avatarClassName()}>{accountInitial}</span>}
+              header={
+                <>
+                  <p className="m-0 truncate text-title-header text-strong">
+                    {session.account?.name ?? ''}
+                  </p>
+                  <p className="m-0 truncate text-secondary text-muted">
+                    {session.account?.email ?? ''}
+                  </p>
+                </>
+              }
               items={accountItems}
               pinned={signOutItem}
               compact
-              triggerClassName={buttonClassName({
-                variant: 'ghost',
-                size: 'sm',
-                iconOnly: true,
-                compact: true,
-                className: `shrink-0 ${edgeControlClassName({ edge: 'end', mark: 'avatar' })}`,
-              })}
+              trigger="avatar"
             />
-          </header>
+          </Inline>
 
           <div
+            ref={drawerScrimRef}
+            data-drawer-scrim=""
             className={
               drawerOpen ? 'fixed inset-0 z-30 bg-scrim/70 md:hidden' : 'hidden'
             }
@@ -1617,17 +1865,23 @@ function ShellFrame({
           <aside
             ref={sidebarRef}
             id="notes-sidebar"
-            className={drawerClassName(drawerOpen, sidebar.size)}
+            className={drawerClassName(drawerOpen, displayedSidebar)}
             aria-label="Notes navigation"
-            aria-modal={drawerOpen ? true : undefined}
-            role={drawerOpen ? 'dialog' : undefined}
+            aria-modal={navigationModal ? true : undefined}
+            role={navigationModal ? 'dialog' : undefined}
           >
-            <SidebarViewBar view={sidebarView} onChoose={setSidebarView} />
-            <div className="flex min-w-0 flex-1 flex-col">
+            <SidebarViewBar
+              workspaceId={workspaceId}
+              view={sidebarView}
+              onChoose={setSidebarView}
+              onNavigate={() => setDrawerOpen(false)}
+            />
+            <Stack className="h-full min-w-0 flex-1">
               <Sidebar
                 workspaceId={workspaceId}
                 view={sidebarView}
                 selectedFolder={selectedFolder}
+                folderCreation={folderCreation}
                 folders={folders}
                 knownFolders={allFolders}
                 newNoteProblem={newNote.error}
@@ -1639,18 +1893,23 @@ function ShellFrame({
                   setMoveItems({ items, returnFocus })
                 }
                 onNewNoteIn={(folder) => newNote.create(folder)}
+                onFromTemplate={(folder) =>
+                  setTemplateDestination({ workspaceId, folder })
+                }
                 onNewWorkspace={() => setWorkspaceDialog('create')}
                 onRenameWorkspace={() => setWorkspaceDialog('rename')}
                 onDeleteWorkspace={() => setWorkspaceDialog('delete')}
                 onClose={() => setDrawerOpen(false)}
               />
-            </div>
+            </Stack>
             <SidebarResizer size={sidebar.size} onStep={sidebar.setStep} />
           </aside>
 
-          <div
+          <ApplicationContent
             id="notes-content"
-            className={`${frameContentClassName()} ${sidebarInsetClass(sidebar.size)}`}
+            sidebar={
+              displayedSidebar.collapsed ? undefined : displayedSidebar.step
+            }
           >
             {/*
               The frame notices stand in the column of the page under them
@@ -1658,8 +1917,15 @@ function ShellFrame({
               with the page and with the note (decision 0137).
             */}
             <div className={`${frameNoticeRowClassName()} ${pageGutter}`}>
-              <div className={`${pageColumnClassName()} pt-4 empty:hidden`}>
+              <Stack
+                gap={4}
+                padY={4}
+                className={`${pageColumnClassName()} empty:hidden`}
+              >
                 <TrialNotice />
+                {templateProblem !== null ? (
+                  <Notice tone="problem" message={templateProblem} />
+                ) : null}
                 <UpdateNotice
                   store={store.store}
                   ownerId={syncSession.ownerId}
@@ -1673,11 +1939,25 @@ function ShellFrame({
                 {theme.syncError === null ? null : (
                   <Notice tone="info" message={theme.syncError} />
                 )}
+                {paletteFailed ? (
+                  <Notice
+                    tone="problem"
+                    message="Search did not load. Try again."
+                  >
+                    <Button
+                      variant="secondary"
+                      size="compact"
+                      onClick={openPalette}
+                    >
+                      Try again
+                    </Button>
+                  </Notice>
+                ) : null}
                 {shortcutsFailed ? (
                   <Notice tone="problem" message={shortcutsLoadFailure}>
                     <Button
                       variant="secondary"
-                      size="sm"
+                      size="compact"
                       onClick={() => setShortcutsFailed(false)}
                     >
                       Close
@@ -1688,7 +1968,7 @@ function ShellFrame({
                   <Notice tone="info" message={persistence.notice.message}>
                     <Button
                       variant="secondary"
-                      size="sm"
+                      size="compact"
                       onClick={persistence.close}
                     >
                       Close
@@ -1697,7 +1977,7 @@ function ShellFrame({
                 ) : persistence.notice.kind === 'at-risk' ? (
                   <Notice tone="problem" message={persistence.notice.message} />
                 ) : null}
-              </div>
+              </Stack>
               <div className={pageSideClassName()} />
             </div>
             {/*
@@ -1707,19 +1987,24 @@ function ShellFrame({
             <PageBackProvider value={<BackLink />}>
               <Outlet />
             </PageBackProvider>
-          </div>
+          </ApplicationContent>
 
           <DeleteNoticeBar />
 
-          <CommandPalette
-            open={paletteOpen}
-            onOpenChange={setPaletteOpen}
-            workspaceId={workspaceId}
-            notes={files.notes}
-            store={store.store}
-            accountId={accountId}
-            actions={paletteActions}
-          />
+          {PaletteView === null ? null : (
+            <PaletteView
+              open={paletteOpen}
+              onOpenChange={setPaletteOpen}
+              workspaceId={workspaceId}
+              workspaceName={openWorkspace?.name ?? 'This workspace'}
+              notes={files.notes}
+              store={store.store}
+              accountId={accountId}
+              actions={paletteActions}
+            />
+          )}
+          <SettingsModalHost workspaceId={workspaceId} />
+          {signOut.dialog}
           {shortcutsOpen && ShortcutsView !== null ? (
             <ShortcutsView open onClose={() => setShortcutsOpen(false)} />
           ) : null}
@@ -1760,29 +2045,31 @@ function ShellFrame({
               />
             </>
           )}
+          <NewFromTemplateDialog
+            key={workspaceId}
+            workspaceId={workspaceId}
+            folder={templateFolder ?? ''}
+            open={templateFolder !== null}
+            onClose={() => setTemplateDestination(null)}
+            onCreationStart={beginTemplateCreation}
+          />
           <NewFolderDialog
             open={newFolderParent !== null}
             onClose={() => setNewFolderParent(null)}
             folders={allFolders}
             parent={newFolderParent ?? ''}
-            onCreated={(folder) => {
-              files.addEmptyFolder(folder);
-              // The new folder must be on the screen. Its parent can be
-              // closed, because the row menu makes a folder inside a folder
-              // that nobody opened, so every folder above it opens here.
-              for (const above of ancestorFolders(folder))
-                folders.openFolder(above);
-              setSelectedFolder(folder);
-            }}
+            onCreated={folderCreation.onCreated}
           />
           {publishScope === null ? null : (
-            <PublishDialog
-              open
-              onClose={() => setPublishScope(null)}
-              workspaceId={workspaceId}
-              scope={publishScope}
-              notes={files.notes}
-            />
+            <Suspense fallback={null}>
+              <PublishDialog
+                open
+                onClose={() => setPublishScope(null)}
+                workspaceId={workspaceId}
+                scope={publishScope}
+                notes={files.notes}
+              />
+            </Suspense>
           )}
           {session.account === null || moveItems === null ? null : (
             <MoveItemsDialog

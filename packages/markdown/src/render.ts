@@ -691,6 +691,34 @@ function drawTaskMarks() {
   };
 }
 
+/** Keep native table layout inside a separate horizontal scroll area. */
+function wrapTables() {
+  return (tree: HastRoot): undefined => {
+    let tableIndex = 0;
+    visit(tree, 'element', (node, index, parent) => {
+      if (
+        node.tagName !== 'table' ||
+        parent === undefined ||
+        index === undefined
+      )
+        return;
+      tableIndex += 1;
+      parent.children[index] = {
+        type: 'element',
+        tagName: 'div',
+        properties: {
+          className: ['notes-table-scroll'],
+          tabIndex: 0,
+          role: 'region',
+          ariaLabel: `Table ${tableIndex}`,
+        },
+        children: [node],
+      };
+      return index + 1;
+    });
+  };
+}
+
 /** Plain text inside one rendered heading. */
 function headingText(node: Element): string {
   let value = '';
@@ -813,6 +841,7 @@ function buildRenderProcessor(options: RenderMarkdownOptions = {}) {
     .use(applyUrlPolicy, options)
     .use(rehypeSanitize, sanitizeSchema)
     .use(checkSanitizedUrls)
+    .use(wrapTables)
     .use(rehypeStringify)
     .freeze();
 }

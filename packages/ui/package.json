@@ -13,12 +13,16 @@
     "./public-footer": {
       "types": "./dist/public-footer.d.ts",
       "default": "./dist/public-footer.js"
+    },
+    "./static": {
+      "types": "./dist/static.d.ts",
+      "default": "./dist/static.js"
     }
   },
   "scripts": {
     "typecheck": "tsc -b tsconfig.build.json && tsc -p tsconfig.json",
     "build": "tsc -b tsconfig.build.json",
-    "test:unit": "node ../../tools/run-tests.mjs unit"
+    "test:unit": "node --config-file=../../node-test.config.json \"src/**/*.test.{ts,mjs}\""
   },
   "dependencies": {
     "react": "catalog:",

@@ -191,3 +191,7 @@ await test('the result of an action replaces the load failure', () => {
     imageActionMessages.copyLinkFailed,
   );
 });
+
+await test('the actual-size key uses the same scale as the 100 percent control', () => {
+  assert.equal(zoomKey('1'), 'actual');
+});

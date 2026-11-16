@@ -1,3 +1,15 @@
+import {
+  IdentityMark,
+  Button,
+  ChevronsUpDownIcon,
+  LoadingState,
+  Menu,
+  type MenuItem,
+  Page,
+  PageHeader,
+  rowClassName,
+} from '@notesapp/ui';
+
 /**
  * The workspaces of the account, and the control that moves between them.
  *
@@ -19,41 +31,21 @@
  */
 import { useEffect, useState, type ReactNode } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
-import {
-  createWorkspace,
-  deleteWorkspace,
-  updateWorkspace,
-  type Workspace,
-} from '@notesapp/api-client';
-import {
-  Button,
-  ChevronsUpDownIcon,
-  Dialog,
-  DialogBody,
-  DialogFooter,
-  LoadingState,
-  Menu,
-  type MenuItem,
-  Page,
-  PageHeader,
-  rowClassName,
-  TextField,
-} from '@notesapp/ui';
+
 import { deleteGlyph } from '../lib/delete-label.ts';
-import { problemMessage, useWorkspace } from '../app.tsx';
+import { useWorkspace } from '../app.tsx';
 import { addressInWorkspace, isMemberOf } from '../lib/workspace-choice.ts';
 import { initialOf } from '../lib/initial.ts';
 import { actionIcon } from './action-icons.tsx';
 
 /** The longest workspace name the contract accepts. */
-const nameLimit = 200;
 
 /**
  * Sends an address that names no workspace into the chosen workspace.
  *
  * The root address goes to the notes of the workspace this device last
  * opened, and any other path goes to the same path under it (record 0091), so
- * `/settings` opens Settings inside the frame. This screen has no sidebar and
+ * `/settings` opens the Settings modal inside the frame. This screen has no sidebar and
  * no rail: it is only the step before the frame, while no workspace is known.
  */
 export function WorkspaceHome(): ReactNode {
@@ -68,22 +60,37 @@ export function WorkspaceHome(): ReactNode {
       });
   }, [state, navigate, location]);
 
-  if (state.status === 'error')
-    return (
-      <Page>
-        <PageHeader title="Your notes did not open" />
-        <p className="text-control text-danger" role="alert">
-          {state.message}
-        </p>
-        <Button variant="secondary" onClick={() => reload()}>
-          Try again
-        </Button>
-      </Page>
-    );
+  return (
+    <WorkspaceStatus
+      message={state.status === 'error' ? state.message : null}
+      onRetry={reload}
+    />
+  );
+}
 
+/** The loading or retry screen, with no workspace or navigation state. */
+function WorkspaceStatus({
+  message,
+  onRetry,
+}: {
+  readonly message: string | null;
+  readonly onRetry: () => void;
+}): ReactNode {
   return (
     <Page>
-      <LoadingState label="Your notes are opening." />
+      {message !== null ? (
+        <>
+          <PageHeader title="Your notes did not open" />
+          <p className="text-secondary text-danger" role="alert">
+            {message}
+          </p>
+          <Button variant="secondary" onClick={() => onRetry()}>
+            Try again
+          </Button>
+        </>
+      ) : (
+        <LoadingState label="Your notes are opening." />
+      )}
     </Page>
   );
 }
@@ -123,7 +130,10 @@ export function RequireCurrentWorkspace({
 
   useEffect(() => {
     if (!ready || member) {
-      if (member) remember(workspaceId);
+      if (member) {
+        remember(workspaceId);
+        if (asked !== null) setAsked(null);
+      }
       return;
     }
     if (asked?.workspaceId === workspaceId) return;
@@ -131,312 +141,26 @@ export function RequireCurrentWorkspace({
     reload();
   }, [ready, member, workspaceId, revision, asked, remember, reload]);
 
-  if (!ready) return children;
   if (member) return children;
-  // The question is still out. Nothing is decided, so nothing moves.
-  if (asked?.workspaceId !== workspaceId || revision <= asked.revision)
-    return children;
-  return <Navigate to={`/w/${state.workspaceId}`} replace />;
+  if (state.status === 'error')
+    return <WorkspaceStatus message={state.message} onRetry={reload} />;
+  if (state.status === 'ready' && asked?.workspaceId === workspaceId) {
+    // Only a completed server list can exclude a workspace. A failed read
+    // may still let a known workspace open from this device's cache.
+    if (state.serverRevision > asked.revision)
+      return <Navigate to={`/w/${state.workspaceId}`} replace />;
+    if (state.failure !== null)
+      return <WorkspaceStatus message={state.failure} onRetry={reload} />;
+  }
+  return <WorkspaceStatus message={null} onRetry={reload} />;
 }
 
-/** What a workspace name has to be before the dialog sends it. */
-function nameProblem(name: string, taken: readonly string[]): string | null {
-  if (name === '') return 'Give the workspace a name.';
-  if (name.length > nameLimit)
-    return `A workspace name can have up to ${String(nameLimit)} characters.`;
-  if (taken.some((one) => one.toLowerCase() === name.toLowerCase()))
-    return `A workspace named ${name} already exists.`;
-  return null;
-}
-
-/**
- * Makes a workspace and opens it.
- *
- * The new workspace starts empty, so the person lands on the empty state of
- * the note list and the one action that fills it.
- */
-export function NewWorkspaceDialog({
-  open,
-  onClose,
-  workspaces,
-  onCreated,
-}: {
-  readonly open: boolean;
-  readonly onClose: () => void;
-  readonly workspaces: readonly Workspace[];
-  readonly onCreated: (workspace: Workspace) => void;
-}): ReactNode {
-  const [name, setName] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (!open) return;
-    setName('');
-    setError(null);
-    setSaving(false);
-  }, [open]);
-
-  const create = (): void => {
-    if (saving) return;
-    const wanted = name.trim();
-    const problem = nameProblem(
-      wanted,
-      workspaces.map((workspace) => workspace.name),
-    );
-    if (problem !== null) {
-      setError(problem);
-      return;
-    }
-    setSaving(true);
-    void (async (): Promise<void> => {
-      const result = await createWorkspace({ body: { name: wanted } });
-      setSaving(false);
-      if (result.error !== undefined || result.data === undefined) {
-        setError(problemMessage(result.error));
-        return;
-      }
-      onCreated(result.data);
-      onClose();
-    })();
-  };
-
-  return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      title="New workspace"
-      titleId="new-workspace-title"
-      width="small"
-    >
-      <form
-        onSubmit={(event): void => {
-          event.preventDefault();
-          create();
-        }}
-      >
-        <DialogBody>
-          <TextField
-            id="new-workspace-name"
-            label="Workspace name"
-            hint="The workspace starts empty and keeps its notes apart from every other workspace."
-            value={name}
-            error={error ?? undefined}
-            autoComplete="off"
-            onChange={(value) => {
-              setName(value);
-              setError(null);
-            }}
-          />
-        </DialogBody>
-        <DialogFooter>
-          <Button variant="secondary" type="button" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button variant="primary" type="submit" disabled={saving}>
-            Make workspace
-          </Button>
-        </DialogFooter>
-      </form>
-    </Dialog>
-  );
-}
-
-/** Renames the open workspace. */
-export function RenameWorkspaceDialog({
-  open,
-  onClose,
-  workspace,
-  workspaces,
-  onRenamed,
-}: {
-  readonly open: boolean;
-  readonly onClose: () => void;
-  readonly workspace: Workspace;
-  readonly workspaces: readonly Workspace[];
-  readonly onRenamed: () => void;
-}): ReactNode {
-  const [name, setName] = useState(workspace.name);
-  const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (!open) return;
-    setName(workspace.name);
-    setError(null);
-    setSaving(false);
-  }, [open, workspace.name]);
-
-  const rename = (): void => {
-    if (saving) return;
-    const wanted = name.trim();
-    if (wanted === workspace.name) {
-      onClose();
-      return;
-    }
-    const problem = nameProblem(
-      wanted,
-      workspaces
-        .filter((one) => one.workspaceId !== workspace.workspaceId)
-        .map((one) => one.name),
-    );
-    if (problem !== null) {
-      setError(problem);
-      return;
-    }
-    setSaving(true);
-    void (async (): Promise<void> => {
-      const result = await updateWorkspace({
-        path: { workspaceId: workspace.workspaceId },
-        body: { name: wanted },
-      });
-      setSaving(false);
-      if (result.error !== undefined) {
-        setError(problemMessage(result.error));
-        return;
-      }
-      onRenamed();
-      onClose();
-    })();
-  };
-
-  return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      title="Rename workspace"
-      titleId="rename-workspace-title"
-      width="small"
-    >
-      <form
-        onSubmit={(event): void => {
-          event.preventDefault();
-          rename();
-        }}
-      >
-        <DialogBody>
-          <TextField
-            id="rename-workspace-name"
-            label="Workspace name"
-            hint="The notes of the workspace do not change."
-            value={name}
-            error={error ?? undefined}
-            autoComplete="off"
-            onChange={(value) => {
-              setName(value);
-              setError(null);
-            }}
-          />
-        </DialogBody>
-        <DialogFooter>
-          <Button variant="secondary" type="button" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button variant="primary" type="submit" disabled={saving}>
-            Rename workspace
-          </Button>
-        </DialogFooter>
-      </form>
-    </Dialog>
-  );
-}
-
-/**
- * Deletes the open workspace and everything in it.
- *
- * The step is not reversible and there is no Trash above a workspace, so the
- * dialog states what goes and asks the person to confirm the name. The server
- * refuses the last workspace of an account whatever this screen shows
- * (record 0051).
- */
-export function DeleteWorkspaceDialog({
-  open,
-  onClose,
-  workspace,
-  onDeleted,
-}: {
-  readonly open: boolean;
-  readonly onClose: () => void;
-  readonly workspace: Workspace;
-  readonly onDeleted: () => void;
-}): ReactNode {
-  const [confirmation, setConfirmation] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
-
-  useEffect(() => {
-    if (!open) return;
-    setConfirmation('');
-    setError(null);
-    setDeleting(false);
-  }, [open]);
-
-  const matches = confirmation.trim() === workspace.name;
-
-  const remove = (): void => {
-    if (deleting || !matches) return;
-    setDeleting(true);
-    void (async (): Promise<void> => {
-      const result = await deleteWorkspace({
-        path: { workspaceId: workspace.workspaceId },
-      });
-      setDeleting(false);
-      if (result.error !== undefined) {
-        setError(problemMessage(result.error));
-        return;
-      }
-      onDeleted();
-      onClose();
-    })();
-  };
-
-  return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      title="Delete workspace permanently"
-      titleId="delete-workspace-title"
-      width="small"
-    >
-      <form
-        onSubmit={(event): void => {
-          event.preventDefault();
-          remove();
-        }}
-      >
-        <DialogBody>
-          <p className="mb-4 mt-0 text-ui text-strong">
-            Every note, version and published link of {workspace.name} goes. You
-            cannot get them back.
-          </p>
-          <TextField
-            id="delete-workspace-name"
-            label={`Type ${workspace.name} to confirm`}
-            value={confirmation}
-            error={error ?? undefined}
-            autoComplete="off"
-            onChange={(value) => {
-              setConfirmation(value);
-              setError(null);
-            }}
-          />
-        </DialogBody>
-        <DialogFooter>
-          <Button variant="secondary" type="button" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            variant="danger"
-            type="submit"
-            disabled={deleting || !matches}
-          >
-            Delete permanently
-          </Button>
-        </DialogFooter>
-      </form>
-    </Dialog>
-  );
-}
+import {
+  NewWorkspaceDialog,
+  RenameWorkspaceDialog,
+  DeleteWorkspaceDialog,
+} from './workspace-dialog-entry.tsx';
+export { NewWorkspaceDialog, RenameWorkspaceDialog, DeleteWorkspaceDialog };
 
 /**
  * The workspace switcher of the sidebar.
@@ -502,6 +226,9 @@ export function WorkspaceSwitcher({
   const pinned: MenuItem[] = [
     {
       id: 'rename-workspace',
+      onIntent: () => {
+        void RenameWorkspaceDialog.preload();
+      },
       label: 'Rename workspace',
       icon: actionIcon('rename'),
       onSelect: onRename,
@@ -513,6 +240,9 @@ export function WorkspaceSwitcher({
       ? [
           {
             id: 'delete-workspace',
+            onIntent: () => {
+              void DeleteWorkspaceDialog.preload();
+            },
             label: 'Delete permanently',
             icon: actionIcon(deleteGlyph),
             danger: true,
@@ -522,6 +252,9 @@ export function WorkspaceSwitcher({
       : []),
     {
       id: 'new-workspace',
+      onIntent: () => {
+        void NewWorkspaceDialog.preload();
+      },
       label: 'New workspace',
       icon: actionIcon('new-workspace'),
       onSelect: onCreate,
@@ -529,24 +262,20 @@ export function WorkspaceSwitcher({
   ];
 
   return (
-    <div className="px-2 pt-2">
+    <div className="shrink-0">
       <Menu
         label={`Workspace: ${openWorkspace.name}`}
+        trigger="row"
         items={items}
         pinned={pinned}
         matchTrigger
         triggerClassName={rowClassName({
           inset: false,
-          className: 'w-full text-left md:min-h-8',
-        })}
+          className: 'ui-sidebar-switcher w-full text-left',
+        }).replace('ui-tree-row', '')}
       >
-        <span
-          className="inline-flex size-5 shrink-0 items-center justify-center rounded-sm bg-active text-kbd font-semibold text-strong"
-          aria-hidden="true"
-        >
-          {initialOf(openWorkspace.name)}
-        </span>
-        <span className="min-w-0 flex-1 truncate font-semibold text-strong">
+        <IdentityMark>{initialOf(openWorkspace.name)}</IdentityMark>
+        <span className="min-w-0 flex-1 truncate text-label text-strong">
           {openWorkspace.name}
         </span>
         <span

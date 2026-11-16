@@ -18,7 +18,7 @@ import {
   completionKeymap,
 } from '@codemirror/autocomplete';
 import { pasteURLAsLink } from '@codemirror/lang-markdown';
-import { openSearchPanel, search } from '@codemirror/search';
+import { search } from '@codemirror/search';
 import { EditorState, Prec, type Extension } from '@codemirror/state';
 import { EditorView, keymap, tooltips } from '@codemirror/view';
 import { readVisibleArea } from '@notesapp/ui';
@@ -32,8 +32,11 @@ import {
 import {
   createSearchPanel,
   editorPhrases,
+  findScrollTarget,
   noteSearchKeymap,
+  openReplacePanel,
   replaceAllAnnouncement,
+  searchPanelScrollMargins,
 } from './search-panel.ts';
 import { formattingKeymap } from './keymaps.ts';
 import { orderedListNumbering } from './list-numbering.ts';
@@ -48,7 +51,7 @@ import { caretInView } from './caret-in-view.ts';
 import { tableGridEditing } from './table-grid.ts';
 
 /** Opens the find panel with its replace field. */
-export const openFindAndReplace = openSearchPanel;
+export const openFindAndReplace = openReplacePanel;
 
 /**
  * Every command extension of the note editor.
@@ -59,7 +62,15 @@ export const openFindAndReplace = openSearchPanel;
 export function editorCommands(): Extension {
   return [
     // The find panel is a panel of the design system (issue 247).
-    search({ top: true, createPanel: createSearchPanel }),
+    // Find scrolls to a match moved off hidden table syntax, by the rules of
+    // the editor (findScrollTarget).
+    search({
+      top: true,
+      createPanel: createSearchPanel,
+      scrollToMatch: (range, view) =>
+        EditorView.scrollIntoView(findScrollTarget(view.state, range)),
+    }),
+    searchPanelScrollMargins,
     replaceAllAnnouncement,
     EditorState.phrases.of(editorPhrases),
     // A list at the caret, such as the slash menu, opens in the part of the
@@ -114,7 +125,16 @@ export function editorCommands(): Extension {
     Prec.highest(keymap.of(formattingKeymap)),
     keymap.of([
       ...noteSearchKeymap,
-      { key: 'Mod-h', mac: 'Mod-Alt-f', run: openSearchPanel },
+      // The find field keeps this key too, so it opens the replace row from
+      // there. Cmd and H hides the application on a Mac, so a Mac uses Cmd,
+      // Option and F, as the shortcut table states.
+      {
+        key: 'Mod-h',
+        mac: 'Mod-Alt-f',
+        run: openReplacePanel,
+        scope: 'editor search-panel',
+        preventDefault: true,
+      },
     ]),
   ];
 }

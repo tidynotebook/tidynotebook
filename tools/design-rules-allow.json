@@ -2,11 +2,6 @@
   "comment": "Accepted exceptions of tools/check-design-rules.mjs. One entry names one file and one rule, and it states why the rule cannot hold there. Do not add an entry to make a new screen pass.",
   "allow": [
     {
-      "file": "apps/web/src/features/accounts/theme-settings.tsx",
-      "rule": "inline-style",
-      "reason": "The theme swatch paints four token values that it reads from the theme registry at run time, one set per family. A utility class names a value at build time, so it cannot express a colour that the registry chooses."
-    },
-    {
       "file": "apps/web/src/diagram/frame-main.ts",
       "rule": "inner-html",
       "reason": "The sandboxed diagram frame writes the SVG that the isolated Mermaid renderer produced. The frame runs on a sandboxed origin, so the markup never reaches the application origin. Decision record 0013."
@@ -19,7 +14,7 @@
     {
       "file": "packages/ui/src/control-classes.ts",
       "rule": "stateful-edge",
-      "reason": "The box of the checkbox recipe is one of the five controls that decision 0063 reserves the component edge for. A person reads the state of a checkbox from its shape alone, so its edge must meet the 3 to 1 non text minimum that theme.test.ts holds `border` to."
+      "reason": "The checkbox box and switch track recipes are two of the five controls that decision 0063 reserves the component edge for. A person reads the state of a checkbox from its shape alone, so its edge must meet the 3 to 1 non text minimum that theme.test.ts holds `border` to."
     },
     {
       "file": "apps/web/src/lib/tree-row.ts",
@@ -30,6 +25,11 @@
       "file": "packages/editor/src/widgets.ts",
       "rule": "inner-html",
       "reason": "The mathematics widget writes the markup that `renderMath` in @notesapp/markdown returned, which strips every element and every attribute outside the KaTeX drawing set first. The editor builds its own DOM, so no React node can carry that markup."
+    },
+    {
+      "file": "apps/web/src/shell/tree.tsx",
+      "rule": "inline-style",
+      "reason": "Tree indentation comes from the current folder depth and the shared indent token. The tree has no fixed depth limit, so a finite set of utility classes cannot state every level."
     }
   ]
 }

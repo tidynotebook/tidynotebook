@@ -4,8 +4,8 @@ This page is for the person who runs the server. It takes you from an empty
 Linux host to a tidy notebook server that runs behind HTTPS, with encrypted
 storage and a first administrator account. Do the steps in order.
 
-To try tidy notebook first, follow the [Quick start](quickstart.md). It sets up
-a test installation on your own machine with one script.
+To try tidy notebook first, follow the [Quick start](quickstart.md). It guides
+you through a test installation on your own machine.
 
 tidy notebook runs as two Compose services: one application and one PostgreSQL
 database. The application updates the database when it starts. It then serves
@@ -65,7 +65,7 @@ This command copies the code to a folder named `notesapp`. The second command
 goes into that folder. Run all later commands in it.
 
 ```bash
-git clone --branch v0.21.0 --depth 1 \
+git clone --branch v0.23.6 --depth 1 \
   https://github.com/tidynotebook/tidynotebook.git notesapp
 cd notesapp
 ```
@@ -296,8 +296,17 @@ The first account is the administrator. The setup screen is open only until
 this account exists. Anyone who reaches it first can make the account, so
 create it as soon as the proxy runs. Use one of these ways.
 
-**In a browser.** Open the address from `NOTESAPP_ORIGIN`. Enter an email
-address and a password.
+**In a browser.**
+
+1. Open the address from `NOTESAPP_ORIGIN`. The page says **Create your
+   account**.
+2. Enter an email address.
+3. Enter a password of at least 15 characters, then enter it again to confirm
+   it. Use a password that you use nowhere else. When the password check
+   service responds, the application refuses passwords on its leaked-password
+   list. If the service does not respond, account creation can continue
+   without this check.
+4. Select **Create account**.
 
 **On the command line.** This needs no browser, and it works before HTTPS
 too. Use it to close the setup screen before the server is public. Run it in
@@ -310,8 +319,17 @@ docker compose exec app node server/dist/cli/bootstrap.js --email you@example.co
 
 The command may print a Node.js warning about `localStorage` first. The
 warning is harmless. Add `--name "Your name"` to set the name of the account.
-The default name is Owner. Each later account needs an invitation. See
-[Account commands](operations.md#account-commands).
+The default name is Owner.
+
+Later visits show **Sign in**. Use the same email address and password. To
+invite other people, see [Accounts and invitations](accounts.md). Each person
+gets an account with its own notes. Give them the
+[Joining an installation](joining.md) guide.
+
+For your first note, see [Getting started](getting-started.md#write-your-first-note).
+For password recovery, see [Forgot your password](joining.md#forgot-your-password).
+If the installation sends no mail, use
+[Account commands](operations.md#account-commands) to recover an account.
 
 ## Turn on MCP
 

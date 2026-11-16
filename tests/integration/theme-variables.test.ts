@@ -19,7 +19,8 @@ import { readFile, readdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runInNewContext } from 'node:vm';
-import { editorThemeVariables, touchFieldQuery } from '@notesapp/editor';
+import { Window } from 'happy-dom';
+import { editorThemeVariables, searchPanelClasses } from '@notesapp/editor';
 import {
   avatarClassName,
   badgeClassName,
@@ -44,7 +45,8 @@ import {
   themeFamilies,
   themeFileText,
   themeProperties,
-  touchFieldText,
+  textRoleClasses,
+  touchTextRoles,
 } from '@notesapp/ui';
 import {
   importedPaletteStorageKey,
@@ -173,51 +175,158 @@ await test('the named steps of the interface reach the stylesheet', () => {
   assert.match(css, /--spacing-header:\s*2\.75rem/);
 });
 
-await test('a field under touch sets its text at 16 px', async () => {
-  // The defect this covers: Safari on iOS zoomed the page into every field
-  // on a tap, because the text of each field was under 16 px. The class of a
-  // field and the panel theme of the editor state the rule under one query.
-  assert.match(css, /--text-base:\s*1rem/);
-  const touch = await buildCss([touchFieldText]);
-  const query = touchFieldQuery.replace(/[()]/g, '\\$&');
-  assert.match(
-    touch,
-    new RegExp(
-      `@media ${query}\\s*\\{\\s*\\.pointer-coarse\\\\:text-base\\s*\\{\\s*font-size:\\s*var\\(--text-base\\)`,
-    ),
-    'the editor query is the query of the class',
+await test('touch form labels and fields share the computed body size', async () => {
+  const built = await buildCss([
+    'text-label',
+    'text-secondary',
+    ...fieldClassName().split(' '),
+  ]);
+  for (const touch of [false, true]) {
+    const browser = new Window({
+      width: 390,
+      settings: { navigator: { maxTouchPoints: touch ? 1 : 0 } },
+    });
+    try {
+      assert.equal(browser.matchMedia('(pointer: coarse)').matches, touch);
+      const document = browser.document;
+      const style = document.createElement('style');
+      // This style engine does not support Tailwind's layers and preflight.
+      // Give the font fixture the compiled token and font rules unchanged.
+      const variables = [
+        '',
+        [...built.matchAll(/:root, :host\s*\{([^}]+)\}/g)]
+          .map((match) => match[1] ?? '')
+          .join('\n'),
+      ] as const;
+      const scale =
+        /@media \(pointer: coarse\)\s*\{\s*:root\s*\{(?=[^}]*--text-control:)([^}]+)\}/.exec(
+          built,
+        );
+      assert.ok(variables?.[1]);
+      assert.ok(scale?.[1]);
+      const fontRules = ['text-label', 'text-body', 'text-secondary'].map(
+        (name) => {
+          const rule = new RegExp(`\\.${name}\\s*\\{([^}]+)\\}`).exec(built);
+          assert.ok(rule?.[0]);
+          // Happy DOM cannot resolve Tailwind's nested fallback for unset overrides.
+          // These override properties are not set in this isolated fixture.
+          return rule[0].replace(
+            /var\(--tw-(?:leading|font-weight),\s*(var\(--[a-z-]+\))\)/g,
+            '$1',
+          );
+        },
+      );
+      const fontVariables = variables[1].match(
+        /--text-(?:control|ui|help|base)(?:--line-height)?:[^;]+;/g,
+      );
+      assert.ok(fontVariables);
+      style.textContent = `:root { ${fontVariables.join(' ')} } ${fontRules.join(' ')}
+        @media (pointer: coarse) { :root { ${scale[1]} } }`;
+      document.head.append(style);
+      const form = document.createElement('form');
+      const label = document.createElement('label');
+      label.className = 'text-label';
+      label.textContent = 'Server';
+      const field = document.createElement('input');
+      field.className = fieldClassName();
+      field.value = 'smtp.example.com';
+      label.append(field);
+      const help = document.createElement('p');
+      help.className = 'text-secondary';
+      help.textContent = 'TLS protects the connection.';
+      form.append(label, help);
+      document.body.append(form);
+      const labelStyle = browser.getComputedStyle(label);
+      const fieldStyle = browser.getComputedStyle(field);
+      assert.equal(labelStyle.fontSize, touch ? '14px' : '13px');
+      assert.equal(fieldStyle.fontSize, touch ? '14px' : '13px');
+      if (touch) {
+        assert.equal(labelStyle.fontSize, fieldStyle.fontSize);
+        assert.equal(labelStyle.lineHeight, '20px');
+        assert.equal(
+          fieldStyle.lineHeight.endsWith('px')
+            ? Number.parseFloat(fieldStyle.lineHeight)
+            : Number.parseFloat(fieldStyle.lineHeight) *
+                Number.parseFloat(fieldStyle.fontSize),
+          20,
+        );
+      }
+      assert.equal(browser.getComputedStyle(help).fontSize, '12px');
+      assert.equal(browser.getComputedStyle(help).lineHeight, '16px');
+    } finally {
+      await browser.happyDOM.close();
+    }
+  }
+});
+
+await test('shared touch roles set the full size, line height, and weight', async () => {
+  const built = await buildCss(
+    Object.values(textRoleClasses).flatMap((value) => value.split(' ')),
   );
-  // The served stylesheet holds the rule, because the recipe is a source.
-  const assets = resolve(root, 'apps/web/dist/web/assets');
-  const served = (
-    await Promise.all(
-      (await readdir(assets))
-        .filter((name) => name.endsWith('.css'))
-        .map((name) => readFile(resolve(assets, name), 'utf8')),
-    )
-  ).join('\n');
-  assert.ok(
-    served.includes('.pointer-coarse\\:text-base{font-size:var(--text-base)'),
-    'the served rule',
-  );
-  assert.match(served, /--text-base:1rem/);
+  const variables = [
+    '',
+    [...built.matchAll(/:root, :host\s*\{([^}]+)\}/g)]
+      .map((match) => match[1] ?? '')
+      .join('\n'),
+  ] as const;
+  const scale =
+    /@media \(pointer: coarse\)\s*\{\s*:root\s*\{(?=[^}]*--text-control:)([^}]+)\}/.exec(
+      built,
+    );
+  assert.ok(variables?.[1]);
+  assert.ok(scale?.[1]);
+  const browser = new Window({
+    width: 390,
+    settings: { navigator: { maxTouchPoints: 1 } },
+  });
+  try {
+    const style = browser.document.createElement('style');
+    const rules = Object.entries(textRoleClasses)
+      .filter(([name]) => name !== 'previewBody')
+      .map(([, classes]) => {
+        const name = classes.split(' ')[0];
+        const rule = new RegExp(`\\.${name}\\s*\\{([^}]+)\\}`).exec(built);
+        assert.ok(rule?.[0], `${name} reaches the compiled stylesheet`);
+        // Happy DOM cannot resolve Tailwind's nested fallback for unset overrides.
+        // These override properties are not set in this isolated fixture.
+        return rule[0].replace(
+          /var\(--tw-(?:leading|font-weight),\s*(var\(--[a-z-]+\))\)/g,
+          '$1',
+        );
+      });
+    const fontVariables = [
+      ...(variables[1].match(/--text-[a-z-]+:[^;]+;/g) ?? []),
+      ...[...built.matchAll(/--text-[a-z-]+--font-weight:\s*\d+;/g)].map(
+        (match) => match[0],
+      ),
+    ];
+    assert.ok(fontVariables);
+    style.textContent = `:root { ${fontVariables.join(' ')} } ${rules.join(' ')} @media (pointer: coarse) { :root { ${scale[1]} } }`;
+    browser.document.head.append(style);
+    for (const [role, classes] of Object.entries(textRoleClasses)) {
+      if (role === 'previewBody') continue; // The browser audit checks its nested media rule.
+      const element = browser.document.createElement('span');
+      element.className = classes;
+      browser.document.body.append(element);
+      const expected = Object.entries(touchTextRoles).find(
+        ([name]) => name === role,
+      )?.[1];
+      assert.ok(expected);
+      const computed = browser.getComputedStyle(element);
+      assert.equal(Number.parseFloat(computed.fontSize), expected.size, role);
+      assert.equal(Number.parseFloat(computed.lineHeight), expected.line, role);
+      assert.equal(Number(computed.fontWeight), expected.weight, role);
+    }
+  } finally {
+    await browser.happyDOM.close();
+  }
 });
 
 await test('the footer of a note gives its row to the text on a phone', async () => {
-  // The rule of `noteFooterClassName` stacks two variants. The served
-  // stylesheet holds it under both queries, so the count goes away while a
-  // person types on a phone and stays on a desktop.
-  const assets = resolve(root, 'apps/web/dist/web/assets');
-  const served = (
-    await Promise.all(
-      (await readdir(assets))
-        .filter((name) => name.endsWith('.css'))
-        .map((name) => readFile(resolve(assets, name), 'utf8')),
-    )
-  ).join('\n');
+  const built = await buildCss(['coarse:max-md:hidden']);
   assert.match(
-    served,
-    /@media not all and \(width>=48rem\)\{@media \(pointer:coarse\)\{\.max-md\\:pointer-coarse\\:hidden\{display:none\}/,
+    built,
+    /@media \(pointer: coarse\)\s*\{\s*@media \(width < 48rem\)\s*\{\s*\.coarse\\:max-md\\:hidden\s*\{\s*display: none/,
   );
 });
 
@@ -238,7 +347,7 @@ await test('every class of every control recipe reaches the built stylesheet', a
   const answers: string[] = [];
   for (const variant of variants)
     for (const tone of [undefined, 'danger'] as const)
-      for (const size of ['sm', 'md'] as const)
+      for (const size of ['compact', 'default'] as const)
         for (const iconOnly of [false, true]) {
           for (const compact of [false, true])
             answers.push(
@@ -274,7 +383,16 @@ await test('every class of every control recipe reaches the built stylesheet', a
     selectClassName(),
   );
   // A marker class selects nothing by itself.
-  const markers = new Set(['group']);
+  const markers = new Set([
+    'group',
+    'ui-button',
+    'ui-calendar-day',
+    'ui-field',
+    'ui-bare-field', // A borderless search control uses its parent inset.
+    'ui-icon-button',
+    'ui-select',
+    'ui-tree-row',
+  ]);
   const missing = new Set<string>();
   for (const answer of answers)
     for (const name of answer.split(' ').filter(Boolean)) {
@@ -295,9 +413,9 @@ await test('the compact tree spacing reaches the built stylesheet', async () => 
       stylesheets.map((name) => readFile(resolve(assets, name), 'utf8')),
     )
   ).join('\n');
-  assert.ok(spacing.includes('.space-y-0\\.5'), 'sibling gap');
-  assert.ok(spacing.includes('.mt-0\\.5'), 'branch gap');
-  assert.ok(spacing.includes('.pl-2'), 'branch indent');
+  assert.ok(spacing.includes('.gap-0\\.5'), 'parent-owned sibling gap');
+  assert.ok(spacing.includes('.gap-1'), 'parent-owned branch gap');
+  assert.ok(spacing.includes('.w-5'), 'shared indent slot');
 });
 
 await test('the one vendored face is declared and its files are served', async () => {
@@ -331,8 +449,10 @@ await test('every palette fallback of the stylesheet is the registry value', () 
   // the inline script runs, so they are a second copy of the Default dark
   // palette. This test is what stops that copy from drifting.
   const registry = new Map(themeProperties(defaultThemeFor('dark')));
-  const block = /@theme inline \{([\s\S]*?)\n\}/.exec(stylesheetSource);
-  assert.ok(block !== null, 'the stylesheet states no inline theme block');
+  const block = [
+    ...stylesheetSource.matchAll(/@theme inline \{([\s\S]*?)\n\}/g),
+  ].find((part) => part[1]?.includes('--color-app:'));
+  assert.ok(block !== undefined, 'the stylesheet states no inline theme block');
   const declarations = [
     ...(block[1] ?? '').matchAll(
       /--color-[a-z-]+:\s*var\((--notes-[a-z-]+),\s*(#[0-9a-f]{6})\);/g,
@@ -369,7 +489,10 @@ function firstPaint(
   deviceDark: boolean,
 ): FirstPaint {
   const html = readFileSync(resolve(root, 'apps/web/index.html'), 'utf8');
-  const script = /<script>([\s\S]*?)<\/script>/.exec(html)?.[1] ?? '';
+  const script =
+    [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].find((match) =>
+      match[1]?.includes('__NOTESAPP_THEMES__'),
+    )?.[1] ?? '';
   assert.ok(script.includes('__NOTESAPP_THEMES__'));
   const attributes = new Map<string, string>();
   const style = new Map<string, string>();
@@ -441,6 +564,44 @@ await test('the first paint states the appearance of the variant it paints', () 
   assert.equal(github.style.get('colorScheme'), 'light');
 });
 
+await test('cached imported palettes keep their old property positions when overlay roles are added', () => {
+  const original = themeFamilies[0];
+  assert.ok(original);
+  const read = readThemeFile(themeFileText(original));
+  assert.ok(read.ok);
+  const family = importedThemeFamily('custom-cached', read.theme);
+  const variants = Object.fromEntries(
+    family.variants.map((theme) => [
+      theme.appearance,
+      {
+        id: theme.id,
+        values: themeProperties(theme)
+          .slice(0, -3)
+          .map(([, value]) => value),
+      },
+    ]),
+  );
+  const shown = family.variants[0];
+  assert.ok(shown);
+  const paint = firstPaint(
+    {
+      'notesapp.theme': shown.appearance,
+      'notesapp.theme-family': family.id,
+      [importedPaletteStorageKey]: JSON.stringify({
+        family: family.id,
+        variants,
+        file: themeFileText(family),
+      }),
+    },
+    shown.appearance === 'dark',
+  );
+  assert.equal(paint.style.get('--notes-bg'), shown.tokens.background);
+  assert.equal(paint.style.get('--notes-syntax-keyword'), shown.syntax.keyword);
+  assert.equal(paint.style.has('--notes-surface-overlay'), false);
+  for (const value of paint.style.values())
+    assert.equal(typeof value, 'string');
+});
+
 await test('the style of a menu that no class reaches reads the variables of its classes', async () => {
   // Review of issue 247: the completion list of the editor wrote the values
   // of the menu surface by hand. One table of `packages/ui` states each class
@@ -460,4 +621,23 @@ await test('the style of a menu that no class reaches reads the variables of its
       );
     }
   }
+});
+
+await test('the find panel layout utilities reach the served stylesheet', async () => {
+  const assets = resolve(root, 'apps/web/dist/web/assets');
+  const served = (
+    await Promise.all(
+      (await readdir(assets))
+        .filter((name) => name.endsWith('.css'))
+        .map((name) => readFile(resolve(assets, name), 'utf8')),
+    )
+  ).join('\n');
+  for (const classes of Object.values(searchPanelClasses))
+    for (const name of classes.split(' ')) {
+      const selector = `.${name.replace(/[^a-zA-Z0-9_-]/g, (character) => `\\${character}`)}`;
+      assert.ok(
+        served.includes(selector),
+        `${name} is missing from the editor layout`,
+      );
+    }
 });

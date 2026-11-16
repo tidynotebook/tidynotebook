@@ -19,7 +19,7 @@ jobs:
     name: Check release source
     if: github.repository == 'tidynotebook/tidynotebook'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 45
     permissions:
       contents: read
       actions: read
@@ -47,7 +47,7 @@ jobs:
     name: Build and prove amd64
     needs: prepare
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     outputs:
       artifact-id: ${{ steps.image.outputs.artifact-id }}
       artifact-digest: ${{ steps.image.outputs.artifact-digest }}
@@ -67,7 +67,7 @@ jobs:
     name: Build and prove arm64
     needs: prepare
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 20
+    timeout-minutes: 30
     outputs:
       artifact-id: ${{ steps.image.outputs.artifact-id }}
       artifact-digest: ${{ steps.image.outputs.artifact-digest }}

@@ -186,7 +186,7 @@ function statedBytes(response: Response | undefined): number {
   return Number(value);
 }
 
-const serverUrl = process.env['NOTESAPP_TEST_DATABASE_URL'] ?? testDatabaseUrl;
+const serverUrl = testDatabaseUrl;
 const name = `notesapp_test_${randomUUID().replaceAll('-', '').slice(0, 16)}`;
 const migrationUrl = await createTestDatabase(serverUrl, name);
 const storageRoot = await mkdtemp(join(tmpdir(), 'notesapp-perf-reads-'));

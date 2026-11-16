@@ -19,7 +19,7 @@ import type { OpenRegistrationPart } from '@notesapp/core';
 import { relativeTime } from './relative-time.ts';
 
 /** The title of the accounts page, which is also its breadcrumb part. */
-export const accountsTitle = 'Accounts';
+export const accountsTitle = 'Users';
 
 /**
  * The path of the page that accepts an invitation. The server writes the
@@ -137,25 +137,37 @@ export function resetTokenOf(hash: string): string | null {
 /** The units of a byte count, each 1024 times the one before. */
 const byteUnits = ['bytes', 'KB', 'MB', 'GB', 'TB'] as const;
 
+/** A closed registration cannot offer another signup verification link. */
+export function verificationRecoveryOf(
+  reason: 'registration_closed' | 'verification_invalid',
+): {
+  readonly path: string;
+  readonly label: string;
+} {
+  return reason === 'registration_closed'
+    ? { path: '/login', label: 'Go to sign in' }
+    : { path: signUpRoute, label: 'Get a new link' };
+}
+
 /**
  * A byte count in words, such as `512 bytes` or `1.5 GB`.
  *
- * One decimal under ten of a unit and none above, so a number reads at a
- * glance and does not change its width with every byte.
+ * Each unit is 1000 times the one before, as the plan limits define.
+ * One decimal under ten of a unit and none above keeps the text short.
  */
 export function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes < 0) return '';
   let value = bytes;
   let unit = 0;
-  while (value >= 1024 && unit < byteUnits.length - 1) {
-    value /= 1024;
+  while (value >= 1000 && unit < byteUnits.length - 1) {
+    value /= 1000;
     unit += 1;
   }
-  if (unit === 0) {
-    const count = Math.round(value);
-    return count === 1 ? '1 byte' : `${String(count)} bytes`;
-  }
-  const shown = value < 10 ? Math.round(value * 10) / 10 : Math.round(value);
+  const shown =
+    unit === 0 || value >= 10 ? Math.round(value) : Math.round(value * 10) / 10;
+  if (shown >= 1000 && unit < byteUnits.length - 1)
+    return `1 ${byteUnits[unit + 1] ?? 'bytes'}`;
+  if (unit === 0) return shown === 1 ? '1 byte' : `${String(shown)} bytes`;
   return `${String(shown)} ${byteUnits[unit] ?? 'bytes'}`;
 }
 
@@ -173,16 +185,16 @@ export function storageLine(storage: {
   return `${formatBytes(storage.usedBytes)} of ${formatBytes(storage.limitBytes)} used`;
 }
 
-/** The bytes of one gigabyte, the unit in which a person states a limit. */
-const gigabyte = 1024 * 1024 * 1024;
+/** The bytes of one gigabyte. Matches plan limits and displayed usage. */
+const gigabyte = 1000 * 1000 * 1000;
 
-/** A limit in gigabytes, as the limit field shows it. */
+/** A limit in GB, as the administrator limit field shows it. */
 export function gigabytesOf(bytes: number): string {
-  return String(Math.round((bytes / gigabyte) * 100) / 100);
+  return (bytes / gigabyte).toFixed(9).replace(/\.?0+$/, '');
 }
 
 /**
- * The bytes of a limit that a person typed in gigabytes, or `null` for a text
+ * The bytes of a limit that a person typed in GB, or `null` for a text
  * that is not a positive number.
  */
 export function bytesOfGigabytes(text: string): number | null {
@@ -357,4 +369,18 @@ export function registrationPolicyText(
 /** Whether the page can change the registration policy (record 0206). */
 export function registrationPolicyLocked(source: SettingSource): boolean {
   return source === 'environment';
+}
+
+/** The browser title and page heading state the same verification outcome. */
+export function verificationTitleOf(
+  state: 'loading' | 'unreachable' | 'verified' | 'invalid',
+  reason?: 'registration_closed' | 'verification_invalid',
+): string {
+  return state === 'verified'
+    ? 'Email verified'
+    : state === 'invalid'
+      ? reason === 'registration_closed'
+        ? 'New accounts are closed'
+        : 'This link no longer works'
+      : 'Check your email';
 }

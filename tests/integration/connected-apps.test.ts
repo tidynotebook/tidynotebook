@@ -229,7 +229,7 @@ await test('the served list holds account metadata and the Settings decisions', 
     sectionKeys,
     settingsSections
       .map((section) => section.key)
-      .filter((key) => key !== 'billing'),
+      .filter((key) => key !== 'billing' && !key.startsWith('admin-')),
   );
   assert.equal(
     sectionKeys.indexOf('connected-apps'),
@@ -841,7 +841,7 @@ await test('the served Settings bundle includes the connected app controls', asy
   for (const text of [
     'Name claimed by app:',
     'Revoke connected app?',
-    'Revoke app',
+    'Revoke access',
     'No connected apps.',
   ])
     assert.ok(answer.body.includes(text), text);

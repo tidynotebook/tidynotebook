@@ -28,7 +28,7 @@ export function trialStatus(
     return null;
   const end = Date.parse(controls.trialEndsAt);
   if (controls.trialState === 'expired')
-    return 'Your free trial has ended. Upgrade to use your account again. There is no automatic charge.';
+    return 'Your trial ended. No charge was made.';
   if (end <= now)
     return 'Checking your trial access. Your account will update shortly.';
   const remainingMs = end - now;
@@ -46,7 +46,7 @@ export function trialStatus(
           : hours === 1
             ? '1 hour'
             : `${String(hours)} hours`;
-  return `Your free trial ends on ${new Date(end).toLocaleString()}. Time left: ${remaining}. There is no automatic charge.`;
+  return `Trial: ${remaining} left`;
 }
 
 const trialRecheckIntervalMs = 30000;

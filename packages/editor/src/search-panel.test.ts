@@ -6,11 +6,13 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { EditorState } from '@codemirror/state';
+import { EditorSelection, EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
 import { closeSearchPanel, gotoLine, searchKeymap } from '@codemirror/search';
 import {
+  currentSearchMatch,
   editorPhrases,
+  matchCountWords,
   noteSearchKeymap,
   replaceAllAnnouncement,
   searchPanelKey,
@@ -76,6 +78,15 @@ await test('a replace of every match counts one match and many matches', () => {
   assert.deepEqual(replacedWords(3), ['Replaced 3 matches.']);
 });
 
+await test('the count of matches reads one match and many matches', () => {
+  // Audit N13: one match read "1 matches". The phone keeps its short form.
+  assert.deepEqual(matchCountWords(1), { full: '1 match', short: '1 found' });
+  assert.deepEqual(matchCountWords(250), {
+    full: '250 matches',
+    short: '250 found',
+  });
+});
+
 await test('Enter finds and replaces in the fields of the panel', () => {
   // Review of issue 247: no test held the keys of the panel.
   const enter = { key: 'Enter', shiftKey: false };
@@ -95,4 +106,46 @@ await test('Escape in the panel closes it, which gives the focus to the text', (
   assert.ok(escape !== undefined);
   assert.equal(escape.run, closeSearchPanel);
   assert.ok((escape.scope ?? 'editor').split(' ').includes('search-panel'));
+});
+
+await test('an ordinal requires one exact selection, including regex zero-width results', () => {
+  const make = (selection: EditorSelection) =>
+    EditorState.create({
+      doc: 'seed seed',
+      selection,
+      extensions: EditorState.allowMultipleSelections.of(true),
+    });
+  const matches = [
+    { from: 0, to: 4 },
+    { from: 5, to: 9 },
+  ];
+  assert.equal(
+    currentSearchMatch(make(EditorSelection.single(5, 9)), matches),
+    1,
+  );
+  assert.equal(
+    currentSearchMatch(make(EditorSelection.single(4)), matches),
+    -1,
+  );
+  assert.equal(
+    currentSearchMatch(make(EditorSelection.single(1, 3)), matches),
+    -1,
+  );
+  assert.equal(
+    currentSearchMatch(
+      make(
+        EditorSelection.create([
+          EditorSelection.range(0, 4),
+          EditorSelection.range(5, 9),
+        ]),
+      ),
+      matches,
+    ),
+    -1,
+  );
+  assert.equal(
+    currentSearchMatch(make(EditorSelection.single(5)), [{ from: 5, to: 5 }]),
+    0,
+  );
+  assert.equal(currentSearchMatch(make(EditorSelection.single(5)), []), -1);
 });

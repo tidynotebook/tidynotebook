@@ -53,7 +53,7 @@ export function visibleArea(
 /** The visible part of the screen now. */
 export function readVisibleArea(): ScreenArea {
   const root = document.documentElement;
-  return visibleArea(window.visualViewport, {
+  return visibleArea(window.visualViewport ?? null, {
     width: root.clientWidth,
     height: root.clientHeight,
   });
@@ -68,7 +68,7 @@ export function readVisibleArea(): ScreenArea {
  * back to the window.
  */
 export function followVisibleArea(follow: () => void): () => void {
-  const visual = window.visualViewport;
+  const visual = window.visualViewport ?? null;
   if (visual === null) {
     window.addEventListener('resize', follow);
     return () => {

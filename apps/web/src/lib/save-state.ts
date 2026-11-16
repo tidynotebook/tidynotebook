@@ -43,25 +43,33 @@ export function resolveSaveState(input: SaveStateInput): SaveState {
 /**
  * What the note screen publishes to the frame about the open note.
  *
- * Only the facts the frame shows: a key changes neither, so a key renders no
- * part of the frame (record 0175).
+ * Only the facts the frame shows. The first edit marks a pending save;
+ * further keys leave that fact unchanged (record 0175).
  */
 export type NoteSaveReport = {
+  /** The current editor work has not reached the server. */
+  readonly pendingSave: boolean;
   /**
    * A write to local storage failed, so the typed text is only in this tab.
    * `lib/local-write.ts` decides it.
    */
   readonly localWriteFailed: boolean;
+  /** The current buffer is ahead of the sequence already written locally. */
+  readonly localWritePending: boolean;
   /** When the last version of this note was created, as an ISO instant. */
   readonly lastSavedAt: string | null;
 };
 
-/** The report of the open note, from the two facts that decide it. */
+/** The pending work, write failure, and last checkpoint of the open note. */
 export function noteSaveReport(input: {
+  readonly pendingSave?: boolean;
+  readonly localWritePending?: boolean;
   readonly storageError: LocalStorageErrorKind | null;
   readonly lastSavedAt: string | null;
 }): NoteSaveReport {
   return {
+    pendingSave: input.pendingSave ?? false,
+    localWritePending: input.localWritePending ?? input.pendingSave ?? false,
     localWriteFailed: localWriteFailed(input.storageError),
     lastSavedAt: input.lastSavedAt,
   };

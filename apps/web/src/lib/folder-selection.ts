@@ -49,3 +49,8 @@ export function selectionForOpenNote(
   if (openNotePath === null) return selected;
   return folderOf(openNotePath);
 }
+
+/** Whether `folder` is `moved` or one of its children. */
+export function isInsideFolder(folder: string, moved: string): boolean {
+  return folder === moved || folder.startsWith(`${moved}/`);
+}

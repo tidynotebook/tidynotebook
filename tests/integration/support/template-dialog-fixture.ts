@@ -1,0 +1,119 @@
+import { createElement } from 'react';
+import type { LocalCachedNote, LocalStore } from '@notesapp/sync';
+
+export const templateId = 'template-note';
+export const reads: {
+  workspaceId: string;
+  fileId: string;
+  finish: (note: LocalCachedNote | null) => void;
+}[] = [];
+export const creations: {
+  folder: string;
+  text: string | undefined;
+  name?: string | undefined;
+}[] = [];
+let creationError: string | null = null;
+let duplicates = false;
+/** Set whether two templates share a name for the next render. */
+export function setDuplicateTemplates(value: boolean): void {
+  duplicates = value;
+}
+let availability = { empty: false, partial: false };
+/** Set whether the template list is empty or incomplete for the next render. */
+export function setTemplateAvailability(value: typeof availability): void {
+  availability = value;
+}
+export function setCreationError(message: string | null): void {
+  creationError = message;
+}
+const store: Pick<LocalStore, 'readCachedNote'> = {
+  readCachedNote: (_accountId, workspaceId, fileId) =>
+    new Promise((finish) => reads.push({ workspaceId, fileId, finish })),
+};
+
+// Replace only the dialog's context boundaries. Its effects, template rules,
+// note reader, shared dialog and buttons remain the built application code.
+export function useLocalStore() {
+  return { store };
+}
+export function useSession() {
+  return { account: { accountId: 'template-test-account' } };
+}
+/** Return the template list for the current availability. */
+export function useFiles() {
+  return {
+    notes: availability.empty
+      ? []
+      : duplicates
+        ? [
+            { fileId: templateId, path: 'Templates/First/Meeting.md' },
+            { fileId: 'second-template', path: 'Templates/Second/Meeting.md' },
+          ]
+        : [
+            { fileId: templateId, path: 'Templates/Meeting.md' },
+            { fileId: 'plan-note', path: 'Meetings/Plan.md' },
+            { fileId: 'brief-note', path: 'Projects/Launch/Brief.md' },
+          ],
+    emptyFolders: [],
+    loading: false,
+    limitNotice: availability.partial ? 'The list is incomplete.' : null,
+  };
+}
+export function useTemplates() {
+  return { settings: { status: 'ready', settings: { folder: 'Templates' } } };
+}
+export function useCreateNote(
+  _store: unknown,
+  _accountId: string | null,
+  _workspaceId: string,
+  onError?: (message: string | null) => void,
+  onCreationStart?: () => (message: string | null) => boolean | void,
+) {
+  return {
+    create: (folder: string, text?: string, name?: string): void => {
+      creations.push(
+        name === undefined ? { folder, text } : { folder, text, name },
+      );
+      const completed = onCreationStart?.() ?? onError;
+      completed?.(creationError);
+    },
+    error: creationError,
+  };
+}
+
+export function templateNote(text: string): LocalCachedNote {
+  return {
+    fileId: templateId,
+    path: 'Templates/Meeting.md',
+    text,
+    deleted: false,
+    sequence: 0,
+    baseRevisionId: null,
+    stale: false,
+    acceptedText: null,
+    acceptedPath: null,
+    acceptedRevisionId: null,
+    document: null,
+  };
+}
+
+/**
+ * The read-only note surface of History, which the preview loads lazily.
+ * The editor needs a layout engine, so the test reads the text it receives:
+ * the same text that the surface renders.
+ */
+export default function NotePreview({
+  text,
+  label,
+  path,
+}: {
+  readonly text: string;
+  readonly label: string;
+  readonly path: string;
+}) {
+  return createElement(
+    'div',
+    { role: 'region', 'aria-label': label, 'data-path': path },
+    text,
+  );
+}

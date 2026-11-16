@@ -86,7 +86,7 @@ ${productName} sets one cookie, which keeps you signed in. It is necessary for t
 
 ## Your rights
 
-- **See and take your data.** Select Export all notes in Settings to download every note and picture as Markdown files. Write to us for a copy of the other data.
+- **See and take your data.** Select Export this workspace in Settings to download notes and images from the active workspace as a zip. Write to us for a copy of the other data.
 - **Correct your data.** Change your name in Settings. Write to us to change your address.
 - **Delete your data.** Select Delete my account in Settings.
 - **Object or restrict.** Write to us if you object to a use of your data, or want us to stop it for a time.
@@ -125,7 +125,7 @@ These terms are the agreement between you and {{operator name}}, {{postal addres
 
 Your notes are yours. You give us the right to store, copy, show and send them only as far as the service needs to work for you, for example to sync them to your devices and to show a link that you publish. This right ends when you delete the notes or delete your account, except for the copy in a backup until that backup expires.
 
-Keep your own copy of notes that are important to you. Select Export all notes in Settings to download them at any time.
+Keep your own copy of notes that are important to you. Select Export this workspace in Settings to download notes and images from the active workspace as a zip at any time.
 
 ## What you must not do
 

@@ -118,6 +118,32 @@ export function mergeStateVectors(
 }
 
 /**
+ * The state vector `known` moved by the insertions of `update` that join it.
+ *
+ * `documentStateVector` of an update names a writer only when the update
+ * holds that writer's work from clock zero, so it cannot measure work that
+ * continues earlier work. This reads the structures of the update instead.
+ * An update holds the structures of each writer in clock order, and a skipped
+ * range takes the place of work that it does not hold. The clock of a writer
+ * moves only over a structure that starts at or before it, so after a gap it
+ * stays where it is and never jumps over work that `known` lacks. A deletion
+ * carries no insertion and moves nothing.
+ */
+export function advanceCoverage(
+  known: Uint8Array,
+  update: Uint8Array,
+): Uint8Array {
+  const covered = Y.decodeStateVector(known);
+  for (const struct of Y.decodeUpdate(update).structs) {
+    const { client, clock } = struct.id;
+    const reached = covered.get(client) ?? 0;
+    if (!(struct instanceof Y.Skip) && clock <= reached)
+      covered.set(client, Math.max(reached, clock + struct.length));
+  }
+  return Y.encodeStateVector(covered);
+}
+
+/**
  * Whether a document of state vector `holder` holds every insertion that a
  * state vector `seen` names.
  *

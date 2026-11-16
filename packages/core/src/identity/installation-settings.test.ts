@@ -303,6 +303,9 @@ await test('a template fills the facts of the server and keeps the other blanks'
     /Have I Been Pwned/,
   );
   for (const text of [privacy, terms]) {
+    assert.match(text, /Select Export this workspace in Settings/);
+    assert.match(text, /notes and images from the active workspace as a zip/);
+    assert.doesNotMatch(text, /Export all notes|as Markdown files/);
     assert.ok(templateBlanks(text).includes('{{operator name}}'));
     assert.ok(!templateBlanks(text).includes('{{service address}}'));
     // Every blank is a short label that a field can carry.

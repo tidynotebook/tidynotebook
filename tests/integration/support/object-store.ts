@@ -1,14 +1,13 @@
 /**
  * A disposable bucket of the test MinIO service (record 0192).
  *
- * `tools/test-database/ensure-minio.sh` starts the service of
+ * `pnpm test:services` starts the service of
  * `compose.test.yaml` on port 59000, and `pnpm test:integration` runs it
  * first. Each test file makes a bucket of its own with a random name and
  * removes it, so the files of several worktrees share the one service, as
  * they share PostgreSQL.
  */
 import { randomBytes } from 'node:crypto';
-import process from 'node:process';
 import {
   AbortMultipartUploadCommand,
   CreateBucketCommand,
@@ -25,8 +24,7 @@ import {
 } from '@notesapp/storage-server';
 
 /** The address of the test MinIO service. */
-export const testS3Endpoint =
-  process.env['NOTESAPP_TEST_S3_ENDPOINT'] ?? 'http://127.0.0.1:59000';
+export const testS3Endpoint = 'http://127.0.0.1:59000';
 
 /** The key pair of the test service, from `compose.test.yaml`. */
 const testKeys = {

@@ -27,7 +27,10 @@ import {
 } from 'react-router';
 import { LoadingState, Page } from '@notesapp/ui';
 import { RouteError } from './shell/route-error.tsx';
-import { LoginPage, RequireSession } from './features/accounts/accounts.tsx';
+import { RequireSession } from './features/accounts/require-session.tsx';
+const LoginPage = lazy(async () => ({
+  default: (await import('./features/accounts/accounts.tsx')).LoginPage,
+}));
 import type { FrameHandle } from './lib/breadcrumb.ts';
 import { createEarlyStart } from './lib/early-start.ts';
 import {
@@ -49,9 +52,14 @@ const NoteView = lazy(async () => ({
 const NotesHomeView = lazy(async () => ({
   default: (await loadNotesHome()).NotesHomeView,
 }));
-const AccountSettingsPage = lazy(async () => ({
-  default: (await import('./features/accounts/account-settings.tsx'))
-    .AccountSettingsPage,
+const LegacyFolderRedirect = lazy(
+  () => import('./features/folders/legacy-folder-redirect.tsx'),
+);
+/** An old Settings address opens the Settings modal (issue 517). */
+// The frame loads it, so it shares the address helpers of the frame chunk.
+const LegacySettingsRedirect = lazy(async () => ({
+  default: (await (await loadShell()).loadLegacySettings())
+    .LegacySettingsRedirect,
 }));
 const loadWorkspaceHome = () => import('./shell/workspaces.tsx');
 const WorkspaceHome = lazy(async () => ({
@@ -63,15 +71,16 @@ const HistoryView = lazy(async () => ({
 const ReviewView = lazy(async () => ({
   default: (await import('./features/review/review.tsx')).ReviewView,
 }));
+/** Load the Trash page only when its route opens. */
 const TrashView = lazy(async () => ({
-  default: (await import('./features/trash/trash.tsx')).TrashView,
+  default: (await import('./features/trash/trash-page.tsx')).TrashView,
 }));
 const AttentionRoute = lazy(async () => ({
   default: (await import('./features/attention/attention.tsx')).AttentionRoute,
 }));
 const AccountsView = lazy(async () => ({
-  default: (await import('./features/accounts/administration.tsx'))
-    .AccountsView,
+  default: (await import('./features/accounts/administration-redirect.tsx'))
+    .AdministrationRedirect,
 }));
 const InvitationPage = lazy(async () => ({
   default: (await import('./features/accounts/invitation.tsx')).InvitationPage,
@@ -117,7 +126,7 @@ function deferred(element: ReactNode): ReactNode {
     <Suspense
       fallback={
         <Page>
-          <LoadingState label="The screen is loading." />
+          <LoadingState label="Loading screen" />
         </Page>
       }
     >
@@ -136,7 +145,7 @@ const routes: RouteObject[] = [
     // The application boundary: it holds every route below it.
     errorElement: <RouteError scope="application" />,
     children: [
-      { path: '/login', element: <LoginPage /> },
+      { path: '/login', element: deferred(<LoginPage />) },
       { path: oauthSignInRoute, element: deferred(<OAuthSignInPage />) },
       { path: oauthConsentRoute, element: deferred(<OAuthConsentPage />) },
       // The page that an invitation link opens. It needs no session, and the
@@ -192,6 +201,11 @@ const routes: RouteObject[] = [
                   handle: page('review'),
                 },
                 {
+                  path: 'folders/*',
+                  element: deferred(<LegacyFolderRedirect />),
+                  handle: page('notes'),
+                },
+                {
                   path: 'trash',
                   element: deferred(<TrashView />),
                   handle: page('trash'),
@@ -212,8 +226,10 @@ const routes: RouteObject[] = [
                   handle: page('attention'),
                 },
                 {
-                  path: 'settings',
-                  element: deferred(<AccountSettingsPage />),
+                  // Settings is a modal over any page. The old addresses
+                  // open it over the last page of the workspace.
+                  path: 'settings/:settingsPage?',
+                  element: deferred(<LegacySettingsRedirect />),
                   handle: page('settings'),
                 },
                 {

@@ -1,3 +1,26 @@
+import {
+  MoveItemsDialog,
+  NewFolderDialog,
+} from '../features/folders/folders.tsx';
+import { PublishDialog } from '../features/publishing/publish-dialog-entry.tsx';
+import {
+  Stack,
+  ListRow,
+  IconSlot,
+  Inline,
+  IconButton,
+  AnchoredMenu,
+  Badge,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  FileTextIcon,
+  FolderIcon,
+  FolderOpenIcon,
+  inlineFieldClassName,
+  MoreIcon,
+  type MenuAnchor,
+  type MenuItem,
+} from '@notesapp/ui';
 /**
  * The tree of the sidebar: one list of rows with a selection (record 0164).
  *
@@ -32,23 +55,9 @@ import {
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
 } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import type { PublicationScope } from '@notesapp/core';
-import {
-  AnchoredMenu,
-  Badge,
-  buttonClassName,
-  ChevronDownIcon,
-  ChevronRightIcon,
-  FileTextIcon,
-  FolderIcon,
-  FolderOpenIcon,
-  inlineFieldClassName,
-  MoreIcon,
-  rowClassName,
-  type MenuAnchor,
-  type MenuItem,
-} from '@notesapp/ui';
+
 import { useLocalStore, useRequestSync, useSession } from '../app.tsx';
 import { useDeleteNotice } from '../features/trash/trash.tsx';
 import { deleteNotes } from '../features/editor/note-delete.ts';
@@ -60,7 +69,13 @@ import {
 import { duplicateNote } from '../features/notes/duplicate-note.ts';
 import { actionIcon } from './action-icons.tsx';
 import { useFiles, type OpenFoldersControl } from './files.tsx';
-import { useRowWindow } from './row-window.ts';
+import { useContentRowWindow } from './content-row-window.ts';
+import { scrollerOf } from './row-window.ts';
+import type { CreatedFolderReveal } from '../features/folders/created-folder-reveal.ts';
+export type {
+  CreatedFolderReveal,
+  CreatedFolderRevealOwner,
+} from '../features/folders/created-folder-reveal.ts';
 import type { TreeDrag } from './tree-drag.ts';
 import type { DragItem } from '../lib/folder-moves.ts';
 import type { TreeNode } from '../lib/note-list.ts';
@@ -85,8 +100,6 @@ import {
   treeItemsClassName,
   treeMessageClassName,
   treeRowClassName,
-  treeRowLeadingClassName,
-  treeRowNameClassName,
 } from '../lib/tree-row.ts';
 import {
   blurLeavesRow,
@@ -122,20 +135,12 @@ import {
 } from '../lib/tree-selection.ts';
 import { trashPlan } from '../lib/tree-trash.ts';
 
-/**
- * One icon action that sits on a row: the chevron and the row menu.
- *
- * A ghost control of the one recipe, square, and as small as a row allows on
- * a desktop while it keeps the 44 px touch target under the medium width.
- */
-export const rowActionClassName = buttonClassName({
-  variant: 'ghost',
-  size: 'sm',
-  className: 'size-11 shrink-0 px-0 md:size-7',
-});
-
-/** The column that a row with no chevron keeps for one, so names line up. */
-export const rowSpacerClassName = 'size-11 shrink-0 md:size-7';
+type FolderRevealControl = {
+  readonly request: CreatedFolderReveal | null;
+  readonly isCurrent: (request: CreatedFolderReveal) => boolean;
+  readonly finish: (request: CreatedFolderReveal) => void;
+  readonly cancel: (event?: Event) => void;
+};
 
 /** What the tree asks the frame to do, and what it reads from it. */
 export type NoteTreeProps = {
@@ -147,9 +152,10 @@ export type NoteTreeProps = {
   readonly activeFileId: string | null;
   /** The folder that a create action uses as its parent (record 0029). */
   readonly selectedFolder: string;
+  readonly folderReveal?: FolderRevealControl | undefined;
   readonly folders: OpenFoldersControl;
   readonly drag: TreeDrag;
-  /** Makes a folder the create parent and opens it. */
+  /** Makes a folder the create parent without changing the open page. */
   readonly onSelectFolder: (folder: string) => void;
   /** Runs after a row opens a screen, which closes the drawer on a phone. */
   readonly onNavigate: () => void;
@@ -188,6 +194,7 @@ type OpenMenu = {
   readonly keys: readonly string[];
   /** The row that takes the focus back when a key closes the menu. */
   readonly returnKey: string;
+  readonly keyboard: boolean;
 };
 
 /** The target of an action that one row starts. */
@@ -222,6 +229,7 @@ export function NoteTree({
   knownFolders,
   activeFileId,
   selectedFolder,
+  folderReveal,
   folders,
   drag,
   onSelectFolder,
@@ -232,6 +240,7 @@ export function NoteTree({
   onMove,
 }: NoteTreeProps): ReactNode {
   const navigate = useNavigate();
+  const location = useLocation();
   const files = useFiles();
   const store = useLocalStore();
   const session = useSession();
@@ -285,7 +294,58 @@ export function NoteTree({
   const revealedFor = useRef<string | null>(null);
   const focusIndex =
     focusKey === null ? null : (indexByKey.get(focusKey) ?? null);
-  const rowsInView = useRowWindow(rows.length, 'tree', focusIndex);
+  const rowKeys = useMemo(() => rows.map((row) => row.key), [rows]);
+  const rowsInView = useContentRowWindow(rowKeys, focusIndex);
+  const listElement = useRef<HTMLElement | null>(null);
+  const attachList = useCallback(
+    (element: HTMLElement | null): void => {
+      listElement.current = element;
+      rowsInView.listRef(element);
+    },
+    [rowsInView.listRef],
+  );
+  const revealControl = useRef(folderReveal);
+  revealControl.current = folderReveal;
+  const hasRevealControl = folderReveal !== undefined;
+  useEffect(() => {
+    const list = listElement.current;
+    if (!list || !hasRevealControl) return;
+    const scroller = scrollerOf(list) ?? list;
+    // The parent reads its latest request even before new props commit.
+    const manual = (event: Event): void => revealControl.current?.cancel(event);
+    const events = ['wheel', 'pointerdown', 'touchstart', 'keydown'] as const;
+    for (const event of events)
+      scroller.addEventListener(event, manual, {
+        capture: true,
+        passive: true,
+      });
+    return () => {
+      for (const event of events)
+        scroller.removeEventListener(event, manual, true);
+      // Strict Mode replays effects with connected DOM. A real removal does not.
+      if (!list.isConnected) revealControl.current?.cancel();
+    };
+  }, [hasRevealControl]);
+  useLayoutEffect(() => () => revealControl.current?.request?.pause(), []);
+
+  // The action is already loaded by the dialog. No hook or import is deferred.
+  useLayoutEffect(() => {
+    const request = folderReveal?.request;
+    request?.update({
+      accountId,
+      workspaceId,
+      routeKey: location.key,
+      list: listElement.current,
+      index: indexByKey.get(folderRowKey(request.path)),
+      row: () => elements.current.get(folderRowKey(request.path)),
+      reveal: rowsInView.reveal,
+      isCurrent: (candidate) =>
+        revealControl.current?.isCurrent(candidate) === true,
+      claim: () => {
+        revealedFor.current = activeKey;
+      },
+    });
+  });
   const selecting = selection.keys.size > 0;
 
   // A row that left the screen leaves the selection.
@@ -722,12 +782,12 @@ export function NoteTree({
 
   /** Opens the menu of one row at a place on the screen. */
   const openMenu = useCallback(
-    (key: string, anchor: MenuAnchor): void => {
+    (key: string, anchor: MenuAnchor, keyboard = false): void => {
       // A row outside the selection acts for itself alone, and the selection
       // gives way to it, as a file manager does on a right click.
       if (!isRowSelected(selection, key)) setSelection(emptySelection);
       setFocusKey(key);
-      setMenu({ anchor, keys: targetsFor(key), returnKey: key });
+      setMenu({ anchor, keys: targetsFor(key), returnKey: key, keyboard });
     },
     [selection, targetsFor],
   );
@@ -793,6 +853,7 @@ export function NoteTree({
       case 'select-folder':
         setSelection(emptySelection);
         onSelectFolder(action.path);
+        toggleFolder(action.path);
         return;
       case 'toggle-select':
         setSelection((now) => toggleRow(now, action.key));
@@ -808,7 +869,8 @@ export function NoteTree({
         return;
       case 'menu': {
         const element = elements.current.get(action.key);
-        if (element !== undefined) openMenu(action.key, anchorOf(element));
+        if (element !== undefined)
+          openMenu(action.key, anchorOf(element), true);
         return;
       }
       case 'trash':
@@ -836,8 +898,10 @@ export function NoteTree({
 
   return (
     <>
-      <div
-        ref={rowsInView.listRef}
+      <Stack
+        gap={0.5}
+        pad={0}
+        ref={attachList}
         className={treeItemsClassName}
         role="tree"
         aria-label={treeLabel}
@@ -856,12 +920,17 @@ export function NoteTree({
               aria-selected="false"
               className={treeIndentClassName(row.level)}
             >
-              <div className={rowClassName({ interactive: false })}>
-                <span className={rowSpacerClassName} aria-hidden="true" />
+              <ListRow
+                as="div"
+                density="tree"
+                indent={row.level - 1}
+                className={treeRowClassName({ wrapOnPhone: true })}
+              >
+                <IconSlot className="ui-sidebar-slot" aria-hidden="true" />
                 <span className="min-w-0 truncate text-muted">
                   This folder is empty.
                 </span>
-              </div>
+              </ListRow>
             </div>
           ) : (
             <TreeRow
@@ -892,6 +961,7 @@ export function NoteTree({
                 setFocusKey(row.key);
                 if (row.kind === 'folder') {
                   onSelectFolder(row.path);
+                  toggleFolder(row.path);
                   return;
                 }
                 onNavigate();
@@ -903,12 +973,12 @@ export function NoteTree({
               onDragItems={() =>
                 targetsOfKeys(targetsFor(row.key)).map(dragItemOf)
               }
-              onMenu={(anchor) => openMenu(row.key, anchor)}
+              onMenu={(anchor, keyboard) => openMenu(row.key, anchor, keyboard)}
               onRenameEvent={renameEvent}
             />
           ),
         )}
-      </div>
+      </Stack>
       {message === null ? null : (
         <p
           className={treeMessageClassName(message.tone)}
@@ -921,11 +991,19 @@ export function NoteTree({
         <AnchoredMenu
           label={openTree.label}
           anchor={menu.anchor}
+          keyboard={menu.keyboard}
           align="start"
           items={openTree.rows.map((row): MenuItem => ({
             id: row.id,
             label: row.label,
             icon: actionIcon(row.icon),
+            onIntent: () => {
+              if (row.id === 'move') void MoveItemsDialog.preload();
+              if (row.id === 'new-folder') void NewFolderDialog.preload();
+              if (row.id === 'publish') void PublishDialog.preload();
+              if (row.id === 'history')
+                void import('../features/history/history.tsx').catch(() => {});
+            },
             onSelect: () => run(row.id, menu.keys),
           }))}
           pinned={openTree.pinned.map((row): MenuItem => ({
@@ -991,7 +1069,7 @@ function TreeRow({
   readonly onPlainClick: () => void;
   readonly onToggle: () => void;
   readonly onDragItems: () => readonly DragItem[];
-  readonly onMenu: (anchor: MenuAnchor) => void;
+  readonly onMenu: (anchor: MenuAnchor, keyboard?: boolean) => void;
   readonly onRenameEvent: (event: RenameEvent) => void;
 }): ReactNode {
   const isFolder = row.kind === 'folder';
@@ -1018,7 +1096,7 @@ function TreeRow({
   );
   const name =
     renaming === null ? (
-      <span className="min-w-0 flex-1 truncate" title={row.name}>
+      <span data-tree-name className="min-w-0 flex-1 truncate" title={row.name}>
         {row.name}
       </span>
     ) : (
@@ -1081,6 +1159,7 @@ function TreeRow({
       aria-haspopup="menu"
       tabIndex={tabbable ? 0 : -1}
       className={`${treeIndentClassName(row.level)} ${treeItemClassName}`}
+
       draggable={renaming === null}
       onFocus={(event) => onFocus(event.currentTarget)}
       onBlur={(event) => {
@@ -1135,8 +1214,12 @@ function TreeRow({
         drag.drop(row.path);
       }}
     >
-      <div
+      <ListRow
+        as="div"
+        density="tree"
+        indent={row.level - 1}
         className={treeRowClassName({
+          wrapOnPhone: true,
           open,
           selected: parent,
           picked,
@@ -1144,60 +1227,60 @@ function TreeRow({
           dropTarget: isTarget,
         })}
       >
-        <div className={treeRowLeadingClassName}>
+        <Inline gap={1} className="ui-sidebar-leading min-w-0 flex-1">
+          {/* Right and Left control expansion from the row. The caret is
+          available to a touch screen reader without another keyboard stop. */}
           {isFolder ? (
-            // The keys open and close a folder with Right and Left on the
-            // row, so the chevron is no stop of the keys. A screen reader on
-            // a touch screen reaches it by a swipe, by its name.
-            <button
-              type="button"
+            <IconButton
+              size="row"
+              compact
+              slotClassName="ui-sidebar-slot"
               tabIndex={-1}
-              aria-label={controls.toggle ?? undefined}
-              className={rowActionClassName}
+              label={controls.toggle ?? 'Toggle folder'}
               onMouseDown={keepFocus}
               onClick={(event) => {
                 event.stopPropagation();
                 onToggle();
               }}
-              title={controls.toggle ?? undefined}
-            >
-              <span className="inline-flex text-muted" aria-hidden="true">
-                {row.expanded ? <ChevronDownIcon /> : <ChevronRightIcon />}
-              </span>
-            </button>
+              glyph={
+                row.expanded ? (
+                  <ChevronDownIcon className="text-muted" />
+                ) : (
+                  <ChevronRightIcon className="text-muted" />
+                )
+              }
+            ></IconButton>
           ) : (
-            <span className={rowSpacerClassName} aria-hidden="true" />
+            <IconSlot className="ui-sidebar-slot" aria-hidden="true" />
           )}
-          <div className={treeRowNameClassName}>
+          <Inline gap={2} className="ui-sidebar-name min-w-0 flex-1">
             {icon}
             {name}
             {badge}
-          </div>
-        </div>
+          </Inline>
+        </Inline>
         {/*
           The action button opens the menu that a right click, Shift + F10
           and the Menu key open. It is no stop of the keys, and a screen
           reader on a touch screen, which has neither key, reaches it by a
           swipe, by its name.
         */}
-        <button
-          type="button"
+        <IconButton
+          size="row"
+          slotClassName="ui-sidebar-slot"
           tabIndex={-1}
-          aria-label={controls.actions}
+          label={controls.actions}
           aria-haspopup="menu"
-          className={rowActionClassName}
-          title={controls.actions}
+          reveal
+          className="ui-sidebar-row-menu"
           onMouseDown={keepFocus}
           onClick={(event) => {
             event.stopPropagation();
-            onMenu(anchorOf(event.currentTarget));
+            onMenu(anchorOf(event.currentTarget), event.detail === 0);
           }}
-        >
-          <span className="inline-flex text-muted" aria-hidden="true">
-            <MoreIcon />
-          </span>
-        </button>
-      </div>
+          glyph={<MoreIcon className="text-muted" />}
+        ></IconButton>
+      </ListRow>
     </div>
   );
 }

@@ -1,0 +1,75 @@
+import type { ComponentProps, ReactNode } from 'react';
+import { buttonClassName, sidebarViewClassName } from './control-classes.ts';
+import { Button } from './controls.tsx';
+import { IconSlot } from './primitives.tsx';
+export type IconButtonSize = 'row' | 'toolbar' | 'header' | 'rail';
+export function IconButton({
+  glyph,
+  size = 'toolbar',
+  label,
+  className = '',
+  reveal = false,
+  current = false,
+  slotClassName = '',
+  render,
+  ...props
+}: Omit<
+  ComponentProps<typeof Button>,
+  'icon' | 'size' | 'children' | 'label'
+> & {
+  readonly glyph: ReactNode;
+  readonly size?: IconButtonSize;
+  readonly label: string;
+  readonly reveal?: boolean;
+  readonly current?: boolean;
+  readonly slotClassName?: string;
+  readonly render?: (props: {
+    readonly className: string;
+    readonly 'aria-label': string;
+    readonly 'aria-current': 'page' | undefined;
+    readonly title: string;
+    readonly children: ReactNode;
+  }) => ReactNode;
+}): ReactNode {
+  const disclosure = size === 'row' && props.compact;
+  const position =
+    size === 'toolbar' || size === 'rail'
+      ? ''
+      : `absolute top-1/2 -translate-y-1/2 ${disclosure ? '-left-2 coarse:-left-3' : 'left-1/2 -translate-x-1/2'}`;
+  const control = render ? (
+    render({
+      className: `${
+        size === 'rail'
+          ? sidebarViewClassName({ current })
+          : buttonClassName({
+              variant: 'ghost',
+              iconOnly: true,
+              iconSize: size,
+            })
+      } ${position} ${className}`,
+      'aria-label': label,
+      'aria-current': current ? 'page' : undefined,
+      title: label,
+      children: glyph,
+    })
+  ) : (
+    <Button
+      {...props}
+      aria-current={current ? 'page' : undefined}
+      ariaPressed={current ? true : size === 'rail' ? false : props.ariaPressed}
+      variant={props.variant ?? 'ghost'}
+      icon={glyph}
+      iconSize={size}
+      label={label}
+      className={`${position} ${current ? 'aria-pressed:bg-active aria-pressed:text-strong aria-pressed:hover:bg-active' : ''} ${reveal ? rowActionVisibility : ''} ${className}`}
+    />
+  );
+  return position ? (
+    <IconSlot className={slotClassName}>{control}</IconSlot>
+  ) : (
+    control
+  );
+}
+
+export const rowActionVisibility =
+  'fine:pointer-events-none fine:opacity-0 fine:group-hover:pointer-events-auto fine:group-hover:opacity-100 fine:group-hover/item:pointer-events-auto fine:group-hover/item:opacity-100 fine:group-focus-within:pointer-events-auto fine:group-focus-within:opacity-100 fine:group-focus-within/item:pointer-events-auto fine:group-focus-within/item:opacity-100 fine:aria-expanded:pointer-events-auto fine:aria-expanded:opacity-100';

@@ -9,6 +9,20 @@
     <!-- The server writes the one link preview of the installation here at
          start, from its configured origin. See design 028. -->
     <!-- __NOTESAPP_LINK_PREVIEW__ -->
+    <script>
+      // iOS Safari stops automatic field focus zoom but still allows pinch zoom.
+      // Other devices keep their viewport limits. Run before the first paint.
+      function isAppleTouchDevice(userAgent, maxTouchPoints) {
+        return (
+          /iPhone|iPad/.test(userAgent) ||
+          (/Mac/.test(userAgent) && maxTouchPoints > 1)
+        );
+      }
+      if (isAppleTouchDevice(navigator.userAgent, navigator.maxTouchPoints)) {
+        var viewport = document.querySelector('meta[name="viewport"]');
+        viewport.content += ', maximum-scale=1';
+      }
+    </script>
     <meta name="theme-color" content="__NOTESAPP_THEME_COLOUR__" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <!-- The build writes one link for each icon it emits, at an address that
@@ -69,7 +83,11 @@
         // loop above wrote, so it follows the palette with no colour here.
         root.style.scrollbarColor = 'var(--notes-border) transparent';
         for (var index = 0; index < themes.properties.length; index += 1)
-          root.style.setProperty(themes.properties[index], theme.values[index]);
+          if (typeof theme.values[index] === 'string')
+            root.style.setProperty(
+              themes.properties[index],
+              theme.values[index],
+            );
         root.style.background = theme.values[0];
         var colour = document.querySelector('meta[name="theme-color"]');
         if (colour) colour.setAttribute('content', theme.values[0]);
@@ -113,9 +131,7 @@
       })();
     </script>
   </head>
-  <body
-    class="m-0 bg-app font-sans text-ui leading-relaxed text-ink antialiased"
-  >
+  <body class="m-0 bg-app font-sans text-body text-strong antialiased">
     <template id="start-failure-load">__NOTESAPP_START_FAILURE_LOAD__</template>
     <template id="start-failure-stop">__NOTESAPP_START_FAILURE_STOP__</template>
     <div id="root" class="min-h-viewport"></div>

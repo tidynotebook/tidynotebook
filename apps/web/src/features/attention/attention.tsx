@@ -1,3 +1,20 @@
+import {
+  PreviewBlock,
+  Inline,
+  Stack,
+  Button,
+  CheckIcon,
+  CopyIcon,
+  EmptyState,
+  ListRow,
+  LoadingState,
+  Notice,
+  Page,
+  pageGroupLabelClassName,
+  PageHeader,
+  pageListClassName,
+  StatusRegion,
+} from '@notesapp/ui';
 /**
  * The Needs attention screen: every save the server refused for good.
  *
@@ -19,20 +36,7 @@
  */
 import { useState, type ReactNode } from 'react';
 import { useParams } from 'react-router';
-import {
-  Button,
-  CheckIcon,
-  CopyIcon,
-  EmptyState,
-  ListRow,
-  LoadingState,
-  Notice,
-  Page,
-  pageGroupLabelClassName,
-  PageHeader,
-  pageListClassName,
-  StatusRegion,
-} from '@notesapp/ui';
+
 import { actionIcon } from '../../shell/action-icons.tsx';
 import { deleteGlyph } from '../../lib/delete-label.ts';
 import { attentionTitle, useParkedSaves } from './attention-link.tsx';
@@ -46,7 +50,6 @@ import {
   type ParkedPlace,
 } from './parked-actions.ts';
 import { useNow } from '../../shell/now.ts';
-import { productName } from '@notesapp/core';
 
 /** One row of the list with its four actions. */
 function ParkedSaveRow({
@@ -67,27 +70,27 @@ function ParkedSaveRow({
   const lines = parkedSaveLines(save, now);
 
   return (
-    <ListRow className="flex-col items-stretch py-3">
+    <ListRow contentEdge className="flex-col items-stretch">
       <div className="min-w-0">
-        <p className="m-0 truncate text-ui text-strong">{save.name}</p>
-        <p className="m-0 text-control text-muted">{lines.cause}</p>
-        <p className="m-0 text-control text-muted">{lines.kept}</p>
+        <p className="m-0 truncate text-body text-strong">{save.name}</p>
+        <p className="m-0 text-secondary text-muted">{lines.cause}</p>
+        <p className="m-0 text-secondary text-muted">{lines.kept}</p>
       </div>
-      <details>
-        <summary className="cursor-pointer text-control text-muted">
+      <Stack gap={2} as="details">
+        <summary className="cursor-pointer text-secondary text-muted">
           Kept text
         </summary>
-        <pre
-          className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap rounded-lg border border-edge-subtle bg-surface p-3 font-mono text-control text-strong"
+        <PreviewBlock
+          className="max-h-96"
           aria-label={`Kept text of ${save.name}`}
         >
           {save.text}
-        </pre>
-      </details>
-      <div className="flex flex-wrap items-center gap-cluster">
+        </PreviewBlock>
+      </Stack>
+      <Inline gap={2} wrap align="center" as="div">
         <Button
           variant="primary"
-          size="sm"
+          size="compact"
           label={`Retry the save of ${save.name}`}
           onClick={() => {
             onRetry(save);
@@ -97,7 +100,7 @@ function ParkedSaveRow({
         </Button>
         <Button
           variant="secondary"
-          size="sm"
+          size="compact"
           label={`Save as new note from ${save.name}`}
           onClick={() => {
             onSaveAsNew(save);
@@ -107,7 +110,7 @@ function ParkedSaveRow({
         </Button>
         <Button
           variant="secondary"
-          size="sm"
+          size="compact"
           icon={<CopyIcon />}
           label={
             copied
@@ -126,7 +129,7 @@ function ParkedSaveRow({
           <>
             <Button
               variant="danger"
-              size="sm"
+              size="compact"
               icon={actionIcon(deleteGlyph)}
               label={`Confirm discard of the kept text of ${save.name}`}
               onClick={() => {
@@ -138,7 +141,7 @@ function ParkedSaveRow({
             </Button>
             <Button
               variant="ghost"
-              size="sm"
+              size="compact"
               label={`Keep the text of ${save.name}`}
               onClick={() => {
                 setConfirming(false);
@@ -150,7 +153,7 @@ function ParkedSaveRow({
         ) : (
           <Button
             variant="ghost"
-            size="sm"
+            size="compact"
             tone="danger"
             icon={actionIcon(deleteGlyph)}
             label={`Discard the kept text of ${save.name}`}
@@ -161,7 +164,7 @@ function ParkedSaveRow({
             Discard
           </Button>
         )}
-      </div>
+      </Inline>
     </ListRow>
   );
 }
@@ -190,7 +193,7 @@ export function AttentionRoute(): ReactNode {
         <LoadingState
           shape="list"
           rows={3}
-          label="The saves that need attention are loading."
+          label="Loading saves that need attention"
         />
       </Page>
     );
@@ -238,24 +241,32 @@ export function AttentionRoute(): ReactNode {
   };
 
   return (
-    <Page>
-      <PageHeader
-        title={attentionTitle}
-        description={`${productName} keeps text here when it cannot complete a save. Retry the save, or create a new note from its text.`}
-      />
-      <div className="space-y-4">
-        {error === null ? null : <Notice tone="problem" message={error} />}
-        {failure === null ? null : <Notice tone="problem" message={failure} />}
-        {notice === '' ? null : <StatusRegion message={notice} />}
-        {saves.length === 0 ? (
-          // Nothing waits here, which is the good state, so the mark is the
-          // check and not the alert of a screen that reports a problem.
+    <Page
+      emptyState={
+        saves.length === 0 ? (
           <EmptyState
             icon={<CheckIcon size={20} />}
             title="No save needs attention"
             description="There is no kept text for you to review."
           />
-        ) : (
+        ) : null
+      }
+    >
+      <PageHeader title={attentionTitle} />
+      <Stack
+        gap={4}
+        as="div"
+        hidden={
+          saves.length === 0 &&
+          error === null &&
+          failure === null &&
+          notice === ''
+        }
+      >
+        {error === null ? null : <Notice tone="problem" message={error} />}
+        {failure === null ? null : <Notice tone="problem" message={failure} />}
+        {notice === '' ? null : <StatusRegion message={notice} />}
+        {saves.length === 0 ? null : ( // check and not the alert of a screen that reports a problem. // Nothing waits here, which is the good state, so the mark is the
           <section aria-labelledby="attention-heading">
             <h2 className={pageGroupLabelClassName()} id="attention-heading">
               Text to review
@@ -274,7 +285,7 @@ export function AttentionRoute(): ReactNode {
             </ul>
           </section>
         )}
-      </div>
+      </Stack>
     </Page>
   );
 }

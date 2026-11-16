@@ -178,6 +178,85 @@ await test('each explicit save creates a restorable version', async () => {
   assert.equal(current.data?.head?.restoredFrom, firstRevisionId);
 });
 
+await test('a restore that names the current path keeps the name of a renamed note', async () => {
+  // The History screen sends the current path, so a restore brings back the
+  // text of a version and keeps the name. With no path the server keeps the
+  // name of the version, which another note can hold by now.
+  const fileId = randomUUID();
+  const firstRevisionId = randomUUID();
+  const created = await createFile({
+    headers,
+    path: { workspaceId },
+    body: {
+      fileId,
+      path: 'restore-old.md',
+      document: firstSave('first text\n'),
+      revisionId: firstRevisionId,
+      mutationId: randomUUID(),
+      deviceId: 'history-test',
+    },
+  });
+  assert.equal(created.error, undefined, JSON.stringify(created.error));
+  const tag = responseOf(created.response).headers.get('etag') ?? '';
+  const renamedRevisionId = randomUUID();
+  const renamed = await updateFile({
+    headers: { ...headers, 'if-match': tag },
+    path: { workspaceId, fileId },
+    body: {
+      mutationId: randomUUID(),
+      deviceId: 'history-test',
+      revisionId: renamedRevisionId,
+      path: 'restore-new.md',
+      document: await saveForHead(
+        workspaceId,
+        firstRevisionId,
+        'second text\n',
+      ),
+    },
+  });
+  assert.equal(renamed.error, undefined, JSON.stringify(renamed.error));
+  // Another note takes the old name.
+  const other = await createFile({
+    headers,
+    path: { workspaceId },
+    body: {
+      fileId: randomUUID(),
+      path: 'restore-old.md',
+      document: firstSave('other note\n'),
+      revisionId: randomUUID(),
+      mutationId: randomUUID(),
+      deviceId: 'history-test',
+    },
+  });
+  assert.equal(other.error, undefined, JSON.stringify(other.error));
+  const restoreBody = (path: string | undefined) => ({
+    mutationId: randomUUID(),
+    deviceId: 'history-test',
+    clientTime: new Date().toISOString(),
+    targetRevisionId: firstRevisionId,
+    expectedHead: renamedRevisionId,
+    revisionId: randomUUID(),
+    ...(path === undefined ? {} : { path }),
+  });
+  // The default keeps the old name, which the other note now holds.
+  const collided = await restoreRevision({
+    headers,
+    path: { workspaceId, fileId },
+    body: restoreBody(undefined),
+  });
+  assert.notEqual(collided.error, undefined);
+  const kept = await restoreRevision({
+    headers,
+    path: { workspaceId, fileId },
+    body: restoreBody('restore-new.md'),
+  });
+  assert.equal(kept.error, undefined, JSON.stringify(kept.error));
+  const current = await getFile({ headers, path: { workspaceId, fileId } });
+  assert.equal(current.data?.head?.text, 'first text\n');
+  assert.equal(current.data?.head?.path, 'restore-new.md');
+  assert.equal(current.data?.head?.restoredFrom, firstRevisionId);
+});
+
 await server.close();
 await auth.close();
 await authPool.end();

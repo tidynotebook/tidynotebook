@@ -11,12 +11,16 @@
  * Every test builds its own `IDBFactory`, so runs never share state.
  */
 import {
+  advanceCoverage,
+  applyDocumentUpdate,
   documentStateVector,
+  openDocumentSession,
   encodeDocumentDelta,
   readDocumentText,
   replaceDocumentText,
   startDocument,
 } from '@notesapp/note-document';
+import { editorBinding } from '@notesapp/note-document/editor-bridge';
 import { markRelease04, storeRelease04Save } from './support/release-0-4.ts';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -409,9 +413,22 @@ await test('an unchanged checkpoint is suppressed and a named one is not', async
   await store.close();
 });
 
-await test('an unchanged working copy of an accepted file writes nothing', async () => {
+await test('an unchanged working copy retains its version receipt without a new version', async () => {
   const backend = createBackend('accepted');
-  const store = await openLocalStore(origin, backend.options());
+  let failing = false;
+  const factory = createFailingFactory(backend.factory, () =>
+    failing
+      ? {
+          store: 'drafts',
+          method: 'put',
+          error: new DOMException('forced abort', 'AbortError'),
+        }
+      : null,
+  );
+  const store = await openLocalStore(
+    origin,
+    backend.options({ indexedDB: factory }),
+  );
   const account = randomUUID();
   const workspace = randomUUID();
   const file = randomUUID();
@@ -442,8 +459,54 @@ await test('an unchanged working copy of an accepted file writes nothing', async
     baseRevisionId: revisionId,
   });
   await store.saveDraft(reopened);
-  assert.equal(await store.checkpoint(reopened, null, 'text'), null);
+  assert.equal(
+    (await store.readFileSaveSnapshot(account, workspace, file))
+      .hasUncheckpointedDraft,
+    true,
+  );
+  failing = true;
+  await assert.rejects(
+    store.checkpoint(reopened, null, 'text'),
+    (failure: unknown) =>
+      isLocalStorageError(failure) && failure.kind === 'aborted',
+  );
+  failing = false;
+  assert.equal(
+    (await store.readFileSaveSnapshot(account, workspace, file))
+      .hasUncheckpointedDraft,
+    true,
+  );
   assert.deepEqual(await store.pending(account, workspace), []);
+  assert.equal(await store.checkpoint(reopened, null, 'text'), null);
+  // The editor asks for a recovery write after a no-op checkpoint. The
+  // proven version must survive that write and another save-state read.
+  await store.saveDraft(reopened);
+  assert.equal(
+    (await store.readFileSaveSnapshot(account, workspace, file))
+      .hasUncheckpointedDraft,
+    false,
+  );
+  assert.deepEqual(await store.pending(account, workspace), []);
+  assert.equal(
+    (await store.listCheckpoints(account, workspace, file)).length,
+    1,
+  );
+  // A newer edit is still uncheckpointed work. The prior receipt cannot
+  // claim that this text reached a version or the accepted head.
+  await store.saveDraft({ ...reopened, sequence: 2, text: 'new work\n' });
+  const newer = await store.readFileSaveSnapshot(account, workspace, file);
+  assert.equal(newer.hasUncheckpointedDraft, true);
+  assert.equal(newer.acceptedHeadRevisionId, revisionId);
+  assert.deepEqual(await store.pending(account, workspace), []);
+  const notifications: string[] = [];
+  const stop = store.subscribe((change) => notifications.push(change.kind));
+  await store.dropDraft(account, workspace, reopened.workingCopyId);
+  assert.deepEqual(
+    notifications,
+    ['draft'],
+    'An unchanged file needs no file notification.',
+  );
+  stop();
   await store.close();
 });
 
@@ -476,6 +539,234 @@ await test('a cached local deletion does not reopen accepted content', async () 
     document: null,
   });
   await store.close();
+});
+
+await test('discarding a draft keeps its queued version and local head', async () => {
+  const backend = createBackend('drop-draft-queued');
+  const store = await openLocalStore(origin, backend.options());
+  const account = randomUUID();
+  const workspace = randomUUID();
+  const file = randomUUID();
+  const draft = draftOf(account, workspace, file, 'copy-a', 'queued text\n');
+  const entry = await store.checkpoint(draft, null, 'text');
+  assert.ok(entry);
+  const revision = entry.input.revisions[0]?.id;
+  const events: string[] = [];
+  const stop = store.subscribe((change) => events.push(change.kind));
+  await store.dropDraft(account, workspace, draft.workingCopyId);
+  assert.equal(
+    await store.readDraft(account, workspace, draft.workingCopyId),
+    null,
+  );
+  const snapshot = await store.readFileSaveSnapshot(account, workspace, file);
+  assert.equal(snapshot.localHeadRevisionId, revision);
+  assert.equal(snapshot.queueState, 'pending');
+  assert.equal((await store.pending(account, workspace)).length, 1);
+  assert.deepEqual(events, ['draft']);
+  events.length = 0;
+  await store.dropDraft(account, workspace, draft.workingCopyId);
+  assert.deepEqual(events, []);
+  stop();
+  await store.close();
+});
+
+await test('stale draft archival and checked removal are one version-bound transaction', async () => {
+  const backend = createBackend('atomic-stale-discard');
+  let failingStore: string | null = null;
+  const factory = createFailingFactory(backend.factory, () =>
+    failingStore === null
+      ? null
+      : {
+          store: failingStore,
+          method: 'put',
+          error: new DOMException('forced recovery abort', 'AbortError'),
+        },
+  );
+  const store = await openLocalStore(
+    origin,
+    backend.options({ indexedDB: factory }),
+  );
+  const account = randomUUID();
+  const workspace = randomUUID();
+  const file = randomUUID();
+  try {
+    const seed = draftOf(account, workspace, file, 'seed', 'Accepted A.\n');
+    const created = await store.checkpoint(seed, null, 'text');
+    assert.ok(created);
+    const base = created.input.revisions[0]?.id;
+    assert.ok(base);
+    await store.acknowledge(account, acceptanceOf(created, account, '1'));
+    await store.dropDraft(account, workspace, seed.workingCopyId);
+    const first = {
+      ...seed,
+      workingCopyId: 'changing-copy',
+      baseRevisionId: base,
+      text: 'First local draft.\n',
+    };
+    await store.saveDraft(first);
+    const accepted = randomUUID();
+    const before = await store.readNoteDocument(account, workspace, file);
+    assert.ok(before);
+    const remoteText = 'Accepted B.\n';
+    const remote = replaceDocumentText(before.bytes, remoteText);
+    assert.ok(remote.ok);
+    await store.applyRemoteChanges(
+      account,
+      workspace,
+      [
+        {
+          file: {
+            fileId: file,
+            revisionId: accepted,
+            path: first.path,
+            fileKind: 'note',
+            deleted: false,
+            digest: await contentDigest(remoteText),
+            text: remoteText,
+            document: {
+              kind: 'document',
+              bytes: remote.value.document,
+              epoch: 1,
+            },
+          },
+          purgedFileId: null,
+        },
+      ],
+      '2',
+    );
+    assert.equal(
+      (await store.readCachedNote(account, workspace, file))?.stale,
+      true,
+    );
+    const old = await store.readDraft(account, workspace, first.workingCopyId);
+    assert.ok(old);
+    const newer = {
+      ...old,
+      text: 'Newer same-copy draft.\n',
+      sequence: old.sequence + 1,
+    };
+    await store.saveDraft(newer);
+    const changes: string[] = [];
+    const stop = store.subscribe((change) => changes.push(change.kind));
+    try {
+      await assert.rejects(
+        store.dropDraft(account, workspace, first.workingCopyId, {
+          expected: old,
+          recoveryId: 'checked-recovery',
+        }),
+        (failure: unknown) =>
+          isLocalStorageError(failure) && failure.kind === 'stale',
+      );
+      assert.equal(
+        (await store.readDraft(account, workspace, first.workingCopyId))?.text,
+        newer.text,
+      );
+      assert.deepEqual(await store.recover(account, workspace), []);
+      assert.deepEqual(changes, []);
+      // A remote draft refresh can change text without advancing local keys.
+      const sameSequence = {
+        ...newer,
+        text: 'Changed text at the same sequence.\n',
+      };
+      await store.saveDraft(sameSequence);
+      changes.length = 0;
+      await assert.rejects(
+        store.dropDraft(account, workspace, first.workingCopyId, {
+          expected: newer,
+          recoveryId: 'checked-recovery',
+        }),
+        (failure: unknown) =>
+          isLocalStorageError(failure) && failure.kind === 'stale',
+      );
+      assert.equal(
+        (await store.readDraft(account, workspace, first.workingCopyId))?.text,
+        sameSequence.text,
+      );
+      assert.deepEqual(await store.recover(account, workspace), []);
+      assert.deepEqual(changes, []);
+      // Neither an archive failure nor a later head-write failure can leave
+      // a partial archive or discard behind.
+      for (const table of ['recovery', 'acceptedFiles']) {
+        failingStore = table;
+        await assert.rejects(
+          store.dropDraft(account, workspace, first.workingCopyId, {
+            expected: sameSequence,
+            recoveryId: 'checked-recovery',
+          }),
+          (failure: unknown) =>
+            isLocalStorageError(failure) && failure.kind === 'aborted',
+        );
+        failingStore = null;
+        assert.equal(
+          (await store.readDraft(account, workspace, first.workingCopyId))
+            ?.text,
+          sameSequence.text,
+        );
+        assert.equal(
+          (await store.readFileSaveSnapshot(account, workspace, file))
+            .localHeadRevisionId,
+          base,
+        );
+        assert.deepEqual(await store.recover(account, workspace), []);
+        assert.deepEqual(changes, []);
+      }
+      await store.dropDraft(account, workspace, first.workingCopyId, {
+        expected: sameSequence,
+        recoveryId: 'checked-recovery',
+      });
+      assert.equal(
+        await store.readDraft(account, workspace, first.workingCopyId),
+        null,
+      );
+      const archived = await store.recover(account, workspace);
+      assert.equal(archived.length, 1);
+      assert.equal(archived[0]?.text, sameSequence.text);
+      assert.equal(archived[0]?.reason, 'stale_draft');
+      assert.equal(
+        (await store.readFileSaveSnapshot(account, workspace, file))
+          .localHeadRevisionId,
+        accepted,
+      );
+      assert.deepEqual(changes, ['draft', 'conflict', 'file']);
+      changes.length = 0;
+      await store.dropDraft(account, workspace, first.workingCopyId, {
+        expected: sameSequence,
+        recoveryId: 'checked-recovery',
+      });
+      assert.deepEqual(await store.recover(account, workspace), archived);
+      assert.deepEqual(changes, []);
+      // An old decision retried after a new writer reused the identity must
+      // not remove the new lifetime's work or replace its existing archive.
+      const after = {
+        ...sameSequence,
+        baseRevisionId: accepted,
+        text: 'Work after discard.\n',
+        sequence: 3,
+      };
+      await store.saveDraft(after);
+      changes.length = 0;
+      await assert.rejects(
+        store.dropDraft(account, workspace, first.workingCopyId, {
+          expected: sameSequence,
+          recoveryId: 'checked-recovery',
+        }),
+        (failure: unknown) =>
+          isLocalStorageError(failure) && failure.kind === 'stale',
+      );
+      assert.equal(
+        (await store.readDraft(account, workspace, first.workingCopyId))?.text,
+        after.text,
+      );
+      assert.deepEqual(await store.recover(account, workspace), archived);
+      assert.deepEqual(changes, []);
+      assert.deepEqual(await store.pending(account, workspace), []);
+    } finally {
+      stop();
+    }
+  } finally {
+    failingStore = null;
+    await store.close();
+  }
 });
 
 await test('two working copies of one file create ordered local saves', async () => {
@@ -1811,6 +2102,434 @@ await test('an appended key is on the disk at once and a checkpoint freezes it',
   await store.close();
 });
 
+await test('a version sends document work that left the text as it was', async () => {
+  // Undo and then redo give the text of the last version again, but with
+  // new characters. A save compared only the text, so it wrote nothing and
+  // the new characters stayed on this device. A restore then removed the
+  // characters that the server held, and the unsent copy stayed beside the
+  // restored text: "fox" and "cat" became "foxcat".
+  const backend = createBackend('same-text-work');
+  const store = await openLocalStore(origin, backend.options());
+  const account = randomUUID();
+  const workspace = randomUUID();
+  const fileId = randomUUID();
+  const original = 'cat dog cat\n';
+  const replaced = 'fox dog fox\n';
+  const head = await cacheHeldNote(store, account, workspace, fileId, original);
+  const source = { kind: 'document', epoch: 1 } as const;
+  const draftAt = (sequence: number, baseRevisionId: string): Draft =>
+    draftOf(account, workspace, fileId, 'copy-1', replaced, {
+      baseRevisionId,
+      sequence,
+    });
+  /** The update that one queued version carries. */
+  const workOf = (entry: QueueEntry): Uint8Array => {
+    const content = entry.input.revisions[0]?.content;
+    assert.ok(content?.kind === 'markdown');
+    assert.ok(content.document.work.kind === 'update');
+    return content.document.work.update;
+  };
+  /** The server accepts a version and the feed brings it back. */
+  const acceptAndFeed = async (
+    entry: QueueEntry,
+    cursor: string,
+    text: string,
+    before: Uint8Array,
+    after: Uint8Array,
+  ): Promise<void> => {
+    const digest = await contentDigest(text);
+    const accepted = acceptanceOf(entry, account, cursor);
+    await store.acknowledge(account, {
+      ...accepted,
+      revisions: accepted.revisions.map((revision) => ({
+        ...revision,
+        digest,
+      })),
+    });
+    await store.applyRemoteChanges(
+      account,
+      workspace,
+      [
+        {
+          file: {
+            fileId,
+            revisionId: entry.input.revisions[0]?.id ?? '',
+            path: 'notes/one.md',
+            fileKind: 'note',
+            document: {
+              kind: 'update',
+              bytes: encodeDocumentDelta(after, documentStateVector(before)),
+              epoch: 1,
+            },
+            deleted: false,
+            digest,
+            text,
+          },
+          purgedFileId: null,
+        },
+      ],
+      cursor,
+    );
+  };
+  // Replace all, and its version, which the server accepts.
+  const replace = typeInto(head, replaced);
+  await store.appendNoteWork(
+    account,
+    workspace,
+    fileId,
+    1,
+    replace.update,
+    'copy-1',
+  );
+  const first = await store.checkpoint(draftAt(1, 'rev-1'), null, source);
+  assert.ok(first !== null);
+  const accepted = applyDocumentUpdate(head, workOf(first));
+  assert.ok(accepted.ok);
+  await acceptAndFeed(first, '2', replaced, head, accepted.value.document);
+  // A save of the same text with no new work still writes nothing.
+  const firstId = first.input.revisions[0]?.id ?? '';
+  assert.equal(await store.checkpoint(draftAt(2, firstId), null, source), null);
+  // Undo and redo: the same text with new characters.
+  const undone = typeInto(replace.document, original);
+  const redone = typeInto(undone.document, replaced);
+  for (const work of [undone.update, redone.update])
+    await store.appendNoteWork(account, workspace, fileId, 1, work, 'copy-1');
+  const second = await store.checkpoint(draftAt(3, firstId), null, source);
+  assert.ok(second !== null, 'the version must carry the unsent work');
+  // The workspace holds the work of both versions, and a restore of the
+  // first text edits that document.
+  const held = applyDocumentUpdate(accepted.value.document, workOf(second));
+  assert.ok(held.ok);
+  assert.equal(held.value.text, replaced);
+  await acceptAndFeed(
+    second,
+    '3',
+    replaced,
+    accepted.value.document,
+    held.value.document,
+  );
+  const restored = replaceDocumentText(held.value.document, original);
+  assert.ok(restored.ok);
+  await feedPage(
+    store,
+    account,
+    workspace,
+    fileId,
+    original,
+    {
+      kind: 'update',
+      bytes: encodeDocumentDelta(
+        restored.value.document,
+        documentStateVector(held.value.document),
+      ),
+    },
+    1,
+    '4',
+  );
+  const read = await store.readNoteDocument(account, workspace, fileId);
+  assert.equal(read === null ? null : readDocumentText(read.bytes), original);
+  await store.close();
+});
+
+/** The live text of one open editor session. */
+type LiveText = ReturnType<typeof editorBinding>['text'];
+
+/**
+ * One open editor and the server document of one note.
+ *
+ * The editor keeps one session, so its later edits continue its clocks as
+ * the editor of the application does. The server applies each accepted save
+ * to its own document, and the feed brings the work that the save added.
+ */
+async function openNoteHarness(
+  store: LocalStore,
+  account: string,
+  workspace: string,
+  fileId: string,
+  text: string,
+): Promise<{
+  readonly edit: (change: (text: LiveText) => void) => Promise<void>;
+  readonly text: () => string;
+  readonly version: (sequence: number) => Promise<QueueEntry | null>;
+  readonly acknowledge: (entry: QueueEntry, cursor: string) => Promise<void>;
+  readonly feed: (entry: QueueEntry, cursor: string) => Promise<void>;
+  readonly server: () => Uint8Array;
+  readonly close: () => void;
+}> {
+  let server = await cacheHeldNote(store, account, workspace, fileId, text);
+  let base = 'rev-1';
+  const session = openDocumentSession(server);
+  const live = editorBinding(session).text;
+  const accepted = new Map<string, Uint8Array>();
+  const workOf = (entry: QueueEntry): Uint8Array => {
+    const content = entry.input.revisions[0]?.content;
+    assert.ok(content?.kind === 'markdown');
+    assert.ok(content.document.work.kind === 'update');
+    return content.document.work.update;
+  };
+  const revisionOf = (entry: QueueEntry): string =>
+    entry.input.revisions[0]?.id ?? '';
+  return {
+    edit: async (change) => {
+      const before = session.stateVector();
+      change(live);
+      await store.appendNoteWork(
+        account,
+        workspace,
+        fileId,
+        1,
+        session.encodeSince(before),
+        'copy-1',
+      );
+    },
+    text: () => session.text(),
+    version: (sequence) =>
+      store.checkpoint(
+        draftOf(account, workspace, fileId, 'copy-1', session.text(), {
+          baseRevisionId: base,
+          sequence,
+        }),
+        null,
+        { kind: 'document', epoch: 1 },
+      ),
+    acknowledge: async (entry, cursor) => {
+      // The server applies the save to its document when it accepts it.
+      if (!accepted.has(revisionOf(entry))) {
+        const before = server;
+        const applied = applyDocumentUpdate(server, workOf(entry));
+        assert.ok(applied.ok);
+        server = applied.value.document;
+        accepted.set(
+          revisionOf(entry),
+          encodeDocumentDelta(server, documentStateVector(before)),
+        );
+      }
+      const digest = await contentDigest(readDocumentText(server));
+      const answer = acceptanceOf(entry, account, cursor);
+      await store.acknowledge(account, {
+        ...answer,
+        revisions: answer.revisions.map((revision) => ({
+          ...revision,
+          digest,
+        })),
+      });
+      base = revisionOf(entry);
+    },
+    feed: async (entry, cursor) => {
+      const added = accepted.get(revisionOf(entry));
+      assert.ok(added !== undefined, 'the server must accept it first');
+      await store.applyRemoteChanges(
+        account,
+        workspace,
+        [
+          {
+            file: {
+              fileId,
+              revisionId: revisionOf(entry),
+              path: 'notes/one.md',
+              fileKind: 'note',
+              document: { kind: 'update', bytes: added, epoch: 1 },
+              deleted: false,
+              digest: await contentDigest(readDocumentText(server)),
+              text: readDocumentText(server),
+            },
+            purgedFileId: null,
+          },
+        ],
+        cursor,
+      );
+    },
+    server: () => server,
+    close: () => session.destroy(),
+  };
+}
+
+/** The document update that one queued version carries. */
+function versionWork(entry: QueueEntry): Uint8Array {
+  const content = entry.input.revisions[0]?.content;
+  assert.ok(content?.kind === 'markdown');
+  assert.ok(content.document.work.kind === 'update');
+  return content.document.work.update;
+}
+
+await test('accepted work that continues earlier work moves what the device knows', async () => {
+  // The feed brings the work of each accepted save. When it continues the
+  // clocks of a writer, its state vector names no clock, so the state that
+  // the device believed the server had never moved, and every later save
+  // carried the accepted work again.
+  const backend = createBackend('applied-coverage');
+  const store = await openLocalStore(origin, backend.options());
+  const account = randomUUID();
+  const workspace = randomUUID();
+  const fileId = randomUUID();
+  const note = await openNoteHarness(
+    store,
+    account,
+    workspace,
+    fileId,
+    'one\n',
+  );
+  await note.edit((text) => text.insert(4, 'two\n'));
+  const first = await note.version(1);
+  assert.ok(first !== null);
+  await note.acknowledge(first, '2');
+  await note.feed(first, '2');
+  const afterFirst = note.server();
+  await note.edit((text) => text.insert(8, 'three\n'));
+  const second = await note.version(2);
+  assert.ok(second !== null);
+  await note.acknowledge(second, '3');
+  await note.feed(second, '3');
+  await note.edit((text) => text.insert(14, 'four\n'));
+  const third = await note.version(3);
+  assert.ok(third !== null);
+  // The third save carries only its own work. Work that continues from the
+  // state after the first save would join that state, so the vector of that
+  // state stays as it is.
+  assert.deepEqual(
+    advanceCoverage(documentStateVector(afterFirst), versionWork(third)),
+    documentStateVector(afterFirst),
+  );
+  const held = applyDocumentUpdate(note.server(), versionWork(third));
+  assert.ok(held.ok);
+  assert.equal(held.value.text, 'one\ntwo\nthree\nfour\n');
+  note.close();
+  await store.close();
+});
+
+await test('an acknowledged save is not unsent before the feed brings it', async () => {
+  // The server answered and the queue entry went, but the feed had not
+  // brought the work yet. A save of the same text then took the accepted
+  // work for unsent work and wrote one more version on every Save.
+  const backend = createBackend('acknowledged-work');
+  const store = await openLocalStore(origin, backend.options());
+  const account = randomUUID();
+  const workspace = randomUUID();
+  const fileId = randomUUID();
+  const note = await openNoteHarness(
+    store,
+    account,
+    workspace,
+    fileId,
+    'cat dog cat\n',
+  );
+  const replace = (from: string, to: string) => (text: LiveText) => {
+    // Each word is replaced from the end, so the earlier positions hold.
+    const current = note.text();
+    for (let at = current.lastIndexOf(from); at >= 0;) {
+      text.delete(at, from.length);
+      text.insert(at, to);
+      at = at === 0 ? -1 : current.lastIndexOf(from, at - 1);
+    }
+  };
+  await note.edit(replace('cat', 'fox'));
+  assert.equal(note.text(), 'fox dog fox\n');
+  const first = await note.version(1);
+  assert.ok(first !== null);
+  await note.acknowledge(first, '2');
+  // No feed yet. Save again, twice, and the answer again.
+  assert.equal(await note.version(2), null);
+  await note.acknowledge(first, '2');
+  assert.equal(await note.version(3), null);
+  // Undo and redo in this gap: the same text with new characters.
+  await note.edit(replace('fox', 'cat'));
+  await note.edit(replace('cat', 'fox'));
+  assert.equal(note.text(), 'fox dog fox\n');
+  const second = await note.version(4);
+  assert.ok(second !== null, 'new work after the answer must be saved');
+  await note.acknowledge(second, '3');
+  assert.equal(await note.version(5), null);
+  // The feed arrives late, and a later Save writes nothing.
+  await note.feed(first, '2');
+  await note.feed(second, '3');
+  assert.equal(await note.version(6), null);
+  // The feed brought all acknowledged work, so the row no longer holds it.
+  await withRawDatabase(backend, async (tables) => {
+    const row = await tables.documents.get([
+      origin,
+      account,
+      workspace,
+      fileId,
+    ]);
+    assert.equal(row?.acknowledgedVector, null);
+  });
+  const read = await store.readNoteDocument(account, workspace, fileId);
+  assert.equal(
+    read === null ? null : readDocumentText(read.bytes),
+    'fox dog fox\n',
+  );
+  // Typing after the feed is saved as usual.
+  await note.edit((text) => text.insert(0, 'new '));
+  assert.ok((await note.version(7)) !== null);
+  note.close();
+  await store.close();
+});
+
+await test('a queued save survives a reload and is not written twice', async () => {
+  const backend = createBackend('queued-reload');
+  const store = await openLocalStore(origin, backend.options());
+  const account = randomUUID();
+  const workspace = randomUUID();
+  const fileId = randomUUID();
+  const note = await openNoteHarness(store, account, workspace, fileId, 'a\n');
+  await note.edit((text) => text.insert(2, 'b\n'));
+  const first = await note.version(1);
+  assert.ok(first !== null);
+  await store.close();
+  // A reload, with the save still waiting for its answer.
+  const reopened = await openLocalStore(origin, backend.options());
+  const pending = await reopened.pending(account, workspace);
+  const [waiting] = pending;
+  assert.equal(pending.length, 1);
+  assert.ok(waiting !== undefined);
+  assert.deepEqual(versionWork(waiting), versionWork(first));
+  const again = await reopened.checkpoint(
+    draftOf(account, workspace, fileId, 'copy-1', 'a\nb\n', {
+      baseRevisionId: 'rev-1',
+      sequence: 2,
+    }),
+    null,
+    { kind: 'document', epoch: 1 },
+  );
+  assert.equal(again, null);
+  assert.equal((await reopened.pending(account, workspace)).length, 1);
+  note.close();
+  await reopened.close();
+});
+
+await test('a document row from before the acknowledged state reads and saves', async () => {
+  const backend = createBackend('document-row-old');
+  const store = await openLocalStore(origin, backend.options());
+  const account = randomUUID();
+  const workspace = randomUUID();
+  const fileId = randomUUID();
+  const note = await openNoteHarness(store, account, workspace, fileId, 'x\n');
+  await note.edit((text) => text.insert(2, 'y\n'));
+  const first = await note.version(1);
+  assert.ok(first !== null);
+  await note.acknowledge(first, '2');
+  await withRawDatabase(backend, async (tables) => {
+    const row = await tables.documents.get([
+      origin,
+      account,
+      workspace,
+      fileId,
+    ]);
+    assert.ok(row !== undefined);
+    assert.ok(row.acknowledgedVector instanceof Uint8Array);
+    const { acknowledgedVector: _dropped, ...older } = row;
+    await tables.documents.put(older);
+  });
+  const read = await store.readNoteDocument(account, workspace, fileId);
+  assert.equal(read === null ? null : readDocumentText(read.bytes), 'x\ny\n');
+  // Without the field the device knows less, so it saves once more and loses
+  // nothing.
+  await note.edit((text) => text.insert(4, 'z\n'));
+  assert.ok((await note.version(2)) !== null);
+  note.close();
+  await store.close();
+});
+
 await test('the pending updates of a note fold into its document past a bound', async () => {
   // Record 0175. Every read decodes the document and applies each pending
   // update, so the store folds them before that work grows.
@@ -2332,7 +3051,20 @@ await test('a draft that matches a newer accepted head is dropped on open', asyn
 
 await test('a draft over an older accepted head opens as stale', async () => {
   const backend = createBackend('draft-stale');
-  const store = await openLocalStore(origin, backend.options());
+  let failing = false;
+  const factory = createFailingFactory(backend.factory, () =>
+    failing
+      ? {
+          store: 'acceptedFiles',
+          method: 'put',
+          error: new DOMException('forced abort', 'AbortError'),
+        }
+      : null,
+  );
+  const store = await openLocalStore(
+    origin,
+    backend.options({ indexedDB: factory }),
+  );
   const account = randomUUID();
   const workspace = randomUUID();
   const file = randomUUID();
@@ -2375,6 +3107,29 @@ await test('a draft over an older accepted head opens as stale', async () => {
   assert.equal(cached?.acceptedRevisionId, remoteRevision);
   assert.equal(cached?.baseRevisionId, firstRevision);
   assert.equal(cached?.workingCopyId, 'copy-a');
+
+  // Discard and the head handoff are one transaction. A failed handoff
+  // must leave the old draft available for another decision.
+  const changes: string[] = [];
+  const stop = store.subscribe((change) => changes.push(change.kind));
+  failing = true;
+  await assert.rejects(
+    store.dropDraft(account, workspace, 'copy-a'),
+    (failure: unknown) =>
+      isLocalStorageError(failure) && failure.kind === 'aborted',
+  );
+  failing = false;
+  assert.deepEqual(changes, [], 'A rolled-back handoff must publish nothing.');
+  stop();
+  assert.equal(
+    (await store.readDraft(account, workspace, 'copy-a'))?.text,
+    'my own text\n',
+  );
+  assert.equal(
+    (await store.readFileSaveSnapshot(account, workspace, file))
+      .localHeadRevisionId,
+    firstRevision,
+  );
 
   // Keeping the text moves only its base, so the next save reaches the
   // server head instead of naming the one it replaced.
@@ -4313,6 +5068,170 @@ await test('a merged save keeps its own checkpoint for Review', async () => {
       revisionId: merging?.input.revisions[0]?.id,
     });
     assert.equal(reviews[0]?.text, 'one\ntwo\n');
+  } finally {
+    await store.close();
+  }
+});
+
+await test('a canonical merged receipt settles only its matching readable draft', async () => {
+  const backend = createBackend('canonical-draft');
+  const store = await openLocalStore(origin, backend.options());
+  const account = randomUUID();
+  const workspace = randomUUID();
+  const file = randomUUID();
+  try {
+    const submitted = draftOf(
+      account,
+      workspace,
+      file,
+      'copy-b',
+      'Submitted B.\n',
+    );
+    const entry = await store.checkpoint(submitted, null, 'text');
+    assert.ok(entry);
+    const revision = entry.input.revisions[0]?.id;
+    assert.ok(revision);
+    const original = await store.readNoteDocument(account, workspace, file);
+    assert.ok(original);
+    const canonicalText = 'Submitted B.\nAccepted A.\n';
+    const canonical = replaceDocumentText(original.bytes, canonicalText);
+    assert.ok(canonical.ok);
+    const digest = await contentDigest(canonicalText);
+    const receipt = mergedAcceptanceOf(entry, account, '1');
+    await store.acknowledge(account, {
+      ...receipt,
+      revisions: receipt.revisions.map((item) => ({
+        ...item,
+        digest,
+        size: new TextEncoder().encode(canonicalText).length,
+        acceptedState: canonical.value.document,
+      })),
+    });
+    await store.applyRemoteChanges(
+      account,
+      workspace,
+      [
+        {
+          file: {
+            fileId: file,
+            revisionId: revision,
+            path: submitted.path,
+            fileKind: 'note',
+            document: {
+              kind: 'document',
+              bytes: canonical.value.document,
+              epoch: 1,
+            },
+            deleted: false,
+            digest,
+            text: canonicalText,
+          },
+          purgedFileId: null,
+        },
+      ],
+      '2',
+    );
+    const draft = {
+      ...submitted,
+      baseRevisionId: revision,
+      text: canonicalText,
+      sequence: 2,
+    };
+    await store.saveDraft(draft);
+    await withRawDatabase(backend, async (tables) => {
+      const row: unknown = await tables.drafts.get([
+        origin,
+        account,
+        workspace,
+        draft.workingCopyId,
+      ]);
+      assert.ok(typeof row === 'object' && row !== null);
+      assert.equal(Reflect.get(row, 'lastCheckpointId'), null);
+    });
+    assert.equal(
+      (await store.readFileSaveSnapshot(account, workspace, file))
+        .hasUncheckpointedDraft,
+      false,
+    );
+    assert.equal(await store.checkpoint(draft, null, 'text'), null);
+    await withRawDatabase(backend, async (tables) => {
+      const row: unknown = await tables.drafts.get([
+        origin,
+        account,
+        workspace,
+        draft.workingCopyId,
+      ]);
+      assert.ok(typeof row === 'object' && row !== null);
+      assert.equal(Reflect.get(row, 'lastCheckpointId'), revision);
+    });
+    assert.equal(
+      (await store.readFileSaveSnapshot(account, workspace, file))
+        .hasUncheckpointedDraft,
+      false,
+    );
+    assert.equal(
+      await store.readRevisionText(account, workspace, revision),
+      submitted.text,
+    );
+    assert.equal(
+      (await store.listReviews(account, workspace, file))[0]?.text,
+      submitted.text,
+    );
+    // A receipt alone cannot prove unreadable content. Keep pending until
+    // the canonical accepted body is available for comparison again.
+    await withRawDatabase(backend, async (tables) => {
+      await tables.contents.delete([origin, account, workspace, digest]);
+    });
+    assert.equal(
+      (await store.readFileSaveSnapshot(account, workspace, file))
+        .hasUncheckpointedDraft,
+      true,
+    );
+    await withRawDatabase(backend, async (tables) => {
+      await tables.contents.put({
+        serverOrigin: origin,
+        accountId: account,
+        workspaceId: workspace,
+        digest,
+        text: canonicalText,
+        bytes: null,
+        size: new TextEncoder().encode(canonicalText).length,
+      });
+    });
+    assert.equal(
+      (await store.readFileSaveSnapshot(account, workspace, file))
+        .hasUncheckpointedDraft,
+      false,
+    );
+    await store.saveDraft({
+      ...draft,
+      text: canonicalText + 'New local text.\n',
+      sequence: 3,
+    });
+    assert.equal(
+      (await store.readFileSaveSnapshot(account, workspace, file))
+        .hasUncheckpointedDraft,
+      true,
+    );
+    await store.saveDraft({ ...draft, path: 'Renamed.md', sequence: 4 });
+    assert.equal(
+      (await store.readFileSaveSnapshot(account, workspace, file))
+        .hasUncheckpointedDraft,
+      true,
+    );
+    await store.dropDraft(account, workspace, draft.workingCopyId);
+    await store.saveDraft({
+      ...draft,
+      workingCopyId: 'unknown-base',
+      baseRevisionId: null,
+      sequence: 5,
+    });
+    assert.equal(
+      (await store.readFileSaveSnapshot(account, workspace, file))
+        .hasUncheckpointedDraft,
+      true,
+    );
+    assert.deepEqual(await store.pending(account, workspace), []);
   } finally {
     await store.close();
   }

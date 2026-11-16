@@ -44,6 +44,7 @@ import { cimd } from '@better-auth/cimd';
 import { fetchClientMetadataResource } from '@better-auth/cimd/node';
 import { createRateLimitKey, getIP } from '@better-auth/core/utils/ip';
 import { APIError, createAuthMiddleware } from 'better-auth/api';
+import { registrationContinuationPlugin } from './registration-continuation.ts';
 import {
   oauthAccessLifetimeSeconds,
   oauthRefreshLifetimeSeconds,
@@ -390,8 +391,9 @@ function buildAuth(
     // BetterCall prints unexpected faults after its default error hook. Throw
     // them to the OAuth boundary instead. APIError responses and redirects stay intact.
     ...(config.mcpOrigin === null ? {} : { onAPIError: { throw: true } }),
-    plugins:
-      config.mcpOrigin === null
+    plugins: [
+      registrationContinuationPlugin(),
+      ...(config.mcpOrigin === null
         ? []
         : [
             adaptOAuthProvider(
@@ -470,7 +472,8 @@ function buildAuth(
                     },
                   }),
                 ]),
-          ],
+          ]),
+    ],
     // This policy is explicit in every environment. It does not use the
     // protocol library default, which changes with NODE_ENV.
     rateLimit: {

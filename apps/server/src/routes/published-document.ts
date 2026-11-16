@@ -1,4 +1,11 @@
 import {
+  staticButtonClasses,
+  staticFieldClasses,
+  staticTextAreaClasses,
+  staticTaskBoxClasses,
+  codeFigureClassName,
+} from '@notesapp/ui/static';
+import {
   renderPublicFooter,
   type PublicFooterOptions,
 } from '@notesapp/ui/public-footer';
@@ -205,30 +212,27 @@ export const pageClasses = `${publicLayout.reading} py-8`;
  * reader meets one short block and not one line at the top of an empty page.
  */
 const gateClasses =
-  'mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center px-gutter py-10 sm:px-gutter-wide';
+  'mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center px-6 py-12 coarse:px-4';
 
 /** The heading of a page that shows no content, the title of a page. */
 const gateHeadingClasses =
-  'mb-2 mt-0 text-xl font-semibold tracking-heading text-strong';
+  'mb-2 mt-0 text-title-page tracking-heading text-strong';
 
 /** The one sentence under the heading of a page that shows no content. */
-const gateHintClasses = 'm-0 text-control text-muted';
+const gateHintClasses = 'm-0 text-secondary text-muted';
 
 /**
  * The classes of the box of a published task: `taskBoxClassName` of
  * `packages/ui/src/control-classes.ts` under the variant of the box of a task
  * item. See {@link publishedButtonClasses}.
  */
-export const publishedTaskBoxClasses =
-  '[&_.task-list-item_input]:size-4 [&_.task-list-item_input]:appearance-none [&_.task-list-item_input]:rounded-sm [&_.task-list-item_input]:border [&_.task-list-item_input]:border-edge [&_.task-list-item_input]:bg-app [&_.task-list-item_input]:align-middle';
+export const publishedTaskBoxClasses = staticTaskBoxClasses;
 
 /**
  * The classes of a code figure of the note: `codeFigureClassName` of
- * `packages/ui/src/code-figure.ts`, written out, as `publishedButtonClasses` is.
- * `tests/integration/published-styles.test.ts` holds this copy to it.
+ * `packages/ui/src/code-figure.ts`, shared with the application.
  */
-export const publishedCodeFigureClasses =
-  '[&_figure.notes-code]:relative [&_figure.notes-code]:mx-0 [&_figure.notes-code]:my-4 [&_figure.notes-code_pre]:my-0 [&_figure.notes-code_pre]:pt-11 md:[&_figure.notes-code_pre]:pt-10 [&_.notes-code-label]:absolute [&_.notes-code-label]:left-4 [&_.notes-code-label]:top-3 [&_.notes-code-label]:z-10 [&_.notes-code-label]:font-mono [&_.notes-code-label]:text-control [&_.notes-code-label]:text-muted';
+export const publishedCodeFigureClasses = codeFigureClassName;
 
 /**
  * The typography of the note body.
@@ -329,7 +333,7 @@ export const noteBodyClasses = [
   // A table is a grid that sizes to its text and scrolls on its own when it
   // cannot fit, as `.cm-np-table` draws it (record 0147). The collapsed edges
   // pass to the rows, and a header cell takes the alignment of its column.
-  '[&_table]:my-4 [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto [&_table]:border-collapse [&_table]:text-note-mono',
+  'content-table-scroll:my-4 content-table-scroll:w-fit content-table-scroll:overflow-x-auto content-table-focus:outline-2 content-table-focus:-outline-offset-2 content-table-focus:outline-focus content-table-scroll:max-w-full content-table-cell:max-w-table-cell content-table-cell:min-w-table-cell-min content-table-cell:wrap-break-word [&_table]:border-collapse [&_table]:text-note-mono',
   '[&_th]:border [&_th]:border-edge-line [&_th]:bg-hover [&_th]:px-3 [&_th]:py-1.5 [&_th]:text-start [&_th]:align-top [&_th]:font-note-heading [&_th]:text-strong',
   '[&_td]:border [&_td]:border-edge-line [&_td]:px-3 [&_td]:py-1.5 [&_td]:align-top',
   '[&_:is(th,td)[align=center]]:text-center [&_:is(th,td)[align=right]]:text-right [&_:is(th,td)[align=left]]:text-left',
@@ -361,44 +365,25 @@ const passwordFormClasses = 'mt-6 flex flex-col gap-4';
 const passwordFieldGroupClasses = 'flex flex-col gap-1.5';
 
 /** The classes of the label above the password field. */
-const labelClasses = 'text-control font-medium text-strong';
+const labelClasses = 'text-label text-strong';
 
 /** The classes of the group of reasons of the report form. */
 const reasonGroupClasses = 'm-0 flex flex-col gap-2 border-0 p-0';
 
 /** The classes of one reason of the report form, a radio and its words. */
-const reasonClasses = 'flex items-center gap-2 text-ui text-ink';
+const reasonClasses = 'flex items-center gap-2 text-body text-strong';
 
 /** The classes of the foot of a page, which holds the report link. */
-export const footClasses = 'mt-12 text-control text-muted';
+export const footClasses = 'mt-12 text-secondary text-muted';
 
-/**
- * The classes of the one button of this page, and of its one field.
- *
- * They are the primary button and the field of
- * `packages/ui/src/control-classes.ts`, written out. This server runs in Node
- * and `@notesapp/ui` is browser code that imports React, so the boundary of
- * `tools/check-boundaries.mjs` refuses the import and the strings have to be
- * written twice. Two copies of one fact drift, so
- * `tests/integration/published-styles.test.ts` reads both and holds this copy
- * to the recipe, class for class.
- *
- * The one difference the test allows is the motion scale. Decision 0054 keeps
- * every transition, duration and easing in `packages/ui/src/motion.ts`, and
- * `tools/check-design-rules.mjs` refuses one anywhere else, including here, so
- * this page states no motion and the test subtracts the named transition
- * before it compares.
- */
-export const publishedButtonClasses =
-  'inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-control font-medium no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed bg-accent-fill text-on-accent hover:bg-accent-fill-hover disabled:bg-hover disabled:hover:bg-hover disabled:text-muted min-h-11 px-3 md:min-h-8';
-
-/** The classes of the password field. See {@link publishedButtonClasses}. */
-export const publishedFieldClasses =
-  'w-full min-h-11 rounded-md border bg-app px-3 text-ui pointer-coarse:text-base text-strong outline-none focus-visible:ring-2 focus-visible:ring-focus/25 md:min-h-8 border-edge-line focus-visible:border-focus';
+/** Static controls read the same React-free recipes as the application. */
+export const publishedButtonClasses = staticButtonClasses;
+export const publishedFieldClasses = staticFieldClasses;
+export const publishedTextAreaClasses = staticTextAreaClasses;
 
 /** The classes of the document frame, which the shell document also writes. */
 export const bodyClasses =
-  'm-0 bg-app font-sans text-ui leading-relaxed text-ink antialiased';
+  'm-0 bg-app font-sans text-body text-strong antialiased';
 
 /** Every class name that this document writes, for the stylesheet test. */
 export const publishedDocumentClasses: readonly string[] = [
@@ -422,7 +407,8 @@ export const publishedDocumentClasses: readonly string[] = [
   footClasses,
   publishedButtonClasses,
   publishedFieldClasses,
-].flatMap((group) => group.split(' '));
+  publishedTextAreaClasses,
+].flatMap((group) => group.split(/\s+/).filter(Boolean));
 
 /**
  * The `<title>` of every state of the page.
@@ -526,7 +512,7 @@ function reportForm(action: string, reasons: readonly ReportReason[]): string {
     choices,
     '</fieldset>',
     `<label class="${labelClasses}" for="report-note">More details (optional)</label>`,
-    `<textarea class="${publishedFieldClasses}" id="report-note" name="note" rows="4" maxlength="2000"></textarea>`,
+    `<textarea class="${publishedTextAreaClasses}" id="report-note" name="note" rows="4" maxlength="2000"></textarea>`,
     `<button class="${publishedButtonClasses}" type="submit">Send report</button>`,
     '</form>',
   ].join('\n');

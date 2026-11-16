@@ -195,7 +195,7 @@ export function syncStateMessage(
  * The longest sentence the footer may say, in characters.
  *
  * The narrowest sidebar leaves about 178 px for the sentence beside the dot,
- * which holds about 24 characters of `text-control`. Every sentence fits in
+ * which holds about 24 characters of `text-body`. Every sentence fits in
  * two lines of it, with a note name of a usual length, and the line wraps
  * and is never cut, so a longer name still reads in full.
  */
@@ -206,14 +206,10 @@ export const syncLineBudget = 48;
  *
  * The sentence wraps and is never cut: the status that matters most is the
  * one a person cannot afford to lose to an ellipsis. The dot sits in a frame
- * of one line of `text-control`, so it stays beside the first line when the
+ * of one line of `text-body`, so it stays beside the first line when the
  * sentence takes two.
  */
-export const syncStatusClassNames = {
-  status: 'flex min-w-0 flex-1 items-start gap-2 py-1',
-  dotFrame: 'flex h-5 shrink-0 items-center',
-  line: 'min-w-0 flex-1 text-muted',
-} as const;
+export { syncStatusClassNames } from '@notesapp/ui';
 
 /**
  * Whether a state only reports how far the queue got.
@@ -349,6 +345,8 @@ export type SyncFooter = {
 /**
  * The sentence and the dot of the sidebar footer.
  *
+ * The open note reports pending work before a checkpoint enters the queue.
+ * That fact prevents a server-saved claim while the queue is still empty.
  * Sync only knows about work that reached local storage. When a write of the
  * open note to local storage fails, the typed text is only in this tab, so a
  * line that reads that everything is saved would be false. That failure then
@@ -360,12 +358,15 @@ export function syncFooter(input: {
   readonly online: boolean;
   readonly noteName: string | null;
   readonly openNoteWriteFailed: boolean;
+  readonly openNotePending?: boolean;
 }): SyncFooter {
   if (input.openNoteWriteFailed)
     return {
       line: 'The open note is not saved.',
       dot: 'attention',
     };
+  if (input.online && input.state.kind === 'in-step' && input.openNotePending)
+    return { line: 'Saving the open note to the server.', dot: 'pending' };
   return {
     line: input.online
       ? syncStateMessage(input.state, input.noteName)

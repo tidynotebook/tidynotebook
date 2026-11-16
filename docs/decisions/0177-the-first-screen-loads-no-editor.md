@@ -44,3 +44,37 @@ This refines record 0136.
   worker still caches them after the load (record 0044).
 - A change that grows the first screen past the margin changes the budget
   line and states why.
+
+## 2026-11-07 finite margin for find and replace
+
+The unchanged base uses all 315,394 bytes of its budget. The approved floating
+find and replace candidate measured 315,422 bytes, an increase of 28 bytes.
+Asset references differ, but this alone does not prove that the eager code
+bodies are unchanged or that hashes alone caused the increase.
+
+Chief authorized 315,648 bytes for this feature. This restores a finite
+254-byte margin at the base, less than the original 256-byte small margin.
+The 650,117-byte ceiling, first-screen script set, gzip level 9, deferred
+library and action checks, and rejection above the limit stay unchanged.
+The settled implementation measures 315,403 bytes across 54 first-screen
+scripts. Its new search code stays in the deferred frame chunk, as production
+source maps show. The policy change has its own commit. Earlier failed
+checks remain failures.
+
+## 2026-11-10 finite margin for reviewed UI fixes
+
+The owner approved increasing the first-screen limit from 315,648 to
+315,904 bytes, adding 256 bytes. The historical growth bound becomes
+8 KiB plus 256 bytes. The reviewed auth build at 885194eb measures
+315,684 gzip bytes across 54 scripts, leaving 220 bytes at the new limit.
+The separate table build at 30cfac44 measures 315,675 bytes. The workspace
+build at 6a4f9133 measures 315,971 bytes and still exceeds the new limit.
+These are separate builds, not a combined result.
+
+The 650,117-byte ceiling, actual first-screen script set, gzip level 9,
+import graph, deferred-library and action checks, and rejection above the
+limit stay unchanged. The source and artifact records do not establish
+that all size changes came from asset names. Keep earlier failures as
+failures. This policy has a separate commit and requires the existing
+policy and web checks. Candidate image and application proof remain
+required. This approval does not authorize a release or deployment.
