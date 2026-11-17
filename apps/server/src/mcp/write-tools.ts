@@ -149,7 +149,11 @@ export function writeTool(
       outputSchema,
       annotations: {
         readOnlyHint: false,
-        destructiveHint: definition.name === 'move_note_to_trash',
+        destructiveHint: [
+          'edit_note',
+          'patch_note',
+          'move_note_to_trash',
+        ].includes(definition.name),
         idempotentHint: true,
         openWorldHint: false,
       },

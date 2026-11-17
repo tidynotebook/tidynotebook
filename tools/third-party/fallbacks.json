@@ -29,6 +29,12 @@
     "repository": "https://github.com/remarkjs/remark-math/tree/main/packages/remark-math",
     "license": "MIT"
   },
+  "@pagefind/darwin-arm64": {
+    "versions": ["1.5.2"],
+    "file": "pagefind.txt",
+    "repository": "https://github.com/Pagefind/pagefind",
+    "license": "MIT"
+  },
   "@pagefind/linux-arm64": {
     "versions": ["1.5.2"],
     "file": "pagefind.txt",
