@@ -197,6 +197,16 @@ await test('the first screen loads no library that only a note needs', async () 
   }
 });
 
+await test('opening a plain note leaves optional fence parsers deferred', async () => {
+  const editor = await firstScreenScripts(distribution, ['note-loader']);
+  const scripts = await builtScripts(distribution);
+  // This node name comes from the Lezer Python grammar.
+  const marker = 'FormatReplacement';
+  assert.ok(scripts.some((script) => script.bytes.includes(marker)));
+  assert.ok(editor.some((script) => script.bytes.includes('cm-scroller')));
+  assert.ok(editor.every((script) => !script.bytes.includes(marker)));
+});
+
 await test('the build writes one self-contained diagram script for a published page', async () => {
   // Record 0158. The content policy of a published page names one script of
   // the build by its address, so the script loads no chunk, and the server

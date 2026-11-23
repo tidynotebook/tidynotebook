@@ -52,7 +52,7 @@ import {
 
 /** Matches the editor engine packages that load with the note surface. */
 const editorEngine =
-  /[\\/]node_modules[\\/](?:@codemirror|@lezer|@marijn|style-mod|w3c-keyname|crelt)[\\/]/;
+  /[\\/]node_modules[\\/](?:@codemirror[\\/](?:autocomplete|commands|lang-markdown|lang-yaml|language|search|state|view)|style-mod|w3c-keyname|crelt)[\\/]/;
 
 /** The built location of the diagram frame, matching the development path. */
 const framePath = 'src/diagram/frame.html';
@@ -456,14 +456,11 @@ export default defineConfig(({ command }) => ({
     rollupOptions: {
       input: { main: 'index.html' },
       output: {
-        // One group holds the whole editor engine. Without it the bundler
-        // spreads CodeMirror over several chunks and puts its own interop
-        // helpers in one of them. Every chunk that needs a helper then names
-        // that chunk, so the login page preloaded the editor and the initial
-        // budget grew by about 140 KB. With the group the helpers stay in a
-        // small chunk of their own and the engine loads with the note
-        // surface, which is the only screen that needs it.
-        advancedChunks: { groups: [{ name: 'editor', test: editorEngine }] },
+        // Keep the editor and its static dependencies in one chunk. This
+        // keeps the shared runtime helpers out of the editor chunk, so
+        // opening All notes does not load the editor. The optional fence
+        // parsers keep their dynamic imports.
+        codeSplitting: { groups: [{ name: 'editor', test: editorEngine }] },
       },
     },
   },

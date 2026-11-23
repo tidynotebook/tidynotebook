@@ -106,6 +106,7 @@ function staticImports(script: BuiltScript): readonly string[] {
  */
 export async function firstScreenScripts(
   dist: string,
+  additionalChunks: readonly string[] = [],
 ): Promise<readonly BuiltScript[]> {
   const every = await builtScripts(dist);
   const byName = new Map(
@@ -113,7 +114,7 @@ export async function firstScreenScripts(
   );
   const start = [
     ...(await firstRouteScripts(dist)),
-    ...firstScreenChunks.map((chunk) => {
+    ...[...firstScreenChunks, ...additionalChunks].map((chunk) => {
       const found = every.find((script) =>
         new RegExp(`^assets/${chunk}-[^/]+\\.js$`).test(script.file),
       );
