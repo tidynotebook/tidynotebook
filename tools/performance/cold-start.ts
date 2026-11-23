@@ -23,6 +23,7 @@ import process from 'node:process';
 import {
   laptop,
   launchChromium,
+  noteCountSelector,
   notesBeforeSeed,
   report,
   seedCorpus,
@@ -56,7 +57,13 @@ if (!Number.isInteger(runs) || runs < 1)
  *
  * It runs before every script of the page, so it sees the whole load.
  */
-function watchStart(expected: string): void {
+function watchStart({
+  selector,
+  expected,
+}: {
+  selector: string;
+  expected: string;
+}): void {
   const probe: StartProbe = { paintAt: null, countAt: null, scripts: [] };
   window.notesappStartProbe = probe;
   new PerformanceObserver((list) => {
@@ -65,9 +72,8 @@ function watchStart(expected: string): void {
         probe.paintAt = entry.startTime;
   }).observe({ type: 'paint', buffered: true });
   const found = (): boolean =>
-    [...document.querySelectorAll('main p, main span, main div')].some(
-      (element) =>
-        element.childElementCount === 0 && element.textContent === expected,
+    [...document.querySelectorAll(selector)].some(
+      (element) => element.textContent === expected,
     );
   const observer = new MutationObserver(() => {
     if (!found()) return;
@@ -197,7 +203,10 @@ try {
       });
       try {
         await context.addCookies(cookies);
-        await context.addInitScript(watchStart, `${String(noteCount)} notes`);
+        await context.addInitScript(watchStart, {
+          selector: noteCountSelector,
+          expected: String(noteCount),
+        });
         const sample = await startOnce(context, address, false);
         cold.push(sample);
         warm.push(await startOnce(context, address, true));
