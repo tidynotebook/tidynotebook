@@ -93,6 +93,7 @@ function missingAttachmentStore(): AttachmentStore {
     readAttachmentRevision: fail,
     readPublishedAttachmentRevision: fail,
     archivePlan: fail,
+    readArchiveNotes: fail,
     workspaceRoom: fail,
     reclaimAttachments: fail,
     stageAttachmentBytes: fail,
