@@ -387,6 +387,29 @@ export function createSnapshotSlice(ctx: LocalStoreContext): SnapshotSlice {
             const byFile = new Map<string, SnapshotItemRow>();
             for (const item of byRevision.values())
               byFile.set(item.fileId, item);
+            const range = partitionRange(serverOrigin, accountId, workspaceId);
+            // Reuse the pre-snapshot file list when checking for purges. The
+            // draft index lets files without drafts skip the head reads.
+            const knownFiles = new Map(
+              (
+                await tables.acceptedFiles
+                  .where('[serverOrigin+accountId+workspaceId+fileId]')
+                  .between(range.lower, range.upper, true, true)
+                  .toArray()
+              ).map((row) => {
+                const file = validateAcceptedFile(row);
+                return [file.fileId, file] as const;
+              }),
+            );
+            const draftKeys = await tables.drafts
+              .where('[serverOrigin+accountId+workspaceId+fileId]')
+              .between(range.lower, range.upper, true, true)
+              .uniqueKeys();
+            const filesWithDrafts = new Set<string>();
+            for (const key of draftKeys) {
+              if (Array.isArray(key) && typeof key[3] === 'string')
+                filesWithDrafts.add(key[3]);
+            }
             for (const item of byFile.values()) {
               // A snapshot is the whole state of the workspace at its cursor,
               // so it carries the whole document of every note. The device
@@ -406,43 +429,38 @@ export function createSnapshotSlice(ctx: LocalStoreContext): SnapshotSlice {
                 );
                 await writeDocumentRow(tables, applied.row);
               }
-              const known: unknown = await tables.acceptedFiles.get([
-                serverOrigin,
-                accountId,
-                workspaceId,
-                item.fileId,
-              ]);
-              const file =
-                known === undefined ? null : validateAcceptedFile(known);
-              // Same dirty test as the change feed: a local head ahead of
-              // the accepted head, or a draft that neither head contains.
+              const file = knownFiles.get(item.fileId) ?? null;
+              const hasDrafts = filesWithDrafts.has(item.fileId);
               const heads: HeadState[] = [];
-              const knownHead = await acceptedHeadState(
-                accountId,
-                workspaceId,
-                file,
-              );
-              if (knownHead !== null) heads.push(knownHead);
-              heads.push({
-                path: item.path,
-                deleted: item.deleted,
-                text: await bodyOfDigest(
-                  ctx,
+              if (hasDrafts) {
+                const knownHead = await acceptedHeadState(
                   accountId,
                   workspaceId,
-                  item.digest,
-                ),
-              });
+                  file,
+                );
+                if (knownHead !== null) heads.push(knownHead);
+                heads.push({
+                  path: item.path,
+                  deleted: item.deleted,
+                  text: await bodyOfDigest(
+                    ctx,
+                    accountId,
+                    workspaceId,
+                    item.digest,
+                  ),
+                });
+              }
               const dirty =
                 file !== null &&
                 ((file.localHeadRevisionId !== null &&
                   file.localHeadRevisionId !== file.acceptedHeadRevisionId) ||
-                  (await hasDivergentDraft(
-                    accountId,
-                    workspaceId,
-                    item.fileId,
-                    heads,
-                  )));
+                  (hasDrafts &&
+                    (await hasDivergentDraft(
+                      accountId,
+                      workspaceId,
+                      item.fileId,
+                      heads,
+                    ))));
               if (!dirty) {
                 await tables.acceptedFiles.put({
                   serverOrigin,
@@ -460,12 +478,13 @@ export function createSnapshotSlice(ctx: LocalStoreContext): SnapshotSlice {
                   // not when this device received it.
                   updatedAt: item.serverTime ?? nowIso(),
                 });
-                await dropSettledDrafts(
-                  accountId,
-                  workspaceId,
-                  item.fileId,
-                  heads,
-                );
+                if (hasDrafts)
+                  await dropSettledDrafts(
+                    accountId,
+                    workspaceId,
+                    item.fileId,
+                    heads,
+                  );
               } else if (file !== null) {
                 // The accepted head follows the snapshot, but the path, the
                 // deletion state, and the local head keep whatever local
@@ -486,7 +505,6 @@ export function createSnapshotSlice(ctx: LocalStoreContext): SnapshotSlice {
             // removed on the server, so it is forgotten. A file with queued
             // local work is kept: it is either an unsent new note that the
             // server has not seen yet, or a change on its way up.
-            const range = partitionRange(serverOrigin, accountId, workspaceId);
             const queuedFiles = new Set<string>();
             for (const row of await tables.queue
               .where('[serverOrigin+accountId+workspaceId+sequence]')
@@ -503,11 +521,7 @@ export function createSnapshotSlice(ctx: LocalStoreContext): SnapshotSlice {
               for (const revision of validateLegacySave(row).revisions)
                 queuedFiles.add(revision.fileId);
             const forgotten: string[] = [];
-            for (const row of await tables.acceptedFiles
-              .where('[serverOrigin+accountId+workspaceId+fileId]')
-              .between(range.lower, range.upper, true, true)
-              .toArray()) {
-              const file = validateAcceptedFile(row);
+            for (const file of knownFiles.values()) {
               if (byFile.has(file.fileId) || queuedFiles.has(file.fileId))
                 continue;
               await forgetFile(accountId, workspaceId, file.fileId);
