@@ -364,6 +364,14 @@ await test('the archive holds every live note and the images they use', async ()
   await newNote('folder/illustrated.md', illustrated);
   const plain = '# Plain note\n\nNothing special.\n';
   await newNote('plain.md', plain);
+  // The archive must keep order and bytes across more than one read batch.
+  const batchNotes = new Map<string, string>();
+  for (let index = 0; index < 17; index += 1) {
+    const path = `batch/note-${String(index).padStart(2, '0')}.md`;
+    const text = `# Note ${String(index)}\n`;
+    await newNote(path, text);
+    batchNotes.set(path, text);
+  }
 
   // One note that is deleted must not be in the archive.
   const doomed = await newNote('folder/doomed.md', '# Doomed\n');
@@ -403,6 +411,12 @@ await test('the archive holds every live note and the images they use', async ()
     illustrated,
   );
   assert.equal(entries.get('plain.md')?.toString('utf8'), plain);
+  assert.deepEqual(
+    paths.filter((path) => path.startsWith('batch/')),
+    [...batchNotes.keys()],
+  );
+  for (const [path, text] of batchNotes)
+    assert.equal(entries.get(path)?.toString('utf8'), text);
   // A deleted note holds no place in the file tree, so it is not exported.
   assert.equal(paths.includes('folder/doomed.md'), false);
   assert.equal(paths.includes('plans/gone.md'), false);

@@ -398,6 +398,21 @@ export async function seedCorpus(
   });
 }
 
+/** The count next to the title of the current page. */
+export const noteCountSelector = '.ui-page-header .text-value';
+
+/** Waits until All notes shows the expected count. */
+export function waitForListedNoteCount(
+  page: Page,
+  count: number,
+  timeout: number,
+): Promise<void> {
+  return page
+    .locator(`${noteCountSelector}:text-is("${String(count)}")`)
+    .first()
+    .waitFor({ timeout });
+}
+
 /**
  * Waits until the open device lists every note and its first sync ended.
  *
@@ -414,10 +429,7 @@ export async function awaitNoteCount(
   await device.page.goto(
     new URL(`/w/${device.workspaceId}`, device.page.url()).href,
   );
-  await device.page
-    .getByText(`${String(count)} notes`, { exact: true })
-    .first()
-    .waitFor({ timeout: 120_000 });
+  await waitForListedNoteCount(device.page, count, 120_000);
   await awaitQuiet(device);
   return Math.round(performance.now() - started);
 }

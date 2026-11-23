@@ -41,6 +41,7 @@ import {
   signInApi,
   startApplication,
   type Device,
+  waitForListedNoteCount,
 } from './browser.ts';
 import { distribution, outliers } from './samples.ts';
 
@@ -275,10 +276,7 @@ async function moveTrial(
   await openNote(device, noteFileId);
   const started = await device.page.evaluate(wallNow, undefined);
   await device.page.getByRole('link', { name: 'All notes' }).first().click();
-  await device.page
-    .getByText(`${String(noteCount)} notes`, { exact: true })
-    .first()
-    .waitFor({ timeout: trialTimeoutMs });
+  await waitForListedNoteCount(device.page, noteCount, trialTimeoutMs);
   const ended = await device.page.evaluate(wallNow, undefined);
   return ended - started;
 }

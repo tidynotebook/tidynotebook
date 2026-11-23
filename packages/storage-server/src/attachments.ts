@@ -61,6 +61,13 @@ export type AttachmentStore = {
     limit: number,
   ): Promise<readonly ArchivePlanRow[]>;
 
+  /** Reads the Markdown of a batch of immutable revisions from an export plan. */
+  readArchiveNotes(
+    actor: Actor,
+    workspaceId: string,
+    revisionIds: readonly string[],
+  ): Promise<ReadonlyMap<string, string>>;
+
   /**
    * The bytes of new content that the owner of the workspace can still take,
    * after the headroom that a write of new content must leave.
@@ -550,6 +557,22 @@ export function openAttachmentStore(
           size: Number(row.size),
           updatedAt: row.updated_at,
         }));
+      });
+    },
+
+    async readArchiveNotes(actor, workspaceId, revisionIds) {
+      if (revisionIds.length === 0) return new Map();
+      return withClient(actor, workspaceId, async (client) => {
+        const result = await client.query<{ id: string; markdown: string }>(
+          `SELECT r.id, c.markdown
+           FROM revisions r
+           JOIN contents c
+             ON c.workspace_id = r.workspace_id AND c.digest = r.content_digest
+           WHERE r.workspace_id = $1 AND r.id = ANY($2::uuid[])
+             AND NOT r.deleted AND c.kind = 'markdown'`,
+          [workspaceId, revisionIds],
+        );
+        return new Map(result.rows.map((row) => [row.id, row.markdown]));
       });
     },
 

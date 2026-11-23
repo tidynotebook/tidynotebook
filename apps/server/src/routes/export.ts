@@ -29,7 +29,6 @@ import {
   maxArchiveBytes,
   maxArchiveEntries,
   readFile,
-  readRevision,
 } from '@notesapp/core';
 import type { ArchivePlanRow, AttachmentStore } from '@notesapp/storage-server';
 import { requireActor } from '../auth/actor.ts';
@@ -64,6 +63,9 @@ const archiveName = 'notes.zip';
 
 /** How many files one page of the export plan reads. */
 const planPageSize = 1000;
+
+/** How many planned entries can supply Markdown in one database read. */
+const exportReadBatchSize = 16;
 
 /**
  * The header of one export download.
@@ -211,26 +213,38 @@ export function createExportHandlers(
     workspaceId: string,
     plan: readonly ArchivePlanRow[],
   ): AsyncGenerator<ZipEntry> {
-    for (const row of plan) {
-      let bytes: Buffer;
-      if (row.kind === 'attachment') {
-        const found = await attachments.readAttachmentRevision(
-          actor,
-          workspaceId,
-          row.headRevisionId,
-        );
-        if (found === null)
-          throw new Error('notesapp: a planned image of the export is gone.');
-        bytes = await readAll(found.stream);
-      } else {
-        const head = unwrapDomain(
-          await readRevision(store, actor, workspaceId, row.headRevisionId),
-        );
-        bytes = Buffer.from(head.text ?? '', 'utf8');
+    for (let offset = 0; offset < plan.length; offset += exportReadBatchSize) {
+      const batch = plan.slice(offset, offset + exportReadBatchSize);
+      const notes = await attachments.readArchiveNotes(
+        actor,
+        workspaceId,
+        batch
+          .filter((row) => row.kind === 'note')
+          .map((row) => row.headRevisionId),
+      );
+      for (const row of batch) {
+        let bytes: Buffer;
+        if (row.kind === 'attachment') {
+          const found = await attachments.readAttachmentRevision(
+            actor,
+            workspaceId,
+            row.headRevisionId,
+          );
+          if (found === null)
+            throw new Error('notesapp: a planned image of the export is gone.');
+          bytes = await readAll(found.stream);
+        } else {
+          const text = notes.get(row.headRevisionId);
+          if (text === undefined)
+            throw new Error('notesapp: a planned note of the export is gone.');
+          bytes = Buffer.from(text, 'utf8');
+        }
+        if (bytes.length !== row.size)
+          throw new Error(
+            'notesapp: a planned file of the export changed size.',
+          );
+        yield { path: row.path, bytes, modified: row.updatedAt };
       }
-      if (bytes.length !== row.size)
-        throw new Error('notesapp: a planned file of the export changed size.');
-      yield { path: row.path, bytes, modified: row.updatedAt };
     }
   }
 
