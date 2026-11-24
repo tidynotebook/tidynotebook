@@ -10,23 +10,10 @@
  * dispatches, never focuses, and never touches the DOM. The caller moves the
  * cursor with the offsets it returns.
  */
-import { syntaxTree } from '@codemirror/language';
-import { EditorState, type Text } from '@codemirror/state';
+import type { EditorState, Text } from '@codemirror/state';
 import { markdownGrammarOn } from './grammar-gate.ts';
-import { noteMarkdown, parsedWhole } from './language.ts';
-import { contentText, headingLevel } from './live-preview.ts';
-
-/** One heading row of the outline. */
-export type OutlineHeading = {
-  /** One to six. */
-  readonly level: number;
-  /** The heading text with its markers removed. */
-  readonly text: string;
-  /** The start of the heading in the document. */
-  readonly from: number;
-  /** The end of the heading in the document. */
-  readonly to: number;
-};
+import { outlineOfSource, type OutlineHeading } from './outline-source.ts';
+export type { OutlineHeading } from './outline-source.ts';
 
 // Immutable documents are shared by selection, scroll, and parser updates.
 // Weak keys let old documents and their rows go when undo no longer holds them.
@@ -42,26 +29,7 @@ export function outlineOf(state: EditorState): readonly OutlineHeading[] {
   if (!markdownGrammarOn(state)) return [];
   const known = outlines.get(state.doc);
   if (known !== undefined) return known;
-  // The live tree can stop at the initial viewport. Background parsing does
-  // not change the document, so the panel cannot wait for it to add rows.
-  // Read the complete structure without loading fence highlight languages.
-  const complete = parsedWhole(
-    EditorState.create({
-      doc: state.doc,
-      extensions: [noteMarkdown({ headless: true })],
-    }),
-  );
-  const found: OutlineHeading[] = [];
-  syntaxTree(complete).iterate({
-    enter: (node) => {
-      const level = headingLevel(node.name);
-      if (level === 0) return true;
-      const text = contentText(complete, node.from, node.to);
-      if (text !== '')
-        found.push({ level, text, from: node.from, to: node.to });
-      return false;
-    },
-  });
-  outlines.set(state.doc, found);
-  return found;
+  const headings = outlineOfSource(state.doc);
+  outlines.set(state.doc, headings);
+  return headings;
 }

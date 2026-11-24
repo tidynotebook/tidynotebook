@@ -18,26 +18,18 @@
  * language. The languages load on demand, so the initial bundle carries none
  * of them.
  */
-import { markdown } from '@codemirror/lang-markdown';
-import { yamlFrontmatter } from '@codemirror/lang-yaml';
 import {
-  ensureSyntaxTree,
   HighlightStyle,
-  Language,
   LanguageDescription,
   LanguageSupport,
   syntaxHighlighting,
-  syntaxTree,
-  syntaxTreeAvailable,
 } from '@codemirror/language';
-import type { EditorState, Extension } from '@codemirror/state';
-import { GFM } from '@lezer/markdown';
+import type { Extension } from '@codemirror/state';
 import {
-  Parser,
-  TreeFragment,
-  type Input,
-  type PartialParse,
-} from '@lezer/common';
+  headlessNoteMarkdown,
+  markdownWithFences,
+} from './headless-markdown.ts';
+export { parsedWhole, type ParsedWholeOptions } from './headless-markdown.ts';
 import {
   codeLanguageOf,
   codeLanguages as fenceLanguages,
@@ -46,8 +38,6 @@ import {
   type CodeLanguage,
   type CodeToken,
 } from '@notesapp/markdown';
-import { footnoteMarkdownExtension } from './footnote-syntax.ts';
-import { mathMarkdownExtension } from './math-syntax.ts';
 
 /**
  * The CodeMirror language of one entry of the shared list.
@@ -159,45 +149,6 @@ export type NoteMarkdownOptions = {
   readonly headless?: boolean;
 };
 
-/** Keeps cached blocks within the end of a partial Markdown parse. */
-class PartialMarkdownParser extends Parser {
-  private readonly base: Parser;
-
-  constructor(base: Parser) {
-    super();
-    this.base = base;
-  }
-
-  createParse(
-    input: Input,
-    fragments: readonly TreeFragment[],
-    ranges: readonly { from: number; to: number }[],
-  ): PartialParse {
-    const end = ranges[0]?.to;
-    // Lezer Markdown 1.7.2 leaves a zero-length placeholder when a reused
-    // block crosses a single partial-parse end. Cap reuse before that end.
-    if (ranges.length === 1 && end !== undefined && end < input.length) {
-      fragments = fragments.flatMap((fragment) =>
-        fragment.from >= end
-          ? []
-          : fragment.to <= end
-            ? [fragment]
-            : [
-                new TreeFragment(
-                  fragment.from,
-                  end,
-                  fragment.tree,
-                  fragment.offset,
-                  fragment.openStart,
-                  true,
-                ),
-              ],
-      );
-    }
-    return this.base.createParse(input, fragments, ranges);
-  }
-}
-
 /**
  * The Markdown language support of the note editor.
  *
@@ -208,21 +159,9 @@ class PartialMarkdownParser extends Parser {
 export function noteMarkdown(
   options: NoteMarkdownOptions = {},
 ): LanguageSupport {
-  const content = markdown({
-    extensions: [GFM, mathMarkdownExtension, footnoteMarkdownExtension],
-    codeLanguages: options.headless === true ? () => null : fenceLanguageOf,
-  });
-  return yamlFrontmatter({
-    content: new LanguageSupport(
-      new Language(
-        content.language.data,
-        new PartialMarkdownParser(content.language.parser),
-        [],
-        content.language.name,
-      ),
-      content.support,
-    ),
-  });
+  return options.headless === true
+    ? headlessNoteMarkdown()
+    : markdownWithFences(fenceLanguageOf);
 }
 
 /** The language plus the colors its fenced code needs. */
@@ -230,74 +169,4 @@ export function noteMarkdownExtensions(
   options: NoteMarkdownOptions = {},
 ): Extension {
   return [noteMarkdown(options), syntaxHighlighting(codeHighlightStyle)];
-}
-
-/** How many pumps of the parser {@link parsedWhole} allows before it refuses. */
-const wholeDocumentAttemptBound = 500;
-
-/** How much parsing work one pump of {@link parsedWhole} buys, in milliseconds. */
-const wholeDocumentSliceBudget = 5000;
-
-/** Tuning knobs of {@link parsedWhole}, for a test that proves its refusal. */
-export type ParsedWholeOptions = {
-  /**
-   * Overrides the attempt bound.
-   *
-   * A test sets this to 0 to force the refusal without waiting on a slow
-   * machine: a fresh state only ever parses its initial viewport of about
-   * 3000 characters, so a document past that length is provably partial
-   * before the first pump.
-   */
-  readonly attempts?: number;
-};
-
-/** A complete parse whose tree has reached the state field. */
-function wholeTreeReady(state: EditorState): boolean {
-  return (
-    syntaxTreeAvailable(state, state.doc.length) &&
-    ensureSyntaxTree(state, state.doc.length, 0) === syntaxTree(state)
-  );
-}
-
-/**
- * Pumps the parser of a state until its whole parse is complete.
- *
- * The outer tree of a mixed parse can cover the document while its nested
- * trees are still incomplete. CodeMirror's completion check, rather than
- * the outer length, states when the body and its fence languages are ready.
- *
- * A view parses at least its viewport before it renders, so the live
- * preview always reads a tree that is ready for what is on screen. A
- * headless state, the kind a test or an offline reader builds, parses in
- * slices instead and keeps the unfinished work in its parse context. This
- * helper drives that background work into the state field one slice at a
- * time, the same way `@codemirror/language` drives it during idle time in a
- * real view.
- *
- * The bound exists so a stuck parse fails loudly instead of spinning
- * forever. When the tree still does not cover the document after the bound
- * is spent, this throws instead of handing back a state whose tree is
- * partial: a caller that compares a partial tree against the whole document
- * would read the gap as a Markdown defect instead of a parser refusal.
- */
-export function parsedWhole(
-  state: EditorState,
-  options: ParsedWholeOptions = {},
-): EditorState {
-  const attemptBound = options.attempts ?? wholeDocumentAttemptBound;
-  let current = state;
-  for (
-    let attempt = 0;
-    attempt < attemptBound && !wholeTreeReady(current);
-    attempt += 1
-  ) {
-    ensureSyntaxTree(current, current.doc.length, wholeDocumentSliceBudget);
-    current = current.update({}).state;
-  }
-  const reached = syntaxTree(current).length;
-  if (!wholeTreeReady(current))
-    throw new Error(
-      `the parser stopped at ${String(reached)} of ${String(current.doc.length)} characters`,
-    );
-  return current;
 }

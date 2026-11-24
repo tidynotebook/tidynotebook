@@ -64,6 +64,7 @@ import {
 
 import { useSpellCheck, useTheme } from '../../app.tsx';
 import { ActiveNoteScope, useActiveNoteControl } from './active-note.tsx';
+import { LongNoteMetricsScope } from './long-note-metrics.tsx';
 import { downloadNote, transferFailureMessage } from '../export/export.ts';
 import { useFiles, type FilesValue } from '../../shell/files.tsx';
 import { useAttachmentUrls } from './note-editor-attachments.ts';
@@ -230,17 +231,23 @@ export function NoteEditor(props: NoteEditorProps): ReactNode {
   );
   return (
     <ActiveNoteScope>
-      <NoteEditorBody
-        {...props}
-        onOpenLink={stable.onOpenLink}
-        onQueued={stable.onQueued}
-        onMoveToFolder={
-          props.onMoveToFolder === undefined ? undefined : stable.onMoveToFolder
-        }
-        onPublish={props.onPublish === undefined ? undefined : stable.onPublish}
-        onHeadReplaced={stable.onHeadReplaced}
-        filesRef={filesRef}
-      />
+      <LongNoteMetricsScope initialText={props.initialText}>
+        <NoteEditorBody
+          {...props}
+          onOpenLink={stable.onOpenLink}
+          onQueued={stable.onQueued}
+          onMoveToFolder={
+            props.onMoveToFolder === undefined
+              ? undefined
+              : stable.onMoveToFolder
+          }
+          onPublish={
+            props.onPublish === undefined ? undefined : stable.onPublish
+          }
+          onHeadReplaced={stable.onHeadReplaced}
+          filesRef={filesRef}
+        />
+      </LongNoteMetricsScope>
     </ActiveNoteScope>
   );
 }
