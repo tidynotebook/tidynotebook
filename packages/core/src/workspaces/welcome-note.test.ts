@@ -112,6 +112,7 @@ function fakeStore(code: DomainErrorCode | null, state: Partial<State> = {}) {
     saveDailyNoteSettings: unused,
     templateSettings: unused,
     saveTemplateSettings: unused,
+    snapshotRevisions: () => Promise.resolve(null),
     revision: unused,
     search: unused,
     backlinks: unused,

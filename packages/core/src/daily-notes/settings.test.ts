@@ -82,6 +82,7 @@ function fakeStore(files: readonly FileRecord[]): WorkspaceStore & {
     listFiles: unused,
     listDeletedFiles: unused,
     takenPaths: unused,
+    snapshotRevisions: () => Promise.resolve(null),
     revision: unused,
     search: unused,
     backlinks: unused,

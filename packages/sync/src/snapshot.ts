@@ -16,6 +16,8 @@
  * in cursor order. An expired cursor, an expired token, or a revision that
  * vanished mid-download restarts from a fresh snapshot and keeps local work.
  */
+import { snapshotRevisionBatchSize } from '@notesapp/core';
+import { routeNotFoundCode } from './protocol.ts';
 import { bytesOfBase64 } from './bytes.ts';
 import {
   LocalStorageError,
@@ -102,6 +104,12 @@ export type SnapshotNetwork = {
     revisionId: string,
     signal: AbortSignal,
   ): Promise<ServiceOutcome<RevisionData>>;
+  revisionBatch?:
+    | ((
+        revisionIds: readonly string[],
+        signal: AbortSignal,
+      ) => Promise<ServiceOutcome<readonly RevisionData[]>>)
+    | undefined;
   changes(
     cursor: string,
     signal: AbortSignal,
@@ -288,32 +296,51 @@ async function fullSnapshot(
     started.value.cursor,
     ctx.owner ?? '',
   );
-  // The revisions are immutable and independent, so a few are read at a
-  // time. One at a time, a workspace of a thousand notes took most of the
-  // time of a first sync, and a save of the device waited for all of it. A
-  // save that waits stops the reads at the next revision (record 0176). The
-  // first stop of a reader stops the others at their next revision.
+  // Reserve a group per reader. If the byte bound returns only part of
+  // it, the same reader keeps the rest in order. A save can go first after
+  // any response. A later pass reuses the staged bodies.
   let next = 0;
   let stop: FreshSnapshot | null = null;
   let failure: unknown = null;
+  let batch = net.revisionBatch;
   const reader = async (): Promise<void> => {
-    while (stop === null && failure === null && next < missing.length) {
+    let remaining: readonly string[] = [];
+    while (stop === null && failure === null) {
+      if (remaining.length === 0) {
+        remaining = missing.slice(
+          next,
+          next + (batch ? snapshotRevisionBatchSize : 1),
+        );
+        next += remaining.length;
+      }
+      const revisionId = remaining[0];
+      if (revisionId === undefined) return;
       if (await saveWaits()) {
         stop ??= { status: 'yield' };
         return;
       }
-      const revisionId = missing[next];
-      next += 1;
-      if (revisionId === undefined) return;
       try {
-        const fetched = await sendWithRetry(ctx, (signal) =>
-          net.revision(revisionId, signal),
-        );
+        const readBatch = batch;
+        const fetched = await sendWithRetry(ctx, async (signal) => {
+          if (readBatch !== undefined) return readBatch(remaining, signal);
+          const single = await net.revision(revisionId, signal);
+          return single.ok ? { ok: true, value: [single.value] } : single;
+        });
         if (fetched === null) {
           stop ??= { status: 'deferred' };
           return;
         }
         if (!fetched.ok) {
+          // A request can reach an older replica during a rolling update.
+          // The old server's route refusal is distinct from a missing revision.
+          if (
+            readBatch !== undefined &&
+            fetched.problem.status === 404 &&
+            fetched.problem.code === routeNotFoundCode
+          ) {
+            batch = undefined;
+            continue;
+          }
           if (fetched.problem.status === 401) {
             stop ??= { status: 'paused' };
             return;
@@ -329,23 +356,34 @@ async function fullSnapshot(
             fetched.problem.status,
           );
         }
-        const revision = fetched.value;
-        await local.storeSnapshotRevision(accountId, workspaceId, {
-          token,
-          revisionId: revision.revisionId,
-          fileId: revision.fileId,
-          path: revision.path,
-          kind: revision.fileKind,
-          deleted: revision.deleted,
-          digest: revision.digest,
-          text: revision.text,
-          document:
-            revision.document === null
-              ? null
-              : bytesOfBase64(revision.document),
-          epoch: revision.epoch,
-          serverTime: revision.serverTime,
-        });
+        if (
+          fetched.value.length === 0 ||
+          fetched.value.some(
+            (revision, index) => revision.revisionId !== remaining[index],
+          )
+        )
+          throw new SyncFailedError('snapshot_failed', 0);
+        await local.storeSnapshotRevisions(
+          accountId,
+          workspaceId,
+          fetched.value.map((revision) => ({
+            token,
+            revisionId: revision.revisionId,
+            fileId: revision.fileId,
+            path: revision.path,
+            kind: revision.fileKind,
+            deleted: revision.deleted,
+            digest: revision.digest,
+            text: revision.text,
+            document:
+              revision.document === null
+                ? null
+                : bytesOfBase64(revision.document),
+            epoch: revision.epoch,
+            serverTime: revision.serverTime,
+          })),
+        );
+        remaining = remaining.slice(fetched.value.length);
       } catch (error: unknown) {
         failure ??= error;
         return;

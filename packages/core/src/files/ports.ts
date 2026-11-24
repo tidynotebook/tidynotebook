@@ -261,6 +261,21 @@ export type RevisionRecord = {
   readonly merged: boolean;
 };
 
+/** The revision fields that a snapshot needs to open a note. */
+export type SnapshotRevisionRecord = Pick<
+  RevisionRecord,
+  | 'revisionId'
+  | 'fileId'
+  | 'path'
+  | 'kind'
+  | 'deleted'
+  | 'digest'
+  | 'text'
+  | 'document'
+  | 'epoch'
+  | 'serverTime'
+>;
+
 /** Reads and the one write of an open workspace transaction. */
 export type WorkspaceTransaction = {
   /** The account's current role in this workspace, or `null` for a stranger. */
@@ -362,6 +377,11 @@ export type WorkspaceTransaction = {
   saveTemplateSettings(settings: TemplateSettings): Promise<void>;
   /** One revision of this workspace, or `null` when it holds no such one. */
   revision(revisionId: string): Promise<RevisionRecord | null>;
+
+  /** Reads a bounded, nonempty prefix in request order, or null after a purge. */
+  snapshotRevisions(
+    revisionIds: readonly string[],
+  ): Promise<readonly SnapshotRevisionRecord[] | null>;
   /** Searches the accepted live note index of this workspace. */
   search(query: string, limit: number): Promise<readonly SearchHit[]>;
   /** Lists accepted live notes that link to one resolved target path. */

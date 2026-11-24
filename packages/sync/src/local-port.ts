@@ -1360,6 +1360,13 @@ export type LocalStore = {
     revision: SnapshotRevision,
   ): Promise<void>;
 
+  /** Stores a batch of downloaded revisions in one transaction. */
+  storeSnapshotRevisions(
+    accountId: string,
+    workspaceId: string,
+    revisions: readonly SnapshotRevision[],
+  ): Promise<void>;
+
   /**
    * Makes a fully downloaded snapshot the accepted state.
    *

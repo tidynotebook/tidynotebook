@@ -1,0 +1,11 @@
+name: ids
+in: query
+required: true
+style: form
+explode: true
+description: Up to 16 revision identifiers in request order, separated by commas.
+schema:
+  type: string
+  minLength: 36
+  maxLength: 591
+  pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,15}$'

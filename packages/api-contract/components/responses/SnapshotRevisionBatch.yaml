@@ -1,0 +1,5 @@
+description: A nonempty batch of immutable revision bodies in request order.
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/SnapshotRevisionBatch.yaml'

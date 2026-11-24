@@ -1,0 +1,74 @@
+type: object
+description: The content and editor document of one revision for sync.
+additionalProperties: false
+required:
+  - revisionId
+  - fileId
+  - path
+  - kind
+  - deleted
+  - digest
+  - text
+  - document
+  - epoch
+  - serverTime
+properties:
+  revisionId:
+    allOf:
+      - $ref: './Uuid.yaml'
+    readOnly: true
+    description: Identifier of this revision.
+  fileId:
+    allOf:
+      - $ref: './Uuid.yaml'
+    readOnly: true
+    description: The file that this revision belongs to.
+  path:
+    allOf:
+      - $ref: './FilePath.yaml'
+    readOnly: true
+    description: The path of the file at this revision.
+  kind:
+    allOf:
+      - $ref: './FileKind.yaml'
+    readOnly: true
+    description: Whether this revision holds Markdown or an attachment.
+  deleted:
+    type: boolean
+    readOnly: true
+    description: True for a tombstone, which is how a deletion is recorded.
+  digest:
+    allOf:
+      - $ref: './ContentDigest.yaml'
+    readOnly: true
+    description: Digest of the content of this revision.
+  text:
+    oneOf:
+      - $ref: './MarkdownText.yaml'
+      - type: 'null'
+    readOnly: true
+    description: >-
+      The Markdown of this revision, or null for an attachment revision.
+  document:
+    oneOf:
+      - $ref: './DocumentUpdate.yaml'
+      - type: 'null'
+    readOnly: true
+    description: >-
+      The whole document of the note at this revision, so a reader can
+      start from it and stay able to merge later work. Null for an
+      attachment revision or a revision that is no longer the note head.
+  epoch:
+    oneOf:
+      - $ref: './DocumentEpoch.yaml'
+      - type: 'null'
+    readOnly: true
+    description: >-
+      The generation of that document, or null for an attachment
+      revision.
+  serverTime:
+    type: string
+    readOnly: true
+    description: Instant at which the workspace accepted the revision.
+    format: date-time
+    maxLength: 64

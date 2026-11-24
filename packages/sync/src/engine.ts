@@ -38,6 +38,7 @@ import {
   getMutationReceipt,
   getRevision,
   getSnapshotPage,
+  getSnapshotRevisions,
   getSyncProtocol,
   startSnapshot,
   observeResponseProgress,
@@ -162,9 +163,12 @@ export type SessionNetwork = {
  * the problem it answers for an unknown path.
  */
 export type ProtocolNetwork = {
-  syncProtocol(
-    signal: AbortSignal,
-  ): Promise<ServiceOutcome<{ readonly versions: readonly number[] }>>;
+  syncProtocol(signal: AbortSignal): Promise<
+    ServiceOutcome<{
+      readonly versions: readonly number[];
+      readonly snapshotRevisionBatches?: boolean;
+    }>
+  >;
 };
 
 /** Every network operation the engine runs, for injection in tests. */
@@ -362,20 +366,26 @@ export function createSyncEngine(
    */
   async function readProtocolFit(
     ctx: SyncContext,
-  ): Promise<ProtocolFit | null> {
+  ): Promise<{ fit: ProtocolFit; snapshotRevisionBatches: boolean } | null> {
     const outcome = await sendWithRetry(ctx, (signal) =>
       operations.syncProtocol(signal),
     );
     if (outcome === null) return null;
     if (outcome.ok)
-      return protocolFit(syncProtocolVersion, {
-        kind: 'served',
-        versions: outcome.value.versions,
-      });
+      return {
+        fit: protocolFit(syncProtocolVersion, {
+          kind: 'served',
+          versions: outcome.value.versions,
+        }),
+        snapshotRevisionBatches: outcome.value.snapshotRevisionBatches === true,
+      };
     const served = servedProtocolOfProblem(outcome.problem);
     if (served === null)
       throw new SyncFailedError(outcome.problem.code, outcome.problem.status);
-    return protocolFit(syncProtocolVersion, served);
+    return {
+      fit: protocolFit(syncProtocolVersion, served),
+      snapshotRevisionBatches: false,
+    };
   }
 
   /** Waits out a delay; returns `false` when the run stopped meanwhile. */
@@ -561,11 +571,12 @@ export function createSyncEngine(
           noteSession('ok');
           const protocol = await protocolRead;
           if (!protocol.read) throw protocol.error;
-          const fit = protocol.fit;
-          if (fit === null) {
+          const readProtocol = protocol.fit;
+          if (readProtocol === null) {
             if (!(await retryRest(signal))) return;
             continue;
           }
+          const { fit, snapshotRevisionBatches } = readProtocol;
           noteFit(fit);
           if (fit !== 'compatible') {
             if (!(await rest(interval(), signal))) return;
@@ -573,8 +584,14 @@ export function createSyncEngine(
           }
           // A refused precondition makes the queue read the server again
           // before it decides what to do with the refused mutation.
+          const network: SnapshotNetwork = {
+            ...operations,
+            revisionBatch: snapshotRevisionBatches
+              ? operations.revisionBatch
+              : undefined,
+          };
           const pull = (): Promise<PushOutcome> =>
-            pullNew(local, accountId, workspaceId, operations, ctx);
+            pullNew(local, accountId, workspaceId, network, ctx);
           const pushed = await pushQueue(
             local,
             accountId,
@@ -604,7 +621,7 @@ export function createSyncEngine(
             local,
             accountId,
             workspaceId,
-            operations,
+            network,
             ctx,
             pagesPerTurn,
             saveWaits,
@@ -813,6 +830,23 @@ function createOperations(
         },
       };
     },
+    async revisionBatch(revisionIds, signal) {
+      const sent = await getSnapshotRevisions({
+        headers: extraHeaders(),
+        path: { workspaceId },
+        query: { ids: revisionIds.join(',') },
+        signal,
+      });
+      if (sent.error !== undefined || sent.data === undefined)
+        return { ok: false, problem: toProblem(sent.error, sent.response) };
+      return {
+        ok: true,
+        value: sent.data.revisions.map(({ kind, ...revision }) => ({
+          ...revision,
+          fileKind: kind,
+        })),
+      };
+    },
     async changes(cursor, signal) {
       const sent = await getChanges({
         headers: extraHeaders(),
@@ -879,7 +913,13 @@ function createOperations(
           ok: false as const,
           problem: toProblem(sent.error, sent.response),
         };
-      return { ok: true as const, value: { versions: sent.data.versions } };
+      return {
+        ok: true as const,
+        value: {
+          versions: sent.data.versions,
+          snapshotRevisionBatches: sent.data.snapshotRevisionBatches === true,
+        },
+      };
     },
     async verifySession(signal: AbortSignal) {
       const sent = await getAccount({ headers: extraHeaders(), signal });

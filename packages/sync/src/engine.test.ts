@@ -619,6 +619,15 @@ class FakeStore implements LocalStore {
     return Promise.resolve();
   }
 
+  async storeSnapshotRevisions(
+    account: string,
+    workspace: string,
+    revisions: readonly SnapshotRevision[],
+  ): Promise<void> {
+    for (const revision of revisions)
+      await this.storeSnapshotRevision(account, workspace, revision);
+  }
+
   activateSnapshot(token: string): Promise<void> {
     const staged = this.staged.get(token);
     if (staged === undefined)
@@ -3156,6 +3165,92 @@ await test('a pass of another account sends nothing though the protocol answered
   controller.abort();
   engine.stop();
   await running;
+});
+
+await test('a snapshot keeps the unread IDs after a partial batch and a route refusal', async () => {
+  const store = new FakeStore();
+  const records = ['one', 'two', 'three'].map((id) => ({
+    fileId: id,
+    revisionId: `rev-${id}`,
+    path: `notes/${id}.md`,
+    fileKind: 'note' as const,
+    deleted: false,
+    digest: `digest-${id}`,
+    text: `# ${id}\n`,
+    document: 'AAEC',
+    epoch: 1,
+    serverTime: '2026-10-02T10:00:00.000Z',
+  }));
+  const batchReads: string[][] = [];
+  const singleReads: string[] = [];
+  const ops = stubOperations({
+    start: () =>
+      Promise.resolve({
+        ok: true as const,
+        value: { token: 'batch', cursor: '40', itemCount: records.length },
+      }),
+    page: () =>
+      Promise.resolve({
+        ok: true as const,
+        value: {
+          token: 'batch',
+          cursor: '40',
+          items: records,
+          nextPosition: null,
+        },
+      }),
+    changes: async (cursor) => ({
+      ok: true as const,
+      value: { changes: [], nextCursor: cursor },
+    }),
+    revision: async (id) => {
+      singleReads.push(id);
+      const record = records.find((item) => item.revisionId === id);
+      assert.ok(record);
+      return { ok: true as const, value: record };
+    },
+  });
+  const [first] = records;
+  assert.ok(first);
+  const network: SnapshotNetwork = {
+    ...ops,
+    revisionBatch: async (ids) => {
+      batchReads.push([...ids]);
+      return batchReads.length === 1
+        ? { ok: true, value: [first] }
+        : {
+            ok: false,
+            problem: { status: 404, code: 'route_not_found', fileIds: [] },
+          };
+    },
+  };
+  assert.equal(
+    await pullNew(store, accountId, workspaceId, network, testContext([], [])),
+    'done',
+  );
+  assert.deepEqual(batchReads, [
+    ['rev-one', 'rev-two', 'rev-three'],
+    ['rev-two', 'rev-three'],
+  ]);
+  assert.deepEqual(singleReads, ['rev-two', 'rev-three']);
+  assert.equal(await store.readCursor(accountId, workspaceId), '40');
+
+  const malformedStore = new FakeStore();
+  await assert.rejects(
+    pullNew(
+      malformedStore,
+      accountId,
+      workspaceId,
+      {
+        ...network,
+        revisionBatch: () =>
+          Promise.resolve({ ok: true, value: [...records].reverse() }),
+      },
+      testContext([], []),
+    ),
+    /snapshot_failed/,
+  );
+  assert.equal(await malformedStore.readCursor(accountId, workspaceId), null);
 });
 
 await test('a snapshot reads a few revisions at a time and activates them all', async () => {

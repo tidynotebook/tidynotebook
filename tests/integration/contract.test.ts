@@ -311,6 +311,7 @@ await test('the sync protocol answers without a session', async () => {
   // offers no subprotocol (record 0124).
   assert.deepEqual(result.data, {
     versions: [...supportedSyncVersions],
+    snapshotRevisionBatches: true,
     notificationProtocols: [],
   });
   assert.ok(result.data?.versions.includes(syncProtocolVersion));

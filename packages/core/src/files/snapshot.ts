@@ -16,8 +16,10 @@
  */
 import { authorize, type Actor } from '../identity/actor.ts';
 import { fail, ok, type Result } from './model.ts';
+import { permitRead } from './permit.ts';
 import type {
   SnapshotPage,
+  SnapshotRevisionRecord,
   SnapshotStart,
   SyncPage,
   WorkspaceStore,
@@ -48,6 +50,12 @@ export const snapshotDefaultPageSize = 100;
 
 /** Largest snapshot page that one page call returns. */
 export const snapshotMaxPageSize = 500;
+
+/** The largest number of revision IDs in one batch request. */
+export const snapshotRevisionBatchSize = 16;
+
+/** The target total of Markdown and document bytes in a batch. */
+export const snapshotRevisionBatchBytes = 256 * 1024;
 
 /** Change count of a sync read that asks for none. */
 export const syncDefaultLimit = 100;
@@ -187,6 +195,28 @@ export async function getSnapshotPage(
       if (page === null) return fail('snapshot_required');
       return ok(page);
     },
+  );
+}
+
+/** Reads a batch by immutable revision ID under current workspace access. */
+export function getSnapshotRevisions(
+  store: WorkspaceStore,
+  actor: Actor,
+  workspaceId: string,
+  revisionIds: readonly string[],
+): Promise<Result<readonly SnapshotRevisionRecord[]>> {
+  if (revisionIds.length < 1 || revisionIds.length > snapshotRevisionBatchSize)
+    return Promise.resolve(fail('invalid_content', []));
+  return store.transact<Result<readonly SnapshotRevisionRecord[]>>(
+    actor,
+    workspaceId,
+    async (tx) => {
+      const permitted = await permitRead(tx, actor, workspaceId);
+      if (!permitted.ok) return permitted;
+      const revisions = await tx.snapshotRevisions(revisionIds);
+      return revisions === null ? fail('snapshot_required') : ok(revisions);
+    },
+    { readOnly: true },
   );
 }
 

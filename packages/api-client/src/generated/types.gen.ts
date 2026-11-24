@@ -2790,6 +2790,59 @@ export type SnapshotPage = {
 };
 
 /**
+ * The content and editor document of one revision for sync.
+ */
+export type SnapshotRevision = {
+    /**
+     * Identifier of this revision.
+     */
+    readonly revisionId: Uuid;
+    /**
+     * The file that this revision belongs to.
+     */
+    readonly fileId: Uuid;
+    /**
+     * The path of the file at this revision.
+     */
+    readonly path: FilePath;
+    /**
+     * Whether this revision holds Markdown or an attachment.
+     */
+    readonly kind: FileKind;
+    /**
+     * True for a tombstone, which is how a deletion is recorded.
+     */
+    readonly deleted: boolean;
+    /**
+     * Digest of the content of this revision.
+     */
+    readonly digest: ContentDigest;
+    /**
+     * The Markdown of this revision, or null for an attachment revision.
+     */
+    readonly text: MarkdownText | null;
+    /**
+     * The whole document of the note at this revision, so a reader can start from it and stay able to merge later work. Null for an attachment revision or a revision that is no longer the note head.
+     */
+    readonly document: DocumentUpdate | null;
+    /**
+     * The generation of that document, or null for an attachment revision.
+     */
+    readonly epoch: DocumentEpoch | null;
+    /**
+     * Instant at which the workspace accepted the revision.
+     */
+    readonly serverTime: string;
+};
+
+/**
+ * A nonempty prefix of the requested revisions.
+ */
+export type SnapshotRevisionBatch = {
+    revisions: Array<SnapshotRevision>;
+};
+
+/**
  * The captured snapshot and its opaque page token.
  */
 export type SnapshotStarted = {
@@ -3031,6 +3084,10 @@ export type SyncProtocolReport = {
      * The notice stream subprotocols that this deployment opens now. The list is empty while this process cannot send notices. A server that omits the member predates the notice stream, so the client reads the feed on its own schedule.
      */
     readonly notificationProtocols?: Array<SyncNoticeProtocol>;
+    /**
+     * Whether this server supports batch reads of snapshot revisions.
+     */
+    readonly snapshotRevisionBatches?: boolean;
 };
 
 /**
@@ -3831,6 +3888,13 @@ export type SnapshotPageWritable = {
 };
 
 /**
+ * A nonempty prefix of the requested revisions.
+ */
+export type SnapshotRevisionBatchWritable = {
+    revisions: Array<unknown>;
+};
+
+/**
  * Ordered incremental changes after a cursor.
  */
 export type SyncChangesWritable = {
@@ -3981,6 +4045,11 @@ export type SearchQuery = string;
  * Largest number of search results to return.
  */
 export type SearchLimit = number;
+
+/**
+ * Up to 16 revision identifiers in request order, separated by commas.
+ */
+export type SnapshotRevisionIds = string;
 
 /**
  * Opaque token of a materialized snapshot, issued by the snapshot start operation. Only its hash is stored, so the value cannot be guessed.
@@ -10160,6 +10229,71 @@ export type GetChangesResponses = {
 };
 
 export type GetChangesResponse = GetChangesResponses[keyof GetChangesResponses];
+
+export type GetSnapshotRevisionsData = {
+    body?: never;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path: {
+        /**
+         * Identifier of the workspace that the operation acts on.
+         */
+        workspaceId: Uuid;
+    };
+    query: {
+        /**
+         * Up to 16 revision identifiers in request order, separated by commas.
+         */
+        ids: string;
+    };
+    url: '/api/workspaces/{workspaceId}/sync/revisions';
+};
+
+export type GetSnapshotRevisionsErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The requested resource does not exist.
+     */
+    404: ProblemDetails;
+    /**
+     * The snapshot expired, is unknown, was invalidated by a purge, or the sync cursor predates the retained 90 day window. The code is snapshot_required. The client starts a fresh snapshot and keeps its local work.
+     */
+    410: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type GetSnapshotRevisionsError = GetSnapshotRevisionsErrors[keyof GetSnapshotRevisionsErrors];
+
+export type GetSnapshotRevisionsResponses = {
+    /**
+     * A nonempty batch of immutable revision bodies in request order.
+     */
+    200: SnapshotRevisionBatch;
+};
+
+export type GetSnapshotRevisionsResponse = GetSnapshotRevisionsResponses[keyof GetSnapshotRevisionsResponses];
 
 export type StartSnapshotData = {
     /**

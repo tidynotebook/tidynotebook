@@ -1,0 +1,12 @@
+type: object
+description: A nonempty prefix of the requested revisions.
+additionalProperties: false
+required:
+  - revisions
+properties:
+  revisions:
+    type: array
+    minItems: 1
+    maxItems: 16
+    items:
+      $ref: './SnapshotRevision.yaml'

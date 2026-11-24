@@ -12,6 +12,7 @@ import type { WorkspaceStore } from '@notesapp/core';
 import {
   getChanges,
   getSnapshotPage,
+  getSnapshotRevisions,
   startSnapshot,
   supportedSyncVersions,
 } from '@notesapp/core';
@@ -58,6 +59,7 @@ export function createSyncHandlers(
         // (records 0129, 0131).
         body: {
           versions: [...supportedSyncVersions],
+          snapshotRevisionBatches: true,
           notificationProtocols: [...noticeProtocols()],
         },
       }),
@@ -127,6 +129,28 @@ export function createSyncHandlers(
             path: item.path,
             kind: item.kind,
             deleted: item.deleted,
+          })),
+        },
+      };
+    },
+
+    getSnapshotRevisions: async (
+      request: FastifyRequest,
+    ): Promise<HandlerResult> => {
+      const actor = requireActor(request).actor;
+      const workspaceId = readText(request.params, 'workspaceId');
+      const ids = readText(request.query, 'ids').split(',');
+      const revisions = unwrapDomain(
+        await getSnapshotRevisions(store, actor, workspaceId, ids),
+      );
+      return {
+        status: 200,
+        mediaType: jsonMediaType,
+        body: {
+          revisions: revisions.map((revision) => ({
+            ...revision,
+            document:
+              revision.document === null ? null : base64Of(revision.document),
           })),
         },
       };

@@ -8,6 +8,7 @@
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import {
   maxPageSize,
+  snapshotRevisionBatchBytes,
   type HistoryPage,
   type PageRequest,
   type RevisionRecord,
@@ -31,6 +32,7 @@ export function historyRepository(
   | 'revisionPaths'
   | 'parents'
   | 'revision'
+  | 'snapshotRevisions'
   | 'isAcceptedRevision'
   | 'listHistory'
 > {
@@ -157,6 +159,66 @@ export function historyRepository(
         clientTime: row.clientTime.toISOString(),
         serverTime: row.serverTime.toISOString(),
       };
+    },
+
+    async snapshotRevisions(revisionIds) {
+      for (const id of revisionIds) assertUuid(id, 'a revision');
+      // Count Markdown and document bytes before sending bodies to Node.
+      // Always include the first revision, even if it exceeds the batch
+      // target. Join a document only when it belongs to the requested head.
+      const result = await client.query<{
+        revision_id: string;
+        file_id: string;
+        path: string;
+        deleted: boolean;
+        digest: string;
+        kind: string;
+        markdown: string | null;
+        document: Buffer | null;
+        epoch: number | null;
+        server_time: Date;
+        batch_count: string;
+      }>(
+        `with sized as (
+           select q.ordinality, r.id as revision_id, r.file_id, r.path,
+                  r.deleted, r.content_digest as digest, c.kind, c.markdown,
+                  d.bytes as document, r.document_epoch as epoch, r.server_time,
+                  sum(case when c.kind = 'markdown' then c.size else 0 end
+                      + coalesce(octet_length(d.bytes), 0))
+                    over (order by q.ordinality) as body_bytes
+             from unnest($2::uuid[]) with ordinality q(id, ordinality)
+             left join revisions r on r.workspace_id = $1 and r.id = q.id
+             left join contents c
+               on c.workspace_id = r.workspace_id and c.digest = r.content_digest
+             left join files f
+               on f.workspace_id = r.workspace_id and f.id = r.file_id
+             left join note_documents d
+               on d.workspace_id = f.workspace_id and d.file_id = f.id
+              and f.head_revision_id = r.id
+         ), batch as (
+           select sized.*, count(*) over () as batch_count
+             from sized
+            where ordinality = 1 or body_bytes <= $3
+         )
+         select revision_id, file_id, path, deleted, digest, kind, markdown,
+                document, epoch, server_time, batch_count
+           from batch where kind is not null order by ordinality`,
+        [workspaceId, revisionIds, snapshotRevisionBatchBytes],
+      );
+      if (result.rows.length !== Number(result.rows[0]?.batch_count))
+        return null;
+      return result.rows.map((row) => ({
+        revisionId: row.revision_id,
+        fileId: row.file_id,
+        path: row.path,
+        deleted: row.deleted,
+        digest: row.digest,
+        kind: row.kind === 'markdown' ? 'note' : 'attachment',
+        text: row.markdown,
+        document: row.document,
+        epoch: row.epoch,
+        serverTime: row.server_time.toISOString(),
+      }));
     },
 
     async isAcceptedRevision(
