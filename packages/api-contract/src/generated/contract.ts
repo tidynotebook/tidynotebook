@@ -52,6 +52,7 @@ export type OperationId =
   | 'getSetupStatus'
   | 'getSignUpChallenge'
   | 'getSnapshotPage'
+  | 'getSnapshotRevisions'
   | 'getSyncProtocol'
   | 'getTemplateSettings'
   | 'giveOAuthConsent'
@@ -10475,6 +10476,210 @@ export const operations: readonly OperationEntry[] = [
     "noContent": []
   },
   {
+    "id": "getSnapshotRevisions",
+    "method": "get",
+    "path": "/api/workspaces/{workspaceId}/sync/revisions",
+    "protocol": null,
+    "security": [
+      {
+        "sessionCookie": []
+      },
+      {
+        "personalApiKey": []
+      }
+    ],
+    "parameters": [
+      {
+        "name": "x-request-id",
+        "location": "header",
+        "required": false,
+        "style": "simple",
+        "explode": false
+      },
+      {
+        "name": "workspaceId",
+        "location": "path",
+        "required": true,
+        "style": "simple",
+        "explode": false
+      },
+      {
+        "name": "ids",
+        "location": "query",
+        "required": true,
+        "style": "form",
+        "explode": true
+      }
+    ],
+    "request": {
+      "params": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Shared14"
+      },
+      "query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "string",
+            "minLength": 36,
+            "maxLength": 591,
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,15}$"
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "additionalProperties": false
+      },
+      "headers": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Shared2"
+      },
+      "body": null,
+      "bodyMediaType": null
+    },
+    "responses": [
+      {
+        "status": 200,
+        "mediaType": "application/json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "description": "A nonempty prefix of the requested revisions.",
+          "additionalProperties": false,
+          "required": [
+            "revisions"
+          ],
+          "properties": {
+            "revisions": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 16,
+              "items": {
+                "type": "object",
+                "description": "The content and editor document of one revision for sync.",
+                "additionalProperties": false,
+                "required": [
+                  "revisionId",
+                  "fileId",
+                  "path",
+                  "kind",
+                  "deleted",
+                  "digest",
+                  "text",
+                  "document",
+                  "epoch",
+                  "serverTime"
+                ],
+                "properties": {
+                  "revisionId": {
+                    "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Shared106"
+                  },
+                  "fileId": {
+                    "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Shared107"
+                  },
+                  "path": {
+                    "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Shared108"
+                  },
+                  "kind": {
+                    "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Shared109"
+                  },
+                  "deleted": {
+                    "type": "boolean",
+                    "readOnly": true,
+                    "description": "True for a tombstone, which is how a deletion is recorded."
+                  },
+                  "digest": {
+                    "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Shared111"
+                  },
+                  "text": {
+                    "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Shared112"
+                  },
+                  "document": {
+                    "oneOf": [
+                      {
+                        "$ref": "https://notesapp.invalid/contract-definitions#/$defs/DocumentUpdate"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "readOnly": true,
+                    "description": "The whole document of the note at this revision, so a reader can start from it and stay able to merge later work. Null for an attachment revision or a revision that is no longer the note head."
+                  },
+                  "epoch": {
+                    "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Shared118"
+                  },
+                  "serverTime": {
+                    "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Shared30"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "status": 400,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 401,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 403,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 404,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 410,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 423,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 500,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      }
+    ],
+    "noContent": []
+  },
+  {
     "id": "getSyncProtocol",
     "method": "get",
     "path": "/api/sync/protocol",
@@ -10542,6 +10747,11 @@ export const operations: readonly OperationEntry[] = [
               "items": {
                 "$ref": "https://notesapp.invalid/contract-definitions#/$defs/SyncNoticeProtocol"
               }
+            },
+            "snapshotRevisionBatches": {
+              "type": "boolean",
+              "readOnly": true,
+              "description": "Whether this server supports batch reads of snapshot revisions."
             }
           }
         }

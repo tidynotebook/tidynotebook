@@ -88,7 +88,9 @@ RUN node tools/runtime-dependencies.mjs /prod/server
 RUN node tools/distribution-notices.mjs /prod/server /prod/licenses
 RUN node tools/distribution-notices.mjs /usr/local/lib/node_modules/npm /prod/licenses/base-npm
 RUN node tools/distribution-target.mjs tools/base-packages.json /prod/licenses/base-source-inventory.json /prod/server
-RUN node tools/native-sources.mjs /prod/licenses/native-source tools/native-source-cache/native
+# Bundle the same verified archives that built the native libraries.
+RUN --mount=type=bind,from=native-libraries,source=/sources,target=/native-source-inputs,readonly \
+    node tools/native-sources.mjs /prod/licenses/native-source /native-source-inputs
 RUN node tools/native-sources.mjs /prod/licenses/base-source tools/native-source-cache/base tools/base-sources.json
 RUN mv /prod/licenses/base-source-inventory.json /prod/licenses/base-source/original-binaries.json
 RUN node tools/native-sources.mjs /prod/licenses/runner-source tools/native-source-cache/runner tools/runner-sources.json

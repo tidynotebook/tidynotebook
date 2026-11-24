@@ -1,5 +1,4 @@
 import { observeElementScrollEdges } from '@notesapp/ui';
-import { MarkdownLimitError, markdownWordCount } from '@notesapp/markdown';
 /**
  * The quiet footer of the note screen.
  *
@@ -20,20 +19,12 @@ import { MarkdownLimitError, markdownWordCount } from '@notesapp/markdown';
  */
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useActiveNote } from './active-note.tsx';
+import { useLongNoteMetrics } from './long-note-metrics.tsx';
+import { wordCount } from './note-metrics.ts';
 import {
   noteColumnClassName,
   noteFooterClassName,
 } from '../../lib/note-column.ts';
-
-/** Counts the words of a Markdown buffer. */
-export function wordCount(text: string): number | null {
-  try {
-    return markdownWordCount(text);
-  } catch (error) {
-    if (error instanceof MarkdownLimitError) return null;
-    throw error;
-  }
-}
 
 /**
  * The footer row of one open note. `initialText` is the text until the
@@ -47,9 +38,13 @@ export function NoteFooter({
   // The revision moves when the text moved on, so the count is read once for
   // each change and not once for each render.
   const { view, revision } = useActiveNote();
+  const long = useLongNoteMetrics();
   const count = useMemo(
-    () => wordCount(view === null ? initialText : view.state.doc.toString()),
-    [view, revision, initialText],
+    () =>
+      long === null
+        ? wordCount(view === null ? initialText : view.state.doc.toString())
+        : long.metrics?.count,
+    [view, revision, initialText, long],
   );
   const [typing, setTyping] = useState(false);
   useEffect(() => {
@@ -77,9 +72,11 @@ export function NoteFooter({
     <footer data-scroll-edge="below" className={noteFooterClassName(typing)}>
       <div className={noteColumnClassName()}>
         <span>
-          {count === null
-            ? 'Word count unavailable'
-            : `${String(count)} ${count === 1 ? 'word' : 'words'}`}
+          {count === undefined
+            ? ''
+            : count === null
+              ? 'Word count unavailable'
+              : `${String(count)} ${count === 1 ? 'word' : 'words'}`}
         </span>
       </div>
     </footer>

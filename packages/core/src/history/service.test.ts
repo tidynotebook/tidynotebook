@@ -190,6 +190,7 @@ function fakeStore(state: FakeWorkspace): WorkspaceStore {
         ),
       ),
     file: (fileId: string) => Promise.resolve(state.files.get(fileId) ?? null),
+    snapshotRevisions: () => Promise.resolve(null),
     revision: (revisionId: string) =>
       Promise.resolve(state.revisions.get(revisionId) ?? null),
     accept: (

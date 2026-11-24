@@ -43,8 +43,10 @@ const { EditorState } = await import('@codemirror/state');
 const { EditorView, plainTextContext } = await import('@notesapp/editor');
 const { ActiveNoteScope, revealInNote } =
   await import('../../apps/web/dist/features/editor/active-note.js');
-const { NoteFooter, wordCount } =
+const { NoteFooter } =
   await import('../../apps/web/dist/features/editor/note-footer.js');
+const { wordCount } =
+  await import('../../apps/web/dist/features/editor/note-metrics.js');
 const { FormatToolbar } =
   await import('../../apps/web/dist/features/editor/format-toolbar.js');
 

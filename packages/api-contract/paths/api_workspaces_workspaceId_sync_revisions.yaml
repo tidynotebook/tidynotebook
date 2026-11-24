@@ -1,0 +1,33 @@
+get:
+  operationId: getSnapshotRevisions
+  summary: Read a batch of revision bodies for sync.
+  description: >-
+    Reads immutable revisions by identifier with current workspace read
+    permission. The answer holds a nonempty prefix of the requested IDs in
+    request order. A large revision can shorten a batch, so the client asks
+    for the remaining IDs again. A missing revision in the selected prefix
+    answers 410 snapshot_required. The document is present only when the
+    pinned revision is still the head of its note.
+  tags:
+    - files
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+    - $ref: '../components/parameters/WorkspaceId.yaml'
+    - $ref: '../components/parameters/SnapshotRevisionIds.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/SnapshotRevisionBatch.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../components/responses/NotFound.yaml'
+    '410':
+      $ref: '../components/responses/SnapshotRequired.yaml'
+    '423':
+      $ref: '../components/responses/AccountLocked.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

@@ -8,13 +8,13 @@
  * mirror without overwriting unsubmitted local work.
  */
 import { applyServerWork, writeDocumentRow } from './documents.ts';
+import { storeSnapshotRevisions } from './snapshot-content.ts';
 import { validateLegacySave } from '../legacy-records.ts';
 import {
   LocalStorageError,
   type LocalStore,
   type RemoteChange,
   type ServerNote,
-  type SnapshotRevision,
   type StagedSnapshot,
 } from '@notesapp/sync';
 import {
@@ -45,6 +45,7 @@ type SnapshotSlice = Pick<
   LocalStore,
   | 'stageSnapshot'
   | 'storeSnapshotRevision'
+  | 'storeSnapshotRevisions'
   | 'activateSnapshot'
   | 'readCursor'
   | 'applyRemoteChanges'
@@ -67,6 +68,9 @@ export function workspaceChangeFile(fileIds: readonly string[]): string | null {
  * a tab that closed during its pass.
  */
 const abandonedStagingMs = 60 * 60 * 1000;
+
+/** Content bodies to check in one read during activation. */
+const snapshotContentCheckBatchSize = 32;
 
 /**
  * Whether a new staging of `owner` can take over an earlier plan: move its
@@ -278,48 +282,10 @@ export function createSnapshotSlice(ctx: LocalStoreContext): SnapshotSlice {
       );
     },
 
-    storeSnapshotRevision(
-      accountId: string,
-      workspaceId: string,
-      revision: SnapshotRevision,
-    ): Promise<void> {
-      return guard('storing a snapshot revision', () =>
-        db.transaction(
-          'rw',
-          [tables.contents, tables.snapshotItems],
-          async () => {
-            if (revision.text !== null) {
-              await tables.contents.put({
-                serverOrigin,
-                accountId,
-                workspaceId,
-                digest: revision.digest,
-                text: revision.text,
-                bytes: null,
-                size: byteLength(revision.text),
-              });
-            }
-            const item: SnapshotItemRow = {
-              serverOrigin,
-              accountId,
-              workspaceId,
-              token: revision.token,
-              revisionId: revision.revisionId,
-              fileId: revision.fileId,
-              path: revision.path,
-              kind: revision.kind,
-              deleted: revision.deleted,
-              digest: revision.digest,
-              storedAt: nowIso(),
-              document: revision.document,
-              epoch: revision.epoch,
-              serverTime: revision.serverTime,
-            };
-            await tables.snapshotItems.put(item);
-          },
-        ),
-      );
-    },
+    storeSnapshotRevision: (accountId, workspaceId, revision) =>
+      storeSnapshotRevisions(ctx, accountId, workspaceId, [revision]),
+    storeSnapshotRevisions: (accountId, workspaceId, revisions) =>
+      storeSnapshotRevisions(ctx, accountId, workspaceId, revisions),
 
     async activateSnapshot(token: string): Promise<void> {
       const activated = await guard('activating a snapshot', () =>
@@ -363,6 +329,7 @@ export function createSnapshotSlice(ctx: LocalStoreContext): SnapshotSlice {
                 return [item.revisionId, item] as const;
               }),
             );
+            const requiredDigests = new Set<string>();
             for (const revisionId of plan.revisionIds) {
               const item = byRevision.get(revisionId);
               if (item === undefined)
@@ -370,19 +337,37 @@ export function createSnapshotSlice(ctx: LocalStoreContext): SnapshotSlice {
                   'aborted',
                   'the staged snapshot is incomplete',
                 );
-              if (!item.deleted && item.kind === 'note') {
-                const body: unknown = await tables.contents.get([
+              if (!item.deleted && item.kind === 'note')
+                requiredDigests.add(item.digest);
+            }
+            const digests = [...requiredDigests];
+            for (
+              let offset = 0;
+              offset < digests.length;
+              offset += snapshotContentCheckBatchSize
+            ) {
+              const batch = digests.slice(
+                offset,
+                offset + snapshotContentCheckBatchSize,
+              );
+              const bodies = await tables.contents.bulkGet(
+                batch.map((digest) => [
                   serverOrigin,
                   accountId,
                   workspaceId,
-                  item.digest,
-                ]);
-                if (body === undefined || validateContent(body).text === null)
-                  throw new LocalStorageError(
-                    'aborted',
-                    'the staged snapshot is incomplete',
-                  );
-              }
+                  digest,
+                ]),
+              );
+              if (
+                bodies.some(
+                  (body) =>
+                    body === undefined || validateContent(body).text === null,
+                )
+              )
+                throw new LocalStorageError(
+                  'aborted',
+                  'the staged snapshot is incomplete',
+                );
             }
             const byFile = new Map<string, SnapshotItemRow>();
             for (const item of byRevision.values())

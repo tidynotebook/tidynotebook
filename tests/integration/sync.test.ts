@@ -28,6 +28,7 @@ import {
   getAccount,
   getFile,
   getRevision,
+  getSnapshotRevisions,
   observeResponseProgress,
   listHistory,
   listWorkspaces,
@@ -440,7 +441,7 @@ for (const [read, path] of [
   ['commit', /\/changesets$/],
   ['snapshot', /\/sync\/snapshots$/],
   ['snapshot page', /\/sync\/snapshots\/[^/]+(?:\?|$)/],
-  ['revision', /\/revisions\/[^/]+$/],
+  ['revision batch', /\/sync\/revisions(?:\?|$)/],
   ['changes', /\/sync\/changes(?:\?|$)/],
 ] as const) {
   await test(`the default engine recovers after repeated ${read} connection failures with no wake`, async () => {
@@ -542,6 +543,56 @@ for (const [read, path] of [
     }
   });
 }
+
+await test('snapshot revisions keep request order and documents only for their heads', async () => {
+  const oldText = '# Pinned batch revision\n';
+  const first = await newFile('batch/pinned.md', oldText);
+  const nextText = '# Current batch revision\n';
+  const next = mutationIds();
+  const updated = await updateFile({
+    headers: { ...browser(ownerCookie), 'if-match': first.tag },
+    path: { workspaceId, fileId: first.fileId },
+    body: {
+      revisionId: next.revisionId,
+      mutationId: next.mutationId,
+      deviceId: next.deviceId,
+      document: await saveForHead(workspaceId, first.revisionId, nextText),
+    },
+  });
+  assert.equal(updated.error, undefined);
+  const read = (ids: readonly string[]) =>
+    getSnapshotRevisions({
+      headers: browser(ownerCookie),
+      path: { workspaceId },
+      query: { ids: ids.join(',') },
+    });
+  const batch = await read([next.revisionId, first.revisionId]);
+  assert.equal(batch.error, undefined);
+  assert.deepEqual(
+    batch.data?.revisions.map((revision) => revision.revisionId),
+    [next.revisionId, first.revisionId],
+  );
+  const [head, pinned] = batch.data?.revisions ?? [];
+  assert.ok(head?.document);
+  assert.equal(head.text, nextText);
+  assert.equal(pinned?.document, null);
+  assert.equal(pinned?.text, oldText);
+
+  const missing = await read([next.revisionId, randomUUID()]);
+  assert.equal(missing.response?.status, 410);
+  assert.equal(missing.error?.code, 'snapshot_required');
+
+  const largeText =
+    '# Large batch\n\n' + ('words '.repeat(100) + '\n\n').repeat(900);
+  const large = await newFile('batch/large.md', largeText);
+  const partial = await read([large.revisionId, next.revisionId]);
+  assert.equal(partial.error, undefined);
+  assert.deepEqual(
+    partial.data?.revisions.map((revision) => revision.revisionId),
+    [large.revisionId],
+  );
+  assert.equal(partial.data?.revisions[0]?.text, largeText);
+});
 
 await test('a lost commit answer retries the accepted save and makes one server version', async () => {
   const store = await openStore('lost-answer', 'device-lost-answer');

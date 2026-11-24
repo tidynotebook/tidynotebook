@@ -88,6 +88,8 @@ export {
 export { mathMarkdownExtension } from './math-syntax.ts';
 export type { OutlineHeading } from './outline.ts';
 export { outlineOf } from './outline.ts';
+export { outlineOfSource } from './outline-source.ts';
+export { markdownGrammarOn } from './grammar-gate.ts';
 export type {
   DelimiterPart,
   PreviewBuild,

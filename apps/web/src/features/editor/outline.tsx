@@ -12,16 +12,8 @@ import {
   previewStructureOf,
   type OutlineHeading,
 } from '@notesapp/editor';
-
 import { revealInNote, useActiveNote } from './active-note.tsx';
-
-/**
- * The inset of one outline row, one step for each level under the first.
- *
- * The step is the same distance at every level, so a deep heading is read by
- * how far it sits from the left and never by a guide line, which is what the
- * folder tree does as well (record 0064).
- */
+import { useLongNoteMetrics } from './long-note-metrics.tsx';
 
 /** The headings of one Markdown source, read from the shared grammar. */
 function outlineOfText(source: string): readonly OutlineHeading[] {
@@ -65,11 +57,17 @@ export function OutlinePanel({
   // count is the reason to read the buffer again, so the walk of the syntax
   // tree happens once for each change and not once for each render.
   const { view, revision } = useActiveNote();
-  const live = useMemo(
-    () => (view === null ? null : outlineOf(view.state)),
-    [view, revision],
+  const long = useLongNoteMetrics();
+  const headings = useMemo(
+    () =>
+      long === null
+        ? view === null
+          ? outlineOfText(text)
+          : outlineOf(view.state)
+        : (long.metrics?.headings ?? []),
+    [view, revision, text, long],
   );
-  const headings = live ?? outlineOfText(text);
+  const outlineView = long !== null && !long.current ? null : view;
   if (headings.length === 0) return null;
   return (
     <CollapsibleSection
@@ -81,7 +79,7 @@ export function OutlinePanel({
       <Inset pad={0} as="ol" className="list-none">
         {headings.map((heading, index) => (
           <li key={`${String(index)}:${heading.text}`}>
-            {view !== null ? (
+            {outlineView !== null ? (
               <ListRow
                 as="button"
                 density="tree"
@@ -89,7 +87,7 @@ export function OutlinePanel({
                 data-outline-level={heading.level}
                 indent={heading.level - 1}
                 onClick={(): void => {
-                  revealInNote(view, heading.from);
+                  revealInNote(outlineView, heading.from);
                 }}
               >
                 <span className="min-w-0 flex-1 truncate">{heading.text}</span>

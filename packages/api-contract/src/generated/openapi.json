@@ -5546,6 +5546,53 @@
         }
       }
     },
+    "/api/workspaces/{workspaceId}/sync/revisions": {
+      "get": {
+        "operationId": "getSnapshotRevisions",
+        "summary": "Read a batch of revision bodies for sync.",
+        "description": "Reads immutable revisions by identifier with current workspace read permission. The answer holds a nonempty prefix of the requested IDs in request order. A large revision can shorten a batch, so the client asks for the remaining IDs again. A missing revision in the selected prefix answers 410 snapshot_required. The document is present only when the pinned revision is still the head of its note.",
+        "tags": [
+          "files"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "$ref": "#/components/parameters/SnapshotRevisionIds"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/SnapshotRevisionBatch"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "410": {
+            "$ref": "#/components/responses/SnapshotRequired"
+          },
+          "423": {
+            "$ref": "#/components/responses/AccountLocked"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
     "/api/workspaces/{workspaceId}/sync/snapshots": {
       "post": {
         "operationId": "startSnapshot",
@@ -6781,6 +6828,20 @@
           "maximum": 100
         }
       },
+      "SnapshotRevisionIds": {
+        "name": "ids",
+        "in": "query",
+        "required": true,
+        "style": "form",
+        "explode": true,
+        "description": "Up to 16 revision identifiers in request order, separated by commas.",
+        "schema": {
+          "type": "string",
+          "minLength": 36,
+          "maxLength": 591,
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(,[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}){0,15}$"
+        }
+      },
       "SnapshotToken": {
         "name": "token",
         "in": "path",
@@ -7964,6 +8025,16 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/SnapshotStarted"
+            }
+          }
+        }
+      },
+      "SnapshotRevisionBatch": {
+        "description": "A nonempty batch of immutable revision bodies in request order.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/SnapshotRevisionBatch"
             }
           }
         }
@@ -14258,6 +14329,136 @@
           }
         }
       },
+      "SnapshotRevision": {
+        "type": "object",
+        "description": "The content and editor document of one revision for sync.",
+        "additionalProperties": false,
+        "required": [
+          "revisionId",
+          "fileId",
+          "path",
+          "kind",
+          "deleted",
+          "digest",
+          "text",
+          "document",
+          "epoch",
+          "serverTime"
+        ],
+        "properties": {
+          "revisionId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Uuid"
+              }
+            ],
+            "readOnly": true,
+            "description": "Identifier of this revision."
+          },
+          "fileId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Uuid"
+              }
+            ],
+            "readOnly": true,
+            "description": "The file that this revision belongs to."
+          },
+          "path": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FilePath"
+              }
+            ],
+            "readOnly": true,
+            "description": "The path of the file at this revision."
+          },
+          "kind": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FileKind"
+              }
+            ],
+            "readOnly": true,
+            "description": "Whether this revision holds Markdown or an attachment."
+          },
+          "deleted": {
+            "type": "boolean",
+            "readOnly": true,
+            "description": "True for a tombstone, which is how a deletion is recorded."
+          },
+          "digest": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ContentDigest"
+              }
+            ],
+            "readOnly": true,
+            "description": "Digest of the content of this revision."
+          },
+          "text": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MarkdownText"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "readOnly": true,
+            "description": "The Markdown of this revision, or null for an attachment revision."
+          },
+          "document": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DocumentUpdate"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "readOnly": true,
+            "description": "The whole document of the note at this revision, so a reader can start from it and stay able to merge later work. Null for an attachment revision or a revision that is no longer the note head."
+          },
+          "epoch": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DocumentEpoch"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "readOnly": true,
+            "description": "The generation of that document, or null for an attachment revision."
+          },
+          "serverTime": {
+            "type": "string",
+            "readOnly": true,
+            "description": "Instant at which the workspace accepted the revision.",
+            "format": "date-time",
+            "maxLength": 64
+          }
+        }
+      },
+      "SnapshotRevisionBatch": {
+        "type": "object",
+        "description": "A nonempty prefix of the requested revisions.",
+        "additionalProperties": false,
+        "required": [
+          "revisions"
+        ],
+        "properties": {
+          "revisions": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 16,
+            "items": {
+              "$ref": "#/components/schemas/SnapshotRevision"
+            }
+          }
+        }
+      },
       "SnapshotStarted": {
         "type": "object",
         "description": "The captured snapshot and its opaque page token.",
@@ -14765,6 +14966,11 @@
             "items": {
               "$ref": "#/components/schemas/SyncNoticeProtocol"
             }
+          },
+          "snapshotRevisionBatches": {
+            "type": "boolean",
+            "readOnly": true,
+            "description": "Whether this server supports batch reads of snapshot revisions."
           }
         }
       },

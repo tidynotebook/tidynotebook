@@ -26,3 +26,7 @@ properties:
     uniqueItems: true
     items:
       $ref: './SyncNoticeProtocol.yaml'
+  snapshotRevisionBatches:
+    type: boolean
+    readOnly: true
+    description: Whether this server supports batch reads of snapshot revisions.
