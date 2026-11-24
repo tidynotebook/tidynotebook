@@ -1,5 +1,5 @@
 import { MarkdownLimitError, markdownWordCount } from '@notesapp/markdown';
-import { outlineOfSource, type OutlineHeading } from '@notesapp/editor/outline';
+import { outlineOfSource, type OutlineHeading } from '@notesapp/editor';
 
 /** Counts the words of a Markdown buffer. */
 export function wordCount(text: string): number | null {

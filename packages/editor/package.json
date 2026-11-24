@@ -9,10 +9,6 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    },
-    "./outline": {
-      "types": "./dist/outline-source.d.ts",
-      "default": "./dist/outline-source.js"
     }
   },
   "scripts": {

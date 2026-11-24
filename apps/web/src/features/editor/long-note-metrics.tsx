@@ -10,7 +10,6 @@ import {
 } from 'react';
 import { useActiveNote } from './active-note.tsx';
 import { readNoteMetrics, type NoteMetrics } from './note-metrics.ts';
-import NoteMetricsWorker from './note-metrics-worker.ts?worker';
 
 const longNoteThreshold = 64 * 1024;
 
@@ -46,10 +45,12 @@ export function LongNoteMetricsScope({
   useEffect(() => {
     if (!large) return;
     let worker: Worker | null = null;
+    let starting = true;
+    let closed = false;
     let running: Job | null = null;
     let pending: Job | null = null;
     const next = (): void => {
-      if (running !== null || pending === null) return;
+      if (starting || running !== null || pending === null) return;
       const job = pending;
       pending = null;
       running = job;
@@ -67,26 +68,37 @@ export function LongNoteMetricsScope({
         startTransition(() => setResult({ ...job, metrics }));
       next();
     };
-    try {
-      worker = new NoteMetricsWorker();
-      worker.onmessage = (event: MessageEvent<NoteMetrics>) =>
-        finish(event.data);
-      worker.onerror = () => {
-        worker?.terminate();
+    const start = async (): Promise<void> => {
+      try {
+        if (typeof Worker === 'undefined') return;
+        const { default: NoteMetricsWorker } =
+          await import('./note-metrics-worker.ts?worker');
+        if (closed) return;
+        worker = new NoteMetricsWorker();
+        worker.onmessage = (event: MessageEvent<NoteMetrics>) =>
+          finish(event.data);
+        worker.onerror = () => {
+          worker?.terminate();
+          worker = null;
+          pending ??= running;
+          running = null;
+          next();
+        };
+      } catch {
         worker = null;
-        pending ??= running;
-        running = null;
-        next();
-      };
-    } catch {
-      worker = null;
-    }
+      } finally {
+        starting = false;
+        if (!closed) next();
+      }
+    };
+    void start();
     // Retain only the latest text while the worker is busy.
     post.current = (job) => {
       pending = job;
       next();
     };
     return () => {
+      closed = true;
       post.current = () => {};
       worker?.terminate();
     };
