@@ -13,7 +13,6 @@ import type { InstallationRole, Role } from '@notesapp/core';
 import { defaultAccountLimitBytes } from '@notesapp/core';
 import {
   accounts,
-  memberships,
   workspaceCursors,
   workspaceUsage,
   workspaces,
@@ -99,16 +98,18 @@ export async function provisionWorkspace(
         .values({ workspaceId: seed.workspaceId, lastCursor: 0n })
         .onConflictDoNothing();
       if (seed.members.length > 0) {
-        await db
-          .insert(memberships)
-          .values(
-            seed.members.map((member) => ({
-              workspaceId: seed.workspaceId,
-              accountId: member.accountId,
-              role: member.role,
-            })),
-          )
-          .onConflictDoNothing();
+        // Upgrade tests also provision workspaces before the color column exists.
+        await client.query(
+          `insert into memberships (workspace_id, account_id, role)
+           select $1::uuid, member.account_id, member.role
+           from unnest($2::uuid[], $3::membership_role[]) as member(account_id, role)
+           on conflict do nothing`,
+          [
+            seed.workspaceId,
+            seed.members.map((member) => member.accountId),
+            seed.members.map((member) => member.role),
+          ],
+        );
       }
       await client.query('commit');
     } catch (error) {
