@@ -249,7 +249,9 @@ export function Button({
   );
   if (optical)
     return (
-      <span className="relative inline-flex h-7 shrink-0 coarse:h-11">
+      <span
+        className={`relative inline-flex h-7 shrink-0 coarse:h-11 ${hideTextOnPhone ? 'coarse:max-md:w-11' : ''}`}
+      >
         <span
           aria-hidden="true"
           className="invisible inline-flex items-center gap-2 px-3 text-label coarse:px-4"

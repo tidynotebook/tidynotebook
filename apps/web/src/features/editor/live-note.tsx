@@ -25,6 +25,7 @@ import {
   DialogBody,
   PresenceAvatar,
   PresenceAvatarStack,
+  presenceTriggerClassName,
   ListRow,
   Notice,
   Popover,
@@ -393,6 +394,7 @@ export function NotePresence({
       <Button
         variant="ghost"
         size="compact"
+        className={presenceTriggerClassName}
         buttonRef={anchor}
         ariaHasPopup="dialog"
         ariaExpanded={open}

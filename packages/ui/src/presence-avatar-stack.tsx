@@ -3,6 +3,9 @@ import { PresenceAvatar } from './identity.tsx';
 import { Inline } from './primitives.tsx';
 import { Pill } from './section-heading.tsx';
 
+export const presenceTriggerClassName =
+  'coarse:max-md:min-w-11 coarse:max-md:px-1';
+
 export function PresenceAvatarStack({
   people,
 }: {
@@ -20,7 +23,11 @@ export function PresenceAvatarStack({
           <span
             key={person.id}
             className={
-              index === 0 ? 'inline-flex' : 'inline-flex max-compact:hidden'
+              index > 1
+                ? 'inline-flex max-md:hidden'
+                : index === 1
+                  ? 'inline-flex max-compact:hidden'
+                  : 'inline-flex'
             }
           >
             <PresenceAvatar slot={person.slot} idle={person.idle} ring>
@@ -30,7 +37,12 @@ export function PresenceAvatarStack({
         ))}
       </span>
       {people.length > 4 ? (
-        <Pill className="max-compact:hidden">+{people.length - 4}</Pill>
+        <Pill className="max-md:hidden">+{people.length - 4}</Pill>
+      ) : null}
+      {people.length > 2 ? (
+        <Pill className="md:hidden max-compact:hidden">
+          +{people.length - 2}
+        </Pill>
       ) : null}
       {people.length > 1 ? (
         <span className="hidden text-small text-muted max-compact:inline">

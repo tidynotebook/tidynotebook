@@ -787,6 +787,76 @@ export async function auditContentParity(page: Page) {
       )
         issues.push(item);
     };
+    const noteTitle = document.querySelector('[data-note-header-title]');
+    const header = noteTitle?.closest('header');
+    if (
+      noteTitle &&
+      header &&
+      !header.closest('[inert]') &&
+      matchMedia('(pointer: coarse) and (width < 48rem)').matches
+    ) {
+      const style = getComputedStyle(noteTitle);
+      check(
+        noteTitle,
+        'note header single line semantics',
+        Number(style.whiteSpace === 'nowrap'),
+        1,
+      );
+      check(
+        noteTitle,
+        'note header ellipsis semantics',
+        Number(
+          style.textOverflow === 'ellipsis' && style.overflowX === 'hidden',
+        ),
+        1,
+      );
+      check(
+        noteTitle,
+        'note header has title space semantics',
+        Number(noteTitle.getBoundingClientRect().width >= 16),
+        1,
+      );
+      if (!(noteTitle instanceof HTMLInputElement)) {
+        const line = document.createRange();
+        line.selectNodeContents(noteTitle);
+        check(
+          noteTitle,
+          'note header rendered lines semantics',
+          line.getClientRects().length,
+          1,
+        );
+      }
+      const actions = [...header.querySelectorAll('button')].filter(
+        (button) =>
+          /^(Note actions$|Search$|Account:)/.test(
+            button.getAttribute('aria-label') ?? '',
+          ) && visible(button),
+      );
+      const gap = parseFloat(getComputedStyle(header).columnGap);
+      let preceding: DOMRect | undefined;
+      for (const button of actions) {
+        const rect = button.getBoundingClientRect();
+        check(
+          button,
+          'note header touch target semantics',
+          Number(
+            rect.width >= 44 &&
+              rect.height >= 44 &&
+              rect.left >= 0 &&
+              rect.right <= innerWidth,
+          ),
+          1,
+        );
+        if (preceding)
+          check(
+            button,
+            'note header action gap',
+            rect.left - preceding.right,
+            gap,
+          );
+        preceding = rect;
+      }
+    }
     for (const list of [
       ...document.querySelectorAll(
         '.ui-page-column ul,.ui-page-column ol,#command-palette-list',

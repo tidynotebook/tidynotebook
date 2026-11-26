@@ -560,11 +560,14 @@ export function Menu({
   );
 
   return (
-    <div className="relative flex items-center" ref={rootRef}>
+    <div
+      className={`relative flex items-center ${trigger === 'avatar' ? 'coarse:max-md:-me-2' : ''}`}
+      ref={rootRef}
+    >
       <span
         className={
           trigger === 'avatar'
-            ? 'relative inline-flex h-6 w-6 shrink-0 items-center justify-center'
+            ? 'relative inline-flex h-6 w-6 shrink-0 items-center justify-center coarse:max-md:w-11'
             : 'contents'
         }
       >

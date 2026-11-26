@@ -65,7 +65,18 @@ export function NoteHeader({
   const fallbackRef = useRef<HTMLInputElement | null>(null);
   const selectOnFocus = useRef(selectOnFirstFocus);
 
-  if (readOnly) return <HeaderLeaf>{name}</HeaderLeaf>;
+  if (readOnly)
+    return (
+      <HeaderLeaf>
+        <span
+          className="min-w-0 truncate"
+          title={name}
+          data-note-header-title=""
+        >
+          {name}
+        </span>
+      </HeaderLeaf>
+    );
 
   return (
     <HeaderLeaf>
@@ -76,6 +87,7 @@ export function NoteHeader({
         <input
           ref={nameInputRef ?? fallbackRef}
           id={`notes-path-${fileId}`}
+          data-note-header-title=""
           className={noteNameFieldClassName()}
           type="text"
           value={name}

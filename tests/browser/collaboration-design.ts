@@ -430,6 +430,16 @@ export async function runCollaborationAudit(
         const text = editor.locator('.cm-content');
         await text.waitFor();
         await editor.locator('[data-live-connection=Live]').waitFor();
+        await owner.goto(note);
+        for (const [page, surface] of [
+          [viewer, 'viewer-note-with-presence'],
+          [editor, 'editor-note-with-presence'],
+        ] as const) {
+          await page
+            .getByRole('button', { name: /People in this note: .+, .+/ })
+            .waitFor();
+          await check(page, surface);
+        }
         await editorContext.setOffline(true);
         if (phone)
           await editor
