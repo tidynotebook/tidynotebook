@@ -516,3 +516,50 @@
   --notes-surface-hover: var(--notes-card-raised-hover);
   --notes-surface-active: var(--notes-card-raised-selected);
 }
+
+@theme static {
+  --color-live-0: #7446a8;
+  --color-live-1: #185d9a;
+  --color-live-2: #90601b;
+  --color-live-3: #7d2946;
+  --color-live-4: #277057;
+  --color-live-5: #394077;
+  --color-live-selection-0: color-mix(
+    in srgb,
+    var(--color-live-0) 24%,
+    transparent
+  );
+  --color-live-selection-1: color-mix(
+    in srgb,
+    var(--color-live-1) 24%,
+    transparent
+  );
+  --color-live-selection-2: color-mix(
+    in srgb,
+    var(--color-live-2) 24%,
+    transparent
+  );
+  --color-live-selection-3: color-mix(
+    in srgb,
+    var(--color-live-3) 24%,
+    transparent
+  );
+  --color-live-selection-4: color-mix(
+    in srgb,
+    var(--color-live-4) 24%,
+    transparent
+  );
+  --color-live-selection-5: color-mix(
+    in srgb,
+    var(--color-live-5) 24%,
+    transparent
+  );
+}
+[data-theme='dark'] {
+  --color-live-0: #c7a4f8;
+  --color-live-1: #7abbfa;
+  --color-live-2: #e2a358;
+  --color-live-3: #e695ae;
+  --color-live-4: #82d7b5;
+  --color-live-5: #aab1f0;
+}

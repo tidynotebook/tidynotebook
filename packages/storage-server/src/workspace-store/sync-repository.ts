@@ -1,3 +1,4 @@
+import { writeContributors } from './contributors.ts';
 /**
  * The sync repository: the changesets, the receipts, the snapshots, and the
  * incremental change feed of the open workspace.
@@ -699,6 +700,13 @@ async function writeChangeset(
       })),
     )
     .returning({ id: revisions.id, serverTime: revisions.serverTime });
+  const contributors = await writeContributors(
+    client,
+    workspaceId,
+    actor,
+    input,
+  );
+  if (!contributors.ok) return contributors;
   const serverTimes = new Map(
     written.map((row) => [row.id, row.serverTime.toISOString()]),
   );

@@ -34,7 +34,7 @@ export const settingsPages = [
     title: 'Profile',
     group: 'Security',
     sections: ['profile', 'account', 'remove-account'],
-    scope: 'Your account owns every note in your workspaces.',
+    scope: 'Your name and email address.',
   },
   {
     path: 'billing',
@@ -70,6 +70,13 @@ export const settingsPages = [
     group: 'Preferences',
     sections: ['offline'],
     scope: 'This device only. Notes are always kept on this device.',
+  },
+  {
+    path: 'members',
+    title: 'Members',
+    group: 'Workspace',
+    sections: ['members'],
+    scope: 'workspace access.',
   },
   {
     path: 'daily-notes',

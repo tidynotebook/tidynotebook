@@ -1,0 +1,457 @@
+import { registerAccessFlush } from '../../lib/workspace-recovery.ts';
+import { base64, bytesOfBase64, type LocalStore } from '@notesapp/sync';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
+import {
+  type BoundNote,
+  setEditorReadOnly,
+  type EditorView,
+  decodeNoteAwareness,
+  decodeNoteSync,
+  encodeNoteSync,
+  mergeDocumentUpdates,
+  updateActors,
+} from '@notesapp/editor';
+import {
+  Button,
+  Dialog,
+  DialogBody,
+  IdentityMark,
+  Inline,
+  ListRow,
+  Notice,
+  Pill,
+} from '@notesapp/ui';
+import { generateUUID } from '@notesapp/core';
+import type { Role } from '@notesapp/api-client';
+import { useSession, useTabNoticeStream, useWorkspace } from '../../app.tsx';
+import { initialOf } from '../../lib/initial.ts';
+function readProperty(value: unknown, key: string): unknown {
+  return value === null || typeof value !== 'object'
+    ? undefined
+    : Object.fromEntries(Object.entries(value))[key];
+}
+
+const maxSyncBytes = 64 * 1024;
+const maxAwarenessBytes = 4 * 1024;
+const liveSendMs = 100;
+const liveRetryMs = 5000;
+
+type Person = {
+  readonly clientId: number;
+  readonly accountId: string;
+  readonly name: string;
+  readonly slot: number;
+  readonly mode: string;
+};
+type LiveStatus = 'Live' | 'Reconnecting' | 'Offline';
+type LiveState = {
+  readonly status: LiveStatus;
+  readonly others: readonly Person[];
+  readonly access?: Role | 'removed';
+};
+
+export function useLiveNote(input: {
+  readonly workspaceId: string;
+  readonly fileId: string;
+  readonly epoch: number | null;
+  readonly hold: () => { note: BoundNote; release: () => void };
+  readonly persist: (update: Uint8Array) => Promise<unknown>;
+  readonly flush: () => Promise<void>;
+}): LiveState {
+  const stream = useTabNoticeStream();
+  const account = useSession().account;
+  const workspace = useWorkspace();
+  const reload = workspace.reload;
+  const [state, setState] = useState<LiveState>({
+    status: navigator.onLine ? 'Reconnecting' : 'Offline',
+    others: [],
+  });
+  const { workspaceId, fileId, epoch, hold, persist, flush } = input;
+
+  useEffect(() => {
+    if (stream === null || account === null || epoch === null) return;
+    const { note, release } = hold();
+    const roomId = generateUUID();
+    const clientId = note.clientId();
+    const others = new Map<number, Person>();
+    let active = true;
+    let joined = false;
+    let role: Role = 'viewer';
+    let retired = false;
+    let sequence = 0;
+    let status: LiveStatus = navigator.onLine ? 'Reconnecting' : 'Offline';
+    let receiving = Promise.resolve();
+    let pending: Uint8Array[] = [];
+    let nextAwareness: Uint8Array | null = null;
+    let sendTimer: number | null = null;
+
+    const updateState = (access?: Role | 'removed'): void => {
+      const accounts = new Map(
+        [...others.values()].map((person) => [person.accountId, person]),
+      );
+      setState((old) => ({
+        ...old,
+        status,
+        others: [...accounts.values()],
+        ...(access === undefined ? {} : { access }),
+      }));
+    };
+
+    const canSendText = (): boolean => role !== 'viewer';
+
+    function tryJoin(): void {
+      if (!active || joined || retired || !navigator.onLine) return;
+      stream?.sendLive({
+        kind: 'joinNote',
+        roomId,
+        workspaceId,
+        fileId,
+        epoch: epoch ?? 1,
+        clientId,
+      });
+    }
+
+    function sendSync(
+      kind: 'state' | 'vector' | 'update',
+      bytes: Uint8Array,
+    ): void {
+      const frame = encodeNoteSync({ kind, bytes });
+      if (frame.byteLength <= maxSyncBytes)
+        stream?.sendLive({
+          kind: 'sendNoteSync',
+          roomId,
+          payload: base64(frame),
+        });
+    }
+
+    function reset(): void {
+      joined = false;
+      sequence = 0;
+      pending = [];
+      nextAwareness = null;
+      others.clear();
+      note.clearRemoteAwareness();
+      status = navigator.onLine ? 'Reconnecting' : 'Offline';
+      updateState();
+    }
+
+    const schedule = (): void => {
+      if (sendTimer !== null) return;
+      sendTimer = window.setTimeout(() => {
+        sendTimer = null;
+        const updates = pending;
+        const awareness = nextAwareness;
+        pending = [];
+        nextAwareness = null;
+        if (!joined) return;
+        if (awareness !== null && awareness.byteLength <= maxAwarenessBytes)
+          stream.sendLive({
+            kind: 'sendNoteAwareness',
+            roomId,
+            payload: base64(awareness),
+          });
+        if (updates.length > 0 && role !== 'viewer')
+          void flush()
+            .then(() => {
+              if (active && joined && role !== 'viewer')
+                sendSync('update', mergeDocumentUpdates(updates));
+            })
+            .catch(() => {});
+      }, liveSendMs);
+    };
+
+    const offUpdates = note.onLiveLocal((update) => {
+      if (!joined || role === 'viewer') return;
+      pending.push(update);
+      schedule();
+    });
+    const offAwareness = note.onAwarenessLocal((update) => {
+      if (!joined) return;
+      nextAwareness = update;
+      schedule();
+    });
+
+    const offMessage = stream.onLive((message) => {
+      if (!active) return;
+      if (message === null) {
+        reset();
+        return;
+      }
+      if (message.kind === 'ready') {
+        reset();
+        tryJoin();
+        return;
+      }
+      if (!('roomId' in message) || message.roomId !== roomId) return;
+      if (message.kind === 'noteJoined') {
+        joined = true;
+        role = message.role;
+        updateState(role);
+        sendSync('vector', note.stateVector());
+        note.setLiveUser(account.name ?? 'Member', 'var(--color-accent)');
+      } else if (message.kind === 'noteStopped') {
+        reset();
+        if (message.reason === 'forbidden') {
+          retired = true;
+          reload();
+        }
+      } else if (message.kind === 'noteAccess') {
+        if (message.access === 'removed') {
+          retired = true;
+          reset();
+        } else role = message.access;
+        updateState(message.access);
+        reload();
+      } else if (message.kind === 'noteAwareness') {
+        const bytes = bytesOfBase64(message.payload);
+        const entries = decodeNoteAwareness(bytes, 32);
+        if (entries === null) return;
+        note.receiveAwareness(bytes);
+        for (const entry of entries) {
+          if (entry.state === null) {
+            others.delete(entry.clientId);
+            continue;
+          }
+          const other = readProperty(entry.state, 'accountId');
+          const name = readProperty(entry.state, 'displayName');
+          const mode = readProperty(entry.state, 'mode');
+          const slot = readProperty(entry.state, 'slot');
+          if (
+            typeof other === 'string' &&
+            other !== account.accountId &&
+            typeof name === 'string' &&
+            typeof slot === 'number' &&
+            typeof mode === 'string'
+          )
+            others.set(entry.clientId, {
+              accountId: other,
+              name,
+              mode,
+              slot,
+              clientId: entry.clientId,
+            });
+        }
+        updateState();
+      } else if (message.kind === 'noteSync') {
+        if (message.sequence !== sequence + 1) {
+          stream.sendLive({ kind: 'leaveNote', roomId });
+          reset();
+          return;
+        }
+        sequence = message.sequence;
+        const frame = decodeNoteSync(bytesOfBase64(message.payload));
+        if (frame === null) return;
+        receiving = receiving
+          .then(async () => {
+            if (!active || !joined) return;
+            if (frame.kind === 'vector') {
+              if (role === 'viewer') return;
+              await flush();
+              if (!active || !joined || !canSendText()) return;
+              const update = note.liveDelta(frame.bytes);
+              if (updateActors(update).clientIds.every((id) => id === clientId))
+                sendSync('state', update);
+              return;
+            }
+            await persist(frame.bytes);
+            if (!active || !joined) return;
+            note.applyLive(frame.bytes);
+            if (frame.kind === 'state') {
+              status = 'Live';
+              updateState();
+            }
+          })
+          .catch(() => {
+            if (active) {
+              stream.sendLive({ kind: 'leaveNote', roomId });
+              reset();
+            }
+          });
+      }
+    });
+    const online = (): void => {
+      reset();
+      tryJoin();
+    };
+    const offline = (): void => {
+      reset();
+    };
+    window.addEventListener('online', online);
+    window.addEventListener('offline', offline);
+    const retry = window.setInterval(tryJoin, liveRetryMs);
+    tryJoin();
+    return () => {
+      active = false;
+      stream.sendLive({ kind: 'leaveNote', roomId });
+      offUpdates();
+      offAwareness();
+      offMessage();
+      window.clearInterval(retry);
+      if (sendTimer !== null) window.clearTimeout(sendTimer);
+      window.removeEventListener('online', online);
+      window.removeEventListener('offline', offline);
+      note.clearRemoteAwareness();
+      release();
+    };
+  }, [
+    stream,
+    account?.accountId,
+    epoch,
+    workspaceId,
+    fileId,
+    hold,
+    persist,
+    flush,
+    reload,
+  ]);
+
+  return state;
+}
+
+export function NotePresence({
+  people,
+}: {
+  readonly people: readonly Person[];
+}): ReactNode {
+  const [open, setOpen] = useState(false);
+  if (people.length === 0) return null;
+  const label = people.map((person) => person.name).join(', ');
+  return (
+    <>
+      <Button
+        variant="ghost"
+        size="compact"
+        label={`People in this note: ${label}`}
+        onClick={() => setOpen(true)}
+      >
+        <Inline gap={1}>
+          {people.slice(0, 4).map((person) => (
+            <IdentityMark key={person.accountId}>
+              {initialOf(person.name)}
+            </IdentityMark>
+          ))}
+          {people.length > 4 ? <Pill>+{people.length - 4}</Pill> : null}
+        </Inline>
+      </Button>
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        titleId="note-presence"
+        title="People in this note"
+      >
+        <DialogBody>
+          {people.map((person) => (
+            <ListRow
+              key={person.accountId}
+              label={person.name}
+              help={person.mode === 'viewing' ? 'Viewing' : 'Editing'}
+              leading={<IdentityMark>{initialOf(person.name)}</IdentityMark>}
+            />
+          ))}
+        </DialogBody>
+      </Dialog>
+    </>
+  );
+}
+
+export function useNoteAccess(
+  view: { current: EditorView | null },
+  viewerRole: boolean,
+) {
+  const [liveRole, setLiveRole] = useState<Role | 'removed'>();
+  const readOnly =
+    viewerRole || liveRole === 'viewer' || liveRole === 'removed';
+  const readOnlyRef = useRef(readOnly);
+  readOnlyRef.current = readOnly;
+  const wasWritable = useRef(!readOnly);
+  useLayoutEffect(() => {
+    if (view.current !== null) setEditorReadOnly(view.current, readOnly);
+    if (!readOnly) wasWritable.current = true;
+  }, [view, readOnly]);
+  return {
+    readOnly,
+    readOnlyRef,
+    setLiveRole,
+    changedToViewer: readOnly && wasWritable.current,
+  };
+}
+
+export function useEditorLiveBinding(input: {
+  readonly workspaceId: string;
+  readonly fileId: string;
+  readonly epoch: number | null;
+  readonly hold: () => { note: BoundNote; release: () => void };
+  readonly store: LocalStore;
+  readonly accountId: string;
+  readonly flush: () => Promise<void>;
+  readonly saveDraft: { current: () => Promise<unknown> };
+  readonly onAccess: (role: Role | 'removed' | undefined) => void;
+}): LiveState {
+  const {
+    workspaceId,
+    fileId,
+    epoch,
+    hold,
+    store,
+    accountId,
+    flush,
+    saveDraft,
+    onAccess,
+  } = input;
+  const persist = useCallback(
+    (bytes: Uint8Array) =>
+      store.mergeNoteWork(accountId, workspaceId, fileId, epoch ?? 1, bytes),
+    [store, accountId, workspaceId, fileId, epoch],
+  );
+  const note = useLiveNote({
+    workspaceId,
+    fileId,
+    epoch,
+    hold,
+    persist,
+    flush,
+  });
+  useLayoutEffect(() => {
+    onAccess(note.access);
+  }, [note.access, onAccess]);
+  useEffect(
+    () =>
+      registerAccessFlush(workspaceId, async () => {
+        await flush();
+        await saveDraft.current();
+      }),
+    [workspaceId, flush, saveDraft],
+  );
+  return note;
+}
+
+export function NoteLiveStatus({
+  note,
+  enabled,
+  changedToViewer,
+}: {
+  readonly note: LiveState;
+  readonly enabled: boolean;
+  readonly changedToViewer: boolean;
+}): ReactNode {
+  if (changedToViewer) return <Notice message="Your role changed to Viewer." />;
+  if (!enabled) return null;
+  return (
+    <Notice
+      message={
+        note.status === 'Live'
+          ? 'Live'
+          : note.status === 'Offline'
+            ? 'Offline. Your edits merge when you reconnect.'
+            : 'Reconnecting. Your edits are safe on this device.'
+      }
+    />
+  );
+}

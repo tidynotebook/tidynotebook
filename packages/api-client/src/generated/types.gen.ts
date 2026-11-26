@@ -1091,10 +1091,6 @@ export type DocumentSave = {
      * The complete state that the device had seen at the save. The workspace reads it to decide whether the save joins unseen work, and whether a deletion would hide an edit that the device never saw.
      */
     observed: DocumentObservedState;
-    /**
-     * Proofs for uncommitted peer work included in this checkpoint.
-     */
-    liveContributions?: Array<LiveContributionProof>;
 };
 
 /**
@@ -1659,14 +1655,6 @@ export type LinkReportList = {
 };
 
 /**
- * One server proof bound to exact peer update bytes in one note epoch.
- */
-export type LiveContributionProof = {
-    update: string;
-    proof: string;
-};
-
-/**
  * Report current access or removal from a joined room.
  */
 export type LiveNoteAccess = {
@@ -1753,7 +1741,7 @@ export type LiveNoteSyncInput = {
 };
 
 /**
- * Deliver a validated y-protocols sync message and any proofs for uncommitted work.
+ * Deliver a validated y-protocols sync message.
  */
 export type LiveNoteSyncOutput = {
     kind: 'noteSync';
@@ -1763,7 +1751,6 @@ export type LiveNoteSyncOutput = {
      */
     sequence: number;
     payload: string;
-    proofs?: Array<LiveContributionProof>;
 };
 
 /**

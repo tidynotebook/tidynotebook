@@ -47,12 +47,12 @@ The work stays in one PR on `feat/workspace-collaboration`. The
 ## M4. Live notes
 
 - Extend the socket, account coordinator, authorization and cross-server
-  relay. Add room lifecycle, document validation, proof attribution,
+  relay. Add room lifecycle, document validation, contributor attribution,
   backpressure and presence. Keep all Yjs values inside their package
   boundary. Apply remote updates through the same editor instance.
 - Test real cross-gateway fan-out and removal, stale membership, spoofed
   identity, client ID collision, role downgrade, delete-only authorship,
-  proof replay and wrong note, listener failure, limits, and HTTP fallback.
+  viewer-bound checkpoints and wrong note, listener failure, limits, and HTTP fallback.
 - In a browser test, use two accounts in separate contexts. Type at the
   same time, check both edits in both views, check avatars and remote
   cursors, disconnect one context, and prove both texts converge on

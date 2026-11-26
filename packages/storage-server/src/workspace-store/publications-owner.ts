@@ -27,6 +27,7 @@ import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import type pg from 'pg';
 import {
   OperationalError,
+  authorize,
   fail,
   ok,
   planPublishedLink,
@@ -35,7 +36,7 @@ import {
   type PublishedLink,
   type Result,
 } from '@notesapp/core';
-import { files, publications } from '../schema.ts';
+import { files, memberships, publications } from '../schema.ts';
 import { isUuid } from './errors.ts';
 import { isSecretDigest, storedScope } from './publication-row.ts';
 
@@ -142,6 +143,22 @@ export function publicationsOwnerRepository(
   actor: Actor,
   workspaceId: string,
 ): PublicationOwner {
+  async function mayPublish(): Promise<boolean> {
+    const found = await db
+      .select({ role: memberships.role })
+      .from(memberships)
+      .where(
+        and(
+          eq(memberships.workspaceId, workspaceId),
+          eq(memberships.accountId, actor.accountId),
+        ),
+      );
+    const role = found[0]?.role;
+    return (
+      role !== undefined && authorize(actor, workspaceId, role, 'publish').ok
+    );
+  }
+
   /** Whether this workspace holds one live note of this identifier. */
   const holdsNote = async (fileId: string): Promise<boolean> => {
     if (!isUuid(fileId)) return false;
@@ -183,6 +200,7 @@ export function publicationsOwnerRepository(
     async create(
       draft: PublishedLinkDraft,
     ): Promise<Result<OwnedPublishedLink>> {
+      if (!(await mayPublish())) return fail('forbidden');
       if (!isSecretDigest(draft.tokenDigest)) {
         throw new OperationalError(
           'unexpected',
@@ -209,12 +227,23 @@ export function publicationsOwnerRepository(
       // nothing, so the owner learns now rather than after a reader fails.
       if (scope.kind === 'note' && !(await holdsNote(scope.fileId)))
         return fail('not_found', [scope.fileId]);
+      const owners = await db
+        .select({ accountId: memberships.accountId })
+        .from(memberships)
+        .where(
+          and(
+            eq(memberships.workspaceId, workspaceId),
+            eq(memberships.role, 'owner'),
+          ),
+        );
+      const ownerAccountId = owners[0]?.accountId;
+      if (ownerAccountId === undefined) return fail('not_found');
       const rows = await db
         .insert(publications)
         .values({
           workspaceId,
           id: randomUUID(),
-          ownerAccountId: actor.accountId,
+          ownerAccountId,
           tokenDigest: draft.tokenDigest,
           scopeKind: scope.kind,
           scopeFileId: scope.kind === 'note' ? scope.fileId : null,
@@ -234,6 +263,7 @@ export function publicationsOwnerRepository(
     },
 
     async list(): Promise<readonly OwnedPublishedLink[]> {
+      if (!(await mayPublish())) return [];
       const rows = await db
         .select(linkColumns)
         .from(publications)
@@ -255,6 +285,7 @@ export function publicationsOwnerRepository(
       publicationId: string,
       at: Date,
     ): Promise<Result<OwnedPublishedLink>> {
+      if (!(await mayPublish())) return fail('forbidden');
       if (!isUuid(publicationId)) return fail('not_found');
       const rows = await db
         .update(publications)

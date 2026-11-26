@@ -297,6 +297,25 @@ export function historyRepository(
       const wanted = rows.slice(0, limit);
       const revIds = wanted.map((r) => r.id);
 
+      const contributorRows =
+        revIds.length === 0
+          ? []
+          : (
+              await client.query<{
+                revision_id: string;
+                account_id: string | null;
+                display_name: string | null;
+                former_member: boolean;
+              }>('select * from notesapp_revision_contributors($1, $2)', [
+                workspaceId,
+                revIds,
+              ])
+            ).rows;
+      const contributorsByRevision = Map.groupBy(
+        contributorRows,
+        (row) => row.revision_id,
+      );
+
       const parentsByChild = new Map<string, string[]>();
       if (revIds.length > 0) {
         const parentRows = await db
@@ -330,6 +349,13 @@ export function historyRepository(
           digest: row.contentDigest,
           size: Number(row.size),
           actorAccountId: row.actorAccountId,
+          contributors: (contributorsByRevision.get(row.id) ?? []).map(
+            (person) => ({
+              accountId: person.account_id,
+              displayName: person.display_name,
+              formerMember: person.former_member,
+            }),
+          ),
           clientTime: row.clientTime.toISOString(),
           serverTime: row.serverTime.toISOString(),
           message: row.message,

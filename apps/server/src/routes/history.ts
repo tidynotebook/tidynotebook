@@ -59,6 +59,7 @@ export function createHistoryHandlers(store: WorkspaceStore): HandlerMap {
             digest: r.digest,
             size: r.size,
             actorAccountId: r.actorAccountId,
+            contributors: r.contributors ?? [],
             clientTime: r.clientTime,
             serverTime: r.serverTime,
             message: r.message ?? null,

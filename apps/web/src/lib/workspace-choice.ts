@@ -123,7 +123,13 @@ function parseWorkspace(value: unknown): Workspace | null {
   const personal = member(value, 'personal');
   if (typeof workspaceId !== 'string' || workspaceId === '') return null;
   if (typeof name !== 'string' || name === '') return null;
-  if (role !== 'owner') return null;
+  if (
+    role !== 'owner' &&
+    role !== 'admin' &&
+    role !== 'editor' &&
+    role !== 'viewer'
+  )
+    return null;
   if (typeof personal !== 'boolean') return null;
   return { workspaceId, name, role, personal };
 }

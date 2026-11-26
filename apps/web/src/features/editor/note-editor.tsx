@@ -1,4 +1,10 @@
 import {
+  NotePresence,
+  NoteLiveStatus,
+  useEditorLiveBinding,
+  useNoteAccess,
+} from './live-note.tsx';
+import {
   Inset,
   Button,
   Notice,
@@ -70,6 +76,7 @@ import { useFiles, type FilesValue } from '../../shell/files.tsx';
 import { useAttachmentUrls } from './note-editor-attachments.ts';
 import {
   useRegisterNoteActions,
+  useNoteActionsForRole,
   type NoteScreenActions,
 } from './note-actions.tsx';
 import { noteFrameClassName, noteRowClassName } from '../../lib/note-column.ts';
@@ -155,6 +162,7 @@ export type NoteEditorProps = {
   readonly fileId: string;
   readonly baseRevisionId: string | null;
   readonly initialText: string;
+  readonly readOnly?: boolean | undefined;
   /**
    * The document of the note as this device holds it, with its generation,
    * or `null` for a note it has not received yet (record 0081).
@@ -267,6 +275,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
   fileId,
   baseRevisionId,
   initialText,
+  readOnly: viewerRole = false,
   initialDocument = null,
   initialPath,
   initialWorkingCopyId,
@@ -309,6 +318,9 @@ const NoteEditorBody = memo(function NoteEditorBody({
   const marginRef = useRef<HTMLDivElement | null>(null);
   const nameInputRef = useRef<HTMLInputElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const access = useNoteAccess(viewRef, viewerRole);
+  const { readOnly, readOnlyRef } = access;
+
   // The resolvers the view holds, so the view is reconfigured only when they
   // change and never with the ones it was created with.
   const viewRichRef = useRef<RichWidgetResolvers | null>(null);
@@ -958,12 +970,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
     setEditorRich(view, richResolvers);
   }, [richResolvers]);
 
-  // One editor instance per working copy. This effect never reruns for text,
-  // path, or theme changes: those travel through transactions, the store, or
-  // the compartments below. It is a layout effect, so the view holds the text
-  // of the note before the browser paints the note screen. A passive effect
-  // ran after that paint, and each open of a note showed one frame with the
-  // tools and no text.
+  // One view per open working copy. Theme and text changes use transactions.
   useLayoutEffect(() => {
     const container = containerRef.current;
     if (container === null) return;
@@ -1006,6 +1013,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
         spellCheck: spellCheckRef.current,
         rich: richResolvers,
         document: bound,
+        readOnly: readOnlyRef.current,
         onFormatContext: setFormatContext,
         onTableMenu: setTableMenu,
         // The slash menu offers the block tools of the row (issue 259).
@@ -1423,7 +1431,18 @@ const NoteEditorBody = memo(function NoteEditorBody({
       insertTemplate,
     ],
   );
-  useRegisterNoteActions(noteScreenActions);
+  const liveNote = useEditorLiveBinding({
+    workspaceId,
+    fileId,
+    epoch: initialDocument?.epoch ?? null,
+    hold: holdSession,
+    store,
+    accountId,
+    flush: noteWork.flush,
+    saveDraft: saveDraftNow,
+    onAccess: access.setLiveRole,
+  });
+  useRegisterNoteActions(useNoteActionsForRole(noteScreenActions, readOnly));
 
   return (
     <Inset as="div" className="flex h-full min-w-0 flex-col" ref={rootRef}>
@@ -1431,6 +1450,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
         fileId={fileId}
         name={name}
         nameError={pathError}
+        readOnly={readOnly}
         nameInputRef={nameInputRef}
         selectOnFirstFocus={selectNameOnFirstFocus}
         onNameChange={typeName}
@@ -1440,8 +1460,10 @@ const NoteEditorBody = memo(function NoteEditorBody({
       />
       <NoteHeaderActions
         workspaceId={workspaceId}
+        readOnly={readOnly}
         fileId={fileId}
         onRename={renameNote}
+        presence={<NotePresence people={liveNote.others} />}
         onCopyText={copyNote.run}
         onMoveToFolder={onMoveToFolder}
         onDuplicate={duplicateNote}
@@ -1455,12 +1477,6 @@ const NoteEditorBody = memo(function NoteEditorBody({
         ref={marginRef}
         className={`flex overflow-hidden flex-1 flex-col ${noteEditorGutterClassName()}`}
       >
-        {/*
-          The name field is in the frame header, which is one row of 44 px and
-          holds no second line, so the reason a name cannot be kept stands
-          here, on the note the name belongs to (record 0069). The field
-          points at this message with `aria-describedby`.
-        */}
         {pathError === '' ? null : (
           <Inset as="div" id={noteNameErrorId(fileId)}>
             <Notice tone="problem" message={pathError} />
@@ -1521,23 +1537,19 @@ const NoteEditorBody = memo(function NoteEditorBody({
           </Inset>
         ) : null}
 
-        {/*
-          The text and the footer are one column, so they sit in one flex
-          child and the side region is its sibling (decision 0055). The name
-          is not here: it is the last part of the breadcrumb in the frame
-          header, so the note starts with its text (decision 0069). The row
-          is the row of every page, so the text keeps the place of the
-          column of any other page (decision 0137).
-        */}
         <div className={noteRowClassName()}>
           <div className={noteFrameClassName()}>
             {/* The tools use the one editor and its local history. */}
-            <FormatToolbar
-              context={formatContext}
-              onFormat={runFormat}
-              history={history.state}
-              onHistory={history.run}
-            />
+            {readOnly ? (
+              <Notice message="View only. You can read this note and its history." />
+            ) : (
+              <FormatToolbar
+                context={formatContext}
+                onFormat={runFormat}
+                history={history.state}
+                onHistory={history.run}
+              />
+            )}
             {tableMenu === null ? null : (
               <TableMenu
                 request={tableMenu}
@@ -1550,6 +1562,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
               as="div"
               className={noteEditorHostClassName()}
               onPaste={(event): void => {
+                if (readOnly) return;
                 const dropped = Array.from(event.clipboardData?.files ?? []);
                 if (dropped.some((file) => file.type.startsWith('image/'))) {
                   event.preventDefault();
@@ -1557,6 +1570,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
                 }
               }}
               onDrop={(event): void => {
+                if (readOnly) return;
                 const dropped = Array.from(event.dataTransfer?.files ?? []);
                 if (dropped.some((file) => file.type.startsWith('image/'))) {
                   event.preventDefault();
@@ -1565,6 +1579,11 @@ const NoteEditorBody = memo(function NoteEditorBody({
               }}
             />
             <NoteFooter initialText={initialText} />
+            <NoteLiveStatus
+              note={liveNote}
+              enabled={initialDocument != null}
+              changedToViewer={access.changedToViewer}
+            />
             <ImageViewer
               image={openImage}
               onRemoved={imageUndo.removed}

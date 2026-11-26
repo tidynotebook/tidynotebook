@@ -102,3 +102,26 @@ export function useRegisterNoteActions(actions: NoteScreenActions): void {
     };
   }, [register, actions]);
 }
+
+export function useNoteActionsForRole(
+  actions: NoteScreenActions,
+  readOnly: boolean,
+): NoteScreenActions {
+  return useMemo(
+    () =>
+      readOnly
+        ? {
+            ...actions,
+            deleteAndLeave: null,
+            moveToFolder: null,
+            duplicate: null,
+            attachImage: null,
+            publish: null,
+            format: null,
+            formatRows: () => [],
+            insertTemplate: null,
+          }
+        : actions,
+    [actions, readOnly],
+  );
+}

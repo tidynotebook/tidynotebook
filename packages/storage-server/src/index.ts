@@ -171,3 +171,15 @@ export {
   type OAuthTokenIdentity,
   type OAuthTokenLocator,
 } from './oauth-store.ts';
+
+export {
+  applyDocumentUpdate,
+  decodeNoteAwareness,
+  decodeNoteSync,
+  documentStateVector,
+  encodeDocumentDelta,
+  encodeNoteAwareness,
+  encodeNoteSync,
+  updateActors,
+  type AwarenessEntry,
+} from '@notesapp/note-document';

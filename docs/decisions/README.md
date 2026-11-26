@@ -270,7 +270,7 @@ the development process. Old process records remain as history.
 | [0242](0242-tables-keep-readable-column-widths.md)                                    | Tables keep readable column widths                                              |
 | [0243](0243-workspace-membership-uses-verified-invitations-and-current-roles.md)      | Workspace membership uses verified invitations and current roles                |
 | [0244](0244-live-note-rooms-share-the-sync-websocket.md)                              | Live note rooms share the sync WebSocket                                        |
-| [0245](0245-checkpoints-prove-live-contributions.md)                                  | Checkpoints prove live contributions                                            |
+| [0245](0245-revision-contributors-come-from-client-id-bindings.md)                    | Revision contributors come from client ID bindings                              |
 
 Records 0001 to 0015 record the decisions D1 to D15 of
 [the v0.1 revamp plan](../plans/003-v0.1-revamp.md). Record 0016 records the

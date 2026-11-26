@@ -1,6 +1,6 @@
 # 0244. Live note rooms share the sync WebSocket
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-26
 
 ## Context

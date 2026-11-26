@@ -1,8 +1,7 @@
 /**
  * The membership repository: the actor's role in the open workspace.
  *
- * It is the workspaces slice of the port. It reads the membership row and
- * reduces the stored enum to the one role of this product.
+ * It reads the membership row inside the workspace transaction.
  */
 import { and, eq } from 'drizzle-orm';
 import type { Role, WorkspaceTransaction } from '@notesapp/core';
@@ -27,10 +26,7 @@ export function membershipRepository(
             eq(memberships.accountId, accountId),
           ),
         );
-      // The database enum still holds the roles of the removed multi-user
-      // product. Only `owner` is a role of this product, so any other stored
-      // value grants nothing at all.
-      return rows[0]?.role === 'owner' ? 'owner' : null;
+      return rows[0]?.role ?? null;
     },
   };
 }

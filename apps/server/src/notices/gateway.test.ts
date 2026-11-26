@@ -187,7 +187,7 @@ function subscribe(generation: number, ids: readonly string[]): string {
 await test('a stream opens with ready and accepts a set before it notifies', async () => {
   const { gateway: target, listener } = gateway();
   await settle();
-  assert.deepEqual(target.offered(), ['notesapp.sync.1']);
+  assert.deepEqual(target.offered(), ['notesapp.sync.2']);
   const socket = await openStream(target);
   assert.deepEqual(socket.sent[0], { kind: 'ready', accountId: account });
   socket.receive(subscribe(1, [first]));

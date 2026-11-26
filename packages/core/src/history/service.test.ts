@@ -1,3 +1,4 @@
+import type { Action } from '../identity/actor.ts';
 /**
  * Unit tests for the history, restore, and purge services.
  */
@@ -69,8 +70,8 @@ const writerId = 'a0000000-0000-4000-8000-000000000002';
 const strangerId = 'a0000000-0000-4000-8000-000000000003';
 
 function buildActor(accountId: string, role: Role | null): Actor {
-  const actions: ('read' | 'write')[] =
-    role === 'owner' ? ['read', 'write'] : [];
+  const actions: Action[] =
+    role === 'owner' ? ['read', 'history', 'write', 'purge'] : [];
   const built = verifyActor(accountId, [{ workspaceId, actions }]);
   if (!built.ok) throw new Error('Actor creation failed');
   return built.value;

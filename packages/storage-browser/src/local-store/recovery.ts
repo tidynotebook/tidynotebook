@@ -1,3 +1,5 @@
+import { readDocumentText } from '@notesapp/note-document';
+import { readDocumentRow } from './documents.ts';
 /**
  * The recovery area of the local store, and the private-data reset.
  *
@@ -12,6 +14,7 @@ import {
   LocalStorageError,
   accountWide,
   type LocalStore,
+  type AccessRecoveryCopy,
   type RecoveryInput,
   type RecoveryRecord,
 } from '@notesapp/sync';
@@ -54,6 +57,8 @@ type RecoverySlice = Pick<
   | 'removeRecovery'
   | 'clearPrivateData'
   | 'clearIdleAccounts'
+  | 'workspaceAccessCopies'
+  | 'clearWorkspaceAccess'
 >;
 
 /** Every table that holds private rows, which a reset writes in one go. */
@@ -366,7 +371,181 @@ export function createRecoverySlice(ctx: LocalStoreContext): RecoverySlice {
     return false;
   };
 
+  async function accessCopies(
+    accountId: string,
+    workspaceId: string,
+  ): Promise<AccessRecoveryCopy[]> {
+    const copies: AccessRecoveryCopy[] = [];
+    const noted = new Set<string>();
+    const add = (copy: AccessRecoveryCopy): void => {
+      const key = JSON.stringify([copy.path, copy.text]);
+      if (noted.has(key)) return;
+      noted.add(key);
+      copies.push(copy);
+    };
+    for (const raw of await tables.drafts.toArray()) {
+      const draft = validateDraft(raw);
+      if (!matchesPartition(ctx, draft, accountId, workspaceId)) continue;
+      const stored = await tables.acceptedFiles.get([
+        serverOrigin,
+        accountId,
+        workspaceId,
+        draft.fileId,
+      ]);
+      const file = stored === undefined ? null : validateAcceptedFile(stored);
+      if (!(await draftHoldsWork(ctx, draft, file))) continue;
+      const document = await readDocumentRow(tables, {
+        serverOrigin,
+        accountId,
+        workspaceId,
+        fileId: draft.fileId,
+      });
+      const text =
+        document === null ? draft.text : readDocumentText(document.bytes);
+      add({ identity: draft.workingCopyId, path: draft.path, text });
+      if (text !== draft.text)
+        add({
+          identity: draft.workingCopyId,
+          path: draft.path,
+          text: draft.text,
+        });
+    }
+    for (const raw of await tables.checkpoints.toArray()) {
+      const checkpoint = validateCheckpoint(raw);
+      if (
+        !matchesPartition(ctx, checkpoint, accountId, workspaceId) ||
+        checkpoint.accepted ||
+        checkpoint.deleted
+      )
+        continue;
+      const stored = await tables.contents.get([
+        serverOrigin,
+        accountId,
+        workspaceId,
+        checkpoint.digest,
+      ]);
+      if (stored === undefined)
+        throw new LocalStorageError('corrupt', 'a pending copy has no content');
+      const content = validateContent(stored);
+      if (content.text !== null)
+        add({
+          identity: checkpoint.revisionId,
+          path: checkpoint.path,
+          text: content.text,
+        });
+    }
+    for (const raw of await tables.recovery.toArray()) {
+      const copy = validateRecovery(raw);
+      if (matchesPartition(ctx, copy, accountId, workspaceId))
+        add({ identity: copy.recoveryId, path: copy.path, text: copy.text });
+    }
+    for (const raw of await tables.documentUpdates.toArray()) {
+      const work = validateDocumentUpdate(raw);
+      if (!matchesPartition(ctx, work, accountId, workspaceId)) continue;
+      const row = await readDocumentRow(tables, {
+        serverOrigin,
+        accountId,
+        workspaceId,
+        fileId: work.fileId,
+      });
+      const file = await tables.acceptedFiles.get([
+        serverOrigin,
+        accountId,
+        workspaceId,
+        work.fileId,
+      ]);
+      if (row !== null && file !== undefined)
+        add({
+          identity: work.fileId,
+          path: validateAcceptedFile(file).path,
+          text: readDocumentText(row.bytes),
+        });
+    }
+    return copies;
+  }
+
+  async function clearWorkspaceWrites(
+    accountId: string,
+    workspaceId: string,
+  ): Promise<void> {
+    for (const row of await tables.acceptedFiles.toArray()) {
+      const file = validateAcceptedFile(row);
+      if (!matchesPartition(ctx, file, accountId, workspaceId)) continue;
+      if (file.acceptedHeadRevisionId === null)
+        await tables.acceptedFiles.delete([
+          serverOrigin,
+          accountId,
+          workspaceId,
+          file.fileId,
+        ]);
+      else
+        await tables.acceptedFiles.put({
+          ...file,
+          localHeadRevisionId: null,
+          path: file.acceptedPath ?? file.path,
+          deleted: file.acceptedPath === null,
+        });
+    }
+    const range = partitionRange(serverOrigin, accountId, workspaceId);
+    const partitions = [
+      tables.drafts.where('[serverOrigin+accountId+workspaceId+workingCopyId]'),
+      tables.queue.where('[serverOrigin+accountId+workspaceId+mutationId]'),
+      tables.documents.where('[serverOrigin+accountId+workspaceId+fileId]'),
+      tables.documentUpdates.where(
+        '[serverOrigin+accountId+workspaceId+fileId+updateId]',
+      ),
+      tables.recovery.where('[serverOrigin+accountId+workspaceId+recoveryId]'),
+      tables.legacySaves.where(
+        '[serverOrigin+accountId+workspaceId+mutationId]',
+      ),
+      tables.legacyDrafts.where(
+        '[serverOrigin+accountId+workspaceId+workingCopyId]',
+      ),
+    ];
+    for (const partition of partitions)
+      await partition.between(range.lower, range.upper, true, true).delete();
+    for (const row of await tables.checkpoints.toArray()) {
+      const checkpoint = validateCheckpoint(row);
+      if (
+        matchesPartition(ctx, checkpoint, accountId, workspaceId) &&
+        !checkpoint.accepted
+      )
+        await tables.checkpoints.delete([
+          serverOrigin,
+          accountId,
+          workspaceId,
+          checkpoint.revisionId,
+        ]);
+    }
+    await tables.cursors.delete([serverOrigin, accountId, workspaceId]);
+  }
+
   return {
+    workspaceAccessCopies(accountId, workspaceId) {
+      return guard('reading work after workspace access changed', () =>
+        db.transaction('r', privateTables(tables), () =>
+          accessCopies(accountId, workspaceId),
+        ),
+      );
+    },
+
+    async clearWorkspaceAccess(accountId, workspaceId, expected, removed) {
+      const cleared = await guard(
+        'clearing work after workspace access changed',
+        () =>
+          db.transaction('rw', privateTables(tables), async () => {
+            const current = await accessCopies(accountId, workspaceId);
+            if (JSON.stringify(current) !== JSON.stringify(expected))
+              return false;
+            if (removed) await clearWorkspacePartition(accountId, workspaceId);
+            else await clearWorkspaceWrites(accountId, workspaceId);
+            return true;
+          }),
+      );
+      if (cleared)
+        publish({ accountId, workspaceId, fileId: null, kind: 'reset' });
+      return cleared;
+    },
     recover(
       accountId: string,
       workspaceId: string,

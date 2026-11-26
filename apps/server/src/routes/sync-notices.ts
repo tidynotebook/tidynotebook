@@ -117,6 +117,7 @@ export function createSyncNoticesProtocol(notices?: {
         const decision = await gateway.admit({
           accountId: resolved.actor.accountId,
           sessionId: resolved.sessionId,
+          name: resolved.name ?? 'Member',
         });
         return decision.ok
           ? { admitted: true, open: decision.open }

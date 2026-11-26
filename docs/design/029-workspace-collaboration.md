@@ -1,6 +1,6 @@
 # Workspace collaboration
 
-Status: proposed
+Status: accepted
 
 People can invite each other to a workspace, edit a note together, and see
 who made a version. [Design 013](013-conflict-free-sync-of-note-text.md) owns
@@ -49,7 +49,8 @@ and role. Account row policies keep their existing scope.
 A member can leave if they keep a workspace, as in
 [record 0051](../decisions/0051-an-account-always-keeps-one-workspace.md).
 If forced removal or a workspace deletion would strand another member,
-create a new Personal workspace for them in the same transaction. This
+create a new Personal workspace for them in the same transaction. Use the
+same name, Personal flag and welcome setup as signup. This
 also permits access revocation when the target has no other workspace.
 Keep the existing refusal when the deleting owner would lose their last
 workspace. Show the count of other members in the delete confirmation. A
@@ -173,7 +174,7 @@ budgets so presence cannot delay durable notices. Initial live limits are
 16 room joins per connection, 32 participating working copies per room,
 64 KiB decoded sync, 4 KiB decoded awareness, and 20 live client messages
 per second with a burst of 40. Limit each JSON live frame to 128 KiB as
-encoded, including proofs, and bound pending and outgoing bytes. Measure
+encoded, and bound pending and outgoing bytes. Measure
 these limits with the multi-server test and load check. If a room exceeds
 a limit, stop or defer live work while local drafts and HTTP sync continue.
 Report Live only after join and handshake. Show Reconnecting when a live
@@ -196,7 +197,8 @@ Use a separate PostgreSQL notification channel for the live bus. Keep
 ordinary feed notices as they are. PostgreSQL notifications are visible to
 database users and usually limit payloads to fewer than 8000 bytes.
 Use authenticated encryption with a distinct purpose and the shared
-installation secret. Send bounded numbered chunks under 7000 bytes each.
+installation secret, through the existing seal helper with a separate
+purpose. If a single gateway runs, deliver in process. Send bounded numbered chunks under 7000 bytes each.
 Authenticate routing metadata and message IDs. Reject replay, bad chunks,
 oversize messages, or expired assemblies. Commit related chunks together.
 Keep the relay outside the checkpoint transaction. Put no live frame in a
@@ -229,22 +231,14 @@ or expiry. Workspace presence sends only open-note counts for other
 accounts to authorized watchers. Collapse tabs of one account into one
 count. Bound refreshes and expire stale state.
 
-A person's local change can depend on text that a peer has shared but not
-saved. The server issues a sealed, immutable proof for each relayed delta.
-It binds the verified author, the workspace, file, epoch, and a digest of the
-exact update. The browser persists the proof with its local dependencies and
-freezes it with the checkpoint. Prove foreign operations by applying the
-referenced updates through the same document validator and comparing
-semantic coverage against the proposed checkpoint. Validate new insertion
-ranges and deletion ranges, including deletion-only changes. A deletion's
-target client ID does not identify the person who deleted it. Attribute a
-local deletion to the checkpoint actor and a proven peer deletion to its
-verified sender. Remove already accepted contributions from the new revision's
-set. A proof can cover only work admitted while the author had write access.
-It grants no action to its bearer. The checkpoint actor must still have
-write permission in the acceptance transaction. If the proof budget or
-validation fails, keep the local work and fall back to checkpointing
-dependencies first or use the recovery path in design 013.
+A person's local change can depend on text that a peer shared before their
+checkpoint reached durable storage. Store the write permission at the time
+of the client ID binding. During checkpoint acceptance, attribute new
+insertions to the account of their binding. Refuse new structs with a
+view-only binding and keep the work for design 013 recovery. Claim unbound
+new client IDs for the checkpoint actor under the workspace lock. Apply the
+normal document validator to all operations. Credit deletions to the account
+that sent the checkpoint. Record 0245 states the limits of these labels.
 
 Store revision contributors under the same savepoint as accepted document
 state, revision, receipt, and feed. Keep `revisions.actor_account_id` for the
@@ -276,8 +270,7 @@ actions in the editor, menus, sidebar, toolbar, and keyboard commands.
 ## Compatibility
 
 Add enum values and tables. Keep existing owner rows and note epochs. Old
-History falls back to the recorded actor. The new contributors and proof
-members are additive to the current HTTP shapes. An old client only knows
+History falls back to the recorded actor. The History contributor list is additive to the current HTTP shape. An old client only knows
 the Owner enum value, so keep collaboration disabled during a mixed rollout.
 Enable it after all servers can handle the fields and grant checks and after
 the served web client can refresh through the existing upgrade path. External
@@ -298,7 +291,7 @@ and proxy effects in the PR. No release or deployment is part of this change.
 
 - [0243. Workspace membership uses verified invitations and current roles](../decisions/0243-workspace-membership-uses-verified-invitations-and-current-roles.md)
 - [0244. Live note rooms share the sync WebSocket](../decisions/0244-live-note-rooms-share-the-sync-websocket.md)
-- [0245. Checkpoints prove live contributions](../decisions/0245-checkpoints-prove-live-contributions.md)
+- [0245. Revision contributors come from client ID bindings](../decisions/0245-revision-contributors-come-from-client-id-bindings.md)
 
 The [implementation plan](../plans/023-workspace-collaboration.md) sets the
 review boundary and tests.

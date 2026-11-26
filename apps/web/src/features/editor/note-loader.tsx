@@ -42,7 +42,7 @@ import type { LocalFileSummary, LocalStore } from '@notesapp/sync';
 import type { LinkTarget } from '@notesapp/editor';
 import { classifyUrl } from '@notesapp/markdown';
 
-import { problemMessage } from '../../app.tsx';
+import { problemMessage, useWorkspace } from '../../app.tsx';
 import {
   blockedLinkNotice,
   missingNoteNotice,
@@ -131,6 +131,14 @@ export function NoteEditorLoader({
   readonly onMoveToFolder?: (() => void) | undefined;
   readonly onPublish?: (() => void) | undefined;
 }): ReactNode {
+  const { state: workspaceState } = useWorkspace();
+  const role =
+    workspaceState.status === 'ready'
+      ? workspaceState.workspaces.find(
+          (item) => item.workspaceId === workspaceId,
+        )?.role
+      : undefined;
+
   const navigate = useNavigate();
   const flushDraft = useFlushNoteDraftForHandoff();
   const location = useLocation();
@@ -527,6 +535,7 @@ export function NoteEditorLoader({
         fileId={fileId}
         baseRevisionId={status.headRevisionId}
         initialText={status.text}
+        readOnly={role === 'viewer'}
         initialDocument={status.document ?? null}
         initialPath={status.path}
         initialWorkingCopyId={status.workingCopyId}
@@ -534,7 +543,7 @@ export function NoteEditorLoader({
         focusText={focusText}
         selectNameOnFirstFocus={selectNameOnFirstFocus}
         onMoveToFolder={onMoveToFolder}
-        onPublish={onPublish}
+        onPublish={role === 'owner' || role === 'admin' ? onPublish : undefined}
         onHeadReplaced={reopen}
         onOpenLink={(target: LinkTarget): void => {
           const action = resolveLinkAction(target.target, status.path);

@@ -35,6 +35,7 @@ export function NoteHeader({
   fileId,
   name,
   nameError,
+  readOnly = false,
   onNameChange,
   onNameCommit,
   onNameRevert,
@@ -45,6 +46,7 @@ export function NoteHeader({
   readonly fileId: string;
   readonly name: string;
   readonly nameError: string;
+  readonly readOnly?: boolean;
   /** Runs on each keystroke. It changes the words in the field only. */
   readonly onNameChange: (name: string) => void;
   /**
@@ -62,6 +64,8 @@ export function NoteHeader({
 }): ReactNode {
   const fallbackRef = useRef<HTMLInputElement | null>(null);
   const selectOnFocus = useRef(selectOnFirstFocus);
+
+  if (readOnly) return <HeaderLeaf>{name}</HeaderLeaf>;
 
   return (
     <HeaderLeaf>

@@ -252,3 +252,29 @@ export function removalNoticeMessage(
     reason: 'your locked account is scheduled for deletion',
   });
 }
+
+/** A workspace invitation can be used by a member with an existing account. */
+export function workspaceInvitationMessage(
+  input: LinkInput & {
+    readonly workspaceName: string;
+    readonly inviterName: string | null;
+  },
+): MailMessage {
+  const inviter = input.inviterName?.trim();
+  const lifetime = 'The link works once, for 7 days.';
+  return message(input, 'Your workspace invitation', {
+    label: 'Workspace invitation',
+    heading: `Join ${input.workspaceName}`,
+    preview: `Open the invitation to join ${input.workspaceName}.`,
+    paragraphs: [
+      inviter
+        ? `${inviter} invited you to join ${input.workspaceName}.`
+        : `You have an invitation to join ${input.workspaceName}.`,
+      'Sign in with this email address or create an account to join.',
+    ],
+    action: { label: 'Open invitation', url: input.link },
+    lifetime,
+    panel: 'If you do not want to join, you can ignore this email.',
+    reason: 'someone invited you to a workspace',
+  });
+}

@@ -124,8 +124,8 @@ messages:
       $ref: '../components/schemas/LiveNoteStopped.yaml'
   noteSync:
     name: noteSync
-    title: Deliver a validated y-protocols sync message and any proofs for uncommitted work
-    summary: Deliver a validated y-protocols sync message and any proofs for uncommitted work.
+    title: Deliver a validated y-protocols sync message
+    summary: Deliver a validated y-protocols sync message.
     contentType: application/json
     payload:
       $ref: '../components/schemas/LiveNoteSyncOutput.yaml'

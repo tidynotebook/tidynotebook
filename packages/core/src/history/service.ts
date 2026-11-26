@@ -49,7 +49,7 @@ export async function listHistory(
   return store.transact<Result<HistoryPage>>(actor, workspaceId, async (tx) => {
     const role = await tx.role(actor.accountId);
     if (role === null) return fail('forbidden');
-    const permitted = authorize(actor, workspaceId, role, 'read');
+    const permitted = authorize(actor, workspaceId, role, 'history');
     if (!permitted.ok) return fail('forbidden');
 
     const purged = await tx.purgedFiles([fileId]);

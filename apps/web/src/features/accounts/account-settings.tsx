@@ -1,3 +1,4 @@
+import { WorkspaceMembers } from './workspace-members.tsx';
 import {
   Form,
   SettingEditRow,
@@ -167,6 +168,7 @@ function settingsSection(key: SettingsSectionKey): PageSection {
 const pageIcons: Readonly<Record<SettingsPagePath, ReactNode>> = {
   appearance: <PaletteIcon />,
   offline: <DownloadIcon />,
+  members: <UsersIcon />,
   'daily-notes': <CalendarIcon />,
   templates: <TemplateIcon />,
   'export-import': <UploadIcon />,
@@ -785,12 +787,13 @@ export function SettingsModal({
   const accountId = account?.accountId ?? null;
   const documents = useLegalDocuments();
   const workspace = useWorkspace();
-  const workspaceName =
+  const currentWorkspace =
     workspace.state.status === 'ready'
-      ? (workspace.state.workspaces.find(
+      ? workspace.state.workspaces.find(
           (item) => item.workspaceId === workspaceId,
-        )?.name ?? '')
-      : '';
+        )
+      : undefined;
+  const workspaceName = currentWorkspace?.name ?? '';
   const portal = useOpenPortal();
   // The limits of the month change with no notice to this device, so the
   // modal reads the account again when it opens (record 0193).
@@ -922,6 +925,15 @@ export function SettingsModal({
   const sectionBodies: Record<SettingsSectionKey, ReactNode> = {
     appearance: <ThemeSettings />,
     spelling: <SpellCheckSettings />,
+    members:
+      currentWorkspace === undefined ? null : (
+        <WorkspaceMembers
+          key={workspaceId}
+          workspaceId={workspaceId}
+          workspaceName={workspaceName}
+          role={currentWorkspace.role}
+        />
+      ),
     'daily-notes': (
       <SettingsSection
         section={settingsSection('daily-notes')}

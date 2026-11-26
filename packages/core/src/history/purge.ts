@@ -3,8 +3,7 @@
  *
  * Purging a file removes all its revisions, writes content-free purge markers
  * to block subsequent mutations with 410 Gone, and reclaims unreferenced
- * content and attachment bytes. Only the workspace owner can preview or
- * execute a purge.
+ * content and attachment bytes. Only owners and admins can preview or execute a purge.
  */
 import { authorize, type Actor } from '../identity/actor.ts';
 import { maxFilesPerChangeset } from '../files/commit.ts';
@@ -32,8 +31,8 @@ export async function previewPurge(
     workspaceId,
     async (tx) => {
       const role = await tx.role(actor.accountId);
-      if (role === null || role !== 'owner') return fail('forbidden');
-      const permitted = authorize(actor, workspaceId, role, 'write');
+      if (role === null) return fail('forbidden');
+      const permitted = authorize(actor, workspaceId, role, 'purge');
       if (!permitted.ok) return fail('forbidden');
 
       return tx.previewPurge(fileIds);
@@ -69,8 +68,8 @@ export async function purgeFiles(
     workspaceId,
     async (tx) => {
       const role = await tx.role(actor.accountId);
-      if (role === null || role !== 'owner') return fail('forbidden');
-      const permitted = authorize(actor, workspaceId, role, 'write');
+      if (role === null) return fail('forbidden');
+      const permitted = authorize(actor, workspaceId, role, 'purge');
       if (!permitted.ok) return fail('forbidden');
 
       const preview = await tx.previewPurge(fileIds);

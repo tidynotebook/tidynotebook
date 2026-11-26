@@ -48,3 +48,13 @@ export type {
 export { recoverLegacyText } from './recovery.ts';
 export type { TextSlot } from './written-character.ts';
 export { keepWrittenCharacter } from './written-character.ts';
+
+export {
+  decodeNoteSync,
+  encodeNoteSync,
+  updateActors,
+  decodeNoteAwareness,
+  encodeNoteAwareness,
+  type NoteSync,
+  type AwarenessEntry,
+} from './live.ts';

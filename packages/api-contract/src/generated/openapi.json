@@ -11409,14 +11409,6 @@
               }
             ],
             "description": "The complete state that the device had seen at the save. The workspace reads it to decide whether the save joins unseen work, and whether a deletion would hide an edit that the device never saw."
-          },
-          "liveContributions": {
-            "type": "array",
-            "description": "Proofs for uncommitted peer work included in this checkpoint.",
-            "maxItems": 16,
-            "items": {
-              "$ref": "#/components/schemas/LiveContributionProof"
-            }
           }
         }
       },
@@ -12698,29 +12690,6 @@
           }
         }
       },
-      "LiveContributionProof": {
-        "type": "object",
-        "description": "One server proof bound to exact peer update bytes in one note epoch.",
-        "additionalProperties": false,
-        "required": [
-          "update",
-          "proof"
-        ],
-        "properties": {
-          "update": {
-            "type": "string",
-            "minLength": 4,
-            "pattern": "^[A-Za-z0-9+/]*={0,2}$",
-            "maxLength": 87384
-          },
-          "proof": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 2048,
-            "pattern": "^[A-Za-z0-9._-]+$"
-          }
-        }
-      },
       "LiveNoteAccess": {
         "type": "object",
         "description": "Report current access or removal from a joined room.",
@@ -12957,7 +12926,7 @@
       },
       "LiveNoteSyncOutput": {
         "type": "object",
-        "description": "Deliver a validated y-protocols sync message and any proofs for uncommitted work.",
+        "description": "Deliver a validated y-protocols sync message.",
         "additionalProperties": false,
         "required": [
           "kind",
@@ -12984,13 +12953,6 @@
             "minLength": 4,
             "pattern": "^[A-Za-z0-9+/]*={0,2}$",
             "maxLength": 87384
-          },
-          "proofs": {
-            "type": "array",
-            "maxItems": 16,
-            "items": {
-              "$ref": "#/components/schemas/LiveContributionProof"
-            }
           }
         }
       },

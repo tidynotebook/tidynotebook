@@ -71,6 +71,7 @@ import {
   useLocalStore,
   useRequestSync,
   useSession,
+  useWorkspaceRole,
 } from '../../app.tsx';
 import {
   loadAttachmentBinary,
@@ -223,6 +224,7 @@ function HistoryDetail({
   readonly workspaceId: string;
   readonly fileId: string;
 }): ReactNode {
+  const readOnly = useWorkspaceRole(workspaceId) === 'viewer';
   // Every row of the list states how long ago its version was written, so the
   // screen takes the instant as a value that moves and not as one reading of
   // the clock. The early returns below stand between this line and the rows.
@@ -555,7 +557,7 @@ function HistoryDetail({
     );
 
   const name = displayNoteName(head.path);
-  const restorable = head.headRevisionId !== null;
+  const restorable = head.headRevisionId !== null && !readOnly;
   const days = historyDays(
     items.map((item) => ({ id: item.revisionId, instant: item.serverTime })),
     now,
@@ -582,9 +584,11 @@ function HistoryDetail({
       <PageHeader
         title="Version history"
         description={
-          head.status === 'ready' && head.kind === 'attachment'
-            ? `${name}. Open a version to preview the image. Restore makes it the newest version.`
-            : `${name}. Restore makes a version the newest. Nothing is lost.`
+          readOnly
+            ? `${name}. View only.`
+            : head.status === 'ready' && head.kind === 'attachment'
+              ? `${name}. Open a version to preview the image. Restore makes it the newest version.`
+              : `${name}. Restore makes a version the newest. Nothing is lost.`
         }
       />
       <Stack
@@ -672,13 +676,17 @@ function HistoryDetail({
                               </span>
                               <span className="line-clamp-2 text-secondary text-muted lg:line-clamp-1">
                                 {rowReading(change, item.merged)}
+                                {item.contributors === undefined ||
+                                item.contributors.length === 0
+                                  ? ''
+                                  : ` · ${item.contributors.map((person) => (person.formerMember ? 'Former member' : (person.displayName ?? 'Member'))).join(', ')}`}
                               </span>
                             </span>
                           </button>
                           <Inset padX={2} as="span" className="shrink-0">
                             {current ? (
                               <Badge>Current version</Badge>
-                            ) : (
+                            ) : readOnly ? null : (
                               <Button
                                 variant="secondary"
                                 size="compact"

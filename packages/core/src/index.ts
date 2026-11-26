@@ -21,7 +21,14 @@ export type {
   Role,
   StoredGrant,
 } from './identity/actor.ts';
-export { actionsForRole, authorize, verifyActor } from './identity/actor.ts';
+export {
+  actionsForRole,
+  authorize,
+  inviteRole,
+  verifyActor,
+  workspaceRoles,
+  type InviteRole,
+} from './identity/actor.ts';
 export { generateUUID } from './identity/uuid.ts';
 export type { ApiKeyRecord, NewApiKey } from './identity/api-keys.ts';
 export type { ConnectedAppRecord } from './identity/connected-apps.ts';
@@ -658,3 +665,15 @@ export type {
   WelcomeNoteTransaction,
   WelcomeNoteOutcome,
 } from './workspaces/welcome-note.ts';
+
+export {
+  workspaceCollaboration,
+  workspaceInviteBatchSize,
+  workspaceMemberPageSize,
+  type CollaborationStore,
+  type CollaborationTransaction,
+  type NewWorkspaceInvite,
+  type WorkspaceInvite,
+  type WorkspaceInviteOutcome,
+  type WorkspaceMember,
+} from './workspaces/collaboration.ts';

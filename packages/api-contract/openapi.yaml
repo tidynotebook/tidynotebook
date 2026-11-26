@@ -732,8 +732,6 @@ components:
       $ref: './components/schemas/LiveWorkspacePresence.yaml'
     LiveNotePresenceCount:
       $ref: './components/schemas/LiveNotePresenceCount.yaml'
-    LiveContributionProof:
-      $ref: './components/schemas/LiveContributionProof.yaml'
     Workspace:
       $ref: './components/schemas/Workspace.yaml'
     WorkspaceList:

@@ -1,6 +1,6 @@
 # 0243. Workspace membership uses verified invitations and current roles
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-26
 
 ## Context

@@ -7,17 +7,19 @@
  */
 import { fail, ok, type Result } from '../files/model.ts';
 
-/**
- * The role of an account in one workspace.
- *
- * A single-user installation knows one role. The type stays, because the
- * contract, the stored rows and the permission matrix all name it, and a
- * later release can add a second value without a change of shape.
- */
-export type Role = 'owner';
+export const workspaceRoles = ['owner', 'admin', 'editor', 'viewer'] as const;
+export type Role = (typeof workspaceRoles)[number];
+export type InviteRole = Exclude<Role, 'owner'>;
+
+export function inviteRole(value: unknown): InviteRole | null {
+  return value === 'admin' || value === 'editor' || value === 'viewer'
+    ? value
+    : null;
+}
 
 /** A permitted kind of operation inside one workspace. */
-export type Action = 'read' | 'write' | 'history' | 'purge';
+export type Action =
+  'read' | 'write' | 'history' | 'purge' | 'publish' | 'manage_members';
 
 /** The verified actions of one account in one workspace. */
 export type Grant = {
@@ -66,15 +68,20 @@ export type Actor = {
   readonly [verifiedActorMark]: true;
 };
 
-/**
- * The actions that each role permits.
- *
- * The owner reads, writes, reads history, and purges. Every action of the
- * matrix has a reachable operation, so an action that no route can perform is
- * not granted.
- */
+/** The actions that a current workspace role permits. */
+const readActions = ['read', 'history'] as const;
+const editorActions = [...readActions, 'write'] as const;
+const adminActions = [
+  ...editorActions,
+  'purge',
+  'publish',
+  'manage_members',
+] as const;
 const roleActions: Readonly<Record<Role, readonly Action[]>> = {
-  owner: ['read', 'history', 'write', 'purge'],
+  owner: adminActions,
+  admin: adminActions,
+  editor: editorActions,
+  viewer: readActions,
 };
 /**
  * The same matrix, read by a plain string key.

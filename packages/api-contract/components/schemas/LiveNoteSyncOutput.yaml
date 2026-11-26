@@ -1,5 +1,5 @@
 type: object
-description: Deliver a validated y-protocols sync message and any proofs for uncommitted work.
+description: Deliver a validated y-protocols sync message.
 additionalProperties: false
 required:
   - kind
@@ -22,8 +22,3 @@ properties:
     minLength: 4
     pattern: ^[A-Za-z0-9+/]*={0,2}$
     maxLength: 87384
-  proofs:
-    type: array
-    maxItems: 16
-    items:
-      $ref: './LiveContributionProof.yaml'

@@ -28,6 +28,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
@@ -61,7 +62,12 @@ const tsvector = customType<{ data: string }>({
  * Every workspace has one member, its owner, so `owner` is the only role. The
  * enum stays because the policies and the owner guard read it.
  */
-export const membershipRole = pgEnum('membership_role', ['owner']);
+export const membershipRole = pgEnum('membership_role', [
+  'owner',
+  'admin',
+  'editor',
+  'viewer',
+]);
 
 /**
  * The role of an account in the installation (record 0109).
@@ -518,6 +524,9 @@ export const memberships = pgTable(
   (table) => [
     primaryKey({ columns: [table.workspaceId, table.accountId] }),
     index('memberships_account_idx').on(table.accountId),
+    uniqueIndex('memberships_one_owner_idx')
+      .on(table.workspaceId)
+      .where(sql`${table.role} = 'owner'`),
   ],
 );
 
@@ -1953,3 +1962,94 @@ export const oauthClientAssertion = pgTable('auth_oauth_client_assertion', {
   id: text('id').primaryKey(),
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
 });
+
+/** A pending workspace grant binds a normalized address and one role. */
+export const workspaceInvitations = pgTable(
+  'workspace_invitations',
+  {
+    id: uuid('id').primaryKey(),
+    workspaceId: uuid('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    email: text('email').notNull(),
+    role: membershipRole('role').notNull(),
+    inviterId: uuid('inviter_id').references(() => accounts.id, {
+      onDelete: 'set null',
+    }),
+    tokenDigest: text('token_digest').notNull().unique(),
+    sealedToken: text('sealed_token'),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    status: text('status').notNull().default('pending'),
+    acceptingAccountId: uuid('accepting_account_id').references(
+      () => accounts.id,
+      { onDelete: 'set null' },
+    ),
+  },
+  (table) => [
+    uniqueIndex('workspace_invitations_pending_idx')
+      .on(table.workspaceId, table.email)
+      .where(sql`${table.status} = 'pending'`),
+    index('workspace_invitations_address_idx')
+      .on(table.email, table.id)
+      .where(sql`${table.status} = 'pending'`),
+    check('workspace_invitations_role_check', sql`${table.role} <> 'owner'`),
+    check(
+      'workspace_invitations_email_check',
+      sql`length(${table.email}) between 3 and 320 and lower(btrim(${table.email})) = ${table.email}`,
+    ),
+    check(
+      'workspace_invitations_digest_check',
+      sql`${table.tokenDigest} ~ '^[0-9a-f]{64}$'`,
+    ),
+    check(
+      'workspace_invitations_status_check',
+      sql`${table.status} in ('pending', 'accepted', 'declined', 'revoked', 'expired')`,
+    ),
+    check(
+      'workspace_invitations_seal_check',
+      sql`(${table.status} = 'pending') = (${table.sealedToken} is not null)`,
+    ),
+  ],
+);
+
+export const noteClientBindings = pgTable(
+  'note_client_bindings',
+  {
+    workspaceId: uuid('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    fileId: uuid('file_id').notNull(),
+    epoch: integer('epoch').notNull(),
+    clientId: bigint('client_id', { mode: 'number' }).notNull(),
+    accountId: uuid('account_id').notNull(),
+    canWrite: boolean('can_write').notNull(),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.workspaceId, table.fileId, table.epoch, table.clientId],
+    }),
+    check(
+      'note_client_bindings_id_check',
+      sql`${table.clientId} between 0 and 4294967295`,
+    ),
+    check('note_client_bindings_epoch_check', sql`${table.epoch} > 0`),
+  ],
+);
+
+export const revisionContributors = pgTable(
+  'revision_contributors',
+  {
+    workspaceId: uuid('workspace_id').notNull(),
+    revisionId: uuid('revision_id').notNull(),
+    accountId: uuid('account_id').notNull(),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.workspaceId, table.revisionId, table.accountId],
+    }),
+    foreignKey({
+      columns: [table.workspaceId, table.revisionId],
+      foreignColumns: [revisions.workspaceId, revisions.id],
+    }).onDelete('cascade'),
+  ],
+);

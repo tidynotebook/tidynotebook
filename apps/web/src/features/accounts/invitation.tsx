@@ -141,16 +141,22 @@ export function InvitationPage(): ReactNode {
 }
 
 /** The fields that make the account of one valid invitation. */
-function AcceptForm({
+export function AcceptForm({
   token,
   email,
   documents,
   trialSeconds,
+  workspace,
 }: {
   readonly token: string;
   readonly email: string;
   readonly documents: LegalDocuments | null;
   readonly trialSeconds: number | null;
+  readonly workspace?: {
+    readonly id: string;
+    readonly name: string;
+    readonly onAccepted: () => void;
+  };
 }): ReactNode {
   const session = useSession();
   const navigate = useNavigate();
@@ -198,14 +204,16 @@ function AcceptForm({
       return;
     }
     session.refresh();
-    void navigate('/');
+    workspace?.onAccepted();
+    void navigate(workspace === undefined ? '/' : `/w/${workspace.id}`);
   };
 
   return (
     <>
       <Inset as="p" className="text-secondary text-muted">
-        You have an invitation to this installation. Choose a password, and your
-        account and its own notes are ready.
+        {workspace === undefined
+          ? 'You have an invitation to this installation. Choose a password, and your account and its own notes are ready.'
+          : `Create an account to join ${workspace.name}.`}
       </Inset>
       {trialOffer(trialSeconds) === null ? null : (
         <Notice message={trialOffer(trialSeconds) ?? ''} />
@@ -270,7 +278,11 @@ function AcceptForm({
         )}
         {error === '' ? null : <Notice tone="problem" message={error} />}
         <Button type="submit" disabled={busy} className="w-full">
-          {busy ? 'Making your account' : 'Make account'}
+          {busy
+            ? 'Making your account'
+            : workspace === undefined
+              ? 'Make account'
+              : 'Create account and join'}
         </Button>
       </Form>
     </>

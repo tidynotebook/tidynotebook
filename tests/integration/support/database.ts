@@ -128,7 +128,14 @@ export function testActor(accountId: string, grants: readonly Grant[]): Actor {
 }
 
 /** Every workspace action, for a test actor that must not be scope limited. */
-export const allActions = ['read', 'write', 'history', 'purge'] as const;
+export const allActions = [
+  'read',
+  'write',
+  'history',
+  'purge',
+  'publish',
+  'manage_members',
+] as const;
 
 /** A verified actor with every action in one workspace. */
 export function memberActor(accountId: string, workspaceId: string): Actor {

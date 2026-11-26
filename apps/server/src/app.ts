@@ -1,3 +1,11 @@
+import { createLiveCluster } from './notices/live-cluster.ts';
+import { liveBounds } from './notices/live-bounds.ts';
+import { createCollaborationHandlers } from './routes/collaboration.ts';
+import {
+  createMailPasswordSeal,
+  createLiveRelaySeal,
+  createWorkspaceInvitationSeal,
+} from './auth/seal.ts';
 import { installationFooterColumns } from '@notesapp/ui/public-footer';
 /**
  * Server composition.
@@ -71,7 +79,6 @@ import {
   type ApplicationMail,
   type MailTransport,
 } from './auth/mail.ts';
-import { createMailPasswordSeal } from './auth/seal.ts';
 import { createInstallationSettings } from './installation-settings.ts';
 import {
   createDocumentService,
@@ -699,7 +706,11 @@ export async function createAppWithHandlers(
           identity: { oauthTokenIdentity: () => Promise.resolve(null) },
         }),
       ];
-  const noticeBounds = { ...defaultNoticeBounds, ...options.noticeBounds };
+  const noticeBounds = {
+    ...defaultNoticeBounds,
+    maxFrameBytes: liveBounds.frameBytes,
+    ...options.noticeBounds,
+  };
   await registerWebSocket(app, {
     maxFrameBytes: noticeBounds.maxFrameBytes,
     subprotocols: [findChannel('syncNotices')?.subprotocol ?? ''].filter(
@@ -954,7 +965,15 @@ async function composeApp(
   // The notice gateway of this process (record 0129). Its log sink is filled
   // once the instance exists, as the sinks above are.
   const noticeLog: { logger?: ReturnType<typeof createServerLogger> } = {};
+  const liveCluster = createLiveCluster({
+    store: identity,
+    noticeAccess: identity.noticeAccess,
+    databaseUrl: config.databaseUrl,
+    seal: createLiveRelaySeal(config.authSecret),
+  });
+  opened.push(() => liveCluster.close());
   const gateway = createNoticeGateway({
+    live: liveCluster,
     stores: {
       noticeAccess: (sessionId, accountId) =>
         identity.noticeAccess(sessionId, accountId),
@@ -971,7 +990,11 @@ async function composeApp(
           ? {}
           : { schedule: options.listenerSchedule },
       ),
-    bounds: { ...defaultNoticeBounds, ...options?.noticeBounds },
+    bounds: {
+      ...defaultNoticeBounds,
+      maxFrameBytes: liveBounds.frameBytes,
+      ...options?.noticeBounds,
+    },
     log: {
       opened: () => noticeLog.logger?.emit('notices.opened', {}),
       closed: (reason) => noticeLog.logger?.emit('notices.closed', { reason }),
@@ -1052,6 +1075,12 @@ async function composeApp(
           },
           stylesheets: publishedStylesheets,
         },
+      }),
+      ...createCollaborationHandlers(config, {
+        store: identity,
+        attempts,
+        mail,
+        seal: createWorkspaceInvitationSeal(config.authSecret),
       }),
       ...createSetupHandlers({
         auth: auth.auth,
@@ -1261,6 +1290,7 @@ async function composeApp(
   });
   // The listener starts once the instance exists. A stream opens only after
   // it listens, so no stream can miss a commit that follows its admission.
+  liveCluster.start();
   gateway.start();
   app.addHook('onClose', async () => {
     // The last sums of this process are written after every answer and

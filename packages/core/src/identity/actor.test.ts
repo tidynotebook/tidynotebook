@@ -20,10 +20,20 @@ import {
 
 const workspace = 'workspace-1';
 const other = 'workspace-2';
-const roles: readonly Role[] = ['owner'];
-const actions: readonly Action[] = ['read', 'write', 'history', 'purge'];
+const roles: readonly Role[] = ['owner', 'admin', 'editor', 'viewer'];
+const actions: readonly Action[] = [
+  'read',
+  'history',
+  'write',
+  'purge',
+  'publish',
+  'manage_members',
+];
 const permitted: Readonly<Record<Role, readonly Action[]>> = {
-  owner: ['read', 'history', 'write', 'purge'],
+  owner: ['read', 'history', 'write', 'purge', 'publish', 'manage_members'],
+  admin: ['read', 'history', 'write', 'purge', 'publish', 'manage_members'],
+  editor: ['read', 'history', 'write'],
+  viewer: ['read', 'history'],
 };
 
 /**
@@ -33,12 +43,7 @@ const permitted: Readonly<Record<Role, readonly Action[]>> = {
  * one is not. The tests below read them as text, because the union holds
  * none of them and nothing may claim that it does.
  */
-const storedRolesOutsideTheUnion: readonly string[] = [
-  'viewer',
-  'superuser',
-  'editor',
-  '',
-];
+const storedRolesOutsideTheUnion: readonly string[] = ['superuser', ''];
 
 /** The verified actor, or a test failure when the input was rejected. */
 function actorOf(accountId: string, grants: readonly StoredGrant[]): Actor {

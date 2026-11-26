@@ -172,9 +172,8 @@ async function startDevice(label: string): Promise<Device> {
   const coordinator = createNoticeCoordinator(accountId, {
     keeper,
     offered: async () =>
-      ((await getSyncProtocol()).data?.notificationProtocols ?? []).includes(
-        syncNoticesProtocol,
-      ),
+      (await getSyncProtocol()).data?.liveNotificationProtocol ===
+      syncNoticesProtocol,
     open: (handlers) =>
       connectSyncNotices(baseUrl, handlers, {
         socketClass: socketClassWith(headers),

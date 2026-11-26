@@ -321,6 +321,7 @@ export function isNoteRefusal(value: unknown): value is NoteRefusal {
 
 export type DomainErrorCode =
   | 'api_key_limit'
+  | 'last_workspace'
   | 'forbidden'
   | 'stale_head'
   | 'path_conflict'

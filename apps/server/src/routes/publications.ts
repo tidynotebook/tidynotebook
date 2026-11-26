@@ -103,7 +103,7 @@ export function createPublicationHandlers(
     createPublishedLink: async (request): Promise<HandlerResult> => {
       const actor = requireActor(request).actor;
       const workspaceId = readText(request.params, 'workspaceId');
-      permit(actor, workspaceId, 'write');
+      permit(actor, workspaceId, 'publish');
       const password = readOptionalText(request.body, 'password');
       // The token exists in this process and in the address that the owner
       // copies. The store receives its digest and never the value.
@@ -127,7 +127,7 @@ export function createPublicationHandlers(
     listPublishedLinks: async (request): Promise<HandlerResult> => {
       const actor = requireActor(request).actor;
       const workspaceId = readText(request.params, 'workspaceId');
-      permit(actor, workspaceId, 'read');
+      permit(actor, workspaceId, 'publish');
       const links = await parts.links.list(actor, workspaceId);
       return {
         status: 200,
@@ -140,7 +140,7 @@ export function createPublicationHandlers(
       const actor = requireActor(request).actor;
       const workspaceId = readText(request.params, 'workspaceId');
       const publicationId = readText(request.params, 'publicationId');
-      permit(actor, workspaceId, 'write');
+      permit(actor, workspaceId, 'publish');
       unwrapDomain(
         await parts.links.revoke(
           actor,

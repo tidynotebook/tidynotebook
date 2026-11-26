@@ -13,6 +13,7 @@ import type { NoteGroup } from './note-groups.ts';
 export const settingsSections = [
   { key: 'appearance', id: 'theme-heading', title: 'Appearance' },
   { key: 'spelling', id: 'spelling-heading', title: 'Spelling' },
+  { key: 'members', id: 'members-heading', title: 'Members' },
   { key: 'daily-notes', id: 'daily-notes-heading', title: 'Daily notes' },
   { key: 'templates', id: 'templates-heading', title: 'Templates' },
   { key: 'offline', id: 'offline-heading', title: 'Offline' },
