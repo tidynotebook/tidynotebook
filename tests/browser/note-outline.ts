@@ -64,7 +64,7 @@ async function rows(
       rows: Array.from(document.querySelectorAll('[data-outline-level]')).map(
         (row) => row.textContent,
       ),
-      words: document.querySelector('footer')?.textContent,
+      words: document.querySelector('[data-note-word-count]')?.textContent,
     }));
     assert.fail(
       `Expected ${String(expected)} outline rows: ${JSON.stringify(detail)}`,
@@ -113,9 +113,10 @@ try {
         const start = performance.now();
         await replaceText(page, source);
         await rows(page, 42);
-        await page
-          .getByText('7141 words', { exact: true })
-          .waitFor({ state: 'attached' });
+        const actions = page.getByRole('button', { name: 'Note actions' });
+        if (width < 1280) await actions.click();
+        await page.getByText('7141 words', { exact: true }).waitFor();
+        if (width < 1280) await actions.press('Escape');
         await checkpoint(page);
         const elapsed = performance.now() - start;
         const pasted = await page.evaluate(() => ({

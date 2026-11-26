@@ -14,7 +14,8 @@ import {
 } from '../../../apps/web/src/features/editor/active-note.tsx';
 import { FormatToolbar } from '../../../apps/web/src/features/editor/format-toolbar.tsx';
 import { OutlinePanel } from '../../../apps/web/src/features/editor/outline.tsx';
-import { NoteFooter } from '../../../apps/web/src/features/editor/note-footer.tsx';
+import { NoteScrollEdges } from '../../../apps/web/src/features/editor/note-scroll-edges.tsx';
+import { NoteWordCount } from '../../../apps/web/src/features/editor/note-word-count.tsx';
 
 const theme =
   new URLSearchParams(location.search).get('theme') === 'dark'
@@ -69,7 +70,7 @@ function Controls() {
   return (
     <main className="flex h-screen min-w-0 flex-col bg-app text-strong">
       <div className="flex min-h-0 flex-1">
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col" data-scroll-frame="">
           <FormatToolbar
             context={context}
             history={{ undo: false, redo: false }}
@@ -79,9 +80,10 @@ function Controls() {
             }}
           />
           <div ref={parent} className="min-h-0 flex-1 overflow-hidden" />
-          <NoteFooter initialText={source} />
+          <NoteScrollEdges />
         </div>
         <aside className="hidden w-64 shrink-0 overflow-y-auto xl:block">
+          <NoteWordCount initialText={source} />
           <OutlinePanel text={source} open onToggle={() => {}} />
         </aside>
       </div>
