@@ -910,31 +910,26 @@ export async function auditHoverPadding(page: Page) {
   }[] = [];
   for (let index = 0; index < (await controls.count()); index++) {
     const control = controls.nth(index);
-    if (
-      !(await control.evaluate((element) => {
-        if (
-          !element.checkVisibility({
-            visibilityProperty: true,
-            opacityProperty: true,
-          }) ||
-          element.closest('[inert],.sr-only')
-        )
-          return false;
-        const box = element.getBoundingClientRect(),
-          hit = document.elementFromPoint(
-            box.x + box.width / 2,
-            box.y + box.height / 2,
-          );
-        return (
-          box.width > 0 &&
-          box.height > 0 &&
-          hit !== null &&
-          element.contains(hit)
-        );
-      }))
-    )
-      continue;
-    await control.hover();
+    const point = await control.evaluate((element) => {
+      if (
+        !element.checkVisibility({
+          visibilityProperty: true,
+          opacityProperty: true,
+        }) ||
+        element.closest('[inert],.sr-only')
+      )
+        return null;
+      const box = element.getBoundingClientRect();
+      if (box.width <= 0 || box.height <= 0) return null;
+      const x = box.x + box.width / 2;
+      const y = box.y + box.height / 2;
+      return element.contains(document.elementFromPoint(x, y))
+        ? { x, y }
+        : null;
+    });
+    if (point === null) continue;
+    // Scrolling a touch target into view can pan a phone sheet horizontally.
+    await page.mouse.move(point.x, point.y);
     const stateContrast = await control.evaluate(async (element) => {
       if (
         !element.matches(

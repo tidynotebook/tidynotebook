@@ -314,8 +314,10 @@ export function WorkspaceMembers({
                         ariaHasPopup="dialog"
                         onClick={() => setRolePicker(member)}
                       >
-                        {roleName(member.role)}
-                        <ChevronDownIcon />
+                        <Inline as="span" align="center" gap={2}>
+                          {roleName(member.role)}
+                          <ChevronDownIcon />
+                        </Inline>
                       </Button>
                     ) : (
                       <Menu

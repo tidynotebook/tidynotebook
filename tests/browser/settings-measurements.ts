@@ -62,6 +62,8 @@ export async function auditSettings(page: Page) {
       )) {
         if (!visible(footer) || footer.closest('[inert]')) continue;
         const style = getComputedStyle(footer);
+        eq('pinned Settings footer left edge', box(footer).left, 0);
+        eq('pinned Settings footer right edge', box(footer).right, innerWidth);
         eq(
           'pinned Settings action left inset',
           parseFloat(style.paddingLeft),

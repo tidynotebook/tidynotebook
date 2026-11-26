@@ -492,11 +492,9 @@ try {
       await screenshot(phone, 'join-valid-phone-dark');
       await phone.getByRole('button', { name: 'Accept and open' }).click();
       await phone.waitForURL(`${origin}/w/${fixture.viewerJoinId}`);
-      const joined = phone
-        .getByRole('status')
-        .filter({
-          hasText: `You joined ${fixture.viewerJoinName} as a Viewer.`,
-        });
+      const joined = phone.getByRole('status').filter({
+        hasText: `You joined ${fixture.viewerJoinName} as a Viewer.`,
+      });
       await joined.waitFor();
       assert.equal(
         await joined.getByRole('button', { name: 'Open', exact: true }).count(),
@@ -517,11 +515,9 @@ try {
       await accept.scrollIntoViewIfNeeded();
       await screenshot(phone, 'switcher-pending-phone-dark');
       await accept.click();
-      const switched = phone
-        .getByRole('status')
-        .filter({
-          hasText: `You joined ${fixture.viewerSwitcherName} as an Editor.`,
-        });
+      const switched = phone.getByRole('status').filter({
+        hasText: `You joined ${fixture.viewerSwitcherName} as an Editor.`,
+      });
       await switched.waitFor();
       await phone.waitForURL(`${origin}${space}`);
       await screenshot(phone, 'switcher-joined-phone-dark');
