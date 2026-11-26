@@ -251,6 +251,7 @@ try {
       await switcher.click();
       const accept = phone.getByText('Accept invite to Switcher check');
       await accept.waitFor();
+      await accept.scrollIntoViewIfNeeded();
       await screenshot(phone, 'switcher-pending-phone-dark');
       await accept.click();
       await phone.waitForURL(`${origin}/w/${fixture.viewerSwitcherId}`);
@@ -283,7 +284,12 @@ try {
     )
     .waitFor();
   await editor.goto(`${origin}/w/${fixture.editorPersonalId}`);
-  await editor.getByRole('link', { name: /^Launch plan · From/ }).click();
+  await editor
+    .getByRole('link', {
+      name: `Launch plan, in From ${fixture.workspaceName}`,
+      exact: true,
+    })
+    .click();
   await editorText
     .getByText('Keep this unsent text', { exact: true })
     .waitFor();
@@ -314,7 +320,12 @@ try {
     .waitFor();
   await screenshot(editor, 'access-removed-desktop-dark');
   await editor.goto(`${origin}/w/${fixture.editorPersonalId}`);
-  await editor.getByRole('link', { name: /^Launch plan 2 · From/ }).click();
+  await editor
+    .getByRole('link', {
+      name: `Launch plan 2, in From ${fixture.workspaceName}`,
+      exact: true,
+    })
+    .click();
   await editorText
     .getByText('Keep this text after removal', { exact: true })
     .waitFor();

@@ -454,20 +454,20 @@ function InvitePeople({
         </DialogBody>
         <DialogFooter>
           {results === null ? (
-            <>
-              <Button variant="secondary" onClick={close}>
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="primary"
-                disabled={busy || emails.length === 0 || emails.length > 20}
-              >
-                {emails.length === 1
-                  ? 'Send invite'
-                  : `Send ${emails.length} invites`}
-              </Button>
-            </>
+            <Button variant="secondary" onClick={close}>
+              Cancel
+            </Button>
+          ) : null}
+          {results === null ? (
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={busy || emails.length === 0 || emails.length > 20}
+            >
+              {emails.length <= 1
+                ? 'Send invite'
+                : `Send ${emails.length} invites`}
+            </Button>
           ) : (
             <Button variant="primary" onClick={close}>
               Done

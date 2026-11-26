@@ -284,6 +284,8 @@ export function openWorkspaceStore(
   documents: DocumentService,
   options: WorkspaceStoreOptions = {},
 ): WorkspaceStoreHandle {
+  const recordRevisionContributors =
+    options.recordRevisionContributors !== false;
   const pool = openPool({
     connectionString: databaseUrl,
     max: options.poolSize ?? poolSizes.content,
@@ -349,7 +351,7 @@ export function openWorkspaceStore(
           transactionActor,
           scope,
           documents,
-          options.recordRevisionContributors !== false,
+          recordRevisionContributors,
         );
         const content: WorkspaceStore = {
           documents,
@@ -412,7 +414,7 @@ export function openWorkspaceStore(
             transactionActor,
             scope,
             documents,
-            options.recordRevisionContributors !== false,
+            recordRevisionContributors,
           ),
       );
     },
