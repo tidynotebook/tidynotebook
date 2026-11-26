@@ -189,6 +189,20 @@ export async function auditSpacing(page: Page) {
       );
     }
     for (const e of [
+      ...document.querySelectorAll('[data-toast-message]'),
+    ].filter(visible)) {
+      const toast = e.parentElement;
+      if (!coarse || toast === null) continue;
+      const style = getComputedStyle(toast);
+      const available =
+        toast.clientWidth -
+        parseFloat(style.paddingLeft) -
+        parseFloat(style.paddingRight);
+      const minimum = Math.min(160, available);
+      if (box(e).width < minimum)
+        check(e, 'toast message width', box(e).width, minimum);
+    }
+    for (const e of [
       ...document.querySelectorAll('[role="switch"] > [aria-hidden="true"]'),
     ].filter(visible)) {
       check(e, 'switch track height', box(e).height, 24);

@@ -59,7 +59,12 @@ export function Toast({
       aria-live="polite"
       className={`pointer-events-auto flex w-full max-w-md flex-wrap items-center gap-4 rounded-lg border border-overlay-edge bg-overlay p-3 coarse:p-4 text-body text-strong shadow-overlay ${transitionRaise}`}
     >
-      <span className="min-w-0 flex-1">{message}</span>
+      <span
+        className="min-w-0 flex-1 break-words coarse:basis-40"
+        data-toast-message=""
+      >
+        {message}
+      </span>
       {children}
     </div>
   );
