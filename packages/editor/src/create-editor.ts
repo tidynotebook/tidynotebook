@@ -136,6 +136,16 @@ const richCompartment = new Compartment();
 /** The access compartment, so a loaded role can unlock the same editor. */
 const readOnlyCompartment = new Compartment();
 
+function noteAccessExtensions(readOnly: boolean): Extension {
+  return [
+    EditorState.readOnly.of(readOnly),
+    EditorView.editable.of(!readOnly),
+    EditorView.contentAttributes.of(
+      readOnly ? { 'aria-readonly': 'true' } : {},
+    ),
+  ];
+}
+
 /** The spell check compartment, so the setting never rebuilds the editor. */
 const spellCheckCompartment = new Compartment();
 
@@ -285,7 +295,7 @@ export function createEditor(
       // The content element carries the accessible name. The wrapper around
       // it must not declare a second text box (UI-26, MD-19).
       EditorView.contentAttributes.of({ 'aria-label': 'Note text' }),
-      readOnlyCompartment.of(EditorState.readOnly.of(readOnly)),
+      readOnlyCompartment.of(noteAccessExtensions(readOnly)),
       spellCheckCompartment.of(spellCheck(options.spellCheck ?? false)),
     ],
   });
@@ -320,7 +330,7 @@ export function setEditorTheme(
  */
 export function setEditorReadOnly(view: EditorView, readOnly: boolean): void {
   view.dispatch({
-    effects: readOnlyCompartment.reconfigure(EditorState.readOnly.of(readOnly)),
+    effects: readOnlyCompartment.reconfigure(noteAccessExtensions(readOnly)),
   });
 }
 

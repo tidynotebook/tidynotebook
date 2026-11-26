@@ -42,6 +42,7 @@ type Room = {
   readonly key: string;
   readonly members: Set<Peer>;
   document: Uint8Array;
+  accepted: Uint8Array;
   work: Promise<void>;
 };
 type Watch = { generation: number; workspaceIds: Set<string> };
@@ -52,6 +53,11 @@ type NoteState = {
   writable: boolean;
 };
 
+export type OpenNotePresence = {
+  workspaceId: string;
+  fileId: string;
+  accountId: string;
+};
 export type LiveRooms = {
   readonly handle: (
     connection: LiveConnection,
@@ -62,6 +68,7 @@ export type LiveRooms = {
   readonly recheck: (connection: LiveConnection) => Promise<void>;
   readonly reset: () => void;
   readonly hasRoom?: (key: string) => boolean;
+  readonly refreshPresence?: (workspaceId: string) => Promise<void>;
 };
 
 export function noteOf(
@@ -144,6 +151,8 @@ function canonicalAwareness(peer: Peer, entry: AwarenessEntry): AwarenessEntry {
 export function createLiveRooms(input: {
   readonly store: CollaborationStore;
   readonly onRoomEmpty?: (key: string) => void;
+  readonly remotePresence?: () => readonly OpenNotePresence[];
+
   readonly noticeAccess: (
     sessionId: string,
     accountId: string,
@@ -226,6 +235,17 @@ export function createLiveRooms(input: {
           others.add(peer.connection.accountId);
           byNote.set(peer.fileId, others);
         }
+      for (const peer of input.remotePresence?.() ?? []) {
+        if (
+          peer.workspaceId !== workspaceId ||
+          peer.accountId === connection.accountId
+        )
+          continue;
+        const others = byNote.get(peer.fileId) ?? new Set<string>();
+        if (others.size >= liveBounds.connectionsPerRoom) continue;
+        others.add(peer.accountId);
+        byNote.set(peer.fileId, others);
+      }
       connection.emit({
         kind: 'workspacePresence',
         workspaceId,
@@ -346,6 +366,7 @@ export function createLiveRooms(input: {
         key: roomKey(note),
         members: new Set(),
         document: current.bytes,
+        accepted: current.bytes,
         work: Promise.resolve(),
       };
       rooms.set(room.key, room);
@@ -386,6 +407,7 @@ export function createLiveRooms(input: {
 
   return {
     hasRoom: (key) => rooms.has(key),
+    refreshPresence: presence,
     async handle(connection, kind, message) {
       if (kind === 'watchWorkspacePresence') {
         const { workspaceIds, generation } = message;
@@ -451,6 +473,18 @@ export function createLiveRooms(input: {
           stop(connection, roomId, 'invalid_update');
           removePeer(peer);
           return;
+        }
+        if (Buffer.compare(current.bytes, peer.room.accepted) !== 0) {
+          const delta = encodeDocumentDelta(
+            current.bytes,
+            documentStateVector(peer.room.document),
+          );
+          if (!apply(peer.room, delta)) {
+            stop(connection, roomId, 'unavailable');
+            removePeer(peer);
+            return;
+          }
+          peer.room.accepted = current.bytes;
         }
         if (decoded.kind === 'vector') {
           try {

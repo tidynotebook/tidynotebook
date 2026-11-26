@@ -368,7 +368,7 @@ export function createNoticeGateway(options: {
 
   const onMessage = (stream: Stream, text: string | null): void => {
     if (stream.closed) return;
-    if (text === null) {
+    if (text === null || Buffer.byteLength(text) > bounds.maxFrameBytes) {
       stop(stream, 'malformed');
       return;
     }

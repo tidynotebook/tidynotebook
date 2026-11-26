@@ -191,6 +191,23 @@ BEGIN
   RETURN 'ok';
 END $$;
 --> statement-breakpoint
+CREATE FUNCTION public.notesapp_transfer_stranded_members(p_workspace uuid, p_owner uuid)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public AS $$
+DECLARE
+  member_id uuid;
+BEGIN
+  FOR member_id IN SELECT account_id FROM public.memberships
+    WHERE workspace_id = p_workspace AND account_id <> p_owner LOOP
+    IF NOT EXISTS (SELECT 1 FROM public.memberships WHERE account_id = member_id AND workspace_id <> p_workspace) THEN
+      PERFORM public.notesapp_new_personal_workspace(member_id, gen_random_uuid(), 'Personal');
+    END IF;
+    PERFORM public.notesapp_membership_changed(p_workspace, member_id, true);
+  END LOOP;
+  PERFORM pg_notify('notesapp_sync', 'a:' || p_owner::text);
+END $$;
+--> statement-breakpoint
+REVOKE ALL ON FUNCTION public.notesapp_transfer_stranded_members(uuid, uuid) FROM PUBLIC;
+--> statement-breakpoint
 CREATE OR REPLACE FUNCTION public.notesapp_delete_workspace(p_workspace_id uuid)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public AS $$
 DECLARE
@@ -209,14 +226,7 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.memberships WHERE account_id = caller AND workspace_id <> p_workspace_id) THEN
     RAISE EXCEPTION 'An account keeps its last workspace' USING ERRCODE = '42501';
   END IF;
-  FOR member_id IN SELECT account_id FROM public.memberships
-    WHERE workspace_id = p_workspace_id AND account_id <> caller LOOP
-    IF NOT EXISTS (SELECT 1 FROM public.memberships WHERE account_id = member_id AND workspace_id <> p_workspace_id) THEN
-      PERFORM public.notesapp_new_personal_workspace(member_id, gen_random_uuid(), 'Personal');
-    END IF;
-    PERFORM public.notesapp_membership_changed(p_workspace_id, member_id, true);
-  END LOOP;
-  PERFORM pg_notify('notesapp_sync', 'a:' || caller::text);
+  PERFORM public.notesapp_transfer_stranded_members(p_workspace_id, caller);
   PERFORM public.notesapp_erase_workspace(p_workspace_id);
 END $$;
 --> statement-breakpoint
@@ -791,6 +801,123 @@ END $$;
 REVOKE ALL ON FUNCTION public.notesapp_revision_contributors(uuid, uuid[]) FROM PUBLIC;
 --> statement-breakpoint
 GRANT EXECUTE ON FUNCTION public.notesapp_revision_contributors(uuid, uuid[]) TO notesapp_app;
+--> statement-breakpoint
+CREATE OR REPLACE FUNCTION public.notesapp_record_account_event(
+		p_account_id uuid,
+		p_kind public.account_event_kind)
+	RETURNS void
+	LANGUAGE plpgsql
+	SECURITY DEFINER
+	SET search_path = pg_catalog, public
+	AS $$
+	BEGIN
+		PERFORM pg_advisory_xact_lock(hashtext('notesapp:account-events')::bigint);
+		INSERT INTO public.account_events (cursor, account_id, kind)
+		SELECT coalesce(max(e.cursor), 0) + 1, p_account_id, p_kind
+		FROM public.account_events e;
+	END
+	$$;
+--> statement-breakpoint
+CREATE OR REPLACE FUNCTION public.notesapp_next_cursor(p_workspace_id uuid) RETURNS bigint
+	LANGUAGE plpgsql
+	SECURITY DEFINER
+	SET search_path = pg_catalog, public
+	AS $$
+	DECLARE
+		allocated bigint;
+	BEGIN
+		IF coalesce(public.notesapp_member_role(p_workspace_id), '') NOT IN ('owner', 'admin', 'editor') THEN
+			RAISE EXCEPTION 'notesapp: the account is not a member of this workspace'
+				USING ERRCODE = '42501';
+		END IF;
+		PERFORM public.notesapp_require_writable(p_workspace_id);
+		UPDATE public.workspace_cursors
+		SET last_cursor = last_cursor + 1
+		WHERE workspace_id = p_workspace_id
+		RETURNING last_cursor INTO allocated;
+		IF allocated IS NULL THEN
+			RAISE EXCEPTION 'notesapp: the workspace has no cursor record'
+				USING ERRCODE = '23503';
+		END IF;
+		RETURN allocated;
+	END
+	$$;
+--> statement-breakpoint
+CREATE OR REPLACE FUNCTION public.notesapp_remove_account(p_account_id uuid)
+	RETURNS void
+	LANGUAGE plpgsql
+	SECURITY DEFINER
+	SET search_path = pg_catalog, public
+	AS $$
+	DECLARE
+		target record;
+    affected uuid;
+		held record;
+	BEGIN
+		PERFORM public.notesapp_lock_installation();
+		IF public.notesapp_current_account() IS DISTINCT FROM p_account_id
+			AND NOT public.notesapp_is_administrator()
+			AND NOT public.notesapp_is_operator() THEN
+			RAISE EXCEPTION 'notesapp: only the account or an administrator can remove it'
+				USING ERRCODE = '42501';
+		END IF;
+		SELECT a.installation_role, a.state INTO target FROM public.accounts a
+		WHERE a.id = p_account_id AND a.removed_at IS NULL;
+		IF NOT FOUND THEN
+			RAISE EXCEPTION 'notesapp: no such account' USING ERRCODE = 'P0002';
+		END IF;
+		IF public.notesapp_current_account() = p_account_id
+			AND target.state <> 'enabled' THEN
+			RAISE EXCEPTION 'notesapp: a disabled account cannot remove itself'
+				USING ERRCODE = '42501';
+		END IF;
+		PERFORM public.notesapp_keep_administrator(p_account_id,
+			target.installation_role, target.state, true);
+		FOR held IN
+			SELECT m.workspace_id, m.role FROM public.memberships m
+			WHERE m.account_id = p_account_id ORDER BY m.workspace_id
+		LOOP
+			PERFORM pg_advisory_xact_lock(hashtext(held.workspace_id::text)::bigint);
+		END LOOP;
+		FOR affected IN
+      SELECT p_account_id
+      UNION SELECT member.account_id FROM public.memberships member
+        JOIN public.memberships account_owner ON account_owner.workspace_id = member.workspace_id
+        WHERE account_owner.account_id = p_account_id AND account_owner.role = 'owner'
+      ORDER BY 1
+    LOOP
+      PERFORM public.notesapp_lock_account(affected);
+    END LOOP;
+		FOR held IN
+			SELECT m.workspace_id, m.role FROM public.memberships m
+			WHERE m.account_id = p_account_id ORDER BY m.workspace_id
+		LOOP
+			IF held.role = 'owner' THEN
+				PERFORM public.notesapp_transfer_stranded_members(held.workspace_id, p_account_id);
+				PERFORM public.notesapp_erase_workspace(held.workspace_id);
+			ELSE
+				DELETE FROM public.memberships
+				WHERE workspace_id = held.workspace_id AND account_id = p_account_id;
+        PERFORM public.notesapp_membership_changed(held.workspace_id, p_account_id, true);
+			END IF;
+		END LOOP;
+		DELETE FROM public.account_preferences WHERE account_id = p_account_id;
+		DELETE FROM public.account_audit_events WHERE account_id = p_account_id;
+		DELETE FROM public.account_handoffs WHERE account_id = p_account_id;
+		DELETE FROM public.auth_user u
+		USING public.account_identities ai
+		WHERE ai.account_id = p_account_id AND u.id = ai.auth_user_id;
+		UPDATE public.accounts SET
+			removed_at = now(),
+			state = 'disabled',
+			installation_role = 'member',
+			address_proof = NULL,
+			removal_at = NULL,
+			removal_notices = 0
+		WHERE id = p_account_id;
+		PERFORM public.notesapp_record_account_event(p_account_id, 'removed');
+	END
+	$$;
 --> statement-breakpoint
 CREATE OR REPLACE FUNCTION public.notesapp_schema_version() RETURNS integer
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$ SELECT 45; $$;

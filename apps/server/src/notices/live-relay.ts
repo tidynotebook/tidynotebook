@@ -20,6 +20,7 @@ type Assembly = {
 export type LiveRelay = {
   start(): void;
   listening(): boolean;
+  hasPeers(): Promise<boolean>;
   owns(room: string): boolean;
   acquire(room: string): Promise<boolean>;
   release(room: string): void;
@@ -171,6 +172,15 @@ export function openLiveRelay(
       void connect();
     },
     listening: () => ready,
+    async hasPeers() {
+      const connection = client;
+      if (connection === null || !ready) return false;
+      const found = await connection.query<{ peers: boolean }>(
+        "select exists(select 1 from pg_stat_activity where datname = current_database() and application_name = 'notesapp-live-relay' and pid <> pg_backend_pid()) as peers",
+      );
+      return found.rows[0]?.peers === true;
+    },
+
     owns: (room) => owned.has(room),
     async acquire(room) {
       if (owned.has(room)) return true;

@@ -1,10 +1,14 @@
-import type { Action } from '../identity/actor.ts';
 /**
  * Unit tests for the history, restore, and purge services.
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { verifyActor, type Actor, type Role } from '../identity/actor.ts';
+import {
+  verifyActor,
+  type Action,
+  type Actor,
+  type Role,
+} from '../identity/actor.ts';
 import { contentDigest } from '../files/digest.ts';
 import { listHistory, restoreRevision } from './service.ts';
 import { previewPurge, purgeFiles } from './purge.ts';

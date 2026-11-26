@@ -578,10 +578,12 @@ const NoteEditorBody = memo(function NoteEditorBody({
         },
         saveDraft: (draft) => live.current.store.saveDraft(draft),
         checkpoint: (draft) =>
-          live.current.store.checkpoint(draft, saveCheckpointMessage, {
-            kind: 'document',
-            epoch: openedEpochRef.current,
-          }),
+          readOnlyRef.current
+            ? Promise.resolve(null)
+            : live.current.store.checkpoint(draft, saveCheckpointMessage, {
+                kind: 'document',
+                epoch: openedEpochRef.current,
+              }),
         draftOwed: () => {
           void saveDraftNow.current();
         },
@@ -927,10 +929,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
     };
   }, []);
 
-  // The resolvers keep their identity between keystrokes. They are rebuilt
-  // only when math arrives, when the palette changes, or when the set of
-  // resolved attachment URLs really changed, because a new object here
-  // reconfigures the widget compartment (MD-10).
+  // Keep resolver identity stable between keystrokes (MD-10).
   const richResolvers = useMemo<RichWidgetResolvers>(
     () => ({
       renderMath: !mathReady
@@ -1056,11 +1055,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
     };
   }, [workingCopyId, documentWork, localWrite, watchHistory]);
 
-  // The local changes of the open document reach this device one frame
-  // after they reach the editor, so a reload, a closed tab and a second tab
-  // all read the work of this editor (records 0085, 0175). The document is
-  // the one source of the text, so the save path that follows sends exactly
-  // the work this device added.
+  // Store local changes on the next frame so reload and other tabs see them.
   useEffect(() => {
     const { note: bound, release: releaseNote } = holdSession();
     releasedRef.current = false;
@@ -1098,14 +1093,12 @@ const NoteEditorBody = memo(function NoteEditorBody({
     };
   }, [workingCopyId, localWrite, noteWork]);
 
-  // Theme changes reconfigure one compartment, keeping document, undo,
-  // selection, and composition exactly where they are.
+  // Theme changes preserve editor state.
   useEffect(() => {
     const view = viewRef.current;
     if (view !== null) setEditorTheme(view, resolved);
   }, [resolved]);
 
-  // The spell check setting reconfigures one compartment in the same way.
   useEffect(() => {
     const view = viewRef.current;
     if (view !== null) setEditorSpellCheck(view, spellCheck);
@@ -1120,10 +1113,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
     validPathRef,
   );
 
-  // The note saves itself, so Cmd or Ctrl + S is only an accelerator that
-  // creates a version at once. It is window level, so it works while focus
-  // sits in the note name field. CodeMirror marks the event handled first, so
-  // the editor binding never fires twice.
+  // The window shortcut also saves when the note name field has focus.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
       if (event.defaultPrevented) return;
@@ -1140,11 +1130,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
     };
   }, []);
 
-  // A version is a restore point, so leaving the note flushes one. A hidden
-  // tab (a switch or a close) runs no frame, so it appends the work that
-  // waits at once, writes the draft and flushes a version. The end of the
-  // screen does the same, which is how one note gives way to another.
-  // Typing that only pauses flushes through the version timer instead.
+  // A hidden tab runs no frame. Flush work, draft and version before leaving.
   useEffect(() => {
     const onHide = (): void => {
       void noteWork.flush();
@@ -1213,13 +1199,9 @@ const NoteEditorBody = memo(function NoteEditorBody({
     return run;
   }, [localWrite, askQueue, setStorageError]);
 
-  // The root states the save state from its first frame on, and later
-  // changes write it through `showSaveFacts`.
   useLayoutEffect(() => {
     showSaveFacts.current();
   }, []);
-  // The note saves itself, so this is the one place that states a failed
-  // local write, and the sidebar footer stops claiming that it is saved.
   const writeFailure = localWriteFailureMessage(storageError);
 
   /**
@@ -1398,9 +1380,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
     });
   }, [workspaceId, fileId]);
 
-  // One stable object holds every action of the open note. It does not change
-  // between keystrokes, so the shell registers it once and offers each action
-  // in the command palette.
+  // Register note actions without replacing them on each keystroke.
   const noteScreenActions = useMemo<NoteScreenActions>(
     () => ({
       fileId,

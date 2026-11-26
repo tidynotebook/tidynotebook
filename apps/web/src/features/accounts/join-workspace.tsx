@@ -61,6 +61,7 @@ export function JoinWorkspacePage(): ReactNode {
   const [state, setState] = useState<JoinState>({ kind: 'loading' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [switching, setSwitching] = useState(false);
 
   useEffect(() => {
     if (location.hash !== '') void navigate('/join', { replace: true });
@@ -119,6 +120,14 @@ export function JoinWorkspacePage(): ReactNode {
       state: { email: state.kind === 'ready' ? state.invite.email : '' },
     });
   }
+
+  useEffect(() => {
+    if (switching && session.status === 'signed-out') {
+      void navigate(signInAddress('/join'), {
+        state: { email: state.kind === 'ready' ? state.invite.email : '' },
+      });
+    }
+  }, [switching, session.status, state, navigate]);
 
   async function respond(
     invite: PendingWorkspaceInvite,
@@ -208,8 +217,15 @@ export function JoinWorkspacePage(): ReactNode {
         <Button
           variant="primary"
           onClick={() => {
+            if (token !== null) {
+              try {
+                sessionStorage.setItem(returnToken, token);
+              } catch {
+                /* Open the original link again. */
+              }
+            }
+            setSwitching(true);
             session.signOut();
-            goToSignIn();
           }}
         >
           Sign out and continue

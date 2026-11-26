@@ -22,7 +22,7 @@ export type Locator = {
   and(locator: Locator): Locator;
   getByRole(
     role: string,
-    options?: { name: string; exact?: boolean; level?: number },
+    options?: { name: string | RegExp; exact?: boolean; level?: number },
   ): Locator;
   getByText(text: string | RegExp, options?: { exact?: boolean }): Locator;
   getByLabel(label: string, options?: { exact?: boolean }): Locator;
@@ -55,7 +55,7 @@ export type Page = {
   locator(selector: string): Locator;
   getByRole(
     role: string,
-    options?: { name: string; exact?: boolean; level?: number },
+    options?: { name: string | RegExp; exact?: boolean; level?: number },
   ): Locator;
   getByText(text: string | RegExp, options?: { exact?: boolean }): Locator;
   getByLabel(label: string, options?: { exact?: boolean }): Locator;

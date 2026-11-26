@@ -14,8 +14,9 @@ const supplied: unknown = JSON.parse(
   readFileSync('.local-app/collaboration-fixture.json', 'utf8'),
 );
 assert.ok(isRecord(supplied));
+const fixture = supplied;
 function value(key: string): string {
-  const item = supplied[key];
+  const item = fixture[key];
   assert.equal(typeof item, 'string', key);
   return String(item);
 }

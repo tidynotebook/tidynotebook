@@ -209,3 +209,7 @@ export {
 export { createSearchHandlers } from './routes/search.ts';
 
 export { emailPalettes } from './auth/email-template.ts';
+
+export { createLiveCluster } from './notices/live-cluster.ts';
+export { liveBounds } from './notices/live-bounds.ts';
+export { createLiveRelaySeal } from './auth/seal.ts';
