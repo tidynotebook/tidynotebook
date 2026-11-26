@@ -697,7 +697,7 @@ export function DisclosureRow({
   return (
     <ListRow {...props} density="tree">
       <span
-        className="inline-flex w-4 shrink-0 items-center"
+        className="inline-flex h-5 w-4 shrink-0 items-center"
         aria-hidden="true"
       >
         {glyph}
