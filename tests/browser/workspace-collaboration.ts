@@ -150,7 +150,9 @@ try {
   await editor.goto(`${origin}${note}/history`);
   await editor.getByText(/Owner/).first().waitFor();
   await screenshot(editor, 'history-desktop-dark');
-  await owner.goto(`${origin}${note}`);
+  await Promise.all(
+    [owner, editor].map((page) => page.goto(`${origin}${note}`)),
+  );
 
   for (const scheme of ['light', 'dark'] as const) {
     for (const width of [390, 1440]) {
@@ -190,6 +192,13 @@ try {
       await page.getByRole('button', { name: /Workspace: / }).click();
       await page.getByText('Rename workspace', { exact: true }).waitFor();
       await screenshot(page, `switcher-${layout}-${scheme}`);
+      if (phone) {
+        await page.goto(`${origin}${note}`);
+        await page
+          .getByRole('button', { name: /People in this note/ })
+          .waitFor();
+        await screenshot(page, `editor-phone-${scheme}`);
+      }
       await context.close();
     }
   }
@@ -263,7 +272,9 @@ try {
     .click();
   await roleMenu.getByText('Viewer', { exact: true }).waitFor();
   await editorContext.setOffline(false);
-  await editor.getByText('Your role changed to Viewer.').waitFor();
+  await editor
+    .getByText('Your role changed to Viewer. Editing is off.')
+    .waitFor();
   assert.equal(await editorText.getAttribute('aria-readonly'), 'true');
   await screenshot(editor, 'editor-downgraded-desktop-dark');
   await editor
@@ -281,8 +292,49 @@ try {
     .getByRole('menuitemradio', { name: 'Editor', exact: true })
     .click();
   await roleMenu.getByText('Editor', { exact: true }).waitFor();
+  await editor.goto(`${origin}${note}`);
+  await editor.getByText('Live', { exact: true }).waitFor();
+  await editorContext.setOffline(true);
+  await editor.getByText(/Offline. Your edits merge/).waitFor();
+  await editorText.focus();
+  await editorText.press('Control+End');
+  await editor.keyboard.type('\nKeep this text after removal');
+  await roleMenu.click();
+  await owner.getByText('Remove from workspace', { exact: true }).click();
+  await owner
+    .getByRole('dialog', { name: 'Remove from workspace' })
+    .getByRole('button', { name: 'Remove', exact: true })
+    .click();
+  await roleMenu.waitFor({ state: 'hidden' });
+  await editorContext.setOffline(false);
+  await editor
+    .getByText(
+      `You no longer have access to ${fixture.workspaceName}. Your unsent text`,
+    )
+    .waitFor();
+  await screenshot(editor, 'access-removed-desktop-dark');
+  await editor.goto(`${origin}/w/${fixture.editorPersonalId}`);
+  await editor.getByText('Launch plan 2', { exact: true }).last().click();
+  await editorText
+    .getByText('Keep this text after removal', { exact: true })
+    .waitFor();
+  await owner.goto(`${origin}${note}/history`);
+  await owner
+    .getByText(/Former member/)
+    .first()
+    .waitFor();
+  await screenshot(owner, 'history-former-member-desktop-light');
+  await owner.goto(`${origin}${space}?settings=members`);
+  await owner.getByRole('button', { name: 'Invite people' }).click();
+  await owner.getByLabel('Email addresses').fill(fixture.editor);
+  await owner.getByRole('button', { name: 'Send invite' }).click();
+  await owner.getByText('Invite created. Copy the link to send it.').waitFor();
+  await editor.goto(`${origin}/w/${fixture.editorPersonalId}`);
+  await editor.getByRole('button', { name: /Workspace: / }).click();
+  await editor.getByText(`Accept invite to ${fixture.workspaceName}`).click();
+  await editor.waitForURL(`${origin}${space}`);
   process.stdout.write(
-    'Concurrent edits, cursors, presence, offline merge, invites, viewer access, and role change recovery passed.\n',
+    'Concurrent edits, cursors, presence, offline merge, invites, viewer access, downgrade and removal recovery, and former contributors passed.\n',
   );
 } catch (error) {
   for (const context of browser.contexts()) {

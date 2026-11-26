@@ -42,9 +42,10 @@ export function recoverWorkspaceAccess(
     let destination =
       remaining.find((space) => space.personal && space.role !== 'viewer') ??
       remaining.find((space) => space.role !== 'viewer');
-    let notice: string | null = removed
-      ? `You lost access to ${old.name}.`
+    const accessNotice = removed
+      ? `You no longer have access to ${old.name}.`
       : null;
+    let notice = accessNotice;
     for (let attempt = 0; attempt < 4; attempt += 1) {
       const copies = await store.workspaceAccessCopies(
         accountId,
@@ -89,7 +90,8 @@ export function recoverWorkspaceAccess(
           known.add(fileId);
           paths.push(path);
         }
-        notice = `Your unsent text is in ${destination.name}, in the folder ${folder}.`;
+        const saved = `Your unsent text is in ${destination.name}, in the folder ${folder}.`;
+        notice = accessNotice === null ? saved : `${accessNotice} ${saved}`;
       }
       if (
         await store.clearWorkspaceAccess(

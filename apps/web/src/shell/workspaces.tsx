@@ -46,6 +46,14 @@ import { useWorkspace } from '../app.tsx';
 import { addressInWorkspace, isMemberOf } from '../lib/workspace-choice.ts';
 import { initialOf } from '../lib/initial.ts';
 import { actionIcon } from './action-icons.tsx';
+import { useOpenSettings } from './settings-modal.tsx';
+
+const roleNames = {
+  owner: 'Owner',
+  admin: 'Admin',
+  editor: 'Editor',
+  viewer: 'Viewer',
+} as const;
 
 /** The longest workspace name the contract accepts. */
 
@@ -210,6 +218,7 @@ export function WorkspaceSwitcher({
   const navigate = useNavigate();
   const [invites, setInvites] = useState<PendingWorkspaceInvite[]>([]);
   const [problem, setProblem] = useState('');
+  const openSettings = useOpenSettings();
   useEffect(() => {
     let active = true;
     void listMyWorkspaceInvites()
@@ -242,6 +251,7 @@ export function WorkspaceSwitcher({
     id: workspace.workspaceId,
     label: workspace.name,
     icon: actionIcon('workspace'),
+    hint: roleNames[workspace.role],
     selected: workspace.workspaceId === workspaceId,
     onSelect: () => switchTo(workspace.workspaceId),
   }));
@@ -251,6 +261,8 @@ export function WorkspaceSwitcher({
       {
         id: `accept-${invite.invitationId}`,
         label: `Accept invite to ${invite.workspaceName}`,
+        hint: roleNames[invite.role],
+        group: 'Invites',
         onSelect: () => {
           void acceptWorkspaceInvite({
             path: { invitationId: invite.invitationId },
@@ -272,6 +284,7 @@ export function WorkspaceSwitcher({
       {
         id: `decline-${invite.invitationId}`,
         label: `Decline invite to ${invite.workspaceName}`,
+        group: 'Invites',
         onSelect: () => {
           void declineWorkspaceInvite({
             path: { invitationId: invite.invitationId },
@@ -293,6 +306,14 @@ export function WorkspaceSwitcher({
   const manages =
     openWorkspace.role === 'owner' || openWorkspace.role === 'admin';
   const pinned: MenuItem[] = [
+    {
+      id: 'workspace-members',
+      label: manages ? 'Members and invites' : 'Members',
+      onSelect: () => {
+        openSettings('members');
+        onNavigate();
+      },
+    },
     ...(manages
       ? [
           {

@@ -468,7 +468,8 @@ export function NoteLiveStatus({
   readonly enabled: boolean;
   readonly changedToViewer: boolean;
 }): ReactNode {
-  if (changedToViewer) return <Notice message="Your role changed to Viewer." />;
+  if (changedToViewer)
+    return <Notice message="Your role changed to Viewer. Editing is off." />;
   if (!enabled) return null;
   return (
     <Notice
