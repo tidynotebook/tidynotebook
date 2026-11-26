@@ -1,0 +1,33 @@
+type: object
+description: An active invitation with no link or secret.
+additionalProperties: false
+required:
+  - invitationId
+  - workspaceId
+  - workspaceName
+  - email
+  - role
+  - inviterName
+  - expiresAt
+properties:
+  invitationId:
+    $ref: './Uuid.yaml'
+  workspaceId:
+    $ref: './Uuid.yaml'
+  workspaceName:
+    type: string
+    minLength: 1
+    maxLength: 200
+  email:
+    $ref: './EmailAddress.yaml'
+  role:
+    $ref: './WorkspaceInviteRole.yaml'
+  inviterName:
+    type:
+      - string
+      - 'null'
+    minLength: 1
+    maxLength: 256
+  expiresAt:
+    type: string
+    format: date-time

@@ -30,3 +30,9 @@ properties:
       workspace reads it to decide whether the save joins unseen work,
       and whether a deletion would hide an edit that the device never
       saw.
+  liveContributions:
+    type: array
+    description: Proofs for uncommitted peer work included in this checkpoint.
+    maxItems: 16
+    items:
+      $ref: './LiveContributionProof.yaml'

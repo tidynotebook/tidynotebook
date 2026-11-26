@@ -1,0 +1,5 @@
+description: The active invitation link.
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/WorkspaceInviteLink.yaml'

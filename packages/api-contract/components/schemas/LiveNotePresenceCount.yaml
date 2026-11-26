@@ -1,0 +1,13 @@
+type: object
+description: The number of other accounts with a note open.
+additionalProperties: false
+required:
+  - fileId
+  - accountCount
+properties:
+  fileId:
+    $ref: './Uuid.yaml'
+  accountCount:
+    type: integer
+    minimum: 1
+    maximum: 32

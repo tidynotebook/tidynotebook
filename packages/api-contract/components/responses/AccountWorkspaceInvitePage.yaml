@@ -1,0 +1,5 @@
+description: A page of active invitations for the account.
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/AccountWorkspaceInvitePage.yaml'

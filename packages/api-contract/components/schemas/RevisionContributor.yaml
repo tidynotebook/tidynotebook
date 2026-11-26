@@ -1,0 +1,20 @@
+type: object
+description: A contributor in History. A former member has no name or account ID in this view.
+additionalProperties: false
+required:
+  - accountId
+  - displayName
+  - formerMember
+properties:
+  accountId:
+    oneOf:
+      - $ref: './Uuid.yaml'
+      - type: 'null'
+  displayName:
+    type:
+      - string
+      - 'null'
+    minLength: 1
+    maxLength: 256
+  formerMember:
+    type: boolean

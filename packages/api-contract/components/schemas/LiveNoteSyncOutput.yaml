@@ -1,0 +1,29 @@
+type: object
+description: Deliver a validated y-protocols sync message and any proofs for uncommitted work.
+additionalProperties: false
+required:
+  - kind
+  - roomId
+  - sequence
+  - payload
+properties:
+  kind:
+    type: string
+    const: noteSync
+  roomId:
+    $ref: './Uuid.yaml'
+  sequence:
+    description: Advances for each sync delivery to this joined working copy.
+    type: integer
+    minimum: 1
+    maximum: 9007199254740991
+  payload:
+    type: string
+    minLength: 4
+    pattern: ^[A-Za-z0-9+/]*={0,2}$
+    maxLength: 87384
+  proofs:
+    type: array
+    maxItems: 16
+    items:
+      $ref: './LiveContributionProof.yaml'

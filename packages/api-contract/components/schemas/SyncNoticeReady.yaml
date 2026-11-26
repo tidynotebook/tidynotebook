@@ -13,3 +13,6 @@ properties:
     const: ready
   accountId:
     $ref: './Uuid.yaml'
+  liveNotes:
+    type: boolean
+    description: True when the server can join note rooms on this connection.

@@ -4,6 +4,17 @@
  */
 
 import type {
+  LiveNoteAccess,
+  LiveNoteAwarenessInput,
+  LiveNoteAwarenessOutput,
+  LiveNoteJoin,
+  LiveNoteJoined,
+  LiveNoteLeave,
+  LiveNoteStopped,
+  LiveNoteSyncInput,
+  LiveNoteSyncOutput,
+  LiveWorkspacePresence,
+  LiveWorkspacePresenceWatch,
   SyncNoticeAccount,
   SyncNoticeChanged,
   SyncNoticeReady,
@@ -18,15 +29,15 @@ import type {
 export const syncNoticesPath = '/api/sync/notices';
 
 /** The one WebSocket subprotocol of the syncNotices channel. */
-export const syncNoticesProtocol = 'notesapp.sync.1';
+export const syncNoticesProtocol = 'notesapp.sync.2';
 
 /** Every message that a client sends on the syncNotices channel. */
-export type SyncNoticesClientMessage = SyncNoticeSubscribe;
+export type SyncNoticesClientMessage = LiveNoteJoin | LiveNoteLeave | LiveNoteAwarenessInput | LiveNoteSyncInput | SyncNoticeSubscribe | LiveWorkspacePresenceWatch;
 
 /** Every message that the server sends on the syncNotices channel. */
-export type SyncNoticesServerMessage = SyncNoticeAccount | SyncNoticeChanged | SyncNoticeReady | SyncNoticeReconcile | SyncNoticeRefused | SyncNoticeStop | SyncNoticeSubscribed;
+export type SyncNoticesServerMessage = SyncNoticeAccount | SyncNoticeChanged | LiveNoteAccess | LiveNoteAwarenessOutput | LiveNoteJoined | LiveNoteStopped | LiveNoteSyncOutput | SyncNoticeReady | SyncNoticeReconcile | SyncNoticeRefused | SyncNoticeStop | SyncNoticeSubscribed | LiveWorkspacePresence;
 
-const syncNoticesServerKinds: readonly string[] = ["account","changed","ready","reconcile","refused","stop","subscribed"];
+const syncNoticesServerKinds: readonly string[] = ["account","changed","noteAccess","noteAwareness","noteJoined","noteStopped","noteSync","ready","reconcile","refused","stop","subscribed","workspacePresence"];
 
 /**
  * The WebSocket address of the syncNotices channel on one origin.

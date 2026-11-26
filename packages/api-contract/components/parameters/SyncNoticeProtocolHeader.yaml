@@ -8,4 +8,4 @@ description: >-
   The server opens the stream only for the one subprotocol that this
   contract names.
 schema:
-  $ref: '../schemas/SyncNoticeProtocol.yaml'
+  $ref: '../schemas/LiveSyncNoticeProtocol.yaml'

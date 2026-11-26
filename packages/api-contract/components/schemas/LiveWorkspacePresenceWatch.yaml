@@ -1,0 +1,18 @@
+type: object
+description: Replace the workspace presence interests for this connection.
+additionalProperties: false
+required:
+  - kind
+  - generation
+  - workspaceIds
+properties:
+  kind:
+    type: string
+    const: watchWorkspacePresence
+  generation:
+    $ref: './SyncNoticeGeneration.yaml'
+  workspaceIds:
+    type: array
+    maxItems: 16
+    items:
+      $ref: './Uuid.yaml'

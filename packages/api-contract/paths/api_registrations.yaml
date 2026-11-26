@@ -3,7 +3,10 @@ post:
   summary: Make an account from an invitation and sign it in.
   description: >-
     Makes an account for the address that the invitation binds, with the
-    given password, and starts its session. A used, revoked, or expired
+    given password, and starts its session. A workspace invitation also
+    creates the invited membership in the same transaction as the account
+    and its Personal workspace. A valid link proves the invited address. A used,
+    revoked, or expired
     invitation makes nothing, and the answer does not say which of the three
     applied. Two requests with one invitation make one account. When the
     installation names its terms and its privacy notice, the request names

@@ -30,3 +30,10 @@ properties:
     type: boolean
     readOnly: true
     description: Whether this server supports batch reads of snapshot revisions.
+  liveNotificationProtocol:
+    allOf:
+      - $ref: './LiveSyncNoticeProtocol.yaml'
+    readOnly: true
+    description: >-
+      The subprotocol of the current sync stream when it is available.
+      The ready frame states if this connection can also open note rooms.

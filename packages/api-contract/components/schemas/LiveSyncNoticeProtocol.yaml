@@ -1,0 +1,3 @@
+type: string
+description: The sync stream subprotocol with optional live notes and presence.
+const: notesapp.sync.2

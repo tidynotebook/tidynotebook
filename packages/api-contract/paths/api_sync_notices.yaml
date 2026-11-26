@@ -4,7 +4,8 @@ get:
   description: >-
     Upgrades the connection to the WebSocket stream that tells a signed in
     device when the feed of a subscribed workspace changes. The stream
-    carries notices only. Saves, receipts, feed pages and snapshots stay on
+    can also carry live note and presence messages when ready offers liveNotes.
+    Saves, receipts, feed pages and snapshots stay on
     the HTTP operations, and a device that cannot open the stream reads the
     feed on its own schedule. `asyncapi.yaml` states every message of the
     stream.

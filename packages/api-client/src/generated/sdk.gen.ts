@@ -2,7 +2,7 @@
 
 import { client } from './client.gen.js';
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape, urlSearchParamsBodySerializer } from './client/index.js';
-import type { AbortWorkspaceImportData, AbortWorkspaceImportErrors, AbortWorkspaceImportResponses, AcceptLegalDocumentsData, AcceptLegalDocumentsErrors, AcceptLegalDocumentsResponses, CommitChangesetData, CommitChangesetErrors, CommitChangesetResponses, CompleteWorkspaceImportData, CompleteWorkspaceImportErrors, CompleteWorkspaceImportResponses, ContinueOAuthAuthorizationData, ContinueOAuthAuthorizationErrors, ContinueOAuthAuthorizationResponses, CreateApiKeyData, CreateApiKeyErrors, CreateApiKeyResponses, CreateFileData, CreateFileErrors, CreateFileResponses, CreateInvitationData, CreateInvitationErrors, CreateInvitationResponses, CreateOwnerData, CreateOwnerErrors, CreateOwnerResponses, CreatePublishedLinkData, CreatePublishedLinkErrors, CreatePublishedLinkResponses, CreateWorkspaceData, CreateWorkspaceErrors, CreateWorkspaceResponses, DeleteFileData, DeleteFileErrors, DeleteFileResponses, DeleteThemeData, DeleteThemeErrors, DeleteThemeResponses, DeleteWorkspaceData, DeleteWorkspaceErrors, DeleteWorkspaceResponses, DismissReportData, DismissReportErrors, DismissReportResponses, ExchangeOAuthTokenData, ExchangeOAuthTokenErrors, ExchangeOAuthTokenResponses, ExportNoteData, ExportNoteErrors, ExportNoteResponses, ExportWorkspaceData, ExportWorkspaceErrors, ExportWorkspaceResponses, FinalizeAttachmentData, FinalizeAttachmentErrors, FinalizeAttachmentResponses, FindOperatorAccountData, FindOperatorAccountErrors, FindOperatorAccountResponses, GetAccountData, GetAccountErrors, GetAccountResponses, GetAttachmentRevisionData, GetAttachmentRevisionErrors, GetAttachmentRevisionResponses, GetAuthSessionData, GetAuthSessionErrors, GetAuthSessionResponses, GetChangesData, GetChangesErrors, GetChangesResponses, GetDailyNoteSettingsData, GetDailyNoteSettingsErrors, GetDailyNoteSettingsResponses, GetFileData, GetFileErrors, GetFileResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetInstallationData, GetInstallationErrors, GetInstallationResponses, GetLegalDocumentData, GetLegalDocumentErrors, GetLegalDocumentResponses, GetLegalDocumentSettingsData, GetLegalDocumentSettingsErrors, GetLegalDocumentSettingsResponses, GetMcpMetadataData, GetMcpMetadataErrors, GetMcpMetadataResponses, GetMutationReceiptData, GetMutationReceiptErrors, GetMutationReceiptResponses, GetOAuthClientData, GetOAuthClientErrors, GetOAuthClientResponses, GetOAuthMetadataData, GetOAuthMetadataErrors, GetOAuthMetadataResponses, GetPublishedAttachmentData, GetPublishedAttachmentErrors, GetPublishedAttachmentResponses, GetPublishedPageData, GetPublishedPageErrors, GetPublishedPageResponses, GetReadinessData, GetReadinessErrors, GetReadinessResponses, GetReportPageData, GetReportPageErrors, GetReportPageResponses, GetRevisionData, GetRevisionErrors, GetRevisionResponses, GetRootHealthData, GetRootHealthErrors, GetRootHealthResponses, GetRootMcpMetadataData, GetRootMcpMetadataErrors, GetRootMcpMetadataResponses, GetRootReadinessData, GetRootReadinessErrors, GetRootReadinessResponses, GetSetupStatusData, GetSetupStatusErrors, GetSetupStatusResponses, GetSignUpChallengeData, GetSignUpChallengeErrors, GetSignUpChallengeResponses, GetSnapshotPageData, GetSnapshotPageErrors, GetSnapshotPageResponses, GetSnapshotRevisionsData, GetSnapshotRevisionsErrors, GetSnapshotRevisionsResponses, GetSyncProtocolData, GetSyncProtocolErrors, GetSyncProtocolResponses, GetTemplateSettingsData, GetTemplateSettingsErrors, GetTemplateSettingsResponses, GiveOAuthConsentData, GiveOAuthConsentErrors, GiveOAuthConsentResponses, ImportThemeData, ImportThemeErrors, ImportThemeResponses, InspectWorkspaceExportData, InspectWorkspaceExportErrors, InspectWorkspaceExportResponses, ListAccountsData, ListAccountsErrors, ListAccountsResponses, ListApiKeysData, ListApiKeysErrors, ListApiKeysResponses, ListBacklinksData, ListBacklinksErrors, ListBacklinksResponses, ListConnectedAppsData, ListConnectedAppsErrors, ListConnectedAppsResponses, ListDeletedFilesData, ListDeletedFilesErrors, ListDeletedFilesResponses, ListFilesData, ListFilesErrors, ListFilesResponses, ListHistoryData, ListHistoryErrors, ListHistoryResponses, ListInvitationsData, ListInvitationsErrors, ListInvitationsResponses, ListOperatorAccountEventsData, ListOperatorAccountEventsErrors, ListOperatorAccountEventsResponses, ListPublishedLinksData, ListPublishedLinksErrors, ListPublishedLinksResponses, ListReportsData, ListReportsErrors, ListReportsResponses, ListSessionsData, ListSessionsErrors, ListSessionsResponses, ListWorkspacesData, ListWorkspacesErrors, ListWorkspacesResponses, OpenAccountPortalData, OpenAccountPortalErrors, OpenAccountPortalResponses, OpenMcpData, OpenMcpErrors, OpenMcpResponses, OpenPublishedPageData, OpenPublishedPageErrors, OpenPublishedPageResponses, OpenSyncNoticesData, OpenSyncNoticesErrors, PreviewPurgeData, PreviewPurgeErrors, PreviewPurgeResponses, PurgeFilesData, PurgeFilesErrors, PurgeFilesResponses, ReadInvitationData, ReadInvitationErrors, ReadInvitationResponses, ReadOperatorAccountData, ReadOperatorAccountErrors, ReadOperatorAccountResponses, ReadOperatorTotalsData, ReadOperatorTotalsErrors, ReadOperatorTotalsResponses, RedeemAccountHandoffData, RedeemAccountHandoffErrors, RedeemAccountHandoffResponses, RegisterAccountData, RegisterAccountErrors, RegisterAccountResponses, RegisterOAuthClientData, RegisterOAuthClientErrors, RegisterOAuthClientResponses, RemoveAccountData, RemoveAccountErrors, RemoveAccountResponses, RemoveLegalDocumentData, RemoveLegalDocumentErrors, RemoveLegalDocumentResponses, RemoveMailSettingsData, RemoveMailSettingsErrors, RemoveMailSettingsResponses, RemoveOperatorAccountData, RemoveOperatorAccountErrors, RemoveOperatorAccountResponses, RemoveOwnAccountData, RemoveOwnAccountErrors, RemoveOwnAccountResponses, ReportPublishedLinkData, ReportPublishedLinkErrors, ReportPublishedLinkResponses, RequestPasswordResetData, RequestPasswordResetErrors, RequestPasswordResetResponses, ResetPasswordData, ResetPasswordErrors, ResetPasswordResponses, RestoreFileData, RestoreFileErrors, RestoreFileResponses, RestoreRevisionData, RestoreRevisionErrors, RestoreRevisionResponses, RevokeApiKeyData, RevokeApiKeyErrors, RevokeApiKeyResponses, RevokeConnectedAppData, RevokeConnectedAppErrors, RevokeConnectedAppResponses, RevokeInvitationData, RevokeInvitationErrors, RevokeInvitationResponses, RevokeOAuthTokenData, RevokeOAuthTokenErrors, RevokeOAuthTokenResponses, RevokeOtherSessionsData, RevokeOtherSessionsErrors, RevokeOtherSessionsResponses, RevokePublishedLinkData, RevokePublishedLinkErrors, RevokePublishedLinkResponses, RevokeSessionData, RevokeSessionErrors, RevokeSessionResponses, SearchFilesData, SearchFilesErrors, SearchFilesResponses, SendTestMessageData, SendTestMessageErrors, SendTestMessageResponses, SendWorkspaceImportPartData, SendWorkspaceImportPartErrors, SendWorkspaceImportPartResponses, ServeMcpData, ServeMcpErrors, ServeMcpResponses, SetOperatorAccountControlsData, SetOperatorAccountControlsErrors, SetOperatorAccountControlsResponses, SignInWithPasswordData, SignInWithPasswordErrors, SignInWithPasswordResponses, SignOutData, SignOutErrors, SignOutResponses, SignUpAccountData, SignUpAccountErrors, SignUpAccountResponses, StartSnapshotData, StartSnapshotErrors, StartSnapshotResponses, StartWorkspaceImportData, StartWorkspaceImportErrors, StartWorkspaceImportResponses, TakeDownReportedLinkData, TakeDownReportedLinkErrors, TakeDownReportedLinkResponses, UnlockPublishedLinkData, UnlockPublishedLinkErrors, UnlockPublishedLinkResponses, UpdateAccountData, UpdateAccountErrors, UpdateAccountResponses, UpdateDailyNoteSettingsData, UpdateDailyNoteSettingsErrors, UpdateDailyNoteSettingsResponses, UpdateFileData, UpdateFileErrors, UpdateFileResponses, UpdateInstallationData, UpdateInstallationErrors, UpdateInstallationResponses, UpdateLegalDocumentData, UpdateLegalDocumentErrors, UpdateLegalDocumentResponses, UpdateMailSettingsData, UpdateMailSettingsErrors, UpdateMailSettingsResponses, UpdatePreferencesData, UpdatePreferencesErrors, UpdatePreferencesResponses, UpdateProfileData, UpdateProfileErrors, UpdateProfileResponses, UpdateTemplateSettingsData, UpdateTemplateSettingsErrors, UpdateTemplateSettingsResponses, UpdateWorkspaceData, UpdateWorkspaceErrors, UpdateWorkspaceResponses, UploadAttachmentData, UploadAttachmentErrors, UploadAttachmentResponses, VerifyAddressData, VerifyAddressErrors, VerifyAddressResponses } from './types.gen.js';
+import type { AbortWorkspaceImportData, AbortWorkspaceImportErrors, AbortWorkspaceImportResponses, AcceptLegalDocumentsData, AcceptLegalDocumentsErrors, AcceptLegalDocumentsResponses, AcceptWorkspaceInviteData, AcceptWorkspaceInviteErrors, AcceptWorkspaceInviteResponses, CommitChangesetData, CommitChangesetErrors, CommitChangesetResponses, CompleteWorkspaceImportData, CompleteWorkspaceImportErrors, CompleteWorkspaceImportResponses, ContinueOAuthAuthorizationData, ContinueOAuthAuthorizationErrors, ContinueOAuthAuthorizationResponses, CreateApiKeyData, CreateApiKeyErrors, CreateApiKeyResponses, CreateFileData, CreateFileErrors, CreateFileResponses, CreateInvitationData, CreateInvitationErrors, CreateInvitationResponses, CreateOwnerData, CreateOwnerErrors, CreateOwnerResponses, CreatePublishedLinkData, CreatePublishedLinkErrors, CreatePublishedLinkResponses, CreateWorkspaceData, CreateWorkspaceErrors, CreateWorkspaceInvitesData, CreateWorkspaceInvitesErrors, CreateWorkspaceInvitesResponses, CreateWorkspaceResponses, DeclineWorkspaceInviteData, DeclineWorkspaceInviteErrors, DeclineWorkspaceInviteResponses, DeleteFileData, DeleteFileErrors, DeleteFileResponses, DeleteThemeData, DeleteThemeErrors, DeleteThemeResponses, DeleteWorkspaceData, DeleteWorkspaceErrors, DeleteWorkspaceResponses, DismissReportData, DismissReportErrors, DismissReportResponses, ExchangeOAuthTokenData, ExchangeOAuthTokenErrors, ExchangeOAuthTokenResponses, ExportNoteData, ExportNoteErrors, ExportNoteResponses, ExportWorkspaceData, ExportWorkspaceErrors, ExportWorkspaceResponses, FinalizeAttachmentData, FinalizeAttachmentErrors, FinalizeAttachmentResponses, FindOperatorAccountData, FindOperatorAccountErrors, FindOperatorAccountResponses, GetAccountData, GetAccountErrors, GetAccountResponses, GetAttachmentRevisionData, GetAttachmentRevisionErrors, GetAttachmentRevisionResponses, GetAuthSessionData, GetAuthSessionErrors, GetAuthSessionResponses, GetChangesData, GetChangesErrors, GetChangesResponses, GetDailyNoteSettingsData, GetDailyNoteSettingsErrors, GetDailyNoteSettingsResponses, GetFileData, GetFileErrors, GetFileResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetInstallationData, GetInstallationErrors, GetInstallationResponses, GetLegalDocumentData, GetLegalDocumentErrors, GetLegalDocumentResponses, GetLegalDocumentSettingsData, GetLegalDocumentSettingsErrors, GetLegalDocumentSettingsResponses, GetMcpMetadataData, GetMcpMetadataErrors, GetMcpMetadataResponses, GetMutationReceiptData, GetMutationReceiptErrors, GetMutationReceiptResponses, GetOAuthClientData, GetOAuthClientErrors, GetOAuthClientResponses, GetOAuthMetadataData, GetOAuthMetadataErrors, GetOAuthMetadataResponses, GetPublishedAttachmentData, GetPublishedAttachmentErrors, GetPublishedAttachmentResponses, GetPublishedPageData, GetPublishedPageErrors, GetPublishedPageResponses, GetReadinessData, GetReadinessErrors, GetReadinessResponses, GetReportPageData, GetReportPageErrors, GetReportPageResponses, GetRevisionData, GetRevisionErrors, GetRevisionResponses, GetRootHealthData, GetRootHealthErrors, GetRootHealthResponses, GetRootMcpMetadataData, GetRootMcpMetadataErrors, GetRootMcpMetadataResponses, GetRootReadinessData, GetRootReadinessErrors, GetRootReadinessResponses, GetSetupStatusData, GetSetupStatusErrors, GetSetupStatusResponses, GetSignUpChallengeData, GetSignUpChallengeErrors, GetSignUpChallengeResponses, GetSnapshotPageData, GetSnapshotPageErrors, GetSnapshotPageResponses, GetSnapshotRevisionsData, GetSnapshotRevisionsErrors, GetSnapshotRevisionsResponses, GetSyncProtocolData, GetSyncProtocolErrors, GetSyncProtocolResponses, GetTemplateSettingsData, GetTemplateSettingsErrors, GetTemplateSettingsResponses, GiveOAuthConsentData, GiveOAuthConsentErrors, GiveOAuthConsentResponses, ImportThemeData, ImportThemeErrors, ImportThemeResponses, InspectWorkspaceExportData, InspectWorkspaceExportErrors, InspectWorkspaceExportResponses, LeaveWorkspaceData, LeaveWorkspaceErrors, LeaveWorkspaceResponses, ListAccountsData, ListAccountsErrors, ListAccountsResponses, ListApiKeysData, ListApiKeysErrors, ListApiKeysResponses, ListBacklinksData, ListBacklinksErrors, ListBacklinksResponses, ListConnectedAppsData, ListConnectedAppsErrors, ListConnectedAppsResponses, ListDeletedFilesData, ListDeletedFilesErrors, ListDeletedFilesResponses, ListFilesData, ListFilesErrors, ListFilesResponses, ListHistoryData, ListHistoryErrors, ListHistoryResponses, ListInvitationsData, ListInvitationsErrors, ListInvitationsResponses, ListMyWorkspaceInvitesData, ListMyWorkspaceInvitesErrors, ListMyWorkspaceInvitesResponses, ListOperatorAccountEventsData, ListOperatorAccountEventsErrors, ListOperatorAccountEventsResponses, ListPublishedLinksData, ListPublishedLinksErrors, ListPublishedLinksResponses, ListReportsData, ListReportsErrors, ListReportsResponses, ListSessionsData, ListSessionsErrors, ListSessionsResponses, ListWorkspaceInvitesData, ListWorkspaceInvitesErrors, ListWorkspaceInvitesResponses, ListWorkspaceMembersData, ListWorkspaceMembersErrors, ListWorkspaceMembersResponses, ListWorkspacesData, ListWorkspacesErrors, ListWorkspacesResponses, OpenAccountPortalData, OpenAccountPortalErrors, OpenAccountPortalResponses, OpenMcpData, OpenMcpErrors, OpenMcpResponses, OpenPublishedPageData, OpenPublishedPageErrors, OpenPublishedPageResponses, OpenSyncNoticesData, OpenSyncNoticesErrors, PreviewPurgeData, PreviewPurgeErrors, PreviewPurgeResponses, PurgeFilesData, PurgeFilesErrors, PurgeFilesResponses, ReadInvitationData, ReadInvitationErrors, ReadInvitationResponses, ReadOperatorAccountData, ReadOperatorAccountErrors, ReadOperatorAccountResponses, ReadOperatorTotalsData, ReadOperatorTotalsErrors, ReadOperatorTotalsResponses, ReadWorkspaceInviteData, ReadWorkspaceInviteErrors, ReadWorkspaceInviteLinkData, ReadWorkspaceInviteLinkErrors, ReadWorkspaceInviteLinkResponses, ReadWorkspaceInviteResponses, RedeemAccountHandoffData, RedeemAccountHandoffErrors, RedeemAccountHandoffResponses, RegisterAccountData, RegisterAccountErrors, RegisterAccountResponses, RegisterOAuthClientData, RegisterOAuthClientErrors, RegisterOAuthClientResponses, RemoveAccountData, RemoveAccountErrors, RemoveAccountResponses, RemoveLegalDocumentData, RemoveLegalDocumentErrors, RemoveLegalDocumentResponses, RemoveMailSettingsData, RemoveMailSettingsErrors, RemoveMailSettingsResponses, RemoveOperatorAccountData, RemoveOperatorAccountErrors, RemoveOperatorAccountResponses, RemoveOwnAccountData, RemoveOwnAccountErrors, RemoveOwnAccountResponses, RemoveWorkspaceMemberData, RemoveWorkspaceMemberErrors, RemoveWorkspaceMemberResponses, ReportPublishedLinkData, ReportPublishedLinkErrors, ReportPublishedLinkResponses, RequestPasswordResetData, RequestPasswordResetErrors, RequestPasswordResetResponses, ResetPasswordData, ResetPasswordErrors, ResetPasswordResponses, RestoreFileData, RestoreFileErrors, RestoreFileResponses, RestoreRevisionData, RestoreRevisionErrors, RestoreRevisionResponses, RevokeApiKeyData, RevokeApiKeyErrors, RevokeApiKeyResponses, RevokeConnectedAppData, RevokeConnectedAppErrors, RevokeConnectedAppResponses, RevokeInvitationData, RevokeInvitationErrors, RevokeInvitationResponses, RevokeOAuthTokenData, RevokeOAuthTokenErrors, RevokeOAuthTokenResponses, RevokeOtherSessionsData, RevokeOtherSessionsErrors, RevokeOtherSessionsResponses, RevokePublishedLinkData, RevokePublishedLinkErrors, RevokePublishedLinkResponses, RevokeSessionData, RevokeSessionErrors, RevokeSessionResponses, RevokeWorkspaceInviteData, RevokeWorkspaceInviteErrors, RevokeWorkspaceInviteResponses, SearchFilesData, SearchFilesErrors, SearchFilesResponses, SendTestMessageData, SendTestMessageErrors, SendTestMessageResponses, SendWorkspaceImportPartData, SendWorkspaceImportPartErrors, SendWorkspaceImportPartResponses, ServeMcpData, ServeMcpErrors, ServeMcpResponses, SetOperatorAccountControlsData, SetOperatorAccountControlsErrors, SetOperatorAccountControlsResponses, SignInWithPasswordData, SignInWithPasswordErrors, SignInWithPasswordResponses, SignOutData, SignOutErrors, SignOutResponses, SignUpAccountData, SignUpAccountErrors, SignUpAccountResponses, StartSnapshotData, StartSnapshotErrors, StartSnapshotResponses, StartWorkspaceImportData, StartWorkspaceImportErrors, StartWorkspaceImportResponses, TakeDownReportedLinkData, TakeDownReportedLinkErrors, TakeDownReportedLinkResponses, UnlockPublishedLinkData, UnlockPublishedLinkErrors, UnlockPublishedLinkResponses, UpdateAccountData, UpdateAccountErrors, UpdateAccountResponses, UpdateDailyNoteSettingsData, UpdateDailyNoteSettingsErrors, UpdateDailyNoteSettingsResponses, UpdateFileData, UpdateFileErrors, UpdateFileResponses, UpdateInstallationData, UpdateInstallationErrors, UpdateInstallationResponses, UpdateLegalDocumentData, UpdateLegalDocumentErrors, UpdateLegalDocumentResponses, UpdateMailSettingsData, UpdateMailSettingsErrors, UpdateMailSettingsResponses, UpdatePreferencesData, UpdatePreferencesErrors, UpdatePreferencesResponses, UpdateProfileData, UpdateProfileErrors, UpdateProfileResponses, UpdateTemplateSettingsData, UpdateTemplateSettingsErrors, UpdateTemplateSettingsResponses, UpdateWorkspaceData, UpdateWorkspaceErrors, UpdateWorkspaceMemberRoleData, UpdateWorkspaceMemberRoleErrors, UpdateWorkspaceMemberRoleResponses, UpdateWorkspaceResponses, UploadAttachmentData, UploadAttachmentErrors, UploadAttachmentResponses, VerifyAddressData, VerifyAddressErrors, VerifyAddressResponses } from './types.gen.js';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -341,6 +341,51 @@ export const deleteTheme = <ThrowOnError extends boolean = false>(options: Optio
             type: 'http'
         }],
     url: '/api/account/themes/{themeId}',
+    ...options
+});
+
+/**
+ * Read workspace invitations for my verified address.
+ *
+ * Lists pending invitations for the account email. An unverified address gets an empty list.
+ */
+export const listMyWorkspaceInvites = <ThrowOnError extends boolean = false>(options?: Options<ListMyWorkspaceInvitesData, ThrowOnError>): RequestResult<ListMyWorkspaceInvitesResponses, ListMyWorkspaceInvitesErrors, ThrowOnError> => (options?.client ?? client).get<ListMyWorkspaceInvitesResponses, ListMyWorkspaceInvitesErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'notesapp_session',
+            type: 'apiKey'
+        }],
+    url: '/api/account/workspace-invitations',
+    ...options
+});
+
+/**
+ * Join a workspace with a pending invitation.
+ *
+ * Requires a signed in account with the same verified address. A retry for the same accepting account returns the workspace while access remains.
+ */
+export const acceptWorkspaceInvite = <ThrowOnError extends boolean = false>(options: Options<AcceptWorkspaceInviteData, ThrowOnError>): RequestResult<AcceptWorkspaceInviteResponses, AcceptWorkspaceInviteErrors, ThrowOnError> => (options.client ?? client).post<AcceptWorkspaceInviteResponses, AcceptWorkspaceInviteErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'notesapp_session',
+            type: 'apiKey'
+        }],
+    url: '/api/account/workspace-invitations/{invitationId}/accept',
+    ...options
+});
+
+/**
+ * Decline a pending workspace invitation.
+ *
+ * Requires a signed in account with the same verified address.
+ */
+export const declineWorkspaceInvite = <ThrowOnError extends boolean = false>(options: Options<DeclineWorkspaceInviteData, ThrowOnError>): RequestResult<DeclineWorkspaceInviteResponses, DeclineWorkspaceInviteErrors, ThrowOnError> => (options.client ?? client).post<DeclineWorkspaceInviteResponses, DeclineWorkspaceInviteErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'notesapp_session',
+            type: 'apiKey'
+        }],
+    url: '/api/account/workspace-invitations/{invitationId}/decline',
     ...options
 });
 
@@ -925,7 +970,7 @@ export const getReadiness = <ThrowOnError extends boolean = false>(options?: Opt
 /**
  * Make an account from an invitation and sign it in.
  *
- * Makes an account for the address that the invitation binds, with the given password, and starts its session. A used, revoked, or expired invitation makes nothing, and the answer does not say which of the three applied. Two requests with one invitation make one account. When the installation names its terms and its privacy notice, the request names the versions that the person accepted, and a missing or an older version makes nothing (record 0120).
+ * Makes an account for the address that the invitation binds, with the given password, and starts its session. A workspace invitation also creates the invited membership in the same transaction as the account and its Personal workspace. A valid link proves the invited address. A used, revoked, or expired invitation makes nothing, and the answer does not say which of the three applied. Two requests with one invitation make one account. When the installation names its terms and its privacy notice, the request names the versions that the person accepted, and a missing or an older version makes nothing (record 0120).
  */
 export const registerAccount = <ThrowOnError extends boolean = false>(options: Options<RegisterAccountData, ThrowOnError>): RequestResult<RegisterAccountResponses, RegisterAccountErrors, ThrowOnError> => (options.client ?? client).post<RegisterAccountResponses, RegisterAccountErrors, ThrowOnError>({
     url: '/api/registrations',
@@ -978,6 +1023,20 @@ export const signUpAccount = <ThrowOnError extends boolean = false>(options: Opt
  */
 export const verifyAddress = <ThrowOnError extends boolean = false>(options: Options<VerifyAddressData, ThrowOnError>): RequestResult<VerifyAddressResponses, VerifyAddressErrors, ThrowOnError> => (options.client ?? client).post<VerifyAddressResponses, VerifyAddressErrors, ThrowOnError>({
     url: '/api/registrations/verification',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Read a workspace invitation from its link.
+ *
+ * Looks up the token digest. An expired, revoked, declined, used or unknown link gets the same refusal. The token travels in the body and the response is no-store.
+ */
+export const readWorkspaceInvite = <ThrowOnError extends boolean = false>(options: Options<ReadWorkspaceInviteData, ThrowOnError>): RequestResult<ReadWorkspaceInviteResponses, ReadWorkspaceInviteErrors, ThrowOnError> => (options.client ?? client).post<ReadWorkspaceInviteResponses, ReadWorkspaceInviteErrors, ThrowOnError>({
+    url: '/api/registrations/workspace-invitation',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -1066,7 +1125,7 @@ export const createOwner = <ThrowOnError extends boolean = false>(options: Optio
 /**
  * Open the WebSocket stream of sync notices.
  *
- * Upgrades the connection to the WebSocket stream that tells a signed in device when the feed of a subscribed workspace changes. The stream carries notices only. Saves, receipts, feed pages and snapshots stay on the HTTP operations, and a device that cannot open the stream reads the feed on its own schedule. `asyncapi.yaml` states every message of the stream.
+ * Upgrades the connection to the WebSocket stream that tells a signed in device when the feed of a subscribed workspace changes. The stream can also carry live note and presence messages when ready offers liveNotes. Saves, receipts, feed pages and snapshots stay on the HTTP operations, and a device that cannot open the stream reads the feed on its own schedule. `asyncapi.yaml` states every message of the stream.
  */
 export const openSyncNotices = <ThrowOnError extends boolean = false>(options: Options<OpenSyncNoticesData, ThrowOnError>): RequestResult<unknown, OpenSyncNoticesErrors, ThrowOnError> => (options.client ?? client).get<unknown, OpenSyncNoticesErrors, ThrowOnError>({
     security: [{
@@ -1130,7 +1189,7 @@ export const createWorkspace = <ThrowOnError extends boolean = false>(options: O
 /**
  * Delete a workspace and every record that belongs to it.
  *
- * Deletes a workspace and its complete content history. Only its owner may do this.
+ * Deletes a workspace and its complete content history. Only its owner may do this. The confirmation uses the member count from listWorkspaceMembers.
  */
 export const deleteWorkspace = <ThrowOnError extends boolean = false>(options: Options<DeleteWorkspaceData, ThrowOnError>): RequestResult<DeleteWorkspaceResponses, DeleteWorkspaceErrors, ThrowOnError> => (options.client ?? client).delete<DeleteWorkspaceResponses, DeleteWorkspaceErrors, ThrowOnError>({
     security: [{
@@ -1611,6 +1670,134 @@ export const sendWorkspaceImportPart = <ThrowOnError extends boolean = false>(op
 });
 
 /**
+ * Read the active invitations of a workspace.
+ *
+ * Only owners and admins can read this list.
+ */
+export const listWorkspaceInvites = <ThrowOnError extends boolean = false>(options: Options<ListWorkspaceInvitesData, ThrowOnError>): RequestResult<ListWorkspaceInvitesResponses, ListWorkspaceInvitesErrors, ThrowOnError> => (options.client ?? client).get<ListWorkspaceInvitesResponses, ListWorkspaceInvitesErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'notesapp_session',
+            type: 'apiKey'
+        }],
+    url: '/api/workspaces/{workspaceId}/invitations',
+    ...options
+});
+
+/**
+ * Invite people to a workspace.
+ *
+ * An owner or admin invites up to twenty addresses. Results state which addresses already have a pending invite or are members. The server keeps at most one hundred active invites.
+ */
+export const createWorkspaceInvites = <ThrowOnError extends boolean = false>(options: Options<CreateWorkspaceInvitesData, ThrowOnError>): RequestResult<CreateWorkspaceInvitesResponses, CreateWorkspaceInvitesErrors, ThrowOnError> => (options.client ?? client).post<CreateWorkspaceInvitesResponses, CreateWorkspaceInvitesErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'notesapp_session',
+            type: 'apiKey'
+        }],
+    url: '/api/workspaces/{workspaceId}/invitations',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Revoke one workspace invitation.
+ *
+ * An owner or admin can end one pending invitation.
+ */
+export const revokeWorkspaceInvite = <ThrowOnError extends boolean = false>(options: Options<RevokeWorkspaceInviteData, ThrowOnError>): RequestResult<RevokeWorkspaceInviteResponses, RevokeWorkspaceInviteErrors, ThrowOnError> => (options.client ?? client).delete<RevokeWorkspaceInviteResponses, RevokeWorkspaceInviteErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'notesapp_session',
+            type: 'apiKey'
+        }],
+    url: '/api/workspaces/{workspaceId}/invitations/{invitationId}',
+    ...options
+});
+
+/**
+ * Read a copy of the invitation link.
+ *
+ * An owner or admin can copy a pending invitation link. The server marks the answer private and no-store.
+ */
+export const readWorkspaceInviteLink = <ThrowOnError extends boolean = false>(options: Options<ReadWorkspaceInviteLinkData, ThrowOnError>): RequestResult<ReadWorkspaceInviteLinkResponses, ReadWorkspaceInviteLinkErrors, ThrowOnError> => (options.client ?? client).get<ReadWorkspaceInviteLinkResponses, ReadWorkspaceInviteLinkErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'notesapp_session',
+            type: 'apiKey'
+        }],
+    url: '/api/workspaces/{workspaceId}/invitations/{invitationId}/link',
+    ...options
+});
+
+/**
+ * Read the members of one workspace.
+ *
+ * Only a member can read its co-member names, addresses and roles. An installation role grants no access.
+ */
+export const listWorkspaceMembers = <ThrowOnError extends boolean = false>(options: Options<ListWorkspaceMembersData, ThrowOnError>): RequestResult<ListWorkspaceMembersResponses, ListWorkspaceMembersErrors, ThrowOnError> => (options.client ?? client).get<ListWorkspaceMembersResponses, ListWorkspaceMembersErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'notesapp_session',
+            type: 'apiKey'
+        }],
+    url: '/api/workspaces/{workspaceId}/members',
+    ...options
+});
+
+/**
+ * Remove a workspace member.
+ *
+ * An owner or admin can remove a member other than the owner. A caller who wants to leave uses leaveWorkspace.
+ */
+export const removeWorkspaceMember = <ThrowOnError extends boolean = false>(options: Options<RemoveWorkspaceMemberData, ThrowOnError>): RequestResult<RemoveWorkspaceMemberResponses, RemoveWorkspaceMemberErrors, ThrowOnError> => (options.client ?? client).delete<RemoveWorkspaceMemberResponses, RemoveWorkspaceMemberErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'notesapp_session',
+            type: 'apiKey'
+        }],
+    url: '/api/workspaces/{workspaceId}/members/{accountId}',
+    ...options
+});
+
+/**
+ * Change a member role.
+ *
+ * An owner or admin can change any member role other than owner.
+ */
+export const updateWorkspaceMemberRole = <ThrowOnError extends boolean = false>(options: Options<UpdateWorkspaceMemberRoleData, ThrowOnError>): RequestResult<UpdateWorkspaceMemberRoleResponses, UpdateWorkspaceMemberRoleErrors, ThrowOnError> => (options.client ?? client).put<UpdateWorkspaceMemberRoleResponses, UpdateWorkspaceMemberRoleErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'notesapp_session',
+            type: 'apiKey'
+        }],
+    url: '/api/workspaces/{workspaceId}/members/{accountId}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Leave a workspace.
+ *
+ * A member can leave if they keep another workspace. The owner cannot leave.
+ */
+export const leaveWorkspace = <ThrowOnError extends boolean = false>(options: Options<LeaveWorkspaceData, ThrowOnError>): RequestResult<LeaveWorkspaceResponses, LeaveWorkspaceErrors, ThrowOnError> => (options.client ?? client).delete<LeaveWorkspaceResponses, LeaveWorkspaceErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'notesapp_session',
+            type: 'apiKey'
+        }],
+    url: '/api/workspaces/{workspaceId}/membership',
+    ...options
+});
+
+/**
  * Read what the workspace knows about one mutation identity.
  *
  * States whether this workspace accepted the request that carries the mutation identity and the request digest. A device reads it after a lost answer, before it transforms work that may already have committed. The answer repeats the stored outcome and never the text of a note, so an actor that may write and not read learns nothing. A digest that names another request answers other_request.
@@ -1632,7 +1819,7 @@ export const getMutationReceipt = <ThrowOnError extends boolean = false>(options
 /**
  * List the published links of a workspace.
  *
- * Reports every published link of the workspace, what it opens, when it expires, and whether it has a password. No entry holds a token and no entry holds a part of one, so a read of this list opens nothing. The answer reports no reader count, because the reader path counts nothing.
+ * An owner or admin can read this list. It reports every published link of the workspace, what it opens, when it expires, and whether it has a password. No entry holds a token and no entry holds a part of one, so a read of this list opens nothing. The answer reports no reader count, because the reader path counts nothing.
  */
 export const listPublishedLinks = <ThrowOnError extends boolean = false>(options: Options<ListPublishedLinksData, ThrowOnError>): RequestResult<ListPublishedLinksResponses, ListPublishedLinksErrors, ThrowOnError> => (options.client ?? client).get<ListPublishedLinksResponses, ListPublishedLinksErrors, ThrowOnError>({
     security: [{
@@ -1651,7 +1838,7 @@ export const listPublishedLinks = <ThrowOnError extends boolean = false>(options
 /**
  * Publish a read-only link to one note or one folder.
  *
- * Makes one read-only link over one note, or over one folder and every note below it. The answer holds the token of the new link. The server keeps only a digest of that token, so this is the one time that the value exists outside the address that the owner copies. A workspace holds a bounded number of links, and a request past that bound is refused.
+ * Makes one read-only link over one note, or over one folder and every note below it. The answer holds the token of the new link. The server keeps only a digest of that token, so this is the one time that the value exists outside the address that the caller copies. An owner or an admin can publish. A workspace holds a bounded number of links, and a request past that bound is refused.
  */
 export const createPublishedLink = <ThrowOnError extends boolean = false>(options: Options<CreatePublishedLinkData, ThrowOnError>): RequestResult<CreatePublishedLinkResponses, CreatePublishedLinkErrors, ThrowOnError> => (options.client ?? client).post<CreatePublishedLinkResponses, CreatePublishedLinkErrors, ThrowOnError>({
     security: [{
@@ -1674,7 +1861,7 @@ export const createPublishedLink = <ThrowOnError extends boolean = false>(option
 /**
  * Revoke one published link.
  *
- * Stops one published link. The server reads the link record on every reader call, so the link opens nothing from the next call onward. A reader that holds the token then takes the one refusal of the reader path.
+ * An owner or admin can stop one published link. The server reads the link record on every reader call, so the link opens nothing from the next call onward. A reader that holds the token then takes the one refusal of the reader path.
  */
 export const revokePublishedLink = <ThrowOnError extends boolean = false>(options: Options<RevokePublishedLinkData, ThrowOnError>): RequestResult<RevokePublishedLinkResponses, RevokePublishedLinkErrors, ThrowOnError> => (options.client ?? client).delete<RevokePublishedLinkResponses, RevokePublishedLinkErrors, ThrowOnError>({
     security: [{
@@ -1693,7 +1880,7 @@ export const revokePublishedLink = <ThrowOnError extends boolean = false>(option
 /**
  * Permanently delete files and write purge markers.
  *
- * Permanently purges files and revisions, writes purge markers, and reclaims storage. Subsequent writes to purged file identifiers answer 410 Gone. Restricted to the workspace owner.
+ * Permanently purges files and revisions, writes purge markers, and reclaims storage. Subsequent writes to purged file identifiers answer 410 Gone. Restricted to the workspace owner and admins.
  */
 export const purgeFiles = <ThrowOnError extends boolean = false>(options: Options<PurgeFilesData, ThrowOnError>): RequestResult<PurgeFilesResponses, PurgeFilesErrors, ThrowOnError> => (options.client ?? client).post<PurgeFilesResponses, PurgeFilesErrors, ThrowOnError>({
     security: [{
@@ -1716,7 +1903,7 @@ export const purgeFiles = <ThrowOnError extends boolean = false>(options: Option
 /**
  * Preview permanent deletion of files.
  *
- * Reports affected revisions, reclaimable bytes, and blocking references such as attachments referenced by external revisions. Restricted to workspace owners.
+ * Reports affected revisions, reclaimable bytes, and blocking references such as attachments referenced by external revisions. Restricted to workspace owners and admins.
  */
 export const previewPurge = <ThrowOnError extends boolean = false>(options: Options<PreviewPurgeData, ThrowOnError>): RequestResult<PreviewPurgeResponses, PreviewPurgeErrors, ThrowOnError> => (options.client ?? client).post<PreviewPurgeResponses, PreviewPurgeErrors, ThrowOnError>({
     security: [{

@@ -1,0 +1,62 @@
+put:
+  operationId: updateWorkspaceMemberRole
+  summary: Change a member role.
+  description: >-
+    An owner or admin can change any member role other than owner.
+  tags:
+    - workspaces
+  security:
+    - sessionCookie: []
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+    - $ref: '../components/parameters/WorkspaceId.yaml'
+    - $ref: '../components/parameters/AccountId.yaml'
+  requestBody:
+    $ref: '../components/requestBodies/WorkspaceMemberRole.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/WorkspaceMember.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../components/responses/NotFound.yaml'
+    '413':
+      $ref: '../components/responses/PayloadTooLarge.yaml'
+    '415':
+      $ref: '../components/responses/UnsupportedMediaType.yaml'
+    '423':
+      $ref: '../components/responses/AccountLocked.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'
+delete:
+  operationId: removeWorkspaceMember
+  summary: Remove a workspace member.
+  description: >-
+    An owner or admin can remove a member other than the owner. A caller who wants to leave uses leaveWorkspace.
+  tags:
+    - workspaces
+  security:
+    - sessionCookie: []
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+    - $ref: '../components/parameters/WorkspaceId.yaml'
+    - $ref: '../components/parameters/AccountId.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/Removed.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../components/responses/NotFound.yaml'
+    '423':
+      $ref: '../components/responses/AccountLocked.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

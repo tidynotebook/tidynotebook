@@ -1,0 +1,5 @@
+description: The active invitations of the workspace.
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/WorkspaceInviteList.yaml'

@@ -1,0 +1,8 @@
+name: afterAccountId
+in: query
+required: false
+style: form
+explode: true
+description: Continue after the last account identifier of the previous page.
+schema:
+  $ref: '../schemas/Uuid.yaml'

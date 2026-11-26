@@ -1,0 +1,5 @@
+description: The member with the new role.
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/WorkspaceMember.yaml'

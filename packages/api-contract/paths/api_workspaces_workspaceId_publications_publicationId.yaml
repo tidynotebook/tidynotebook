@@ -2,7 +2,7 @@ delete:
   operationId: revokePublishedLink
   summary: Revoke one published link.
   description: >-
-    Stops one published link. The server reads the link record on every
+    An owner or admin can stop one published link. The server reads the link record on every
     reader call, so the link opens nothing from the next call onward. A
     reader that holds the token then takes the one refusal of the reader
     path.

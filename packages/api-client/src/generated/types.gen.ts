@@ -513,6 +513,14 @@ export type AccountUsage = {
 };
 
 /**
+ * A page of active invitations for the verified address of the signed in account.
+ */
+export type AccountWorkspaceInvitePage = {
+    invitations: Array<PendingWorkspaceInvite>;
+    nextAfterInvitationId: Uuid | null;
+};
+
+/**
  * The token that a verification link carries in its fragment.
  */
 export type AddressVerificationInput = {
@@ -1083,6 +1091,10 @@ export type DocumentSave = {
      * The complete state that the device had seen at the save. The workspace reads it to decide whether the save joins unseen work, and whether a deletion would hide an edit that the device never saw.
      */
     observed: DocumentObservedState;
+    /**
+     * Proofs for uncommitted peer work included in this checkpoint.
+     */
+    liveContributions?: Array<LiveContributionProof>;
 };
 
 /**
@@ -1330,6 +1342,10 @@ export type HistoryRevisionItem = {
      * True when the save that made this revision joined work that its device had not seen. History marks the revision on every device.
      */
     merged: boolean;
+    /**
+     * The contributors to this revision, resolved against current membership.
+     */
+    contributors?: Array<RevisionContributor>;
 };
 
 /**
@@ -1640,6 +1656,138 @@ export type LinkReportList = {
      * The open reports, newest first.
      */
     readonly reports: Array<LinkReport>;
+};
+
+/**
+ * One server proof bound to exact peer update bytes in one note epoch.
+ */
+export type LiveContributionProof = {
+    update: string;
+    proof: string;
+};
+
+/**
+ * Report current access or removal from a joined room.
+ */
+export type LiveNoteAccess = {
+    kind: 'noteAccess';
+    roomId: Uuid;
+    access: 'owner' | 'admin' | 'editor' | 'viewer' | 'removed';
+};
+
+/**
+ * Send the awareness state of the joined client ID.
+ */
+export type LiveNoteAwarenessInput = {
+    kind: 'sendNoteAwareness';
+    roomId: Uuid;
+    payload: string;
+};
+
+/**
+ * Deliver a y-protocols awareness message with server-verified identity.
+ */
+export type LiveNoteAwarenessOutput = {
+    kind: 'noteAwareness';
+    roomId: Uuid;
+    payload: string;
+};
+
+/**
+ * Open one note room for one working copy.
+ */
+export type LiveNoteJoin = {
+    kind: 'joinNote';
+    roomId: Uuid;
+    workspaceId: Uuid;
+    fileId: Uuid;
+    epoch: DocumentEpoch;
+    clientId: number;
+};
+
+/**
+ * Confirm the room, epoch and current access.
+ */
+export type LiveNoteJoined = {
+    kind: 'noteJoined';
+    roomId: Uuid;
+    epoch: DocumentEpoch;
+    role: Role;
+};
+
+/**
+ * Close one note room on this connection.
+ */
+export type LiveNoteLeave = {
+    kind: 'leaveNote';
+    roomId: Uuid;
+};
+
+/**
+ * The number of other accounts with a note open.
+ */
+export type LiveNotePresenceCount = {
+    fileId: Uuid;
+    accountCount: number;
+};
+
+/**
+ * Stop one room and keep the sync notice stream open.
+ */
+export type LiveNoteStopped = {
+    kind: 'noteStopped';
+    roomId: Uuid;
+    reason: 'unavailable' | 'epoch_mismatch' | 'client_id_conflict' | 'invalid_update' | 'capacity' | 'forbidden';
+};
+
+/**
+ * Send a standard y-protocols sync message.
+ */
+export type LiveNoteSyncInput = {
+    kind: 'sendNoteSync';
+    roomId: Uuid;
+    /**
+     * Base64 encoding of one y-protocols sync message of at most 64 KiB.
+     */
+    payload: string;
+};
+
+/**
+ * Deliver a validated y-protocols sync message and any proofs for uncommitted work.
+ */
+export type LiveNoteSyncOutput = {
+    kind: 'noteSync';
+    roomId: Uuid;
+    /**
+     * Advances for each sync delivery to this joined working copy.
+     */
+    sequence: number;
+    payload: string;
+    proofs?: Array<LiveContributionProof>;
+};
+
+/**
+ * The sync stream subprotocol with optional live notes and presence.
+ */
+export type LiveSyncNoticeProtocol = 'notesapp.sync.2';
+
+/**
+ * Replace the open-note counts for one authorized workspace.
+ */
+export type LiveWorkspacePresence = {
+    kind: 'workspacePresence';
+    generation: SyncNoticeGeneration;
+    workspaceId: Uuid;
+    notes: Array<LiveNotePresenceCount>;
+};
+
+/**
+ * Replace the workspace presence interests for this connection.
+ */
+export type LiveWorkspacePresenceWatch = {
+    kind: 'watchWorkspacePresence';
+    generation: SyncNoticeGeneration;
+    workspaceIds: Array<Uuid>;
 };
 
 /**
@@ -2117,6 +2265,19 @@ export type OperatorTotals = {
 export type Password = string;
 
 /**
+ * An active invitation with no link or secret.
+ */
+export type PendingWorkspaceInvite = {
+    invitationId: Uuid;
+    workspaceId: Uuid;
+    workspaceName: string;
+    email: EmailAddress;
+    role: WorkspaceInviteRole;
+    inviterName: string | null;
+    expiresAt: string;
+};
+
+/**
  * The address that opens the account portal for the signed in account. It carries a single-use token that works for 60 seconds.
  */
 export type PortalAddress = {
@@ -2577,6 +2738,15 @@ export type RestoreRevisionInput = {
 };
 
 /**
+ * A contributor in History. A former member has no name or account ID in this view.
+ */
+export type RevisionContributor = {
+    accountId: Uuid | null;
+    displayName: string | null;
+    formerMember: boolean;
+};
+
+/**
  * One revision that a client submits inside a changeset.
  */
 export type RevisionInput = {
@@ -2619,9 +2789,9 @@ export type RevisionInput = {
 };
 
 /**
- * The role of an account in one workspace. Every workspace has one member, its owner, so the only role is owner. The installation role of an account is a separate fact and grants no workspace access.
+ * The role of an account in one workspace. The installation role is a separate fact and grants no workspace access.
  */
-export type Role = 'owner';
+export type Role = 'owner' | 'admin' | 'editor' | 'viewer';
 
 /**
  * One part of a search excerpt. A part with `marked` true is a word that the query matched. The excerpt quotes the text that a reader sees, with no Markdown mark and no link address, and it carries no markup, so a reader renders every part as text and decides itself how a marked part looks.
@@ -3015,7 +3185,7 @@ export type SyncNoticeChanged = {
 export type SyncNoticeGeneration = number;
 
 /**
- * The WebSocket subprotocol of the sync notice stream. The browser names it when it opens the stream, and the server accepts no other value. A later version gets a new name, so an old client and a new server never read each other's messages.
+ * The legacy notice stream subprotocol without live notes.
  */
 export type SyncNoticeProtocol = 'notesapp.sync.1';
 
@@ -3025,6 +3195,10 @@ export type SyncNoticeProtocol = 'notesapp.sync.1';
 export type SyncNoticeReady = {
     kind: 'ready';
     accountId: Uuid;
+    /**
+     * True when the server can join note rooms on this connection.
+     */
+    liveNotes?: boolean;
 };
 
 /**
@@ -3088,6 +3262,10 @@ export type SyncProtocolReport = {
      * Whether this server supports batch reads of snapshot revisions.
      */
     readonly snapshotRevisionBatches?: boolean;
+    /**
+     * The subprotocol of the current sync stream when it is available. The ready frame states if this connection can also open note rooms.
+     */
+    readonly liveNotificationProtocol?: LiveSyncNoticeProtocol;
 };
 
 /**
@@ -3512,6 +3690,56 @@ export type WorkspaceImportStarted = {
 };
 
 /**
+ * The link of an active invitation. The secret is in its fragment.
+ */
+export type WorkspaceInviteLink = {
+    url: string;
+};
+
+/**
+ * All active invitations of one workspace.
+ */
+export type WorkspaceInviteList = {
+    invitations: Array<PendingWorkspaceInvite>;
+};
+
+/**
+ * One result in request order. The email is normalized.
+ */
+export type WorkspaceInviteResult = {
+    email: EmailAddress;
+    outcome: 'created' | 'pending_invite' | 'already_member' | 'pending_limit';
+    /**
+     * Present for created and pending_invite. The manager can copy that link.
+     */
+    invitationId?: Uuid;
+    /**
+     * Present for created. Copy link remains available when mail was sent.
+     */
+    delivery?: 'sent' | 'copy_link';
+};
+
+/**
+ * The outcome for every address in the request.
+ */
+export type WorkspaceInviteResults = {
+    results: Array<WorkspaceInviteResult>;
+};
+
+/**
+ * A workspace role that can be granted through Members.
+ */
+export type WorkspaceInviteRole = 'admin' | 'editor' | 'viewer';
+
+/**
+ * Invite at most twenty addresses with the same role.
+ */
+export type WorkspaceInvitesInput = {
+    emails: Array<EmailAddress>;
+    role: WorkspaceInviteRole;
+};
+
+/**
  * Every workspace of the signed in account.
  */
 export type WorkspaceList = {
@@ -3519,6 +3747,32 @@ export type WorkspaceList = {
      * One entry for each workspace the account belongs to.
      */
     readonly workspaces: Array<Workspace>;
+};
+
+/**
+ * One current member as seen by a member of the same workspace.
+ */
+export type WorkspaceMember = {
+    accountId: Uuid;
+    displayName: string | null;
+    email: EmailAddress;
+    role: Role;
+};
+
+/**
+ * A page of current members ordered by account ID, with the current total count.
+ */
+export type WorkspaceMemberPage = {
+    members: Array<WorkspaceMember>;
+    nextAfterAccountId: Uuid | null;
+    memberCount: number;
+};
+
+/**
+ * The new role of a current member other than the owner.
+ */
+export type WorkspaceMemberRoleInput = {
+    role: WorkspaceInviteRole;
 };
 
 /**
@@ -4079,7 +4333,7 @@ export type SyncLimit = number;
 /**
  * The subprotocol that the browser asks for when it opens the notice stream. The server opens the stream only for the one subprotocol that this contract names.
  */
-export type SyncNoticeProtocolHeader = SyncNoticeProtocol;
+export type SyncNoticeProtocolHeader = LiveSyncNoticeProtocol;
 
 /**
  * Identifier of the published link that the operation acts on.
@@ -4140,6 +4394,16 @@ export type UsageMonthQuery = UsageMonth;
  * The position of the last event that the reader already read. The answer holds the events after it, oldest first. The server uses 0 when the parameter is absent, which reads from the first event.
  */
 export type AccountEventAfter = AccountEventCursor;
+
+/**
+ * Continue after the last invitation identifier of the previous page.
+ */
+export type AfterInvitationId = Uuid;
+
+/**
+ * Continue after the last account identifier of the previous page.
+ */
+export type AfterAccountId = Uuid;
 
 /**
  * The note of a folder link that the page shows. Leave it out to read the list of every note that the link opens. A link over one note opens that note, so it needs no value here.
@@ -4300,6 +4564,16 @@ export type HandoffRedeem = HandoffRedeemInput;
  * The path on the account portal to open.
  */
 export type PortalOpen = PortalOpenInput;
+
+/**
+ * The role to give this member.
+ */
+export type WorkspaceMemberRole = WorkspaceMemberRoleInput;
+
+/**
+ * The addresses and role of the invitations.
+ */
+export type WorkspaceInvitesCreate = WorkspaceInvitesInput;
 
 /**
  * The address and the password of the account that a person asks for.
@@ -5287,6 +5561,170 @@ export type DeleteThemeResponses = {
 };
 
 export type DeleteThemeResponse = DeleteThemeResponses[keyof DeleteThemeResponses];
+
+export type ListMyWorkspaceInvitesData = {
+    body?: never;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path?: never;
+    query?: {
+        /**
+         * Continue after the last invitation identifier of the previous page.
+         */
+        afterInvitationId?: Uuid;
+    };
+    url: '/api/account/workspace-invitations';
+};
+
+export type ListMyWorkspaceInvitesErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type ListMyWorkspaceInvitesError = ListMyWorkspaceInvitesErrors[keyof ListMyWorkspaceInvitesErrors];
+
+export type ListMyWorkspaceInvitesResponses = {
+    /**
+     * A page of active invitations for the account.
+     */
+    200: AccountWorkspaceInvitePage;
+};
+
+export type ListMyWorkspaceInvitesResponse = ListMyWorkspaceInvitesResponses[keyof ListMyWorkspaceInvitesResponses];
+
+export type AcceptWorkspaceInviteData = {
+    body?: never;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path: {
+        /**
+         * Identifier of the invitation that the operation acts on.
+         */
+        invitationId: Uuid;
+    };
+    query?: never;
+    url: '/api/account/workspace-invitations/{invitationId}/accept';
+};
+
+export type AcceptWorkspaceInviteErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The requested resource does not exist.
+     */
+    404: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type AcceptWorkspaceInviteError = AcceptWorkspaceInviteErrors[keyof AcceptWorkspaceInviteErrors];
+
+export type AcceptWorkspaceInviteResponses = {
+    /**
+     * One workspace of the signed in account.
+     */
+    200: Workspace;
+};
+
+export type AcceptWorkspaceInviteResponse = AcceptWorkspaceInviteResponses[keyof AcceptWorkspaceInviteResponses];
+
+export type DeclineWorkspaceInviteData = {
+    body?: never;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path: {
+        /**
+         * Identifier of the invitation that the operation acts on.
+         */
+        invitationId: Uuid;
+    };
+    query?: never;
+    url: '/api/account/workspace-invitations/{invitationId}/decline';
+};
+
+export type DeclineWorkspaceInviteErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The requested resource does not exist.
+     */
+    404: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type DeclineWorkspaceInviteError = DeclineWorkspaceInviteErrors[keyof DeclineWorkspaceInviteErrors];
+
+export type DeclineWorkspaceInviteResponses = {
+    /**
+     * The named record no longer exists.
+     */
+    200: Removed;
+};
+
+export type DeclineWorkspaceInviteResponse = DeclineWorkspaceInviteResponses[keyof DeclineWorkspaceInviteResponses];
 
 export type ListAccountsData = {
     body?: never;
@@ -7487,6 +7925,60 @@ export type VerifyAddressResponses = {
 
 export type VerifyAddressResponse = VerifyAddressResponses[keyof VerifyAddressResponses];
 
+export type ReadWorkspaceInviteData = {
+    /**
+     * The token of the invitation to read.
+     */
+    body: InvitationRead;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/registrations/workspace-invitation';
+};
+
+export type ReadWorkspaceInviteErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The invitation opens nothing. The code is invitation_invalid for a token that expired, that somebody used, that an administrator revoked, or that never existed. The answer does not say which.
+     */
+    403: ProblemDetails;
+    /**
+     * The request body is larger than the configured limit. A save of a note adds document_too_large, which means that the update or the document it would produce passes a bound of the workspace. The work stays on the device, which offers recovery rather than sending the same bytes again.
+     */
+    413: ProblemDetails;
+    /**
+     * The request media type is not supported.
+     */
+    415: ProblemDetails;
+    /**
+     * Too many requests. Too many attempts were made in a short time, the account runs its limit of archive jobs, or the account or the installation downloaded the most bytes or read the most objects that one calendar month in UTC allows (record 0193). The code names the cause: rate_limited, archive_job_running or download_limit. Nothing changed.
+     */
+    429: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type ReadWorkspaceInviteError = ReadWorkspaceInviteErrors[keyof ReadWorkspaceInviteErrors];
+
+export type ReadWorkspaceInviteResponses = {
+    /**
+     * The active invitation details.
+     */
+    200: PendingWorkspaceInvite;
+};
+
+export type ReadWorkspaceInviteResponse = ReadWorkspaceInviteResponses[keyof ReadWorkspaceInviteResponses];
+
 export type ListReportsData = {
     body?: never;
     headers?: {
@@ -7760,7 +8252,7 @@ export type OpenSyncNoticesData = {
         /**
          * The subprotocol that the browser asks for when it opens the notice stream. The server opens the stream only for the one subprotocol that this contract names.
          */
-        'sec-websocket-protocol': SyncNoticeProtocol;
+        'sec-websocket-protocol': LiveSyncNoticeProtocol;
     };
     path?: never;
     query?: never;
@@ -9633,6 +10125,505 @@ export type SendWorkspaceImportPartResponses = {
 };
 
 export type SendWorkspaceImportPartResponse = SendWorkspaceImportPartResponses[keyof SendWorkspaceImportPartResponses];
+
+export type ListWorkspaceInvitesData = {
+    body?: never;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path: {
+        /**
+         * Identifier of the workspace that the operation acts on.
+         */
+        workspaceId: Uuid;
+    };
+    query?: never;
+    url: '/api/workspaces/{workspaceId}/invitations';
+};
+
+export type ListWorkspaceInvitesErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The requested resource does not exist.
+     */
+    404: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type ListWorkspaceInvitesError = ListWorkspaceInvitesErrors[keyof ListWorkspaceInvitesErrors];
+
+export type ListWorkspaceInvitesResponses = {
+    /**
+     * The active invitations of the workspace.
+     */
+    200: WorkspaceInviteList;
+};
+
+export type ListWorkspaceInvitesResponse = ListWorkspaceInvitesResponses[keyof ListWorkspaceInvitesResponses];
+
+export type CreateWorkspaceInvitesData = {
+    /**
+     * The addresses and role of the invitations.
+     */
+    body: WorkspaceInvitesCreate;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path: {
+        /**
+         * Identifier of the workspace that the operation acts on.
+         */
+        workspaceId: Uuid;
+    };
+    query?: never;
+    url: '/api/workspaces/{workspaceId}/invitations';
+};
+
+export type CreateWorkspaceInvitesErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The requested resource does not exist.
+     */
+    404: ProblemDetails;
+    /**
+     * The request body is larger than the configured limit. A save of a note adds document_too_large, which means that the update or the document it would produce passes a bound of the workspace. The work stays on the device, which offers recovery rather than sending the same bytes again.
+     */
+    413: ProblemDetails;
+    /**
+     * The request media type is not supported.
+     */
+    415: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
+     * Too many requests. Too many attempts were made in a short time, the account runs its limit of archive jobs, or the account or the installation downloaded the most bytes or read the most objects that one calendar month in UTC allows (record 0193). The code names the cause: rate_limited, archive_job_running or download_limit. Nothing changed.
+     */
+    429: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type CreateWorkspaceInvitesError = CreateWorkspaceInvitesErrors[keyof CreateWorkspaceInvitesErrors];
+
+export type CreateWorkspaceInvitesResponses = {
+    /**
+     * The outcomes of the invitation request.
+     */
+    200: WorkspaceInviteResults;
+};
+
+export type CreateWorkspaceInvitesResponse = CreateWorkspaceInvitesResponses[keyof CreateWorkspaceInvitesResponses];
+
+export type RevokeWorkspaceInviteData = {
+    body?: never;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path: {
+        /**
+         * Identifier of the workspace that the operation acts on.
+         */
+        workspaceId: Uuid;
+        /**
+         * Identifier of the invitation that the operation acts on.
+         */
+        invitationId: Uuid;
+    };
+    query?: never;
+    url: '/api/workspaces/{workspaceId}/invitations/{invitationId}';
+};
+
+export type RevokeWorkspaceInviteErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The requested resource does not exist.
+     */
+    404: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type RevokeWorkspaceInviteError = RevokeWorkspaceInviteErrors[keyof RevokeWorkspaceInviteErrors];
+
+export type RevokeWorkspaceInviteResponses = {
+    /**
+     * The named record no longer exists.
+     */
+    200: Removed;
+};
+
+export type RevokeWorkspaceInviteResponse = RevokeWorkspaceInviteResponses[keyof RevokeWorkspaceInviteResponses];
+
+export type ReadWorkspaceInviteLinkData = {
+    body?: never;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path: {
+        /**
+         * Identifier of the workspace that the operation acts on.
+         */
+        workspaceId: Uuid;
+        /**
+         * Identifier of the invitation that the operation acts on.
+         */
+        invitationId: Uuid;
+    };
+    query?: never;
+    url: '/api/workspaces/{workspaceId}/invitations/{invitationId}/link';
+};
+
+export type ReadWorkspaceInviteLinkErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The requested resource does not exist.
+     */
+    404: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type ReadWorkspaceInviteLinkError = ReadWorkspaceInviteLinkErrors[keyof ReadWorkspaceInviteLinkErrors];
+
+export type ReadWorkspaceInviteLinkResponses = {
+    /**
+     * The active invitation link.
+     */
+    200: WorkspaceInviteLink;
+};
+
+export type ReadWorkspaceInviteLinkResponse = ReadWorkspaceInviteLinkResponses[keyof ReadWorkspaceInviteLinkResponses];
+
+export type ListWorkspaceMembersData = {
+    body?: never;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path: {
+        /**
+         * Identifier of the workspace that the operation acts on.
+         */
+        workspaceId: Uuid;
+    };
+    query?: {
+        /**
+         * Continue after the last account identifier of the previous page.
+         */
+        afterAccountId?: Uuid;
+    };
+    url: '/api/workspaces/{workspaceId}/members';
+};
+
+export type ListWorkspaceMembersErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The requested resource does not exist.
+     */
+    404: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type ListWorkspaceMembersError = ListWorkspaceMembersErrors[keyof ListWorkspaceMembersErrors];
+
+export type ListWorkspaceMembersResponses = {
+    /**
+     * A page of current members.
+     */
+    200: WorkspaceMemberPage;
+};
+
+export type ListWorkspaceMembersResponse = ListWorkspaceMembersResponses[keyof ListWorkspaceMembersResponses];
+
+export type RemoveWorkspaceMemberData = {
+    body?: never;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path: {
+        /**
+         * Identifier of the workspace that the operation acts on.
+         */
+        workspaceId: Uuid;
+        /**
+         * Identifier of the account that the operation acts on.
+         */
+        accountId: Uuid;
+    };
+    query?: never;
+    url: '/api/workspaces/{workspaceId}/members/{accountId}';
+};
+
+export type RemoveWorkspaceMemberErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The requested resource does not exist.
+     */
+    404: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type RemoveWorkspaceMemberError = RemoveWorkspaceMemberErrors[keyof RemoveWorkspaceMemberErrors];
+
+export type RemoveWorkspaceMemberResponses = {
+    /**
+     * The named record no longer exists.
+     */
+    200: Removed;
+};
+
+export type RemoveWorkspaceMemberResponse = RemoveWorkspaceMemberResponses[keyof RemoveWorkspaceMemberResponses];
+
+export type UpdateWorkspaceMemberRoleData = {
+    /**
+     * The role to give this member.
+     */
+    body: WorkspaceMemberRole;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path: {
+        /**
+         * Identifier of the workspace that the operation acts on.
+         */
+        workspaceId: Uuid;
+        /**
+         * Identifier of the account that the operation acts on.
+         */
+        accountId: Uuid;
+    };
+    query?: never;
+    url: '/api/workspaces/{workspaceId}/members/{accountId}';
+};
+
+export type UpdateWorkspaceMemberRoleErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The requested resource does not exist.
+     */
+    404: ProblemDetails;
+    /**
+     * The request body is larger than the configured limit. A save of a note adds document_too_large, which means that the update or the document it would produce passes a bound of the workspace. The work stays on the device, which offers recovery rather than sending the same bytes again.
+     */
+    413: ProblemDetails;
+    /**
+     * The request media type is not supported.
+     */
+    415: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type UpdateWorkspaceMemberRoleError = UpdateWorkspaceMemberRoleErrors[keyof UpdateWorkspaceMemberRoleErrors];
+
+export type UpdateWorkspaceMemberRoleResponses = {
+    /**
+     * The member with the new role.
+     */
+    200: WorkspaceMember;
+};
+
+export type UpdateWorkspaceMemberRoleResponse = UpdateWorkspaceMemberRoleResponses[keyof UpdateWorkspaceMemberRoleResponses];
+
+export type LeaveWorkspaceData = {
+    body?: never;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path: {
+        /**
+         * Identifier of the workspace that the operation acts on.
+         */
+        workspaceId: Uuid;
+    };
+    query?: never;
+    url: '/api/workspaces/{workspaceId}/membership';
+};
+
+export type LeaveWorkspaceErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation.
+     */
+    403: ProblemDetails;
+    /**
+     * The requested resource does not exist.
+     */
+    404: ProblemDetails;
+    /**
+     * The operation would remove the last workspace of the acting account (last_workspace).
+     */
+    409: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type LeaveWorkspaceError = LeaveWorkspaceErrors[keyof LeaveWorkspaceErrors];
+
+export type LeaveWorkspaceResponses = {
+    /**
+     * The named record no longer exists.
+     */
+    200: Removed;
+};
+
+export type LeaveWorkspaceResponse = LeaveWorkspaceResponses[keyof LeaveWorkspaceResponses];
 
 export type GetMutationReceiptData = {
     body?: never;

@@ -1,0 +1,18 @@
+type: object
+description: Confirm the room, epoch and current access.
+additionalProperties: false
+required:
+  - kind
+  - roomId
+  - epoch
+  - role
+properties:
+  kind:
+    type: string
+    const: noteJoined
+  roomId:
+    $ref: './Uuid.yaml'
+  epoch:
+    $ref: './DocumentEpoch.yaml'
+  role:
+    $ref: './Role.yaml'

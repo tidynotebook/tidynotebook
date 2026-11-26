@@ -4,7 +4,7 @@ post:
   description: >-
     Reports affected revisions, reclaimable bytes, and blocking references
     such as attachments referenced by external revisions. Restricted to
-    workspace owners.
+    workspace owners and admins.
   tags:
     - files
   parameters:

@@ -1,0 +1,29 @@
+delete:
+  operationId: leaveWorkspace
+  summary: Leave a workspace.
+  description: >-
+    A member can leave if they keep another workspace. The owner cannot leave.
+  tags:
+    - workspaces
+  security:
+    - sessionCookie: []
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+    - $ref: '../components/parameters/WorkspaceId.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/Removed.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../components/responses/NotFound.yaml'
+    '409':
+      $ref: '../components/responses/WorkspaceMembershipConflict.yaml'
+    '423':
+      $ref: '../components/responses/AccountLocked.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

@@ -1,0 +1,6 @@
+description: A workspace role that can be granted through Members.
+type: string
+enum:
+  - admin
+  - editor
+  - viewer

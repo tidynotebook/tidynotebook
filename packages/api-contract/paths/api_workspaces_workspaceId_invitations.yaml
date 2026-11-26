@@ -1,0 +1,62 @@
+get:
+  operationId: listWorkspaceInvites
+  summary: Read the active invitations of a workspace.
+  description: >-
+    Only owners and admins can read this list.
+  tags:
+    - workspaces
+  security:
+    - sessionCookie: []
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+    - $ref: '../components/parameters/WorkspaceId.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/WorkspaceInviteList.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../components/responses/NotFound.yaml'
+    '423':
+      $ref: '../components/responses/AccountLocked.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'
+post:
+  operationId: createWorkspaceInvites
+  summary: Invite people to a workspace.
+  description: >-
+    An owner or admin invites up to twenty addresses. Results state which addresses already have a pending invite or are members. The server keeps at most one hundred active invites.
+  tags:
+    - workspaces
+  security:
+    - sessionCookie: []
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+    - $ref: '../components/parameters/WorkspaceId.yaml'
+  requestBody:
+    $ref: '../components/requestBodies/WorkspaceInvitesCreate.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/WorkspaceInviteResults.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../components/responses/NotFound.yaml'
+    '413':
+      $ref: '../components/responses/PayloadTooLarge.yaml'
+    '415':
+      $ref: '../components/responses/UnsupportedMediaType.yaml'
+    '423':
+      $ref: '../components/responses/AccountLocked.yaml'
+    '429':
+      $ref: '../components/responses/RateLimited.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

@@ -1,0 +1,17 @@
+type: object
+description: One server proof bound to exact peer update bytes in one note epoch.
+additionalProperties: false
+required:
+  - update
+  - proof
+properties:
+  update:
+    type: string
+    minLength: 4
+    pattern: ^[A-Za-z0-9+/]*={0,2}$
+    maxLength: 87384
+  proof:
+    type: string
+    minLength: 1
+    maxLength: 2048
+    pattern: ^[A-Za-z0-9._-]+$

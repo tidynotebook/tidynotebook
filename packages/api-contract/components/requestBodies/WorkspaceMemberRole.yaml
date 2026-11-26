@@ -1,0 +1,6 @@
+description: The role to give this member.
+required: true
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/WorkspaceMemberRoleInput.yaml'

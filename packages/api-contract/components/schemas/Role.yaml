@@ -1,7 +1,9 @@
 type: string
 description: >-
-  The role of an account in one workspace. Every workspace has one member,
-  its owner, so the only role is owner. The installation role of an account
-  is a separate fact and grants no workspace access.
+  The role of an account in one workspace. The installation role is
+  a separate fact and grants no workspace access.
 enum:
   - owner
+  - admin
+  - editor
+  - viewer

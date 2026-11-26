@@ -1,0 +1,21 @@
+type: object
+description: Report current access or removal from a joined room.
+additionalProperties: false
+required:
+  - kind
+  - roomId
+  - access
+properties:
+  kind:
+    type: string
+    const: noteAccess
+  roomId:
+    $ref: './Uuid.yaml'
+  access:
+    type: string
+    enum:
+      - owner
+      - admin
+      - editor
+      - viewer
+      - removed

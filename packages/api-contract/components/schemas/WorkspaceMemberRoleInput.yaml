@@ -1,0 +1,8 @@
+type: object
+description: The new role of a current member other than the owner.
+additionalProperties: false
+required:
+  - role
+properties:
+  role:
+    $ref: './WorkspaceInviteRole.yaml'
