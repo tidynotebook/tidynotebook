@@ -8,7 +8,10 @@ import {
   touchTextRoles,
 } from '../../packages/ui/src/typography.ts';
 import { hasChromium, routeAuditAssets, type Page } from './browser.ts';
-import { collaborationFixture } from './collaboration-fixture.ts';
+import {
+  clearCollaborationFixtures,
+  collaborationFixture,
+} from './collaboration-fixture.ts';
 import { auditSettings } from './settings-measurements.ts';
 import {
   auditContentParity,
@@ -51,6 +54,7 @@ export async function runCollaborationAudit(
   );
   const defects: string[] = [];
   const runId = randomUUID().slice(0, 4);
+  const cleanup: (() => Promise<void>)[] = [];
   try {
     for (const width of variants)
       for (const theme of themes) {
@@ -58,7 +62,7 @@ export async function runCollaborationAudit(
         const colorScheme = theme;
         const phone = width < 1024;
         const suffix = ` ${width} ${theme} ${runId}`;
-        const fixture = await collaborationFixture(origin, suffix);
+        const fixture = await collaborationFixture(origin, cleanup, suffix);
         const home = `${origin}/w/${fixture.workspaceId}`;
         const note = `${home}/notes/${fixture.fileId}`;
         async function newContext() {
@@ -202,7 +206,7 @@ export async function runCollaborationAudit(
           await owner.getByText(fixture.editor, { exact: true }).waitFor();
         };
         await members();
-        await owner.getByText('pending@example.com', { exact: true }).waitFor();
+        await owner.getByText(fixture.pendingEmail, { exact: true }).waitFor();
         await check(owner, 'members');
         emptyInvites = true;
         await members();
@@ -227,7 +231,7 @@ export async function runCollaborationAudit(
           .click();
         await owner.getByText('“bad@” is not a valid email address.').waitFor();
         await check(owner, 'invite-errors');
-        await emailField.fill('pending@example.com, result@example.test');
+        await emailField.fill(`${fixture.pendingEmail}, result@example.test`);
         await owner
           .getByRole('button', { name: 'Send 2 invites', exact: true })
           .click();
@@ -284,7 +288,39 @@ export async function runCollaborationAudit(
           await owner
             .locator('[role=menu] [data-note-word-count]:visible')
             .waitFor();
+        if (width === 320) await owner.setViewportSize({ width, height: 700 });
         await check(owner, 'note-actions-count');
+        if (phone) {
+          assert.deepEqual(
+            await owner.locator('[data-menu-fit-viewport]').evaluate((menu) => {
+              const list = menu.querySelector('[data-menu-scroll]');
+              if (list === null)
+                throw new Error('The menu has no scroll region.');
+              const clip = list.getBoundingClientRect();
+              return ['Attach an image', 'Export as Markdown'].map((label) =>
+                [...list.querySelectorAll('[data-menu-label]')].some(
+                  (row) =>
+                    row.textContent === label &&
+                    row.getBoundingClientRect().bottom <= clip.bottom + 1,
+                ),
+              );
+            }),
+            [true, true],
+          );
+          await owner.setViewportSize({ width, height: 290 });
+          await owner
+            .locator('[data-menu-fit-viewport] [data-edge-top]')
+            .waitFor({ state: 'attached' });
+          await check(owner, 'note-actions-overflow');
+          await owner.locator('[data-menu-scroll]').evaluate((scroll) => {
+            scroll.scrollTop = scroll.scrollHeight;
+          });
+          await owner
+            .locator('[data-menu-fit-viewport] [data-scroll-hidden="false"]')
+            .waitFor({ state: 'attached' });
+          await check(owner, 'note-actions-end');
+          await owner.setViewportSize({ width, height: 844 });
+        }
         await owner
           .getByRole('menuitem', { name: 'Version history', exact: true })
           .click();
@@ -478,7 +514,6 @@ export async function runCollaborationAudit(
         );
     throw error;
   } finally {
-    await browser.close();
     for (const [audit, samples] of results)
       writeFileSync(
         `${output}/${audit}.json`,
@@ -491,6 +526,11 @@ export async function runCollaborationAudit(
           2,
         ),
       );
+    try {
+      await browser.close();
+    } finally {
+      await clearCollaborationFixtures(cleanup);
+    }
   }
   assert.deepEqual(defects, []);
 }

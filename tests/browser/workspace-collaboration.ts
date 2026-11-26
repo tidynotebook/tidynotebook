@@ -3,7 +3,10 @@ import { randomUUID } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { hasChromium, type Page } from './browser.ts';
-import { collaborationFixture } from './collaboration-fixture.ts';
+import {
+  clearCollaborationFixtures,
+  collaborationFixture,
+} from './collaboration-fixture.ts';
 
 const loaded: unknown = await import(
   pathToFileURL(
@@ -14,16 +17,24 @@ const loaded: unknown = await import(
 assert.ok(hasChromium(loaded));
 const origin = process.env.UI_AUDIT_ORIGIN ?? 'http://localhost:3000';
 const runId = randomUUID().slice(0, 6);
+const cleanup: (() => Promise<void>)[] = [];
 const fixture = await collaborationFixture(
   origin,
+  cleanup,
   ` ${runId}`,
   `pending-${runId}@example.com`,
-);
+).catch(async (error: unknown) => {
+  await clearCollaborationFixtures(cleanup);
+  throw error;
+});
 const space = `/w/${fixture.workspaceId}`;
 const note = `${space}/notes/${fixture.fileId}`;
 const output = '.local-app/collaboration-screenshots';
 mkdirSync(output, { recursive: true });
-const browser = await loaded.chromium.launch();
+const browser = await loaded.chromium.launch().catch(async (error: unknown) => {
+  await clearCollaborationFixtures(cleanup);
+  throw error;
+});
 
 async function signIn(page: Page, email: string): Promise<void> {
   page.setDefaultTimeout(20_000);
@@ -785,5 +796,9 @@ try {
   }
   throw error;
 } finally {
-  await browser.close();
+  try {
+    await browser.close();
+  } finally {
+    await clearCollaborationFixtures(cleanup);
+  }
 }

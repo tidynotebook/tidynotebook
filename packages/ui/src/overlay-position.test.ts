@@ -105,6 +105,20 @@ await test('a long list is bounded so it never fills the screen', () => {
   assert.equal(place.maxHeight, overlayMaxHeight);
 });
 
+await test('a menu can use the space below its trigger up to the safe inset', () => {
+  const place = placeOverlay({
+    anchor: { top: 0, left: 100, width: 44, height: 44 },
+    overlay: { width: 224, height: 420 },
+    screen: { top: 0, left: 0, bottom: 700, right: 320 },
+    align: 'end',
+    heightLimit: Infinity,
+    bottomInset: 20,
+  });
+  assert.equal(place.top, 44 + overlayGap);
+  assert.equal(place.maxHeight, 700 - 20 - overlayMargin - place.top);
+  assert.ok(place.maxHeight >= 420);
+});
+
 await test('an anchor below the foot of the screen leaves no room below it', () => {
   const place = placeOverlay({
     anchor: { top: 900, left: 100, width: 32, height: 32 },

@@ -830,28 +830,26 @@ export async function auditContentParity(page: Page) {
       const menu = count.closest('[role=menu]');
       const x = firstX(count);
       if (x === null) continue;
-      if (panel !== null)
-        check(
-          count,
-          'note panel word count content edge',
-          x,
-          panel.getBoundingClientRect().left +
-            parseFloat(getComputedStyle(panel).paddingLeft),
-        );
-      if (menu !== null) {
-        const info = count.parentElement;
-        const padding =
-          info === null ? 0 : parseFloat(getComputedStyle(info).paddingLeft);
-        check(
-          count,
-          'note actions word count content edge',
-          x,
-          menu.getBoundingClientRect().left +
-            parseFloat(getComputedStyle(menu).paddingLeft) +
-            parseFloat(getComputedStyle(menu).borderLeftWidth) +
-            padding,
-        );
-      }
+      const siblings = panel ?? menu;
+      const label =
+        siblings === null
+          ? undefined
+          : [
+              ...siblings.querySelectorAll(
+                panel === null
+                  ? '[data-menu-label]'
+                  : '[data-disclosure-label]',
+              ),
+            ].find(visible);
+      const edge = label === undefined ? null : firstX(label);
+      check(
+        count,
+        panel === null
+          ? 'note actions word count label edge'
+          : 'note panel word count label edge',
+        x,
+        edge ?? Number.NaN,
+      );
     }
     const probe = document.createElement('span');
     probe.className = 'bg-active';

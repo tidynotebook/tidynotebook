@@ -1,17 +1,19 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import {
-  acceptWorkspaceInvite,
   configureClient,
   createFile,
   createWorkspace,
   createWorkspaceInvites,
+  deleteWorkspace,
   getFile,
+  listAccounts,
   listFiles,
   listHistory,
   listWorkspaces,
   readWorkspaceInviteLink,
   registerAccount,
+  removeAccount,
   signInWithPassword,
   type WorkspaceInviteRole,
 } from '@notesapp/api-client';
@@ -20,13 +22,16 @@ import { firstSave } from '../integration/support/documents.ts';
 /** The disposable installation needs the owner account before the audit. */
 export async function collaborationFixture(
   origin: string,
-  suffix = '',
-  pendingEmail = 'pending@example.com',
+  cleanup: (() => Promise<void>)[],
+  suffix: string,
+  signupEmail?: string,
 ) {
   configureClient(origin, undefined);
   const owner = 'owner@example.com';
-  const editor = 'editor@example.com';
-  const viewer = 'viewer@example.com';
+  const tag = randomUUID().slice(0, 12);
+  const editor = `editor-${tag}@example.com`;
+  const viewer = `viewer-${tag}@example.com`;
+  const pendingEmail = signupEmail ?? `pending-${tag}@example.com`;
   const password =
     process.env.UI_AUDIT_PASSWORD ?? 'Workspace notes test 2026!';
 
@@ -46,12 +51,53 @@ export async function collaborationFixture(
   const ownerHeaders = await signInHeaders(owner);
   assert.ok(ownerHeaders, 'Bootstrap the disposable owner account first.');
   const headers = ownerHeaders;
-  const workspace = await createWorkspace({
-    headers,
-    body: { name: `Collaboration check${suffix}` },
+  const workspaces: string[] = [];
+  const accountEmails = new Set([editor, viewer, pendingEmail]);
+  cleanup.push(async () => {
+    const failures: unknown[] = [];
+    for (const workspaceId of workspaces) {
+      try {
+        const result = await deleteWorkspace({
+          headers,
+          path: { workspaceId },
+        });
+        assert.equal(result.error, undefined, JSON.stringify(result.error));
+      } catch (error) {
+        failures.push(error);
+      }
+    }
+    const accounts = await listAccounts({ headers });
+    assert.ok(accounts.data, JSON.stringify(accounts.error));
+    for (const account of accounts.data.accounts) {
+      if (account.email === null || !accountEmails.has(account.email)) continue;
+      try {
+        const result = await removeAccount({
+          headers,
+          path: { accountId: account.accountId },
+        });
+        assert.equal(result.error, undefined, JSON.stringify(result.error));
+      } catch (error) {
+        failures.push(error);
+      }
+    }
+    if (failures.length > 0)
+      throw new AggregateError(
+        failures,
+        'Collaboration fixture cleanup failed.',
+      );
   });
-  assert.ok(workspace.data, JSON.stringify(workspace.error));
-  const { workspaceId, name: workspaceName } = workspace.data;
+
+  async function createFixtureWorkspace(name: string) {
+    const result = await createWorkspace({ headers, body: { name } });
+    assert.ok(result.data, JSON.stringify(result.error));
+    workspaces.push(result.data.workspaceId);
+    return result.data;
+  }
+
+  const workspace = await createFixtureWorkspace(
+    `Collaboration check${suffix}`,
+  );
+  const { workspaceId, name: workspaceName } = workspace;
   const path = { workspaceId };
 
   async function invite(
@@ -85,42 +131,23 @@ export async function collaborationFixture(
     ['viewer', viewer],
   ] as const) {
     const link = await invite(email, role);
-    const current = await signInHeaders(email);
-    if (current !== null) {
-      const accepted = await acceptWorkspaceInvite({
-        path: { invitationId: link.invitationId },
-        headers: current,
-      });
-      assert.ok(accepted.data, JSON.stringify(accepted.error));
-    } else {
-      const registered = await registerAccount({
-        headers: { origin },
-        body: {
-          invitation: new URL(link.url).hash.slice(1),
-          password,
-          name: role === 'editor' ? 'Casey Editor' : 'Sam Viewer',
-        },
-      });
-      assert.ok(registered.data, JSON.stringify(registered.error));
-    }
+    const registered = await registerAccount({
+      headers: { origin },
+      body: {
+        invitation: new URL(link.url).hash.slice(1),
+        password,
+        name: role === 'editor' ? 'Casey Editor' : 'Sam Viewer',
+      },
+    });
+    assert.ok(registered.data, JSON.stringify(registered.error));
   }
 
   const pending = await invite(pendingEmail, 'editor');
   await invite('another@example.com', 'viewer');
-  const forViewer = await createWorkspace({
-    headers,
-    body: { name: `Join check${suffix}` },
-  });
-  assert.ok(forViewer.data, JSON.stringify(forViewer.error));
-  const viewerLink = await invite(viewer, 'viewer', forViewer.data.workspaceId);
-  const viewerHeaders = await signInHeaders(viewer);
-  assert.ok(viewerHeaders);
-  const forEditor = await createWorkspace({
-    headers,
-    body: { name: `Switcher check${suffix}` },
-  });
-  assert.ok(forEditor.data, JSON.stringify(forEditor.error));
-  await invite(viewer, 'editor', forEditor.data.workspaceId);
+  const forViewer = await createFixtureWorkspace(`Join check${suffix}`);
+  const viewerLink = await invite(viewer, 'viewer', forViewer.workspaceId);
+  const forEditor = await createFixtureWorkspace(`Switcher check${suffix}`);
+  await invite(viewer, 'editor', forEditor.workspaceId);
   const editorHeaders = await signInHeaders(editor);
   assert.ok(editorHeaders);
   const spaces = await listWorkspaces({ headers: editorHeaders });
@@ -159,10 +186,10 @@ export async function collaborationFixture(
     pendingEmail,
     pendingLink: pending.url,
     viewerLink: viewerLink.url,
-    viewerJoinId: forViewer.data.workspaceId,
-    viewerJoinName: forViewer.data.name,
-    viewerSwitcherId: forEditor.data.workspaceId,
-    viewerSwitcherName: forEditor.data.name,
+    viewerJoinId: forViewer.workspaceId,
+    viewerJoinName: forViewer.name,
+    viewerSwitcherId: forEditor.workspaceId,
+    viewerSwitcherName: forEditor.name,
     editorPersonalId: editorPersonal.workspaceId,
     createNote,
     async readNote() {
@@ -216,4 +243,22 @@ export async function collaborationFixture(
         .sort();
     },
   };
+}
+
+export async function clearCollaborationFixtures(
+  cleanup: readonly (() => Promise<void>)[],
+): Promise<void> {
+  const failures: unknown[] = [];
+  for (const remove of cleanup) {
+    try {
+      await remove();
+    } catch (failure) {
+      failures.push(failure);
+    }
+  }
+  if (failures.length > 0)
+    throw new AggregateError(
+      failures,
+      'Could not remove all collaboration fixtures.',
+    );
 }

@@ -161,6 +161,7 @@ export function NoteHeaderActions({
               ]
         }
         information={<NoteWordCount initialText={initialText} menu />}
+        fitTouchViewport
         triggerClassName={noteMenuTriggerClassName}
         compact
       />

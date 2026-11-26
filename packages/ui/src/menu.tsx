@@ -1,6 +1,7 @@
 import { rowActionVisibility } from './icon-button.tsx';
-import { Stack, Inset, Divider } from './primitives.tsx';
+import { Stack, Inline, Inset, Divider, IconSlot } from './primitives.tsx';
 import { listRowClasses } from './layout.tsx';
+import { Region, fixedRegionClasses } from './scroll-region.tsx';
 /**
  * A menu button with full keyboard support.
  *
@@ -128,7 +129,7 @@ function MenuRow({
           {item.icon}
         </span>
       )}
-      <span className="min-w-0 flex-1">
+      <span data-menu-label="" className="min-w-0 flex-1">
         <span className="block truncate">{item.label}</span>
         {item.detail === undefined ? null : (
           <span className="block text-secondary text-muted">{item.detail}</span>
@@ -147,6 +148,26 @@ function MenuRow({
         </span>
       ) : null}
     </button>
+  );
+}
+
+export function MenuInformation({
+  children,
+  className,
+}: {
+  readonly children: ReactNode;
+  readonly className?: string;
+}): ReactNode {
+  return (
+    <Stack gap={1} className={className} role="presentation">
+      <Divider />
+      <Inline gap={2} padX={{ fine: 2, coarse: 3 }} padY={1}>
+        <span aria-hidden="true">
+          <IconSlot />
+        </span>
+        {children}
+      </Inline>
+    </Stack>
   );
 }
 
@@ -172,6 +193,7 @@ function MenuList({
   header,
   pinned,
   information,
+  fitTouchViewport,
   anchor,
   align,
   matchWidth,
@@ -187,6 +209,7 @@ function MenuList({
   readonly items: readonly MenuItem[];
   readonly pinned: readonly MenuItem[];
   readonly information?: ReactNode;
+  readonly fitTouchViewport?: boolean | undefined;
   /** Reads the place the list opens beside, at the time it is placed. */
   readonly anchor: () => MenuAnchor | null;
   readonly align: MenuAlign;
@@ -201,6 +224,8 @@ function MenuList({
   const [activeIndex, setActiveIndex] = useState(initialIndex);
   const [showFocus, setShowFocus] = useState(keyboard);
   const listRef = useRef<HTMLDivElement | null>(null);
+  const bottomEdge = useRef<HTMLDivElement | null>(null);
+  const safeArea = useRef<HTMLSpanElement | null>(null);
 
   // The arrow keys run over both regions in the order they are on the screen,
   // so a pinned row is reached by pressing End and never disappears from the
@@ -267,30 +292,43 @@ function MenuList({
     list.style.maxHeight = '';
     if (matchWidth) list.style.width = `${String(spot.width)}px`;
     const size = list.getBoundingClientRect();
+    const fit =
+      fitTouchViewport === true &&
+      window.matchMedia('(pointer: coarse)').matches;
     const placed = placeOverlay({
       anchor: spot,
       overlay: { width: size.width, height: size.height },
       screen: readVisibleArea(),
       align,
+      ...(fit
+        ? {
+            heightLimit: Infinity,
+            bottomInset: safeArea.current?.offsetHeight ?? 0,
+          }
+        : {}),
     });
     list.style.top = `${String(placed.top)}px`;
     list.style.left = `${String(placed.left)}px`;
     list.style.maxHeight = `${String(placed.maxHeight)}px`;
-  }, [align, matchWidth, anchor]);
+  }, [align, matchWidth, anchor, fitTouchViewport]);
 
   useLayoutEffect(() => {
     place();
-    const follow = (): void => {
-      place();
+    const followAnchor = (event: Event): void => {
+      if (
+        !(event.target instanceof Node) ||
+        !listRef.current?.contains(event.target)
+      )
+        place();
     };
     // The keyboard of a phone moves the visible area and not the window.
-    const stopFollowing = followVisibleArea(follow);
+    const stopFollowing = followVisibleArea(place);
     // The capture phase, because the trigger can sit in a box that scrolls,
     // such as the folder tree, and a scroll there does not reach the window.
-    window.addEventListener('scroll', follow, true);
+    window.addEventListener('scroll', followAnchor, true);
     return () => {
       stopFollowing();
-      window.removeEventListener('scroll', follow, true);
+      window.removeEventListener('scroll', followAnchor, true);
     };
   }, [place]);
 
@@ -320,6 +358,7 @@ function MenuList({
       id={id}
       className={`fixed z-50 ${menuSurfaceClassName()} ${matchWidth ? '' : 'min-w-56'}`}
       role="menu"
+      data-menu-fit-viewport={fitTouchViewport ? '' : undefined}
       onPointerDownCapture={() => setShowFocus(false)}
       onKeyDownCapture={() => setShowFocus(true)}
       aria-label={label}
@@ -351,22 +390,42 @@ function MenuList({
           {header}
         </Inset>
       )}
-      <div className="overflow-hidden flex-1 overflow-y-auto">
-        {items.map((item, index) => (
-          <Fragment key={item.id}>
-            {startsGroup(items, index) ? (
-              <Inset padY={1}>
-                <Divider />
-              </Inset>
-            ) : null}
-            <MenuRow
-              item={item}
-              choosing={choosing}
-              onRun={run}
-              showFocus={showFocus}
-            />
-          </Fragment>
-        ))}
+      {fitTouchViewport ? (
+        <span
+          ref={safeArea}
+          data-menu-safe-area=""
+          aria-hidden="true"
+          className="pointer-events-none invisible absolute h-0 coarse:h-safe"
+        />
+      ) : null}
+      <div className="min-h-0 flex flex-1 flex-col">
+        <Region
+          below={bottomEdge}
+          data-menu-scroll=""
+          className="overflow-x-hidden"
+        >
+          {items.map((item, index) => (
+            <Fragment key={item.id}>
+              {startsGroup(items, index) ? (
+                <Inset padY={1}>
+                  <Divider />
+                </Inset>
+              ) : null}
+              <MenuRow
+                item={item}
+                choosing={choosing}
+                onRun={run}
+                showFocus={showFocus}
+              />
+            </Fragment>
+          ))}
+        </Region>
+        <div
+          ref={bottomEdge}
+          data-scroll-edge="below"
+          className={fixedRegionClasses('top')}
+          aria-hidden="true"
+        />
       </div>
       {pinned.length === 0 ? null : (
         <Stack gap={1} className="shrink-0">
@@ -401,6 +460,7 @@ export function Menu({
   header,
   pinned = [],
   information,
+  fitTouchViewport,
   matchTrigger = false,
   align = 'end',
   triggerClassName,
@@ -413,6 +473,7 @@ export function Menu({
   readonly icon?: ReactNode | undefined;
   readonly header?: ReactNode;
   readonly information?: ReactNode;
+  readonly fitTouchViewport?: boolean;
   readonly items: readonly MenuItem[];
   /**
    * Rows that stay in view while `items` scrolls.
@@ -562,6 +623,7 @@ export function Menu({
           items={items}
           pinned={pinned}
           information={information}
+          fitTouchViewport={fitTouchViewport}
           anchor={anchor}
           align={align}
           matchWidth={matchTrigger}

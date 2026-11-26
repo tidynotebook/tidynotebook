@@ -1,5 +1,5 @@
 import { useMemo, type ReactNode } from 'react';
-import { Divider, Inset, Stack } from '@notesapp/ui';
+import { DisclosureRow, MenuInformation } from '@notesapp/ui';
 import { useActiveNote } from './active-note.tsx';
 import { useLongNoteMetrics } from './long-note-metrics.tsx';
 import { wordCount } from './note-metrics.ts';
@@ -29,13 +29,8 @@ export function NoteWordCount({
     </p>
   );
   return menu ? (
-    <Stack gap={1} className="xl:hidden" role="presentation">
-      <Divider />
-      <Inset padX={2} padY={1}>
-        {line}
-      </Inset>
-    </Stack>
+    <MenuInformation className="xl:hidden">{line}</MenuInformation>
   ) : (
-    line
+    <DisclosureRow>{line}</DisclosureRow>
   );
 }

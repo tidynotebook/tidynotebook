@@ -83,21 +83,28 @@ export function placeOverlay(input: {
   /** The part of the screen that a person sees. */
   readonly screen: ScreenArea;
   readonly align: OverlayAlign;
+  readonly heightLimit?: number;
+  readonly bottomInset?: number;
 }): OverlayPlacement {
-  const { anchor, overlay, screen, align } = input;
+  const {
+    anchor,
+    overlay,
+    screen,
+    align,
+    heightLimit = overlayMaxHeight,
+    bottomInset = 0,
+  } = input;
 
+  const bottom = screen.bottom - bottomInset;
   const below = anchor.top + anchor.height + overlayGap;
-  const roomBelow = Math.max(screen.bottom - below - overlayMargin, 0);
+  const roomBelow = Math.max(bottom - below - overlayMargin, 0);
   // An overlay above its anchor ends at the anchor, or at the foot of the
   // visible area when the anchor stands under it, as under a keyboard.
-  const aboveEnd = Math.min(
-    anchor.top - overlayGap,
-    screen.bottom - overlayMargin,
-  );
+  const aboveEnd = Math.min(anchor.top - overlayGap, bottom - overlayMargin);
   const roomAbove = Math.max(aboveEnd - overlayMargin - screen.top, 0);
   const fitsBelow = overlay.height <= roomBelow;
   const above = !fitsBelow && roomAbove > roomBelow;
-  const room = Math.min(above ? roomAbove : roomBelow, overlayMaxHeight);
+  const room = Math.min(above ? roomAbove : roomBelow, heightLimit);
   const height = Math.min(overlay.height, room);
   const top = above ? aboveEnd - height : below;
 

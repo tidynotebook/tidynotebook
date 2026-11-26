@@ -687,11 +687,28 @@ export function Checkbox({
   );
 }
 
+export function DisclosureRow({
+  children,
+  glyph,
+  ...props
+}: React.ComponentProps<typeof ListRow> & {
+  readonly glyph?: ReactNode;
+}): ReactNode {
+  return (
+    <ListRow {...props} density="tree">
+      <span
+        className="inline-flex w-4 shrink-0 items-center"
+        aria-hidden="true"
+      >
+        {glyph}
+      </span>
+      {children}
+    </ListRow>
+  );
+}
+
 /**
- * A collapsible region, for the outline panel.
- *
- * The toggle button owns `aria-expanded` and the panel is a labeled region,
- * so screen reader and keyboard users can open, enter, and close it.
+ * The toggle owns `aria-expanded` and the panel is a named region.
  */
 export function CollapsibleSection({
   id,
@@ -709,22 +726,18 @@ export function CollapsibleSection({
   const panelId = `${id}-panel`;
   return (
     <Stack as="section" gap={2} aria-labelledby={id}>
-      <ListRow
+      <DisclosureRow
         as="button"
-        density="tree"
         id={id}
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => onToggle(!open)}
+        glyph={open ? <ChevronDownIcon /> : <ChevronRightIcon />}
       >
-        <span
-          className="inline-flex w-4 shrink-0 items-center"
-          aria-hidden="true"
-        >
-          {open ? <ChevronDownIcon /> : <ChevronRightIcon />}
+        <span data-disclosure-label="" className="flex-1 text-left text-muted">
+          {title}
         </span>
-        <span className="flex-1 text-left text-muted">{title}</span>
-      </ListRow>
+      </DisclosureRow>
       {open ? (
         // The `section` above is already the named region of this group, so
         // the panel carries the identifier that `aria-controls` names and no
