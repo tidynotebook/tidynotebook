@@ -520,45 +520,22 @@
 
 @theme static {
   --color-live-0: #7446a8;
+  --live-extra-lightness: 0.38;
+  --live-extra-chroma: 0.1;
   --color-live-ink: #ffffff;
   --color-live-1: #185d9a;
   --color-live-2: #90601b;
   --color-live-3: #7d2946;
   --color-live-4: #277057;
   --color-live-5: #394077;
-  --color-live-selection-0: color-mix(
-    in srgb,
-    var(--color-live-0) 24%,
-    transparent
-  );
-  --color-live-selection-1: color-mix(
-    in srgb,
-    var(--color-live-1) 24%,
-    transparent
-  );
-  --color-live-selection-2: color-mix(
-    in srgb,
-    var(--color-live-2) 24%,
-    transparent
-  );
-  --color-live-selection-3: color-mix(
-    in srgb,
-    var(--color-live-3) 24%,
-    transparent
-  );
-  --color-live-selection-4: color-mix(
-    in srgb,
-    var(--color-live-4) 24%,
-    transparent
-  );
-  --color-live-selection-5: color-mix(
-    in srgb,
-    var(--color-live-5) 24%,
-    transparent
-  );
+}
+@theme inline {
+  --color-live-extra: var(--presence-color);
 }
 [data-theme='dark'] {
   --color-live-0: #c7a4f8;
+  --live-extra-lightness: 0.82;
+  --live-extra-chroma: 0.11;
   --color-live-ink: #141414;
   --color-live-1: #7abbfa;
   --color-live-2: #e2a358;

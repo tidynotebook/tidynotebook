@@ -5,7 +5,6 @@ import { setTimeout } from 'node:timers/promises';
 import {
   acceptWithDocuments,
   commitChangeset,
-  presenceColorSlot,
   type CollaborationStore,
 } from '@notesapp/core';
 import {
@@ -198,10 +197,21 @@ try {
     );
     assert.match(JSON.stringify(entries), /"displayName":"Editor"/);
     assert.doesNotMatch(JSON.stringify(entries), /An invented name/);
-    assert.equal(presenceColorSlot(ownerId), presenceColorSlot(editorId));
+    const editorAccess = await identity.collaboration(
+      memberActor(editorId, workspaceId),
+      workspaceId,
+      (tx) => tx.liveNoteAccess(fileId),
+    );
+    assert.ok(editorAccess);
+    assert.match(
+      JSON.stringify(entries),
+      new RegExp(`"slot":${editorAccess.colorSlot}[,}]`),
+    );
     assert.notEqual(
-      JSON.stringify(entries).includes(`"slot":${presenceColorSlot(ownerId)}`),
-      true,
+      owner.output.find((frame) => frame['kind'] === 'noteJoined')?.[
+        'colorSlot'
+      ],
+      editorAccess.colorSlot,
     );
     await first.handle(viewer, 'joinNote', viewerRoom);
     assert.equal(

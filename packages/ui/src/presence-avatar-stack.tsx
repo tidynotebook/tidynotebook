@@ -13,6 +13,7 @@ export function PresenceAvatarStack({
     readonly id: string;
     readonly initial: string;
     readonly slot: number;
+    readonly color?: string | undefined;
     readonly idle: boolean;
   }[];
 }): ReactNode {
@@ -30,7 +31,12 @@ export function PresenceAvatarStack({
                   : 'inline-flex'
             }
           >
-            <PresenceAvatar slot={person.slot} idle={person.idle} ring>
+            <PresenceAvatar
+              slot={person.slot}
+              color={person.color}
+              idle={person.idle}
+              ring
+            >
               {person.initial}
             </PresenceAvatar>
           </span>

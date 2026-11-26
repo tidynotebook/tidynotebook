@@ -668,7 +668,7 @@ export type {
 
 export {
   presenceColorSlot,
-  availablePresenceSlot,
+  workspacePresenceColor,
   workspaceCollaboration,
   workspaceInviteBatchSize,
   workspaceMemberPageSize,

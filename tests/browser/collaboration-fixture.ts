@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import {
   configureClient,
   createFile,
+  createInvitation,
   createWorkspace,
   createWorkspaceInvites,
   deleteWorkspace,
@@ -14,10 +15,13 @@ import {
   readWorkspaceInviteLink,
   registerAccount,
   removeAccount,
+  revokeInvitation,
   signInWithPassword,
   type WorkspaceInviteRole,
 } from '@notesapp/api-client';
 import { firstSave } from '../integration/support/documents.ts';
+
+type FixtureHeaders = { origin: string; cookie: string };
 
 /** The disposable installation needs the owner account before the audit. */
 export async function collaborationFixture(
@@ -27,15 +31,15 @@ export async function collaborationFixture(
   signupEmail?: string,
 ) {
   configureClient(origin, undefined);
-  const owner = 'owner@example.com';
   const tag = randomUUID().slice(0, 12);
+  const owner = `owner-${tag}@example.com`;
   const editor = `editor-${tag}@example.com`;
   const viewer = `viewer-${tag}@example.com`;
   const pendingEmail = signupEmail ?? `pending-${tag}@example.com`;
   const password =
     process.env.UI_AUDIT_PASSWORD ?? 'Workspace notes test 2026!';
 
-  async function signInHeaders(email: string) {
+  async function signInHeaders(email: string): Promise<FixtureHeaders | null> {
     const result = await signInWithPassword({
       headers: { origin },
       body: { email, password },
@@ -48,15 +52,18 @@ export async function collaborationFixture(
     return { origin, cookie };
   }
 
-  const ownerHeaders = await signInHeaders(owner);
-  assert.ok(ownerHeaders, 'Bootstrap the disposable owner account first.');
-  const headers = ownerHeaders;
+  const admin = await signInHeaders('owner@example.com');
+  assert.ok(admin, 'Bootstrap the disposable owner account first.');
   const workspaces: string[] = [];
-  const accountEmails = new Set([editor, viewer, pendingEmail]);
+  const accountEmails = new Set([owner, editor, viewer, pendingEmail]);
+  let fixtureOwner: FixtureHeaders | null = null;
+  let pendingAccountInvite: string | null = null;
   cleanup.push(async () => {
     const failures: unknown[] = [];
     for (const workspaceId of workspaces) {
       try {
+        const headers = fixtureOwner;
+        assert.ok(headers);
         const result = await deleteWorkspace({
           headers,
           path: { workspaceId },
@@ -66,13 +73,20 @@ export async function collaborationFixture(
         failures.push(error);
       }
     }
-    const accounts = await listAccounts({ headers });
+    if (pendingAccountInvite !== null) {
+      const result = await revokeInvitation({
+        headers: admin,
+        path: { invitationId: pendingAccountInvite },
+      });
+      if (result.error !== undefined) failures.push(result.error);
+    }
+    const accounts = await listAccounts({ headers: admin });
     assert.ok(accounts.data, JSON.stringify(accounts.error));
     for (const account of accounts.data.accounts) {
       if (account.email === null || !accountEmails.has(account.email)) continue;
       try {
-        const result = await removeAccount({
-          headers,
+        const result: { error?: unknown } = await removeAccount({
+          headers: admin,
           path: { accountId: account.accountId },
         });
         assert.equal(result.error, undefined, JSON.stringify(result.error));
@@ -86,6 +100,27 @@ export async function collaborationFixture(
         'Collaboration fixture cleanup failed.',
       );
   });
+  const invitation = await createInvitation({
+    headers: admin,
+    body: { email: owner },
+  });
+  assert.ok(invitation.data, JSON.stringify(invitation.error));
+  pendingAccountInvite = invitation.data.invitation.invitationId;
+  assert.ok(invitation.data.link);
+  const registered = await registerAccount({
+    headers: { origin },
+    body: {
+      invitation: new URL(invitation.data.link).hash.slice(1),
+      password,
+      name: 'Owner',
+    },
+  });
+  assert.ok(registered.data, JSON.stringify(registered.error));
+  pendingAccountInvite = null;
+  const signedIn = await signInHeaders(owner);
+  assert.ok(signedIn);
+  const headers: FixtureHeaders = signedIn;
+  fixtureOwner = headers;
 
   async function createFixtureWorkspace(name: string) {
     const result = await createWorkspace({ headers, body: { name } });

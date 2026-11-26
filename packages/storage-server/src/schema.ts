@@ -517,6 +517,7 @@ export const memberships = pgTable(
       .notNull()
       .references(() => accounts.id),
     role: membershipRole('role').notNull(),
+    colorSlot: integer('color_slot').notNull().default(0),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -524,6 +525,10 @@ export const memberships = pgTable(
   (table) => [
     primaryKey({ columns: [table.workspaceId, table.accountId] }),
     index('memberships_account_idx').on(table.accountId),
+    uniqueIndex('memberships_color_slot_idx').on(
+      table.workspaceId,
+      table.colorSlot,
+    ),
     uniqueIndex('memberships_one_owner_idx')
       .on(table.workspaceId)
       .where(sql`${table.role} = 'owner'`),

@@ -857,6 +857,125 @@ export async function auditContentParity(page: Page) {
         preceding = rect;
       }
     }
+    const ellipsis = (element: Element) => {
+      const style = getComputedStyle(element);
+      return (
+        style.whiteSpace === 'nowrap' &&
+        style.textOverflow === 'ellipsis' &&
+        style.overflowX === 'hidden'
+      );
+    };
+    for (const email of [
+      ...document.querySelectorAll('[data-member-email]'),
+    ].filter(visible)) {
+      const line = document.createRange();
+      line.selectNodeContents(email);
+      check(
+        email,
+        'member email has one line semantics',
+        line.getClientRects().length,
+        1,
+      );
+      check(
+        email,
+        'member email has ellipsis semantics',
+        Number(ellipsis(email)),
+        1,
+      );
+    }
+    for (const name of [
+      ...document.querySelectorAll('[data-settings-workspace-name]'),
+    ].filter(visible)) {
+      const heading = name.closest('h3');
+      if (!heading) continue;
+      const right =
+        heading.getBoundingClientRect().right -
+        parseFloat(getComputedStyle(heading).paddingRight);
+      check(
+        name,
+        'workspace heading has ellipsis semantics',
+        Number(ellipsis(name)),
+        1,
+      );
+      check(
+        name,
+        'workspace heading stays inside navigation semantics',
+        Number(name.getBoundingClientRect().right <= right + 1),
+        1,
+      );
+    }
+    const memberColors = new Set<string>();
+    let trailingEdge: number | undefined;
+    for (const row of [
+      ...document.querySelectorAll('[data-member-row]'),
+    ].filter(visible)) {
+      const avatar = row.querySelector('[data-presence-slot]');
+      if (avatar) {
+        const color = getComputedStyle(avatar).backgroundColor;
+        check(
+          row,
+          'workspace member color is distinct semantics',
+          Number(!memberColors.has(color) && color !== 'rgba(0, 0, 0, 0)'),
+          1,
+        );
+        memberColors.add(color);
+      }
+      const control = row.querySelector('[data-setting-control]');
+      if (!control) continue;
+      const button = [...control.querySelectorAll('button')]
+        .filter(visible)
+        .at(-1);
+      const mark =
+        button?.querySelector('svg') ?? button ?? control.lastElementChild;
+      if (!mark) continue;
+      const right = control.getBoundingClientRect().right;
+      trailingEdge ??= right;
+      check(
+        row,
+        'members share one trailing edge',
+        mark.getBoundingClientRect().right,
+        trailingEdge,
+      );
+    }
+    for (const menu of [
+      ...document.querySelectorAll('[role=menu][aria-label^="Workspace:"]'),
+    ].filter(visible)) {
+      const captions = [
+        ...menu.querySelectorAll('[data-menu-label] > span:first-child'),
+      ].filter(visible);
+      const first = captions[0]?.getBoundingClientRect().left;
+      if (first === undefined) continue;
+      for (const caption of captions) {
+        check(
+          caption,
+          'workspace menu label edge',
+          caption.getBoundingClientRect().left,
+          first,
+        );
+        if (caption instanceof HTMLElement)
+          check(
+            caption,
+            'workspace menu label fits or has ellipsis semantics',
+            Number(
+              caption.scrollWidth <= caption.clientWidth + 1 ||
+                ellipsis(caption),
+            ),
+            1,
+          );
+      }
+    }
+    const viewerNotice = document.querySelector('[data-viewer-notice]');
+    if (
+      viewerNotice &&
+      visible(viewerNotice) &&
+      matchMedia('(pointer: coarse)').matches
+    )
+      check(
+        viewerNotice,
+        'viewer notice top inset',
+        parseFloat(getComputedStyle(viewerNotice).paddingTop),
+        8,
+      );
     for (const list of [
       ...document.querySelectorAll(
         '.ui-page-column ul,.ui-page-column ol,#command-palette-list',

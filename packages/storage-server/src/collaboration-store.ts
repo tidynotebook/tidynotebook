@@ -25,6 +25,7 @@ type MemberRow = {
   email: string;
   role: string;
   member_count: string;
+  color_slot: number;
 };
 
 function storedRole(text: string): Role {
@@ -55,6 +56,7 @@ function memberOf(row: MemberRow): WorkspaceMember {
     displayName: row.display_name,
     email: row.email,
     role: storedRole(row.role),
+    colorSlot: row.color_slot,
   };
 }
 
@@ -77,15 +79,25 @@ export function collaborationTransaction(
         epoch: number;
         role: string;
         writable: boolean;
+        color_slot: number;
       }>(
         `select f.head_revision_id as head, d.epoch, notesapp_member_role($1) as role,
-          notesapp_workspace_writable($1) as writable
+          notesapp_workspace_writable($1) as writable,
+          notesapp_current_member_color($1) as color_slot
          from note_documents d join files f on f.workspace_id = d.workspace_id and f.id = d.file_id
          where d.workspace_id = $1 and d.file_id = $2 and not f.deleted`,
         [workspaceId, fileId],
       );
       const row = rows[0];
-      return row === undefined ? null : { ...row, role: storedRole(row.role) };
+      return row === undefined
+        ? null
+        : {
+            head: row.head,
+            epoch: row.epoch,
+            role: storedRole(row.role),
+            writable: row.writable,
+            colorSlot: row.color_slot,
+          };
     },
     async liveNote(fileId) {
       const { rows } = await client.query<{
@@ -94,9 +106,11 @@ export function collaborationTransaction(
         epoch: number;
         role: string;
         writable: boolean;
+        color_slot: number;
       }>(
         `select d.bytes as document, f.head_revision_id as head, d.epoch, notesapp_member_role($1) as role,
-          notesapp_workspace_writable($1) as writable
+          notesapp_workspace_writable($1) as writable,
+          notesapp_current_member_color($1) as color_slot
          from note_documents d join files f on f.workspace_id = d.workspace_id and f.id = d.file_id
          where d.workspace_id = $1 and d.file_id = $2 and not f.deleted`,
         [workspaceId, fileId],
@@ -110,6 +124,7 @@ export function collaborationTransaction(
             epoch: row.epoch,
             role: storedRole(row.role),
             writable: row.writable,
+            colorSlot: row.color_slot,
           };
     },
     async bindNoteClient(fileId, epoch, clientId) {

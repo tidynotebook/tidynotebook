@@ -316,6 +316,13 @@
       "when": 1795672455134,
       "tag": "0044_workspace_collaboration",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1795713544258,
+      "tag": "0045_workspace_member_colors",
+      "breakpoints": true
     }
   ]
 }

@@ -7,8 +7,10 @@ import {
 import {
   IdentityMark,
   Button,
+  CheckIcon,
   ChevronsUpDownIcon,
   LoadingState,
+  MailIcon,
   Menu,
   Notice,
   UsersIcon,
@@ -16,6 +18,7 @@ import {
   Page,
   PageHeader,
   rowClassName,
+  SignOutIcon,
 } from '@notesapp/ui';
 
 /**
@@ -259,56 +262,57 @@ export function WorkspaceSwitcher({
     onSelect: () => switchTo(workspace.workspaceId),
   }));
 
+  const answer = (invite: PendingWorkspaceInvite, accept: boolean): void => {
+    const path = { invitationId: invite.invitationId };
+    const request = accept
+      ? acceptWorkspaceInvite({ path })
+      : declineWorkspaceInvite({ path });
+    void request.then(({ data }) => {
+      if (data === undefined) {
+        setProblem(
+          accept
+            ? 'This invitation could not be accepted.'
+            : 'This invitation could not be declined.',
+        );
+        return;
+      }
+      setInvites((entries) =>
+        entries.filter((entry) => entry.invitationId !== invite.invitationId),
+      );
+      if ('workspaceId' in data) {
+        adopt(data);
+        void navigate(location, {
+          replace: true,
+          state: joinedWorkspaceState(invite),
+        });
+        onNavigate();
+      }
+    });
+  };
+
   for (const invite of invites) {
-    items.push(
-      {
-        id: `accept-${invite.invitationId}`,
-        label: `Accept invite to ${invite.workspaceName}`,
-        hint: roleNames[invite.role],
-        group: 'Invites',
-        onSelect: () => {
-          void acceptWorkspaceInvite({
-            path: { invitationId: invite.invitationId },
-          }).then((result) => {
-            if (result.data === undefined) {
-              setProblem('This invitation could not be accepted.');
-              return;
-            }
-            setInvites((entries) =>
-              entries.filter(
-                (entry) => entry.invitationId !== invite.invitationId,
-              ),
-            );
-            adopt(result.data);
-            void navigate(location, {
-              replace: true,
-              state: joinedWorkspaceState(invite),
-            });
-            onNavigate();
-          });
+    items.push({
+      id: invite.invitationId,
+      label: invite.workspaceName,
+      icon: <MailIcon />,
+      hint: roleNames[invite.role],
+      group: 'Invites',
+      submenu: [
+        {
+          id: 'accept-invite',
+          label: 'Accept invite',
+          icon: <CheckIcon />,
+          onSelect: () => answer(invite, true),
         },
-      },
-      {
-        id: `decline-${invite.invitationId}`,
-        label: `Decline invite to ${invite.workspaceName}`,
-        group: 'Invites',
-        onSelect: () => {
-          void declineWorkspaceInvite({
-            path: { invitationId: invite.invitationId },
-          }).then((result) => {
-            if (result.data === undefined) {
-              setProblem('This invitation could not be declined.');
-              return;
-            }
-            setInvites((entries) =>
-              entries.filter(
-                (entry) => entry.invitationId !== invite.invitationId,
-              ),
-            );
-          });
+        {
+          id: 'decline-invite',
+          label: 'Decline invite',
+          icon: <SignOutIcon />,
+          danger: true,
+          onSelect: () => answer(invite, false),
         },
-      },
-    );
+      ],
+    });
   }
   const manages =
     openWorkspace.role === 'owner' || openWorkspace.role === 'admin';
@@ -357,6 +361,7 @@ export function WorkspaceSwitcher({
           {
             id: 'leave-workspace',
             label: 'Leave workspace',
+            icon: <SignOutIcon />,
             danger: true,
             onIntent: () => {
               void LeaveWorkspaceDialog.preload();

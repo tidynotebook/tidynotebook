@@ -32,44 +32,24 @@ export function TileSelectedBadge({
   );
 }
 
-const presenceColors = [
-  'bg-live-0',
-  'bg-live-1',
-  'bg-live-2',
-  'bg-live-3',
-  'bg-live-4',
-  'bg-live-5',
-];
-
-const presenceRings = [
-  'ring-live-0',
-  'ring-live-1',
-  'ring-live-2',
-  'ring-live-3',
-  'ring-live-4',
-  'ring-live-5',
-];
-
-const idleRings = [
-  'ring-live-0/60',
-  'ring-live-1/60',
-  'ring-live-2/60',
-  'ring-live-3/60',
-  'ring-live-4/60',
-  'ring-live-5/60',
-];
+function paintPresence(color?: string) {
+  return (node: HTMLSpanElement | null): void => {
+    node?.style.setProperty('--presence-color', color ?? '');
+  };
+}
 
 export function PresenceDots({
-  slots,
+  colors,
 }: {
-  readonly slots: readonly number[];
+  readonly colors: readonly string[];
 }): ReactNode {
   return (
     <span aria-hidden="true" className="inline-flex -space-x-0.5">
-      {slots.map((slot, index) => (
+      {colors.map((color, index) => (
         <span
           key={index}
-          className={`size-2 rounded-full ring-1 ring-surface ${presenceColors[slot] ?? 'bg-live-0'}`}
+          ref={paintPresence(color)}
+          className="size-2 rounded-full bg-live-extra ring-1 ring-surface"
         />
       ))}
     </span>
@@ -79,21 +59,24 @@ export function PresenceDots({
 export function PresenceAvatar({
   children,
   slot = 0,
+  color,
   pending = false,
   idle = false,
   ring = false,
 }: {
   readonly children: ReactNode;
   readonly slot?: number;
+  readonly color?: string | undefined;
   readonly pending?: boolean;
   readonly idle?: boolean;
   readonly ring?: boolean;
 }): ReactNode {
-  const rings = idle ? idleRings : presenceRings;
   return (
     <span
       aria-hidden="true"
-      className={`relative inline-flex ${ring ? 'size-6' : 'size-5'} shrink-0 items-center justify-center rounded-full text-avatar ${pending || idle ? 'bg-surface text-muted' : `text-live-ink ${presenceColors[slot] ?? 'bg-live-0'}`} ${ring ? `border border-overlay ring-1 ${rings[slot] ?? rings[0]}` : ''}`}
+      data-presence-slot={pending ? undefined : slot}
+      ref={pending ? undefined : paintPresence(color)}
+      className={`relative inline-flex ${ring ? 'size-6' : 'size-5'} shrink-0 items-center justify-center rounded-full text-avatar ${pending ? 'bg-surface text-muted' : 'bg-live-extra text-live-ink'} ${ring ? `border border-overlay ring-1 ${idle ? 'ring-live-extra/60' : 'ring-live-extra'}` : ''}`}
     >
       {pending ? (
         <IconFrame size={20} className="absolute inset-0">

@@ -12828,6 +12828,12 @@
           },
           "role": {
             "$ref": "#/components/schemas/Role"
+          },
+          "colorSlot": {
+            "description": "The joining member's color slot in this workspace.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
           }
         }
       },
@@ -12873,7 +12879,7 @@
             "items": {
               "type": "integer",
               "minimum": 0,
-              "maximum": 5
+              "maximum": 2147483647
             }
           }
         }
@@ -15036,6 +15042,12 @@
           },
           "formerMember": {
             "type": "boolean"
+          },
+          "colorSlot": {
+            "description": "The current member's color slot in this workspace.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
           }
         }
       },
@@ -17218,6 +17230,12 @@
           },
           "role": {
             "$ref": "#/components/schemas/Role"
+          },
+          "colorSlot": {
+            "description": "The member's stable color slot in this workspace.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
           }
         }
       },

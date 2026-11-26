@@ -3726,6 +3726,12 @@ export const sharedDefinitions: JsonSchema = {
         },
         "role": {
           "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Role"
+        },
+        "colorSlot": {
+          "description": "The member's stable color slot in this workspace.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
         }
       }
     },
@@ -13090,6 +13096,12 @@ export const operations: readonly OperationEntry[] = [
                         },
                         "formerMember": {
                           "type": "boolean"
+                        },
+                        "colorSlot": {
+                          "description": "The current member's color slot in this workspace.",
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 2147483647
                         }
                       }
                     }
@@ -22943,6 +22955,12 @@ export const channels: readonly ChannelEntry[] = [
             },
             "role": {
               "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Role"
+            },
+            "colorSlot": {
+              "description": "The joining member's color slot in this workspace.",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
             }
           }
         }
@@ -23330,7 +23348,7 @@ export const channels: readonly ChannelEntry[] = [
                     "items": {
                       "type": "integer",
                       "minimum": 0,
-                      "maximum": 5
+                      "maximum": 2147483647
                     }
                   }
                 }

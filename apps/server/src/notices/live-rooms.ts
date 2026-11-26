@@ -12,7 +12,7 @@ import {
 import {
   verifyActor,
   presenceColorSlot,
-  availablePresenceSlot,
+  workspacePresenceColor,
   type CollaborationStore,
   type Role,
 } from '@notesapp/core';
@@ -57,6 +57,7 @@ export type OpenNotePresence = {
   workspaceId: string;
   fileId: string;
   accountId: string;
+  colorSlot?: number;
 };
 export type LiveRooms = {
   readonly handle: (
@@ -135,8 +136,8 @@ function canonicalAwareness(peer: Peer, entry: AwarenessEntry): AwarenessEntry {
             slot,
             user: {
               name: peer.connection.name,
-              color: `var(--color-live-${slot})`,
-              colorLight: `var(--color-live-selection-${slot})`,
+              color: workspacePresenceColor(slot),
+              colorLight: `color-mix(in srgb, ${workspacePresenceColor(slot)} 24%, transparent)`,
             },
             mode: peer.role === 'viewer' ? 'viewing' : 'editing',
             idle: readProperty(entry.state, 'idle') === true,
@@ -232,7 +233,7 @@ export function createLiveRooms(input: {
       );
       if (!allowed?.includes(workspaceId) || watches.get(connection) !== watch)
         continue;
-      const byNote = new Map<string, Set<string>>();
+      const byNote = new Map<string, Map<string, number>>();
       for (const room of rooms.values())
         for (const peer of room.members) {
           if (
@@ -240,8 +241,8 @@ export function createLiveRooms(input: {
             peer.connection.accountId === connection.accountId
           )
             continue;
-          const others = byNote.get(peer.fileId) ?? new Set<string>();
-          others.add(peer.connection.accountId);
+          const others = byNote.get(peer.fileId) ?? new Map<string, number>();
+          others.set(peer.connection.accountId, peer.colorSlot);
           byNote.set(peer.fileId, others);
         }
       for (const peer of input.remotePresence?.() ?? []) {
@@ -250,9 +251,13 @@ export function createLiveRooms(input: {
           peer.accountId === connection.accountId
         )
           continue;
-        const others = byNote.get(peer.fileId) ?? new Set<string>();
+        const others = byNote.get(peer.fileId) ?? new Map<string, number>();
         if (others.size >= liveBounds.connectionsPerRoom) continue;
-        others.add(peer.accountId);
+        if (!others.has(peer.accountId))
+          others.set(
+            peer.accountId,
+            peer.colorSlot ?? presenceColorSlot(peer.accountId),
+          );
         byNote.set(peer.fileId, others);
       }
       connection.emit({
@@ -264,7 +269,9 @@ export function createLiveRooms(input: {
           .map(([fileId, accounts]) => ({
             fileId,
             accountCount: accounts.size,
-            colorSlots: [...accounts].sort().slice(0, 3).map(presenceColorSlot),
+            colorSlots: [...accounts.values()]
+              .sort((left, right) => left - right)
+              .slice(0, 3),
           })),
       });
     }
@@ -406,6 +413,7 @@ export function createLiveRooms(input: {
           roomId: existing.roomId,
           epoch: existing.epoch,
           role: existing.role,
+          colorSlot: existing.colorSlot,
         });
       });
       return;
@@ -455,19 +463,9 @@ export function createLiveRooms(input: {
         return stop(connection, note.roomId, 'capacity');
       if ([...target.members].some((entry) => entry.clientId === note.clientId))
         return stop(connection, note.roomId, 'client_id_conflict');
-      const present = [...target.members];
-      const own = present.find(
-        (entry) => entry.connection.accountId === connection.accountId,
-      );
-      const colorSlot =
-        own?.colorSlot ??
-        availablePresenceSlot(
-          connection.accountId,
-          new Set(present.map((entry) => entry.colorSlot)),
-        );
       const peer: Peer = {
         ...note,
-        colorSlot,
+        colorSlot: current.colorSlot,
         connection,
         room: target,
         role: current.writable ? current.role : 'viewer',
@@ -483,6 +481,7 @@ export function createLiveRooms(input: {
         roomId: peer.roomId,
         epoch: peer.epoch,
         role: peer.role,
+        colorSlot: peer.colorSlot,
       });
       for (const other of target.members)
         if (other !== peer && other.awareness !== null)

@@ -235,11 +235,13 @@ their bindings and are not new contributions.
 
 An awareness frame changes only the entry for the bound client ID. The
 server rebuilds that entry with the verified account and display name,
-role-derived mode, deterministic palette slot, and bounded relative
-selection and idle state. The UI uses readable light and dark palette
-tokens with different lightness, plus text for each person. Pick an unused
-slot in each room while there are free slots. Keep it for the account until
-it leaves the room. History also assigns distinct slots within its list. Use
+role-derived mode, workspace color slot, and bounded relative selection
+and idle state. Assign the first unused slot when a member joins the
+workspace. Existing workspaces assign slots in order of membership, with
+the owner first. Role changes and other members' departures keep the slot
+in place. Members, History, presence, and cursors read this same slot.
+The first six slots use the theme palette. Higher slots use theme values
+with different hues and lightness. Use
 `y-codemirror.next` to show selections and cursors. Remove state on leave
 or expiry. Workspace presence sends only open-note counts for other
 accounts to authorized watchers. Collapse tabs of one account into one

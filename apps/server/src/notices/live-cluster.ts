@@ -101,13 +101,24 @@ export function createLiveCluster(input: {
       const workspaceId = readProperty(item, 'workspaceId');
       const fileId = readProperty(item, 'fileId');
       const accountId = readProperty(item, 'accountId');
+      const colorSlot = readProperty(item, 'colorSlot');
       if (
         typeof workspaceId !== 'string' ||
         typeof fileId !== 'string' ||
         typeof accountId !== 'string'
       )
         continue;
-      notes.push({ workspaceId, fileId, accountId });
+      notes.push({
+        workspaceId,
+        fileId,
+        accountId,
+        ...(typeof colorSlot === 'number' &&
+        Number.isInteger(colorSlot) &&
+        colorSlot >= 0 &&
+        colorSlot <= 2147483647
+          ? { colorSlot }
+          : {}),
+      });
     }
     if (!otherPresence.has(gateway) && otherPresence.size >= 64) return;
     const changed = new Set(
@@ -276,6 +287,8 @@ export function createLiveCluster(input: {
             if (routes.delete(roomId)) sharePresence();
           } else if (route !== undefined && message['kind'] === 'noteJoined') {
             route.joined = true;
+            const slot = readProperty(message, 'colorSlot');
+            if (typeof slot === 'number') route.note.colorSlot = slot;
             route.acknowledged = Date.now();
             sharePresence();
           }

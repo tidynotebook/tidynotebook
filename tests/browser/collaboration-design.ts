@@ -193,17 +193,23 @@ export async function runCollaborationAudit(
         await check(owner, 'join-wrong-account');
 
         if (phone) {
-          for (const [path, heading] of [
-            ['accounts', 'Users'],
-            ['daily-notes', 'Daily notes'],
-          ] as const) {
-            await owner.goto(`${home}?settings=${path}`);
-            await owner
-              .locator('.ui-settings-column .ui-settings-header-title')
-              .filter({ hasText: heading })
-              .waitFor();
-            await check(owner, `settings-${path}`);
-          }
+          const referenceContext = await newContext();
+          const reference = await referenceContext.newPage();
+          await signIn(reference, 'owner@example.com');
+          const accountHome = await reference.evaluate(() => location.pathname);
+          await reference.goto(`${origin}${accountHome}?settings=accounts`);
+          await reference
+            .locator('.ui-settings-column .ui-settings-header-title')
+            .filter({ hasText: 'Users' })
+            .waitFor();
+          await check(reference, 'settings-accounts');
+          await referenceContext.close();
+          await owner.goto(`${home}?settings=daily-notes`);
+          await owner
+            .locator('.ui-settings-column .ui-settings-header-title')
+            .filter({ hasText: 'Daily notes' })
+            .waitFor();
+          await check(owner, 'settings-daily-notes');
         }
 
         let emptyInvites = false;
@@ -367,14 +373,24 @@ export async function runCollaborationAudit(
         await check(viewer, 'joined-toast');
         await viewer.goto(home);
         await switcher(viewer);
-        const accept = viewer.getByText(
-          `Accept invite to ${fixture.viewerSwitcherName}`,
-          { exact: true },
-        );
-        await accept.waitFor();
-        await accept.scrollIntoViewIfNeeded();
+        const pending = viewer.getByText(fixture.viewerSwitcherName, {
+          exact: true,
+        });
+        await pending.waitFor();
+        await pending.scrollIntoViewIfNeeded();
         await check(viewer, 'switcher-invites');
-        await accept.click();
+        await pending.click();
+        const inviteActions = viewer.getByRole('menu', {
+          name: fixture.viewerSwitcherName,
+          exact: true,
+        });
+        await inviteActions
+          .getByRole('menuitem', { name: 'Decline invite', exact: true })
+          .waitFor();
+        await check(viewer, 'switcher-invite-actions');
+        await inviteActions
+          .getByRole('menuitem', { name: 'Accept invite', exact: true })
+          .click();
         const openToast = viewer
           .getByRole('status')
           .filter({ hasText: `You joined ${fixture.viewerSwitcherName}` });

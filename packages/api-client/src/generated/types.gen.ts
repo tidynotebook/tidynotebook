@@ -1701,6 +1701,10 @@ export type LiveNoteJoined = {
     roomId: Uuid;
     epoch: DocumentEpoch;
     role: Role;
+    /**
+     * The joining member's color slot in this workspace.
+     */
+    colorSlot?: number;
 };
 
 /**
@@ -2732,6 +2736,10 @@ export type RevisionContributor = {
     accountId: Uuid | null;
     displayName: string | null;
     formerMember: boolean;
+    /**
+     * The current member's color slot in this workspace.
+     */
+    colorSlot?: number;
 };
 
 /**
@@ -3749,6 +3757,10 @@ export type WorkspaceMember = {
     displayName: string | null;
     email: EmailAddress;
     role: Role;
+    /**
+     * The member's stable color slot in this workspace.
+     */
+    colorSlot?: number;
 };
 
 /**

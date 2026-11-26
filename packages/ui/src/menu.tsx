@@ -49,7 +49,7 @@ import {
   menuSurfaceClassName,
   rowClassName,
 } from './control-classes.ts';
-import { CheckIcon } from './icons.tsx';
+import { CheckIcon, ChevronLeftIcon, ChevronRightIcon } from './icons.tsx';
 import { startsGroup } from './menu-groups.ts';
 import { placeOverlay } from './overlay-position.ts';
 import { followVisibleArea, readVisibleArea } from './visible-area.ts';
@@ -80,7 +80,8 @@ export type MenuItem = {
    * hairline separates one group from the next.
    */
   readonly group?: string | undefined;
-  readonly onSelect: () => void;
+  readonly onSelect?: () => void;
+  readonly submenu?: readonly MenuItem[];
   /** Load an action when a pointer or keyboard shows intent. */
   readonly onIntent?: () => void;
 };
@@ -109,8 +110,11 @@ function MenuRow({
   return (
     <button
       type="button"
-      role={choosing ? 'menuitemradio' : 'menuitem'}
-      aria-checked={choosing ? item.selected === true : undefined}
+      role={choosing && !item.submenu ? 'menuitemradio' : 'menuitem'}
+      aria-checked={
+        choosing && !item.submenu ? item.selected === true : undefined
+      }
+      aria-haspopup={item.submenu ? 'menu' : undefined}
       aria-label={item.detail === undefined ? undefined : item.label}
       aria-description={item.detail}
       tabIndex={-1}
@@ -130,7 +134,15 @@ function MenuRow({
         </span>
       )}
       <span data-menu-label="" className="min-w-0 flex-1">
-        <span className="block truncate">{item.label}</span>
+        <span
+          className={
+            item.submenu
+              ? 'block wrap-anywhere whitespace-normal'
+              : 'block truncate'
+          }
+        >
+          {item.label}
+        </span>
         {item.detail === undefined ? null : (
           <span className="block text-secondary text-muted">{item.detail}</span>
         )}
@@ -138,13 +150,17 @@ function MenuRow({
       {item.hint === undefined ? null : (
         <span className="shrink-0 text-secondary text-muted">{item.hint}</span>
       )}
-      {choosing ? (
+      {choosing || item.submenu ? (
         <span
           data-menu-check
           className="inline-flex size-4 shrink-0"
           aria-hidden="true"
         >
-          {item.selected ? <CheckIcon /> : null}
+          {item.submenu ? (
+            <ChevronRightIcon />
+          ) : item.selected ? (
+            <CheckIcon />
+          ) : null}
         </span>
       ) : null}
     </button>
@@ -189,9 +205,9 @@ export type MenuAnchor = {
 function MenuList({
   id,
   label,
-  items,
+  items: rootItems,
   header,
-  pinned,
+  pinned: rootPinned,
   information,
   fitTouchViewport,
   anchor,
@@ -222,6 +238,23 @@ function MenuList({
   readonly isInside?: ((target: Node) => boolean) | undefined;
 }): ReactNode {
   const [activeIndex, setActiveIndex] = useState(initialIndex);
+  const [submenu, setSubmenu] = useState<MenuItem | null>(null);
+  const items = submenu?.submenu ?? rootItems;
+  const submenuIndex = useRef(0);
+  const back = useCallback((): void => {
+    setActiveIndex(submenuIndex.current);
+    setSubmenu(null);
+  }, []);
+  const pinned: readonly MenuItem[] = submenu
+    ? [
+        {
+          id: 'menu-back',
+          label: 'Back',
+          icon: <ChevronLeftIcon />,
+          onSelect: back,
+        },
+      ]
+    : rootPinned;
   const [showFocus, setShowFocus] = useState(keyboard);
   const listRef = useRef<HTMLDivElement | null>(null);
   const bottomEdge = useRef<HTMLDivElement | null>(null);
@@ -259,13 +292,14 @@ function MenuList({
       if (event.key !== 'Escape') return;
       event.preventDefault();
       event.stopPropagation();
-      onClose(true);
+      if (submenu) back();
+      else onClose(true);
     };
     window.addEventListener('keydown', onKeyDown, true);
     return () => {
       window.removeEventListener('keydown', onKeyDown, true);
     };
-  }, [onClose]);
+  }, [onClose, submenu, back]);
 
   useEffect(() => {
     window.requestAnimationFrame(() => {
@@ -275,7 +309,7 @@ function MenuList({
         )
         [activeIndex]?.focus();
     });
-  }, [activeIndex]);
+  }, [activeIndex, submenu]);
 
   /**
    * Writes the place of the open list.
@@ -330,7 +364,7 @@ function MenuList({
       stopFollowing();
       window.removeEventListener('scroll', followAnchor, true);
     };
-  }, [place]);
+  }, [place, submenu]);
 
   const move = (delta: number): void => {
     setActiveIndex((current) => {
@@ -347,8 +381,18 @@ function MenuList({
   );
 
   const run = (item: MenuItem): void => {
+    if (item.submenu) {
+      submenuIndex.current = enabled.indexOf(item);
+      setActiveIndex(0);
+      setSubmenu(item);
+      return;
+    }
+    if (submenu && item.id === 'menu-back') {
+      back();
+      return;
+    }
     onClose(true);
-    item.onSelect();
+    item.onSelect?.();
   };
 
   return createPortal(
@@ -361,7 +405,7 @@ function MenuList({
       data-menu-fit-viewport={fitTouchViewport ? '' : undefined}
       onPointerDownCapture={() => setShowFocus(false)}
       onKeyDownCapture={() => setShowFocus(true)}
-      aria-label={label}
+      aria-label={submenu?.label ?? label}
       onKeyDown={(event): void => {
         if (event.key === 'ArrowDown') {
           event.preventDefault();
@@ -381,7 +425,11 @@ function MenuList({
         }
       }}
     >
-      {header === undefined ? null : (
+      {submenu ? (
+        <Inset pad={2} className="text-label text-strong wrap-anywhere">
+          {submenu.label}
+        </Inset>
+      ) : header === undefined ? null : (
         <Inset
           pad={2}
           role="presentation"
@@ -494,7 +542,13 @@ export function Menu({
   readonly matchTrigger?: boolean | undefined;
   readonly align?: MenuAlign | undefined;
   readonly trigger?:
-    'row' | 'row-action' | 'toolbar' | 'avatar' | 'value' | 'default';
+    | 'row'
+    | 'row-action'
+    | 'toolbar'
+    | 'avatar'
+    | 'value'
+    | 'content-edge'
+    | 'default';
   readonly triggerClassName?: string | undefined;
   /**
    * Keeps the touch target of the trigger and draws a smaller surface inside
@@ -514,6 +568,7 @@ export function Menu({
   const [keyboard, setKeyboard] = useState(false);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const contentEdge = trigger === 'content-edge';
 
   const enabledCount = [...items, ...pinned].filter(
     (item) => item.disabled !== true,
@@ -568,13 +623,20 @@ export function Menu({
         className={
           trigger === 'avatar'
             ? 'relative inline-flex h-6 w-6 shrink-0 items-center justify-center coarse:max-md:w-11'
-            : 'contents'
+            : contentEdge
+              ? `relative inline-flex shrink-0 ${children === undefined ? 'size-4' : ''}`
+              : 'contents'
         }
       >
+        {contentEdge && children !== undefined ? (
+          <span aria-hidden="true" className="invisible inline-flex text-label">
+            {triggerContent}
+          </span>
+        ) : null}
         <button
           ref={triggerRef}
           type="button"
-          className={`${trigger === 'row' ? listRowClasses('tree') : buttonClassName({ variant: 'ghost', size: compact ? 'compact' : 'default', iconOnly: children === undefined, iconSize: trigger === 'toolbar' ? 'toolbar' : trigger === 'row-action' ? 'row' : 'header', compact, endAligned: trigger === 'value' })} ${trigger === 'row-action' || trigger === 'avatar' ? `absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 ${trigger === 'row-action' ? rowActionVisibility : ''}` : ''} ${triggerClassName ?? ''}`}
+          className={`${trigger === 'row' ? listRowClasses('tree') : buttonClassName({ variant: 'ghost', size: compact ? 'compact' : 'default', iconOnly: children === undefined, iconSize: trigger === 'toolbar' ? 'toolbar' : trigger === 'row-action' ? 'row' : 'header', compact, endAligned: trigger === 'value' })} ${trigger === 'row-action' || trigger === 'avatar' || (contentEdge && children === undefined) ? `absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 ${trigger === 'row-action' ? rowActionVisibility : ''}` : contentEdge ? 'absolute -end-5 top-1/2 -translate-y-1/2' : ''} ${triggerClassName ?? ''}`}
 
           aria-haspopup="menu"
           aria-expanded={open}

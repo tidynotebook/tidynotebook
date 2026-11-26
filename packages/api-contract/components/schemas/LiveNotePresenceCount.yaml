@@ -18,4 +18,4 @@ properties:
     items:
       type: integer
       minimum: 0
-      maximum: 5
+      maximum: 2147483647

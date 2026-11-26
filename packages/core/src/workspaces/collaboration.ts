@@ -20,16 +20,11 @@ export function presenceColorSlot(accountId: string): number {
   return slot;
 }
 
-export function availablePresenceSlot(
-  accountId: string,
-  used: ReadonlySet<number>,
-): number {
-  const preferred = presenceColorSlot(accountId);
-  for (let offset = 0; offset < 6; offset += 1) {
-    const slot = (preferred + offset) % 6;
-    if (!used.has(slot)) return slot;
-  }
-  return preferred;
+export function workspacePresenceColor(slot: number): string {
+  if (slot < 6) return `var(--color-live-${slot})`;
+  const hue = (slot * 137.50776405) % 360;
+  const lightness = (slot % 5) / 100;
+  return `oklch(calc(var(--live-extra-lightness) + ${lightness}) var(--live-extra-chroma) ${hue})`;
 }
 
 export type WorkspaceMember = {
@@ -37,6 +32,7 @@ export type WorkspaceMember = {
   readonly displayName: string | null;
   readonly email: string;
   readonly role: Role;
+  readonly colorSlot: number;
 };
 
 export type WorkspaceInvite = {
@@ -71,6 +67,7 @@ export type CollaborationTransaction = {
     epoch: number;
     role: Role;
     writable: boolean;
+    colorSlot: number;
   } | null>;
   liveNote(fileId: string): Promise<{
     readonly head: string | null;
@@ -78,6 +75,7 @@ export type CollaborationTransaction = {
     epoch: number;
     role: Role;
     writable: boolean;
+    colorSlot: number;
   } | null>;
   bindNoteClient(
     fileId: string,

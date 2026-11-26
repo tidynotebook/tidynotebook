@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { hasChromium, isRecord, type Page } from './browser.ts';
+import { hasChromium, isRecord, type Locator, type Page } from './browser.ts';
 import {
   clearCollaborationFixtures,
   collaborationFixture,
@@ -146,6 +146,10 @@ function trackRoomMessages(page: Page): string[] {
   return messages;
 }
 
+function avatarColor(avatar: Locator): Promise<string> {
+  return avatar.evaluate((node) => getComputedStyle(node).backgroundColor);
+}
+
 try {
   const ownerContext = await browser.newContext({
     viewport: { width: 1440, height: 900 },
@@ -182,6 +186,12 @@ try {
     .waitFor();
   await owner.goto(`${origin}${space}?settings=members`);
   await owner.getByText(fixture.editor, { exact: true }).waitFor();
+  const caseyColor = await avatarColor(
+    owner
+      .locator('[data-member-row]')
+      .filter({ hasText: 'Casey Editor' })
+      .locator('[data-presence-slot]'),
+  );
   await screenshot(owner, 'members-desktop-light');
   await owner
     .getByRole('button', { name: 'Invite people', exact: true })
@@ -280,6 +290,15 @@ try {
   await desktopPresence.click();
   const popover = owner.getByRole('dialog', { name: 'People in this note' });
   await popover.getByRole('list').getByRole('listitem').first().waitFor();
+  assert.equal(
+    await avatarColor(
+      popover
+        .getByRole('listitem')
+        .filter({ hasText: 'Casey Editor' })
+        .locator('[data-presence-slot]'),
+    ),
+    caseyColor,
+  );
   assert.equal(await popover.getAttribute('aria-modal'), null);
   assert.equal(
     await popover.evaluate((node) => getComputedStyle(node).outlineStyle),
@@ -295,6 +314,10 @@ try {
   assert.notEqual(
     await editorCaret.evaluate((node) => getComputedStyle(node).borderColor),
     await ownerCaret.evaluate((node) => getComputedStyle(node).borderColor),
+  );
+  assert.equal(
+    await editorCaret.evaluate((node) => getComputedStyle(node).borderColor),
+    caseyColor,
   );
 
   const viewerContext = await browser.newContext({
@@ -390,6 +413,12 @@ try {
     .getByText(/Casey Editor/)
     .first()
     .waitFor();
+  assert.equal(
+    await avatarColor(
+      owner.locator('[title="Casey Editor"] [data-presence-slot]').first(),
+    ),
+    caseyColor,
+  );
   await screenshot(owner, 'history-desktop-light');
 
   await editor.goto(`${origin}${note}/history`);
@@ -612,14 +641,19 @@ try {
       await phone.getByRole('button', { name: 'Open navigation' }).click();
       const switcher = phone.getByRole('button', { name: /Workspace: / });
       await switcher.click();
-      const accept = phone.getByText(
-        `Accept invite to ${fixture.viewerSwitcherName}`,
-        { exact: true },
-      );
-      await accept.waitFor();
-      await accept.scrollIntoViewIfNeeded();
+      const pending = phone.getByText(fixture.viewerSwitcherName, {
+        exact: true,
+      });
+      await pending.waitFor();
+      await pending.scrollIntoViewIfNeeded();
       await screenshot(phone, 'switcher-pending-phone-dark');
-      await accept.click();
+      await pending.click();
+      await phone
+        .getByRole('menuitem', { name: 'Decline invite', exact: true })
+        .waitFor();
+      await phone
+        .getByRole('menuitem', { name: 'Accept invite', exact: true })
+        .click();
       const switched = phone.getByRole('status').filter({
         hasText: `You joined ${fixture.viewerSwitcherName} as an Editor.`,
       });
@@ -775,7 +809,10 @@ try {
   await owner.getByText('Invite created. Copy the link to send it.').waitFor();
   await editor.goto(`${origin}/w/${fixture.editorPersonalId}`);
   await editor.getByRole('button', { name: /Workspace: / }).click();
-  await editor.getByText(`Accept invite to ${fixture.workspaceName}`).click();
+  await editor.getByText(fixture.workspaceName, { exact: true }).click();
+  await editor
+    .getByRole('menuitem', { name: 'Accept invite', exact: true })
+    .click();
   const rejoined = editor
     .getByRole('status')
     .filter({ hasText: `You joined ${fixture.workspaceName} as an Editor.` });

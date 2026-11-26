@@ -33,7 +33,7 @@ import {
   noteColumnFineInset,
   Stack,
 } from '@notesapp/ui';
-import { generateUUID } from '@notesapp/core';
+import { generateUUID, workspacePresenceColor } from '@notesapp/core';
 import type { Role } from '@notesapp/api-client';
 import { useSession, useTabNoticeStream, useWorkspace } from '../../app.tsx';
 import { noteColumnClassName } from '../../lib/note-column.ts';
@@ -380,7 +380,11 @@ export function NotePresence({
             label={person.name}
             help={person.idle ? `${mode} · Idle` : mode}
             leading={
-              <PresenceAvatar slot={person.slot} idle={person.idle}>
+              <PresenceAvatar
+                slot={person.slot}
+                idle={person.idle}
+                color={workspacePresenceColor(person.slot)}
+              >
                 {initialOf(person.name)}
               </PresenceAvatar>
             }
@@ -407,6 +411,7 @@ export function NotePresence({
             id: person.accountId,
             initial: initialOf(person.name),
             slot: person.slot,
+            color: workspacePresenceColor(person.slot),
             idle: person.idle,
           }))}
         />
@@ -437,7 +442,11 @@ export function NotePresence({
 
 export function ViewerNotice(): ReactNode {
   return (
-    <Stack className={noteColumnInset}>
+    <Stack
+      padY={{ fine: 0, coarse: 2 }}
+      className={noteColumnInset}
+      data-viewer-notice=""
+    >
       <Stack align="center" className={noteColumnFineInset}>
         <div className={noteColumnClassName()}>
           <Notice message="View only. You can read this note and its history." />

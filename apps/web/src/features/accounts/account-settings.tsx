@@ -1265,7 +1265,15 @@ export function SettingsModal({
                         <NavigationHeading>
                           {group}
                           {group === 'Workspace' && workspaceName !== '' ? (
-                            <Pill>{workspaceName}</Pill>
+                            <Pill shrink>
+                              <span
+                                className="truncate"
+                                data-settings-workspace-name=""
+                                title={workspaceName}
+                              >
+                                {workspaceName}
+                              </span>
+                            </Pill>
                           ) : null}
                         </NavigationHeading>
                         <Card as="ul" responsive className="list-none">

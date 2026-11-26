@@ -57,7 +57,7 @@ import {
   type ReactNode,
 } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import type { PublicationScope } from '@notesapp/core';
+import { workspacePresenceColor, type PublicationScope } from '@notesapp/core';
 
 import {
   useLocalStore,
@@ -1339,7 +1339,7 @@ function TreeRow({
           slotContent={
             occupied === undefined ? null : (
               <span className="pointer-events-none absolute inset-0 flex items-center justify-center group-focus-within/item:hidden fine:group-hover/item:hidden">
-                <PresenceDots slots={occupied} />
+                <PresenceDots colors={occupied.map(workspacePresenceColor)} />
               </span>
             )
           }

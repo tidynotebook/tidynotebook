@@ -490,6 +490,7 @@ export type HistoryRevision = {
     readonly accountId: string | null;
     readonly displayName: string | null;
     readonly formerMember: boolean;
+    readonly colorSlot?: number | undefined;
   }[];
 
   readonly clientTime: string;

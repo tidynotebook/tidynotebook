@@ -327,6 +327,7 @@ export function historyRepository(
                 account_id: string | null;
                 display_name: string | null;
                 former_member: boolean;
+                color_slot: number | null;
               }>('select * from notesapp_revision_contributors($1, $2)', [
                 workspaceId,
                 revIds,
@@ -375,6 +376,9 @@ export function historyRepository(
               accountId: person.account_id,
               displayName: person.display_name,
               formerMember: person.former_member,
+              ...(person.color_slot === null
+                ? {}
+                : { colorSlot: person.color_slot }),
             }),
           ),
           clientTime: row.clientTime.toISOString(),

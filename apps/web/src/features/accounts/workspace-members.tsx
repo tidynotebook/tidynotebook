@@ -29,6 +29,7 @@ import {
   IconSlot,
   InfoIcon,
   Inline,
+  Inset,
   PresenceAvatar,
   ListRow,
   LoadingState,
@@ -43,7 +44,11 @@ import {
   type MenuItem,
 } from '@notesapp/ui';
 import { problemMessage, useSession, useWorkspace } from '../../app.tsx';
-import { normalizeEmail, presenceColorSlot } from '@notesapp/core';
+import {
+  normalizeEmail,
+  presenceColorSlot,
+  workspacePresenceColor,
+} from '@notesapp/core';
 import { relativeTime } from '../../lib/relative-time.ts';
 import { useNow } from '../../shell/now.ts';
 import { initialOf } from '../../lib/initial.ts';
@@ -233,7 +238,8 @@ export function WorkspaceMembers({
                 return (
                   <ListRow
                     key={invite.invitationId}
-                    label={invite.email}
+                    data-member-row=""
+                    label={<MemberEmail address={invite.email} />}
                     help={`Invited by ${invite.inviterName ?? 'a workspace member'} · Expires ${relativeTime(invite.expiresAt, now)}`}
                     leading={<PresenceAvatar pending>?</PresenceAvatar>}
                     control={
@@ -243,6 +249,7 @@ export function WorkspaceMembers({
                           <Menu
                             label={`Actions for ${invite.email}`}
                             icon={<MoreIcon />}
+                            trigger="content-edge"
                             compact
                             items={[
                               {
@@ -294,47 +301,69 @@ export function WorkspaceMembers({
           <LoadingState label="Loading members" />
         ) : (
           <Card responsive>
-            {members.map((member) => (
-              <ListRow
-                key={member.accountId}
-                label={`${member.displayName ?? member.email}${member.accountId === ownId ? ' (you)' : ''}`}
-                leading={
-                  <PresenceAvatar slot={presenceColorSlot(member.accountId)}>
-                    {initialOf(member.displayName ?? member.email)}
-                  </PresenceAvatar>
-                }
-                help={member.displayName === null ? undefined : member.email}
-                control={
-                  manage && member.role !== 'owner' ? (
-                    phone ? (
-                      <Button
-                        label={`Role for ${member.displayName ?? member.email}`}
-                        size="compact"
-                        variant="ghost"
-                        ariaHasPopup="dialog"
-                        onClick={() => setRolePicker(member)}
-                      >
-                        <Inline as="span" align="center" gap={2}>
+            {members.map((member) => {
+              const slot =
+                member.colorSlot ?? presenceColorSlot(member.accountId);
+              return (
+                <ListRow
+                  key={member.accountId}
+                  data-member-row=""
+                  label={
+                    member.displayName === null ? (
+                      <MemberEmail
+                        address={member.email}
+                        own={member.accountId === ownId}
+                      />
+                    ) : (
+                      `${member.displayName}${member.accountId === ownId ? ' (you)' : ''}`
+                    )
+                  }
+                  leading={
+                    <PresenceAvatar
+                      slot={slot}
+                      color={workspacePresenceColor(slot)}
+                    >
+                      {initialOf(member.displayName ?? member.email)}
+                    </PresenceAvatar>
+                  }
+                  help={
+                    member.displayName === null ? undefined : (
+                      <MemberEmail address={member.email} />
+                    )
+                  }
+                  control={
+                    manage && member.role !== 'owner' ? (
+                      phone ? (
+                        <Button
+                          label={`Role for ${member.displayName ?? member.email}`}
+                          size="compact"
+                          variant="ghost"
+                          ariaHasPopup="dialog"
+                          onClick={() => setRolePicker(member)}
+                        >
+                          <Inline as="span" align="center" gap={2}>
+                            {roleName(member.role)}
+                            <ChevronDownIcon />
+                          </Inline>
+                        </Button>
+                      ) : (
+                        <Menu
+                          label={`Role for ${member.displayName ?? member.email}`}
+                          items={memberMenu(member)}
+                          trigger="content-edge"
+                          compact
+                        >
                           {roleName(member.role)}
                           <ChevronDownIcon />
-                        </Inline>
-                      </Button>
+                        </Menu>
+                      )
                     ) : (
-                      <Menu
-                        label={`Role for ${member.displayName ?? member.email}`}
-                        items={memberMenu(member)}
-                        compact
-                      >
-                        {roleName(member.role)}
-                        <ChevronDownIcon />
-                      </Menu>
+                      <Pill>{roleName(member.role)}</Pill>
                     )
-                  ) : (
-                    <Pill>{roleName(member.role)}</Pill>
-                  )
-                }
-              />
-            ))}
+                  }
+                />
+              );
+            })}
           </Card>
         )}
         {after === null ? null : (
@@ -429,21 +458,16 @@ export function WorkspaceMembers({
           open
           titleId="remove-workspace-member-title"
           title="Remove from workspace"
+          titleDivider={false}
+          describedBy="remove-workspace-member-detail"
+          width="small"
           onClose={() => setRemoval(null)}
         >
-          <DialogBody>
-            <Notice
-              message={`${removal.displayName ?? removal.email} will lose access to ${workspaceName}.`}
-            />
-          </DialogBody>
-          <DialogFooter>
-            <Button variant="secondary" onClick={() => setRemoval(null)}>
-              Cancel
-            </Button>
-            <Button
-              variant="danger"
-              disabled={busy}
-              onClick={() => {
+          <Form
+            regions
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (!busy) {
                 setBusy(true);
                 void removeWorkspaceMember({
                   path: { workspaceId, accountId: removal.accountId },
@@ -457,14 +481,46 @@ export function WorkspaceMembers({
                     }
                   })
                   .finally(() => setBusy(false));
-              }}
-            >
-              Remove
-            </Button>
-          </DialogFooter>
+              }
+            }}
+          >
+            <DialogBody>
+              <Inset
+                as="p"
+                id="remove-workspace-member-detail"
+                className="text-body text-strong"
+              >
+                {removal.displayName ?? removal.email} will lose access to{' '}
+                {workspaceName}.
+              </Inset>
+            </DialogBody>
+            <DialogFooter>
+              <Button variant="secondary" onClick={() => setRemoval(null)}>
+                Cancel
+              </Button>
+              <Button variant="danger" type="submit" disabled={busy}>
+                Remove
+              </Button>
+            </DialogFooter>
+          </Form>
         </Dialog>
       )}
     </Stack>
+  );
+}
+
+function MemberEmail({
+  address,
+  own = false,
+}: {
+  readonly address: string;
+  readonly own?: boolean;
+}): ReactNode {
+  return (
+    <span className="block truncate" data-member-email="" title={address}>
+      {address}
+      {own ? ' (you)' : ''}
+    </span>
   );
 }
 

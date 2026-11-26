@@ -18,3 +18,8 @@ properties:
     maxLength: 256
   formerMember:
     type: boolean
+  colorSlot:
+    description: The current member's color slot in this workspace.
+    type: integer
+    minimum: 0
+    maximum: 2147483647
