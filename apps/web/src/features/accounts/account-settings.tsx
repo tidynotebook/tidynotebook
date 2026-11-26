@@ -764,6 +764,9 @@ export function SettingsModal({
   const [actionHeaderTarget, setActionHeaderTarget] =
     useState<HTMLDivElement | null>(null);
   const [actionTarget, setActionTarget] = useState<HTMLDivElement | null>(null);
+  const [membersFooter, setMembersFooter] = useState<HTMLDivElement | null>(
+    null,
+  );
   const [activeAction, setActiveAction] =
     useState<SettingsActionRegistration | null>(null);
   const actionHost = useMemo(
@@ -932,6 +935,7 @@ export function SettingsModal({
           workspaceId={workspaceId}
           workspaceName={workspaceName}
           role={currentWorkspace.role}
+          phoneFooter={membersFooter}
         />
       ),
     'daily-notes': (
@@ -1461,10 +1465,19 @@ export function SettingsModal({
                           </Stack>
                         </ScrollCueRegion>
                       </Stack>
-                      <div
-                        aria-hidden="true"
-                        className="h-0 shrink-0 coarse:h-safe"
-                      />
+                      {activePage?.path === 'members' &&
+                      (currentWorkspace?.role === 'owner' ||
+                        currentWorkspace?.role === 'admin') ? (
+                        <div
+                          ref={setMembersFooter}
+                          className="shrink-0 lg:hidden"
+                        />
+                      ) : (
+                        <div
+                          aria-hidden="true"
+                          className="h-0 shrink-0 coarse:h-safe"
+                        />
+                      )}
                     </Stack>
                   )}
                 </DialogHeaderActionsContext.Provider>

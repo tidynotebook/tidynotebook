@@ -50,22 +50,34 @@ function clearToken(): void {
   }
 }
 
+function keepToken(token: string): void {
+  try {
+    sessionStorage.setItem(returnToken, token);
+  } catch {
+    /* The original link still works. */
+  }
+}
+
 export function JoinWorkspacePage(): ReactNode {
   const session = useSession();
   const workspace = useWorkspace();
   const location = useLocation();
   const navigate = useNavigate();
-  const [token] = useState(
-    () => invitationTokenOf(location.hash) ?? savedToken(),
-  );
+  const incomingToken = invitationTokenOf(location.hash);
+  const [retainedToken, setRetainedToken] = useState(savedToken);
+  const token = incomingToken ?? retainedToken;
   const [state, setState] = useState<JoinState>({ kind: 'loading' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [switching, setSwitching] = useState(false);
 
   useEffect(() => {
+    if (incomingToken !== null) {
+      keepToken(incomingToken);
+      setRetainedToken(incomingToken);
+    }
     if (location.hash !== '') void navigate('/join', { replace: true });
-  }, [location.hash, navigate]);
+  }, [incomingToken, location.hash, navigate]);
 
   useEffect(() => {
     if (token === null) {
@@ -109,13 +121,6 @@ export function JoinWorkspacePage(): ReactNode {
   }, [token]);
 
   function goToSignIn(): void {
-    if (token !== null) {
-      try {
-        sessionStorage.setItem(returnToken, token);
-      } catch {
-        /* The original link still works. */
-      }
-    }
     void navigate(signInAddress('/join'), {
       state: { email: state.kind === 'ready' ? state.invite.email : '' },
     });
@@ -217,13 +222,6 @@ export function JoinWorkspacePage(): ReactNode {
         <Button
           variant="primary"
           onClick={() => {
-            if (token !== null) {
-              try {
-                sessionStorage.setItem(returnToken, token);
-              } catch {
-                /* Open the original link again. */
-              }
-            }
             setSwitching(true);
             session.signOut();
           }}

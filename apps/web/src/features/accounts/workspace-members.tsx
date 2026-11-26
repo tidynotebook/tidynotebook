@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import {
   createWorkspaceInvites,
   listWorkspaceInvites,
@@ -50,10 +51,12 @@ export function WorkspaceMembers({
   workspaceId,
   workspaceName,
   role,
+  phoneFooter,
 }: {
   readonly workspaceId: string;
   readonly workspaceName: string;
   readonly role: Role;
+  readonly phoneFooter: HTMLElement | null;
 }): ReactNode {
   const manage = role === 'owner' || role === 'admin';
   const ownId = useSession().account?.accountId;
@@ -153,13 +156,15 @@ export function WorkspaceMembers({
             count={invites.length}
             divider
             action={
-              <Button
-                variant="primary"
-                size="compact"
-                onClick={() => setInviteOpen(true)}
-              >
-                Invite people
-              </Button>
+              <div className="hidden lg:block">
+                <Button
+                  variant="primary"
+                  size="compact"
+                  onClick={() => setInviteOpen(true)}
+                >
+                  Invite people
+                </Button>
+              </div>
             }
           />
           {invites.map((invite) => (
@@ -255,6 +260,20 @@ export function WorkspaceMembers({
           </Button>
         )}
       </Stack>
+      {manage && phoneFooter !== null
+        ? createPortal(
+            <DialogFooter column={false}>
+              <Button
+                variant="primary"
+                full
+                onClick={() => setInviteOpen(true)}
+              >
+                Invite people
+              </Button>
+            </DialogFooter>,
+            phoneFooter,
+          )
+        : null}
       {inviteOpen ? (
         <InvitePeople
           workspaceId={workspaceId}

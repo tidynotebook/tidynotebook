@@ -7,6 +7,7 @@ export type Locator = {
   click(): Promise<void>;
   hover(): Promise<void>;
   nth(index: number): Locator;
+  last(): Locator;
   focus(): Promise<void>;
   fill(value: string): Promise<void>;
   press(key: string): Promise<void>;
@@ -94,6 +95,7 @@ type Context = {
     callback: (route: Route) => Promise<void>,
   ): Promise<void>;
   newPage(): Promise<Page>;
+  pages(): Page[];
   close(): Promise<void>;
 };
 export type Browser = {
