@@ -135,11 +135,7 @@ function MenuRow({
       )}
       <span data-menu-label="" className="min-w-0 flex-1">
         <span
-          className={
-            item.submenu
-              ? 'block wrap-anywhere whitespace-normal'
-              : 'block truncate'
-          }
+          className={item.submenu ? 'block wrap-anywhere' : 'block truncate'}
         >
           {item.label}
         </span>
@@ -251,7 +247,6 @@ function MenuList({
           id: 'menu-back',
           label: 'Back',
           icon: <ChevronLeftIcon />,
-          onSelect: back,
         },
       ]
     : rootPinned;
@@ -425,17 +420,13 @@ function MenuList({
         }
       }}
     >
-      {submenu ? (
-        <Inset pad={2} className="text-label text-strong wrap-anywhere">
-          {submenu.label}
-        </Inset>
-      ) : header === undefined ? null : (
+      {header === undefined && submenu === null ? null : (
         <Inset
           pad={2}
           role="presentation"
-          className="border-b border-edge-subtle"
+          className="border-b border-edge-subtle wrap-anywhere"
         >
-          {header}
+          {submenu?.label ?? header}
         </Inset>
       )}
       {fitTouchViewport ? (
@@ -569,6 +560,9 @@ export function Menu({
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const contentEdge = trigger === 'content-edge';
+  const textEdge = contentEdge && children !== undefined;
+  const positioned =
+    contentEdge || trigger === 'avatar' || trigger === 'row-action';
 
   const enabledCount = [...items, ...pinned].filter(
     (item) => item.disabled !== true,
@@ -628,7 +622,7 @@ export function Menu({
               : 'contents'
         }
       >
-        {contentEdge && children !== undefined ? (
+        {textEdge ? (
           <span aria-hidden="true" className="invisible inline-flex text-label">
             {triggerContent}
           </span>
@@ -636,7 +630,7 @@ export function Menu({
         <button
           ref={triggerRef}
           type="button"
-          className={`${trigger === 'row' ? listRowClasses('tree') : buttonClassName({ variant: 'ghost', size: compact ? 'compact' : 'default', iconOnly: children === undefined, iconSize: trigger === 'toolbar' ? 'toolbar' : trigger === 'row-action' ? 'row' : 'header', compact, endAligned: trigger === 'value' })} ${trigger === 'row-action' || trigger === 'avatar' || (contentEdge && children === undefined) ? `absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 ${trigger === 'row-action' ? rowActionVisibility : ''}` : contentEdge ? 'absolute -end-5 top-1/2 -translate-y-1/2' : ''} ${triggerClassName ?? ''}`}
+          className={`${trigger === 'row' ? listRowClasses('tree') : buttonClassName({ variant: 'ghost', size: compact ? 'compact' : 'default', iconOnly: children === undefined, iconSize: trigger === 'toolbar' ? 'toolbar' : trigger === 'row-action' ? 'row' : 'header', compact, endAligned: trigger === 'value' })} ${positioned ? `absolute top-1/2 -translate-y-1/2 ${textEdge ? '-end-5' : 'left-1/2 -translate-x-1/2'}` : ''} ${trigger === 'row-action' ? rowActionVisibility : ''} ${triggerClassName ?? ''}`}
 
           aria-haspopup="menu"
           aria-expanded={open}

@@ -209,7 +209,7 @@ export function buttonClassName(
     toolbar: 'h-7 w-7 coarse:h-10 coarse:w-10',
     header: 'h-7 w-7 coarse:h-11 coarse:w-11',
     rail: 'h-7 w-7 coarse:h-11 coarse:w-11',
-    stack: 'h-7 min-w-7 coarse:h-11 coarse:min-w-11',
+    stack: 'h-7 coarse:h-11 coarse:min-w-11',
   } as const;
   const textPadding = options.endAligned
     ? 'ps-2 coarse:ps-4'
