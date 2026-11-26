@@ -1,6 +1,6 @@
 import { getSyncProtocol, syncNoticesProtocol } from '@notesapp/api-client';
 
-export { connectSyncNotices } from '@notesapp/api-client/notice-transport';
+export { loadSyncNoticesTransport } from '@notesapp/api-client';
 
 export async function noticesOffered(): Promise<boolean> {
   const answer = await getSyncProtocol();

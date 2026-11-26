@@ -348,20 +348,24 @@ function useTabNotices(
       setNotices(null);
       return;
     }
-    let transport: typeof import('./lib/notice-transport.ts') | undefined;
+    let openSocket:
+      typeof import('@notesapp/api-client').connectSyncNotices | undefined;
     const tab = startTabNotices({
       store,
       accountId,
       tabId: syncSession.ownerId,
       channel: browserChannel,
       offered: async () => {
-        transport ??= await import('./lib/notice-transport.ts');
-        return transport.noticesOffered();
+        const transport = await import('./lib/notice-transport.ts');
+        if (!(await transport.noticesOffered())) return false;
+        openSocket ??= (await transport.loadSyncNoticesTransport())
+          .connectSyncNotices;
+        return true;
       },
       connect: (handlers) => {
-        if (transport === undefined)
+        if (openSocket === undefined)
           throw new Error('The notice transport did not load.');
-        return transport.connectSyncNotices(window.location.origin, handlers);
+        return openSocket(window.location.origin, handlers);
       },
       schedule: timerSchedule,
       clock: Date.now,

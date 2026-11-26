@@ -9,10 +9,6 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    },
-    "./notice-transport": {
-      "types": "./dist/socket.d.ts",
-      "default": "./dist/socket.js"
     }
   },
   "scripts": {

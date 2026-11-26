@@ -17,6 +17,13 @@ export {
   type SyncNoticesHandlers,
   type SyncNoticesTransport,
 } from './socket.ts';
+
+export function loadSyncNoticesTransport(): Promise<
+  typeof import('./socket.ts')
+> {
+  return import('./socket.ts');
+}
+
 export {
   configureClient,
   normalizeProblem,
