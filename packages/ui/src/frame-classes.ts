@@ -54,6 +54,7 @@ export function noteNameFieldClassName(): string {
   return `absolute inset-0 w-full min-w-0 max-w-full truncate rounded-md border border-transparent focus:border-focus bg-transparent ${noteNameFieldText} text-strong outline-none ${transitionSurface} hover:bg-hover ${focusOutline}`;
 }
 export const noteNameFieldText = `px-1 py-1 text-body`;
+export const noteNameReadOnlyClassName = `min-w-0 truncate border border-transparent ${noteNameFieldText}`;
 export const noteNameFieldContainer =
   'relative inline-grid min-w-0 max-w-full coarse:h-11';
 export const noteNameFieldMeasure = `invisible overflow-hidden whitespace-pre border border-transparent ${noteNameFieldText}`;

@@ -1,7 +1,11 @@
 import type { ReactNode } from 'react';
-import { PresenceAvatar } from './identity.tsx';
-import { Inline } from './primitives.tsx';
-import { Pill } from './section-heading.tsx';
+import { PresenceAvatar, presenceAvatarShape } from './identity.tsx';
+
+const overflowLayouts = [
+  { visible: 1, display: 'compact:hidden' },
+  { visible: 2, display: 'max-compact:hidden md:hidden' },
+  { visible: 4, display: 'max-md:hidden' },
+];
 
 export function PresenceAvatarStack({
   people,
@@ -15,43 +19,43 @@ export function PresenceAvatarStack({
   }[];
 }): ReactNode {
   return (
-    <Inline gap={1} aria-hidden="true">
-      <span className="inline-flex -space-x-1">
-        {people.slice(0, 4).map((person, index) => (
-          <span
-            key={person.id}
-            className={
-              index > 1
-                ? 'inline-flex max-md:hidden'
-                : index === 1
-                  ? 'inline-flex max-compact:hidden'
-                  : 'inline-flex'
-            }
+    <span
+      className="inline-flex -space-x-1"
+      aria-hidden="true"
+      data-presence-stack=""
+    >
+      {people.slice(0, 4).map((person, index) => (
+        <span
+          key={person.id}
+          className={
+            index > 1
+              ? 'inline-flex max-md:hidden'
+              : index === 1
+                ? 'inline-flex max-compact:hidden'
+                : 'inline-flex'
+          }
+        >
+          <PresenceAvatar
+            slot={person.slot}
+            color={person.color}
+            idle={person.idle}
+            ring
           >
-            <PresenceAvatar
-              slot={person.slot}
-              color={person.color}
-              idle={person.idle}
-              ring
-            >
-              {person.initial}
-            </PresenceAvatar>
-          </span>
-        ))}
-      </span>
-      {people.length > 4 ? (
-        <Pill className="max-md:hidden">+{people.length - 4}</Pill>
-      ) : null}
-      {people.length > 2 ? (
-        <Pill className="md:hidden max-compact:hidden">
-          +{people.length - 2}
-        </Pill>
-      ) : null}
-      {people.length > 1 ? (
-        <span className="hidden text-small text-muted max-compact:inline">
-          {people.length}
+            {person.initial}
+          </PresenceAvatar>
         </span>
-      ) : null}
-    </Inline>
+      ))}
+      {overflowLayouts.map(({ visible, display }) =>
+        people.length > visible ? (
+          <span
+            key={visible}
+            data-presence-overflow=""
+            className={`${presenceAvatarShape} inline-flex size-6 border border-overlay bg-active text-strong ${display}`}
+          >
+            +{people.length - visible}
+          </span>
+        ) : null,
+      )}
+    </span>
   );
 }

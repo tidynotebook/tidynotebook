@@ -121,8 +121,8 @@ function MenuRow({
       data-menu-input={showFocus ? 'keyboard' : 'pointer'}
       className={rowClassName({
         danger: item.danger,
-        className: `w-full text-left  ${showFocus ? '' : 'focus-visible:outline-none'}`,
-      })}
+        className: `w-full text-left ${showFocus ? '' : 'focus-visible:outline-none'}`,
+      }).replace(showFocus ? 'hover:bg-hover' : '', '')}
       disabled={item.disabled ?? false}
       onPointerEnter={item.onIntent}
       onFocus={item.onIntent}
@@ -258,9 +258,8 @@ function MenuList({
   // The arrow keys run over both regions in the order they are on the screen,
   // so a pinned row is reached by pressing End and never disappears from the
   // keyboard order when the scrolling list grows.
-  const enabled = [...items, ...pinned].filter(
-    (item) => item.disabled !== true,
-  );
+  const rows = [...items, ...pinned];
+  const enabled = rows.filter((item) => item.disabled !== true);
 
   useEffect(() => {
     const onPointerDown = (event: MouseEvent): void => {
@@ -371,13 +370,13 @@ function MenuList({
 
   // A menu states a selection only when a row claims one, so every menu that
   // runs actions keeps the plain `menuitem` role it had.
-  const choosing = [...items, ...pinned].some(
-    (item) => item.selected !== undefined,
-  );
+  const choosing = rows.some((item) => item.selected !== undefined);
 
   const run = (item: MenuItem): void => {
     if (item.submenu) {
       submenuIndex.current = enabled.indexOf(item);
+      // The new rows can land under a stationary pointer.
+      setShowFocus(true);
       setActiveIndex(0);
       setSubmenu(item);
       return;
@@ -398,7 +397,7 @@ function MenuList({
       className={`fixed z-50 ${menuSurfaceClassName()} ${matchWidth ? '' : 'min-w-56'}`}
       role="menu"
       data-menu-fit-viewport={fitTouchViewport ? '' : undefined}
-      onPointerDownCapture={() => setShowFocus(false)}
+      onPointerMove={() => setShowFocus(false)}
       onKeyDownCapture={() => setShowFocus(true)}
       aria-label={submenu?.label ?? label}
       onKeyDown={(event): void => {

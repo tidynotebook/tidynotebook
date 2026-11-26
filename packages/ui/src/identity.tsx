@@ -76,7 +76,7 @@ export function PresenceAvatar({
       aria-hidden="true"
       data-presence-slot={pending ? undefined : slot}
       ref={pending ? undefined : paintPresence(color)}
-      className={`relative inline-flex ${ring ? 'size-6' : 'size-5'} shrink-0 items-center justify-center rounded-full text-avatar ${pending ? 'bg-surface text-muted' : 'bg-live-extra text-live-ink'} ${ring ? `border border-overlay ring-1 ${idle ? 'ring-live-extra/60' : 'ring-live-extra'}` : ''}`}
+      className={`${presenceAvatarShape} relative inline-flex ${ring ? 'size-6' : 'size-5'} ${pending ? 'bg-surface text-muted' : 'bg-live-extra text-live-ink'} ${ring ? `border border-overlay ring-1 ${idle ? 'ring-live-extra/60' : 'ring-live-extra'}` : ''}`}
     >
       {pending ? (
         <IconFrame size={20} className="absolute inset-0">
@@ -87,3 +87,6 @@ export function PresenceAvatar({
     </span>
   );
 }
+
+export const presenceAvatarShape =
+  'shrink-0 items-center justify-center rounded-full text-avatar';

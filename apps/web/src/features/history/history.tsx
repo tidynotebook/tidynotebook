@@ -63,11 +63,7 @@ import {
   restoreRevision,
   type HistoryRevisionItem,
 } from '@notesapp/api-client';
-import {
-  generateUUID,
-  presenceColorSlot,
-  workspacePresenceColor,
-} from '@notesapp/core';
+import { generateUUID, workspacePresenceColor } from '@notesapp/core';
 import type { DiffHunk, LineChangeCount } from '@notesapp/editor';
 import type { LocalStore } from '@notesapp/sync';
 
@@ -798,8 +794,7 @@ function RevisionContributors({
         const name = person.formerMember
           ? 'Former member'
           : (person.displayName ?? 'Member');
-        const slot =
-          person.colorSlot ?? presenceColorSlot(person.accountId ?? '');
+        const slot = person.colorSlot ?? 0;
         return (
           <Inline
             as="span"

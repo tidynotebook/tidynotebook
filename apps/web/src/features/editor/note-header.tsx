@@ -15,6 +15,7 @@
  * message on the note and this field points at it.
  */
 import { useRef, type ReactNode } from 'react';
+import { noteNameReadOnlyClassName } from '@notesapp/ui';
 import {
   noteNameFieldClassName,
   noteNameFieldContainer,
@@ -69,7 +70,7 @@ export function NoteHeader({
     return (
       <HeaderLeaf>
         <span
-          className="min-w-0 truncate"
+          className={noteNameReadOnlyClassName}
           title={name}
           data-note-header-title=""
         >

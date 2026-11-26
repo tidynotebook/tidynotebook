@@ -44,11 +44,7 @@ import {
   type MenuItem,
 } from '@notesapp/ui';
 import { problemMessage, useSession, useWorkspace } from '../../app.tsx';
-import {
-  normalizeEmail,
-  presenceColorSlot,
-  workspacePresenceColor,
-} from '@notesapp/core';
+import { normalizeEmail, workspacePresenceColor } from '@notesapp/core';
 import { relativeTime } from '../../lib/relative-time.ts';
 import { useNow } from '../../shell/now.ts';
 import { initialOf } from '../../lib/initial.ts';
@@ -302,8 +298,7 @@ export function WorkspaceMembers({
         ) : (
           <Card responsive>
             {members.map((member) => {
-              const slot =
-                member.colorSlot ?? presenceColorSlot(member.accountId);
+              const slot = member.colorSlot ?? 0;
               return (
                 <ListRow
                   key={member.accountId}

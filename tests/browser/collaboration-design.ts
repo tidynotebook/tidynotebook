@@ -385,8 +385,15 @@ export async function runCollaborationAudit(
           exact: true,
         });
         await inviteActions
-          .getByRole('menuitem', { name: 'Decline invite', exact: true })
+          .locator('button:focus')
+          .getByText('Accept invite', { exact: true })
           .waitFor();
+        assert.equal(
+          await inviteActions
+            .getByRole('menuitem', { name: 'Back', exact: true })
+            .evaluate((row) => getComputedStyle(row).backgroundColor),
+          'rgba(0, 0, 0, 0)',
+        );
         await check(viewer, 'switcher-invite-actions');
         await inviteActions
           .getByRole('menuitem', { name: 'Accept invite', exact: true })
@@ -447,6 +454,7 @@ export async function runCollaborationAudit(
         await text.waitFor();
         await editor.locator('[data-live-connection=Live]').waitFor();
         await owner.goto(note);
+        const titleEdges: number[] = [];
         for (const [page, surface] of [
           [viewer, 'viewer-note-with-presence'],
           [editor, 'editor-note-with-presence'],
@@ -454,8 +462,47 @@ export async function runCollaborationAudit(
           await page
             .getByRole('button', { name: /People in this note: .+, .+/ })
             .waitFor();
+          if (phone)
+            titleEdges.push(
+              await page
+                .locator('[data-note-header-title]')
+                .evaluate((title) => {
+                  const style = getComputedStyle(title);
+                  return (
+                    title.getBoundingClientRect().left +
+                    parseFloat(style.paddingLeft) +
+                    parseFloat(style.borderLeftWidth)
+                  );
+                }),
+            );
+          if (width < 360) {
+            const stack = page.locator('[data-presence-stack]');
+            const overflow = stack.locator('[data-presence-overflow]:visible');
+            await overflow.waitFor();
+            const chips = await stack.evaluate((element) =>
+              [
+                ...element.querySelectorAll(
+                  '[data-presence-slot], [data-presence-overflow]',
+                ),
+              ]
+                .filter((chip) => chip.checkVisibility())
+                .map((chip) => {
+                  const { width, height, left, right } =
+                    chip.getBoundingClientRect();
+                  return { text: chip.textContent, width, height, left, right };
+                }),
+            );
+            const [avatar, extra] = chips;
+            assert.ok(avatar && extra);
+            assert.equal(chips.length, 2);
+            assert.equal(extra.text, '+1');
+            assert.equal(extra.width, avatar.width);
+            assert.equal(extra.height, avatar.height);
+            assert.equal(avatar.right - extra.left, 4);
+          }
           await check(page, surface);
         }
+        if (phone) assert.equal(titleEdges[0], titleEdges[1]);
         await editorContext.setOffline(true);
         if (phone)
           await editor
