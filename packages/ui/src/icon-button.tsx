@@ -57,6 +57,7 @@ export function IconButton({
   ) : (
     <Button
       {...props}
+      data-row-disclosure={disclosure ? '' : undefined}
       aria-current={current ? 'page' : undefined}
       ariaPressed={current ? true : size === 'rail' ? false : props.ariaPressed}
       variant={props.variant ?? 'ghost'}

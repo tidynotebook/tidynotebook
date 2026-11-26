@@ -18,7 +18,7 @@
  * sides, both from the named scale, so no screen writes a clamp of its own.
  */
 import { createContext, useContext, type ReactNode } from 'react';
-import { pageGutter } from './layout.tsx';
+import { pageGutter } from './public-layout.ts';
 import { transitionRaise } from './motion.ts';
 
 const ToastStackContext = createContext(false);

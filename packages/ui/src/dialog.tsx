@@ -351,7 +351,7 @@ export function Dialog({
           <h2
             data-scroll-edge={titleDivider ? 'above' : undefined}
             data-edge-always={settings && titleDivider ? '' : undefined}
-            className={`${dialogTitleClassName(hideTitle || screen)} ${settings ? 'ui-settings-dialog-heading' : ''}`}
+            className={`${dialogTitleClassName(hideTitle || screen)} ${settings && titleDivider ? 'ui-settings-dialog-heading' : ''}`}
             id={titleId}
           >
             {title}
@@ -360,7 +360,7 @@ export function Dialog({
           <div
             data-scroll-edge={titleDivider ? 'above' : undefined}
             data-edge-always={settings && titleDivider ? '' : undefined}
-            className={`${dialogHeaderClassName()} ${settings ? 'ui-settings-dialog-heading' : ''}`}
+            className={`${dialogHeaderClassName()} ${settings && titleDivider ? 'ui-settings-dialog-heading' : ''}`}
           >
             <h2 className={dialogHeaderTitleClassName()} id={titleId}>
               {title}

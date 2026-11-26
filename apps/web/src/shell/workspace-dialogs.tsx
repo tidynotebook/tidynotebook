@@ -6,11 +6,13 @@ import {
   Dialog,
   DialogBody,
   DialogFooter,
+  Notice,
   TextField,
 } from '@notesapp/ui';
 import {
   createWorkspace,
   deleteWorkspace,
+  leaveWorkspace,
   listWorkspaceMembers,
   updateWorkspace,
   type Workspace,
@@ -339,6 +341,64 @@ export function DeleteWorkspaceDialog({
           </Button>
         </DialogFooter>
       </Form>
+    </Dialog>
+  );
+}
+
+export function LeaveWorkspaceDialog({
+  open,
+  workspace,
+  onClose,
+  onLeft,
+}: {
+  readonly open: boolean;
+  readonly workspace: Workspace;
+  readonly onClose: () => void;
+  readonly onLeft: () => void;
+}): ReactNode {
+  const [busy, setBusy] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      title="Leave workspace"
+      titleId="leave-workspace-title"
+      width="small"
+    >
+      <DialogBody>
+        <p className="text-body text-strong">
+          You will lose access to {workspace.name}.
+        </p>
+        {failure === null ? null : <Notice tone="problem" message={failure} />}
+      </DialogBody>
+      <DialogFooter>
+        <Button variant="secondary" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button
+          variant="danger"
+          disabled={busy}
+          onClick={() => {
+            setBusy(true);
+            setFailure(null);
+            void leaveWorkspace({
+              path: { workspaceId: workspace.workspaceId },
+            })
+              .then((result) => {
+                if (result.data === undefined)
+                  setFailure(problemMessage(result.error));
+                else {
+                  onClose();
+                  onLeft();
+                }
+              })
+              .finally(() => setBusy(false));
+          }}
+        >
+          Leave workspace
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }

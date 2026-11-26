@@ -117,10 +117,14 @@ export function useNavigationDrawer(
       backdrop = scrim.current;
     let disposed = false;
     let stop: (() => void) | undefined;
-    void import('./drawer-drag.ts').then(({ followDrawerDrag }) => {
-      if (!disposed)
-        stop = followDrawerDrag(element, backdrop, () => setOpen(false));
-    });
+    void import('./drawer-drag.ts')
+      .then(({ followDrawerDrag }) => {
+        if (!disposed)
+          stop = followDrawerDrag(element, backdrop, () => setOpen(false));
+      })
+      .catch(() => {
+        // The Close button still works when the gesture code is unavailable offline.
+      });
     return () => {
       disposed = true;
       stop?.();

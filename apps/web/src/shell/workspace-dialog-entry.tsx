@@ -17,3 +17,10 @@ export const DeleteWorkspaceDialog = deferredDialog(
   }),
   'Delete workspace',
 );
+
+export const LeaveWorkspaceDialog = deferredDialog(
+  async () => ({
+    default: (await import('./workspace-dialogs.tsx')).LeaveWorkspaceDialog,
+  }),
+  'Leave workspace',
+);

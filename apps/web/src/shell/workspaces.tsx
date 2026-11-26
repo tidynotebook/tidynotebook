@@ -1,7 +1,6 @@
 import {
   acceptWorkspaceInvite,
   declineWorkspaceInvite,
-  leaveWorkspace,
   listMyWorkspaceInvites,
   type PendingWorkspaceInvite,
 } from '@notesapp/api-client';
@@ -9,9 +8,6 @@ import {
   IdentityMark,
   Button,
   ChevronsUpDownIcon,
-  Dialog,
-  DialogBody,
-  DialogFooter,
   LoadingState,
   Menu,
   Notice,
@@ -180,6 +176,7 @@ import {
   NewWorkspaceDialog,
   RenameWorkspaceDialog,
   DeleteWorkspaceDialog,
+  LeaveWorkspaceDialog,
 } from './workspace-dialog-entry.tsx';
 export { NewWorkspaceDialog, RenameWorkspaceDialog, DeleteWorkspaceDialog };
 
@@ -224,7 +221,6 @@ export function WorkspaceSwitcher({
   const [invites, setInvites] = useState<PendingWorkspaceInvite[]>([]);
   const [problem, setProblem] = useState('');
   const [leaving, setLeaving] = useState(false);
-  const [leaveBusy, setLeaveBusy] = useState(false);
   const openSettings = useOpenSettings();
   useEffect(() => {
     let active = true;
@@ -362,6 +358,9 @@ export function WorkspaceSwitcher({
             id: 'leave-workspace',
             label: 'Leave workspace',
             danger: true,
+            onIntent: () => {
+              void LeaveWorkspaceDialog.preload();
+            },
             onSelect: () => setLeaving(true),
           },
         ]
@@ -380,41 +379,12 @@ export function WorkspaceSwitcher({
   return (
     <div className="shrink-0">
       {problem === '' ? null : <Notice tone="problem" message={problem} />}
-      <Dialog
+      <LeaveWorkspaceDialog
         open={leaving}
+        workspace={openWorkspace}
         onClose={() => setLeaving(false)}
-        title="Leave workspace"
-        titleId="leave-workspace-title"
-        width="small"
-      >
-        <DialogBody>
-          <p className="text-body text-strong">
-            You will lose access to {openWorkspace.name}.
-          </p>
-        </DialogBody>
-        <DialogFooter>
-          <Button variant="secondary" onClick={() => setLeaving(false)}>
-            Cancel
-          </Button>
-          <Button
-            variant="danger"
-            disabled={leaveBusy}
-            onClick={() => {
-              setLeaveBusy(true);
-              void leaveWorkspace({ path: { workspaceId } })
-                .then((result) => {
-                  setLeaving(false);
-                  if (result.data === undefined)
-                    setProblem('You could not leave this workspace.');
-                  else reload();
-                })
-                .finally(() => setLeaveBusy(false));
-            }}
-          >
-            Leave workspace
-          </Button>
-        </DialogFooter>
-      </Dialog>
+        onLeft={reload}
+      />
       <Menu
         label={`Workspace: ${openWorkspace.name}${invites.length ? `, ${invites.length} pending ${invites.length === 1 ? 'invite' : 'invites'}` : ''}`}
         trigger="row"

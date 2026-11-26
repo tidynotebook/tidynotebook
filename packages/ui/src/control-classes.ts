@@ -212,7 +212,7 @@ export function buttonClassName(
   } as const;
   const textPadding = options.endAligned
     ? 'ps-2 coarse:ps-4'
-    : size === 'compact'
+    : size === 'compact' && !compact
       ? 'px-2 coarse:px-4'
       : 'px-3 coarse:px-4';
   const sizeClass = options.iconOnly

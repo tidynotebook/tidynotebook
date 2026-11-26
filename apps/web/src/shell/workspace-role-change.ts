@@ -1,13 +1,8 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Toast } from '@notesapp/ui';
+import { useEffect, useRef, useState } from 'react';
 import type { Role } from '@notesapp/core';
 import { useWorkspace } from '../app.tsx';
 
-export function WorkspaceRoleToast({
-  workspaceId,
-}: {
-  readonly workspaceId: string;
-}): ReactNode {
+export function useWorkspaceRoleChange(workspaceId: string): boolean {
   const { state } = useWorkspace();
   const role =
     state.status === 'ready'
@@ -32,7 +27,5 @@ export function WorkspaceRoleToast({
     const timer = window.setTimeout(() => setNotice(null), 8000);
     return () => window.clearTimeout(timer);
   }, [workspaceId, role]);
-  return notice === workspaceId ? (
-    <Toast message="Your role changed to Viewer. Editing is off." />
-  ) : null;
+  return notice === workspaceId;
 }

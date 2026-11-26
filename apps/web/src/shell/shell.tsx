@@ -1,6 +1,4 @@
-import { WorkspaceRoleToast } from './workspace-role-toast.tsx';
-import { WorkspaceRecoveryToast } from './workspace-recovery-toast.tsx';
-import { WorkspaceJoinedToast } from './workspace-joined.tsx';
+import { WorkspaceToasts } from './workspace-toasts.tsx';
 import {
   Inline,
   ApplicationContent,
@@ -37,11 +35,9 @@ import {
   PanelLeftIcon,
   SearchIcon,
   transitionSurface,
-  ToastStack,
 } from '@notesapp/ui';
 
 import { useNavigationDrawer } from './use-navigation-drawer.ts';
-import { TrialNotice } from '../features/accounts/trial-notice.tsx';
 /**
  * The application shell: one frame for every signed in screen.
  *
@@ -284,6 +280,9 @@ const allNotesTitle = 'All notes';
 /** The name of the screen that holds the notes a person deleted. */
 const SidebarStatus = lazy(async () => ({
   default: (await import('./sidebar-status.tsx')).SidebarStatus,
+}));
+const TrialNotice = lazy(async () => ({
+  default: (await import('../features/accounts/trial-notice.tsx')).TrialNotice,
 }));
 const trashTitle = 'Trash';
 
@@ -1942,7 +1941,12 @@ function ShellFrame({
                 padY={4}
                 className={`${pageColumnClassName()} empty:hidden`}
               >
-                <TrialNotice />
+                {session.account?.controls.trialState === undefined ||
+                session.account.controls.trialState === 'none' ? null : (
+                  <Suspense fallback={null}>
+                    <TrialNotice />
+                  </Suspense>
+                )}
                 {templateProblem !== null ? (
                   <Notice tone="problem" message={templateProblem} />
                 ) : null}
@@ -2024,11 +2028,7 @@ function ShellFrame({
             />
           )}
           <SettingsModalHost workspaceId={workspaceId} />
-          <ToastStack>
-            <WorkspaceJoinedToast workspaceId={workspaceId} />
-            <WorkspaceRoleToast workspaceId={workspaceId} />
-            <WorkspaceRecoveryToast />
-          </ToastStack>
+          <WorkspaceToasts workspaceId={workspaceId} />
           {signOut.dialog}
           {shortcutsOpen && ShortcutsView !== null ? (
             <ShortcutsView open onClose={() => setShortcutsOpen(false)} />

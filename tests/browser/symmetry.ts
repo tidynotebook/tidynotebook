@@ -615,7 +615,12 @@ export async function auditComposition(page: Page) {
           side,
         );
       } else {
-        check(e, 'icon button left inset', parseFloat(s.paddingLeft), 0);
+        const inset = e.hasAttribute('data-row-disclosure')
+          ? coarse
+            ? 8
+            : 4
+          : 0;
+        check(e, 'icon button left inset', parseFloat(s.paddingLeft), inset);
         check(e, 'icon button right inset', parseFloat(s.paddingRight), 0);
       }
     }
