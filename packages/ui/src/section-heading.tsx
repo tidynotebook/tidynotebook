@@ -54,13 +54,15 @@ const pillDots = {
 export function Pill({
   children,
   tone = 'neutral',
+  className = '',
 }: {
   readonly children: ReactNode;
   readonly tone?: 'neutral' | 'accent' | 'success' | 'danger';
+  readonly className?: string;
 }): ReactNode {
   return (
     <span
-      className={`inline-flex shrink-0 items-center gap-1 rounded-sm px-2 py-0.5 text-small ${pillTones[tone]}`}
+      className={`inline-flex shrink-0 items-center gap-1 rounded-sm px-2 py-0.5 text-small ${pillTones[tone]} ${className}`}
     >
       {tone === 'neutral' ? null : (
         <span

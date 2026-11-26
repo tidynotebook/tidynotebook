@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import {
   createWorkspaceInvites,
+  getSetupStatus,
   listWorkspaceInvites,
   listWorkspaceMembers,
   readWorkspaceInviteLink,
@@ -22,7 +23,8 @@ import {
   DialogBody,
   DialogFooter,
   Form,
-  IdentityMark,
+  Inline,
+  PresenceAvatar,
   ListRow,
   LoadingState,
   Menu,
@@ -36,9 +38,26 @@ import {
   type MenuItem,
 } from '@notesapp/ui';
 import { problemMessage, useSession, useWorkspace } from '../../app.tsx';
+import { normalizeEmail, presenceColorSlot } from '@notesapp/core';
+import { relativeTime } from '../../lib/relative-time.ts';
+import { useNow } from '../../shell/now.ts';
 import { initialOf } from '../../lib/initial.ts';
 
 const roles: readonly WorkspaceInviteRole[] = ['admin', 'editor', 'viewer'];
+const roleHelp = {
+  admin: 'Admins can edit notes and manage members.',
+  editor: 'Editors can read and edit notes. They cannot manage members.',
+  viewer: 'Viewers can read notes and their history.',
+};
+
+function badAddresses(addresses: readonly string[]): string[] {
+  const field = document.createElement('input');
+  field.type = 'email';
+  return [...new Set(addresses)].filter((address) => {
+    field.value = address;
+    return normalizeEmail(address) === null || !field.validity.valid;
+  });
+}
 
 export function roleName(role: Role): string {
   return role === 'owner'
@@ -61,6 +80,7 @@ export function WorkspaceMembers({
   readonly role: Role;
   readonly phoneFooter: HTMLElement | null;
 }): ReactNode {
+  const now = useNow();
   const manage = role === 'owner' || role === 'admin';
   const ownId = useSession().account?.accountId;
   const workspace = useWorkspace();
@@ -123,6 +143,7 @@ export function WorkspaceMembers({
     const options: MenuItem[] = roles.map((next) => ({
       id: next,
       label: roleName(next),
+      detail: roleHelp[next],
       selected: next === member.role,
       onSelect: () => {
         void updateWorkspaceMemberRole({
@@ -143,6 +164,7 @@ export function WorkspaceMembers({
         id: 'remove',
         label: 'Remove from workspace',
         danger: true,
+        group: 'Danger',
         onSelect: () => setRemoval(member),
       });
     return options;
@@ -153,65 +175,97 @@ export function WorkspaceMembers({
       {problem === '' ? null : <Notice tone="problem" message={problem} />}
       {notice === '' ? null : <Notice message={notice} />}
       {manage ? (
+        <Inline gap={3} justify="between" align="center">
+          <p className="text-secondary text-muted">
+            Owners and admins can invite people and change roles.
+          </p>
+          <div className="hidden lg:block">
+            <Button
+              variant="primary"
+              size="compact"
+              onClick={() => setInviteOpen(true)}
+            >
+              Invite people
+            </Button>
+          </div>
+        </Inline>
+      ) : null}
+      {manage ? (
         <Stack gap={2}>
           <SectionHeading
             label="Pending invites"
             count={invites.length}
             divider
-            action={
-              <div className="hidden lg:block">
-                <Button
-                  variant="primary"
-                  size="compact"
-                  onClick={() => setInviteOpen(true)}
-                >
-                  Invite people
-                </Button>
-              </div>
-            }
           />
           {invites.length === 0 ? null : (
             <Card responsive>
-              {invites.map((invite) => (
-                <ListRow
-                  key={invite.invitationId}
-                  label={invite.email}
-                  help={`${roleName(invite.role)}. Expires ${new Date(invite.expiresAt).toLocaleDateString()}.`}
-                  leading={<IdentityMark>?</IdentityMark>}
-                  control={
-                    <Menu
-                      label={`Actions for ${invite.email}`}
-                      icon={<MoreIcon />}
-                      items={[
-                        {
-                          id: 'copy',
-                          label: 'Copy link',
-                          onSelect: () => {
-                            void copy(invite.invitationId);
-                          },
-                        },
-                        {
-                          id: 'revoke',
-                          label: 'Revoke',
-                          danger: true,
-                          onSelect: () => {
-                            void revokeWorkspaceInvite({
-                              path: {
-                                workspaceId,
-                                invitationId: invite.invitationId,
+              {invites.map((invite) => {
+                const copyLink = () => {
+                  void copy(invite.invitationId);
+                };
+                const revoke = () => {
+                  void revokeWorkspaceInvite({
+                    path: { workspaceId, invitationId: invite.invitationId },
+                  }).then((result) => {
+                    if (result.data === undefined)
+                      setProblem(problemMessage(result.error));
+                    else refresh();
+                  });
+                };
+                return (
+                  <ListRow
+                    key={invite.invitationId}
+                    label={invite.email}
+                    help={`Invited by ${invite.inviterName ?? 'a workspace member'} · Expires ${relativeTime(invite.expiresAt, now)}`}
+                    leading={<PresenceAvatar pending>?</PresenceAvatar>}
+                    control={
+                      <Inline gap={2} align="center">
+                        <Pill>{roleName(invite.role)}</Pill>
+                        <div className="lg:hidden">
+                          <Menu
+                            label={`Actions for ${invite.email}`}
+                            icon={<MoreIcon />}
+                            compact
+                            items={[
+                              {
+                                id: 'copy',
+                                label: 'Copy link',
+                                onSelect: copyLink,
                               },
-                            }).then((result) => {
-                              if (result.data === undefined)
-                                setProblem(problemMessage(result.error));
-                              else refresh();
-                            });
-                          },
-                        },
-                      ]}
-                    />
-                  }
-                />
-              ))}
+                              {
+                                id: 'revoke',
+                                label: 'Revoke',
+                                danger: true,
+                                group: 'Danger',
+                                onSelect: revoke,
+                              },
+                            ]}
+                          />
+                        </div>
+                        <div className="hidden lg:block">
+                          <Inline gap={2}>
+                            <Button
+                              variant="secondary"
+                              size="compact"
+                              onClick={copyLink}
+                            >
+                              Copy link
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              tone="danger"
+                              size="compact"
+                              onClick={revoke}
+                            >
+                              Revoke
+                            </Button>
+                          </Inline>
+                        </div>
+                      </Inline>
+                    }
+                  />
+                );
+              })}
             </Card>
           )}
         </Stack>
@@ -225,11 +279,11 @@ export function WorkspaceMembers({
             {members.map((member) => (
               <ListRow
                 key={member.accountId}
-                label={member.displayName ?? member.email}
+                label={`${member.displayName ?? member.email}${member.accountId === ownId ? ' (you)' : ''}`}
                 leading={
-                  <IdentityMark>
+                  <PresenceAvatar slot={presenceColorSlot(member.accountId)}>
                     {initialOf(member.displayName ?? member.email)}
-                  </IdentityMark>
+                  </PresenceAvatar>
                 }
                 help={member.displayName === null ? undefined : member.email}
                 control={
@@ -237,6 +291,7 @@ export function WorkspaceMembers({
                     <Menu
                       label={`Role for ${member.displayName ?? member.email}`}
                       items={memberMenu(member)}
+                      compact
                     >
                       {roleName(member.role)}
                       <ChevronDownIcon />
@@ -356,8 +411,32 @@ function InvitePeople({
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState('');
   const [results, setResults] = useState<WorkspaceInviteResult[] | null>(null);
+  const [mail, setMail] = useState<boolean | null>(null);
+  const [checked, setChecked] = useState(false);
+  useEffect(() => {
+    let active = true;
+    void getSetupStatus()
+      .then((result) => {
+        if (active && result.data !== undefined)
+          setMail(result.data.passwordReset);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
   const emails = input.split(/[\s,]+/u).filter(Boolean);
+  const invalid = checked ? badAddresses(emails) : [];
+  const created =
+    results?.filter((result) => result.outcome === 'created').length ?? 0;
   async function submit() {
+    setChecked(true);
+    if (
+      badAddresses(emails).length > 0 ||
+      emails.length === 0 ||
+      emails.length > 20
+    )
+      return;
     setBusy(true);
     setProblem('');
     try {
@@ -381,9 +460,10 @@ function InvitePeople({
       title={
         results === null
           ? `Invite people to ${workspaceName}`
-          : 'Invitation results'
+          : `${created} ${created === 1 ? 'invite' : 'invites'} created`
       }
       onClose={close}
+      titleDivider={false}
     >
       <Form
         regions
@@ -400,12 +480,19 @@ function InvitePeople({
                 label="Email addresses"
                 value={input}
                 onChange={setInput}
+                size="growing"
+                error={invalid
+                  .map(
+                    (address) => `“${address}” is not a valid email address.`,
+                  )
+                  .join('\n')}
                 hint="Enter up to 20 addresses. Use a comma or a new line between addresses."
               />
               <SelectField
                 id="workspace-invite-role"
                 label="Role"
                 value={role}
+                hint={roleHelp[role]}
                 options={roles.map((choice) => ({
                   value: choice,
                   label: roleName(choice),
@@ -415,13 +502,40 @@ function InvitePeople({
                   if (next !== undefined) setRole(next);
                 }}
               />
-              <Notice message="The link works for 7 days. Copy it if the server cannot send email." />
+              {mail === null ? null : (
+                <Notice
+                  message={
+                    mail
+                      ? 'We email each person a link. The link works for 7 days. A person without an account can create one from the link.'
+                      : 'This installation sends no mail, so you get the link here and send it yourself. It works for 7 days.'
+                  }
+                />
+              )}
             </Stack>
           ) : (
             results.map((result, index) => (
               <ListRow
                 key={`${result.email}:${index}`}
                 label={result.email}
+                leading={
+                  <Pill
+                    tone={
+                      result.outcome === 'created'
+                        ? 'success'
+                        : result.outcome === 'pending_limit'
+                          ? 'danger'
+                          : 'neutral'
+                    }
+                  >
+                    {result.outcome === 'created'
+                      ? 'Created'
+                      : result.outcome === 'pending_invite'
+                        ? 'Already invited'
+                        : result.outcome === 'already_member'
+                          ? 'Already a member'
+                          : 'Limit reached'}
+                  </Pill>
+                }
                 help={
                   result.outcome === 'pending_invite'
                     ? 'Already invited. Copy the link to send it again.'

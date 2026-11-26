@@ -599,8 +599,10 @@ export function openIdentityStore(
           name: string;
           personal: boolean;
           role: string;
+          member_count: number;
         }>(
-          `select w.id, w.name, w.personal, m.role::text as role
+          `select w.id, w.name, w.personal, m.role::text as role,
+            (select count(*)::int from memberships tally where tally.workspace_id = w.id) as member_count
              from memberships m
              join workspaces w on w.id = m.workspace_id
             where m.account_id = $1
@@ -612,6 +614,7 @@ export function openIdentityStore(
           name: row.name,
           personal: row.personal,
           role: asRole(row.role),
+          ...(row.member_count > 1 ? { memberCount: row.member_count } : {}),
         }));
       },
 

@@ -4,9 +4,10 @@ import { pageRowClassName, pageSideClassName } from './layout-classes.ts';
 import { controlStripClassName, focusOutline } from './control-classes.ts';
 import { transitionSurface } from './motion.ts';
 import { pageGutter } from './public-layout.ts';
-export function noteColumnClassName(): string {
-  return 'self-center flex w-full max-w-note flex-col gap-1';
+export function noteColumnClassName(row = false): string {
+  return `self-center flex w-full max-w-note ${row ? '' : 'flex-col gap-1'}`;
 }
+export const noteColumnInset = 'px-2 fine:px-6';
 export function noteScreenClassName(): string {
   return 'flex overflow-hidden min-w-0 flex-1 flex-col';
 }
@@ -31,7 +32,7 @@ export function noteOutlineScrollClassName(): string {
   return 'overflow-hidden overflow-y-auto overscroll-contain';
 }
 export function noteFooterClassName(typing: boolean): string {
-  const base = `flex flex-col shrink-0 px-2 py-2 text-secondary text-muted ${fixedRegionClasses('top')}`;
+  const base = `flex flex-col shrink-0 ${noteColumnInset} py-2 text-secondary text-muted ${fixedRegionClasses('top')}`;
   return typing ? `${base} ${phoneTypingHiddenClassName}` : base;
 }
 export function formatToolbarFrameClassName(): string {

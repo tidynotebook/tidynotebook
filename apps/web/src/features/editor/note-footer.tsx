@@ -1,4 +1,4 @@
-import { observeElementScrollEdges } from '@notesapp/ui';
+import { Inline, observeElementScrollEdges } from '@notesapp/ui';
 /**
  * The quiet footer of the note screen.
  *
@@ -18,6 +18,7 @@ import { observeElementScrollEdges } from '@notesapp/ui';
  * footer renders only when the text takes the focus or lets it go.
  */
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { NoteLiveStatus, type LiveState } from './live-note.tsx';
 import { useActiveNote } from './active-note.tsx';
 import { useLongNoteMetrics } from './long-note-metrics.tsx';
 import { wordCount } from './note-metrics.ts';
@@ -32,8 +33,14 @@ import {
  */
 export function NoteFooter({
   initialText,
+  live,
+  liveEnabled = false,
+  changedToViewer = false,
 }: {
   readonly initialText: string;
+  readonly live?: LiveState;
+  readonly liveEnabled?: boolean;
+  readonly changedToViewer?: boolean;
 }): ReactNode {
   // The revision moves when the text moved on, so the count is read once for
   // each change and not once for each render.
@@ -70,15 +77,22 @@ export function NoteFooter({
   );
   return (
     <footer data-scroll-edge="below" className={noteFooterClassName(typing)}>
-      <div className={noteColumnClassName()}>
-        <span>
+      <Inline gap={3} wrap className={noteColumnClassName(true)}>
+        <span className="shrink-0">
           {count === undefined
             ? ''
             : count === null
               ? 'Word count unavailable'
               : `${String(count)} ${count === 1 ? 'word' : 'words'}`}
         </span>
-      </div>
+        {live === undefined ? null : (
+          <NoteLiveStatus
+            note={live}
+            enabled={liveEnabled}
+            changedToViewer={changedToViewer}
+          />
+        )}
+      </Inline>
     </footer>
   );
 }

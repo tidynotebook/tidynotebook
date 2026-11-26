@@ -1,5 +1,6 @@
 /** Bounds that keep live work separate from durable sync notices. */
 export const liveBounds = {
+  recheckHeadMs: 1000,
   roomsPerConnection: 16,
   connectionsPerRoom: 32,
   roomsPerProcess: 512,

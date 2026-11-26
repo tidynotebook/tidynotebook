@@ -1717,6 +1717,7 @@ export type LiveNoteLeave = {
 export type LiveNotePresenceCount = {
     fileId: Uuid;
     accountCount: number;
+    colorSlots?: Array<number>;
 };
 
 /**
@@ -3519,6 +3520,10 @@ export type Workspace = {
      * True for the workspace that was created with the account.
      */
     readonly personal: boolean;
+    /**
+     * Current number of members.
+     */
+    readonly memberCount?: number;
 };
 
 /**

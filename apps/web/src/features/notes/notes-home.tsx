@@ -180,6 +180,9 @@ function NoteGroupList({
                   </span>
                 )}
               </span>
+              <span className="shrink-0 text-secondary text-muted">
+                {meta.when}
+              </span>
             </Link>
           </li>
         );

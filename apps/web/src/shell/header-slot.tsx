@@ -39,6 +39,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { Inline } from '@notesapp/ui';
 import { createPortal } from 'react-dom';
 
 /** What the frame publishes and a route reads. */
@@ -128,7 +129,7 @@ export function HeaderSlot({
   readonly className?: string | undefined;
 }): ReactNode {
   const { setHost } = useHeaderSlot();
-  return <div className={className} ref={setHost} />;
+  return <Inline gap={1} className={className} ref={setHost} />;
 }
 
 /**

@@ -71,14 +71,31 @@ export function collaborationTransaction(
       const role = rows[0]?.role;
       return role == null ? null : storedRole(role);
     },
-    async liveNote(fileId) {
+    async liveNoteAccess(fileId) {
       const { rows } = await client.query<{
-        document: Buffer;
+        head: string | null;
         epoch: number;
         role: string;
         writable: boolean;
       }>(
-        `select d.bytes as document, d.epoch, notesapp_member_role($1) as role,
+        `select f.head_revision_id as head, d.epoch, notesapp_member_role($1) as role,
+          notesapp_workspace_writable($1) as writable
+         from note_documents d join files f on f.workspace_id = d.workspace_id and f.id = d.file_id
+         where d.workspace_id = $1 and d.file_id = $2 and not f.deleted`,
+        [workspaceId, fileId],
+      );
+      const row = rows[0];
+      return row === undefined ? null : { ...row, role: storedRole(row.role) };
+    },
+    async liveNote(fileId) {
+      const { rows } = await client.query<{
+        document: Buffer;
+        head: string | null;
+        epoch: number;
+        role: string;
+        writable: boolean;
+      }>(
+        `select d.bytes as document, f.head_revision_id as head, d.epoch, notesapp_member_role($1) as role,
           notesapp_workspace_writable($1) as writable
          from note_documents d join files f on f.workspace_id = d.workspace_id and f.id = d.file_id
          where d.workspace_id = $1 and d.file_id = $2 and not f.deleted`,
@@ -89,6 +106,7 @@ export function collaborationTransaction(
         ? null
         : {
             bytes: row.document,
+            head: row.head,
             epoch: row.epoch,
             role: storedRole(row.role),
             writable: row.writable,

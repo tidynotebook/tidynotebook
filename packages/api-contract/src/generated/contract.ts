@@ -3677,6 +3677,12 @@ export const sharedDefinitions: JsonSchema = {
           "type": "boolean",
           "readOnly": true,
           "description": "True for the workspace that was created with the account."
+        },
+        "memberCount": {
+          "type": "integer",
+          "minimum": 1,
+          "readOnly": true,
+          "description": "Current number of members."
         }
       }
     },
@@ -23316,6 +23322,16 @@ export const channels: readonly ChannelEntry[] = [
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 32
+                  },
+                  "colorSlots": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 3,
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 5
+                    }
                   }
                 }
               }

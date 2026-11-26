@@ -207,6 +207,10 @@ try {
       ),
       'ok',
     );
+    assert.equal(
+      (await identity.memberships(viewerId))[0]?.welcomePending,
+      true,
+    );
     assert.deepEqual(await listWorkspaces(identity, viewer), {
       ok: true,
       value: [

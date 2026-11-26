@@ -12,7 +12,7 @@ import {
   LoadingState,
   Menu,
   Notice,
-  Pill,
+  UsersIcon,
   type MenuItem,
   Page,
   PageHeader,
@@ -44,6 +44,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router';
 import { deleteGlyph } from '../lib/delete-label.ts';
 import { useWorkspace } from '../app.tsx';
 import { addressInWorkspace, isMemberOf } from '../lib/workspace-choice.ts';
+import { joinedWorkspaceState } from './workspace-joined.tsx';
 import { initialOf } from '../lib/initial.ts';
 import { actionIcon } from './action-icons.tsx';
 import { useOpenSettings } from './settings-modal.tsx';
@@ -251,7 +252,7 @@ export function WorkspaceSwitcher({
     id: workspace.workspaceId,
     label: workspace.name,
     icon: actionIcon('workspace'),
-    hint: roleNames[workspace.role],
+    hint: `${roleNames[workspace.role]}${(workspace.memberCount ?? 0) > 1 ? ` · ${workspace.memberCount}` : ''}`,
     selected: workspace.workspaceId === workspaceId,
     onSelect: () => switchTo(workspace.workspaceId),
   }));
@@ -277,7 +278,10 @@ export function WorkspaceSwitcher({
               ),
             );
             adopt(result.data);
-            switchTo(invite.workspaceId);
+            void navigate(`/w/${invite.workspaceId}`, {
+              state: joinedWorkspaceState(invite),
+            });
+            onNavigate();
           });
         },
       },
@@ -309,6 +313,7 @@ export function WorkspaceSwitcher({
     {
       id: 'workspace-members',
       label: manages ? 'Members and invites' : 'Members',
+      icon: <UsersIcon />,
       onSelect: () => {
         openSettings('members');
         onNavigate();
@@ -376,7 +381,7 @@ export function WorkspaceSwitcher({
       {problem === '' ? null : <Notice tone="problem" message={problem} />}
       {recoveryNotice == null ? null : <Notice message={recoveryNotice} />}
       <Menu
-        label={`Workspace: ${openWorkspace.name}`}
+        label={`Workspace: ${openWorkspace.name}${invites.length ? `, ${invites.length} pending ${invites.length === 1 ? 'invite' : 'invites'}` : ''}`}
         trigger="row"
         items={items}
         pinned={pinned}
@@ -391,7 +396,10 @@ export function WorkspaceSwitcher({
           {openWorkspace.name}
         </span>
         {invites.length === 0 ? null : (
-          <Pill tone="accent">{invites.length} pending</Pill>
+          <span
+            aria-hidden="true"
+            className="size-2 shrink-0 rounded-full bg-accent"
+          />
         )}
         <span
           className="inline-flex shrink-0 items-center text-muted"

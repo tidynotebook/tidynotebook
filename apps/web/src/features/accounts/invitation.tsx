@@ -1,3 +1,4 @@
+import { joinedWorkspaceState } from '../../shell/workspace-joined.tsx';
 import {
   Form,
   Stack,
@@ -30,6 +31,7 @@ import {
   readInvitation,
   registerAccount,
   type LegalDocuments,
+  type WorkspaceInviteRole,
 } from '@notesapp/api-client';
 
 import { problemMessage, useSession } from '../../app.tsx';
@@ -155,6 +157,7 @@ export function AcceptForm({
   readonly workspace?: {
     readonly id: string;
     readonly name: string;
+    readonly role: WorkspaceInviteRole;
     readonly onAccepted: () => void;
   };
 }): ReactNode {
@@ -205,7 +208,15 @@ export function AcceptForm({
     }
     session.refresh();
     workspace?.onAccepted();
-    void navigate(workspace === undefined ? '/' : `/w/${workspace.id}`);
+    if (workspace === undefined) void navigate('/');
+    else
+      void navigate(`/w/${workspace.id}`, {
+        state: joinedWorkspaceState({
+          workspaceId: workspace.id,
+          workspaceName: workspace.name,
+          role: workspace.role,
+        }),
+      });
   };
 
   return (
@@ -228,13 +239,18 @@ export function AcceptForm({
           id="invite-address"
           label="Email address"
           value={email}
+          plain={workspace !== undefined}
         />
         <TextField
           id="invite-name"
           label="Your name"
           value={name}
           autoComplete="name"
-          hint="An administrator of this installation sees it. You can leave it empty."
+          hint={
+            workspace === undefined
+              ? 'An administrator of this installation sees it. You can leave it empty.'
+              : 'Members of this workspace can see it. You can leave it empty.'
+          }
           autoFocus
           onChange={setName}
         />

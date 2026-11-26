@@ -310,6 +310,7 @@ export function createLiveCluster(input: {
   }
 
   return {
+    refreshWorkspace: (workspaceId) => rooms.refreshWorkspace?.(workspaceId),
     ready: () => relay.listening(),
     start() {
       relay.start();

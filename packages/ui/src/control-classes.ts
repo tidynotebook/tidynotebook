@@ -628,11 +628,11 @@ function fieldEdge(invalid: boolean): string {
 export function textAreaClassName(
   options: {
     readonly invalid?: boolean | undefined;
-    readonly size?: 'document' | 'short';
+    readonly size?: 'document' | 'short' | 'growing';
   } = {},
 ): string {
   return [
-    `block w-full ${options.size === 'short' ? '' : 'min-h-64 font-mono'} resize-y py-2 text-body ${fieldSurface}`,
+    `block w-full ${options.size === 'growing' ? 'max-h-48' : options.size === 'short' ? '' : 'min-h-64 font-mono'} resize-y py-2 text-body ${fieldSurface}`,
     fieldEdge(options.invalid === true),
   ].join(' ');
 }

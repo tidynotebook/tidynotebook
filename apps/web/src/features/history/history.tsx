@@ -13,6 +13,7 @@ import {
   ListRow,
   LoadingState,
   Notice,
+  PresenceAvatar,
   Page,
   pageGroupLabelClassName,
   PageHeader,
@@ -62,7 +63,7 @@ import {
   restoreRevision,
   type HistoryRevisionItem,
 } from '@notesapp/api-client';
-import { generateUUID } from '@notesapp/core';
+import { generateUUID, presenceColorSlot } from '@notesapp/core';
 import type { DiffHunk, LineChangeCount } from '@notesapp/editor';
 import type { LocalStore } from '@notesapp/sync';
 
@@ -77,6 +78,7 @@ import {
   loadAttachmentBinary,
   type LoadedAttachment,
 } from '../../lib/attachment-content.ts';
+import { initialOf } from '../../lib/initial.ts';
 import { displayNoteName } from '../../lib/note-name.ts';
 import {
   requestDiff,
@@ -676,11 +678,36 @@ function HistoryDetail({
                               </span>
                               <span className="line-clamp-2 text-secondary text-muted lg:line-clamp-1">
                                 {rowReading(change, item.merged)}
-                                {item.contributors === undefined ||
-                                item.contributors.length === 0
-                                  ? ''
-                                  : ` · ${item.contributors.map((person) => (person.formerMember ? 'Former member' : (person.displayName ?? 'Member'))).join(', ')}`}
                               </span>
+                              {item.contributors?.length ? (
+                                <Inline as="span" gap={2} wrap>
+                                  {item.contributors.map((person, index) => {
+                                    const name = person.formerMember
+                                      ? 'Former member'
+                                      : (person.displayName ?? 'Member');
+                                    return (
+                                      <Inline
+                                        key={person.accountId ?? index}
+                                        as="span"
+                                        gap={1}
+                                        className="text-secondary text-muted"
+                                      >
+                                        <PresenceAvatar
+                                          pending={person.formerMember ?? false}
+                                          slot={presenceColorSlot(
+                                            person.accountId ?? '',
+                                          )}
+                                        >
+                                          {person.formerMember
+                                            ? '?'
+                                            : initialOf(name)}
+                                        </PresenceAvatar>
+                                        {name}
+                                      </Inline>
+                                    );
+                                  })}
+                                </Inline>
+                              ) : null}
                             </span>
                           </button>
                           <Inset padX={2} as="span" className="shrink-0">

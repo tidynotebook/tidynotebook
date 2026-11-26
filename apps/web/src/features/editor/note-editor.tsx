@@ -1,6 +1,6 @@
 import {
   NotePresence,
-  NoteLiveStatus,
+  ViewerNotice,
   useEditorLiveBinding,
   useNoteAccess,
 } from './live-note.tsx';
@@ -1521,7 +1521,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
           <div className={noteFrameClassName()}>
             {/* The tools use the one editor and its local history. */}
             {readOnly ? (
-              <Notice message="View only. You can read this note and its history." />
+              <ViewerNotice />
             ) : (
               <FormatToolbar
                 context={formatContext}
@@ -1558,10 +1558,10 @@ const NoteEditorBody = memo(function NoteEditorBody({
                 }
               }}
             />
-            <NoteFooter initialText={initialText} />
-            <NoteLiveStatus
-              note={liveNote}
-              enabled={initialDocument != null}
+            <NoteFooter
+              initialText={initialText}
+              live={liveNote}
+              liveEnabled={initialDocument != null}
               changedToViewer={access.changedToViewer}
             />
             <ImageViewer

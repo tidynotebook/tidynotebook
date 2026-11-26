@@ -53,8 +53,11 @@ A member can leave if they keep a workspace, as in
 [record 0051](../decisions/0051-an-account-always-keeps-one-workspace.md).
 If forced removal or a workspace deletion would strand another member,
 create a new Personal workspace for them in the same transaction. Use the
-same name, Personal flag and welcome setup as signup. This
-also permits access revocation when the target has no other workspace.
+same Personal workspace function as signup. The Personal flag queues a
+welcome note through the workspace insert trigger. The server creates that
+note at the next workspace list or request for the Personal workspace. The
+account already has preferences from signup, so it keeps them. The new
+workspace starts with the default workspace settings.
 Keep the existing refusal when the deleting owner would lose their last
 workspace. Show the count of other members in the delete confirmation. A
 removed member's storage use does not move with them.

@@ -131,7 +131,7 @@ export function NoteHeaderActions({
     <HeaderActions>
       {presence}
       {readOnly ? (
-        <Pill>View only</Pill>
+        <Pill className="max-compact:hidden">View only</Pill>
       ) : (
         <SaveProblemControl workspaceId={workspaceId} onCopyText={onCopyText} />
       )}

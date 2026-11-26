@@ -25,7 +25,7 @@ export type IconProps = {
 };
 
 /** The one frame that every icon of the set draws in. */
-function IconFrame({
+export function IconFrame({
   size = defaultIconSize,
   className,
   children,

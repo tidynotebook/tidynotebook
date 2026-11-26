@@ -667,6 +667,7 @@ export type {
 } from './workspaces/welcome-note.ts';
 
 export {
+  presenceColorSlot,
   workspaceCollaboration,
   workspaceInviteBatchSize,
   workspaceMemberPageSize,

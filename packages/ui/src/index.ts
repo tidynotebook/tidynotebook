@@ -361,6 +361,7 @@ export {
   IdentityMark,
   TileSelectedBadge,
   PresenceAvatar,
+  PresenceDots,
 } from './identity.tsx';
 export { PreviewBlock } from './preview-block.tsx';
 export { PreviewSurface } from './preview-surface.tsx';

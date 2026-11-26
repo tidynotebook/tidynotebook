@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
+import { joinedWorkspaceState } from '../../shell/workspace-joined.tsx';
 import {
   acceptWorkspaceInvite,
   declineWorkspaceInvite,
@@ -151,7 +152,11 @@ export function JoinWorkspacePage(): ReactNode {
       }
       clearToken();
       workspace.reload();
-      void navigate(accept ? `/w/${invite.workspaceId}` : '/');
+      if (accept)
+        void navigate(`/w/${invite.workspaceId}`, {
+          state: joinedWorkspaceState(invite),
+        });
+      else void navigate('/');
     } catch {
       setError('The response could not be sent.');
     } finally {
@@ -190,14 +195,17 @@ export function JoinWorkspacePage(): ReactNode {
         : 'Viewer';
   const title = `Join ${invite.workspaceName}`;
   const details = `${invite.inviterName ?? 'A workspace member'} invited you as ${role}.`;
+  const permissions = {
+    admin: 'You can read and edit notes and manage members in this workspace.',
+    editor: 'You can read and edit the notes in this workspace.',
+    viewer: 'You can read the notes and their history in this workspace.',
+  }[invite.role];
   if (session.account === null)
     return (
       <AuthFrame title={title}>
         <Stack gap={4}>
           <Notice message={details} />
-          <Button variant="secondary" onClick={goToSignIn}>
-            Sign in to join
-          </Button>
+          <p className="text-secondary text-muted">{permissions}</p>
           <AcceptForm
             token={token}
             email={invite.email}
@@ -206,9 +214,16 @@ export function JoinWorkspacePage(): ReactNode {
             workspace={{
               id: invite.workspaceId,
               name: invite.workspaceName,
+              role: invite.role,
               onAccepted: clearToken,
             }}
           />
+          <Inline gap={1} justify="center">
+            <span className="text-secondary text-muted">Have an account?</span>
+            <Button variant="ghost" size="compact" onClick={goToSignIn}>
+              Sign in
+            </Button>
+          </Inline>
         </Stack>
       </AuthFrame>
     );
@@ -228,6 +243,9 @@ export function JoinWorkspacePage(): ReactNode {
         >
           Sign out and continue
         </Button>
+        <Link className={buttonClassName({ variant: 'secondary' })} to="/">
+          Go to my notes
+        </Link>
       </AuthFrame>
     );
 

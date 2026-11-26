@@ -1143,7 +1143,9 @@ export function SettingsModal({
   const sectionForm = activePage?.path === 'mail';
   const scope =
     activePage?.group === 'Workspace'
-      ? `${workspaceName === '' ? 'This' : workspaceName} ${activePage.scope}`
+      ? activePage.path === 'members'
+        ? `People who can open ${workspaceName}. Their role sets what they can do.`
+        : `${workspaceName === '' ? 'This' : workspaceName} ${activePage.scope}`
       : activePage?.scope;
 
   return (

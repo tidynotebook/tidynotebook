@@ -419,6 +419,7 @@ export function TextAreaField({
   error: suppliedError,
   hint,
   required,
+  size,
 }: {
   readonly id: string;
   readonly label: string;
@@ -428,6 +429,7 @@ export function TextAreaField({
   /** The rule of the field, stated under it at all times. */
   readonly hint?: string | undefined;
   readonly required?: boolean | undefined;
+  readonly size?: 'growing' | undefined;
 }): ReactNode {
   const submitted = useContext(FormSubmittedContext);
   const error =
@@ -450,7 +452,22 @@ export function TextAreaField({
       <div className="flex flex-col gap-1">
         <textarea
           id={id}
-          className={textAreaClassName({ invalid: hasError })}
+          className={textAreaClassName({
+            invalid: hasError,
+            ...(size === undefined ? {} : { size }),
+          })}
+          rows={
+            size === 'growing'
+              ? Math.min(
+                  8,
+                  Math.max(
+                    3,
+                    value.split('\n').length,
+                    Math.ceil(value.length / 40),
+                  ),
+                )
+              : undefined
+          }
           value={value}
           required={required ?? false}
           aria-required={required ?? false}
@@ -468,7 +485,7 @@ export function TextAreaField({
         ) : null}
         {hasError ? (
           <p
-            className="m-0 text-secondary text-danger"
+            className="m-0 whitespace-pre-line text-secondary text-danger"
             id={errorId}
             role="alert"
           >
@@ -504,6 +521,7 @@ export function ReadOnlyField({
   value,
   takeFocus,
   describedBy,
+  plain = false,
 }: {
   readonly id: string;
   readonly label: string;
@@ -511,6 +529,7 @@ export function ReadOnlyField({
   /** Takes focus when the field appears, for a value shown one time. */
   readonly takeFocus?: boolean | undefined;
   readonly describedBy?: string | undefined;
+  readonly plain?: boolean;
 }): ReactNode {
   const inputRef = useRef<HTMLInputElement | null>(null);
   useEffect(() => {
@@ -526,7 +545,9 @@ export function ReadOnlyField({
         <input
           ref={inputRef}
           id={id}
-          className={fieldClassName({ className: 'font-mono' })}
+          className={fieldClassName({
+            className: plain ? 'bg-surface text-muted' : 'font-mono',
+          })}
           type="text"
           value={value}
           readOnly

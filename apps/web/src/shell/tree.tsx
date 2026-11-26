@@ -7,6 +7,7 @@ import {
   Stack,
   ListRow,
   IconSlot,
+  PresenceDots,
   Inline,
   IconButton,
   AnchoredMenu,
@@ -249,16 +250,22 @@ export function NoteTree({
   const readOnly = role === 'viewer';
   const canPublish = role === 'owner' || role === 'admin';
   const stream = useTabNoticeStream();
-  const [presence, setPresence] = useState<ReadonlySet<string>>(new Set());
+  const [presence, setPresence] = useState<
+    ReadonlyMap<string, readonly number[]>
+  >(new Map());
   useEffect(() => {
-    setPresence(new Set());
+    setPresence(new Map());
     return stream?.onLive((message) => {
-      if (message === null) setPresence(new Set());
+      if (message === null) setPresence(new Map());
       else if (
         message.kind === 'workspacePresence' &&
         message.workspaceId === workspaceId
       )
-        setPresence(new Set(message.notes.map((note) => note.fileId)));
+        setPresence(
+          new Map(
+            message.notes.map((note) => [note.fileId, note.colorSlots ?? [0]]),
+          ),
+        );
     });
   }, [stream, workspaceId]);
 
@@ -965,7 +972,9 @@ export function NoteTree({
               row={row}
               workspaceId={workspaceId}
               readOnly={readOnly}
-              occupied={row.kind === 'note' && presence.has(row.note.fileId)}
+              occupied={
+                row.kind === 'note' ? presence.get(row.note.fileId) : undefined
+              }
               open={row.key === activeKey}
               parent={row.kind === 'folder' && row.path === selectedFolder}
               picked={isRowSelected(selection, row.key)}
@@ -1088,7 +1097,7 @@ function TreeRow({
   onMenu,
   onRenameEvent,
 }: {
-  readonly occupied: boolean;
+  readonly occupied: readonly number[] | undefined;
   readonly readOnly: boolean;
   readonly row: ActionableRow;
   readonly workspaceId: string;
@@ -1306,12 +1315,6 @@ function TreeRow({
             {icon}
             {name}
             {badge}
-            {occupied ? (
-              <span
-                aria-hidden="true"
-                className="shrink-0 size-1 rounded-full bg-accent"
-              />
-            ) : null}
           </Inline>
         </Inline>
         {/*
@@ -1328,12 +1331,27 @@ function TreeRow({
           aria-haspopup="menu"
           reveal
           className="ui-sidebar-row-menu"
+          slotContent={
+            occupied === undefined ? null : (
+              <span className="pointer-events-none absolute inset-0 flex items-center justify-center group-focus-within/item:hidden fine:group-hover/item:hidden">
+                <PresenceDots slots={occupied} />
+              </span>
+            )
+          }
           onMouseDown={keepFocus}
           onClick={(event) => {
             event.stopPropagation();
             onMenu(anchorOf(event.currentTarget), event.detail === 0);
           }}
-          glyph={<MoreIcon className="text-muted" />}
+          glyph={
+            <MoreIcon
+              className={
+                occupied === undefined
+                  ? 'text-muted'
+                  : 'text-muted coarse:invisible coarse:group-focus-within/item:visible'
+              }
+            />
+          }
         ></IconButton>
       </ListRow>
     </div>

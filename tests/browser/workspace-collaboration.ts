@@ -76,6 +76,11 @@ try {
     signIn(owner, fixture.owner),
     signIn(editor, fixture.editor),
   ]);
+  await owner.goto(`${origin}${space}`);
+  await owner
+    .getByRole('link', { name: 'Launch plan', exact: true })
+    .getByText(/just now|ago/)
+    .waitFor();
   await owner.goto(`${origin}${space}?settings=members`);
   await owner.getByText(fixture.editor, { exact: true }).waitFor();
   await screenshot(owner, 'members-desktop-light');
@@ -84,13 +89,32 @@ try {
     .click();
   await owner.getByRole('dialog', { name: /Invite people to/ }).waitFor();
   await screenshot(owner, 'invite-desktop-light');
+  let inviteRequests = 0;
+  owner.on('request', (request) => {
+    if (request.method() === 'POST' && request.url().endsWith('/invitations'))
+      inviteRequests += 1;
+  });
+  await owner.getByLabel('Email addresses').fill('a@example.com, bad@');
+  await owner.getByRole('button', { name: 'Send 2 invites' }).click();
+  await owner
+    .getByText('“bad@” is not a valid email address.', { exact: true })
+    .waitFor();
+  assert.equal(
+    await owner.getByLabel('Email addresses').getAttribute('aria-invalid'),
+    'true',
+  );
+  assert.equal(inviteRequests, 0);
+  await screenshot(owner, 'invite-bad-address-desktop-light');
   await owner
     .getByLabel('Email addresses')
     .fill(`pending@example.com\n${fixture.editor}`);
   await owner.getByRole('button', { name: 'Send 2 invites' }).click();
+  await owner.getByRole('dialog', { name: '0 invites created' }).waitFor();
+  assert.equal(inviteRequests, 1);
   await owner
     .getByText('Already invited. Copy the link to send it again.')
     .waitFor();
+  await screenshot(owner, 'invite-results-desktop-light');
   await owner.getByText('Already a member.').waitFor();
   await owner.getByRole('button', { name: 'Copy link' }).waitFor();
   await owner.getByRole('button', { name: 'Done', exact: true }).click();
@@ -125,8 +149,35 @@ try {
       page.locator('.cm-ySelectionCaret').first().waitFor(),
     ),
   );
+  const peerLabel = owner
+    .locator('.cm-ySelectionInfo[data-active="true"]')
+    .filter({ hasText: 'Casey Editor' })
+    .first();
+  await peerLabel.waitFor();
   await screenshot(owner, 'editor-desktop-light');
   await screenshot(editor, 'editor-desktop-dark');
+  await owner
+    .locator('.cm-ySelectionInfo[data-active="true"]')
+    .first()
+    .waitFor({ state: 'detached' });
+  await owner.locator('.cm-ySelectionCaret').first().hover();
+  assert.equal(
+    await owner
+      .locator('.cm-ySelectionInfo')
+      .first()
+      .evaluate((node) => getComputedStyle(node).opacity),
+    '1',
+  );
+  const desktopPresence = owner.getByRole('button', {
+    name: /People in this note/,
+  });
+  await desktopPresence.click();
+  const popover = owner.getByRole('dialog', { name: 'People in this note' });
+  await popover.getByRole('list').getByRole('listitem').first().waitFor();
+  assert.equal(await popover.getAttribute('aria-modal'), null);
+  await screenshot(owner, 'presence-desktop-light');
+  await owner.keyboard.press('Escape');
+  await popover.waitFor({ state: 'hidden' });
 
   await editorContext.setOffline(true);
   await editor.getByText(/Offline. Your edits merge/).waitFor();
@@ -155,9 +206,10 @@ try {
   );
 
   for (const scheme of ['light', 'dark'] as const) {
-    for (const width of [390, 1440]) {
-      const phone = width === 390;
-      const layout = phone ? 'phone' : 'desktop';
+    for (const width of [320, 390, 1440]) {
+      const phone = width < 1440;
+      const layout =
+        width === 320 ? 'compact-phone' : phone ? 'phone' : 'desktop';
       const context = await browser.newContext({
         viewport: { width, height: phone ? 844 : 900 },
         hasTouch: phone,
@@ -203,7 +255,7 @@ try {
         await page
           .getByRole('button', { name: /People in this note/ })
           .waitFor();
-        await screenshot(page, `editor-phone-${scheme}`);
+        await screenshot(page, `editor-${layout}-${scheme}`);
       }
       await context.close();
     }
@@ -225,6 +277,15 @@ try {
       'true',
     );
     await screenshot(phone, `viewer-phone-${scheme}`);
+    await phone.setViewportSize({ width: 320, height: 720 });
+    await phone
+      .getByText('View only', { exact: true })
+      .waitFor({ state: 'hidden' });
+    await phone
+      .getByText('View only. You can read this note and its history.')
+      .waitFor();
+    await screenshot(phone, `viewer-compact-phone-${scheme}`);
+    await phone.setViewportSize({ width: 390, height: 844 });
     await phone.getByRole('button', { name: /People in this note/ }).click();
     await phone.getByRole('dialog', { name: 'People in this note' }).waitFor();
     await screenshot(phone, `presence-phone-${scheme}`);
@@ -248,6 +309,8 @@ try {
       await screenshot(phone, 'join-valid-phone-dark');
       await phone.getByRole('button', { name: 'Accept and open' }).click();
       await phone.waitForURL(`${origin}/w/${fixture.viewerJoinId}`);
+      await phone.getByText('You joined Join check as a Viewer.').waitFor();
+      await phone.getByRole('button', { name: 'Open', exact: true }).click();
       await phone.goto(fixture.viewerLink);
       await phone.getByText('This invite no longer works').waitFor();
       await screenshot(phone, 'join-used-phone-dark');
@@ -261,6 +324,10 @@ try {
       await screenshot(phone, 'switcher-pending-phone-dark');
       await accept.click();
       await phone.waitForURL(`${origin}/w/${fixture.viewerSwitcherId}`);
+      await phone
+        .getByText('You joined Switcher check as an Editor.')
+        .waitFor();
+      await screenshot(phone, 'switcher-joined-phone-dark');
     }
     await context.close();
   }

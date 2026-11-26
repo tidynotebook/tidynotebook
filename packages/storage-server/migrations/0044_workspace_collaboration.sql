@@ -114,6 +114,22 @@ ALTER POLICY publications_member_policy ON public.publications
 --> statement-breakpoint
 GRANT SELECT, INSERT ON public.note_client_bindings, public.revision_contributors TO notesapp_app;
 --> statement-breakpoint
+DROP POLICY workspace_write ON public.revision_contributors;
+--> statement-breakpoint
+CREATE POLICY record_revision_contributor ON public.revision_contributors FOR INSERT TO notesapp_app
+  WITH CHECK (public.notesapp_member_role(workspace_id) IN ('owner', 'admin', 'editor')
+    AND EXISTS (
+      SELECT 1 FROM public.revisions r
+      WHERE r.workspace_id = revision_contributors.workspace_id AND r.id = revision_contributors.revision_id
+        AND r.actor_account_id = public.notesapp_current_account()
+        AND (revision_contributors.account_id = r.actor_account_id OR EXISTS (
+          SELECT 1 FROM public.note_client_bindings b
+          WHERE b.workspace_id = r.workspace_id AND b.file_id = r.file_id
+            AND b.epoch = r.document_epoch AND b.account_id = revision_contributors.account_id
+            AND b.can_write
+        ))
+    ));
+--> statement-breakpoint
 CREATE TRIGGER note_client_bindings_locked_guard
   BEFORE INSERT OR UPDATE OR DELETE ON public.note_client_bindings
   FOR EACH ROW EXECUTE FUNCTION public.notesapp_guard_locked_write('workspace_id', 'workspace');
@@ -166,14 +182,22 @@ BEGIN
     RAISE EXCEPTION 'Workspace access is required' USING ERRCODE = '42501';
   END IF;
   RETURN QUERY
-    SELECT m.account_id, nullif(u.name, ''), u.email, m.role::text,
+    WITH ordered AS (
+      SELECT m.account_id AS id, nullif(u.name, '') AS label, u.email AS address, m.role::text AS access,
+        row_number() OVER (ORDER BY
+          CASE m.role::text WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 WHEN 'editor' THEN 2 ELSE 3 END,
+          lower(coalesce(nullif(u.name, ''), u.email)), m.account_id) AS position
+      FROM public.memberships m
+      JOIN public.account_identities ai ON ai.account_id = m.account_id
+      JOIN public.auth_user u ON u.id = ai.auth_user_id
+      WHERE m.workspace_id = p_workspace
+    )
+    SELECT m.id, m.label, m.address, m.access,
       (SELECT count(*) FROM public.memberships tally WHERE tally.workspace_id = p_workspace)
-    FROM public.memberships m
-    JOIN public.account_identities ai ON ai.account_id = m.account_id
-    JOIN public.auth_user u ON u.id = ai.auth_user_id
-    WHERE m.workspace_id = p_workspace AND (p_after IS NULL OR m.account_id > p_after)
-      AND (p_member IS NULL OR m.account_id = p_member)
-    ORDER BY m.account_id LIMIT 101;
+    FROM ordered m
+    WHERE (p_after IS NULL OR m.position > coalesce((SELECT o.position FROM ordered o WHERE o.id = p_after), 0))
+      AND (p_member IS NULL OR m.id = p_member)
+    ORDER BY m.position LIMIT 101;
 END $$;
 --> statement-breakpoint
 CREATE FUNCTION public.notesapp_change_workspace_member(p_workspace uuid, p_member uuid, p_role text, p_leave boolean)

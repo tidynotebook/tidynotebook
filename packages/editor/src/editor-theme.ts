@@ -1120,7 +1120,7 @@ export function noteSurfaceStyle(): Parameters<typeof EditorView.theme>[0] {
     [`@media ${gripPointerQuery}`]: {
       '.cm-content': {
         paddingInlineStart:
-          'max(calc(var(--spacing) * 5), calc((100% - var(--container-note)) / 2))',
+          'max(calc(var(--spacing) * 6), calc((100% - var(--container-note)) / 2))',
       },
     },
     '.cm-np-align-left': { textAlign: 'left' },

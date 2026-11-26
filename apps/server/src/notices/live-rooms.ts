@@ -11,6 +11,7 @@ import {
 } from '@notesapp/storage-server';
 import {
   verifyActor,
+  presenceColorSlot,
   type CollaborationStore,
   type Role,
 } from '@notesapp/core';
@@ -42,17 +43,14 @@ type Room = {
   readonly key: string;
   readonly members: Set<Peer>;
   document: Uint8Array;
-  accepted: Uint8Array;
+  head: string | null;
+  refreshing: boolean;
+  retryHeadAfter: number;
   work: Promise<void>;
 };
-type Watch = { generation: number; workspaceIds: Set<string> };
-type NoteState = {
-  bytes: Uint8Array;
-  epoch: number;
-  role: Role;
-  writable: boolean;
-};
+const bindingConflict = Symbol('bindingConflict');
 
+type Watch = { generation: number; workspaceIds: Set<string> };
 export type OpenNotePresence = {
   workspaceId: string;
   fileId: string;
@@ -68,6 +66,7 @@ export type LiveRooms = {
   readonly recheck: (connection: LiveConnection) => Promise<void>;
   readonly reset: () => void;
   readonly hasRoom?: (key: string) => boolean;
+  readonly refreshWorkspace?: (workspaceId: string) => void;
   readonly refreshPresence?: (workspaceId: string) => Promise<void>;
 };
 
@@ -86,14 +85,6 @@ export function noteOf(
 
 export function roomKey(note: LiveNote): string {
   return `${note.workspaceId}:${note.fileId}:${note.epoch}`;
-}
-
-function colorSlot(accountId: string): number {
-  const value = accountId.replaceAll('-', '');
-  let slot = 0;
-  for (let index = 0; index < value.length; index += 1)
-    slot = (slot * 31 + value.charCodeAt(index)) % 6;
-  return slot;
 }
 
 function relativePoint(value: unknown): unknown {
@@ -121,11 +112,15 @@ function relativePoint(value: unknown): unknown {
     : null;
 }
 
+function canWrite(peer: Peer): boolean {
+  return peer.role !== 'viewer';
+}
+
 function canonicalAwareness(peer: Peer, entry: AwarenessEntry): AwarenessEntry {
   const rawCursor = readProperty(entry.state, 'cursor');
   const anchor = relativePoint(readProperty(rawCursor, 'anchor'));
   const head = relativePoint(readProperty(rawCursor, 'head'));
-  const slot = colorSlot(peer.connection.accountId);
+  const slot = presenceColorSlot(peer.connection.accountId);
   return {
     clientId: entry.clientId,
     clock: entry.clock,
@@ -170,11 +165,15 @@ export function createLiveRooms(input: {
   ): void => {
     connection.emit({ kind: 'noteStopped', roomId, reason });
   };
-  const read = async (
+  async function read(
     connection: LiveConnection,
     note: LiveNote,
-    bind = false,
-  ): Promise<NoteState | null> => {
+    options: {
+      bind?: boolean;
+      bindIfWritable?: boolean;
+      knownHead?: string | null;
+    } = {},
+  ) {
     const readable = await input.noticeAccess(
       connection.sessionId,
       connection.accountId,
@@ -186,17 +185,25 @@ export function createLiveRooms(input: {
       actor.value,
       note.workspaceId,
       async (tx) => {
-        const current = await tx.liveNote(note.fileId);
+        const current = await tx.liveNoteAccess(note.fileId);
         if (current === null || current.epoch !== note.epoch) return null;
         if (
-          bind &&
+          (options.bind ||
+            (options.bindIfWritable &&
+              current.writable &&
+              current.role !== 'viewer')) &&
           !(await tx.bindNoteClient(note.fileId, note.epoch, note.clientId))
         )
-          return null;
-        return current;
+          return bindingConflict;
+        if (options.knownHead === current.head)
+          return { ...current, bytes: null };
+        const document = await tx.liveNote(note.fileId);
+        return document === null || document.epoch !== note.epoch
+          ? null
+          : document;
       },
     );
-  };
+  }
 
   function serial(room: Room, run: () => Promise<void>): Promise<void> {
     const next = room.work.then(run);
@@ -255,6 +262,7 @@ export function createLiveRooms(input: {
           .map(([fileId, accounts]) => ({
             fileId,
             accountCount: accounts.size,
+            colorSlots: [...accounts].sort().slice(0, 3).map(presenceColorSlot),
           })),
       });
     }
@@ -278,16 +286,23 @@ export function createLiveRooms(input: {
         state: null,
       };
       void serial(room, async () => {
-        for (const target of room.members)
-          if (await currentPeer(target)) writeAwareness(target, entry);
+        for (const target of room.members) writeAwareness(target, entry);
       }).catch(() => {});
     }
     void presence(peer.workspaceId).catch(() => {});
   }
 
-  async function currentPeer(peer: Peer): Promise<NoteState | null> {
-    const current = await read(peer.connection, peer);
-    if (!peer.room.members.has(peer)) return null;
+  async function currentPeer(peer: Peer): Promise<boolean> {
+    const current = await read(peer.connection, peer, {
+      knownHead: peer.room.head,
+      bindIfWritable: peer.role === 'viewer',
+    });
+    if (!peer.room.members.has(peer)) return false;
+    if (current === bindingConflict) {
+      stop(peer.connection, peer.roomId, 'client_id_conflict');
+      removePeer(peer);
+      return false;
+    }
     if (current === null) {
       peer.connection.emit({
         kind: 'noteAccess',
@@ -295,19 +310,10 @@ export function createLiveRooms(input: {
         access: 'removed',
       });
       removePeer(peer);
-      return null;
+      return false;
     }
     const role = current.writable ? current.role : 'viewer';
     if (peer.role !== role) {
-      if (
-        peer.role === 'viewer' &&
-        role !== 'viewer' &&
-        !(await read(peer.connection, peer, true))
-      ) {
-        stop(peer.connection, peer.roomId, 'client_id_conflict');
-        removePeer(peer);
-        return null;
-      }
       peer.role = role;
       peer.connection.emit({
         kind: 'noteAccess',
@@ -317,7 +323,15 @@ export function createLiveRooms(input: {
       if (peer.awareness !== null)
         peer.awareness = canonicalAwareness(peer, peer.awareness);
     }
-    return current;
+    if (
+      current.bytes !== null &&
+      !refreshHead(peer.room, current.head, current.bytes)
+    ) {
+      stop(peer.connection, peer.roomId, 'unavailable');
+      removePeer(peer);
+      return false;
+    }
+    return true;
   }
 
   function sendSync(
@@ -341,14 +355,28 @@ export function createLiveRooms(input: {
     return true;
   }
 
-  function apply(room: Room, update: Uint8Array): boolean {
+  function apply(room: Room, update: Uint8Array) {
     const next = applyDocumentUpdate(room.document, update);
-    if (!next.ok) return false;
+    if (!next.ok) return next.refusal;
     const delta = next.value.document.byteLength - room.document.byteLength;
-    if (memory + delta > liveBounds.roomMemory) return false;
-    if (rooms.get(room.key) !== room) return false;
+    if (memory + delta > liveBounds.roomMemory) return 'too-large';
+    if (rooms.get(room.key) !== room) return 'unavailable';
     room.document = next.value.document;
     memory += delta;
+    return null;
+  }
+
+  function refreshHead(
+    room: Room,
+    head: string | null,
+    bytes: Uint8Array,
+  ): boolean {
+    const delta = encodeDocumentDelta(
+      bytes,
+      documentStateVector(room.document),
+    );
+    if (apply(room, delta) !== null) return false;
+    room.head = head;
     return true;
   }
 
@@ -359,12 +387,13 @@ export function createLiveRooms(input: {
     const known = peers.get(connection);
     const existing = known?.get(note.roomId);
     if (existing !== undefined) {
-      const current = await currentPeer(existing);
-      if (
-        current !== null &&
-        note.clientId === existing.clientId &&
-        roomKey(note) === existing.room.key
-      ) {
+      await serial(existing.room, async () => {
+        if (
+          !existing.room.members.has(existing) ||
+          note.clientId !== existing.clientId ||
+          roomKey(note) !== existing.room.key
+        )
+          return;
         existing.sequence = 0;
         connection.emit({
           kind: 'noteJoined',
@@ -372,26 +401,35 @@ export function createLiveRooms(input: {
           epoch: existing.epoch,
           role: existing.role,
         });
-      }
+      });
       return;
     }
     if ((known?.size ?? 0) >= liveBounds.roomsPerConnection)
       return stop(connection, note.roomId, 'capacity');
-    const current = await read(connection, note);
-    if (current === null) return stop(connection, note.roomId, 'forbidden');
-    if (rooms.size >= liveBounds.roomsPerProcess && !rooms.has(roomKey(note)))
-      return stop(connection, note.roomId, 'capacity');
-    if (!(await read(connection, note, true)))
-      return stop(connection, note.roomId, 'client_id_conflict');
     let room = rooms.get(roomKey(note));
+    if (rooms.size >= liveBounds.roomsPerProcess && room === undefined)
+      return stop(connection, note.roomId, 'capacity');
+    const knownHead = room?.head;
+    const current = await read(connection, note, {
+      bind: true,
+      ...(knownHead === undefined ? {} : { knownHead }),
+    });
+    if (current === null) return stop(connection, note.roomId, 'forbidden');
+    if (current === bindingConflict)
+      return stop(connection, note.roomId, 'client_id_conflict');
+    room = rooms.get(roomKey(note));
     if (room === undefined) {
+      if (current.bytes === null)
+        return stop(connection, note.roomId, 'unavailable');
       if (memory + current.bytes.byteLength > liveBounds.roomMemory)
         return stop(connection, note.roomId, 'capacity');
       room = {
         key: roomKey(note),
         members: new Set(),
         document: current.bytes,
-        accepted: current.bytes,
+        head: current.head,
+        refreshing: false,
+        retryHeadAfter: 0,
         work: Promise.resolve(),
       };
       rooms.set(room.key, room);
@@ -400,6 +438,12 @@ export function createLiveRooms(input: {
     const target = room;
     await serial(target, async () => {
       if (rooms.get(target.key) !== target)
+        return stop(connection, note.roomId, 'unavailable');
+      if (
+        current.bytes !== null &&
+        target.head === knownHead &&
+        !refreshHead(target, current.head, current.bytes)
+      )
         return stop(connection, note.roomId, 'unavailable');
       if (target.members.size >= liveBounds.connectionsPerRoom)
         return stop(connection, note.roomId, 'capacity');
@@ -469,8 +513,7 @@ export function createLiveRooms(input: {
       if (typeof payload !== 'string') return;
       const bytes = Buffer.from(payload, 'base64');
       await serial(peer.room, async () => {
-        const current = await currentPeer(peer);
-        if (current === null) return;
+        if (!peer.room.members.has(peer)) return;
         if (kind === 'sendNoteAwareness') {
           const decoded =
             bytes.byteLength <= liveBounds.awarenessBytes
@@ -486,8 +529,7 @@ export function createLiveRooms(input: {
           const entry = canonicalAwareness(peer, first);
           peer.awareness = entry;
           for (const target of peer.room.members)
-            if (target !== peer && (await currentPeer(target)))
-              writeAwareness(target, entry);
+            if (target !== peer) writeAwareness(target, entry);
           return;
         }
         const decoded =
@@ -498,18 +540,6 @@ export function createLiveRooms(input: {
           stop(connection, roomId, 'invalid_update');
           removePeer(peer);
           return;
-        }
-        if (Buffer.compare(current.bytes, peer.room.accepted) !== 0) {
-          const delta = encodeDocumentDelta(
-            current.bytes,
-            documentStateVector(peer.room.document),
-          );
-          if (!apply(peer.room, delta)) {
-            stop(connection, roomId, 'unavailable');
-            removePeer(peer);
-            return;
-          }
-          peer.room.accepted = current.bytes;
         }
         if (decoded.kind === 'vector') {
           try {
@@ -525,21 +555,28 @@ export function createLiveRooms(input: {
           }
           return;
         }
-        if (peer.role === 'viewer') return;
+        if (!canWrite(peer)) return;
         try {
           const { clientIds } = updateActors(decoded.bytes);
           if (clientIds.some((id) => id !== peer.clientId))
             throw new Error('Unexpected client ID.');
-          if (!apply(peer.room, decoded.bytes))
-            throw new Error('Invalid live update.');
+          let refusal = apply(peer.room, decoded.bytes);
+          if (
+            refusal === 'missing-dependency' &&
+            Date.now() >= peer.room.retryHeadAfter
+          ) {
+            peer.room.retryHeadAfter = Date.now() + liveBounds.recheckHeadMs;
+            if (!(await currentPeer(peer)) || !canWrite(peer)) return;
+            refusal = apply(peer.room, decoded.bytes);
+          }
+          if (refusal !== null) throw new Error('Invalid live update.');
         } catch {
           stop(connection, roomId, 'invalid_update');
           removePeer(peer);
           return;
         }
         for (const target of peer.room.members)
-          if (target !== peer && (await currentPeer(target)))
-            sendSync(target, 'update', decoded.bytes);
+          if (target !== peer) sendSync(target, 'update', decoded.bytes);
       });
     },
     remove(connection) {
@@ -548,8 +585,46 @@ export function createLiveRooms(input: {
         removePeer(peer);
     },
     async recheck(connection) {
-      for (const peer of [...(peers.get(connection)?.values() ?? [])])
-        await currentPeer(peer);
+      const pending = [...(peers.get(connection)?.values() ?? [])].map((peer) =>
+        serial(peer.room, async () => {
+          if (!peer.room.members.has(peer)) return;
+          try {
+            await currentPeer(peer);
+          } catch {
+            stop(peer.connection, peer.roomId, 'unavailable');
+            removePeer(peer);
+          }
+        }),
+      );
+      const watch = watches.get(connection);
+      if (watch !== undefined) {
+        const allowed = await input.noticeAccess(
+          connection.sessionId,
+          connection.accountId,
+        );
+        if (watches.get(connection) === watch)
+          for (const id of watch.workspaceIds)
+            if (!allowed?.includes(id)) watch.workspaceIds.delete(id);
+      }
+      await Promise.all(pending);
+    },
+    refreshWorkspace(workspaceId) {
+      for (const room of rooms.values()) {
+        if (!room.key.startsWith(`${workspaceId}:`) || room.refreshing)
+          continue;
+        room.refreshing = true;
+        void serial(room, async () => {
+          room.refreshing = false;
+          for (const peer of room.members) {
+            if (await currentPeer(peer)) break;
+          }
+        }).catch(() => {
+          for (const peer of room.members) {
+            stop(peer.connection, peer.roomId, 'unavailable');
+            removePeer(peer);
+          }
+        });
+      }
     },
     reset() {
       for (const [connection, list] of peers)

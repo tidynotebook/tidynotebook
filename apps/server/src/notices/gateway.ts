@@ -443,6 +443,7 @@ export function createNoticeGateway(options: {
 
   const onHint = (hint: GatewayHint): void => {
     if (hint.kind === 'workspace') {
+      options.live?.refreshWorkspace?.(hint.workspaceId);
       for (const stream of byWorkspace.get(hint.workspaceId) ?? []) {
         stream.changed.add(hint.workspaceId);
         queueBatch(stream);
@@ -452,9 +453,15 @@ export function createNoticeGateway(options: {
     // A session or an account changed, so each of its streams checks its
     // access again with no changed workspace.
     for (const stream of streams)
-      if (hint.kind === 'session' && stream.sessionId === hint.sessionId)
+      if (hint.kind === 'session' && stream.sessionId === hint.sessionId) {
+        enqueue(stream, async () => {
+          await options.live?.recheck(stream.live);
+        });
         queueBatch(stream);
-      else if (hint.kind === 'account' && stream.accountId === hint.accountId) {
+      } else if (
+        hint.kind === 'account' &&
+        stream.accountId === hint.accountId
+      ) {
         stream.accountChanged = true;
         enqueue(stream, async () => {
           await options.live?.recheck(stream.live);

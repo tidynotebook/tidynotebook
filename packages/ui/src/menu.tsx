@@ -58,6 +58,7 @@ export type MenuItem = {
   /** A value that is unique inside one menu. */
   readonly id: string;
   readonly label: string;
+  readonly detail?: string;
   /** A short value shown on the right, such as the current theme. */
   readonly hint?: ReactNode | undefined;
   readonly icon?: ReactNode | undefined;
@@ -109,6 +110,8 @@ function MenuRow({
       type="button"
       role={choosing ? 'menuitemradio' : 'menuitem'}
       aria-checked={choosing ? item.selected === true : undefined}
+      aria-label={item.detail === undefined ? undefined : item.label}
+      aria-description={item.detail}
       tabIndex={-1}
       data-menu-input={showFocus ? 'keyboard' : 'pointer'}
       className={rowClassName({
@@ -125,7 +128,15 @@ function MenuRow({
           {item.icon}
         </span>
       )}
-      <span className="flex-1 truncate">{item.label}</span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate">{item.label}</span>
+        {item.detail === undefined ? null : (
+          <span className="block text-secondary text-muted">{item.detail}</span>
+        )}
+      </span>
+      {item.hint === undefined ? null : (
+        <span className="shrink-0 text-secondary text-muted">{item.hint}</span>
+      )}
       {choosing ? (
         <span
           data-menu-check
@@ -135,9 +146,6 @@ function MenuRow({
           {item.selected ? <CheckIcon /> : null}
         </span>
       ) : null}
-      {item.hint === undefined ? null : (
-        <span className="shrink-0 text-secondary text-muted">{item.hint}</span>
-      )}
     </button>
   );
 }
@@ -173,6 +181,7 @@ function MenuList({
 }: {
   readonly id: string;
   readonly label: string;
+
   readonly header?: ReactNode;
   readonly items: readonly MenuItem[];
   readonly pinned: readonly MenuItem[];
@@ -397,6 +406,7 @@ export function Menu({
 }: {
   /** The accessible name of the trigger. */
   readonly label: string;
+
   readonly icon?: ReactNode | undefined;
   readonly header?: ReactNode;
   readonly items: readonly MenuItem[];
@@ -580,6 +590,7 @@ export function AnchoredMenu({
   onClose,
 }: {
   readonly label: string;
+
   readonly header?: ReactNode;
   readonly items: readonly MenuItem[];
   /**

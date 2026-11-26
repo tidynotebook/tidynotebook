@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import test from 'node:test';
 import { setTimeout } from 'node:timers/promises';
-import { acceptWithDocuments } from '@notesapp/core';
+import { acceptWithDocuments, type CollaborationStore } from '@notesapp/core';
 import {
   createDocumentService,
   openIdentityStore,
@@ -41,20 +41,39 @@ const editorId = randomUUID();
 const viewerId = randomUUID();
 const fileId = randomUUID();
 const seal = createLiveRelaySeal('integration-only 36-byte room relay key');
-const noticeAccess = async (sessionId: string, accountId: string) =>
-  sessionId === accountId
+let transactions = 0;
+let documentReads = 0;
+let accessReads = 0;
+const store: CollaborationStore = {
+  collaboration(actor, workspaceId, run) {
+    transactions += 1;
+    return identity.collaboration(actor, workspaceId, (tx) =>
+      run({
+        ...tx,
+        liveNote(fileId) {
+          documentReads += 1;
+          return tx.liveNote(fileId);
+        },
+      }),
+    );
+  },
+};
+const noticeAccess = async (sessionId: string, accountId: string) => {
+  accessReads += 1;
+  return sessionId === accountId
     ? (await identity.memberships(accountId)).map((entry) => entry.workspaceId)
     : null;
+};
 const first = createLiveCluster({
   databaseUrl: db.runtimeUrl,
   seal,
-  store: identity,
+  store,
   noticeAccess,
 });
 const second = createLiveCluster({
   databaseUrl: db.runtimeUrl,
   seal,
-  store: identity,
+  store,
   noticeAccess,
 });
 
@@ -181,6 +200,27 @@ try {
     );
   });
 
+  await test('message delivery uses the cached role and document for every peer', async () => {
+    const updates = 8;
+    const count = (peer: typeof owner) =>
+      peer.output.filter((entry) => entry['kind'] === 'noteSync').length;
+    const oldOwner = count(owner);
+    const oldViewer = count(viewer);
+    const reads = [transactions, documentReads, accessReads];
+    for (let index = 0; index < updates; index += 1)
+      await second.handle(editor, 'sendNoteSync', {
+        roomId: editorRoom.roomId,
+        payload: Buffer.from(update).toString('base64'),
+      });
+    await waitFor(
+      () =>
+        count(owner) === oldOwner + updates &&
+        count(viewer) === oldViewer + updates,
+      'The updates did not reach both recipients.',
+    );
+    assert.deepEqual([transactions, documentReads, accessReads], reads);
+  });
+
   await test('a live update reaches the peer and its binding supplies checkpoint authorship', async () => {
     await second.handle(editor, 'sendNoteSync', {
       roomId: editorRoom.roomId,
@@ -210,6 +250,30 @@ try {
       acceptWithDocuments(content.documents, tx, actor, save, save.mutationId),
     );
     assert.ok(result.ok, JSON.stringify(result));
+    const runtime = await openSession(db.runtimeUrl, ownerId);
+    const editorRuntime = await openSession(db.runtimeUrl, editorId);
+    try {
+      const insert =
+        'insert into revision_contributors (workspace_id, revision_id, account_id) values ($1, $2, $3)';
+      assert.equal(
+        (await runtime.failure(insert, [workspaceId, dependent.id, viewerId]))
+          .code,
+        '42501',
+      );
+      assert.equal(
+        (
+          await editorRuntime.failure(insert, [
+            workspaceId,
+            dependent.id,
+            ownerId,
+          ])
+        ).code,
+        '42501',
+      );
+    } finally {
+      await runtime.close();
+      await editorRuntime.close();
+    }
     const history = await content.transact(actor, workspaceId, (tx) =>
       tx.listHistory(fileId, { limit: 10, cursor: null }),
     );
@@ -219,6 +283,15 @@ try {
         ?.contributors?.map((person) => person.accountId),
       [editorId],
     );
+  });
+
+  await test('access rechecks read document bytes only after a durable head changes', async () => {
+    const before = documentReads;
+    await first.recheck(owner);
+    assert.equal(documentReads, before + 1);
+    await first.recheck(viewer);
+    await first.recheck(owner);
+    assert.equal(documentReads, before + 1);
   });
 
   await test('viewer writes do not reach peers and removal evicts a remote room', async () => {

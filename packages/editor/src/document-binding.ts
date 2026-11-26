@@ -42,6 +42,7 @@ import {
   type DocumentResult,
   type DocumentSession,
 } from '@notesapp/note-document';
+import { remoteCaretLabels } from './remote-caret.ts';
 import { documentHistory } from './history-controls.ts';
 import {
   yCollab,
@@ -163,6 +164,7 @@ export function bindDocument(session: DocumentSession): DocumentBinding {
       yCollab(binding.text, binding.awareness, {
         undoManager: binding.undoManager,
       }),
+      remoteCaretLabels(binding.awareness),
       // Yjs holds the local undo of a bound editor, so the keys of the
       // shortcuts list run the undo manager rather than the CodeMirror
       // history that a plain editor keeps.

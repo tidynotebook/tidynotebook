@@ -1,3 +1,4 @@
+import { WorkspaceJoinedToast } from './workspace-joined.tsx';
 import {
   Inline,
   ApplicationContent,
@@ -1821,7 +1822,7 @@ function ShellFrame({
               }}
             />
 
-            <HeaderSlot className="flex shrink-0 items-center empty:hidden" />
+            <HeaderSlot className="shrink-0 empty:hidden" />
 
             {/*
               A hand written button and not a `Button`, because the word and
@@ -2020,6 +2021,7 @@ function ShellFrame({
             />
           )}
           <SettingsModalHost workspaceId={workspaceId} />
+          <WorkspaceJoinedToast />
           {signOut.dialog}
           {shortcutsOpen && ShortcutsView !== null ? (
             <ShortcutsView open onClose={() => setShortcutsOpen(false)} />
