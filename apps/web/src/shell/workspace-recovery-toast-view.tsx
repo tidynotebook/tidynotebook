@@ -13,7 +13,7 @@ export function RecoveryToastView({
   const navigate = useNavigate();
   const note = notice.note;
   return (
-    <Toast message={notice.message}>
+    <Toast message={notice.message} aboveFooter>
       <Inline gap={2}>
         {note === undefined ? null : (
           <Button

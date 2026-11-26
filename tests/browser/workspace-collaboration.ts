@@ -423,7 +423,6 @@ try {
     .getByText('Your role changed to Viewer. Editing is off.')
     .waitFor();
   assert.equal(await editorText.getAttribute('aria-readonly'), 'true');
-  await screenshot(editor, 'editor-downgraded-desktop-dark');
   await editor
     .getByText(
       `Your unsent text is in Personal, in the folder From ${fixture.workspaceName}.`,
@@ -446,6 +445,11 @@ try {
   await downgradeToast
     .getByRole('button', { name: 'Dismiss', exact: true })
     .waitFor();
+  const cardBox = await downgradeToast.locator('div').first().boundingBox();
+  const footerBox = await editor
+    .getByText('Your role changed to Viewer. Editing is off.')
+    .boundingBox();
+  assert.ok(cardBox && footerBox && cardBox.y + cardBox.height <= footerBox.y);
   await screenshot(editor, 'recovery-downgrade-desktop-dark');
   await downgradeToast
     .getByRole('button', { name: 'Open', exact: true })

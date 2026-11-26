@@ -30,14 +30,16 @@ import { transitionRaise } from './motion.ts';
 export function Toast({
   message,
   children,
+  aboveFooter = false,
 }: {
   readonly message: string;
+  readonly aboveFooter?: boolean;
   /** The one action of the toast, such as Undo. */
   readonly children?: ReactNode | undefined;
 }): ReactNode {
   return (
     <div
-      className={`pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center pb-4 ${pageGutter}`}
+      className={`pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center ${aboveFooter ? 'pb-12' : 'pb-4'} ${pageGutter}`}
       role="status"
       aria-live="polite"
     >
