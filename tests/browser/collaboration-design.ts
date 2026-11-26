@@ -347,7 +347,6 @@ export async function runCollaborationAudit(
           .click();
         await owner.getByText(/^Viewing(?: · Idle)?$/).waitFor();
         await check(owner, 'presence');
-        await viewerContext.close();
 
         const reconnectContext = await newContext();
         await reconnectContext.routeWebSocket('**/api/sync/notices', (socket) =>
@@ -415,18 +414,49 @@ export async function runCollaborationAudit(
         await editor
           .getByRole('button', { name: 'Dismiss', exact: true })
           .click();
-        await role.click();
-        await owner.getByText('Remove from workspace', { exact: true }).click();
-        await owner
-          .getByRole('dialog', { name: 'Remove from workspace' })
-          .getByRole('button', { name: 'Remove', exact: true })
-          .click();
-        await editor
+        async function removeMember(name: string) {
+          await owner.getByRole('button', { name: `Role for ${name}` }).click();
+          await owner
+            .getByText('Remove from workspace', { exact: true })
+            .click();
+          await owner
+            .getByRole('dialog', { name: 'Remove from workspace' })
+            .getByRole('button', { name: 'Remove', exact: true })
+            .click();
+        }
+        await removeMember('Sam Viewer');
+        await viewer
           .getByText(`You no longer have access to ${fixture.workspaceName}.`, {
             exact: true,
           })
           .waitFor();
-        await check(editor, 'removal-toast');
+        await check(viewer, 'removal-toast');
+        await viewerContext.close();
+
+        await role.click();
+        await owner
+          .getByRole(phone ? 'button' : 'menuitemradio', {
+            name: 'Editor',
+            exact: true,
+          })
+          .click();
+        await role.getByText('Editor', { exact: true }).waitFor();
+        await editor.goto(note);
+        await editor.locator('[data-live-connection=Live]').waitFor();
+        await editorContext.setOffline(true);
+        await text.focus();
+        await text.press('Control+End');
+        await editor.keyboard.type('\nKeep this text after removal');
+        await text.press('Control+s');
+        await removeMember('Casey Editor');
+        await editorContext.setOffline(false);
+        await editor
+          .getByText(
+            `You no longer have access to ${fixture.workspaceName}. Your unsent text`,
+            { exact: false },
+          )
+          .waitFor();
+        await check(editor, 'removal-recovery-toast');
         await editorContext.close();
         await ownerContext.close();
       }
