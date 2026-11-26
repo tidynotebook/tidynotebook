@@ -32,14 +32,6 @@ import { minPasswordLength } from '../../lib/password-policy.ts';
 import { relativeTime } from '../../lib/relative-time.ts';
 
 /**
- * The one name of the owner screen.
- *
- * The sidebar, the command palette and the screen itself read it here, so the
- * shell names the screen without loading it.
- */
-export const publishedLinksTitle = 'Published links';
-
-/**
  * The address that the owner copies, once.
  *
  * The origin is the origin that serves this application, which is the origin

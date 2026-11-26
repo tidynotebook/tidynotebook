@@ -161,7 +161,7 @@ import {
 import { SidebarCalendar } from '../features/daily-notes/calendar-entry.tsx';
 import { dailyNoteDate, type PublicationScope } from '@notesapp/core';
 import { PublishDialog } from '../features/publishing/publish-dialog-entry.tsx';
-import { publishedLinksTitle } from '../features/publishing/publishing.ts';
+import { publishedLinksTitle } from '../features/publishing/published-links-title.ts';
 import { accountsTitle } from '../lib/accounts.ts';
 import {
   NoteActionsScope,

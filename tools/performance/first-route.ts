@@ -99,6 +99,46 @@ function staticImports(script: BuiltScript): readonly string[] {
   return [...found];
 }
 
+async function screenChunk(
+  dist: string,
+  scripts: readonly BuiltScript[],
+  name: string,
+): Promise<BuiltScript> {
+  const candidates = scripts.filter((script) =>
+    new RegExp(`^assets/${name}-[^/]+\\.js$`).test(script.file),
+  );
+  if (candidates.length === 1 && candidates[0] !== undefined)
+    return candidates[0];
+
+  // A syntax mode can have the same chunk name as an application screen.
+  const entries = await Promise.all(
+    candidates.map(async (script) => {
+      const map: unknown = JSON.parse(
+        await readFile(join(dist, `${script.file}.map`), 'utf8'),
+      );
+      return map !== null &&
+        typeof map === 'object' &&
+        'sources' in map &&
+        Array.isArray(map.sources) &&
+        map.sources.some(
+          (source: unknown) =>
+            typeof source === 'string' &&
+            source.includes('/src/') &&
+            !source.includes('/node_modules/') &&
+            source.endsWith(`/${name}.tsx`),
+        )
+        ? script
+        : null;
+    }),
+  );
+  const found = entries.filter((entry) => entry !== null);
+  if (found.length !== 1 || found[0] === undefined)
+    throw new Error(
+      `The build does not identify one screen chunk for ${name}.`,
+    );
+  return found[0];
+}
+
 /**
  * The scripts of the first screen: the first route, the lazy chunks of the
  * frame and All notes, and every chunk that those import statically. A cold
@@ -114,14 +154,11 @@ export async function firstScreenScripts(
   );
   const start = [
     ...(await firstRouteScripts(dist)),
-    ...[...firstScreenChunks, ...additionalChunks].map((chunk) => {
-      const found = every.find((script) =>
-        new RegExp(`^assets/${chunk}-[^/]+\\.js$`).test(script.file),
-      );
-      if (found === undefined)
-        throw new Error(`The build has no chunk of ${chunk}.`);
-      return found;
-    }),
+    ...(await Promise.all(
+      [...firstScreenChunks, ...additionalChunks].map((name) =>
+        screenChunk(dist, every, name),
+      ),
+    )),
   ];
   const seen = new Map<string, BuiltScript>();
   const queue = [...start];
