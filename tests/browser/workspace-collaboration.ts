@@ -103,6 +103,16 @@ async function readOpenRecovery(page: Page) {
   return fixture.readRecovery(fileId);
 }
 
+async function waitForSavedHead(text: string): Promise<string> {
+  const deadline = Date.now() + 10_000;
+  while (Date.now() < deadline) {
+    const head = await fixture.readNote();
+    if (head?.includes(text)) return head;
+    await new Promise<void>((resolve) => setTimeout(resolve, 100));
+  }
+  assert.fail(`The server did not save "${text}".`);
+}
+
 try {
   const ownerContext = await browser.newContext({
     viewport: { width: 1440, height: 900 },
@@ -311,15 +321,18 @@ try {
   await ownerText.press('Control+End');
   await owner.keyboard.type('\nThe owner can still save');
   await ownerText.press('Control+s');
+  const head = await waitForSavedHead('The owner can still save');
   await owner
     .getByRole('button', { name: /Show save details/ })
     .waitFor({ state: 'hidden' });
+  await owner
+    .getByRole('treeitem', { name: /Launch plan/ })
+    .getByText('Local', { exact: true })
+    .waitFor({ state: 'hidden' });
   await bothSee(owner, editor, /The owner can still save/);
   await editorContext.unrouteAll({ behavior: 'wait' });
-  const head = await fixture.readNote();
-  assert.match(head ?? '', /Casey wrote this before the change/);
-  assert.match(head ?? '', /Owner work in progress/);
-  assert.match(head ?? '', /The owner can still save/);
+  assert.match(head, /Casey wrote this before the change/);
+  assert.match(head, /Owner work in progress/);
   await Promise.all(
     [owner, editor].map((page) => page.goto(`${origin}${note}`)),
   );
