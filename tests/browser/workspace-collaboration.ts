@@ -642,8 +642,73 @@ try {
   await editor.getByRole('button', { name: /Workspace: / }).click();
   await editor.getByText(`Accept invite to ${fixture.workspaceName}`).click();
   await editor.waitForURL(`${origin}${space}`);
+  await memberSettings.goto(`${origin}${space}?settings=members`);
+  await Promise.all(
+    [owner, editor].map((page) => page.goto(`${origin}${note}`)),
+  );
+  await editorText
+    .getByText('The owner can still save', { exact: true })
+    .waitFor();
+  await editor.getByText('Live', { exact: true }).waitFor();
+  const recoveryPaths = await fixture.recoveryPaths();
+  assert.deepEqual(await workspaceWrites(editor, fixture.workspaceId), [0, 0]);
+  await editor.evaluate(() =>
+    Object.defineProperty(document, 'hidden', {
+      value: true,
+      configurable: true,
+    }),
+  );
+  const idlePresence = owner.getByRole('button', {
+    name: /People in this note: Casey Editor/,
+  });
+  const idlePopover = owner.getByRole('dialog', {
+    name: 'People in this note',
+  });
+  await idlePresence.click();
+  await idlePopover.getByText('Editing · Idle', { exact: true }).waitFor();
+  await screenshot(owner, 'presence-idle-editor-desktop-light');
+  await owner.keyboard.press('Escape');
+
+  await onlineRole.click();
+  await memberSettings
+    .getByRole('menuitemradio', { name: 'Viewer', exact: true })
+    .click();
+  await editor
+    .getByText('Your role changed to Viewer. Editing is off.')
+    .waitFor();
+  await editor.getByText('Live', { exact: true }).waitFor();
+  assert.equal(await editorText.getAttribute('aria-readonly'), 'true');
+  await idlePresence.click();
+  await idlePopover.getByText('Viewing · Idle', { exact: true }).waitFor();
+  await screenshot(owner, 'presence-idle-viewer-desktop-light');
+  assert.deepEqual(await fixture.recoveryPaths(), recoveryPaths);
+  assert.equal(
+    await editor.getByText(/Your unsent text is in Personal/).count(),
+    0,
+  );
+  await onlineRole.click();
+  await memberSettings
+    .getByText('Remove from workspace', { exact: true })
+    .click();
+  await memberSettings
+    .getByRole('dialog', { name: 'Remove from workspace' })
+    .getByRole('button', { name: 'Remove', exact: true })
+    .click();
+  const removedNotice = `You no longer have access to ${fixture.workspaceName}.`;
+  const cleanToast = editor
+    .getByRole('status')
+    .filter({ hasText: removedNotice });
+  await cleanToast.getByText(removedNotice, { exact: true }).waitFor();
+  assert.equal(
+    await cleanToast.getByRole('button', { name: 'Open', exact: true }).count(),
+    0,
+  );
+  await editor.waitForURL(`${origin}/w/${fixture.editorPersonalId}`);
+  assert.deepEqual(await workspaceWrites(editor, fixture.workspaceId), [0, 0]);
+  assert.deepEqual(await fixture.recoveryPaths(), recoveryPaths);
+  await screenshot(editor, 'clean-removal-desktop-dark');
   process.stdout.write(
-    'Concurrent edits, cursors, presence, offline merge, invites, viewer access, downgrade and removal recovery, and former contributors passed.\n',
+    'Concurrent edits, cursors, presence and idle modes, offline merge, invites, access changes with and without unsent work, and former contributors passed.\n',
   );
 } catch (error) {
   for (const context of browser.contexts()) {

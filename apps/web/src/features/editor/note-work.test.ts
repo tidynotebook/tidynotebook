@@ -376,3 +376,10 @@ await test('access recovery settles pending writes and blocks later draft writes
     ['a', 'a'],
   );
 });
+
+await test('access loss freezes a clean editor without writing a draft', async () => {
+  const editor = new Editor();
+  await editor.work.saveForAccess(false, null);
+  assert.equal(editor.work.frozen(), true);
+  assert.deepEqual(editor.drafts, []);
+});

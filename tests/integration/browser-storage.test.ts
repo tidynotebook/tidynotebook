@@ -209,6 +209,89 @@ await test('workspace access recovery copies queued text before it clears the ol
   }
 });
 
+await test('access loss leaves no recovery copy when a draft and document match the accepted note', async () => {
+  for (const removed of [false, true]) {
+    const store = await openLocalStore(
+      origin,
+      createBackend('clean-access-loss').options(),
+    );
+    try {
+      const accountId = randomUUID();
+      const fileId = randomUUID();
+      const revisionId = randomUUID();
+      const old = {
+        workspaceId: randomUUID(),
+        name: 'Team',
+        role: removed ? 'viewer' : 'editor',
+        personal: false,
+      } as const;
+      const personal = {
+        workspaceId: randomUUID(),
+        name: 'Personal',
+        role: 'owner',
+        personal: true,
+      } as const;
+      const draft = draftOf(
+        accountId,
+        old.workspaceId,
+        fileId,
+        randomUUID(),
+        'Already saved here.\n',
+        { baseRevisionId: revisionId },
+      );
+      const bytes = startDocument(draft.text);
+      await store.applyRemoteChanges(
+        accountId,
+        old.workspaceId,
+        [
+          {
+            file: {
+              fileId,
+              revisionId,
+              path: draft.path,
+              fileKind: 'note',
+              deleted: false,
+              digest: await contentDigest(draft.text),
+              text: draft.text,
+              document: { kind: 'document', bytes, epoch: 1 },
+            },
+            purgedFileId: null,
+          },
+        ],
+        '1',
+      );
+      await store.saveDraft(draft);
+      await store.appendNoteWork(
+        accountId,
+        old.workspaceId,
+        fileId,
+        1,
+        bytes,
+        draft.workingCopyId,
+      );
+      assert.deepEqual(await store.pending(accountId, old.workspaceId), []);
+      const notice = await recoverWorkspaceAccess(
+        store,
+        accountId,
+        old,
+        removed ? [personal] : [personal, { ...old, role: 'viewer' }],
+        removed,
+        async () => assert.fail('A clean note must not be copied.'),
+      );
+      assert.deepEqual(
+        notice,
+        removed ? { message: 'You no longer have access to Team.' } : null,
+      );
+      assert.equal(
+        await store.readDraft(accountId, old.workspaceId, draft.workingCopyId),
+        null,
+      );
+    } finally {
+      await store.close();
+    }
+  }
+});
+
 /** Accepts every revision of a queued mutation, as the server would. */
 function acceptanceOf(
   entry: QueueEntry | null,

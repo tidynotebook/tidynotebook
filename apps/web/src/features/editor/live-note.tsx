@@ -371,24 +371,21 @@ export function NotePresence({
   };
   const list = (
     <Stack role="list">
-      {people.map((person) => (
-        <ListRow
-          key={person.accountId}
-          label={person.name}
-          help={
-            person.idle
-              ? 'Idle'
-              : person.mode === 'viewing'
-                ? 'Viewing'
-                : 'Editing'
-          }
-          leading={
-            <PresenceAvatar slot={person.slot} idle={person.idle}>
-              {initialOf(person.name)}
-            </PresenceAvatar>
-          }
-        />
-      ))}
+      {people.map((person) => {
+        const mode = person.mode === 'viewing' ? 'Viewing' : 'Editing';
+        return (
+          <ListRow
+            key={person.accountId}
+            label={person.name}
+            help={person.idle ? `${mode} · Idle` : mode}
+            leading={
+              <PresenceAvatar slot={person.slot} idle={person.idle}>
+                {initialOf(person.name)}
+              </PresenceAvatar>
+            }
+          />
+        );
+      })}
     </Stack>
   );
   return (

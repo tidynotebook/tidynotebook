@@ -102,6 +102,7 @@ export type NoteWork = {
 
 /** Builds the writes of one open editor. */
 export function createNoteWork(ports: NoteWorkPorts): NoteWork {
+  const initialSequence = ports.sequence();
   let appends: Promise<void> = Promise.resolve();
   // Each loss of work counts once, and a whole write repairs every loss
   // that it saw begin. A loss that begins while that write runs stays.
@@ -163,6 +164,7 @@ export function createNoteWork(ports: NoteWorkPorts): NoteWork {
       const draft = ports.draft(deleted);
       const vector = ports.stateVector();
       await Promise.allSettled([flushed, checkpoint, ...drafts]);
+      if (draft.sequence === initialSequence) return;
       await ports.saveDraft(
         isLost() || vector === null
           ? draft

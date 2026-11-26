@@ -7,6 +7,7 @@ import {
   createWorkspace,
   createWorkspaceInvites,
   getFile,
+  listFiles,
   listHistory,
   listWorkspaces,
   readWorkspaceInviteLink,
@@ -190,6 +191,18 @@ export async function collaborationFixture(origin: string) {
       });
       assert.ok(result.data, JSON.stringify(result.error));
       return result.data;
+    },
+    async recoveryPaths() {
+      const result = await listFiles({
+        path: personalPath,
+        headers: editorHeaders,
+        query: { limit: 500 },
+      });
+      assert.ok(result.data, JSON.stringify(result.error));
+      return result.data.files
+        .map((file) => file.path)
+        .filter((path) => path.startsWith(`From ${workspaceName}/`))
+        .sort();
     },
   };
 }

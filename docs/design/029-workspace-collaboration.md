@@ -129,8 +129,9 @@ bytes sent while access was valid cannot be recalled.
 On a confirmed access loss, stop sends and flush local editor input. Resolve
 any frozen mutation that can still be checked with the existing actor-bound
 receipt rules. If its outcome cannot be resolved, keep the original text.
-Recover each affected note's unsent text and drafts as a new note with a stable
-recovery ID. Use Personal first if writable, then another writable workspace.
+Check drafts and pending text against the accepted digest before making a
+recovery copy. Recover unsent work as a new note with a stable recovery ID.
+Use Personal first if writable, then another writable workspace.
 If all remaining workspaces are read only, use the account's existing create
 workspace permission to make Personal. Put recovered notes in `From <workspace
 name>`, with the existing path collision rule. Check the destination listing

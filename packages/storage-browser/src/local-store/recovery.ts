@@ -1,3 +1,5 @@
+import { Dexie } from 'dexie';
+import { contentDigest } from '@notesapp/core';
 import { readDocumentText } from '@notesapp/note-document';
 import { readDocumentRow } from './documents.ts';
 /**
@@ -18,7 +20,12 @@ import {
   type RecoveryInput,
   type RecoveryRecord,
 } from '@notesapp/sync';
-import { guard, partitionRange, type Tables } from '../database.ts';
+import {
+  guard,
+  partitionRange,
+  type FileRow,
+  type Tables,
+} from '../database.ts';
 import {
   validateAcceptedFile,
   validateCheckpoint,
@@ -81,6 +88,19 @@ const privateTables = (tables: Tables) => [
   tables.legacyDrafts,
   tables.reviews,
 ];
+
+function matchesAcceptedText(
+  file: FileRow | null,
+  path: string,
+  text: string,
+): Promise<boolean> {
+  if (file?.acceptedPath !== path || file.acceptedHeadDigest === null)
+    return Promise.resolve(false);
+  // The cached document can include live text or other work beyond this head.
+  return Dexie.waitFor(contentDigest(text)).then(
+    (digest) => digest === file.acceptedHeadDigest,
+  );
+}
 
 export function createRecoverySlice(ctx: LocalStoreContext): RecoverySlice {
   const { serverOrigin, db, tables, nowIso, newId, publish } = ctx;
@@ -394,6 +414,11 @@ export function createRecoverySlice(ctx: LocalStoreContext): RecoverySlice {
       ]);
       const file = stored === undefined ? null : validateAcceptedFile(stored);
       if (!(await draftHoldsWork(ctx, draft, file))) continue;
+      if (
+        !draft.deleted &&
+        (await matchesAcceptedText(file, draft.path, draft.text))
+      )
+        continue;
       const document = await readDocumentRow(tables, {
         serverOrigin,
         accountId,
@@ -454,12 +479,11 @@ export function createRecoverySlice(ctx: LocalStoreContext): RecoverySlice {
         workspaceId,
         work.fileId,
       ]);
-      if (row !== null && file !== undefined)
-        add({
-          identity: work.fileId,
-          path: validateAcceptedFile(file).path,
-          text: readDocumentText(row.bytes),
-        });
+      if (row === null || file === undefined) continue;
+      const accepted = validateAcceptedFile(file);
+      const text = readDocumentText(row.bytes);
+      if (!(await matchesAcceptedText(accepted, accepted.path, text)))
+        add({ identity: work.fileId, path: accepted.path, text });
     }
     return copies;
   }
