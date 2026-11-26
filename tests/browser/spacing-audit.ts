@@ -221,7 +221,10 @@ export async function auditSpacing(page: Page) {
         const scroll = menu.querySelector('[data-menu-scroll]');
         const edge = menu.querySelector('[data-scroll-edge=below]');
         const safeArea = menu.querySelector('[data-menu-safe-area]');
-        if (scroll === null || edge === null || safeArea === null) continue;
+        if (scroll === null || edge === null || safeArea === null) {
+          check(menu, 'menu has a scroll region and edge cue', 0, 1);
+          continue;
+        }
         const area = visualViewport;
         const bottom = Math.min(
           innerHeight,

@@ -514,22 +514,25 @@ export async function runCollaborationAudit(
         );
     throw error;
   } finally {
-    for (const [audit, samples] of results)
-      writeFileSync(
-        `${output}/${audit}.json`,
-        JSON.stringify(
-          {
-            samples,
-            defects: defects.filter((issue) => issue.startsWith(`${audit} `)),
-          },
-          null,
-          2,
-        ),
-      );
     try {
-      await browser.close();
+      for (const [audit, samples] of results)
+        writeFileSync(
+          `${output}/${audit}.json`,
+          JSON.stringify(
+            {
+              samples,
+              defects: defects.filter((issue) => issue.startsWith(`${audit} `)),
+            },
+            null,
+            2,
+          ),
+        );
     } finally {
-      await clearCollaborationFixtures(cleanup);
+      try {
+        await browser.close();
+      } finally {
+        await clearCollaborationFixtures(cleanup);
+      }
     }
   }
   assert.deepEqual(defects, []);

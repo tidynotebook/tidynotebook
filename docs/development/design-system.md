@@ -113,10 +113,13 @@ status line uses the panel inset and its own line height.
 
 ## Note editor
 
-The note scroll edges stay outside the text layout. Put the word count at the
-top of the right panel in secondary text. At widths that hide the panel, put
-the count at the end of Note actions, below a divider. Use the sidebar status
-line for connection problems. Use a toast for a change to Viewer.
+The note scroll edges stay outside the text layout. Put the word count on the
+label edge of the right panel, with an empty disclosure slot. At widths that
+hide the panel, put the count on the label edge at the end of Note actions,
+below a divider. Use secondary text in both places. On touch screens, the
+menu can use the visible space below its trigger. Its scroll edge shows a
+shadow while content is hidden. Use the sidebar status line for connection
+problems. Use a toast for a change to Viewer.
 
 ## Page lists
 

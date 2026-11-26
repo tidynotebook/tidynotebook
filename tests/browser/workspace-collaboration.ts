@@ -17,6 +17,8 @@ const loaded: unknown = await import(
 assert.ok(hasChromium(loaded));
 const origin = process.env.UI_AUDIT_ORIGIN ?? 'http://localhost:3000';
 const runId = randomUUID().slice(0, 6);
+const output = '.local-app/collaboration-screenshots';
+mkdirSync(output, { recursive: true });
 const cleanup: (() => Promise<void>)[] = [];
 const fixture = await collaborationFixture(
   origin,
@@ -29,8 +31,6 @@ const fixture = await collaborationFixture(
 });
 const space = `/w/${fixture.workspaceId}`;
 const note = `${space}/notes/${fixture.fileId}`;
-const output = '.local-app/collaboration-screenshots';
-mkdirSync(output, { recursive: true });
 const browser = await loaded.chromium.launch().catch(async (error: unknown) => {
   await clearCollaborationFixtures(cleanup);
   throw error;

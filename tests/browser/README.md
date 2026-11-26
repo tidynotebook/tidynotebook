@@ -195,9 +195,11 @@ node tests/browser/search-vertical-cases.ts
 ## Workspace collaboration
 
 Use a disposable Docker deployment with the bootstrap owner. The collaboration
-audit creates its own accounts, notes and workspaces. It uses real mouse and
-touch contexts and covers the Settings actions, join routes, note actions,
-presence, History, status messages and toasts.
+audit creates its own member accounts, notes and workspaces and removes them
+when it finishes, including after a failed check. It uses real mouse and touch
+contexts and covers the Settings actions, join routes, note actions, presence,
+History, status messages and toasts. Note actions uses the 390 × 844 and
+320 × 700 viewports for the fit check and a shorter viewport for the scroll cue.
 
 ```sh
 DS1_AUDIT=1 HOVER_AUDIT=1 TOUCH_WIDTHS=1440,390,320 \
