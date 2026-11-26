@@ -18,7 +18,11 @@ import {
 import { firstSave } from '../integration/support/documents.ts';
 
 /** The disposable installation needs the owner account before the audit. */
-export async function collaborationFixture(origin: string, suffix = '') {
+export async function collaborationFixture(
+  origin: string,
+  suffix = '',
+  pendingEmail = 'pending@example.com',
+) {
   configureClient(origin, undefined);
   const owner = 'owner@example.com';
   const editor = 'editor@example.com';
@@ -101,7 +105,7 @@ export async function collaborationFixture(origin: string, suffix = '') {
     }
   }
 
-  const pending = await invite('pending@example.com', 'editor');
+  const pending = await invite(pendingEmail, 'editor');
   await invite('another@example.com', 'viewer');
   const forViewer = await createWorkspace({
     headers,
@@ -152,6 +156,7 @@ export async function collaborationFixture(origin: string, suffix = '') {
     workspaceId,
     workspaceName,
     fileId,
+    pendingEmail,
     pendingLink: pending.url,
     viewerLink: viewerLink.url,
     viewerJoinId: forViewer.data.workspaceId,

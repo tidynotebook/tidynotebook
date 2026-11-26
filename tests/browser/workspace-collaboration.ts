@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { hasChromium, type Page } from './browser.ts';
@@ -12,7 +13,12 @@ const loaded: unknown = await import(
 );
 assert.ok(hasChromium(loaded));
 const origin = process.env.UI_AUDIT_ORIGIN ?? 'http://localhost:3000';
-const fixture = await collaborationFixture(origin);
+const runId = randomUUID().slice(0, 6);
+const fixture = await collaborationFixture(
+  origin,
+  ` ${runId}`,
+  `pending-${runId}@example.com`,
+);
 const space = `/w/${fixture.workspaceId}`;
 const note = `${space}/notes/${fixture.fileId}`;
 const output = '.local-app/collaboration-screenshots';
@@ -174,7 +180,7 @@ try {
   await screenshot(owner, 'invite-bad-address-desktop-light');
   await owner
     .getByLabel('Email addresses')
-    .fill(`pending@example.com\n${fixture.editor}`);
+    .fill(`${fixture.pendingEmail}\n${fixture.editor}`);
   await owner.getByRole('button', { name: 'Send 2 invites' }).click();
   const inviteResults = owner.getByRole('dialog', {
     name: '0 invites created',
@@ -399,9 +405,15 @@ try {
       await page
         .getByRole('button', { name: 'Invite people', exact: true })
         .click();
-      await page
-        .getByRole(phone ? 'region' : 'dialog', { name: /Invite people to/ })
-        .waitFor();
+      await page.getByLabel('Email addresses').waitFor();
+      if (phone)
+        await page.getByRole('button', { name: 'Back to section' }).waitFor();
+      else
+        await page
+          .getByRole('dialog', {
+            name: `Invite people to ${fixture.workspaceName}`,
+          })
+          .waitFor();
       await screenshot(page, `invite-${layout}-${scheme}`);
       await page.goto(`${origin}${space}`);
       if (phone)
@@ -410,7 +422,7 @@ try {
       await page.getByText('Rename workspace', { exact: true }).waitFor();
       await page
         .getByRole('menuitemradio', {
-          name: 'Collaboration check Owner · 3',
+          name: `${fixture.workspaceName} Owner · 3`,
           exact: true,
         })
         .waitFor();
@@ -480,10 +492,12 @@ try {
       await screenshot(phone, 'join-valid-phone-dark');
       await phone.getByRole('button', { name: 'Accept and open' }).click();
       await phone.waitForURL(`${origin}/w/${fixture.viewerJoinId}`);
-      await phone.getByText('You joined Join check as a Viewer.').waitFor();
       const joined = phone
         .getByRole('status')
-        .filter({ hasText: 'You joined Join check as a Viewer.' });
+        .filter({
+          hasText: `You joined ${fixture.viewerJoinName} as a Viewer.`,
+        });
+      await joined.waitFor();
       assert.equal(
         await joined.getByRole('button', { name: 'Open', exact: true }).count(),
         0,
@@ -495,14 +509,19 @@ try {
       await phone.getByRole('button', { name: 'Open navigation' }).click();
       const switcher = phone.getByRole('button', { name: /Workspace: / });
       await switcher.click();
-      const accept = phone.getByText('Accept invite to Switcher check');
+      const accept = phone.getByText(
+        `Accept invite to ${fixture.viewerSwitcherName}`,
+        { exact: true },
+      );
       await accept.waitFor();
       await accept.scrollIntoViewIfNeeded();
       await screenshot(phone, 'switcher-pending-phone-dark');
       await accept.click();
       const switched = phone
         .getByRole('status')
-        .filter({ hasText: 'You joined Switcher check as an Editor.' });
+        .filter({
+          hasText: `You joined ${fixture.viewerSwitcherName} as an Editor.`,
+        });
       await switched.waitFor();
       await phone.waitForURL(`${origin}${space}`);
       await screenshot(phone, 'switcher-joined-phone-dark');
@@ -589,7 +608,7 @@ try {
   assert.equal(occupiedDuringUpload, true);
   assert.equal(
     downgradedCopy.path,
-    'From Collaboration check/Recovery plan 3.md',
+    `From ${fixture.workspaceName}/Recovery plan 3.md`,
   );
   assert.match(downgradedCopy.head?.text ?? '', /Keep this unsent text/);
   await editorContext.unrouteAll({ behavior: 'wait' });
@@ -637,7 +656,10 @@ try {
     .getByText('Keep this text after removal', { exact: true })
     .waitFor();
   const removedCopy = await readOpenRecovery(editor);
-  assert.equal(removedCopy.path, 'From Collaboration check/Recovery plan 4.md');
+  assert.equal(
+    removedCopy.path,
+    `From ${fixture.workspaceName}/Recovery plan 4.md`,
+  );
   assert.match(removedCopy.head?.text ?? '', /Keep this text after removal/);
   await owner.goto(`${origin}${note}/history`);
   await owner
