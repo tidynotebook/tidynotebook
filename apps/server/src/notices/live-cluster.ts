@@ -63,7 +63,7 @@ export function createLiveCluster(input: {
   const relay = openLiveRelay(input.databaseUrl, input.seal, dispatch, reset);
   const rooms = createLiveRooms({
     ...input,
-    onRoomEmpty: relay.release,
+    onRoomEmpty: (key) => relay.release(key),
     remotePresence: () =>
       [...otherPresence.values()].flatMap((entry) => entry.notes),
   });
@@ -310,7 +310,7 @@ export function createLiveCluster(input: {
   }
 
   return {
-    ready: relay.listening,
+    ready: () => relay.listening(),
     start() {
       relay.start();
       heartbeat = setInterval(() => {

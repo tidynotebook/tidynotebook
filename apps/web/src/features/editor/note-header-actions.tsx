@@ -21,7 +21,13 @@ import { MoveItemsDialog } from '../folders/folders.tsx';
  */
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router';
-import { buttonClassName, Menu, MoreIcon, type MenuItem } from '@notesapp/ui';
+import {
+  buttonClassName,
+  Menu,
+  MoreIcon,
+  Pill,
+  type MenuItem,
+} from '@notesapp/ui';
 import { SaveProblemControl } from './save-problem.tsx';
 import { actionIcon } from '../../shell/action-icons.tsx';
 import { HeaderActions } from '../../shell/header-slot.tsx';
@@ -124,7 +130,9 @@ export function NoteHeaderActions({
   return (
     <HeaderActions>
       {presence}
-      {readOnly ? null : (
+      {readOnly ? (
+        <Pill>View only</Pill>
+      ) : (
         <SaveProblemControl workspaceId={workspaceId} onCopyText={onCopyText} />
       )}
       {/*

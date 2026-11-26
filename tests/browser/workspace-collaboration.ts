@@ -29,6 +29,12 @@ async function signIn(page: Page, email: string): Promise<void> {
 }
 
 async function screenshot(page: Page, name: string): Promise<void> {
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      }),
+  );
   await page.screenshot({
     path: `${output}/${name}.png`,
     animations: 'disabled',
@@ -49,12 +55,14 @@ try {
     hasTouch: false,
     isMobile: false,
     colorScheme: 'light',
+    reducedMotion: 'reduce',
   });
   const editorContext = await browser.newContext({
     viewport: { width: 1440, height: 900 },
     hasTouch: false,
     isMobile: false,
     colorScheme: 'dark',
+    reducedMotion: 'reduce',
   });
   const owner = await ownerContext.newPage();
   const editor = await editorContext.newPage();
@@ -76,7 +84,16 @@ try {
     .click();
   await owner.getByRole('dialog', { name: /Invite people to/ }).waitFor();
   await screenshot(owner, 'invite-desktop-light');
-  await owner.keyboard.press('Escape');
+  await owner
+    .getByLabel('Email addresses')
+    .fill(`pending@example.com\n${fixture.editor}`);
+  await owner.getByRole('button', { name: 'Send 2 invites' }).click();
+  await owner
+    .getByText('Already invited. Copy the link to send it again.')
+    .waitFor();
+  await owner.getByText('Already a member.').waitFor();
+  await owner.getByRole('button', { name: 'Copy link' }).waitFor();
+  await owner.getByRole('button', { name: 'Done', exact: true }).click();
   await Promise.all(
     [owner, editor].map((page) => page.goto(`${origin}${note}`)),
   );
@@ -144,6 +161,7 @@ try {
         hasTouch: phone,
         isMobile: phone,
         colorScheme: scheme,
+        reducedMotion: 'reduce',
       });
       const page = await context.newPage();
       page.setDefaultTimeout(15_000);
@@ -181,6 +199,7 @@ try {
       hasTouch: true,
       isMobile: true,
       colorScheme: scheme,
+      reducedMotion: 'reduce',
     });
     const phone = await context.newPage();
     await signIn(phone, fixture.viewer);

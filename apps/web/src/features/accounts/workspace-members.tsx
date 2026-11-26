@@ -16,6 +16,8 @@ import {
 } from '@notesapp/api-client';
 import {
   Button,
+  Card,
+  ChevronDownIcon,
   Dialog,
   DialogBody,
   DialogFooter,
@@ -24,6 +26,7 @@ import {
   ListRow,
   LoadingState,
   Menu,
+  MoreIcon,
   Notice,
   Pill,
   SectionHeading,
@@ -167,45 +170,50 @@ export function WorkspaceMembers({
               </div>
             }
           />
-          {invites.map((invite) => (
-            <ListRow
-              key={invite.invitationId}
-              label={invite.email}
-              help={`${roleName(invite.role)}. Expires ${new Date(invite.expiresAt).toLocaleDateString()}.`}
-              leading={<IdentityMark>?</IdentityMark>}
-              control={
-                <Menu
-                  label={`Actions for ${invite.email}`}
-                  items={[
-                    {
-                      id: 'copy',
-                      label: 'Copy link',
-                      onSelect: () => {
-                        void copy(invite.invitationId);
-                      },
-                    },
-                    {
-                      id: 'revoke',
-                      label: 'Revoke',
-                      danger: true,
-                      onSelect: () => {
-                        void revokeWorkspaceInvite({
-                          path: {
-                            workspaceId,
-                            invitationId: invite.invitationId,
+          {invites.length === 0 ? null : (
+            <Card responsive>
+              {invites.map((invite) => (
+                <ListRow
+                  key={invite.invitationId}
+                  label={invite.email}
+                  help={`${roleName(invite.role)}. Expires ${new Date(invite.expiresAt).toLocaleDateString()}.`}
+                  leading={<IdentityMark>?</IdentityMark>}
+                  control={
+                    <Menu
+                      label={`Actions for ${invite.email}`}
+                      icon={<MoreIcon />}
+                      items={[
+                        {
+                          id: 'copy',
+                          label: 'Copy link',
+                          onSelect: () => {
+                            void copy(invite.invitationId);
                           },
-                        }).then((result) => {
-                          if (result.data === undefined)
-                            setProblem(problemMessage(result.error));
-                          else refresh();
-                        });
-                      },
-                    },
-                  ]}
+                        },
+                        {
+                          id: 'revoke',
+                          label: 'Revoke',
+                          danger: true,
+                          onSelect: () => {
+                            void revokeWorkspaceInvite({
+                              path: {
+                                workspaceId,
+                                invitationId: invite.invitationId,
+                              },
+                            }).then((result) => {
+                              if (result.data === undefined)
+                                setProblem(problemMessage(result.error));
+                              else refresh();
+                            });
+                          },
+                        },
+                      ]}
+                    />
+                  }
                 />
-              }
-            />
-          ))}
+              ))}
+            </Card>
+          )}
         </Stack>
       ) : null}
       <Stack gap={2}>
@@ -213,30 +221,33 @@ export function WorkspaceMembers({
         {members === null ? (
           <LoadingState label="Loading members" />
         ) : (
-          members.map((member) => (
-            <ListRow
-              key={member.accountId}
-              label={member.displayName ?? member.email}
-              leading={
-                <IdentityMark>
-                  {initialOf(member.displayName ?? member.email)}
-                </IdentityMark>
-              }
-              help={member.displayName === null ? undefined : member.email}
-              control={
-                manage && member.role !== 'owner' ? (
-                  <Menu
-                    label={`Role for ${member.displayName ?? member.email}`}
-                    items={memberMenu(member)}
-                  >
-                    {roleName(member.role)}
-                  </Menu>
-                ) : (
-                  <Pill>{roleName(member.role)}</Pill>
-                )
-              }
-            />
-          ))
+          <Card responsive>
+            {members.map((member) => (
+              <ListRow
+                key={member.accountId}
+                label={member.displayName ?? member.email}
+                leading={
+                  <IdentityMark>
+                    {initialOf(member.displayName ?? member.email)}
+                  </IdentityMark>
+                }
+                help={member.displayName === null ? undefined : member.email}
+                control={
+                  manage && member.role !== 'owner' ? (
+                    <Menu
+                      label={`Role for ${member.displayName ?? member.email}`}
+                      items={memberMenu(member)}
+                    >
+                      {roleName(member.role)}
+                      <ChevronDownIcon />
+                    </Menu>
+                  ) : (
+                    <Pill>{roleName(member.role)}</Pill>
+                  )
+                }
+              />
+            ))}
+          </Card>
         )}
         {after === null ? null : (
           <Button

@@ -967,7 +967,8 @@ async function composeApp(
   const noticeLog: { logger?: ReturnType<typeof createServerLogger> } = {};
   const liveCluster = createLiveCluster({
     store: identity,
-    noticeAccess: identity.noticeAccess,
+    noticeAccess: (sessionId, accountId) =>
+      identity.noticeAccess(sessionId, accountId),
     databaseUrl: config.databaseUrl,
     seal: createLiveRelaySeal(config.authSecret),
   });

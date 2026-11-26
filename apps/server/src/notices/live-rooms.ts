@@ -90,10 +90,10 @@ export function roomKey(note: LiveNote): string {
 
 function colorSlot(accountId: string): number {
   const value = accountId.replaceAll('-', '');
-  return [...value].reduce(
-    (slot, character) => (slot * 31 + character.charCodeAt(0)) % 6,
-    0,
-  );
+  let slot = 0;
+  for (let index = 0; index < value.length; index += 1)
+    slot = (slot * 31 + value.charCodeAt(index)) % 6;
+  return slot;
 }
 
 function relativePoint(value: unknown): unknown {

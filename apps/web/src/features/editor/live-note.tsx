@@ -351,6 +351,7 @@ export function NotePresence({
         variant="ghost"
         size="compact"
         label={`People in this note: ${label}`}
+        title={label}
         onClick={() => setOpen(true)}
       >
         <Inline gap={1}>
