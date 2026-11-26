@@ -493,8 +493,9 @@ export async function auditComposition(page: Page) {
     for (const e of rows) {
       const s = getComputedStyle(e),
         r = e.getBoundingClientRect(),
-        setting = e.getAttribute('data-ui-row') === 'setting',
-        y = setting ? 12 : coarse ? 8 : 4,
+        density = e.getAttribute('data-ui-row'),
+        setting = density === 'setting',
+        y = setting ? 12 : coarse ? (density === 'tree' ? 12 : 8) : 4,
         x = e.classList.contains('ui-content-row')
           ? 0
           : setting
@@ -817,13 +818,35 @@ export async function auditContentParity(page: Page) {
             check(row, 'outline content edge', x, edge + (level - 1) * 20);
         }
     }
-    const line = document.querySelector('.cm-content .cm-line'),
-      footer = document.querySelector('footer');
-    if (line && footer && visible(line) && visible(footer)) {
-      const edge = firstX(line),
-        x = firstX(footer);
-      if (x !== null && edge !== null)
-        check(footer, 'note footer content edge', x, edge);
+    for (const count of [
+      ...document.querySelectorAll('[data-note-word-count]'),
+    ].filter(visible)) {
+      const panel = count.closest('aside');
+      const menu = count.closest('[role=menu]');
+      const x = firstX(count);
+      if (x === null) continue;
+      if (panel !== null)
+        check(
+          count,
+          'note panel word count content edge',
+          x,
+          panel.getBoundingClientRect().left +
+            parseFloat(getComputedStyle(panel).paddingLeft),
+        );
+      if (menu !== null) {
+        const info = count.parentElement;
+        const padding =
+          info === null ? 0 : parseFloat(getComputedStyle(info).paddingLeft);
+        check(
+          count,
+          'note actions word count content edge',
+          x,
+          menu.getBoundingClientRect().left +
+            parseFloat(getComputedStyle(menu).paddingLeft) +
+            parseFloat(getComputedStyle(menu).borderLeftWidth) +
+            padding,
+        );
+      }
     }
     const probe = document.createElement('span');
     probe.className = 'bg-active';

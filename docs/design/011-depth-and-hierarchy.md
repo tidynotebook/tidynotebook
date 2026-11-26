@@ -36,9 +36,7 @@ anything to say.
 
 On a wide screen the text sits left, the side region sits right, and a band of
 empty canvas sits between them. Nothing in the frame explains the band. The
-note name in `apps/web/src/lib/note-header-layout.ts` and the word count in
-`note-footer.tsx` are not held to the measure either, so the three parts of one
-page do not share one column.
+note name once used a different measure from the note text.
 
 ## Fault two: the brightest plane is spent on the chrome
 
@@ -108,7 +106,7 @@ The first option leaves the column where it is and removes the side region, so
 the band disappears. This is cheap, and it loses the outline.
 
 The second option centres the note column inside the space it owns and holds
-the name, the text and the footer to one column. The side region stops taking
+the name and text to one column. The side region stops taking
 width from the measure: it appears one breakpoint later, at the first width
 where the full measure and the region both fit, and its outline section
 appears only when the note has a heading. This costs a change in the typed

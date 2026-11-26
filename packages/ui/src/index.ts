@@ -190,7 +190,7 @@ export {
 export { AnchoredMenu, Menu } from './menu.tsx';
 export type { NoticeTone } from './notice.tsx';
 export { Notice } from './notice.tsx';
-export { Toast } from './toast.tsx';
+export { Toast, ToastStack } from './toast.tsx';
 export type { IconProps } from './icons.tsx';
 export {
   AlertCircleIcon,
@@ -361,6 +361,7 @@ export {
   IdentityMark,
   TileSelectedBadge,
   PresenceAvatar,
+  PresenceAvatarStack,
   PresenceDots,
 } from './identity.tsx';
 export { PreviewBlock } from './preview-block.tsx';

@@ -4,10 +4,10 @@ import { Button, Toast } from '@notesapp/ui';
 
 export function WorkspaceJoinedToastView({
   message,
-  id,
+  target,
 }: {
   readonly message: string;
-  readonly id: string;
+  readonly target: string | null;
 }): ReactNode {
   const navigate = useNavigate();
   const [closed, setClosed] = useState(false);
@@ -18,16 +18,18 @@ export function WorkspaceJoinedToastView({
   if (closed) return null;
   return (
     <Toast message={message}>
-      <Button
-        variant="secondary"
-        size="compact"
-        onClick={() => {
-          setClosed(true);
-          void navigate(`/w/${id}`, { replace: true });
-        }}
-      >
-        Open
-      </Button>
+      {target === null ? null : (
+        <Button
+          variant="secondary"
+          size="compact"
+          onClick={() => {
+            setClosed(true);
+            void navigate(`/w/${target}`, { replace: true });
+          }}
+        >
+          Open
+        </Button>
+      )}
     </Toast>
   );
 }

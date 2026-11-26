@@ -651,6 +651,7 @@ function HistoryDetail({
                     return (
                       <Fragment key={item.revisionId}>
                         <ListRow
+                          density="menu"
                           selected={selected}
                           contentEdge
                           className="flex-wrap"

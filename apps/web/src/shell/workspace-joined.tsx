@@ -6,7 +6,11 @@ const WorkspaceJoinedToastView = lazy(async () => ({
     .WorkspaceJoinedToastView,
 }));
 
-export function WorkspaceJoinedToast(): ReactNode {
+export function WorkspaceJoinedToast({
+  workspaceId,
+}: {
+  readonly workspaceId: string;
+}): ReactNode {
   const location = useLocation();
   const state: unknown = location.state;
   const value =
@@ -27,7 +31,7 @@ export function WorkspaceJoinedToast(): ReactNode {
       <WorkspaceJoinedToastView
         key={location.key}
         message={value.message}
-        id={value.id}
+        target={value.id === workspaceId ? null : value.id}
       />
     </Suspense>
   );

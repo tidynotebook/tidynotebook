@@ -171,6 +171,7 @@ function MenuList({
   items,
   header,
   pinned,
+  information,
   anchor,
   align,
   matchWidth,
@@ -185,6 +186,7 @@ function MenuList({
   readonly header?: ReactNode;
   readonly items: readonly MenuItem[];
   readonly pinned: readonly MenuItem[];
+  readonly information?: ReactNode;
   /** Reads the place the list opens beside, at the time it is placed. */
   readonly anchor: () => MenuAnchor | null;
   readonly align: MenuAlign;
@@ -380,6 +382,7 @@ function MenuList({
           ))}
         </Stack>
       )}
+      {information}
     </Stack>,
     document.body,
   );
@@ -397,6 +400,7 @@ export function Menu({
   items,
   header,
   pinned = [],
+  information,
   matchTrigger = false,
   align = 'end',
   triggerClassName,
@@ -408,6 +412,7 @@ export function Menu({
   readonly label: string;
   readonly icon?: ReactNode | undefined;
   readonly header?: ReactNode;
+  readonly information?: ReactNode;
   readonly items: readonly MenuItem[];
   /**
    * Rows that stay in view while `items` scrolls.
@@ -556,6 +561,7 @@ export function Menu({
           header={header}
           items={items}
           pinned={pinned}
+          information={information}
           anchor={anchor}
           align={align}
           matchWidth={matchTrigger}

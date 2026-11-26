@@ -193,7 +193,7 @@ try {
   );
   await Promise.all(
     [owner, editor].map((page) =>
-      page.getByText('Live', { exact: true }).waitFor(),
+      page.locator('[data-live-connection=Live]').waitFor(),
     ),
   );
   const ownerText = owner.locator('.cm-content');
@@ -294,7 +294,7 @@ try {
     name: 'Role for Casey Editor',
   });
   await onlineRole.click();
-  await editor.getByText('Live', { exact: true }).waitFor();
+  await editor.locator('[data-live-connection=Live]').waitFor();
   await editorContext.route(
     `**/api/workspaces/${fixture.workspaceId}/changesets`,
     async (route) => {
@@ -399,7 +399,9 @@ try {
       await page
         .getByRole('button', { name: 'Invite people', exact: true })
         .click();
-      await page.getByRole('dialog', { name: /Invite people to/ }).waitFor();
+      await page
+        .getByRole(phone ? 'region' : 'dialog', { name: /Invite people to/ })
+        .waitFor();
       await screenshot(page, `invite-${layout}-${scheme}`);
       await page.goto(`${origin}${space}`);
       if (phone)
@@ -479,7 +481,13 @@ try {
       await phone.getByRole('button', { name: 'Accept and open' }).click();
       await phone.waitForURL(`${origin}/w/${fixture.viewerJoinId}`);
       await phone.getByText('You joined Join check as a Viewer.').waitFor();
-      await phone.getByRole('button', { name: 'Open', exact: true }).click();
+      const joined = phone
+        .getByRole('status')
+        .filter({ hasText: 'You joined Join check as a Viewer.' });
+      assert.equal(
+        await joined.getByRole('button', { name: 'Open', exact: true }).count(),
+        0,
+      );
       await phone.goto(fixture.viewerLink);
       await phone.getByText('This invite no longer works').waitFor();
       await screenshot(phone, 'join-used-phone-dark');
@@ -492,18 +500,21 @@ try {
       await accept.scrollIntoViewIfNeeded();
       await screenshot(phone, 'switcher-pending-phone-dark');
       await accept.click();
-      await phone.waitForURL(`${origin}/w/${fixture.viewerSwitcherId}`);
-      await phone
-        .getByText('You joined Switcher check as an Editor.')
-        .waitFor();
+      const switched = phone
+        .getByRole('status')
+        .filter({ hasText: 'You joined Switcher check as an Editor.' });
+      await switched.waitFor();
+      await phone.waitForURL(`${origin}${space}`);
       await screenshot(phone, 'switcher-joined-phone-dark');
+      await switched.getByRole('button', { name: 'Open', exact: true }).click();
+      await phone.waitForURL(`${origin}/w/${fixture.viewerSwitcherId}`);
     }
     await context.close();
   }
   const recoveryFileId = await fixture.createNote('Recovery plan');
   const recoveryNote = `${space}/notes/${recoveryFileId}`;
   await editor.goto(`${origin}${recoveryNote}`);
-  await editor.getByText('Live', { exact: true }).waitFor();
+  await editor.locator('[data-live-connection=Live]').waitFor();
   await owner.goto(`${origin}${space}?settings=members`);
   await fixture.addRecoveryOccupant('Recovery plan');
   await editorContext.setOffline(true);
@@ -561,11 +572,12 @@ try {
   await downgradeToast
     .getByRole('button', { name: 'Dismiss', exact: true })
     .waitFor();
-  const cardBox = await downgradeToast.locator('div').first().boundingBox();
-  const footerBox = await editor
-    .getByText('Your role changed to Viewer. Editing is off.')
+  const cardBox = await downgradeToast.boundingBox();
+  const roleBox = await editor
+    .getByRole('status')
+    .filter({ hasText: 'Your role changed to Viewer. Editing is off.' })
     .boundingBox();
-  assert.ok(cardBox && footerBox && cardBox.y + cardBox.height <= footerBox.y);
+  assert.ok(cardBox && roleBox && roleBox.y + roleBox.height <= cardBox.y);
   await screenshot(editor, 'recovery-downgrade-desktop-dark');
   await downgradeToast
     .getByRole('button', { name: 'Open', exact: true })
@@ -587,7 +599,7 @@ try {
     .click();
   await roleMenu.getByText('Editor', { exact: true }).waitFor();
   await editor.goto(`${origin}${recoveryNote}`);
-  await editor.getByText('Live', { exact: true }).waitFor();
+  await editor.locator('[data-live-connection=Live]').waitFor();
   await editorContext.setOffline(true);
   await editor.getByText(/Offline. Your edits merge/).waitFor();
   await editorText.focus();
@@ -641,6 +653,10 @@ try {
   await editor.goto(`${origin}/w/${fixture.editorPersonalId}`);
   await editor.getByRole('button', { name: /Workspace: / }).click();
   await editor.getByText(`Accept invite to ${fixture.workspaceName}`).click();
+  const rejoined = editor
+    .getByRole('status')
+    .filter({ hasText: `You joined ${fixture.workspaceName} as an Editor.` });
+  await rejoined.getByRole('button', { name: 'Open', exact: true }).click();
   await editor.waitForURL(`${origin}${space}`);
   await memberSettings.goto(`${origin}${space}?settings=members`);
   await Promise.all(
@@ -649,7 +665,7 @@ try {
   await editorText
     .getByText('The owner can still save', { exact: true })
     .waitFor();
-  await editor.getByText('Live', { exact: true }).waitFor();
+  await editor.locator('[data-live-connection=Live]').waitFor();
   const recoveryPaths = await fixture.recoveryPaths();
   assert.deepEqual(await workspaceWrites(editor, fixture.workspaceId), [0, 0]);
   await editor.evaluate(() =>
@@ -706,6 +722,33 @@ try {
   assert.deepEqual(await workspaceWrites(editor, fixture.workspaceId), [0, 0]);
   assert.deepEqual(await fixture.recoveryPaths(), recoveryPaths);
   await screenshot(editor, 'clean-removal-desktop-dark');
+  const signupContext = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+    colorScheme: 'light',
+  });
+  const signup = await signupContext.newPage();
+  await signup.goto(fixture.pendingLink);
+  await signup.getByLabel('Your name').fill('Invite Test');
+  await signup.getByLabel('Password', { exact: true }).fill(fixture.password);
+  await signup
+    .getByLabel('Password again', { exact: true })
+    .fill(fixture.password);
+  await signup.getByRole('button', { name: 'Create account and join' }).click();
+  await signup.waitForURL(`${origin}${space}`);
+  const signupToast = signup.getByRole('status').filter({
+    hasText: `You joined ${fixture.workspaceName} as an Editor.`,
+  });
+  await signupToast.waitFor();
+  assert.equal(
+    await signupToast
+      .getByRole('button', { name: 'Open', exact: true })
+      .count(),
+    0,
+  );
+  await screenshot(signup, 'join-sign-up-toast-phone-light');
+  await signupContext.close();
   process.stdout.write(
     'Concurrent edits, cursors, presence and idle modes, offline merge, invites, access changes with and without unsent work, and former contributors passed.\n',
   );

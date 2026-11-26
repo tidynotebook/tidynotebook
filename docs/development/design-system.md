@@ -111,6 +111,13 @@ fine pointer menus show on hover and focus. Other views keep an empty menu slot.
 Rail buttons share one size role. The rail owns padding and item gap; the
 status line uses the panel inset and its own line height.
 
+## Note editor
+
+The note scroll edges stay outside the text layout. Put the word count at the
+top of the right panel in secondary text. At widths that hide the panel, put
+the count at the end of Note actions, below a divider. Use the sidebar status
+line for connection problems. Use a toast for a change to Viewer.
+
 ## Page lists
 
 Pages reached from the rail have no back control before the title. A list

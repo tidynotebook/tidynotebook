@@ -18,7 +18,7 @@ import {
 import { firstSave } from '../integration/support/documents.ts';
 
 /** The disposable installation needs the owner account before the audit. */
-export async function collaborationFixture(origin: string) {
+export async function collaborationFixture(origin: string, suffix = '') {
   configureClient(origin, undefined);
   const owner = 'owner@example.com';
   const editor = 'editor@example.com';
@@ -44,7 +44,7 @@ export async function collaborationFixture(origin: string) {
   const headers = ownerHeaders;
   const workspace = await createWorkspace({
     headers,
-    body: { name: 'Collaboration check' },
+    body: { name: `Collaboration check${suffix}` },
   });
   assert.ok(workspace.data, JSON.stringify(workspace.error));
   const { workspaceId, name: workspaceName } = workspace.data;
@@ -69,7 +69,11 @@ export async function collaborationFixture(origin: string) {
       headers,
     });
     assert.ok(link.data, JSON.stringify(link.error));
-    return { invitationId, url: link.data.url };
+    const address = new URL(link.data.url);
+    return {
+      invitationId,
+      url: `${origin}${address.pathname}${address.search}${address.hash}`,
+    };
   }
 
   for (const [role, email] of [
@@ -101,7 +105,7 @@ export async function collaborationFixture(origin: string) {
   await invite('another@example.com', 'viewer');
   const forViewer = await createWorkspace({
     headers,
-    body: { name: 'Join check' },
+    body: { name: `Join check${suffix}` },
   });
   assert.ok(forViewer.data, JSON.stringify(forViewer.error));
   const viewerLink = await invite(viewer, 'viewer', forViewer.data.workspaceId);
@@ -109,7 +113,7 @@ export async function collaborationFixture(origin: string) {
   assert.ok(viewerHeaders);
   const forEditor = await createWorkspace({
     headers,
-    body: { name: 'Switcher check' },
+    body: { name: `Switcher check${suffix}` },
   });
   assert.ok(forEditor.data, JSON.stringify(forEditor.error));
   await invite(viewer, 'editor', forEditor.data.workspaceId);
@@ -151,7 +155,9 @@ export async function collaborationFixture(origin: string) {
     pendingLink: pending.url,
     viewerLink: viewerLink.url,
     viewerJoinId: forViewer.data.workspaceId,
+    viewerJoinName: forViewer.data.name,
     viewerSwitcherId: forEditor.data.workspaceId,
+    viewerSwitcherName: forEditor.data.name,
     editorPersonalId: editorPersonal.workspaceId,
     createNote,
     async readNote() {

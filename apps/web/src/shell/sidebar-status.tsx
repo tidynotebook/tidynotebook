@@ -17,7 +17,11 @@ import {
 } from 'react';
 
 import { useLocalStore, useSession, useSyncState } from '../app.tsx';
-import { useNoteSaveFact, useOnline } from '../features/editor/save-status.tsx';
+import {
+  useLiveConnection,
+  useNoteSaveFact,
+  useOnline,
+} from '../features/editor/save-status.tsx';
 import { useCalmSyncView } from './use-calm-sync.ts';
 import { syncDotClassName } from '../lib/sync-state.ts';
 
@@ -37,6 +41,7 @@ export function SidebarStatus({
   const failed = useNoteSaveFact((r) => r?.localWriteFailed ?? false);
   const pending = useNoteSaveFact((r) => r?.pendingSave ?? false);
   const editing = useNoteSaveFact((r) => r?.localWritePending ?? false);
+  const live = useLiveConnection();
   const footer = useCalmSyncView({
     state: sync.state,
     online,
@@ -74,11 +79,24 @@ export function SidebarStatus({
       stop();
     };
   }, [store.store, session.account?.accountId, workspaceId]);
-  const dot = store.error === null ? footer.dot : 'attention';
-  const message = store.error ?? footer.line;
+  const connection =
+    live === 'Offline'
+      ? 'Offline. Your edits merge when you reconnect.'
+      : live === 'Reconnecting'
+        ? 'Reconnecting. Your edits are safe on this device.'
+        : null;
+  const needsAttention = store.error !== null || footer.dot === 'attention';
+  const connectionLine = needsAttention ? null : connection;
+  const dot = needsAttention
+    ? 'attention'
+    : connectionLine === null
+      ? footer.dot
+      : 'pending';
+  const message = store.error ?? connectionLine ?? footer.line;
   const details = dot !== 'saved';
   const short =
-    dot === 'saved'
+    connectionLine ??
+    (dot === 'saved'
       ? footer.line
       : waiting > 0
         ? `${waiting} ${waiting === 1 ? 'change' : 'changes'} waiting`
@@ -86,11 +104,15 @@ export function SidebarStatus({
           ? 'Save problem'
           : !online || sync.state.kind === 'waiting'
             ? 'Offline'
-            : 'Waiting to upload';
+            : 'Waiting to upload');
   const content = (
     <>
       <span className={syncDotClassName(dot)} aria-hidden="true" />
-      <span className="min-w-0 truncate">{short}</span>
+      <span
+        className={connectionLine === null ? 'min-w-0 truncate' : 'min-w-0'}
+      >
+        {short}
+      </span>
     </>
   );
   return (
@@ -101,7 +123,7 @@ export function SidebarStatus({
             as="button"
             type="button"
             className={`ui-sidebar-status flex w-full cursor-pointer items-center bg-transparent text-left text-secondary text-muted hover:bg-hover ${focusOutlineInset}`}
-            aria-label={`${short}. Show save details`}
+            aria-label={`${short}${short.endsWith('.') ? '' : '.'} Show save details`}
             onClick={() => setOpen(true)}
           >
             {content}

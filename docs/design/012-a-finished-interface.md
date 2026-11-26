@@ -35,7 +35,7 @@ Default neutral so that a first screen states no taste; the blue is a taste.
 
 **Every edge is loud and every thing has one.** Fifty four edge utilities, plus
 a rule under every row, every section of a dialog, the header, the sidebar, the
-note header and the note footer. A secondary button and a text field wear the
+note header and the note scroll edges. A secondary button and a text field wear the
 component edge of the palette, which `theme.test.ts` holds to 3 to 1 against
 every surface, so each one reads as a dark cage. Separation never comes from
 space or from fill.

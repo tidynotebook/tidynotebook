@@ -4,6 +4,7 @@ import type { LocalStore } from '@notesapp/sync';
 import { Inset, Panel, CollapsibleSection } from '@notesapp/ui';
 import { OutlinePanel } from './outline.tsx';
 import { Backlinks } from './backlinks.tsx';
+import { NoteWordCount } from './note-word-count.tsx';
 import {
   noteSideRegionClassName,
   noteOutlineScrollClassName,
@@ -35,6 +36,7 @@ export function NoteSide({
       className={noteSideRegionClassName()}
       aria-label="Note outline and inbound links"
     >
+      <NoteWordCount initialText={text} />
       <div className={noteOutlineScrollClassName()}>
         <OutlinePanel
           text={text}

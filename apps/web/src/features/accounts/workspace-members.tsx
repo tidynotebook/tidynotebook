@@ -24,6 +24,7 @@ import {
   Dialog,
   DialogBody,
   DialogFooter,
+  FixedDialogLayout,
   Form,
   IconSlot,
   InfoIcon,
@@ -46,6 +47,8 @@ import { normalizeEmail, presenceColorSlot } from '@notesapp/core';
 import { relativeTime } from '../../lib/relative-time.ts';
 import { useNow } from '../../shell/now.ts';
 import { initialOf } from '../../lib/initial.ts';
+import { SettingsDialog } from './settings-dialog.tsx';
+import { usePhoneSettings } from './settings-section.tsx';
 
 const roles: readonly WorkspaceInviteRole[] = ['admin', 'editor', 'viewer'];
 const roleHelp = {
@@ -85,6 +88,7 @@ export function WorkspaceMembers({
   readonly phoneFooter: HTMLElement | null;
 }): ReactNode {
   const now = useNow();
+  const phone = usePhoneSettings();
   const manage = role === 'owner' || role === 'admin';
   const ownId = useSession().account?.accountId;
   const workspace = useWorkspace();
@@ -96,6 +100,7 @@ export function WorkspaceMembers({
   const [problem, setProblem] = useState('');
   const [notice, setNotice] = useState('');
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [rolePicker, setRolePicker] = useState<WorkspaceMember | null>(null);
   const [removal, setRemoval] = useState<WorkspaceMember | null>(null);
   const [busy, setBusy] = useState(false);
   const refresh = () => setRevision((value) => value + 1);
@@ -143,25 +148,32 @@ export function WorkspaceMembers({
     }
   };
 
+  function changeRole(
+    member: WorkspaceMember,
+    next: WorkspaceInviteRole,
+  ): void {
+    setRolePicker(null);
+    if (next === member.role) return;
+    void updateWorkspaceMemberRole({
+      path: { workspaceId, accountId: member.accountId },
+      body: { role: next },
+    }).then((response) => {
+      if (response.data === undefined)
+        setProblem(problemMessage(response.error));
+      else {
+        refresh();
+        if (member.accountId === ownId) workspace.reload();
+      }
+    });
+  }
+
   function memberMenu(member: WorkspaceMember): MenuItem[] {
     const options: MenuItem[] = roles.map((next) => ({
       id: next,
       label: roleName(next),
       detail: roleHelp[next],
       selected: next === member.role,
-      onSelect: () => {
-        void updateWorkspaceMemberRole({
-          path: { workspaceId, accountId: member.accountId },
-          body: { role: next },
-        }).then((response) => {
-          if (response.data === undefined)
-            setProblem(problemMessage(response.error));
-          else {
-            refresh();
-            if (member.accountId === ownId) workspace.reload();
-          }
-        });
-      },
+      onSelect: () => changeRole(member, next),
     }));
     if (member.accountId !== ownId)
       options.push({
@@ -201,7 +213,9 @@ export function WorkspaceMembers({
             count={invites.length}
             divider
           />
-          {invites.length === 0 ? null : (
+          {invites.length === 0 ? (
+            <p className="text-secondary text-muted">No pending invites.</p>
+          ) : (
             <Card responsive>
               {invites.map((invite) => {
                 const copyLink = () => {
@@ -292,15 +306,27 @@ export function WorkspaceMembers({
                 help={member.displayName === null ? undefined : member.email}
                 control={
                   manage && member.role !== 'owner' ? (
-                    <Menu
-                      label={`Role for ${member.displayName ?? member.email}`}
-                      items={memberMenu(member)}
-                      trigger="value"
-                      compact
-                    >
-                      {roleName(member.role)}
-                      <ChevronDownIcon />
-                    </Menu>
+                    phone ? (
+                      <Button
+                        label={`Role for ${member.displayName ?? member.email}`}
+                        size="compact"
+                        variant="ghost"
+                        ariaHasPopup="dialog"
+                        onClick={() => setRolePicker(member)}
+                      >
+                        {roleName(member.role)}
+                        <ChevronDownIcon />
+                      </Button>
+                    ) : (
+                      <Menu
+                        label={`Role for ${member.displayName ?? member.email}`}
+                        items={memberMenu(member)}
+                        compact
+                      >
+                        {roleName(member.role)}
+                        <ChevronDownIcon />
+                      </Menu>
+                    )
                   ) : (
                     <Pill>{roleName(member.role)}</Pill>
                   )
@@ -331,17 +357,15 @@ export function WorkspaceMembers({
           </Button>
         )}
       </Stack>
-      {manage && phoneFooter !== null
+      {manage && phone && phoneFooter !== null
         ? createPortal(
-            <DialogFooter column={false}>
-              <Button
-                variant="primary"
-                full
-                onClick={() => setInviteOpen(true)}
-              >
-                Invite people
-              </Button>
-            </DialogFooter>,
+            <FixedDialogLayout phone>
+              <DialogFooter column={false}>
+                <Button variant="primary" onClick={() => setInviteOpen(true)}>
+                  Invite people
+                </Button>
+              </DialogFooter>
+            </FixedDialogLayout>,
             phoneFooter,
           )
         : null}
@@ -356,6 +380,48 @@ export function WorkspaceMembers({
           }}
         />
       ) : null}
+      {rolePicker === null ? null : (
+        <SettingsDialog
+          open={phone}
+          hideScope
+          titleId="workspace-member-role-title"
+          title={`Role for ${rolePicker.displayName ?? rolePicker.email}`}
+          onClose={() => setRolePicker(null)}
+        >
+          <DialogBody>
+            <Stack gap={4}>
+              <Card responsive>
+                {roles.map((choice) => (
+                  <ListRow
+                    key={choice}
+                    as="button"
+                    label={roleName(choice)}
+                    help={roleHelp[choice]}
+                    control={
+                      choice === rolePicker.role ? <CheckIcon /> : undefined
+                    }
+                    aria-pressed={choice === rolePicker.role}
+                    onClick={() => changeRole(rolePicker, choice)}
+                  />
+                ))}
+              </Card>
+              {rolePicker.accountId === ownId ? null : (
+                <Card responsive>
+                  <ListRow
+                    as="button"
+                    label="Remove from workspace"
+                    labelTone="danger"
+                    onClick={() => {
+                      setRemoval(rolePicker);
+                      setRolePicker(null);
+                    }}
+                  />
+                </Card>
+              )}
+            </Stack>
+          </DialogBody>
+        </SettingsDialog>
+      )}
       {removal === null ? null : (
         <Dialog
           open
@@ -455,8 +521,9 @@ function InvitePeople({
   }
 
   return (
-    <Dialog
+    <SettingsDialog
       open
+      hideScope
       titleId="invite-workspace-people-title"
       title={
         results === null
@@ -586,6 +653,6 @@ function InvitePeople({
           )}
         </DialogFooter>
       </Form>
-    </Dialog>
+    </SettingsDialog>
   );
 }

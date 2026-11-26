@@ -29,6 +29,7 @@ import {
   type MenuItem,
 } from '@notesapp/ui';
 import { SaveProblemControl } from './save-problem.tsx';
+import { NoteWordCount } from './note-word-count.tsx';
 import { actionIcon } from '../../shell/action-icons.tsx';
 import { HeaderActions } from '../../shell/header-slot.tsx';
 import {
@@ -42,6 +43,7 @@ export type NoteHeaderActionsProps = {
   readonly workspaceId: string;
   readonly readOnly?: boolean;
   readonly presence?: ReactNode;
+  readonly initialText: string;
   readonly onCopyText: () => void;
   readonly fileId: string;
   /** Moves the caret into the note name, so the person can write a new one. */
@@ -73,6 +75,7 @@ export function NoteHeaderActions({
   workspaceId,
   readOnly = false,
   presence,
+  initialText,
   fileId,
   onRename,
   onCopyText,
@@ -157,6 +160,7 @@ export function NoteHeaderActions({
                 },
               ]
         }
+        information={<NoteWordCount initialText={initialText} menu />}
         triggerClassName={noteMenuTriggerClassName}
         compact
       />

@@ -32,10 +32,6 @@ export function noteSideRegionClassName(): string {
 export function noteOutlineScrollClassName(): string {
   return 'overflow-hidden overflow-y-auto overscroll-contain';
 }
-export function noteFooterClassName(typing: boolean): string {
-  const base = `flex flex-col shrink-0 ${noteColumnInset} py-2 text-secondary text-muted ${fixedRegionClasses('top')}`;
-  return typing ? `${base} ${phoneTypingHiddenClassName}` : base;
-}
 export function formatToolbarFrameClassName(): string {
   return `flex justify-center shrink-0 px-2 ${fixedRegionClasses('bottom')}`;
 }
@@ -67,7 +63,6 @@ export function frameContentClassName(): string {
 export function frameNoticeRowClassName(): string {
   return `${pageRowClassName()} shrink-0`;
 }
-const phoneTypingHiddenClassName = 'coarse:max-md:hidden';
 
 export const syncStatusClassNames = {
   status: 'flex min-w-0 flex-1 items-start gap-2 py-1',

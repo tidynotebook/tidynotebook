@@ -328,7 +328,7 @@ export function listRowClasses(
 ): string {
   return density === 'setting'
     ? 'ui-settings-row ui-setting-fill fine:isolate fine:before:pointer-events-auto fine:before:absolute fine:before:inset-y-0 fine:before:-inset-x-2 fine:before:-z-10 fine:before:rounded-md fine:before:bg-inherit text-left relative flex min-w-0 w-full items-center gap-4 py-3 px-0 coarse:px-4 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:border-b after:border-edge-subtle coarse:after:left-4 last:after:hidden'
-    : `flex min-w-0 w-full items-center gap-2 rounded-md text-left py-1 coarse:rounded-lg coarse:py-3 ${contentEdge ? 'px-0 ' + contentEdgeRowClassName : 'px-2 coarse:px-3'}`;
+    : `flex min-w-0 w-full items-center gap-2 rounded-md text-left py-1 coarse:rounded-lg ${density === 'menu' ? 'coarse:py-2' : 'coarse:py-3'} ${contentEdge ? 'px-0 ' + contentEdgeRowClassName : 'px-2 coarse:px-3'}`;
 }
 export function ListRow({
   children,

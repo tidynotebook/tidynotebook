@@ -84,6 +84,10 @@ export type Page = {
 };
 type Context = {
   setOffline(offline: boolean): Promise<void>;
+  routeWebSocket(
+    pattern: string,
+    callback: (socket: { close(): Promise<void> }) => Promise<void>,
+  ): Promise<void>;
   unrouteAll(options: { behavior: 'wait' | 'ignoreErrors' }): Promise<void>;
   newCDPSession(page: Page): Promise<{
     send(method: string, params: Record<string, unknown>): Promise<unknown>;

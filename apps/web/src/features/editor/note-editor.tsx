@@ -84,7 +84,7 @@ import { noteFrameClassName, noteRowClassName } from '../../lib/note-column.ts';
 import { localWriteFailureMessage } from '../../lib/local-write.ts';
 import { FormatToolbar, toolSlashCommands } from './format-toolbar.tsx';
 import { TableMenu } from './table-menu.tsx';
-import { NoteFooter } from './note-footer.tsx';
+import { NoteScrollEdges } from './note-scroll-edges.tsx';
 import { NoteHeader, noteNameErrorId } from './note-header.tsx';
 import { NoteHeaderActions } from './note-header-actions.tsx';
 import { useInsertTemplate } from './insert-template.ts';
@@ -109,7 +109,10 @@ import { duplicateNote as makeCopy } from '../notes/duplicate-note.ts';
 import { NoteSide } from './note-side.tsx';
 import { useDeleteNotice } from '../trash/trash.tsx';
 import { createDiagramWidget, diagramFramePath } from '../../diagram/widget.ts';
-import { useRegisterNoteDraftFlush } from './save-status.tsx';
+import {
+  useRegisterNoteDraftFlush,
+  useReportLiveConnection,
+} from './save-status.tsx';
 import { createDocumentWorkQueue } from './document-work.ts';
 import { createWriteSchedule } from './write-schedule.ts';
 import { createNoteWork, readAfterChange } from './note-work.ts';
@@ -190,7 +193,6 @@ export type NoteEditorProps = {
   readonly onPublish?: (() => void) | undefined;
   /** Reloads the note when a new document generation cannot join the editor. */
   readonly onHeadReplaced?: (() => void) | undefined;
-  readonly roleChanged?: boolean;
 };
 
 /**
@@ -273,7 +275,6 @@ const NoteEditorBody = memo(function NoteEditorBody({
   baseRevisionId,
   initialText,
   readOnly: viewerRole = false,
-  roleChanged = false,
   initialDocument = null,
   initialPath,
   initialWorkingCopyId,
@@ -1424,9 +1425,15 @@ const NoteEditorBody = memo(function NoteEditorBody({
     onAccess: access.setLiveRole,
   });
   useRegisterNoteActions(useNoteActionsForRole(noteScreenActions, readOnly));
+  useReportLiveConnection(initialDocument === null ? null : liveNote.status);
 
   return (
-    <Inset as="div" className="flex h-full min-w-0 flex-col" ref={rootRef}>
+    <Inset
+      as="div"
+      className="flex h-full min-w-0 flex-col"
+      ref={rootRef}
+      data-live-connection={liveNote.status}
+    >
       <NoteHeader
         fileId={fileId}
         name={name}
@@ -1445,6 +1452,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
         fileId={fileId}
         onRename={renameNote}
         presence={<NotePresence people={liveNote.others} />}
+        initialText={initialText}
         onCopyText={copyNote.run}
         onMoveToFolder={onMoveToFolder}
         onDuplicate={duplicateNote}
@@ -1453,7 +1461,6 @@ const NoteEditorBody = memo(function NoteEditorBody({
         onPublish={onPublish}
         onDelete={deleteNoteAndLeave}
       />
-      {/* The visible side region owns the right edge. Narrow notes keep both gutters. */}
       <div
         ref={marginRef}
         className={`flex overflow-hidden flex-1 flex-col ${noteEditorGutterClassName()}`}
@@ -1519,7 +1526,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
         ) : null}
 
         <div className={noteRowClassName()}>
-          <div className={noteFrameClassName()}>
+          <div className={noteFrameClassName()} data-scroll-frame="">
             {/* The tools use the one editor and its local history. */}
             {readOnly ? (
               <ViewerNotice />
@@ -1559,14 +1566,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
                 }
               }}
             />
-            <NoteFooter
-              initialText={initialText}
-              live={liveNote}
-              liveEnabled={initialDocument != null}
-              changedToViewer={
-                access.changedToViewer || (roleChanged && readOnly)
-              }
-            />
+            <NoteScrollEdges />
             <ImageViewer
               image={openImage}
               onRemoved={imageUndo.removed}

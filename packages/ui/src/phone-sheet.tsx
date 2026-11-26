@@ -28,10 +28,10 @@ export function PhoneSheetHeader({
       padX={4}
       className="ui-sheet-header touch-pan-x touch-pinch-zoom"
     >
-      <HeaderSlot side="leading" targetWidth className="empty:hidden">
+      <HeaderSlot side="leading" targetWidth>
         {leading}
       </HeaderSlot>
-      <HeaderTitle align="start">
+      <HeaderTitle>
         <h2
           id={titleId}
           ref={titleRef}
@@ -43,7 +43,7 @@ export function PhoneSheetHeader({
       </HeaderTitle>
       <Inline gap={0} justify="end" className="shrink-0">
         {trailing ? <HeaderSlot targetWidth>{trailing}</HeaderSlot> : null}
-        <HeaderSlot side="trailing" targetWidth>
+        <HeaderSlot side="trailing">
           <IconButton
             glyph={<CloseIcon />}
             size="header"

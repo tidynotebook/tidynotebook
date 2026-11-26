@@ -64,12 +64,13 @@ export async function auditSpacing(page: Page) {
       visible,
     )) {
       const s = getComputedStyle(e),
-        setting = e.getAttribute('data-ui-row') === 'setting';
+        density = e.getAttribute('data-ui-row'),
+        setting = density === 'setting';
       check(e, 'content-owned row height', parseFloat(s.minHeight) || 0, 0);
       if (!setting) {
         // Rows own padding, while a search control, an inline field or a
         // second help line can make their content taller than one text line.
-        const vertical = coarse ? 8 : 4;
+        const vertical = coarse ? (density === 'tree' ? 12 : 8) : 4;
         check(e, 'row top padding', parseFloat(s.paddingTop), vertical);
         check(e, 'row bottom padding', parseFloat(s.paddingBottom), vertical);
         const content = Math.max(
@@ -175,8 +176,18 @@ export async function auditSpacing(page: Page) {
     }
     for (const e of [...document.querySelectorAll('.ui-sidebar-status')].filter(
       visible,
-    ))
-      check(e, 'status footer height', box(e).height, 32);
+    )) {
+      const text = e.querySelector(':scope > span:last-child');
+      const style = getComputedStyle(e);
+      check(
+        e,
+        'status line height',
+        box(e).height,
+        Math.max(16, text?.getBoundingClientRect().height ?? 0) +
+          parseFloat(style.paddingTop) +
+          parseFloat(style.paddingBottom),
+      );
+    }
     for (const e of [
       ...document.querySelectorAll('[role="switch"] > [aria-hidden="true"]'),
     ].filter(visible)) {
@@ -197,4 +208,10 @@ export async function auditSpacing(page: Page) {
     ],
     measurements: measured.measurements,
   };
+}
+
+if (import.meta.main) {
+  await (
+    await import('./collaboration-design.ts')
+  ).runCollaborationAudit(auditSpacing);
 }

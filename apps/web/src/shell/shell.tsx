@@ -1,3 +1,4 @@
+import { WorkspaceRoleToast } from './workspace-role-toast.tsx';
 import { WorkspaceRecoveryToast } from './workspace-recovery-toast.tsx';
 import { WorkspaceJoinedToast } from './workspace-joined.tsx';
 import {
@@ -36,6 +37,7 @@ import {
   PanelLeftIcon,
   SearchIcon,
   transitionSurface,
+  ToastStack,
 } from '@notesapp/ui';
 
 import { useNavigationDrawer } from './use-navigation-drawer.ts';
@@ -2022,8 +2024,11 @@ function ShellFrame({
             />
           )}
           <SettingsModalHost workspaceId={workspaceId} />
-          <WorkspaceJoinedToast />
-          <WorkspaceRecoveryToast />
+          <ToastStack>
+            <WorkspaceJoinedToast workspaceId={workspaceId} />
+            <WorkspaceRoleToast workspaceId={workspaceId} />
+            <WorkspaceRecoveryToast />
+          </ToastStack>
           {signOut.dialog}
           {shortcutsOpen && ShortcutsView !== null ? (
             <ShortcutsView open onClose={() => setShortcutsOpen(false)} />

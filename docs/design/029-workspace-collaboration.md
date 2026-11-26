@@ -142,7 +142,7 @@ Keep local recovery data if a limit prevents a destination save. After
 recovery commits, clear the source queue and drafts. Refresh the save status
 and reload the accepted head on a downgrade. Keep the readable cache. Show
 a dismissible toast with a link to the first recovered note and keep the
-role change in the editor footer. Apply the same rules for an offline client at
+role change in a one-time toast. Apply the same rules for an offline client at
 its next confirmed access check. Transport failures alone must not trigger
 cache removal.
 
@@ -273,9 +273,9 @@ differences follow the [design system](../development/design-system.md):
 | Mock-up               | Use in the product                                                                                                                                                                                                                                                         |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Main and Phone        | Use Settings headers and edge treatment. Use flat desktop groups and aligned phone cards. Shared rows set height and pointer targets from padding and line boxes. Keep compact phone actions in the row menu. Use the pinned full-width Invite people action on the phone. |
-| Invite and Accept     | Use the shared dialog or sheet, account forms, fields, focus handling, and notices. The invite address group uses shared wrapping and control slots with symmetric insets.                                                                                                 |
+| Invite and Accept     | Use the desktop dialog, phone Settings sub-level, account forms, fields, focus handling, and notices. The invite address group uses shared wrapping and control slots with symmetric insets.                                                                               |
 | Switcher              | Use the existing workspace menu or phone sheet. Put the invite actions in a focusable group without interactive controls nested in a menu item. Use the shared Notice or Toast for recovery.                                                                               |
-| Editor and EditorDark | Use the existing editor header, sidebar, toolbar and status regions. The editor footer uses the overflow hairline rule. Put avatar overlap and cursor styling in owners of shared components and theme roles. Dark colors use theme tokens.                                |
+| Editor and EditorDark | Use the existing editor header, sidebar, toolbar and status regions. The sidebar reports connection problems. The note scroll edges take no space. Put avatar overlap and cursor styling in owners of shared components and theme roles. Dark colors use theme tokens.     |
 | History               | Use existing History rows, diff layout, and semantic status and type roles. The viewer omits Restore.                                                                                                                                                                      |
 | PhoneEditor           | Use the shared sheet with its header, close slot, scrolling body and safe area. Desktop presence uses a tooltip and a keyboard-accessible trigger.                                                                                                                         |
 

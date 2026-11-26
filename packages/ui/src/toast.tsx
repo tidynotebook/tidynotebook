@@ -17,9 +17,26 @@
  * The width is the reading measure of a short sentence with a gutter on both
  * sides, both from the named scale, so no screen writes a clamp of its own.
  */
-import type { ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 import { pageGutter } from './layout.tsx';
 import { transitionRaise } from './motion.ts';
+
+const ToastStackContext = createContext(false);
+const placement = `pointer-events-none fixed inset-x-0 bottom-0 z-50 flex items-center pb-4 ${pageGutter}`;
+
+export function ToastStack({
+  children,
+}: {
+  readonly children: ReactNode;
+}): ReactNode {
+  return (
+    <ToastStackContext.Provider value>
+      <div className={`${placement} flex-col gap-2 empty:hidden`}>
+        {children}
+      </div>
+    </ToastStackContext.Provider>
+  );
+}
 
 /**
  * A message at the foot of the window, with one action.
@@ -30,25 +47,25 @@ import { transitionRaise } from './motion.ts';
 export function Toast({
   message,
   children,
-  aboveFooter = false,
 }: {
   readonly message: string;
-  readonly aboveFooter?: boolean;
   /** The one action of the toast, such as Undo. */
   readonly children?: ReactNode | undefined;
 }): ReactNode {
-  return (
+  const stacked = useContext(ToastStackContext);
+  const card = (
     <div
-      className={`pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center ${aboveFooter ? 'pb-12' : 'pb-4'} ${pageGutter}`}
       role="status"
       aria-live="polite"
+      className={`pointer-events-auto flex w-full max-w-md flex-wrap items-center gap-4 rounded-lg border border-overlay-edge bg-overlay p-3 coarse:p-4 text-body text-strong shadow-overlay ${transitionRaise}`}
     >
-      <div
-        className={`pointer-events-auto flex w-full max-w-md flex-wrap items-center gap-4 rounded-lg border border-overlay-edge bg-overlay p-3 coarse:p-4 text-body text-strong shadow-overlay ${transitionRaise}`}
-      >
-        <span className="min-w-0 flex-1">{message}</span>
-        {children}
-      </div>
+      <span className="min-w-0 flex-1">{message}</span>
+      {children}
     </div>
+  );
+  return stacked ? (
+    card
+  ) : (
+    <div className={`${placement} justify-center`}>{card}</div>
   );
 }

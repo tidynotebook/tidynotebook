@@ -169,13 +169,11 @@ export function NoteEditorLoader({
               : 'Loading note',
   );
   const accessReload = useRef(false);
-  const [roleChangedFor, setRoleChangedFor] = useState<string | null>(null);
   const setStatus = useCallback(
     (next: NoteLoadStatus): void => {
       if (accessReload.current) {
         accessReload.current = false;
         setGeneration((count) => count + 1);
-        setRoleChangedFor(workspaceId);
       }
       setLoadState({
         identity: { accountId, workspaceId, fileId },
@@ -558,7 +556,6 @@ export function NoteEditorLoader({
         baseRevisionId={status.headRevisionId}
         initialText={status.text}
         readOnly={role === 'viewer'}
-        roleChanged={roleChangedFor === workspaceId}
         initialDocument={status.document ?? null}
         initialPath={status.path}
         initialWorkingCopyId={status.workingCopyId}

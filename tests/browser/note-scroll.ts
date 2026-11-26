@@ -54,27 +54,25 @@ try {
             scroller.scrollTop = 0;
             await new Promise(requestAnimationFrame);
             const box = scroller.getBoundingClientRect();
-            const footer = scroller.closest('main')?.querySelector('footer');
-            if (!(footer instanceof HTMLElement))
-              throw Error('Word count missing.');
-            const footerBox = footer.getBoundingClientRect();
+            const edge = scroller
+              .closest('[data-scroll-frame]')
+              ?.querySelector('[data-scroll-edge=below]');
+            if (!(edge instanceof HTMLElement))
+              throw Error('Bottom scroll edge missing.');
             return {
               height: scroller.clientHeight,
               content: scroller.scrollHeight,
               top: box.top,
               bottom: box.bottom,
-              footerTop: footerBox.top,
-              footerBottom: footerBox.bottom,
-              footerHeight: footerBox.height,
+              edgeHeight: edge.getBoundingClientRect().height,
             };
           });
           assert.ok(start.height > 100, 'The editor has room for text.');
           assert.ok(start.bottom <= height, 'The editor stays on the screen.');
-          assert.ok(
-            start.footerHeight > 0 &&
-              start.footerTop >= 0 &&
-              start.footerBottom <= height,
-            'The resting word count stays on the screen.',
+          assert.equal(
+            start.edgeHeight,
+            0,
+            'The bottom edge takes no space from the note.',
           );
           assert.ok(
             start.content > start.height + 500,

@@ -24,14 +24,13 @@ import {
   Dialog,
   DialogBody,
   PresenceAvatar,
-  Inline,
+  PresenceAvatarStack,
   ListRow,
   Notice,
   Popover,
   noteColumnInset,
   noteColumnFineInset,
   Stack,
-  Pill,
 } from '@notesapp/ui';
 import { generateUUID } from '@notesapp/core';
 import type { Role } from '@notesapp/api-client';
@@ -57,7 +56,7 @@ type Person = {
   readonly mode: string;
   readonly idle: boolean;
 };
-type LiveStatus = 'Live' | 'Reconnecting' | 'Offline';
+import type { LiveStatus } from './save-status.tsx';
 export type LiveState = {
   readonly status: LiveStatus;
   readonly others: readonly Person[];
@@ -376,6 +375,7 @@ export function NotePresence({
         return (
           <ListRow
             key={person.accountId}
+            density="menu"
             label={person.name}
             help={person.idle ? `${mode} · Idle` : mode}
             leading={
@@ -400,30 +400,14 @@ export function NotePresence({
         title={label}
         onClick={() => setOpen(!open)}
       >
-        <Inline gap={1}>
-          <span className="inline-flex -space-x-1">
-            {people.slice(0, 4).map((person, index) => (
-              <span
-                key={person.accountId}
-                className={
-                  index === 0 ? 'inline-flex' : 'inline-flex max-compact:hidden'
-                }
-              >
-                <PresenceAvatar slot={person.slot} idle={person.idle} ring>
-                  {initialOf(person.name)}
-                </PresenceAvatar>
-              </span>
-            ))}
-          </span>
-          {people.length > 4 ? (
-            <Pill className="max-compact:hidden">+{people.length - 4}</Pill>
-          ) : null}
-          {people.length > 1 ? (
-            <span className="hidden text-small text-muted max-compact:inline">
-              {people.length}
-            </span>
-          ) : null}
-        </Inline>
+        <PresenceAvatarStack
+          people={people.map((person) => ({
+            id: person.accountId,
+            initial: initialOf(person.name),
+            slot: person.slot,
+            idle: person.idle,
+          }))}
+        />
       </Button>
       {open && desktop ? (
         <Popover
@@ -470,16 +454,13 @@ export function useNoteAccess(
     viewerRole || liveRole === 'viewer' || liveRole === 'removed';
   const readOnlyRef = useRef(readOnly);
   readOnlyRef.current = readOnly;
-  const wasWritable = useRef(!readOnly);
   useLayoutEffect(() => {
     if (view.current !== null) setEditorReadOnly(view.current, readOnly);
-    if (!readOnly) wasWritable.current = true;
   }, [view, readOnly]);
   return {
     readOnly,
     readOnlyRef,
     setLiveRole,
-    changedToViewer: readOnly && wasWritable.current,
   };
 }
 
@@ -543,32 +524,4 @@ export function useEditorLiveBinding(input: {
     [workspaceId],
   );
   return note;
-}
-
-export function NoteLiveStatus({
-  note,
-  enabled,
-  changedToViewer,
-}: {
-  readonly note: LiveState;
-  readonly enabled: boolean;
-  readonly changedToViewer: boolean;
-}): ReactNode {
-  if (!enabled && !changedToViewer) return null;
-  const label = changedToViewer
-    ? 'Your role changed to Viewer. Editing is off.'
-    : note.status === 'Live'
-      ? 'Live'
-      : note.status === 'Offline'
-        ? 'Offline. Your edits merge when you reconnect.'
-        : 'Reconnecting. Your edits are safe on this device.';
-  return (
-    <Inline as="span" gap={1} align="center" role="status">
-      <span
-        aria-hidden="true"
-        className={`size-2 shrink-0 rounded-full ${changedToViewer ? 'bg-danger' : note.status === 'Live' ? 'bg-success' : 'bg-muted'}`}
-      />
-      <span>{label}</span>
-    </Inline>
-  );
 }

@@ -41,7 +41,7 @@ On a phone, the row of tools stands above the note, as on a computer.
 
 - Swipe the row sideways to reach the other tools. You can also select the
   arrow at the end of the row. The arrow shows when more tools are there.
-- While you type, the word count goes away to give the text more room.
+- Read the word count in the right panel or at the end of Note actions.
 - The slash menu and the other menus open above the keyboard.
 
 With a keyboard, press **Tab** to reach the row. Use the arrow keys to move

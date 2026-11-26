@@ -58,19 +58,4 @@ export { noteSideRegionClassName } from '@notesapp/ui';
 /** The outline keeps its natural height until it needs to scroll. */
 export { noteOutlineScrollClassName } from '@notesapp/ui';
 
-/**
- * The classes of the footer row under the note text.
- *
- * The footer draws `edge-line` above itself. The note text is a region a
- * person scrolls, and the design guide draws a divider exactly there, so the
- * line states where the text stops and the count of the note starts. Without
- * it the sentence reads as one more line of the note.
- *
- * While a person types on a phone, the keyboard takes half of the screen, and
- * the count is not what they read then. The footer gives its row to the text
- * while the text has the focus on a narrow screen under a finger, and comes
- * back when the text lets the focus go. A desktop keeps it.
- */
-export { noteFooterClassName } from '@notesapp/ui';
-
 /** Hides a part of the note on a phone while the text has the focus. */
