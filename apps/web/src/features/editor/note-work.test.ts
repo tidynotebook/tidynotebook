@@ -364,7 +364,7 @@ await test('access recovery settles pending writes and blocks later draft writes
   const recovery = editor.work.saveForAccess(false, checkpoint.promise);
   assert.equal(editor.work.frozen(), true);
   await editor.work.writeDraft(false);
-  assert.deepEqual(editor.drafts, []);
+  assert.equal(editor.drafts.length, 0);
   append.resolve();
   await draft;
   assert.equal(editor.drafts.length, 1);
