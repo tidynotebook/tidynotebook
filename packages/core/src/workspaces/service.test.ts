@@ -472,9 +472,40 @@ await test('a theme family that is not a slug is rejected', async () => {
 });
 
 await test('session grants follow the current role', () => {
-  assert.deepEqual(sessionGrants([{ workspaceId: space, role: 'owner' }]), [
-    { workspaceId: space, actions: ['read', 'history', 'write', 'purge'] },
-  ]);
+  assert.deepEqual(
+    sessionGrants([
+      { workspaceId: 'owner', role: 'owner' },
+      { workspaceId: 'admin', role: 'admin' },
+      { workspaceId: 'editor', role: 'editor' },
+      { workspaceId: 'viewer', role: 'viewer' },
+    ]),
+    [
+      {
+        workspaceId: 'owner',
+        actions: [
+          'read',
+          'history',
+          'write',
+          'purge',
+          'publish',
+          'manage_members',
+        ],
+      },
+      {
+        workspaceId: 'admin',
+        actions: [
+          'read',
+          'history',
+          'write',
+          'purge',
+          'publish',
+          'manage_members',
+        ],
+      },
+      { workspaceId: 'editor', actions: ['read', 'history', 'write'] },
+      { workspaceId: 'viewer', actions: ['read', 'history'] },
+    ],
+  );
 });
 
 await test('consent names the current versions and is stored with its time', async () => {

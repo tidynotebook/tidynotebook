@@ -66,6 +66,7 @@ await test('the modal groups its sections as the wireframe does, with no Sign ou
       ['Security', 'API keys and apps'],
       ['Preferences', 'Appearance and editor'],
       ['Preferences', 'Offline'],
+      ['Workspace', 'Members'],
       ['Workspace', 'Daily notes'],
       ['Workspace', 'Templates'],
       ['Workspace', 'Export and import'],

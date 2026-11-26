@@ -49,7 +49,8 @@ export const settingsGroups: readonly {
   readonly keys: readonly SettingsSectionKey[];
 }[] = [
   { title: 'Appearance', keys: ['appearance'] },
-  { title: 'Writing', keys: ['spelling', 'daily-notes', 'templates'] },
+  { title: 'Writing', keys: ['spelling'] },
+  { title: 'Workspace', keys: ['members', 'daily-notes', 'templates'] },
   { title: 'Data', keys: ['offline', 'export', 'import'] },
   {
     title: 'Account',

@@ -367,6 +367,8 @@ await test('a released note opens again with every change and no start work', ()
   assert.equal(again.takeLocalWork(), null);
   // A second release of the ended note changes nothing.
   note.release();
-  assert.equal(note.reopen().text(), 'zero\none\ntwo\n');
+  const second = note.reopen();
+  assert.equal(second.text(), 'zero\none\ntwo\n');
+  second.release();
   again.release();
 });

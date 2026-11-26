@@ -271,19 +271,18 @@ actions in the editor, menus, sidebar, toolbar, and keyboard commands.
 ## Compatibility
 
 Add enum values and tables. Keep existing owner rows and note epochs. Old
-History falls back to the recorded actor. The History contributor list is additive to the current HTTP shape. An old client only knows
-the Owner enum value, so keep collaboration disabled during a mixed rollout.
-Enable it after all servers can handle the fields and grant checks and after
-the served web client can refresh through the existing upgrade path. External
-clients that validate roles must update before they consume shared memberships.
+History falls back to the recorded actor. The History contributor list adds
+a field to the current HTTP shape. Upgrade all servers together in a
+maintenance window. Old binaries only know the Owner enum value. Let the
+served web client refresh through the existing upgrade path. External clients
+that validate roles must update before they consume shared memberships.
 
 Use `notesapp.sync.2` at the same upgrade address. A new server reports it
 in the sync capability response and leaves the legacy notification list
 empty. Old clients use HTTP polling. New clients wait for Ready to offer
 live rooms and send room or presence messages only after that offer. They
-use HTTP polling with an old server. Keep durable writes available when live
-admission is off. A
-rollback to owner-only binaries with shared membership data needs a compatible
+use HTTP polling with an old server. Durable writes continue if live
+admission fails. A rollback to owner-only binaries with shared membership data needs a compatible
 forward repair or a restore from backup. Rehearse that before rollout.
 Document schema, operator controls, key sharing, database session pooling,
 and proxy effects in the PR. No release or deployment is part of this change.
