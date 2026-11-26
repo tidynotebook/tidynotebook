@@ -1,7 +1,8 @@
 import { createWorkspace, type Workspace } from '@notesapp/api-client';
 import { contentDigest } from '@notesapp/core';
-import { createNote, type LocalStore } from '@notesapp/sync';
-import { freeNamedPath, newNoteDraft } from './new-note-draft.ts';
+import type { LocalStore } from '@notesapp/sync';
+import { newNoteDraft } from './new-note-draft.ts';
+import { persistRecoveredNote } from './persist-recovered-note.ts';
 import { baseNameOf, cleanNoteBaseName } from './note-name.ts';
 
 export type WorkspaceRecoveryNotice = {
@@ -36,6 +37,7 @@ export function recoverWorkspaceAccess(
   old: Workspace,
   remaining: readonly Workspace[],
   removed: boolean,
+  writeCopy = persistRecoveredNote,
 ): Promise<WorkspaceRecoveryNotice | null> {
   const scope = `${accountId}:${old.workspaceId}`;
   const running = pending.get(scope);
@@ -68,11 +70,6 @@ export function recoverWorkspaceAccess(
       if (destination !== undefined && copies.length > 0) {
         const workspaceId = destination.workspaceId;
         const folder = `From ${cleanNoteBaseName(old.name)}`;
-        const known = new Set(
-          (await store.listLocalFiles(accountId, workspaceId)).map(
-            (file) => file.fileId,
-          ),
-        );
         const paths = (await store.listHeldPaths(accountId, workspaceId)).map(
           (file) => file.path,
         );
@@ -82,22 +79,21 @@ export function recoverWorkspaceAccess(
             JSON.stringify([scope, copy.identity, copy.path, copy.text]),
           );
           firstId ??= fileId;
-          if (known.has(fileId)) continue;
           const name = cleanNoteBaseName(
             baseNameOf(copy.path).replace(/\.md$/iu, ''),
           );
-          const path = freeNamedPath(paths, folder, name);
-          await createNote(
-            store,
+          const path = await writeCopy(
             newNoteDraft({
               accountId,
               workspaceId,
-              path,
+              path: `${folder}/${name}.md`,
               text: copy.text,
               ids: { fileId, workingCopyId: fileId },
             }),
+            folder,
+            name,
+            paths,
           );
-          known.add(fileId);
           paths.push(path);
         }
         const saved = `Your unsent text is in ${destination.name}, in the folder ${folder}.`;

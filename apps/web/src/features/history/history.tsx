@@ -63,7 +63,7 @@ import {
   restoreRevision,
   type HistoryRevisionItem,
 } from '@notesapp/api-client';
-import { generateUUID, presenceColorSlot } from '@notesapp/core';
+import { availablePresenceSlot, generateUUID } from '@notesapp/core';
 import type { DiffHunk, LineChangeCount } from '@notesapp/editor';
 import type { LocalStore } from '@notesapp/sync';
 
@@ -567,6 +567,17 @@ function HistoryDetail({
   const indexOf = new Map(
     items.map((item, index) => [item.revisionId, index] as const),
   );
+  const contributorSlots = new Map<string, number>();
+  const usedSlots = new Set<number>();
+  for (const item of items) {
+    for (const person of item.contributors ?? []) {
+      if (person.accountId === null || contributorSlots.has(person.accountId))
+        continue;
+      const slot = availablePresenceSlot(person.accountId, usedSlots);
+      usedSlots.add(slot);
+      contributorSlots.set(person.accountId, slot);
+    }
+  }
   return (
     <Page
       emptyState={
@@ -634,7 +645,7 @@ function HistoryDetail({
                       count: counts.get(item.revisionId) ?? null,
                     });
                     const selected = item.revisionId === selectedId;
-                    const current = item.revisionId === head.headRevisionId;
+                    const current = index === 0;
                     const panelId = `history-panel-${String(index)}`;
                     const label = savedAtLabel(row.time);
                     return (
@@ -689,6 +700,7 @@ function HistoryDetail({
                                     <span aria-hidden="true">·</span>
                                     <RevisionContributors
                                       contributors={item.contributors}
+                                      slots={contributorSlots}
                                     />
                                   </>
                                 ) : null}
@@ -718,6 +730,7 @@ function HistoryDetail({
                             {item.contributors?.length ? (
                               <RevisionContributors
                                 contributors={item.contributors}
+                                slots={contributorSlots}
                                 expanded
                               />
                             ) : null}
@@ -775,9 +788,11 @@ function HistoryDetail({
 /** The identifier of the heading of one day of the history. */
 function RevisionContributors({
   contributors,
+  slots,
   expanded = false,
 }: {
   readonly contributors: NonNullable<HistoryRevisionItem['contributors']>;
+  readonly slots: ReadonlyMap<string, number>;
   readonly expanded?: boolean;
 }): ReactNode {
   return (
@@ -803,7 +818,7 @@ function RevisionContributors({
           >
             <PresenceAvatar
               pending={person.formerMember ?? false}
-              slot={presenceColorSlot(person.accountId ?? '')}
+              slot={slots.get(person.accountId ?? '') ?? 0}
             >
               {person.formerMember ? '?' : initialOf(name)}
             </PresenceAvatar>

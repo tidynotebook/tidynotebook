@@ -410,11 +410,19 @@ export function createDraftsSlice(ctx: LocalStoreContext): DraftsSlice {
         }
       }
 
-      // A stale draft is text of this device over a server version it never
-      // saw. "Based on an older head" needs a base to compare, the head must
-      // be one the server set, and a deleted head is not a version to offer:
-      // deletion recovery is the Trash, not this choice.
+      // The document can already hold this draft and a newer server head.
+      // Offer a choice only when the recovery text is outside the document.
+      const document = snapshot.document;
+      const covered =
+        document !== null &&
+        draft.documentVector !== null &&
+        draft.documentVector !== undefined &&
+        stateVectorCovers(
+          documentStateVector(document.bytes),
+          draft.documentVector,
+        );
       const stale =
+        !covered &&
         !draft.deleted &&
         !accepted.deleted &&
         !accepted.isLocal &&
@@ -426,23 +434,13 @@ export function createDraftsSlice(ctx: LocalStoreContext): DraftsSlice {
       // The draft no longer describes its file and holds no stale text to
       // choose from, so the accepted row is the newer statement of the path
       // and of the deletion state.
-      if (!snapshot.leads && !stale) return withHead(snapshot.head);
+      const merged = covered && !draft.deleted && !accepted.deleted;
+      if (!snapshot.leads && !stale && !merged) return withHead(snapshot.head);
 
-      // A draft lags the document of its editor, which takes each key at
-      // once. A document that holds every change the draft saw is the newer
-      // text, and the draft text would undo work as new work (record 0175).
-      const document = snapshot.document;
-      const covered =
-        document !== null &&
-        draft.documentVector !== null &&
-        draft.documentVector !== undefined &&
-        stateVectorCovers(
-          documentStateVector(document.bytes),
-          draft.documentVector,
-        );
       return withDocument({
         fileId,
-        path: draft.path,
+        path:
+          snapshot.leads || stale ? draft.path : (accepted.path ?? draft.path),
         text: covered ? readDocumentText(document.bytes) : draft.text,
         deleted: draft.deleted,
         workingCopyId: draft.workingCopyId,

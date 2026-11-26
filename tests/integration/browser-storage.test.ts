@@ -171,6 +171,10 @@ await test('workspace access recovery copies queued text before it clears the ol
       old,
       [personal],
       true,
+      async (draft) => {
+        await createNote(store, draft);
+        return draft.path;
+      },
     );
     assert.equal(
       notice?.message,
@@ -3769,6 +3773,75 @@ await test('a queued save of this device never reads as a stale draft', async ()
   assert.equal(cached?.text, 'three\n');
   assert.equal(cached?.acceptedRevisionId, acceptedRevision);
   await store.close();
+});
+
+await test('a draft already in the merged document opens on the new head', async () => {
+  const store = await openLocalStore(
+    origin,
+    createBackend('merged-draft-open').options(),
+  );
+  const accountId = randomUUID();
+  const workspaceId = randomUUID();
+  const fileId = randomUUID();
+  try {
+    const draft = draftOf(accountId, workspaceId, fileId, 'copy-a', 'Start\n');
+    const created = await store.checkpoint(draft, null, 'text');
+    assert.ok(created);
+    await store.acknowledge(accountId, acceptanceOf(created, accountId, '1'));
+    const base = await store.readNoteDocument(accountId, workspaceId, fileId);
+    assert.ok(base);
+    const local = replaceDocumentText(base.bytes, 'Start\nLocal\n');
+    const remote = replaceDocumentText(base.bytes, 'Remote\nStart\n');
+    assert.ok(local.ok && remote.ok);
+    const vector = documentStateVector(base.bytes);
+    await store.appendNoteWork(
+      accountId,
+      workspaceId,
+      fileId,
+      base.epoch,
+      encodeDocumentDelta(local.value.document, vector),
+      draft.workingCopyId,
+    );
+    await store.saveDraft({
+      ...draft,
+      baseRevisionId: created.input.revisions[0]?.id ?? null,
+      text: 'Start\nLocal\n',
+      sequence: 2,
+      documentVector: documentStateVector(local.value.document),
+    });
+    const revisionId = randomUUID();
+    await store.applyRemoteChanges(
+      accountId,
+      workspaceId,
+      [
+        {
+          file: {
+            fileId,
+            revisionId,
+            path: draft.path,
+            fileKind: 'note',
+            deleted: false,
+            digest: await contentDigest('Remote\nStart\n'),
+            text: 'Remote\nStart\n',
+            document: {
+              kind: 'document',
+              bytes: remote.value.document,
+              epoch: base.epoch,
+            },
+          },
+          purgedFileId: null,
+        },
+      ],
+      '2',
+    );
+    const reopened = await store.readCachedNote(accountId, workspaceId, fileId);
+    assert.equal(reopened?.stale, false);
+    assert.equal(reopened?.workingCopyId, draft.workingCopyId);
+    assert.equal(reopened?.acceptedRevisionId, revisionId);
+    assert.equal(reopened?.text, 'Remote\nStart\nLocal\n');
+  } finally {
+    await store.close();
+  }
 });
 
 await test('forgetting a purged file removes every local trace of it', async () => {

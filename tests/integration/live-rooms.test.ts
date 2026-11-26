@@ -2,7 +2,12 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import test from 'node:test';
 import { setTimeout } from 'node:timers/promises';
-import { acceptWithDocuments, type CollaborationStore } from '@notesapp/core';
+import {
+  acceptWithDocuments,
+  commitChangeset,
+  presenceColorSlot,
+  type CollaborationStore,
+} from '@notesapp/core';
 import {
   createDocumentService,
   openIdentityStore,
@@ -36,8 +41,8 @@ const db = await createDisposableDatabase();
 const identity = openIdentityStore(db.runtimeUrl);
 const content = openWorkspaceStore(db.runtimeUrl, createDocumentService());
 const workspaceId = randomUUID();
-const ownerId = randomUUID();
-const editorId = randomUUID();
+const ownerId = 'a0000000-0000-4000-8000-000000000001';
+const editorId = 'a0000000-0000-4000-8000-000000000007';
 const viewerId = randomUUID();
 const fileId = randomUUID();
 const seal = createLiveRelaySeal('integration-only 36-byte room relay key');
@@ -193,6 +198,11 @@ try {
     );
     assert.match(JSON.stringify(entries), /"displayName":"Editor"/);
     assert.doesNotMatch(JSON.stringify(entries), /An invented name/);
+    assert.equal(presenceColorSlot(ownerId), presenceColorSlot(editorId));
+    assert.notEqual(
+      JSON.stringify(entries).includes(`"slot":${presenceColorSlot(ownerId)}`),
+      true,
+    );
     await first.handle(viewer, 'joinNote', viewerRoom);
     assert.equal(
       viewer.output.find((frame) => frame['kind'] === 'noteJoined')?.['role'],
@@ -283,6 +293,32 @@ try {
         ?.contributors?.map((person) => person.accountId),
       [editorId],
     );
+
+    const parallel = revision({
+      fileId,
+      path: 'Collaboration.md',
+      parents: [initial.id],
+      content: dependent.content,
+    });
+    const parallelSave = changeset(workspaceId, [parallel], {
+      expectedHeads: { [fileId]: initial.id },
+    });
+    const editorActor = memberActor(editorId, workspaceId);
+    const receipt = await commitChangeset(
+      content,
+      editorActor,
+      parallelSave,
+      parallelSave.mutationId,
+    );
+    assert.ok(receipt.ok, JSON.stringify(receipt));
+    const after = await content.transact(actor, workspaceId, (tx) =>
+      tx.listHistory(fileId, { limit: 2, cursor: null }),
+    );
+    assert.deepEqual(
+      after.revisions.map((version) => version.revisionId),
+      [dependent.id, initial.id],
+    );
+    assert.equal(after.nextCursor, null);
   });
 
   await test('access rechecks read document bytes only after a durable head changes', async () => {
@@ -292,6 +328,84 @@ try {
     await first.recheck(viewer);
     await first.recheck(owner);
     assert.equal(documentReads, before + 1);
+  });
+
+  await test('a viewer rejoin after downgrade cannot relay text or replace a writer binding', async () => {
+    const late = connection(editorId, 'Editor');
+    const changed = replaceDocumentText(state.bytes, 'Late client edit.');
+    assert.ok(changed.ok);
+    const vector = documentStateVector(state.bytes);
+    const lateDelta = encodeDocumentDelta(changed.value.document, vector);
+    const [clientId] = updateActors(lateDelta, vector).clientIds;
+    assert.ok(clientId !== undefined);
+    const lateRoom = room(clientId);
+    const changeRole = (role: 'viewer' | 'editor') =>
+      identity.collaboration(actor, workspaceId, (tx) =>
+        tx.changeMember(editorId, role, false),
+      );
+    try {
+      assert.equal(await changeRole('viewer'), 'ok');
+      const previous = editor.output.length;
+      await second.handle(editor, 'joinNote', editorRoom);
+      await waitFor(
+        () =>
+          editor.output
+            .slice(previous)
+            .some(
+              (frame) =>
+                frame['kind'] === 'noteJoined' && frame['role'] === 'viewer',
+            ),
+        'The open room did not learn of the downgrade.',
+      );
+      await first.handle(late, 'joinNote', lateRoom);
+      await waitFor(
+        () => late.output.some((frame) => frame['kind'] === 'noteJoined'),
+        'The viewer reload did not join.',
+      );
+      assert.equal(
+        late.output.find((frame) => frame['kind'] === 'noteJoined')?.['role'],
+        'viewer',
+      );
+      const syncCount = () =>
+        owner.output.filter((frame) => frame['kind'] === 'noteSync').length;
+      const before = syncCount();
+      for (const kind of ['state', 'update'] as const) {
+        await first.handle(late, 'sendNoteSync', {
+          roomId: lateRoom.roomId,
+          payload: Buffer.from(
+            encodeNoteSync({ kind, bytes: lateDelta }),
+          ).toString('base64'),
+        });
+      }
+      await first.handle(late, 'sendNoteSync', {
+        roomId: lateRoom.roomId,
+        payload: Buffer.from(
+          encodeNoteSync({ kind: 'vector', bytes: vector }),
+        ).toString('base64'),
+      });
+      await waitFor(
+        () => late.output.some((frame) => frame['kind'] === 'noteSync'),
+        'The viewer could not read from the live room.',
+      );
+      assert.equal(syncCount(), before);
+      const database = await openSession(db.migrationUrl);
+      try {
+        const bindings = await database.query<{ can_write: boolean }>(
+          'select can_write from note_client_bindings where workspace_id = $1 and file_id = $2 and client_id = any($3::bigint[]) order by can_write',
+          [workspaceId, fileId, [clientId, id]],
+        );
+        assert.deepEqual(
+          bindings.map((entry) => entry.can_write),
+          [false, true],
+        );
+      } finally {
+        await database.close();
+      }
+    } finally {
+      first.remove(late);
+      assert.equal(await changeRole('editor'), 'ok');
+      await second.recheck(editor);
+    }
   });
 
   await test('viewer writes do not reach peers and removal evicts a remote room', async () => {

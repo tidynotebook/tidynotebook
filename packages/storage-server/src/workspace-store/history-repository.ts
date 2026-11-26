@@ -289,6 +289,27 @@ export function historyRepository(
             eq(revisions.workspaceId, workspaceId),
             eq(revisions.fileId, fileId),
             cursorCondition,
+            // Keep the checkpoint ID for receipts and the document feed.
+            // History lists a version only when the file changes.
+            sql`(
+              ${revisions.documentEpoch} is null
+              or ${revisions.message} is not null
+              or ${revisions.restoredFrom} is not null
+              or not exists (
+                select 1
+                from ${revisionParents} as edge
+                join ${revisions} as prior
+                  on prior.workspace_id = edge.workspace_id
+                  and prior.id = edge.parent_id
+                where edge.workspace_id = ${revisions.workspaceId}
+                  and edge.child_id = ${revisions.id}
+                  and edge.ordinal = 0
+                  and prior.file_id = ${revisions.fileId}
+                  and prior.content_digest = ${revisions.contentDigest}
+                  and prior.path = ${revisions.path}
+                  and prior.deleted = ${revisions.deleted}
+              )
+            )`,
           ),
         )
         .orderBy(sql`${revisions.serverTime} DESC`, sql`${revisions.id} DESC`)

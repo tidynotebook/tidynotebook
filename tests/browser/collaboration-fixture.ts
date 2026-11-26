@@ -6,6 +6,8 @@ import {
   createFile,
   createWorkspace,
   createWorkspaceInvites,
+  getFile,
+  listHistory,
   listWorkspaces,
   readWorkspaceInviteLink,
   registerAccount,
@@ -131,6 +133,8 @@ export async function collaborationFixture(origin: string) {
     },
   });
   assert.ok(note.data, JSON.stringify(note.error));
+  const notePath = { ...path, fileId };
+  const personalPath = { workspaceId: editorPersonal.workspaceId };
   return {
     owner,
     editor,
@@ -144,5 +148,43 @@ export async function collaborationFixture(origin: string) {
     viewerJoinId: forViewer.data.workspaceId,
     viewerSwitcherId: forEditor.data.workspaceId,
     editorPersonalId: editorPersonal.workspaceId,
+    async readNote() {
+      const result = await getFile({
+        path: notePath,
+        headers,
+        query: { content: 'text' },
+      });
+      assert.ok(result.data, JSON.stringify(result.error));
+      return result.data.head?.text;
+    },
+    async readHistory() {
+      const result = await listHistory({ path: notePath, headers });
+      assert.ok(result.data, JSON.stringify(result.error));
+      return result.data.revisions;
+    },
+    async addRecoveryOccupant(name: string) {
+      const result = await createFile({
+        path: personalPath,
+        headers: editorHeaders,
+        body: {
+          path: `From ${workspaceName}/${name}.md`,
+          fileId: randomUUID(),
+          mutationId: randomUUID(),
+          revisionId: randomUUID(),
+          deviceId: randomUUID(),
+          document: firstSave('This note was already in Personal.'),
+        },
+      });
+      assert.ok(result.data, JSON.stringify(result.error));
+    },
+    async readRecovery(fileId: string) {
+      const result = await getFile({
+        path: { ...personalPath, fileId },
+        headers: editorHeaders,
+        query: { content: 'text' },
+      });
+      assert.ok(result.data, JSON.stringify(result.error));
+      return result.data;
+    },
   };
 }

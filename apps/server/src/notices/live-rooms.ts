@@ -12,6 +12,7 @@ import {
 import {
   verifyActor,
   presenceColorSlot,
+  availablePresenceSlot,
   type CollaborationStore,
   type Role,
 } from '@notesapp/core';
@@ -36,6 +37,7 @@ type Peer = LiveNote & {
   readonly connection: LiveConnection;
   readonly room: Room;
   role: Role;
+  readonly colorSlot: number;
   sequence: number;
   awareness: AwarenessEntry | null;
 };
@@ -120,7 +122,7 @@ function canonicalAwareness(peer: Peer, entry: AwarenessEntry): AwarenessEntry {
   const rawCursor = readProperty(entry.state, 'cursor');
   const anchor = relativePoint(readProperty(rawCursor, 'anchor'));
   const head = relativePoint(readProperty(rawCursor, 'head'));
-  const slot = presenceColorSlot(peer.connection.accountId);
+  const slot = peer.colorSlot;
   return {
     clientId: entry.clientId,
     clock: entry.clock,
@@ -320,8 +322,11 @@ export function createLiveRooms(input: {
         roomId: peer.roomId,
         access: role,
       });
-      if (peer.awareness !== null)
+      if (peer.awareness !== null) {
         peer.awareness = canonicalAwareness(peer, peer.awareness);
+        for (const target of peer.room.members)
+          if (target !== peer) writeAwareness(target, peer.awareness);
+      }
     }
     if (
       current.bytes !== null &&
@@ -394,6 +399,7 @@ export function createLiveRooms(input: {
           roomKey(note) !== existing.room.key
         )
           return;
+        if (!(await currentPeer(existing))) return;
         existing.sequence = 0;
         connection.emit({
           kind: 'noteJoined',
@@ -449,8 +455,19 @@ export function createLiveRooms(input: {
         return stop(connection, note.roomId, 'capacity');
       if ([...target.members].some((entry) => entry.clientId === note.clientId))
         return stop(connection, note.roomId, 'client_id_conflict');
+      const present = [...target.members];
+      const own = present.find(
+        (entry) => entry.connection.accountId === connection.accountId,
+      );
+      const colorSlot =
+        own?.colorSlot ??
+        availablePresenceSlot(
+          connection.accountId,
+          new Set(present.map((entry) => entry.colorSlot)),
+        );
       const peer: Peer = {
         ...note,
+        colorSlot,
         connection,
         room: target,
         role: current.writable ? current.role : 'viewer',

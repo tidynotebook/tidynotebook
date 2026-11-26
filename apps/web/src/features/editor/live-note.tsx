@@ -71,6 +71,7 @@ export function useLiveNote(input: {
   readonly hold: () => { note: BoundNote; release: () => void };
   readonly persist: (update: Uint8Array) => Promise<unknown>;
   readonly flush: () => Promise<void>;
+  readonly canEdit: () => boolean;
 }): LiveState {
   const stream = useTabNoticeStream();
   const account = useSession().account;
@@ -80,7 +81,7 @@ export function useLiveNote(input: {
     status: navigator.onLine ? 'Reconnecting' : 'Offline',
     others: [],
   });
-  const { workspaceId, fileId, epoch, hold, persist, flush } = input;
+  const { workspaceId, fileId, epoch, hold, persist, flush, canEdit } = input;
 
   useEffect(() => {
     if (stream === null || account === null || epoch === null) return;
@@ -113,7 +114,7 @@ export function useLiveNote(input: {
       }));
     };
 
-    const canSendText = (): boolean => role !== 'viewer';
+    const canSendText = (): boolean => role !== 'viewer' && canEdit();
 
     function tryJoin(): void {
       if (!active || joined || retired || !navigator.onLine) return;
@@ -166,10 +167,10 @@ export function useLiveNote(input: {
             roomId,
             payload: base64(awareness),
           });
-        if (updates.length > 0 && role !== 'viewer')
+        if (updates.length > 0 && canSendText())
           void flush()
             .then(() => {
-              if (active && joined && role !== 'viewer')
+              if (active && joined && canSendText())
                 sendSync('update', mergeDocumentUpdates(updates));
             })
             .catch(() => {});
@@ -193,7 +194,7 @@ export function useLiveNote(input: {
     window.addEventListener('keydown', markActive);
 
     const offUpdates = note.onLiveLocal((update) => {
-      if (!joined || role === 'viewer') return;
+      if (!joined || !canSendText()) return;
       pending.push(update);
       schedule();
     });
@@ -279,7 +280,7 @@ export function useLiveNote(input: {
           .then(async () => {
             if (!active || !joined) return;
             if (frame.kind === 'vector') {
-              if (role === 'viewer') return;
+              if (!canSendText()) return;
               await flush();
               if (!active || !joined || !canSendText()) return;
               const update = note.liveDelta(frame.bytes);
@@ -333,6 +334,7 @@ export function useLiveNote(input: {
   }, [
     stream,
     account?.accountId,
+    canEdit,
     epoch,
     workspaceId,
     fileId,
@@ -492,6 +494,7 @@ export function useEditorLiveBinding(input: {
   readonly store: LocalStore;
   readonly accountId: string;
   readonly work: Pick<NoteWork, 'flush' | 'frozen'>;
+  readonly readOnly: { readonly current: boolean };
   readonly freeze: () => Promise<void>;
   readonly onAccess: (role: Role | 'removed' | undefined) => void;
 }): LiveState {
@@ -503,6 +506,7 @@ export function useEditorLiveBinding(input: {
     store,
     accountId,
     work,
+    readOnly,
     freeze,
     onAccess,
   } = input;
@@ -521,6 +525,10 @@ export function useEditorLiveBinding(input: {
     },
     [store, accountId, workspaceId, fileId, epoch, work],
   );
+  const canEdit = useCallback(
+    () => !work.frozen() && !readOnly.current,
+    [work, readOnly],
+  );
   const note = useLiveNote({
     workspaceId,
     fileId,
@@ -528,6 +536,7 @@ export function useEditorLiveBinding(input: {
     hold,
     persist,
     flush: work.flush,
+    canEdit,
   });
   useLayoutEffect(() => {
     onAccess(note.access);

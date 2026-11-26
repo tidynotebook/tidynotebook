@@ -20,6 +20,18 @@ export function presenceColorSlot(accountId: string): number {
   return slot;
 }
 
+export function availablePresenceSlot(
+  accountId: string,
+  used: ReadonlySet<number>,
+): number {
+  const preferred = presenceColorSlot(accountId);
+  for (let offset = 0; offset < 6; offset += 1) {
+    const slot = (preferred + offset) % 6;
+    if (!used.has(slot)) return slot;
+  }
+  return preferred;
+}
+
 export type WorkspaceMember = {
   readonly accountId: string;
   readonly displayName: string | null;

@@ -81,6 +81,7 @@ export function updateActors(
         decoded.structs
           .filter(
             (item) =>
+              !(item instanceof Y.Skip) &&
               item.id.clock + item.length > (known?.get(item.id.client) ?? 0),
           )
           .map((item) => item.id.client),

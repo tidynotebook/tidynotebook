@@ -56,3 +56,5 @@ export {
 } from './migrations.ts';
 export type { LocalStoreOptions } from './local-store/index.ts';
 export { openLocalStore } from './local-store/index.ts';
+
+export { observeDocument, startDocument } from '@notesapp/note-document';

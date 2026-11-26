@@ -97,6 +97,12 @@ async function waitForFrozenSave(
   );
 }
 
+async function readOpenRecovery(page: Page) {
+  const fileId = await page.evaluate(() => location.pathname.split('/').at(-1));
+  assert.ok(fileId);
+  return fixture.readRecovery(fileId);
+}
+
 try {
   const ownerContext = await browser.newContext({
     viewport: { width: 1440, height: 900 },
@@ -239,6 +245,12 @@ try {
   await popover.waitFor({ state: 'hidden' });
   await ownerText.focus();
   await ownerText.press('Control+End');
+  const editorCaret = owner.locator('.cm-ySelectionCaret').first();
+  const ownerCaret = editor.locator('.cm-ySelectionCaret').first();
+  assert.notEqual(
+    await editorCaret.evaluate((node) => getComputedStyle(node).borderColor),
+    await ownerCaret.evaluate((node) => getComputedStyle(node).borderColor),
+  );
 
   await editorContext.setOffline(true);
   await editor.getByText(/Offline. Your edits merge/).waitFor();
@@ -265,6 +277,83 @@ try {
   await Promise.all(
     [owner, editor].map((page) => page.goto(`${origin}${note}`)),
   );
+
+  const memberSettings = await ownerContext.newPage();
+  await memberSettings.goto(`${origin}${space}?settings=members`);
+  const onlineRole = memberSettings.getByRole('button', {
+    name: 'Role for Casey Editor',
+  });
+  await onlineRole.click();
+  await editor.getByText('Live', { exact: true }).waitFor();
+  await editorContext.route(
+    `**/api/workspaces/${fixture.workspaceId}/changesets`,
+    async (route) => {
+      if (route.request().method() === 'POST') {
+        await route.fulfill({ status: 503 });
+      } else await route.continue();
+    },
+  );
+  await ownerText.focus();
+  await ownerText.press('Control+Home');
+  await owner.keyboard.type('Owner work in progress\n');
+  await editorText.focus();
+  await editorText.press('Control+End');
+  await editor.keyboard.type('\nCasey wrote this before the change');
+  await bothSee(owner, editor, /Casey wrote this before the change/);
+  await memberSettings
+    .getByRole('menuitemradio', { name: 'Viewer', exact: true })
+    .click();
+  await editor
+    .getByText('Your role changed to Viewer. Editing is off.')
+    .waitFor();
+  assert.equal(await editorText.getAttribute('aria-readonly'), 'true');
+  await ownerText.focus();
+  await ownerText.press('Control+End');
+  await owner.keyboard.type('\nThe owner can still save');
+  await ownerText.press('Control+s');
+  await owner
+    .getByRole('button', { name: /Show save details/ })
+    .waitFor({ state: 'hidden' });
+  await bothSee(owner, editor, /The owner can still save/);
+  await editorContext.unrouteAll({ behavior: 'wait' });
+  const head = await fixture.readNote();
+  assert.match(head ?? '', /Casey wrote this before the change/);
+  assert.match(head ?? '', /Owner work in progress/);
+  assert.match(head ?? '', /The owner can still save/);
+  await Promise.all(
+    [owner, editor].map((page) => page.goto(`${origin}${note}`)),
+  );
+  await bothSee(owner, editor, /The owner can still save/);
+  assert.equal(await owner.getByText(/Two versions of this note/).count(), 0);
+  await owner
+    .getByRole('button', { name: /People in this note: Casey Editor/ })
+    .waitFor();
+  await editor
+    .getByRole('button', { name: /People in this note: Owner/ })
+    .waitFor();
+  await screenshot(owner, 'editor-after-downgrade-desktop-light');
+  await screenshot(editor, 'viewer-after-downgrade-desktop-dark');
+  const versions = await fixture.readHistory();
+  for (const [index, version] of versions.entries())
+    assert.notEqual(version.text, versions[index + 1]?.text);
+  const beforeDowngrade = versions
+    .filter((version) =>
+      version.text?.includes('Casey wrote this before the change'),
+    )
+    .at(-1);
+  assert.ok(
+    beforeDowngrade?.contributors?.some(
+      (person) => person.displayName === 'Casey Editor',
+    ),
+  );
+  assert.ok(
+    versions[0]?.contributors?.some((person) => person.displayName === 'Owner'),
+  );
+  await onlineRole.click();
+  await memberSettings
+    .getByRole('menuitemradio', { name: 'Editor', exact: true })
+    .click();
+  await onlineRole.getByText('Editor', { exact: true }).waitFor();
 
   for (const scheme of ['light', 'dark'] as const) {
     for (const width of [320, 390, 1440]) {
@@ -401,6 +490,7 @@ try {
   await editor.goto(`${origin}${note}`);
   await editor.getByText('Live', { exact: true }).waitFor();
   await owner.goto(`${origin}${space}?settings=members`);
+  await fixture.addRecoveryOccupant('Launch plan');
   await editorContext.setOffline(true);
   await editor.getByText(/Offline. Your edits merge/).waitFor();
   await editorText.focus();
@@ -418,6 +508,17 @@ try {
     .getByRole('menuitemradio', { name: 'Viewer', exact: true })
     .click();
   await roleMenu.getByText('Viewer', { exact: true }).waitFor();
+  let occupiedDuringUpload = false;
+  await editorContext.route(
+    `**/api/workspaces/${fixture.editorPersonalId}/files`,
+    async (route) => {
+      if (route.request().method() === 'POST' && !occupiedDuringUpload) {
+        occupiedDuringUpload = true;
+        await fixture.addRecoveryOccupant('Launch plan 2');
+      }
+      await route.continue();
+    },
+  );
   await editorContext.setOffline(false);
   await editor
     .getByText('Your role changed to Viewer. Editing is off.')
@@ -457,6 +558,14 @@ try {
   await editorText
     .getByText('Keep this unsent text', { exact: true })
     .waitFor();
+  const downgradedCopy = await readOpenRecovery(editor);
+  assert.equal(occupiedDuringUpload, true);
+  assert.equal(
+    downgradedCopy.path,
+    'From Collaboration check/Launch plan 3.md',
+  );
+  assert.match(downgradedCopy.head?.text ?? '', /Keep this unsent text/);
+  await editorContext.unrouteAll({ behavior: 'wait' });
   await roleMenu.click();
   await owner
     .getByRole('menuitemradio', { name: 'Editor', exact: true })
@@ -500,6 +609,9 @@ try {
   await editorText
     .getByText('Keep this text after removal', { exact: true })
     .waitFor();
+  const removedCopy = await readOpenRecovery(editor);
+  assert.equal(removedCopy.path, 'From Collaboration check/Launch plan 4.md');
+  assert.match(removedCopy.head?.text ?? '', /Keep this text after removal/);
   await owner.goto(`${origin}${note}/history`);
   await owner
     .getByText(/Former member/)

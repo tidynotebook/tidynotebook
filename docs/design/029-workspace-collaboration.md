@@ -133,9 +133,10 @@ Recover each affected note's unsent text and drafts as a new note with a stable
 recovery ID. Use Personal first if writable, then another writable workspace.
 If all remaining workspaces are read only, use the account's existing create
 workspace permission to make Personal. Put recovered notes in `From <workspace
-name>`, with the existing path collision rule. Persist the destination drafts
-and replacement queue entries before clearing inaccessible source data. Make
-copy, retry and cache clear safe after a crash or a second tab's recovery.
+name>`, with the existing path collision rule. Check the destination listing
+and retry with the next free name if another device takes that name. Wait for
+the server to accept the copy before clearing the inaccessible source data.
+The stable file ID lets a retry find a copy after a lost answer.
 Keep local recovery data if a limit prevents a destination save. After
 recovery commits, clear the source queue and drafts. Refresh the save status
 and reload the accepted head on a downgrade. Keep the readable cache. Show
@@ -150,8 +151,10 @@ The existing authenticated socket stays the only connection for the browser
 sync coordinator. Tabs send room interest and payloads through its account
 channel. A connection-local room ID names one working copy. The room authority
 keys the shared room by workspace, note, and document epoch. Admission
-checks the session, role, file type, and epoch. A viewer can get sync data
-and publish its own presence. It cannot send a text update. Close or rejoin
+checks the session, role, file type, and epoch. Read the role and bind the
+client ID under the same workspace lock. A viewer can get sync data
+and publish its own presence. It cannot send a text update or a sync reply
+that carries text. Close or rejoin
 a room when a file is purged or its epoch changes. The leader tab's lease can
 change while a note is open. Re-register its room interests and restore
 presence on the new connection.
@@ -233,7 +236,9 @@ An awareness frame changes only the entry for the bound client ID. The
 server rebuilds that entry with the verified account and display name,
 role-derived mode, deterministic palette slot, and bounded relative
 selection and idle state. The UI uses readable light and dark palette
-tokens with different lightness, plus text for each person. Use
+tokens with different lightness, plus text for each person. Pick an unused
+slot in each room while there are free slots. Keep it for the account until
+it leaves the room. History also assigns distinct slots within its list. Use
 `y-codemirror.next` to show selections and cursors. Remove state on leave
 or expiry. Workspace presence sends only open-note counts for other
 accounts to authorized watchers. Collapse tabs of one account into one
@@ -254,7 +259,10 @@ state, revision, receipt, and feed. Keep `revisions.actor_account_id` for the
 committer. Use it as the contributor for old revisions and server-driven
 writes without live input. Resolve identities through current workspace
 membership when reading History. Show Former member after removal, with no
-name or email. Record no second version for live traffic.
+name or email. When a checkpoint leaves the Markdown, path and Trash state
+unchanged, keep its ID for document catch-up and receipts. History keeps the
+previous version. Named checkpoints and explicit restores keep their own
+version.
 
 ## Interface and design system
 

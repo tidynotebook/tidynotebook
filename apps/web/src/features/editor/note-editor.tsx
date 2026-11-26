@@ -318,7 +318,6 @@ const NoteEditorBody = memo(function NoteEditorBody({
   const viewRef = useRef<EditorView | null>(null);
   const access = useNoteAccess(viewRef, viewerRole);
   const { readOnly, readOnlyRef } = access;
-
   // The resolvers the view holds, so the view is reconfigured only when they
   // change and never with the ones it was created with.
   const viewRichRef = useRef<RichWidgetResolvers | null>(null);
@@ -1414,6 +1413,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
     store,
     accountId,
     work: noteWork,
+    readOnly: readOnlyRef,
     freeze: () => {
       if (viewRef.current !== null) setEditorReadOnly(viewRef.current, true);
       return noteWork.saveForAccess(
