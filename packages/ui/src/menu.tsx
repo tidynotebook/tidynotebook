@@ -406,7 +406,6 @@ export function Menu({
 }: {
   /** The accessible name of the trigger. */
   readonly label: string;
-
   readonly icon?: ReactNode | undefined;
   readonly header?: ReactNode;
   readonly items: readonly MenuItem[];
@@ -428,7 +427,8 @@ export function Menu({
    */
   readonly matchTrigger?: boolean | undefined;
   readonly align?: MenuAlign | undefined;
-  readonly trigger?: 'row' | 'row-action' | 'toolbar' | 'avatar' | 'default';
+  readonly trigger?:
+    'row' | 'row-action' | 'toolbar' | 'avatar' | 'value' | 'default';
   readonly triggerClassName?: string | undefined;
   /**
    * Keeps the touch target of the trigger and draws a smaller surface inside
@@ -505,7 +505,7 @@ export function Menu({
         <button
           ref={triggerRef}
           type="button"
-          className={`${trigger === 'row' ? listRowClasses('tree') : buttonClassName({ variant: 'ghost', size: compact ? 'compact' : 'default', iconOnly: children === undefined, iconSize: trigger === 'toolbar' ? 'toolbar' : trigger === 'row-action' ? 'row' : 'header', compact })} ${trigger === 'row-action' || trigger === 'avatar' ? `absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 ${trigger === 'row-action' ? rowActionVisibility : ''}` : ''} ${triggerClassName ?? ''}`}
+          className={`${trigger === 'row' ? listRowClasses('tree') : buttonClassName({ variant: 'ghost', size: compact ? 'compact' : 'default', iconOnly: children === undefined, iconSize: trigger === 'toolbar' ? 'toolbar' : trigger === 'row-action' ? 'row' : 'header', compact, endAligned: trigger === 'value' })} ${trigger === 'row-action' || trigger === 'avatar' ? `absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 ${trigger === 'row-action' ? rowActionVisibility : ''}` : ''} ${triggerClassName ?? ''}`}
 
           aria-haspopup="menu"
           aria-expanded={open}
@@ -539,6 +539,7 @@ export function Menu({
                 variant: 'ghost',
                 size: 'compact',
                 iconOnly: children === undefined,
+                endAligned: trigger === 'value',
               })}
             >
               {triggerContent}

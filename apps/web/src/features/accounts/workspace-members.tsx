@@ -16,13 +16,17 @@ import {
   type WorkspaceMember,
 } from '@notesapp/api-client';
 import {
+  AlertCircleIcon,
   Button,
   Card,
+  CheckIcon,
   ChevronDownIcon,
   Dialog,
   DialogBody,
   DialogFooter,
   Form,
+  IconSlot,
+  InfoIcon,
   Inline,
   PresenceAvatar,
   ListRow,
@@ -291,6 +295,7 @@ export function WorkspaceMembers({
                     <Menu
                       label={`Role for ${member.displayName ?? member.email}`}
                       items={memberMenu(member)}
+                      trigger="value"
                       compact
                     >
                       {roleName(member.role)}
@@ -518,23 +523,21 @@ function InvitePeople({
                 key={`${result.email}:${index}`}
                 label={result.email}
                 leading={
-                  <Pill
-                    tone={
+                  <IconSlot
+                    className={
                       result.outcome === 'created'
-                        ? 'success'
-                        : result.outcome === 'pending_limit'
-                          ? 'danger'
-                          : 'neutral'
+                        ? 'text-success'
+                        : 'text-muted'
                     }
                   >
-                    {result.outcome === 'created'
-                      ? 'Created'
-                      : result.outcome === 'pending_invite'
-                        ? 'Already invited'
-                        : result.outcome === 'already_member'
-                          ? 'Already a member'
-                          : 'Limit reached'}
-                  </Pill>
+                    {result.outcome === 'created' ? (
+                      <CheckIcon />
+                    ) : result.outcome === 'pending_limit' ? (
+                      <AlertCircleIcon />
+                    ) : (
+                      <InfoIcon />
+                    )}
+                  </IconSlot>
                 }
                 help={
                   result.outcome === 'pending_invite'

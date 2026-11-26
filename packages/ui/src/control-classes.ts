@@ -184,6 +184,7 @@ export function buttonClassName(
     readonly iconSize?: IconSize | undefined;
     readonly compact?: boolean | undefined;
     readonly settingsRow?: boolean;
+    readonly endAligned?: boolean;
     readonly className?: string | undefined;
   } = {},
 ): string {
@@ -209,9 +210,14 @@ export function buttonClassName(
     header: 'h-7 w-7 coarse:h-11 coarse:w-11',
     rail: 'h-7 w-7 coarse:h-11 coarse:w-11',
   } as const;
+  const textPadding = options.endAligned
+    ? 'ps-2 coarse:ps-4'
+    : size === 'compact'
+      ? 'px-2 coarse:px-4'
+      : 'px-3 coarse:px-4';
   const sizeClass = options.iconOnly
     ? `ui-icon-button ${iconSizes[options.iconSize ?? 'header']} p-0`
-    : `${compactSize ? 'h-7' : 'h-8'} ${size === 'compact' ? 'px-2' : 'px-3'} coarse:h-11 coarse:px-4`;
+    : `${compactSize ? 'h-7' : 'h-8'} ${textPadding} coarse:h-11`;
   return [
     `ui-button inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-md text-label no-underline ${transitionSurface} ${compact ? 'focus-visible:outline-none' : options.iconOnly ? focusOutlineInset : focusOutline} disabled:cursor-not-allowed`,
     variantClass,
@@ -235,6 +241,7 @@ export function compactButtonVisualClassName(options: {
   readonly size?: ButtonSize | undefined;
   readonly tone?: ButtonTone | undefined;
   readonly iconOnly: boolean;
+  readonly endAligned?: boolean;
   readonly iconSize?: IconSize | undefined;
 }): string {
   const variant = options.variant ?? 'primary';
@@ -243,7 +250,9 @@ export function compactButtonVisualClassName(options: {
       ? 'p-0.5'
       : options.iconOnly
         ? 'h-7 w-7'
-        : 'h-7 px-2';
+        : options.endAligned
+          ? 'h-7 ps-2'
+          : 'h-7 px-2';
   return [
     `inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md ${transitionSurface}`,
     'group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-focus',

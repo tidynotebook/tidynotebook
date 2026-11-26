@@ -109,14 +109,17 @@ try {
     .getByLabel('Email addresses')
     .fill(`pending@example.com\n${fixture.editor}`);
   await owner.getByRole('button', { name: 'Send 2 invites' }).click();
-  await owner.getByRole('dialog', { name: '0 invites created' }).waitFor();
+  const inviteResults = owner.getByRole('dialog', {
+    name: '0 invites created',
+  });
+  await inviteResults.waitFor();
   assert.equal(inviteRequests, 1);
   await owner
     .getByText('Already invited. Copy the link to send it again.')
     .waitFor();
   await screenshot(owner, 'invite-results-desktop-light');
   await owner.getByText('Already a member.').waitFor();
-  await owner.getByRole('button', { name: 'Copy link' }).waitFor();
+  await inviteResults.getByRole('button', { name: 'Copy link' }).waitFor();
   await owner.getByRole('button', { name: 'Done', exact: true }).click();
   await Promise.all(
     [owner, editor].map((page) => page.goto(`${origin}${note}`)),
@@ -178,6 +181,8 @@ try {
   await screenshot(owner, 'presence-desktop-light');
   await owner.keyboard.press('Escape');
   await popover.waitFor({ state: 'hidden' });
+  await ownerText.focus();
+  await ownerText.press('Control+End');
 
   await editorContext.setOffline(true);
   await editor.getByText(/Offline. Your edits merge/).waitFor();

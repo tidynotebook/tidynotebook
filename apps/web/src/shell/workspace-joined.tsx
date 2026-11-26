@@ -24,7 +24,9 @@ export function joinedWorkspaceState(invite: {
 }
 
 export function WorkspaceJoinedToast(): ReactNode {
-  const { key, state } = useLocation();
+  const location = useLocation();
+  const key = location.key;
+  const state: unknown = location.state;
   const navigate = useNavigate();
   const [closed, setClosed] = useState('');
   useEffect(() => {
