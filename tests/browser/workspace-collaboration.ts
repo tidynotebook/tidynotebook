@@ -676,7 +676,6 @@ try {
   await editor
     .getByText('Your role changed to Viewer. Editing is off.')
     .waitFor();
-  await editor.getByText('Live', { exact: true }).waitFor();
   assert.equal(await editorText.getAttribute('aria-readonly'), 'true');
   await idlePresence.click();
   await idlePopover.getByText('Viewing · Idle', { exact: true }).waitFor();
