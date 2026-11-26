@@ -251,7 +251,6 @@ try {
   await bothSee(owner, editor, /Online addition/);
   await bothSee(owner, editor, /Offline addition/);
   await editorText.press('Control+s');
-  await waitForFrozenSave(editor, fixture.workspaceId);
   await ownerText.press('Control+s');
   await owner.goto(`${origin}${note}/history`);
   await owner

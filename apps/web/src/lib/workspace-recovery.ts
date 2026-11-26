@@ -120,10 +120,11 @@ export function recoverWorkspaceAccess(
     }
     throw new Error('The local copy changed during recovery.');
   }
+  const locks = navigator.locks;
   const next = (
-    typeof navigator.locks === 'undefined'
+    locks == null
       ? recover()
-      : navigator.locks.request(`notesapp:workspace-access:${scope}`, recover)
+      : locks.request(`notesapp:workspace-access:${scope}`, recover)
   ).finally(() => {
     pending.delete(scope);
   });

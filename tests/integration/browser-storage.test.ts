@@ -165,10 +165,27 @@ await test('workspace access recovery copies queued text before it clears the ol
       'Unsent text',
     );
     await createNote(store, draft);
+    const notice = await recoverWorkspaceAccess(
+      store,
+      accountId,
+      old,
+      [personal],
+      true,
+    );
     assert.equal(
-      await recoverWorkspaceAccess(store, accountId, old, [personal], true),
+      notice?.message,
       'You no longer have access to Team. Your unsent text is in Personal, in the folder From Team.',
     );
+    const [recovered] = await store.listLocalFiles(
+      accountId,
+      personal.workspaceId,
+    );
+    assert.ok(recovered);
+    assert.deepEqual(notice?.note, {
+      workspaceId: personal.workspaceId,
+      fileId: recovered.fileId,
+    });
+    assert.deepEqual(await store.pending(accountId, old.workspaceId), []);
     assert.deepEqual(
       await store.listLocalFiles(accountId, old.workspaceId),
       [],
