@@ -27,6 +27,7 @@ export {
   replaceDocumentText,
   startDocument,
   stateVectorCovers,
+  stateVectorHasInserts,
 } from './document.ts';
 export type { Coverage, DocumentInEpoch, ObservedInEpoch } from './observed.ts';
 export {

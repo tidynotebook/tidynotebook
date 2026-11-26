@@ -13,6 +13,7 @@ import {
   documentStateVector,
   readDocumentText,
   stateVectorCovers,
+  stateVectorHasInserts,
 } from '@notesapp/note-document';
 import {
   LocalStorageError,
@@ -421,8 +422,13 @@ export function createDraftsSlice(ctx: LocalStoreContext): DraftsSlice {
           documentStateVector(document.bytes),
           draft.documentVector,
         );
+      const merged =
+        covered &&
+        stateVectorHasInserts(draft.documentVector) &&
+        !draft.deleted &&
+        !accepted.deleted;
       const stale =
-        !covered &&
+        !merged &&
         !draft.deleted &&
         !accepted.deleted &&
         !accepted.isLocal &&
@@ -434,7 +440,6 @@ export function createDraftsSlice(ctx: LocalStoreContext): DraftsSlice {
       // The draft no longer describes its file and holds no stale text to
       // choose from, so the accepted row is the newer statement of the path
       // and of the deletion state.
-      const merged = covered && !draft.deleted && !accepted.deleted;
       if (!snapshot.leads && !stale && !merged) return withHead(snapshot.head);
 
       return withDocument({
