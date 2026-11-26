@@ -15,12 +15,14 @@ export async function writeContributors(
   input: AcceptedInput,
 ): Promise<Result<void>> {
   for (const revision of input.revisions) {
-    const document = input.documents.find(
-      (item) => item.fileId === revision.fileId,
-    );
+    const document = revision.contribution;
     const contributors = new Set<string>();
     if (document !== undefined) {
-      const { clientIds, deletes } = updateActors(document.update);
+      const { clientIds, deletes } = updateActors(
+        document.update,
+        document.beforeVector,
+        document.beforeObserved,
+      );
       if (deletes) contributors.add(actor.accountId);
       const bindings =
         clientIds.length === 0

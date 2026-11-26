@@ -50,6 +50,7 @@ export function encodeNoteSync(message: NoteSync): Uint8Array {
 export function updateActors(
   update: Uint8Array,
   knownVector?: Uint8Array,
+  previousObserved?: Uint8Array,
 ): {
   readonly clientIds: readonly number[];
   readonly deletes: boolean;
@@ -57,6 +58,23 @@ export function updateActors(
   const known =
     knownVector === undefined ? null : Y.decodeStateVector(knownVector);
   const decoded = Y.decodeUpdate(update);
+  const previous =
+    previousObserved === undefined
+      ? null
+      : Y.decodeSnapshot(previousObserved).ds.clients;
+  const deletes = [...decoded.ds.clients].some(([client, ranges]) => {
+    const seen = previous?.get(client) ?? [];
+    return ranges.some((range) => {
+      let next = range.clock;
+      const end = next + range.len;
+      for (const prior of seen) {
+        if (prior.clock > next) return true;
+        next = Math.max(next, prior.clock + prior.len);
+        if (next >= end) return false;
+      }
+      return next < end;
+    });
+  });
   return {
     clientIds: [
       ...new Set(
@@ -68,7 +86,7 @@ export function updateActors(
           .map((item) => item.id.client),
       ),
     ],
-    deletes: decoded.ds.clients.size > 0,
+    deletes,
   };
 }
 

@@ -155,6 +155,41 @@ try {
     assert.equal(await accept(), null);
   });
 
+  await test('expired invites free slots and the workspace holds at most 100 pending', async () => {
+    const address = 'again@example.test';
+    const old = await invite(admin, address);
+    assert.ok('invitationId' in old);
+    const maintenance = await openSession(db.migrationUrl);
+    try {
+      await maintenance.query(
+        "update workspace_invitations set expires_at = now() - interval '1 second' where id = $1",
+        [old.invitationId],
+      );
+    } finally {
+      await maintenance.close();
+    }
+    const fresh = await invite(admin, address);
+    assert.ok('invitationId' in fresh);
+    assert.notEqual(fresh.invitationId, old.invitationId);
+    await identity.collaboration(admin, workspaceId, async (tx) => {
+      for (let count = 1; count < 100; count += 1) {
+        const id = randomUUID();
+        const result = await tx.createInvite({
+          email: `test-${count}@example.test`,
+          invitationId: id,
+          role: 'viewer',
+          digest: createHash('sha256').update(id).digest('hex'),
+          seal: `sealed-${id}`,
+        });
+        assert.equal(result.outcome, 'created');
+      }
+      assert.equal((await tx.invites(null)).length, 100);
+    });
+    assert.deepEqual(await invite(admin, 'one-more@example.test'), {
+      outcome: 'pending_limit',
+    });
+  });
+
   await test('forced removal and deletion provision Personal for stranded members', async () => {
     const leave = await identity.collaboration(viewer, workspaceId, (tx) =>
       tx.changeMember(viewerId, null, true),

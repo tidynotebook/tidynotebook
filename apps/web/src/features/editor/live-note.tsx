@@ -22,7 +22,7 @@ import {
   Button,
   Dialog,
   DialogBody,
-  IdentityMark,
+  PresenceAvatar,
   Inline,
   ListRow,
   Notice,
@@ -90,6 +90,8 @@ export function useLiveNote(input: {
     let receiving = Promise.resolve();
     let pending: Uint8Array[] = [];
     let nextAwareness: Uint8Array | null = null;
+    let lastInput = Date.now();
+    let idle = false;
     let sendTimer: number | null = null;
 
     const updateState = (access?: Role | 'removed'): void => {
@@ -167,6 +169,22 @@ export function useLiveNote(input: {
       }, liveSendMs);
     };
 
+    function setIdle(value: boolean): void {
+      if (idle === value) return;
+      idle = value;
+      note.setLiveIdle(value);
+    }
+    const markActive = (): void => {
+      lastInput = Date.now();
+      setIdle(false);
+    };
+    const idleTimer = window.setInterval(
+      () => setIdle(document.hidden || Date.now() - lastInput > 45_000),
+      5000,
+    );
+    window.addEventListener('pointerdown', markActive);
+    window.addEventListener('keydown', markActive);
+
     const offUpdates = note.onLiveLocal((update) => {
       if (!joined || role === 'viewer') return;
       pending.push(update);
@@ -192,6 +210,7 @@ export function useLiveNote(input: {
       if (!('roomId' in message) || message.roomId !== roomId) return;
       if (message.kind === 'noteJoined') {
         joined = true;
+        sequence = 0;
         role = message.role;
         updateState(role);
         sendSync('vector', note.stateVector());
@@ -294,6 +313,9 @@ export function useLiveNote(input: {
       offAwareness();
       offMessage();
       window.clearInterval(retry);
+      window.clearInterval(idleTimer);
+      window.removeEventListener('pointerdown', markActive);
+      window.removeEventListener('keydown', markActive);
       if (sendTimer !== null) window.clearTimeout(sendTimer);
       window.removeEventListener('online', online);
       window.removeEventListener('offline', offline);
@@ -333,9 +355,9 @@ export function NotePresence({
       >
         <Inline gap={1}>
           {people.slice(0, 4).map((person) => (
-            <IdentityMark key={person.accountId}>
+            <PresenceAvatar key={person.accountId} slot={person.slot}>
               {initialOf(person.name)}
-            </IdentityMark>
+            </PresenceAvatar>
           ))}
           {people.length > 4 ? <Pill>+{people.length - 4}</Pill> : null}
         </Inline>
@@ -352,7 +374,11 @@ export function NotePresence({
               key={person.accountId}
               label={person.name}
               help={person.mode === 'viewing' ? 'Viewing' : 'Editing'}
-              leading={<IdentityMark>{initialOf(person.name)}</IdentityMark>}
+              leading={
+                <PresenceAvatar slot={person.slot}>
+                  {initialOf(person.name)}
+                </PresenceAvatar>
+              }
             />
           ))}
         </DialogBody>

@@ -519,6 +519,7 @@
 
 @theme static {
   --color-live-0: #7446a8;
+  --color-live-ink: #ffffff;
   --color-live-1: #185d9a;
   --color-live-2: #90601b;
   --color-live-3: #7d2946;
@@ -557,6 +558,7 @@
 }
 [data-theme='dark'] {
   --color-live-0: #c7a4f8;
+  --color-live-ink: #141414;
   --color-live-1: #7abbfa;
   --color-live-2: #e2a358;
   --color-live-3: #e695ae;

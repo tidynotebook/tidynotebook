@@ -349,7 +349,23 @@ export function createLiveRooms(input: {
   ): Promise<void> {
     const known = peers.get(connection);
     const existing = known?.get(note.roomId);
-    if (existing !== undefined) return;
+    if (existing !== undefined) {
+      const current = await currentPeer(existing);
+      if (
+        current !== null &&
+        note.clientId === existing.clientId &&
+        roomKey(note) === existing.room.key
+      ) {
+        existing.sequence = 0;
+        connection.emit({
+          kind: 'noteJoined',
+          roomId: existing.roomId,
+          epoch: existing.epoch,
+          role: existing.role,
+        });
+      }
+      return;
+    }
     if ((known?.size ?? 0) >= liveBounds.roomsPerConnection)
       return stop(connection, note.roomId, 'capacity');
     const current = await read(connection, note);

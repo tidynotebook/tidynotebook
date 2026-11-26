@@ -286,6 +286,7 @@ export type BoundNote = {
   onLiveLocal(listener: (update: Uint8Array) => void): () => void;
   onAwarenessLocal(listener: (update: Uint8Array) => void): () => void;
   setLiveUser(name: string, color: string): void;
+  setLiveIdle(idle: boolean): void;
   receiveAwareness(update: Uint8Array): void;
   clearRemoteAwareness(): void;
   work(): Uint8Array;
@@ -387,6 +388,9 @@ export function openBoundNote(
     },
     setLiveUser: (name, color) => {
       awareness.setLocalStateField('user', { name, color, colorLight: color });
+    },
+    setLiveIdle: (idle) => {
+      awareness.setLocalStateField('idle', idle);
     },
     receiveAwareness: (update) => {
       applyAwarenessUpdate(awareness, update, remoteAwareness);

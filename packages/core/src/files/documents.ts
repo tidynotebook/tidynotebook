@@ -117,8 +117,9 @@ export async function acceptDocumentWork(
       currentDocument(service, stored.get(revision.fileId), save.epoch);
     if (before.epoch !== save.epoch)
       return fail('epoch_mismatch', [revision.fileId]);
+    const beforeVector = service.stateVector(before.bytes);
     if (!vectorsBefore.has(revision.fileId))
-      vectorsBefore.set(revision.fileId, service.stateVector(before.bytes));
+      vectorsBefore.set(revision.fileId, beforeVector);
 
     // The workspace itself has seen everything it holds, so a text that it
     // writes is never a merge and never hides work.
@@ -157,10 +158,8 @@ export async function acceptDocumentWork(
     if (!result.ok) return result;
     // Work that the document already held adds nothing. A save that repeats
     // it is a duplicate, and a duplicate never brings a note back from Trash.
-    const newWork = !sameBytes(
-      result.value.state,
-      service.observe(before.bytes),
-    );
+    const beforeObserved = service.observe(before.bytes);
+    const newWork = !sameBytes(result.value.state, beforeObserved);
     const head = heads.get(revision.fileId);
     // The text work of a device brings a note back from Trash, and a save
     // with no work leaves it there. A restore and an import state what they
@@ -183,6 +182,16 @@ export async function acceptDocumentWork(
       // later write, and the tombstone kept the document behind it. A
       // duplicate update leaves the note in Trash.
       deleted,
+      ...(work.kind === 'update' && newWork
+        ? {
+            contribution: {
+              update: work.update,
+              beforeVector,
+              beforeObserved,
+              epoch: save.epoch,
+            },
+          }
+        : {}),
       content: {
         kind: 'markdown',
         digest: await contentDigest(text),

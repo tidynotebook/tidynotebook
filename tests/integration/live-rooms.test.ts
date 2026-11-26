@@ -10,6 +10,9 @@ import {
 } from '@notesapp/storage-server';
 import {
   encodeNoteSync,
+  encodeDocumentDelta,
+  documentStateVector,
+  observeDocument,
   encodeNoteAwareness,
   decodeNoteAwareness,
   updateActors,
@@ -102,10 +105,11 @@ try {
   assert.ok(state !== null);
   const edited = replaceDocumentText(state.bytes, 'Initial text. Editor text.');
   assert.ok(edited.ok);
-  const update = encodeNoteSync({
-    kind: 'update',
-    bytes: edited.value.document,
-  });
+  const delta = encodeDocumentDelta(
+    edited.value.document,
+    documentStateVector(state.bytes),
+  );
+  const update = encodeNoteSync({ kind: 'update', bytes: delta });
   const old = new Set(updateActors(state.bytes).clientIds);
   const id = updateActors(edited.value.document).clientIds.find(
     (current) => !old.has(current),
@@ -176,13 +180,54 @@ try {
     );
   });
 
+  await test('a live update reaches the peer and its binding supplies checkpoint authorship', async () => {
+    await second.handle(editor, 'sendNoteSync', {
+      roomId: editorRoom.roomId,
+      payload: Buffer.from(update).toString('base64'),
+    });
+    await waitFor(
+      () => owner.output.some((entry) => entry['kind'] === 'noteSync'),
+      'The live update did not reach the other gateway.',
+    );
+    const dependent = revision({
+      fileId,
+      path: 'Collaboration.md',
+      parents: [initial.id],
+      content: {
+        kind: 'markdown',
+        document: {
+          epoch: state.epoch,
+          observed: observeDocument(state.bytes),
+          work: { kind: 'update', update: delta },
+        },
+      },
+    });
+    const save = changeset(workspaceId, [dependent], {
+      expectedHeads: { [fileId]: initial.id },
+    });
+    const result = await content.transact(actor, workspaceId, (tx) =>
+      acceptWithDocuments(content.documents, tx, actor, save, save.mutationId),
+    );
+    assert.ok(result.ok, JSON.stringify(result));
+    const history = await content.transact(actor, workspaceId, (tx) =>
+      tx.listHistory(fileId, { limit: 10, cursor: null }),
+    );
+    assert.deepEqual(
+      history.revisions
+        .find((entry) => entry.revisionId === dependent.id)
+        ?.contributors?.map((person) => person.accountId),
+      [editorId],
+    );
+  });
+
   await test('viewer writes do not reach peers and removal evicts a remote room', async () => {
+    const before = owner.output.length;
     await first.handle(viewer, 'sendNoteSync', {
       roomId: viewerRoom.roomId,
       payload: Buffer.from(update).toString('base64'),
     });
     assert.equal(
-      owner.output.find((frame) => frame['kind'] === 'noteSync'),
+      owner.output.slice(before).find((frame) => frame['kind'] === 'noteSync'),
       undefined,
     );
     assert.equal(
@@ -200,6 +245,45 @@ try {
         ),
       'The removed editor kept a live room.',
     );
+  });
+
+  await test('room and connection caps refuse joins beyond their limits', async () => {
+    const busy = connection(ownerId, 'Busy owner');
+    const other = connection(ownerId, 'Other owner');
+    const overflow = connection(ownerId, 'Overflow');
+    try {
+      for (let i = 0; i < liveBounds.roomsPerConnection; i += 1) {
+        await first.handle(busy, 'joinNote', room(100 + i));
+      }
+      assert.equal(
+        busy.output.filter((entry) => entry['kind'] === 'noteJoined').length,
+        liveBounds.roomsPerConnection,
+      );
+      await first.handle(busy, 'joinNote', room(200));
+      assert.equal(busy.output.at(-1)?.['reason'], 'capacity');
+      const alreadyPresent = 2 + liveBounds.roomsPerConnection;
+      for (let i = alreadyPresent; i < liveBounds.connectionsPerRoom; i += 1) {
+        await first.handle(other, 'joinNote', room(1000 + i));
+      }
+      await first.handle(overflow, 'joinNote', room(2000));
+      assert.equal(overflow.output.at(-1)?.['reason'], 'capacity');
+    } finally {
+      first.remove(busy);
+      first.remove(other);
+      first.remove(overflow);
+    }
+  });
+
+  await test('a sync payload over the decoded byte limit closes just its room', async () => {
+    const tooLarge = connection(ownerId, 'Large frame');
+    const id = room(3000);
+    await first.handle(tooLarge, 'joinNote', id);
+    assert.equal(tooLarge.output.at(-1)?.['kind'], 'noteJoined');
+    await first.handle(tooLarge, 'sendNoteSync', {
+      roomId: id.roomId,
+      payload: Buffer.alloc(liveBounds.syncBytes + 1).toString('base64'),
+    });
+    assert.equal(tooLarge.output.at(-1)?.['reason'], 'invalid_update');
   });
 
   await test('awareness frames over the decoded byte limit close the note room', async () => {

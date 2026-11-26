@@ -30,3 +30,29 @@ export function TileSelectedBadge({
     </span>
   );
 }
+
+const presenceColors = [
+  'bg-live-0',
+  'bg-live-1',
+  'bg-live-2',
+  'bg-live-3',
+  'bg-live-4',
+  'bg-live-5',
+];
+
+export function PresenceAvatar({
+  children,
+  slot,
+}: {
+  readonly children: ReactNode;
+  readonly slot: number;
+}): ReactNode {
+  return (
+    <span
+      aria-hidden="true"
+      className={`inline-flex size-5 shrink-0 items-center justify-center rounded-full text-avatar text-live-ink ${presenceColors[slot] ?? 'bg-live-0'}`}
+    >
+      {children}
+    </span>
+  );
+}

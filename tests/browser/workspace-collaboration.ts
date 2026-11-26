@@ -99,11 +99,11 @@ try {
   const editorText = editor.locator('.cm-content');
   await Promise.all([ownerText.focus(), editorText.focus()]);
   await Promise.all([
-    ownerText.press('Control+End'),
+    ownerText.press('Control+Home'),
     editorText.press('Control+End'),
   ]);
   await Promise.all([
-    owner.keyboard.type('\nOwner note item'),
+    owner.keyboard.type('Owner note item\n'),
     editor.keyboard.type('\nEditor note item'),
   ]);
   await bothSee(owner, editor, /Owner note item/);
@@ -138,6 +138,47 @@ try {
     .waitFor();
   await screenshot(owner, 'history-desktop-light');
 
+  const pendingLink = value('pendingLink');
+  for (const scheme of ['light', 'dark'] as const) {
+    for (const width of [390, 1440]) {
+      const phone = width === 390;
+      const layout = phone ? 'phone' : 'desktop';
+      const context = await browser.newContext({
+        viewport: { width, height: phone ? 844 : 900 },
+        hasTouch: phone,
+        isMobile: phone,
+        colorScheme: scheme,
+      });
+      const page = await context.newPage();
+      page.setDefaultTimeout(15_000);
+      await page.goto(pendingLink);
+      await page
+        .getByRole('button', { name: 'Create account and join' })
+        .waitFor();
+      await screenshot(page, `join-signed-out-${layout}-${scheme}`);
+      await signIn(page, value('owner'));
+      await page.goto(pendingLink);
+      await page
+        .getByText('This invite is for another email', { exact: true })
+        .waitFor();
+      await screenshot(page, `join-wrong-account-${layout}-${scheme}`);
+      await page.goto(`${origin}${space}?settings=members`);
+      await page.getByText(value('editor'), { exact: true }).waitFor();
+      await screenshot(page, `members-${layout}-${scheme}`);
+      await page
+        .getByRole('button', { name: 'Invite people', exact: true })
+        .click();
+      await page.getByRole('dialog', { name: /Invite people to/ }).waitFor();
+      await screenshot(page, `invite-${layout}-${scheme}`);
+      await page.goto(`${origin}${space}`);
+      if (phone)
+        await page.getByRole('button', { name: 'Open navigation' }).click();
+      await page.getByRole('button', { name: /Workspace: / }).click();
+      await page.getByText('Rename workspace', { exact: true }).waitFor();
+      await screenshot(page, `switcher-${layout}-${scheme}`);
+      await context.close();
+    }
+  }
   for (const scheme of ['light', 'dark'] as const) {
     const context = await browser.newContext({
       viewport: { width: 390, height: 844 },
