@@ -92,6 +92,12 @@ export type NoteWork = {
   readonly storeLacksWork: () => void;
   /** Cancels the frame that waits. The work stays for a later flush. */
   readonly stop: () => void;
+  readonly frozen: () => boolean;
+  readonly freeze: () => void;
+  readonly saveForAccess: (
+    deleted: boolean,
+    checkpoint: Promise<unknown> | null,
+  ) => Promise<void>;
 };
 
 /** Builds the writes of one open editor. */
@@ -105,6 +111,8 @@ export function createNoteWork(ports: NoteWorkPorts): NoteWork {
   let taken: Uint8Array | null = null;
   let cancelFrame: (() => void) | null = null;
   let versioned: number | null = null;
+  let frozen = false;
+  const drafts = new Set<Promise<unknown>>();
 
   /** Takes the work that waits and appends it. Settles with every append. */
   const flush = (): Promise<void> => {
@@ -114,7 +122,7 @@ export function createNoteWork(ports: NoteWorkPorts): NoteWork {
     // the work that the store lacks. The whole document of the next version
     // holds it, and the next take after that writes it again, which changes
     // nothing that the store already holds.
-    if (isLost()) return appends;
+    if (frozen || isLost()) return appends;
     const work = ports.takeWork();
     if (work === null) return appends;
     // The vector names this work and every change before it.
@@ -141,28 +149,55 @@ export function createNoteWork(ports: NoteWorkPorts): NoteWork {
     return appends;
   };
 
+  const freeze = (): void => {
+    cancelFrame?.();
+    cancelFrame = null;
+    frozen = true;
+  };
   return {
+    frozen: () => frozen,
+    freeze,
+    async saveForAccess(deleted, checkpoint) {
+      const flushed = flush();
+      freeze();
+      const draft = ports.draft(deleted);
+      const vector = ports.stateVector();
+      await Promise.allSettled([flushed, checkpoint, ...drafts]);
+      await ports.saveDraft(
+        isLost() || vector === null
+          ? draft
+          : { ...draft, documentVector: vector },
+      );
+    },
     changed: () => {
-      if (cancelFrame !== null) return;
+      if (frozen || cancelFrame !== null) return;
       cancelFrame = ports.frame(() => {
         cancelFrame = null;
         void flush();
       });
     },
     flush,
-    writeDraft: async (deleted) => {
+    writeDraft(deleted) {
       // The text and the vector come from one moment, after the take, so
       // the appends that the draft waits for hold every change it names.
       const settled = flush();
       const draft = ports.draft(deleted);
       const vector = ports.stateVector();
-      await settled;
-      const stated =
-        isLost() || vector === null
-          ? draft
-          : { ...draft, documentVector: vector };
-      await ports.saveDraft(stated);
-      return stated;
+      if (frozen) return Promise.resolve(draft);
+      const writing = settled.then(async () => {
+        const stated =
+          isLost() || vector === null
+            ? draft
+            : { ...draft, documentVector: vector };
+        await ports.saveDraft(stated);
+        return stated;
+      });
+      drafts.add(writing);
+      const forget = (): void => {
+        drafts.delete(writing);
+      };
+      void writing.then(forget, forget);
+      return writing;
     },
     version: async () => {
       const settled = flush();

@@ -49,6 +49,54 @@ async function bothSee(first: Page, second: Page, text: RegExp): Promise<void> {
   );
 }
 
+async function workspaceWrites(
+  page: Page,
+  workspaceId: string,
+): Promise<readonly number[]> {
+  return page.evaluate(async (workspaceId) => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const open = indexedDB.open('notesapp');
+      open.onsuccess = () => resolve(open.result);
+      open.onerror = () => reject(open.error);
+    });
+    try {
+      const tx = db.transaction(['queue', 'drafts']);
+      return await Promise.all(
+        ['queue', 'drafts'].map(
+          (name) =>
+            new Promise<number>((resolve, reject) => {
+              const request = tx.objectStore(name).getAllKeys();
+              request.onsuccess = () =>
+                resolve(
+                  request.result.filter(
+                    (key) => Array.isArray(key) && key[2] === workspaceId,
+                  ).length,
+                );
+              request.onerror = () => reject(request.error);
+            }),
+        ),
+      );
+    } finally {
+      db.close();
+    }
+  }, workspaceId);
+}
+
+async function waitForFrozenSave(
+  page: Page,
+  workspaceId: string,
+): Promise<void> {
+  const deadline = Date.now() + 5000;
+  while (Date.now() < deadline) {
+    const [queue, drafts] = await workspaceWrites(page, workspaceId);
+    if ((queue ?? 0) > 0 && (drafts ?? 0) > 0) return;
+    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+  }
+  assert.fail(
+    'The offline note needs a queued save and a draft before access changes.',
+  );
+}
+
 try {
   const ownerContext = await browser.newContext({
     viewport: { width: 1440, height: 900 },
@@ -94,8 +142,10 @@ try {
     if (request.method() === 'POST' && request.url().endsWith('/invitations'))
       inviteRequests += 1;
   });
-  await owner.getByLabel('Email addresses').fill('a@example.com, bad@');
-  await owner.getByRole('button', { name: 'Send 2 invites' }).click();
+  await owner
+    .getByLabel('Email addresses')
+    .fill('a@example.com, bad@, also bad');
+  await owner.getByRole('button', { name: 'Send invite', exact: true }).click();
   await owner
     .getByText('“bad@” is not a valid email address.', { exact: true })
     .waitFor();
@@ -157,6 +207,7 @@ try {
     .filter({ hasText: 'Casey Editor' })
     .first();
   await peerLabel.waitFor();
+  assert.equal(await peerLabel.getAttribute('data-below'), 'false');
   await screenshot(owner, 'editor-desktop-light');
   await screenshot(editor, 'editor-desktop-dark');
   await owner
@@ -178,6 +229,10 @@ try {
   const popover = owner.getByRole('dialog', { name: 'People in this note' });
   await popover.getByRole('list').getByRole('listitem').first().waitFor();
   assert.equal(await popover.getAttribute('aria-modal'), null);
+  assert.equal(
+    await popover.evaluate((node) => getComputedStyle(node).outlineStyle),
+    'none',
+  );
   await screenshot(owner, 'presence-desktop-light');
   await owner.keyboard.press('Escape');
   await popover.waitFor({ state: 'hidden' });
@@ -195,6 +250,7 @@ try {
   await bothSee(owner, editor, /Online addition/);
   await bothSee(owner, editor, /Offline addition/);
   await editorText.press('Control+s');
+  await waitForFrozenSave(editor, fixture.workspaceId);
   await ownerText.press('Control+s');
   await owner.goto(`${origin}${note}/history`);
   await owner
@@ -350,6 +406,12 @@ try {
   await editorText.focus();
   await editorText.press('Control+End');
   await editor.keyboard.type('\nKeep this unsent text');
+  await editorText.press('Control+s');
+  await waitForFrozenSave(editor, fixture.workspaceId);
+  await editor
+    .getByRole('treeitem', { name: /Launch plan/ })
+    .getByText('Local', { exact: true })
+    .waitFor();
   const roleMenu = owner.getByRole('button', { name: 'Role for Casey Editor' });
   await roleMenu.click();
   await owner
@@ -367,12 +429,26 @@ try {
       `Your unsent text is in Personal, in the folder From ${fixture.workspaceName}.`,
     )
     .waitFor();
-  await editor.goto(`${origin}/w/${fixture.editorPersonalId}`);
+  await editorText
+    .getByText('Keep this unsent text', { exact: true })
+    .waitFor({ state: 'hidden' });
   await editor
-    .getByRole('link', {
-      name: `Launch plan, in From ${fixture.workspaceName}`,
-      exact: true,
-    })
+    .getByRole('treeitem', { name: /Launch plan/ })
+    .getByText('Local', { exact: true })
+    .waitFor({ state: 'hidden' });
+  await editor
+    .getByRole('button', { name: /Show save details/ })
+    .waitFor({ state: 'hidden' });
+  assert.deepEqual(await workspaceWrites(editor, fixture.workspaceId), [0, 0]);
+  const downgradeToast = editor
+    .getByRole('status')
+    .filter({ hasText: 'Your unsent text is in Personal' });
+  await downgradeToast
+    .getByRole('button', { name: 'Dismiss', exact: true })
+    .waitFor();
+  await screenshot(editor, 'recovery-downgrade-desktop-dark');
+  await downgradeToast
+    .getByRole('button', { name: 'Open', exact: true })
     .click();
   await editorText
     .getByText('Keep this unsent text', { exact: true })
@@ -389,6 +465,12 @@ try {
   await editorText.focus();
   await editorText.press('Control+End');
   await editor.keyboard.type('\nKeep this text after removal');
+  await editorText.press('Control+s');
+  await waitForFrozenSave(editor, fixture.workspaceId);
+  await editor
+    .getByRole('treeitem', { name: /Launch plan/ })
+    .getByText('Local', { exact: true })
+    .waitFor();
   await roleMenu.click();
   await owner.getByText('Remove from workspace', { exact: true }).click();
   await owner
@@ -403,13 +485,14 @@ try {
     )
     .waitFor();
   await screenshot(editor, 'access-removed-desktop-dark');
-  await editor.goto(`${origin}/w/${fixture.editorPersonalId}`);
-  await editor
-    .getByRole('link', {
-      name: `Launch plan 2, in From ${fixture.workspaceName}`,
-      exact: true,
-    })
-    .click();
+  assert.deepEqual(await workspaceWrites(editor, fixture.workspaceId), [0, 0]);
+  const removalToast = editor
+    .getByRole('status')
+    .filter({ hasText: 'Your unsent text is in Personal' });
+  await removalToast
+    .getByRole('button', { name: 'Dismiss', exact: true })
+    .waitFor();
+  await removalToast.getByRole('button', { name: 'Open', exact: true }).click();
   await editorText
     .getByText('Keep this text after removal', { exact: true })
     .waitFor();

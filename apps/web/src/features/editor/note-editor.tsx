@@ -56,6 +56,7 @@ import {
   runFormatAction,
   setEditorRich,
   setEditorSpellCheck,
+  setEditorReadOnly,
   setEditorTheme,
   takeMarginTaps,
   type EditorView,
@@ -187,13 +188,9 @@ export type NoteEditorProps = {
   readonly onMoveToFolder?: (() => void) | undefined;
   /** Opens the Publish dialog that the note screen owns. */
   readonly onPublish?: (() => void) | undefined;
-  /**
-   * Reports that the store holds a new generation of the document of this
-   * note, which cannot join this editor, and that no key of this session is
-   * at stake. The loader reads the note again with a new editor. Every other
-   * move of the head joins this editor and keeps its caret (record 0179).
-   */
+  /** Reloads the note when a new document generation cannot join the editor. */
   readonly onHeadReplaced?: (() => void) | undefined;
+  readonly roleChanged?: boolean;
 };
 
 /**
@@ -276,6 +273,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
   baseRevisionId,
   initialText,
   readOnly: viewerRole = false,
+  roleChanged = false,
   initialDocument = null,
   initialPath,
   initialWorkingCopyId,
@@ -797,13 +795,9 @@ const NoteEditorBody = memo(function NoteEditorBody({
   const checkpointAgainRef = useRef(false);
   const checkpointNow = useRef((): Promise<boolean> => Promise.resolve(true));
   checkpointNow.current = (): Promise<boolean> => {
-    if (isDeletedRef.current) return Promise.resolve(false);
+    if (isDeletedRef.current || readOnlyRef.current || noteWork.frozen())
+      return Promise.resolve(false);
     if (bufferWasReplaced()) return Promise.resolve(false);
-    // The document also holds the work of other tabs and devices, and that
-    // work is a version of the editor that wrote it. An editor with no input
-    // since its last checkpoint therefore writes no version (record 0133).
-    // The first checkpoint always runs, because a draft that this open
-    // recovered can hold work that no version holds yet.
     if (noteWork.versionedSequence() === sequenceRef.current)
       return Promise.resolve(false);
     followHeading();
@@ -898,6 +892,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
         (change.fileId !== null && change.fileId !== current.fileId)
       )
         return;
+      if (change.accessReset !== undefined) noteWork.freeze();
       if (change.kind === 'purge') isDeletedRef.current = true;
       const read = readAfterChange(change, current.workingCopyId);
       if (read !== 'none') askQueue(read === 'join');
@@ -1418,8 +1413,14 @@ const NoteEditorBody = memo(function NoteEditorBody({
     hold: holdSession,
     store,
     accountId,
-    flush: noteWork.flush,
-    saveDraft: saveDraftNow,
+    work: noteWork,
+    freeze: () => {
+      if (viewRef.current !== null) setEditorReadOnly(viewRef.current, true);
+      return noteWork.saveForAccess(
+        isDeletedRef.current,
+        checkpointInFlightRef.current,
+      );
+    },
     onAccess: access.setLiveRole,
   });
   useRegisterNoteActions(useNoteActionsForRole(noteScreenActions, readOnly));
@@ -1562,7 +1563,9 @@ const NoteEditorBody = memo(function NoteEditorBody({
               initialText={initialText}
               live={liveNote}
               liveEnabled={initialDocument != null}
-              changedToViewer={access.changedToViewer}
+              changedToViewer={
+                access.changedToViewer || (roleChanged && readOnly)
+              }
             />
             <ImageViewer
               image={openImage}

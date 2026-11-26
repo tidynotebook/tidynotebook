@@ -136,9 +136,11 @@ workspace permission to make Personal. Put recovered notes in `From <workspace
 name>`, with the existing path collision rule. Persist the destination drafts
 and replacement queue entries before clearing inaccessible source data. Make
 copy, retry and cache clear safe after a crash or a second tab's recovery.
-Keep local recovery data if a limit prevents a destination save. Show the
-switcher notice after removal and the footer notice after a downgrade. Keep
-readable cache on a downgrade. Apply the same rules for an offline client at
+Keep local recovery data if a limit prevents a destination save. After
+recovery commits, clear the source queue and drafts. Refresh the save status
+and reload the accepted head on a downgrade. Keep the readable cache. Show
+a dismissible toast with a link to the first recovered note and keep the
+role change in the editor footer. Apply the same rules for an offline client at
 its next confirmed access check. Transport failures alone must not trigger
 cache removal.
 

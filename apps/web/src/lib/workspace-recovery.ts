@@ -4,7 +4,12 @@ import { createNote, type LocalStore } from '@notesapp/sync';
 import { freeNamedPath, newNoteDraft } from './new-note-draft.ts';
 import { baseNameOf, cleanNoteBaseName } from './note-name.ts';
 
-const pending = new Map<string, Promise<string | null>>();
+export type WorkspaceRecoveryNotice = {
+  readonly message: string;
+  readonly note?: { readonly workspaceId: string; readonly fileId: string };
+};
+
+const pending = new Map<string, Promise<WorkspaceRecoveryNotice | null>>();
 const flushes = new Map<string, Set<() => Promise<void>>>();
 
 export function registerAccessFlush(
@@ -31,14 +36,14 @@ export function recoverWorkspaceAccess(
   old: Workspace,
   remaining: readonly Workspace[],
   removed: boolean,
-): Promise<string | null> {
+): Promise<WorkspaceRecoveryNotice | null> {
   const scope = `${accountId}:${old.workspaceId}`;
   const running = pending.get(scope);
   if (running !== undefined) return running;
   const flushResults = Promise.allSettled(
     [...(flushes.get(old.workspaceId) ?? [])].map((flush) => flush()),
   );
-  async function recover(): Promise<string | null> {
+  async function recover(): Promise<WorkspaceRecoveryNotice | null> {
     for (const result of await flushResults)
       if (result.status === 'rejected') throw result.reason;
     let destination =
@@ -47,7 +52,8 @@ export function recoverWorkspaceAccess(
     const accessNotice = removed
       ? `You no longer have access to ${old.name}.`
       : null;
-    let notice = accessNotice;
+    let notice: WorkspaceRecoveryNotice | null =
+      accessNotice === null ? null : { message: accessNotice };
     for (let attempt = 0; attempt < 4; attempt += 1) {
       const copies = await store.workspaceAccessCopies(
         accountId,
@@ -70,10 +76,12 @@ export function recoverWorkspaceAccess(
         const paths = (await store.listHeldPaths(accountId, workspaceId)).map(
           (file) => file.path,
         );
+        let firstId: string | undefined;
         for (const copy of copies) {
           const fileId = await recoveryId(
             JSON.stringify([scope, copy.identity, copy.path, copy.text]),
           );
+          firstId ??= fileId;
           if (known.has(fileId)) continue;
           const name = cleanNoteBaseName(
             baseNameOf(copy.path).replace(/\.md$/iu, ''),
@@ -93,7 +101,12 @@ export function recoverWorkspaceAccess(
           paths.push(path);
         }
         const saved = `Your unsent text is in ${destination.name}, in the folder ${folder}.`;
-        notice = accessNotice === null ? saved : `${accessNotice} ${saved}`;
+        notice = {
+          message: accessNotice === null ? saved : `${accessNotice} ${saved}`,
+          ...(firstId === undefined
+            ? {}
+            : { note: { workspaceId, fileId: firstId } }),
+        };
       }
       if (
         await store.clearWorkspaceAccess(

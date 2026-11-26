@@ -543,7 +543,13 @@ export function createRecoverySlice(ctx: LocalStoreContext): RecoverySlice {
           }),
       );
       if (cleared)
-        publish({ accountId, workspaceId, fileId: null, kind: 'reset' });
+        publish({
+          accountId,
+          workspaceId,
+          fileId: null,
+          kind: 'reset',
+          accessReset: removed ? 'removed' : 'viewer',
+        });
       return cleared;
     },
     recover(

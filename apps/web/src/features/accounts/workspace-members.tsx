@@ -431,17 +431,13 @@ function InvitePeople({
     };
   }, []);
   const emails = input.split(/[\s,]+/u).filter(Boolean);
-  const invalid = checked ? badAddresses(emails) : [];
+  const invalid = badAddresses(emails);
+  const validCount = emails.filter((email) => !invalid.includes(email)).length;
   const created =
     results?.filter((result) => result.outcome === 'created').length ?? 0;
   async function submit() {
     setChecked(true);
-    if (
-      badAddresses(emails).length > 0 ||
-      emails.length === 0 ||
-      emails.length > 20
-    )
-      return;
+    if (invalid.length > 0 || emails.length === 0 || emails.length > 20) return;
     setBusy(true);
     setProblem('');
     try {
@@ -486,7 +482,7 @@ function InvitePeople({
                 value={input}
                 onChange={setInput}
                 size="growing"
-                error={invalid
+                error={(checked ? invalid : [])
                   .map(
                     (address) => `“${address}” is not a valid email address.`,
                   )
@@ -581,9 +577,7 @@ function InvitePeople({
               variant="primary"
               disabled={busy || emails.length === 0 || emails.length > 20}
             >
-              {emails.length <= 1
-                ? 'Send invite'
-                : `Send ${emails.length} invites`}
+              {validCount <= 1 ? 'Send invite' : `Send ${validCount} invites`}
             </Button>
           ) : (
             <Button variant="primary" onClick={close}>

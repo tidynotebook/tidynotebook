@@ -158,6 +158,7 @@ export type LocalChange = {
    * other, of this tab or of another (record 0175).
    */
   readonly writer?: string | undefined;
+  readonly accessReset?: 'viewer' | 'removed';
 };
 
 /** One file as it must appear in local navigation. */

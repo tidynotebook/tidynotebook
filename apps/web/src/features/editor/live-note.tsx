@@ -1,3 +1,4 @@
+import type { NoteWork } from './note-work.ts';
 import { registerAccessFlush } from '../../lib/workspace-recovery.ts';
 import { base64, bytesOfBase64, type LocalStore } from '@notesapp/sync';
 import {
@@ -490,8 +491,8 @@ export function useEditorLiveBinding(input: {
   readonly hold: () => { note: BoundNote; release: () => void };
   readonly store: LocalStore;
   readonly accountId: string;
-  readonly flush: () => Promise<void>;
-  readonly saveDraft: { current: () => Promise<unknown> };
+  readonly work: Pick<NoteWork, 'flush' | 'frozen'>;
+  readonly freeze: () => Promise<void>;
   readonly onAccess: (role: Role | 'removed' | undefined) => void;
 }): LiveState {
   const {
@@ -501,14 +502,24 @@ export function useEditorLiveBinding(input: {
     hold,
     store,
     accountId,
-    flush,
-    saveDraft,
+    work,
+    freeze,
     onAccess,
   } = input;
+  const freezeRef = useRef(freeze);
+  freezeRef.current = freeze;
   const persist = useCallback(
-    (bytes: Uint8Array) =>
-      store.mergeNoteWork(accountId, workspaceId, fileId, epoch ?? 1, bytes),
-    [store, accountId, workspaceId, fileId, epoch],
+    async (bytes: Uint8Array) => {
+      if (!work.frozen())
+        await store.mergeNoteWork(
+          accountId,
+          workspaceId,
+          fileId,
+          epoch ?? 1,
+          bytes,
+        );
+    },
+    [store, accountId, workspaceId, fileId, epoch, work],
   );
   const note = useLiveNote({
     workspaceId,
@@ -516,18 +527,14 @@ export function useEditorLiveBinding(input: {
     epoch,
     hold,
     persist,
-    flush,
+    flush: work.flush,
   });
   useLayoutEffect(() => {
     onAccess(note.access);
   }, [note.access, onAccess]);
   useEffect(
-    () =>
-      registerAccessFlush(workspaceId, async () => {
-        await flush();
-        await saveDraft.current();
-      }),
-    [workspaceId, flush, saveDraft],
+    () => registerAccessFlush(workspaceId, () => freezeRef.current()),
+    [workspaceId],
   );
   return note;
 }
@@ -553,7 +560,7 @@ export function NoteLiveStatus({
     <Inline as="span" gap={1} align="center" role="status">
       <span
         aria-hidden="true"
-        className={`size-2 shrink-0 rounded-full ${note.status === 'Live' && !changedToViewer ? 'bg-success' : 'bg-muted'}`}
+        className={`size-2 shrink-0 rounded-full ${changedToViewer ? 'bg-danger' : note.status === 'Live' ? 'bg-success' : 'bg-muted'}`}
       />
       <span>{label}</span>
     </Inline>

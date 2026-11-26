@@ -1,3 +1,4 @@
+import type { WorkspaceRecoveryNotice } from './lib/workspace-recovery.ts';
 /**
  * Application composition of the notesapp web client.
  *
@@ -652,7 +653,8 @@ function settleWorkspaceList(
 /** The workspaces of the account and the ways the list changes. */
 export type WorkspaceValue = {
   readonly state: WorkspaceState;
-  readonly recoveryNotice?: string | null | undefined;
+  readonly recoveryNotice?: WorkspaceRecoveryNotice | null | undefined;
+  readonly dismissRecoveryNotice?: (() => void) | undefined;
   /** Asks the server for the list again. */
   readonly reload: () => void;
   /**
@@ -751,7 +753,9 @@ function useWorkspaceLoader(
     state: { status: 'loading' },
   });
   const [retryGeneration, setRetryGeneration] = useState(0);
-  const [recoveryNotice, setRecoveryNotice] = useState<string | null>(null);
+  const [recoveryNotice, setRecoveryNotice] =
+    useState<WorkspaceRecoveryNotice | null>(null);
+  const dismissRecoveryNotice = useCallback(() => setRecoveryNotice(null), []);
   const recoveryBaseline = useRef<{
     readonly accountId: string;
     readonly workspaces: readonly Workspace[];
@@ -844,6 +848,25 @@ function useWorkspaceLoader(
         });
         if (changes.length === 0) rememberAccess(workspaces);
       }
+      const recoverWorkspaceAccess =
+        changes.length > 0 && store !== null
+          ? (await import('./lib/workspace-recovery.ts')).recoverWorkspaceAccess
+          : null;
+      if (cancelled) return;
+      const recovery =
+        store === null || workspaces === null || recoverWorkspaceAccess === null
+          ? []
+          : changes.map((old) =>
+              recoverWorkspaceAccess(
+                store,
+                activeAccount,
+                old,
+                workspaces,
+                !workspaces.some(
+                  (space) => space.workspaceId === old.workspaceId,
+                ),
+              ),
+            );
       // Keep completion numbers across loading, failures and repeated reads.
       setSnapshot((current) => {
         if (current.accountId !== activeAccount) return current;
@@ -859,32 +882,19 @@ function useWorkspaceLoader(
           failure === null ? 'server' : 'fallback',
         );
       });
-      if (changes.length > 0 && store !== null && workspaces !== null) {
-        const available = workspaces;
-        try {
-          const { recoverWorkspaceAccess } =
-            await import('./lib/workspace-recovery.ts');
-          if (cancelled) return;
-          for (const old of changes) {
-            const removed = !available.some(
-              (space) => space.workspaceId === old.workspaceId,
-            );
-            const message = await recoverWorkspaceAccess(
-              store,
-              activeAccount,
-              old,
-              available,
-              removed,
-            );
-            if (message !== null && !cancelled) setRecoveryNotice(message);
-          }
-          if (!cancelled) rememberAccess(available);
-        } catch {
-          if (!cancelled)
-            setRecoveryNotice(
-              'Your unsent text is safe on this device. Recovery will try again after sync.',
-            );
+      if (recovery.length > 0 && workspaces !== null) {
+        const results = await Promise.allSettled(recovery);
+        if (cancelled) return;
+        for (const result of results) {
+          if (result.status === 'rejected')
+            setRecoveryNotice({
+              message:
+                'Your unsent text is safe on this device. Recovery will try again after sync.',
+            });
+          else if (result.value !== null) setRecoveryNotice(result.value);
         }
+        if (results.every((result) => result.status === 'fulfilled'))
+          rememberAccess(workspaces);
       }
     }
     void load();
@@ -960,7 +970,14 @@ function useWorkspaceLoader(
     [replaceList],
   );
 
-  return { state, remember, adopt, forget, recoveryNotice };
+  return {
+    state,
+    remember,
+    adopt,
+    forget,
+    recoveryNotice,
+    dismissRecoveryNotice,
+  };
 }
 
 /** What the sync engine of the open workspace reports and accepts. */
@@ -1329,8 +1346,9 @@ export function useWorkspaceSync(
       if (
         change.accountId === accountId &&
         change.workspaceId === workspaceId &&
-        change.kind === 'queue'
+        (change.kind === 'queue' || change.kind === 'reset')
       ) {
+        if (change.accessReset === 'viewer') setState(syncStateOnline);
         readQueue();
         requestSync();
       }
@@ -1472,7 +1490,11 @@ export function useBackgroundSync(
         });
     };
     const unsubscribe = activeStore.subscribe((change) => {
-      if (change.accountId === activeAccount && change.kind === 'queue') read();
+      if (
+        change.accountId === activeAccount &&
+        (change.kind === 'queue' || change.kind === 'reset')
+      )
+        read();
     });
     read();
     return () => {
@@ -1631,6 +1653,7 @@ export function AppProviders({
     adopt: adoptWorkspace,
     forget: forgetWorkspace,
     recoveryNotice,
+    dismissRecoveryNotice,
   } = useWorkspaceLoader(
     session.status,
     session.account?.accountId ?? null,
@@ -1735,6 +1758,7 @@ export function AppProviders({
       adopt: adoptWorkspace,
       forget: forgetWorkspace,
       recoveryNotice,
+      dismissRecoveryNotice,
     }),
     [
       workspaceState,
@@ -1743,6 +1767,7 @@ export function AppProviders({
       adoptWorkspace,
       forgetWorkspace,
       recoveryNotice,
+      dismissRecoveryNotice,
     ],
   );
 

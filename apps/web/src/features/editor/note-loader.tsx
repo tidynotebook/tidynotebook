@@ -168,8 +168,15 @@ export function NoteEditorLoader({
               ? "Can't open this note"
               : 'Loading note',
   );
+  const accessReload = useRef(false);
+  const [roleChangedFor, setRoleChangedFor] = useState<string | null>(null);
   const setStatus = useCallback(
     (next: NoteLoadStatus): void => {
+      if (accessReload.current) {
+        accessReload.current = false;
+        setGeneration((count) => count + 1);
+        setRoleChangedFor(workspaceId);
+      }
       setLoadState({
         identity: { accountId, workspaceId, fileId },
         status: next,
@@ -393,7 +400,18 @@ export function NoteEditorLoader({
   // its document, its undo history, and its selection.
   useEffect(() => {
     if (store === null) return;
-    return watchDeviceNote(
+    const stopReset = store.subscribe((change) => {
+      if (
+        change.accountId !== accountId ||
+        change.workspaceId !== workspaceId ||
+        change.accessReset !== 'viewer'
+      )
+        return;
+      accessReload.current = true;
+      deviceOpens.forget(store);
+      readAgain();
+    });
+    const stopWatching = watchDeviceNote(
       store,
       { accountId, workspaceId, fileId },
       (cached, fromChange) => {
@@ -425,6 +443,10 @@ export function NoteEditorLoader({
         setStatus({ kind: 'purged' });
       },
     );
+    return () => {
+      stopReset();
+      stopWatching();
+    };
   }, [
     store,
     accountId,
@@ -536,6 +558,7 @@ export function NoteEditorLoader({
         baseRevisionId={status.headRevisionId}
         initialText={status.text}
         readOnly={role === 'viewer'}
+        roleChanged={roleChangedFor === workspaceId}
         initialDocument={status.document ?? null}
         initialPath={status.path}
         initialWorkingCopyId={status.workingCopyId}

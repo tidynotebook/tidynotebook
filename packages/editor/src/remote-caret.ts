@@ -7,8 +7,8 @@ const labelSelector = '.cm-ySelectionCaret > .cm-ySelectionInfo';
 
 const theme = EditorView.theme({
   [labelSelector]: {
-    top: '100%',
-    bottom: 'auto',
+    top: 'auto',
+    bottom: '100%',
     borderRadius: 'var(--radius-sm)',
     padding: '1px 4px',
     fontFamily: 'var(--font-sans)',
@@ -17,6 +17,7 @@ const theme = EditorView.theme({
     lineHeight: 'var(--text-small--line-height)',
     color: 'var(--color-live-ink)',
   },
+  [`${labelSelector}[data-below="true"]`]: { top: '100%', bottom: 'auto' },
   [`${labelSelector}[data-active="true"]`]: { opacity: '1' },
   '@media (prefers-reduced-motion: reduce)': {
     [labelSelector]: { transition: 'none' },
@@ -41,13 +42,20 @@ export function remoteCaretLabels(
         if (frame !== null) return;
         frame = window.requestAnimationFrame(() => {
           frame = null;
-          for (const label of view.contentDOM.querySelectorAll(labelSelector)) {
+          const top = Math.max(0, view.scrollDOM.getBoundingClientRect().top);
+          for (const label of view.contentDOM.querySelectorAll<HTMLElement>(
+            labelSelector,
+          )) {
             const caret = label.parentElement;
             const visible = [...active.values()].some(
               ({ name, slot }) =>
                 name === label.textContent &&
                 caret?.style.backgroundColor === `var(--color-live-${slot})`,
             );
+            if (caret !== null)
+              label.dataset['below'] = String(
+                caret.getBoundingClientRect().top - label.offsetHeight < top,
+              );
             label.setAttribute('data-active', String(visible));
           }
         });
@@ -93,11 +101,13 @@ export function remoteCaretLabels(
         paint();
       };
       awareness.on('change', change);
+      view.scrollDOM.addEventListener('scroll', paint, { passive: true });
 
       return {
         update: paint,
         destroy() {
           awareness.off('change', change);
+          view.scrollDOM.removeEventListener('scroll', paint);
           if (frame !== null) window.cancelAnimationFrame(frame);
           for (const id of active.keys()) clear(id);
         },

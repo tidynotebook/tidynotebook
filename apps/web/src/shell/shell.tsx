@@ -1,3 +1,4 @@
+import { WorkspaceRecoveryToast } from './workspace-recovery-toast.tsx';
 import { WorkspaceJoinedToast } from './workspace-joined.tsx';
 import {
   Inline,
@@ -113,7 +114,7 @@ import {
   useWorkspaceRole,
   useWorkspaceSync,
 } from '../app.tsx';
-import { attentionTitle } from '../features/attention/attention-link.tsx';
+import { attentionTitle } from '../lib/save-status-words.ts';
 import { NewFromTemplateDialog } from '../features/templates/new-from-template.tsx';
 import { useWorkspaceProblem } from '../features/templates/workspace-problem.ts';
 import type { CommandPalette } from './command-palette.tsx';
@@ -2022,6 +2023,7 @@ function ShellFrame({
           )}
           <SettingsModalHost workspaceId={workspaceId} />
           <WorkspaceJoinedToast />
+          <WorkspaceRecoveryToast />
           {signOut.dialog}
           {shortcutsOpen && ShortcutsView !== null ? (
             <ShortcutsView open onClose={() => setShortcutsOpen(false)} />

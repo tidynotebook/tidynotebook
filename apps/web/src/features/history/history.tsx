@@ -676,38 +676,23 @@ function HistoryDetail({
                               <span className="truncate text-body text-strong">
                                 {label}
                               </span>
-                              <span className="line-clamp-2 text-secondary text-muted lg:line-clamp-1">
-                                {rowReading(change, item.merged)}
-                              </span>
-                              {item.contributors?.length ? (
-                                <Inline as="span" gap={2} wrap>
-                                  {item.contributors.map((person, index) => {
-                                    const name = person.formerMember
-                                      ? 'Former member'
-                                      : (person.displayName ?? 'Member');
-                                    return (
-                                      <Inline
-                                        key={person.accountId ?? index}
-                                        as="span"
-                                        gap={1}
-                                        className="text-secondary text-muted"
-                                      >
-                                        <PresenceAvatar
-                                          pending={person.formerMember ?? false}
-                                          slot={presenceColorSlot(
-                                            person.accountId ?? '',
-                                          )}
-                                        >
-                                          {person.formerMember
-                                            ? '?'
-                                            : initialOf(name)}
-                                        </PresenceAvatar>
-                                        {name}
-                                      </Inline>
-                                    );
-                                  })}
-                                </Inline>
-                              ) : null}
+                              <Inline
+                                as="span"
+                                gap={1}
+                                className="min-w-0 overflow-hidden text-secondary text-muted"
+                              >
+                                <span className="truncate">
+                                  {rowReading(change, item.merged)}
+                                </span>
+                                {item.contributors?.length ? (
+                                  <>
+                                    <span aria-hidden="true">·</span>
+                                    <RevisionContributors
+                                      contributors={item.contributors}
+                                    />
+                                  </>
+                                ) : null}
+                              </Inline>
                             </span>
                           </button>
                           <Inset padX={2} as="span" className="shrink-0">
@@ -730,6 +715,12 @@ function HistoryDetail({
                         </ListRow>
                         {selected ? (
                           <Inset padX={2} padY={1} as="li" id={panelId}>
+                            {item.contributors?.length ? (
+                              <RevisionContributors
+                                contributors={item.contributors}
+                                expanded
+                              />
+                            ) : null}
                             <RevisionPanel
                               key={item.revisionId}
                               detail={detail}
@@ -782,6 +773,48 @@ function HistoryDetail({
 }
 
 /** The identifier of the heading of one day of the history. */
+function RevisionContributors({
+  contributors,
+  expanded = false,
+}: {
+  readonly contributors: NonNullable<HistoryRevisionItem['contributors']>;
+  readonly expanded?: boolean;
+}): ReactNode {
+  return (
+    <Inline
+      as="span"
+      gap={2}
+      wrap={expanded}
+      className={
+        expanded ? 'text-secondary text-muted' : 'min-w-0 overflow-hidden'
+      }
+    >
+      {contributors.map((person, index) => {
+        const name = person.formerMember
+          ? 'Former member'
+          : (person.displayName ?? 'Member');
+        return (
+          <Inline
+            as="span"
+            gap={1}
+            key={person.accountId ?? index}
+            title={name}
+            className="min-w-0"
+          >
+            <PresenceAvatar
+              pending={person.formerMember ?? false}
+              slot={presenceColorSlot(person.accountId ?? '')}
+            >
+              {person.formerMember ? '?' : initialOf(name)}
+            </PresenceAvatar>
+            <span className="truncate">{name}</span>
+          </Inline>
+        );
+      })}
+    </Inline>
+  );
+}
+
 function dayHeadingId(key: string): string {
   return `history-day-${key}`;
 }

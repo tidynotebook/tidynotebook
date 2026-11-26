@@ -94,8 +94,8 @@ export function FieldPopover({
       data-dialog-escape="local"
       className={
         wide
-          ? `fixed z-50 overflow-y-auto rounded-lg border border-overlay-edge bg-overlay p-1 shadow-overlay state-overlay`
-          : `rounded-lg border border-overlay-edge bg-overlay p-1 shadow-overlay state-overlay`
+          ? `fixed z-50 overflow-y-auto rounded-lg border border-overlay-edge bg-overlay p-1 shadow-overlay state-overlay outline-none`
+          : `rounded-lg border border-overlay-edge bg-overlay p-1 shadow-overlay state-overlay outline-none`
       }
       onKeyDown={(event) => {
         if (event.key === 'Escape') {

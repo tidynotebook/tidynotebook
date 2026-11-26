@@ -215,7 +215,7 @@ export function WorkspaceSwitcher({
   readonly onRename: () => void;
   readonly onDelete: () => void;
 }): ReactNode {
-  const { state, reload, adopt, recoveryNotice } = useWorkspace();
+  const { state, reload, adopt } = useWorkspace();
   const navigate = useNavigate();
   const [invites, setInvites] = useState<PendingWorkspaceInvite[]>([]);
   const [problem, setProblem] = useState('');
@@ -379,7 +379,6 @@ export function WorkspaceSwitcher({
   return (
     <div className="shrink-0">
       {problem === '' ? null : <Notice tone="problem" message={problem} />}
-      {recoveryNotice == null ? null : <Notice message={recoveryNotice} />}
       <Menu
         label={`Workspace: ${openWorkspace.name}${invites.length ? `, ${invites.length} pending ${invites.length === 1 ? 'invite' : 'invites'}` : ''}`}
         trigger="row"

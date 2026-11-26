@@ -7,16 +7,23 @@ import {
   focusOutlineInset,
 } from '@notesapp/ui';
 /** One short status line. Details retain the full save and connection messages. */
-import { useEffect, useId, useState, type ReactNode } from 'react';
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useId,
+  useState,
+  type ReactNode,
+} from 'react';
 
 import { useLocalStore, useSession, useSyncState } from '../app.tsx';
-import {
-  AttentionLink,
-  useAttentionCount,
-} from '../features/attention/attention-link.tsx';
 import { useNoteSaveFact, useOnline } from '../features/editor/save-status.tsx';
 import { useCalmSyncView } from './use-calm-sync.ts';
 import { syncDotClassName } from '../lib/sync-state.ts';
+
+const SidebarAttention = lazy(async () => ({
+  default: (await import('./sidebar-attention.tsx')).SidebarAttention,
+}));
 
 export function SidebarStatus({
   workspaceId,
@@ -37,11 +44,6 @@ export function SidebarStatus({
     pending,
     editing,
   });
-  const attention = useAttentionCount(
-    store.store,
-    session.account?.accountId ?? null,
-    workspaceId,
-  );
   const [waiting, setWaiting] = useState(0),
     [open, setOpen] = useState(false);
   const titleId = useId();
@@ -119,7 +121,11 @@ export function SidebarStatus({
       >
         <DialogBody>
           <p className="m-0 text-body text-strong">{message}</p>
-          <AttentionLink workspaceId={workspaceId} count={attention} />
+          {open ? (
+            <Suspense>
+              <SidebarAttention workspaceId={workspaceId} />
+            </Suspense>
+          ) : null}
         </DialogBody>
         <DialogFooter>
           <Button
