@@ -167,3 +167,15 @@ export function useWorkspaceRole(): 'owner' {
 export function useTabNoticeStream(): null {
   return null;
 }
+
+const workspace = {
+  state: {
+    status: 'ready',
+    workspaces: [{ workspaceId: 'workspace', role: 'owner' }],
+  },
+  reload() {},
+} as const;
+
+export function useWorkspace(): typeof workspace {
+  return workspace;
+}
