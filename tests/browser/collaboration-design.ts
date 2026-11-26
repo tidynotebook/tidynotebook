@@ -199,7 +199,8 @@ export async function runCollaborationAudit(
           ] as const) {
             await owner.goto(`${home}?settings=${path}`);
             await owner
-              .getByRole('heading', { name: heading, exact: true })
+              .locator('.ui-settings-column .ui-settings-header-title')
+              .filter({ hasText: heading })
               .waitFor();
             await check(owner, `settings-${path}`);
           }
