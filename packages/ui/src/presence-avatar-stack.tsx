@@ -4,7 +4,7 @@ import { Inline } from './primitives.tsx';
 import { Pill } from './section-heading.tsx';
 
 export const presenceTriggerClassName =
-  'coarse:max-md:min-w-11 coarse:max-md:px-1';
+  'w-auto min-w-7 coarse:w-auto coarse:min-w-11';
 
 export function PresenceAvatarStack({
   people,

@@ -405,17 +405,18 @@ export function NotePresence({
         label={`People in this note: ${label}`}
         title={label}
         onClick={() => setOpen(!open)}
-      >
-        <PresenceAvatarStack
-          people={people.map((person) => ({
-            id: person.accountId,
-            initial: initialOf(person.name),
-            slot: person.slot,
-            color: workspacePresenceColor(person.slot),
-            idle: person.idle,
-          }))}
-        />
-      </Button>
+        icon={
+          <PresenceAvatarStack
+            people={people.map((person) => ({
+              id: person.accountId,
+              initial: initialOf(person.name),
+              slot: person.slot,
+              color: workspacePresenceColor(person.slot),
+              idle: person.idle,
+            }))}
+          />
+        }
+      />
       {open && desktop ? (
         <Popover
           id="note-presence"
