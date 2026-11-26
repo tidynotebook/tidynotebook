@@ -787,6 +787,11 @@ export async function auditContentParity(page: Page) {
       )
         issues.push(item);
     };
+    const lineCount = (element: Element): number => {
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      return new Set(Array.from(range.getClientRects(), ({ top }) => top)).size;
+    };
     const noteTitle = document.querySelector('[data-note-header-title]');
     const header = noteTitle?.closest('header');
     if (
@@ -806,7 +811,8 @@ export async function auditContentParity(page: Page) {
         noteTitle,
         'note header ellipsis semantics',
         Number(
-          style.textOverflow === 'ellipsis' && style.overflowX === 'hidden',
+          style.textOverflow === 'ellipsis' &&
+            (style.overflowX === 'hidden' || style.overflowX === 'clip'),
         ),
         1,
       );
@@ -817,12 +823,10 @@ export async function auditContentParity(page: Page) {
         1,
       );
       if (!(noteTitle instanceof HTMLInputElement)) {
-        const line = document.createRange();
-        line.selectNodeContents(noteTitle);
         check(
           noteTitle,
           'note header rendered lines semantics',
-          line.getClientRects().length,
+          lineCount(noteTitle),
           1,
         );
       }
@@ -868,14 +872,7 @@ export async function auditContentParity(page: Page) {
     for (const email of [
       ...document.querySelectorAll('[data-member-email]'),
     ].filter(visible)) {
-      const line = document.createRange();
-      line.selectNodeContents(email);
-      check(
-        email,
-        'member email has one line semantics',
-        line.getClientRects().length,
-        1,
-      );
+      check(email, 'member email has one line semantics', lineCount(email), 1);
       check(
         email,
         'member email has ellipsis semantics',
@@ -976,6 +973,31 @@ export async function auditContentParity(page: Page) {
         parseFloat(getComputedStyle(viewerNotice).paddingTop),
         8,
       );
+    const removeTitle = document.getElementById(
+      'remove-workspace-member-title',
+    );
+    const removeText = document.getElementById(
+      'remove-workspace-member-detail',
+    );
+    if (
+      removeTitle &&
+      removeText &&
+      visible(removeTitle) &&
+      matchMedia('(min-width: 64rem)').matches
+    ) {
+      check(
+        removeTitle,
+        'member removal has no title divider semantics',
+        Number(!removeTitle.hasAttribute('data-scroll-edge')),
+        1,
+      );
+      check(
+        removeText,
+        'member removal content edge',
+        removeText.getBoundingClientRect().left,
+        removeTitle.getBoundingClientRect().left,
+      );
+    }
     for (const list of [
       ...document.querySelectorAll(
         '.ui-page-column ul,.ui-page-column ol,#command-palette-list',
