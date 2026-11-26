@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { hasChromium, type Page } from './browser.ts';
+import { hasChromium, isRecord, type Page } from './browser.ts';
 import {
   clearCollaborationFixtures,
   collaborationFixture,
@@ -130,6 +130,22 @@ async function waitForSavedHead(text: string): Promise<string> {
   assert.fail(`The server did not save "${text}".`);
 }
 
+function trackRoomMessages(page: Page): string[] {
+  const messages: string[] = [];
+  page.on('websocket', (socket) =>
+    socket.on('framesent', ({ payload }) => {
+      if (typeof payload !== 'string') return;
+      const frame: unknown = JSON.parse(payload);
+      if (
+        isRecord(frame) &&
+        (frame.kind === 'leaveNote' || frame.kind === 'joinNote')
+      )
+        messages.push(frame.kind);
+    }),
+  );
+  return messages;
+}
+
 try {
   const ownerContext = await browser.newContext({
     viewport: { width: 1440, height: 900 },
@@ -147,6 +163,8 @@ try {
   });
   const owner = await ownerContext.newPage();
   const editor = await editorContext.newPage();
+  const ownerRooms = trackRoomMessages(owner);
+  const editorRooms = trackRoomMessages(editor);
   owner.on('pageerror', (error) => {
     process.stderr.write(`${error.message}\n`);
   });
@@ -278,6 +296,82 @@ try {
     await editorCaret.evaluate((node) => getComputedStyle(node).borderColor),
     await ownerCaret.evaluate((node) => getComputedStyle(node).borderColor),
   );
+
+  const viewerContext = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+    colorScheme: 'light',
+  });
+  const viewer = await viewerContext.newPage();
+  const viewerRooms = trackRoomMessages(viewer);
+  await signIn(viewer, fixture.viewer);
+  await viewer.goto(`${origin}${note}`);
+  await viewer.locator('[data-live-connection=Live]').waitFor();
+  const clients = [owner, editor, viewer];
+  await Promise.all(
+    clients.map(async (page) => {
+      await page
+        .getByRole('button', { name: /People in this note: .+, .+/ })
+        .waitFor();
+      await page.evaluate(() => {
+        const status = document.querySelector('[data-live-connection=Live]');
+        if (!status) throw new Error('The live status is missing.');
+        const record = (changes: MutationRecord[]) => {
+          if (
+            changes.some(({ oldValue }) => oldValue !== 'Live') ||
+            status.getAttribute('data-live-connection') !== 'Live'
+          )
+            document.documentElement.dataset.roomInterrupted = '';
+        };
+        new MutationObserver(record).observe(status, {
+          attributeFilter: ['data-live-connection'],
+          attributeOldValue: true,
+        });
+      });
+    }),
+  );
+  const rooms = [ownerRooms, editorRooms, viewerRooms];
+  for (const messages of rooms) messages.length = 0;
+  for (const [lead, peer, first, second] of [
+    [owner, editor, 'Owner starts a line.', ' Casey completes it.'],
+    [editor, owner, 'Casey starts a line.', ' Owner completes it.'],
+  ] as const) {
+    const leadText = lead.locator('.cm-content');
+    const peerText = peer.locator('.cm-content');
+    await leadText.press('Control+End');
+    await lead.keyboard.type(`\n${first}`);
+    await peerText.getByText(first).waitFor();
+    await peerText.press('Control+End');
+    await peer.keyboard.type(second);
+    await viewer.locator('.cm-content').getByText(second.trim()).waitFor();
+    await peerText.press('Control+s');
+    const saved = await waitForSavedHead(first + second);
+    for (const messages of rooms) assert.deepEqual(messages, []);
+    for (const page of clients) {
+      const content = page.locator('.cm-content');
+      await content.getByText(second.trim()).waitFor();
+      assert.equal(
+        await content.evaluate((node) =>
+          Array.from(node.querySelectorAll('.cm-line'), (line) => {
+            const copy = line.cloneNode(true);
+            if (!(copy instanceof HTMLElement))
+              throw new Error('Expected an editor line.');
+            for (const cursor of copy.querySelectorAll('.cm-ySelectionCaret'))
+              cursor.remove();
+            return copy.textContent;
+          }).join('\n'),
+        ),
+        saved,
+      );
+      assert.equal(await page.locator('[data-room-interrupted]').count(), 0);
+      await page
+        .getByRole('button', { name: /People in this note: .+, .+/ })
+        .waitFor();
+    }
+    for (const messages of rooms) assert.deepEqual(messages, []);
+  }
+  await viewerContext.close();
 
   await editorContext.setOffline(true);
   await editor.getByText(/Offline. Your edits merge/).waitFor();

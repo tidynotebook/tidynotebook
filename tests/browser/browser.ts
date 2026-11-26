@@ -64,6 +64,15 @@ export type Page = {
   on(event: 'pageerror', callback: (error: Error) => void): void;
   on(event: 'request', callback: (request: Request) => void): void;
   on(
+    event: 'websocket',
+    callback: (socket: {
+      on(
+        event: 'framesent',
+        listener: (frame: { payload: string | Uint8Array }) => void,
+      ): void;
+    }) => void,
+  ): void;
+  on(
     event: 'console',
     callback: (message: { type(): string; text(): string }) => void,
   ): void;

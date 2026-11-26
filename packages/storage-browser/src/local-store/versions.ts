@@ -101,7 +101,8 @@ export function createVersionsSlice(ctx: LocalStoreContext): VersionsSlice {
     epoch: number,
     update: Uint8Array,
   ): Promise<NoteDocument> => {
-    const row = await readStoredDocumentRow(tables, key);
+    // A peer can write against our live text before a checkpoint folds it.
+    const row = await readDocumentRow(tables, key);
     refuseOtherGeneration(row, epoch);
     if (row === null) {
       // Work of an editor that started its own document for a note that the
