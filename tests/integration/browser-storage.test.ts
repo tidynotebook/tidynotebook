@@ -33,6 +33,7 @@ import {
   type AcceptedRevision,
 } from '@notesapp/core';
 import {
+  createNote,
   isLocalStorageError,
   LocalStorageError,
   parkRefusedSave,
@@ -68,6 +69,7 @@ import {
   syncQueueOf,
   syncStateOfQueue,
 } from '../../apps/web/src/lib/sync-state.ts';
+import { recoverWorkspaceAccess } from '../../apps/web/src/lib/workspace-recovery.ts';
 
 const origin = 'https://notes.example.test';
 
@@ -136,6 +138,55 @@ function draftOf(
     ...extra,
   };
 }
+
+await test('workspace access recovery copies queued text before it clears the old partition', async () => {
+  const backend = createBackend('access-recovery');
+  const store = await openLocalStore(origin, backend.options());
+  try {
+    const accountId = randomUUID();
+    const old = {
+      workspaceId: randomUUID(),
+      name: 'Team',
+      role: 'editor',
+      personal: false,
+    } as const;
+    const personal = {
+      workspaceId: randomUUID(),
+      name: 'Personal',
+      role: 'owner',
+      personal: true,
+    } as const;
+    const fileId = randomUUID();
+    const draft = draftOf(
+      accountId,
+      old.workspaceId,
+      fileId,
+      randomUUID(),
+      'Unsent text',
+    );
+    await createNote(store, draft);
+    assert.equal(
+      await recoverWorkspaceAccess(store, accountId, old, [personal], true),
+      'Your unsent text is in Personal, in the folder From Team.',
+    );
+    assert.deepEqual(
+      await store.listLocalFiles(accountId, old.workspaceId),
+      [],
+    );
+    assert.deepEqual(
+      await store.workspaceAccessCopies(accountId, old.workspaceId),
+      [],
+    );
+    assert.deepEqual(
+      (await store.workspaceAccessCopies(accountId, personal.workspaceId)).map(
+        ({ path, text }) => ({ path, text }),
+      ),
+      [{ path: 'From Team/one.md', text: 'Unsent text' }],
+    );
+  } finally {
+    await store.close();
+  }
+});
 
 /** Accepts every revision of a queued mutation, as the server would. */
 function acceptanceOf(

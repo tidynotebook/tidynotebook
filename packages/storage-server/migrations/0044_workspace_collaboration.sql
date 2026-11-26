@@ -95,9 +95,20 @@ ALTER POLICY workspaces_update_policy ON public.workspaces
 ALTER POLICY publications_member_policy ON public.publications
   USING (public.notesapp_member_role(workspace_id) IN ('owner', 'admin'))
   WITH CHECK (public.notesapp_member_role(workspace_id) IN ('owner', 'admin')
-    AND owner_account_id = public.notesapp_workspace_owner(workspace_id));
+    AND EXISTS (SELECT 1 FROM public.memberships owner
+      WHERE owner.workspace_id = publications.workspace_id
+        AND owner.account_id = publications.owner_account_id
+        AND owner.role = 'owner'));
 --> statement-breakpoint
 GRANT SELECT, INSERT ON public.note_client_bindings, public.revision_contributors TO notesapp_app;
+--> statement-breakpoint
+CREATE TRIGGER note_client_bindings_locked_guard
+  BEFORE INSERT OR UPDATE OR DELETE ON public.note_client_bindings
+  FOR EACH ROW EXECUTE FUNCTION public.notesapp_guard_locked_write('workspace_id', 'workspace');
+--> statement-breakpoint
+CREATE TRIGGER revision_contributors_locked_guard
+  BEFORE INSERT OR UPDATE OR DELETE ON public.revision_contributors
+  FOR EACH ROW EXECUTE FUNCTION public.notesapp_guard_locked_write('workspace_id', 'workspace');
 --> statement-breakpoint
 CREATE FUNCTION public.notesapp_new_personal_workspace(p_account uuid, p_workspace uuid, p_name text)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public AS $$

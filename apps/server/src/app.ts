@@ -1302,6 +1302,7 @@ async function composeApp(
         // The streams stop first, while the stores that they release still
         // run.
         await gateway.close();
+        await liveCluster.close();
         clearInterval(cleanupTimer);
         await auth.close();
         await authPool.end();

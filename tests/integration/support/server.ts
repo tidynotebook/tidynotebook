@@ -69,7 +69,33 @@ export const stubProtocol: ProtocolAdapter = {
 
 /** Adds deterministic account handlers to a server that has no identity store. */
 export function completeTestHandlers(handlers: HandlerMap): HandlerMap {
+  const collaborationUnavailable: NonNullable<
+    HandlerMap['listWorkspaceMembers']
+  > = (request) =>
+    Promise.resolve({
+      status: 403,
+      mediaType: problemMediaType,
+      body: createProblem({
+        code: 'forbidden',
+        status: 403,
+        detail: 'This test server has no collaboration store.',
+        instance: request.url.split('?')[0] ?? request.url,
+        requestId: request.id,
+      }),
+    });
   return {
+    acceptWorkspaceInvite: collaborationUnavailable,
+    createWorkspaceInvites: collaborationUnavailable,
+    declineWorkspaceInvite: collaborationUnavailable,
+    leaveWorkspace: collaborationUnavailable,
+    listMyWorkspaceInvites: collaborationUnavailable,
+    listWorkspaceInvites: collaborationUnavailable,
+    listWorkspaceMembers: collaborationUnavailable,
+    readWorkspaceInvite: collaborationUnavailable,
+    readWorkspaceInviteLink: collaborationUnavailable,
+    removeWorkspaceMember: collaborationUnavailable,
+    revokeWorkspaceInvite: collaborationUnavailable,
+    updateWorkspaceMemberRole: collaborationUnavailable,
     ...handlers,
     getSetupStatus: () =>
       Promise.resolve({

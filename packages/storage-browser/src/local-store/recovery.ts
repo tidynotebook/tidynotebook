@@ -523,7 +523,7 @@ export function createRecoverySlice(ctx: LocalStoreContext): RecoverySlice {
   return {
     workspaceAccessCopies(accountId, workspaceId) {
       return guard('reading work after workspace access changed', () =>
-        db.transaction('r', privateTables(tables), () =>
+        db.transaction('r', privateTables(tables), async () =>
           accessCopies(accountId, workspaceId),
         ),
       );
