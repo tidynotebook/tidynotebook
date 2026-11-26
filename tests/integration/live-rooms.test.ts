@@ -27,6 +27,7 @@ import {
   changeset,
   createDisposableDatabase,
   memberActor,
+  openSession,
   revision,
   seedWorkspace,
 } from './support/database.ts';
@@ -230,6 +231,29 @@ try {
       owner.output.slice(before).find((frame) => frame['kind'] === 'noteSync'),
       undefined,
     );
+    assert.equal(
+      await identity.collaboration(actor, workspaceId, (tx) =>
+        tx.changeMember(viewerId, 'editor', false),
+      ),
+      'ok',
+    );
+    await first.recheck(viewer);
+    assert.ok(
+      viewer.output.some(
+        (frame) =>
+          frame['kind'] === 'noteAccess' && frame['access'] === 'editor',
+      ),
+    );
+    const database = await openSession(db.migrationUrl);
+    try {
+      const binding = await database.query<{ can_write: boolean }>(
+        'select can_write from note_client_bindings where workspace_id = $1 and file_id = $2 and client_id = $3',
+        [workspaceId, fileId, viewerRoom.clientId],
+      );
+      assert.equal(binding[0]?.can_write, true);
+    } finally {
+      await database.close();
+    }
     assert.equal(
       await identity.collaboration(actor, workspaceId, (tx) =>
         tx.changeMember(editorId, null, false),

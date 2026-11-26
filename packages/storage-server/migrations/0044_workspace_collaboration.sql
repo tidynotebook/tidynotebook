@@ -685,6 +685,9 @@ BEGIN
 	DELETE FROM public.note_documents
 	WHERE workspace_id = p_workspace_id AND file_id = ANY(p_file_ids);
 
+	DELETE FROM public.note_client_bindings
+	WHERE workspace_id = p_workspace_id AND file_id = ANY(p_file_ids);
+
 	DELETE FROM public.files
 	WHERE workspace_id = p_workspace_id AND id = ANY(p_file_ids);
 
@@ -765,7 +768,10 @@ BEGIN
   ) THEN RETURN false; END IF;
   INSERT INTO public.note_client_bindings (workspace_id, file_id, epoch, client_id, account_id, can_write)
     VALUES (p_workspace, p_file, p_epoch, p_client, caller, caller_role <> 'viewer' AND public.notesapp_workspace_writable(p_workspace))
-    ON CONFLICT DO NOTHING;
+    ON CONFLICT (workspace_id, file_id, epoch, client_id) DO UPDATE
+    SET can_write = true
+    WHERE public.note_client_bindings.account_id = caller
+      AND NOT public.note_client_bindings.can_write AND excluded.can_write;
   SELECT * INTO binding FROM public.note_client_bindings
     WHERE workspace_id = p_workspace AND file_id = p_file AND epoch = p_epoch AND client_id = p_client;
   RETURN binding.account_id = caller;

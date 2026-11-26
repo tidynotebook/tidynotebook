@@ -16,7 +16,7 @@ import { firstSave } from '../integration/support/documents.ts';
 
 /** The disposable installation needs the owner account before the audit. */
 export async function collaborationFixture(origin: string) {
-  configureClient(origin);
+  configureClient(origin, undefined);
   const owner = 'owner@example.com';
   const editor = 'editor@example.com';
   const viewer = 'viewer@example.com';
@@ -28,7 +28,7 @@ export async function collaborationFixture(origin: string) {
       headers: { origin },
       body: { email, password },
     });
-    if (result.data === undefined) return null;
+    if (result.data === undefined || result.response === undefined) return null;
     const cookie = result.response.headers
       .getSetCookie()
       .map((entry) => entry.split(';')[0])
@@ -36,8 +36,9 @@ export async function collaborationFixture(origin: string) {
     return { origin, cookie };
   }
 
-  const headers = await signInHeaders(owner);
-  assert.ok(headers, 'Bootstrap the disposable owner account first.');
+  const ownerHeaders = await signInHeaders(owner);
+  assert.ok(ownerHeaders, 'Bootstrap the disposable owner account first.');
+  const headers = ownerHeaders;
   const workspace = await createWorkspace({
     headers,
     body: { name: 'Collaboration check' },

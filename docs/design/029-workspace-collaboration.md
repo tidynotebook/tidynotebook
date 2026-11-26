@@ -233,7 +233,8 @@ count. Bound refreshes and expire stale state.
 
 A person's local change can depend on text that a peer shared before their
 checkpoint reached durable storage. Store the write permission at the time
-of the client ID binding. During checkpoint acceptance, attribute new
+of the client ID binding. When a viewer becomes an editor, confirm the same
+account's binding again before it can send edits. During checkpoint acceptance, attribute new
 insertions to the account of their binding. Refuse new structs with a
 view-only binding and keep the work for design 013 recovery. Claim unbound
 new client IDs for the checkpoint actor under the workspace lock. Apply the

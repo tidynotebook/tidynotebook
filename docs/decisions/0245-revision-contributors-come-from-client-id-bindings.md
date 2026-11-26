@@ -12,7 +12,8 @@ identifies the affected structures.
 ## Decision
 
 Bind the room client ID to the verified account for the note and epoch.
-Store whether it could write at bind time. At checkpoint acceptance, credit
+Store whether it could write at bind time. Check the binding again for the
+same account when a viewer becomes an editor. At checkpoint acceptance, credit
 new insertions to the accounts with write bindings. Claim unbound IDs for
 the checkpoint actor under the workspace lock. Refuse new structs from a
 view-only binding and use the recovery rules in design 013. Use the normal

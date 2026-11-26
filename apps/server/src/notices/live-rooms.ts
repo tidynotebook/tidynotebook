@@ -299,6 +299,15 @@ export function createLiveRooms(input: {
     }
     const role = current.writable ? current.role : 'viewer';
     if (peer.role !== role) {
+      if (
+        peer.role === 'viewer' &&
+        role !== 'viewer' &&
+        !(await read(peer.connection, peer, true))
+      ) {
+        stop(peer.connection, peer.roomId, 'client_id_conflict');
+        removePeer(peer);
+        return null;
+      }
       peer.role = role;
       peer.connection.emit({
         kind: 'noteAccess',
