@@ -283,7 +283,7 @@ try {
     )
     .waitFor();
   await editor.goto(`${origin}/w/${fixture.editorPersonalId}`);
-  await editor.getByText('Launch plan', { exact: true }).last().click();
+  await editor.getByRole('link', { name: /^Launch plan · From/ }).click();
   await editorText
     .getByText('Keep this unsent text', { exact: true })
     .waitFor();
@@ -314,7 +314,7 @@ try {
     .waitFor();
   await screenshot(editor, 'access-removed-desktop-dark');
   await editor.goto(`${origin}/w/${fixture.editorPersonalId}`);
-  await editor.getByText('Launch plan 2', { exact: true }).last().click();
+  await editor.getByRole('link', { name: /^Launch plan 2 · From/ }).click();
   await editorText
     .getByText('Keep this text after removal', { exact: true })
     .waitFor();

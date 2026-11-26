@@ -1299,6 +1299,7 @@ await test('the sidebar has the three groups, the workspace name and no Sign out
     'API keys',
     'Appearance and editor',
     'Offline',
+    'Members',
     'Daily notes',
     'Templates',
     'Export and import',

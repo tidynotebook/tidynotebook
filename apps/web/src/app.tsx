@@ -1,4 +1,3 @@
-import { recoverWorkspaceAccess } from './lib/workspace-recovery.ts';
 /**
  * Application composition of the notesapp web client.
  *
@@ -19,11 +18,8 @@ import {
   type ReactNode,
 } from 'react';
 import {
-  connectSyncNotices,
   getAccount,
-  getSyncProtocol,
   listWorkspaces,
-  syncNoticesProtocol,
   updatePreferences,
   type Account,
   type Preferences,
@@ -334,14 +330,6 @@ function browserChannel(name: string): TabChannel {
   };
 }
 
-/** Whether this server offers the notice stream now (record 0130). */
-async function noticesOffered(): Promise<boolean> {
-  const answer = await getSyncProtocol();
-  // A server that predates the member, and one that offers another
-  // subprotocol, leave this tab on its poll interval.
-  return answer.data?.liveNotificationProtocol === syncNoticesProtocol;
-}
-
 /**
  * Runs the notices of this tab for one account (record 0130).
  *
@@ -360,14 +348,21 @@ function useTabNotices(
       setNotices(null);
       return;
     }
+    let transport: typeof import('./lib/notice-transport.ts') | undefined;
     const tab = startTabNotices({
       store,
       accountId,
       tabId: syncSession.ownerId,
       channel: browserChannel,
-      offered: noticesOffered,
-      connect: (handlers) =>
-        connectSyncNotices(window.location.origin, handlers),
+      offered: async () => {
+        transport ??= await import('./lib/notice-transport.ts');
+        return transport.noticesOffered();
+      },
+      connect: (handlers) => {
+        if (transport === undefined)
+          throw new Error('The notice transport did not load.');
+        return transport.connectSyncNotices(window.location.origin, handlers);
+      },
       schedule: timerSchedule,
       clock: Date.now,
       random: Math.random,
@@ -863,6 +858,9 @@ function useWorkspaceLoader(
       if (changes.length > 0 && store !== null && workspaces !== null) {
         const available = workspaces;
         try {
+          const { recoverWorkspaceAccess } =
+            await import('./lib/workspace-recovery.ts');
+          if (cancelled) return;
           for (const old of changes) {
             const removed = !available.some(
               (space) => space.workspaceId === old.workspaceId,

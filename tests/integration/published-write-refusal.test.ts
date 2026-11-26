@@ -250,6 +250,7 @@ const protocolWrites = [
 const setupWrites = [
   'createOwner',
   'readInvitation',
+  'readWorkspaceInvite',
   'registerAccount',
   'signUpAccount',
   'verifyAddress',

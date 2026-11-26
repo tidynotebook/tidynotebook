@@ -38,6 +38,9 @@ an existing grant that can publish today can continue to publish for an owner
 or admin. A viewer's write grant has no write effect. Membership and
 invitation management uses a browser session.
 
+Owners and admins can manage the workspace's published links. Attribute
+each link to the workspace owner for the existing transfer limits.
+
 Enforce the owner count in the database. Use the workspace write lock for
 membership changes and note acceptance. Use a consistent lock order for
 all affected accounts and workspaces to serialize last-workspace checks.

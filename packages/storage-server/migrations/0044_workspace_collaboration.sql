@@ -101,7 +101,11 @@ ALTER POLICY workspaces_update_policy ON public.workspaces
   WITH CHECK (public.notesapp_member_role(id) IN ('owner', 'admin'));
 --> statement-breakpoint
 ALTER POLICY publications_member_policy ON public.publications
-  USING (public.notesapp_member_role(workspace_id) IN ('owner', 'admin'))
+  USING (public.notesapp_member_role(workspace_id) IN ('owner', 'admin')
+    AND EXISTS (SELECT 1 FROM public.memberships owner
+      WHERE owner.workspace_id = publications.workspace_id
+        AND owner.account_id = publications.owner_account_id
+        AND owner.role = 'owner'))
   WITH CHECK (public.notesapp_member_role(workspace_id) IN ('owner', 'admin')
     AND EXISTS (SELECT 1 FROM public.memberships owner
       WHERE owner.workspace_id = publications.workspace_id

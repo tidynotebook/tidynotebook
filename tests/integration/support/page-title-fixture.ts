@@ -160,3 +160,6 @@ export const versionRead = Promise.withResolvers<{ data: { text: string } }>();
 export async function getRevision() {
   return versionRead.promise;
 }
+export function useWorkspaceRole(): 'owner' {
+  return 'owner';
+}

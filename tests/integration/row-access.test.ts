@@ -252,10 +252,7 @@ await test('non members and anonymous readers: shows nothing without an identity
   }
 });
 
-await test('a published link belongs to the account that made it', async () => {
-  // The policy of a link needs the membership and the owner account, so a
-  // second account of the same workspace still reads none of its links. The
-  // product serves one account today, so the row is written by hand here.
+await test('a workspace manager cannot read or create a link under a different account', async () => {
   const foreign = randomUUID();
   const owner = await openSession(database.migrationUrl);
   try {
@@ -820,14 +817,12 @@ await test('the owner guard keeps a workspace with an owner', async () => {
       [guarded, soleOwner],
     );
     assert.equal(removed.code, '23514');
-    // `owner` is the only value of the role enum, so a demotion is not
-    // expressible at all. The database refuses the value itself.
     const demoted = await setup.failure(
       `update memberships set role = 'viewer'
         where workspace_id = $1 and account_id = $2`,
       [guarded, soleOwner],
     );
-    assert.equal(demoted.code, '22P02');
+    assert.equal(demoted.code, '23514');
   } finally {
     await setup.close();
   }

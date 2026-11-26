@@ -630,6 +630,7 @@ await test('a commit on one instance wakes a stream on the other', async () => {
   assert.deepEqual(await stream.waitFor((m) => m.kind === 'ready'), {
     kind: 'ready',
     accountId,
+    liveNotes: true,
   });
   stream.send({
     kind: 'subscribe',
