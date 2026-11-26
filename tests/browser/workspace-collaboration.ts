@@ -192,6 +192,12 @@ try {
       await page.getByRole('button', { name: /Workspace: / }).click();
       await page.getByText('Rename workspace', { exact: true }).waitFor();
       await screenshot(page, `switcher-${layout}-${scheme}`);
+      await page.getByText('Delete permanently', { exact: true }).click();
+      await page
+        .getByRole('dialog', { name: 'Delete workspace permanently' })
+        .getByText(/2 other members will lose access/)
+        .waitFor();
+      await screenshot(page, `delete-workspace-${layout}-${scheme}`);
       if (phone) {
         await page.goto(`${origin}${note}`);
         await page

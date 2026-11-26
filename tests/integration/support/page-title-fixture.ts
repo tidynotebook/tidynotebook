@@ -163,3 +163,7 @@ export async function getRevision() {
 export function useWorkspaceRole(): 'owner' {
   return 'owner';
 }
+
+export function useTabNoticeStream(): null {
+  return null;
+}
