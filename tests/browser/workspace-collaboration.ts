@@ -248,6 +248,12 @@ try {
         await page.getByRole('button', { name: 'Open navigation' }).click();
       await page.getByRole('button', { name: /Workspace: / }).click();
       await page.getByText('Rename workspace', { exact: true }).waitFor();
+      await page
+        .getByRole('menuitemradio', {
+          name: 'Collaboration check Owner · 3',
+          exact: true,
+        })
+        .waitFor();
       await screenshot(page, `switcher-${layout}-${scheme}`);
       await page.getByText('Delete permanently', { exact: true }).click();
       await page

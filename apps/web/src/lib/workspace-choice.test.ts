@@ -99,9 +99,9 @@ await test('a cached value that is not a workspace list answers nothing', () => 
     assert.deepEqual(parseCachedWorkspaces(source), [], String(source));
 });
 
-await test('cached lists retain each shared workspace role', () => {
+await test('cached lists retain each shared workspace role and member count', () => {
   for (const role of ['admin', 'editor', 'viewer']) {
-    const shared = { ...work, role };
+    const shared = { ...work, role, memberCount: 3 };
     assert.deepEqual(parseCachedWorkspaces(JSON.stringify([shared])), [shared]);
   }
 });
