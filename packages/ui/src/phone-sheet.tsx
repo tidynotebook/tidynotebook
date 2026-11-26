@@ -28,9 +28,7 @@ export function PhoneSheetHeader({
       padX={4}
       className="ui-sheet-header touch-pan-x touch-pinch-zoom"
     >
-      <HeaderSlot side="leading" targetWidth>
-        {leading}
-      </HeaderSlot>
+      <HeaderSlot side="leading">{leading}</HeaderSlot>
       <HeaderTitle>
         <h2
           id={titleId}

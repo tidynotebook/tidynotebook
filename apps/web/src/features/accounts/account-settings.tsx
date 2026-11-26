@@ -1389,17 +1389,13 @@ export function SettingsModal({
                     ref={setActionHeaderTarget}
                     className="flex shrink-0 items-center empty:hidden"
                   />
-                  <HeaderSlot targetWidth>
-                    <Inline justify="end" className="w-full">
-                      <HeaderSlot side="trailing">
-                        <IconButton
-                          size="header"
-                          glyph={<CloseIcon />}
-                          label="Close Settings"
-                          onClick={closeSettings}
-                        />
-                      </HeaderSlot>
-                    </Inline>
+                  <HeaderSlot side="trailing" targetWidth>
+                    <IconButton
+                      size="header"
+                      glyph={<CloseIcon />}
+                      label="Close Settings"
+                      onClick={closeSettings}
+                    />
                   </HeaderSlot>
                 </Inline>
               </ContentHeader>

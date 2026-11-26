@@ -347,16 +347,59 @@ export async function auditComposition(page: Page) {
         1,
         0,
       );
-      const glyph = close.querySelector('svg'),
-        header = close.closest('header');
-      if (glyph && header)
+      const closeGlyph = close.querySelector('svg');
+      const header = close.closest('header');
+      if (!coarse || header === null) continue;
+
+      for (const target of [
+        ...header.querySelectorAll('button,a[href]'),
+      ].filter(visible)) {
+        const targetBox = target.getBoundingClientRect();
+        check(
+          target,
+          'header target past left viewport edge',
+          Math.min(0, targetBox.left),
+          0,
+        );
+        check(
+          target,
+          'header target past right viewport edge',
+          Math.max(0, targetBox.right - innerWidth),
+          0,
+        );
+        check(
+          target,
+          'header target past top viewport edge',
+          Math.min(0, targetBox.top),
+          0,
+        );
+        check(
+          target,
+          'header target past bottom viewport edge',
+          Math.max(0, targetBox.bottom - innerHeight),
+          0,
+        );
+      }
+
+      const leading = header.querySelector('[data-header-slot="leading"]');
+      const leadingGlyph = leading?.querySelector('svg');
+      const headerBox = header.getBoundingClientRect();
+      const slot = leading?.getBoundingClientRect();
+      const glyph = closeGlyph?.getBoundingClientRect();
+      check(close, 'sheet header has glyph slots', slot && glyph ? 1 : 0, 1, 0);
+      if (slot && glyph) {
+        // A sheet with no Back keeps its leading glyph slot empty.
+        const left =
+          leadingGlyph && visible(leadingGlyph)
+            ? leadingGlyph.getBoundingClientRect().left
+            : slot.left + (slot.width - glyph.width) / 2;
         check(
           close,
-          'right Close glyph edge',
-          glyph.getBoundingClientRect().right,
-          header.getBoundingClientRect().right -
-            parseFloat(getComputedStyle(header).paddingRight),
+          'sheet header glyph insets match',
+          headerBox.right - glyph.right,
+          left - headerBox.left,
         );
+      }
     }
     for (const dialog of [
       ...document.querySelectorAll('[data-dialog-inset]'),

@@ -192,6 +192,19 @@ export async function runCollaborationAudit(
           .waitFor();
         await check(owner, 'join-wrong-account');
 
+        if (phone) {
+          for (const [path, heading] of [
+            ['accounts', 'Users'],
+            ['daily-notes', 'Daily notes'],
+          ] as const) {
+            await owner.goto(`${home}?settings=${path}`);
+            await owner
+              .getByRole('heading', { name: heading, exact: true })
+              .waitFor();
+            await check(owner, `settings-${path}`);
+          }
+        }
+
         let emptyInvites = false;
         await ownerContext.route(
           `**/api/workspaces/${fixture.workspaceId}/invitations`,
@@ -269,6 +282,11 @@ export async function runCollaborationAudit(
               .click();
           await page.getByRole('button', { name: /Workspace: / }).click();
         }
+        await owner.goto(home);
+        await switcher(owner);
+        await owner.getByText('Rename workspace', { exact: true }).click();
+        await owner.getByRole('dialog', { name: 'Rename workspace' }).waitFor();
+        await check(owner, 'rename-confirmation');
         await owner.goto(home);
         await switcher(owner);
         await owner.getByText('Delete permanently', { exact: true }).click();
