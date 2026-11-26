@@ -756,6 +756,8 @@ function useWorkspaceLoader(
   const [recoveryNotice, setRecoveryNotice] =
     useState<WorkspaceRecoveryNotice | null>(null);
   const dismissRecoveryNotice = useCallback(() => setRecoveryNotice(null), []);
+  const recoveryAccount = useRef<string | null>(null);
+  recoveryAccount.current = status === 'signed-in' ? accountId : null;
   const recoveryBaseline = useRef<{
     readonly accountId: string;
     readonly workspaces: readonly Workspace[];
@@ -848,21 +850,23 @@ function useWorkspaceLoader(
         });
         if (changes.length === 0) rememberAccess(workspaces);
       }
-      const recoverWorkspaceAccess =
-        changes.length > 0 && store !== null
-          ? (await import('./lib/workspace-recovery.ts')).recoverWorkspaceAccess
-          : null;
+      const needsRecovery =
+        changes.length > 0 && store !== null && workspaces !== null;
+      const recoveryModule = needsRecovery
+        ? await import('./lib/workspace-recovery.ts').catch(() => null)
+        : null;
       if (cancelled) return;
+      const available = workspaces;
       const recovery =
-        store === null || workspaces === null || recoverWorkspaceAccess === null
+        store === null || available === null || recoveryModule === null
           ? []
           : changes.map((old) =>
-              recoverWorkspaceAccess(
+              recoveryModule.recoverWorkspaceAccess(
                 store,
                 activeAccount,
                 old,
-                workspaces,
-                !workspaces.some(
+                available,
+                !available.some(
                   (space) => space.workspaceId === old.workspaceId,
                 ),
               ),
@@ -882,19 +886,27 @@ function useWorkspaceLoader(
           failure === null ? 'server' : 'fallback',
         );
       });
-      if (recovery.length > 0 && workspaces !== null) {
+      if (needsRecovery) {
         const results = await Promise.allSettled(recovery);
-        if (cancelled) return;
-        for (const result of results) {
-          if (result.status === 'rejected')
-            setRecoveryNotice({
-              message:
-                'Your unsent text is safe on this device. Recovery will try again after sync.',
-            });
-          else if (result.value !== null) setRecoveryNotice(result.value);
-        }
-        if (results.every((result) => result.status === 'fulfilled'))
-          rememberAccess(workspaces);
+        if (recoveryAccount.current !== activeAccount) return;
+        if (
+          recoveryModule === null ||
+          results.some((result) => result.status === 'rejected')
+        )
+          setRecoveryNotice({
+            message:
+              'Your unsent text is safe on this device. Recovery will try again after sync.',
+          });
+        for (const result of results)
+          if (result.status === 'fulfilled' && result.value !== null)
+            setRecoveryNotice(result.value);
+        if (
+          !cancelled &&
+          available !== null &&
+          recoveryModule !== null &&
+          results.every((result) => result.status === 'fulfilled')
+        )
+          rememberAccess(available);
       }
     }
     void load();
