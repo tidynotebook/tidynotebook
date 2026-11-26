@@ -146,9 +146,10 @@ try {
     .getByLabel('Email addresses')
     .fill('a@example.com, bad@, also bad');
   await owner.getByRole('button', { name: 'Send invite', exact: true }).click();
-  await owner
-    .getByText('“bad@” is not a valid email address.', { exact: true })
-    .waitFor();
+  for (const address of ['bad@', 'also', 'bad'])
+    await owner
+      .getByText(`“${address}” is not a valid email address.`)
+      .waitFor();
   assert.equal(
     await owner.getByLabel('Email addresses').getAttribute('aria-invalid'),
     'true',
