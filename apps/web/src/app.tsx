@@ -753,6 +753,10 @@ function useWorkspaceLoader(
   });
   const [retryGeneration, setRetryGeneration] = useState(0);
   const [recoveryNotice, setRecoveryNotice] = useState<string | null>(null);
+  const recoveryBaseline = useRef<{
+    readonly accountId: string;
+    readonly workspaces: readonly Workspace[];
+  } | null>(null);
   // A local server-confirmed mutation makes an earlier list request stale.
   const mutation = useRef<{ readonly accountId: string | null }>({
     accountId: null,
@@ -765,6 +769,7 @@ function useWorkspaceLoader(
   useEffect(() => {
     if (status !== 'signed-in' || accountId === null) {
       mutation.current = { accountId: null };
+      recoveryBaseline.current = null;
       setRecoveryNotice(null);
       setSnapshot({
         accountId: null,
@@ -776,6 +781,10 @@ function useWorkspaceLoader(
     const activeAccount = accountId;
     let cancelled = false;
 
+    const rememberAccess = (workspaces: readonly Workspace[]): void => {
+      recoveryBaseline.current = { accountId: activeAccount, workspaces };
+      writeStored(workspaceListKey(activeAccount), JSON.stringify(workspaces));
+    };
     if (mutation.current.accountId !== activeAccount)
       mutation.current = { accountId: activeAccount };
     const requestedMutation = mutation.current;
@@ -818,9 +827,13 @@ function useWorkspaceLoader(
         failure = problemMessage(result.error);
       } else {
         workspaces = result.data.workspaces;
-        const previous = parseCachedWorkspaces(
-          readStored(workspaceListKey(activeAccount)),
-        );
+        // Another tab can finish recovery while this tab still has an open draft.
+        const previous =
+          recoveryBaseline.current?.accountId === activeAccount
+            ? recoveryBaseline.current.workspaces
+            : parseCachedWorkspaces(
+                readStored(workspaceListKey(activeAccount)),
+              );
         changes = previous.filter((old) => {
           const current = result.data?.workspaces.find(
             (entry) => entry.workspaceId === old.workspaceId,
@@ -830,11 +843,7 @@ function useWorkspaceLoader(
             (current.role === 'viewer' && old.role !== 'viewer')
           );
         });
-        if (changes.length === 0)
-          writeStored(
-            workspaceListKey(activeAccount),
-            JSON.stringify(workspaces),
-          );
+        if (changes.length === 0) rememberAccess(workspaces);
       }
       // Keep completion numbers across loading, failures and repeated reads.
       setSnapshot((current) => {
@@ -867,11 +876,7 @@ function useWorkspaceLoader(
             );
             if (message !== null && !cancelled) setRecoveryNotice(message);
           }
-          if (!cancelled)
-            writeStored(
-              workspaceListKey(activeAccount),
-              JSON.stringify(available),
-            );
+          if (!cancelled) rememberAccess(available);
         } catch {
           if (!cancelled)
             setRecoveryNotice(

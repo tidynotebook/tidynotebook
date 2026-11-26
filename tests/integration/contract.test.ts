@@ -500,6 +500,7 @@ const openOperations = [
   // The two operations of an invitation take its token and no session, so an
   // invited person reaches them before the account exists (record 0108).
   'readInvitation',
+  'readWorkspaceInvite',
   'registerAccount',
   // Open registration takes an address and a password, and its link takes
   // its token, before any account exists (record 0114).

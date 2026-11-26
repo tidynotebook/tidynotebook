@@ -35,10 +35,12 @@ export function recoverWorkspaceAccess(
   const scope = `${accountId}:${old.workspaceId}`;
   const running = pending.get(scope);
   if (running !== undefined) return running;
+  const flushResults = Promise.allSettled(
+    [...(flushes.get(old.workspaceId) ?? [])].map((flush) => flush()),
+  );
   async function recover(): Promise<string | null> {
-    await Promise.all(
-      [...(flushes.get(old.workspaceId) ?? [])].map((flush) => flush()),
-    );
+    for (const result of await flushResults)
+      if (result.status === 'rejected') throw result.reason;
     let destination =
       remaining.find((space) => space.personal && space.role !== 'viewer') ??
       remaining.find((space) => space.role !== 'viewer');

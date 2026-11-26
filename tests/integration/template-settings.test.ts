@@ -184,15 +184,13 @@ await test('a folder that names no folder is refused and nothing changes', async
   assert.deepEqual(await settingsNow(), before);
 });
 
-// The rest of this file reads the database guarantees on a workspace of two
-// members, which the first run of the product cannot make through a screen.
 const alice = randomUUID();
 const bob = randomUUID();
 const shared = randomUUID();
 const spare = randomUUID();
 await seedWorkspace(database, shared, [
   { accountId: alice, role: 'owner' },
-  { accountId: bob, role: 'owner' },
+  { accountId: bob, role: 'editor' },
 ]);
 // Alice keeps a second workspace, so she may delete the shared one.
 await seedWorkspace(database, spare, [{ accountId: alice, role: 'owner' }]);
@@ -273,15 +271,15 @@ await test('a member who leaves takes their settings, and the workspace takes th
   assert.equal(stored.ok, true, JSON.stringify(stored));
   assert.deepEqual(await rowsOf(shared), [alice, bob].sort());
 
-  const owner = await openSession(database.migrationUrl);
-  try {
-    await owner.query(
-      'delete from memberships where workspace_id = $1 and account_id = $2',
-      [shared, bob],
-    );
-  } finally {
-    await owner.close();
-  }
+  await seedWorkspace(database, randomUUID(), [
+    { accountId: bob, role: 'owner' },
+  ]);
+  assert.equal(
+    await identity.collaboration(bobActor, shared, (tx) =>
+      tx.changeMember(bob, null, true),
+    ),
+    'ok',
+  );
   assert.deepEqual(await rowsOf(shared), [alice]);
 
   const removed = await deleteWorkspace(identity, aliceActor, shared);

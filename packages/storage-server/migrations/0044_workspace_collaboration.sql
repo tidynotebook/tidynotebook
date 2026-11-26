@@ -55,7 +55,7 @@ DECLARE
     'workspace_usage', 'workspace_cursors', 'files', 'live_paths', 'contents',
     'revisions', 'revision_parents', 'changesets', 'purge_markers',
     'sync_changes', 'search_index', 'attachment_objects', 'note_documents',
-    'note_links', 'daily_note_settings', 'template_settings',
+    'note_links',
     'note_client_bindings', 'revision_contributors'
   ];
   name text;
@@ -76,6 +76,14 @@ BEGIN
       name);
   END LOOP;
 END $$;
+--> statement-breakpoint
+ALTER POLICY daily_note_settings_member_policy ON public.daily_note_settings
+  WITH CHECK (account_id = public.notesapp_current_account()
+    AND public.notesapp_member_role(workspace_id) IN ('owner', 'admin', 'editor'));
+--> statement-breakpoint
+ALTER POLICY template_settings_member_policy ON public.template_settings
+  WITH CHECK (account_id = public.notesapp_current_account()
+    AND public.notesapp_member_role(workspace_id) IN ('owner', 'admin', 'editor'));
 --> statement-breakpoint
 REVOKE INSERT, UPDATE, DELETE ON public.memberships FROM notesapp_app;
 --> statement-breakpoint

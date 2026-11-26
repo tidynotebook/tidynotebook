@@ -76,6 +76,22 @@ code or addresses. The settings of your browser choose the languages. This
 choice belongs to your account. Old links to the Spelling page open
 **Appearance and editor**. See [Spelling](spelling.md).
 
+## Members
+
+Open **Settings**, then **Workspace > Members**. You can see who has access
+and which role each person has.
+
+The owner and admins can invite people, change roles, and remove members.
+Select **Invite people**, enter up to 20 email addresses, and choose a role.
+An invitation expires after seven days. Copy its link from the pending list
+if you need to send it again or if email delivery is unavailable. The
+recipient must sign in with the invited address or create an account from the
+link. A signed-in recipient can also accept or decline in the workspace menu.
+
+Editors can edit notes and restore them. Viewers can read notes and version
+history. The owner can delete the workspace. Other members can leave from
+the workspace menu if they have another workspace.
+
 ## Daily notes
 
 These settings apply to the workspace that you have open, and they follow you
