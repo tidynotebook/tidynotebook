@@ -69,11 +69,6 @@ import {
 import { useDeleteNotice } from '../features/trash/trash.tsx';
 import { deleteNotes } from '../features/editor/note-delete.ts';
 import { applyMoves } from '../features/folders/apply-moves.ts';
-import {
-  downloadNote,
-  transferFailureMessage,
-} from '../features/export/export.ts';
-import { duplicateNote } from '../features/notes/duplicate-note.ts';
 import { actionIcon } from './action-icons.tsx';
 import { useFiles, type OpenFoldersControl } from './files.tsx';
 import { useContentRowWindow } from './content-row-window.ts';
@@ -698,6 +693,8 @@ export function NoteTree({
         }
         let fileId: string;
         try {
+          const { duplicateNote } =
+            await import('../features/notes/duplicate-note.ts');
           fileId = await duplicateNote(activeStore, {
             accountId,
             workspaceId,
@@ -774,13 +771,21 @@ export function NoteTree({
           return;
         case 'export':
           if (first.kind !== 'note') return;
-          void downloadNote(workspaceId, first.fileId).catch(
-            (failure: unknown) => {
+          void import('../features/export/export.ts').then(
+            ({ downloadNote, transferFailureMessage }) =>
+              downloadNote(workspaceId, first.fileId).catch(
+                (failure: unknown) => {
+                  setMessage({
+                    tone: 'problem',
+                    text: transferFailureMessage(failure),
+                  });
+                },
+              ),
+            () =>
               setMessage({
                 tone: 'problem',
-                text: transferFailureMessage(failure),
-              });
-            },
+                text: 'The download could not start. Try again.',
+              }),
           );
           return;
         case 'new-note':

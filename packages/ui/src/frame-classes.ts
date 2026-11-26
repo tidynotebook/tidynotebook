@@ -7,7 +7,8 @@ import { pageGutter } from './public-layout.ts';
 export function noteColumnClassName(row = false): string {
   return `self-center flex w-full max-w-note ${row ? '' : 'flex-col gap-1'}`;
 }
-export const noteColumnInset = 'px-2 fine:px-6';
+export const noteColumnInset = 'px-2 fine:px-4';
+export const noteColumnFineInset = 'fine:px-1';
 export function noteScreenClassName(): string {
   return 'flex overflow-hidden min-w-0 flex-1 flex-col';
 }

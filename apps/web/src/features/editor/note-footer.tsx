@@ -1,4 +1,9 @@
-import { Inline, observeElementScrollEdges } from '@notesapp/ui';
+import {
+  Inline,
+  Stack,
+  noteColumnFineInset,
+  observeElementScrollEdges,
+} from '@notesapp/ui';
 /**
  * The quiet footer of the note screen.
  *
@@ -77,22 +82,24 @@ export function NoteFooter({
   );
   return (
     <footer data-scroll-edge="below" className={noteFooterClassName(typing)}>
-      <Inline gap={3} wrap className={noteColumnClassName(true)}>
-        <span className="shrink-0">
-          {count === undefined
-            ? ''
-            : count === null
-              ? 'Word count unavailable'
-              : `${String(count)} ${count === 1 ? 'word' : 'words'}`}
-        </span>
-        {live === undefined ? null : (
-          <NoteLiveStatus
-            note={live}
-            enabled={liveEnabled}
-            changedToViewer={changedToViewer}
-          />
-        )}
-      </Inline>
+      <Stack className={noteColumnFineInset}>
+        <Inline gap={3} wrap className={noteColumnClassName(true)}>
+          <span className="shrink-0">
+            {count === undefined
+              ? ''
+              : count === null
+                ? 'Word count unavailable'
+                : `${String(count)} ${count === 1 ? 'word' : 'words'}`}
+          </span>
+          {live === undefined ? null : (
+            <NoteLiveStatus
+              note={live}
+              enabled={liveEnabled}
+              changedToViewer={changedToViewer}
+            />
+          )}
+        </Inline>
+      </Stack>
     </footer>
   );
 }

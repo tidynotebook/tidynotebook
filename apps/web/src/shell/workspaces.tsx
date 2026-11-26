@@ -44,7 +44,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router';
 import { deleteGlyph } from '../lib/delete-label.ts';
 import { useWorkspace } from '../app.tsx';
 import { addressInWorkspace, isMemberOf } from '../lib/workspace-choice.ts';
-import { joinedWorkspaceState } from './workspace-joined.tsx';
+import { joinedWorkspaceState } from '../lib/workspace-joined.ts';
 import { initialOf } from '../lib/initial.ts';
 import { actionIcon } from './action-icons.tsx';
 import { useOpenSettings } from './settings-modal.tsx';

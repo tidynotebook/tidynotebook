@@ -28,6 +28,7 @@ import {
   Notice,
   Popover,
   noteColumnInset,
+  noteColumnFineInset,
   Stack,
   Pill,
 } from '@notesapp/ui';
@@ -450,10 +451,12 @@ export function NotePresence({
 
 export function ViewerNotice(): ReactNode {
   return (
-    <Stack align="center" className={noteColumnInset}>
-      <div className={noteColumnClassName()}>
-        <Notice message="View only. You can read this note and its history." />
-      </div>
+    <Stack className={noteColumnInset}>
+      <Stack align="center" className={noteColumnFineInset}>
+        <div className={noteColumnClassName()}>
+          <Notice message="View only. You can read this note and its history." />
+        </div>
+      </Stack>
     </Stack>
   );
 }
