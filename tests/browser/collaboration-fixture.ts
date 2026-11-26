@@ -119,20 +119,24 @@ export async function collaborationFixture(origin: string) {
   const editorPersonal = spaces.data.workspaces.find((space) => space.personal);
   assert.ok(editorPersonal);
 
-  const fileId = randomUUID();
-  const note = await createFile({
-    path,
-    headers,
-    body: {
-      path: 'Launch plan.md',
-      fileId,
-      mutationId: randomUUID(),
-      revisionId: randomUUID(),
-      deviceId: randomUUID(),
-      document: firstSave('We are ready to edit this note together.\n'),
-    },
-  });
-  assert.ok(note.data, JSON.stringify(note.error));
+  async function createNote(name: string) {
+    const fileId = randomUUID();
+    const note = await createFile({
+      path,
+      headers,
+      body: {
+        path: `${name}.md`,
+        fileId,
+        mutationId: randomUUID(),
+        revisionId: randomUUID(),
+        deviceId: randomUUID(),
+        document: firstSave('We are ready to edit this note together.\n'),
+      },
+    });
+    assert.ok(note.data, JSON.stringify(note.error));
+    return fileId;
+  }
+  const fileId = await createNote('Launch plan');
   const notePath = { ...path, fileId };
   const personalPath = { workspaceId: editorPersonal.workspaceId };
   return {
@@ -148,6 +152,7 @@ export async function collaborationFixture(origin: string) {
     viewerJoinId: forViewer.data.workspaceId,
     viewerSwitcherId: forEditor.data.workspaceId,
     editorPersonalId: editorPersonal.workspaceId,
+    createNote,
     async readNote() {
       const result = await getFile({
         path: notePath,

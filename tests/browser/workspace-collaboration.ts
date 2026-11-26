@@ -487,10 +487,12 @@ try {
     }
     await context.close();
   }
-  await editor.goto(`${origin}${note}`);
+  const recoveryFileId = await fixture.createNote('Recovery plan');
+  const recoveryNote = `${space}/notes/${recoveryFileId}`;
+  await editor.goto(`${origin}${recoveryNote}`);
   await editor.getByText('Live', { exact: true }).waitFor();
   await owner.goto(`${origin}${space}?settings=members`);
-  await fixture.addRecoveryOccupant('Launch plan');
+  await fixture.addRecoveryOccupant('Recovery plan');
   await editorContext.setOffline(true);
   await editor.getByText(/Offline. Your edits merge/).waitFor();
   await editorText.focus();
@@ -499,7 +501,7 @@ try {
   await editorText.press('Control+s');
   await waitForFrozenSave(editor, fixture.workspaceId);
   await editor
-    .getByRole('treeitem', { name: /Launch plan/ })
+    .getByRole('treeitem', { name: /Recovery plan/ })
     .getByText('Local', { exact: true })
     .waitFor();
   const roleMenu = owner.getByRole('button', { name: 'Role for Casey Editor' });
@@ -514,7 +516,7 @@ try {
     async (route) => {
       if (route.request().method() === 'POST' && !occupiedDuringUpload) {
         occupiedDuringUpload = true;
-        await fixture.addRecoveryOccupant('Launch plan 2');
+        await fixture.addRecoveryOccupant('Recovery plan 2');
       }
       await route.continue();
     },
@@ -533,7 +535,7 @@ try {
     .getByText('Keep this unsent text', { exact: true })
     .waitFor({ state: 'hidden' });
   await editor
-    .getByRole('treeitem', { name: /Launch plan/ })
+    .getByRole('treeitem', { name: /Recovery plan/ })
     .getByText('Local', { exact: true })
     .waitFor({ state: 'hidden' });
   await editor
@@ -562,7 +564,7 @@ try {
   assert.equal(occupiedDuringUpload, true);
   assert.equal(
     downgradedCopy.path,
-    'From Collaboration check/Launch plan 3.md',
+    'From Collaboration check/Recovery plan 3.md',
   );
   assert.match(downgradedCopy.head?.text ?? '', /Keep this unsent text/);
   await editorContext.unrouteAll({ behavior: 'wait' });
@@ -571,7 +573,7 @@ try {
     .getByRole('menuitemradio', { name: 'Editor', exact: true })
     .click();
   await roleMenu.getByText('Editor', { exact: true }).waitFor();
-  await editor.goto(`${origin}${note}`);
+  await editor.goto(`${origin}${recoveryNote}`);
   await editor.getByText('Live', { exact: true }).waitFor();
   await editorContext.setOffline(true);
   await editor.getByText(/Offline. Your edits merge/).waitFor();
@@ -581,7 +583,7 @@ try {
   await editorText.press('Control+s');
   await waitForFrozenSave(editor, fixture.workspaceId);
   await editor
-    .getByRole('treeitem', { name: /Launch plan/ })
+    .getByRole('treeitem', { name: /Recovery plan/ })
     .getByText('Local', { exact: true })
     .waitFor();
   await roleMenu.click();
@@ -610,7 +612,7 @@ try {
     .getByText('Keep this text after removal', { exact: true })
     .waitFor();
   const removedCopy = await readOpenRecovery(editor);
-  assert.equal(removedCopy.path, 'From Collaboration check/Launch plan 4.md');
+  assert.equal(removedCopy.path, 'From Collaboration check/Recovery plan 4.md');
   assert.match(removedCopy.head?.text ?? '', /Keep this text after removal/);
   await owner.goto(`${origin}${note}/history`);
   await owner
