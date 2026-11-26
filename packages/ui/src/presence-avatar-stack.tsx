@@ -3,9 +3,6 @@ import { PresenceAvatar } from './identity.tsx';
 import { Inline } from './primitives.tsx';
 import { Pill } from './section-heading.tsx';
 
-export const presenceTriggerClassName =
-  'w-auto min-w-7 coarse:w-auto coarse:min-w-11';
-
 export function PresenceAvatarStack({
   people,
 }: {
