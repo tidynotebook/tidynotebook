@@ -115,7 +115,13 @@ try {
         await rows(page, 42);
         const actions = page.getByRole('button', { name: 'Note actions' });
         if (width < 1280) await actions.click();
-        await page.getByText('7141 words', { exact: true }).waitFor();
+        const countRegion =
+          width < 1280
+            ? page.getByRole('menu', { name: 'Note actions' })
+            : page.getByRole('complementary', {
+                name: 'Note outline and inbound links',
+              });
+        await countRegion.getByText('7141 words', { exact: true }).waitFor();
         if (width < 1280) await actions.press('Escape');
         await checkpoint(page);
         const elapsed = performance.now() - start;
