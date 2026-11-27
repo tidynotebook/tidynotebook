@@ -1,6 +1,7 @@
 import {
   inviteRole,
   workspaceMemberPageSize,
+  workspaceSeatUsage,
   workspaceRoles,
   type CollaborationTransaction,
   type Role,
@@ -18,6 +19,7 @@ type InviteRow = {
   inviter_name: string | null;
   expires_at: Date;
   collaboration_enabled: boolean;
+  seat_owner_name: string | null;
 };
 
 type MemberRow = {
@@ -27,6 +29,7 @@ type MemberRow = {
   role: string;
   member_count: string;
   color_slot: number;
+  owner_workspace_memberships: number;
 };
 
 function storedRole(text: string): Role {
@@ -49,6 +52,7 @@ function inviteOf(row: InviteRow): WorkspaceInvite {
     inviterName: row.inviter_name,
     expiresAt: row.expires_at.toISOString(),
     collaborationEnabled: row.collaboration_enabled,
+    seatOwnerName: row.seat_owner_name,
   };
 }
 
@@ -59,6 +63,7 @@ function memberOf(row: MemberRow): WorkspaceMember {
     email: row.email,
     role: storedRole(row.role),
     colorSlot: row.color_slot,
+    ownerWorkspaceMemberships: row.owner_workspace_memberships,
   };
 }
 
@@ -81,6 +86,32 @@ export function collaborationTransaction(
         [workspaceId],
       );
       return rows[0]?.enabled === true;
+    },
+    async seatPreview(emails, lock) {
+      const { rows } = await client.query<{
+        member_limit: number | null;
+        members_used: number;
+        pending_invites: number;
+        additional_places: number;
+      }>('select * from notesapp_workspace_seat_preview($1, $2, $3)', [
+        workspaceId,
+        emails,
+        lock,
+      ]);
+      const row = rows[0];
+      if (row === undefined)
+        throw new Error('The seat preview returned no row.');
+      return {
+        seats:
+          row.member_limit === null
+            ? null
+            : workspaceSeatUsage(
+                row.member_limit,
+                row.members_used,
+                row.pending_invites,
+              ),
+        additionalPlaces: row.additional_places,
+      };
     },
     async liveNoteAccess(fileId) {
       const { rows } = await client.query<{

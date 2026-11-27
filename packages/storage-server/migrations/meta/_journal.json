@@ -330,6 +330,13 @@
       "when": 1795713544259,
       "tag": "0046_enforce_workspace_collaboration_switch",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1795747648109,
+      "tag": "0047_owner_seats",
+      "breakpoints": true
     }
   ]
 }

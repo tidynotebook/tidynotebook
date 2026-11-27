@@ -91,3 +91,9 @@ properties:
     description: >-
       The limit of the month that refused the request, on the codes
       download_limit and storage_busy only (record 0193).
+  freePlaces:
+    type: integer
+    readOnly: true
+    minimum: 0
+    maximum: 10000
+    description: The available places when the member_limit problem refused a request.

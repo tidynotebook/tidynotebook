@@ -55,6 +55,7 @@ function account(extra: Partial<AccountSummary> = {}): AccountSummary {
       textLimitBytes: null,
       publishedTransferLimitBytes: null,
       downloadLimitBytes: null,
+      memberLimit: null,
       features: { teams: true, collaboration: true },
     },
     self: false,

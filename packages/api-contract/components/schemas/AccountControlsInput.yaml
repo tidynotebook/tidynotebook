@@ -52,6 +52,10 @@ properties:
     writeOnly: true
     description: >-
       The new download limit of one month, in bytes, or null for no limit.
+  memberLimit:
+    allOf:
+      - $ref: './MemberLimit.yaml'
+    writeOnly: true
   features:
     allOf:
       - $ref: './AccountFeaturesInput.yaml'

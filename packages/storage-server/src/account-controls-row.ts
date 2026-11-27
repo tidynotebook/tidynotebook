@@ -27,6 +27,7 @@ export type AccountControlsRow = {
   readonly download_limit_bytes: string | null;
   readonly teams: boolean;
   readonly collaboration: boolean;
+  readonly member_limit: number | null;
   readonly controls_revision: string;
 };
 
@@ -37,7 +38,7 @@ export const accountControlsColumns = `public.notesapp_effective_standing(a)::te
   a.text_limit_bytes::text as text_limit_bytes,
   a.published_transfer_limit_bytes::text as published_transfer_limit_bytes,
   a.download_limit_bytes::text as download_limit_bytes,
-  a.teams, a.collaboration, a.controls_revision::text as controls_revision`;
+  a.teams, a.collaboration, a.member_limit, a.controls_revision::text as controls_revision`;
 
 /** Narrows a stored standing. An unexpected value is a defect. */
 export function storedStanding(value: string): ControlStanding {
@@ -82,6 +83,7 @@ export function accountControlsOf(row: AccountControlsRow): AccountControls {
     textLimitBytes: limitOf(row.text_limit_bytes),
     publishedTransferLimitBytes: limitOf(row.published_transfer_limit_bytes),
     downloadLimitBytes: limitOf(row.download_limit_bytes),
+    memberLimit: row.member_limit,
     features: { teams: row.teams, collaboration: row.collaboration },
   };
 }
@@ -90,7 +92,7 @@ export function accountControlsOf(row: AccountControlsRow): AccountControls {
 export function controlsParameters(
   revision: number,
   controls: AccountControls,
-): readonly (string | boolean | null)[] {
+): readonly (string | boolean | number | null)[] {
   const limit = (value: bigint | null): string | null =>
     value === null ? null : value.toString();
   return [
@@ -103,6 +105,7 @@ export function controlsParameters(
     limit(controls.downloadLimitBytes),
     controls.features.teams,
     controls.features.collaboration,
+    controls.memberLimit,
   ];
 }
 

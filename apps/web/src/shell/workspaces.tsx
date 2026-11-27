@@ -265,11 +265,7 @@ export function WorkspaceSwitcher({
       path,
     }).then(({ data, error }) => {
       if (data === undefined) {
-        setProblem(
-          error?.code === 'collaboration_off'
-            ? error.title
-            : problemMessage(error),
-        );
+        setProblem(error?.title ?? problemMessage(error));
         return;
       }
       setInvites((entries) =>

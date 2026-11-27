@@ -200,7 +200,8 @@ export function AcceptForm({
     setBusy(false);
     if (result.data === undefined) {
       setError(
-        result.error?.code === 'collaboration_off'
+        result.error?.code === 'collaboration_off' ||
+          result.error?.code === 'member_limit'
           ? result.error.title
           : result.response?.status === 403
             ? invalidInvitation

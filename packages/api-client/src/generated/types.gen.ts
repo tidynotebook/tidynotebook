@@ -170,6 +170,7 @@ export type AccountControls = {
      * The most bytes that the account downloads in one calendar month in UTC, or null for no limit (record 0193).
      */
     readonly downloadLimitBytes: ByteLimit;
+    readonly memberLimit: MemberLimit;
     /**
      * The switch of each switchable feature.
      */
@@ -216,6 +217,7 @@ export type AccountControlsInput = {
      * The new download limit of one month, in bytes, or null for no limit.
      */
     downloadLimitBytes?: ByteLimit;
+    memberLimit?: MemberLimit;
     /**
      * The feature switches to change.
      */
@@ -223,7 +225,7 @@ export type AccountControlsInput = {
 };
 
 /**
- * One account event. It names the account and nothing else of it.
+ * One account event. Membership events also name the workspace and the remaining membership count.
  */
 export type AccountEvent = {
     /**
@@ -242,6 +244,13 @@ export type AccountEvent = {
      * Instant at which it happened.
      */
     readonly occurredAt: string;
+    ownerAccountId?: Uuid;
+    memberAccountId?: Uuid;
+    workspaceId?: Uuid;
+    /**
+     * The number of workspaces of this owner that the member belongs to after the change.
+     */
+    ownerWorkspaceMemberships?: number;
 };
 
 /**
@@ -252,7 +261,7 @@ export type AccountEventCursor = number;
 /**
  * What happened to an account (record 0190).
  */
-export type AccountEventKind = 'made' | 'verified' | 'removed';
+export type AccountEventKind = 'made' | 'verified' | 'removed' | 'workspace_member_added' | 'workspace_member_removed';
 
 /**
  * The account events after a cursor, oldest first, and the cursor to read after next.
@@ -1907,6 +1916,11 @@ export type McpMetadata = {
 };
 
 /**
+ * The maximum number of members and reserved places for an owner's workspaces. Null means no limit.
+ */
+export type MemberLimit = number | null;
+
+/**
  * What the workspace knows about one mutation identity. A device reads it when it does not know whether a save reached the server, before it transforms work that may already have committed. The answer states the outcome and never the text of a note.
  */
 export type MutationReceipt = {
@@ -2261,6 +2275,10 @@ export type Password = string;
  */
 export type PendingWorkspaceInvite = {
     /**
+     * Name of the owner when seats are limited, or null when they are unlimited.
+     */
+    seatOwnerName: string | null;
+    /**
      * Why the current owner setting prevents acceptance, or null when it permits acceptance.
      */
     acceptanceMessage: string | null;
@@ -2393,6 +2411,10 @@ export type ProblemDetails = {
      * The limit of the month that refused the request, on the codes download_limit and storage_busy only (record 0193).
      */
     readonly limit?: UsageLimit;
+    /**
+     * The available places when the member_limit problem refused a request.
+     */
+    readonly freePlaces?: number;
     [key: string]: unknown;
 };
 
@@ -3757,6 +3779,10 @@ export type WorkspaceList = {
  * One current member as seen by a member of the same workspace.
  */
 export type WorkspaceMember = {
+    /**
+     * The member's workspace count for this owner.
+     */
+    ownerWorkspaceMemberships: number;
     accountId: Uuid;
     displayName: string | null;
     email: EmailAddress;
@@ -3771,6 +3797,7 @@ export type WorkspaceMember = {
  * A page of current members ordered by account ID, with the current total count.
  */
 export type WorkspaceMemberPage = {
+    seats: WorkspaceSeats | null;
     /**
      * Whether the workspace owner can add members by invitation.
      */
@@ -3797,10 +3824,37 @@ export type WorkspaceNameInput = {
     name: string;
 };
 
+export type WorkspaceSeats = {
+    memberLimit: number;
+    membersUsed: number;
+    pendingInvites: number;
+    freePlaces: number;
+};
+
 /**
  * The signed in account and its settings.
  */
 export type AccountWritable = {
+    [key: string]: never;
+};
+
+/**
+ * One account event. Membership events also name the workspace and the remaining membership count.
+ */
+export type AccountEventWritable = {
+    ownerAccountId?: Uuid;
+    memberAccountId?: Uuid;
+    workspaceId?: Uuid;
+    /**
+     * The number of workspaces of this owner that the member belongs to after the change.
+     */
+    ownerWorkspaceMemberships?: number;
+};
+
+/**
+ * The account events after a cursor, oldest first, and the cursor to read after next.
+ */
+export type AccountEventListWritable = {
     [key: string]: never;
 };
 
@@ -5654,7 +5708,7 @@ export type AcceptWorkspaceInviteErrors = {
      */
     401: ProblemDetails;
     /**
-     * The actor may not perform this operation, or the workspace owner's collaboration switch is off (collaboration_off).
+     * The actor may not perform this operation, or the workspace owner's collaboration switch is off (collaboration_off), or the request would exceed the member limit (member_limit). The limit response includes freePlaces.
      */
     403: ProblemDetails;
     /**
@@ -7716,7 +7770,7 @@ export type RegisterAccountErrors = {
      */
     400: ProblemDetails;
     /**
-     * The invitation is invalid (invitation_invalid), the terms or privacy notice changed (consent_required), or the workspace owner's collaboration switch is off (collaboration_off).
+     * The invitation is invalid (invitation_invalid), the terms or privacy notice changed (consent_required), or the workspace owner's collaboration switch is off (collaboration_off), or the member limit would be exceeded (member_limit).
      */
     403: ProblemDetails;
     /**
@@ -10225,7 +10279,7 @@ export type CreateWorkspaceInvitesErrors = {
      */
     401: ProblemDetails;
     /**
-     * The actor may not perform this operation, or the workspace owner's collaboration switch is off (collaboration_off).
+     * The actor may not perform this operation, or the workspace owner's collaboration switch is off (collaboration_off), or the request would exceed the member limit (member_limit). The limit response includes freePlaces.
      */
     403: ProblemDetails;
     /**
@@ -10264,6 +10318,72 @@ export type CreateWorkspaceInvitesResponses = {
 };
 
 export type CreateWorkspaceInvitesResponse = CreateWorkspaceInvitesResponses[keyof CreateWorkspaceInvitesResponses];
+
+export type PreviewWorkspaceInvitesData = {
+    /**
+     * The addresses and role of the invitations.
+     */
+    body: WorkspaceInvitesCreate;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path: {
+        /**
+         * Identifier of the workspace that the operation acts on.
+         */
+        workspaceId: Uuid;
+    };
+    query?: never;
+    url: '/api/workspaces/{workspaceId}/invitations/preview';
+};
+
+export type PreviewWorkspaceInvitesErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The actor may not perform this operation, or the workspace owner's collaboration switch is off (collaboration_off), or the request would exceed the member limit (member_limit). The limit response includes freePlaces.
+     */
+    403: ProblemDetails;
+    /**
+     * The request body is larger than the configured limit. A save of a note adds document_too_large, which means that the update or the document it would produce passes a bound of the workspace. The work stays on the device, which offers recovery rather than sending the same bytes again.
+     */
+    413: ProblemDetails;
+    /**
+     * The request media type is not supported.
+     */
+    415: ProblemDetails;
+    /**
+     * The account is locked, and a locked account keeps only a fixed list of operations (record 0201). The code is account_locked. Nothing changed.
+     */
+    423: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type PreviewWorkspaceInvitesError = PreviewWorkspaceInvitesErrors[keyof PreviewWorkspaceInvitesErrors];
+
+export type PreviewWorkspaceInvitesResponses = {
+    /**
+     * The number of places the batch would use and the places available.
+     */
+    200: {
+        additionalPlaces: number;
+        freePlaces: number | null;
+    };
+};
+
+export type PreviewWorkspaceInvitesResponse = PreviewWorkspaceInvitesResponses[keyof PreviewWorkspaceInvitesResponses];
 
 export type RevokeWorkspaceInviteData = {
     body?: never;

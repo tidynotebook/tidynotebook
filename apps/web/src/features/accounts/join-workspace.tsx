@@ -173,7 +173,12 @@ export function JoinWorkspacePage(): ReactNode {
                 }
               : current,
           );
-        else setError(problemMessage(result.error));
+        else
+          setError(
+            refusal?.code === 'member_limit'
+              ? refusal.title
+              : problemMessage(refusal),
+          );
         return;
       }
       clearToken();
@@ -223,6 +228,12 @@ export function JoinWorkspacePage(): ReactNode {
     invite.acceptanceMessage === null ? null : (
       <Notice tone="problem" message={invite.acceptanceMessage} />
     );
+  const seatNotice =
+    invite.seatOwnerName === null ? null : (
+      <Notice
+        message={`Your seat in this workspace is part of the plan of ${invite.seatOwnerName}.`}
+      />
+    );
   const title = `Join ${invite.workspaceName}`;
   const details = `${invite.inviterName ?? 'A workspace member'} invited you as ${role}.`;
   const permissions = {
@@ -235,6 +246,7 @@ export function JoinWorkspacePage(): ReactNode {
       <AuthFrame title={title}>
         <Stack gap={4}>
           <Notice message={details} />
+          {seatNotice}
           <p className="text-secondary text-muted">{permissions}</p>
           {blocked ?? (
             <AcceptForm
@@ -285,6 +297,7 @@ export function JoinWorkspacePage(): ReactNode {
     <AuthFrame title={title}>
       <Stack gap={4}>
         <Notice message={details} />
+        {seatNotice}
         {blocked}
         {error === '' ? null : <Notice tone="problem" message={error} />}
         <Inline gap={2}>

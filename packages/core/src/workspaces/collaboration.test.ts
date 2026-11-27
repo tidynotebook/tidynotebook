@@ -3,7 +3,9 @@ import test from 'node:test';
 import { ok } from '../files/model.ts';
 import { verifyActor } from '../identity/actor.ts';
 import {
+  checkWorkspaceSeatPreview,
   workspaceCollaboration,
+  workspaceSeatUsage,
   workspaceInvitationWrite,
   WorkspaceInvitationsOff,
   type CollaborationStore,
@@ -19,6 +21,7 @@ function store(enabled: boolean): CollaborationStore {
       run({
         role: () => Promise.resolve('admin'),
         invitationEnabled: () => Promise.resolve(enabled),
+        seatPreview: unused,
         liveNoteAccess: unused,
         liveNote: unused,
         bindNoteClient: unused,
@@ -86,5 +89,33 @@ await test('an invitation write reports the owner switch refusal', async () => {
   await assert.rejects(
     workspaceInvitationWrite(() => Promise.reject(failure)),
     failure,
+  );
+});
+
+await test('registered members and open reservations use the same owner limit', () => {
+  const seats = workspaceSeatUsage(4, 2, 1);
+  assert.deepEqual(seats, {
+    memberLimit: 4,
+    membersUsed: 2,
+    pendingInvites: 1,
+    freePlaces: 1,
+  });
+  assert.deepEqual(
+    checkWorkspaceSeatPreview({ seats, additionalPlaces: 1 }),
+    ok(undefined),
+  );
+  assert.deepEqual(checkWorkspaceSeatPreview({ seats, additionalPlaces: 2 }), {
+    ok: false,
+    error: { code: 'member_limit', fileIds: [], freePlaces: 1 },
+  });
+  const lowered = workspaceSeatUsage(0, 2, 1);
+  assert.equal(lowered.freePlaces, 0);
+  assert.equal(
+    checkWorkspaceSeatPreview({ seats: lowered, additionalPlaces: 0 }).ok,
+    false,
+  );
+  assert.equal(
+    checkWorkspaceSeatPreview({ seats: null, additionalPlaces: 20 }).ok,
+    true,
   );
 });

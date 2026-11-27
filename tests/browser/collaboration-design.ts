@@ -362,12 +362,70 @@ export async function runCollaborationAudit(
         });
         await acceptLink.waitFor();
         await members();
+        await fixture.setMemberLimit(6);
+        await owner.getByText('6 of 7 seats used', { exact: true }).waitFor();
+        await owner.getByText('3 open invites', { exact: true }).waitFor();
+        await owner.getByRole('meter', { name: 'Seats' }).waitFor();
+        if (fixture.hasPortal)
+          await owner.getByRole('link', { name: 'Manage seats' }).waitFor();
+        await check(owner, 'members-seat-usage');
+        await invite.click();
+        await owner
+          .getByLabel('Email addresses')
+          .fill('seat-one@example.test, seat-two@example.test');
+        await owner
+          .getByText('You have 1 free seat. Remove 1 address, or add seats.')
+          .waitFor();
+        assert.ok(
+          await owner
+            .getByRole('button', { name: 'Send 2 invites' })
+            .isDisabled(),
+        );
+        await check(owner, 'invite-seat-limit');
+        await fixture.assertSeatBatchRefused();
+        await owner
+          .getByRole('button', { name: 'Cancel', exact: true })
+          .click();
+        await viewer
+          .getByText(
+            'Your seat in this workspace is part of the plan of Owner.',
+          )
+          .waitFor();
+        await check(viewer, 'join-seat-notice');
+        await role.click();
+        await owner.getByText('Remove from workspace', { exact: true }).click();
+        await owner
+          .getByText("Casey Editor's seat becomes free.", { exact: true })
+          .waitFor();
+        await check(owner, 'remove-seat-notice');
+        await owner
+          .getByRole('dialog', { name: 'Remove from workspace' })
+          .getByRole('button', { name: 'Cancel', exact: true })
+          .click();
+        await fixture.setMemberLimit(5);
+        await owner
+          .getByText('All 6 seats are in use. Add seats to invite more people.')
+          .waitFor();
+        assert.ok(await invite.isDisabled());
+        if (fixture.hasPortal)
+          await owner.getByRole('link', { name: 'Manage seats' }).waitFor();
+        await check(owner, 'members-seats-full');
+        await fixture.setMemberLimit(null);
+        await owner
+          .getByText('All 6 seats are in use. Add seats to invite more people.')
+          .waitFor({ state: 'hidden' });
         const joinBlocked =
           'The owner of this workspace cannot add members now.';
         await fixture.setCollaboration(false);
         await owner
-          .getByText('Collaboration is turned off for this account.')
+          .getByText(
+            fixture.hasPortal
+              ? 'Your plan does not include collaboration.'
+              : 'Collaboration is turned off for this account.',
+          )
           .waitFor();
+        if (fixture.hasPortal)
+          await owner.getByRole('link', { name: 'See plans' }).waitFor();
         assert.ok(await invite.isDisabled());
         await owner.getByText(fixture.pendingEmail, { exact: true }).waitFor();
         await check(owner, 'members-collaboration-off');

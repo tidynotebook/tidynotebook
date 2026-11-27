@@ -8,7 +8,9 @@ import {
   createWorkspace,
   createWorkspaceInvites,
   deleteWorkspace,
+  getAccount,
   getFile,
+  type AccountControlsInput,
   listAccounts,
   listFiles,
   listHistory,
@@ -54,8 +56,9 @@ export async function collaborationFixture(
     return { origin, cookie };
   }
 
-  const admin = await signInHeaders('owner@example.com');
-  assert.ok(admin, 'Bootstrap the disposable owner account first.');
+  const administrator = await signInHeaders('owner@example.com');
+  assert.ok(administrator, 'Bootstrap the disposable owner account first.');
+  const admin: FixtureHeaders = administrator;
   const workspaces: string[] = [];
   const accountEmails = new Set([owner, editor, viewer, pendingEmail]);
   let fixtureOwner: FixtureHeaders | null = null;
@@ -212,6 +215,25 @@ export async function collaborationFixture(
   const fileId = await createNote('Launch plan');
   const notePath = { ...path, fileId };
   const personalPath = { workspaceId: editorPersonal.workspaceId };
+  const ownerAccount = await getAccount({ headers });
+  assert.ok(ownerAccount.data, JSON.stringify(ownerAccount.error));
+
+  async function setOwnerControls(
+    change: Omit<AccountControlsInput, 'revision'>,
+  ) {
+    const accounts = await listAccounts({ headers: admin });
+    const account = accounts.data?.accounts.find(
+      (entry) => entry.email === owner,
+    );
+    assert.ok(account, JSON.stringify(accounts.error));
+    const response = await updateAccount({
+      path: { accountId: account.accountId },
+      headers: admin,
+      body: { controls: { revision: account.controls.revision, ...change } },
+    });
+    assert.equal(response.error, undefined, JSON.stringify(response.error));
+  }
+
   return {
     owner,
     editor,
@@ -228,23 +250,23 @@ export async function collaborationFixture(
     viewerSwitcherId: forEditor.workspaceId,
     viewerSwitcherName: forEditor.name,
     editorPersonalId: editorPersonal.workspaceId,
-    async setCollaboration(enabled: boolean) {
-      const accounts = await listAccounts({ headers: admin });
-      const account = accounts.data?.accounts.find(
-        (entry) => entry.email === owner,
-      );
-      assert.ok(account, JSON.stringify(accounts.error));
-      const response = await updateAccount({
-        path: { accountId: account.accountId },
-        headers: admin,
+    hasPortal: ownerAccount.data.accountPortal,
+    setCollaboration: (collaboration: boolean) =>
+      setOwnerControls({ features: { collaboration } }),
+    setMemberLimit: (memberLimit: number | null) =>
+      setOwnerControls({ memberLimit }),
+    async assertSeatBatchRefused() {
+      const result = await createWorkspaceInvites({
+        path,
+        headers,
         body: {
-          controls: {
-            revision: account.controls.revision,
-            features: { collaboration: enabled },
-          },
+          emails: ['seat-one@example.test', 'seat-two@example.test'],
+          role: 'viewer',
         },
       });
-      assert.equal(response.error, undefined, JSON.stringify(response.error));
+      assert.equal(result.response?.status, 403);
+      assert.equal(result.error?.code, 'member_limit');
+      assert.equal(result.error?.freePlaces, 1);
     },
     async assertInvitationsBlocked() {
       const attempted = await createWorkspaceInvites({

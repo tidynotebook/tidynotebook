@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import {
+  checkWorkspaceSeatPreview,
   fail,
   inviteRole,
   normalizeEmail,
@@ -71,6 +72,26 @@ function notFound<T>(value: T | null): T {
   return value;
 }
 
+function inviteBatch(body: unknown) {
+  const role = inviteRole(readProperty(body, 'role'));
+  const input = readProperty(body, 'emails');
+  if (
+    role === null ||
+    !Array.isArray(input) ||
+    input.length < 1 ||
+    input.length > workspaceInviteBatchSize
+  )
+    throw new DomainProblemError({ code: 'forbidden', fileIds: [] });
+  const emails: string[] = [];
+  for (const value of input) {
+    const email = typeof value === 'string' ? normalizeEmail(value) : null;
+    if (email === null)
+      throw new DomainProblemError({ code: 'forbidden', fileIds: [] });
+    emails.push(email);
+  }
+  return { role, emails };
+}
+
 export function createCollaborationHandlers(
   config: ServerConfig,
   deps: CollaborationDependencies,
@@ -107,6 +128,7 @@ export function createCollaborationHandlers(
               ok({
                 ...(await tx.members(after)),
                 collaborationEnabled: await tx.invitationEnabled(),
+                seats: (await tx.seatPreview([], false)).seats,
               }),
           ),
         ),
@@ -183,23 +205,31 @@ export function createCollaborationHandlers(
       );
       return answer({ invitations: invites.map(inviteResponse) }, true);
     },
+    previewWorkspaceInvites: async (request) => {
+      const { actor } = requireSessionActor(request);
+      const workspaceId = readText(request.params, 'workspaceId');
+      const { emails } = inviteBatch(request.body);
+      const preview = unwrapDomain(
+        await workspaceCollaboration(
+          store,
+          actor,
+          workspaceId,
+          'invite',
+          async (tx) => ok(await tx.seatPreview(emails, false)),
+        ),
+      );
+      return answer(
+        {
+          additionalPlaces: preview.additionalPlaces,
+          freePlaces: preview.seats?.freePlaces ?? null,
+        },
+        true,
+      );
+    },
     createWorkspaceInvites: async (request) => {
       const { actor, name } = requireSessionActor(request);
       const workspaceId = readText(request.params, 'workspaceId');
-      const role = inviteRole(readProperty(request.body, 'role'));
-      const input = readProperty(request.body, 'emails');
-      if (
-        role === null ||
-        !Array.isArray(input) ||
-        input.length < 1 ||
-        input.length > workspaceInviteBatchSize
-      )
-        throw new DomainProblemError({ code: 'forbidden', fileIds: [] });
-      const emails = input.map((entry: unknown) =>
-        typeof entry === 'string' ? normalizeEmail(entry) : null,
-      );
-      if (emails.some((email) => email === null))
-        throw new DomainProblemError({ code: 'forbidden', fileIds: [] });
+      const { emails, role } = inviteBatch(request.body);
 
       const staged = unwrapDomain(
         await workspaceCollaboration(
@@ -208,6 +238,10 @@ export function createCollaborationHandlers(
           workspaceId,
           'invite',
           async (tx) => {
+            const limit = checkWorkspaceSeatPreview(
+              await tx.seatPreview(emails, true),
+            );
+            if (!limit.ok) return limit;
             await budget(
               `workspace-inviter:${actor.accountId}`,
               inviteAccountBudget,
@@ -220,8 +254,6 @@ export function createCollaborationHandlers(
             );
             const outcomes = [];
             for (const email of emails) {
-              if (email === null)
-                throw new Error('An invitation email is missing.');
               const token = newPublishedSecret();
               const digest = secretDigest.digest(token);
               const outcome = await tx.createInvite({

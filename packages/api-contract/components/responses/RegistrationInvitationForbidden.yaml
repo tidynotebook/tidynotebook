@@ -1,7 +1,7 @@
 description: >-
   The invitation is invalid (invitation_invalid), the terms or privacy notice
   changed (consent_required), or the workspace owner's collaboration switch is
-  off (collaboration_off).
+  off (collaboration_off), or the member limit would be exceeded (member_limit).
 content:
   application/problem+json:
     schema:

@@ -1,0 +1,45 @@
+post:
+  operationId: previewWorkspaceInvites
+  summary: Count the additional places that invitations would use.
+  description: Only owners and admins can preview a batch. Creating it checks the limit again.
+  tags:
+    - workspaces
+  security:
+    - sessionCookie: []
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+    - $ref: '../components/parameters/WorkspaceId.yaml'
+  requestBody:
+    $ref: '../components/requestBodies/WorkspaceInvitesCreate.yaml'
+  responses:
+    '200':
+      description: The number of places the batch would use and the places available.
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [additionalPlaces, freePlaces]
+            properties:
+              additionalPlaces:
+                type: integer
+                minimum: 0
+                maximum: 20
+              freePlaces:
+                type: [integer, 'null']
+                minimum: 0
+                maximum: 10000
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../components/responses/WorkspaceInvitationForbidden.yaml'
+    '413':
+      $ref: '../components/responses/PayloadTooLarge.yaml'
+    '415':
+      $ref: '../components/responses/UnsupportedMediaType.yaml'
+    '423':
+      $ref: '../components/responses/AccountLocked.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

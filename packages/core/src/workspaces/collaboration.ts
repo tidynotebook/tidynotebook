@@ -33,6 +33,7 @@ export type WorkspaceMember = {
   readonly email: string;
   readonly role: Role;
   readonly colorSlot: number;
+  readonly ownerWorkspaceMemberships: number;
 };
 
 export type WorkspaceInvite = {
@@ -44,6 +45,7 @@ export type WorkspaceInvite = {
   readonly inviterName: string | null;
   readonly expiresAt: string;
   readonly collaborationEnabled: boolean;
+  readonly seatOwnerName: string | null;
 };
 
 export type NewWorkspaceInvite = {
@@ -61,9 +63,58 @@ export type WorkspaceInviteOutcome =
     }
   | { readonly outcome: 'already_member' | 'pending_limit' };
 
+export type WorkspaceSeats = {
+  readonly memberLimit: number;
+  readonly membersUsed: number;
+  readonly pendingInvites: number;
+  readonly freePlaces: number;
+};
+
+export type WorkspaceSeatPreview = {
+  readonly seats: WorkspaceSeats | null;
+  readonly additionalPlaces: number;
+};
+
+export function workspaceSeatUsage(
+  memberLimit: number,
+  membersUsed: number,
+  pendingInvites: number,
+): WorkspaceSeats {
+  return {
+    memberLimit,
+    membersUsed,
+    pendingInvites,
+    freePlaces: Math.max(0, memberLimit - membersUsed - pendingInvites),
+  };
+}
+
+export function checkWorkspaceSeatPreview(
+  preview: WorkspaceSeatPreview,
+): Result<void> {
+  const { seats, additionalPlaces } = preview;
+  if (
+    seats !== null &&
+    seats.membersUsed + seats.pendingInvites + additionalPlaces >
+      seats.memberLimit
+  )
+    return {
+      ok: false,
+      error: {
+        code: 'member_limit',
+        fileIds: [],
+        freePlaces: seats.freePlaces,
+      },
+    };
+  return ok(undefined);
+}
+
 export type CollaborationTransaction = {
   role(): Promise<Role | null>;
   invitationEnabled(): Promise<boolean>;
+  seatPreview(
+    emails: readonly string[],
+    lock: boolean,
+  ): Promise<WorkspaceSeatPreview>;
   liveNoteAccess(fileId: string): Promise<{
     head: string | null;
     epoch: number;
@@ -137,12 +188,30 @@ export async function workspaceCollaboration<T>(
 /** A workspace invitation write met the owner's switch after it took the lock. */
 export class WorkspaceInvitationsOff extends Error {}
 
+export class WorkspaceMemberLimitExceeded extends Error {
+  readonly freePlaces: number;
+
+  constructor(freePlaces: number) {
+    super('The workspace member limit would be exceeded.');
+    this.freePlaces = freePlaces;
+  }
+}
+
 export async function workspaceInvitationWrite<T>(
   write: () => Promise<T>,
 ): Promise<Result<T>> {
   try {
     return ok(await write());
   } catch (error) {
+    if (error instanceof WorkspaceMemberLimitExceeded)
+      return {
+        ok: false,
+        error: {
+          code: 'member_limit',
+          fileIds: [],
+          freePlaces: error.freePlaces,
+        },
+      };
     if (error instanceof WorkspaceInvitationsOff)
       return fail('collaboration_off');
     throw error;

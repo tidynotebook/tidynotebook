@@ -3,7 +3,9 @@ import { createHash, randomUUID } from 'node:crypto';
 import test from 'node:test';
 import { setTimeout as pause } from 'node:timers/promises';
 import {
+  checkWorkspaceSeatPreview,
   defaultAccountLimitBytes,
+  ok,
   deleteWorkspace,
   listWorkspaces,
   registerAccount,
@@ -48,9 +50,9 @@ async function addAddress(accountId: string, email: string) {
   }
 }
 
-function invite(actor: Actor, email: string) {
+function invite(actor: Actor, email: string, space = workspaceId) {
   const id = randomUUID();
-  return identity.collaboration(actor, workspaceId, (tx) =>
+  return identity.collaboration(actor, space, (tx) =>
     tx.createInvite({
       invitationId: id,
       email,
@@ -391,6 +393,181 @@ try {
       await changeSwitch(control, ownerId, true);
       await Promise.all([control.close(), creator.close(), accepter.close()]);
     }
+  });
+
+  await test('seat reservations share the owner limit across workspaces and membership events count the workspaces left', async () => {
+    const buyer = randomUUID();
+    const member = randomUUID();
+    const first = randomUUID();
+    const second = randomUUID();
+    await seedWorkspace(db, first, [{ accountId: buyer, role: 'owner' }]);
+    await seedWorkspace(db, second, [{ accountId: buyer, role: 'owner' }]);
+    await seedWorkspace(db, randomUUID(), [
+      { accountId: member, role: 'owner' },
+    ]);
+    await addAddress(buyer, 'buyer@example.test');
+    await addAddress(member, 'seat@example.test');
+    const buyerOf = (space: string) => memberActor(buyer, space);
+    const memberOf = (space: string) => memberActor(member, space);
+    const limit = async (memberLimit: number) => {
+      await identity.operator(async (tx) => {
+        const account = await tx.account(buyer, '2026-11');
+        assert.ok(account);
+        assert.equal(
+          await tx.setControls(buyer, account.controls.revision, {
+            ...account.controls,
+            memberLimit,
+          }),
+          'written',
+        );
+        assert.equal(
+          (await tx.account(buyer, '2026-11'))?.controls.memberLimit,
+          memberLimit,
+        );
+      });
+    };
+    const seatPreview = (emails: readonly string[] = []) =>
+      identity.collaboration(buyerOf(first), first, (tx) =>
+        tx.seatPreview(emails, false),
+      );
+    await limit(1);
+    const refused = await workspaceCollaboration(
+      identity,
+      buyerOf(first),
+      first,
+      'invite',
+      async (tx) => {
+        const checked = checkWorkspaceSeatPreview(
+          await tx.seatPreview(['a@example.test', 'b@example.test'], true),
+        );
+        return checked.ok ? ok('unexpected') : checked;
+      },
+    );
+    assert.deepEqual(refused, {
+      ok: false,
+      error: { code: 'member_limit', fileIds: [], freePlaces: 1 },
+    });
+    const race = await Promise.all(
+      [first, second].map((space, index) =>
+        workspaceInvitationWrite(() =>
+          invite(buyerOf(space), `seat-race-${index}@example.test`, space),
+        ),
+      ),
+    );
+    assert.equal(race.filter((entry) => entry.ok).length, 1);
+    assert.deepEqual(
+      race.find((entry) => !entry.ok),
+      {
+        ok: false,
+        error: { code: 'member_limit', fileIds: [], freePlaces: 0 },
+      },
+    );
+    assert.deepEqual((await seatPreview()).seats, {
+      memberLimit: 1,
+      membersUsed: 0,
+      pendingInvites: 1,
+      freePlaces: 0,
+    });
+    const createdSpace = race[0]?.ok ? first : second;
+    const winner = race.find((entry) => entry.ok);
+    assert.ok(winner?.ok && 'invitationId' in winner.value);
+    const winningInvite = winner.value.invitationId;
+    await identity.collaboration(buyerOf(createdSpace), createdSpace, (tx) =>
+      tx.adminInvite(winningInvite, true),
+    );
+    const invitedFirst = await invite(
+      buyerOf(first),
+      'seat@example.test',
+      first,
+    );
+    const invitedSecond = await invite(
+      buyerOf(second),
+      'seat@example.test',
+      second,
+    );
+    assert.ok(
+      'invitationId' in invitedFirst && 'invitationId' in invitedSecond,
+    );
+    const firstId = invitedFirst.invitationId;
+    const secondId = invitedSecond.invitationId;
+    assert.equal(
+      (await seatPreview(['seat@example.test', 'seat@example.test']))
+        .additionalPlaces,
+      0,
+    );
+    assert.equal((await seatPreview()).seats?.pendingInvites, 1);
+    const accept = (id: string) =>
+      workspaceInvitationWrite(() =>
+        identity.collaboration(testActor(member, []), null, (tx) =>
+          tx.answerInvite(id, true),
+        ),
+      );
+    await limit(0);
+    assert.deepEqual(await accept(firstId), {
+      ok: false,
+      error: { code: 'member_limit', fileIds: [], freePlaces: 0 },
+    });
+    const pending = await identity.collaboration(
+      testActor(member, []),
+      null,
+      (tx) => tx.invites(null),
+    );
+    assert.deepEqual(
+      new Set(pending.map((entry) => entry.invitationId)),
+      new Set([firstId, secondId]),
+    );
+    await limit(1);
+    for (const id of [firstId, secondId]) {
+      const joined = await accept(id);
+      assert.ok(joined.ok && joined.value?.role === 'editor');
+    }
+    assert.deepEqual((await seatPreview()).seats, {
+      memberLimit: 1,
+      membersUsed: 1,
+      pendingInvites: 0,
+      freePlaces: 0,
+    });
+    assert.equal(
+      await identity.collaboration(buyerOf(first), first, (tx) =>
+        tx.changeMember(member, 'viewer', false),
+      ),
+      'ok',
+    );
+    assert.equal(
+      await identity.collaboration(buyerOf(first), first, (tx) =>
+        tx.changeMember(member, null, false),
+      ),
+      'ok',
+    );
+    assert.equal(
+      await identity.collaboration(memberOf(second), second, (tx) =>
+        tx.changeMember(member, null, true),
+      ),
+      'ok',
+    );
+    const again = await invite(buyerOf(first), 'seat@example.test', first);
+    assert.ok('invitationId' in again);
+    assert.ok((await accept(again.invitationId)).ok);
+    assert.equal(await identity.operator((tx) => tx.remove(member)), 'removed');
+    const feed = await identity.operator((tx) => tx.events(0, 500));
+    assert.deepEqual(
+      feed
+        .filter((event) => event.memberAccountId === member)
+        .map((event) => [
+          event.kind,
+          event.ownerAccountId,
+          event.workspaceId,
+          event.ownerWorkspaceMemberships,
+        ]),
+      [
+        ['workspace_member_added', buyer, first, 1],
+        ['workspace_member_added', buyer, second, 2],
+        ['workspace_member_removed', buyer, first, 1],
+        ['workspace_member_removed', buyer, second, 0],
+        ['workspace_member_added', buyer, first, 1],
+        ['workspace_member_removed', buyer, first, 0],
+      ],
+    );
   });
 
   await test('expired invites free slots and the workspace holds at most 100 pending', async () => {
