@@ -112,6 +112,9 @@ export type {
   OperatorAccountRecord,
   OperatorRemoval,
   OperatorStore,
+  OperatorSeatInvite,
+  OperatorSeatMember,
+  OperatorSeatUsage,
   OperatorTotals,
   OperatorTransaction,
 } from './identity/operator.ts';
@@ -123,6 +126,7 @@ export {
   openAccountPortal,
   portalAddress,
   readOperatorAccount,
+  readOperatorAccountSeats,
   readOperatorTotals,
   redeemHandoff,
   removeOperatorAccount,

@@ -1,0 +1,30 @@
+get:
+  operationId: readOperatorAccountSeats
+  summary: Read the seat usage of one account.
+  description: >-
+    A service of the operator reads the members and open invites that use
+    seats across the workspaces owned by one account (record 0190).
+  tags:
+    - operator
+  security:
+    - operatorToken: []
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+    - $ref: '../components/parameters/AccountId.yaml'
+  responses:
+    '200':
+      description: The seat usage of the account.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/OperatorAccountSeats.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '404':
+      $ref: '../components/responses/OperatorNotFound.yaml'
+    '429':
+      $ref: '../components/responses/RateLimited.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

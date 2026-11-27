@@ -7,6 +7,10 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## Unreleased
 
+### Added
+
+- Let the operator read an account's seat usage, including members and open invites across its workspaces.
+
 ## 0.25.0 - 2026-11-27
 
 ### Added

@@ -87,6 +87,7 @@ export type OperationId =
   | 'purgeFiles'
   | 'readInvitation'
   | 'readOperatorAccount'
+  | 'readOperatorAccountSeats'
   | 'readOperatorTotals'
   | 'readWorkspaceInvite'
   | 'readWorkspaceInviteLink'
@@ -15723,6 +15724,201 @@ export const operations: readonly OperationEntry[] = [
         "schema": {
           "$schema": "https://json-schema.org/draft/2020-12/schema",
           "$ref": "https://notesapp.invalid/contract-definitions#/$defs/OperatorAccount"
+        }
+      },
+      {
+        "status": 400,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 401,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 404,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 429,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      },
+      {
+        "status": 500,
+        "mediaType": "application/problem+json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "$ref": "https://notesapp.invalid/contract-definitions#/$defs/ProblemDetails"
+        }
+      }
+    ],
+    "noContent": []
+  },
+  {
+    "id": "readOperatorAccountSeats",
+    "method": "get",
+    "path": "/api/operator/accounts/{accountId}/seats",
+    "protocol": null,
+    "security": [
+      {
+        "operatorToken": []
+      }
+    ],
+    "parameters": [
+      {
+        "name": "x-request-id",
+        "location": "header",
+        "required": false,
+        "style": "simple",
+        "explode": false
+      },
+      {
+        "name": "accountId",
+        "location": "path",
+        "required": true,
+        "style": "simple",
+        "explode": false
+      }
+    ],
+    "request": {
+      "params": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Shared168"
+      },
+      "query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "headers": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Shared2"
+      },
+      "body": null,
+      "bodyMediaType": null
+    },
+    "responses": [
+      {
+        "status": 200,
+        "mediaType": "application/json",
+        "schema": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "description": "The seats used across all workspaces owned by one account.",
+          "readOnly": true,
+          "additionalProperties": false,
+          "required": [
+            "memberLimit",
+            "membersUsed",
+            "pendingInvites",
+            "members",
+            "invites"
+          ],
+          "properties": {
+            "memberLimit": {
+              "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Shared87"
+            },
+            "membersUsed": {
+              "type": "integer",
+              "minimum": 0,
+              "readOnly": true,
+              "description": "The number of distinct member accounts, excluding the owner."
+            },
+            "pendingInvites": {
+              "type": "integer",
+              "minimum": 0,
+              "readOnly": true,
+              "description": "The number of distinct addresses that hold a place through an open invite."
+            },
+            "members": {
+              "type": "array",
+              "readOnly": true,
+              "description": "Members in order of their first join.",
+              "items": {
+                "type": "object",
+                "readOnly": true,
+                "additionalProperties": false,
+                "required": [
+                  "accountId",
+                  "email",
+                  "name",
+                  "since"
+                ],
+                "properties": {
+                  "accountId": {
+                    "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Shared155"
+                  },
+                  "email": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 320,
+                    "readOnly": true
+                  },
+                  "name": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "readOnly": true
+                  },
+                  "since": {
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true,
+                    "description": "The earliest start of any current membership with the owner."
+                  }
+                }
+              }
+            },
+            "invites": {
+              "type": "array",
+              "readOnly": true,
+              "description": "The first invite to expire for each address that holds a place, in expiry order.",
+              "items": {
+                "type": "object",
+                "readOnly": true,
+                "additionalProperties": false,
+                "required": [
+                  "email",
+                  "expiresAt",
+                  "workspaceId"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "maxLength": 320,
+                    "readOnly": true
+                  },
+                  "expiresAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                  },
+                  "workspaceId": {
+                    "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Shared155"
+                  }
+                }
+              }
+            }
+          }
         }
       },
       {

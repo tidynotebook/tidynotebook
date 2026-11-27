@@ -2240,6 +2240,41 @@ export type OperatorAccount = {
 };
 
 /**
+ * The seats used across all workspaces owned by one account.
+ */
+export type OperatorAccountSeats = {
+    readonly memberLimit: MemberLimit;
+    /**
+     * The number of distinct member accounts, excluding the owner.
+     */
+    readonly membersUsed: number;
+    /**
+     * The number of distinct addresses that hold a place through an open invite.
+     */
+    readonly pendingInvites: number;
+    /**
+     * Members in order of their first join.
+     */
+    readonly members: Array<{
+        readonly accountId: Uuid;
+        readonly email: string | null;
+        readonly name: string | null;
+        /**
+         * The earliest start of any current membership with the owner.
+         */
+        readonly since: string;
+    }>;
+    /**
+     * The first invite to expire for each address that holds a place, in expiry order.
+     */
+    readonly invites: Array<{
+        readonly email: string;
+        readonly expiresAt: string;
+        readonly workspaceId: Uuid;
+    }>;
+};
+
+/**
  * The totals of the whole installation for one calendar month in UTC (record 0193).
  */
 export type OperatorTotals = {
@@ -7523,6 +7558,58 @@ export type SetOperatorAccountControlsResponses = {
 };
 
 export type SetOperatorAccountControlsResponse = SetOperatorAccountControlsResponses[keyof SetOperatorAccountControlsResponses];
+
+export type ReadOperatorAccountSeatsData = {
+    body?: never;
+    headers?: {
+        /**
+         * Optional caller supplied correlation identifier. The server echoes the value and generates a UUID when the header is absent. A value outside the pattern below is rejected with a 400 problem.
+         */
+        'x-request-id'?: string;
+    };
+    path: {
+        /**
+         * Identifier of the account that the operation acts on.
+         */
+        accountId: Uuid;
+    };
+    query?: never;
+    url: '/api/operator/accounts/{accountId}/seats';
+};
+
+export type ReadOperatorAccountSeatsErrors = {
+    /**
+     * The request did not match the contract.
+     */
+    400: ProblemDetails;
+    /**
+     * The request carries no usable session.
+     */
+    401: ProblemDetails;
+    /**
+     * The operator API is off, with the code operator_off, or the request names no account or no valid handoff, with the code not_found.
+     */
+    404: ProblemDetails;
+    /**
+     * Too many requests. Too many attempts were made in a short time, the account runs its limit of archive jobs, or the account or the installation downloaded the most bytes or read the most objects that one calendar month in UTC allows (record 0193). The code names the cause: rate_limited, archive_job_running or download_limit. Nothing changed.
+     */
+    429: ProblemDetails;
+    /**
+     * The service failed to complete the request.
+     */
+    500: ProblemDetails;
+};
+
+export type ReadOperatorAccountSeatsError = ReadOperatorAccountSeatsErrors[keyof ReadOperatorAccountSeatsErrors];
+
+export type ReadOperatorAccountSeatsResponses = {
+    /**
+     * The seat usage of the account.
+     */
+    200: OperatorAccountSeats;
+};
+
+export type ReadOperatorAccountSeatsResponse = ReadOperatorAccountSeatsResponses[keyof ReadOperatorAccountSeatsResponses];
 
 export type ListOperatorAccountEventsData = {
     body?: never;

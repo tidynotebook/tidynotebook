@@ -166,6 +166,8 @@ paths:
     $ref: './paths/api_operator_accounts_accountId.yaml'
   /api/operator/accounts/{accountId}/controls:
     $ref: './paths/api_operator_accounts_accountId_controls.yaml'
+  /api/operator/accounts/{accountId}/seats:
+    $ref: './paths/api_operator_accounts_accountId_seats.yaml'
   /api/operator/totals:
     $ref: './paths/api_operator_totals.yaml'
   /api/operator/events:

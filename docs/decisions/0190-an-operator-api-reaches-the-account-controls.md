@@ -35,8 +35,10 @@ session of a person. See
 - The operator operations skip the Host allowlist of record 0039, as the
   probes of record 0199 do, because a service on a private network names the
   core by an internal host. They set no cookie and answer no page.
-- The operator API never reads or writes a note, a workspace or a published
-  link.
+- The seat read returns the memberships and open invitations that use seats
+  across one owner's workspaces. It uses the owner's account identity in one
+  read-only transaction. The operator API has no access to notes or published
+  links.
 
 ## Consequences
 

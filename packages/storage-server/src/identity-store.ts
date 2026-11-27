@@ -23,6 +23,7 @@ import { randomUUID } from 'node:crypto';
 import { resolveOAuthToken, type OAuthTokenIdentity } from './oauth-store.ts';
 import { apiKeyOf, type ApiKeyRow } from './api-key-row.ts';
 import { connectedAppOf, type ConnectedAppRow } from './connected-app-row.ts';
+import { readOperatorSeatUsage } from './operator-seats.ts';
 import {
   installationSettingsOf,
   type InstallationSettingsRow,
@@ -461,6 +462,7 @@ export function openIdentityStore(
     accountId: string | null,
     workspaceId: string | null,
     run: (client: pg.PoolClient) => Promise<T>,
+    mode: 'read' | 'write' = 'write',
   ): Promise<T> {
     let client: pg.PoolClient;
     try {
@@ -474,7 +476,11 @@ export function openIdentityStore(
       );
     }
     try {
-      await client.query('begin');
+      await client.query(
+        mode === 'read'
+          ? 'begin isolation level repeatable read read only'
+          : 'begin',
+      );
       try {
         if (accountId !== null) {
           await client.query(
@@ -1654,6 +1660,16 @@ export function openIdentityStore(
 
     operator<T>(run: (tx: OperatorTransaction) => Promise<T>): Promise<T> {
       return asOperator((client) => run(operatorTransaction(client)));
+    },
+
+    operatorSeatUsage(accountId) {
+      assertUuid(accountId, 'the account');
+      return inTransaction(
+        accountId,
+        null,
+        (client) => readOperatorSeatUsage(client, accountId),
+        'read',
+      );
     },
 
     operatorPromote(email: string): Promise<string | null> {

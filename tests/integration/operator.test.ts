@@ -16,15 +16,20 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { setImmediate } from 'node:timers/promises';
 import {
+  acceptWorkspaceInvite,
   configureClient,
   createInvitation,
   createOwner,
+  createWorkspace,
+  createWorkspaceInvites,
   findOperatorAccount,
   getAccount,
   listOperatorAccountEvents,
+  listWorkspaceMembers,
   listWorkspaces,
   openAccountPortal,
   readOperatorAccount,
+  readOperatorAccountSeats,
   readOperatorTotals,
   redeemAccountHandoff,
   registerAccount,
@@ -36,6 +41,10 @@ import {
   loadProtectedEnvironment,
   loadServerConfig,
 } from '@notesapp/server';
+import {
+  openIdentityStore,
+  readOnlyTransactionCode,
+} from '@notesapp/storage-server';
 import { createDisposableDatabase, openSession } from './support/database.ts';
 
 function responseOf(response: Response | undefined): Response {
@@ -126,7 +135,10 @@ const admin = {
 };
 
 /** Invites and registers one member, and answers its session. */
-async function member(signal: AbortSignal | null = null): Promise<{
+async function member(
+  signal: AbortSignal | null = null,
+  name?: string,
+): Promise<{
   email: string;
   headers: { origin: string; cookie: string };
   accountId: string;
@@ -140,7 +152,11 @@ async function member(signal: AbortSignal | null = null): Promise<{
   const token = new URL(made.data?.link ?? 'http://x/').hash.slice(1);
   const registered = await registerAccount({
     headers: origin,
-    body: { invitation: token, password: 'member-password-123456' },
+    body: {
+      invitation: token,
+      password: 'member-password-123456',
+      ...(name === undefined ? {} : { name }),
+    },
     signal,
   });
   assert.equal(responseOf(registered.response).status, 201);
@@ -163,6 +179,11 @@ await test('an installation with no token file answers operator_off', async () =
       query: { address: someone.email },
     }),
     readOperatorAccount({
+      baseUrl: offUrl,
+      headers: operator,
+      path: { accountId: someone.accountId },
+    }),
+    readOperatorAccountSeats({
       baseUrl: offUrl,
       headers: operator,
       path: { accountId: someone.accountId },
@@ -732,6 +753,207 @@ await test('a wrong or missing token changes nothing, and the failures are bound
     ]);
   } finally {
     await setup.close();
+  }
+});
+
+await test('seat usage counts distinct members and open reservations across the owner workspaces', async () => {
+  const owner = await member();
+  const casey = await member(null, 'Casey');
+  const sam = await member(null, 'Sam');
+  const first = await createWorkspace({
+    headers: owner.headers,
+    body: { name: 'First shared workspace' },
+  });
+  assert.ok(first.data, JSON.stringify(first.error));
+  const second = await createWorkspace({
+    headers: owner.headers,
+    body: { name: 'Second shared workspace' },
+  });
+  assert.ok(second.data, JSON.stringify(second.error));
+  const firstId = first.data.workspaceId;
+  const secondId = second.data.workspaceId;
+
+  async function invite(workspaceId: string, email: string) {
+    const result = await createWorkspaceInvites({
+      path: { workspaceId },
+      headers: owner.headers,
+      body: { emails: [email], role: 'editor' },
+    });
+    const invitationId = result.data?.results[0]?.invitationId;
+    assert.ok(invitationId, JSON.stringify(result.error));
+    return invitationId;
+  }
+
+  for (const [workspaceId, person] of [
+    [firstId, casey],
+    [secondId, casey],
+    [secondId, sam],
+  ] as const) {
+    const accepted = await acceptWorkspaceInvite({
+      path: { invitationId: await invite(workspaceId, person.email) },
+      headers: person.headers,
+    });
+    assert.ok(accepted.data, JSON.stringify(accepted.error));
+  }
+
+  const reservedEmail = 'reserved@notes.invalid';
+  const early = await invite(firstId, reservedEmail);
+  const late = await invite(secondId, reservedEmail);
+  const expired = await invite(firstId, 'expired@notes.invalid');
+  await invite(firstId, sam.email);
+
+  const earliestJoin = '2025-01-01T00:00:00.000Z';
+  const laterJoin = '2025-01-02T00:00:00.000Z';
+  const expiry = new Date(Date.now() + 86_400_000).toISOString();
+  const laterExpiry = new Date(Date.now() + 172_800_000).toISOString();
+  const seed = await openSession(database.migrationUrl);
+  try {
+    await seed.query(
+      'UPDATE memberships SET created_at = $1 WHERE workspace_id = $2 AND account_id = $3',
+      [earliestJoin, secondId, casey.accountId],
+    );
+    await seed.query(
+      'UPDATE memberships SET created_at = $1 WHERE workspace_id = $2 AND account_id = $3',
+      [laterJoin, secondId, sam.accountId],
+    );
+    await seed.query(
+      `UPDATE workspace_invitations SET expires_at = CASE id
+         WHEN $1 THEN $2::timestamptz WHEN $3 THEN $4::timestamptz
+         ELSE now() - interval '1 hour' END
+         WHERE id IN ($1, $3, $5)`,
+      [early, expiry, late, laterExpiry, expired],
+    );
+  } finally {
+    await seed.close();
+  }
+
+  const path = { accountId: owner.accountId };
+  const expected = {
+    memberLimit: null,
+    membersUsed: 2,
+    pendingInvites: 1,
+    members: [
+      {
+        accountId: casey.accountId,
+        email: casey.email,
+        name: 'Casey',
+        since: earliestJoin,
+      },
+      {
+        accountId: sam.accountId,
+        email: sam.email,
+        name: 'Sam',
+        since: laterJoin,
+      },
+    ],
+    invites: [
+      { email: reservedEmail, expiresAt: expiry, workspaceId: firstId },
+    ],
+  };
+  const unlimited = await readOperatorAccountSeats({ path, headers: operator });
+  assert.equal(
+    responseOf(unlimited.response).status,
+    200,
+    JSON.stringify(unlimited.error),
+  );
+  assert.deepEqual(unlimited.data, expected);
+
+  const controls = await readOperatorAccount({ path, headers: operator });
+  assert.ok(controls.data, JSON.stringify(controls.error));
+  const limited = await setOperatorAccountControls({
+    path,
+    headers: operator,
+    body: { revision: controls.data.controls.revision, memberLimit: 5 },
+  });
+  assert.ok(limited.data, JSON.stringify(limited.error));
+  const usage = await readOperatorAccountSeats({ path, headers: operator });
+  assert.equal(
+    responseOf(usage.response).status,
+    200,
+    JSON.stringify(usage.error),
+  );
+  assert.deepEqual(usage.data, { ...expected, memberLimit: 5 });
+  const roster = await listWorkspaceMembers({
+    headers: owner.headers,
+    path: { workspaceId: firstId },
+  });
+  assert.deepEqual(roster.data?.seats, {
+    memberLimit: 5,
+    membersUsed: expected.membersUsed,
+    pendingInvites: expected.pendingInvites,
+    freePlaces: 2,
+  });
+  const unauthenticated = await readOperatorAccountSeats({
+    path,
+    headers: owner.headers,
+  });
+  assert.equal(responseOf(unauthenticated.response).status, 401);
+});
+
+await test('seat usage distinguishes an account without workspaces from a missing account', async () => {
+  const accountId = randomUUID();
+  const seed = await openSession(database.migrationUrl);
+  try {
+    await seed.query(
+      'INSERT INTO accounts (id, member_limit, limit_bytes) VALUES ($1, 4, 1048576)',
+      [accountId],
+    );
+  } finally {
+    await seed.close();
+  }
+  const empty = await readOperatorAccountSeats({
+    path: { accountId },
+    headers: operator,
+  });
+  assert.equal(
+    responseOf(empty.response).status,
+    200,
+    JSON.stringify(empty.error),
+  );
+  assert.deepEqual(empty.data, {
+    memberLimit: 4,
+    membersUsed: 0,
+    pendingInvites: 0,
+    members: [],
+    invites: [],
+  });
+  const missing = await readOperatorAccountSeats({
+    path: { accountId: randomUUID() },
+    headers: operator,
+  });
+  assert.equal(responseOf(missing.response).status, 404);
+  assert.equal(codeOf(missing.error), 'not_found');
+});
+
+await test('the owner identity used for the operator seat read cannot write', async () => {
+  const owner = await member();
+  const seed = await openSession(database.migrationUrl);
+  const store = openIdentityStore(database.runtimeUrl);
+  try {
+    const [original] = await seed.query<{ definition: string }>(
+      "SELECT pg_get_functiondef('notesapp_workspace_seat_preview(uuid,text[],boolean)'::regprocedure) AS definition",
+    );
+    assert.ok(original);
+    try {
+      await seed.query(`
+        CREATE OR REPLACE FUNCTION public.notesapp_workspace_seat_preview(
+          p_workspace uuid, p_emails text[], p_lock boolean
+        ) RETURNS TABLE(member_limit integer, members_used integer, pending_invites integer, additional_places integer)
+        LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public AS $$
+        BEGIN
+          UPDATE public.accounts SET member_limit = 8 WHERE id = public.notesapp_current_account();
+          RETURN QUERY SELECT 8, 0, 0, 0;
+        END $$`);
+      await assert.rejects(store.operatorSeatUsage(owner.accountId), {
+        code: readOnlyTransactionCode,
+      });
+    } finally {
+      await seed.query(original.definition);
+    }
+    const usage = await store.operatorSeatUsage(owner.accountId);
+    assert.equal(usage?.memberLimit, null);
+  } finally {
+    await Promise.all([store.close(), seed.close()]);
   }
 });
 

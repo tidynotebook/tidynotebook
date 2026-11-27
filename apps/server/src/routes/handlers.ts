@@ -72,11 +72,13 @@ function missingStore(): WorkspaceAdminStore & InstallationStore {
 }
 
 function missingOperatorStore(): OperatorStore {
+  const unavailable = (): Promise<never> =>
+    Promise.reject(
+      new Error('notesapp: the server was built without an operator store.'),
+    );
   return {
-    operator: () =>
-      Promise.reject(
-        new Error('notesapp: the server was built without an operator store.'),
-      ),
+    operator: unavailable,
+    operatorSeatUsage: unavailable,
   };
 }
 

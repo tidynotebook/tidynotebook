@@ -1,0 +1,68 @@
+type: object
+description: The seats used across all workspaces owned by one account.
+readOnly: true
+additionalProperties: false
+required: [memberLimit, membersUsed, pendingInvites, members, invites]
+properties:
+  memberLimit:
+    allOf:
+      - $ref: './MemberLimit.yaml'
+    readOnly: true
+  membersUsed:
+    type: integer
+    minimum: 0
+    readOnly: true
+    description: The number of distinct member accounts, excluding the owner.
+  pendingInvites:
+    type: integer
+    minimum: 0
+    readOnly: true
+    description: The number of distinct addresses that hold a place through an open invite.
+  members:
+    type: array
+    readOnly: true
+    description: Members in order of their first join.
+    items:
+      type: object
+      readOnly: true
+      additionalProperties: false
+      required: [accountId, email, name, since]
+      properties:
+        accountId:
+          allOf:
+            - $ref: './Uuid.yaml'
+          readOnly: true
+        email:
+          type: [string, 'null']
+          maxLength: 320
+          readOnly: true
+        name:
+          type: [string, 'null']
+          readOnly: true
+        since:
+          type: string
+          format: date-time
+          readOnly: true
+          description: The earliest start of any current membership with the owner.
+  invites:
+    type: array
+    readOnly: true
+    description: The first invite to expire for each address that holds a place, in expiry order.
+    items:
+      type: object
+      readOnly: true
+      additionalProperties: false
+      required: [email, expiresAt, workspaceId]
+      properties:
+        email:
+          type: string
+          maxLength: 320
+          readOnly: true
+        expiresAt:
+          type: string
+          format: date-time
+          readOnly: true
+        workspaceId:
+          allOf:
+            - $ref: './Uuid.yaml'
+          readOnly: true

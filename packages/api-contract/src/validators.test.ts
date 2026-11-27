@@ -553,6 +553,7 @@ await test('every operator operation takes the operator token alone', () => {
     'findOperatorAccount',
     'listOperatorAccountEvents',
     'readOperatorAccount',
+    'readOperatorAccountSeats',
     'readOperatorTotals',
     'redeemAccountHandoff',
     'removeOperatorAccount',
@@ -560,8 +561,7 @@ await test('every operator operation takes the operator token alone', () => {
   ]);
   for (const operation of operator) {
     assert.deepEqual(operation.security, [{ operatorToken: [] }], operation.id);
-    // The operator API reaches no note, no workspace and no published link
-    // (record 0190), so no operator address names one.
+    // The operator API has no workspace, file or publication routes (record 0190).
     assert.doesNotMatch(operation.path, /workspace|file|publication/);
     assert.ok(responseMediaTypes(operation.id, 404).length > 0, operation.id);
     assert.ok(responseMediaTypes(operation.id, 401).length > 0, operation.id);
