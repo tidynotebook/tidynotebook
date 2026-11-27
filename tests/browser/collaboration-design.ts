@@ -443,8 +443,23 @@ export async function runCollaborationAudit(
           .getByText('All 6 seats are in use. Add seats to invite more people.')
           .waitFor();
         assert.ok(await invite.isDisabled());
-        if (fixture.hasPortal)
-          await owner.getByRole('link', { name: 'Manage seats' }).waitFor();
+        if (fixture.hasPortal) {
+          const manage = owner.getByRole('link', { name: 'Manage seats' });
+          await manage.waitFor();
+          if (phone) {
+            const message = await owner
+              .getByText(
+                'All 6 seats are in use. Add seats to invite more people.',
+              )
+              .boundingBox();
+            const action = await manage.boundingBox();
+            assert.ok(message && action);
+            assert.ok(
+              action.y >= message.y + message.height,
+              'On touch screens the portal link is below the full notice.',
+            );
+          }
+        }
         await check(owner, 'members-seats-full');
         await fixture.setMemberLimit(null);
         await owner

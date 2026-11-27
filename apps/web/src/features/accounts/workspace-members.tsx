@@ -214,9 +214,10 @@ export function WorkspaceMembers({
       {manage ? (
         <Inline gap={3} justify="between" align="center">
           {collaborationEnabled === false && hasPortal ? (
-            <Notice message="Your plan does not include collaboration.">
-              <SeatPortalLink label="See plans" />
-            </Notice>
+            <SeatNotice
+              message="Your plan does not include collaboration."
+              portalLabel="See plans"
+            />
           ) : (
             <p className="text-secondary text-muted">
               {collaborationEnabled === false
@@ -557,6 +558,24 @@ function SeatPortalLink({ label }: { readonly label: string }): ReactNode {
   );
 }
 
+function SeatNotice({
+  message,
+  portalLabel,
+}: {
+  readonly message: string;
+  readonly portalLabel: string | null;
+}): ReactNode {
+  return (
+    <Notice message={message}>
+      {portalLabel === null ? null : (
+        <Inline justify="end" className="coarse:basis-full">
+          <SeatPortalLink label={portalLabel} />
+        </Inline>
+      )}
+    </Notice>
+  );
+}
+
 function WorkspaceSeatStatus({
   seats,
   hasPortal,
@@ -567,14 +586,16 @@ function WorkspaceSeatStatus({
   const total = seats.memberLimit + 1;
   const used = seats.membersUsed + seats.pendingInvites + 1;
   const portal = hasPortal ? <SeatPortalLink label="Manage seats" /> : null;
-  if (seats.freePlaces === 0)
+  if (seats.freePlaces === 0) {
+    const inUse =
+      total === 1 ? 'Your seat is in use.' : `All ${total} seats are in use.`;
     return (
-      <Notice
-        message={`All ${total} seats are in use. Add seats to invite more people.`}
-      >
-        {portal}
-      </Notice>
+      <SeatNotice
+        message={`${inUse} Add seats to invite more people.`}
+        portalLabel={hasPortal ? 'Manage seats' : null}
+      />
     );
+  }
   const text = `${used} of ${total} seats used`;
   return (
     <Stack gap={2}>
