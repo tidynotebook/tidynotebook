@@ -56,6 +56,7 @@ await test('the account contract names every browser session operation', () => {
     'leaveWorkspace',
     'listWorkspaceInvites',
     'createWorkspaceInvites',
+    'previewWorkspaceInvites',
     'readWorkspaceInviteLink',
     'revokeWorkspaceInvite',
     'listMyWorkspaceInvites',

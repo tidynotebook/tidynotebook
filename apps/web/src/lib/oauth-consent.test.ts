@@ -178,6 +178,7 @@ await test('a locked account cannot consent and gets one next action', () => {
               textLimitBytes: null,
               publishedTransferLimitBytes: null,
               downloadLimitBytes: null,
+              memberLimit: null,
               features: { teams: true, collaboration: true },
             },
             accountPortal,

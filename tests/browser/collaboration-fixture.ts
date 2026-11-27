@@ -1,13 +1,16 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import {
+  acceptWorkspaceInvite,
   configureClient,
   createFile,
   createInvitation,
   createWorkspace,
   createWorkspaceInvites,
   deleteWorkspace,
+  getAccount,
   getFile,
+  type AccountControlsInput,
   listAccounts,
   listFiles,
   listHistory,
@@ -17,6 +20,7 @@ import {
   removeAccount,
   revokeInvitation,
   signInWithPassword,
+  updateAccount,
   type WorkspaceInviteRole,
 } from '@notesapp/api-client';
 import { firstSave } from '../integration/support/documents.ts';
@@ -52,8 +56,9 @@ export async function collaborationFixture(
     return { origin, cookie };
   }
 
-  const admin = await signInHeaders('owner@example.com');
-  assert.ok(admin, 'Bootstrap the disposable owner account first.');
+  const administrator = await signInHeaders('owner@example.com');
+  assert.ok(administrator, 'Bootstrap the disposable owner account first.');
+  const admin: FixtureHeaders = administrator;
   const workspaces: string[] = [];
   const accountEmails = new Set([owner, editor, viewer, pendingEmail]);
   let fixtureOwner: FixtureHeaders | null = null;
@@ -210,6 +215,25 @@ export async function collaborationFixture(
   const fileId = await createNote('Launch plan');
   const notePath = { ...path, fileId };
   const personalPath = { workspaceId: editorPersonal.workspaceId };
+  const ownerAccount = await getAccount({ headers });
+  assert.ok(ownerAccount.data, JSON.stringify(ownerAccount.error));
+
+  async function setOwnerControls(
+    change: Omit<AccountControlsInput, 'revision'>,
+  ) {
+    const accounts = await listAccounts({ headers: admin });
+    const account = accounts.data?.accounts.find(
+      (entry) => entry.email === owner,
+    );
+    assert.ok(account, JSON.stringify(accounts.error));
+    const response = await updateAccount({
+      path: { accountId: account.accountId },
+      headers: admin,
+      body: { controls: { revision: account.controls.revision, ...change } },
+    });
+    assert.equal(response.error, undefined, JSON.stringify(response.error));
+  }
+
   return {
     owner,
     editor,
@@ -226,6 +250,52 @@ export async function collaborationFixture(
     viewerSwitcherId: forEditor.workspaceId,
     viewerSwitcherName: forEditor.name,
     editorPersonalId: editorPersonal.workspaceId,
+    hasPortal: ownerAccount.data.accountPortal,
+    setCollaboration: (collaboration: boolean) =>
+      setOwnerControls({ features: { collaboration } }),
+    setMemberLimit: (memberLimit: number | null) =>
+      setOwnerControls({ memberLimit }),
+    async assertSeatBatchRefused() {
+      const result = await createWorkspaceInvites({
+        path,
+        headers,
+        body: {
+          emails: ['seat-one@example.test', 'seat-two@example.test'],
+          role: 'viewer',
+        },
+      });
+      assert.equal(result.response?.status, 403);
+      assert.equal(result.error?.code, 'member_limit');
+      assert.equal(result.error?.freePlaces, 1);
+    },
+    async assertInvitationsBlocked() {
+      const attempted = await createWorkspaceInvites({
+        path,
+        headers,
+        body: { emails: ['off@example.test'], role: 'viewer' },
+      });
+      assert.equal(attempted.response?.status, 403);
+      assert.equal(attempted.error?.code, 'collaboration_off');
+      const viewerHeaders = await signInHeaders(viewer);
+      assert.ok(viewerHeaders);
+      const accepted = await acceptWorkspaceInvite({
+        path: { invitationId: viewerLink.invitationId },
+        headers: viewerHeaders,
+      });
+      assert.equal(accepted.response?.status, 403);
+      assert.equal(accepted.error?.code, 'collaboration_off');
+      const signup = await registerAccount({
+        headers: { origin },
+        body: {
+          invitation: new URL(pending.url).hash.slice(1),
+          password,
+          name: 'Pending member',
+        },
+      });
+      assert.equal(signup.response?.status, 403);
+      assert.equal(signup.error?.code, 'collaboration_off');
+    },
+
     createNote,
     async readNote() {
       const result = await getFile({

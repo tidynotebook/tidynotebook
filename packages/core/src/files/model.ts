@@ -350,6 +350,8 @@ export type DomainErrorCode =
   | 'published_link_unavailable'
   | 'not_found'
   | 'last_administrator'
+  | 'member_limit'
+  | 'collaboration_off'
   | 'invitation_invalid'
   | 'account_exists'
   | 'open_registration_unavailable'
@@ -376,6 +378,7 @@ export type DomainErrorCode =
 export type DomainError = {
   readonly code: DomainErrorCode;
   readonly fileIds: readonly string[];
+  readonly freePlaces?: number;
 };
 
 /**

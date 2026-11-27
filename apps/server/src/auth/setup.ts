@@ -217,7 +217,11 @@ export function createSetupHandlers(
         newAccount: dependencies.newAccount,
       });
       if (!made.ok) {
-        if (made.error.code === 'password_breached')
+        if (
+          made.error.code === 'password_breached' ||
+          made.error.code === 'collaboration_off' ||
+          made.error.code === 'member_limit'
+        )
           throw new DomainProblemError(made.error);
         throw invitationRefused();
       }

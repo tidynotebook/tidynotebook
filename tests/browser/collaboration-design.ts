@@ -95,6 +95,14 @@ export async function runCollaborationAudit(
         async function check(page: Page, surface: string) {
           const name = `${surface}-${width}-${theme}`;
           await pause(100);
+          const storageAdvisory = page.getByRole('status').filter({
+            hasText:
+              'This browser can remove offline data when the device needs space.',
+          });
+          if (await storageAdvisory.isVisible())
+            await storageAdvisory
+              .getByRole('button', { name: 'Close', exact: true })
+              .click();
           await captureSurface(page, name, output);
           for (const audit of audits) {
             let report: Record<string, unknown>;
@@ -192,18 +200,53 @@ export async function runCollaborationAudit(
           .waitFor();
         await check(owner, 'join-wrong-account');
 
+        const adminContext = await newContext();
+        const admin = await adminContext.newPage();
+        await signIn(admin, 'owner@example.com');
+        const accountHome = await admin.evaluate(() => location.pathname);
+        await admin.goto(`${origin}${accountHome}?settings=accounts`);
+        await admin
+          .locator('.ui-settings-column .ui-settings-header-title')
+          .filter({ hasText: 'Users' })
+          .waitFor();
         if (phone) {
-          const referenceContext = await newContext();
-          const reference = await referenceContext.newPage();
-          await signIn(reference, 'owner@example.com');
-          const accountHome = await reference.evaluate(() => location.pathname);
-          await reference.goto(`${origin}${accountHome}?settings=accounts`);
-          await reference
-            .locator('.ui-settings-column .ui-settings-header-title')
-            .filter({ hasText: 'Users' })
-            .waitFor();
-          await check(reference, 'settings-accounts');
-          await referenceContext.close();
+          await check(admin, 'settings-accounts');
+          await admin
+            .getByRole('button', { name: 'Account: Casey Editor', exact: true })
+            .filter({ hasText: fixture.editor })
+            .click();
+          await admin
+            .getByRole('button', { name: /Limits and access/ })
+            .click();
+        } else {
+          await admin
+            .locator('[data-ui-row]')
+            .filter({ hasText: fixture.editor })
+            .getByRole('button', { name: 'Change the account of Casey Editor' })
+            .click();
+          await admin
+            .getByRole('menuitem', { name: 'Change limits and access' })
+            .click();
+        }
+        await admin
+          .getByLabel('Member limit', { exact: true })
+          .scrollIntoViewIfNeeded();
+        await admin
+          .getByText(
+            'The number of people, not the owner, in the workspaces of this account. Empty means no limit.',
+            { exact: true },
+          )
+          .waitFor();
+        if (!phone)
+          assert.equal(
+            await admin
+              .getByRole('heading', { name: 'Change limits and access' })
+              .getAttribute('data-scroll-edge'),
+            null,
+          );
+        await check(admin, 'account-member-limit');
+        await adminContext.close();
+        if (phone) {
           await owner.goto(`${home}?settings=daily-notes`);
           await owner
             .locator('.ui-settings-column .ui-settings-header-title')
@@ -213,12 +256,16 @@ export async function runCollaborationAudit(
         }
 
         let emptyInvites = false;
+        let beforeInviteWrite: (() => Promise<void>) | null = null;
         await ownerContext.route(
           `**/api/workspaces/${fixture.workspaceId}/invitations`,
-          (route) =>
-            emptyInvites && route.request().method() === 'GET'
-              ? route.fulfill({ json: { invitations: [] } })
-              : route.continue(),
+          async (route) => {
+            const method = route.request().method();
+            if (method === 'GET' && emptyInvites)
+              return route.fulfill({ json: { invitations: [] } });
+            if (method === 'POST') await beforeInviteWrite?.();
+            return route.continue();
+          },
         );
         const settings = `${home}?settings=members`;
         const members = async () => {
@@ -357,7 +404,254 @@ export async function runCollaborationAudit(
         const viewer = await viewerContext.newPage();
         await signIn(viewer, fixture.viewer);
         await viewer.goto(fixture.viewerLink);
-        await viewer.getByRole('button', { name: 'Accept and open' }).waitFor();
+        const acceptLink = viewer.getByRole('button', {
+          name: 'Accept and open',
+        });
+        await acceptLink.waitFor();
+        await members();
+        await fixture.setMemberLimit(6);
+        await owner.getByText('6 of 7 seats used', { exact: true }).waitFor();
+        const openInvites = owner.getByText('3 open invites', { exact: true });
+        await openInvites.waitFor();
+        assert.equal(
+          await openInvites.evaluate((element) => {
+            const range = document.createRange();
+            range.selectNodeContents(element);
+            return (
+              range.getBoundingClientRect().height <=
+              parseFloat(getComputedStyle(element).lineHeight)
+            );
+          }),
+          true,
+          'The open invite count fits on one line.',
+        );
+        await owner.getByRole('meter', { name: 'Seats' }).waitFor();
+        if (fixture.hasPortal)
+          await owner.getByRole('link', { name: 'Manage seats' }).waitFor();
+        await check(owner, 'members-seat-usage');
+        await invite.click();
+        await owner
+          .getByLabel('Email addresses')
+          .fill('seat-one@example.test, seat-two@example.test');
+        await owner
+          .getByText('You have 1 free seat. Remove 1 address, or add seats.')
+          .waitFor();
+        assert.ok(
+          await owner
+            .getByRole('button', { name: 'Send 2 invites' })
+            .isDisabled(),
+        );
+        await check(owner, 'invite-seat-limit');
+        await fixture.assertSeatBatchRefused();
+        await owner
+          .getByRole('button', {
+            name: phone ? 'Back to section' : 'Cancel',
+            exact: true,
+          })
+          .click();
+        await viewer
+          .getByText(
+            'Owner invited you as Viewer. Your seat in this workspace is part of the plan of Owner.',
+            { exact: true },
+          )
+          .waitFor();
+        await check(viewer, 'join-seat-notice');
+        await role.click();
+        await owner.getByText('Remove from workspace', { exact: true }).click();
+        await owner
+          .getByText("Casey Editor's seat becomes free.", { exact: true })
+          .waitFor();
+        await check(owner, 'remove-seat-notice');
+        await owner
+          .getByRole('dialog', { name: 'Remove from workspace' })
+          .getByRole('button', {
+            name: phone ? 'Close dialog' : 'Cancel',
+            exact: true,
+          })
+          .click();
+        await fixture.setMemberLimit(5);
+        await owner
+          .getByText('All 6 seats are in use. Add seats to invite more people.')
+          .waitFor();
+        assert.ok(await invite.isEnabled());
+        async function checkNoticeAction(message: string, label: string) {
+          const action = owner.getByRole('link', { name: label, exact: true });
+          await action.waitFor();
+          const notice = owner.getByRole('status').filter({ hasText: message });
+          const position = await notice.evaluate((element) => {
+            const message = element.querySelector('span.text-strong');
+            const actionText = element.querySelector('a')?.firstChild;
+            if (!message || !actionText)
+              throw new Error('Notice action is missing.');
+            const range = document.createRange();
+            range.selectNode(actionText);
+            const anchorText = range.getBoundingClientRect();
+            const body = message.getBoundingClientRect();
+            return {
+              dx: anchorText.left - body.left,
+              below: anchorText.top >= body.bottom,
+            };
+          });
+          if (phone) {
+            assert.ok(
+              position.below,
+              'The portal link is below the full notice.',
+            );
+            assert.ok(
+              Math.abs(position.dx) <= 1,
+              'The portal link starts at the notice text edge.',
+            );
+          } else assert.ok(!position.below && position.dx > 0);
+        }
+        if (fixture.hasPortal)
+          await checkNoticeAction('All 6 seats are in use.', 'Manage seats');
+        await check(owner, 'members-seats-full');
+        await invite.click();
+        const sendInvite = owner.getByRole('button', {
+          name: 'Send invite',
+          exact: true,
+        });
+        await emailField.fill('new-seat@example.test');
+        const noSeats =
+          'You have 0 free seats. Remove 1 address, or add seats.';
+        await owner.getByText(noSeats, { exact: true }).waitFor();
+        assert.ok(await sendInvite.isDisabled());
+        await check(owner, 'invite-seats-full');
+        await emailField.fill(fixture.pendingEmail);
+        await sendInvite.click();
+        await owner
+          .getByText('Already invited. Copy the link to send it again.')
+          .waitFor();
+        await owner.getByRole('button', { name: 'Done', exact: true }).click();
+        await fixture.setMemberLimit(null);
+        await owner
+          .getByText('All 6 seats are in use. Add seats to invite more people.')
+          .waitFor({ state: 'hidden' });
+        await invite.click();
+        await emailField.fill('unquoted-seat@example.test');
+        const membersUrl = `**/api/workspaces/${fixture.workspaceId}/members*`;
+        const roster = Promise.withResolvers<void>();
+        await ownerContext.route(membersUrl, async (route) => {
+          await roster.promise;
+          await route.continue();
+        });
+        beforeInviteWrite = () => fixture.setMemberLimit(5);
+        try {
+          await sendInvite.click();
+          await owner.getByText(noSeats, { exact: true }).waitFor();
+          assert.ok(await sendInvite.isDisabled());
+          await check(owner, 'invite-limit-added');
+        } finally {
+          roster.resolve();
+          beforeInviteWrite = null;
+        }
+        await owner
+          .getByRole('button', {
+            name: phone ? 'Back to section' : 'Cancel',
+            exact: true,
+          })
+          .click();
+        await fixture.setMemberLimit(null);
+        const joinBlocked =
+          'The owner of this workspace cannot add members now.';
+        await fixture.setCollaboration(false);
+        const offText = fixture.hasPortal
+          ? 'Your plan does not include collaboration.'
+          : 'Collaboration is turned off for this account.';
+        const offNotice = owner
+          .getByRole('status')
+          .filter({ hasText: offText });
+        await offNotice.waitFor();
+        const help = owner.getByText(
+          'Owners and admins can invite people and change roles.',
+        );
+        const [noticeBounds, helpBounds] = await Promise.all([
+          offNotice.boundingBox(),
+          help.boundingBox(),
+        ]);
+        assert.ok(noticeBounds && helpBounds);
+        assert.equal(noticeBounds.x, helpBounds.x);
+        assert.ok(noticeBounds.y + noticeBounds.height < helpBounds.y);
+        assert.ok(
+          await offNotice.evaluate(
+            (element) =>
+              Math.abs(
+                element.getBoundingClientRect().width -
+                  (element.parentElement?.getBoundingClientRect().width ?? 0),
+              ) <= 1,
+          ),
+          'The collaboration notice fills the Members content width.',
+        );
+        if (fixture.hasPortal) await checkNoticeAction(offText, 'See plans');
+        assert.ok(await invite.isDisabled());
+        await owner.getByText(fixture.pendingEmail, { exact: true }).waitFor();
+        assert.equal(
+          await owner
+            .getByRole('button', { name: 'Copy link', exact: true })
+            .count(),
+          0,
+        );
+        await check(owner, 'members-collaboration-off');
+        if (phone) {
+          await owner
+            .getByRole('button', {
+              name: `Actions for ${fixture.pendingEmail}`,
+            })
+            .click();
+          const menu = owner.getByRole('menu');
+          await menu
+            .getByRole('menuitem', { name: 'Revoke', exact: true })
+            .waitFor();
+          assert.equal(
+            await menu.getByRole('menuitem', { name: 'Copy link' }).count(),
+            0,
+          );
+          await check(owner, 'members-collaboration-off-actions');
+          await owner.keyboard.press('Escape');
+          await menu.waitFor({ state: 'hidden' });
+        } else {
+          assert.ok(
+            await owner
+              .getByRole('button', { name: 'Revoke', exact: true })
+              .first()
+              .isEnabled(),
+          );
+        }
+        await viewer.getByText(joinBlocked, { exact: true }).waitFor();
+        assert.ok(await acceptLink.isDisabled());
+        assert.ok(
+          await viewer
+            .getByRole('button', { name: 'Decline', exact: true })
+            .isEnabled(),
+        );
+        await check(viewer, 'join-collaboration-off');
+        await fixture.assertInvitationsBlocked();
+
+        await viewer.goto(home);
+        await switcher(viewer);
+        await viewer
+          .getByText(fixture.viewerSwitcherName, { exact: true })
+          .click();
+        await viewer.getByText(joinBlocked, { exact: true }).waitFor();
+        const acceptMenu = viewer.getByRole('menuitem', {
+          name: /^Accept invite/,
+        });
+        assert.ok(await acceptMenu.isDisabled());
+        assert.ok(
+          await viewer
+            .getByRole('menuitem', { name: 'Decline invite' })
+            .isEnabled(),
+        );
+        await check(viewer, 'switcher-collaboration-off');
+        await fixture.setCollaboration(true);
+        await offNotice.waitFor({ state: 'hidden' });
+        assert.ok(await invite.isEnabled());
+        await viewer
+          .getByRole('menuitem', { name: 'Accept invite', exact: true })
+          .waitFor();
+        assert.ok(await acceptMenu.isEnabled());
+        await owner.goto(note);
+        await viewer.goto(fixture.viewerLink);
         await check(viewer, 'join-valid');
         await viewer.getByRole('button', { name: 'Accept and open' }).click();
         const joinToast = viewer

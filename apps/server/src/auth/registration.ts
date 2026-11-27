@@ -130,7 +130,7 @@ export async function registerIdentity(
   }
   if (!made.ok) {
     await deleteIdentityUser(auth, authUserId);
-    return fail(made.error.code);
+    return made;
   }
   // The address of this account is proved: the operator typed it at the first
   // run, or the invitation bound it (record 0114).

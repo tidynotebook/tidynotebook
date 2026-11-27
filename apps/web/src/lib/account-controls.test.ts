@@ -16,6 +16,7 @@ const active: AccountControls = {
   textLimitBytes: null,
   publishedTransferLimitBytes: null,
   downloadLimitBytes: 2 * gigabyte,
+  memberLimit: null,
   features: { teams: true, collaboration: true },
 };
 
@@ -27,6 +28,7 @@ await test('the form shows the stored controls in gigabytes and days', () => {
     textGigabytes: '',
     transferGigabytes: '',
     downloadGigabytes: '2',
+    memberLimit: '',
     teams: true,
     collaboration: true,
   });
@@ -56,6 +58,7 @@ await test('a saved form names the revision that the page read', () => {
       textLimitBytes: gigabyte,
       publishedTransferLimitBytes: null,
       downloadLimitBytes: null,
+      memberLimit: null,
       features: { teams: false, collaboration: true },
     },
   });
@@ -138,6 +141,7 @@ await test('a save keeps each limit that a person did not change exactly', () =>
       textLimitBytes: 5 * 1024 ** 3 + 12_345,
       publishedTransferLimitBytes: gigabyte + 7,
       downloadLimitBytes: 3,
+      memberLimit: null,
       features: { teams: false, collaboration: true },
     },
   });

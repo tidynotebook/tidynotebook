@@ -76,6 +76,8 @@ import type {
 } from '@notesapp/core';
 import {
   workspaceRoles,
+  WorkspaceInvitationsOff,
+  WorkspaceMemberLimitExceeded,
   accountStates,
   defaultSpellCheck,
   importedFamilyOf,
@@ -229,7 +231,13 @@ function asAccountState(value: string): AccountState {
 }
 
 /** The kinds of an account event, in the order of the enum. */
-const eventKinds: readonly AccountEventKind[] = ['made', 'verified', 'removed'];
+const eventKinds: readonly AccountEventKind[] = [
+  'made',
+  'verified',
+  'removed',
+  'workspace_member_added',
+  'workspace_member_removed',
+];
 
 /** Narrows a stored event kind. An unexpected value is a defect. */
 function asEventKind(value: string): AccountEventKind {
@@ -489,6 +497,20 @@ export function openIdentityStore(
         } catch {
           // The connection is already unusable; report the first failure.
         }
+        const code = postgresFailure(error)?.code;
+        if (
+          code === 'NA006' &&
+          typeof error === 'object' &&
+          error !== null &&
+          'detail' in error &&
+          typeof error.detail === 'string' &&
+          /^\d+$/.test(error.detail)
+        ) {
+          const freePlaces = Number(error.detail);
+          if (freePlaces <= 10000)
+            throw new WorkspaceMemberLimitExceeded(freePlaces);
+        }
+        if (code === 'NA005') throw new WorkspaceInvitationsOff();
         throw error;
       }
     } finally {
@@ -979,7 +1001,7 @@ export function openIdentityStore(
               c.published_transfer_limit_bytes::text
                 as published_transfer_limit_bytes,
               c.download_limit_bytes::text as download_limit_bytes,
-              c.teams, c.collaboration,
+              c.teams, c.collaboration, notesapp_account_member_limit(c.account_id) as member_limit,
               c.controls_revision::text as controls_revision,
               c.used_bytes::text as used_bytes,
               c.text_bytes::text as text_bytes,
@@ -1021,7 +1043,7 @@ export function openIdentityStore(
     const rows = await client.query<{ outcome: string }>(
       `select notesapp_set_account_controls($1, $2::bigint,
          $3::account_standing, $4::timestamptz, $5::bigint, $6::bigint,
-         $7::bigint, $8::bigint, $9, $10) as outcome`,
+         $7::bigint, $8::bigint, $9, $10, $11::integer) as outcome`,
       [accountId, ...controlsParameters(revision, controls)],
     );
     const outcome = rows.rows[0]?.outcome;
@@ -1109,8 +1131,13 @@ export function openIdentityStore(
           account_id: string;
           kind: string;
           occurred_at: Date;
+          owner_account_id: string | null;
+          member_account_id: string | null;
+          workspace_id: string | null;
+          owner_workspace_memberships: number | null;
         }>(
-          `select cursor::text as cursor, account_id, kind, occurred_at
+          `select cursor::text as cursor, account_id, kind, occurred_at,
+              owner_account_id, member_account_id, workspace_id, owner_workspace_memberships
              from notesapp_operator_account_events($1::bigint, $2)`,
           [String(after), limit],
         );
@@ -1119,6 +1146,17 @@ export function openIdentityStore(
           accountId: row.account_id,
           kind: asEventKind(row.kind),
           occurredAt: isoOf(row.occurred_at),
+          ...(row.owner_account_id === null ||
+          row.member_account_id === null ||
+          row.workspace_id === null ||
+          row.owner_workspace_memberships === null
+            ? {}
+            : {
+                ownerAccountId: row.owner_account_id,
+                memberAccountId: row.member_account_id,
+                workspaceId: row.workspace_id,
+                ownerWorkspaceMemberships: row.owner_workspace_memberships,
+              }),
         }));
       },
 
@@ -1187,7 +1225,7 @@ export function openIdentityStore(
                   published_transfer_limit_bytes::text
                     as published_transfer_limit_bytes,
                   download_limit_bytes::text as download_limit_bytes,
-                  teams, collaboration,
+                  teams, collaboration, notesapp_account_member_limit(account_id) as member_limit,
                   controls_revision::text as controls_revision
              from notesapp_list_accounts()`,
         );

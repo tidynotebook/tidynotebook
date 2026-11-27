@@ -1,4 +1,4 @@
-import { joinedWorkspaceState } from '../../lib/workspace-joined.ts';
+import { joinedWorkspaceState } from '../../shell/workspace-invites.ts';
 import {
   Form,
   Stack,
@@ -200,9 +200,12 @@ export function AcceptForm({
     setBusy(false);
     if (result.data === undefined) {
       setError(
-        (result.response?.status ?? 0) === 403
-          ? invalidInvitation
-          : problemMessage(result.error),
+        result.error?.code === 'collaboration_off' ||
+          result.error?.code === 'member_limit'
+          ? result.error.title
+          : result.response?.status === 403
+            ? invalidInvitation
+            : problemMessage(result.error),
       );
       return;
     }

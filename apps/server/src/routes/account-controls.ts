@@ -40,6 +40,7 @@ export function controlsBody(
       controls.publishedTransferLimitBytes,
     ),
     downloadLimitBytes: limitNumber(controls.downloadLimitBytes),
+    memberLimit: controls.memberLimit,
     features: {
       teams: controls.features.teams,
       collaboration: controls.features.collaboration,
@@ -97,6 +98,7 @@ export function controlsChangeOf(body: unknown): ControlsChange {
   const removalAt = readProperty(body, 'removalAt');
   const limit = limitMember(body, 'limitBytes');
   const features = readProperty(body, 'features');
+  const memberLimit = readProperty(body, 'memberLimit');
   return {
     revision,
     ...(typeof standing === 'string' ? { standing } : {}),
@@ -110,6 +112,9 @@ export function controlsChangeOf(body: unknown): ControlsChange {
       'publishedTransferLimitBytes',
     ),
     downloadLimitBytes: limitMember(body, 'downloadLimitBytes'),
+    ...(memberLimit === null || typeof memberLimit === 'number'
+      ? { memberLimit }
+      : {}),
     ...(features === undefined
       ? {}
       : {

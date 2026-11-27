@@ -679,6 +679,10 @@ export async function createAppWithHandlers(
           status === classified.status
             ? { noteRefusal: classified.noteRefusal }
             : {}),
+          ...(classified.freePlaces !== undefined &&
+          status === classified.status
+            ? { freePlaces: classified.freePlaces }
+            : {}),
           ...(classified.limit !== undefined && status === classified.status
             ? { limit: classified.limit }
             : {}),

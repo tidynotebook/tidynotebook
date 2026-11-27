@@ -52,6 +52,7 @@ export type AccountControls = {
   readonly textLimitBytes: bigint | null;
   readonly publishedTransferLimitBytes: bigint | null;
   readonly downloadLimitBytes: bigint | null;
+  readonly memberLimit: number | null;
   readonly features: AccountFeatures;
 };
 
@@ -70,6 +71,7 @@ export type ControlsChange = {
   readonly textLimitBytes?: bigint | null | undefined;
   readonly publishedTransferLimitBytes?: bigint | null | undefined;
   readonly downloadLimitBytes?: bigint | null | undefined;
+  readonly memberLimit?: number | null | undefined;
   readonly features?:
     | {
         readonly teams?: boolean | undefined;
@@ -144,6 +146,10 @@ export function applyControlsChange(
       change.downloadLimitBytes === undefined
         ? current.downloadLimitBytes
         : change.downloadLimitBytes,
+    memberLimit:
+      change.memberLimit === undefined
+        ? current.memberLimit
+        : change.memberLimit,
     features: {
       teams: change.features?.teams ?? current.features.teams,
       collaboration:
@@ -151,6 +157,10 @@ export function applyControlsChange(
     },
   };
   if (
+    (next.memberLimit !== null &&
+      (!Number.isInteger(next.memberLimit) ||
+        next.memberLimit < 0 ||
+        next.memberLimit > 10000)) ||
     !holdsLimit(next.limitBytes) ||
     !holdsLimit(next.textLimitBytes) ||
     !holdsLimit(next.publishedTransferLimitBytes) ||

@@ -14,6 +14,7 @@ required:
   - textLimitBytes
   - publishedTransferLimitBytes
   - downloadLimitBytes
+  - memberLimit
   - features
 properties:
   revision:
@@ -64,6 +65,10 @@ properties:
     description: >-
       The most bytes that the account downloads in one calendar month in UTC,
       or null for no limit (record 0193).
+  memberLimit:
+    allOf:
+      - $ref: './MemberLimit.yaml'
+    readOnly: true
   features:
     allOf:
       - $ref: './AccountFeatures.yaml'

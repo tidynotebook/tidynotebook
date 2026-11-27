@@ -4,3 +4,5 @@ enum:
   - made
   - verified
   - removed
+  - workspace_member_added
+  - workspace_member_removed

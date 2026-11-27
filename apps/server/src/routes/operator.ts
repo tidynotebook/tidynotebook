@@ -156,12 +156,7 @@ export function createOperatorHandlers(
         status: 200,
         mediaType: jsonMediaType,
         body: {
-          events: page.events.map((event) => ({
-            cursor: event.cursor,
-            accountId: event.accountId,
-            kind: event.kind,
-            occurredAt: event.occurredAt,
-          })),
+          events: page.events,
           cursor: page.cursor,
         },
       };

@@ -10,6 +10,7 @@
 import { fail, ok, type Result } from '../files/model.ts';
 import type { RegistrationRequest, RegistrationStore } from './ports.ts';
 import { newAccountSettingsHold } from './controls.ts';
+import { workspaceInvitationWrite } from '../workspaces/collaboration.ts';
 
 /**
  * The shape of an invitation token: 32 random bytes in base64url, with no
@@ -69,9 +70,9 @@ export function invitationState(
 /**
  * Makes one account through the one registration path.
  *
- * A refusal of an invitation answers `invitation_invalid` whatever the
- * cause, so the answer does not say whether the token expired, was used, was
- * revoked, or never existed. A refused first run answers `forbidden`.
+ * An expired, used, revoked, or unknown token answers `invitation_invalid`.
+ * An open workspace invitation can answer `collaboration_off`.
+ * A refused first run answers `forbidden`.
  */
 export async function registerAccount(
   store: RegistrationStore,
@@ -83,7 +84,9 @@ export async function registerAccount(
   )
     return fail('invitation_invalid');
   if (!newAccountSettingsHold(request.newAccount)) return fail('forbidden');
-  const accountId = await store.register(request);
+  const written = await workspaceInvitationWrite(() => store.register(request));
+  if (!written.ok) return written;
+  const accountId = written.value;
   if (accountId !== null) return ok(accountId);
   if (request.ground.kind === 'open') return fail('registration_closed');
   return fail(

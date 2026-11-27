@@ -5,7 +5,16 @@ required:
   - members
   - nextAfterAccountId
   - memberCount
+  - collaborationEnabled
+  - seats
 properties:
+  seats:
+    oneOf:
+      - $ref: './WorkspaceSeats.yaml'
+      - type: 'null'
+  collaborationEnabled:
+    type: boolean
+    description: Whether the workspace owner can add members by invitation.
   members:
     type: array
     maxItems: 100

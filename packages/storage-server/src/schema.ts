@@ -91,6 +91,8 @@ export const accountEventKind = pgEnum('account_event_kind', [
   'made',
   'verified',
   'removed',
+  'workspace_member_added',
+  'workspace_member_removed',
 ]);
 
 /** Who can make an account (record 0108). */
@@ -204,11 +206,16 @@ export const accounts = pgTable(
     removalNotices: integer('removal_notices').notNull().default(0),
     teams: boolean('teams').notNull().default(true),
     collaboration: boolean('collaboration').notNull().default(true),
+    memberLimit: integer('member_limit'),
     controlsRevision: bigint('controls_revision', { mode: 'bigint' })
       .notNull()
       .default(sql`1`),
   },
   (table) => [
+    check(
+      'accounts_member_limit_check',
+      sql`${table.memberLimit} between 0 and 10000`,
+    ),
     check('accounts_limit_bytes_check', sql`${table.limitBytes} > 0`),
     check(
       'accounts_text_limit_bytes_check',
@@ -262,6 +269,10 @@ export const accountEvents = pgTable(
       .notNull()
       .references(() => accounts.id),
     kind: accountEventKind('kind').notNull(),
+    ownerAccountId: uuid('owner_account_id'),
+    memberAccountId: uuid('member_account_id'),
+    workspaceId: uuid('workspace_id'),
+    ownerWorkspaceMemberships: integer('owner_workspace_memberships'),
     occurredAt: timestamp('occurred_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
