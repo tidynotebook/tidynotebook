@@ -9911,16 +9911,32 @@
             "maxLength": 64
           },
           "ownerAccountId": {
-            "$ref": "#/components/schemas/Uuid"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Uuid"
+              }
+            ],
+            "readOnly": true
           },
           "memberAccountId": {
-            "$ref": "#/components/schemas/Uuid"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Uuid"
+              }
+            ],
+            "readOnly": true
           },
           "workspaceId": {
-            "$ref": "#/components/schemas/Uuid"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Uuid"
+              }
+            ],
+            "readOnly": true
           },
           "ownerWorkspaceMemberships": {
             "type": "integer",
+            "readOnly": true,
             "minimum": 0,
             "description": "The number of workspaces of this owner that the member belongs to after the change."
           }

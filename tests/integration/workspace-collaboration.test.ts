@@ -20,6 +20,7 @@ import {
   openSession,
   seedWorkspace,
   testActor,
+  type SqlFailure,
   type TestSession,
 } from './support/database.ts';
 
@@ -76,12 +77,16 @@ async function changeSwitch(
   );
 }
 
-async function waitForBlocked(session: TestSession, pid: number) {
+async function waitForBlocked(
+  session: TestSession,
+  pid: number,
+  blockerPid: number,
+) {
   const deadline = Date.now() + 5000;
   while (Date.now() < deadline) {
     const [row] = await session.query<{ waiting: boolean }>(
-      'select cardinality(pg_blocking_pids($1)) > 0 as waiting',
-      [pid],
+      'select $2::integer = any(pg_blocking_pids($1)) as waiting',
+      [pid, blockerPid],
     );
     if (row?.waiting) return;
     await pause(20);
@@ -317,58 +322,66 @@ try {
         'ok',
       );
     } finally {
-      await changeSwitch(control, ownerId, true);
-      await control.close();
+      try {
+        await changeSwitch(control, ownerId, true);
+      } finally {
+        await control.close();
+      }
     }
   });
 
   await test('invite creation and acceptance wait for an uncommitted change to the owner switch', async () => {
     const control = await openSession(db.migrationUrl);
-    const creator = await openSession(db.runtimeUrl, adminId);
-    const accepter = await openSession(db.runtimeUrl, guestId);
+    const sessions = [control];
     try {
+      const creator = await openSession(db.runtimeUrl, ownerId);
+      sessions.push(creator);
+      const accepter = await openSession(db.runtimeUrl, guestId);
+      sessions.push(accepter);
       const pending = await invite(admin, 'guest@example.test');
       assert.ok('invitationId' in pending);
-      const [creating] = await creator.query<{ pid: number }>(
-        'select pg_backend_pid() as pid',
-      );
-      const [accepting] = await accepter.query<{ pid: number }>(
-        'select pg_backend_pid() as pid',
-      );
-      assert.ok(creating && accepting);
-      await control.query('begin');
-      await changeSwitch(control, ownerId, false);
+      const [[controlling], [creating], [accepting]] = await Promise.all([
+        control.query<{ pid: number }>('select pg_backend_pid() as pid'),
+        creator.query<{ pid: number }>('select pg_backend_pid() as pid'),
+        accepter.query<{ pid: number }>('select pg_backend_pid() as pid'),
+      ]);
+      assert.ok(controlling && creating && accepting);
+      const blockerPid = controlling.pid;
+      async function checkWrite(pid: number, write: () => Promise<SqlFailure>) {
+        await changeSwitch(control, ownerId, true);
+        await control.query('begin');
+        await changeSwitch(control, ownerId, false);
+        const result = write().then(
+          (outcome) => ({ outcome }),
+          (error: unknown) => ({ error }),
+        );
+        await waitForBlocked(control, pid, blockerPid);
+        await control.query('commit');
+        const done = await result;
+        if ('error' in done) throw done.error;
+        assert.equal(done.outcome.code, 'NA005');
+      }
+
       const id = randomUUID();
-      const created = creator
-        .failure(
+      await checkWrite(creating.pid, () =>
+        creator.failure(
           'select * from notesapp_create_workspace_invite($1, $2, $3, $4, $5, $6)',
           [
-            workspaceId,
+            otherOwned,
             id,
             'race@example.test',
             'viewer',
             createHash('sha256').update(id).digest('hex'),
             'sealed',
           ],
-        )
-        .catch((error: unknown) => error);
-      const accepted = accepter
-        .failure('select * from notesapp_answer_workspace_invite($1, true)', [
-          pending.invitationId,
-        ])
-        .catch((error: unknown) => error);
-      await Promise.all([
-        waitForBlocked(control, creating.pid),
-        waitForBlocked(control, accepting.pid),
-      ]);
-      await control.query('commit');
-      for (const outcome of await Promise.all([created, accepted]))
-        assert.ok(
-          typeof outcome === 'object' &&
-            outcome !== null &&
-            'code' in outcome &&
-            outcome.code === 'NA005',
-        );
+        ),
+      );
+      await checkWrite(accepting.pid, () =>
+        accepter.failure(
+          'select * from notesapp_answer_workspace_invite($1, true)',
+          [pending.invitationId],
+        ),
+      );
       const listed = await identity.collaboration(admin, workspaceId, (tx) =>
         tx.invites(null),
       );
@@ -389,9 +402,12 @@ try {
         'revoked',
       );
     } finally {
-      await control.query('rollback');
-      await changeSwitch(control, ownerId, true);
-      await Promise.all([control.close(), creator.close(), accepter.close()]);
+      try {
+        await control.query('rollback');
+        await changeSwitch(control, ownerId, true);
+      } finally {
+        await Promise.all(sessions.map((session) => session.close()));
+      }
     }
   });
 

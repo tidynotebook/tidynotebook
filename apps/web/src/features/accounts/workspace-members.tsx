@@ -108,8 +108,7 @@ export function WorkspaceMembers({
   >(null);
   const [seats, setSeats] = useState<WorkspaceSeats | null>(null);
   const collaborationOff = collaborationEnabled === false;
-  const inviteDisabled =
-    collaborationEnabled !== true || seats?.freePlaces === 0;
+  const inviteDisabled = collaborationEnabled !== true;
   const [count, setCount] = useState(0);
   const [after, setAfter] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
@@ -689,6 +688,7 @@ function InvitePeople({
     readonly key: string;
     readonly free: number | null;
     readonly needed: number;
+    readonly refused?: true;
   } | null>(null);
   useEffect(() => {
     if (memberLimit === null || key === '') return;
@@ -716,7 +716,9 @@ function InvitePeople({
     };
   }, [key, memberLimit, freePlaces, role, workspaceId]);
   const currentQuote =
-    memberLimit !== null && quote?.key === key ? quote : null;
+    quote?.key === key && (memberLimit !== null || quote.refused)
+      ? quote
+      : null;
   const shortage =
     currentQuote !== null &&
     currentQuote.free !== null &&
@@ -744,7 +746,7 @@ function InvitePeople({
         const needed =
           currentQuote?.needed ??
           new Set(emails.map((email) => normalizeEmail(email))).size;
-        if (needed > free) setQuote({ key, free, needed });
+        if (needed > free) setQuote({ key, free, needed, refused: true });
         else setProblem(result.error.title);
       } else if (result.data === undefined)
         setProblem(
@@ -787,7 +789,10 @@ function InvitePeople({
                 id="workspace-invite-emails"
                 label="Email addresses"
                 value={input}
-                onChange={setInput}
+                onChange={(value) => {
+                  if (quote?.refused) setQuote(null);
+                  setInput(value);
+                }}
                 size="growing"
                 error={
                   shortage ||

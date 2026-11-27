@@ -13608,16 +13608,17 @@ export const operations: readonly OperationEntry[] = [
                     "maxLength": 64
                   },
                   "ownerAccountId": {
-                    "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Uuid"
+                    "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Shared155"
                   },
                   "memberAccountId": {
-                    "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Uuid"
+                    "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Shared155"
                   },
                   "workspaceId": {
-                    "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Uuid"
+                    "$ref": "https://notesapp.invalid/contract-definitions#/$defs/Shared155"
                   },
                   "ownerWorkspaceMemberships": {
                     "type": "integer",
+                    "readOnly": true,
                     "minimum": 0,
                     "description": "The number of workspaces of this owner that the member belongs to after the change."
                   }

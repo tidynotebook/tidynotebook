@@ -244,13 +244,13 @@ export type AccountEvent = {
      * Instant at which it happened.
      */
     readonly occurredAt: string;
-    ownerAccountId?: Uuid;
-    memberAccountId?: Uuid;
-    workspaceId?: Uuid;
+    readonly ownerAccountId?: Uuid;
+    readonly memberAccountId?: Uuid;
+    readonly workspaceId?: Uuid;
     /**
      * The number of workspaces of this owner that the member belongs to after the change.
      */
-    ownerWorkspaceMemberships?: number;
+    readonly ownerWorkspaceMemberships?: number;
 };
 
 /**
@@ -3835,26 +3835,6 @@ export type WorkspaceSeats = {
  * The signed in account and its settings.
  */
 export type AccountWritable = {
-    [key: string]: never;
-};
-
-/**
- * One account event. Membership events also name the workspace and the remaining membership count.
- */
-export type AccountEventWritable = {
-    ownerAccountId?: Uuid;
-    memberAccountId?: Uuid;
-    workspaceId?: Uuid;
-    /**
-     * The number of workspaces of this owner that the member belongs to after the change.
-     */
-    ownerWorkspaceMemberships?: number;
-};
-
-/**
- * The account events after a cursor, oldest first, and the cursor to read after next.
- */
-export type AccountEventListWritable = {
     [key: string]: never;
 };
 

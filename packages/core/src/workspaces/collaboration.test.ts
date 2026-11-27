@@ -110,9 +110,9 @@ await test('registered members and open reservations use the same owner limit', 
   });
   const lowered = workspaceSeatUsage(0, 2, 1);
   assert.equal(lowered.freePlaces, 0);
-  assert.equal(
-    checkWorkspaceSeatPreview({ seats: lowered, additionalPlaces: 0 }).ok,
-    false,
+  assert.deepEqual(
+    checkWorkspaceSeatPreview({ seats: lowered, additionalPlaces: 0 }),
+    { ok: false, error: { code: 'member_limit', fileIds: [], freePlaces: 0 } },
   );
   assert.equal(
     checkWorkspaceSeatPreview({ seats: null, additionalPlaces: 20 }).ok,

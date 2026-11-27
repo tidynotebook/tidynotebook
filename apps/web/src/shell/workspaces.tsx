@@ -46,7 +46,6 @@ import { Navigate, useLocation, useNavigate } from 'react-router';
 import { deleteGlyph } from '../lib/delete-label.ts';
 import { problemMessage, useWorkspace } from '../app.tsx';
 import { addressInWorkspace, isMemberOf } from '../lib/workspace-choice.ts';
-import { joinedWorkspaceState } from '../lib/workspace-joined.ts';
 import { initialOf } from '../lib/initial.ts';
 import { actionIcon } from './action-icons.tsx';
 import { useOpenSettings } from './settings-modal.tsx';
@@ -260,26 +259,34 @@ export function WorkspaceSwitcher({
   }));
 
   const answer = (invite: PendingWorkspaceInvite, accept: boolean): void => {
-    const path = { invitationId: invite.invitationId };
-    void (accept ? acceptWorkspaceInvite : declineWorkspaceInvite)({
-      path,
-    }).then(({ data, error }) => {
-      if (data === undefined) {
-        setProblem(error?.title ?? problemMessage(error));
-        return;
-      }
-      setInvites((entries) =>
-        entries.filter((entry) => entry.invitationId !== invite.invitationId),
-      );
-      if ('workspaceId' in data) {
-        adopt(data);
-        void navigate(location, {
-          replace: true,
-          state: joinedWorkspaceState(invite),
+    const prepare = accept
+      ? import('../lib/workspace-joined.ts')
+      : Promise.resolve(null);
+    void prepare
+      .then(async (join) => {
+        const path = { invitationId: invite.invitationId };
+        const { data, error } = await (
+          accept ? acceptWorkspaceInvite : declineWorkspaceInvite
+        )({
+          path,
         });
-        onNavigate();
-      }
-    });
+        if (data === undefined) {
+          setProblem(error?.title ?? problemMessage(error));
+          return;
+        }
+        setInvites((entries) =>
+          entries.filter((entry) => entry.invitationId !== invite.invitationId),
+        );
+        if (join !== null && 'workspaceId' in data) {
+          adopt(data);
+          void navigate(location, {
+            replace: true,
+            state: join.joinedWorkspaceState(invite),
+          });
+          onNavigate();
+        }
+      })
+      .catch(() => setProblem(problemMessage(undefined)));
   };
 
   for (const invite of invites) {

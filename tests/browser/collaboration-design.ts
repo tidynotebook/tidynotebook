@@ -213,12 +213,15 @@ export async function runCollaborationAudit(
           await check(admin, 'settings-accounts');
           await admin
             .getByRole('button', { name: 'Account: Casey Editor', exact: true })
+            .filter({ hasText: fixture.editor })
             .click();
           await admin
             .getByRole('button', { name: /Limits and access/ })
             .click();
         } else {
           await admin
+            .locator('[data-ui-row]')
+            .filter({ hasText: fixture.editor })
             .getByRole('button', { name: 'Change the account of Casey Editor' })
             .click();
           await admin
@@ -253,12 +256,16 @@ export async function runCollaborationAudit(
         }
 
         let emptyInvites = false;
+        let beforeInviteWrite: (() => Promise<void>) | null = null;
         await ownerContext.route(
           `**/api/workspaces/${fixture.workspaceId}/invitations`,
-          (route) =>
-            emptyInvites && route.request().method() === 'GET'
-              ? route.fulfill({ json: { invitations: [] } })
-              : route.continue(),
+          async (route) => {
+            const method = route.request().method();
+            if (method === 'GET' && emptyInvites)
+              return route.fulfill({ json: { invitations: [] } });
+            if (method === 'POST') await beforeInviteWrite?.();
+            return route.continue();
+          },
         );
         const settings = `${home}?settings=members`;
         const members = async () => {
@@ -466,7 +473,7 @@ export async function runCollaborationAudit(
         await owner
           .getByText('All 6 seats are in use. Add seats to invite more people.')
           .waitFor();
-        assert.ok(await invite.isDisabled());
+        assert.ok(await invite.isEnabled());
         async function checkNoticeAction(message: string, label: string) {
           const action = owner.getByRole('link', { name: label, exact: true });
           await action.waitFor();
@@ -499,10 +506,52 @@ export async function runCollaborationAudit(
         if (fixture.hasPortal)
           await checkNoticeAction('All 6 seats are in use.', 'Manage seats');
         await check(owner, 'members-seats-full');
+        await invite.click();
+        const sendInvite = owner.getByRole('button', {
+          name: 'Send invite',
+          exact: true,
+        });
+        await emailField.fill('new-seat@example.test');
+        const noSeats =
+          'You have 0 free seats. Remove 1 address, or add seats.';
+        await owner.getByText(noSeats, { exact: true }).waitFor();
+        assert.ok(await sendInvite.isDisabled());
+        await check(owner, 'invite-seats-full');
+        await emailField.fill(fixture.pendingEmail);
+        await sendInvite.click();
+        await owner
+          .getByText('Already invited. Copy the link to send it again.')
+          .waitFor();
+        await owner.getByRole('button', { name: 'Done', exact: true }).click();
         await fixture.setMemberLimit(null);
         await owner
           .getByText('All 6 seats are in use. Add seats to invite more people.')
           .waitFor({ state: 'hidden' });
+        await invite.click();
+        await emailField.fill('unquoted-seat@example.test');
+        const membersUrl = `**/api/workspaces/${fixture.workspaceId}/members*`;
+        const roster = Promise.withResolvers<void>();
+        await ownerContext.route(membersUrl, async (route) => {
+          await roster.promise;
+          await route.continue();
+        });
+        beforeInviteWrite = () => fixture.setMemberLimit(5);
+        try {
+          await sendInvite.click();
+          await owner.getByText(noSeats, { exact: true }).waitFor();
+          assert.ok(await sendInvite.isDisabled());
+          await check(owner, 'invite-limit-added');
+        } finally {
+          roster.resolve();
+          beforeInviteWrite = null;
+        }
+        await owner
+          .getByRole('button', {
+            name: phone ? 'Back to section' : 'Cancel',
+            exact: true,
+          })
+          .click();
+        await fixture.setMemberLimit(null);
         const joinBlocked =
           'The owner of this workspace cannot add members now.';
         await fixture.setCollaboration(false);

@@ -29,12 +29,19 @@ properties:
     format: date-time
     maxLength: 64
   ownerAccountId:
-    $ref: './Uuid.yaml'
+    allOf:
+      - $ref: './Uuid.yaml'
+    readOnly: true
   memberAccountId:
-    $ref: './Uuid.yaml'
+    allOf:
+      - $ref: './Uuid.yaml'
+    readOnly: true
   workspaceId:
-    $ref: './Uuid.yaml'
+    allOf:
+      - $ref: './Uuid.yaml'
+    readOnly: true
   ownerWorkspaceMemberships:
     type: integer
+    readOnly: true
     minimum: 0
     description: The number of workspaces of this owner that the member belongs to after the change.
