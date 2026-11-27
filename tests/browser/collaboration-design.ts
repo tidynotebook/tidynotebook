@@ -95,6 +95,14 @@ export async function runCollaborationAudit(
         async function check(page: Page, surface: string) {
           const name = `${surface}-${width}-${theme}`;
           await pause(100);
+          const storageAdvisory = page.getByRole('status').filter({
+            hasText:
+              'This browser can remove offline data when the device needs space.',
+          });
+          if (await storageAdvisory.isVisible())
+            await storageAdvisory
+              .getByRole('button', { name: 'Close', exact: true })
+              .click();
           await captureSurface(page, name, output);
           for (const audit of audits) {
             let report: Record<string, unknown>;
@@ -192,18 +200,40 @@ export async function runCollaborationAudit(
           .waitFor();
         await check(owner, 'join-wrong-account');
 
+        const adminContext = await newContext();
+        const admin = await adminContext.newPage();
+        await signIn(admin, 'owner@example.com');
+        const accountHome = await admin.evaluate(() => location.pathname);
+        await admin.goto(`${origin}${accountHome}?settings=accounts`);
+        await admin
+          .locator('.ui-settings-column .ui-settings-header-title')
+          .filter({ hasText: 'Users' })
+          .waitFor();
         if (phone) {
-          const referenceContext = await newContext();
-          const reference = await referenceContext.newPage();
-          await signIn(reference, 'owner@example.com');
-          const accountHome = await reference.evaluate(() => location.pathname);
-          await reference.goto(`${origin}${accountHome}?settings=accounts`);
-          await reference
-            .locator('.ui-settings-column .ui-settings-header-title')
-            .filter({ hasText: 'Users' })
-            .waitFor();
-          await check(reference, 'settings-accounts');
-          await referenceContext.close();
+          await check(admin, 'settings-accounts');
+          await admin
+            .getByRole('button', { name: 'Account: Casey Editor', exact: true })
+            .click();
+          await admin
+            .getByRole('button', { name: /Limits and access/ })
+            .click();
+        } else {
+          await admin
+            .getByRole('button', { name: 'Change the account of Casey Editor' })
+            .click();
+          await admin
+            .getByRole('menuitem', { name: 'Change limits and access' })
+            .click();
+        }
+        await admin
+          .getByLabel('Member limit', { exact: true })
+          .scrollIntoViewIfNeeded();
+        await admin
+          .getByText('Empty means no limit.', { exact: true })
+          .waitFor();
+        await check(admin, 'account-member-limit');
+        await adminContext.close();
+        if (phone) {
           await owner.goto(`${home}?settings=daily-notes`);
           await owner
             .locator('.ui-settings-column .ui-settings-header-title')

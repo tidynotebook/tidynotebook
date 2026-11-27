@@ -503,6 +503,7 @@ await test('operator account answers include the existing installation role', ()
       textLimitBytes: null,
       publishedTransferLimitBytes: null,
       downloadLimitBytes: null,
+      memberLimit: null,
       features: { teams: true, collaboration: true },
     },
     usage: {
@@ -534,6 +535,10 @@ await test('operator account answers include the existing installation role', ()
   const write = requestValidator('setOperatorAccountControls', 'body');
   assert.ok(write !== undefined);
   assert.equal(write({ revision: 1, standing: 'active' }), true);
+  for (const memberLimit of [null, 0, 10000])
+    assert.equal(write({ revision: 1, memberLimit }), true);
+  for (const memberLimit of [-1, 10001, 2.5, '10'])
+    assert.equal(write({ revision: 1, memberLimit }), false);
   assert.equal(
     write({ revision: 1, standing: 'active', role: 'administrator' }),
     false,
