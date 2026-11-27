@@ -118,6 +118,7 @@ function MenuRow({
       aria-label={item.detail === undefined ? undefined : item.label}
       aria-description={item.detail}
       tabIndex={-1}
+      data-menu-row={item.id}
       data-menu-input={showFocus ? 'keyboard' : 'pointer'}
       className={rowClassName({
         danger: item.danger,
@@ -270,6 +271,8 @@ function MenuList({
   const listRef = useRef<HTMLDivElement | null>(null);
   const bottomEdge = useRef<HTMLDivElement | null>(null);
   const safeArea = useRef<HTMLSpanElement | null>(null);
+  const focusedRow = useRef<string | undefined>(undefined);
+  const previous = useRef<readonly [readonly string[], string[]] | null>(null);
 
   // The arrow keys run over both regions in the order they are on the screen,
   // so a pinned row is reached by pressing End and never disappears from the
@@ -300,15 +303,6 @@ function MenuList({
       window.removeEventListener('keydown', onKeyDown, true);
     };
   }, [onClose, isInside, submenu, back]);
-
-  useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
-      listRef.current
-        ?.querySelectorAll<HTMLElement>(enabledMenuRow)
-        [focusIndex]?.focus();
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [focusIndex, path]);
 
   /**
    * Writes the place of the open list.
@@ -365,6 +359,38 @@ function MenuList({
     };
   }, [place, submenu]);
 
+  useLayoutEffect(() => {
+    const prior = previous.current;
+    previous.current = [path, (submenu ? items : rows).map((row) => row.id)];
+    const list = listRef.current;
+    if (!list) return;
+    if (prior?.[0] !== path) {
+      focusedRow.current = undefined;
+      menuButtons(list).at(focusIndex)?.focus();
+      return;
+    }
+
+    const id = focusedRow.current;
+    if (id === undefined || document.activeElement !== document.body) return;
+    const buttons = menuButtons(list);
+    const index = prior[1].indexOf(id);
+    const candidates = [
+      id,
+      ...prior[1].slice(index + 1),
+      ...prior[1].slice(0, index).reverse(),
+    ];
+    for (const candidate of candidates) {
+      const target = buttons.find(
+        (button) => button.dataset.menuRow === candidate,
+      );
+      if (target) {
+        target.focus();
+        return;
+      }
+    }
+    buttons[0]?.focus();
+  });
+
   // A menu states a selection only when a row claims one, so every menu that
   // runs actions keeps the plain `menuitem` role it had.
   const choosing = rows.some((item) => item.selected !== undefined);
@@ -389,6 +415,9 @@ function MenuList({
       role="menu"
       data-menu-fit-viewport={fitTouchViewport ? '' : undefined}
       onPointerMove={() => setShowFocus(false)}
+      onFocus={(event) => {
+        focusedRow.current = event.target.dataset.menuRow;
+      }}
       aria-label={submenu?.label ?? label}
       onKeyDown={(event): void => {
         setShowFocus(true);
@@ -398,9 +427,7 @@ function MenuList({
           onClose(true);
           return;
         }
-        const enabled = [
-          ...event.currentTarget.querySelectorAll<HTMLElement>(enabledMenuRow),
-        ];
+        const enabled = menuButtons(event.currentTarget);
         let index = 0;
         if (key === 'ArrowDown' || key === 'ArrowUp') {
           if (enabled.length === 0) return;
@@ -481,7 +508,13 @@ function MenuList({
   );
 }
 
-const enabledMenuRow = '[role^="menuitem"]:not([disabled])';
+function menuButtons(list: HTMLElement): HTMLButtonElement[] {
+  return [
+    ...list.querySelectorAll<HTMLButtonElement>(
+      '[data-menu-row]:not([disabled])',
+    ),
+  ];
+}
 
 /** The id of the list of one menu, from its name. */
 function menuIdOf(label: string): string {
@@ -561,10 +594,6 @@ export function Menu({
   const textEdge = contentEdge && children !== undefined;
   const positioned =
     contentEdge || trigger === 'avatar' || trigger === 'row-action';
-
-  const enabledCount = [...items, ...pinned].filter(
-    (item) => !item.disabled,
-  ).length;
 
   const close = useCallback((restoreFocus: boolean): void => {
     setOpening(null);
@@ -648,10 +677,7 @@ export function Menu({
           onKeyDown={(event): void => {
             if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
               event.preventDefault();
-              setOpening([
-                event.key === 'ArrowDown' ? 0 : Math.max(0, enabledCount - 1),
-                true,
-              ]);
+              setOpening([event.key === 'ArrowDown' ? 0 : -1, true]);
             }
           }}
         >

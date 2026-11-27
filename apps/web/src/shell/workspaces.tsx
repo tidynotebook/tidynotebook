@@ -1,6 +1,4 @@
 import {
-  acceptWorkspaceInvite,
-  declineWorkspaceInvite,
   listMyWorkspaceInvites,
   type PendingWorkspaceInvite,
 } from '@notesapp/api-client';
@@ -44,7 +42,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
 
 import { deleteGlyph } from '../lib/delete-label.ts';
-import { problemMessage, useWorkspace } from '../app.tsx';
+import { useWorkspace } from '../app.tsx';
 import { addressInWorkspace, isMemberOf } from '../lib/workspace-choice.ts';
 import { initialOf } from '../lib/initial.ts';
 import { actionIcon } from './action-icons.tsx';
@@ -217,16 +215,28 @@ export function WorkspaceSwitcher({
   const { state, reload, adopt } = useWorkspace();
   const navigate = useNavigate();
   const location = useLocation();
-  const [invites, setInvites] = useState<PendingWorkspaceInvite[]>([]);
+  const [pending, setPending] = useState<
+    | readonly [
+        invites: PendingWorkspaceInvite[],
+        menu: typeof import('./workspace-invites.ts'),
+      ]
+    | undefined
+  >();
+  const [invites = [], inviteMenu] = pending ?? [];
   const [problem, setProblem] = useState('');
   const [leaving, setLeaving] = useState(false);
   const openSettings = useOpenSettings();
   useEffect(() => {
     let active = true;
     void listMyWorkspaceInvites()
-      .then((result) => {
-        if (active && result.data !== undefined)
-          setInvites(result.data.invitations);
+      .then(async ({ data }) => {
+        if (!active || data === undefined) return;
+        if (!data.invitations.length) {
+          setPending(undefined);
+          return;
+        }
+        const menu = await import('./workspace-invites.ts');
+        if (active) setPending([data.invitations, menu]);
       })
       .catch(() => {});
     return () => {
@@ -259,62 +269,35 @@ export function WorkspaceSwitcher({
   }));
 
   const answer = (invite: PendingWorkspaceInvite, accept: boolean): void => {
-    const prepare = accept
-      ? import('../lib/workspace-joined.ts')
-      : Promise.resolve(null);
-    void prepare
-      .then(async (join) => {
-        const path = { invitationId: invite.invitationId };
-        const { data, error } = await (
-          accept ? acceptWorkspaceInvite : declineWorkspaceInvite
-        )({
-          path,
-        });
-        if (data === undefined) {
-          setProblem(error?.title ?? problemMessage(error));
-          return;
-        }
-        setInvites((entries) =>
-          entries.filter((entry) => entry.invitationId !== invite.invitationId),
+    void inviteMenu
+      ?.answerWorkspaceInvite(invite, accept, setProblem)
+      .then((result) => {
+        if (result === undefined) return;
+        setPending(
+          (current) =>
+            current && [
+              current[0].filter(
+                (entry) => entry.invitationId !== invite.invitationId,
+              ),
+              current[1],
+            ],
         );
-        if (join !== null && 'workspaceId' in data) {
-          adopt(data);
-          void navigate(location, {
-            replace: true,
-            state: join.joinedWorkspaceState(invite),
-          });
+        if (result) {
+          adopt(result.workspace);
+          void navigate(location, { replace: true, state: result.state });
           onNavigate();
         }
-      })
-      .catch(() => setProblem(problemMessage(undefined)));
+      });
   };
 
-  for (const invite of invites) {
-    items.push({
-      id: invite.invitationId,
-      label: invite.workspaceName,
-      icon: <MailIcon />,
-      hint: roleName(invite.role),
-      group: 'Invites',
-      submenu: [
-        {
-          id: 'accept-invite',
-          label: 'Accept invite',
-          icon: <CheckIcon />,
-          disabled: invite.acceptanceMessage !== null,
-          detail: invite.acceptanceMessage ?? undefined,
-          onSelect: () => answer(invite, true),
-        },
-        {
-          id: 'decline-invite',
-          label: 'Decline invite',
-          icon: <SignOutIcon />,
-          danger: true,
-          onSelect: () => answer(invite, false),
-        },
-      ],
-    });
-  }
+  if (inviteMenu)
+    items.push(
+      ...inviteMenu.workspaceInviteItems(invites, roleName, answer, {
+        mail: <MailIcon />,
+        accept: <CheckIcon />,
+        decline: <SignOutIcon />,
+      }),
+    );
   const owns = openWorkspace.role === 'owner';
   const manages = owns || openWorkspace.role === 'admin';
   const hasAnother = workspaces.length > 1;

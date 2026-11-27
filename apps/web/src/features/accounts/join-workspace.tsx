@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
-import { joinedWorkspaceState } from '../../lib/workspace-joined.ts';
+import { joinedWorkspaceState } from '../../shell/workspace-invites.ts';
 import {
   acceptWorkspaceInvite,
   declineWorkspaceInvite,

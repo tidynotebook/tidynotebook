@@ -54,6 +54,11 @@ import { relativeTime } from '../../lib/relative-time.ts';
 import { useNow } from '../../shell/now.ts';
 import { initialOf } from '../../lib/initial.ts';
 import { portalRoute } from '../../lib/portal.ts';
+import {
+  retainInviteSeatQuote,
+  splitInviteAddresses,
+  type InviteSeatQuote,
+} from './invite-addresses.ts';
 import { SettingsDialog } from './settings-dialog.tsx';
 import { usePhoneSettings } from './settings-section.tsx';
 
@@ -675,7 +680,7 @@ function InvitePeople({
       active = false;
     };
   }, []);
-  const emails = input.split(/[\s,]+/u).filter(Boolean);
+  const emails = splitInviteAddresses(input);
   const invalid = badAddresses(emails);
   const validCount = emails.filter((email) => !invalid.includes(email)).length;
   const key =
@@ -684,12 +689,7 @@ function InvitePeople({
       : '';
   const memberLimit = seats?.memberLimit ?? null;
   const freePlaces = seats?.freePlaces ?? null;
-  const [quote, setQuote] = useState<{
-    readonly key: string;
-    readonly free: number | null;
-    readonly needed: number;
-    readonly refused?: true;
-  } | null>(null);
+  const [quote, setQuote] = useState<InviteSeatQuote | null>(null);
   useEffect(() => {
     if (memberLimit === null || key === '') return;
     let active = true;
@@ -790,7 +790,7 @@ function InvitePeople({
                 label="Email addresses"
                 value={input}
                 onChange={(value) => {
-                  if (quote?.refused) setQuote(null);
+                  setQuote((current) => retainInviteSeatQuote(current, value));
                   setInput(value);
                 }}
                 size="growing"

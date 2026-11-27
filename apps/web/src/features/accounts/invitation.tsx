@@ -1,4 +1,4 @@
-import { joinedWorkspaceState } from '../../lib/workspace-joined.ts';
+import { joinedWorkspaceState } from '../../shell/workspace-invites.ts';
 import {
   Form,
   Stack,

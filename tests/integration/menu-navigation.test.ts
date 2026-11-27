@@ -26,19 +26,19 @@ await test('menus keep focus across item refreshes and resolve nested pinned act
     { id: 'disabled', label: 'Unavailable', disabled: true },
     { id: 'first', label: 'First action' },
   ];
-  function pinned(prefix: readonly MenuItem[] = []): readonly MenuItem[] {
+  const nested = {
+    id: 'nested',
+    label: 'More options',
+    submenu: [{ id: 'leaf', label: 'Nested action' }],
+  };
+  function pinned(
+    submenu: readonly MenuItem[] = [nested],
+  ): readonly MenuItem[] {
     return [
       {
         id: 'pinned',
         label: 'Pinned options',
-        submenu: [
-          ...prefix,
-          {
-            id: 'nested',
-            label: 'More options',
-            submenu: [{ id: 'leaf', label: 'Nested action' }],
-          },
-        ],
+        submenu,
       },
     ];
   }
@@ -62,12 +62,23 @@ await test('menus keep focus across item refreshes and resolve nested pinned act
   function focused(label: string) {
     assert.equal(browser.document.activeElement?.textContent, label);
   }
+  async function press(key: string) {
+    await act(async () => {
+      browser.document.activeElement?.dispatchEvent(
+        new browser.KeyboardEvent('keydown', { key, bubbles: true }),
+      );
+    });
+  }
   try {
     await render(pinned());
-    await click('Actions');
+    const trigger = host.querySelector('button');
+    assert.ok(trigger);
+    trigger.focus();
+    await press('ArrowUp');
+    focused('Pinned options');
     await click('Pinned options');
     focused('More options');
-    await render(pinned([{ id: 'inserted', label: 'Fresh action' }]));
+    await render(pinned([{ id: 'inserted', label: 'Fresh action' }, nested]));
     await nextFrame();
     focused('More options');
     await click('More options');
@@ -81,6 +92,24 @@ await test('menus keep focus across item refreshes and resolve nested pinned act
     await render(pinned());
     await nextFrame();
     focused('First action');
+
+    const early = { id: 'early', label: 'Early action' };
+    const selected = { id: 'selected', label: 'Chosen action' };
+    const earlier = { id: 'earlier', label: 'Earlier action' };
+    const disabled = { id: 'disabled', label: 'Unavailable', disabled: true };
+    const last = { id: 'last', label: 'Last action' };
+    await render(pinned([early, selected, disabled, earlier]));
+    await click('Pinned options');
+    await press('ArrowDown');
+    focused('Chosen action');
+    await render(pinned([earlier, early, selected, disabled, last]));
+    focused('Chosen action');
+    await render(pinned([earlier, early, disabled, last]));
+    focused('Last action');
+    await render(pinned([earlier, early, disabled]));
+    focused('Early action');
+    await press('ArrowUp');
+    focused('Earlier action');
   } finally {
     await act(async () => root.unmount());
     await browser.happyDOM.close();
