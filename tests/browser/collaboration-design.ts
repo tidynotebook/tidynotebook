@@ -414,7 +414,10 @@ export async function runCollaborationAudit(
         await check(owner, 'invite-seat-limit');
         await fixture.assertSeatBatchRefused();
         await owner
-          .getByRole('button', { name: 'Cancel', exact: true })
+          .getByRole('button', {
+            name: phone ? 'Back to section' : 'Cancel',
+            exact: true,
+          })
           .click();
         await viewer
           .getByText(
@@ -430,7 +433,10 @@ export async function runCollaborationAudit(
         await check(owner, 'remove-seat-notice');
         await owner
           .getByRole('dialog', { name: 'Remove from workspace' })
-          .getByRole('button', { name: 'Cancel', exact: true })
+          .getByRole('button', {
+            name: phone ? 'Close dialog' : 'Cancel',
+            exact: true,
+          })
           .click();
         await fixture.setMemberLimit(5);
         await owner
