@@ -14,6 +14,9 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - Invite people to a workspace by email. Members accept or decline an invitation from a link or from the workspace switcher. ([PR 601](https://github.com/tidynotebook/tidynotebook/pull/601))
 - Give each member the Owner, Admin, Editor or Viewer role. Viewers can read notes but cannot change them. ([PR 601](https://github.com/tidynotebook/tidynotebook/pull/601))
 - Edit a note together in real time. See who is in the note, their cursors and selections. Each member has the same color in Members, History and the editor. ([PR 601](https://github.com/tidynotebook/tidynotebook/pull/601))
+- Honor the collaboration switch of the workspace owner's account. When it is off, nobody can send or accept invites to that workspace. Members who joined before keep their access. ([PR 603](https://github.com/tidynotebook/tidynotebook/pull/603))
+- Add an optional member limit to each account. It counts the people in all workspaces of the owner, and open invites. Members and admins see the seats that are in use. ([PR 603](https://github.com/tidynotebook/tidynotebook/pull/603))
+- Add `workspace_member_added` and `workspace_member_removed` events to the operator account events. ([PR 603](https://github.com/tidynotebook/tidynotebook/pull/603))
 - Add the Tidy Notebook ChatGPT plugin package for the hosted MCP server. Mark note replacements and patches as destructive tool actions. ([PR 469](https://github.com/tidynotebook/tidynotebook/pull/469))
 
 ### Changed
