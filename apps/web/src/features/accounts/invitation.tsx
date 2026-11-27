@@ -1,3 +1,4 @@
+import { joinedWorkspaceState } from '../../lib/workspace-joined.ts';
 import {
   Form,
   Stack,
@@ -30,6 +31,7 @@ import {
   readInvitation,
   registerAccount,
   type LegalDocuments,
+  type WorkspaceInviteRole,
 } from '@notesapp/api-client';
 
 import { problemMessage, useSession } from '../../app.tsx';
@@ -141,16 +143,23 @@ export function InvitationPage(): ReactNode {
 }
 
 /** The fields that make the account of one valid invitation. */
-function AcceptForm({
+export function AcceptForm({
   token,
   email,
   documents,
   trialSeconds,
+  workspace,
 }: {
   readonly token: string;
   readonly email: string;
   readonly documents: LegalDocuments | null;
   readonly trialSeconds: number | null;
+  readonly workspace?: {
+    readonly id: string;
+    readonly name: string;
+    readonly role: WorkspaceInviteRole;
+    readonly onAccepted: () => void;
+  };
 }): ReactNode {
   const session = useSession();
   const navigate = useNavigate();
@@ -198,14 +207,24 @@ function AcceptForm({
       return;
     }
     session.refresh();
-    void navigate('/');
+    workspace?.onAccepted();
+    if (workspace === undefined) void navigate('/');
+    else
+      void navigate(`/w/${workspace.id}`, {
+        state: joinedWorkspaceState({
+          workspaceId: workspace.id,
+          workspaceName: workspace.name,
+          role: workspace.role,
+        }),
+      });
   };
 
   return (
     <>
       <Inset as="p" className="text-secondary text-muted">
-        You have an invitation to this installation. Choose a password, and your
-        account and its own notes are ready.
+        {workspace === undefined
+          ? 'You have an invitation to this installation. Choose a password, and your account and its own notes are ready.'
+          : `Create an account to join ${workspace.name}.`}
       </Inset>
       {trialOffer(trialSeconds) === null ? null : (
         <Notice message={trialOffer(trialSeconds) ?? ''} />
@@ -220,13 +239,18 @@ function AcceptForm({
           id="invite-address"
           label="Email address"
           value={email}
+          plain={workspace !== undefined}
         />
         <TextField
           id="invite-name"
           label="Your name"
           value={name}
           autoComplete="name"
-          hint="An administrator of this installation sees it. You can leave it empty."
+          hint={
+            workspace === undefined
+              ? 'An administrator of this installation sees it. You can leave it empty.'
+              : 'Members of this workspace can see it. You can leave it empty.'
+          }
           autoFocus
           onChange={setName}
         />
@@ -270,7 +294,11 @@ function AcceptForm({
         )}
         {error === '' ? null : <Notice tone="problem" message={error} />}
         <Button type="submit" disabled={busy} className="w-full">
-          {busy ? 'Making your account' : 'Make account'}
+          {busy
+            ? 'Making your account'
+            : workspace === undefined
+              ? 'Make account'
+              : 'Create account and join'}
         </Button>
       </Form>
     </>

@@ -39,7 +39,12 @@ import {
   type NoteDocument,
   type QueueEntry,
 } from '@notesapp/sync';
-import { guard, type CheckpointRow, type FileRow } from '../database.ts';
+import {
+  guard,
+  type CheckpointRow,
+  type DocumentRow,
+  type FileRow,
+} from '../database.ts';
 import {
   validateAcceptedFile,
   validateCheckpoint,
@@ -100,8 +105,8 @@ export function createVersionsSlice(ctx: LocalStoreContext): VersionsSlice {
     key: DocumentKey,
     epoch: number,
     update: Uint8Array,
+    row: DocumentRow | null,
   ): Promise<NoteDocument> => {
-    const row = await readStoredDocumentRow(tables, key);
     refuseOtherGeneration(row, epoch);
     if (row === null) {
       // Work of an editor that started its own document for a note that the
@@ -532,7 +537,7 @@ export function createVersionsSlice(ctx: LocalStoreContext): VersionsSlice {
             // whole document, which also checks that the server does not
             // hold the note (record 0084).
             if (row === null) {
-              await mergeWork(key, epoch, update);
+              await mergeWork(key, epoch, update, row);
               return;
             }
             // Work that builds on another generation would name items that
@@ -569,7 +574,9 @@ export function createVersionsSlice(ctx: LocalStoreContext): VersionsSlice {
         db.transaction(
           'rw',
           [tables.documents, tables.documentUpdates, tables.acceptedFiles],
-          () => mergeWork(key, epoch, update),
+          // A peer can write against our live text before a checkpoint folds it.
+          async () =>
+            mergeWork(key, epoch, update, await readDocumentRow(tables, key)),
         ),
       );
       publish({ accountId, workspaceId, fileId, kind: 'document' });

@@ -1,3 +1,9 @@
+import {
+  editorBinding,
+  applyAwarenessUpdate,
+  encodeAwarenessUpdate,
+  removeAwarenessStates,
+} from '@notesapp/note-document/editor-bridge';
 /**
  * The binding of one live note document to one editor view (record 0082).
  *
@@ -36,8 +42,8 @@ import {
   type DocumentResult,
   type DocumentSession,
 } from '@notesapp/note-document';
+import { remoteCaretLabels } from './remote-caret.ts';
 import { documentHistory } from './history-controls.ts';
-import { editorBinding } from '@notesapp/note-document/editor-bridge';
 import {
   yCollab,
   ySyncAnnotation,
@@ -155,7 +161,10 @@ export function bindDocument(session: DocumentSession): DocumentBinding {
           };
         },
       }),
-      yCollab(binding.text, null, { undoManager: binding.undoManager }),
+      yCollab(binding.text, binding.awareness, {
+        undoManager: binding.undoManager,
+      }),
+      remoteCaretLabels(binding.awareness),
       // Yjs holds the local undo of a bound editor, so the keys of the
       // shortcuts list run the undo manager rather than the CodeMirror
       // history that a plain editor keeps.
@@ -273,6 +282,15 @@ export type BoundNote = {
    * The screen writes it after a local write failed, so the store holds
    * every change of this view again before a save freezes the store.
    */
+  clientId(): number;
+  liveDelta(vector: Uint8Array): Uint8Array;
+  applyLive(update: Uint8Array): void;
+  onLiveLocal(listener: (update: Uint8Array) => void): () => void;
+  onAwarenessLocal(listener: (update: Uint8Array) => void): () => void;
+  setLiveUser(name: string, color: string): void;
+  setLiveIdle(idle: boolean): void;
+  receiveAwareness(update: Uint8Array): void;
+  clearRemoteAwareness(): void;
   work(): Uint8Array;
   /**
    * The state vector of the open document. A draft states it, so the open
@@ -337,6 +355,9 @@ export function openBoundNote(
   const session = openDocumentSession(opened);
   const binding = bindDocument(session);
   const localWork = holdLocalWork(session);
+  const { awareness, clientId } = editorBinding(session);
+  const remoteAwareness = Symbol('remote presence');
+
   // The whole document at the release, which `reopen` opens again.
   let released: Uint8Array | null = null;
   const note: BoundNote = {
@@ -348,6 +369,42 @@ export function openBoundNote(
     text: () => session.text(),
     work: () => session.encode(),
     stateVector: () => session.stateVector(),
+    clientId,
+    liveDelta: (vector) => session.encodeSince(vector),
+    applyLive: (update) => {
+      binding.applyRemote(update);
+    },
+    onLiveLocal: (listener) =>
+      session.subscribe((change) => {
+        if (change.origin === 'local') listener(change.update);
+      }),
+    onAwarenessLocal: (listener) => {
+      const send = (_changes: unknown, origin: unknown): void => {
+        if (origin !== remoteAwareness)
+          listener(encodeAwarenessUpdate(awareness, [clientId()]));
+      };
+      awareness.on('update', send);
+      return () => {
+        awareness.off('update', send);
+      };
+    },
+    setLiveUser: (name, color) => {
+      awareness.setLocalStateField('user', { name, color, colorLight: color });
+    },
+    setLiveIdle: (idle) => {
+      awareness.setLocalStateField('idle', idle);
+    },
+    receiveAwareness: (update) => {
+      applyAwarenessUpdate(awareness, update, remoteAwareness);
+    },
+    clearRemoteAwareness: () => {
+      removeAwarenessStates(
+        awareness,
+        [...awareness.getStates().keys()].filter((id) => id !== clientId()),
+        remoteAwareness,
+      );
+    },
+
     join(document: Uint8Array): void {
       binding.applyRemote(encodeDocumentDelta(document, session.stateVector()));
     },

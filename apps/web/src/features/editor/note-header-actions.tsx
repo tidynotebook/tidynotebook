@@ -21,8 +21,15 @@ import { MoveItemsDialog } from '../folders/folders.tsx';
  */
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router';
-import { buttonClassName, Menu, MoreIcon, type MenuItem } from '@notesapp/ui';
+import {
+  buttonClassName,
+  Menu,
+  MoreIcon,
+  Pill,
+  type MenuItem,
+} from '@notesapp/ui';
 import { SaveProblemControl } from './save-problem.tsx';
+import { NoteWordCount } from './note-word-count.tsx';
 import { actionIcon } from '../../shell/action-icons.tsx';
 import { HeaderActions } from '../../shell/header-slot.tsx';
 import {
@@ -34,6 +41,9 @@ import {
 /** What the open note can do, as the header offers it. */
 export type NoteHeaderActionsProps = {
   readonly workspaceId: string;
+  readonly readOnly?: boolean;
+  readonly presence?: ReactNode;
+  readonly initialText: string;
   readonly onCopyText: () => void;
   readonly fileId: string;
   /** Moves the caret into the note name, so the person can write a new one. */
@@ -63,6 +73,9 @@ const noteMenuTriggerClassName = buttonClassName({
 /** The note menu of the open note, in the frame header. */
 export function NoteHeaderActions({
   workspaceId,
+  readOnly = false,
+  presence,
+  initialText,
   fileId,
   onRename,
   onCopyText,
@@ -97,6 +110,7 @@ export function NoteHeaderActions({
     canMove: onMoveToFolder !== undefined,
     canPublish: onPublish !== undefined,
   }).flatMap((row) => {
+    if (readOnly && row.id !== 'history' && row.id !== 'export') return [];
     const onSelect = run[row.id];
     return onSelect === undefined
       ? []
@@ -118,7 +132,12 @@ export function NoteHeaderActions({
 
   return (
     <HeaderActions>
-      <SaveProblemControl workspaceId={workspaceId} onCopyText={onCopyText} />
+      {presence}
+      {readOnly ? (
+        <Pill className="max-compact:hidden">View only</Pill>
+      ) : (
+        <SaveProblemControl workspaceId={workspaceId} onCopyText={onCopyText} />
+      )}
       {/*
         Move to Trash is the one row that destroys something, so it takes the
         danger tone of the row recipe and stands in the pinned region under
@@ -128,15 +147,21 @@ export function NoteHeaderActions({
         label="Note actions"
         icon={<MoreIcon />}
         items={items}
-        pinned={[
-          {
-            id: noteTrashRow.id,
-            label: noteTrashRow.label,
-            icon: actionIcon(noteTrashRow.icon),
-            danger: true,
-            onSelect: onDelete,
-          },
-        ]}
+        pinned={
+          readOnly
+            ? []
+            : [
+                {
+                  id: noteTrashRow.id,
+                  label: noteTrashRow.label,
+                  icon: actionIcon(noteTrashRow.icon),
+                  danger: true,
+                  onSelect: onDelete,
+                },
+              ]
+        }
+        information={<NoteWordCount initialText={initialText} menu />}
+        fitTouchViewport
         triggerClassName={noteMenuTriggerClassName}
         compact
       />

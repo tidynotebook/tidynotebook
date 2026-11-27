@@ -7,6 +7,7 @@ import {
   Stack,
   ListRow,
   IconSlot,
+  PresenceDots,
   Inline,
   IconButton,
   AnchoredMenu,
@@ -56,17 +57,18 @@ import {
   type ReactNode,
 } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import type { PublicationScope } from '@notesapp/core';
+import { workspacePresenceColor, type PublicationScope } from '@notesapp/core';
 
-import { useLocalStore, useRequestSync, useSession } from '../app.tsx';
+import {
+  useLocalStore,
+  useRequestSync,
+  useSession,
+  useTabNoticeStream,
+  useWorkspaceRole,
+} from '../app.tsx';
 import { useDeleteNotice } from '../features/trash/trash.tsx';
 import { deleteNotes } from '../features/editor/note-delete.ts';
 import { applyMoves } from '../features/folders/apply-moves.ts';
-import {
-  downloadNote,
-  transferFailureMessage,
-} from '../features/export/export.ts';
-import { duplicateNote } from '../features/notes/duplicate-note.ts';
 import { actionIcon } from './action-icons.tsx';
 import { useFiles, type OpenFoldersControl } from './files.tsx';
 import { useContentRowWindow } from './content-row-window.ts';
@@ -239,6 +241,29 @@ export function NoteTree({
   onPublish,
   onMove,
 }: NoteTreeProps): ReactNode {
+  const role = useWorkspaceRole(workspaceId);
+  const readOnly = role === 'viewer';
+  const canPublish = role === 'owner' || role === 'admin';
+  const stream = useTabNoticeStream();
+  const [presence, setPresence] = useState<
+    ReadonlyMap<string, readonly number[]>
+  >(new Map());
+  useEffect(() => {
+    setPresence(new Map());
+    return stream?.onLive((message) => {
+      if (message === null) setPresence(new Map());
+      else if (
+        message.kind === 'workspacePresence' &&
+        message.workspaceId === workspaceId
+      )
+        setPresence(
+          new Map(
+            message.notes.map((note) => [note.fileId, note.colorSlots ?? [0]]),
+          ),
+        );
+    });
+  }, [stream, workspaceId]);
+
   const navigate = useNavigate();
   const location = useLocation();
   const files = useFiles();
@@ -668,6 +693,8 @@ export function NoteTree({
         }
         let fileId: string;
         try {
+          const { duplicateNote } =
+            await import('../features/notes/duplicate-note.ts');
           fileId = await duplicateNote(activeStore, {
             accountId,
             workspaceId,
@@ -700,6 +727,8 @@ export function NoteTree({
   /** Runs one row of a tree menu on the rows it acts on. */
   const run = useCallback(
     (action: TreeAction, keys: readonly string[]): void => {
+      if (readOnly && action !== 'open' && action !== 'history') return;
+      if (action === 'publish' && !canPublish) return;
       const targets = targetsOfKeys(keys);
       const first = targets[0];
       if (first === undefined) return;
@@ -742,13 +771,21 @@ export function NoteTree({
           return;
         case 'export':
           if (first.kind !== 'note') return;
-          void downloadNote(workspaceId, first.fileId).catch(
-            (failure: unknown) => {
+          void import('../features/export/export.ts').then(
+            ({ downloadNote, transferFailureMessage }) =>
+              downloadNote(workspaceId, first.fileId).catch(
+                (failure: unknown) => {
+                  setMessage({
+                    tone: 'problem',
+                    text: transferFailureMessage(failure),
+                  });
+                },
+              ),
+            () =>
               setMessage({
                 tone: 'problem',
-                text: transferFailureMessage(failure),
-              });
-            },
+                text: 'The download could not start. Try again.',
+              }),
           );
           return;
         case 'new-note':
@@ -770,6 +807,8 @@ export function NoteTree({
       navigate,
       workspaceId,
       onPublish,
+      canPublish,
+      readOnly,
       startRename,
       onMove,
       returnFocus,
@@ -865,7 +904,7 @@ export function NoteTree({
         setSelection(emptySelection);
         return;
       case 'rename':
-        startRename(action.key);
+        if (!readOnly) startRename(action.key);
         return;
       case 'menu': {
         const element = elements.current.get(action.key);
@@ -874,7 +913,7 @@ export function NoteTree({
         return;
       }
       case 'trash':
-        trash(targetsFor(action.key));
+        if (!readOnly) trash(targetsFor(action.key));
         return;
     }
   };
@@ -937,6 +976,10 @@ export function NoteTree({
               key={row.key}
               row={row}
               workspaceId={workspaceId}
+              readOnly={readOnly}
+              occupied={
+                row.kind === 'note' ? presence.get(row.note.fileId) : undefined
+              }
               open={row.key === activeKey}
               parent={row.kind === 'folder' && row.path === selectedFolder}
               picked={isRowSelected(selection, row.key)}
@@ -993,26 +1036,38 @@ export function NoteTree({
           anchor={menu.anchor}
           keyboard={menu.keyboard}
           align="start"
-          items={openTree.rows.map((row): MenuItem => ({
-            id: row.id,
-            label: row.label,
-            icon: actionIcon(row.icon),
-            onIntent: () => {
-              if (row.id === 'move') void MoveItemsDialog.preload();
-              if (row.id === 'new-folder') void NewFolderDialog.preload();
-              if (row.id === 'publish') void PublishDialog.preload();
-              if (row.id === 'history')
-                void import('../features/history/history.tsx').catch(() => {});
-            },
-            onSelect: () => run(row.id, menu.keys),
-          }))}
-          pinned={openTree.pinned.map((row): MenuItem => ({
-            id: row.id,
-            label: row.label,
-            icon: actionIcon(row.icon),
-            danger: true,
-            onSelect: () => run(row.id, menu.keys),
-          }))}
+          items={openTree.rows
+            .filter((row) =>
+              readOnly
+                ? row.id === 'open' || row.id === 'history'
+                : canPublish || row.id !== 'publish',
+            )
+            .map((row): MenuItem => ({
+              id: row.id,
+              label: row.label,
+              icon: actionIcon(row.icon),
+              onIntent: () => {
+                if (row.id === 'move') void MoveItemsDialog.preload();
+                if (row.id === 'new-folder') void NewFolderDialog.preload();
+                if (row.id === 'publish') void PublishDialog.preload();
+                if (row.id === 'history')
+                  void import('../features/history/history.tsx').catch(
+                    () => {},
+                  );
+              },
+              onSelect: () => run(row.id, menu.keys),
+            }))}
+          pinned={
+            readOnly
+              ? []
+              : openTree.pinned.map((row): MenuItem => ({
+                  id: row.id,
+                  label: row.label,
+                  icon: actionIcon(row.icon),
+                  danger: true,
+                  onSelect: () => run(row.id, menu.keys),
+                }))
+          }
           onClose={(restoreFocus) => {
             const key = menu.returnKey;
             setMenu(null);
@@ -1027,6 +1082,8 @@ export function NoteTree({
 /** One row of the tree: a note or a folder, its actions and its marks. */
 function TreeRow({
   row,
+  occupied,
+  readOnly,
   workspaceId,
   open,
   parent,
@@ -1045,6 +1102,8 @@ function TreeRow({
   onMenu,
   onRenameEvent,
 }: {
+  readonly occupied: readonly number[] | undefined;
+  readonly readOnly: boolean;
   readonly row: ActionableRow;
   readonly workspaceId: string;
   /** The row is the note that the screen shows. */
@@ -1155,12 +1214,16 @@ function TreeRow({
       aria-selected={picked || (!selecting && open)}
       aria-expanded={isFolder ? row.expanded : undefined}
       aria-current={open ? 'page' : undefined}
-      aria-label={controls.label}
+      aria-label={
+        occupied
+          ? `${controls.label}. Someone else has this note open.`
+          : controls.label
+      }
       aria-haspopup="menu"
       tabIndex={tabbable ? 0 : -1}
       className={`${treeIndentClassName(row.level)} ${treeItemClassName}`}
 
-      draggable={renaming === null}
+      draggable={!readOnly && renaming === null}
       onFocus={(event) => onFocus(event.currentTarget)}
       onBlur={(event) => {
         const next = event.relatedTarget;
@@ -1200,7 +1263,7 @@ function TreeRow({
       onDragStart={(event) => drag.begin(event, onDragItems())}
       onDragEnd={() => drag.end()}
       onDragOver={(event) => {
-        if (!isFolder || !drag.accepts(row.path)) return;
+        if (readOnly || !isFolder || !drag.accepts(row.path)) return;
         event.preventDefault();
         event.dataTransfer.dropEffect = 'move';
         drag.hover(row.path);
@@ -1209,7 +1272,7 @@ function TreeRow({
         if (isTarget) drag.hover(null);
       }}
       onDrop={(event) => {
-        if (!isFolder) return;
+        if (readOnly || !isFolder) return;
         event.preventDefault();
         drag.drop(row.path);
       }}
@@ -1273,12 +1336,27 @@ function TreeRow({
           aria-haspopup="menu"
           reveal
           className="ui-sidebar-row-menu"
+          slotContent={
+            occupied === undefined ? null : (
+              <span className="pointer-events-none absolute inset-0 flex items-center justify-center group-focus-within/item:hidden fine:group-hover/item:hidden">
+                <PresenceDots colors={occupied.map(workspacePresenceColor)} />
+              </span>
+            )
+          }
           onMouseDown={keepFocus}
           onClick={(event) => {
             event.stopPropagation();
             onMenu(anchorOf(event.currentTarget), event.detail === 0);
           }}
-          glyph={<MoreIcon className="text-muted" />}
+          glyph={
+            <MoreIcon
+              className={
+                occupied === undefined
+                  ? 'text-muted'
+                  : 'text-muted coarse:invisible coarse:group-focus-within/item:visible'
+              }
+            />
+          }
         ></IconButton>
       </ListRow>
     </div>

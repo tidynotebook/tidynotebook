@@ -1,3 +1,4 @@
+import type { WorkspaceRecoveryNotice } from './lib/workspace-recovery.ts';
 /**
  * Application composition of the notesapp web client.
  *
@@ -18,11 +19,8 @@ import {
   type ReactNode,
 } from 'react';
 import {
-  connectSyncNotices,
   getAccount,
-  getSyncProtocol,
   listWorkspaces,
-  syncNoticesProtocol,
   updatePreferences,
   type Account,
   type Preferences,
@@ -308,6 +306,10 @@ const SyncSessionContext = createContext<SyncSession | null>(null);
 /** The notices of this tab and its account, or `null` before both exist. */
 const NoticesContext = createContext<TabNotices | null>(null);
 
+export function useTabNoticeStream(): TabNotices | null {
+  return useContext(NoticesContext);
+}
+
 /** One channel between the tabs of this browser profile. */
 function browserChannel(name: string): TabChannel {
   // A browser without the channel serves only its own tab, as before.
@@ -329,16 +331,6 @@ function browserChannel(name: string): TabChannel {
   };
 }
 
-/** Whether this server offers the notice stream now (record 0130). */
-async function noticesOffered(): Promise<boolean> {
-  const answer = await getSyncProtocol();
-  // A server that predates the member, and one that offers another
-  // subprotocol, leave this tab on its poll interval.
-  return (answer.data?.notificationProtocols ?? []).includes(
-    syncNoticesProtocol,
-  );
-}
-
 /**
  * Runs the notices of this tab for one account (record 0130).
  *
@@ -357,14 +349,25 @@ function useTabNotices(
       setNotices(null);
       return;
     }
+    let openSocket:
+      typeof import('@notesapp/api-client').connectSyncNotices | undefined;
     const tab = startTabNotices({
       store,
       accountId,
       tabId: syncSession.ownerId,
       channel: browserChannel,
-      offered: noticesOffered,
-      connect: (handlers) =>
-        connectSyncNotices(window.location.origin, handlers),
+      offered: async () => {
+        const transport = await import('./lib/notice-transport.ts');
+        if (!(await transport.noticesOffered())) return false;
+        openSocket ??= (await transport.loadSyncNoticesTransport())
+          .connectSyncNotices;
+        return true;
+      },
+      connect: (handlers) => {
+        if (openSocket === undefined)
+          throw new Error('The notice transport did not load.');
+        return openSocket(window.location.origin, handlers);
+      },
       schedule: timerSchedule,
       clock: Date.now,
       random: Math.random,
@@ -650,6 +653,8 @@ function settleWorkspaceList(
 /** The workspaces of the account and the ways the list changes. */
 export type WorkspaceValue = {
   readonly state: WorkspaceState;
+  readonly recoveryNotice?: WorkspaceRecoveryNotice | null | undefined;
+  readonly dismissRecoveryNotice?: (() => void) | undefined;
   /** Asks the server for the list again. */
   readonly reload: () => void;
   /**
@@ -697,6 +702,17 @@ export function useWorkspace(): WorkspaceValue {
   return useContext(WorkspaceContext);
 }
 
+export function useWorkspaceRole(
+  workspaceId: string,
+): Workspace['role'] | undefined {
+  const { state } = useWorkspace();
+  return state.status === 'ready'
+    ? state.workspaces.find(
+        (workspace) => workspace.workspaceId === workspaceId,
+      )?.role
+    : undefined;
+}
+
 /** Reads one local settings value, for a start with no connection. */
 function readStored(key: string): string | null {
   try {
@@ -729,6 +745,7 @@ function useWorkspaceLoader(
   status: SessionStatus,
   accountId: string | null,
   generation: number,
+  store: LocalStore | null,
 ): Omit<WorkspaceValue, 'reload'> {
   const [snapshot, setSnapshot] = useState<WorkspaceSnapshot>({
     accountId: null,
@@ -736,6 +753,15 @@ function useWorkspaceLoader(
     state: { status: 'loading' },
   });
   const [retryGeneration, setRetryGeneration] = useState(0);
+  const [recoveryNotice, setRecoveryNotice] =
+    useState<WorkspaceRecoveryNotice | null>(null);
+  const dismissRecoveryNotice = useCallback(() => setRecoveryNotice(null), []);
+  const recoveryAccount = useRef<string | null>(null);
+  recoveryAccount.current = status === 'signed-in' ? accountId : null;
+  const recoveryBaseline = useRef<{
+    readonly accountId: string;
+    readonly workspaces: readonly Workspace[];
+  } | null>(null);
   // A local server-confirmed mutation makes an earlier list request stale.
   const mutation = useRef<{ readonly accountId: string | null }>({
     accountId: null,
@@ -748,6 +774,8 @@ function useWorkspaceLoader(
   useEffect(() => {
     if (status !== 'signed-in' || accountId === null) {
       mutation.current = { accountId: null };
+      recoveryBaseline.current = null;
+      setRecoveryNotice(null);
       setSnapshot({
         accountId: null,
         revision: 0,
@@ -758,6 +786,10 @@ function useWorkspaceLoader(
     const activeAccount = accountId;
     let cancelled = false;
 
+    const rememberAccess = (workspaces: readonly Workspace[]): void => {
+      recoveryBaseline.current = { accountId: activeAccount, workspaces };
+      writeStored(workspaceListKey(activeAccount), JSON.stringify(workspaces));
+    };
     if (mutation.current.accountId !== activeAccount)
       mutation.current = { accountId: activeAccount };
     const requestedMutation = mutation.current;
@@ -787,6 +819,7 @@ function useWorkspaceLoader(
         return;
       }
       let workspaces: readonly Workspace[] | null;
+      let changes: Workspace[] = [];
       let failure: string | null = null;
       let allowPrevious = false;
       if (result.error !== undefined || result.data === undefined) {
@@ -799,11 +832,45 @@ function useWorkspaceLoader(
         failure = problemMessage(result.error);
       } else {
         workspaces = result.data.workspaces;
-        writeStored(
-          workspaceListKey(activeAccount),
-          JSON.stringify(workspaces),
-        );
+        // Another tab can finish recovery while this tab still has an open draft.
+        const previous =
+          recoveryBaseline.current?.accountId === activeAccount
+            ? recoveryBaseline.current.workspaces
+            : parseCachedWorkspaces(
+                readStored(workspaceListKey(activeAccount)),
+              );
+        changes = previous.filter((old) => {
+          const current = result.data?.workspaces.find(
+            (entry) => entry.workspaceId === old.workspaceId,
+          );
+          return (
+            current === undefined ||
+            (current.role === 'viewer' && old.role !== 'viewer')
+          );
+        });
+        if (changes.length === 0) rememberAccess(workspaces);
       }
+      const needsRecovery =
+        changes.length > 0 && store !== null && workspaces !== null;
+      const recoveryModule = needsRecovery
+        ? await import('./lib/workspace-recovery.ts').catch(() => null)
+        : null;
+      if (cancelled) return;
+      const available = workspaces;
+      const recovery =
+        store === null || available === null || recoveryModule === null
+          ? []
+          : changes.map((old) =>
+              recoveryModule.recoverWorkspaceAccess(
+                store,
+                activeAccount,
+                old,
+                available,
+                !available.some(
+                  (space) => space.workspaceId === old.workspaceId,
+                ),
+              ),
+            );
       // Keep completion numbers across loading, failures and repeated reads.
       setSnapshot((current) => {
         if (current.accountId !== activeAccount) return current;
@@ -819,12 +886,34 @@ function useWorkspaceLoader(
           failure === null ? 'server' : 'fallback',
         );
       });
+      if (needsRecovery) {
+        const results = await Promise.allSettled(recovery);
+        if (recoveryAccount.current !== activeAccount) return;
+        if (
+          recoveryModule === null ||
+          results.some((result) => result.status === 'rejected')
+        )
+          setRecoveryNotice({
+            message:
+              'Your unsent text is safe on this device. Recovery will try again after sync.',
+          });
+        for (const result of results)
+          if (result.status === 'fulfilled' && result.value !== null)
+            setRecoveryNotice(result.value);
+        if (
+          !cancelled &&
+          available !== null &&
+          recoveryModule !== null &&
+          results.every((result) => result.status === 'fulfilled')
+        )
+          rememberAccess(available);
+      }
     }
     void load();
     return () => {
       cancelled = true;
     };
-  }, [status, accountId, generation, retryGeneration]);
+  }, [status, accountId, generation, retryGeneration, store]);
 
   const remember = useCallback(
     (workspaceId: string): void => {
@@ -893,7 +982,14 @@ function useWorkspaceLoader(
     [replaceList],
   );
 
-  return { state, remember, adopt, forget };
+  return {
+    state,
+    remember,
+    adopt,
+    forget,
+    recoveryNotice,
+    dismissRecoveryNotice,
+  };
 }
 
 /** What the sync engine of the open workspace reports and accepts. */
@@ -1262,8 +1358,9 @@ export function useWorkspaceSync(
       if (
         change.accountId === accountId &&
         change.workspaceId === workspaceId &&
-        change.kind === 'queue'
+        (change.kind === 'queue' || change.kind === 'reset')
       ) {
+        if (change.accessReset === 'viewer') setState(syncStateOnline);
         readQueue();
         requestSync();
       }
@@ -1405,7 +1502,11 @@ export function useBackgroundSync(
         });
     };
     const unsubscribe = activeStore.subscribe((change) => {
-      if (change.accountId === activeAccount && change.kind === 'queue') read();
+      if (
+        change.accountId === activeAccount &&
+        (change.kind === 'queue' || change.kind === 'reset')
+      )
+        read();
     });
     read();
     return () => {
@@ -1563,10 +1664,13 @@ export function AppProviders({
     remember: rememberWorkspace,
     adopt: adoptWorkspace,
     forget: forgetWorkspace,
+    recoveryNotice,
+    dismissRecoveryNotice,
   } = useWorkspaceLoader(
     session.status,
     session.account?.accountId ?? null,
     workspaceGeneration,
+    storeValue.store,
   );
 
   // Record 0050. The drain sits here and not in the shell, so a workspace that
@@ -1584,10 +1688,27 @@ export function AppProviders({
     session.account?.accountId ?? null,
     syncSession,
   );
+  useEffect(() => {
+    if (syncAccountId === null) return;
+    const refresh = (): void => {
+      if (navigator.onLine) setWorkspaceGeneration((current) => current + 1);
+    };
+    const timer = window.setInterval(refresh, 30_000);
+    window.addEventListener('online', refresh);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('online', refresh);
+    };
+  }, [syncAccountId]);
   const recheckAccount = session.recheck;
   useEffect(
     () =>
-      notices === null ? undefined : notices.onAccountChanged(recheckAccount),
+      notices === null
+        ? undefined
+        : notices.onAccountChanged(() => {
+            recheckAccount();
+            setWorkspaceGeneration((current) => current + 1);
+          }),
     [notices, recheckAccount],
   );
   useBackgroundSync(
@@ -1648,6 +1769,8 @@ export function AppProviders({
       remember: rememberWorkspace,
       adopt: adoptWorkspace,
       forget: forgetWorkspace,
+      recoveryNotice,
+      dismissRecoveryNotice,
     }),
     [
       workspaceState,
@@ -1655,6 +1778,8 @@ export function AppProviders({
       rememberWorkspace,
       adoptWorkspace,
       forgetWorkspace,
+      recoveryNotice,
+      dismissRecoveryNotice,
     ],
   );
 

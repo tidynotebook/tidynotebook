@@ -141,3 +141,11 @@ export {
 export type { EditorHistoryState, HistoryAction } from './history-controls.ts';
 
 export { searchPanelClasses } from './search-panel.ts';
+
+export {
+  decodeNoteAwareness,
+  decodeNoteSync,
+  encodeNoteSync,
+  mergeDocumentUpdates,
+  updateActors,
+} from '@notesapp/note-document';

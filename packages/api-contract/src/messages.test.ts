@@ -28,7 +28,7 @@ function subscribe(members: Record<string, unknown>): string {
 await test('the channel states its address and subprotocol', () => {
   const channel = findChannel('syncNotices');
   assert.equal(channel?.address, '/api/sync/notices');
-  assert.equal(channel?.subprotocol, 'notesapp.sync.1');
+  assert.equal(channel?.subprotocol, 'notesapp.sync.2');
   assert.equal(channel?.operationId, 'openSyncNotices');
 });
 
@@ -165,11 +165,19 @@ await test('a server message outside its schema is refused', () => {
 });
 
 await test('the handlers of a channel must cover its client messages', () => {
-  assertMessageHandlers('syncNotices', ['subscribe']);
+  const handlers = [
+    'subscribe',
+    'joinNote',
+    'leaveNote',
+    'sendNoteSync',
+    'sendNoteAwareness',
+    'watchWorkspacePresence',
+  ];
+  assertMessageHandlers('syncNotices', handlers);
   assert.throws(() => {
     assertMessageHandlers('syncNotices', []);
   }, /Missing handler for message subscribe of syncNotices/);
   assert.throws(() => {
-    assertMessageHandlers('syncNotices', ['subscribe', 'shout']);
+    assertMessageHandlers('syncNotices', [...handlers, 'shout']);
   }, /Handler shout has no client message in syncNotices/);
 });

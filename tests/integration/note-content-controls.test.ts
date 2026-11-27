@@ -43,15 +43,15 @@ const { EditorState } = await import('@codemirror/state');
 const { EditorView, plainTextContext } = await import('@notesapp/editor');
 const { ActiveNoteScope, revealInNote } =
   await import('../../apps/web/dist/features/editor/active-note.js');
-const { NoteFooter } =
-  await import('../../apps/web/dist/features/editor/note-footer.js');
+const { NoteWordCount } =
+  await import('../../apps/web/dist/features/editor/note-word-count.js');
 const { wordCount } =
   await import('../../apps/web/dist/features/editor/note-metrics.js');
 const { FormatToolbar } =
   await import('../../apps/web/dist/features/editor/format-toolbar.js');
 
 try {
-  await test('footer counts content and handles the parser refusal without losing the screen', async () => {
+  await test('the panel and menu count words and handle a parser refusal', async () => {
     const container = document.createElement('div');
     document.body.append(container);
     const root = createRoot(container);
@@ -59,7 +59,7 @@ try {
       await act(async () =>
         root.render(
           createElement(ActiveNoteScope, {
-            children: createElement(NoteFooter, {
+            children: createElement(NoteWordCount, {
               initialText: '# Title\n\nTwo words',
             }),
           }),
@@ -70,8 +70,9 @@ try {
       await act(async () =>
         root.render(
           createElement(ActiveNoteScope, {
-            children: createElement(NoteFooter, {
+            children: createElement(NoteWordCount, {
               initialText: 'x'.repeat(1024 * 1024 + 1),
+              menu: true,
             }),
           }),
         ),

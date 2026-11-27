@@ -4,7 +4,7 @@ post:
   description: >-
     Permanently purges files and revisions, writes purge markers, and
     reclaims storage. Subsequent writes to purged file identifiers answer
-    410 Gone. Restricted to the workspace owner.
+    410 Gone. Restricted to the workspace owner and admins.
   tags:
     - files
   parameters:

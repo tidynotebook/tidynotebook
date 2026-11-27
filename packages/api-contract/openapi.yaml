@@ -39,7 +39,7 @@ tags:
       them.
   - name: publishing
     description: >-
-      Read-only links that an owner makes over one note or one folder.
+      Read-only links for one note or one folder. Owners and admins manage them.
   - name: published
     description: >-
       The reader path of a published link. No operation of this tag names a
@@ -246,6 +246,26 @@ paths:
     $ref: './paths/published_token_report.yaml'
   /published/{token}/attachments/{fileId}/{revisionId}:
     $ref: './paths/published_token_attachments_fileId_revisionId.yaml'
+  /api/account/workspace-invitations/{invitationId}/decline:
+    $ref: './paths/api_account_workspace-invitations_invitationId_decline.yaml'
+  /api/account/workspace-invitations/{invitationId}/accept:
+    $ref: './paths/api_account_workspace-invitations_invitationId_accept.yaml'
+  /api/account/workspace-invitations:
+    $ref: './paths/api_account_workspace-invitations.yaml'
+  /api/registrations/workspace-invitation:
+    $ref: './paths/api_registrations_workspace-invitation.yaml'
+  /api/workspaces/{workspaceId}/invitations/{invitationId}/link:
+    $ref: './paths/api_workspaces_workspaceId_invitations_invitationId_link.yaml'
+  /api/workspaces/{workspaceId}/invitations/{invitationId}:
+    $ref: './paths/api_workspaces_workspaceId_invitations_invitationId.yaml'
+  /api/workspaces/{workspaceId}/invitations:
+    $ref: './paths/api_workspaces_workspaceId_invitations.yaml'
+  /api/workspaces/{workspaceId}/membership:
+    $ref: './paths/api_workspaces_workspaceId_membership.yaml'
+  /api/workspaces/{workspaceId}/members/{accountId}:
+    $ref: './paths/api_workspaces_workspaceId_members_accountId.yaml'
+  /api/workspaces/{workspaceId}/members:
+    $ref: './paths/api_workspaces_workspaceId_members.yaml'
 components:
   securitySchemes:
     mcpAccessToken:
@@ -335,6 +355,10 @@ components:
       $ref: './components/parameters/UsageMonthQuery.yaml'
     AccountEventAfter:
       $ref: './components/parameters/AccountEventAfter.yaml'
+    AfterInvitationId:
+      $ref: './components/parameters/AfterInvitationId.yaml'
+    AfterAccountId:
+      $ref: './components/parameters/AfterAccountId.yaml'
   requestBodies:
     PreferencesUpdate:
       $ref: './components/requestBodies/PreferencesUpdate.yaml'
@@ -398,6 +422,10 @@ components:
       $ref: './components/requestBodies/HandoffRedeem.yaml'
     PortalOpen:
       $ref: './components/requestBodies/PortalOpen.yaml'
+    WorkspaceMemberRole:
+      $ref: './components/requestBodies/WorkspaceMemberRole.yaml'
+    WorkspaceInvitesCreate:
+      $ref: './components/requestBodies/WorkspaceInvitesCreate.yaml'
   responses:
     Health:
       $ref: './components/responses/Health.yaml'
@@ -593,51 +621,23 @@ components:
       $ref: './components/responses/HandoffAccount.yaml'
     PortalAddress:
       $ref: './components/responses/PortalAddress.yaml'
+    WorkspaceMembershipConflict:
+      $ref: './components/responses/WorkspaceMembershipConflict.yaml'
+    WorkspaceInviteDetails:
+      $ref: './components/responses/WorkspaceInviteDetails.yaml'
+    WorkspaceInviteLink:
+      $ref: './components/responses/WorkspaceInviteLink.yaml'
+    WorkspaceInviteResults:
+      $ref: './components/responses/WorkspaceInviteResults.yaml'
+    AccountWorkspaceInvitePage:
+      $ref: './components/responses/AccountWorkspaceInvitePage.yaml'
+    WorkspaceInviteList:
+      $ref: './components/responses/WorkspaceInviteList.yaml'
+    WorkspaceMember:
+      $ref: './components/responses/WorkspaceMember.yaml'
+    WorkspaceMemberPage:
+      $ref: './components/responses/WorkspaceMemberPage.yaml'
   schemas:
-    McpError:
-      $ref: './components/schemas/McpError.yaml'
-    McpMessage:
-      $ref: './components/schemas/McpMessage.yaml'
-    McpMetadata:
-      $ref: './components/schemas/McpMetadata.yaml'
-    ConnectedApp:
-      $ref: './components/schemas/ConnectedApp.yaml'
-    ConnectedAppList:
-      $ref: './components/schemas/ConnectedAppList.yaml'
-    OAuthTokenRequest:
-      $ref: './components/schemas/OAuthTokenRequest.yaml'
-    OAuthToken:
-      $ref: './components/schemas/OAuthToken.yaml'
-    OAuthRevokeRequest:
-      $ref: './components/schemas/OAuthRevokeRequest.yaml'
-    OAuthRegistrationRequest:
-      $ref: './components/schemas/OAuthRegistrationRequest.yaml'
-    OAuthRedirect:
-      $ref: './components/schemas/OAuthRedirect.yaml'
-    OAuthMetadata:
-      $ref: './components/schemas/OAuthMetadata.yaml'
-    OAuthError:
-      $ref: './components/schemas/OAuthError.yaml'
-    OAuthContinueRequest:
-      $ref: './components/schemas/OAuthContinueRequest.yaml'
-    OAuthConsentRequest:
-      $ref: './components/schemas/OAuthConsentRequest.yaml'
-    OAuthPublicClient:
-      $ref: './components/schemas/OAuthPublicClient.yaml'
-    OAuthClient:
-      $ref: './components/schemas/OAuthClient.yaml'
-    ApiKey:
-      $ref: './components/schemas/ApiKey.yaml'
-    ApiKeyCreateInput:
-      $ref: './components/schemas/ApiKeyCreateInput.yaml'
-    ApiKeyCreated:
-      $ref: './components/schemas/ApiKeyCreated.yaml'
-    ApiKeyList:
-      $ref: './components/schemas/ApiKeyList.yaml'
-    ProfileUpdateInput:
-      $ref: './components/schemas/ProfileUpdateInput.yaml'
-    ProfileUpdated:
-      $ref: './components/schemas/ProfileUpdated.yaml'
     HealthReport:
       $ref: './components/schemas/HealthReport.yaml'
     ReadinessReport:
@@ -648,6 +648,8 @@ components:
       $ref: './components/schemas/SyncNoticeChanged.yaml'
     SyncNoticeGeneration:
       $ref: './components/schemas/SyncNoticeGeneration.yaml'
+    LiveSyncNoticeProtocol:
+      $ref: './components/schemas/LiveSyncNoticeProtocol.yaml'
     SyncNoticeProtocol:
       $ref: './components/schemas/SyncNoticeProtocol.yaml'
     SyncNoticeReady:
@@ -706,6 +708,30 @@ components:
       $ref: './components/schemas/TemplateSettingsInput.yaml'
     Account:
       $ref: './components/schemas/Account.yaml'
+    LiveNoteJoin:
+      $ref: './components/schemas/LiveNoteJoin.yaml'
+    LiveNoteLeave:
+      $ref: './components/schemas/LiveNoteLeave.yaml'
+    LiveNoteSyncInput:
+      $ref: './components/schemas/LiveNoteSyncInput.yaml'
+    LiveNoteAwarenessInput:
+      $ref: './components/schemas/LiveNoteAwarenessInput.yaml'
+    LiveWorkspacePresenceWatch:
+      $ref: './components/schemas/LiveWorkspacePresenceWatch.yaml'
+    LiveNoteJoined:
+      $ref: './components/schemas/LiveNoteJoined.yaml'
+    LiveNoteAccess:
+      $ref: './components/schemas/LiveNoteAccess.yaml'
+    LiveNoteStopped:
+      $ref: './components/schemas/LiveNoteStopped.yaml'
+    LiveNoteSyncOutput:
+      $ref: './components/schemas/LiveNoteSyncOutput.yaml'
+    LiveNoteAwarenessOutput:
+      $ref: './components/schemas/LiveNoteAwarenessOutput.yaml'
+    LiveWorkspacePresence:
+      $ref: './components/schemas/LiveWorkspacePresence.yaml'
+    LiveNotePresenceCount:
+      $ref: './components/schemas/LiveNotePresenceCount.yaml'
     Workspace:
       $ref: './components/schemas/Workspace.yaml'
     WorkspaceList:
@@ -1028,3 +1054,71 @@ components:
       $ref: './components/schemas/PortalOpenInput.yaml'
     PortalAddress:
       $ref: './components/schemas/PortalAddress.yaml'
+    RevisionContributor:
+      $ref: './components/schemas/RevisionContributor.yaml'
+    WorkspaceInviteLink:
+      $ref: './components/schemas/WorkspaceInviteLink.yaml'
+    WorkspaceInviteResults:
+      $ref: './components/schemas/WorkspaceInviteResults.yaml'
+    WorkspaceInviteResult:
+      $ref: './components/schemas/WorkspaceInviteResult.yaml'
+    WorkspaceInvitesInput:
+      $ref: './components/schemas/WorkspaceInvitesInput.yaml'
+    AccountWorkspaceInvitePage:
+      $ref: './components/schemas/AccountWorkspaceInvitePage.yaml'
+    WorkspaceInviteList:
+      $ref: './components/schemas/WorkspaceInviteList.yaml'
+    PendingWorkspaceInvite:
+      $ref: './components/schemas/PendingWorkspaceInvite.yaml'
+    WorkspaceMemberRoleInput:
+      $ref: './components/schemas/WorkspaceMemberRoleInput.yaml'
+    WorkspaceMemberPage:
+      $ref: './components/schemas/WorkspaceMemberPage.yaml'
+    WorkspaceMember:
+      $ref: './components/schemas/WorkspaceMember.yaml'
+    WorkspaceInviteRole:
+      $ref: './components/schemas/WorkspaceInviteRole.yaml'
+    McpError:
+      $ref: './components/schemas/McpError.yaml'
+    McpMessage:
+      $ref: './components/schemas/McpMessage.yaml'
+    McpMetadata:
+      $ref: './components/schemas/McpMetadata.yaml'
+    ConnectedApp:
+      $ref: './components/schemas/ConnectedApp.yaml'
+    ConnectedAppList:
+      $ref: './components/schemas/ConnectedAppList.yaml'
+    OAuthTokenRequest:
+      $ref: './components/schemas/OAuthTokenRequest.yaml'
+    OAuthToken:
+      $ref: './components/schemas/OAuthToken.yaml'
+    OAuthRevokeRequest:
+      $ref: './components/schemas/OAuthRevokeRequest.yaml'
+    OAuthRegistrationRequest:
+      $ref: './components/schemas/OAuthRegistrationRequest.yaml'
+    OAuthRedirect:
+      $ref: './components/schemas/OAuthRedirect.yaml'
+    OAuthMetadata:
+      $ref: './components/schemas/OAuthMetadata.yaml'
+    OAuthError:
+      $ref: './components/schemas/OAuthError.yaml'
+    OAuthContinueRequest:
+      $ref: './components/schemas/OAuthContinueRequest.yaml'
+    OAuthConsentRequest:
+      $ref: './components/schemas/OAuthConsentRequest.yaml'
+    OAuthPublicClient:
+      $ref: './components/schemas/OAuthPublicClient.yaml'
+    OAuthClient:
+      $ref: './components/schemas/OAuthClient.yaml'
+    ApiKey:
+      $ref: './components/schemas/ApiKey.yaml'
+    ApiKeyCreateInput:
+      $ref: './components/schemas/ApiKeyCreateInput.yaml'
+    ApiKeyCreated:
+      $ref: './components/schemas/ApiKeyCreated.yaml'
+    ApiKeyList:
+      $ref: './components/schemas/ApiKeyList.yaml'
+    ProfileUpdateInput:
+      $ref: './components/schemas/ProfileUpdateInput.yaml'
+    ProfileUpdated:
+      $ref: './components/schemas/ProfileUpdated.yaml'

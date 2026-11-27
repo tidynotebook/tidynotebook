@@ -1,0 +1,27 @@
+post:
+  operationId: readWorkspaceInvite
+  summary: Read a workspace invitation from its link.
+  description: >-
+    Looks up the token digest. An expired, revoked, declined, used or unknown link gets the same refusal. The token travels in the body and the response is no-store.
+  tags:
+    - auth
+  security: []
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+  requestBody:
+    $ref: '../components/requestBodies/InvitationRead.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/WorkspaceInviteDetails.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '403':
+      $ref: '../components/responses/InvitationUnavailable.yaml'
+    '413':
+      $ref: '../components/responses/PayloadTooLarge.yaml'
+    '415':
+      $ref: '../components/responses/UnsupportedMediaType.yaml'
+    '429':
+      $ref: '../components/responses/RateLimited.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

@@ -1,0 +1,28 @@
+get:
+  operationId: readWorkspaceInviteLink
+  summary: Read a copy of the invitation link.
+  description: >-
+    An owner or admin can copy a pending invitation link. The server marks the answer private and no-store.
+  tags:
+    - workspaces
+  security:
+    - sessionCookie: []
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+    - $ref: '../components/parameters/WorkspaceId.yaml'
+    - $ref: '../components/parameters/InvitationId.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/WorkspaceInviteLink.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../components/responses/NotFound.yaml'
+    '423':
+      $ref: '../components/responses/AccountLocked.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

@@ -5,7 +5,8 @@ post:
     Makes one read-only link over one note, or over one folder and every
     note below it. The answer holds the token of the new link. The server
     keeps only a digest of that token, so this is the one time that the
-    value exists outside the address that the owner copies. A workspace
+    value exists outside the address that the caller copies. An owner or an
+    admin can publish. A workspace
     holds a bounded number of links, and a request past that bound is
     refused.
   tags:
@@ -40,7 +41,8 @@ get:
   operationId: listPublishedLinks
   summary: List the published links of a workspace.
   description: >-
-    Reports every published link of the workspace, what it opens, when it
+    An owner or admin can read this list. It reports every published link
+    of the workspace, what it opens, when it
     expires, and whether it has a password. No entry holds a token and no
     entry holds a part of one, so a read of this list opens nothing. The
     answer reports no reader count, because the reader path counts nothing.

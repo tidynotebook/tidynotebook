@@ -35,7 +35,7 @@ delete:
   summary: Delete a workspace and every record that belongs to it.
   description: >-
     Deletes a workspace and its complete content history. Only its owner
-    may do this.
+    may do this. The confirmation uses the member count from listWorkspaceMembers.
   tags:
     - workspaces
   parameters:

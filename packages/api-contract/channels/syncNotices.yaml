@@ -3,7 +3,12 @@ title: Sync notices
 description: >-
   One stream for one browser session. The client replaces its
   subscription set with each subscribe message, and the server sends a
-  notice when the feed of a subscribed workspace changes.
+  notice when the feed of a subscribed workspace changes. A client can
+  join live note rooms when the ready message offers liveNotes. The room
+  payload is base64 over standard y-protocols bytes. Each direction uses
+  a separate message kind. One connection can keep up to 16 note rooms.
+  The server bounds queued work and frame rate. HTTP sync continues when
+  the live path is unavailable.
 messages:
   subscribe:
     name: subscribe
@@ -61,6 +66,83 @@ messages:
     contentType: application/json
     payload:
       $ref: '../components/schemas/SyncNoticeStop.yaml'
+  joinNote:
+    name: joinNote
+    title: Open one note room for one working copy
+    summary: Open one note room for one working copy.
+    contentType: application/json
+    payload:
+      $ref: '../components/schemas/LiveNoteJoin.yaml'
+  leaveNote:
+    name: leaveNote
+    title: Close one note room on this connection
+    summary: Close one note room on this connection.
+    contentType: application/json
+    payload:
+      $ref: '../components/schemas/LiveNoteLeave.yaml'
+  sendNoteSync:
+    name: sendNoteSync
+    title: Send a standard y-protocols sync message
+    summary: Send a standard y-protocols sync message.
+    contentType: application/json
+    payload:
+      $ref: '../components/schemas/LiveNoteSyncInput.yaml'
+  sendNoteAwareness:
+    name: sendNoteAwareness
+    title: Send the awareness state of the joined client ID
+    summary: Send the awareness state of the joined client ID.
+    contentType: application/json
+    payload:
+      $ref: '../components/schemas/LiveNoteAwarenessInput.yaml'
+  watchWorkspacePresence:
+    name: watchWorkspacePresence
+    title: Replace the workspace presence interests for this connection
+    summary: Replace the workspace presence interests for this connection.
+    contentType: application/json
+    payload:
+      $ref: '../components/schemas/LiveWorkspacePresenceWatch.yaml'
+  noteJoined:
+    name: noteJoined
+    title: Confirm the room, epoch and current access
+    summary: Confirm the room, epoch and current access.
+    contentType: application/json
+    payload:
+      $ref: '../components/schemas/LiveNoteJoined.yaml'
+  noteAccess:
+    name: noteAccess
+    title: Report current access or removal from a joined room
+    summary: Report current access or removal from a joined room.
+    contentType: application/json
+    payload:
+      $ref: '../components/schemas/LiveNoteAccess.yaml'
+  noteStopped:
+    name: noteStopped
+    title: Stop one room and keep the sync notice stream open
+    summary: Stop one room and keep the sync notice stream open.
+    contentType: application/json
+    payload:
+      $ref: '../components/schemas/LiveNoteStopped.yaml'
+  noteSync:
+    name: noteSync
+    title: Deliver a validated y-protocols sync message
+    summary: Deliver a validated y-protocols sync message.
+    contentType: application/json
+    payload:
+      $ref: '../components/schemas/LiveNoteSyncOutput.yaml'
+  noteAwareness:
+    name: noteAwareness
+    title: Deliver a y-protocols awareness message with server-verified identity
+    summary: Deliver a y-protocols awareness message with server-verified identity.
+    contentType: application/json
+    payload:
+      $ref: '../components/schemas/LiveNoteAwarenessOutput.yaml'
+  workspacePresence:
+    name: workspacePresence
+    title: Replace the open-note counts for one authorized workspace
+    summary: Replace the open-note counts for one authorized workspace.
+    contentType: application/json
+    payload:
+      $ref: '../components/schemas/LiveWorkspacePresence.yaml'
 bindings:
   ws:
     method: GET
@@ -70,5 +152,5 @@ bindings:
         - sec-websocket-protocol
       properties:
         sec-websocket-protocol:
-          $ref: '../components/schemas/SyncNoticeProtocol.yaml'
+          $ref: '../components/schemas/LiveSyncNoticeProtocol.yaml'
     bindingVersion: 0.1.0

@@ -1,0 +1,5 @@
+description: The outcomes of the invitation request.
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/WorkspaceInviteResults.yaml'

@@ -114,6 +114,8 @@ export type WorkspaceStoreOptions = {
    * Defaults to {@link defaultConnectionTimeoutMs}.
    */
   readonly connectionTimeoutMs?: number;
+  /** Migration tests write to snapshots older than the contributor tables. */
+  readonly recordRevisionContributors?: boolean;
 };
 
 /**
@@ -261,6 +263,7 @@ function createTransaction(
   actor: Actor,
   workspaceId: string,
   documents: DocumentService,
+  recordRevisionContributors: boolean,
 ): WorkspaceTransaction {
   const context = { client, db, actor, workspaceId, documents };
   return {
@@ -271,7 +274,7 @@ function createTransaction(
     ...historyRepository(context),
     ...trashRepository(context),
     ...searchRepository(context),
-    ...syncRepository(context),
+    ...syncRepository(context, recordRevisionContributors),
   };
 }
 
@@ -281,6 +284,8 @@ export function openWorkspaceStore(
   documents: DocumentService,
   options: WorkspaceStoreOptions = {},
 ): WorkspaceStoreHandle {
+  const recordRevisionContributors =
+    options.recordRevisionContributors !== false;
   const pool = openPool({
     connectionString: databaseUrl,
     max: options.poolSize ?? poolSizes.content,
@@ -346,6 +351,7 @@ export function openWorkspaceStore(
           transactionActor,
           scope,
           documents,
+          recordRevisionContributors,
         );
         const content: WorkspaceStore = {
           documents,
@@ -402,7 +408,14 @@ export function openWorkspaceStore(
         run,
         options,
         (client, db, transactionActor, scope) =>
-          createTransaction(client, db, transactionActor, scope, documents),
+          createTransaction(
+            client,
+            db,
+            transactionActor,
+            scope,
+            documents,
+            recordRevisionContributors,
+          ),
       );
     },
 

@@ -50,7 +50,7 @@ import {
 } from 'react';
 import { Link, useParams } from 'react-router';
 
-import { useLocalStore, useSession } from '../../app.tsx';
+import { useLocalStore, useSession, useWorkspaceRole } from '../../app.tsx';
 import { useDocumentTitle } from '../../shell/document-title.ts';
 import { useNow } from '../../shell/now.ts';
 import { useFiles } from '../../shell/files.tsx';
@@ -180,6 +180,9 @@ function NoteGroupList({
                   </span>
                 )}
               </span>
+              <span className="shrink-0 text-secondary text-muted">
+                {meta.when}
+              </span>
             </Link>
           </li>
         );
@@ -205,7 +208,8 @@ export function NotesHomeView(): ReactNode {
     [files.notes, now],
   );
   const total = files.notes.length;
-  const actions = (
+  const readOnly = useWorkspaceRole(workspaceId) === 'viewer';
+  const actions = readOnly ? null : (
     <Inline
       gap={2}
       wrap
@@ -233,7 +237,11 @@ export function NotesHomeView(): ReactNode {
           <EmptyState
             icon={<FileTextIcon size={20} />}
             title="No notes yet"
-            description="Write your first note."
+            description={
+              readOnly
+                ? 'This workspace has no notes.'
+                : 'Write your first note.'
+            }
             action={actions}
           />
         ) : null

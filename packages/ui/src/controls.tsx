@@ -249,7 +249,9 @@ export function Button({
   );
   if (optical)
     return (
-      <span className="relative inline-flex h-7 shrink-0 coarse:h-11">
+      <span
+        className={`relative inline-flex h-7 shrink-0 coarse:h-11 ${hideTextOnPhone ? 'coarse:max-md:w-11' : ''}`}
+      >
         <span
           aria-hidden="true"
           className="invisible inline-flex items-center gap-2 px-3 text-label coarse:px-4"
@@ -419,6 +421,7 @@ export function TextAreaField({
   error: suppliedError,
   hint,
   required,
+  size,
 }: {
   readonly id: string;
   readonly label: string;
@@ -428,6 +431,7 @@ export function TextAreaField({
   /** The rule of the field, stated under it at all times. */
   readonly hint?: string | undefined;
   readonly required?: boolean | undefined;
+  readonly size?: 'growing' | undefined;
 }): ReactNode {
   const submitted = useContext(FormSubmittedContext);
   const error =
@@ -450,7 +454,22 @@ export function TextAreaField({
       <div className="flex flex-col gap-1">
         <textarea
           id={id}
-          className={textAreaClassName({ invalid: hasError })}
+          className={textAreaClassName({
+            invalid: hasError,
+            ...(size === undefined ? {} : { size }),
+          })}
+          rows={
+            size === 'growing'
+              ? Math.min(
+                  8,
+                  Math.max(
+                    3,
+                    value.split('\n').length,
+                    Math.ceil(value.length / 40),
+                  ),
+                )
+              : undefined
+          }
           value={value}
           required={required ?? false}
           aria-required={required ?? false}
@@ -468,7 +487,7 @@ export function TextAreaField({
         ) : null}
         {hasError ? (
           <p
-            className="m-0 text-secondary text-danger"
+            className="m-0 whitespace-pre-line text-secondary text-danger"
             id={errorId}
             role="alert"
           >
@@ -504,6 +523,7 @@ export function ReadOnlyField({
   value,
   takeFocus,
   describedBy,
+  plain = false,
 }: {
   readonly id: string;
   readonly label: string;
@@ -511,6 +531,7 @@ export function ReadOnlyField({
   /** Takes focus when the field appears, for a value shown one time. */
   readonly takeFocus?: boolean | undefined;
   readonly describedBy?: string | undefined;
+  readonly plain?: boolean;
 }): ReactNode {
   const inputRef = useRef<HTMLInputElement | null>(null);
   useEffect(() => {
@@ -526,7 +547,9 @@ export function ReadOnlyField({
         <input
           ref={inputRef}
           id={id}
-          className={fieldClassName({ className: 'font-mono' })}
+          className={fieldClassName({
+            className: plain ? 'bg-surface text-muted' : 'font-mono',
+          })}
           type="text"
           value={value}
           readOnly
@@ -666,11 +689,28 @@ export function Checkbox({
   );
 }
 
+export function DisclosureRow({
+  children,
+  glyph,
+  ...props
+}: React.ComponentProps<typeof ListRow> & {
+  readonly glyph?: ReactNode;
+}): ReactNode {
+  return (
+    <ListRow {...props} density="tree">
+      <span
+        className="inline-flex h-5 w-4 shrink-0 items-center"
+        aria-hidden="true"
+      >
+        {glyph}
+      </span>
+      {children}
+    </ListRow>
+  );
+}
+
 /**
- * A collapsible region, for the outline panel.
- *
- * The toggle button owns `aria-expanded` and the panel is a labeled region,
- * so screen reader and keyboard users can open, enter, and close it.
+ * The toggle owns `aria-expanded` and the panel is a named region.
  */
 export function CollapsibleSection({
   id,
@@ -688,22 +728,18 @@ export function CollapsibleSection({
   const panelId = `${id}-panel`;
   return (
     <Stack as="section" gap={2} aria-labelledby={id}>
-      <ListRow
+      <DisclosureRow
         as="button"
-        density="tree"
         id={id}
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => onToggle(!open)}
+        glyph={open ? <ChevronDownIcon /> : <ChevronRightIcon />}
       >
-        <span
-          className="inline-flex w-4 shrink-0 items-center"
-          aria-hidden="true"
-        >
-          {open ? <ChevronDownIcon /> : <ChevronRightIcon />}
+        <span data-disclosure-label="" className="flex-1 text-left text-muted">
+          {title}
         </span>
-        <span className="flex-1 text-left text-muted">{title}</span>
-      </ListRow>
+      </DisclosureRow>
       {open ? (
         // The `section` above is already the named region of this group, so
         // the panel carries the identifier that `aria-controls` names and no

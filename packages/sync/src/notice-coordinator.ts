@@ -79,6 +79,7 @@ export type CoordinatorPorts = {
    * account again (records 0189 and 0201).
    */
   readonly accountChanged: () => void;
+  readonly liveMessage?: (message: SyncNoticesServerMessage | null) => void;
   readonly schedule: Schedule;
   /** A number from 0 up to 1. Defaults to `Math.random`. */
   readonly random?: () => number;
@@ -90,6 +91,7 @@ export type StreamEnd = 'session_ended' | 'malformed' | 'other_account';
 /** The coordinator of one account. */
 export type NoticeCoordinator = {
   readonly start: () => void;
+  readonly sendLive: (frame: string) => boolean;
   readonly stop: () => void;
   /** Replaces the wanted set. The stream sends it as a new generation. */
   readonly want: (workspaceIds: readonly string[]) => void;
@@ -110,6 +112,7 @@ export function createNoticeCoordinator(
   let running = false;
   let socket: NoticeSocket | null = null;
   let ready = false;
+  let liveReady = false;
   let wanted: readonly string[] = [];
   let generation = 0;
   let accepted: number | null = null;
@@ -132,6 +135,8 @@ export function createNoticeCoordinator(
     const current = socket;
     socket = null;
     ready = false;
+    if (liveReady) ports.liveMessage?.(null);
+    liveReady = false;
     setAccepted(null);
     current?.close();
   };
@@ -161,7 +166,9 @@ export function createNoticeCoordinator(
         return;
       }
       ready = true;
+      liveReady = message.liveNotes === true;
       sendSet();
+      if (liveReady) ports.liveMessage?.(message);
       return;
     }
     if (message.kind === 'subscribed') {
@@ -187,6 +194,10 @@ export function createNoticeCoordinator(
       // The HTTP reads of the engines tell which access the account holds.
       setAccepted(null);
       ports.wakeAll();
+      return;
+    }
+    if (message.kind !== 'stop') {
+      if (liveReady) ports.liveMessage?.(message);
       return;
     }
     // A stop comes last. The ones that a reconnect would repeat end the
@@ -241,6 +252,8 @@ export function createNoticeCoordinator(
       onMessage,
       onClose: () => {
         ready = false;
+        if (liveReady) ports.liveMessage?.(null);
+        liveReady = false;
         const wasHealthy = accepted !== null;
         setAccepted(null);
         // The engines rest on the long safety interval while a set is
@@ -260,6 +273,11 @@ export function createNoticeCoordinator(
   };
 
   return {
+    sendLive: (frame) => {
+      if (socket === null || !liveReady) return false;
+      socket.send(frame);
+      return true;
+    },
     start: () => {
       if (running) return;
       running = true;

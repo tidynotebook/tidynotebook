@@ -1,0 +1,25 @@
+get:
+  operationId: listMyWorkspaceInvites
+  summary: Read workspace invitations for my verified address.
+  description: >-
+    Lists pending invitations for the account email. An unverified address gets an empty list.
+  tags:
+    - workspaces
+  security:
+    - sessionCookie: []
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+    - $ref: '../components/parameters/AfterInvitationId.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/AccountWorkspaceInvitePage.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../components/responses/Forbidden.yaml'
+    '423':
+      $ref: '../components/responses/AccountLocked.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

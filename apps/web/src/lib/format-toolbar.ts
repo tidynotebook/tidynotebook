@@ -268,9 +268,7 @@ export function pressKeepsTextFocus(press: ToolbarPress): boolean {
  * The classes of the band that holds the row, above the note text.
  *
  * The band draws `edge-line` under itself, because the note text below is a
- * region a person scrolls, as the footer does above itself
- * (`noteFooterClassName` in `./note-column.ts`). Its inline padding is the
- * one of the footer, so the row and the text start on one line.
+ * region a person scrolls. Its inline padding aligns the row with the text.
  *
  * The row stands above the text at every width (record 0094). A row at the
  * foot of a phone screen stood in the place where a swipe starts the gestures

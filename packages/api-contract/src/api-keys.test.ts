@@ -46,16 +46,29 @@ await test('key creation has a closed input and returns the secret once', () => 
   );
 });
 
-await test('every account operation accepts a key except the two browser session operations', () => {
-  const cookieOnly = new Set(['openSyncNotices', 'revokeOtherSessions']);
+await test('the account contract names every browser session operation', () => {
+  const cookieOnly = new Set([
+    'openSyncNotices',
+    'revokeOtherSessions',
+    'listWorkspaceMembers',
+    'updateWorkspaceMemberRole',
+    'removeWorkspaceMember',
+    'leaveWorkspace',
+    'listWorkspaceInvites',
+    'createWorkspaceInvites',
+    'readWorkspaceInviteLink',
+    'revokeWorkspaceInvite',
+    'listMyWorkspaceInvites',
+    'acceptWorkspaceInvite',
+    'declineWorkspaceInvite',
+  ]);
+  const found = [];
   for (const operation of operations) {
     if (!operation.security.some((entry) => 'sessionCookie' in entry)) continue;
-    assert.equal(
-      operation.security.some((entry) => 'personalApiKey' in entry),
-      !cookieOnly.has(operation.id),
-      operation.id,
-    );
+    if (!operation.security.some((entry) => 'personalApiKey' in entry))
+      found.push(operation.id);
   }
+  assert.deepEqual(new Set(found), cookieOnly);
   const profile = operations.find((entry) => entry.id === 'updateProfile');
   assert.equal(profile?.protocol, null);
 });

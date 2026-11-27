@@ -1,4 +1,5 @@
 import { spacingSpec } from '../../packages/ui/src/spacing.ts';
+import { overlayMargin } from '../../packages/ui/src/overlay-position.ts';
 import type { Page } from './browser.ts';
 import { auditBorderSpacing } from './border-spacing.ts';
 import { auditComposition } from './symmetry.ts';
@@ -6,6 +7,7 @@ import { auditComposition } from './symmetry.ts';
 /** Component geometry plus page, group and scroll-region relationships. */
 export async function auditSpacing(page: Page) {
   const composition = await auditComposition(page);
+  const spacing = { ...spacingSpec, overlayMargin };
   const measured = await page.evaluate((spec) => {
     const coarse = matchMedia('(pointer: coarse)').matches;
     const role = coarse ? spec.coarse : spec.fine;
@@ -64,12 +66,13 @@ export async function auditSpacing(page: Page) {
       visible,
     )) {
       const s = getComputedStyle(e),
-        setting = e.getAttribute('data-ui-row') === 'setting';
+        density = e.getAttribute('data-ui-row'),
+        setting = density === 'setting';
       check(e, 'content-owned row height', parseFloat(s.minHeight) || 0, 0);
       if (!setting) {
         // Rows own padding, while a search control, an inline field or a
         // second help line can make their content taller than one text line.
-        const vertical = coarse ? 8 : 4;
+        const vertical = coarse ? (density === 'tree' ? 12 : 8) : 4;
         check(e, 'row top padding', parseFloat(s.paddingTop), vertical);
         check(e, 'row bottom padding', parseFloat(s.paddingBottom), vertical);
         const content = Math.max(
@@ -175,8 +178,32 @@ export async function auditSpacing(page: Page) {
     }
     for (const e of [...document.querySelectorAll('.ui-sidebar-status')].filter(
       visible,
-    ))
-      check(e, 'status footer height', box(e).height, 32);
+    )) {
+      const text = e.querySelector(':scope > span:last-child');
+      const style = getComputedStyle(e);
+      check(
+        e,
+        'status line height',
+        box(e).height,
+        Math.max(16, text?.getBoundingClientRect().height ?? 0) +
+          parseFloat(style.paddingTop) +
+          parseFloat(style.paddingBottom),
+      );
+    }
+    for (const e of [
+      ...document.querySelectorAll('[data-toast-message]'),
+    ].filter(visible)) {
+      const toast = e.parentElement;
+      if (!coarse || toast === null) continue;
+      const style = getComputedStyle(toast);
+      const available =
+        toast.clientWidth -
+        parseFloat(style.paddingLeft) -
+        parseFloat(style.paddingRight);
+      const minimum = Math.min(160, available);
+      if (box(e).width < minimum)
+        check(e, 'toast message width', box(e).width, minimum);
+    }
     for (const e of [
       ...document.querySelectorAll('[role="switch"] > [aria-hidden="true"]'),
     ].filter(visible)) {
@@ -187,8 +214,44 @@ export async function auditSpacing(page: Page) {
       visible,
     ))
       check(e, 'calendar cell height', box(e).height, coarse ? 44 : 28);
+    if (coarse) {
+      for (const menu of [
+        ...document.querySelectorAll('[data-menu-fit-viewport]'),
+      ].filter(visible)) {
+        const scroll = menu.querySelector('[data-menu-scroll]');
+        const edge = menu.querySelector('[data-scroll-edge=below]');
+        const safeArea = menu.querySelector('[data-menu-safe-area]');
+        if (scroll === null || edge === null || safeArea === null) {
+          check(menu, 'menu has a scroll region and edge cue', 0, 1);
+          continue;
+        }
+        const area = visualViewport;
+        const bottom = Math.min(
+          innerHeight,
+          (area?.offsetTop ?? 0) + (area?.height ?? innerHeight),
+        );
+        const remaining = scroll.scrollHeight - scroll.clientHeight;
+        if (
+          box(menu).bottom + remaining <=
+          bottom - box(safeArea).height - spec.overlayMargin + 1
+        )
+          check(
+            menu,
+            'menu content fits in available room',
+            Math.max(0, remaining),
+            0,
+          );
+        const hidden = remaining - scroll.scrollTop > 1;
+        check(
+          menu,
+          'menu bottom shadow follows hidden content',
+          Number(getComputedStyle(edge, '::before').boxShadow !== 'none'),
+          Number(hidden),
+        );
+      }
+    }
     return { issues, measurements };
-  }, spacingSpec);
+  }, spacing);
   return {
     issues: [
       ...composition.issues,
@@ -197,4 +260,10 @@ export async function auditSpacing(page: Page) {
     ],
     measurements: measured.measurements,
   };
+}
+
+if (import.meta.main) {
+  await (
+    await import('./collaboration-design.ts')
+  ).runCollaborationAudit(auditSpacing);
 }

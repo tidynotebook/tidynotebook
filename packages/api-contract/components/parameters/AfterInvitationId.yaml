@@ -1,0 +1,8 @@
+name: afterInvitationId
+in: query
+required: false
+style: form
+explode: true
+description: Continue after the last invitation identifier of the previous page.
+schema:
+  $ref: '../schemas/Uuid.yaml'

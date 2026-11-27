@@ -112,6 +112,7 @@ export type WorkspaceSummary = {
   readonly role: Role;
   /** True for the workspace that was created with the account. */
   readonly personal: boolean;
+  readonly memberCount?: number;
 };
 
 /**

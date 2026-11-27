@@ -120,7 +120,7 @@ export function createWorkspace(
   });
 }
 
-/** Renames a workspace. Only the owner may do this. */
+/** Renames a workspace for its owner or an admin. */
 export function updateWorkspace(
   store: WorkspaceAdminStore,
   actor: Actor,
@@ -131,7 +131,8 @@ export function updateWorkspace(
     const role = await tx.role(actor.accountId);
     const allowed = permit(actor, workspaceId, role, 'write');
     if (!allowed.ok) return fail<WorkspaceSummary>(allowed.error.code);
-    if (role !== 'owner') return fail<WorkspaceSummary>('forbidden');
+    if (role !== 'owner' && role !== 'admin')
+      return fail<WorkspaceSummary>('forbidden');
     await tx.rename(name);
     const described = await tx.describe();
     return ok({

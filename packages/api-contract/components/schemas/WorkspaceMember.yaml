@@ -1,0 +1,26 @@
+type: object
+description: One current member as seen by a member of the same workspace.
+additionalProperties: false
+required:
+  - accountId
+  - displayName
+  - email
+  - role
+properties:
+  accountId:
+    $ref: './Uuid.yaml'
+  displayName:
+    type:
+      - string
+      - 'null'
+    minLength: 1
+    maxLength: 256
+  email:
+    $ref: './EmailAddress.yaml'
+  role:
+    $ref: './Role.yaml'
+  colorSlot:
+    description: The member's stable color slot in this workspace.
+    type: integer
+    minimum: 0
+    maximum: 2147483647

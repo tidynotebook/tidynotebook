@@ -1,0 +1,6 @@
+description: The addresses and role of the invitations.
+required: true
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/WorkspaceInvitesInput.yaml'

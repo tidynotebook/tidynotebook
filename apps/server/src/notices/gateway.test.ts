@@ -1,3 +1,5 @@
+import { liveBounds } from './live-bounds.ts';
+import type { LiveRooms } from './live-rooms.ts';
 /**
  * Checks of the notice gateway with a fake socket, fake stores and a fake
  * listener. The real database and two server instances are proved in
@@ -134,7 +136,10 @@ class FakeListener {
 }
 
 /** A gateway over fakes, and every log line it wrote. */
-function gateway(overrides: Partial<NoticeBounds> = {}): {
+function gateway(
+  overrides: Partial<NoticeBounds> = {},
+  live?: LiveRooms,
+): {
   readonly gateway: NoticeGateway;
   readonly stores: FakeStores;
   readonly listener: FakeListener;
@@ -145,6 +150,7 @@ function gateway(overrides: Partial<NoticeBounds> = {}): {
   const log: string[] = [];
   const built = createNoticeGateway({
     stores: stores.stores,
+    ...(live === undefined ? {} : { live }),
     listener: (events) => {
       listener.events = events;
       return {
@@ -187,7 +193,7 @@ function subscribe(generation: number, ids: readonly string[]): string {
 await test('a stream opens with ready and accepts a set before it notifies', async () => {
   const { gateway: target, listener } = gateway();
   await settle();
-  assert.deepEqual(target.offered(), ['notesapp.sync.1']);
+  assert.deepEqual(target.offered(), ['notesapp.sync.2']);
   const socket = await openStream(target);
   assert.deepEqual(socket.sent[0], { kind: 'ready', accountId: account });
   socket.receive(subscribe(1, [first]));
@@ -323,6 +329,62 @@ await test('too many messages in a window stop the stream', async () => {
   assert.deepEqual(socket.sent.at(-1), { kind: 'stop', reason: 'overloaded' });
   assert.equal(socket.closedWith, 1013);
   await target.close();
+});
+
+await test('the live burst and pending queue have their own bound', async () => {
+  let release: () => void = () => {};
+  const stalled = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const { gateway: target } = gateway(
+    {},
+    {
+      handle: () => stalled,
+      remove: () => {},
+      reset: () => {},
+      recheck: async () => {},
+    },
+  );
+  await settle();
+  const socket = await openStream(target);
+  try {
+    assert.deepEqual(socket.sent[0], {
+      kind: 'ready',
+      accountId: account,
+      liveNotes: true,
+    });
+    const frame = JSON.stringify({ kind: 'leaveNote', roomId: first });
+    socket.receive(subscribe(1, [first]));
+    for (let sent = 0; sent < liveBounds.messageBurst; sent += 1)
+      socket.receive(frame);
+    assert.equal(socket.closedWith, null);
+    socket.receive(frame);
+    assert.deepEqual(socket.sent.at(-1), {
+      kind: 'stop',
+      reason: 'overloaded',
+    });
+  } finally {
+    release();
+    await target.close();
+  }
+});
+
+await test('an oversize live envelope is refused before parsing', async () => {
+  const { gateway: target } = gateway({ maxFrameBytes: 100 });
+  try {
+    await settle();
+    const socket = await openStream(target);
+    socket.receive(
+      JSON.stringify({
+        kind: 'sendNoteSync',
+        roomId: first,
+        payload: 'a'.repeat(100),
+      }),
+    );
+    assert.deepEqual(socket.sent.at(-1), { kind: 'stop', reason: 'malformed' });
+  } finally {
+    await target.close();
+  }
 });
 
 await test('a full outbound buffer stops the stream', async () => {

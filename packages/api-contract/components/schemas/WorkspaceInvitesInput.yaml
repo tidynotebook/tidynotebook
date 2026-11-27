@@ -1,0 +1,15 @@
+type: object
+description: Invite at most twenty addresses with the same role.
+additionalProperties: false
+required:
+  - emails
+  - role
+properties:
+  emails:
+    type: array
+    maxItems: 20
+    minItems: 1
+    items:
+      $ref: './EmailAddress.yaml'
+  role:
+    $ref: './WorkspaceInviteRole.yaml'

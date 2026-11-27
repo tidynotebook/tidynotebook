@@ -1,0 +1,26 @@
+type: object
+description: Open one note room for one working copy.
+additionalProperties: false
+required:
+  - kind
+  - roomId
+  - workspaceId
+  - fileId
+  - epoch
+  - clientId
+properties:
+  kind:
+    type: string
+    const: joinNote
+  roomId:
+    $ref: './Uuid.yaml'
+  workspaceId:
+    $ref: './Uuid.yaml'
+  fileId:
+    $ref: './Uuid.yaml'
+  epoch:
+    $ref: './DocumentEpoch.yaml'
+  clientId:
+    type: integer
+    minimum: 0
+    maximum: 4294967295

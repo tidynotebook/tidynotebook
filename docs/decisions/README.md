@@ -268,6 +268,9 @@ the development process. Old process records remain as history.
 | [0240](0240-a-code-block-shows-quiet-fences-and-one-ring.md)                          | A code block shows quiet fences and one ring                                    |
 | [0241](0241-linux-images-build-fixed-native-libraries.md)                             | Linux images build fixed native libraries                                       |
 | [0242](0242-tables-keep-readable-column-widths.md)                                    | Tables keep readable column widths                                              |
+| [0243](0243-workspace-membership-uses-verified-invitations-and-current-roles.md)      | Workspace membership uses verified invitations and current roles                |
+| [0244](0244-live-note-rooms-share-the-sync-websocket.md)                              | Live note rooms share the sync WebSocket                                        |
+| [0245](0245-revision-contributors-come-from-client-id-bindings.md)                    | Revision contributors come from client ID bindings                              |
 
 Records 0001 to 0015 record the decisions D1 to D15 of
 [the v0.1 revamp plan](../plans/003-v0.1-revamp.md). Record 0016 records the

@@ -10,6 +10,13 @@ import {
   auditHoverPadding,
   captureSurface,
 } from './symmetry.ts';
+if (process.env.COLLABORATION_AUDIT === '1') {
+  await (
+    await import('./collaboration-design.ts')
+  ).runCollaborationAudit(undefined, ['content-parity']);
+  process.exit(0);
+}
+
 const module: unknown = await import(
   pathToFileURL(
     process.env.PLAYWRIGHT_MODULE ??
@@ -141,6 +148,10 @@ try {
         .click();
       await p
         .getByRole('menuitem', { name: 'Version history', exact: true })
+        .waitFor();
+      await check('note-actions');
+      await p
+        .getByRole('menuitem', { name: 'Version history', exact: true })
         .click();
       await p
         .getByRole('heading', { name: 'Version history', exact: true })
@@ -198,7 +209,6 @@ if (process.env.CONTENT_EXPECT_FAILURES === '1') {
   for (const kind of [
     'selected navigation surface',
     'outline content edge',
-    'note footer content edge',
     'page row content edge',
   ])
     assert.ok(

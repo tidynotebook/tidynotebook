@@ -14,6 +14,7 @@ export type {
   AttachmentPin,
   CheckpointRecord,
   CheckpointSource,
+  AccessRecoveryCopy,
   Draft,
   FileMove,
   HeldPath,
@@ -145,3 +146,5 @@ export type { LocalBacklink } from './local-backlinks.ts';
 export { localBacklinks } from './local-backlinks.ts';
 export type { LocalSearchFile } from './local-search.ts';
 export { searchLocal } from './local-search.ts';
+
+export { base64, bytesOfBase64 } from './bytes.ts';

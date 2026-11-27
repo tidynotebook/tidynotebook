@@ -158,6 +158,7 @@ export type LocalChange = {
    * other, of this tab or of another (record 0175).
    */
   readonly writer?: string | undefined;
+  readonly accessReset?: 'viewer' | 'removed';
 };
 
 /** One file as it must appear in local navigation. */
@@ -702,6 +703,12 @@ export function isLocalStorageError(
  * Every method rejects with a `LocalStorageError` when the browser database
  * fails. No method returns a partial result.
  */
+export type AccessRecoveryCopy = {
+  readonly identity: string;
+  readonly path: string;
+  readonly text: string;
+};
+
 export type LocalStore = {
   /** The origin this store belongs to. */
   readonly serverOrigin: string;
@@ -1274,6 +1281,19 @@ export type LocalStore = {
    * sign-out marker and the device identity survive.
    */
   clearPrivateData(accountId: string, workspaceId?: string): Promise<void>;
+
+  /** Reads pending text before a workspace becomes inaccessible or read only. */
+  workspaceAccessCopies(
+    accountId: string,
+    workspaceId: string,
+  ): Promise<readonly AccessRecoveryCopy[]>;
+  /** Clears source work only if it still matches the durable copies. */
+  clearWorkspaceAccess(
+    accountId: string,
+    workspaceId: string,
+    expected: readonly AccessRecoveryCopy[],
+    removed: boolean,
+  ): Promise<boolean>;
 
   /**
    * Deletes the private data of every other account of this origin that

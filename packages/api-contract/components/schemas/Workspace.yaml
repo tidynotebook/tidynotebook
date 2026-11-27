@@ -27,3 +27,8 @@ properties:
     type: boolean
     readOnly: true
     description: True for the workspace that was created with the account.
+  memberCount:
+    type: integer
+    minimum: 1
+    readOnly: true
+    description: Current number of members.

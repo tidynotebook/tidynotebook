@@ -1,0 +1,25 @@
+type: object
+description: One result in request order. The email is normalized.
+additionalProperties: false
+required:
+  - email
+  - outcome
+properties:
+  email:
+    $ref: './EmailAddress.yaml'
+  outcome:
+    type: string
+    enum:
+      - created
+      - pending_invite
+      - already_member
+      - pending_limit
+  invitationId:
+    description: Present for created and pending_invite. The manager can copy that link.
+    $ref: './Uuid.yaml'
+  delivery:
+    description: Present for created. Copy link remains available when mail was sent.
+    type: string
+    enum:
+      - sent
+      - copy_link

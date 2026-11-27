@@ -160,3 +160,22 @@ export const versionRead = Promise.withResolvers<{ data: { text: string } }>();
 export async function getRevision() {
   return versionRead.promise;
 }
+export function useWorkspaceRole(): 'owner' {
+  return 'owner';
+}
+
+export function useTabNoticeStream(): null {
+  return null;
+}
+
+const workspace = {
+  state: {
+    status: 'ready',
+    workspaces: [{ workspaceId: 'workspace', role: 'owner' }],
+  },
+  reload() {},
+} as const;
+
+export function useWorkspace(): typeof workspace {
+  return workspace;
+}

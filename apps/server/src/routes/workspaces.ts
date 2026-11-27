@@ -42,6 +42,9 @@ function workspaceBody(summary: WorkspaceSummary): Record<string, unknown> {
     name: summary.name,
     role: summary.role,
     personal: summary.personal,
+    ...(summary.memberCount === undefined
+      ? {}
+      : { memberCount: summary.memberCount }),
   };
 }
 

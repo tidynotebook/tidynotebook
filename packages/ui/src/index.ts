@@ -131,6 +131,7 @@ export {
   Button,
   Checkbox,
   CollapsibleSection,
+  DisclosureRow,
   Meter,
   ReadOnlyField,
   SelectField,
@@ -187,10 +188,10 @@ export {
   readVisibleArea,
   visibleArea,
 } from './visible-area.ts';
-export { AnchoredMenu, Menu } from './menu.tsx';
+export { AnchoredMenu, Menu, MenuInformation } from './menu.tsx';
 export type { NoticeTone } from './notice.tsx';
 export { Notice } from './notice.tsx';
-export { Toast } from './toast.tsx';
+export { Toast, ToastStack } from './toast.tsx';
 export type { IconProps } from './icons.tsx';
 export {
   AlertCircleIcon,
@@ -357,7 +358,13 @@ export {
   RowControl,
   ContentGroups,
 } from './content-header.tsx';
-export { IdentityMark, TileSelectedBadge } from './identity.tsx';
+export {
+  IdentityMark,
+  TileSelectedBadge,
+  PresenceAvatar,
+  PresenceDots,
+} from './identity.tsx';
+export { PresenceAvatarStack } from './presence-avatar-stack.tsx';
 export { PreviewBlock } from './preview-block.tsx';
 export { PreviewSurface } from './preview-surface.tsx';
 export { Dialog as Sheet } from './dialog.tsx';

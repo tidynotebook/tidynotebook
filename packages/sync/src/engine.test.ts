@@ -521,6 +521,11 @@ class FakeStore implements LocalStore {
     return Promise.reject(new Error('the engine never clears other accounts'));
   }
 
+  workspaceAccessCopies = (): never => {
+    throw new Error('Access recovery is not part of this engine test.');
+  };
+  clearWorkspaceAccess = this.workspaceAccessCopies;
+
   clearPrivateData(account: string, workspace?: string): Promise<void> {
     if (workspace === undefined) {
       this.entries.clear();

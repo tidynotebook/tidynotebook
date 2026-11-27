@@ -1,0 +1,12 @@
+type: object
+description: Close one note room on this connection.
+additionalProperties: false
+required:
+  - kind
+  - roomId
+properties:
+  kind:
+    type: string
+    const: leaveNote
+  roomId:
+    $ref: './Uuid.yaml'

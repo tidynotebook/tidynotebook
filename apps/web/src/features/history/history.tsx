@@ -13,6 +13,7 @@ import {
   ListRow,
   LoadingState,
   Notice,
+  PresenceAvatar,
   Page,
   pageGroupLabelClassName,
   PageHeader,
@@ -62,7 +63,7 @@ import {
   restoreRevision,
   type HistoryRevisionItem,
 } from '@notesapp/api-client';
-import { generateUUID } from '@notesapp/core';
+import { generateUUID, workspacePresenceColor } from '@notesapp/core';
 import type { DiffHunk, LineChangeCount } from '@notesapp/editor';
 import type { LocalStore } from '@notesapp/sync';
 
@@ -71,11 +72,13 @@ import {
   useLocalStore,
   useRequestSync,
   useSession,
+  useWorkspaceRole,
 } from '../../app.tsx';
 import {
   loadAttachmentBinary,
   type LoadedAttachment,
 } from '../../lib/attachment-content.ts';
+import { initialOf } from '../../lib/initial.ts';
 import { displayNoteName } from '../../lib/note-name.ts';
 import {
   requestDiff,
@@ -223,6 +226,7 @@ function HistoryDetail({
   readonly workspaceId: string;
   readonly fileId: string;
 }): ReactNode {
+  const readOnly = useWorkspaceRole(workspaceId) === 'viewer';
   // Every row of the list states how long ago its version was written, so the
   // screen takes the instant as a value that moves and not as one reading of
   // the clock. The early returns below stand between this line and the rows.
@@ -555,7 +559,7 @@ function HistoryDetail({
     );
 
   const name = displayNoteName(head.path);
-  const restorable = head.headRevisionId !== null;
+  const restorable = head.headRevisionId !== null && !readOnly;
   const days = historyDays(
     items.map((item) => ({ id: item.revisionId, instant: item.serverTime })),
     now,
@@ -582,9 +586,11 @@ function HistoryDetail({
       <PageHeader
         title="Version history"
         description={
-          head.status === 'ready' && head.kind === 'attachment'
-            ? `${name}. Open a version to preview the image. Restore makes it the newest version.`
-            : `${name}. Restore makes a version the newest. Nothing is lost.`
+          readOnly
+            ? `${name}. View only.`
+            : head.status === 'ready' && head.kind === 'attachment'
+              ? `${name}. Open a version to preview the image. Restore makes it the newest version.`
+              : `${name}. Restore makes a version the newest. Nothing is lost.`
         }
       />
       <Stack
@@ -628,12 +634,13 @@ function HistoryDetail({
                       count: counts.get(item.revisionId) ?? null,
                     });
                     const selected = item.revisionId === selectedId;
-                    const current = item.revisionId === head.headRevisionId;
+                    const current = index === 0;
                     const panelId = `history-panel-${String(index)}`;
                     const label = savedAtLabel(row.time);
                     return (
                       <Fragment key={item.revisionId}>
                         <ListRow
+                          density="menu"
                           selected={selected}
                           contentEdge
                           className="flex-wrap"
@@ -670,15 +677,29 @@ function HistoryDetail({
                               <span className="truncate text-body text-strong">
                                 {label}
                               </span>
-                              <span className="line-clamp-2 text-secondary text-muted lg:line-clamp-1">
-                                {rowReading(change, item.merged)}
-                              </span>
+                              <Inline
+                                as="span"
+                                gap={1}
+                                className="min-w-0 overflow-hidden text-secondary text-muted"
+                              >
+                                <span className="truncate">
+                                  {rowReading(change, item.merged)}
+                                </span>
+                                {item.contributors?.length ? (
+                                  <>
+                                    <span aria-hidden="true">·</span>
+                                    <RevisionContributors
+                                      contributors={item.contributors}
+                                    />
+                                  </>
+                                ) : null}
+                              </Inline>
                             </span>
                           </button>
                           <Inset padX={2} as="span" className="shrink-0">
                             {current ? (
                               <Badge>Current version</Badge>
-                            ) : (
+                            ) : readOnly ? null : (
                               <Button
                                 variant="secondary"
                                 size="compact"
@@ -695,6 +716,12 @@ function HistoryDetail({
                         </ListRow>
                         {selected ? (
                           <Inset padX={2} padY={1} as="li" id={panelId}>
+                            {item.contributors?.length ? (
+                              <RevisionContributors
+                                contributors={item.contributors}
+                                expanded
+                              />
+                            ) : null}
                             <RevisionPanel
                               key={item.revisionId}
                               detail={detail}
@@ -747,6 +774,50 @@ function HistoryDetail({
 }
 
 /** The identifier of the heading of one day of the history. */
+function RevisionContributors({
+  contributors,
+  expanded = false,
+}: {
+  readonly contributors: NonNullable<HistoryRevisionItem['contributors']>;
+  readonly expanded?: boolean;
+}): ReactNode {
+  return (
+    <Inline
+      as="span"
+      gap={2}
+      wrap={expanded}
+      className={
+        expanded ? 'text-secondary text-muted' : 'min-w-0 overflow-hidden'
+      }
+    >
+      {contributors.map((person, index) => {
+        const name = person.formerMember
+          ? 'Former member'
+          : (person.displayName ?? 'Member');
+        const slot = person.colorSlot ?? 0;
+        return (
+          <Inline
+            as="span"
+            gap={1}
+            key={person.accountId ?? index}
+            title={name}
+            className="min-w-0"
+          >
+            <PresenceAvatar
+              pending={person.formerMember ?? false}
+              slot={slot}
+              color={workspacePresenceColor(slot)}
+            >
+              {person.formerMember ? '?' : initialOf(name)}
+            </PresenceAvatar>
+            <span className="truncate">{name}</span>
+          </Inline>
+        );
+      })}
+    </Inline>
+  );
+}
+
 function dayHeadingId(key: string): string {
   return `history-day-${key}`;
 }

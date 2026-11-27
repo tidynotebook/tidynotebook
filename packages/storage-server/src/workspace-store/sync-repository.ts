@@ -1,3 +1,4 @@
+import { writeContributors } from './contributors.ts';
 /**
  * The sync repository: the changesets, the receipts, the snapshots, and the
  * incremental change feed of the open workspace.
@@ -250,6 +251,7 @@ function clientTime(revision: StoredRevisionInput): Date {
 /** Builds the sync slice of the port over one open transaction. */
 export function syncRepository(
   context: RepositoryContext,
+  recordRevisionContributors: boolean,
 ): Pick<
   WorkspaceTransaction,
   'receipt' | 'accept' | 'startSnapshot' | 'snapshotPage' | 'syncChanges'
@@ -327,6 +329,7 @@ export function syncRepository(
             digest,
             fileIds,
             superseded,
+            recordRevisionContributors,
           ),
         (error) => domainFailure(error, fileIds),
       );
@@ -428,6 +431,7 @@ async function writeChangeset(
   digest: string,
   fileIds: readonly string[],
   superseded: readonly SupersededHead[],
+  recordRevisionContributors: boolean,
 ): Promise<Result<AcceptedChangeset>> {
   assertUuid(input.mutationId, 'the mutation');
   for (const revision of input.revisions) {
@@ -699,6 +703,15 @@ async function writeChangeset(
       })),
     )
     .returning({ id: revisions.id, serverTime: revisions.serverTime });
+  if (recordRevisionContributors) {
+    const contributors = await writeContributors(
+      client,
+      workspaceId,
+      actor,
+      input,
+    );
+    if (!contributors.ok) return contributors;
+  }
   const serverTimes = new Map(
     written.map((row) => [row.id, row.serverTime.toISOString()]),
   );

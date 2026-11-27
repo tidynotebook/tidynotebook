@@ -11,6 +11,7 @@ export function IconButton({
   reveal = false,
   current = false,
   slotClassName = '',
+  slotContent,
   render,
   ...props
 }: Omit<
@@ -23,6 +24,7 @@ export function IconButton({
   readonly reveal?: boolean;
   readonly current?: boolean;
   readonly slotClassName?: string;
+  readonly slotContent?: ReactNode;
   readonly render?: (props: {
     readonly className: string;
     readonly 'aria-label': string;
@@ -55,6 +57,7 @@ export function IconButton({
   ) : (
     <Button
       {...props}
+      data-row-disclosure={disclosure ? '' : undefined}
       aria-current={current ? 'page' : undefined}
       ariaPressed={current ? true : size === 'rail' ? false : props.ariaPressed}
       variant={props.variant ?? 'ghost'}
@@ -65,7 +68,10 @@ export function IconButton({
     />
   );
   return position ? (
-    <IconSlot className={slotClassName}>{control}</IconSlot>
+    <IconSlot className={slotClassName}>
+      {slotContent}
+      {control}
+    </IconSlot>
   ) : (
     control
   );

@@ -4,9 +4,11 @@ import { pageRowClassName, pageSideClassName } from './layout-classes.ts';
 import { controlStripClassName, focusOutline } from './control-classes.ts';
 import { transitionSurface } from './motion.ts';
 import { pageGutter } from './public-layout.ts';
-export function noteColumnClassName(): string {
-  return 'self-center flex w-full max-w-note flex-col gap-1';
+export function noteColumnClassName(row = false): string {
+  return `self-center flex w-full max-w-note ${row ? '' : 'flex-col gap-1'}`;
 }
+export const noteColumnInset = 'px-2 fine:px-4';
+export const noteColumnFineInset = 'fine:px-1';
 export function noteScreenClassName(): string {
   return 'flex overflow-hidden min-w-0 flex-1 flex-col';
 }
@@ -30,10 +32,6 @@ export function noteSideRegionClassName(): string {
 export function noteOutlineScrollClassName(): string {
   return 'overflow-hidden overflow-y-auto overscroll-contain';
 }
-export function noteFooterClassName(typing: boolean): string {
-  const base = `flex flex-col shrink-0 px-2 py-2 text-secondary text-muted ${fixedRegionClasses('top')}`;
-  return typing ? `${base} ${phoneTypingHiddenClassName}` : base;
-}
 export function formatToolbarFrameClassName(): string {
   return `flex justify-center shrink-0 px-2 ${fixedRegionClasses('bottom')}`;
 }
@@ -56,6 +54,7 @@ export function noteNameFieldClassName(): string {
   return `absolute inset-0 w-full min-w-0 max-w-full truncate rounded-md border border-transparent focus:border-focus bg-transparent ${noteNameFieldText} text-strong outline-none ${transitionSurface} hover:bg-hover ${focusOutline}`;
 }
 export const noteNameFieldText = `px-1 py-1 text-body`;
+export const noteNameReadOnlyClassName = `min-w-0 truncate border border-transparent ${noteNameFieldText}`;
 export const noteNameFieldContainer =
   'relative inline-grid min-w-0 max-w-full coarse:h-11';
 export const noteNameFieldMeasure = `invisible overflow-hidden whitespace-pre border border-transparent ${noteNameFieldText}`;
@@ -65,7 +64,6 @@ export function frameContentClassName(): string {
 export function frameNoticeRowClassName(): string {
   return `${pageRowClassName()} shrink-0`;
 }
-const phoneTypingHiddenClassName = 'coarse:max-md:hidden';
 
 export const syncStatusClassNames = {
   status: 'flex min-w-0 flex-1 items-start gap-2 py-1',

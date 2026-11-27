@@ -49,6 +49,7 @@ import {
   useLocalStore,
   useRequestSync,
   useSession,
+  useWorkspaceRole,
 } from '../../app.tsx';
 import { useLocalQuery } from '../../local-state.ts';
 import { displayNoteName } from '../../lib/note-name.ts';
@@ -99,6 +100,7 @@ export function TrashView(): ReactNode {
   const params = useParams();
   const workspaceId =
     typeof params.workspaceId === 'string' ? params.workspaceId : null;
+
   const session = useSession();
   const store = useLocalStore();
   const accountId = session.account?.accountId ?? null;
@@ -141,6 +143,10 @@ function TrashList({
   readonly accountId: string;
   readonly workspaceId: string;
 }): ReactNode {
+  const role = useWorkspaceRole(workspaceId);
+  const canPurge = role === 'owner' || role === 'admin';
+  const canRestore = role !== 'viewer';
+
   const navigate = useNavigate();
   const requestSync = useRequestSync();
   const [remote, setRemote] = useState<readonly WorkspaceDeletedFileSummary[]>(
@@ -343,7 +349,7 @@ function TrashList({
         title="Trash"
         actionLayout="inline"
         actions={
-          items.length === 0 ? undefined : (
+          items.length === 0 || !canPurge ? undefined : (
             <Menu
               label="Trash actions"
               icon={<MoreIcon />}
@@ -448,39 +454,43 @@ function TrashList({
                       as="div"
                       className="shrink-0"
                     >
-                      <Button
-                        variant="secondary"
-                        size="compact"
-                        compact
-                        disabled={busy}
-                        label={`Restore ${name}`}
-                        onClick={() => restore(item)}
-                      >
-                        Restore
-                      </Button>
-                      <Menu
-                        label={`Actions for ${name}`}
-                        icon={<MoreIcon />}
-                        items={[
-                          {
-                            id: 'restore',
-                            label: 'Restore',
-                            disabled: busy,
-                            onSelect: () => restore(item),
-                          },
-                          {
-                            id: 'delete',
-                            label: deleteTrashLabel,
-                            danger: true,
-                            disabled: busy || item.pending,
-                            onSelect: () =>
-                              setConfirming({
-                                kind: 'one',
-                                fileId: item.fileId,
-                              }),
-                          },
-                        ]}
-                      />
+                      {canRestore ? (
+                        <Button
+                          variant="secondary"
+                          size="compact"
+                          compact
+                          disabled={busy}
+                          label={`Restore ${name}`}
+                          onClick={() => restore(item)}
+                        >
+                          Restore
+                        </Button>
+                      ) : null}
+                      {canPurge ? (
+                        <Menu
+                          label={`Actions for ${name}`}
+                          icon={<MoreIcon />}
+                          items={[
+                            {
+                              id: 'restore',
+                              label: 'Restore',
+                              disabled: busy,
+                              onSelect: () => restore(item),
+                            },
+                            {
+                              id: 'delete',
+                              label: deleteTrashLabel,
+                              danger: true,
+                              disabled: busy || item.pending,
+                              onSelect: () =>
+                                setConfirming({
+                                  kind: 'one',
+                                  fileId: item.fileId,
+                                }),
+                            },
+                          ]}
+                        />
+                      ) : null}
                     </Inline>
                   </ListRow>
                 );

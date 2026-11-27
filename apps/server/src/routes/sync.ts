@@ -60,7 +60,10 @@ export function createSyncHandlers(
         body: {
           versions: [...supportedSyncVersions],
           snapshotRevisionBatches: true,
-          notificationProtocols: [...noticeProtocols()],
+          notificationProtocols: [],
+          ...(noticeProtocols().length > 0
+            ? { liveNotificationProtocol: noticeProtocols()[0] }
+            : {}),
         },
       }),
 

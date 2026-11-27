@@ -163,6 +163,10 @@ export function stateVectorCovers(
   return true;
 }
 
+export function stateVectorHasInserts(vector: Uint8Array): boolean {
+  return Y.decodeStateVector(vector).size > 0;
+}
+
 /** Merges several updates into one without loading a document. */
 export function mergeDocumentUpdates(
   updates: readonly Uint8Array[],

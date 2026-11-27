@@ -42,7 +42,7 @@ import type { LocalFileSummary, LocalStore } from '@notesapp/sync';
 import type { LinkTarget } from '@notesapp/editor';
 import { classifyUrl } from '@notesapp/markdown';
 
-import { problemMessage } from '../../app.tsx';
+import { problemMessage, useWorkspace } from '../../app.tsx';
 import {
   blockedLinkNotice,
   missingNoteNotice,
@@ -131,6 +131,14 @@ export function NoteEditorLoader({
   readonly onMoveToFolder?: (() => void) | undefined;
   readonly onPublish?: (() => void) | undefined;
 }): ReactNode {
+  const { state: workspaceState } = useWorkspace();
+  const role =
+    workspaceState.status === 'ready'
+      ? workspaceState.workspaces.find(
+          (item) => item.workspaceId === workspaceId,
+        )?.role
+      : undefined;
+
   const navigate = useNavigate();
   const flushDraft = useFlushNoteDraftForHandoff();
   const location = useLocation();
@@ -160,8 +168,13 @@ export function NoteEditorLoader({
               ? "Can't open this note"
               : 'Loading note',
   );
+  const accessReload = useRef(false);
   const setStatus = useCallback(
     (next: NoteLoadStatus): void => {
+      if (accessReload.current) {
+        accessReload.current = false;
+        setGeneration((count) => count + 1);
+      }
       setLoadState({
         identity: { accountId, workspaceId, fileId },
         status: next,
@@ -385,7 +398,18 @@ export function NoteEditorLoader({
   // its document, its undo history, and its selection.
   useEffect(() => {
     if (store === null) return;
-    return watchDeviceNote(
+    const stopReset = store.subscribe((change) => {
+      if (
+        change.accountId !== accountId ||
+        change.workspaceId !== workspaceId ||
+        change.accessReset !== 'viewer'
+      )
+        return;
+      accessReload.current = true;
+      deviceOpens.forget(store);
+      readAgain();
+    });
+    const stopWatching = watchDeviceNote(
       store,
       { accountId, workspaceId, fileId },
       (cached, fromChange) => {
@@ -417,6 +441,10 @@ export function NoteEditorLoader({
         setStatus({ kind: 'purged' });
       },
     );
+    return () => {
+      stopReset();
+      stopWatching();
+    };
   }, [
     store,
     accountId,
@@ -527,6 +555,7 @@ export function NoteEditorLoader({
         fileId={fileId}
         baseRevisionId={status.headRevisionId}
         initialText={status.text}
+        readOnly={role === 'viewer'}
         initialDocument={status.document ?? null}
         initialPath={status.path}
         initialWorkingCopyId={status.workingCopyId}
@@ -534,7 +563,7 @@ export function NoteEditorLoader({
         focusText={focusText}
         selectNameOnFirstFocus={selectNameOnFirstFocus}
         onMoveToFolder={onMoveToFolder}
-        onPublish={onPublish}
+        onPublish={role === 'owner' || role === 'admin' ? onPublish : undefined}
         onHeadReplaced={reopen}
         onOpenLink={(target: LinkTarget): void => {
           const action = resolveLinkAction(target.target, status.path);

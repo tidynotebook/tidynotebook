@@ -1,3 +1,9 @@
+import {
+  encodeSyncNoticesMessage,
+  readSyncNoticesMessage,
+  type SyncNoticesClientMessage,
+  type SyncNoticesServerMessage,
+} from '@notesapp/api-client';
 /**
  * The sync notices of one tab and one account (records 0124, 0130).
  *
@@ -12,7 +18,6 @@
  * Everything that touches the browser or the network is injected, so a test
  * drives the channel, the clock and the stream itself.
  */
-import { encodeSyncNoticesMessage } from '@notesapp/api-client';
 import {
   createInterestTable,
   createLeaseKeeper,
@@ -91,6 +96,10 @@ export type TabNotices = {
    */
   readonly onAccountChanged: (listener: () => void) => () => void;
   /** Stops the stream and the channel, and gives the lease back. */
+  readonly sendLive: (message: SyncNoticesClientMessage) => void;
+  readonly onLive: (
+    listener: (message: SyncNoticesServerMessage | null) => void,
+  ) => () => void;
   readonly stop: () => Promise<void>;
 };
 
@@ -130,6 +139,13 @@ export function interestChannelName(accountId: string): string {
 /** Starts the notices of one tab. */
 export function startTabNotices(deps: TabNoticeDependencies): TabNotices {
   const wakes = new Map<string, Set<() => void>>();
+  const liveListeners = new Set<
+    (message: SyncNoticesServerMessage | null) => void
+  >();
+  function deliverLive(message: SyncNoticesServerMessage | null): void {
+    for (const listener of [...liveListeners]) listener(message);
+  }
+
   const servedListeners = new Set<() => void>();
   const accountListeners = new Set<() => void>();
   const accountChanged = (): void => {
@@ -175,8 +191,31 @@ export function startTabNotices(deps: TabNoticeDependencies): TabNotices {
       accountChanged();
       channel.post({ kind: 'account', tabId: deps.tabId });
     },
+    liveMessage: (message) => {
+      deliverLive(message);
+      channel.post({
+        kind: 'live-output',
+        frame: message === null ? null : JSON.stringify(message),
+      });
+      if (message?.kind === 'ready') watchPresence();
+    },
     schedule: deps.schedule,
   });
+
+  let presenceGeneration = 0;
+  function watchPresence(): void {
+    if (!keeper.held()) return;
+    presenceGeneration += 1;
+    coordinator.sendLive(
+      encodeSyncNoticesMessage({
+        kind: 'watchWorkspacePresence',
+        generation: presenceGeneration,
+        workspaceIds: [
+          ...new Set([...(own === null ? [] : [own]), ...served]),
+        ].slice(0, 16),
+      }),
+    );
+  }
 
   const recompute = (): void => {
     const now = deps.clock();
@@ -190,6 +229,7 @@ export function startTabNotices(deps: TabNoticeDependencies): TabNotices {
     coordinator.want(
       subscriptionSet(own, served, queuedIds, maxSubscribedWorkspaces),
     );
+    watchPresence();
   };
 
   const channel = deps.channel(interestChannelName(deps.accountId));
@@ -197,6 +237,27 @@ export function startTabNotices(deps: TabNoticeDependencies): TabNotices {
     channel.post({ kind: 'interest', tabId: deps.tabId, workspaceId: own });
   };
   channel.onMessage((value) => {
+    if (
+      value !== null &&
+      typeof value === 'object' &&
+      'kind' in value &&
+      'frame' in value
+    ) {
+      if (
+        value.kind === 'live-input' &&
+        keeper.held() &&
+        typeof value.frame === 'string'
+      ) {
+        coordinator.sendLive(value.frame);
+        return;
+      }
+      if (value.kind === 'live-output' && !keeper.held()) {
+        if (typeof value.frame === 'string')
+          deliverLive(readSyncNoticesMessage(value.frame));
+        else if (value.frame === null) deliverLive(null);
+        return;
+      }
+    }
     const message = readTabMessage(value);
     if (message === null || message.tabId === deps.tabId) return;
     if (message.kind === 'account') {
@@ -232,6 +293,17 @@ export function startTabNotices(deps: TabNoticeDependencies): TabNotices {
 
   return {
     gate: keeper.gate,
+    sendLive: (message) => {
+      const frame = encodeSyncNoticesMessage(message);
+      if (keeper.held()) coordinator.sendLive(frame);
+      else channel.post({ kind: 'live-input', frame });
+    },
+    onLive: (listener) => {
+      liveListeners.add(listener);
+      return () => {
+        liveListeners.delete(listener);
+      };
+    },
     interval: () =>
       engineInterval(coordinator.healthy(), pollIntervalMs, deps.random),
     register: (workspaceId, wake) => {

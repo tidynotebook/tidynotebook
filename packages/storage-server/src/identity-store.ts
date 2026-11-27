@@ -1,3 +1,4 @@
+import { collaborationTransaction } from './collaboration-store.ts';
 /**
  * PostgreSQL implementation of the account, workspace and installation ports.
  *
@@ -27,6 +28,8 @@ import {
   type InstallationSettingsRow,
 } from './installation-settings-row.ts';
 import type {
+  CollaborationStore,
+  CollaborationTransaction,
   AccountControls,
   ControlStanding,
   AccountEvent,
@@ -72,6 +75,7 @@ import type {
   WorkspaceSummary,
 } from '@notesapp/core';
 import {
+  workspaceRoles,
   accountStates,
   defaultSpellCheck,
   importedFamilyOf,
@@ -100,7 +104,7 @@ import { postgresFailure } from './workspace-store/errors.ts';
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const roles: readonly Role[] = ['owner'];
+const roles: readonly Role[] = workspaceRoles;
 
 /**
  * The family a row without a stored choice renders with.
@@ -316,7 +320,8 @@ function asThemeFamily(value: string): string {
 }
 
 /** An identity store and the calls that a process needs to manage its pool. */
-export type IdentityStoreHandle = WorkspaceAdminStore &
+export type IdentityStoreHandle = CollaborationStore &
+  WorkspaceAdminStore &
   InstallationStore &
   InstallationSettingsReader &
   EnvironmentPolicyStore &
@@ -594,8 +599,10 @@ export function openIdentityStore(
           name: string;
           personal: boolean;
           role: string;
+          member_count: number;
         }>(
-          `select w.id, w.name, w.personal, m.role::text as role
+          `select w.id, w.name, w.personal, m.role::text as role,
+            (select count(*)::int from memberships tally where tally.workspace_id = w.id) as member_count
              from memberships m
              join workspaces w on w.id = m.workspace_id
             where m.account_id = $1
@@ -607,6 +614,7 @@ export function openIdentityStore(
           name: row.name,
           personal: row.personal,
           role: asRole(row.role),
+          ...(row.member_count > 1 ? { memberCount: row.member_count } : {}),
         }));
       },
 
@@ -1394,6 +1402,15 @@ export function openIdentityStore(
   }
 
   return {
+    collaboration<T>(
+      actor: Actor | null,
+      workspaceId: string | null,
+      run: (tx: CollaborationTransaction) => Promise<T>,
+    ): Promise<T> {
+      return inTransaction(actor?.accountId ?? null, workspaceId, (client) =>
+        run(collaborationTransaction(client, workspaceId)),
+      );
+    },
     oauthTokenIdentity: (digest, resource) =>
       resolveOAuthToken(pool, digest, resource),
     installation<T>(
@@ -1446,7 +1463,8 @@ export function openIdentityStore(
     async invitationAddress(tokenDigest: string): Promise<string | null> {
       return inTransaction(null, null, async (client) => {
         const rows = await client.query<{ email: string | null }>(
-          'select notesapp_invitation_address($1) as email',
+          `select coalesce(notesapp_invitation_address($1),
+            (select email from notesapp_workspace_invite_details($1))) as email`,
           [tokenDigest],
         );
         return rows.rows[0]?.email ?? null;

@@ -1,13 +1,24 @@
 import {
+  acceptWorkspaceInvite,
+  declineWorkspaceInvite,
+  listMyWorkspaceInvites,
+  type PendingWorkspaceInvite,
+} from '@notesapp/api-client';
+import {
   IdentityMark,
   Button,
+  CheckIcon,
   ChevronsUpDownIcon,
   LoadingState,
+  MailIcon,
   Menu,
+  Notice,
+  UsersIcon,
   type MenuItem,
   Page,
   PageHeader,
   rowClassName,
+  SignOutIcon,
 } from '@notesapp/ui';
 
 /**
@@ -35,8 +46,17 @@ import { Navigate, useLocation, useNavigate } from 'react-router';
 import { deleteGlyph } from '../lib/delete-label.ts';
 import { useWorkspace } from '../app.tsx';
 import { addressInWorkspace, isMemberOf } from '../lib/workspace-choice.ts';
+import { joinedWorkspaceState } from '../lib/workspace-joined.ts';
 import { initialOf } from '../lib/initial.ts';
 import { actionIcon } from './action-icons.tsx';
+import { useOpenSettings } from './settings-modal.tsx';
+
+const roleNames = {
+  owner: 'Owner',
+  admin: 'Admin',
+  editor: 'Editor',
+  viewer: 'Viewer',
+} as const;
 
 /** The longest workspace name the contract accepts. */
 
@@ -159,6 +179,7 @@ import {
   NewWorkspaceDialog,
   RenameWorkspaceDialog,
   DeleteWorkspaceDialog,
+  LeaveWorkspaceDialog,
 } from './workspace-dialog-entry.tsx';
 export { NewWorkspaceDialog, RenameWorkspaceDialog, DeleteWorkspaceDialog };
 
@@ -197,8 +218,25 @@ export function WorkspaceSwitcher({
   readonly onRename: () => void;
   readonly onDelete: () => void;
 }): ReactNode {
-  const { state } = useWorkspace();
+  const { state, reload, adopt } = useWorkspace();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [invites, setInvites] = useState<PendingWorkspaceInvite[]>([]);
+  const [problem, setProblem] = useState('');
+  const [leaving, setLeaving] = useState(false);
+  const openSettings = useOpenSettings();
+  useEffect(() => {
+    let active = true;
+    void listMyWorkspaceInvites()
+      .then((result) => {
+        if (active && result.data !== undefined)
+          setInvites(result.data.invitations);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [state]);
 
   const workspaces = state.status === 'ready' ? state.workspaces : [];
   const openWorkspace =
@@ -219,24 +257,92 @@ export function WorkspaceSwitcher({
     id: workspace.workspaceId,
     label: workspace.name,
     icon: actionIcon('workspace'),
+    hint: `${roleNames[workspace.role]}${(workspace.memberCount ?? 0) > 1 ? ` · ${workspace.memberCount}` : ''}`,
     selected: workspace.workspaceId === workspaceId,
     onSelect: () => switchTo(workspace.workspaceId),
   }));
 
+  const answer = (invite: PendingWorkspaceInvite, accept: boolean): void => {
+    const path = { invitationId: invite.invitationId };
+    const request = accept
+      ? acceptWorkspaceInvite({ path })
+      : declineWorkspaceInvite({ path });
+    void request.then(({ data }) => {
+      if (data === undefined) {
+        setProblem(
+          accept
+            ? 'This invitation could not be accepted.'
+            : 'This invitation could not be declined.',
+        );
+        return;
+      }
+      setInvites((entries) =>
+        entries.filter((entry) => entry.invitationId !== invite.invitationId),
+      );
+      if ('workspaceId' in data) {
+        adopt(data);
+        void navigate(location, {
+          replace: true,
+          state: joinedWorkspaceState(invite),
+        });
+        onNavigate();
+      }
+    });
+  };
+
+  for (const invite of invites) {
+    items.push({
+      id: invite.invitationId,
+      label: invite.workspaceName,
+      icon: <MailIcon />,
+      hint: roleNames[invite.role],
+      group: 'Invites',
+      submenu: [
+        {
+          id: 'accept-invite',
+          label: 'Accept invite',
+          icon: <CheckIcon />,
+          onSelect: () => answer(invite, true),
+        },
+        {
+          id: 'decline-invite',
+          label: 'Decline invite',
+          icon: <SignOutIcon />,
+          danger: true,
+          onSelect: () => answer(invite, false),
+        },
+      ],
+    });
+  }
+  const manages =
+    openWorkspace.role === 'owner' || openWorkspace.role === 'admin';
   const pinned: MenuItem[] = [
     {
-      id: 'rename-workspace',
-      onIntent: () => {
-        void RenameWorkspaceDialog.preload();
+      id: 'workspace-members',
+      label: manages ? 'Members and invites' : 'Members',
+      icon: <UsersIcon />,
+      onSelect: () => {
+        openSettings('members');
+        onNavigate();
       },
-      label: 'Rename workspace',
-      icon: actionIcon('rename'),
-      onSelect: onRename,
     },
+    ...(manages
+      ? [
+          {
+            id: 'rename-workspace',
+            onIntent: () => {
+              void RenameWorkspaceDialog.preload();
+            },
+            label: 'Rename workspace',
+            icon: actionIcon('rename'),
+            onSelect: onRename,
+          },
+        ]
+      : []),
     // Record 0051 keeps the last workspace of an account, so the row is absent
     // rather than present and always refused. The server refuses it either
     // way; this is only the courtesy.
-    ...(workspaces.length > 1
+    ...(workspaces.length > 1 && openWorkspace.role === 'owner'
       ? [
           {
             id: 'delete-workspace',
@@ -247,6 +353,20 @@ export function WorkspaceSwitcher({
             icon: actionIcon(deleteGlyph),
             danger: true,
             onSelect: onDelete,
+          },
+        ]
+      : []),
+    ...(workspaces.length > 1 && openWorkspace.role !== 'owner'
+      ? [
+          {
+            id: 'leave-workspace',
+            label: 'Leave workspace',
+            icon: <SignOutIcon />,
+            danger: true,
+            onIntent: () => {
+              void LeaveWorkspaceDialog.preload();
+            },
+            onSelect: () => setLeaving(true),
           },
         ]
       : []),
@@ -263,8 +383,15 @@ export function WorkspaceSwitcher({
 
   return (
     <div className="shrink-0">
+      {problem === '' ? null : <Notice tone="problem" message={problem} />}
+      <LeaveWorkspaceDialog
+        open={leaving}
+        workspace={openWorkspace}
+        onClose={() => setLeaving(false)}
+        onLeft={reload}
+      />
       <Menu
-        label={`Workspace: ${openWorkspace.name}`}
+        label={`Workspace: ${openWorkspace.name}${invites.length ? `, ${invites.length} pending ${invites.length === 1 ? 'invite' : 'invites'}` : ''}`}
         trigger="row"
         items={items}
         pinned={pinned}
@@ -278,6 +405,12 @@ export function WorkspaceSwitcher({
         <span className="min-w-0 flex-1 truncate text-label text-strong">
           {openWorkspace.name}
         </span>
+        {invites.length === 0 ? null : (
+          <span
+            aria-hidden="true"
+            className="size-2 shrink-0 rounded-full bg-accent"
+          />
+        )}
         <span
           className="inline-flex shrink-0 items-center text-muted"
           aria-hidden="true"

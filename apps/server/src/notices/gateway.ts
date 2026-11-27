@@ -1,3 +1,5 @@
+import type { LiveConnection, LiveRooms } from './live-rooms.ts';
+import { liveBounds } from './live-bounds.ts';
 /**
  * The sync notice gateway of one server process (records 0124, 0125, 0129).
  *
@@ -109,6 +111,7 @@ export type NoticeGateway = {
   readonly admit: (binding: {
     readonly accountId: string;
     readonly sessionId: string;
+    readonly name?: string;
   }) => Promise<
     | { readonly ok: true; readonly open: (socket: StreamSocket) => void }
     | { readonly ok: false; readonly reason: AdmissionRefusal }
@@ -124,6 +127,10 @@ export type NoticeGateway = {
 /** One open stream. */
 type Stream = {
   readonly socket: StreamSocket;
+  readonly live: LiveConnection;
+  liveTokens: number;
+  liveAt: number;
+  livePending: number;
   readonly accountId: string;
   readonly sessionId: string;
   readonly reservationId: string;
@@ -162,6 +169,7 @@ export function createNoticeGateway(options: {
   readonly listener: GatewayListenerFactory;
   readonly bounds: NoticeBounds;
   readonly log: GatewayLog;
+  readonly live?: LiveRooms;
 }): NoticeGateway {
   const { stores, bounds, log } = options;
   const streams = new Set<Stream>();
@@ -175,7 +183,40 @@ export function createNoticeGateway(options: {
 
   // Each message that a client can send has its handler here, and the
   // contract check stops the start when one is missing or unknown.
+  const liveHandler =
+    (kind: string) =>
+    (stream: Stream, message: Readonly<Record<string, unknown>>): void => {
+      if (options.live === undefined) return;
+      const now = Date.now();
+      stream.liveTokens = Math.min(
+        liveBounds.messageBurst,
+        stream.liveTokens +
+          ((now - stream.liveAt) * liveBounds.messagesPerSecond) / 1000,
+      );
+      stream.liveAt = now;
+      if (
+        stream.liveTokens < 1 ||
+        stream.livePending >= liveBounds.pendingPerConnection
+      ) {
+        stop(stream, 'overloaded');
+        return;
+      }
+      stream.liveTokens -= 1;
+      stream.livePending += 1;
+      enqueue(stream, async () => {
+        try {
+          await options.live?.handle(stream.live, kind, message);
+        } finally {
+          stream.livePending -= 1;
+        }
+      });
+    };
   const handlers = {
+    joinNote: liveHandler('joinNote'),
+    leaveNote: liveHandler('leaveNote'),
+    sendNoteSync: liveHandler('sendNoteSync'),
+    sendNoteAwareness: liveHandler('sendNoteAwareness'),
+    watchWorkspacePresence: liveHandler('watchWorkspacePresence'),
     subscribe: (stream: Stream, message: Readonly<Record<string, unknown>>) => {
       const request = readSubscribe(message);
       if (request === null) {
@@ -300,6 +341,7 @@ export function createNoticeGateway(options: {
   const finish = (stream: Stream, reason: StopReason): void => {
     if (!streams.delete(stream)) return;
     stream.closed = true;
+    options.live?.remove(stream.live);
     for (const id of stream.subscription.workspaceIds)
       byWorkspace.get(id)?.delete(stream);
     void stores.releaseStream(stream.reservationId).catch(() => {
@@ -326,15 +368,8 @@ export function createNoticeGateway(options: {
 
   const onMessage = (stream: Stream, text: string | null): void => {
     if (stream.closed) return;
-    if (text === null) {
+    if (text === null || Buffer.byteLength(text) > bounds.maxFrameBytes) {
       stop(stream, 'malformed');
-      return;
-    }
-    const now = Date.now();
-    stream.sent = stream.sent.filter((at) => now - at < bounds.messageWindowMs);
-    stream.sent.push(now);
-    if (stream.sent.length > bounds.messagesPerWindow) {
-      stop(stream, 'overloaded');
       return;
     }
     const read = readClientMessage('syncNotices', text);
@@ -342,16 +377,40 @@ export function createNoticeGateway(options: {
       stop(stream, 'malformed');
       return;
     }
+    if (read.kind === 'subscribe') {
+      const now = Date.now();
+      stream.sent = stream.sent.filter(
+        (at) => now - at < bounds.messageWindowMs,
+      );
+      stream.sent.push(now);
+      if (stream.sent.length > bounds.messagesPerWindow) {
+        stop(stream, 'overloaded');
+        return;
+      }
+    }
     handlers[read.kind](stream, read.message);
   };
 
   const open = (
-    binding: { readonly accountId: string; readonly sessionId: string },
+    binding: {
+      readonly accountId: string;
+      readonly sessionId: string;
+      readonly name?: string;
+    },
     reservationId: string,
     socket: StreamSocket,
   ): void => {
     const stream: Stream = {
       socket,
+      live: {
+        accountId: binding.accountId,
+        sessionId: binding.sessionId,
+        name: binding.name ?? 'Member',
+        emit: (message) => send(stream, message),
+      },
+      liveAt: Date.now(),
+      livePending: 0,
+      liveTokens: liveBounds.messageBurst,
       accountId: binding.accountId,
       sessionId: binding.sessionId,
       reservationId,
@@ -375,11 +434,16 @@ export function createNoticeGateway(options: {
       finish(stream, 'client_closed');
     });
     log.opened();
-    send(stream, { kind: 'ready', accountId: binding.accountId });
+    send(stream, {
+      kind: 'ready',
+      accountId: binding.accountId,
+      ...(options.live === undefined ? {} : { liveNotes: true }),
+    });
   };
 
   const onHint = (hint: GatewayHint): void => {
     if (hint.kind === 'workspace') {
+      options.live?.refreshWorkspace?.(hint.workspaceId);
       for (const stream of byWorkspace.get(hint.workspaceId) ?? []) {
         stream.changed.add(hint.workspaceId);
         queueBatch(stream);
@@ -389,16 +453,26 @@ export function createNoticeGateway(options: {
     // A session or an account changed, so each of its streams checks its
     // access again with no changed workspace.
     for (const stream of streams)
-      if (hint.kind === 'session' && stream.sessionId === hint.sessionId)
+      if (hint.kind === 'session' && stream.sessionId === hint.sessionId) {
+        enqueue(stream, async () => {
+          await options.live?.recheck(stream.live);
+        });
         queueBatch(stream);
-      else if (hint.kind === 'account' && stream.accountId === hint.accountId) {
+      } else if (
+        hint.kind === 'account' &&
+        stream.accountId === hint.accountId
+      ) {
         stream.accountChanged = true;
+        enqueue(stream, async () => {
+          await options.live?.recheck(stream.live);
+        });
         queueBatch(stream);
       }
   };
 
   const onLost = (): void => {
     log.listenerLost();
+    options.live?.reset();
     gap = true;
     if (graceTimer !== null) return;
     graceTimer = setTimeout(() => {
@@ -452,7 +526,12 @@ export function createNoticeGateway(options: {
         }
       });
       every(bounds.accessCheckMs, () => {
-        for (const stream of streams) queueBatch(stream);
+        for (const stream of streams) {
+          queueBatch(stream);
+          enqueue(stream, async () => {
+            await options.live?.recheck(stream.live);
+          });
+        }
       });
       every(bounds.reservationRenewMs, () => {
         for (const stream of [...streams])

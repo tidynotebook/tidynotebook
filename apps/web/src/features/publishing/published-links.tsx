@@ -60,10 +60,10 @@ import {
   linkFacts,
   linkTitle,
   notesInScope,
-  publishedLinksTitle,
   shownLinkFacts,
   sortLinks,
 } from './publishing.ts';
+import { publishedLinksTitle } from './published-links-title.ts';
 
 /** How far the read of the list got. */
 type ListState =

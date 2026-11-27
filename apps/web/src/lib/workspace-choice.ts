@@ -121,11 +121,28 @@ function parseWorkspace(value: unknown): Workspace | null {
   const name = member(value, 'name');
   const role = member(value, 'role');
   const personal = member(value, 'personal');
+  const memberCount = member(value, 'memberCount');
   if (typeof workspaceId !== 'string' || workspaceId === '') return null;
   if (typeof name !== 'string' || name === '') return null;
-  if (role !== 'owner') return null;
+  if (
+    role !== 'owner' &&
+    role !== 'admin' &&
+    role !== 'editor' &&
+    role !== 'viewer'
+  )
+    return null;
   if (typeof personal !== 'boolean') return null;
-  return { workspaceId, name, role, personal };
+  return {
+    workspaceId,
+    name,
+    role,
+    personal,
+    ...(typeof memberCount === 'number' &&
+    Number.isSafeInteger(memberCount) &&
+    memberCount > 1
+      ? { memberCount }
+      : {}),
+  };
 }
 
 /**

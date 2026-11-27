@@ -131,6 +131,7 @@
  * block that has no line of its own, such as an image or a diagram.
  */
 @theme static {
+  --breakpoint-compact: 22.5rem;
   --font-sans:
     'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
     Arial, sans-serif;
@@ -515,4 +516,30 @@
 @utility state-raised {
   --notes-surface-hover: var(--notes-card-raised-hover);
   --notes-surface-active: var(--notes-card-raised-selected);
+}
+
+@theme static {
+  --color-live-0: #7446a8;
+  --live-extra-lightness: 0.38;
+  --live-extra-chroma: 0.1;
+  --color-live-ink: #ffffff;
+  --color-live-1: #185d9a;
+  --color-live-2: #90601b;
+  --color-live-3: #7d2946;
+  --color-live-4: #277057;
+  --color-live-5: #394077;
+}
+@theme inline {
+  --color-live-extra: var(--presence-color);
+}
+[data-theme='dark'] {
+  --color-live-0: #c7a4f8;
+  --live-extra-lightness: 0.82;
+  --live-extra-chroma: 0.11;
+  --color-live-ink: #141414;
+  --color-live-1: #7abbfa;
+  --color-live-2: #e2a358;
+  --color-live-3: #e695ae;
+  --color-live-4: #82d7b5;
+  --color-live-5: #aab1f0;
 }

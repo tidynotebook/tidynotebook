@@ -1,4 +1,10 @@
 import {
+  NotePresence,
+  ViewerNotice,
+  useEditorLiveBinding,
+  useNoteAccess,
+} from './live-note.tsx';
+import {
   Inset,
   Button,
   Notice,
@@ -50,6 +56,7 @@ import {
   runFormatAction,
   setEditorRich,
   setEditorSpellCheck,
+  setEditorReadOnly,
   setEditorTheme,
   takeMarginTaps,
   type EditorView,
@@ -70,13 +77,14 @@ import { useFiles, type FilesValue } from '../../shell/files.tsx';
 import { useAttachmentUrls } from './note-editor-attachments.ts';
 import {
   useRegisterNoteActions,
+  useNoteActionsForRole,
   type NoteScreenActions,
 } from './note-actions.tsx';
 import { noteFrameClassName, noteRowClassName } from '../../lib/note-column.ts';
 import { localWriteFailureMessage } from '../../lib/local-write.ts';
 import { FormatToolbar, toolSlashCommands } from './format-toolbar.tsx';
 import { TableMenu } from './table-menu.tsx';
-import { NoteFooter } from './note-footer.tsx';
+import { NoteScrollEdges } from './note-scroll-edges.tsx';
 import { NoteHeader, noteNameErrorId } from './note-header.tsx';
 import { NoteHeaderActions } from './note-header-actions.tsx';
 import { useInsertTemplate } from './insert-template.ts';
@@ -101,7 +109,10 @@ import { duplicateNote as makeCopy } from '../notes/duplicate-note.ts';
 import { NoteSide } from './note-side.tsx';
 import { useDeleteNotice } from '../trash/trash.tsx';
 import { createDiagramWidget, diagramFramePath } from '../../diagram/widget.ts';
-import { useRegisterNoteDraftFlush } from './save-status.tsx';
+import {
+  useRegisterNoteDraftFlush,
+  useReportLiveConnection,
+} from './save-status.tsx';
 import { createDocumentWorkQueue } from './document-work.ts';
 import { createWriteSchedule } from './write-schedule.ts';
 import { createNoteWork, readAfterChange } from './note-work.ts';
@@ -155,6 +166,7 @@ export type NoteEditorProps = {
   readonly fileId: string;
   readonly baseRevisionId: string | null;
   readonly initialText: string;
+  readonly readOnly?: boolean | undefined;
   /**
    * The document of the note as this device holds it, with its generation,
    * or `null` for a note it has not received yet (record 0081).
@@ -179,12 +191,7 @@ export type NoteEditorProps = {
   readonly onMoveToFolder?: (() => void) | undefined;
   /** Opens the Publish dialog that the note screen owns. */
   readonly onPublish?: (() => void) | undefined;
-  /**
-   * Reports that the store holds a new generation of the document of this
-   * note, which cannot join this editor, and that no key of this session is
-   * at stake. The loader reads the note again with a new editor. Every other
-   * move of the head joins this editor and keeps its caret (record 0179).
-   */
+  /** Reloads the note when a new document generation cannot join the editor. */
   readonly onHeadReplaced?: (() => void) | undefined;
 };
 
@@ -267,6 +274,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
   fileId,
   baseRevisionId,
   initialText,
+  readOnly: viewerRole = false,
   initialDocument = null,
   initialPath,
   initialWorkingCopyId,
@@ -309,6 +317,8 @@ const NoteEditorBody = memo(function NoteEditorBody({
   const marginRef = useRef<HTMLDivElement | null>(null);
   const nameInputRef = useRef<HTMLInputElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const access = useNoteAccess(viewRef, viewerRole);
+  const { readOnly, readOnlyRef } = access;
   // The resolvers the view holds, so the view is reconfigured only when they
   // change and never with the ones it was created with.
   const viewRichRef = useRef<RichWidgetResolvers | null>(null);
@@ -566,10 +576,12 @@ const NoteEditorBody = memo(function NoteEditorBody({
         },
         saveDraft: (draft) => live.current.store.saveDraft(draft),
         checkpoint: (draft) =>
-          live.current.store.checkpoint(draft, saveCheckpointMessage, {
-            kind: 'document',
-            epoch: openedEpochRef.current,
-          }),
+          readOnlyRef.current
+            ? Promise.resolve(null)
+            : live.current.store.checkpoint(draft, saveCheckpointMessage, {
+                kind: 'document',
+                epoch: openedEpochRef.current,
+              }),
         draftOwed: () => {
           void saveDraftNow.current();
         },
@@ -783,13 +795,9 @@ const NoteEditorBody = memo(function NoteEditorBody({
   const checkpointAgainRef = useRef(false);
   const checkpointNow = useRef((): Promise<boolean> => Promise.resolve(true));
   checkpointNow.current = (): Promise<boolean> => {
-    if (isDeletedRef.current) return Promise.resolve(false);
+    if (isDeletedRef.current || readOnlyRef.current || noteWork.frozen())
+      return Promise.resolve(false);
     if (bufferWasReplaced()) return Promise.resolve(false);
-    // The document also holds the work of other tabs and devices, and that
-    // work is a version of the editor that wrote it. An editor with no input
-    // since its last checkpoint therefore writes no version (record 0133).
-    // The first checkpoint always runs, because a draft that this open
-    // recovered can hold work that no version holds yet.
     if (noteWork.versionedSequence() === sequenceRef.current)
       return Promise.resolve(false);
     followHeading();
@@ -884,6 +892,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
         (change.fileId !== null && change.fileId !== current.fileId)
       )
         return;
+      if (change.accessReset !== undefined) noteWork.freeze();
       if (change.kind === 'purge') isDeletedRef.current = true;
       const read = readAfterChange(change, current.workingCopyId);
       if (read !== 'none') askQueue(read === 'join');
@@ -915,10 +924,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
     };
   }, []);
 
-  // The resolvers keep their identity between keystrokes. They are rebuilt
-  // only when math arrives, when the palette changes, or when the set of
-  // resolved attachment URLs really changed, because a new object here
-  // reconfigures the widget compartment (MD-10).
+  // Keep resolver identity stable between keystrokes (MD-10).
   const richResolvers = useMemo<RichWidgetResolvers>(
     () => ({
       renderMath: !mathReady
@@ -958,12 +964,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
     setEditorRich(view, richResolvers);
   }, [richResolvers]);
 
-  // One editor instance per working copy. This effect never reruns for text,
-  // path, or theme changes: those travel through transactions, the store, or
-  // the compartments below. It is a layout effect, so the view holds the text
-  // of the note before the browser paints the note screen. A passive effect
-  // ran after that paint, and each open of a note showed one frame with the
-  // tools and no text.
+  // One view per open working copy. Theme and text changes use transactions.
   useLayoutEffect(() => {
     const container = containerRef.current;
     if (container === null) return;
@@ -1006,6 +1007,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
         spellCheck: spellCheckRef.current,
         rich: richResolvers,
         document: bound,
+        readOnly: readOnlyRef.current,
         onFormatContext: setFormatContext,
         onTableMenu: setTableMenu,
         // The slash menu offers the block tools of the row (issue 259).
@@ -1048,11 +1050,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
     };
   }, [workingCopyId, documentWork, localWrite, watchHistory]);
 
-  // The local changes of the open document reach this device one frame
-  // after they reach the editor, so a reload, a closed tab and a second tab
-  // all read the work of this editor (records 0085, 0175). The document is
-  // the one source of the text, so the save path that follows sends exactly
-  // the work this device added.
+  // Store local changes on the next frame so reload and other tabs see them.
   useEffect(() => {
     const { note: bound, release: releaseNote } = holdSession();
     releasedRef.current = false;
@@ -1090,14 +1088,12 @@ const NoteEditorBody = memo(function NoteEditorBody({
     };
   }, [workingCopyId, localWrite, noteWork]);
 
-  // Theme changes reconfigure one compartment, keeping document, undo,
-  // selection, and composition exactly where they are.
+  // Theme changes preserve editor state.
   useEffect(() => {
     const view = viewRef.current;
     if (view !== null) setEditorTheme(view, resolved);
   }, [resolved]);
 
-  // The spell check setting reconfigures one compartment in the same way.
   useEffect(() => {
     const view = viewRef.current;
     if (view !== null) setEditorSpellCheck(view, spellCheck);
@@ -1112,10 +1108,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
     validPathRef,
   );
 
-  // The note saves itself, so Cmd or Ctrl + S is only an accelerator that
-  // creates a version at once. It is window level, so it works while focus
-  // sits in the note name field. CodeMirror marks the event handled first, so
-  // the editor binding never fires twice.
+  // The window shortcut also saves when the note name field has focus.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
       if (event.defaultPrevented) return;
@@ -1132,11 +1125,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
     };
   }, []);
 
-  // A version is a restore point, so leaving the note flushes one. A hidden
-  // tab (a switch or a close) runs no frame, so it appends the work that
-  // waits at once, writes the draft and flushes a version. The end of the
-  // screen does the same, which is how one note gives way to another.
-  // Typing that only pauses flushes through the version timer instead.
+  // A hidden tab runs no frame. Flush work, draft and version before leaving.
   useEffect(() => {
     const onHide = (): void => {
       void noteWork.flush();
@@ -1205,13 +1194,9 @@ const NoteEditorBody = memo(function NoteEditorBody({
     return run;
   }, [localWrite, askQueue, setStorageError]);
 
-  // The root states the save state from its first frame on, and later
-  // changes write it through `showSaveFacts`.
   useLayoutEffect(() => {
     showSaveFacts.current();
   }, []);
-  // The note saves itself, so this is the one place that states a failed
-  // local write, and the sidebar footer stops claiming that it is saved.
   const writeFailure = localWriteFailureMessage(storageError);
 
   /**
@@ -1390,9 +1375,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
     });
   }, [workspaceId, fileId]);
 
-  // One stable object holds every action of the open note. It does not change
-  // between keystrokes, so the shell registers it once and offers each action
-  // in the command palette.
+  // Register note actions without replacing them on each keystroke.
   const noteScreenActions = useMemo<NoteScreenActions>(
     () => ({
       fileId,
@@ -1423,14 +1406,39 @@ const NoteEditorBody = memo(function NoteEditorBody({
       insertTemplate,
     ],
   );
-  useRegisterNoteActions(noteScreenActions);
+  const liveNote = useEditorLiveBinding({
+    workspaceId,
+    fileId,
+    epoch: initialDocument?.epoch ?? null,
+    hold: holdSession,
+    store,
+    accountId,
+    work: noteWork,
+    readOnly: readOnlyRef,
+    freeze: () => {
+      if (viewRef.current !== null) setEditorReadOnly(viewRef.current, true);
+      return noteWork.saveForAccess(
+        isDeletedRef.current,
+        checkpointInFlightRef.current,
+      );
+    },
+    onAccess: access.setLiveRole,
+  });
+  useRegisterNoteActions(useNoteActionsForRole(noteScreenActions, readOnly));
+  useReportLiveConnection(initialDocument === null ? null : liveNote.status);
 
   return (
-    <Inset as="div" className="flex h-full min-w-0 flex-col" ref={rootRef}>
+    <Inset
+      as="div"
+      className="flex h-full min-w-0 flex-col"
+      ref={rootRef}
+      data-live-connection={liveNote.status}
+    >
       <NoteHeader
         fileId={fileId}
         name={name}
         nameError={pathError}
+        readOnly={readOnly}
         nameInputRef={nameInputRef}
         selectOnFirstFocus={selectNameOnFirstFocus}
         onNameChange={typeName}
@@ -1440,8 +1448,11 @@ const NoteEditorBody = memo(function NoteEditorBody({
       />
       <NoteHeaderActions
         workspaceId={workspaceId}
+        readOnly={readOnly}
         fileId={fileId}
         onRename={renameNote}
+        presence={<NotePresence people={liveNote.others} />}
+        initialText={initialText}
         onCopyText={copyNote.run}
         onMoveToFolder={onMoveToFolder}
         onDuplicate={duplicateNote}
@@ -1450,17 +1461,10 @@ const NoteEditorBody = memo(function NoteEditorBody({
         onPublish={onPublish}
         onDelete={deleteNoteAndLeave}
       />
-      {/* The visible side region owns the right edge. Narrow notes keep both gutters. */}
       <div
         ref={marginRef}
         className={`flex overflow-hidden flex-1 flex-col ${noteEditorGutterClassName()}`}
       >
-        {/*
-          The name field is in the frame header, which is one row of 44 px and
-          holds no second line, so the reason a name cannot be kept stands
-          here, on the note the name belongs to (record 0069). The field
-          points at this message with `aria-describedby`.
-        */}
         {pathError === '' ? null : (
           <Inset as="div" id={noteNameErrorId(fileId)}>
             <Notice tone="problem" message={pathError} />
@@ -1521,23 +1525,19 @@ const NoteEditorBody = memo(function NoteEditorBody({
           </Inset>
         ) : null}
 
-        {/*
-          The text and the footer are one column, so they sit in one flex
-          child and the side region is its sibling (decision 0055). The name
-          is not here: it is the last part of the breadcrumb in the frame
-          header, so the note starts with its text (decision 0069). The row
-          is the row of every page, so the text keeps the place of the
-          column of any other page (decision 0137).
-        */}
         <div className={noteRowClassName()}>
-          <div className={noteFrameClassName()}>
+          <div className={noteFrameClassName()} data-scroll-frame="">
             {/* The tools use the one editor and its local history. */}
-            <FormatToolbar
-              context={formatContext}
-              onFormat={runFormat}
-              history={history.state}
-              onHistory={history.run}
-            />
+            {readOnly ? (
+              <ViewerNotice />
+            ) : (
+              <FormatToolbar
+                context={formatContext}
+                onFormat={runFormat}
+                history={history.state}
+                onHistory={history.run}
+              />
+            )}
             {tableMenu === null ? null : (
               <TableMenu
                 request={tableMenu}
@@ -1550,6 +1550,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
               as="div"
               className={noteEditorHostClassName()}
               onPaste={(event): void => {
+                if (readOnly) return;
                 const dropped = Array.from(event.clipboardData?.files ?? []);
                 if (dropped.some((file) => file.type.startsWith('image/'))) {
                   event.preventDefault();
@@ -1557,6 +1558,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
                 }
               }}
               onDrop={(event): void => {
+                if (readOnly) return;
                 const dropped = Array.from(event.dataTransfer?.files ?? []);
                 if (dropped.some((file) => file.type.startsWith('image/'))) {
                   event.preventDefault();
@@ -1564,7 +1566,7 @@ const NoteEditorBody = memo(function NoteEditorBody({
                 }
               }}
             />
-            <NoteFooter initialText={initialText} />
+            <NoteScrollEdges />
             <ImageViewer
               image={openImage}
               onRemoved={imageUndo.removed}

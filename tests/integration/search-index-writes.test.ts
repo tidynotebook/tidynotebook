@@ -95,7 +95,9 @@ await test('an upgrade drains earlier writes and keeps future writes indexed', a
   let store: ReturnType<typeof openWorkspaceStore> | null = null;
   try {
     await runMigrations({ ...run, migrationsFolder: earlier.folder });
-    store = openWorkspaceStore(database.runtimeUrl, createDocumentService());
+    store = openWorkspaceStore(database.runtimeUrl, createDocumentService(), {
+      recordRevisionContributors: false,
+    });
     const accountId = randomUUID();
     const workspaceId = randomUUID();
     const actor = memberActor(accountId, workspaceId);
@@ -154,6 +156,8 @@ await test('an upgrade drains earlier writes and keeps future writes indexed', a
         'the migration drains earlier saves',
       );
       await runMigrations(run);
+      await store.close();
+      store = openWorkspaceStore(database.runtimeUrl, createDocumentService());
       const third = await write(
         'Running.md',
         '# Running\nA runner returns along the canal.\n',

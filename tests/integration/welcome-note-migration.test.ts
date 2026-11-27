@@ -54,7 +54,9 @@ await test('the welcome note migration uses the UTC cutoff, account bytes, and r
     await runMigrations({ ...options, migrationsFolder: earlier.folder });
     session = await openSession(migrationUrl);
     const sql = session;
-    content = openWorkspaceStore(database.runtimeUrl, options.documents);
+    content = openWorkspaceStore(database.runtimeUrl, options.documents, {
+      recordRevisionContributors: false,
+    });
     const eligible: string[] = [];
     const excluded: string[] = [];
     async function account(createdAt = '2026-10-22T00:00:00Z') {

@@ -1,3 +1,4 @@
+import { WorkspaceMembers } from './workspace-members.tsx';
 import {
   Form,
   SettingEditRow,
@@ -167,6 +168,7 @@ function settingsSection(key: SettingsSectionKey): PageSection {
 const pageIcons: Readonly<Record<SettingsPagePath, ReactNode>> = {
   appearance: <PaletteIcon />,
   offline: <DownloadIcon />,
+  members: <UsersIcon />,
   'daily-notes': <CalendarIcon />,
   templates: <TemplateIcon />,
   'export-import': <UploadIcon />,
@@ -762,6 +764,9 @@ export function SettingsModal({
   const [actionHeaderTarget, setActionHeaderTarget] =
     useState<HTMLDivElement | null>(null);
   const [actionTarget, setActionTarget] = useState<HTMLDivElement | null>(null);
+  const [membersFooter, setMembersFooter] = useState<HTMLDivElement | null>(
+    null,
+  );
   const [activeAction, setActiveAction] =
     useState<SettingsActionRegistration | null>(null);
   const actionHost = useMemo(
@@ -785,12 +790,13 @@ export function SettingsModal({
   const accountId = account?.accountId ?? null;
   const documents = useLegalDocuments();
   const workspace = useWorkspace();
-  const workspaceName =
+  const currentWorkspace =
     workspace.state.status === 'ready'
-      ? (workspace.state.workspaces.find(
+      ? workspace.state.workspaces.find(
           (item) => item.workspaceId === workspaceId,
-        )?.name ?? '')
-      : '';
+        )
+      : undefined;
+  const workspaceName = currentWorkspace?.name ?? '';
   const portal = useOpenPortal();
   // The limits of the month change with no notice to this device, so the
   // modal reads the account again when it opens (record 0193).
@@ -922,6 +928,16 @@ export function SettingsModal({
   const sectionBodies: Record<SettingsSectionKey, ReactNode> = {
     appearance: <ThemeSettings />,
     spelling: <SpellCheckSettings />,
+    members:
+      currentWorkspace === undefined ? null : (
+        <WorkspaceMembers
+          key={workspaceId}
+          workspaceId={workspaceId}
+          workspaceName={workspaceName}
+          role={currentWorkspace.role}
+          phoneFooter={membersFooter}
+        />
+      ),
     'daily-notes': (
       <SettingsSection
         section={settingsSection('daily-notes')}
@@ -1127,7 +1143,9 @@ export function SettingsModal({
   const sectionForm = activePage?.path === 'mail';
   const scope =
     activePage?.group === 'Workspace'
-      ? `${workspaceName === '' ? 'This' : workspaceName} ${activePage.scope}`
+      ? activePage.path === 'members'
+        ? `People who can open ${workspaceName}. Their role sets what they can do.`
+        : `${workspaceName === '' ? 'This' : workspaceName} ${activePage.scope}`
       : activePage?.scope;
 
   return (
@@ -1247,7 +1265,15 @@ export function SettingsModal({
                         <NavigationHeading>
                           {group}
                           {group === 'Workspace' && workspaceName !== '' ? (
-                            <Pill>{workspaceName}</Pill>
+                            <Pill shrink>
+                              <span
+                                className="truncate"
+                                data-settings-workspace-name=""
+                                title={workspaceName}
+                              >
+                                {workspaceName}
+                              </span>
+                            </Pill>
                           ) : null}
                         </NavigationHeading>
                         <Card as="ul" responsive className="list-none">
@@ -1449,10 +1475,19 @@ export function SettingsModal({
                           </Stack>
                         </ScrollCueRegion>
                       </Stack>
-                      <div
-                        aria-hidden="true"
-                        className="h-0 shrink-0 coarse:h-safe"
-                      />
+                      {activePage?.path === 'members' &&
+                      (currentWorkspace?.role === 'owner' ||
+                        currentWorkspace?.role === 'admin') ? (
+                        <div
+                          ref={setMembersFooter}
+                          className="shrink-0 lg:hidden"
+                        />
+                      ) : (
+                        <div
+                          aria-hidden="true"
+                          className="h-0 shrink-0 coarse:h-safe"
+                        />
+                      )}
                     </Stack>
                   )}
                 </DialogHeaderActionsContext.Provider>

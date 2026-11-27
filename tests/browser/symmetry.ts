@@ -347,16 +347,59 @@ export async function auditComposition(page: Page) {
         1,
         0,
       );
-      const glyph = close.querySelector('svg'),
-        header = close.closest('header');
-      if (glyph && header)
+      const closeGlyph = close.querySelector('svg');
+      const header = close.closest('header');
+      if (!coarse || header === null) continue;
+
+      for (const target of [
+        ...header.querySelectorAll('button,a[href]'),
+      ].filter(visible)) {
+        const targetBox = target.getBoundingClientRect();
+        check(
+          target,
+          'header target past left viewport edge',
+          Math.min(0, targetBox.left),
+          0,
+        );
+        check(
+          target,
+          'header target past right viewport edge',
+          Math.max(0, targetBox.right - innerWidth),
+          0,
+        );
+        check(
+          target,
+          'header target past top viewport edge',
+          Math.min(0, targetBox.top),
+          0,
+        );
+        check(
+          target,
+          'header target past bottom viewport edge',
+          Math.max(0, targetBox.bottom - innerHeight),
+          0,
+        );
+      }
+
+      const leading = header.querySelector('[data-header-slot="leading"]');
+      const leadingGlyph = leading?.querySelector('svg');
+      const headerBox = header.getBoundingClientRect();
+      const slot = leading?.getBoundingClientRect();
+      const glyph = closeGlyph?.getBoundingClientRect();
+      check(close, 'sheet header has glyph slots', slot && glyph ? 1 : 0, 1, 0);
+      if (slot && glyph) {
+        // A sheet with no Back keeps its leading glyph slot empty.
+        const left =
+          leadingGlyph && visible(leadingGlyph)
+            ? leadingGlyph.getBoundingClientRect().left
+            : slot.left + (slot.width - glyph.width) / 2;
         check(
           close,
-          'right Close glyph edge',
-          glyph.getBoundingClientRect().right,
-          header.getBoundingClientRect().right -
-            parseFloat(getComputedStyle(header).paddingRight),
+          'sheet header glyph insets match',
+          headerBox.right - glyph.right,
+          left - headerBox.left,
         );
+      }
     }
     for (const dialog of [
       ...document.querySelectorAll('[data-dialog-inset]'),
@@ -493,8 +536,9 @@ export async function auditComposition(page: Page) {
     for (const e of rows) {
       const s = getComputedStyle(e),
         r = e.getBoundingClientRect(),
-        setting = e.getAttribute('data-ui-row') === 'setting',
-        y = setting ? 12 : coarse ? 8 : 4,
+        density = e.getAttribute('data-ui-row'),
+        setting = density === 'setting',
+        y = setting ? 12 : coarse ? (density === 'tree' ? 12 : 8) : 4,
         x = e.classList.contains('ui-content-row')
           ? 0
           : setting
@@ -614,7 +658,12 @@ export async function auditComposition(page: Page) {
           side,
         );
       } else {
-        check(e, 'icon button left inset', parseFloat(s.paddingLeft), 0);
+        const inset = e.hasAttribute('data-row-disclosure')
+          ? coarse
+            ? 8
+            : 4
+          : 0;
+        check(e, 'icon button left inset', parseFloat(s.paddingLeft), inset);
         check(e, 'icon button right inset', parseFloat(s.paddingRight), 0);
       }
     }
@@ -738,6 +787,217 @@ export async function auditContentParity(page: Page) {
       )
         issues.push(item);
     };
+    const lineCount = (element: Element): number => {
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      return new Set(Array.from(range.getClientRects(), ({ top }) => top)).size;
+    };
+    const noteTitle = document.querySelector('[data-note-header-title]');
+    const header = noteTitle?.closest('header');
+    if (
+      noteTitle &&
+      header &&
+      !header.closest('[inert]') &&
+      matchMedia('(pointer: coarse) and (width < 48rem)').matches
+    ) {
+      const style = getComputedStyle(noteTitle);
+      check(
+        noteTitle,
+        'note header single line semantics',
+        Number(style.whiteSpace === 'nowrap'),
+        1,
+      );
+      check(
+        noteTitle,
+        'note header ellipsis semantics',
+        Number(
+          style.textOverflow === 'ellipsis' &&
+            (style.overflowX === 'hidden' || style.overflowX === 'clip'),
+        ),
+        1,
+      );
+      check(
+        noteTitle,
+        'note header has title space semantics',
+        Number(noteTitle.getBoundingClientRect().width >= 16),
+        1,
+      );
+      if (!(noteTitle instanceof HTMLInputElement)) {
+        check(
+          noteTitle,
+          'note header rendered lines semantics',
+          lineCount(noteTitle),
+          1,
+        );
+      }
+      const actions = [...header.querySelectorAll('button')].filter(
+        (button) =>
+          /^(Note actions$|Search$|Account:)/.test(
+            button.getAttribute('aria-label') ?? '',
+          ) && visible(button),
+      );
+      const gap = parseFloat(getComputedStyle(header).columnGap);
+      let preceding: DOMRect | undefined;
+      for (const button of actions) {
+        const rect = button.getBoundingClientRect();
+        check(
+          button,
+          'note header touch target semantics',
+          Number(
+            rect.width >= 44 &&
+              rect.height >= 44 &&
+              rect.left >= 0 &&
+              rect.right <= innerWidth,
+          ),
+          1,
+        );
+        if (preceding)
+          check(
+            button,
+            'note header action gap',
+            rect.left - preceding.right,
+            gap,
+          );
+        preceding = rect;
+      }
+    }
+    const ellipsis = (element: Element) => {
+      const style = getComputedStyle(element);
+      return (
+        style.whiteSpace === 'nowrap' &&
+        style.textOverflow === 'ellipsis' &&
+        style.overflowX === 'hidden'
+      );
+    };
+    for (const email of [
+      ...document.querySelectorAll('[data-member-email]'),
+    ].filter(visible)) {
+      check(email, 'member email has one line semantics', lineCount(email), 1);
+      check(
+        email,
+        'member email has ellipsis semantics',
+        Number(ellipsis(email)),
+        1,
+      );
+    }
+    for (const name of [
+      ...document.querySelectorAll('[data-settings-workspace-name]'),
+    ].filter(visible)) {
+      const heading = name.closest('h3');
+      if (!heading) continue;
+      const right =
+        heading.getBoundingClientRect().right -
+        parseFloat(getComputedStyle(heading).paddingRight);
+      check(
+        name,
+        'workspace heading has ellipsis semantics',
+        Number(ellipsis(name)),
+        1,
+      );
+      check(
+        name,
+        'workspace heading stays inside navigation semantics',
+        Number(name.getBoundingClientRect().right <= right + 1),
+        1,
+      );
+    }
+    const memberColors = new Set<string>();
+    let trailingEdge: number | undefined;
+    for (const row of [
+      ...document.querySelectorAll('[data-member-row]'),
+    ].filter(visible)) {
+      const avatar = row.querySelector('[data-presence-slot]');
+      if (avatar) {
+        const color = getComputedStyle(avatar).backgroundColor;
+        check(
+          row,
+          'workspace member color is distinct semantics',
+          Number(!memberColors.has(color) && color !== 'rgba(0, 0, 0, 0)'),
+          1,
+        );
+        memberColors.add(color);
+      }
+      const control = row.querySelector('[data-setting-control]');
+      if (!control) continue;
+      const button = [...control.querySelectorAll('button')]
+        .filter(visible)
+        .at(-1);
+      const mark =
+        button?.querySelector('svg') ?? button ?? control.lastElementChild;
+      if (!mark) continue;
+      const right = control.getBoundingClientRect().right;
+      trailingEdge ??= right;
+      check(
+        row,
+        'members share one trailing edge',
+        mark.getBoundingClientRect().right,
+        trailingEdge,
+      );
+    }
+    for (const menu of [
+      ...document.querySelectorAll('[role=menu][aria-label^="Workspace:"]'),
+    ].filter(visible)) {
+      const captions = [
+        ...menu.querySelectorAll('[data-menu-label] > span:first-child'),
+      ].filter(visible);
+      const first = captions[0]?.getBoundingClientRect().left;
+      if (first === undefined) continue;
+      for (const caption of captions) {
+        check(
+          caption,
+          'workspace menu label edge',
+          caption.getBoundingClientRect().left,
+          first,
+        );
+        if (caption instanceof HTMLElement)
+          check(
+            caption,
+            'workspace menu label fits or has ellipsis semantics',
+            Number(
+              caption.scrollWidth <= caption.clientWidth + 1 ||
+                ellipsis(caption),
+            ),
+            1,
+          );
+      }
+    }
+    const viewerNotice = document.querySelector('[data-viewer-notice]');
+    if (
+      viewerNotice &&
+      visible(viewerNotice) &&
+      matchMedia('(pointer: coarse)').matches
+    )
+      check(
+        viewerNotice,
+        'viewer notice top inset',
+        parseFloat(getComputedStyle(viewerNotice).paddingTop),
+        8,
+      );
+    const removeTitle = document.getElementById(
+      'remove-workspace-member-title',
+    );
+    const removeText = document.getElementById(
+      'remove-workspace-member-detail',
+    );
+    if (
+      removeTitle &&
+      removeText &&
+      visible(removeTitle) &&
+      matchMedia('(min-width: 64rem)').matches
+    ) {
+      check(
+        removeTitle,
+        'member removal has no title divider semantics',
+        Number(!removeTitle.hasAttribute('data-scroll-edge')),
+        1,
+      );
+      check(
+        removeText,
+        'member removal content edge',
+        removeText.getBoundingClientRect().left,
+        removeTitle.getBoundingClientRect().left,
+      );
+    }
     for (const list of [
       ...document.querySelectorAll(
         '.ui-page-column ul,.ui-page-column ol,#command-palette-list',
@@ -817,13 +1077,33 @@ export async function auditContentParity(page: Page) {
             check(row, 'outline content edge', x, edge + (level - 1) * 20);
         }
     }
-    const line = document.querySelector('.cm-content .cm-line'),
-      footer = document.querySelector('footer');
-    if (line && footer && visible(line) && visible(footer)) {
-      const edge = firstX(line),
-        x = firstX(footer);
-      if (x !== null && edge !== null)
-        check(footer, 'note footer content edge', x, edge);
+    for (const count of [
+      ...document.querySelectorAll('[data-note-word-count]'),
+    ].filter(visible)) {
+      const panel = count.closest('aside');
+      const menu = count.closest('[role=menu]');
+      const x = firstX(count);
+      if (x === null) continue;
+      const siblings = panel ?? menu;
+      const label =
+        siblings === null
+          ? undefined
+          : [
+              ...siblings.querySelectorAll(
+                panel === null
+                  ? '[data-menu-label]'
+                  : '[data-disclosure-label]',
+              ),
+            ].find(visible);
+      const edge = label === undefined ? null : firstX(label);
+      check(
+        count,
+        panel === null
+          ? 'note actions word count label edge'
+          : 'note panel word count label edge',
+        x,
+        edge ?? Number.NaN,
+      );
     }
     const probe = document.createElement('span');
     probe.className = 'bg-active';
@@ -882,31 +1162,26 @@ export async function auditHoverPadding(page: Page) {
   }[] = [];
   for (let index = 0; index < (await controls.count()); index++) {
     const control = controls.nth(index);
-    if (
-      !(await control.evaluate((element) => {
-        if (
-          !element.checkVisibility({
-            visibilityProperty: true,
-            opacityProperty: true,
-          }) ||
-          element.closest('[inert],.sr-only')
-        )
-          return false;
-        const box = element.getBoundingClientRect(),
-          hit = document.elementFromPoint(
-            box.x + box.width / 2,
-            box.y + box.height / 2,
-          );
-        return (
-          box.width > 0 &&
-          box.height > 0 &&
-          hit !== null &&
-          element.contains(hit)
-        );
-      }))
-    )
-      continue;
-    await control.hover();
+    const point = await control.evaluate((element) => {
+      if (
+        !element.checkVisibility({
+          visibilityProperty: true,
+          opacityProperty: true,
+        }) ||
+        element.closest('[inert],.sr-only')
+      )
+        return null;
+      const box = element.getBoundingClientRect();
+      if (box.width <= 0 || box.height <= 0) return null;
+      const x = box.x + box.width / 2;
+      const y = box.y + box.height / 2;
+      return element.contains(document.elementFromPoint(x, y))
+        ? { x, y }
+        : null;
+    });
+    if (point === null) continue;
+    // Scrolling a touch target into view can pan a phone sheet horizontally.
+    await page.mouse.move(point.x, point.y);
     const stateContrast = await control.evaluate(async (element) => {
       if (
         !element.matches(

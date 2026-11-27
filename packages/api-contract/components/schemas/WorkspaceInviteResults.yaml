@@ -1,0 +1,12 @@
+type: object
+description: The outcome for every address in the request.
+additionalProperties: false
+required:
+  - results
+properties:
+  results:
+    type: array
+    maxItems: 20
+    minItems: 1
+    items:
+      $ref: './WorkspaceInviteResult.yaml'

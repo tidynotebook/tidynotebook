@@ -1,0 +1,22 @@
+type: object
+description: Stop one room and keep the sync notice stream open.
+additionalProperties: false
+required:
+  - kind
+  - roomId
+  - reason
+properties:
+  kind:
+    type: string
+    const: noteStopped
+  roomId:
+    $ref: './Uuid.yaml'
+  reason:
+    type: string
+    enum:
+      - unavailable
+      - epoch_mismatch
+      - client_id_conflict
+      - invalid_update
+      - capacity
+      - forbidden

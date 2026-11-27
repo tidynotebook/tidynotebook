@@ -1,5 +1,7 @@
 import { syncStateMessage, type SyncState } from './sync-state.ts';
 
+export const attentionTitle = 'Needs attention';
+
 /**
  * The save facts of the open note, as the status words read them.
  *

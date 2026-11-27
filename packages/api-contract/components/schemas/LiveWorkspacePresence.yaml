@@ -1,0 +1,21 @@
+type: object
+description: Replace the open-note counts for one authorized workspace.
+additionalProperties: false
+required:
+  - kind
+  - generation
+  - workspaceId
+  - notes
+properties:
+  kind:
+    type: string
+    const: workspacePresence
+  generation:
+    $ref: './SyncNoticeGeneration.yaml'
+  workspaceId:
+    $ref: './Uuid.yaml'
+  notes:
+    type: array
+    maxItems: 256
+    items:
+      $ref: './LiveNotePresenceCount.yaml'

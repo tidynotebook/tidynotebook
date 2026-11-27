@@ -39,8 +39,11 @@ export type {
   SaveStateInput,
 } from '../../lib/save-state.ts';
 
+export type LiveStatus = 'Live' | 'Reconnecting' | 'Offline';
+
 type NoteSaveChannel = {
   readonly report: FactStore<NoteSaveReport | null>;
+  readonly connection: FactStore<LiveStatus | null>;
   readonly flushDraft: () => Promise<void>;
   readonly flushDraftForHandoff: () => Promise<void>;
   readonly registerDraftFlush: (
@@ -52,6 +55,7 @@ type NoteSaveChannel = {
 /** The channel outside a scope: no note, and nothing to flush. */
 const noChannel: NoteSaveChannel = {
   report: createFactStore<NoteSaveReport | null>(null, sameMembers),
+  connection: createFactStore<LiveStatus | null>(null, Object.is),
   flushDraft: () => Promise.resolve(),
   flushDraftForHandoff: () => Promise.resolve(),
   registerDraftFlush: () => () => {},
@@ -72,6 +76,9 @@ export function NoteSaveScope({
 }): ReactNode {
   const [report] = useState(() =>
     createFactStore<NoteSaveReport | null>(null, sameMembers),
+  );
+  const [connection] = useState(() =>
+    createFactStore<LiveStatus | null>(null, Object.is),
   );
   const draftFlush = useRef<() => Promise<void>>(() => Promise.resolve());
   const flushDraft = useCallback((): Promise<void> => draftFlush.current(), []);
@@ -94,14 +101,33 @@ export function NoteSaveScope({
     [],
   );
   const value = useMemo<NoteSaveChannel>(
-    () => ({ report, flushDraft, flushDraftForHandoff, registerDraftFlush }),
-    [report, flushDraft, flushDraftForHandoff, registerDraftFlush],
+    () => ({
+      report,
+      connection,
+      flushDraft,
+      flushDraftForHandoff,
+      registerDraftFlush,
+    }),
+    [report, connection, flushDraft, flushDraftForHandoff, registerDraftFlush],
   );
   return (
     <NoteSaveContext.Provider value={value}>
       {children}
     </NoteSaveContext.Provider>
   );
+}
+
+export function useLiveConnection(): LiveStatus | null {
+  const { connection } = useContext(NoteSaveContext);
+  return useSyncExternalStore(connection.subscribe, connection.get);
+}
+
+export function useReportLiveConnection(status: LiveStatus | null): void {
+  const { connection } = useContext(NoteSaveContext);
+  useEffect(() => {
+    connection.set(status);
+    return () => connection.set(null);
+  }, [connection, status]);
 }
 
 /**

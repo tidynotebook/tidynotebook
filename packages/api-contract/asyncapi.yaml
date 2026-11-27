@@ -29,6 +29,11 @@ operations:
     security:
       - $ref: '#/components/securitySchemes/streamSessionCookie'
     messages:
+      - $ref: '#/channels/syncNotices/messages/joinNote'
+      - $ref: '#/channels/syncNotices/messages/leaveNote'
+      - $ref: '#/channels/syncNotices/messages/sendNoteSync'
+      - $ref: '#/channels/syncNotices/messages/sendNoteAwareness'
+      - $ref: '#/channels/syncNotices/messages/watchWorkspacePresence'
       - $ref: '#/channels/syncNotices/messages/subscribe'
   sendServerMessages:
     action: send
@@ -48,6 +53,12 @@ operations:
       - $ref: '#/channels/syncNotices/messages/changed'
       - $ref: '#/channels/syncNotices/messages/reconcile'
       - $ref: '#/channels/syncNotices/messages/account'
+      - $ref: '#/channels/syncNotices/messages/noteJoined'
+      - $ref: '#/channels/syncNotices/messages/noteAccess'
+      - $ref: '#/channels/syncNotices/messages/noteStopped'
+      - $ref: '#/channels/syncNotices/messages/noteSync'
+      - $ref: '#/channels/syncNotices/messages/noteAwareness'
+      - $ref: '#/channels/syncNotices/messages/workspacePresence'
       - $ref: '#/channels/syncNotices/messages/stop'
 components:
   securitySchemes:

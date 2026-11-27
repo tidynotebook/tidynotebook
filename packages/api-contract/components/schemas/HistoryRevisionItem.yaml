@@ -67,3 +67,8 @@ properties:
     description: >-
       True when the save that made this revision joined work that its device
       had not seen. History marks the revision on every device.
+  contributors:
+    type: array
+    description: The contributors to this revision, resolved against current membership.
+    items:
+      $ref: './RevisionContributor.yaml'

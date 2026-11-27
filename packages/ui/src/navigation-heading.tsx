@@ -14,7 +14,7 @@ export function NavigationHeading({
       padY={{ fine: 1, coarse: 0 }}
       className="ui-settings-nav-heading text-group text-muted"
     >
-      <span className="flex h-5 items-center coarse:h-auto gap-2">
+      <span className="flex h-5 min-w-0 items-center coarse:h-auto gap-2">
         {children}
       </span>
     </Inline>

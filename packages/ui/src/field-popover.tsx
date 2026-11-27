@@ -15,10 +15,14 @@ import { followVisibleArea, readVisibleArea } from './visible-area.ts';
 export function FieldPopover({
   id,
   anchor,
+  align = 'start',
+  label,
   onClose,
   children,
 }: {
   readonly id: string;
+  readonly align?: 'start' | 'end';
+  readonly label?: string;
   readonly anchor: RefObject<HTMLElement | null>;
   readonly onClose: () => void;
   readonly children: ReactNode;
@@ -48,7 +52,7 @@ export function FieldPopover({
         anchor: rect,
         overlay: { width: panel.offsetWidth, height: panel.scrollHeight },
         screen: room,
-        align: 'start',
+        align,
       });
       panel.style.top = `${String(placement.top)}px`;
       panel.style.left = `${String(placement.left)}px`;
@@ -64,7 +68,10 @@ export function FieldPopover({
       stop();
       window.removeEventListener('scroll', position, true);
     };
-  }, [wide, anchor]);
+  }, [wide, anchor, align]);
+  useEffect(() => {
+    if (label !== undefined) surface.current?.focus();
+  }, [label]);
   useEffect(() => {
     const outside = (event: PointerEvent): void => {
       if (
@@ -81,11 +88,14 @@ export function FieldPopover({
     <div
       id={id}
       ref={surface}
+      role={label === undefined ? undefined : 'dialog'}
+      aria-label={label}
+      tabIndex={label === undefined ? undefined : -1}
       data-dialog-escape="local"
       className={
         wide
-          ? `fixed z-50 overflow-y-auto rounded-lg border border-overlay-edge bg-overlay p-1 shadow-overlay state-overlay`
-          : `rounded-lg border border-overlay-edge bg-overlay p-1 shadow-overlay state-overlay`
+          ? `fixed z-50 overflow-y-auto rounded-lg border border-overlay-edge bg-overlay p-1 shadow-overlay state-overlay outline-none`
+          : `rounded-lg border border-overlay-edge bg-overlay p-1 shadow-overlay state-overlay outline-none`
       }
       onKeyDown={(event) => {
         if (event.key === 'Escape') {

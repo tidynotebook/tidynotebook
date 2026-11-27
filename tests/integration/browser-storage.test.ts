@@ -33,6 +33,7 @@ import {
   type AcceptedRevision,
 } from '@notesapp/core';
 import {
+  createNote,
   isLocalStorageError,
   LocalStorageError,
   parkRefusedSave,
@@ -68,6 +69,7 @@ import {
   syncQueueOf,
   syncStateOfQueue,
 } from '../../apps/web/src/lib/sync-state.ts';
+import { recoverWorkspaceAccess } from '../../apps/web/src/lib/workspace-recovery.ts';
 
 const origin = 'https://notes.example.test';
 
@@ -136,6 +138,159 @@ function draftOf(
     ...extra,
   };
 }
+
+await test('workspace access recovery copies queued text before it clears the old partition', async () => {
+  const backend = createBackend('access-recovery');
+  const store = await openLocalStore(origin, backend.options());
+  try {
+    const accountId = randomUUID();
+    const old = {
+      workspaceId: randomUUID(),
+      name: 'Team',
+      role: 'editor',
+      personal: false,
+    } as const;
+    const personal = {
+      workspaceId: randomUUID(),
+      name: 'Personal',
+      role: 'owner',
+      personal: true,
+    } as const;
+    const fileId = randomUUID();
+    const draft = draftOf(
+      accountId,
+      old.workspaceId,
+      fileId,
+      randomUUID(),
+      'Unsent text',
+    );
+    await createNote(store, draft);
+    const notice = await recoverWorkspaceAccess(
+      store,
+      accountId,
+      old,
+      [personal],
+      true,
+      async (draft) => {
+        await createNote(store, draft);
+        return draft.path;
+      },
+    );
+    assert.equal(
+      notice?.message,
+      'You no longer have access to Team. Your unsent text is in Personal, in the folder From Team.',
+    );
+    const [recovered] = await store.listLocalFiles(
+      accountId,
+      personal.workspaceId,
+    );
+    assert.ok(recovered);
+    assert.deepEqual(notice?.note, {
+      workspaceId: personal.workspaceId,
+      fileId: recovered.fileId,
+    });
+    assert.deepEqual(await store.pending(accountId, old.workspaceId), []);
+    assert.deepEqual(
+      await store.listLocalFiles(accountId, old.workspaceId),
+      [],
+    );
+    assert.deepEqual(
+      await store.workspaceAccessCopies(accountId, old.workspaceId),
+      [],
+    );
+    assert.deepEqual(
+      (await store.workspaceAccessCopies(accountId, personal.workspaceId)).map(
+        ({ path, text }) => ({ path, text }),
+      ),
+      [{ path: 'From Team/one.md', text: 'Unsent text' }],
+    );
+  } finally {
+    await store.close();
+  }
+});
+
+await test('access loss leaves no recovery copy when a draft and document match the accepted note', async () => {
+  for (const removed of [false, true]) {
+    const store = await openLocalStore(
+      origin,
+      createBackend('clean-access-loss').options(),
+    );
+    try {
+      const accountId = randomUUID();
+      const fileId = randomUUID();
+      const revisionId = randomUUID();
+      const old = {
+        workspaceId: randomUUID(),
+        name: 'Team',
+        role: removed ? 'viewer' : 'editor',
+        personal: false,
+      } as const;
+      const personal = {
+        workspaceId: randomUUID(),
+        name: 'Personal',
+        role: 'owner',
+        personal: true,
+      } as const;
+      const draft = draftOf(
+        accountId,
+        old.workspaceId,
+        fileId,
+        randomUUID(),
+        'Already saved here.\n',
+        { baseRevisionId: revisionId },
+      );
+      const bytes = startDocument(draft.text);
+      await store.applyRemoteChanges(
+        accountId,
+        old.workspaceId,
+        [
+          {
+            file: {
+              fileId,
+              revisionId,
+              path: draft.path,
+              fileKind: 'note',
+              deleted: false,
+              digest: await contentDigest(draft.text),
+              text: draft.text,
+              document: { kind: 'document', bytes, epoch: 1 },
+            },
+            purgedFileId: null,
+          },
+        ],
+        '1',
+      );
+      await store.saveDraft(draft);
+      await store.appendNoteWork(
+        accountId,
+        old.workspaceId,
+        fileId,
+        1,
+        bytes,
+        draft.workingCopyId,
+      );
+      assert.deepEqual(await store.pending(accountId, old.workspaceId), []);
+      const notice = await recoverWorkspaceAccess(
+        store,
+        accountId,
+        old,
+        removed ? [personal] : [personal, { ...old, role: 'viewer' }],
+        removed,
+        async () => assert.fail('A clean note must not be copied.'),
+      );
+      assert.deepEqual(
+        notice,
+        removed ? { message: 'You no longer have access to Team.' } : null,
+      );
+      assert.equal(
+        await store.readDraft(accountId, old.workspaceId, draft.workingCopyId),
+        null,
+      );
+    } finally {
+      await store.close();
+    }
+  }
+});
 
 /** Accepts every revision of a queued mutation, as the server would. */
 function acceptanceOf(
@@ -3701,6 +3856,75 @@ await test('a queued save of this device never reads as a stale draft', async ()
   assert.equal(cached?.text, 'three\n');
   assert.equal(cached?.acceptedRevisionId, acceptedRevision);
   await store.close();
+});
+
+await test('a draft already in the merged document opens on the new head', async () => {
+  const store = await openLocalStore(
+    origin,
+    createBackend('merged-draft-open').options(),
+  );
+  const accountId = randomUUID();
+  const workspaceId = randomUUID();
+  const fileId = randomUUID();
+  try {
+    const draft = draftOf(accountId, workspaceId, fileId, 'copy-a', 'Start\n');
+    const created = await store.checkpoint(draft, null, 'text');
+    assert.ok(created);
+    await store.acknowledge(accountId, acceptanceOf(created, accountId, '1'));
+    const base = await store.readNoteDocument(accountId, workspaceId, fileId);
+    assert.ok(base);
+    const local = replaceDocumentText(base.bytes, 'Start\nLocal\n');
+    const remote = replaceDocumentText(base.bytes, 'Remote\nStart\n');
+    assert.ok(local.ok && remote.ok);
+    const vector = documentStateVector(base.bytes);
+    await store.appendNoteWork(
+      accountId,
+      workspaceId,
+      fileId,
+      base.epoch,
+      encodeDocumentDelta(local.value.document, vector),
+      draft.workingCopyId,
+    );
+    await store.saveDraft({
+      ...draft,
+      baseRevisionId: created.input.revisions[0]?.id ?? null,
+      text: 'Start\nLocal\n',
+      sequence: 2,
+      documentVector: documentStateVector(local.value.document),
+    });
+    const revisionId = randomUUID();
+    await store.applyRemoteChanges(
+      accountId,
+      workspaceId,
+      [
+        {
+          file: {
+            fileId,
+            revisionId,
+            path: draft.path,
+            fileKind: 'note',
+            deleted: false,
+            digest: await contentDigest('Remote\nStart\n'),
+            text: 'Remote\nStart\n',
+            document: {
+              kind: 'document',
+              bytes: remote.value.document,
+              epoch: base.epoch,
+            },
+          },
+          purgedFileId: null,
+        },
+      ],
+      '2',
+    );
+    const reopened = await store.readCachedNote(accountId, workspaceId, fileId);
+    assert.equal(reopened?.stale, false);
+    assert.equal(reopened?.workingCopyId, draft.workingCopyId);
+    assert.equal(reopened?.acceptedRevisionId, revisionId);
+    assert.equal(reopened?.text, 'Remote\nStart\nLocal\n');
+  } finally {
+    await store.close();
+  }
 });
 
 await test('forgetting a purged file removes every local trace of it', async () => {

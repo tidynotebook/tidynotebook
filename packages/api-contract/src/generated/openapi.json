@@ -52,7 +52,7 @@
     },
     {
       "name": "publishing",
-      "description": "Read-only links that an owner makes over one note or one folder."
+      "description": "Read-only links for one note or one folder. Owners and admins manage them."
     },
     {
       "name": "published",
@@ -942,6 +942,141 @@
         "responses": {
           "200": {
             "$ref": "#/components/responses/Preferences"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/AccountLocked"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/account/workspace-invitations": {
+      "get": {
+        "operationId": "listMyWorkspaceInvites",
+        "summary": "Read workspace invitations for my verified address.",
+        "description": "Lists pending invitations for the account email. An unverified address gets an empty list.",
+        "tags": [
+          "workspaces"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/AfterInvitationId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/AccountWorkspaceInvitePage"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "423": {
+            "$ref": "#/components/responses/AccountLocked"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/account/workspace-invitations/{invitationId}/accept": {
+      "post": {
+        "operationId": "acceptWorkspaceInvite",
+        "summary": "Join a workspace with a pending invitation.",
+        "description": "Requires a signed in account with the same verified address. A retry for the same accepting account returns the workspace while access remains.",
+        "tags": [
+          "workspaces"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/InvitationId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Workspace"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/AccountLocked"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/account/workspace-invitations/{invitationId}/decline": {
+      "post": {
+        "operationId": "declineWorkspaceInvite",
+        "summary": "Decline a pending workspace invitation.",
+        "description": "Requires a signed in account with the same verified address.",
+        "tags": [
+          "workspaces"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/InvitationId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Removed"
           },
           "400": {
             "$ref": "#/components/responses/BadRequest"
@@ -3252,7 +3387,7 @@
       "post": {
         "operationId": "registerAccount",
         "summary": "Make an account from an invitation and sign it in.",
-        "description": "Makes an account for the address that the invitation binds, with the given password, and starts its session. A used, revoked, or expired invitation makes nothing, and the answer does not say which of the three applied. Two requests with one invitation make one account. When the installation names its terms and its privacy notice, the request names the versions that the person accepted, and a missing or an older version makes nothing (record 0120).",
+        "description": "Makes an account for the address that the invitation binds, with the given password, and starts its session. A workspace invitation also creates the invited membership in the same transaction as the account and its Personal workspace. A valid link proves the invited address. A used, revoked, or expired invitation makes nothing, and the answer does not say which of the three applied. Two requests with one invitation make one account. When the installation names its terms and its privacy notice, the request names the versions that the person accepted, and a missing or an older version makes nothing (record 0120).",
         "tags": [
           "auth"
         ],
@@ -3414,6 +3549,48 @@
           },
           "403": {
             "$ref": "#/components/responses/VerificationUnavailable"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/registrations/workspace-invitation": {
+      "post": {
+        "operationId": "readWorkspaceInvite",
+        "summary": "Read a workspace invitation from its link.",
+        "description": "Looks up the token digest. An expired, revoked, declined, used or unknown link gets the same refusal. The token travels in the body and the response is no-store.",
+        "tags": [
+          "auth"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/InvitationRead"
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/WorkspaceInviteDetails"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "403": {
+            "$ref": "#/components/responses/InvitationUnavailable"
           },
           "413": {
             "$ref": "#/components/responses/PayloadTooLarge"
@@ -3705,7 +3882,7 @@
       "get": {
         "operationId": "openSyncNotices",
         "summary": "Open the WebSocket stream of sync notices.",
-        "description": "Upgrades the connection to the WebSocket stream that tells a signed in device when the feed of a subscribed workspace changes. The stream carries notices only. Saves, receipts, feed pages and snapshots stay on the HTTP operations, and a device that cannot open the stream reads the feed on its own schedule. `asyncapi.yaml` states every message of the stream.",
+        "description": "Upgrades the connection to the WebSocket stream that tells a signed in device when the feed of a subscribed workspace changes. The stream can also carry live note and presence messages when ready offers liveNotes. Saves, receipts, feed pages and snapshots stay on the HTTP operations, and a device that cannot open the stream reads the feed on its own schedule. `asyncapi.yaml` states every message of the stream.",
         "security": [
           {
             "sessionCookie": []
@@ -3906,7 +4083,7 @@
       "delete": {
         "operationId": "deleteWorkspace",
         "summary": "Delete a workspace and every record that belongs to it.",
-        "description": "Deletes a workspace and its complete content history. Only its owner may do this.",
+        "description": "Deletes a workspace and its complete content history. Only its owner may do this. The confirmation uses the member count from listWorkspaceMembers.",
         "tags": [
           "workspaces"
         ],
@@ -5110,6 +5287,409 @@
         }
       }
     },
+    "/api/workspaces/{workspaceId}/invitations": {
+      "get": {
+        "operationId": "listWorkspaceInvites",
+        "summary": "Read the active invitations of a workspace.",
+        "description": "Only owners and admins can read this list.",
+        "tags": [
+          "workspaces"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/WorkspaceInviteList"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/AccountLocked"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createWorkspaceInvites",
+        "summary": "Invite people to a workspace.",
+        "description": "An owner or admin invites up to twenty addresses. Results state which addresses already have a pending invite or are members. The server keeps at most one hundred active invites.",
+        "tags": [
+          "workspaces"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/WorkspaceInvitesCreate"
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/WorkspaceInviteResults"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "423": {
+            "$ref": "#/components/responses/AccountLocked"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/workspaces/{workspaceId}/invitations/{invitationId}": {
+      "delete": {
+        "operationId": "revokeWorkspaceInvite",
+        "summary": "Revoke one workspace invitation.",
+        "description": "An owner or admin can end one pending invitation.",
+        "tags": [
+          "workspaces"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "$ref": "#/components/parameters/InvitationId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Removed"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/AccountLocked"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/workspaces/{workspaceId}/invitations/{invitationId}/link": {
+      "get": {
+        "operationId": "readWorkspaceInviteLink",
+        "summary": "Read a copy of the invitation link.",
+        "description": "An owner or admin can copy a pending invitation link. The server marks the answer private and no-store.",
+        "tags": [
+          "workspaces"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "$ref": "#/components/parameters/InvitationId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/WorkspaceInviteLink"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/AccountLocked"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/workspaces/{workspaceId}/members": {
+      "get": {
+        "operationId": "listWorkspaceMembers",
+        "summary": "Read the members of one workspace.",
+        "description": "Only a member can read its co-member names, addresses and roles. An installation role grants no access.",
+        "tags": [
+          "workspaces"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "$ref": "#/components/parameters/AfterAccountId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/WorkspaceMemberPage"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/AccountLocked"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/workspaces/{workspaceId}/members/{accountId}": {
+      "put": {
+        "operationId": "updateWorkspaceMemberRole",
+        "summary": "Change a member role.",
+        "description": "An owner or admin can change any member role other than owner.",
+        "tags": [
+          "workspaces"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "$ref": "#/components/parameters/AccountId"
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/WorkspaceMemberRole"
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/WorkspaceMember"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "423": {
+            "$ref": "#/components/responses/AccountLocked"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "removeWorkspaceMember",
+        "summary": "Remove a workspace member.",
+        "description": "An owner or admin can remove a member other than the owner. A caller who wants to leave uses leaveWorkspace.",
+        "tags": [
+          "workspaces"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "$ref": "#/components/parameters/AccountId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Removed"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/AccountLocked"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/workspaces/{workspaceId}/membership": {
+      "delete": {
+        "operationId": "leaveWorkspace",
+        "summary": "Leave a workspace.",
+        "description": "A member can leave if they keep another workspace. The owner cannot leave.",
+        "tags": [
+          "workspaces"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Removed"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/WorkspaceMembershipConflict"
+          },
+          "423": {
+            "$ref": "#/components/responses/AccountLocked"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
     "/api/workspaces/{workspaceId}/mutations/{mutationId}": {
       "get": {
         "operationId": "getMutationReceipt",
@@ -5164,7 +5744,7 @@
       "post": {
         "operationId": "createPublishedLink",
         "summary": "Publish a read-only link to one note or one folder.",
-        "description": "Makes one read-only link over one note, or over one folder and every note below it. The answer holds the token of the new link. The server keeps only a digest of that token, so this is the one time that the value exists outside the address that the owner copies. A workspace holds a bounded number of links, and a request past that bound is refused.",
+        "description": "Makes one read-only link over one note, or over one folder and every note below it. The answer holds the token of the new link. The server keeps only a digest of that token, so this is the one time that the value exists outside the address that the caller copies. An owner or an admin can publish. A workspace holds a bounded number of links, and a request past that bound is refused.",
         "tags": [
           "publishing"
         ],
@@ -5215,7 +5795,7 @@
       "get": {
         "operationId": "listPublishedLinks",
         "summary": "List the published links of a workspace.",
-        "description": "Reports every published link of the workspace, what it opens, when it expires, and whether it has a password. No entry holds a token and no entry holds a part of one, so a read of this list opens nothing. The answer reports no reader count, because the reader path counts nothing.",
+        "description": "An owner or admin can read this list. It reports every published link of the workspace, what it opens, when it expires, and whether it has a password. No entry holds a token and no entry holds a part of one, so a read of this list opens nothing. The answer reports no reader count, because the reader path counts nothing.",
         "tags": [
           "publishing"
         ],
@@ -5256,7 +5836,7 @@
       "delete": {
         "operationId": "revokePublishedLink",
         "summary": "Revoke one published link.",
-        "description": "Stops one published link. The server reads the link record on every reader call, so the link opens nothing from the next call onward. A reader that holds the token then takes the one refusal of the reader path.",
+        "description": "An owner or admin can stop one published link. The server reads the link record on every reader call, so the link opens nothing from the next call onward. A reader that holds the token then takes the one refusal of the reader path.",
         "tags": [
           "publishing"
         ],
@@ -5300,7 +5880,7 @@
       "post": {
         "operationId": "purgeFiles",
         "summary": "Permanently delete files and write purge markers.",
-        "description": "Permanently purges files and revisions, writes purge markers, and reclaims storage. Subsequent writes to purged file identifiers answer 410 Gone. Restricted to the workspace owner.",
+        "description": "Permanently purges files and revisions, writes purge markers, and reclaims storage. Subsequent writes to purged file identifiers answer 410 Gone. Restricted to the workspace owner and admins.",
         "tags": [
           "files"
         ],
@@ -5353,7 +5933,7 @@
       "post": {
         "operationId": "previewPurge",
         "summary": "Preview permanent deletion of files.",
-        "description": "Reports affected revisions, reclaimable bytes, and blocking references such as attachments referenced by external revisions. Restricted to workspace owners.",
+        "description": "Reports affected revisions, reclaimable bytes, and blocking references such as attachments referenced by external revisions. Restricted to workspace owners and admins.",
         "tags": [
           "files"
         ],
@@ -6916,7 +7496,7 @@
         "explode": false,
         "description": "The subprotocol that the browser asks for when it opens the notice stream. The server opens the stream only for the one subprotocol that this contract names.",
         "schema": {
-          "$ref": "#/components/schemas/SyncNoticeProtocol"
+          "$ref": "#/components/schemas/LiveSyncNoticeProtocol"
         }
       },
       "PublicationId": {
@@ -7056,6 +7636,28 @@
         "description": "The position of the last event that the reader already read. The answer holds the events after it, oldest first. The server uses 0 when the parameter is absent, which reads from the first event.",
         "schema": {
           "$ref": "#/components/schemas/AccountEventCursor"
+        }
+      },
+      "AfterInvitationId": {
+        "name": "afterInvitationId",
+        "in": "query",
+        "required": false,
+        "style": "form",
+        "explode": true,
+        "description": "Continue after the last invitation identifier of the previous page.",
+        "schema": {
+          "$ref": "#/components/schemas/Uuid"
+        }
+      },
+      "AfterAccountId": {
+        "name": "afterAccountId",
+        "in": "query",
+        "required": false,
+        "style": "form",
+        "explode": true,
+        "description": "Continue after the last account identifier of the previous page.",
+        "schema": {
+          "$ref": "#/components/schemas/Uuid"
         }
       },
       "PublishedNote": {
@@ -7408,6 +8010,28 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/PortalOpenInput"
+            }
+          }
+        }
+      },
+      "WorkspaceMemberRole": {
+        "description": "The role to give this member.",
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/WorkspaceMemberRoleInput"
+            }
+          }
+        }
+      },
+      "WorkspaceInvitesCreate": {
+        "description": "The addresses and role of the invitations.",
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/WorkspaceInvitesInput"
             }
           }
         }
@@ -8539,6 +9163,86 @@
             }
           }
         }
+      },
+      "WorkspaceMembershipConflict": {
+        "description": "The operation would remove the last workspace of the acting account (last_workspace).",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "WorkspaceInviteDetails": {
+        "description": "The active invitation details.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/PendingWorkspaceInvite"
+            }
+          }
+        }
+      },
+      "WorkspaceInviteLink": {
+        "description": "The active invitation link.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/WorkspaceInviteLink"
+            }
+          }
+        }
+      },
+      "WorkspaceInviteResults": {
+        "description": "The outcomes of the invitation request.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/WorkspaceInviteResults"
+            }
+          }
+        }
+      },
+      "AccountWorkspaceInvitePage": {
+        "description": "A page of active invitations for the account.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/AccountWorkspaceInvitePage"
+            }
+          }
+        }
+      },
+      "WorkspaceInviteList": {
+        "description": "The active invitations of the workspace.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/WorkspaceInviteList"
+            }
+          }
+        }
+      },
+      "WorkspaceMember": {
+        "description": "The member with the new role.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/WorkspaceMember"
+            }
+          }
+        }
+      },
+      "WorkspaceMemberPage": {
+        "description": "A page of current members.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/WorkspaceMemberPage"
+            }
+          }
+        }
       }
     },
     "schemas": {
@@ -9605,6 +10309,34 @@
             ],
             "readOnly": true,
             "description": "The bytes that the account downloaded in the month."
+          }
+        }
+      },
+      "AccountWorkspaceInvitePage": {
+        "type": "object",
+        "description": "A page of active invitations for the verified address of the signed in account.",
+        "additionalProperties": false,
+        "required": [
+          "invitations",
+          "nextAfterInvitationId"
+        ],
+        "properties": {
+          "invitations": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/PendingWorkspaceInvite"
+            }
+          },
+          "nextAfterInvitationId": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -11240,6 +11972,13 @@
           "merged": {
             "type": "boolean",
             "description": "True when the save that made this revision joined work that its device had not seen. History marks the revision on every device."
+          },
+          "contributors": {
+            "type": "array",
+            "description": "The contributors to this revision, resolved against current membership.",
+            "items": {
+              "$ref": "#/components/schemas/RevisionContributor"
+            }
           }
         }
       },
@@ -11947,6 +12686,349 @@
             "maxItems": 10000,
             "items": {
               "$ref": "#/components/schemas/LinkReport"
+            }
+          }
+        }
+      },
+      "LiveNoteAccess": {
+        "type": "object",
+        "description": "Report current access or removal from a joined room.",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "roomId",
+          "access"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "noteAccess"
+          },
+          "roomId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "access": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "admin",
+              "editor",
+              "viewer",
+              "removed"
+            ]
+          }
+        }
+      },
+      "LiveNoteAwarenessInput": {
+        "type": "object",
+        "description": "Send the awareness state of the joined client ID.",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "roomId",
+          "payload"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "sendNoteAwareness"
+          },
+          "roomId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "payload": {
+            "type": "string",
+            "minLength": 4,
+            "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+            "maxLength": 5464
+          }
+        }
+      },
+      "LiveNoteAwarenessOutput": {
+        "type": "object",
+        "description": "Deliver a y-protocols awareness message with server-verified identity.",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "roomId",
+          "payload"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "noteAwareness"
+          },
+          "roomId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "payload": {
+            "type": "string",
+            "minLength": 4,
+            "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+            "maxLength": 5464
+          }
+        }
+      },
+      "LiveNoteJoin": {
+        "type": "object",
+        "description": "Open one note room for one working copy.",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "roomId",
+          "workspaceId",
+          "fileId",
+          "epoch",
+          "clientId"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "joinNote"
+          },
+          "roomId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "workspaceId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "fileId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "epoch": {
+            "$ref": "#/components/schemas/DocumentEpoch"
+          },
+          "clientId": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4294967295
+          }
+        }
+      },
+      "LiveNoteJoined": {
+        "type": "object",
+        "description": "Confirm the room, epoch and current access.",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "roomId",
+          "epoch",
+          "role"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "noteJoined"
+          },
+          "roomId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "epoch": {
+            "$ref": "#/components/schemas/DocumentEpoch"
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "colorSlot": {
+            "description": "The joining member's color slot in this workspace.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          }
+        }
+      },
+      "LiveNoteLeave": {
+        "type": "object",
+        "description": "Close one note room on this connection.",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "roomId"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "leaveNote"
+          },
+          "roomId": {
+            "$ref": "#/components/schemas/Uuid"
+          }
+        }
+      },
+      "LiveNotePresenceCount": {
+        "type": "object",
+        "description": "The number of other accounts with a note open.",
+        "additionalProperties": false,
+        "required": [
+          "fileId",
+          "accountCount"
+        ],
+        "properties": {
+          "fileId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "accountCount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 32
+          },
+          "colorSlots": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 3,
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            }
+          }
+        }
+      },
+      "LiveNoteStopped": {
+        "type": "object",
+        "description": "Stop one room and keep the sync notice stream open.",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "roomId",
+          "reason"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "noteStopped"
+          },
+          "roomId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "unavailable",
+              "epoch_mismatch",
+              "client_id_conflict",
+              "invalid_update",
+              "capacity",
+              "forbidden"
+            ]
+          }
+        }
+      },
+      "LiveNoteSyncInput": {
+        "type": "object",
+        "description": "Send a standard y-protocols sync message.",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "roomId",
+          "payload"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "sendNoteSync"
+          },
+          "roomId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "payload": {
+            "description": "Base64 encoding of one y-protocols sync message of at most 64 KiB.",
+            "type": "string",
+            "minLength": 4,
+            "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+            "maxLength": 87384
+          }
+        }
+      },
+      "LiveNoteSyncOutput": {
+        "type": "object",
+        "description": "Deliver a validated y-protocols sync message.",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "roomId",
+          "sequence",
+          "payload"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "noteSync"
+          },
+          "roomId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "sequence": {
+            "description": "Advances for each sync delivery to this joined working copy.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "payload": {
+            "type": "string",
+            "minLength": 4,
+            "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+            "maxLength": 87384
+          }
+        }
+      },
+      "LiveSyncNoticeProtocol": {
+        "type": "string",
+        "description": "The sync stream subprotocol with optional live notes and presence.",
+        "const": "notesapp.sync.2"
+      },
+      "LiveWorkspacePresence": {
+        "type": "object",
+        "description": "Replace the open-note counts for one authorized workspace.",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "generation",
+          "workspaceId",
+          "notes"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "workspacePresence"
+          },
+          "generation": {
+            "$ref": "#/components/schemas/SyncNoticeGeneration"
+          },
+          "workspaceId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "notes": {
+            "type": "array",
+            "maxItems": 256,
+            "items": {
+              "$ref": "#/components/schemas/LiveNotePresenceCount"
+            }
+          }
+        }
+      },
+      "LiveWorkspacePresenceWatch": {
+        "type": "object",
+        "description": "Replace the workspace presence interests for this connection.",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "generation",
+          "workspaceIds"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "watchWorkspacePresence"
+          },
+          "generation": {
+            "$ref": "#/components/schemas/SyncNoticeGeneration"
+          },
+          "workspaceIds": {
+            "type": "array",
+            "maxItems": 16,
+            "items": {
+              "$ref": "#/components/schemas/Uuid"
             }
           }
         }
@@ -12950,6 +14032,51 @@
         "maxLength": 512,
         "writeOnly": true
       },
+      "PendingWorkspaceInvite": {
+        "type": "object",
+        "description": "An active invitation with no link or secret.",
+        "additionalProperties": false,
+        "required": [
+          "invitationId",
+          "workspaceId",
+          "workspaceName",
+          "email",
+          "role",
+          "inviterName",
+          "expiresAt"
+        ],
+        "properties": {
+          "invitationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "workspaceId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "workspaceName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "email": {
+            "$ref": "#/components/schemas/EmailAddress"
+          },
+          "role": {
+            "$ref": "#/components/schemas/WorkspaceInviteRole"
+          },
+          "inviterName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "PortalAddress": {
         "type": "object",
         "description": "The address that opens the account portal for the signed in account. It carries a single-use token that works for 60 seconds.",
@@ -13885,6 +15012,45 @@
           }
         }
       },
+      "RevisionContributor": {
+        "type": "object",
+        "description": "A contributor in History. A former member has no name or account ID in this view.",
+        "additionalProperties": false,
+        "required": [
+          "accountId",
+          "displayName",
+          "formerMember"
+        ],
+        "properties": {
+          "accountId": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "displayName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "formerMember": {
+            "type": "boolean"
+          },
+          "colorSlot": {
+            "description": "The current member's color slot in this workspace.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          }
+        }
+      },
       "RevisionInput": {
         "type": "object",
         "description": "One revision that a client submits inside a changeset.",
@@ -13973,9 +15139,12 @@
       },
       "Role": {
         "type": "string",
-        "description": "The role of an account in one workspace. Every workspace has one member, its owner, so the only role is owner. The installation role of an account is a separate fact and grants no workspace access.",
+        "description": "The role of an account in one workspace. The installation role is a separate fact and grants no workspace access.",
         "enum": [
-          "owner"
+          "owner",
+          "admin",
+          "editor",
+          "viewer"
         ]
       },
       "SearchExcerptPart": {
@@ -14802,7 +15971,7 @@
       },
       "SyncNoticeProtocol": {
         "type": "string",
-        "description": "The WebSocket subprotocol of the sync notice stream. The browser names it when it opens the stream, and the server accepts no other value. A later version gets a new name, so an old client and a new server never read each other's messages.",
+        "description": "The legacy notice stream subprotocol without live notes.",
         "const": "notesapp.sync.1"
       },
       "SyncNoticeReady": {
@@ -14820,6 +15989,10 @@
           },
           "accountId": {
             "$ref": "#/components/schemas/Uuid"
+          },
+          "liveNotes": {
+            "type": "boolean",
+            "description": "True when the server can join note rooms on this connection."
           }
         }
       },
@@ -14971,6 +16144,15 @@
             "type": "boolean",
             "readOnly": true,
             "description": "Whether this server supports batch reads of snapshot revisions."
+          },
+          "liveNotificationProtocol": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LiveSyncNoticeProtocol"
+              }
+            ],
+            "readOnly": true,
+            "description": "The subprotocol of the current sync stream when it is available. The ready frame states if this connection can also open note rooms."
           }
         }
       },
@@ -15549,6 +16731,12 @@
             "type": "boolean",
             "readOnly": true,
             "description": "True for the workspace that was created with the account."
+          },
+          "memberCount": {
+            "type": "integer",
+            "minimum": 1,
+            "readOnly": true,
+            "description": "Current number of members."
           }
         }
       },
@@ -15880,6 +17068,122 @@
           }
         }
       },
+      "WorkspaceInviteLink": {
+        "type": "object",
+        "description": "The link of an active invitation. The secret is in its fragment.",
+        "additionalProperties": false,
+        "required": [
+          "url"
+        ],
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 2048
+          }
+        }
+      },
+      "WorkspaceInviteList": {
+        "type": "object",
+        "description": "All active invitations of one workspace.",
+        "additionalProperties": false,
+        "required": [
+          "invitations"
+        ],
+        "properties": {
+          "invitations": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/PendingWorkspaceInvite"
+            }
+          }
+        }
+      },
+      "WorkspaceInviteResult": {
+        "type": "object",
+        "description": "One result in request order. The email is normalized.",
+        "additionalProperties": false,
+        "required": [
+          "email",
+          "outcome"
+        ],
+        "properties": {
+          "email": {
+            "$ref": "#/components/schemas/EmailAddress"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "created",
+              "pending_invite",
+              "already_member",
+              "pending_limit"
+            ]
+          },
+          "invitationId": {
+            "description": "Present for created and pending_invite. The manager can copy that link.",
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "delivery": {
+            "description": "Present for created. Copy link remains available when mail was sent.",
+            "type": "string",
+            "enum": [
+              "sent",
+              "copy_link"
+            ]
+          }
+        }
+      },
+      "WorkspaceInviteResults": {
+        "type": "object",
+        "description": "The outcome for every address in the request.",
+        "additionalProperties": false,
+        "required": [
+          "results"
+        ],
+        "properties": {
+          "results": {
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceInviteResult"
+            }
+          }
+        }
+      },
+      "WorkspaceInviteRole": {
+        "description": "A workspace role that can be granted through Members.",
+        "type": "string",
+        "enum": [
+          "admin",
+          "editor",
+          "viewer"
+        ]
+      },
+      "WorkspaceInvitesInput": {
+        "type": "object",
+        "description": "Invite at most twenty addresses with the same role.",
+        "additionalProperties": false,
+        "required": [
+          "emails",
+          "role"
+        ],
+        "properties": {
+          "emails": {
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/EmailAddress"
+            }
+          },
+          "role": {
+            "$ref": "#/components/schemas/WorkspaceInviteRole"
+          }
+        }
+      },
       "WorkspaceList": {
         "type": "object",
         "description": "Every workspace of the signed in account.",
@@ -15896,6 +17200,88 @@
             "items": {
               "$ref": "#/components/schemas/Workspace"
             }
+          }
+        }
+      },
+      "WorkspaceMember": {
+        "type": "object",
+        "description": "One current member as seen by a member of the same workspace.",
+        "additionalProperties": false,
+        "required": [
+          "accountId",
+          "displayName",
+          "email",
+          "role"
+        ],
+        "properties": {
+          "accountId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "displayName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "email": {
+            "$ref": "#/components/schemas/EmailAddress"
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "colorSlot": {
+            "description": "The member's stable color slot in this workspace.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          }
+        }
+      },
+      "WorkspaceMemberPage": {
+        "type": "object",
+        "description": "A page of current members ordered by account ID, with the current total count.",
+        "additionalProperties": false,
+        "required": [
+          "members",
+          "nextAfterAccountId",
+          "memberCount"
+        ],
+        "properties": {
+          "members": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceMember"
+            }
+          },
+          "nextAfterAccountId": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "memberCount": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "WorkspaceMemberRoleInput": {
+        "type": "object",
+        "description": "The new role of a current member other than the owner.",
+        "additionalProperties": false,
+        "required": [
+          "role"
+        ],
+        "properties": {
+          "role": {
+            "$ref": "#/components/schemas/WorkspaceInviteRole"
           }
         }
       },

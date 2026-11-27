@@ -106,6 +106,12 @@ export type RevisionInput = {
 /** One revision with the content that the workspace derived for it. */
 export type StoredRevisionInput = Omit<RevisionInput, 'content'> & {
   readonly content: StoredContentRef;
+  readonly contribution?: {
+    readonly update: Uint8Array;
+    readonly beforeVector: Uint8Array;
+    readonly beforeObserved: Uint8Array;
+    readonly epoch: number;
+  };
 };
 
 /**
@@ -321,6 +327,7 @@ export function isNoteRefusal(value: unknown): value is NoteRefusal {
 
 export type DomainErrorCode =
   | 'api_key_limit'
+  | 'last_workspace'
   | 'forbidden'
   | 'stale_head'
   | 'path_conflict'

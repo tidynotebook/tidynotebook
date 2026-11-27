@@ -1,0 +1,27 @@
+post:
+  operationId: acceptWorkspaceInvite
+  summary: Join a workspace with a pending invitation.
+  description: >-
+    Requires a signed in account with the same verified address. A retry for the same accepting account returns the workspace while access remains.
+  tags:
+    - workspaces
+  security:
+    - sessionCookie: []
+  parameters:
+    - $ref: '../components/parameters/RequestId.yaml'
+    - $ref: '../components/parameters/InvitationId.yaml'
+  responses:
+    '200':
+      $ref: '../components/responses/Workspace.yaml'
+    '400':
+      $ref: '../components/responses/BadRequest.yaml'
+    '401':
+      $ref: '../components/responses/Unauthorized.yaml'
+    '403':
+      $ref: '../components/responses/Forbidden.yaml'
+    '404':
+      $ref: '../components/responses/NotFound.yaml'
+    '423':
+      $ref: '../components/responses/AccountLocked.yaml'
+    '500':
+      $ref: '../components/responses/ServerError.yaml'

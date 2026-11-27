@@ -591,7 +591,7 @@ async function offered(baseUrl: string): Promise<void> {
   const started = Date.now();
   while (Date.now() - started < 20_000) {
     const answer = await getSyncProtocol({ baseUrl });
-    if ((answer.data?.notificationProtocols ?? []).length > 0) return;
+    if (answer.data?.liveNotificationProtocol === syncNoticesProtocol) return;
     await new Promise((resolve) => setImmediate(resolve));
   }
   throw new Error(`${baseUrl} offered no stream in 20 s.`);
@@ -601,7 +601,7 @@ await test('both instances offer the stream once they listen', async () => {
   await offered(one.baseUrl);
   await offered(two.baseUrl);
   const answer = await getSyncProtocol({ baseUrl: two.baseUrl });
-  assert.deepEqual(answer.data?.notificationProtocols, [syncNoticesProtocol]);
+  assert.equal(answer.data?.liveNotificationProtocol, syncNoticesProtocol);
 });
 
 await test('an upgrade needs a session, an origin and the subprotocol', async () => {
@@ -630,6 +630,7 @@ await test('a commit on one instance wakes a stream on the other', async () => {
   assert.deepEqual(await stream.waitFor((m) => m.kind === 'ready'), {
     kind: 'ready',
     accountId,
+    liveNotes: true,
   });
   stream.send({
     kind: 'subscribe',

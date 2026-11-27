@@ -9,12 +9,20 @@
  * of its local input, so remote work and repair never enter local undo.
  */
 import * as Y from 'yjs';
+import { Awareness } from 'y-protocols/awareness';
+export {
+  applyAwarenessUpdate,
+  encodeAwarenessUpdate,
+  removeAwarenessStates,
+} from 'y-protocols/awareness';
 import { noteTextRoot } from './document.ts';
 import { liveDocumentOf, type DocumentSession } from './session.ts';
 
 /** The live Yjs values that one editor view binds to. */
 export type EditorBinding = {
   readonly text: Y.Text;
+  readonly awareness: Awareness;
+  readonly clientId: () => number;
   readonly undoManager: Y.UndoManager;
   /**
    * Whether the undo manager runs a step now.
@@ -56,7 +64,10 @@ export function editorBinding(session: DocumentSession): EditorBinding {
   };
   doc.on('beforeTransaction', start);
   doc.on('afterTransaction', end);
+  const awareness = new Awareness(doc);
   const binding: EditorBinding = {
+    awareness,
+    clientId: () => doc.clientID,
     text,
     undoManager,
     historyRuns: () => open.includes(true),
@@ -65,6 +76,7 @@ export function editorBinding(session: DocumentSession): EditorBinding {
   session.onDestroy(() => {
     doc.off('beforeTransaction', start);
     doc.off('afterTransaction', end);
+    awareness.destroy();
     undoManager.destroy();
     bindings.delete(session);
   });

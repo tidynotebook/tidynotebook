@@ -15,6 +15,13 @@ import {
   fineTextRoles,
 } from '../../packages/ui/src/typography.ts';
 import { hasChromium, isRecord } from './browser.ts';
+if (process.env.COLLABORATION_AUDIT === '1') {
+  await (
+    await import('./collaboration-design.ts')
+  ).runCollaborationAudit(undefined, ['touch-typography']);
+  process.exit(0);
+}
+
 const loaded: unknown = await import(
   pathToFileURL(
     process.env.PLAYWRIGHT_MODULE ??

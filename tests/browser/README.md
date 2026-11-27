@@ -36,7 +36,7 @@ a local web asset build for source checks before the single Docker build.
 Omit it when checking the deployed image.
 
 `content-parity.ts` checks selected rail and navigation surfaces, outline indent
-slots, the note footer and page list content edges at both pointer densities.
+slots, word count placement and page list content edges at both pointer densities.
 It also checks that a row fill and hit area extend into the page gutter.
 Parity records include the painted surface, current state and visible content
 position, so unchanged wrapper boxes cannot hide these regressions.
@@ -191,3 +191,24 @@ node tests/browser/search-vertical-cases.ts
 ```
 
 `SEARCH_CASES_OUTPUT` selects the evidence directory.
+
+## Workspace collaboration
+
+Use a disposable Docker deployment with the bootstrap owner. The collaboration
+audit creates its own member accounts, notes and workspaces and removes them
+when it finishes, including after a failed check. It uses real mouse and touch
+contexts and covers the Settings actions, join routes, note actions, presence,
+History, status messages and toasts. Note actions uses the 390 × 844 and
+320 × 700 viewports for the fit check and a shorter viewport for the scroll cue.
+
+```sh
+DS1_AUDIT=1 HOVER_AUDIT=1 TOUCH_WIDTHS=1440,390,320 \
+UI_AUDIT_ORIGIN=http://10.20.30.30:3000 \
+COLLABORATION_AUDIT_OUTPUT=.local-app/collaboration-design \
+node tests/browser/spacing-audit.ts
+```
+
+The command writes one JSON report per audit in the output directory, plus PNG
+and geometry files for each screen. To run one measurement alone, set
+`COLLABORATION_AUDIT=1` and run `settings-symmetry.ts`, `touch-typography.ts`
+or `content-parity.ts` with the same origin and viewport settings.

@@ -1,0 +1,18 @@
+type: object
+description: Send the awareness state of the joined client ID.
+additionalProperties: false
+required:
+  - kind
+  - roomId
+  - payload
+properties:
+  kind:
+    type: string
+    const: sendNoteAwareness
+  roomId:
+    $ref: './Uuid.yaml'
+  payload:
+    type: string
+    minLength: 4
+    pattern: ^[A-Za-z0-9+/]*={0,2}$
+    maxLength: 5464

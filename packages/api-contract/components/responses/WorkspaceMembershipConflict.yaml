@@ -1,0 +1,5 @@
+description: The operation would remove the last workspace of the acting account (last_workspace).
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/ProblemDetails.yaml'

@@ -6,11 +6,14 @@ import {
   Dialog,
   DialogBody,
   DialogFooter,
+  Notice,
   TextField,
 } from '@notesapp/ui';
 import {
   createWorkspace,
   deleteWorkspace,
+  leaveWorkspace,
+  listWorkspaceMembers,
   updateWorkspace,
   type Workspace,
 } from '@notesapp/api-client';
@@ -242,6 +245,24 @@ export function DeleteWorkspaceDialog({
   const [confirmation, setConfirmation] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [otherMembers, setOtherMembers] = useState<number | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    let active = true;
+    setOtherMembers(null);
+    void listWorkspaceMembers({ path: { workspaceId: workspace.workspaceId } })
+      .then((result) => {
+        if (!active) return;
+        if (result.data === undefined) setError(problemMessage(result.error));
+        else setOtherMembers(result.data.memberCount - 1);
+      })
+      .catch(() => {
+        if (active) setError('The member count could not load.');
+      });
+    return () => {
+      active = false;
+    };
+  }, [open, workspace.workspaceId]);
 
   useEffect(() => {
     if (!open) return;
@@ -250,7 +271,8 @@ export function DeleteWorkspaceDialog({
     setDeleting(false);
   }, [open]);
 
-  const matches = confirmation.trim() === workspace.name;
+  const matches =
+    otherMembers !== null && confirmation.trim() === workspace.name;
 
   const remove = (): void => {
     if (deleting || !matches) return;
@@ -288,6 +310,11 @@ export function DeleteWorkspaceDialog({
           <Inset as="p" className="text-body text-strong">
             Every note, version and published link of {workspace.name} goes. You
             cannot get them back.
+            {otherMembers === null || otherMembers === 0
+              ? ''
+              : otherMembers === 1
+                ? ' One other member will lose access.'
+                : ` ${otherMembers} other members will lose access.`}
           </Inset>
           <TextField
             id="delete-workspace-name"
@@ -314,6 +341,64 @@ export function DeleteWorkspaceDialog({
           </Button>
         </DialogFooter>
       </Form>
+    </Dialog>
+  );
+}
+
+export function LeaveWorkspaceDialog({
+  open,
+  workspace,
+  onClose,
+  onLeft,
+}: {
+  readonly open: boolean;
+  readonly workspace: Workspace;
+  readonly onClose: () => void;
+  readonly onLeft: () => void;
+}): ReactNode {
+  const [busy, setBusy] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      title="Leave workspace"
+      titleId="leave-workspace-title"
+      width="small"
+    >
+      <DialogBody>
+        <p className="text-body text-strong">
+          You will lose access to {workspace.name}.
+        </p>
+        {failure === null ? null : <Notice tone="problem" message={failure} />}
+      </DialogBody>
+      <DialogFooter>
+        <Button variant="secondary" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button
+          variant="danger"
+          disabled={busy}
+          onClick={() => {
+            setBusy(true);
+            setFailure(null);
+            void leaveWorkspace({
+              path: { workspaceId: workspace.workspaceId },
+            })
+              .then((result) => {
+                if (result.data === undefined)
+                  setFailure(problemMessage(result.error));
+                else {
+                  onClose();
+                  onLeft();
+                }
+              })
+              .finally(() => setBusy(false));
+          }}
+        >
+          Leave workspace
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }

@@ -22,7 +22,7 @@ export type Locator = {
   and(locator: Locator): Locator;
   getByRole(
     role: string,
-    options?: { name: string; exact?: boolean; level?: number },
+    options?: { name: string | RegExp; exact?: boolean; level?: number },
   ): Locator;
   getByText(text: string | RegExp, options?: { exact?: boolean }): Locator;
   getByLabel(label: string, options?: { exact?: boolean }): Locator;
@@ -55,7 +55,7 @@ export type Page = {
   locator(selector: string): Locator;
   getByRole(
     role: string,
-    options?: { name: string; exact?: boolean; level?: number },
+    options?: { name: string | RegExp; exact?: boolean; level?: number },
   ): Locator;
   getByText(text: string | RegExp, options?: { exact?: boolean }): Locator;
   getByLabel(label: string, options?: { exact?: boolean }): Locator;
@@ -63,6 +63,15 @@ export type Page = {
   setViewportSize(size: { width: number; height: number }): Promise<void>;
   on(event: 'pageerror', callback: (error: Error) => void): void;
   on(event: 'request', callback: (request: Request) => void): void;
+  on(
+    event: 'websocket',
+    callback: (socket: {
+      on(
+        event: 'framesent',
+        listener: (frame: { payload: string | Uint8Array }) => void,
+      ): void;
+    }) => void,
+  ): void;
   on(
     event: 'console',
     callback: (message: { type(): string; text(): string }) => void,
@@ -83,6 +92,11 @@ export type Page = {
   };
 };
 type Context = {
+  setOffline(offline: boolean): Promise<void>;
+  routeWebSocket(
+    pattern: string,
+    callback: (socket: { close(): Promise<void> }) => Promise<void>,
+  ): Promise<void>;
   unrouteAll(options: { behavior: 'wait' | 'ignoreErrors' }): Promise<void>;
   newCDPSession(page: Page): Promise<{
     send(method: string, params: Record<string, unknown>): Promise<unknown>;
@@ -93,6 +107,7 @@ type Context = {
     callback: (route: Route) => Promise<void>,
   ): Promise<void>;
   newPage(): Promise<Page>;
+  pages(): Page[];
   close(): Promise<void>;
 };
 export type Browser = {

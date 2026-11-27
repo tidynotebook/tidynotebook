@@ -89,3 +89,13 @@ function createSeal(secret: string, purpose: string): Seal {
     },
   };
 }
+
+/** Seals copyable invitation tokens with a key dedicated to workspace invitations. */
+export function createWorkspaceInvitationSeal(secret: string): Seal {
+  return createSeal(secret, 'notesapp workspace invitation');
+}
+
+/** Authenticates and encrypts each cross-server room message. */
+export function createLiveRelaySeal(secret: string): Seal {
+  return createSeal(secret, 'notesapp live room relay');
+}

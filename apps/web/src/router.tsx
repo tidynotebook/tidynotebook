@@ -82,6 +82,10 @@ const AccountsView = lazy(async () => ({
   default: (await import('./features/accounts/administration-redirect.tsx'))
     .AdministrationRedirect,
 }));
+const JoinWorkspacePage = lazy(async () => ({
+  default: (await import('./features/accounts/join-workspace.tsx'))
+    .JoinWorkspacePage,
+}));
 const InvitationPage = lazy(async () => ({
   default: (await import('./features/accounts/invitation.tsx')).InvitationPage,
 }));
@@ -151,6 +155,7 @@ const routes: RouteObject[] = [
       // The page that an invitation link opens. It needs no session, and the
       // server writes the same path into every link.
       { path: invitationRoute, element: deferred(<InvitationPage />) },
+      { path: '/join', element: deferred(<JoinWorkspacePage />) },
       // Open registration (record 0114). The server writes the verification path
       // into every link.
       { path: signUpRoute, element: deferred(<SignUpPage />) },

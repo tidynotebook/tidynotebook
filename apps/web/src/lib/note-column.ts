@@ -1,10 +1,9 @@
 /**
- * The column that the note text and the note footer share.
+ * The column that holds the note text.
  *
  * The name of the note is not here: it is the last part of the breadcrumb in
  * the frame header (decision 0069), so the note surface starts with the text.
- * The text and the footer stay one centred column of the note measure, and
- * the editor centres its own lines on the same measure in
+ * The editor centres its lines on the note measure in
  * `packages/editor/src/editor-theme.ts`. See
  * [decision 0055](../../../../docs/decisions/0055-the-note-is-one-centred-column.md).
  *
@@ -16,7 +15,7 @@
  */
 
 /**
- * The classes of the column that the text and the footer share.
+ * The classes of the note column.
  *
  * One measure, centred in the space the note screen owns. A frame that cannot
  * reach the editor adapter reads this constant, the way every page frame reads
@@ -33,7 +32,7 @@ export { noteColumnClassName } from '@notesapp/ui';
 export { noteScreenClassName } from '@notesapp/ui';
 
 /**
- * The classes of the frame that holds the note text and the note footer.
+ * The classes of the frame that holds the note text.
  *
  * The frame draws no space above the text. The editor scrolls inside it, so
  * any padding here stays on the screen under the frame header while the text
@@ -57,20 +56,5 @@ export { noteSideRegionClassName } from '@notesapp/ui';
 
 /** The outline keeps its natural height until it needs to scroll. */
 export { noteOutlineScrollClassName } from '@notesapp/ui';
-
-/**
- * The classes of the footer row under the note text.
- *
- * The footer draws `edge-line` above itself. The note text is a region a
- * person scrolls, and the design guide draws a divider exactly there, so the
- * line states where the text stops and the count of the note starts. Without
- * it the sentence reads as one more line of the note.
- *
- * While a person types on a phone, the keyboard takes half of the screen, and
- * the count is not what they read then. The footer gives its row to the text
- * while the text has the focus on a narrow screen under a finger, and comes
- * back when the text lets the focus go. A desktop keeps it.
- */
-export { noteFooterClassName } from '@notesapp/ui';
 
 /** Hides a part of the note on a phone while the text has the focus. */

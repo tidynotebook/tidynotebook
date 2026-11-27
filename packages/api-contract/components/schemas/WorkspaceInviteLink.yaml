@@ -1,0 +1,10 @@
+type: object
+description: The link of an active invitation. The secret is in its fragment.
+additionalProperties: false
+required:
+  - url
+properties:
+  url:
+    type: string
+    format: uri
+    maxLength: 2048

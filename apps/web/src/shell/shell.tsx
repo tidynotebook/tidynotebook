@@ -1,3 +1,4 @@
+import { WorkspaceToasts } from './workspace-toasts.tsx';
 import {
   Inline,
   ApplicationContent,
@@ -37,7 +38,6 @@ import {
 } from '@notesapp/ui';
 
 import { useNavigationDrawer } from './use-navigation-drawer.ts';
-import { TrialNotice } from '../features/accounts/trial-notice.tsx';
 /**
  * The application shell: one frame for every signed in screen.
  *
@@ -109,9 +109,10 @@ import {
   useSyncSession,
   useTheme,
   useWorkspace,
+  useWorkspaceRole,
   useWorkspaceSync,
 } from '../app.tsx';
-import { attentionTitle } from '../features/attention/attention-link.tsx';
+import { attentionTitle } from '../lib/save-status-words.ts';
 import { NewFromTemplateDialog } from '../features/templates/new-from-template.tsx';
 import { useWorkspaceProblem } from '../features/templates/workspace-problem.ts';
 import type { CommandPalette } from './command-palette.tsx';
@@ -160,7 +161,7 @@ import {
 import { SidebarCalendar } from '../features/daily-notes/calendar-entry.tsx';
 import { dailyNoteDate, type PublicationScope } from '@notesapp/core';
 import { PublishDialog } from '../features/publishing/publish-dialog-entry.tsx';
-import { publishedLinksTitle } from '../features/publishing/publishing.ts';
+import { publishedLinksTitle } from '../features/publishing/published-links-title.ts';
 import { accountsTitle } from '../lib/accounts.ts';
 import {
   NoteActionsScope,
@@ -279,6 +280,9 @@ const allNotesTitle = 'All notes';
 /** The name of the screen that holds the notes a person deleted. */
 const SidebarStatus = lazy(async () => ({
   default: (await import('./sidebar-status.tsx')).SidebarStatus,
+}));
+const TrialNotice = lazy(async () => ({
+  default: (await import('../features/accounts/trial-notice.tsx')).TrialNotice,
 }));
 const trashTitle = 'Trash';
 
@@ -519,6 +523,7 @@ function Sidebar({
   readonly onDeleteWorkspace: () => void;
   readonly onClose: () => void;
 }): ReactNode {
+  const readOnly = useWorkspaceRole(workspaceId) === 'viewer';
   const params = useParams();
   const location = useLocation();
   const fileId = typeof params.fileId === 'string' ? params.fileId : null;
@@ -615,52 +620,56 @@ function Sidebar({
           <>
             <div ref={actionLayout.ref} className="ui-drawer-actions">
               <Toolbar className="ui-drawer-actions-row ui-sidebar-actions">
-                <IconButton
-                  size="toolbar"
-                  variant="ghost"
+                {readOnly ? null : (
+                  <>
+                    <IconButton
+                      size="toolbar"
+                      variant="ghost"
 
-                  className="ui-sidebar-action"
-                  label={
-                    selectedFolder === ''
-                      ? 'New note'
-                      : `New note in ${selectedFolder}`
-                  }
-                  title="New note"
-                  glyph={actionIcon('new-note')}
-                  onClick={() => onNewNoteIn(selectedFolder)}
-                />
-                <IconButton
-                  size="toolbar"
-                  variant="ghost"
+                      className="ui-sidebar-action"
+                      label={
+                        selectedFolder === ''
+                          ? 'New note'
+                          : `New note in ${selectedFolder}`
+                      }
+                      title="New note"
+                      glyph={actionIcon('new-note')}
+                      onClick={() => onNewNoteIn(selectedFolder)}
+                    />
+                    <IconButton
+                      size="toolbar"
+                      variant="ghost"
 
-                  className="ui-sidebar-action"
-                  onPointerEnter={() => {
-                    void NewFolderDialog.preload();
-                  }}
-                  onFocus={() => {
-                    void NewFolderDialog.preload();
-                  }}
-                  label="New folder"
-                  title="New folder"
-                  glyph={actionIcon('new-folder')}
-                  onClick={() => onNewFolderIn('')}
-                />
-                <IconButton
-                  size="toolbar"
-                  variant="ghost"
+                      className="ui-sidebar-action"
+                      onPointerEnter={() => {
+                        void NewFolderDialog.preload();
+                      }}
+                      onFocus={() => {
+                        void NewFolderDialog.preload();
+                      }}
+                      label="New folder"
+                      title="New folder"
+                      glyph={actionIcon('new-folder')}
+                      onClick={() => onNewFolderIn('')}
+                    />
+                    <IconButton
+                      size="toolbar"
+                      variant="ghost"
 
-                  className="ui-sidebar-action"
-                  onPointerEnter={() => {
-                    void NewFromTemplateDialog.preload();
-                  }}
-                  onFocus={() => {
-                    void NewFromTemplateDialog.preload();
-                  }}
-                  label="New note from template"
-                  title="New note from template"
-                  glyph={actionIcon('template')}
-                  onClick={() => onFromTemplate(selectedFolder)}
-                />
+                      className="ui-sidebar-action"
+                      onPointerEnter={() => {
+                        void NewFromTemplateDialog.preload();
+                      }}
+                      onFocus={() => {
+                        void NewFromTemplateDialog.preload();
+                      }}
+                      label="New note from template"
+                      title="New note from template"
+                      glyph={actionIcon('template')}
+                      onClick={() => onFromTemplate(selectedFolder)}
+                    />
+                  </>
+                )}
                 <div className={actionLayout.compact ? 'hidden' : 'contents'}>
                   <Menu
                     label="Sort notes"
@@ -821,31 +830,35 @@ function Sidebar({
                     </span>
                   </Inline>
                 </Inline>
-                <IconSlot className="ui-sidebar-slot">
-                  <Menu
-                    label="Actions for All notes"
-                    icon={<MoreIcon />}
-                    trigger="row-action"
-                    triggerClassName="ui-sidebar-row-action ui-sidebar-row-menu"
-                    items={[
-                      {
-                        id: 'new-note',
-                        label: 'New note',
-                        onSelect: () => onNewNoteIn(''),
-                      },
-                      {
-                        id: 'new-folder',
-                        label: 'New folder',
-                        onSelect: () => onNewFolderIn(''),
-                      },
-                      {
-                        id: 'template',
-                        label: 'New note from template',
-                        onSelect: () => onFromTemplate(''),
-                      },
-                    ]}
-                  />
-                </IconSlot>
+                {readOnly ? (
+                  <IconSlot className="ui-sidebar-slot" />
+                ) : (
+                  <IconSlot className="ui-sidebar-slot">
+                    <Menu
+                      label="Actions for All notes"
+                      icon={<MoreIcon />}
+                      trigger="row-action"
+                      triggerClassName="ui-sidebar-row-action ui-sidebar-row-menu"
+                      items={[
+                        {
+                          id: 'new-note',
+                          label: 'New note',
+                          onSelect: () => onNewNoteIn(''),
+                        },
+                        {
+                          id: 'new-folder',
+                          label: 'New folder',
+                          onSelect: () => onNewFolderIn(''),
+                        },
+                        {
+                          id: 'template',
+                          label: 'New note from template',
+                          onSelect: () => onFromTemplate(''),
+                        },
+                      ]}
+                    />
+                  </IconSlot>
+                )}
               </ListRow>
               {files.loading ? (
                 <div className="ui-sidebar-message">
@@ -1465,31 +1478,37 @@ function ShellFrame({
   /** Build the palette actions when the palette opens. */
   const paletteActions = useCallback(
     (): readonly PaletteAction[] => [
-      {
-        id: 'new-note',
-        label:
-          selectedFolder === '' ? 'New note' : `New note in ${selectedFolder}`,
-        keywords: 'create add',
-        icon: 'new-note' as const,
-        run: () => newNote.create(selectedFolder),
-      },
-      {
-        id: 'new-folder',
-        label:
-          selectedFolder === ''
-            ? 'New folder'
-            : `New folder in ${selectedFolder}`,
-        keywords: 'create add group',
-        icon: 'new-folder' as const,
-        run: () => setNewFolderParent(selectedFolder),
-      },
-      {
-        id: 'today',
-        label: "Open today's note",
-        keywords: 'daily journal day date today',
-        icon: 'today' as const,
-        run: () => daily.open(today()),
-      },
+      ...(openWorkspace?.role === 'viewer'
+        ? []
+        : [
+            {
+              id: 'new-note',
+              label:
+                selectedFolder === ''
+                  ? 'New note'
+                  : `New note in ${selectedFolder}`,
+              keywords: 'create add',
+              icon: 'new-note' as const,
+              run: () => newNote.create(selectedFolder),
+            },
+            {
+              id: 'new-folder',
+              label:
+                selectedFolder === ''
+                  ? 'New folder'
+                  : `New folder in ${selectedFolder}`,
+              keywords: 'create add group',
+              icon: 'new-folder' as const,
+              run: () => setNewFolderParent(selectedFolder),
+            },
+            {
+              id: 'today',
+              label: "Open today's note",
+              keywords: 'daily journal day date today',
+              icon: 'today' as const,
+              run: () => daily.open(today()),
+            },
+          ]),
       {
         id: 'toggle-sidebar',
         label: 'Show or hide the sidebar',
@@ -1805,7 +1824,7 @@ function ShellFrame({
               }}
             />
 
-            <HeaderSlot className="flex shrink-0 items-center empty:hidden" />
+            <HeaderSlot className="shrink-0 empty:hidden" />
 
             {/*
               A hand written button and not a `Button`, because the word and
@@ -1922,7 +1941,12 @@ function ShellFrame({
                 padY={4}
                 className={`${pageColumnClassName()} empty:hidden`}
               >
-                <TrialNotice />
+                {session.account?.controls.trialState === undefined ||
+                session.account.controls.trialState === 'none' ? null : (
+                  <Suspense fallback={null}>
+                    <TrialNotice />
+                  </Suspense>
+                )}
                 {templateProblem !== null ? (
                   <Notice tone="problem" message={templateProblem} />
                 ) : null}
@@ -2004,6 +2028,7 @@ function ShellFrame({
             />
           )}
           <SettingsModalHost workspaceId={workspaceId} />
+          <WorkspaceToasts workspaceId={workspaceId} />
           {signOut.dialog}
           {shortcutsOpen && ShortcutsView !== null ? (
             <ShortcutsView open onClose={() => setShortcutsOpen(false)} />

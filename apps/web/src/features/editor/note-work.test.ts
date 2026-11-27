@@ -353,3 +353,33 @@ await test('work of an old generation waits in the editor and the draft', async 
   assert.equal(draft.text, 'ab');
   assert.equal(draft.documentVector, undefined);
 });
+
+await test('access recovery settles pending writes and blocks later draft writes', async () => {
+  const editor = new Editor();
+  const append = deferred();
+  const checkpoint = deferred();
+  editor.appendGate = append.promise;
+  editor.type('a');
+  const draft = editor.work.writeDraft(false);
+  const recovery = editor.work.saveForAccess(false, checkpoint.promise);
+  assert.equal(editor.work.frozen(), true);
+  await editor.work.writeDraft(false);
+  assert.equal(editor.drafts.length, 0);
+  append.resolve();
+  await draft;
+  assert.equal(editor.drafts.length, 1);
+  checkpoint.resolve();
+  await recovery;
+  await editor.work.writeDraft(false);
+  assert.deepEqual(
+    editor.drafts.map((copy) => copy.text),
+    ['a', 'a'],
+  );
+});
+
+await test('access loss freezes a clean editor without writing a draft', async () => {
+  const editor = new Editor();
+  await editor.work.saveForAccess(false, null);
+  assert.equal(editor.work.frozen(), true);
+  assert.deepEqual(editor.drafts, []);
+});

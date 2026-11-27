@@ -10,8 +10,8 @@ import type { LocalStore, RecoveryRecord } from '@notesapp/sync';
 import { rowClassName } from '@notesapp/ui';
 import { parkedSaves, type ParkedSave } from '../../lib/parked-saves.ts';
 
-/** The heading and the link text of the screen. */
-export const attentionTitle = 'Needs attention';
+import { attentionTitle } from '../../lib/save-status-words.ts';
+export { attentionTitle };
 
 /** Reads the parked saves of one workspace and keeps the count current. */
 export function useParkedSaves(

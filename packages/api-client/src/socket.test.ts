@@ -89,7 +89,7 @@ await test('failed tries wait longer each time up to the cap, then stop on close
     assert.equal(FakeSocket.attempts.length, 1);
     const first = FakeSocket.attempts[0];
     assert.equal(first?.socket.url, 'wss://notes.example/api/sync/notices');
-    assert.deepEqual(first?.socket.protocols, ['notesapp.sync.1']);
+    assert.deepEqual(first?.socket.protocols, ['notesapp.sync.2']);
     // Each close starts the next try after the delay of its count.
     const expected = [1_000, 1_500, 2_250, 3_375];
     for (const delay of expected) {

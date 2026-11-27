@@ -27,6 +27,7 @@ export const problemMediaType = 'application/problem+json';
 
 /** Stable application error codes. Add a code, never reuse one. */
 export type ProblemCode =
+  | 'last_workspace'
   | 'api_key_limit'
   | 'invalid_request'
   | 'oauth_request_invalid'
@@ -141,6 +142,7 @@ const titles: Readonly<Record<ProblemCode, string>> = {
   notices_unavailable: 'This deployment does not open the notice stream now.',
   request_timeout: 'The request body stopped before it was complete.',
   unauthenticated: 'The request carries no usable session or token.',
+  last_workspace: 'Keep at least one workspace.',
   forbidden: 'The actor may not perform this operation.',
   origin_required:
     'A cookie authenticated write must name the configured origin.',
@@ -486,6 +488,7 @@ export function unwrapDomain<T>(result: Result<T>): T {
 const domainStatus: Readonly<
   Record<DomainErrorCode, { status: number; code: ProblemCode }>
 > = {
+  last_workspace: { status: 409, code: 'last_workspace' },
   forbidden: { status: 403, code: 'forbidden' },
   not_found: { status: 404, code: 'not_found' },
   stale_head: { status: 412, code: 'stale_head' },
@@ -560,6 +563,7 @@ const domainStatus: Readonly<
 const domainTitles: Readonly<Record<DomainErrorCode, string>> = {
   api_key_limit:
     'The account keeps 25 API keys. Revoke one before you create another.',
+  last_workspace: 'Keep at least one workspace.',
   forbidden: 'The actor may not perform this operation.',
   not_found: 'The requested resource does not exist.',
   stale_head:

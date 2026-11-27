@@ -486,6 +486,13 @@ export type HistoryRevision = {
   readonly digest: string;
   readonly size: number;
   readonly actorAccountId: string;
+  readonly contributors?: readonly {
+    readonly accountId: string | null;
+    readonly displayName: string | null;
+    readonly formerMember: boolean;
+    readonly colorSlot?: number | undefined;
+  }[];
+
   readonly clientTime: string;
   readonly serverTime: string;
   readonly message: string | null;

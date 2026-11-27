@@ -93,10 +93,17 @@ await test('a cached value that is not a workspace list answers nothing', () => 
     '[{"workspaceId":"ws-a"}]',
     '[{"workspaceId":"","name":"n","role":"owner","personal":false}]',
     '[{"workspaceId":"ws-a","name":"","role":"owner","personal":false}]',
-    '[{"workspaceId":"ws-a","name":"n","role":"viewer","personal":false}]',
+    '[{"workspaceId":"ws-a","name":"n","role":"guest","personal":false}]',
     '[{"workspaceId":"ws-a","name":"n","role":"owner","personal":"yes"}]',
   ])
     assert.deepEqual(parseCachedWorkspaces(source), [], String(source));
+});
+
+await test('cached lists retain each shared workspace role and member count', () => {
+  for (const role of ['admin', 'editor', 'viewer']) {
+    const shared = { ...work, role, memberCount: 3 };
+    assert.deepEqual(parseCachedWorkspaces(JSON.stringify([shared])), [shared]);
+  }
 });
 
 await test('one broken row drops the whole cached list', () => {

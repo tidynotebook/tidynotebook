@@ -34,6 +34,9 @@ export function useFiles() {
 export function useSession() {
   return { account: { accountId: 'folder-test-account' } };
 }
+export function useWorkspaceRole(): 'owner' {
+  return 'owner';
+}
 /** Return an empty device store. */
 export function useLocalStore() {
   return { store: {} };

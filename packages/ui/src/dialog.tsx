@@ -112,8 +112,10 @@ export function Dialog({
   actions,
   headerActions = false,
   fillSheet = false,
+  titleDivider = true,
 }: {
   readonly fillSheet?: boolean;
+  readonly titleDivider?: boolean;
   readonly anchor?: HTMLElement | null;
   /** Controls at the end of the title row, such as a link to settings. */
   readonly actions?: ReactNode;
@@ -347,18 +349,18 @@ export function Dialog({
           />
         ) : (actions === undefined && !headerActions) || hideTitle || screen ? (
           <h2
-            data-scroll-edge="above"
-            data-edge-always={settings ? '' : undefined}
-            className={`${dialogTitleClassName(hideTitle || screen)} ${settings ? 'ui-settings-dialog-heading' : ''}`}
+            data-scroll-edge={titleDivider ? 'above' : undefined}
+            data-edge-always={settings && titleDivider ? '' : undefined}
+            className={`${dialogTitleClassName(hideTitle || screen)} ${settings && titleDivider ? 'ui-settings-dialog-heading' : ''}`}
             id={titleId}
           >
             {title}
           </h2>
         ) : (
           <div
-            data-scroll-edge="above"
-            data-edge-always={settings ? '' : undefined}
-            className={`${dialogHeaderClassName()} ${settings ? 'ui-settings-dialog-heading' : ''}`}
+            data-scroll-edge={titleDivider ? 'above' : undefined}
+            data-edge-always={settings && titleDivider ? '' : undefined}
+            className={`${dialogHeaderClassName()} ${settings && titleDivider ? 'ui-settings-dialog-heading' : ''}`}
           >
             <h2 className={dialogHeaderTitleClassName()} id={titleId}>
               {title}

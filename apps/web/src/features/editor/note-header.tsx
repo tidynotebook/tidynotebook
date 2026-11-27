@@ -15,6 +15,7 @@
  * message on the note and this field points at it.
  */
 import { useRef, type ReactNode } from 'react';
+import { noteNameReadOnlyClassName } from '@notesapp/ui';
 import {
   noteNameFieldClassName,
   noteNameFieldContainer,
@@ -35,6 +36,7 @@ export function NoteHeader({
   fileId,
   name,
   nameError,
+  readOnly = false,
   onNameChange,
   onNameCommit,
   onNameRevert,
@@ -45,6 +47,7 @@ export function NoteHeader({
   readonly fileId: string;
   readonly name: string;
   readonly nameError: string;
+  readonly readOnly?: boolean;
   /** Runs on each keystroke. It changes the words in the field only. */
   readonly onNameChange: (name: string) => void;
   /**
@@ -63,6 +66,19 @@ export function NoteHeader({
   const fallbackRef = useRef<HTMLInputElement | null>(null);
   const selectOnFocus = useRef(selectOnFirstFocus);
 
+  if (readOnly)
+    return (
+      <HeaderLeaf>
+        <span
+          className={noteNameReadOnlyClassName}
+          title={name}
+          data-note-header-title=""
+        >
+          {name}
+        </span>
+      </HeaderLeaf>
+    );
+
   return (
     <HeaderLeaf>
       <span className={noteNameFieldContainer}>
@@ -72,6 +88,7 @@ export function NoteHeader({
         <input
           ref={nameInputRef ?? fallbackRef}
           id={`notes-path-${fileId}`}
+          data-note-header-title=""
           className={noteNameFieldClassName()}
           type="text"
           value={name}

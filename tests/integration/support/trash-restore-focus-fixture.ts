@@ -36,6 +36,9 @@ export function reset(store: LocalStore, noteId: string, notePath: string) {
 export function useSession() {
   return { account: { accountId } };
 }
+export function useWorkspaceRole(): 'owner' {
+  return 'owner';
+}
 export function useLocalStore() {
   return { store: activeStore };
 }
