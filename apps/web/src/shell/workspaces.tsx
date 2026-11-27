@@ -263,7 +263,7 @@ export function WorkspaceSwitcher({
     id: workspace.workspaceId,
     label: workspace.name,
     icon: actionIcon('workspace'),
-    hint: `${roleName(workspace.role)}${(workspace.memberCount ?? 0) > 1 ? ` · ${workspace.memberCount}` : ''}`,
+    hint: roleName(workspace.role),
     selected: workspace.workspaceId === workspaceId,
     onSelect: () => switchTo(workspace.workspaceId),
   }));

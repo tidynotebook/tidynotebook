@@ -63,6 +63,7 @@ export type { DialogWidth } from './dialog-classes.ts';
 
 const focusableSelector =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+const toastLayerSelector = '[data-toast-layer]';
 
 /** Whether an element is on the screen, where the browser can tell. */
 function shown(element: HTMLElement): boolean {
@@ -76,7 +77,8 @@ function setPageInert(panel: HTMLElement | null, inert: boolean): () => void {
   const container = panel?.closest('[data-notes-dialog-root]') ?? null;
   const changed: HTMLElement[] = [];
   for (const child of Array.from(body.children)) {
-    if (!(child instanceof HTMLElement)) continue;
+    if (!(child instanceof HTMLElement) || child.matches(toastLayerSelector))
+      continue;
     if (container !== null && child.contains(container)) continue;
     if (!('inert' in child)) continue;
     if (child.inert === inert) continue;
@@ -201,14 +203,22 @@ export function Dialog({
         ).focus();
     });
     const onKeyDown = (event: KeyboardEvent): void => {
+      const target = event.target instanceof Element ? event.target : null;
+      const toast = target?.closest(toastLayerSelector) ?? null;
       // A dialog that this one opened, such as a confirmation inside
       // Settings, owns the keys while it is open.
       if (
-        event.target instanceof Element &&
+        target !== null &&
         root !== null &&
-        event.target.closest('[data-notes-dialog-root]') !== root
-      )
-        return;
+        target.closest('[data-notes-dialog-root]') !== root
+      ) {
+        if (event.key !== 'Tab' || (toast === null && target !== document.body))
+          return;
+        const foreground = Array.from(
+          document.querySelectorAll('[data-notes-dialog-root]'),
+        ).findLast((dialog) => dialog.closest('[inert]') === null);
+        if (foreground !== root) return;
+      }
       if (event.key === 'Escape') {
         // A popup inside the dialog, such as a folder tree under a field,
         // closes itself first, and the dialog stays open.
@@ -224,19 +234,35 @@ export function Dialog({
       }
       if (event.key !== 'Tab') return;
       const targets = focusables();
+      if (panel === null) return;
+      const toastTargets = Array.from(
+        document.querySelectorAll<HTMLElement>(
+          `:is(${toastLayerSelector}) :is(${focusableSelector})`,
+        ),
+      ).filter(shown);
       const first = targets[0];
       const last = targets.at(-1);
-      if (first === undefined || last === undefined) {
+      const active = document.activeElement;
+      if (toast !== null) {
+        const index = toastTargets.findIndex((element) => element === active);
         event.preventDefault();
-        panel?.focus();
-        return;
-      }
-      if (event.shiftKey && document.activeElement === first) {
+        (event.shiftKey
+          ? (toastTargets[index - 1] ?? last ?? panel)
+          : (toastTargets[index + 1] ?? first ?? panel)
+        ).focus();
+      } else if (!event.shiftKey && active === last) {
         event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
+        (toastTargets[0] ?? first ?? panel).focus();
+      } else if (event.shiftKey && active === first) {
         event.preventDefault();
-        first.focus();
+        (toastTargets.at(-1) ?? last ?? panel).focus();
+      } else if (first === undefined || target === document.body) {
+        event.preventDefault();
+        (
+          (event.shiftKey
+            ? (toastTargets.at(-1) ?? last)
+            : (first ?? toastTargets[0])) ?? panel
+        ).focus();
       }
     };
     // Capture phase: the open dialog owns Escape before any other window
@@ -539,6 +565,7 @@ export function DialogFooter({
           padX={4}
           padY={3}
           safeArea
+          data-phone-sheet-footer=""
           className="ui-dialog-footer bg-card"
         >
           {action}
