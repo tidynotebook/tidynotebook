@@ -3212,6 +3212,56 @@
         }
       }
     },
+    "/api/operator/accounts/{accountId}/seats": {
+      "get": {
+        "operationId": "readOperatorAccountSeats",
+        "summary": "Read the seat usage of one account.",
+        "description": "A service of the operator reads the members and open invites that use seats across the workspaces owned by one account (record 0190).",
+        "tags": [
+          "operator"
+        ],
+        "security": [
+          {
+            "operatorToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/AccountId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The seat usage of the account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperatorAccountSeats"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/OperatorNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
     "/api/operator/events": {
       "get": {
         "operationId": "listOperatorAccountEvents",
@@ -14124,6 +14174,123 @@
             ],
             "readOnly": true,
             "description": "What the account uses."
+          }
+        }
+      },
+      "OperatorAccountSeats": {
+        "type": "object",
+        "description": "The seats used across all workspaces owned by one account.",
+        "readOnly": true,
+        "additionalProperties": false,
+        "required": [
+          "memberLimit",
+          "membersUsed",
+          "pendingInvites",
+          "members",
+          "invites"
+        ],
+        "properties": {
+          "memberLimit": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MemberLimit"
+              }
+            ],
+            "readOnly": true
+          },
+          "membersUsed": {
+            "type": "integer",
+            "minimum": 0,
+            "readOnly": true,
+            "description": "The number of distinct member accounts, excluding the owner."
+          },
+          "pendingInvites": {
+            "type": "integer",
+            "minimum": 0,
+            "readOnly": true,
+            "description": "The number of distinct addresses that hold a place through an open invite."
+          },
+          "members": {
+            "type": "array",
+            "readOnly": true,
+            "description": "Members in order of their first join.",
+            "items": {
+              "type": "object",
+              "readOnly": true,
+              "additionalProperties": false,
+              "required": [
+                "accountId",
+                "email",
+                "name",
+                "since"
+              ],
+              "properties": {
+                "accountId": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Uuid"
+                    }
+                  ],
+                  "readOnly": true
+                },
+                "email": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 320,
+                  "readOnly": true
+                },
+                "name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "readOnly": true
+                },
+                "since": {
+                  "type": "string",
+                  "format": "date-time",
+                  "readOnly": true,
+                  "description": "The earliest start of any current membership with the owner."
+                }
+              }
+            }
+          },
+          "invites": {
+            "type": "array",
+            "readOnly": true,
+            "description": "The first invite to expire for each address that holds a place, in expiry order.",
+            "items": {
+              "type": "object",
+              "readOnly": true,
+              "additionalProperties": false,
+              "required": [
+                "email",
+                "expiresAt",
+                "workspaceId"
+              ],
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "maxLength": 320,
+                  "readOnly": true
+                },
+                "expiresAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "readOnly": true
+                },
+                "workspaceId": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Uuid"
+                    }
+                  ],
+                  "readOnly": true
+                }
+              }
+            }
           }
         }
       },

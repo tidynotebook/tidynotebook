@@ -3,8 +3,8 @@
  *
  * A service of the operator, such as a billing service, reaches the controls
  * of an account through these use cases with one bearer token and no session.
- * None of them reads or writes a note, a workspace or a published link: the
- * port below has no method that could.
+ * The seat read includes only memberships and open invitations for workspaces
+ * of the selected owner. This port has no access to notes or published links.
  *
  * The handoff lets the portal of the operator learn which person opened it.
  * The application asks for a single-use token that works for 60 seconds, the
@@ -41,6 +41,27 @@ export type OperatorAccountRecord = {
   readonly createdAt: string;
   readonly controls: AccountControls;
   readonly usage: AccountUsage;
+};
+
+export type OperatorSeatMember = {
+  readonly accountId: string;
+  readonly email: string | null;
+  readonly name: string | null;
+  readonly since: string;
+};
+
+export type OperatorSeatInvite = {
+  readonly email: string;
+  readonly expiresAt: string;
+  readonly workspaceId: string;
+};
+
+export type OperatorSeatUsage = {
+  readonly memberLimit: number | null;
+  readonly membersUsed: number;
+  readonly pendingInvites: number;
+  readonly members: readonly OperatorSeatMember[];
+  readonly invites: readonly OperatorSeatInvite[];
 };
 
 /** The totals of the installation for one month in UTC (record 0193). */
@@ -109,7 +130,16 @@ export type OperatorTransaction = {
 /** Opens the transactions of the operator. */
 export type OperatorStore = {
   operator<T>(run: (tx: OperatorTransaction) => Promise<T>): Promise<T>;
+  operatorSeatUsage(accountId: string): Promise<OperatorSeatUsage | null>;
 };
+
+export async function readOperatorAccountSeats(
+  store: OperatorStore,
+  accountId: string,
+): Promise<Result<OperatorSeatUsage>> {
+  const seats = await store.operatorSeatUsage(accountId);
+  return seats === null ? fail('not_found') : ok(seats);
+}
 
 /** The most events of one answer, and the number when a reader names none. */
 export const maxAccountEventPage = 500;

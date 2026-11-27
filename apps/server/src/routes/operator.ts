@@ -4,15 +4,14 @@
  * A service of the operator reaches these operations with the operator token
  * and no session. The identity hook has checked the token before a handler
  * runs, so a handler maps validated input to one use case of
- * `@notesapp/core` and maps the result back. No handler here reads or writes
- * a note, a workspace or a published link, and the port of the use cases has
- * no method that could.
+ * `@notesapp/core` and maps the result back.
  */
 import type { FastifyRequest } from 'fastify';
 import {
   findOperatorAccount,
   listAccountEvents,
   readOperatorAccount,
+  readOperatorAccountSeats,
   readOperatorTotals,
   redeemHandoff,
   removeOperatorAccount,
@@ -100,6 +99,17 @@ export function createOperatorHandlers(
           ),
         ),
       ),
+
+    readOperatorAccountSeats: async (request): Promise<HandlerResult> => ({
+      status: 200,
+      mediaType: jsonMediaType,
+      body: unwrapDomain(
+        await readOperatorAccountSeats(
+          store,
+          readParameter(request, 'accountId'),
+        ),
+      ),
+    }),
 
     setOperatorAccountControls: async (request): Promise<HandlerResult> =>
       accountAnswer(

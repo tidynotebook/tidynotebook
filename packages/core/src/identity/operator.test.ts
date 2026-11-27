@@ -69,6 +69,7 @@ function storeOf(
   return {
     calls,
     written: () => written,
+    operatorSeatUsage: () => Promise.resolve(null),
     operator<T>(run: (tx: OperatorTransaction) => Promise<T>): Promise<T> {
       let current = account;
       return run({
