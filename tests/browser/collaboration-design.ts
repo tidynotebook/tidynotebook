@@ -976,10 +976,57 @@ export async function runCollaborationAudit(
             hasText: 'Your role changed to Viewer. Editing is off.',
           }),
         );
-        await assertToastAbove(
-          editor
-            .getByRole('status')
-            .filter({ hasText: 'Your unsent text is in Personal' }),
+        const recoveryToast = editor
+          .getByRole('status')
+          .filter({ hasText: 'Your unsent text is in Personal' });
+        await assertToastAbove(recoveryToast);
+        const recoverySettings = editor.getByRole('dialog');
+        await recoverySettings.focus();
+        await editor.keyboard.press('Tab');
+        assert.ok(
+          await recoverySettings.evaluate((dialog) => {
+            const first = document.activeElement;
+            if (!(first instanceof HTMLElement) || !dialog.contains(first))
+              return false;
+            first.setAttribute('data-test-first-settings-control', '');
+            return first !== dialog;
+          }),
+        );
+        const firstControl = recoverySettings.locator(
+          '[data-test-first-settings-control]',
+        );
+        await editor.keyboard.press('Shift+Tab');
+        assert.ok(
+          await recoveryToast
+            .getByRole('button', { name: 'Dismiss', exact: true })
+            .evaluate((button) => button === document.activeElement),
+          'Shift+Tab from the first Settings control reaches the toast.',
+        );
+        await editor.keyboard.press('Shift+Tab');
+        assert.ok(
+          await recoveryToast
+            .getByRole('button', { name: 'Open', exact: true })
+            .evaluate((button) => button === document.activeElement),
+        );
+        await editor.keyboard.press('Shift+Tab');
+        assert.ok(
+          await recoverySettings.evaluate((dialog) =>
+            dialog.contains(document.activeElement),
+          ),
+        );
+        await editor.keyboard.press('Tab');
+        assert.ok(
+          await recoveryToast
+            .getByRole('button', { name: 'Open', exact: true })
+            .evaluate((button) => button === document.activeElement),
+          'Tab from the last Settings control reaches the toast.',
+        );
+        await editor.keyboard.press('Tab');
+        await editor.keyboard.press('Tab');
+        assert.ok(
+          await firstControl.evaluate(
+            (control) => control === document.activeElement,
+          ),
         );
         await editor
           .getByRole('button', { name: 'Close Settings', exact: true })
