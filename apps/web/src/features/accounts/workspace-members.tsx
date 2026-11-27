@@ -107,6 +107,7 @@ export function WorkspaceMembers({
     boolean | null
   >(null);
   const [seats, setSeats] = useState<WorkspaceSeats | null>(null);
+  const collaborationOff = collaborationEnabled === false;
   const inviteDisabled =
     collaborationEnabled !== true || seats?.freePlaces === 0;
   const [count, setCount] = useState(0);
@@ -211,20 +212,21 @@ export function WorkspaceMembers({
       {seats === null ? null : (
         <WorkspaceSeatStatus seats={seats} hasPortal={hasPortal} />
       )}
+      {manage && collaborationOff ? (
+        <SeatNotice
+          message={
+            hasPortal
+              ? 'Your plan does not include collaboration.'
+              : 'Collaboration is turned off for this account.'
+          }
+          portalLabel={hasPortal ? 'See plans' : null}
+        />
+      ) : null}
       {manage ? (
         <Inline gap={3} justify="between" align="center">
-          {collaborationEnabled === false && hasPortal ? (
-            <SeatNotice
-              message="Your plan does not include collaboration."
-              portalLabel="See plans"
-            />
-          ) : (
-            <p className="text-secondary text-muted">
-              {collaborationEnabled === false
-                ? 'Collaboration is turned off for this account.'
-                : 'Owners and admins can invite people and change roles.'}
-            </p>
-          )}
+          <p className="text-secondary text-muted">
+            Owners and admins can invite people and change roles.
+          </p>
           <div className="hidden lg:block">
             <Button
               variant="primary"
@@ -278,11 +280,15 @@ export function WorkspaceMembers({
                             trigger="content-edge"
                             compact
                             items={[
-                              {
-                                id: 'copy',
-                                label: 'Copy link',
-                                onSelect: copyLink,
-                              },
+                              ...(collaborationOff
+                                ? []
+                                : [
+                                    {
+                                      id: 'copy',
+                                      label: 'Copy link',
+                                      onSelect: copyLink,
+                                    },
+                                  ]),
                               {
                                 id: 'revoke',
                                 label: 'Revoke',
@@ -295,13 +301,15 @@ export function WorkspaceMembers({
                         </div>
                         <div className="hidden lg:block">
                           <Inline gap={2}>
-                            <Button
-                              variant="secondary"
-                              size="compact"
-                              onClick={copyLink}
-                            >
-                              Copy link
-                            </Button>
+                            {collaborationOff ? null : (
+                              <Button
+                                variant="secondary"
+                                size="compact"
+                                onClick={copyLink}
+                              >
+                                Copy link
+                              </Button>
+                            )}
                             <Button
                               variant="ghost"
                               tone="danger"
@@ -568,7 +576,7 @@ function SeatNotice({
   return (
     <Notice message={message}>
       {portalLabel === null ? null : (
-        <Inline justify="end" className="coarse:basis-full">
+        <Inline padX={{ fine: 0, coarse: 4 }} className="coarse:basis-full">
           <SeatPortalLink label={portalLabel} />
         </Inline>
       )}
@@ -600,13 +608,15 @@ function WorkspaceSeatStatus({
   return (
     <Stack gap={2}>
       <Inline gap={2} justify="between" align="center">
-        <div>
-          <span className="text-body text-strong">{text}</span>{' '}
-          <span className="text-secondary text-muted">
+        <Inline wrap gapX={1}>
+          <span className="text-body text-strong whitespace-nowrap">
+            {text}
+          </span>
+          <span className="text-secondary text-muted whitespace-nowrap">
             {seats.pendingInvites} open{' '}
             {seats.pendingInvites === 1 ? 'invite' : 'invites'}
           </span>
-        </div>
+        </Inline>
         {portal}
       </Inline>
       <Meter trackOnly label="Seats" value={used} max={total} text={text} />

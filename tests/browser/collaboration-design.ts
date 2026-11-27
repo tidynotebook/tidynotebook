@@ -229,8 +229,18 @@ export async function runCollaborationAudit(
           .getByLabel('Member limit', { exact: true })
           .scrollIntoViewIfNeeded();
         await admin
-          .getByText('Empty means no limit.', { exact: true })
+          .getByText(
+            'The number of people, not the owner, in the workspaces of this account. Empty means no limit.',
+            { exact: true },
+          )
           .waitFor();
+        if (!phone)
+          assert.equal(
+            await admin
+              .getByRole('heading', { name: 'Change limits and access' })
+              .getAttribute('data-scroll-edge'),
+            null,
+          );
         await check(admin, 'account-member-limit');
         await adminContext.close();
         if (phone) {
@@ -394,7 +404,20 @@ export async function runCollaborationAudit(
         await members();
         await fixture.setMemberLimit(6);
         await owner.getByText('6 of 7 seats used', { exact: true }).waitFor();
-        await owner.getByText('3 open invites', { exact: true }).waitFor();
+        const openInvites = owner.getByText('3 open invites', { exact: true });
+        await openInvites.waitFor();
+        assert.equal(
+          await openInvites.evaluate((element) => {
+            const range = document.createRange();
+            range.selectNodeContents(element);
+            return (
+              range.getBoundingClientRect().height <=
+              parseFloat(getComputedStyle(element).lineHeight)
+            );
+          }),
+          true,
+          'The open invite count fits on one line.',
+        );
         await owner.getByRole('meter', { name: 'Seats' }).waitFor();
         if (fixture.hasPortal)
           await owner.getByRole('link', { name: 'Manage seats' }).waitFor();
@@ -421,7 +444,8 @@ export async function runCollaborationAudit(
           .click();
         await viewer
           .getByText(
-            'Your seat in this workspace is part of the plan of Owner.',
+            'Owner invited you as Viewer. Your seat in this workspace is part of the plan of Owner.',
+            { exact: true },
           )
           .waitFor();
         await check(viewer, 'join-seat-notice');
@@ -443,23 +467,37 @@ export async function runCollaborationAudit(
           .getByText('All 6 seats are in use. Add seats to invite more people.')
           .waitFor();
         assert.ok(await invite.isDisabled());
-        if (fixture.hasPortal) {
-          const manage = owner.getByRole('link', { name: 'Manage seats' });
-          await manage.waitFor();
+        async function checkNoticeAction(message: string, label: string) {
+          const action = owner.getByRole('link', { name: label, exact: true });
+          await action.waitFor();
+          const notice = owner.getByRole('status').filter({ hasText: message });
+          const position = await notice.evaluate((element) => {
+            const message = element.querySelector('span.text-strong');
+            const actionText = element.querySelector('a')?.firstChild;
+            if (!message || !actionText)
+              throw new Error('Notice action is missing.');
+            const range = document.createRange();
+            range.selectNode(actionText);
+            const anchorText = range.getBoundingClientRect();
+            const body = message.getBoundingClientRect();
+            return {
+              dx: anchorText.left - body.left,
+              below: anchorText.top >= body.bottom,
+            };
+          });
           if (phone) {
-            const message = await owner
-              .getByText(
-                'All 6 seats are in use. Add seats to invite more people.',
-              )
-              .boundingBox();
-            const action = await manage.boundingBox();
-            assert.ok(message && action);
             assert.ok(
-              action.y >= message.y + message.height,
-              'On touch screens the portal link is below the full notice.',
+              position.below,
+              'The portal link is below the full notice.',
             );
-          }
+            assert.ok(
+              Math.abs(position.dx) <= 1,
+              'The portal link starts at the notice text edge.',
+            );
+          } else assert.ok(!position.below && position.dx > 0);
         }
+        if (fixture.hasPortal)
+          await checkNoticeAction('All 6 seats are in use.', 'Manage seats');
         await check(owner, 'members-seats-full');
         await fixture.setMemberLimit(null);
         await owner
@@ -468,18 +506,68 @@ export async function runCollaborationAudit(
         const joinBlocked =
           'The owner of this workspace cannot add members now.';
         await fixture.setCollaboration(false);
-        await owner
-          .getByText(
-            fixture.hasPortal
-              ? 'Your plan does not include collaboration.'
-              : 'Collaboration is turned off for this account.',
-          )
-          .waitFor();
-        if (fixture.hasPortal)
-          await owner.getByRole('link', { name: 'See plans' }).waitFor();
+        const offText = fixture.hasPortal
+          ? 'Your plan does not include collaboration.'
+          : 'Collaboration is turned off for this account.';
+        const offNotice = owner
+          .getByRole('status')
+          .filter({ hasText: offText });
+        await offNotice.waitFor();
+        const help = owner.getByText(
+          'Owners and admins can invite people and change roles.',
+        );
+        const [noticeBounds, helpBounds] = await Promise.all([
+          offNotice.boundingBox(),
+          help.boundingBox(),
+        ]);
+        assert.ok(noticeBounds && helpBounds);
+        assert.equal(noticeBounds.x, helpBounds.x);
+        assert.ok(noticeBounds.y + noticeBounds.height < helpBounds.y);
+        assert.ok(
+          await offNotice.evaluate(
+            (element) =>
+              Math.abs(
+                element.getBoundingClientRect().width -
+                  (element.parentElement?.getBoundingClientRect().width ?? 0),
+              ) <= 1,
+          ),
+          'The collaboration notice fills the Members content width.',
+        );
+        if (fixture.hasPortal) await checkNoticeAction(offText, 'See plans');
         assert.ok(await invite.isDisabled());
         await owner.getByText(fixture.pendingEmail, { exact: true }).waitFor();
+        assert.equal(
+          await owner
+            .getByRole('button', { name: 'Copy link', exact: true })
+            .count(),
+          0,
+        );
         await check(owner, 'members-collaboration-off');
+        if (phone) {
+          await owner
+            .getByRole('button', {
+              name: `Actions for ${fixture.pendingEmail}`,
+            })
+            .click();
+          const menu = owner.getByRole('menu');
+          await menu
+            .getByRole('menuitem', { name: 'Revoke', exact: true })
+            .waitFor();
+          assert.equal(
+            await menu.getByRole('menuitem', { name: 'Copy link' }).count(),
+            0,
+          );
+          await check(owner, 'members-collaboration-off-actions');
+          await owner.keyboard.press('Escape');
+          await menu.waitFor({ state: 'hidden' });
+        } else {
+          assert.ok(
+            await owner
+              .getByRole('button', { name: 'Revoke', exact: true })
+              .first()
+              .isEnabled(),
+          );
+        }
         await viewer.getByText(joinBlocked, { exact: true }).waitFor();
         assert.ok(await acceptLink.isDisabled());
         assert.ok(
@@ -507,9 +595,7 @@ export async function runCollaborationAudit(
         );
         await check(viewer, 'switcher-collaboration-off');
         await fixture.setCollaboration(true);
-        await owner
-          .getByText('Owners and admins can invite people and change roles.')
-          .waitFor();
+        await offNotice.waitFor({ state: 'hidden' });
         assert.ok(await invite.isEnabled());
         await viewer
           .getByRole('menuitem', { name: 'Accept invite', exact: true })

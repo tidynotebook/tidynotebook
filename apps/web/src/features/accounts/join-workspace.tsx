@@ -228,14 +228,12 @@ export function JoinWorkspacePage(): ReactNode {
     invite.acceptanceMessage === null ? null : (
       <Notice tone="problem" message={invite.acceptanceMessage} />
     );
-  const seatNotice =
-    invite.seatOwnerName === null ? null : (
-      <Notice
-        message={`Your seat in this workspace is part of the plan of ${invite.seatOwnerName}.`}
-      />
-    );
   const title = `Join ${invite.workspaceName}`;
-  const details = `${invite.inviterName ?? 'A workspace member'} invited you as ${role}.`;
+  const seatDetails =
+    invite.seatOwnerName === null
+      ? ''
+      : ` Your seat in this workspace is part of the plan of ${invite.seatOwnerName}.`;
+  const details = `${invite.inviterName ?? 'A workspace member'} invited you as ${role}.${seatDetails}`;
   const permissions = {
     admin: 'You can read and edit notes and manage members in this workspace.',
     editor: 'You can read and edit the notes in this workspace.',
@@ -246,7 +244,6 @@ export function JoinWorkspacePage(): ReactNode {
       <AuthFrame title={title}>
         <Stack gap={4}>
           <Notice message={details} />
-          {seatNotice}
           <p className="text-secondary text-muted">{permissions}</p>
           {blocked ?? (
             <AcceptForm
@@ -297,7 +294,6 @@ export function JoinWorkspacePage(): ReactNode {
     <AuthFrame title={title}>
       <Stack gap={4}>
         <Notice message={details} />
-        {seatNotice}
         {blocked}
         {error === '' ? null : <Notice tone="problem" message={error} />}
         <Inline gap={2}>
