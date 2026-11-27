@@ -6,7 +6,6 @@ import {
   listWorkspaceInvites,
   listWorkspaceMembers,
   previewWorkspaceInvites,
-  readWorkspaceInviteLink,
   removeWorkspaceMember,
   revokeWorkspaceInvite,
   updateWorkspaceMemberRole,
@@ -45,6 +44,7 @@ import {
   SelectField,
   Stack,
   TextAreaField,
+  Toast,
   buttonClassName,
   type MenuItem,
 } from '@notesapp/ui';
@@ -61,6 +61,12 @@ import {
 } from './invite-addresses.ts';
 import { SettingsDialog } from './settings-dialog.tsx';
 import { usePhoneSettings } from './settings-section.tsx';
+import {
+  CopyInviteButton,
+  InviteCopyProblem,
+  inviteLinkCopied,
+  useWorkspaceInviteCopy,
+} from './workspace-invite-copy.tsx';
 
 const roles: readonly WorkspaceInviteRole[] = ['admin', 'editor', 'viewer'];
 const roleHelp = {
@@ -118,7 +124,8 @@ export function WorkspaceMembers({
   const [after, setAfter] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
   const [problem, setProblem] = useState('');
-  const [notice, setNotice] = useState('');
+  const { copy, problem: copyProblem } = useWorkspaceInviteCopy(workspaceId);
+  const [phoneCopies, setPhoneCopies] = useState(0);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [rolePicker, setRolePicker] = useState<WorkspaceMember | null>(null);
   const [removal, setRemoval] = useState<WorkspaceMember | null>(null);
@@ -155,21 +162,11 @@ export function WorkspaceMembers({
     };
   }, [manage, revision, workspaceId, workspace.state]);
 
-  const copy = async (invitationId: string): Promise<void> => {
-    const response = await readWorkspaceInviteLink({
-      path: { workspaceId, invitationId },
-    });
-    if (response.data === undefined) {
-      setProblem(problemMessage(response.error));
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(response.data.url);
-      setNotice('Invitation link copied.');
-    } catch {
-      setProblem('The link could not be copied.');
-    }
-  };
+  useEffect(() => {
+    if (phoneCopies === 0) return;
+    const timeout = window.setTimeout(() => setPhoneCopies(0), 5000);
+    return () => window.clearTimeout(timeout);
+  }, [phoneCopies]);
 
   function changeRole(
     member: WorkspaceMember,
@@ -212,7 +209,12 @@ export function WorkspaceMembers({
   return (
     <Stack gap={6}>
       {problem === '' ? null : <Notice tone="problem" message={problem} />}
-      {notice === '' ? null : <Notice message={notice} />}
+      {copyProblem === null ? null : (
+        <InviteCopyProblem problem={copyProblem} />
+      )}
+      {phoneCopies > 0 ? (
+        <Toast key={phoneCopies} message={inviteLinkCopied} />
+      ) : null}
       {seats === null ? null : (
         <WorkspaceSeatStatus seats={seats} hasPortal={hasPortal} />
       )}
@@ -255,9 +257,6 @@ export function WorkspaceMembers({
           ) : (
             <Card responsive>
               {invites.map((invite) => {
-                const copyLink = () => {
-                  void copy(invite.invitationId);
-                };
                 const revoke = () => {
                   void revokeWorkspaceInvite({
                     path: { workspaceId, invitationId: invite.invitationId },
@@ -290,7 +289,16 @@ export function WorkspaceMembers({
                                     {
                                       id: 'copy',
                                       label: 'Copy link',
-                                      onSelect: copyLink,
+                                      onSelect: () => {
+                                        void copy(invite.invitationId).then(
+                                          (copied) => {
+                                            if (copied)
+                                              setPhoneCopies(
+                                                (copies) => copies + 1,
+                                              );
+                                          },
+                                        );
+                                      },
                                     },
                                   ]),
                               {
@@ -306,13 +314,9 @@ export function WorkspaceMembers({
                         <div className="hidden lg:block">
                           <Inline gap={2}>
                             {collaborationOff ? null : (
-                              <Button
-                                variant="secondary"
-                                size="compact"
-                                onClick={copyLink}
-                              >
-                                Copy link
-                              </Button>
+                              <CopyInviteButton
+                                copy={() => copy(invite.invitationId)}
+                              />
                             )}
                             <Button
                               variant="ghost"
@@ -445,7 +449,6 @@ export function WorkspaceMembers({
         <InvitePeople
           workspaceId={workspaceId}
           workspaceName={workspaceName}
-          copy={copy}
           seats={seats}
           close={() => {
             setInviteOpen(false);
@@ -651,20 +654,19 @@ function MemberEmail({
 function InvitePeople({
   workspaceId,
   workspaceName,
-  copy,
   seats,
   close,
 }: {
   readonly workspaceId: string;
   readonly workspaceName: string;
   readonly seats: WorkspaceSeats | null;
-  readonly copy: (id: string) => Promise<void>;
   readonly close: () => void;
 }): ReactNode {
   const [input, setInput] = useState('');
   const [role, setRole] = useState<WorkspaceInviteRole>('editor');
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState('');
+  const { copy, problem: copyProblem } = useWorkspaceInviteCopy(workspaceId);
   const [results, setResults] = useState<WorkspaceInviteResult[] | null>(null);
   const [mail, setMail] = useState<boolean | null>(null);
   const [checked, setChecked] = useState(false);
@@ -783,6 +785,9 @@ function InvitePeople({
         }}
       >
         <DialogBody>
+          {copyProblem === null ? null : (
+            <InviteCopyProblem problem={copyProblem} />
+          )}
           {results === null ? (
             <Stack gap={3}>
               <TextAreaField
@@ -829,7 +834,7 @@ function InvitePeople({
               )}
             </Stack>
           ) : (
-            results.map((result, index) => (
+            results.map(({ invitationId, ...result }, index) => (
               <ListRow
                 key={`${result.email}:${index}`}
                 label={result.email}
@@ -862,17 +867,8 @@ function InvitePeople({
                           : 'Invite created. Copy the link to send it.'
                 }
                 control={
-                  result.invitationId === undefined ? undefined : (
-                    <Button
-                      size="compact"
-                      variant="secondary"
-                      onClick={() => {
-                        if (result.invitationId !== undefined)
-                          void copy(result.invitationId);
-                      }}
-                    >
-                      Copy link
-                    </Button>
+                  invitationId === undefined ? undefined : (
+                    <CopyInviteButton copy={() => copy(invitationId)} />
                   )
                 }
               />

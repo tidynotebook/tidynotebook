@@ -76,7 +76,11 @@ function setPageInert(panel: HTMLElement | null, inert: boolean): () => void {
   const container = panel?.closest('[data-notes-dialog-root]') ?? null;
   const changed: HTMLElement[] = [];
   for (const child of Array.from(body.children)) {
-    if (!(child instanceof HTMLElement)) continue;
+    if (
+      !(child instanceof HTMLElement) ||
+      child.hasAttribute('data-toast-layer')
+    )
+      continue;
     if (container !== null && child.contains(container)) continue;
     if (!('inert' in child)) continue;
     if (child.inert === inert) continue;

@@ -18,11 +18,23 @@
  * sides, both from the named scale, so no screen writes a clamp of its own.
  */
 import { createContext, useContext, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { pageGutter } from './public-layout.ts';
 import { transitionRaise } from './motion.ts';
 
 const ToastStackContext = createContext(false);
-const placement = `pointer-events-none fixed inset-x-0 bottom-0 z-50 flex items-center pb-4 ${pageGutter}`;
+
+function toastLayer(children: ReactNode): ReactNode {
+  return createPortal(
+    <div
+      data-toast-layer=""
+      className={`pointer-events-none fixed inset-x-0 bottom-0 z-60 flex flex-col items-center gap-2 pb-4 ${pageGutter}`}
+    >
+      {children}
+    </div>,
+    document.body,
+  );
+}
 
 export function ToastStack({
   children,
@@ -31,9 +43,7 @@ export function ToastStack({
 }): ReactNode {
   return (
     <ToastStackContext.Provider value>
-      <div className={`${placement} flex-col gap-2 empty:hidden`}>
-        {children}
-      </div>
+      {toastLayer(children)}
     </ToastStackContext.Provider>
   );
 }
@@ -56,7 +66,6 @@ export function Toast({
   const card = (
     <div
       role="status"
-      aria-live="polite"
       className={`pointer-events-auto flex w-full max-w-md flex-wrap items-center gap-4 rounded-lg border border-overlay-edge bg-overlay p-3 coarse:p-4 text-body text-strong shadow-overlay ${transitionRaise}`}
     >
       <span
@@ -68,9 +77,5 @@ export function Toast({
       {children}
     </div>
   );
-  return stacked ? (
-    card
-  ) : (
-    <div className={`${placement} justify-center`}>{card}</div>
-  );
+  return stacked ? card : toastLayer(card);
 }

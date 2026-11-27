@@ -7,7 +7,12 @@ import {
   fineTextRoles,
   touchTextRoles,
 } from '../../packages/ui/src/typography.ts';
-import { hasChromium, routeAuditAssets, type Page } from './browser.ts';
+import {
+  hasChromium,
+  routeAuditAssets,
+  type Locator,
+  type Page,
+} from './browser.ts';
 import {
   clearCollaborationFixtures,
   collaborationFixture,
@@ -75,7 +80,35 @@ export async function runCollaborationAudit(
             serviceWorkers: 'block',
           });
           await routeAuditAssets(context);
+          await context.addInitScript(() => {
+            Object.defineProperty(navigator, 'clipboard', {
+              value: {
+                async writeText(value: string) {
+                  if (
+                    document.documentElement.hasAttribute(
+                      'data-block-clipboard',
+                    )
+                  )
+                    throw new Error('Clipboard refused the write.');
+                  document.documentElement.dataset.testCopiedText = value;
+                },
+              },
+            });
+          }, undefined);
           return context;
+        }
+        async function assertToastAbove(toast: Locator) {
+          await toast.waitFor();
+          assert.ok(
+            await toast.evaluate((element) => {
+              const { left, top, width, height } =
+                element.getBoundingClientRect();
+              return element.contains(
+                document.elementFromPoint(left + width / 2, top + height / 2),
+              );
+            }),
+            'The toast is visible above the current overlay.',
+          );
         }
         async function signIn(page: Page, email: string) {
           page.setDefaultTimeout(18_000);
@@ -308,7 +341,98 @@ export async function runCollaborationAudit(
             .getByRole('button', { name: 'Back to section' })
             .waitFor();
         await check(owner, 'invite-results');
+        const resultCopyRow = owner
+          .locator('[data-ui-row]')
+          .filter({ hasText: 'result@example.test' });
+        const resultCopy = resultCopyRow.getByRole('button', {
+          name: 'Copy link',
+          exact: true,
+        });
+        const copyWidth = (await resultCopy.boundingBox())?.width;
+        assert.ok(copyWidth);
+        await resultCopy.click();
+        const resultCopied = resultCopyRow.getByRole('button', {
+          name: 'Copied!',
+          exact: true,
+        });
+        await resultCopied.waitFor();
+        assert.equal((await resultCopied.boundingBox())?.width, copyWidth);
+        const copiedMessage = 'Invitation link copied.';
+        assert.equal(
+          await resultCopyRow
+            .getByRole('status')
+            .filter({ hasText: copiedMessage })
+            .count(),
+          1,
+        );
+        assert.equal(
+          await owner
+            .locator('[data-toast-message]')
+            .filter({ hasText: copiedMessage })
+            .count(),
+          0,
+        );
+        await check(owner, 'invite-results-copied');
+        await resultCopy.waitFor();
+        const copiedURL = await owner.evaluate(
+          () => document.documentElement.dataset.testCopiedText,
+        );
+        assert.ok(copiedURL && new URL(copiedURL).hash.length > 1);
+        await owner.evaluate(() =>
+          document.documentElement.setAttribute('data-block-clipboard', ''),
+        );
+        await resultCopy.click();
+        const copyError = owner.getByRole('alert').filter({
+          hasText: 'Could not copy the link. Select and copy it yourself.',
+        });
+        await copyError.waitFor();
+        assert.ok(
+          await owner
+            .getByLabel('Invitation link', { exact: true })
+            .evaluate(
+              (field) =>
+                field instanceof HTMLInputElement &&
+                field.readOnly &&
+                field.value.length > 0 &&
+                field.selectionStart === 0 &&
+                field.selectionEnd === field.value.length,
+            ),
+        );
+        await check(owner, 'invite-results-copy-error');
+        await owner.evaluate(() =>
+          document.documentElement.removeAttribute('data-block-clipboard'),
+        );
         await owner.getByRole('button', { name: 'Done', exact: true }).click();
+        const pendingCopyRow = owner
+          .locator('[data-member-row]')
+          .filter({ hasText: fixture.pendingEmail });
+        if (phone) {
+          await pendingCopyRow
+            .getByRole('button', {
+              name: `Actions for ${fixture.pendingEmail}`,
+            })
+            .click();
+          const menu = owner.getByRole('menu');
+          await menu
+            .getByRole('menuitem', { name: 'Copy link', exact: true })
+            .click();
+          await menu.waitFor({ state: 'hidden' });
+          await owner.getByRole('dialog').waitFor();
+          const toast = owner
+            .getByRole('status')
+            .filter({ hasText: copiedMessage });
+          await assertToastAbove(toast);
+          await check(owner, 'members-copy-toast');
+          await toast.waitFor({ state: 'hidden' });
+        } else {
+          await pendingCopyRow
+            .getByRole('button', { name: 'Copy link', exact: true })
+            .click();
+          await pendingCopyRow
+            .getByRole('button', { name: 'Copied!', exact: true })
+            .waitFor();
+          await check(owner, 'members-copied');
+        }
         const role = owner.getByRole('button', {
           name: 'Role for Casey Editor',
         });
@@ -629,6 +753,13 @@ export async function runCollaborationAudit(
 
         await viewer.goto(home);
         await switcher(viewer);
+        const workspaceMenu = viewer.getByRole('menu');
+        const workspaceRow = workspaceMenu.getByRole('menuitemradio', {
+          name: `${fixture.workspaceName} Viewer`,
+          exact: true,
+        });
+        await workspaceRow.waitFor();
+        await check(viewer, 'switcher-roles');
         await viewer
           .getByText(fixture.viewerSwitcherName, { exact: true })
           .click();
@@ -797,6 +928,12 @@ export async function runCollaborationAudit(
           await check(page, surface);
         }
         if (phone) assert.equal(titleEdges[0], titleEdges[1]);
+        await editor.keyboard.press('Control+,');
+        await editor.getByRole('dialog').waitFor();
+        await editor
+          .getByRole('button', { name: 'Close Settings', exact: true })
+          .click();
+        await editor.getByRole('dialog').waitFor({ state: 'hidden' });
         await editorContext.setOffline(true);
         if (phone)
           await editor
@@ -816,6 +953,8 @@ export async function runCollaborationAudit(
         await text.press('Control+End');
         await editor.keyboard.type('\nKeep this offline draft');
         await text.press('Control+s');
+        await editor.keyboard.press('Control+,');
+        await editor.getByRole('dialog').waitFor();
         await members();
         await role.click();
         await owner
@@ -832,6 +971,20 @@ export async function runCollaborationAudit(
           })
           .waitFor();
         await editor.getByText(/Your unsent text is in Personal/).waitFor();
+        await assertToastAbove(
+          editor.getByRole('status').filter({
+            hasText: 'Your role changed to Viewer. Editing is off.',
+          }),
+        );
+        await assertToastAbove(
+          editor
+            .getByRole('status')
+            .filter({ hasText: 'Your unsent text is in Personal' }),
+        );
+        await editor
+          .getByRole('button', { name: 'Close Settings', exact: true })
+          .click();
+        await editor.getByRole('dialog').waitFor({ state: 'hidden' });
         await check(editor, 'downgrade-and-recovery-toasts');
         await editor
           .getByRole('button', { name: 'Dismiss', exact: true })
@@ -852,6 +1005,11 @@ export async function runCollaborationAudit(
             exact: true,
           })
           .waitFor();
+        await assertToastAbove(
+          viewer.getByRole('status').filter({
+            hasText: `You no longer have access to ${fixture.workspaceName}.`,
+          }),
+        );
         await check(viewer, 'removal-toast');
         await viewerContext.close();
 
