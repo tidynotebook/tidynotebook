@@ -86,6 +86,7 @@ export function completeTestHandlers(handlers: HandlerMap): HandlerMap {
   return {
     acceptWorkspaceInvite: collaborationUnavailable,
     createWorkspaceInvites: collaborationUnavailable,
+    previewWorkspaceInvites: collaborationUnavailable,
     declineWorkspaceInvite: collaborationUnavailable,
     leaveWorkspace: collaborationUnavailable,
     listMyWorkspaceInvites: collaborationUnavailable,

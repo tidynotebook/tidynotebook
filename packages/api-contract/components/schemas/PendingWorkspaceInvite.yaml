@@ -9,7 +9,19 @@ required:
   - role
   - inviterName
   - expiresAt
+  - acceptanceMessage
+  - seatOwnerName
 properties:
+  seatOwnerName:
+    type: [string, 'null']
+    maxLength: 256
+    description: Name of the owner when seats are limited, or null when they are unlimited.
+  acceptanceMessage:
+    description: Why the current owner setting prevents acceptance, or null when it permits acceptance.
+    type:
+      - string
+      - 'null'
+    maxLength: 256
   invitationId:
     $ref: './Uuid.yaml'
   workspaceId:

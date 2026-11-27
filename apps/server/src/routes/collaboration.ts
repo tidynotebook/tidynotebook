@@ -1,13 +1,16 @@
 import { randomUUID } from 'node:crypto';
 import {
+  checkWorkspaceSeatPreview,
   fail,
   inviteRole,
   normalizeEmail,
   ok,
   workspaceCollaboration,
+  workspaceInvitationWrite,
   workspaceInviteBatchSize,
   workspaceMemberPageSize,
   type CollaborationStore,
+  type WorkspaceInvite,
 } from '@notesapp/core';
 import { requireSessionActor, requireWriteOrigin } from '../auth/actor.ts';
 import type { Mailer } from '../auth/mail.ts';
@@ -27,6 +30,7 @@ import {
   DomainProblemError,
   NotFoundError,
   unwrapDomain,
+  workspaceInvitationsOffTitle,
 } from '../plugins/problem.ts';
 import type { HandlerMap, HandlerResult } from '../plugins/register.ts';
 import { readProperty } from '../values.ts';
@@ -54,9 +58,38 @@ function answer(body: unknown, privateData = false): HandlerResult {
   };
 }
 
+function inviteResponse({ collaborationEnabled, ...invite }: WorkspaceInvite) {
+  return {
+    ...invite,
+    acceptanceMessage: collaborationEnabled
+      ? null
+      : workspaceInvitationsOffTitle,
+  };
+}
+
 function notFound<T>(value: T | null): T {
   if (value === null) throw new NotFoundError();
   return value;
+}
+
+function inviteBatch(body: unknown) {
+  const role = inviteRole(readProperty(body, 'role'));
+  const input = readProperty(body, 'emails');
+  if (
+    role === null ||
+    !Array.isArray(input) ||
+    input.length < 1 ||
+    input.length > workspaceInviteBatchSize
+  )
+    throw new DomainProblemError({ code: 'forbidden', fileIds: [] });
+  const emails: string[] = [];
+  for (const value of input) {
+    const email = typeof value === 'string' ? normalizeEmail(value) : null;
+    if (email === null)
+      throw new DomainProblemError({ code: 'forbidden', fileIds: [] });
+    emails.push(email);
+  }
+  return { role, emails };
 }
 
 export function createCollaborationHandlers(
@@ -91,7 +124,12 @@ export function createCollaborationHandlers(
             actor,
             workspaceId,
             'read',
-            async (tx) => ok(await tx.members(after)),
+            async (tx) =>
+              ok({
+                ...(await tx.members(after)),
+                collaborationEnabled: await tx.invitationEnabled(),
+                seats: (await tx.seatPreview([], false)).seats,
+              }),
           ),
         ),
         true,
@@ -165,33 +203,45 @@ export function createCollaborationHandlers(
           async (tx) => ok(await tx.invites(null)),
         ),
       );
-      return answer({ invitations: invites }, true);
+      return answer({ invitations: invites.map(inviteResponse) }, true);
+    },
+    previewWorkspaceInvites: async (request) => {
+      const { actor } = requireSessionActor(request);
+      const workspaceId = readText(request.params, 'workspaceId');
+      const { emails } = inviteBatch(request.body);
+      const preview = unwrapDomain(
+        await workspaceCollaboration(
+          store,
+          actor,
+          workspaceId,
+          'invite',
+          async (tx) => ok(await tx.seatPreview(emails, false)),
+        ),
+      );
+      return answer(
+        {
+          additionalPlaces: preview.additionalPlaces,
+          freePlaces: preview.seats?.freePlaces ?? null,
+        },
+        true,
+      );
     },
     createWorkspaceInvites: async (request) => {
       const { actor, name } = requireSessionActor(request);
       const workspaceId = readText(request.params, 'workspaceId');
-      const role = inviteRole(readProperty(request.body, 'role'));
-      const input = readProperty(request.body, 'emails');
-      if (
-        role === null ||
-        !Array.isArray(input) ||
-        input.length < 1 ||
-        input.length > workspaceInviteBatchSize
-      )
-        throw new DomainProblemError({ code: 'forbidden', fileIds: [] });
-      const emails = input.map((entry: unknown) =>
-        typeof entry === 'string' ? normalizeEmail(entry) : null,
-      );
-      if (emails.some((email) => email === null))
-        throw new DomainProblemError({ code: 'forbidden', fileIds: [] });
+      const { emails, role } = inviteBatch(request.body);
 
       const staged = unwrapDomain(
         await workspaceCollaboration(
           store,
           actor,
           workspaceId,
-          'manage_members',
+          'invite',
           async (tx) => {
+            const limit = checkWorkspaceSeatPreview(
+              await tx.seatPreview(emails, true),
+            );
+            if (!limit.ok) return limit;
             await budget(
               `workspace-inviter:${actor.accountId}`,
               inviteAccountBudget,
@@ -204,8 +254,6 @@ export function createCollaborationHandlers(
             );
             const outcomes = [];
             for (const email of emails) {
-              if (email === null)
-                throw new Error('An invitation email is missing.');
               const token = newPublishedSecret();
               const digest = secretDigest.digest(token);
               const outcome = await tx.createInvite({
@@ -313,7 +361,7 @@ export function createCollaborationHandlers(
           code: 'invitation_invalid',
           fileIds: [],
         });
-      return answer(invite, true);
+      return answer(inviteResponse(invite), true);
     },
     listMyWorkspaceInvites: async (request) => {
       const { actor } = requireSessionActor(request);
@@ -324,7 +372,7 @@ export function createCollaborationHandlers(
       const invitations = rows.slice(0, workspaceMemberPageSize);
       return answer(
         {
-          invitations,
+          invitations: invitations.map(inviteResponse),
           nextAfterInvitationId:
             rows.length > invitations.length
               ? (invitations.at(-1)?.invitationId ?? null)
@@ -338,8 +386,12 @@ export function createCollaborationHandlers(
       const id = readText(request.params, 'invitationId');
       return answer(
         notFound(
-          await store.collaboration(actor, null, (tx) =>
-            tx.answerInvite(id, true),
+          unwrapDomain(
+            await workspaceInvitationWrite(() =>
+              store.collaboration(actor, null, (tx) =>
+                tx.answerInvite(id, true),
+              ),
+            ),
           ),
         ),
       );

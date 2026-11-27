@@ -1015,6 +1015,7 @@ function ControlsDialog({
       open
       title="Change limits and access"
       titleId="controls-title"
+      titleDivider={false}
       width="small"
       onClose={onClose}
     >
@@ -1105,6 +1106,16 @@ function ControlsDialog({
               set({ downloadGigabytes: value });
             }}
           />
+          <TextField
+            id="controls-member-limit"
+            label="Member limit"
+            value={form.memberLimit}
+            inputType="number"
+            hint="The number of people, not the owner, in the workspaces of this account. Empty means no limit."
+            error={errorOf('memberLimit')}
+            onChange={(memberLimit) => set({ memberLimit })}
+          />
+
           <Stack gap={{ fine: 6, coarse: 4 }}>
             <AdminGroup title="Features">
               <SettingSwitchRow

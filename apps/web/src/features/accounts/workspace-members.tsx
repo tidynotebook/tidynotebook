@@ -5,6 +5,7 @@ import {
   getSetupStatus,
   listWorkspaceInvites,
   listWorkspaceMembers,
+  previewWorkspaceInvites,
   readWorkspaceInviteLink,
   removeWorkspaceMember,
   revokeWorkspaceInvite,
@@ -14,6 +15,7 @@ import {
   type WorkspaceInviteResult,
   type WorkspaceInviteRole,
   type WorkspaceMember,
+  type WorkspaceSeats,
 } from '@notesapp/api-client';
 import {
   AlertCircleIcon,
@@ -24,6 +26,7 @@ import {
   Dialog,
   DialogBody,
   DialogFooter,
+  ExternalLinkIcon,
   FixedDialogLayout,
   Form,
   IconSlot,
@@ -33,6 +36,7 @@ import {
   PresenceAvatar,
   ListRow,
   LoadingState,
+  Meter,
   Menu,
   MoreIcon,
   Notice,
@@ -41,6 +45,7 @@ import {
   SelectField,
   Stack,
   TextAreaField,
+  buttonClassName,
   type MenuItem,
 } from '@notesapp/ui';
 import { problemMessage, useSession, useWorkspace } from '../../app.tsx';
@@ -48,6 +53,12 @@ import { normalizeEmail, workspacePresenceColor } from '@notesapp/core';
 import { relativeTime } from '../../lib/relative-time.ts';
 import { useNow } from '../../shell/now.ts';
 import { initialOf } from '../../lib/initial.ts';
+import { portalRoute } from '../../lib/portal.ts';
+import {
+  retainInviteSeatQuote,
+  splitInviteAddresses,
+  type InviteSeatQuote,
+} from './invite-addresses.ts';
 import { SettingsDialog } from './settings-dialog.tsx';
 import { usePhoneSettings } from './settings-section.tsx';
 
@@ -91,10 +102,18 @@ export function WorkspaceMembers({
   const now = useNow();
   const phone = usePhoneSettings();
   const manage = role === 'owner' || role === 'admin';
-  const ownId = useSession().account?.accountId;
+  const { account } = useSession();
+  const ownId = account?.accountId;
+  const hasPortal = account?.accountPortal === true;
   const workspace = useWorkspace();
   const [members, setMembers] = useState<WorkspaceMember[] | null>(null);
   const [invites, setInvites] = useState<PendingWorkspaceInvite[]>([]);
+  const [collaborationEnabled, setCollaborationEnabled] = useState<
+    boolean | null
+  >(null);
+  const [seats, setSeats] = useState<WorkspaceSeats | null>(null);
+  const collaborationOff = collaborationEnabled === false;
+  const inviteDisabled = collaborationEnabled !== true;
   const [count, setCount] = useState(0);
   const [after, setAfter] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
@@ -119,6 +138,9 @@ export function WorkspaceMembers({
         return;
       }
       setMembers(people.data.members);
+      setCollaborationEnabled(people.data.collaborationEnabled);
+      setSeats(people.data.seats);
+      if (!people.data.collaborationEnabled) setInviteOpen(false);
       setCount(people.data.memberCount);
       setAfter(people.data.nextAfterAccountId);
       setInvites(pending?.data?.invitations ?? []);
@@ -191,6 +213,19 @@ export function WorkspaceMembers({
     <Stack gap={6}>
       {problem === '' ? null : <Notice tone="problem" message={problem} />}
       {notice === '' ? null : <Notice message={notice} />}
+      {seats === null ? null : (
+        <WorkspaceSeatStatus seats={seats} hasPortal={hasPortal} />
+      )}
+      {manage && collaborationOff ? (
+        <SeatNotice
+          message={
+            hasPortal
+              ? 'Your plan does not include collaboration.'
+              : 'Collaboration is turned off for this account.'
+          }
+          portalLabel={hasPortal ? 'See plans' : null}
+        />
+      ) : null}
       {manage ? (
         <Inline gap={3} justify="between" align="center">
           <p className="text-secondary text-muted">
@@ -200,6 +235,7 @@ export function WorkspaceMembers({
             <Button
               variant="primary"
               size="compact"
+              disabled={inviteDisabled}
               onClick={() => setInviteOpen(true)}
             >
               Invite people
@@ -248,11 +284,15 @@ export function WorkspaceMembers({
                             trigger="content-edge"
                             compact
                             items={[
-                              {
-                                id: 'copy',
-                                label: 'Copy link',
-                                onSelect: copyLink,
-                              },
+                              ...(collaborationOff
+                                ? []
+                                : [
+                                    {
+                                      id: 'copy',
+                                      label: 'Copy link',
+                                      onSelect: copyLink,
+                                    },
+                                  ]),
                               {
                                 id: 'revoke',
                                 label: 'Revoke',
@@ -265,13 +305,15 @@ export function WorkspaceMembers({
                         </div>
                         <div className="hidden lg:block">
                           <Inline gap={2}>
-                            <Button
-                              variant="secondary"
-                              size="compact"
-                              onClick={copyLink}
-                            >
-                              Copy link
-                            </Button>
+                            {collaborationOff ? null : (
+                              <Button
+                                variant="secondary"
+                                size="compact"
+                                onClick={copyLink}
+                              >
+                                Copy link
+                              </Button>
+                            )}
                             <Button
                               variant="ghost"
                               tone="danger"
@@ -387,7 +429,11 @@ export function WorkspaceMembers({
         ? createPortal(
             <FixedDialogLayout phone>
               <DialogFooter column={false}>
-                <Button variant="primary" onClick={() => setInviteOpen(true)}>
+                <Button
+                  variant="primary"
+                  disabled={inviteDisabled}
+                  onClick={() => setInviteOpen(true)}
+                >
                   Invite people
                 </Button>
               </DialogFooter>
@@ -395,11 +441,12 @@ export function WorkspaceMembers({
             phoneFooter,
           )
         : null}
-      {inviteOpen ? (
+      {inviteOpen && collaborationEnabled === true ? (
         <InvitePeople
           workspaceId={workspaceId}
           workspaceName={workspaceName}
           copy={copy}
+          seats={seats}
           close={() => {
             setInviteOpen(false);
             refresh();
@@ -488,6 +535,11 @@ export function WorkspaceMembers({
                 {removal.displayName ?? removal.email} will lose access to{' '}
                 {workspaceName}.
               </Inset>
+              {seats !== null && removal.ownerWorkspaceMemberships === 1 ? (
+                <Inset as="p">
+                  {removal.displayName ?? removal.email}'s seat becomes free.
+                </Inset>
+              ) : null}
             </DialogBody>
             <DialogFooter>
               <Button variant="secondary" onClick={() => setRemoval(null)}>
@@ -502,6 +554,83 @@ export function WorkspaceMembers({
       )}
     </Stack>
   );
+}
+
+function SeatPortalLink({ label }: { readonly label: string }): ReactNode {
+  return (
+    <a
+      href={portalRoute}
+      target="_blank"
+      rel="noreferrer"
+      className={buttonClassName({ variant: 'ghost', size: 'compact' })}
+    >
+      {label}
+      <ExternalLinkIcon />
+    </a>
+  );
+}
+
+function SeatNotice({
+  message,
+  portalLabel,
+}: {
+  readonly message: string;
+  readonly portalLabel: string | null;
+}): ReactNode {
+  return (
+    <Notice message={message}>
+      {portalLabel === null ? null : (
+        <Inline padX={{ fine: 0, coarse: 4 }} className="coarse:basis-full">
+          <SeatPortalLink label={portalLabel} />
+        </Inline>
+      )}
+    </Notice>
+  );
+}
+
+function WorkspaceSeatStatus({
+  seats,
+  hasPortal,
+}: {
+  readonly seats: WorkspaceSeats;
+  readonly hasPortal: boolean;
+}): ReactNode {
+  const total = seats.memberLimit + 1;
+  const used = seats.membersUsed + seats.pendingInvites + 1;
+  const portal = hasPortal ? <SeatPortalLink label="Manage seats" /> : null;
+  if (seats.freePlaces === 0) {
+    const inUse =
+      total === 1 ? 'Your seat is in use.' : `All ${total} seats are in use.`;
+    return (
+      <SeatNotice
+        message={`${inUse} Add seats to invite more people.`}
+        portalLabel={hasPortal ? 'Manage seats' : null}
+      />
+    );
+  }
+  const text = `${used} of ${total} seats used`;
+  return (
+    <Stack gap={2}>
+      <Inline gap={2} justify="between" align="center">
+        <Inline wrap gapX={1}>
+          <span className="text-body text-strong whitespace-nowrap">
+            {text}
+          </span>
+          <span className="text-secondary text-muted whitespace-nowrap">
+            {seats.pendingInvites} open{' '}
+            {seats.pendingInvites === 1 ? 'invite' : 'invites'}
+          </span>
+        </Inline>
+        {portal}
+      </Inline>
+      <Meter trackOnly label="Seats" value={used} max={total} text={text} />
+    </Stack>
+  );
+}
+
+function seatShortage(free: number, needed: number): string {
+  const extra = needed - free;
+  return `You have ${free} free ${free === 1 ? 'seat' : 'seats'}. Remove ${extra} ${extra === 1 ? 'address' : 'addresses'}, or add seats.`;
 }
 
 function MemberEmail({
@@ -523,10 +652,12 @@ function InvitePeople({
   workspaceId,
   workspaceName,
   copy,
+  seats,
   close,
 }: {
   readonly workspaceId: string;
   readonly workspaceName: string;
+  readonly seats: WorkspaceSeats | null;
   readonly copy: (id: string) => Promise<void>;
   readonly close: () => void;
 }): ReactNode {
@@ -549,14 +680,57 @@ function InvitePeople({
       active = false;
     };
   }, []);
-  const emails = input.split(/[\s,]+/u).filter(Boolean);
+  const emails = splitInviteAddresses(input);
   const invalid = badAddresses(emails);
   const validCount = emails.filter((email) => !invalid.includes(email)).length;
+  const key =
+    invalid.length === 0 && emails.length > 0 && emails.length <= 20
+      ? emails.join(',')
+      : '';
+  const memberLimit = seats?.memberLimit ?? null;
+  const freePlaces = seats?.freePlaces ?? null;
+  const [quote, setQuote] = useState<InviteSeatQuote | null>(null);
+  useEffect(() => {
+    if (memberLimit === null || key === '') return;
+    let active = true;
+    const timer = window.setTimeout(() => {
+      void previewWorkspaceInvites({
+        path: { workspaceId },
+        body: { emails: key.split(','), role },
+      })
+        .then(({ data }) => {
+          if (active)
+            setQuote({
+              key,
+              free: data?.freePlaces ?? null,
+              needed: data?.additionalPlaces ?? 0,
+            });
+        })
+        .catch(() => {
+          if (active) setQuote({ key, free: null, needed: 0 });
+        });
+    }, 200);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [key, memberLimit, freePlaces, role, workspaceId]);
+  const currentQuote =
+    quote?.key === key && (memberLimit !== null || quote.refused)
+      ? quote
+      : null;
+  const shortage =
+    currentQuote !== null &&
+    currentQuote.free !== null &&
+    currentQuote.needed > currentQuote.free
+      ? seatShortage(currentQuote.free, currentQuote.needed)
+      : '';
+  const checking = memberLimit !== null && key !== '' && currentQuote === null;
   const created =
     results?.filter((result) => result.outcome === 'created').length ?? 0;
   async function submit() {
     setChecked(true);
-    if (invalid.length > 0 || emails.length === 0 || emails.length > 20) return;
+    if (key === '' || shortage !== '' || checking) return;
     setBusy(true);
     setProblem('');
     try {
@@ -564,7 +738,22 @@ function InvitePeople({
         path: { workspaceId },
         body: { emails, role },
       });
-      if (result.data === undefined) setProblem(problemMessage(result.error));
+      if (
+        result.error?.code === 'member_limit' &&
+        result.error.freePlaces !== undefined
+      ) {
+        const free = result.error.freePlaces;
+        const needed =
+          currentQuote?.needed ??
+          new Set(emails.map((email) => normalizeEmail(email))).size;
+        if (needed > free) setQuote({ key, free, needed, refused: true });
+        else setProblem(result.error.title);
+      } else if (result.data === undefined)
+        setProblem(
+          result.error?.code === 'collaboration_off'
+            ? result.error.title
+            : problemMessage(result.error),
+        );
       else setResults(result.data.results);
     } catch {
       setProblem('Invitations could not be sent.');
@@ -600,13 +789,19 @@ function InvitePeople({
                 id="workspace-invite-emails"
                 label="Email addresses"
                 value={input}
-                onChange={setInput}
+                onChange={(value) => {
+                  setQuote((current) => retainInviteSeatQuote(current, value));
+                  setInput(value);
+                }}
                 size="growing"
-                error={(checked ? invalid : [])
-                  .map(
-                    (address) => `“${address}” is not a valid email address.`,
-                  )
-                  .join('\n')}
+                error={
+                  shortage ||
+                  (checked ? invalid : [])
+                    .map(
+                      (address) => `“${address}” is not a valid email address.`,
+                    )
+                    .join('\n')
+                }
                 hint="Enter up to 20 addresses. Use a comma or a new line between addresses."
               />
               <SelectField
@@ -695,7 +890,13 @@ function InvitePeople({
             <Button
               type="submit"
               variant="primary"
-              disabled={busy || emails.length === 0 || emails.length > 20}
+              disabled={
+                busy ||
+                checking ||
+                shortage !== '' ||
+                emails.length === 0 ||
+                emails.length > 20
+              }
             >
               {validCount <= 1 ? 'Send invite' : `Send ${validCount} invites`}
             </Button>

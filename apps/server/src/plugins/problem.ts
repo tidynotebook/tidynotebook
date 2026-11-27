@@ -75,6 +75,8 @@ export type ProblemCode =
   | 'invalid_response'
   | 'internal_error'
   | 'last_administrator'
+  | 'member_limit'
+  | 'collaboration_off'
   | 'invitation_invalid'
   | 'account_exists'
   | 'open_registration_unavailable'
@@ -119,7 +121,11 @@ export type Problem = {
   readonly noteRefusal?: NoteRefusal;
   /** The limit of the month that refused the request (record 0193). */
   readonly limit?: UsageLimit;
+  readonly freePlaces?: number;
 };
+
+export const workspaceInvitationsOffTitle =
+  'The owner of this workspace cannot add members now.';
 
 const titles: Readonly<Record<ProblemCode, string>> = {
   api_key_limit: 'The account keeps as many API keys as it may.',
@@ -175,6 +181,8 @@ const titles: Readonly<Record<ProblemCode, string>> = {
   quota_exceeded: 'The account has no room left for new content.',
   last_administrator:
     'The installation keeps at least one enabled administrator.',
+  member_limit: 'The workspace member limit would be exceeded.',
+  collaboration_off: workspaceInvitationsOffTitle,
   invitation_invalid: 'This invitation is not valid.',
   account_exists: 'An account already signs in with this address.',
   open_registration_unavailable:
@@ -522,8 +530,9 @@ const domainStatus: Readonly<
   },
   quota: { status: 413, code: 'quota_exceeded' },
   last_administrator: { status: 409, code: 'last_administrator' },
-  // The one refusal of an invitation. An expired, a used, a revoked and an
-  // unknown token all answer it, so the answer states nothing more.
+  member_limit: { status: 403, code: 'member_limit' },
+  collaboration_off: { status: 403, code: 'collaboration_off' },
+  // An expired, used, revoked or unknown invitation returns the same code.
   invitation_invalid: { status: 403, code: 'invitation_invalid' },
   account_exists: { status: 409, code: 'account_exists' },
   open_registration_unavailable: {
@@ -612,6 +621,8 @@ const domainTitles: Readonly<Record<DomainErrorCode, string>> = {
   quota: 'The account has no room left for new content.',
   last_administrator:
     'The change would leave the installation with no enabled administrator.',
+  member_limit: 'The workspace member limit would be exceeded.',
+  collaboration_off: workspaceInvitationsOffTitle,
   invitation_invalid: 'This invitation is not valid. Ask for a new one.',
   account_exists: 'An account already signs in with this address.',
   open_registration_unavailable:
@@ -808,6 +819,7 @@ export function createProblem(input: {
   readonly reason?: string;
   readonly noteRefusal?: NoteRefusal;
   readonly limit?: UsageLimit;
+  readonly freePlaces?: number;
 }): Problem {
   const issues = input.issues ?? [];
   const fileIds = input.fileIds ?? [];
@@ -830,6 +842,7 @@ export function createProblem(input: {
       ? {}
       : { noteRefusal: input.noteRefusal }),
     ...(input.limit === undefined ? {} : { limit: input.limit }),
+    ...(input.freePlaces === undefined ? {} : { freePlaces: input.freePlaces }),
   };
 }
 
@@ -845,6 +858,7 @@ export function classifyError(error: unknown): {
   reason?: string;
   noteRefusal?: NoteRefusal;
   limit?: UsageLimit;
+  freePlaces?: number;
 } {
   if (error instanceof LegalDocumentUnfinishedError)
     return {
@@ -880,6 +894,9 @@ export function classifyError(error: unknown): {
       ...(error.domain.fileIds.length > 0
         ? { fileIds: error.domain.fileIds }
         : {}),
+      ...(error.domain.freePlaces === undefined
+        ? {}
+        : { freePlaces: error.domain.freePlaces }),
       // A refused note names its limit, so a device keeps the cause.
       ...(isNoteRefusal(error.domain.code)
         ? { noteRefusal: error.domain.code }

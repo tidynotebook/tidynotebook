@@ -22,6 +22,7 @@ const controls: Account['controls'] = {
   textLimitBytes: null,
   publishedTransferLimitBytes: null,
   downloadLimitBytes: null,
+  memberLimit: null,
   features: { teams: true, collaboration: true },
 };
 

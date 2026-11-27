@@ -37,6 +37,7 @@ const account: AccountSummary = {
     textLimitBytes: null,
     publishedTransferLimitBytes: null,
     downloadLimitBytes: null,
+    memberLimit: null,
     features: { teams: false, collaboration: false },
     trialEndsAt: null,
     trialState: 'none',

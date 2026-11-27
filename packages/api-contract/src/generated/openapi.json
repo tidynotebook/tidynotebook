@@ -1039,7 +1039,7 @@
             "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
+            "$ref": "#/components/responses/WorkspaceInvitationForbidden"
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
@@ -3403,7 +3403,7 @@
             "$ref": "#/components/responses/BadRequest"
           },
           "403": {
-            "$ref": "#/components/responses/InvitationUnavailable"
+            "$ref": "#/components/responses/RegistrationInvitationForbidden"
           },
           "409": {
             "$ref": "#/components/responses/Conflict"
@@ -5366,7 +5366,7 @@
             "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
+            "$ref": "#/components/responses/WorkspaceInvitationForbidden"
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
@@ -5382,6 +5382,85 @@
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/workspaces/{workspaceId}/invitations/preview": {
+      "post": {
+        "operationId": "previewWorkspaceInvites",
+        "summary": "Count the additional places that invitations would use.",
+        "description": "Only owners and admins can preview a batch. Creating it checks the limit again.",
+        "tags": [
+          "workspaces"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/WorkspaceInvitesCreate"
+        },
+        "responses": {
+          "200": {
+            "description": "The number of places the batch would use and the places available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "additionalPlaces",
+                    "freePlaces"
+                  ],
+                  "properties": {
+                    "additionalPlaces": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 20
+                    },
+                    "freePlaces": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 0,
+                      "maximum": 10000
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/WorkspaceInvitationForbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "423": {
+            "$ref": "#/components/responses/AccountLocked"
           },
           "500": {
             "$ref": "#/components/responses/ServerError"
@@ -9243,6 +9322,26 @@
             }
           }
         }
+      },
+      "RegistrationInvitationForbidden": {
+        "description": "The invitation is invalid (invitation_invalid), the terms or privacy notice changed (consent_required), or the workspace owner's collaboration switch is off (collaboration_off), or the member limit would be exceeded (member_limit).",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "WorkspaceInvitationForbidden": {
+        "description": "The actor may not perform this operation, or the workspace owner's collaboration switch is off (collaboration_off), or the request would exceed the member limit (member_limit). The limit response includes freePlaces.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
       }
     },
     "schemas": {
@@ -9556,6 +9655,7 @@
           "textLimitBytes",
           "publishedTransferLimitBytes",
           "downloadLimitBytes",
+          "memberLimit",
           "features"
         ],
         "properties": {
@@ -9626,6 +9726,14 @@
             ],
             "readOnly": true,
             "description": "The most bytes that the account downloads in one calendar month in UTC, or null for no limit (record 0193)."
+          },
+          "memberLimit": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MemberLimit"
+              }
+            ],
+            "readOnly": true
           },
           "features": {
             "allOf": [
@@ -9738,6 +9846,14 @@
             "writeOnly": true,
             "description": "The new download limit of one month, in bytes, or null for no limit."
           },
+          "memberLimit": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MemberLimit"
+              }
+            ],
+            "writeOnly": true
+          },
           "features": {
             "allOf": [
               {
@@ -9751,7 +9867,7 @@
       },
       "AccountEvent": {
         "type": "object",
-        "description": "One account event. It names the account and nothing else of it.",
+        "description": "One account event. Membership events also name the workspace and the remaining membership count.",
         "additionalProperties": false,
         "required": [
           "cursor",
@@ -9793,6 +9909,36 @@
             "description": "Instant at which it happened.",
             "format": "date-time",
             "maxLength": 64
+          },
+          "ownerAccountId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Uuid"
+              }
+            ],
+            "readOnly": true
+          },
+          "memberAccountId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Uuid"
+              }
+            ],
+            "readOnly": true
+          },
+          "workspaceId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Uuid"
+              }
+            ],
+            "readOnly": true
+          },
+          "ownerWorkspaceMemberships": {
+            "type": "integer",
+            "readOnly": true,
+            "minimum": 0,
+            "description": "The number of workspaces of this owner that the member belongs to after the change."
           }
         }
       },
@@ -9808,7 +9954,9 @@
         "enum": [
           "made",
           "verified",
-          "removed"
+          "removed",
+          "workspace_member_added",
+          "workspace_member_removed"
         ]
       },
       "AccountEventList": {
@@ -13306,6 +13454,15 @@
           }
         }
       },
+      "MemberLimit": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "minimum": 0,
+        "maximum": 10000,
+        "description": "The maximum number of members and reserved places for an owner's workspaces. Null means no limit."
+      },
       "MutationReceipt": {
         "type": "object",
         "description": "What the workspace knows about one mutation identity. A device reads it when it does not know whether a save reached the server, before it transforms work that may already have committed. The answer states the outcome and never the text of a note.",
@@ -14043,9 +14200,27 @@
           "email",
           "role",
           "inviterName",
-          "expiresAt"
+          "expiresAt",
+          "acceptanceMessage",
+          "seatOwnerName"
         ],
         "properties": {
+          "seatOwnerName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 256,
+            "description": "Name of the owner when seats are limited, or null when they are unlimited."
+          },
+          "acceptanceMessage": {
+            "description": "Why the current owner setting prevents acceptance, or null when it permits acceptance.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 256
+          },
           "invitationId": {
             "$ref": "#/components/schemas/Uuid"
           },
@@ -14307,6 +14482,13 @@
             ],
             "readOnly": true,
             "description": "The limit of the month that refused the request, on the codes download_limit and storage_busy only (record 0193)."
+          },
+          "freePlaces": {
+            "type": "integer",
+            "readOnly": true,
+            "minimum": 0,
+            "maximum": 10000,
+            "description": "The available places when the member_limit problem refused a request."
           }
         }
       },
@@ -17211,9 +17393,15 @@
           "accountId",
           "displayName",
           "email",
-          "role"
+          "role",
+          "ownerWorkspaceMemberships"
         ],
         "properties": {
+          "ownerWorkspaceMemberships": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The member's workspace count for this owner."
+          },
           "accountId": {
             "$ref": "#/components/schemas/Uuid"
           },
@@ -17246,9 +17434,25 @@
         "required": [
           "members",
           "nextAfterAccountId",
-          "memberCount"
+          "memberCount",
+          "collaborationEnabled",
+          "seats"
         ],
         "properties": {
+          "seats": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WorkspaceSeats"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "collaborationEnabled": {
+            "type": "boolean",
+            "description": "Whether the workspace owner can add members by invitation."
+          },
           "members": {
             "type": "array",
             "maxItems": 100,
@@ -17298,6 +17502,36 @@
             "description": "Name of the workspace.",
             "minLength": 1,
             "maxLength": 200
+          }
+        }
+      },
+      "WorkspaceSeats": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "memberLimit",
+          "membersUsed",
+          "pendingInvites",
+          "freePlaces"
+        ],
+        "properties": {
+          "memberLimit": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "membersUsed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pendingInvites": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "freePlaces": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
           }
         }
       }

@@ -59,7 +59,7 @@ export type MenuItem = {
   /** A value that is unique inside one menu. */
   readonly id: string;
   readonly label: string;
-  readonly detail?: string;
+  readonly detail?: string | undefined;
   /** A short value shown on the right, such as the current theme. */
   readonly hint?: ReactNode | undefined;
   readonly icon?: ReactNode | undefined;
@@ -118,12 +118,13 @@ function MenuRow({
       aria-label={item.detail === undefined ? undefined : item.label}
       aria-description={item.detail}
       tabIndex={-1}
+      data-menu-row={item.id}
       data-menu-input={showFocus ? 'keyboard' : 'pointer'}
       className={rowClassName({
         danger: item.danger,
         className: `w-full text-left ${showFocus ? '' : 'focus-visible:outline-none'}`,
       }).replace(showFocus ? 'hover:bg-hover' : '', '')}
-      disabled={item.disabled ?? false}
+      disabled={item.disabled}
       onPointerEnter={item.onIntent}
       onFocus={item.onIntent}
       onClick={() => onRun(item)}
@@ -233,14 +234,30 @@ function MenuList({
   /** A press here does not count as a press outside, such as the trigger. */
   readonly isInside?: ((target: Node) => boolean) | undefined;
 }): ReactNode {
-  const [activeIndex, setActiveIndex] = useState(initialIndex);
-  const [submenu, setSubmenu] = useState<MenuItem | null>(null);
+  const [[path, focusIndex], setNavigation] = useState<
+    readonly [path: readonly string[], focusIndex: number]
+  >([[], initialIndex]);
+  let level: readonly MenuItem[] = [...rootItems, ...rootPinned];
+  let parentRows = level;
+  let submenu: MenuItem | undefined;
+  for (const id of path) {
+    const item = level.find((row) => row.id === id);
+    if (item?.submenu === undefined) {
+      setNavigation([[], 0]);
+      break;
+    }
+    submenu = item;
+    parentRows = level;
+    level = item.submenu;
+  }
+
   const items = submenu?.submenu ?? rootItems;
-  const submenuIndex = useRef(0);
-  const back = useCallback((): void => {
-    setActiveIndex(submenuIndex.current);
-    setSubmenu(null);
-  }, []);
+  const back = (): void => {
+    const index = parentRows
+      .filter((row) => !row.disabled)
+      .findIndex((row) => row === submenu);
+    setNavigation([path.slice(0, -1), Math.max(0, index)]);
+  };
   const pinned: readonly MenuItem[] = submenu
     ? [
         {
@@ -254,12 +271,13 @@ function MenuList({
   const listRef = useRef<HTMLDivElement | null>(null);
   const bottomEdge = useRef<HTMLDivElement | null>(null);
   const safeArea = useRef<HTMLSpanElement | null>(null);
+  const focusedRow = useRef<string | undefined>(undefined);
+  const previous = useRef<readonly [readonly string[], string[]] | null>(null);
 
   // The arrow keys run over both regions in the order they are on the screen,
   // so a pinned row is reached by pressing End and never disappears from the
   // keyboard order when the scrolling list grows.
   const rows = [...items, ...pinned];
-  const enabled = rows.filter((item) => item.disabled !== true);
 
   useEffect(() => {
     const onPointerDown = (event: MouseEvent): void => {
@@ -269,19 +287,8 @@ function MenuList({
       if (listRef.current?.contains(target) === true) return;
       onClose(false);
     };
-    document.addEventListener('mousedown', onPointerDown);
-    return () => {
-      document.removeEventListener('mousedown', onPointerDown);
-    };
-  }, [onClose, isInside]);
-
-  // Escape closes the open list wherever the focus is, because the list takes
-  // the focus one frame after it opens and a key pressed before that reaches
-  // what had it. The capture phase, so Escape closes the innermost thing and
-  // nothing above it: an open menu inside the navigation drawer would
-  // otherwise close the drawer as well, because the drawer listens for the key
-  // on the window, and focus would have nowhere to return to.
-  useEffect(() => {
+    // Capture Escape before the containing drawer handles it, even during
+    // the frame before focus reaches the menu.
     const onKeyDown = (event: KeyboardEvent): void => {
       if (event.key !== 'Escape') return;
       event.preventDefault();
@@ -289,21 +296,13 @@ function MenuList({
       if (submenu) back();
       else onClose(true);
     };
+    document.addEventListener('mousedown', onPointerDown);
     window.addEventListener('keydown', onKeyDown, true);
     return () => {
+      document.removeEventListener('mousedown', onPointerDown);
       window.removeEventListener('keydown', onKeyDown, true);
     };
-  }, [onClose, submenu, back]);
-
-  useEffect(() => {
-    window.requestAnimationFrame(() => {
-      listRef.current
-        ?.querySelectorAll<HTMLElement>(
-          '[role="menuitem"]:not([disabled]),[role="menuitemradio"]:not([disabled])',
-        )
-        [activeIndex]?.focus();
-    });
-  }, [activeIndex, submenu]);
+  }, [onClose, isInside, submenu, back]);
 
   /**
    * Writes the place of the open list.
@@ -360,13 +359,37 @@ function MenuList({
     };
   }, [place, submenu]);
 
-  const move = (delta: number): void => {
-    setActiveIndex((current) => {
-      const count = enabled.length;
-      if (count === 0) return 0;
-      return (current + delta + count) % count;
-    });
-  };
+  useLayoutEffect(() => {
+    const prior = previous.current;
+    previous.current = [path, (submenu ? items : rows).map((row) => row.id)];
+    const list = listRef.current;
+    if (!list) return;
+    if (prior?.[0] !== path) {
+      focusedRow.current = undefined;
+      menuButtons(list).at(focusIndex)?.focus();
+      return;
+    }
+
+    const id = focusedRow.current;
+    if (id === undefined || document.activeElement !== document.body) return;
+    const buttons = menuButtons(list);
+    const index = prior[1].indexOf(id);
+    const candidates = [
+      id,
+      ...prior[1].slice(index + 1),
+      ...prior[1].slice(0, index).reverse(),
+    ];
+    for (const candidate of candidates) {
+      const target = buttons.find(
+        (button) => button.dataset.menuRow === candidate,
+      );
+      if (target) {
+        target.focus();
+        return;
+      }
+    }
+    buttons[0]?.focus();
+  });
 
   // A menu states a selection only when a row claims one, so every menu that
   // runs actions keeps the plain `menuitem` role it had.
@@ -374,15 +397,9 @@ function MenuList({
 
   const run = (item: MenuItem): void => {
     if (item.submenu) {
-      submenuIndex.current = enabled.indexOf(item);
       // The new rows can land under a stationary pointer.
       setShowFocus(true);
-      setActiveIndex(0);
-      setSubmenu(item);
-      return;
-    }
-    if (submenu && item.id === 'menu-back') {
-      back();
+      setNavigation([[...path, item.id], 0]);
       return;
     }
     onClose(true);
@@ -398,28 +415,34 @@ function MenuList({
       role="menu"
       data-menu-fit-viewport={fitTouchViewport ? '' : undefined}
       onPointerMove={() => setShowFocus(false)}
-      onKeyDownCapture={() => setShowFocus(true)}
+      onFocus={(event) => {
+        focusedRow.current = event.target.dataset.menuRow;
+      }}
       aria-label={submenu?.label ?? label}
       onKeyDown={(event): void => {
-        if (event.key === 'ArrowDown') {
-          event.preventDefault();
-          move(1);
-        } else if (event.key === 'ArrowUp') {
-          event.preventDefault();
-          move(-1);
-        } else if (event.key === 'Home') {
-          event.preventDefault();
-          setActiveIndex(0);
-        } else if (event.key === 'End') {
-          event.preventDefault();
-          setActiveIndex(Math.max(enabled.length - 1, 0));
-        } else if (event.key === 'Tab') {
+        setShowFocus(true);
+        const { key } = event;
+        if (key === 'Tab') {
           event.preventDefault();
           onClose(true);
+          return;
         }
+        const enabled = menuButtons(event.currentTarget);
+        let index = 0;
+        if (key === 'ArrowDown' || key === 'ArrowUp') {
+          if (enabled.length === 0) return;
+          const current = enabled.findIndex((row) => row === event.target);
+          const next =
+            key === 'ArrowDown' ? current + 1 : Math.max(current, 0) - 1;
+          index = (next + enabled.length) % enabled.length;
+        } else if (key === 'End') {
+          index = enabled.length - 1;
+        } else if (key !== 'Home') return;
+        event.preventDefault();
+        enabled[index]?.focus();
       }}
     >
-      {header === undefined && submenu === null ? null : (
+      {header === undefined && submenu === undefined ? null : (
         <Inset
           pad={2}
           role="presentation"
@@ -473,7 +496,7 @@ function MenuList({
               key={item.id}
               item={item}
               choosing={choosing}
-              onRun={run}
+              onRun={submenu === undefined ? run : back}
               showFocus={showFocus}
             />
           ))}
@@ -483,6 +506,14 @@ function MenuList({
     </Stack>,
     document.body,
   );
+}
+
+function menuButtons(list: HTMLElement): HTMLButtonElement[] {
+  return [
+    ...list.querySelectorAll<HTMLButtonElement>(
+      '[data-menu-row]:not([disabled])',
+    ),
+  ];
 }
 
 /** The id of the list of one menu, from its name. */
@@ -553,9 +584,10 @@ export function Menu({
   /** Visible trigger text. Omit it for an icon-only trigger. */
   readonly children?: ReactNode | undefined;
 }): ReactNode {
-  const [open, setOpen] = useState(false);
-  const [startIndex, setStartIndex] = useState(0);
-  const [keyboard, setKeyboard] = useState(false);
+  const [opening, setOpening] = useState<
+    readonly [index: number, keyboard: boolean] | null
+  >(null);
+  const open = opening !== null;
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const contentEdge = trigger === 'content-edge';
@@ -563,12 +595,8 @@ export function Menu({
   const positioned =
     contentEdge || trigger === 'avatar' || trigger === 'row-action';
 
-  const enabledCount = [...items, ...pinned].filter(
-    (item) => item.disabled !== true,
-  ).length;
-
   const close = useCallback((restoreFocus: boolean): void => {
-    setOpen(false);
+    setOpening(null);
     if (restoreFocus) triggerRef.current?.focus();
   }, []);
   const anchor = useCallback(
@@ -644,16 +672,12 @@ export function Menu({
           // because nothing else on the screen states its purpose.
           title={children === undefined ? label : undefined}
           onClick={(event) => {
-            setKeyboard(event.detail === 0);
-            setStartIndex(0);
-            setOpen((value) => !value);
+            setOpening(open ? null : [0, event.detail === 0]);
           }}
           onKeyDown={(event): void => {
             if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-              setKeyboard(true);
               event.preventDefault();
-              setStartIndex(event.key === 'ArrowDown' ? 0 : enabledCount - 1);
-              setOpen(true);
+              setOpening([event.key === 'ArrowDown' ? 0 : -1, true]);
             }
           }}
         >
@@ -673,7 +697,7 @@ export function Menu({
           )}
         </button>
       </span>
-      {open ? (
+      {opening === null ? null : (
         <MenuList
           id={menuId}
           label={label}
@@ -685,12 +709,12 @@ export function Menu({
           anchor={anchor}
           align={align}
           matchWidth={matchTrigger}
-          initialIndex={Math.max(0, startIndex)}
-          keyboard={keyboard}
+          initialIndex={opening[0]}
+          keyboard={opening[1]}
           onClose={close}
           isInside={isInside}
         />
-      ) : null}
+      )}
     </div>
   );
 }

@@ -258,6 +258,8 @@ paths:
     $ref: './paths/api_workspaces_workspaceId_invitations_invitationId_link.yaml'
   /api/workspaces/{workspaceId}/invitations/{invitationId}:
     $ref: './paths/api_workspaces_workspaceId_invitations_invitationId.yaml'
+  /api/workspaces/{workspaceId}/invitations/preview:
+    $ref: './paths/api_workspaces_workspaceId_invitations_preview.yaml'
   /api/workspaces/{workspaceId}/invitations:
     $ref: './paths/api_workspaces_workspaceId_invitations.yaml'
   /api/workspaces/{workspaceId}/membership:

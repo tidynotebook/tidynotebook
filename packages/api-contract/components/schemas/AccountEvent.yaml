@@ -1,5 +1,5 @@
 type: object
-description: One account event. It names the account and nothing else of it.
+description: One account event. Membership events also name the workspace and the remaining membership count.
 additionalProperties: false
 required:
   - cursor
@@ -28,3 +28,20 @@ properties:
     description: Instant at which it happened.
     format: date-time
     maxLength: 64
+  ownerAccountId:
+    allOf:
+      - $ref: './Uuid.yaml'
+    readOnly: true
+  memberAccountId:
+    allOf:
+      - $ref: './Uuid.yaml'
+    readOnly: true
+  workspaceId:
+    allOf:
+      - $ref: './Uuid.yaml'
+    readOnly: true
+  ownerWorkspaceMemberships:
+    type: integer
+    readOnly: true
+    minimum: 0
+    description: The number of workspaces of this owner that the member belongs to after the change.

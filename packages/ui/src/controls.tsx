@@ -57,7 +57,9 @@ export function Meter({
   value,
   max,
   text,
+  trackOnly = false,
 }: {
+  readonly trackOnly?: boolean | undefined;
   readonly kind?: 'capacity' | 'progress' | undefined;
   readonly label: string;
   readonly value: number;
@@ -75,6 +77,28 @@ export function Meter({
         : meterAlmostFull(value, max)
           ? `${text}. Almost full`
           : text;
+  const track = (
+    <div
+      className={classes.track}
+      role={kind === 'progress' ? 'progressbar' : 'meter'}
+      aria-label={label}
+      aria-valuemin={0}
+      aria-valuemax={max}
+      aria-valuenow={Math.min(value, max)}
+      aria-valuetext={words}
+    >
+      <svg
+        className={classes.fill}
+        aria-hidden="true"
+        width="100%"
+        height="100%"
+      >
+        <rect width={`${String(percent)}%`} height="100%" />
+        {value > 0 ? <rect width="2" height="100%" /> : null}
+      </svg>
+    </div>
+  );
+  if (trackOnly) return track;
   return (
     <Stack
       gap={2}
@@ -89,25 +113,7 @@ export function Meter({
       ) : (
         <p className={classes.text}>{words}</p>
       )}
-      <div
-        className={classes.track}
-        role={kind === 'progress' ? 'progressbar' : 'meter'}
-        aria-label={label}
-        aria-valuemin={0}
-        aria-valuemax={max}
-        aria-valuenow={Math.min(value, max)}
-        aria-valuetext={words}
-      >
-        <svg
-          className={classes.fill}
-          aria-hidden="true"
-          width="100%"
-          height="100%"
-        >
-          <rect width={`${String(percent)}%`} height="100%" />
-          {value > 0 ? <rect width="2" height="100%" /> : null}
-        </svg>
-      </div>
+      {track}
     </Stack>
   );
 }
@@ -332,7 +338,7 @@ export function TextField({
   readonly error?: string | undefined;
   /** The rule of the field, stated under it at all times. */
   readonly hint?: string | undefined;
-  readonly inputType?: 'text' | 'email' | 'password' | undefined;
+  readonly inputType?: 'text' | 'email' | 'password' | 'number' | undefined;
   readonly autoComplete?: string | undefined;
   readonly placeholder?: string | undefined;
   readonly required?: boolean | undefined;

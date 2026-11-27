@@ -6,7 +6,12 @@ required:
   - displayName
   - email
   - role
+  - ownerWorkspaceMemberships
 properties:
+  ownerWorkspaceMemberships:
+    type: integer
+    minimum: 0
+    description: The member's workspace count for this owner.
   accountId:
     $ref: './Uuid.yaml'
   displayName:

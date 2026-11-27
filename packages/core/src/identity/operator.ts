@@ -53,13 +53,22 @@ export type OperatorTotals = {
 };
 
 /** What happened to an account. */
-export type AccountEventKind = 'made' | 'verified' | 'removed';
+export type AccountEventKind =
+  | 'made'
+  | 'verified'
+  | 'removed'
+  | 'workspace_member_added'
+  | 'workspace_member_removed';
 
 /** One account event, in the order of its commit. */
 export type AccountEvent = {
   readonly cursor: number;
   readonly accountId: string;
   readonly kind: AccountEventKind;
+  readonly ownerAccountId?: string;
+  readonly memberAccountId?: string;
+  readonly workspaceId?: string;
+  readonly ownerWorkspaceMemberships?: number;
   readonly occurredAt: string;
 };
 

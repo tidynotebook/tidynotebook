@@ -1,0 +1,4 @@
+type: [integer, 'null']
+minimum: 0
+maximum: 10000
+description: The maximum number of members and reserved places for an owner's workspaces. Null means no limit.

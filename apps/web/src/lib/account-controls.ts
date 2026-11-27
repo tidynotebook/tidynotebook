@@ -23,6 +23,7 @@ export type ControlsForm = {
   readonly textGigabytes: string;
   readonly transferGigabytes: string;
   readonly downloadGigabytes: string;
+  readonly memberLimit: string;
   readonly teams: boolean;
   readonly collaboration: boolean;
 };
@@ -60,6 +61,8 @@ export function controlsFormOf(
     textGigabytes: limitText(controls.textLimitBytes),
     transferGigabytes: limitText(controls.publishedTransferLimitBytes),
     downloadGigabytes: limitText(controls.downloadLimitBytes),
+    memberLimit:
+      controls.memberLimit === null ? '' : String(controls.memberLimit),
     teams: controls.features.teams,
     collaboration: controls.features.collaboration,
   };
@@ -127,6 +130,24 @@ export function controlsChangeOf(
           message: 'Enter a number of GB above zero, or leave it empty.',
         },
       };
+  const memberText = form.memberLimit.trim();
+  const memberLimit =
+    memberText === ''
+      ? null
+      : /^\d+$/.test(memberText)
+        ? Number(memberText)
+        : Number.NaN;
+  if (
+    memberLimit !== null &&
+    (!Number.isInteger(memberLimit) || memberLimit > 10000)
+  )
+    return {
+      ok: false,
+      problem: {
+        field: 'memberLimit',
+        message: 'Enter a whole number from 0 to 10000, or leave it empty.',
+      },
+    };
   let removalAt: string | null | undefined;
   if (form.standing === 'active') removalAt = undefined;
   else if (form.removeInDays === shown.removeInDays)
@@ -156,6 +177,7 @@ export function controlsChangeOf(
       textLimitBytes: text ?? null,
       publishedTransferLimitBytes: transfer ?? null,
       downloadLimitBytes: download ?? null,
+      memberLimit,
       features: { teams: form.teams, collaboration: form.collaboration },
     },
   };

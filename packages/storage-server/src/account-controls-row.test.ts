@@ -18,6 +18,7 @@ const row: AccountControlsRow = {
   download_limit_bytes: null,
   teams: false,
   collaboration: true,
+  member_limit: null,
   controls_revision: '7',
 };
 
@@ -33,6 +34,7 @@ await test('a row reads as the controls, with null as no limit', () => {
     textLimitBytes: null,
     publishedTransferLimitBytes: 10_000_000_000n,
     downloadLimitBytes: null,
+    memberLimit: null,
     features: { teams: false, collaboration: true },
   });
   // The parameters of a write carry the same values back.
@@ -46,6 +48,7 @@ await test('a row reads as the controls, with null as no limit', () => {
     null,
     false,
     true,
+    null,
   ]);
 });
 
