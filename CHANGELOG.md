@@ -7,6 +7,29 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## Unreleased
 
+## 0.25.0 - 2026-11-27
+
+### Added
+
+- Invite people to a workspace by email. Members accept or decline an invitation from a link or from the workspace switcher. ([PR 601](https://github.com/tidynotebook/tidynotebook/pull/601))
+- Give each member the Owner, Admin, Editor or Viewer role. Viewers can read notes but cannot change them. ([PR 601](https://github.com/tidynotebook/tidynotebook/pull/601))
+- Edit a note together in real time. See who is in the note, their cursors and selections. Each member has the same color in Members, History and the editor. ([PR 601](https://github.com/tidynotebook/tidynotebook/pull/601))
+- Honor the collaboration switch of the workspace owner's account. When it is off, nobody can send or accept invites to that workspace. Members who joined before keep their access. ([PR 603](https://github.com/tidynotebook/tidynotebook/pull/603))
+- Add an optional member limit to each account. It counts the people in all workspaces of the owner, and open invites. Owners and admins see the seats that are in use. ([PR 603](https://github.com/tidynotebook/tidynotebook/pull/603))
+- Add `workspace_member_added` and `workspace_member_removed` events to the operator account events. ([PR 603](https://github.com/tidynotebook/tidynotebook/pull/603))
+- Add the Tidy Notebook ChatGPT plugin package for the hosted MCP server. Mark note replacements and patches as destructive tool actions. ([PR 469](https://github.com/tidynotebook/tidynotebook/pull/469))
+
+### Changed
+
+- Load optional syntax parsers only when the editor needs them. This makes the main editor script approximately 40% smaller. ([PR 599](https://github.com/tidynotebook/tidynotebook/pull/599))
+- Read up to 16 note revisions in each offline sync request and store each batch in one transaction. ([PR 599](https://github.com/tidynotebook/tidynotebook/pull/599), [PR 600](https://github.com/tidynotebook/tidynotebook/pull/600))
+- Calculate the word count and outline of large notes in a worker, so that the editor stays responsive. ([PR 600](https://github.com/tidynotebook/tidynotebook/pull/600))
+- Merge PRs with merge commits. The fast-forward merge workflows are removed. ([PR 597](https://github.com/tidynotebook/tidynotebook/pull/597))
+
+### Security
+
+- Update Hono to 4.13.18 and the Hono Node.js server to 2.1.8. These versions include request validation fixes. ([PR 596](https://github.com/tidynotebook/tidynotebook/pull/596), [PR 598](https://github.com/tidynotebook/tidynotebook/pull/598))
+
 ## 0.24.0 - 2026-11-13
 
 ### Added
