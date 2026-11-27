@@ -18,6 +18,8 @@ export type Locator = {
   count(): Promise<number>;
   getAttribute(name: string): Promise<string | null>;
   isVisible(): Promise<boolean>;
+  isDisabled(): Promise<boolean>;
+  isEnabled(): Promise<boolean>;
   locator(selector: string): Locator;
   and(locator: Locator): Locator;
   getByRole(

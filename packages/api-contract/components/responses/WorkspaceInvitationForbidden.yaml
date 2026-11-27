@@ -1,0 +1,7 @@
+description: >-
+  The actor may not perform this operation, or the workspace owner's
+  collaboration switch is off (collaboration_off).
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/ProblemDetails.yaml'

@@ -17,6 +17,7 @@ type InviteRow = {
   role: string;
   inviter_name: string | null;
   expires_at: Date;
+  collaboration_enabled: boolean;
 };
 
 type MemberRow = {
@@ -47,6 +48,7 @@ function inviteOf(row: InviteRow): WorkspaceInvite {
     role,
     inviterName: row.inviter_name,
     expiresAt: row.expires_at.toISOString(),
+    collaborationEnabled: row.collaboration_enabled,
   };
 }
 
@@ -72,6 +74,13 @@ export function collaborationTransaction(
       );
       const role = rows[0]?.role;
       return role == null ? null : storedRole(role);
+    },
+    async invitationEnabled() {
+      const { rows } = await client.query<{ enabled: boolean }>(
+        'select notesapp_workspace_invitation_enabled($1) as enabled',
+        [workspaceId],
+      );
+      return rows[0]?.enabled === true;
     },
     async liveNoteAccess(fileId) {
       const { rows } = await client.query<{

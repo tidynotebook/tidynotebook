@@ -1,7 +1,16 @@
 import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
 import test from 'node:test';
-import { deleteWorkspace, listWorkspaces, type Actor } from '@notesapp/core';
+import { setTimeout as pause } from 'node:timers/promises';
+import {
+  defaultAccountLimitBytes,
+  deleteWorkspace,
+  listWorkspaces,
+  registerAccount,
+  workspaceCollaboration,
+  workspaceInvitationWrite,
+  type Actor,
+} from '@notesapp/core';
 import { openIdentityStore } from '@notesapp/storage-server';
 import {
   createDisposableDatabase,
@@ -9,6 +18,7 @@ import {
   openSession,
   seedWorkspace,
   testActor,
+  type TestSession,
 } from './support/database.ts';
 
 const db = await createDisposableDatabase();
@@ -49,6 +59,32 @@ function invite(actor: Actor, email: string) {
       seal: `sealed-${id}`,
     }),
   );
+}
+
+const off = { ok: false, error: { code: 'collaboration_off', fileIds: [] } };
+
+async function changeSwitch(
+  session: TestSession,
+  accountId: string,
+  enabled: boolean,
+) {
+  await session.query(
+    'update accounts set collaboration = $2, controls_revision = controls_revision + 1 where id = $1',
+    [accountId, enabled],
+  );
+}
+
+async function waitForBlocked(session: TestSession, pid: number) {
+  const deadline = Date.now() + 5000;
+  while (Date.now() < deadline) {
+    const [row] = await session.query<{ waiting: boolean }>(
+      'select cardinality(pg_blocking_pids($1)) > 0 as waiting',
+      [pid],
+    );
+    if (row?.waiting) return;
+    await pause(20);
+  }
+  assert.fail('The invitation write did not wait for the switch change.');
 }
 
 try {
@@ -153,6 +189,208 @@ try {
       'ok',
     );
     assert.equal(await accept(), null);
+  });
+
+  await test('the owner switch pauses new memberships and preserves open invitations and member management', async () => {
+    const control = await openSession(db.migrationUrl);
+    try {
+      await changeSwitch(control, adminId, false);
+      await changeSwitch(control, guestId, false);
+      const invited = await invite(admin, 'guest@example.test');
+      assert.ok('invitationId' in invited);
+      const declineId = invited.invitationId;
+      const revoke = await invite(owner, 'revoke@example.test');
+      assert.ok('invitationId' in revoke);
+      const signup = await invite(owner, 'signup@example.test');
+      assert.ok('invitationId' in signup);
+      const signupId = randomUUID();
+      await control.query(
+        'insert into auth_user(id, name, email, email_verified, created_at, updated_at) values ($1, $2, $3, true, now(), now())',
+        [signupId, 'New member', 'signup@example.test'],
+      );
+      const invitationTokenDigest = createHash('sha256')
+        .update(signup.invitationId)
+        .digest('hex');
+      const accept = (accepting: boolean) =>
+        workspaceInvitationWrite(() =>
+          identity.collaboration(guest, null, (tx) =>
+            tx.answerInvite(declineId, accepting),
+          ),
+        );
+      const roster = () =>
+        identity.collaboration(admin, workspaceId, (tx) => tx.invites(null));
+      await changeSwitch(control, ownerId, false);
+      assert.deepEqual(
+        await workspaceCollaboration(
+          identity,
+          admin,
+          workspaceId,
+          'invite',
+          () => {
+            assert.fail('An invitation ran while the owner switch was off.');
+          },
+        ),
+        off,
+      );
+      assert.deepEqual(
+        await workspaceInvitationWrite(() => invite(owner, 'off@example.test')),
+        off,
+      );
+      assert.deepEqual(await accept(true), off);
+      assert.deepEqual(
+        await registerAccount(identity, {
+          authUserId: signupId,
+          ground: { kind: 'invitation', tokenDigest: invitationTokenDigest },
+          accountId: randomUUID(),
+          workspaceId: randomUUID(),
+          workspaceName: 'Personal',
+          newAccount: {
+            limitBytes: defaultAccountLimitBytes,
+            standing: 'active',
+            removeAfterSeconds: null,
+          },
+        }),
+        off,
+      );
+      assert.equal(await identity.accountOf(signupId), null);
+      assert.ok(
+        (await roster()).some(
+          (entry) =>
+            entry.invitationId === declineId && !entry.collaborationEnabled,
+        ),
+      );
+      assert.ok(
+        (await roster()).some(
+          (entry) => entry.invitationId === signup.invitationId,
+        ),
+      );
+      assert.equal(
+        await identity.collaboration(admin, workspaceId, (tx) =>
+          tx.changeMember(viewerId, 'editor', false),
+        ),
+        'ok',
+      );
+      assert.equal(
+        await identity.collaboration(owner, workspaceId, (tx) =>
+          tx.changeMember(viewerId, 'viewer', false),
+        ),
+        'ok',
+      );
+      assert.equal(
+        await identity.collaboration(admin, workspaceId, (tx) =>
+          tx.adminInvite(revoke.invitationId, true),
+        ),
+        'revoked',
+      );
+      const declined = await accept(false);
+      assert.ok(declined.ok && declined.value?.workspaceId === workspaceId);
+      assert.deepEqual(
+        (await roster()).map((entry) => entry.invitationId),
+        [signup.invitationId],
+      );
+      assert.equal(
+        await identity.collaboration(admin, workspaceId, (tx) =>
+          tx.adminInvite(signup.invitationId, true),
+        ),
+        'revoked',
+      );
+      await changeSwitch(control, ownerId, true);
+      const renewed = await invite(admin, 'guest@example.test');
+      assert.ok('invitationId' in renewed);
+      const joined = await identity.collaboration(guest, null, (tx) =>
+        tx.answerInvite(renewed.invitationId, true),
+      );
+      assert.equal(joined?.role, 'editor');
+      await changeSwitch(control, ownerId, false);
+      assert.deepEqual(
+        await identity.collaboration(guest, null, (tx) =>
+          tx.answerInvite(renewed.invitationId, true),
+        ),
+        joined,
+      );
+      assert.equal(
+        await identity.collaboration(admin, workspaceId, (tx) =>
+          tx.changeMember(guestId, null, false),
+        ),
+        'ok',
+      );
+    } finally {
+      await changeSwitch(control, ownerId, true);
+      await control.close();
+    }
+  });
+
+  await test('invite creation and acceptance wait for an uncommitted change to the owner switch', async () => {
+    const control = await openSession(db.migrationUrl);
+    const creator = await openSession(db.runtimeUrl, adminId);
+    const accepter = await openSession(db.runtimeUrl, guestId);
+    try {
+      const pending = await invite(admin, 'guest@example.test');
+      assert.ok('invitationId' in pending);
+      const [creating] = await creator.query<{ pid: number }>(
+        'select pg_backend_pid() as pid',
+      );
+      const [accepting] = await accepter.query<{ pid: number }>(
+        'select pg_backend_pid() as pid',
+      );
+      assert.ok(creating && accepting);
+      await control.query('begin');
+      await changeSwitch(control, ownerId, false);
+      const id = randomUUID();
+      const created = creator
+        .failure(
+          'select * from notesapp_create_workspace_invite($1, $2, $3, $4, $5, $6)',
+          [
+            workspaceId,
+            id,
+            'race@example.test',
+            'viewer',
+            createHash('sha256').update(id).digest('hex'),
+            'sealed',
+          ],
+        )
+        .catch((error: unknown) => error);
+      const accepted = accepter
+        .failure('select * from notesapp_answer_workspace_invite($1, true)', [
+          pending.invitationId,
+        ])
+        .catch((error: unknown) => error);
+      await Promise.all([
+        waitForBlocked(control, creating.pid),
+        waitForBlocked(control, accepting.pid),
+      ]);
+      await control.query('commit');
+      for (const outcome of await Promise.all([created, accepted]))
+        assert.ok(
+          typeof outcome === 'object' &&
+            outcome !== null &&
+            'code' in outcome &&
+            outcome.code === 'NA005',
+        );
+      const listed = await identity.collaboration(admin, workspaceId, (tx) =>
+        tx.invites(null),
+      );
+      assert.deepEqual(
+        listed.map((entry) => entry.invitationId),
+        [pending.invitationId],
+      );
+      assert.equal(
+        await identity.collaboration(admin, workspaceId, (tx) =>
+          tx.member(guestId),
+        ),
+        null,
+      );
+      assert.equal(
+        await identity.collaboration(admin, workspaceId, (tx) =>
+          tx.adminInvite(pending.invitationId, true),
+        ),
+        'revoked',
+      );
+    } finally {
+      await control.query('rollback');
+      await changeSwitch(control, ownerId, true);
+      await Promise.all([control.close(), creator.close(), accepter.close()]);
+    }
   });
 
   await test('expired invites free slots and the workspace holds at most 100 pending', async () => {

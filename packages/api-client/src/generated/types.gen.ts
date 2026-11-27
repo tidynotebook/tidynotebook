@@ -2260,6 +2260,10 @@ export type Password = string;
  * An active invitation with no link or secret.
  */
 export type PendingWorkspaceInvite = {
+    /**
+     * Why the current owner setting prevents acceptance, or null when it permits acceptance.
+     */
+    acceptanceMessage: string | null;
     invitationId: Uuid;
     workspaceId: Uuid;
     workspaceName: string;
@@ -3767,6 +3771,10 @@ export type WorkspaceMember = {
  * A page of current members ordered by account ID, with the current total count.
  */
 export type WorkspaceMemberPage = {
+    /**
+     * Whether the workspace owner can add members by invitation.
+     */
+    collaborationEnabled: boolean;
     members: Array<WorkspaceMember>;
     nextAfterAccountId: Uuid | null;
     memberCount: number;
@@ -5646,7 +5654,7 @@ export type AcceptWorkspaceInviteErrors = {
      */
     401: ProblemDetails;
     /**
-     * The actor may not perform this operation.
+     * The actor may not perform this operation, or the workspace owner's collaboration switch is off (collaboration_off).
      */
     403: ProblemDetails;
     /**
@@ -7708,7 +7716,7 @@ export type RegisterAccountErrors = {
      */
     400: ProblemDetails;
     /**
-     * The invitation opens nothing. The code is invitation_invalid for a token that expired, that somebody used, that an administrator revoked, or that never existed. The answer does not say which.
+     * The invitation is invalid (invitation_invalid), the terms or privacy notice changed (consent_required), or the workspace owner's collaboration switch is off (collaboration_off).
      */
     403: ProblemDetails;
     /**
@@ -10217,7 +10225,7 @@ export type CreateWorkspaceInvitesErrors = {
      */
     401: ProblemDetails;
     /**
-     * The actor may not perform this operation.
+     * The actor may not perform this operation, or the workspace owner's collaboration switch is off (collaboration_off).
      */
     403: ProblemDetails;
     /**

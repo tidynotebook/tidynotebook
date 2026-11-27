@@ -99,6 +99,11 @@ The join page reads the token digest through the public, rate-limited inspect
 operation. It displays workspace, inviter, email and role for a valid token.
 All unavailable token states use one response. The browser uses its session
 to show the matching account, the wrong account, or Create account and join.
+The workspace owner's account switch controls invitation creation and
+acceptance, including sign-up. When it is off, existing invitations stay
+pending and can still be declined or revoked. Member roles and live editing
+continue as before. See [record 0246](../decisions/0246-the-owner-controls-workspace-invitations.md).
+
 A verified address sees its pending invitations in the switcher and can
 accept or decline by invitation ID. The database checks the normalized,
 verified address again. An unrelated account learns no invitation state.

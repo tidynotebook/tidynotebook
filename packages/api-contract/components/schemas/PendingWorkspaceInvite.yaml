@@ -9,7 +9,14 @@ required:
   - role
   - inviterName
   - expiresAt
+  - acceptanceMessage
 properties:
+  acceptanceMessage:
+    description: Why the current owner setting prevents acceptance, or null when it permits acceptance.
+    type:
+      - string
+      - 'null'
+    maxLength: 256
   invitationId:
     $ref: './Uuid.yaml'
   workspaceId:

@@ -1039,7 +1039,7 @@
             "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
+            "$ref": "#/components/responses/WorkspaceInvitationForbidden"
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
@@ -3403,7 +3403,7 @@
             "$ref": "#/components/responses/BadRequest"
           },
           "403": {
-            "$ref": "#/components/responses/InvitationUnavailable"
+            "$ref": "#/components/responses/RegistrationInvitationForbidden"
           },
           "409": {
             "$ref": "#/components/responses/Conflict"
@@ -5366,7 +5366,7 @@
             "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
+            "$ref": "#/components/responses/WorkspaceInvitationForbidden"
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
@@ -9240,6 +9240,26 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/WorkspaceMemberPage"
+            }
+          }
+        }
+      },
+      "RegistrationInvitationForbidden": {
+        "description": "The invitation is invalid (invitation_invalid), the terms or privacy notice changed (consent_required), or the workspace owner's collaboration switch is off (collaboration_off).",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "WorkspaceInvitationForbidden": {
+        "description": "The actor may not perform this operation, or the workspace owner's collaboration switch is off (collaboration_off).",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
             }
           }
         }
@@ -14043,9 +14063,18 @@
           "email",
           "role",
           "inviterName",
-          "expiresAt"
+          "expiresAt",
+          "acceptanceMessage"
         ],
         "properties": {
+          "acceptanceMessage": {
+            "description": "Why the current owner setting prevents acceptance, or null when it permits acceptance.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 256
+          },
           "invitationId": {
             "$ref": "#/components/schemas/Uuid"
           },
@@ -17246,9 +17275,14 @@
         "required": [
           "members",
           "nextAfterAccountId",
-          "memberCount"
+          "memberCount",
+          "collaborationEnabled"
         ],
         "properties": {
+          "collaborationEnabled": {
+            "type": "boolean",
+            "description": "Whether the workspace owner can add members by invitation."
+          },
           "members": {
             "type": "array",
             "maxItems": 100,

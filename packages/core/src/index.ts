@@ -670,6 +670,8 @@ export {
   presenceColorSlot,
   workspacePresenceColor,
   workspaceCollaboration,
+  workspaceInvitationWrite,
+  WorkspaceInvitationsOff,
   workspaceInviteBatchSize,
   workspaceMemberPageSize,
   type CollaborationStore,

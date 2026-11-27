@@ -76,6 +76,7 @@ import type {
 } from '@notesapp/core';
 import {
   workspaceRoles,
+  WorkspaceInvitationsOff,
   accountStates,
   defaultSpellCheck,
   importedFamilyOf,
@@ -489,6 +490,8 @@ export function openIdentityStore(
         } catch {
           // The connection is already unusable; report the first failure.
         }
+        if (postgresFailure(error)?.code === 'NA005')
+          throw new WorkspaceInvitationsOff();
         throw error;
       }
     } finally {

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import {
+  acceptWorkspaceInvite,
   configureClient,
   createFile,
   createInvitation,
@@ -17,6 +18,7 @@ import {
   removeAccount,
   revokeInvitation,
   signInWithPassword,
+  updateAccount,
   type WorkspaceInviteRole,
 } from '@notesapp/api-client';
 import { firstSave } from '../integration/support/documents.ts';
@@ -226,6 +228,52 @@ export async function collaborationFixture(
     viewerSwitcherId: forEditor.workspaceId,
     viewerSwitcherName: forEditor.name,
     editorPersonalId: editorPersonal.workspaceId,
+    async setCollaboration(enabled: boolean) {
+      const accounts = await listAccounts({ headers: admin });
+      const account = accounts.data?.accounts.find(
+        (entry) => entry.email === owner,
+      );
+      assert.ok(account, JSON.stringify(accounts.error));
+      const response = await updateAccount({
+        path: { accountId: account.accountId },
+        headers: admin,
+        body: {
+          controls: {
+            revision: account.controls.revision,
+            features: { collaboration: enabled },
+          },
+        },
+      });
+      assert.equal(response.error, undefined, JSON.stringify(response.error));
+    },
+    async assertInvitationsBlocked() {
+      const attempted = await createWorkspaceInvites({
+        path,
+        headers,
+        body: { emails: ['off@example.test'], role: 'viewer' },
+      });
+      assert.equal(attempted.response?.status, 403);
+      assert.equal(attempted.error?.code, 'collaboration_off');
+      const viewerHeaders = await signInHeaders(viewer);
+      assert.ok(viewerHeaders);
+      const accepted = await acceptWorkspaceInvite({
+        path: { invitationId: viewerLink.invitationId },
+        headers: viewerHeaders,
+      });
+      assert.equal(accepted.response?.status, 403);
+      assert.equal(accepted.error?.code, 'collaboration_off');
+      const signup = await registerAccount({
+        headers: { origin },
+        body: {
+          invitation: new URL(pending.url).hash.slice(1),
+          password,
+          name: 'Pending member',
+        },
+      });
+      assert.equal(signup.response?.status, 403);
+      assert.equal(signup.error?.code, 'collaboration_off');
+    },
+
     createNote,
     async readNote() {
       const result = await getFile({

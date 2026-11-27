@@ -17,7 +17,12 @@ import {
   Stack,
   buttonClassName,
 } from '@notesapp/ui';
-import { problemMessage, useSession, useWorkspace } from '../../app.tsx';
+import {
+  problemMessage,
+  useSession,
+  useTabNoticeStream,
+  useWorkspace,
+} from '../../app.tsx';
 import { signInAddress } from '../../lib/sign-in-return.ts';
 import { invitationTokenOf } from '../../lib/accounts.ts';
 import { AuthFrame } from './auth-frame.tsx';
@@ -62,6 +67,8 @@ function keepToken(token: string): void {
 export function JoinWorkspacePage(): ReactNode {
   const session = useSession();
   const workspace = useWorkspace();
+  const notices = useTabNoticeStream();
+  const [revision, setRevision] = useState(0);
   const location = useLocation();
   const navigate = useNavigate();
   const incomingToken = invitationTokenOf(location.hash);
@@ -79,6 +86,12 @@ export function JoinWorkspacePage(): ReactNode {
     }
     if (location.hash !== '') void navigate('/join', { replace: true });
   }, [incomingToken, location.hash, navigate]);
+
+  useEffect(
+    () =>
+      notices?.onAccountChanged(() => setRevision((current) => current + 1)),
+    [notices],
+  );
 
   useEffect(() => {
     if (token === null) {
@@ -119,7 +132,7 @@ export function JoinWorkspacePage(): ReactNode {
     return () => {
       active = false;
     };
-  }, [token]);
+  }, [token, revision]);
 
   function goToSignIn(): void {
     void navigate(signInAddress('/join'), {
@@ -147,7 +160,20 @@ export function JoinWorkspacePage(): ReactNode {
         ? await acceptWorkspaceInvite(args)
         : await declineWorkspaceInvite(args);
       if (result.data === undefined) {
-        setError(problemMessage(result.error));
+        const refusal = result.error;
+        if (refusal?.code === 'collaboration_off')
+          setState((current) =>
+            current.kind === 'ready'
+              ? {
+                  ...current,
+                  invite: {
+                    ...current.invite,
+                    acceptanceMessage: refusal.title,
+                  },
+                }
+              : current,
+          );
+        else setError(problemMessage(result.error));
         return;
       }
       clearToken();
@@ -193,6 +219,10 @@ export function JoinWorkspacePage(): ReactNode {
       : invite.role === 'editor'
         ? 'Editor'
         : 'Viewer';
+  const blocked =
+    invite.acceptanceMessage === null ? null : (
+      <Notice tone="problem" message={invite.acceptanceMessage} />
+    );
   const title = `Join ${invite.workspaceName}`;
   const details = `${invite.inviterName ?? 'A workspace member'} invited you as ${role}.`;
   const permissions = {
@@ -206,18 +236,20 @@ export function JoinWorkspacePage(): ReactNode {
         <Stack gap={4}>
           <Notice message={details} />
           <p className="text-secondary text-muted">{permissions}</p>
-          <AcceptForm
-            token={token}
-            email={invite.email}
-            documents={state.documents}
-            trialSeconds={state.trial}
-            workspace={{
-              id: invite.workspaceId,
-              name: invite.workspaceName,
-              role: invite.role,
-              onAccepted: clearToken,
-            }}
-          />
+          {blocked ?? (
+            <AcceptForm
+              token={token}
+              email={invite.email}
+              documents={state.documents}
+              trialSeconds={state.trial}
+              workspace={{
+                id: invite.workspaceId,
+                name: invite.workspaceName,
+                role: invite.role,
+                onAccepted: clearToken,
+              }}
+            />
+          )}
           <Inline gap={1} justify="center">
             <span className="text-secondary text-muted">Have an account?</span>
             <Button variant="ghost" size="compact" onClick={goToSignIn}>
@@ -253,11 +285,12 @@ export function JoinWorkspacePage(): ReactNode {
     <AuthFrame title={title}>
       <Stack gap={4}>
         <Notice message={details} />
+        {blocked}
         {error === '' ? null : <Notice tone="problem" message={error} />}
         <Inline gap={2}>
           <Button
             variant="primary"
-            disabled={busy}
+            disabled={busy || invite.acceptanceMessage !== null}
             onClick={() => {
               void respond(invite, true);
             }}

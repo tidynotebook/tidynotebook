@@ -1,0 +1,8 @@
+description: >-
+  The invitation is invalid (invitation_invalid), the terms or privacy notice
+  changed (consent_required), or the workspace owner's collaboration switch is
+  off (collaboration_off).
+content:
+  application/problem+json:
+    schema:
+      $ref: '../schemas/ProblemDetails.yaml'

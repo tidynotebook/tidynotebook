@@ -350,6 +350,7 @@ export type DomainErrorCode =
   | 'published_link_unavailable'
   | 'not_found'
   | 'last_administrator'
+  | 'collaboration_off'
   | 'invitation_invalid'
   | 'account_exists'
   | 'open_registration_unavailable'

@@ -59,7 +59,7 @@ export type MenuItem = {
   /** A value that is unique inside one menu. */
   readonly id: string;
   readonly label: string;
-  readonly detail?: string;
+  readonly detail?: string | undefined;
   /** A short value shown on the right, such as the current theme. */
   readonly hint?: ReactNode | undefined;
   readonly icon?: ReactNode | undefined;
@@ -123,7 +123,7 @@ function MenuRow({
         danger: item.danger,
         className: `w-full text-left ${showFocus ? '' : 'focus-visible:outline-none'}`,
       }).replace(showFocus ? 'hover:bg-hover' : '', '')}
-      disabled={item.disabled ?? false}
+      disabled={item.disabled}
       onPointerEnter={item.onIntent}
       onFocus={item.onIntent}
       onClick={() => onRun(item)}
@@ -234,12 +234,13 @@ function MenuList({
   readonly isInside?: ((target: Node) => boolean) | undefined;
 }): ReactNode {
   const [activeIndex, setActiveIndex] = useState(initialIndex);
-  const [submenu, setSubmenu] = useState<MenuItem | null>(null);
+  const [submenuId, setSubmenuId] = useState<string | null>(null);
+  const submenu = rootItems.find((item) => item.id === submenuId);
   const items = submenu?.submenu ?? rootItems;
   const submenuIndex = useRef(0);
   const back = useCallback((): void => {
     setActiveIndex(submenuIndex.current);
-    setSubmenu(null);
+    setSubmenuId(null);
   }, []);
   const pinned: readonly MenuItem[] = submenu
     ? [
@@ -259,7 +260,7 @@ function MenuList({
   // so a pinned row is reached by pressing End and never disappears from the
   // keyboard order when the scrolling list grows.
   const rows = [...items, ...pinned];
-  const enabled = rows.filter((item) => item.disabled !== true);
+  const enabled = rows.filter((item) => !item.disabled);
 
   useEffect(() => {
     const onPointerDown = (event: MouseEvent): void => {
@@ -378,7 +379,7 @@ function MenuList({
       // The new rows can land under a stationary pointer.
       setShowFocus(true);
       setActiveIndex(0);
-      setSubmenu(item);
+      setSubmenuId(item.id);
       return;
     }
     if (submenu && item.id === 'menu-back') {
@@ -419,7 +420,7 @@ function MenuList({
         }
       }}
     >
-      {header === undefined && submenu === null ? null : (
+      {header === undefined && submenu === undefined ? null : (
         <Inset
           pad={2}
           role="presentation"
@@ -564,7 +565,7 @@ export function Menu({
     contentEdge || trigger === 'avatar' || trigger === 'row-action';
 
   const enabledCount = [...items, ...pinned].filter(
-    (item) => item.disabled !== true,
+    (item) => !item.disabled,
   ).length;
 
   const close = useCallback((restoreFocus: boolean): void => {

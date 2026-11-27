@@ -357,7 +357,57 @@ export async function runCollaborationAudit(
         const viewer = await viewerContext.newPage();
         await signIn(viewer, fixture.viewer);
         await viewer.goto(fixture.viewerLink);
-        await viewer.getByRole('button', { name: 'Accept and open' }).waitFor();
+        const acceptLink = viewer.getByRole('button', {
+          name: 'Accept and open',
+        });
+        await acceptLink.waitFor();
+        await members();
+        const joinBlocked =
+          'The owner of this workspace cannot add members now.';
+        await fixture.setCollaboration(false);
+        await owner
+          .getByText('Collaboration is turned off for this account.')
+          .waitFor();
+        assert.ok(await invite.isDisabled());
+        await owner.getByText(fixture.pendingEmail, { exact: true }).waitFor();
+        await check(owner, 'members-collaboration-off');
+        await viewer.getByText(joinBlocked, { exact: true }).waitFor();
+        assert.ok(await acceptLink.isDisabled());
+        assert.ok(
+          await viewer
+            .getByRole('button', { name: 'Decline', exact: true })
+            .isEnabled(),
+        );
+        await check(viewer, 'join-collaboration-off');
+        await fixture.assertInvitationsBlocked();
+
+        await viewer.goto(home);
+        await switcher(viewer);
+        await viewer
+          .getByText(fixture.viewerSwitcherName, { exact: true })
+          .click();
+        await viewer.getByText(joinBlocked, { exact: true }).waitFor();
+        const acceptMenu = viewer.getByRole('menuitem', {
+          name: /^Accept invite/,
+        });
+        assert.ok(await acceptMenu.isDisabled());
+        assert.ok(
+          await viewer
+            .getByRole('menuitem', { name: 'Decline invite' })
+            .isEnabled(),
+        );
+        await check(viewer, 'switcher-collaboration-off');
+        await fixture.setCollaboration(true);
+        await owner
+          .getByText('Owners and admins can invite people and change roles.')
+          .waitFor();
+        assert.ok(await invite.isEnabled());
+        await viewer
+          .getByRole('menuitem', { name: 'Accept invite', exact: true })
+          .waitFor();
+        assert.ok(await acceptMenu.isEnabled());
+        await owner.goto(note);
+        await viewer.goto(fixture.viewerLink);
         await check(viewer, 'join-valid');
         await viewer.getByRole('button', { name: 'Accept and open' }).click();
         const joinToast = viewer

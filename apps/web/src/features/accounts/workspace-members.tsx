@@ -95,6 +95,9 @@ export function WorkspaceMembers({
   const workspace = useWorkspace();
   const [members, setMembers] = useState<WorkspaceMember[] | null>(null);
   const [invites, setInvites] = useState<PendingWorkspaceInvite[]>([]);
+  const [collaborationEnabled, setCollaborationEnabled] = useState<
+    boolean | null
+  >(null);
   const [count, setCount] = useState(0);
   const [after, setAfter] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
@@ -119,6 +122,8 @@ export function WorkspaceMembers({
         return;
       }
       setMembers(people.data.members);
+      setCollaborationEnabled(people.data.collaborationEnabled);
+      if (!people.data.collaborationEnabled) setInviteOpen(false);
       setCount(people.data.memberCount);
       setAfter(people.data.nextAfterAccountId);
       setInvites(pending?.data?.invitations ?? []);
@@ -194,12 +199,15 @@ export function WorkspaceMembers({
       {manage ? (
         <Inline gap={3} justify="between" align="center">
           <p className="text-secondary text-muted">
-            Owners and admins can invite people and change roles.
+            {collaborationEnabled === false
+              ? 'Collaboration is turned off for this account.'
+              : 'Owners and admins can invite people and change roles.'}
           </p>
           <div className="hidden lg:block">
             <Button
               variant="primary"
               size="compact"
+              disabled={collaborationEnabled !== true}
               onClick={() => setInviteOpen(true)}
             >
               Invite people
@@ -387,7 +395,11 @@ export function WorkspaceMembers({
         ? createPortal(
             <FixedDialogLayout phone>
               <DialogFooter column={false}>
-                <Button variant="primary" onClick={() => setInviteOpen(true)}>
+                <Button
+                  variant="primary"
+                  disabled={collaborationEnabled !== true}
+                  onClick={() => setInviteOpen(true)}
+                >
                   Invite people
                 </Button>
               </DialogFooter>
@@ -395,7 +407,7 @@ export function WorkspaceMembers({
             phoneFooter,
           )
         : null}
-      {inviteOpen ? (
+      {inviteOpen && collaborationEnabled === true ? (
         <InvitePeople
           workspaceId={workspaceId}
           workspaceName={workspaceName}
@@ -564,7 +576,12 @@ function InvitePeople({
         path: { workspaceId },
         body: { emails, role },
       });
-      if (result.data === undefined) setProblem(problemMessage(result.error));
+      if (result.data === undefined)
+        setProblem(
+          result.error?.code === 'collaboration_off'
+            ? result.error.title
+            : problemMessage(result.error),
+        );
       else setResults(result.data.results);
     } catch {
       setProblem('Invitations could not be sent.');

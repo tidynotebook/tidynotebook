@@ -5,7 +5,11 @@ required:
   - members
   - nextAfterAccountId
   - memberCount
+  - collaborationEnabled
 properties:
+  collaborationEnabled:
+    type: boolean
+    description: Whether the workspace owner can add members by invitation.
   members:
     type: array
     maxItems: 100

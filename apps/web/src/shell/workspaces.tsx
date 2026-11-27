@@ -44,19 +44,16 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
 
 import { deleteGlyph } from '../lib/delete-label.ts';
-import { useWorkspace } from '../app.tsx';
+import { problemMessage, useWorkspace } from '../app.tsx';
 import { addressInWorkspace, isMemberOf } from '../lib/workspace-choice.ts';
 import { joinedWorkspaceState } from '../lib/workspace-joined.ts';
 import { initialOf } from '../lib/initial.ts';
 import { actionIcon } from './action-icons.tsx';
 import { useOpenSettings } from './settings-modal.tsx';
 
-const roleNames = {
-  owner: 'Owner',
-  admin: 'Admin',
-  editor: 'Editor',
-  viewer: 'Viewer',
-} as const;
+function roleName(role: string): string {
+  return role.charAt(0).toUpperCase() + role.slice(1);
+}
 
 /** The longest workspace name the contract accepts. */
 
@@ -238,12 +235,12 @@ export function WorkspaceSwitcher({
     };
   }, [state]);
 
-  const workspaces = state.status === 'ready' ? state.workspaces : [];
-  const openWorkspace =
-    workspaces.find((workspace) => workspace.workspaceId === workspaceId) ??
-    null;
-
-  if (state.status !== 'ready' || openWorkspace === null) return null;
+  if (state.status !== 'ready') return null;
+  const { workspaces } = state;
+  const openWorkspace = workspaces.find(
+    (workspace) => workspace.workspaceId === workspaceId,
+  );
+  if (openWorkspace === undefined) return null;
 
   const switchTo = (wanted: string): void => {
     if (wanted === workspaceId) return;
@@ -257,22 +254,21 @@ export function WorkspaceSwitcher({
     id: workspace.workspaceId,
     label: workspace.name,
     icon: actionIcon('workspace'),
-    hint: `${roleNames[workspace.role]}${(workspace.memberCount ?? 0) > 1 ? ` · ${workspace.memberCount}` : ''}`,
+    hint: `${roleName(workspace.role)}${(workspace.memberCount ?? 0) > 1 ? ` · ${workspace.memberCount}` : ''}`,
     selected: workspace.workspaceId === workspaceId,
     onSelect: () => switchTo(workspace.workspaceId),
   }));
 
   const answer = (invite: PendingWorkspaceInvite, accept: boolean): void => {
     const path = { invitationId: invite.invitationId };
-    const request = accept
-      ? acceptWorkspaceInvite({ path })
-      : declineWorkspaceInvite({ path });
-    void request.then(({ data }) => {
+    void (accept ? acceptWorkspaceInvite : declineWorkspaceInvite)({
+      path,
+    }).then(({ data, error }) => {
       if (data === undefined) {
         setProblem(
-          accept
-            ? 'This invitation could not be accepted.'
-            : 'This invitation could not be declined.',
+          error?.code === 'collaboration_off'
+            ? error.title
+            : problemMessage(error),
         );
         return;
       }
@@ -295,13 +291,15 @@ export function WorkspaceSwitcher({
       id: invite.invitationId,
       label: invite.workspaceName,
       icon: <MailIcon />,
-      hint: roleNames[invite.role],
+      hint: roleName(invite.role),
       group: 'Invites',
       submenu: [
         {
           id: 'accept-invite',
           label: 'Accept invite',
           icon: <CheckIcon />,
+          disabled: invite.acceptanceMessage !== null,
+          detail: invite.acceptanceMessage ?? undefined,
           onSelect: () => answer(invite, true),
         },
         {
@@ -314,8 +312,9 @@ export function WorkspaceSwitcher({
       ],
     });
   }
-  const manages =
-    openWorkspace.role === 'owner' || openWorkspace.role === 'admin';
+  const owns = openWorkspace.role === 'owner';
+  const manages = owns || openWorkspace.role === 'admin';
+  const hasAnother = workspaces.length > 1;
   const pinned: MenuItem[] = [
     {
       id: 'workspace-members',
@@ -326,25 +325,22 @@ export function WorkspaceSwitcher({
         onNavigate();
       },
     },
-    ...(manages
-      ? [
-          {
-            id: 'rename-workspace',
-            onIntent: () => {
-              void RenameWorkspaceDialog.preload();
-            },
-            label: 'Rename workspace',
-            icon: actionIcon('rename'),
-            onSelect: onRename,
-          },
-        ]
-      : []),
-    // Record 0051 keeps the last workspace of an account, so the row is absent
-    // rather than present and always refused. The server refuses it either
-    // way; this is only the courtesy.
-    ...(workspaces.length > 1 && openWorkspace.role === 'owner'
-      ? [
-          {
+  ];
+  if (manages)
+    pinned.push({
+      id: 'rename-workspace',
+      onIntent: () => {
+        void RenameWorkspaceDialog.preload();
+      },
+      label: 'Rename workspace',
+      icon: actionIcon('rename'),
+      onSelect: onRename,
+    });
+  // The last workspace must stay (record 0051).
+  if (hasAnother)
+    pinned.push(
+      owns
+        ? {
             id: 'delete-workspace',
             onIntent: () => {
               void DeleteWorkspaceDialog.preload();
@@ -353,12 +349,8 @@ export function WorkspaceSwitcher({
             icon: actionIcon(deleteGlyph),
             danger: true,
             onSelect: onDelete,
-          },
-        ]
-      : []),
-    ...(workspaces.length > 1 && openWorkspace.role !== 'owner'
-      ? [
-          {
+          }
+        : {
             id: 'leave-workspace',
             label: 'Leave workspace',
             icon: <SignOutIcon />,
@@ -368,18 +360,16 @@ export function WorkspaceSwitcher({
             },
             onSelect: () => setLeaving(true),
           },
-        ]
-      : []),
-    {
-      id: 'new-workspace',
-      onIntent: () => {
-        void NewWorkspaceDialog.preload();
-      },
-      label: 'New workspace',
-      icon: actionIcon('new-workspace'),
-      onSelect: onCreate,
+    );
+  pinned.push({
+    id: 'new-workspace',
+    onIntent: () => {
+      void NewWorkspaceDialog.preload();
     },
-  ];
+    label: 'New workspace',
+    icon: actionIcon('new-workspace'),
+    onSelect: onCreate,
+  });
 
   return (
     <div className="shrink-0">
@@ -391,7 +381,7 @@ export function WorkspaceSwitcher({
         onLeft={reload}
       />
       <Menu
-        label={`Workspace: ${openWorkspace.name}${invites.length ? `, ${invites.length} pending ${invites.length === 1 ? 'invite' : 'invites'}` : ''}`}
+        label={`Workspace: ${openWorkspace.name}${invites.length ? `, ${invites.length} pending invite${invites.length === 1 ? '' : 's'}` : ''}`}
         trigger="row"
         items={items}
         pinned={pinned}

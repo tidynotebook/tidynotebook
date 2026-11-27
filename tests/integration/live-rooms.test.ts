@@ -111,6 +111,15 @@ try {
     { accountId: editorId, role: 'editor' },
     { accountId: viewerId, role: 'viewer' },
   ]);
+  const controls = await openSession(db.migrationUrl);
+  try {
+    await controls.query(
+      'update accounts set collaboration = false where id = $1',
+      [ownerId],
+    );
+  } finally {
+    await controls.close();
+  }
   const actor = memberActor(ownerId, workspaceId);
   const initial = revision({
     fileId,
@@ -159,7 +168,7 @@ try {
     'The relay listeners did not start.',
   );
 
-  await test('admission and awareness cross gateway boundaries with verified identity', async () => {
+  await test('admission and awareness cross gateways with verified identity when the owner switch is off', async () => {
     await first.handle(owner, 'joinNote', ownerRoom);
     await second.handle(editor, 'joinNote', editorRoom);
     await waitFor(

@@ -75,6 +75,7 @@ export type ProblemCode =
   | 'invalid_response'
   | 'internal_error'
   | 'last_administrator'
+  | 'collaboration_off'
   | 'invitation_invalid'
   | 'account_exists'
   | 'open_registration_unavailable'
@@ -120,6 +121,9 @@ export type Problem = {
   /** The limit of the month that refused the request (record 0193). */
   readonly limit?: UsageLimit;
 };
+
+export const workspaceInvitationsOffTitle =
+  'The owner of this workspace cannot add members now.';
 
 const titles: Readonly<Record<ProblemCode, string>> = {
   api_key_limit: 'The account keeps as many API keys as it may.',
@@ -175,6 +179,7 @@ const titles: Readonly<Record<ProblemCode, string>> = {
   quota_exceeded: 'The account has no room left for new content.',
   last_administrator:
     'The installation keeps at least one enabled administrator.',
+  collaboration_off: workspaceInvitationsOffTitle,
   invitation_invalid: 'This invitation is not valid.',
   account_exists: 'An account already signs in with this address.',
   open_registration_unavailable:
@@ -522,8 +527,8 @@ const domainStatus: Readonly<
   },
   quota: { status: 413, code: 'quota_exceeded' },
   last_administrator: { status: 409, code: 'last_administrator' },
-  // The one refusal of an invitation. An expired, a used, a revoked and an
-  // unknown token all answer it, so the answer states nothing more.
+  collaboration_off: { status: 403, code: 'collaboration_off' },
+  // An expired, used, revoked or unknown invitation returns the same code.
   invitation_invalid: { status: 403, code: 'invitation_invalid' },
   account_exists: { status: 409, code: 'account_exists' },
   open_registration_unavailable: {
@@ -612,6 +617,7 @@ const domainTitles: Readonly<Record<DomainErrorCode, string>> = {
   quota: 'The account has no room left for new content.',
   last_administrator:
     'The change would leave the installation with no enabled administrator.',
+  collaboration_off: workspaceInvitationsOffTitle,
   invitation_invalid: 'This invitation is not valid. Ask for a new one.',
   account_exists: 'An account already signs in with this address.',
   open_registration_unavailable:

@@ -1,4 +1,4 @@
-import { fail, type Result } from '../files/model.ts';
+import { fail, ok, type Result } from '../files/model.ts';
 import {
   authorize,
   type Action,
@@ -43,6 +43,7 @@ export type WorkspaceInvite = {
   readonly role: InviteRole;
   readonly inviterName: string | null;
   readonly expiresAt: string;
+  readonly collaborationEnabled: boolean;
 };
 
 export type NewWorkspaceInvite = {
@@ -62,6 +63,7 @@ export type WorkspaceInviteOutcome =
 
 export type CollaborationTransaction = {
   role(): Promise<Role | null>;
+  invitationEnabled(): Promise<boolean>;
   liveNoteAccess(fileId: string): Promise<{
     head: string | null;
     epoch: number;
@@ -111,17 +113,38 @@ export type CollaborationStore = {
   ): Promise<T>;
 };
 
-export function workspaceCollaboration<T>(
+export async function workspaceCollaboration<T>(
   store: CollaborationStore,
   actor: Actor,
   workspaceId: string,
-  action: Extract<Action, 'read' | 'manage_members'>,
+  action: Extract<Action, 'read' | 'manage_members'> | 'invite',
   run: (tx: CollaborationTransaction) => Promise<Result<T>>,
 ): Promise<Result<T>> {
-  return store.collaboration(actor, workspaceId, async (tx) => {
-    const role = await tx.role();
-    if (role === null || !authorize(actor, workspaceId, role, action).ok)
-      return fail('forbidden');
-    return run(tx);
-  });
+  const result = await workspaceInvitationWrite(() =>
+    store.collaboration<Result<T>>(actor, workspaceId, async (tx) => {
+      const role = await tx.role();
+      const permission = action === 'invite' ? 'manage_members' : action;
+      if (role === null || !authorize(actor, workspaceId, role, permission).ok)
+        return fail('forbidden');
+      if (action === 'invite' && !(await tx.invitationEnabled()))
+        return fail('collaboration_off');
+      return run(tx);
+    }),
+  );
+  return result.ok ? result.value : result;
+}
+
+/** A workspace invitation write met the owner's switch after it took the lock. */
+export class WorkspaceInvitationsOff extends Error {}
+
+export async function workspaceInvitationWrite<T>(
+  write: () => Promise<T>,
+): Promise<Result<T>> {
+  try {
+    return ok(await write());
+  } catch (error) {
+    if (error instanceof WorkspaceInvitationsOff)
+      return fail('collaboration_off');
+    throw error;
+  }
 }

@@ -5,9 +5,11 @@ import {
   normalizeEmail,
   ok,
   workspaceCollaboration,
+  workspaceInvitationWrite,
   workspaceInviteBatchSize,
   workspaceMemberPageSize,
   type CollaborationStore,
+  type WorkspaceInvite,
 } from '@notesapp/core';
 import { requireSessionActor, requireWriteOrigin } from '../auth/actor.ts';
 import type { Mailer } from '../auth/mail.ts';
@@ -27,6 +29,7 @@ import {
   DomainProblemError,
   NotFoundError,
   unwrapDomain,
+  workspaceInvitationsOffTitle,
 } from '../plugins/problem.ts';
 import type { HandlerMap, HandlerResult } from '../plugins/register.ts';
 import { readProperty } from '../values.ts';
@@ -51,6 +54,15 @@ function answer(body: unknown, privateData = false): HandlerResult {
     ...(privateData
       ? { headers: [['cache-control', 'private, no-store']] }
       : {}),
+  };
+}
+
+function inviteResponse({ collaborationEnabled, ...invite }: WorkspaceInvite) {
+  return {
+    ...invite,
+    acceptanceMessage: collaborationEnabled
+      ? null
+      : workspaceInvitationsOffTitle,
   };
 }
 
@@ -91,7 +103,11 @@ export function createCollaborationHandlers(
             actor,
             workspaceId,
             'read',
-            async (tx) => ok(await tx.members(after)),
+            async (tx) =>
+              ok({
+                ...(await tx.members(after)),
+                collaborationEnabled: await tx.invitationEnabled(),
+              }),
           ),
         ),
         true,
@@ -165,7 +181,7 @@ export function createCollaborationHandlers(
           async (tx) => ok(await tx.invites(null)),
         ),
       );
-      return answer({ invitations: invites }, true);
+      return answer({ invitations: invites.map(inviteResponse) }, true);
     },
     createWorkspaceInvites: async (request) => {
       const { actor, name } = requireSessionActor(request);
@@ -190,7 +206,7 @@ export function createCollaborationHandlers(
           store,
           actor,
           workspaceId,
-          'manage_members',
+          'invite',
           async (tx) => {
             await budget(
               `workspace-inviter:${actor.accountId}`,
@@ -313,7 +329,7 @@ export function createCollaborationHandlers(
           code: 'invitation_invalid',
           fileIds: [],
         });
-      return answer(invite, true);
+      return answer(inviteResponse(invite), true);
     },
     listMyWorkspaceInvites: async (request) => {
       const { actor } = requireSessionActor(request);
@@ -324,7 +340,7 @@ export function createCollaborationHandlers(
       const invitations = rows.slice(0, workspaceMemberPageSize);
       return answer(
         {
-          invitations,
+          invitations: invitations.map(inviteResponse),
           nextAfterInvitationId:
             rows.length > invitations.length
               ? (invitations.at(-1)?.invitationId ?? null)
@@ -338,8 +354,12 @@ export function createCollaborationHandlers(
       const id = readText(request.params, 'invitationId');
       return answer(
         notFound(
-          await store.collaboration(actor, null, (tx) =>
-            tx.answerInvite(id, true),
+          unwrapDomain(
+            await workspaceInvitationWrite(() =>
+              store.collaboration(actor, null, (tx) =>
+                tx.answerInvite(id, true),
+              ),
+            ),
           ),
         ),
       );
