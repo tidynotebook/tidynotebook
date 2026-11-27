@@ -341,6 +341,7 @@ export function ListRow({
   leading,
   help,
   helpId,
+  details,
   value,
   trailing,
   control: customControl,
@@ -362,6 +363,7 @@ export function ListRow({
   readonly leading?: ReactNode;
   readonly help?: ReactNode;
   readonly helpId?: string;
+  readonly details?: ReactNode;
   readonly value?: ReactNode;
   readonly trailing?: RowTrailing;
   readonly density?: RowDensity;
@@ -413,7 +415,7 @@ export function ListRow({
     ) : null);
   const body = structured ? (
     <>
-      {leading}
+      {leading ?? (details ? <span /> : null)}
       <span
         data-setting-text={rowDensity === 'setting' ? '' : undefined}
         className="ui-settings-copy text-left flex min-w-0 flex-1 flex-col gap-0.5"
@@ -452,6 +454,11 @@ export function ListRow({
           {control}
         </span>
       ) : null}
+      {details ? (
+        <div className="col-span-2 col-start-2 row-start-2 min-w-0">
+          {details}
+        </div>
+      ) : null}
     </>
   ) : (
     children
@@ -470,16 +477,23 @@ export function ListRow({
   })
     .replace('ui-tree-row', '')
     .replace('px-2', '')
-    .replace('gap-2', '')} ${className}`;
+    .replace(
+      'gap-2',
+      '',
+    )} ${structured && details ? 'grid! grid-cols-list-row-details gap-y-3' : ''} ${className}`;
+  const rowProps = {
+    ...nativeProps,
+    'data-ui-row': rowDensity,
+    'data-ui-layout': structured && details ? 'grid' : undefined,
+    className: classes,
+  };
   const ariaLabel =
     nativeProps['aria-label'] ??
     (typeof label === 'string' ? label : undefined);
   const row =
     href !== undefined ? (
       <a
-        {...nativeProps}
-        data-ui-row={rowDensity}
-        className={classes}
+        {...rowProps}
         href={href}
         aria-current={current ? 'page' : undefined}
         aria-label={ariaLabel}
@@ -488,24 +502,18 @@ export function ListRow({
       </a>
     ) : onClick !== undefined || as === 'button' ? (
       <button
-        {...nativeProps}
-        data-ui-row={rowDensity}
+        {...rowProps}
         ref={buttonRef}
         type="button"
-        className={classes}
         onClick={onClick}
         aria-label={ariaLabel}
       >
         {content}
       </button>
     ) : as === 'div' ? (
-      <div {...nativeProps} data-ui-row={rowDensity} className={classes}>
-        {content}
-      </div>
+      <div {...rowProps}>{content}</div>
     ) : (
-      <li {...nativeProps} data-ui-row={rowDensity} className={classes}>
-        {content}
-      </li>
+      <li {...rowProps}>{content}</li>
     );
   const wrapped =
     indent > 0 ? (

@@ -565,6 +565,7 @@ export function DialogFooter({
           padX={4}
           padY={3}
           safeArea
+          data-phone-sheet-footer=""
           className="ui-dialog-footer bg-card"
         >
           {action}

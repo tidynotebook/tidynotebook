@@ -17,16 +17,28 @@
  * The width is the reading measure of a short sentence with a gutter on both
  * sides, both from the named scale, so no screen writes a clamp of its own.
  */
-import { createContext, useContext, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useLayoutEffect,
+  useRef,
+  type ReactNode,
+} from 'react';
 import { createPortal } from 'react-dom';
 import { pageGutter } from './public-layout.ts';
 import { transitionRaise } from './motion.ts';
+import { followToastPosition } from './toast-position.ts';
 
 const ToastStackContext = createContext(false);
 
-function toastLayer(children: ReactNode): ReactNode {
+function ToastLayer({ children }: { readonly children: ReactNode }): ReactNode {
+  const layer = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (layer.current !== null) return followToastPosition(layer.current);
+  }, []);
   return createPortal(
     <div
+      ref={layer}
       data-toast-layer=""
       className={`pointer-events-none fixed inset-x-0 bottom-0 z-60 flex flex-col items-center gap-2 pb-4 ${pageGutter}`}
     >
@@ -43,7 +55,7 @@ export function ToastStack({
 }): ReactNode {
   return (
     <ToastStackContext.Provider value>
-      {toastLayer(children)}
+      <ToastLayer>{children}</ToastLayer>
     </ToastStackContext.Provider>
   );
 }
@@ -77,5 +89,5 @@ export function Toast({
       {children}
     </div>
   );
-  return stacked ? card : toastLayer(card);
+  return stacked ? card : <ToastLayer>{card}</ToastLayer>;
 }

@@ -97,7 +97,7 @@ export async function runCollaborationAudit(
           }, undefined);
           return context;
         }
-        async function assertToastAbove(toast: Locator) {
+        async function assertToastAbove(toast: Locator, action?: Locator) {
           await toast.waitFor();
           assert.ok(
             await toast.evaluate((element) => {
@@ -109,6 +109,29 @@ export async function runCollaborationAudit(
             }),
             'The toast is visible above the current overlay.',
           );
+          if (action !== undefined) {
+            const top = await action.evaluate((button) => {
+              const bounds = button.getBoundingClientRect();
+              const hit = document.elementFromPoint(
+                bounds.left + bounds.width / 2,
+                bounds.top + bounds.height / 2,
+              );
+              return button.contains(hit)
+                ? button
+                    .closest('[data-phone-sheet-footer]')
+                    ?.getBoundingClientRect().top
+                : null;
+            });
+            const box = await toast.boundingBox();
+            assert.ok(
+              top != null && box,
+              'The pinned sheet action is visible.',
+            );
+            assert.ok(
+              Math.abs(top - (box.y + box.height) - 16) <= 1,
+              'The toast leaves the standard gap above the pinned action bar.',
+            );
+          }
         }
         async function signIn(page: Page, email: string) {
           page.setDefaultTimeout(18_000);
@@ -381,23 +404,39 @@ export async function runCollaborationAudit(
         await owner.evaluate(() =>
           document.documentElement.setAttribute('data-block-clipboard', ''),
         );
+        const otherResult = owner
+          .locator('[data-ui-row]')
+          .filter({ hasText: fixture.pendingEmail });
+        const otherHeight = (await otherResult.boundingBox())?.height;
         await resultCopy.click();
-        const copyError = owner.getByRole('alert').filter({
+        const copyError = resultCopyRow.getByRole('alert').filter({
           hasText: 'Could not copy the link. Select and copy it yourself.',
         });
         await copyError.waitFor();
+        const linkField = resultCopyRow.getByLabel('Invitation link', {
+          exact: true,
+        });
         assert.ok(
-          await owner
-            .getByLabel('Invitation link', { exact: true })
-            .evaluate(
-              (field) =>
-                field instanceof HTMLInputElement &&
-                field.readOnly &&
-                field.value.length > 0 &&
-                field.selectionStart === 0 &&
-                field.selectionEnd === field.value.length,
-            ),
+          await linkField.evaluate(
+            (field) =>
+              field instanceof HTMLInputElement &&
+              field.readOnly &&
+              field.value.length > 0 &&
+              field.selectionStart === 0 &&
+              field.selectionEnd === field.value.length,
+          ),
         );
+        const email = await resultCopyRow
+          .getByText('result@example.test', { exact: true })
+          .boundingBox();
+        const error = await copyError.boundingBox();
+        const link = await linkField.boundingBox();
+        assert.ok(email && error && link);
+        assert.equal(error.x, email.x);
+        assert.equal(link.x, email.x);
+        assert.ok(error.y >= email.y + email.height);
+        assert.equal(await otherResult.getByRole('alert').count(), 0);
+        assert.equal((await otherResult.boundingBox())?.height, otherHeight);
         await check(owner, 'invite-results-copy-error');
         await owner.evaluate(() =>
           document.documentElement.removeAttribute('data-block-clipboard'),
@@ -421,7 +460,10 @@ export async function runCollaborationAudit(
           const toast = owner
             .getByRole('status')
             .filter({ hasText: copiedMessage });
-          await assertToastAbove(toast);
+          await assertToastAbove(
+            toast,
+            owner.getByRole('button', { name: 'Invite people', exact: true }),
+          );
           await check(owner, 'members-copy-toast');
           await toast.waitFor({ state: 'hidden' });
         } else {

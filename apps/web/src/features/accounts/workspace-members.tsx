@@ -651,6 +651,55 @@ function MemberEmail({
   );
 }
 
+function InviteResultRow({
+  workspaceId,
+  result: { invitationId, ...result },
+}: {
+  readonly workspaceId: string;
+  readonly result: WorkspaceInviteResult;
+}): ReactNode {
+  const { copy, problem } = useWorkspaceInviteCopy(workspaceId);
+  return (
+    <ListRow
+      label={result.email}
+      leading={
+        <IconSlot
+          className={
+            result.outcome === 'created' ? 'text-success' : 'text-muted'
+          }
+        >
+          {result.outcome === 'created' ? (
+            <CheckIcon />
+          ) : result.outcome === 'pending_limit' ? (
+            <AlertCircleIcon />
+          ) : (
+            <InfoIcon />
+          )}
+        </IconSlot>
+      }
+      help={
+        result.outcome === 'pending_invite'
+          ? 'Already invited. Copy the link to send it again.'
+          : result.outcome === 'already_member'
+            ? 'Already a member.'
+            : result.outcome === 'pending_limit'
+              ? 'This workspace has too many pending invites.'
+              : result.delivery === 'sent'
+                ? 'Email sent.'
+                : 'Invite created. Copy the link to send it.'
+      }
+      details={
+        problem === null ? undefined : <InviteCopyProblem problem={problem} />
+      }
+      control={
+        invitationId === undefined ? undefined : (
+          <CopyInviteButton copy={() => copy(invitationId)} />
+        )
+      }
+    />
+  );
+}
+
 function InvitePeople({
   workspaceId,
   workspaceName,
@@ -666,7 +715,6 @@ function InvitePeople({
   const [role, setRole] = useState<WorkspaceInviteRole>('editor');
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState('');
-  const { copy, problem: copyProblem } = useWorkspaceInviteCopy(workspaceId);
   const [results, setResults] = useState<WorkspaceInviteResult[] | null>(null);
   const [mail, setMail] = useState<boolean | null>(null);
   const [checked, setChecked] = useState(false);
@@ -785,9 +833,6 @@ function InvitePeople({
         }}
       >
         <DialogBody>
-          {copyProblem === null ? null : (
-            <InviteCopyProblem problem={copyProblem} />
-          )}
           {results === null ? (
             <Stack gap={3}>
               <TextAreaField
@@ -834,43 +879,11 @@ function InvitePeople({
               )}
             </Stack>
           ) : (
-            results.map(({ invitationId, ...result }, index) => (
-              <ListRow
+            results.map((result, index) => (
+              <InviteResultRow
                 key={`${result.email}:${index}`}
-                label={result.email}
-                leading={
-                  <IconSlot
-                    className={
-                      result.outcome === 'created'
-                        ? 'text-success'
-                        : 'text-muted'
-                    }
-                  >
-                    {result.outcome === 'created' ? (
-                      <CheckIcon />
-                    ) : result.outcome === 'pending_limit' ? (
-                      <AlertCircleIcon />
-                    ) : (
-                      <InfoIcon />
-                    )}
-                  </IconSlot>
-                }
-                help={
-                  result.outcome === 'pending_invite'
-                    ? 'Already invited. Copy the link to send it again.'
-                    : result.outcome === 'already_member'
-                      ? 'Already a member.'
-                      : result.outcome === 'pending_limit'
-                        ? 'This workspace has too many pending invites.'
-                        : result.delivery === 'sent'
-                          ? 'Email sent.'
-                          : 'Invite created. Copy the link to send it.'
-                }
-                control={
-                  invitationId === undefined ? undefined : (
-                    <CopyInviteButton copy={() => copy(invitationId)} />
-                  )
-                }
+                workspaceId={workspaceId}
+                result={result}
               />
             ))
           )}
