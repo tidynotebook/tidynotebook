@@ -7,9 +7,17 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## Unreleased
 
+## 0.25.1 - 2026-11-27
+
 ### Added
 
-- Let the operator read an account's seat usage, including members and open invites across its workspaces.
+- Let the operator read an account's seat usage, including members and open invites across its workspaces. ([PR 606](https://github.com/tidynotebook/tidynotebook/pull/606))
+
+### Fixed
+
+- Show "Copied!" on the Copy link button of an invite, in the invite results and in Members. When a copy fails, show the link in the invite row so that it can be copied by hand. ([PR 605](https://github.com/tidynotebook/tidynotebook/pull/605))
+- Show toasts above open dialogs and sheets, and above the action bar of a phone sheet. ([PR 605](https://github.com/tidynotebook/tidynotebook/pull/605))
+- Show only the role in the workspace switcher, without the member count. ([PR 605](https://github.com/tidynotebook/tidynotebook/pull/605))
 
 ## 0.25.0 - 2026-11-27
 
