@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { randomUUID } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
+import {
+  describeIssues,
+  responseValidator,
+  type OperationId,
+} from '@notesapp/api-contract';
 import { mcpTools, runTool, type ContractCall } from './registry.ts';
 import {
   maxToolResultBytes,
@@ -53,113 +59,187 @@ function fails(name: string, input: unknown, call: ContractCall) {
   });
 }
 
-await test('each read mapping calls only its declared operations', async () => {
-  const data: Record<string, unknown> = {
-    listWorkspaces: {
-      workspaces: [
-        { workspaceId, name: 'Work', role: 'owner', personal: true },
-      ],
-    },
-    listFiles: {
-      files: [
-        { fileId, path: identity.path, kind: 'note', headRevisionId: version },
-      ],
-      nextCursor: null,
-    },
-    getFile: { fileId, path: identity.path, head: revision('Text') },
-    getRevision: revision('Text'),
-    searchFiles: {
-      hits: [
-        {
-          fileId,
-          path: identity.path,
-          revisionId: version,
-          excerpt: [{ text: 'Text', marked: true }],
-        },
-      ],
-    },
-    listBacklinks: {
-      backlinks: [{ fileId, path: identity.path, revisionId: version }],
-    },
+function checkRestFixture(id: OperationId, body: unknown): void {
+  const validate = responseValidator(id, 200, 'application/json');
+  assert.ok(validate, `${id} needs a JSON response schema.`);
+  const valid = validate(body);
+  assert.ok(valid, `${id}: ${JSON.stringify(describeIssues(validate.errors))}`);
+}
+
+await test('each MCP read tool projects valid REST responses', async () => {
+  const workspace = {
+    workspaceId,
+    name: 'Work',
+    role: 'owner',
+    personal: false,
+  };
+  const timestamp = '2026-11-28T00:00:00.000Z';
+  const file = {
+    fileId,
+    path: identity.path,
+    kind: 'note',
+    headRevisionId: version,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  };
+  const historyFields = {
+    revisionId: version,
+    fileId,
+    path: identity.path,
+    deleted: false,
+    size: 4,
+    message: 'Checkpoint',
+    merged: false,
+    restoredFrom: null,
+  };
+  const revisionDetails = {
+    ...historyFields,
+    parents: [],
+    digest: '0'.repeat(64),
+    clientTime: timestamp,
+    serverTime: timestamp,
+  };
+  const noteHead = {
+    ...revisionDetails,
+    kind: 'note',
+    text: 'Text',
+    document: 'AA==',
+    epoch: 1,
+    attachmentObjectId: null,
+  };
+  const reference = { fileId, path: file.path, revisionId: version };
+  const excerpt = [{ text: 'Text', marked: true }];
+  const data: Partial<Record<OperationId, unknown>> = {
+    listWorkspaces: { workspaces: [{ ...workspace, memberCount: 2 }] },
+    listFiles: { files: [file], nextCursor: null },
+    getFile: { ...file, head: { ...noteHead, document: null } },
+    getRevision: noteHead,
+    searchFiles: { hits: [{ ...reference, excerpt }] },
+    listBacklinks: { backlinks: [reference] },
     listHistory: {
       revisions: [
         {
-          fileId,
-          path: identity.path,
-          revisionId: version,
-          objectId: null,
-          text: 'never return history text',
-          deleted: false,
-          size: 4,
-          message: 'x'.repeat(512),
+          ...revisionDetails,
+          actorAccountId: randomUUID(),
           isCheckpoint: true,
-          merged: false,
-          restoredFrom: null,
+          checkpointName: 'Checkpoint',
+          text: 'Never return history text.',
+          objectId: null,
+          contributors: [
+            { accountId: null, displayName: null, formerMember: true },
+          ],
         },
       ],
       nextCursor: null,
     },
   };
-  for (const entry of mcpTools.filter((tool) => tool.scope === 'notes:read')) {
-    const calls: string[] = [];
-    const input =
-      entry.definition.name === 'list_workspaces'
-        ? {}
-        : entry.definition.name === 'search_notes'
-          ? { query: 'Text' }
-          : entry.definition.name === 'list_notes'
-            ? { workspaceId }
-            : { workspaceId, fileId };
-    const body = await invoke(entry.definition.name, input, (id) => {
+  const note = { workspaceId, fileId };
+  const summary = { ...identity, version };
+  const read = { ...summary, text: 'Text', offset: 0, nextOffset: null };
+  const cases = [
+    [
+      'list_workspaces',
+      {},
+      ['listWorkspaces'],
+      { workspaces: [workspace], nextOffset: null },
+    ],
+    [
+      'list_notes',
+      { workspaceId },
+      ['listFiles'],
+      { notes: [summary], nextCursor: null },
+    ],
+    ['read_note', note, ['getFile'], read],
+    ['read_note', { ...note, version }, ['getRevision'], read],
+    [
+      'search_notes',
+      { query: 'Text' },
+      ['listWorkspaces', 'searchFiles'],
+      { hits: [{ ...summary, excerpt }], nextOffset: null, nextCursor: null },
+    ],
+    [
+      'list_backlinks',
+      note,
+      ['listBacklinks'],
+      { backlinks: [summary], nextOffset: null },
+    ],
+    [
+      'list_note_history',
+      note,
+      ['listHistory'],
+      {
+        revisions: [
+          {
+            ...summary,
+            deleted: false,
+            size: 4,
+            message: 'Checkpoint',
+            isCheckpoint: true,
+            merged: false,
+            restoredFrom: null,
+          },
+        ],
+        nextCursor: null,
+      },
+    ],
+  ] as const;
+  assert.deepEqual(
+    [...new Set(cases.map(([name]) => name))].sort(),
+    mcpTools
+      .filter((entry) => entry.scope === 'notes:read')
+      .map((entry) => entry.definition.name)
+      .sort(),
+  );
+  for (const [name, input, operations, expected] of cases) {
+    const declared = tool(name).operations;
+    for (const id of operations) {
+      assert.ok(declared.includes(id), `${name} did not declare ${id}.`);
+      checkRestFixture(id, data[id]);
+    }
+    const calls: OperationId[] = [];
+    const body = await invoke(name, input, (id) => {
       calls.push(id);
-      assert.ok(entry.operations.includes(id));
       return accepted(data[id]);
     });
-    assert.ok(calls.length > 0);
-    if (entry.definition.name === 'read_note')
-      assert.deepEqual(body, {
-        ...identity,
-        version,
-        text: 'Text',
-        offset: 0,
-        nextOffset: null,
-      });
-    if (entry.definition.name === 'list_note_history')
-      assert.equal(
-        JSON.stringify(body).includes('never return history text'),
-        false,
-      );
+    assert.deepEqual(calls, operations, name);
+    assert.deepEqual(body, expected, name);
   }
 });
-await test('workspace lists keep all membership roles and omit REST-only fields', async () => {
-  const workspaces = [
-    { workspaceId, name: 'Owned', role: 'owner', personal: false },
-    {
-      workspaceId: randomUUID(),
-      name: 'Admin',
-      role: 'admin',
-      personal: false,
-    },
-    {
-      workspaceId: randomUUID(),
-      name: 'Editor',
-      role: 'editor',
-      personal: false,
-    },
-    {
-      workspaceId: randomUUID(),
-      name: 'Viewer',
-      role: 'viewer',
-      personal: false,
-    },
-  ];
-  const call: ContractCall = () =>
-    accepted({
-      workspaces: [
-        { ...workspaces[0], memberCount: 2 },
-        ...workspaces.slice(1),
-      ],
-    });
+
+await test('workspace lists keep every REST role and omit REST-only fields', async () => {
+  const document: unknown = JSON.parse(
+    await readFile(
+      new URL(
+        '../../../../packages/api-contract/src/generated/openapi.json',
+        import.meta.url,
+      ),
+      'utf8',
+    ),
+  );
+  const schemas = record(record(record(document).components).schemas);
+  const roles = record(schemas.Role).enum;
+  assert.ok(Array.isArray(roles) && roles.length > 1);
+  const workspaces = roles.map((role: unknown) => {
+    assert.equal(typeof role, 'string');
+    return { workspaceId: randomUUID(), name: 'Shared', role, personal: false };
+  });
+  const restWorkspaces = workspaces.map((workspace) => ({
+    ...workspace,
+    memberCount: 2,
+  }));
+  const restFields = Object.keys(
+    record(record(schemas.Workspace).properties),
+  ).sort();
+  for (const workspace of restWorkspaces) {
+    assert.deepEqual(
+      Object.keys(workspace).sort(),
+      restFields,
+      'Include optional REST fields so the projection is checked.',
+    );
+  }
+  const response = { workspaces: restWorkspaces };
+  checkRestFixture('listWorkspaces', response);
+  const call: ContractCall = () => accepted(response);
   assert.deepEqual(await invoke('list_workspaces', { limit: 1 }, call), {
     workspaces: workspaces.slice(0, 1),
     nextOffset: 1,
