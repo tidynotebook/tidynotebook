@@ -7,6 +7,13 @@ and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## Unreleased
 
+## 0.25.2 - 2026-11-28
+
+### Fixed
+
+- List shared workspaces through MCP. `list_workspaces` now returns workspaces with every member role, and it does not fail when the workspace list includes a member count. ([PR 609](https://github.com/tidynotebook/tidynotebook/pull/609))
+- Keep the request ID in MCP JSON-RPC error replies, and send `Allow: POST` with HTTP 405 replies from the MCP endpoint. Generated API clients now type the MCP error ID as a string, number or null. ([PR 610](https://github.com/tidynotebook/tidynotebook/pull/610))
+
 ## 0.25.1 - 2026-11-27
 
 ### Added
