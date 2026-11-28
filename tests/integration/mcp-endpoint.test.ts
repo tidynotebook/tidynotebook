@@ -269,11 +269,12 @@ function errorBody(
     json: () => unknown;
   },
   code?: number,
+  id: string | number | null = null,
 ) {
   const body = json(answer);
   assert.ok(body !== null && typeof body === 'object');
   assert.deepEqual(Object.keys(body).sort(), ['error', 'id', 'jsonrpc']);
-  assert.equal(Reflect.get(body, 'id'), null);
+  assert.equal(Reflect.get(body, 'id'), id);
   assert.equal(Reflect.get(body, 'jsonrpc'), '2.0');
   const failure: unknown = Reflect.get(body, 'error');
   assert.ok(failure !== null && typeof failure === 'object');
@@ -558,6 +559,7 @@ try {
         },
         payload: JSON.stringify(modern()),
         status: 400,
+        id: 1,
       },
     ];
     for (const entry of cases) {
@@ -568,15 +570,8 @@ try {
         payload: entry.payload,
       });
       assert.equal(answer.statusCode, entry.status, answer.body);
-      errorBody(answer);
+      errorBody(answer, undefined, entry.id);
     }
-    const stream = await app.inject({
-      method: 'GET',
-      url: '/mcp',
-      headers: headers(),
-    });
-    assert.equal(stream.statusCode, 405, stream.body);
-    errorBody(stream);
     const subscription = await app.inject({
       method: 'POST',
       url: '/mcp',
@@ -588,6 +583,28 @@ try {
       subscription.body,
     );
     json(subscription);
+  });
+  await test('GET refuses the event stream and advertises POST', async () => {
+    const stream = await app.inject({
+      method: 'GET',
+      url: '/mcp',
+      headers: headers(),
+    });
+    assert.equal(stream.statusCode, 405, stream.body);
+    assert.equal(stream.headers.allow, 'POST');
+    errorBody(stream);
+  });
+  await test('modern protocol errors keep the request ID', async () => {
+    for (const id of ['list-request', 0]) {
+      const answer = await app.inject({
+        method: 'POST',
+        url: '/mcp',
+        headers: modernHeaders('ping'),
+        payload: { ...modern('tools/list'), id },
+      });
+      assert.equal(answer.statusCode, 400, answer.body);
+      errorBody(answer, undefined, id);
+    }
   });
   await test('a delegation is limited to its named operations and the life of its call', async () => {
     const grant = await identity.oauthTokenIdentity(

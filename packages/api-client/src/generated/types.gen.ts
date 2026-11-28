@@ -1878,7 +1878,10 @@ export type MarkdownText = string;
  */
 export type McpError = {
     jsonrpc: '2.0';
-    id: null;
+    /**
+     * The request ID when the protocol can determine it.
+     */
+    id: string | number | null;
     error: {
         code: number;
         message: string;

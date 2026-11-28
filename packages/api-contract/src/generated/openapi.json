@@ -6776,6 +6776,14 @@
           },
           "405": {
             "description": "No event stream or session operation is served.",
+            "headers": {
+              "Allow": {
+                "description": "The HTTP method supported by the MCP endpoint.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -6924,6 +6932,14 @@
           },
           "405": {
             "description": "No event stream or session operation is served.",
+            "headers": {
+              "Allow": {
+                "description": "The HTTP method supported by the MCP endpoint.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -13428,7 +13444,18 @@
             "const": "2.0"
           },
           "id": {
-            "type": "null"
+            "description": "The request ID when the protocol can determine it.",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "error": {
             "type": "object",

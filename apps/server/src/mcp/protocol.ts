@@ -367,10 +367,12 @@ async function serve(
       )
     )
       throw new Error('The MCP transport must answer JSON.');
-    let body: unknown = await response.json();
-    if (response.status >= 400 && body !== null && typeof body === 'object')
-      body = { ...Object.fromEntries(Object.entries(body)), id: null };
-    return answer(response.status, body);
+    const allow = response.headers.get('allow');
+    return answer(
+      response.status,
+      await response.json(),
+      allow === null ? [] : [['allow', allow]],
+    );
   } finally {
     await close();
   }
