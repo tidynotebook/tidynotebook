@@ -131,6 +131,45 @@ await test('each read mapping calls only its declared operations', async () => {
       );
   }
 });
+await test('workspace lists keep all membership roles and omit REST-only fields', async () => {
+  const workspaces = [
+    { workspaceId, name: 'Owned', role: 'owner', personal: false },
+    {
+      workspaceId: randomUUID(),
+      name: 'Admin',
+      role: 'admin',
+      personal: false,
+    },
+    {
+      workspaceId: randomUUID(),
+      name: 'Editor',
+      role: 'editor',
+      personal: false,
+    },
+    {
+      workspaceId: randomUUID(),
+      name: 'Viewer',
+      role: 'viewer',
+      personal: false,
+    },
+  ];
+  const call: ContractCall = () =>
+    accepted({
+      workspaces: [
+        { ...workspaces[0], memberCount: 2 },
+        ...workspaces.slice(1),
+      ],
+    });
+  assert.deepEqual(await invoke('list_workspaces', { limit: 1 }, call), {
+    workspaces: workspaces.slice(0, 1),
+    nextOffset: 1,
+  });
+  assert.deepEqual(await invoke('list_workspaces', { offset: 1 }, call), {
+    workspaces: workspaces.slice(1),
+    nextOffset: null,
+  });
+});
+
 await test('bad input fails before a contract call and a bad answer has a safe error', async () => {
   let calls = 0;
   const call: ContractCall = () => {

@@ -1,5 +1,6 @@
 /** The six read mappings of plan 022. Only the contract port reaches data. */
 import { Buffer } from 'node:buffer';
+import { workspaceRoles } from '@notesapp/core';
 import type { ContractCall, McpTool } from './registry.ts';
 import {
   arraySchema,
@@ -42,7 +43,7 @@ const workspaceSchema = objectSchema(
   {
     workspaceId: idSchema,
     name: { type: 'string', minLength: 1, maxLength: 200 },
-    role: { enum: ['owner'] },
+    role: { enum: [...workspaceRoles] },
     personal: { type: 'boolean' },
   },
   ['workspaceId', 'name', 'role', 'personal'],
@@ -85,7 +86,12 @@ const listWorkspaces = readTool(
     const workspaces = rows(
       await readContract(call, 'listWorkspaces'),
       'workspaces',
-    );
+    ).map(({ workspaceId, name, role, personal }) => ({
+      workspaceId,
+      name,
+      role,
+      personal,
+    }));
     return offsetPage(
       workspaces,
       number(input, 'offset', 0),
