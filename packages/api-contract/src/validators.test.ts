@@ -653,7 +653,10 @@ await test('MCP refusals have one JSON media type and closed protocol bodies', (
     assert.equal(forbidden({ error: 'insufficient_scope' }), true);
     assert.equal(forbidden(rpc), true);
     assert.equal(refusal(rpc), true);
-    assert.equal(refusal({ ...rpc, id: 1 }), false);
+    assert.equal(refusal({ ...rpc, id: 1 }), true);
+    assert.equal(refusal({ ...rpc, id: 'list-request' }), true);
+    assert.equal(refusal({ ...rpc, id: true }), false);
+    assert.equal(refusal({ jsonrpc: rpc.jsonrpc, error: rpc.error }), false);
     assert.equal(refusal({ ...rpc, extra: true }), false);
     assert.equal(
       refusal({ ...rpc, error: { ...rpc.error, extra: true } }),
