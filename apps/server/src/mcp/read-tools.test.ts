@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import {
   describeIssues,
+  findOperation,
   responseValidator,
   type OperationId,
 } from '@notesapp/api-contract';
@@ -59,11 +60,75 @@ function fails(name: string, input: unknown, call: ContractCall) {
   });
 }
 
+const openapi: unknown = JSON.parse(
+  await readFile(
+    new URL(
+      '../../../../packages/api-contract/src/generated/openapi.json',
+      import.meta.url,
+    ),
+    'utf8',
+  ),
+);
+
+function resolveReference(reference: string): Record<string, unknown> {
+  assert.ok(reference.startsWith('#/'), reference);
+  return reference
+    .slice(2)
+    .split('/')
+    .reduce(
+      (current, part) =>
+        record(current[part.replaceAll('~1', '/').replaceAll('~0', '~')]),
+      record(openapi),
+    );
+}
+
+function checkFixtureProperties(
+  schema: Record<string, unknown>,
+  value: unknown,
+  path: string,
+): void {
+  if (typeof schema.$ref === 'string')
+    checkFixtureProperties(resolveReference(schema.$ref), value, path);
+  for (const alternatives of [schema.allOf, schema.oneOf, schema.anyOf]) {
+    if (Array.isArray(alternatives))
+      for (const alternative of alternatives)
+        checkFixtureProperties(record(alternative), value, path);
+  }
+  if (Array.isArray(value) && schema.items !== undefined) {
+    value.forEach((item: unknown, index) =>
+      checkFixtureProperties(record(schema.items), item, `${path}[${index}]`),
+    );
+  }
+  if (
+    schema.properties !== undefined &&
+    value !== null &&
+    typeof value === 'object' &&
+    !Array.isArray(value)
+  ) {
+    const fields = record(value);
+    for (const [name, property] of Object.entries(record(schema.properties))) {
+      const fieldPath = `${path}.${name}`;
+      assert.ok(Object.hasOwn(fields, name), `The fixture needs ${fieldPath}.`);
+      checkFixtureProperties(record(property), fields[name], fieldPath);
+    }
+  }
+}
+
 function checkRestFixture(id: OperationId, body: unknown): void {
   const validate = responseValidator(id, 200, 'application/json');
   assert.ok(validate, `${id} needs a JSON response schema.`);
   const valid = validate(body);
   assert.ok(valid, `${id}: ${JSON.stringify(describeIssues(validate.errors))}`);
+  const operation = findOperation(id);
+  assert.ok(operation);
+  const path = record(record(record(openapi).paths)[operation.path]);
+  const example = record(
+    record(record(path[operation.method]).responses)['200'],
+  );
+  const response =
+    typeof example.$ref === 'string' ? resolveReference(example.$ref) : example;
+  const media = record(record(response.content)['application/json']);
+  checkFixtureProperties(record(media.schema), body, id);
 }
 
 await test('each MCP read tool projects valid REST responses', async () => {
@@ -126,7 +191,12 @@ await test('each MCP read tool projects valid REST responses', async () => {
           text: 'Never return history text.',
           objectId: null,
           contributors: [
-            { accountId: null, displayName: null, formerMember: true },
+            {
+              accountId: randomUUID(),
+              displayName: 'Author',
+              formerMember: false,
+              colorSlot: 2,
+            },
           ],
         },
       ],
@@ -207,16 +277,7 @@ await test('each MCP read tool projects valid REST responses', async () => {
 });
 
 await test('workspace lists keep every REST role and omit REST-only fields', async () => {
-  const document: unknown = JSON.parse(
-    await readFile(
-      new URL(
-        '../../../../packages/api-contract/src/generated/openapi.json',
-        import.meta.url,
-      ),
-      'utf8',
-    ),
-  );
-  const schemas = record(record(record(document).components).schemas);
+  const schemas = record(record(record(openapi).components).schemas);
   const roles = record(schemas.Role).enum;
   assert.ok(Array.isArray(roles) && roles.length > 1);
   const workspaces = roles.map((role: unknown) => {
@@ -227,16 +288,6 @@ await test('workspace lists keep every REST role and omit REST-only fields', asy
     ...workspace,
     memberCount: 2,
   }));
-  const restFields = Object.keys(
-    record(record(schemas.Workspace).properties),
-  ).sort();
-  for (const workspace of restWorkspaces) {
-    assert.deepEqual(
-      Object.keys(workspace).sort(),
-      restFields,
-      'Include optional REST fields so the projection is checked.',
-    );
-  }
   const response = { workspaces: restWorkspaces };
   checkRestFixture('listWorkspaces', response);
   const call: ContractCall = () => accepted(response);
