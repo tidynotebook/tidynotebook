@@ -99,8 +99,8 @@
     },
     {
       "file": "13-v2.4.1.tar.gz",
-      "url": "https://github.com/lovell/libimagequant/archive/v2.4.1.tar.gz",
-      "sha256": "47d2a84b7b1052975c9d50a3d4e3cacbf57b43d84a4c3131210848ead9964dfb"
+      "url": "https://github.com/lovell/libimagequant/archive/ce5fdeb1ccd9db288950faa21fd09c42c0a59bbb.tar.gz",
+      "sha256": "99dfd59981afc9af17a3c300ff528b6ca8b1fadd092ab55bd1aafc01bbbd7f78"
     },
     {
       "file": "14-libwebp-1.6.0.tar.gz",

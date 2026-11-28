@@ -53,6 +53,21 @@ replace(
   'https://cairographics.org/releases/cairo-',
   'https://cairo.freedesktop.org/releases/cairo-',
 );
+// The upstream tag can move. Use the commit URL of the reviewed archive.
+const imagequant = manifest.sources.find(
+  (source) => source.file === `13-v${manifest.versions.imagequant}.tar.gz`,
+);
+if (
+  !imagequant ||
+  !/^https:\/\/github\.com\/lovell\/libimagequant\/archive\/[a-f0-9]{40}\.tar\.gz$/.test(
+    imagequant.url,
+  )
+)
+  throw new Error('The native imagequant source needs a commit archive.');
+replace(
+  'https://github.com/lovell/libimagequant/archive/v${VERSION_IMAGEQUANT}.tar.gz',
+  imagequant.url,
+);
 replace('cargo update --workspace', 'cargo update --workspace --offline');
 // The static archives and pkg-config files are needed to compile Sharp.
 // The final image receives only the dependency closure, not the build tools.
